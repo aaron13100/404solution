@@ -94,7 +94,6 @@ function wbz404_getDefaultOptions() {
 		'auto_cats' => '1',
 		'auto_tags' => '1',
 		'force_permalinks' => '1',
-		'404_promote' => '1'
 	);
 	return $options;
 }

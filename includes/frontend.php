@@ -45,11 +45,6 @@ function wbz404_suggestions() {
 					echo esc_html( $options['suggest_noresults'] );
 				}
 	
-				//Promote Plugin
-				if ($options['404_promote'] == "1") {
-					echo wbz404_trans('Generated using the') . " <a href=\"" . WBZ404_HOME . "\" title=\"" . wbz404_trans('Wordpress 404 Manager Plugin') . "\" target=\"_blank\">";
-					echo wbz404_trans('404 Redirected') . "</a> " . wbz404_trans('plugin written by') . " <a href=\"http://www.weberz.com/\" title=\"Weberz Hosting\" target=\"_blank\">Weberz Hosting</a>.";
-				}
 			echo "</div>";
 		}
 	}
