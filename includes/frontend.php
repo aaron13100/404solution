@@ -10,10 +10,11 @@ function wbz404_suggestions() {
 		if ($options['display_suggest'] == '1') {
 			echo "<div class=\"404suggest\">";
 				$requestedURL = $_SERVER['REQUEST_URI'];
+				$requestedURL = esc_url( $requestedURL );
 				$urlParts = parse_url($requestedURL);
 				$permalinks = wbz404_rankPermalinks($urlParts['path'], $options['suggest_cats'], $options['suggest_tags']);
 
-				echo $options['suggest_title'];
+				echo esc_html( $options['suggest_title'] );
 				$displayed = 0;
 
 				foreach($permalinks as $k=>$v) {
@@ -21,15 +22,15 @@ function wbz404_suggestions() {
 
 					if ($permalink['score'] >= $options['suggest_minscore']) {
 						if ($displayed == 0) {
-							echo $options['suggest_before'];
+							echo esc_html( $options['suggest_before'] );
 						}
 
 						echo $options['suggest_entrybefore'];
-						echo "<a href=\"" . $permalink['link'] . "\" title=\"" . $permalink['title'] . "\">" . $permalink['title'] . "</a>";
+						echo "<a href=\"" . esc_url( $permalink['link'] ) . "\" title=\"" . esc_attr( $permalink['title'] ) . "\">" . esc_html( $permalink['title'] ) . "</a>";
 						if (is_user_logged_in() && current_user_can('manage_options')) {
-							echo " (" . $permalink['score'] . ")";
+							echo " (" . esc_html( $permalink['score'] ) . ")";
 						}
-						echo $options['suggest_entryafter'];
+						echo esc_html( $options['suggest_entryafter'] );
 						$displayed++;
 						if ($displayed >= $options['suggest_max']) {
 							break;
@@ -39,9 +40,9 @@ function wbz404_suggestions() {
 					}
 				}
 				if ($displayed >= 1) {
-					echo $options['suggest_after'];
+					echo esc_html( $options['suggest_after'] );
 				} else {
-					echo $options['suggest_noresults'];
+					echo esc_html( $options['suggest_noresults'] );
 				}
 	
 				//Promote Plugin
@@ -58,6 +59,7 @@ function wbz404_process404() {
 	$options = wbz404_getOptions();
 
 	$urlRequest = $_SERVER['REQUEST_URI'];
+	$urlRequest = esc_url( $urlRequest );
 	$urlParts = parse_url($urlRequest);
 	$requestedURL = $urlParts['path'];
 	$requestedURL .= wbz404_SortQuery($urlParts);
@@ -107,7 +109,7 @@ function wbz404_process404() {
 			if ($found == 1) {
 				//Perform actual redirect
 				wbz404_logRedirectHit($redirect_id, $permalink['link']);
-				wp_redirect($permalink['link'], $options['default_redirect']);
+				wp_redirect( esc_url( $permalink['link'] ), esc_html( $options['default_redirect'] ) );
 				exit;
 			} else {
 				//Check for incoming 404 settings
@@ -126,7 +128,7 @@ function wbz404_process404() {
 				$urlParts = parse_url($permalink['link']);
 				$perma_link = $urlParts['path'];
 
-				$paged = get_query_var('page') ? get_query_var('page') : FALSE;
+				$paged = get_query_var('page') ? esc_html( get_query_var('page') ) : FALSE;
 
 				if (! $paged === FALSE) {
 					if ($urlParts[query] == "") {
@@ -148,9 +150,9 @@ function wbz404_process404() {
 						if ($redirect['id'] != '0') {
 							wbz404_ProcessRedirect($redirect);
 						} else {
-							$redirect_id = wbz404_setupRedirect($requestedURL, WBZ404_AUTO, WBZ404_POST, $permalink['id'], $options['default_redirect'], 0);
+							$redirect_id = wbz404_setupRedirect(esc_url( $requestedURL ), WBZ404_AUTO, WBZ404_POST, $permalink['id'], $options['default_redirect'], 0);
 							wbz404_logRedirectHit($redirect_id, $permalink['link']);
-							wp_redirect($permalink['link'], $options['default_redirect']);
+							wp_redirect(esc_url( $permalink['link'] ), esc_html( $options['default_redirect'] ) );
 							exit;
 						}
 					}
@@ -174,7 +176,16 @@ function wbz404_redirectCanonical($redirect, $request) {
 		if (!is_feed() && !is_trackback() && !is_preview()) {
 			$options = wbz404_getOptions();
 
+			/**
+			 * Sanitizing options.
+			 */
+			foreach ( $options as $key => $value ) {
+				$key = wp_kses_post( $key );
+				$options[$key] = wp_kses_post( $value );
+			}
+
 			$urlRequest = $_SERVER['REQUEST_URI'];
+			$urlRequest = esc_url( $urlRequest );
 			$urlParts = parse_url($urlRequest);
 			
 			$requestedURL = $urlParts['path'];
@@ -192,7 +203,7 @@ function wbz404_redirectCanonical($redirect, $request) {
 					$urlParts = parse_url($permalink['link']);
 
 					$perma_link = $urlParts['path'];
-					$paged = get_query_var('page') ? get_query_var('page') : FALSE;
+					$paged = get_query_var('page') ? esc_html( get_query_var('page') ) : FALSE;
 
 					if (! $paged === FALSE) {
 						if ($urlParts[query] == "") {
@@ -211,7 +222,7 @@ function wbz404_redirectCanonical($redirect, $request) {
 					if ($requestedURL != $perma_link) {
 						$redirect_id = wbz404_setupRedirect($requestedURL, WBZ404_AUTO, WBZ404_POST, $theID, $options['default_redirect'], 0);
 						wbz404_logRedirectHit($redirect_id, $perma_link);
-						wp_redirect($perma_link, $options['default_redirect']);
+						wp_redirect( esc_url( $perma_link ), esc_html( $options['default_redirect'] ) );
 						exit;
 					}
 				}
