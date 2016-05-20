@@ -1,18 +1,18 @@
 === 404 Redirected ===
-Contributors: rrolfe, thememix
-Donate link: http://www.weberz.com/
+Contributors: DeFries
+Donate link: https://remkusdevries.com/donate/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
-Tested up to: 4.5.1
-Stable tag: 2.0.0
+Tested up to: 4.5.2
+Stable tag: 1.4.0
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 
 == Description ==
 
-404 Redirected allows Wordpress admins to have control over their dead links and redirects from inside the admin panel. 404 Redirected records all URLs that users have visited and allows the admin to easily create 301 and 302 redirects to valid pages on their site. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
+404 Redirected allows WordPress admins to have control over their dead links and redirects from inside the admin panel. 404 Redirected records all URLs that users have visited and allows the admin to easily create 301 and 302 redirects to valid pages on their site. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
 
-**Features:**
+= Features:=
 
 * Get list of 404 URLs as they happen inside the admin panel
 * Easily redirect 404 URLs to existing pages or choose to ignore the 404 error
@@ -69,6 +69,11 @@ I try to get to the support forums as often as I can. This plugin is just one of
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 1.4.0 =
+
+* Data sanitization added where needed (everywhere)
+* Fixed PHP notices
 
 = Version 1.3.2 =
 
