@@ -34,7 +34,7 @@ function wbz404_dashboardNotification() {
 			if ( $options['admin_notification'] != '0' ) {
 				$captured = wbz404_capturedCount();
 				if ( $captured >= $options['admin_notification'] ) {
-					echo "<div class=\"updated\"><p><strong>" . esc_html( __( '404 Redirected' ) ) . ":</strong> " . __( 'There are ' . esc_html( $captured ) . ' captured 404 URLs that need to be processed.' ) . "</p></div>";
+					echo "<div class=\"updated\"><p><strong>" . esc_html( __( '404 Redirected', '404-redirected' ) ) . ":</strong> " . __( 'There are ' . esc_html( $captured ) . ' captured 404 URLs that need to be processed.', '404-redirected' ) . "</p></div>";
 				}
 			}
 		}
@@ -67,7 +67,7 @@ function wbz404_updateOptions() {
 	if ( $_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302" ) {
 		$options['default_redirect'] = $_POST['default_redirect'];
 	} else {
-		$message.= __( 'Error: Invalid value specified for default redirect type' ) . ".<br>";
+		$message.= __( 'Error: Invalid value specified for default redirect type', '404-redirected' ) . ".<br>";
 	}
 
 	if ( $_POST['capture_404'] == "1" ) {
@@ -83,13 +83,13 @@ function wbz404_updateOptions() {
 	if ( preg_match( '/^[0-9]+$/', $_POST['capture_deletion'] )==1 && $_POST['capture_deletion'] >= 0 ) {
 		$options['capture_deletion'] = $_POST['capture_deletion'];
 	} else {
-		$message.= __( 'Collected URL deletion value must be a number greater or equal to zero' ) . ".<br>";
+		$message.= __( 'Collected URL deletion value must be a number greater or equal to zero', '404-redirected' ) . ".<br>";
 	}
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['manual_deletion'] )==1 && $_POST['manual_deletion'] >= 0 ) {
 		$options['manual_deletion'] = $_POST['manual_deletion'];
 	} else {
-		$message.= __( 'Manual redirect deletion value must be a number greater or equal to zero' ) . ".<br>";
+		$message.= __( 'Manual redirect deletion value must be a number greater or equal to zero', '404-redirected' ) . ".<br>";
 	}
 
 	if ( $_POST['remove_matches'] == "1" ) {
@@ -119,13 +119,13 @@ function wbz404_updateOptions() {
 	if ( preg_match( '/^[0-9]+$/', $_POST['suggest_minscore'] ) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99 ) {
 		$options['suggest_minscore'] = $_POST['suggest_minscore'];
 	} else {
-		$message.= __( 'Suggestion minimum score value must be a number between 1 and 99' ) . ".<br>";
+		$message.= __( 'Suggestion minimum score value must be a number between 1 and 99', '404-redirected' ) . ".<br>";
 	}
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['suggest_max'] ) == 1 && $_POST['suggest_max'] >= 1 ) {
 		$options['suggest_max'] = $_POST['suggest_max'];
 	} else {
-		$message.= __( 'Maximum number of suggest value must be a number greater or equal to 1' ) . ".<br>";
+		$message.= __( 'Maximum number of suggest value must be a number greater or equal to 1', '404-redirected' ) . ".<br>";
 	}
 
 	$options['suggest_title'] = $_POST['suggest_title'];
@@ -156,14 +156,14 @@ function wbz404_updateOptions() {
 	if ( preg_match( '/^[0-9]+$/', $_POST['auto_score'] ) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99 ) {
 		$options['auto_score'] = $_POST['auto_score'];
 	} else {
-		$message .= __( 'Auto match score value must be a number between 0 and 99' ) . ".<br>";
+		$message .= __( 'Auto match score value must be a number between 0 and 99', '404-redirected' ) . ".<br>";
 	}
 
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['auto_deletion'] )==1 && $_POST['auto_deletion'] >= 0 ) {
 		$options['auto_deletion'] = $_POST['auto_deletion'];
 	} else {
-		$message.= __( 'Auto redirect deletion value must be a number greater or equal to zero' ) . ".<br>";
+		$message.= __( 'Auto redirect deletion value must be a number greater or equal to zero', '404-redirected' ) . ".<br>";
 	}
 
 	if ( $_POST['force_permalinks'] == "1" ) {
@@ -375,7 +375,7 @@ function wbz404_drawFilters( $sub, $tableOptions ) {
 
 	if ( $sub != "captured" ) {
 		echo "<li>";
-		echo "<a href=\"" . $url . "\"" . $class . ">" . __( 'All' );
+		echo "<a href=\"" . $url . "\"" . $class . ">" . __( 'All', '404-redirected' );
 		echo " <span class=\"count\">(" . wbz404_getRecordCount( $types ) . ")</span>";
 		echo "</a>";
 		echo "</li>";
@@ -403,7 +403,7 @@ function wbz404_drawFilters( $sub, $tableOptions ) {
 		if ( ! ( $sub == "captured" && $type == WBZ404_CAPTURED ) ) {
 			echo " | ";
 		}
-		echo "<a href=\"" . esc_url( $thisurl ) . "\"" . $class . ">" . __( $title );
+		echo "<a href=\"" . esc_url( $thisurl ) . "\"" . $class . ">" . ( $title );
 		echo " <span class=\"count\">(" . wbz404_getRecordCount( array( $type ) ) . ")</span>";
 		echo "</a>";
 		echo "</li>";
@@ -416,7 +416,7 @@ function wbz404_drawFilters( $sub, $tableOptions ) {
 		$class = " class=\"current\"";
 	}
 	echo "<li> | ";
-	echo "<a href=\"" . esc_url( $trashurl ) . "\"" . $class . ">" . __( 'Trash' );
+	echo "<a href=\"" . esc_url( $trashurl ) . "\"" . $class . ">" . __( 'Trash', '404-redirected' );
 	echo " <span class=\"count\">(" . wbz404_getRecordCount( $types, 1 ) . ")</span>";
 	echo "</a>";
 	echo "</li>";
@@ -457,14 +457,14 @@ function wbz404_drawPaginationLinks( $sub, $tableOptions ) {
 	}
 
 	echo "<div class=\"tablenav-pages\">";
-	echo "<span class=\"displaying-num\">" . $tableOptions['perpage'] . " " . __( 'items' ) . "</span>";
+	echo "<span class=\"displaying-num\">" . $tableOptions['perpage'] . " " . __( 'items', '404-redirected' ) . "</span>";
 	echo "<span class=\"pagination-links\">";
 	$class = "";
 	if ( $tableOptions['paged'] == 1 ) {
 		$class=" disabled";
 	}
 	$firsturl = $url;
-	echo "<a href=\"" . esc_url( $firsturl ) . "\" class=\"first-page" . $class . "\" title=\"" . __( 'Go to first page' ) . "\">&laquo;</a>";
+	echo "<a href=\"" . esc_url( $firsturl ) . "\" class=\"first-page" . $class . "\" title=\"" . __( 'Go to first page', '404-redirected' ) . "\">&laquo;</a>";
 	$class = "";
 	if ( $tableOptions['paged'] == 1 ) {
 		$class=" disabled";
@@ -473,9 +473,9 @@ function wbz404_drawPaginationLinks( $sub, $tableOptions ) {
 		$prev = $tableOptions['paged'] -1;
 		$prevurl = $url . "&paged=" . $prev;
 	}
-	echo "<a href=\"" . esc_url( $prevurl ) . "\" class=\"prev-page" . $class . "\" title=\"" . __( 'Go to previous page' ) . "\">&lsaquo;</a>";
+	echo "<a href=\"" . esc_url( $prevurl ) . "\" class=\"prev-page" . $class . "\" title=\"" . __( 'Go to previous page', '404-redirected' ) . "\">&lsaquo;</a>";
 	echo " ";
-	echo __( 'Page' ) . " " . $tableOptions['paged'] . " " . __( 'of' ) . " " . esc_html( $total_pages );
+	echo __( 'Page', '404-redirected' ) . " " . $tableOptions['paged'] . " " . __( 'of', '404-redirected' ) . " " . esc_html( $total_pages );
 	echo " ";
 	$class = "";
 	if ( $tableOptions['paged'] + 1 > $total_pages ) {
@@ -489,7 +489,7 @@ function wbz404_drawPaginationLinks( $sub, $tableOptions ) {
 		$next = $tableOptions['paged'] + 1;
 		$nexturl = $url . "&paged=" . $next;
 	}
-	echo "<a href=\"" . esc_url( $nexturl ) . "\" class=\"next-page" . $class . "\" title=\"" . __( 'Go to next page' ) . "\">&rsaquo;</a>";
+	echo "<a href=\"" . esc_url( $nexturl ) . "\" class=\"next-page" . $class . "\" title=\"" . __( 'Go to next page', '404-redirected' ) . "\">&rsaquo;</a>";
 	$class = "";
 	if ( $tableOptions['paged'] + 1 > $total_pages ) {
 		$class=" disabled";
@@ -501,7 +501,7 @@ function wbz404_drawPaginationLinks( $sub, $tableOptions ) {
 	} else {
 		$lasturl = $url . "&paged=" . $total_pages;
 	}
-	echo "<a href=\"" . esc_url( $lasturl ) . "\" class=\"last-page" . $class . "\" title=\"" . __( 'Go to last page' ) . "\">&raquo;</a>";
+	echo "<a href=\"" . esc_url( $lasturl ) . "\" class=\"last-page" . $class . "\" title=\"" . __( 'Go to last page', '404-redirected' ) . "\">&raquo;</a>";
 	echo "</span>";
 	echo "</div>";
 }
@@ -598,18 +598,18 @@ function wbz404_addAdminRedirect() {
 
 	if ( $_POST['url'] != "" ) {
 		if ( substr( $_POST['url'], 0, 1 ) != "/" ) {
-			$message .= __( 'Error: URL must start with /' ) . "<br>";
+			$message .= __( 'Error: URL must start with /', '404-redirected' ) . "<br>";
 		}
 	} else {
-		$message .= __( "Error: URL is a required field." ) . "<br>";
+		$message .= __( 'Error: URL is a required field.', '404-redirected' ) . "<br>";
 	}
 
 	if ( $_POST['dest'] == "EXTERNAL" ) {
 		if ( $_POST['external'] == "" ) {
-			$message .= __( 'Error: You selected external URL but did not enter a URL.' ) . "<br>";
+			$message .= __( 'Error: You selected external URL but did not enter a URL.', '404-redirected' ) . "<br>";
 		} else {
 			if ( substr( $_POST['external'], 0, 7 ) != "http://" && substr( $_POST['external'], 0, 8 ) != "https://" && substr( $_POST['external'], 0, 6 ) != "ftp://" ) {
-				$message .= __( 'Error: External URL\'s must start with http://, https://, or ftp://' ) . "<br>";
+				$message .= __( 'Error: External URL\'s must start with http://, https://, or ftp://', '404-redirected' ) . "<br>";
 			}
 		}
 	}
@@ -640,7 +640,7 @@ function wbz404_addAdminRedirect() {
 			$_POST['external'] = "";
 			$_POST['dest'] = "";
 		} else {
-			$message .= __( 'Error: Data not formatted properly.' ) . "<br>";
+			$message .= __( 'Error: Data not formatted properly.', '404-redirected' ) . "<br>";
 		}
 	}
 
@@ -653,18 +653,18 @@ function wbz404_editRedirectData() {
 
 	if ( $_POST['url'] != "" ) {
 		if ( substr( $_POST['url'], 0, 1 ) != "/" ) {
-			$message .= __( 'Error: URL must start with /' ) . "<br>";
+			$message .= __( 'Error: URL must start with /', '404-redirected' ) . "<br>";
 		}
 	} else {
-		$message .= __( "Error: URL is a required field." ) . "<br>";
+		$message .= __( 'Error: URL is a required field.', '404-redirected' ) . "<br>";
 	}
 
 	if ( $_POST['dest'] == "EXTERNAL" ) {
 		if ( $_POST['external'] == "" ) {
-			$message .= __( 'Error: You selected external URL but did not enter a URL.' ) . "<br>";
+			$message .= __( 'Error: You selected external URL but did not enter a URL.', '404-redirected' ) . "<br>";
 		} else {
 			if ( substr( $_POST['external'], 0, 7 ) != "http://" && substr( $_POST['external'], 0, 8 ) != "https://" && substr( $_POST['external'], 0, 6 ) != "ftp://" ) {
-				$message .= __( 'Error: External URL\'s must start with http://, https://, or ftp://' ) . "<br>";
+				$message .= __( 'Error: External URL\'s must start with http://, https://, or ftp://', '404-redirected' ) . "<br>";
 			}
 		}
 	}
@@ -718,7 +718,7 @@ function wbz404_editRedirectData() {
 			$_POST['external'] = "";
 			$_POST['dest'] = "";
 		} else {
-			$message .= __( 'Error: Data not formatted properly.' ) . "<br>";
+			$message .= __( 'Error: Data not formatted properly.', '404-redirected' ) . "<br>";
 		}
 	}
 
@@ -739,7 +739,7 @@ function wbz404_setTrash( $id, $trash ) {
 		);
 	}
 	if ( $result == false ) {
-		$message = __( 'Error: Unknown Database Error!' );
+		$message = __( 'Error: Unknown Database Error!', '404-redirected' );
 	}
 	return $message;
 }
@@ -758,20 +758,20 @@ function wbz404_setIgnore( $id, $newstatus ) {
 		);
 	}
 	if ( $result == false ) {
-		$message = __( 'Error: Unknown Database Error!' );
+		$message = __( 'Error: Unknown Database Error!', '404-redirected' );
 	}
 	return $message;
 }
 
 function wbz404_adminHeader( $sub = 'list', $message = '' ) {
 	if ( $sub == "options" ) {
-		$header = " " . __( 'Options' );
+		$header = " " . __( 'Options', '404-redirected' );
 	} else if ( $sub == "logs" ) {
-			$header = " " . __( 'Logs' );
+			$header = " " . __( 'Logs', '404-redirected' );
 		} else if ( $sub == "stats" ) {
-			$header = " " . __( 'Stats' );
+			$header = " " . __( 'Stats', '404-redirected' );
 		} else if ( $sub == "edit" ) {
-			$header = ": " . __( 'Edit Redirect' );
+			$header = ": " . __( 'Edit Redirect', '404-redirected' );
 		} else if ( $sub == "redirects" ) {
 			$header = "";
 		} else {
@@ -783,47 +783,47 @@ function wbz404_adminHeader( $sub = 'list', $message = '' ) {
 	} else {
 		echo "<div id=\"icon-tools\" class=\"icon32\"></div>";
 	}
-	echo "<h2>" . __( '404 Redirected' ) . esc_html( $header ) . "</h2>";
+	echo "<h2>" . __( '404 Redirected', '404-redirected' ) . esc_html( $header ) . "</h2>";
 	if ( $message != "" ) {
 		echo "<div class=\"message updated\"><p>" . esc_html( $message ) . "</p></div>";
 	}
-	echo __( 'by' ) . " <a href=\"http://www.weberz.com/\" title=\"Weberz Hosting\" target=\"_blank\">Weberz Hosting</a><br>";
-	echo __( 'Version' ) . ": " . WBZ404_VERSION . " | ";
-	echo "<a href=\"" . WBZ404_HOME . "\" title=\"" . __( 'Plugin Home Page' ) . "\" target=\"_blank\">" . __( 'Plugin Home Page' ) . "</a> | ";
-	echo "<a href=\"http://twitter.com/Weberz\" title=\"Weberz Hosting on Twitter\" target=\"_blank\">Weberz on Twitter</a> | ";
-	echo "<a href=\"http://www.facebook.com/Weberz\" title=\"Weberz Hosting on Facebook\" target=\"_blank\">Weberz on Facebook</a><br>";
+	echo __( 'by', '404-redirected' ) . " <a href=\"https://remkusdevries.com\" title=\"Remkus de Vries\" target=\"_blank\">Remkus de Vries</a><br>";
+	echo __( 'Version', '404-redirected' ) . ": " . WBZ404_VERSION . " | ";
+	echo "<a href=\"" . WBZ404_HOME . "\" title=\"" . __( 'Plugin Home Page', '404-redirected' ) . "\" target=\"_blank\">" . __( 'Plugin Home Page', '404-redirected' ) . "</a> | ";
+	echo "<a href=\"https://twitter.com/DeFries\" title=\"Remkus on Twitter\" target=\"_blank\">Remkus on Twitter</a> | ";
+	echo "<a href=\"https://www.facebook.com/jrdevries\" title=\"Remkus on Facebook\" target=\"_blank\">Remkus on Facebook</a><br>";
 	echo "<br>";
 
 	$class="";
 	if ( $sub == "redirects" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected\" title=\"" . __( 'Page Redirects' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Page Redirects' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected\" title=\"" . __( 'Page Redirects', '404-redirected' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Page Redirects', '404-redirected' ) . "</a>";
 	$class="";
 	if ( $sub == "captured" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_captured\" title=\"" . __( 'Captured 404 URLs' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Captured 404 URLs' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_captured\" title=\"" . __( 'Captured 404 URLs', '404-redirected' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Captured 404 URLs', '404-redirected' ) . "</a>";
 	$class="";
 	if ( $sub == "logs" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_logs\" title=\"" . __( 'Redirect & Capture Logs' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Logs' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_logs\" title=\"" . __( 'Redirect & Capture Logs', '404-redirected' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Logs', '404-redirected' ) . "</a>";
 	$class="";
 	if ( $sub == "stats" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_stats\" title=\"" . __( 'Stats' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Stats' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_stats\" title=\"" . __( 'Stats', '404-redirected' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Stats', '404-redirected' ) . "</a>";
 	$class="";
 	if ( $sub == "tools" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_tools\" title=\"" . __( 'Tools' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Tools' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_tools\" title=\"" . __( 'Tools', '404-redirected' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Tools', '404-redirected' ) . "</a>";
 	$class="";
 	if ( $sub == "options" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . __( 'Options' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . __( 'Options', '404-redirected' ) . "</a>";
 	echo "<hr style=\"border: 0px; border-bottom: 1px solid #DFDFDF; margin-top: 0px; margin-bottom: 0px; \">";
 }
 
@@ -832,10 +832,10 @@ function wbz404_adminFooter() {
 	echo "<br>";
 	echo "<strong>Credits:</strong><br>";
 	echo "<a href=\"" . WBZ404_HOME . "\" title=\"" . __( '404 Redirected' ) . "\" target=\"_blank\">" . __( '404 Redirected' ) . "</a> ";
-	echo __( 'was designed by' );
+	echo __( 'is maintained', '404-redirected' );
 	echo " ";
-	echo "<a href=\"http://twitter.com/rrolfe/\" title=\"Robert Rolfe\" target=\"_blank\">Robert Rolfe</a>. ";
-	echo __( 'It\'s released under the GNU GPL version 2 License.' );
+	echo "<a href=\"http://twitter.com/DeFries/\" title=\"Remkus de Vries\" target=\"_blank\">Remkus de Vries</a>. ";
+	echo __( 'It\'s released under the GNU GPL version 2 License.', '404-redirected' );
 	echo "</div>";
 	echo "</div>";
 }
@@ -865,9 +865,9 @@ function wbz404_bulkProcess( $action, $ids ) {
 			}
 		}
 		if ( $action == "bulkignore" ) {
-			$message = $count . " " . __( 'URLs marked as ignored.' );
+			$message = $count . " " . __( 'URLs marked as ignored.', '404-redirected' );
 		} else {
-			$message = $count . " " . __( 'URLs marked as captured.' );
+			$message = $count . " " . __( 'URLs marked as captured.', '404-redirected');
 		}
 	} else {
 		$count = 0;
@@ -877,7 +877,7 @@ function wbz404_bulkProcess( $action, $ids ) {
 				$count ++;
 			}
 		}
-		$message = $count . " " . __( 'URLs moved to trash' );
+		$message = $count . " " . __( 'URLs moved to trash', '404-redirected' );
 	}
 	return $message;
 }
@@ -898,29 +898,29 @@ function wbz404_adminPage() {
 			$sub="wbz404_options";
 			$message=wbz404_updateOptions();
 			if ( $message == "" ) {
-				$message = __( 'Options Saved Successfully!' );
+				$message = __( 'Options Saved Successfully!', '404-redirected' );
 			} else {
-				$message .= __( 'Some options were not saved successfully.' );
+				$message .= __( 'Some options were not saved successfully.', '404-redirected' );
 			}
 		}
 	} else if ( $action == "addRedirect" ) {
 			if ( check_admin_referer( 'wbz404addRedirect' ) && is_admin() ) {
 				$message=wbz404_addAdminRedirect();
 				if ( $message == "" ) {
-					$message = __( 'New Redirect Added Successfully!' );
+					$message = __( 'New Redirect Added Successfully!', '404-redirected' );
 				} else {
-					$message .= __( 'Error: unable to add new redirect successfully.' );
+					$message .= __( 'Error: unable to add new redirect successfully.', '404-redirected' );
 				}
 			}
 		} else if ( $action == "emptyRedirectTrash" ) {
 			if ( check_admin_referer( 'wbz404_emptyRedirectTrash' ) && is_admin() ) {
 				wbz404_emptyTrash( 'redirects' );
-				$message = __( 'All trashed URLs have been deleted!' );
+				$message = __( 'All trashed URLs have been deleted!', '404-redirected' );
 			}
 		} else if ( $action == "emptyCapturedTrash" ) {
 			if ( check_admin_referer( 'wbz404_emptyCapturedTrash' ) && is_admin() ) {
 				wbz404_emptyTrash( 'captured' );
-				$message = __( 'All trashed URLs have been deleted!' );
+				$message = __( 'All trashed URLs have been deleted!', '404-redirected' );
 			}
 		} else if ( $action == "bulkignore" || $action == "bulkcaptured" || $action == "bulktrash" ) {
 			if ( check_admin_referer( 'wbz404_capturedBulkAction' ) && is_admin() ) {
