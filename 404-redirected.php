@@ -53,3 +53,11 @@ require WBZ404_PATH."includes/frontend.php";
 if ( is_admin() ) {
 	require WBZ404_PATH."includes/admin.php";
 }
+
+/**
+ * Load the text domain for translation of the plugin
+ *
+ * @since 1.4.2
+ */
+// Load text domain.
+load_plugin_textdomain( '404-redirected', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
