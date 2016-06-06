@@ -10,43 +10,43 @@ function wbz404_addAdminPage() {
 	$pageName = "404 Redirected";
 
 	// Admin notice
-	if ( $options['admin_notification'] != '0' ) {
+	if ($options['admin_notification'] != '0') {
 		$captured = wbz404_capturedCount();
-		if ( $captured >= $options['admin_notification'] ) {
+		if ($captured >= $options['admin_notification']) {
 			$pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . esc_html( $captured ) . "</span></span>";
-			$pos = strpos( $menu[80][0], 'update-plugins' );
-			if ( $pos === false ) {
-				$menu[80][0] = $menu[80][0] . " <span class='update-plugins count-1'><span class='update-count'>1</span></span>";
+			$pos = strpos($menu[80][0], 'update-plugins');
+			if ($pos === false) {
+				$menu[80][0] = $menu[80][0] . " <span class='update-plugins count-1'><span class='update-count'>1</span></span>"; 
 			}
 		}
 	}
 
-	add_options_page( '404 Redirected', $pageName, 'manage_options', 'wbz404_redirected', 'wbz404_adminPage' );
+	add_options_page('404 Redirected', $pageName, 'manage_options', 'wbz404_redirected', 'wbz404_adminPage');
 }
 
-add_action( 'admin_menu', 'wbz404_addAdminPage' );
+add_action('admin_menu', 'wbz404_addAdminPage');
 
 function wbz404_dashboardNotification() {
 	global $pagenow;
-	if ( current_user_can( 'manage_options' ) ) {
-		if ( ( isset( $_GET['page'] ) && $_GET['page'] == "wbz404_redirected" ) || ( $pagenow == 'index.php' && ( !( isset( $_GET['page'] ) ) ) ) ) {
+	if ( current_user_can('manage_options') ) {
+		if ((isset($_GET['page']) && $_GET['page'] == "wbz404_redirected") || ( $pagenow == 'index.php' && (!(isset($_GET['page']))))) {
 			$options = wbz404_getOptions();
-			if ( $options['admin_notification'] != '0' ) {
+			if ($options['admin_notification'] != '0') {
 				$captured = wbz404_capturedCount();
-				if ( $captured >= $options['admin_notification'] ) {
-					echo "<div class=\"updated\"><p><strong>" . esc_html( wbz404_trans( '404 Redirected' ) ) . ":</strong> " . wbz404_trans( 'There are ' . esc_html( $captured ) . ' captured 404 URLs that need to be processed.' ) . "</p></div>";
+				if ($captured >= $options['admin_notification']) {
+					echo "<div class=\"updated\"><p><strong>" . esc_html( wbz404_trans('404 Redirected') ) . ":</strong> " . wbz404_trans('There are ' . esc_html( $captured ) . ' captured 404 URLs that need to be processed.') . "</p></div>";
 				}
 			}
 		}
 	}
 }
 
-add_action( 'admin_notices', 'wbz404_dashboardNotification' );
+add_action('admin_notices', 'wbz404_dashboardNotification' );
 
 function wbz404_postbox( $id, $title, $content ) {
 	echo "<div id=\"" . esc_attr( $id ) . "\" class=\"postbox\">";
-	echo "<h3 class=\"hndle\" style=\"cursor: default;\"><span>" . esc_html( $title ) . "</span></h3>";
-	echo "<div class=\"inside\">" . $content /* Can't escape here, as contains forms */ . "</div>";
+		echo "<h3 class=\"hndle\" style=\"cursor: default;\"><span>" . esc_html( $title ) . "</span></h3>";
+		echo "<div class=\"inside\">" . $content /* Can't escape here, as contains forms */ . "</div>";
 	echo "</div>";
 }
 
@@ -54,8 +54,8 @@ function wbz404_capturedCount() {
 	global $wpdb;
 
 	$query = "select count(id) from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql( WBZ404_CAPTURED );
-	$captured = $wpdb->get_col( $query, 0 );
-	if ( count( $captured ) == 0 ) {
+	$captured = $wpdb->get_col($query, 0);
+	if (count($captured) == 0) {
 		$captured[0] = 0;
 	}
 	return $captured[0];
@@ -64,68 +64,68 @@ function wbz404_capturedCount() {
 function wbz404_updateOptions() {
 	$message="";
 	$options = wbz404_getOptions();
-	if ( $_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302" ) {
+	if ($_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302") {
 		$options['default_redirect'] = $_POST['default_redirect'];
 	} else {
-		$message.= wbz404_trans( 'Error: Invalid value specified for default redirect type' ) . ".<br>";
+		$message.= wbz404_trans('Error: Invalid value specified for default redirect type') . ".<br>";
 	}
 
-	if ( $_POST['capture_404'] == "1" ) {
+	if ($_POST['capture_404'] == "1") { 
 		$options['capture_404'] = '1';
 	} else {
 		$options['capture_404'] = '0';
 	}
 
-	if ( preg_match( '/^[0-9]+$/', $_POST['admin_notification'] ) == 1 ) {
+	if (preg_match('/^[0-9]+$/', $_POST['admin_notification']) == 1) {
 		$options['admin_notification'] = $_POST['admin_notification'];
 	}
 
-	if ( preg_match( '/^[0-9]+$/', $_POST['capture_deletion'] )==1 && $_POST['capture_deletion'] >= 0 ) {
+	if (preg_match('/^[0-9]+$/', $_POST['capture_deletion'])==1 && $_POST['capture_deletion'] >= 0) {
 		$options['capture_deletion'] = $_POST['capture_deletion'];
 	} else {
-		$message.= wbz404_trans( 'Collected URL deletion value must be a number greater or equal to zero' ) . ".<br>";
+		$message.= wbz404_trans('Collected URL deletion value must be a number greater or equal to zero') . ".<br>";
 	}
 
-	if ( preg_match( '/^[0-9]+$/', $_POST['manual_deletion'] )==1 && $_POST['manual_deletion'] >= 0 ) {
+	if (preg_match('/^[0-9]+$/', $_POST['manual_deletion'])==1 && $_POST['manual_deletion'] >= 0) {
 		$options['manual_deletion'] = $_POST['manual_deletion'];
 	} else {
-		$message.= wbz404_trans( 'Manual redirect deletion value must be a number greater or equal to zero' ) . ".<br>";
+		$message.= wbz404_trans('Manual redirect deletion value must be a number greater or equal to zero') . ".<br>";
 	}
 
-	if ( $_POST['remove_matches'] == "1" ) {
+	if ($_POST['remove_matches'] == "1") {
 		$options['remove_matches'] = '1';
 	} else {
 		$options['remove_matches'] = '0';
 	}
 
-	if ( $_POST['display_suggest'] == "1" ) {
+	if ($_POST['display_suggest'] == "1") {
 		$options['display_suggest'] = '1';
 	} else {
 		$options['display_suggest'] = '0';
 	}
 
-	if ( $_POST['suggest_cats'] == "1" ) {
+	if ($_POST['suggest_cats'] == "1") {
 		$options['suggest_cats'] = '1';
 	} else {
 		$options['suggest_cats'] = '0';
 	}
 
-	if ( $_POST['suggest_tags'] == "1" ) {
+	if ($_POST['suggest_tags'] == "1") {
 		$options['suggest_tags'] = '1';
 	} else {
 		$options['suggest_tags'] = '0';
 	}
 
-	if ( preg_match( '/^[0-9]+$/', $_POST['suggest_minscore'] ) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99 ) {
+	if (preg_match('/^[0-9]+$/', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
 		$options['suggest_minscore'] = $_POST['suggest_minscore'];
 	} else {
-		$message.= wbz404_trans( 'Suggestion minimum score value must be a number between 1 and 99' ) . ".<br>";
+		$message.= wbz404_trans('Suggestion minimum score value must be a number between 1 and 99') . ".<br>";
 	}
 
-	if ( preg_match( '/^[0-9]+$/', $_POST['suggest_max'] ) == 1 && $_POST['suggest_max'] >= 1 ) {
+	if (preg_match('/^[0-9]+$/', $_POST['suggest_max']) == 1 && $_POST['suggest_max'] >= 1) {
 		$options['suggest_max'] = $_POST['suggest_max'];
 	} else {
-		$message.= wbz404_trans( 'Maximum number of suggest value must be a number greater or equal to 1' ) . ".<br>";
+		$message.= wbz404_trans('Maximum number of suggest value must be a number greater or equal to 1') . ".<br>";
 	}
 
 	$options['suggest_title'] = $_POST['suggest_title'];
@@ -135,38 +135,38 @@ function wbz404_updateOptions() {
 	$options['suggest_entryafter'] = $_POST['suggest_entryafter'];
 	$options['suggest_noresults'] = $_POST['suggest_noresults'];
 
-	if ( $_POST['auto_redirects'] == "1" ) {
+	if ($_POST['auto_redirects'] == "1") {
 		$options['auto_redirects'] = '1';
 	} else {
 		$options['auto_redirects'] = '0';
 	}
 
-	if ( $_POST['auto_cats'] == "1" ) {
+	if ($_POST['auto_cats'] == "1") {
 		$options['auto_cats'] = '1';
 	} else {
 		$options['auto_cats'] = '0';
 	}
 
-	if ( $_POST['auto_tags'] == "1" ) {
+	if ($_POST['auto_tags'] == "1") {
 		$options['auto_tags'] = '1';
 	} else {
 		$options['auto_tags'] = '0';
 	}
 
-	if ( preg_match( '/^[0-9]+$/', $_POST['auto_score'] ) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99 ) {
+	if (preg_match('/^[0-9]+$/', $_POST['auto_score']) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
 		$options['auto_score'] = $_POST['auto_score'];
 	} else {
-		$message .= wbz404_trans( 'Auto match score value must be a number between 0 and 99' ) . ".<br>";
+		$message .= wbz404_trans('Auto match score value must be a number between 0 and 99') . ".<br>";
 	}
-
-
-	if ( preg_match( '/^[0-9]+$/', $_POST['auto_deletion'] )==1 && $_POST['auto_deletion'] >= 0 ) {
+	
+	
+	if (preg_match('/^[0-9]+$/', $_POST['auto_deletion'])==1 && $_POST['auto_deletion'] >= 0) {
 		$options['auto_deletion'] = $_POST['auto_deletion'];
 	} else {
-		$message.= wbz404_trans( 'Auto redirect deletion value must be a number greater or equal to zero' ) . ".<br>";
+		$message.= wbz404_trans('Auto redirect deletion value must be a number greater or equal to zero') . ".<br>";
 	}
 
-	if ( $_POST['force_permalinks'] == "1" ) {
+	if ($_POST['force_permalinks'] == "1") {
 		$options['force_permalinks'] = '1';
 	} else {
 		$options['force_permalinks'] = '0';
@@ -181,7 +181,7 @@ function wbz404_updateOptions() {
 		$new_options[$new_key] = $new_option;
 	}
 
-	update_option( 'wbz404_settings', $new_options );
+	update_option('wbz404_settings', $new_options);
 
 	return $message;
 }
@@ -189,9 +189,9 @@ function wbz404_updateOptions() {
 function wbz404_getTableOptions() {
 	$tableOptions = array();
 
-	if ( !isset( $_POST['filter'] ) ) {
-		if ( !isset( $_GET['filter'] ) ) {
-			if ( isset( $_GET['subpage'] ) && $_GET['subpage'] == 'wbz404_captured' ) {
+	if (!isset($_POST['filter'])) {
+		if (!isset($_GET['filter'])) {
+			if (isset($_GET['subpage']) && $_GET['subpage'] == 'wbz404_captured') {
 				$tableOptions['filter'] = WBZ404_CAPTURED;
 			} else {
 				$tableOptions['filter'] = '0';
@@ -203,8 +203,8 @@ function wbz404_getTableOptions() {
 		$tableOptions['filter'] = $_POST['filter'];
 	}
 
-	if ( !isset( $_GET['orderby'] ) ) {
-		if ( isset( $_GET['subpage'] ) && $_GET['subpage'] == "wbz404_logs" ) {
+	if (!isset($_GET['orderby'])) {
+		if (isset($_GET['subpage']) && $_GET['subpage'] == "wbz404_logs") {
 			$tableOptions['orderby'] = "timestamp";
 		} else {
 			$tableOptions['orderby'] = "url";
@@ -213,8 +213,8 @@ function wbz404_getTableOptions() {
 		$tableOptions['orderby'] = $_GET['orderby'];
 	}
 
-	if ( !isset( $_GET['order'] ) ) {
-		if ( $tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp" ) {
+	if (!isset($_GET['order'])) {
+		if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
 			$tableOptions['order'] = "DESC";
 		} else {
 			$tableOptions['order'] = "ASC";
@@ -223,20 +223,20 @@ function wbz404_getTableOptions() {
 		$tableOptions['order'] = $_GET['order'];
 	}
 
-	if ( !isset( $_GET['paged'] ) ) {
+	if (!isset($_GET['paged'])) {
 		$tableOptions['paged'] = 1;
 	} else {
 		$tableOptions['paged'] = $_GET['paged'];
 	}
 
-	if ( !isset( $_GET['perpage'] ) ) {
+	if (!isset($_GET['perpage'])) {
 		$tableOptions['perpage'] = 25;
 	} else {
 		$tableOptions['perpage'] = $_GET['perpage'];
 	}
 
-	if ( isset( $_GET['subpage'] ) && $_GET['subpage'] == "wbz404_logs" ) {
-		if ( isset( $_GET['id'] ) && preg_match( '/[0-9]+/', $_GET['id'] ) ) {
+	if (isset($_GET['subpage']) && $_GET['subpage'] == "wbz404_logs") {
+		if (isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {
 			$tableOptions['logsid'] = $_GET['id'];
 		} else {
 			$tableOptions['logsid'] = 0;
@@ -246,16 +246,16 @@ function wbz404_getTableOptions() {
 	return $tableOptions;
 }
 
-function wbz404_getRecordCount( $types = array(), $trashed = 0 ) {
+function wbz404_getRecordCount($types = array(), $trashed = 0) {
 	global $wpdb;
 	$records = 0;
-
-	if ( count( $types )>=1 ) {
+	
+	if (count($types)>=1) {
 
 		$query = "select count(id) from " . $wpdb->prefix . "wbz404_redirects where 1 and (";
 		$x=0;
-		foreach ( $types as $type ) {
-			if ( $x >= 1 ) {
+		foreach ($types as $type) {
+			if ($x >= 1) {
 				$query.=" or ";
 			}
 			$query .= "status = " . $type;
@@ -265,28 +265,28 @@ function wbz404_getRecordCount( $types = array(), $trashed = 0 ) {
 
 		$query .= " and disabled = " . $trashed;
 
-		$row = $wpdb->get_row( $query, ARRAY_N );
+		$row = $wpdb->get_row($query, ARRAY_N);
 		$records = $row[0];
 	}
 
 	return $records;
 }
 
-function wbz404_getLogsCount( $id ) {
+function wbz404_getLogsCount($id) {
 	global $wpdb;
 	$records = 0;
-
+	
 	$query = "select count(id) from " . $wpdb->prefix . "wbz404_logs where 1 ";
-	if ( $id != 0 ) {
+	if ($id != 0) {
 		$query .= "and redirect_id = " . $id;
 	}
-	$row = $wpdb->get_row( $query, ARRAY_N );
+	$row = $wpdb->get_row($query, ARRAY_N);
 	$records = $row[0];
 
 	return $records;
 }
 
-function wbz404_getRecords( $sub, $tableOptions, $limitEnforced = 1 ) {
+function wbz404_getRecords($sub, $tableOptions, $limitEnforced = 1) {
 	global $wpdb;
 	$rows = array();
 
@@ -297,18 +297,18 @@ function wbz404_getRecords( $sub, $tableOptions, $limitEnforced = 1 ) {
 	$query .= ", count(" . $logs . ".id) as hits from " . $redirects . " ";
 	$query .= " left outer join " . $logs . " on " . $redirects . ".id = " . $logs . ".redirect_id ";
 	$query .= " where 1 and (";
-	if ( $tableOptions['filter'] == 0 || $tableOptions['filter'] == -1 ) {
-		if ( $sub == "redirects" ) {
+	if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
+		if ($sub == "redirects") {
 			$query .= "status = " . WBZ404_MANUAL . " or status = " . WBZ404_AUTO;
-		} else if ( $sub == "captured" ) {
-				$query .= "status = " . WBZ404_CAPTURED . " or status = " . WBZ404_IGNORED;
-			}
+		} else if ($sub == "captured") {
+			$query .= "status = " . WBZ404_CAPTURED . " or status = " . WBZ404_IGNORED;
+		}
 	} else {
 		$query.="status = " . $tableOptions['filter'];
 	}
 	$query .= ") ";
 
-	if ( $tableOptions['filter'] != -1 ) {
+	if ($tableOptions['filter'] != -1) {
 		$query .= "and disabled = 0 ";
 	} else {
 		$query .= "and disabled = 1 ";
@@ -317,17 +317,17 @@ function wbz404_getRecords( $sub, $tableOptions, $limitEnforced = 1 ) {
 	$query .= "group by " . $redirects . ".id ";
 
 	$query .= "order by " . $tableOptions['orderby'] . " " . $tableOptions['order'] . " ";
-
-	if ( $limitEnforced == 1 ) {
-		$start = ( $tableOptions['paged'] - 1 ) * $tableOptions['perpage'];
+	
+	if ($limitEnforced == 1) {
+		$start = ($tableOptions['paged'] - 1) * $tableOptions['perpage'];
 		$query .= "limit " . $start . ", " . $tableOptions['perpage'];
 	}
 
-	$rows = $wpdb->get_results( $query, ARRAY_A );
+	$rows = $wpdb->get_results($query, ARRAY_A);
 	return $rows;
 }
 
-function wbz404_getLogRecords( $tableOptions ) {
+function wbz404_getLogRecords($tableOptions) {
 	global $wpdb;
 	$rows = array();
 
@@ -336,208 +336,198 @@ function wbz404_getLogRecords( $tableOptions ) {
 
 	$query = "select " . $logs . ".redirect_id, " . $logs . ".timestamp, " . $logs . ".remote_host, " . $logs . ".referrer, " . $logs . ".action, " . $redirects . ".url from " . $logs;
 	$query .= " left outer join " . $redirects . " on " . $logs . ".redirect_id = " . $redirects . ".id where 1 ";
-	if ( $tableOptions['logsid'] != 0 ) {
+	if ($tableOptions['logsid'] != 0) {
 		$query .= " and redirect_id = " . $tableOptions['logsid'] . " ";
 	}
 
 	$query .= "order by " . $tableOptions['orderby'] . " " . $tableOptions['order'] . " ";
-	$start = ( $tableOptions['paged'] - 1 ) * $tableOptions['perpage'];
+	$start = ($tableOptions['paged'] - 1) * $tableOptions['perpage'];
 	$query .= "limit " . $start . ", " . $tableOptions['perpage'];
 
-	$rows = $wpdb->get_results( $query, ARRAY_A );
+	$rows = $wpdb->get_results($query, ARRAY_A);
 	return $rows;
 }
 
-function wbz404_drawFilters( $sub, $tableOptions ) {
-	if ( count( $tableOptions ) == 0 ) {
+function wbz404_drawFilters($sub, $tableOptions) {
+	if (count($tableOptions) == 0) {
 		$tableOptions = wbz404_getTableOptions();
 	}
 	echo "<ul class=\"subsubsub\">";
 
 	$url = "?page=wbz404_redirected";
-	if ( $sub == "captured" ) {
+	if ($sub == "captured") {
 		$url .= "&subpage=wbz404_captured";
 	}
 
 	$url .= "&orderby=" . $tableOptions['orderby'];
 	$url .= "&order=" . $tableOptions['order'];
 
-	if ( $sub == "redirects" ) {
-		$types = array( WBZ404_MANUAL, WBZ404_AUTO );
+	if ($sub == "redirects") {
+		$types = array(WBZ404_MANUAL, WBZ404_AUTO);
 	} else {
-		$types = array( WBZ404_CAPTURED, WBZ404_IGNORED );
+		$types = array(WBZ404_CAPTURED, WBZ404_IGNORED);
 	}
 
 	$class = "";
-	if ( $tableOptions['filter'] == 0 ) {
+	if ($tableOptions['filter'] == 0) {
 		$class = " class=\"current\"";
 	}
 
-	if ( $sub != "captured" ) {
+	if ($sub != "captured") {
 		echo "<li>";
-		echo "<a href=\"" . $url . "\"" . $class . ">" . wbz404_trans( 'All' );
-		echo " <span class=\"count\">(" . wbz404_getRecordCount( $types ) . ")</span>";
-		echo "</a>";
+			echo "<a href=\"" . $url . "\"" . $class . ">" . wbz404_trans('All');
+				echo " <span class=\"count\">(" . wbz404_getRecordCount($types) . ")</span>";
+			echo "</a>";
 		echo "</li>";
 	}
 
-	foreach ( $types as $type ) {
+	foreach ($types as $type) {
 		$thisurl = $url . "&filter=" . $type;
 
 		$class = "";
-		if ( $tableOptions['filter'] == $type ) {
+		if ($tableOptions['filter'] == $type) {
 			$class=" class=\"current\"";
 		}
 
-		if ( $type == WBZ404_MANUAL ) {
+		if ($type == WBZ404_MANUAL) {
 			$title = "Manual Redirects";
-		} else if ( $type == WBZ404_AUTO ) {
-				$title = "Automatic Redirects";
-			} else if ( $type == WBZ404_CAPTURED ) {
-				$title = "Captured URL's";
-			} else if ( $type == WBZ404_IGNORED ) {
-				$title = "Ignored 404's";
-			}
+		} else if ($type == WBZ404_AUTO) {
+			$title = "Automatic Redirects";
+		} else if ($type == WBZ404_CAPTURED) {
+			$title = "Captured URL's";
+		} else if ($type == WBZ404_IGNORED) {
+			$title = "Ignored 404's";
+		}
 
 		echo "<li>";
-		if ( ! ( $sub == "captured" && $type == WBZ404_CAPTURED ) ) {
-			echo " | ";
-		}
-		echo "<a href=\"" . esc_url( $thisurl ) . "\"" . $class . ">" . wbz404_trans( $title );
-		echo " <span class=\"count\">(" . wbz404_getRecordCount( array( $type ) ) . ")</span>";
-		echo "</a>";
+			if (! ($sub == "captured" && $type == WBZ404_CAPTURED)) {
+				echo " | ";
+			}
+			echo "<a href=\"" . esc_url( $thisurl ) . "\"" . $class . ">" . wbz404_trans($title);
+				echo " <span class=\"count\">(" . wbz404_getRecordCount(array($type)) . ")</span>";
+			echo "</a>";
 		echo "</li>";
 	}
 
 
 	$trashurl = $url . "&filter=-1";
 	$class = "";
-	if ( $tableOptions['filter'] == -1 ) {
+	if ($tableOptions['filter'] == -1) {
 		$class = " class=\"current\"";
 	}
 	echo "<li> | ";
-	echo "<a href=\"" . esc_url( $trashurl ) . "\"" . $class . ">" . wbz404_trans( 'Trash' );
-	echo " <span class=\"count\">(" . wbz404_getRecordCount( $types, 1 ) . ")</span>";
-	echo "</a>";
+		echo "<a href=\"" . esc_url( $trashurl ) . "\"" . $class . ">" . wbz404_trans('Trash');
+			echo " <span class=\"count\">(" . wbz404_getRecordCount($types,1) . ")</span>";
+		echo "</a>";
 	echo "</li>";
 
 	echo "</ul>";
 }
 
-function wbz404_drawPaginationLinks( $sub, $tableOptions ) {
-	$url = "?page=wbz404_redirected";
-	if ( $sub == "captured" ) {
-		$url .= "&subpage=wbz404_captured";
-	} else if ( $sub == "logs" ) {
-			$url .= "&subpage=wbz404_logs&id=" . $tableOptions['logsid'];
-		}
+function wbz404_drawPaginationLinks($sub, $tableOptions) {
+		$url = "?page=wbz404_redirected";
+		if ($sub == "captured") {
+				$url .= "&subpage=wbz404_captured";
+		} else if ($sub == "logs") {
+		$url .= "&subpage=wbz404_logs&id=" . $tableOptions['logsid'];
+	}
 
-	$url .= "&orderby=" . $tableOptions['orderby'];
-	$url .= "&order=" . $tableOptions['order'];
+		$url .= "&orderby=" . $tableOptions['orderby'];
+		$url .= "&order=" . $tableOptions['order'];
 
-	if ( $tableOptions['filter'] == 0 ) {
-		if ( $sub == "redirects" ) {
-			$types = array( WBZ404_MANUAL, WBZ404_AUTO );
-		} else {
-			$types = array( WBZ404_CAPTURED, WBZ404_IGNORED );
-		}
+	if ($tableOptions['filter'] == 0) {
+			if ($sub == "redirects") {
+					$types = array(WBZ404_MANUAL, WBZ404_AUTO);
+			} else {
+					$types = array(WBZ404_CAPTURED, WBZ404_IGNORED);
+			}
 	} else {
-		$types = array( $tableOptions['filter'] );
+		$types = array($tableOptions['filter']);
 		$url .= "&filter=" . $tableOptions['filter'];
 	}
 
-	if ( $sub != "logs" ) {
-		$num_records = wbz404_getRecordCount( $types );
+	if ($sub != "logs") {
+		$num_records = wbz404_getRecordCount($types);
 	} else {
-		$num_records = wbz404_getLogsCount( $tableOptions['logsid'] );
+		$num_records = wbz404_getLogsCount($tableOptions['logsid']);
 	}
-	$total_pages = ceil( $num_records / $tableOptions['perpage'] );
-	if ( $total_pages == 0 ) {
+	$total_pages = ceil($num_records / $tableOptions['perpage']);
+	if ($total_pages == 0) {
 		$total_pages = 1;
 	}
 
 	echo "<div class=\"tablenav-pages\">";
-	echo "<span class=\"displaying-num\">" . $tableOptions['perpage'] . " " . wbz404_trans( 'items' ) . "</span>";
-	echo "<span class=\"pagination-links\">";
-	$class = "";
-	if ( $tableOptions['paged'] == 1 ) {
-		$class=" disabled";
-	}
-	$firsturl = $url;
-	echo "<a href=\"" . esc_url( $firsturl ) . "\" class=\"first-page" . $class . "\" title=\"" . wbz404_trans( 'Go to first page' ) . "\">&laquo;</a>";
-	$class = "";
-	if ( $tableOptions['paged'] == 1 ) {
-		$class=" disabled";
-		$prevurl = $url;
-	} else {
-		$prev = $tableOptions['paged'] -1;
-		$prevurl = $url . "&paged=" . $prev;
-	}
-	echo "<a href=\"" . esc_url( $prevurl ) . "\" class=\"prev-page" . $class . "\" title=\"" . wbz404_trans( 'Go to previous page' ) . "\">&lsaquo;</a>";
-	echo " ";
-	echo wbz404_trans( 'Page' ) . " " . $tableOptions['paged'] . " " . wbz404_trans( 'of' ) . " " . esc_html( $total_pages );
-	echo " ";
-	$class = "";
-	if ( $tableOptions['paged'] + 1 > $total_pages ) {
-		$class=" disabled";
-		if ( $tableOptions['paged'] == 1 ) {
-			$nexturl = $url;
-		} else {
-			$nexturl = $url . "&paged=" . $tableOptions['paged'];
-		}
-	} else {
-		$next = $tableOptions['paged'] + 1;
-		$nexturl = $url . "&paged=" . $next;
-	}
-	echo "<a href=\"" . esc_url( $nexturl ) . "\" class=\"next-page" . $class . "\" title=\"" . wbz404_trans( 'Go to next page' ) . "\">&rsaquo;</a>";
-	$class = "";
-	if ( $tableOptions['paged'] + 1 > $total_pages ) {
-		$class=" disabled";
-		if ( $tableOptions['paged'] == 1 ) {
-			$lasturl = $url;
-		} else {
-			$lasturl = $url . "&paged=" . $tableOptions['paged'];
-		}
-	} else {
-		$lasturl = $url . "&paged=" . $total_pages;
-	}
-	echo "<a href=\"" . esc_url( $lasturl ) . "\" class=\"last-page" . $class . "\" title=\"" . wbz404_trans( 'Go to last page' ) . "\">&raquo;</a>";
-	echo "</span>";
+		echo "<span class=\"displaying-num\">" . $tableOptions['perpage'] . " " . wbz404_trans('items') . "</span>";
+		echo "<span class=\"pagination-links\">";
+			$class = "";
+			if ($tableOptions['paged'] == 1) {
+				$class=" disabled";
+			} 
+			$firsturl = $url;
+			echo "<a href=\"" . esc_url( $firsturl ) . "\" class=\"first-page" . $class . "\" title=\"" . wbz404_trans('Go to first page') . "\">&laquo;</a>";
+			$class = "";
+			if ($tableOptions['paged'] == 1) {
+				$class=" disabled";
+				$prevurl = $url;
+			} else {
+				$prev = $tableOptions['paged'] -1;
+				$prevurl = $url . "&paged=" . $prev;
+			}
+			echo "<a href=\"" . esc_url( $prevurl ) . "\" class=\"prev-page" . $class . "\" title=\"" . wbz404_trans('Go to previous page') . "\">&lsaquo;</a>";
+			echo " ";
+			echo wbz404_trans('Page') . " " . $tableOptions['paged'] . " " . wbz404_trans('of') . " " . esc_html( $total_pages );
+			echo " ";
+			$class = "";
+			if ($tableOptions['paged'] + 1 > $total_pages) {
+				$class=" disabled";
+				if ($tableOptions['paged'] == 1) {
+					$nexturl = $url;
+				} else {
+					$nexturl = $url . "&paged=" . $tableOptions['paged'];
+				}
+			} else {
+				$next = $tableOptions['paged'] + 1;
+				$nexturl = $url . "&paged=" . $next;
+			}
+			echo "<a href=\"" . esc_url( $nexturl ) . "\" class=\"next-page" . $class . "\" title=\"" . wbz404_trans('Go to next page') . "\">&rsaquo;</a>";
+			$class = "";
+			if ($tableOptions['paged'] + 1 > $total_pages) {
+				$class=" disabled";
+				if ($tableOptions['paged'] == 1) {
+					$lasturl = $url;
+				} else {
+					$lasturl = $url . "&paged=" . $tableOptions['paged'];
+				}
+			} else {
+				$lasturl = $url . "&paged=" . $total_pages;
+			}
+			echo "<a href=\"" . esc_url( $lasturl ) . "\" class=\"last-page" . $class . "\" title=\"" . wbz404_trans('Go to last page') . "\">&raquo;</a>";
+		echo "</span>";
 	echo "</div>";
 }
 
-function wbz404_buildTableColumns( $sub, $tableOptions, $columns ) {
+function wbz404_buildTableColumns($sub, $tableOptions, $columns) {
 	echo "<tr>";
-	if ( $sub == "captured" && $tableOptions['filter'] != '-1' ) {
-		$cbinfo = "class=\"manage-column column-cb check-column\"";
-	} else {
-		$cbinfo = "style=\"width: 1px;\"";
-	}
-	echo "<th " . $cbinfo . ">";
-	if ( $sub == "captured" && $tableOptions['filter'] != '-1' ) {
-		echo "<input type=\"checkbox\">";
-	}
-	echo "</th>";
-	foreach ( $columns as $column ) {
-		$style = "";
-		if ( $column['width'] != "" ) {
-			$style = " style=\"width: " . esc_attr( $column['width'] ) . ";\" ";
-		}
-		$nolink=0;
-		$sortorder = "";
-		if ( $tableOptions['orderby'] == $column['orderby'] ) {
-			$class=" sorted";
-			if ( $tableOptions['order'] == "ASC" ) {
-				$class .= " asc";
-				$sortorder = "DESC";
-			} else {
-				$class .= " desc";
-				$sortorder = "ASC";
-			}
+		if ($sub == "captured" && $tableOptions['filter'] != '-1') {
+			$cbinfo = "class=\"manage-column column-cb check-column\"";
 		} else {
-			if ( $column['orderby'] != "" ) {
-				$class=" sortable";
-				if ( $column['orderby'] == "timestamp" || $column['orderby'] == "lastused" ) {
+			$cbinfo = "style=\"width: 1px;\"";
+		}
+		echo "<th " . $cbinfo . ">";
+			if ($sub == "captured" && $tableOptions['filter'] != '-1') {
+				echo "<input type=\"checkbox\">";
+			}
+		echo "</th>";
+		foreach ($columns as $column) {
+			$style = "";
+			if ($column['width'] != "") {
+				$style = " style=\"width: " . esc_attr( $column['width'] ) . ";\" ";
+			}
+			$nolink=0;
+			$sortorder = "";
+			if ($tableOptions['orderby'] == $column['orderby']) {
+				$class=" sorted";
+				if ($tableOptions['order'] == "ASC") {
 					$class .= " asc";
 					$sortorder = "DESC";
 				} else {
@@ -545,50 +535,60 @@ function wbz404_buildTableColumns( $sub, $tableOptions, $columns ) {
 					$sortorder = "ASC";
 				}
 			} else {
-				$class = "";
-				$nolink=1;
+				if ($column['orderby'] != "") {
+					$class=" sortable";
+					if ($column['orderby'] == "timestamp" || $column['orderby'] == "lastused") {
+						$class .= " asc";
+						$sortorder = "DESC";
+					} else {
+						$class .= " desc";
+						$sortorder = "ASC";
+					}
+				} else {
+					$class = "";
+					$nolink=1;
+				}
 			}
-		}
 
-		$url = "?page=wbz404_redirected";
-		if ( $sub == "captured" ) {
-			$url .= "&subpage=wbz404_captured";
-		} else if ( $sub == "logs" ) {
+			$url = "?page=wbz404_redirected";
+			if ($sub == "captured") {
+				$url .= "&subpage=wbz404_captured";
+			} else if ($sub == "logs") {
 				$url .= "&subpage=wbz404_logs&id=" . $tableOptions['logsid'];
 			}
-		if ( $tableOptions['filter'] != 0 ) {
-			$url .= "&filter=" . $tableOptions['filter'];
-		}
-		$url .= "&orderby=" . $column['orderby'] . "&order=" . $sortorder;
+			if ($tableOptions['filter'] != 0) {
+				$url .= "&filter=" . $tableOptions['filter'];
+			}
+			$url .= "&orderby=" . $column['orderby'] . "&order=" . $sortorder;
 
-		echo "<th" . $style . "class=\"manage-column column-title" . $class . "\">";
-		if ( $nolink == 1 ) {
-			echo $column['title'];
-		} else {
-			echo "<a href=\"" . esc_url( $url ) . "\">";
-			echo "<span>" . esc_html( $column['title'] ) . "</span>";
-			echo "<span class=\"sorting-indicator\"></span>";
-			echo "</a>";
+			echo "<th" . $style . "class=\"manage-column column-title" . $class . "\">";
+				if ($nolink == 1) {
+					echo $column['title'];
+				} else {
+					echo "<a href=\"" . esc_url( $url ) . "\">";
+					echo "<span>" . esc_html( $column['title'] ) . "</span>";
+					echo "<span class=\"sorting-indicator\"></span>";
+					echo "</a>";
+				}
+			echo "</th>";
 		}
-		echo "</th>";
-	}
-	echo "<th style=\"width: 1px;\"></th>";
+		echo "<th style=\"width: 1px;\"></th>";
 	echo "</tr>";
 }
 
-function wbz404_getRedirectHits( $id ) {
+function wbz404_getRedirectHits($id) {
 	global $wpdb;
 
 	$query = "select count(id) from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . esc_sql();
-	$row = $wpdb->get_col( $query );
+	$row = $wpdb->get_col($query);
 	return $row[0];
 }
 
-function wbz404_getRedirectLastUsed( $id ) {
+function wbz404_getRedirectLastUsed($id) {
 	global $wpdb;
-
-	$query = "select timestamp from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . esc_sql( $id ) . " order by timestamp desc";
-	$row = $wpdb->get_col( $query );
+	
+	$query = "select timestamp from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . esc_sql($id) . " order by timestamp desc";
+	$row = $wpdb->get_col($query);
 	return $row[0];
 }
 
@@ -596,51 +596,51 @@ function wbz404_addAdminRedirect() {
 	global $wpdb;
 	$messasge = "";
 
-	if ( $_POST['url'] != "" ) {
-		if ( substr( $_POST['url'], 0, 1 ) != "/" ) {
-			$message .= wbz404_trans( 'Error: URL must start with /' ) . "<br>";
-		}
+	if ($_POST['url'] != "") {
+		if (substr($_POST['url'],0,1) != "/") {
+			$message .= wbz404_trans('Error: URL must start with /') . "<br>";
+		} 
 	} else {
-		$message .= wbz404_trans( "Error: URL is a required field." ) . "<br>";
+		$message .= wbz404_trans("Error: URL is a required field.") . "<br>";
 	}
 
-	if ( $_POST['dest'] == "EXTERNAL" ) {
-		if ( $_POST['external'] == "" ) {
-			$message .= wbz404_trans( 'Error: You selected external URL but did not enter a URL.' ) . "<br>";
+	if ($_POST['dest'] == "EXTERNAL") {
+		if ($_POST['external'] == "") {
+			$message .= wbz404_trans('Error: You selected external URL but did not enter a URL.') . "<br>";
 		} else {
-			if ( substr( $_POST['external'], 0, 7 ) != "http://" && substr( $_POST['external'], 0, 8 ) != "https://" && substr( $_POST['external'], 0, 6 ) != "ftp://" ) {
-				$message .= wbz404_trans( 'Error: External URL\'s must start with http://, https://, or ftp://' ) . "<br>";
+			if (substr($_POST['external'],0,7) != "http://" && substr($_POST['external'],0,8) != "https://" && substr($_POST['external'],0,6) != "ftp://") {
+				$message .= wbz404_trans('Error: External URL\'s must start with http://, https://, or ftp://') . "<br>";
 			}
 		}
 	}
 
-	if ( $message == "" ) {
+	if ($message == "") {
 		$type = "";
 		$dest = "";
-		if ( $_POST['dest'] == "EXTERNAL" ) {
+		if ($_POST['dest'] == "EXTERNAL") {
 			$type = WBZ404_EXTERNAL;
-			$dest = esc_sql( $_POST['external'] );
+			$dest = esc_sql($_POST['external']);
 		} else {
-			$info = explode( "|", $_POST['dest'] );
-			if ( count( $info )==2 ) {
+			$info = explode("|", $_POST['dest']);
+			if (count($info)==2) {
 				$dest = $info[0];
-				if ( $info[1] == "POST" ) {
+				if ($info[1] == "POST") {
 					$type = WBZ404_POST;
-				} else if ( $info[1] == "CAT" ) {
-						$type = WBZ404_CAT;
-					} else if ( $info[1] == "TAG" ) {
-						$type = WBZ404_TAG;
-					}
+				} else if ($info[1] == "CAT") {
+					$type = WBZ404_CAT;
+				} else if ($info[1] == "TAG") {
+					$type = WBZ404_TAG;
+				}
 			}
 		}
-		if ( $type != "" && $dest != "" ) {
-			wbz404_setupRedirect( esc_sql( $_POST['url'] ), WBZ404_MANUAL, $type, $dest, esc_sql( $_POST['code'] ), 0 );
+		if ($type != "" && $dest != "") {
+			wbz404_setupRedirect(esc_sql($_POST['url']), WBZ404_MANUAL, $type, $dest, esc_sql($_POST['code']), 0);
 			$_POST['url'] = "";
 			$_POST['code'] = "";
 			$_POST['external'] = "";
 			$_POST['dest'] = "";
 		} else {
-			$message .= wbz404_trans( 'Error: Data not formatted properly.' ) . "<br>";
+			$message .= wbz404_trans('Error: Data not formatted properly.') . "<br>";
 		}
 	}
 
@@ -651,46 +651,46 @@ function wbz404_editRedirectData() {
 	global $wpdb;
 	$message = "";
 
-	if ( $_POST['url'] != "" ) {
-		if ( substr( $_POST['url'], 0, 1 ) != "/" ) {
-			$message .= wbz404_trans( 'Error: URL must start with /' ) . "<br>";
-		}
+	if ($_POST['url'] != "") {
+		if (substr($_POST['url'],0,1) != "/") {
+			$message .= wbz404_trans('Error: URL must start with /') . "<br>";
+		} 
 	} else {
-		$message .= wbz404_trans( "Error: URL is a required field." ) . "<br>";
+		$message .= wbz404_trans("Error: URL is a required field.") . "<br>";
 	}
 
-	if ( $_POST['dest'] == "EXTERNAL" ) {
-		if ( $_POST['external'] == "" ) {
-			$message .= wbz404_trans( 'Error: You selected external URL but did not enter a URL.' ) . "<br>";
+	if ($_POST['dest'] == "EXTERNAL") {
+		if ($_POST['external'] == "") {
+			$message .= wbz404_trans('Error: You selected external URL but did not enter a URL.') . "<br>";
 		} else {
-			if ( substr( $_POST['external'], 0, 7 ) != "http://" && substr( $_POST['external'], 0, 8 ) != "https://" && substr( $_POST['external'], 0, 6 ) != "ftp://" ) {
-				$message .= wbz404_trans( 'Error: External URL\'s must start with http://, https://, or ftp://' ) . "<br>";
+			if (substr($_POST['external'],0,7) != "http://" && substr($_POST['external'],0,8) != "https://" && substr($_POST['external'],0,6) != "ftp://") {
+				$message .= wbz404_trans('Error: External URL\'s must start with http://, https://, or ftp://') . "<br>";
 			}
 		}
 	}
 
-	if ( $message == "" ) {
+	if ($message == "") {
 		$type = "";
 		$dest = "";
-		if ( $_POST['dest'] === "" . WBZ404_EXTERNAL ) {
+		if ($_POST['dest'] === "" . WBZ404_EXTERNAL) {
 			$type = WBZ404_EXTERNAL;
-			$dest = esc_sql( $_POST['external'] );
+			$dest = esc_sql($_POST['external']);
 		} else {
-			$info = explode( "|", $_POST['dest'] );
-			if ( count( $info )==2 ) {
+			$info = explode("|", $_POST['dest']);
+			if (count($info)==2) {
 				$dest = $info[0];
-				if ( $info[1] == WBZ404_POST ) {
+				if ($info[1] == WBZ404_POST) {
 					$type = WBZ404_POST;
-				} else if ( $info[1] == WBZ404_CAT ) {
-						$type = WBZ404_CAT;
-					} else if ( $info[1] == WBZ404_TAG ) {
-						$type = WBZ404_TAG;
-					}
+				} else if ($info[1] == WBZ404_CAT) {
+					$type = WBZ404_CAT;
+				} else if ($info[1] == WBZ404_TAG) {
+					$type = WBZ404_TAG;
+				}
 			}
 		}
 
-		if ( $type != "" && $dest != "" ) {
-			$wpdb->update( $wpdb->prefix . "wbz404_redirects",
+		if ($type != "" && $dest != "") {
+			$wpdb->update($wpdb->prefix . "wbz404_redirects",
 				array(
 					'url' => esc_url( $_POST['url'] ),
 					'status' => WBZ404_MANUAL,
@@ -718,166 +718,166 @@ function wbz404_editRedirectData() {
 			$_POST['external'] = "";
 			$_POST['dest'] = "";
 		} else {
-			$message .= wbz404_trans( 'Error: Data not formatted properly.' ) . "<br>";
+			$message .= wbz404_trans('Error: Data not formatted properly.') . "<br>";
 		}
 	}
 
 	return $message;
 }
 
-function wbz404_setTrash( $id, $trash ) {
+function wbz404_setTrash($id, $trash) {
 	global $wpdb;
 
 	$result = false;
-	if ( preg_match( '/[0-9]+/', $id ) ) {
+	if (preg_match('/[0-9]+/', $id)) {
 
-		$result = $wpdb->update( $wpdb->prefix . "wbz404_redirects",
-			array( 'disabled' => esc_html( $trash ) ),
-			array ( 'id' => absint( $id ) ),
-			array ( '%d' ),
-			array ( '%d' )
+		$result = $wpdb->update($wpdb->prefix . "wbz404_redirects",
+			array('disabled' => esc_html( $trash ) ),
+			array ('id' => absint( $id ) ),
+			array ('%d'),
+			array ('%d')
 		);
 	}
-	if ( $result == false ) {
-		$message = wbz404_trans( 'Error: Unknown Database Error!' );
+	if ($result == false) {
+		$message = wbz404_trans('Error: Unknown Database Error!');
 	}
 	return $message;
 }
 
-function wbz404_setIgnore( $id, $newstatus ) {
+function wbz404_setIgnore($id, $newstatus) {
 	global $wpdb;
 
 	$result = false;
-	if ( preg_match( '/[0-9]+/', $id ) ) {
+	if (preg_match('/[0-9]+/', $id)) {
 
-		$result = $wpdb->update( $wpdb->prefix . "wbz404_redirects",
-			array( 'status' => esc_html( $newstatus ) ),
-			array ( 'id' => absint( $id ) ),
-			array ( '%d' ),
-			array ( '%d' )
+		$result = $wpdb->update($wpdb->prefix . "wbz404_redirects",
+			array('status' => esc_html( $newstatus ) ),
+			array ('id' => absint( $id ) ),
+			array ('%d'),
+			array ('%d')
 		);
 	}
-	if ( $result == false ) {
-		$message = wbz404_trans( 'Error: Unknown Database Error!' );
+	if ($result == false) {
+		$message = wbz404_trans('Error: Unknown Database Error!');
 	}
 	return $message;
 }
 
-function wbz404_adminHeader( $sub = 'list', $message = '' ) {
-	if ( $sub == "options" ) {
-		$header = " " . wbz404_trans( 'Options' );
-	} else if ( $sub == "logs" ) {
-			$header = " " . wbz404_trans( 'Logs' );
-		} else if ( $sub == "stats" ) {
-			$header = " " . wbz404_trans( 'Stats' );
-		} else if ( $sub == "edit" ) {
-			$header = ": " . wbz404_trans( 'Edit Redirect' );
-		} else if ( $sub == "redirects" ) {
-			$header = "";
-		} else {
+function wbz404_adminHeader($sub = 'list', $message = '') {
+	if ($sub == "options") {
+		$header = " " . wbz404_trans('Options');
+	} else if ($sub == "logs") {
+		$header = " " . wbz404_trans('Logs');
+	} else if ($sub == "stats") {
+		$header = " " . wbz404_trans('Stats');
+	} else if ($sub == "edit") {
+		$header = ": " . wbz404_trans('Edit Redirect');
+	} else if ($sub == "redirects") {
+		$header = "";
+	} else {
 		$header = "";
 	}
 	echo "<div class=\"wrap\">";
-	if ( $sub == "options" ) {
+	if ($sub == "options") {
 		echo "<div id=\"icon-options-general\" class=\"icon32\"></div>";
 	} else {
 		echo "<div id=\"icon-tools\" class=\"icon32\"></div>";
 	}
-	echo "<h2>" . wbz404_trans( '404 Redirected' ) . esc_html( $header ) . "</h2>";
-	if ( $message != "" ) {
+	echo "<h2>" . wbz404_trans('404 Redirected') . esc_html( $header ) . "</h2>";
+	if ($message != "") {
 		echo "<div class=\"message updated\"><p>" . esc_html( $message ) . "</p></div>";
 	}
-	echo wbz404_trans( 'by' ) . " <a href=\"http://www.weberz.com/\" title=\"Weberz Hosting\" target=\"_blank\">Weberz Hosting</a><br>";
-	echo wbz404_trans( 'Version' ) . ": " . WBZ404_VERSION . " | ";
-	echo "<a href=\"" . WBZ404_HOME . "\" title=\"" . wbz404_trans( 'Plugin Home Page' ) . "\" target=\"_blank\">" . wbz404_trans( 'Plugin Home Page' ) . "</a> | ";
+	echo wbz404_trans('by') . " <a href=\"http://www.weberz.com/\" title=\"Weberz Hosting\" target=\"_blank\">Weberz Hosting</a><br>";
+	echo wbz404_trans('Version') . ": " . WBZ404_VERSION . " | ";
+	echo "<a href=\"" . WBZ404_HOME . "\" title=\"" . wbz404_trans('Plugin Home Page') . "\" target=\"_blank\">" . wbz404_trans('Plugin Home Page') . "</a> | ";
 	echo "<a href=\"http://twitter.com/Weberz\" title=\"Weberz Hosting on Twitter\" target=\"_blank\">Weberz on Twitter</a> | ";
 	echo "<a href=\"http://www.facebook.com/Weberz\" title=\"Weberz Hosting on Facebook\" target=\"_blank\">Weberz on Facebook</a><br>";
 	echo "<br>";
-
+	
 	$class="";
-	if ( $sub == "redirects" ) {
+	if ($sub == "redirects") {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected\" title=\"" . wbz404_trans( 'Page Redirects' ) . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans( 'Page Redirects' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected\" title=\"" . wbz404_trans('Page Redirects') . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Page Redirects') . "</a>";
 	$class="";
-	if ( $sub == "captured" ) {
+	if ($sub == "captured") {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_captured\" title=\"" . wbz404_trans( 'Captured 404 URLs' ) . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans( 'Captured 404 URLs' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_captured\" title=\"" . wbz404_trans('Captured 404 URLs') . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Captured 404 URLs') . "</a>";
 	$class="";
-	if ( $sub == "logs" ) {
+	if ($sub == "logs") {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_logs\" title=\"" . wbz404_trans( 'Redirect & Capture Logs' ) . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans( 'Logs' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_logs\" title=\"" . wbz404_trans('Redirect & Capture Logs') . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Logs') . "</a>";
 	$class="";
-	if ( $sub == "stats" ) {
+	if ($sub == "stats") {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_stats\" title=\"" . wbz404_trans( 'Stats' ) . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans( 'Stats' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_stats\" title=\"" . wbz404_trans('Stats') . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Stats') . "</a>";
 	$class="";
-	if ( $sub == "tools" ) {
+	if ($sub == "tools") {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_tools\" title=\"" . wbz404_trans( 'Tools' ) . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans( 'Tools' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_tools\" title=\"" . wbz404_trans('Tools') . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Tools') . "</a>";
 	$class="";
-	if ( $sub == "options" ) {
+	if ($sub == "options") {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . wbz404_trans( 'Options' ) . "</a>";
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Options') . "</a>";	
 	echo "<hr style=\"border: 0px; border-bottom: 1px solid #DFDFDF; margin-top: 0px; margin-bottom: 0px; \">";
 }
 
 function wbz404_adminFooter() {
 	echo "<div style=\"clear: both;\">";
-	echo "<br>";
-	echo "<strong>Credits:</strong><br>";
-	echo "<a href=\"" . WBZ404_HOME . "\" title=\"" . wbz404_trans( '404 Redirected' ) . "\" target=\"_blank\">" . wbz404_trans( '404 Redirected' ) . "</a> ";
-	echo wbz404_trans( 'was designed by' );
-	echo " ";
-	echo "<a href=\"http://twitter.com/rrolfe/\" title=\"Robert Rolfe\" target=\"_blank\">Robert Rolfe</a>. ";
-	echo wbz404_trans( 'It\'s released under the GNU GPL version 2 License.' );
+		echo "<br>";
+		echo "<strong>Credits:</strong><br>";
+		echo "<a href=\"" . WBZ404_HOME . "\" title=\"" . wbz404_trans('404 Redirected') . "\" target=\"_blank\">" . wbz404_trans('404 Redirected') . "</a> ";
+		echo wbz404_trans('was designed by');
+		echo " ";
+		echo "<a href=\"http://twitter.com/rrolfe/\" title=\"Robert Rolfe\" target=\"_blank\">Robert Rolfe</a>. ";
+		echo wbz404_trans('It\'s released under the GNU GPL version 2 License.');
 	echo "</div>";
 	echo "</div>";
 }
 
-function wbz404_emptyTrash( $sub ) {
+function wbz404_emptyTrash($sub) {
 	$tableOptions = wbz404_getTableOptions();
 
-	$rows = wbz404_getRecords( $sub, $tableOptions, 0 );
-	foreach ( $rows as $row ) {
-		wbz404_cleanRedirect( $row['id'] );
+	$rows = wbz404_getRecords($sub, $tableOptions, 0);
+	foreach ($rows as $row) {
+		wbz404_cleanRedirect($row['id']);
 	}
 }
 
-function wbz404_bulkProcess( $action, $ids ) {
+function wbz404_bulkProcess($action, $ids) {
 	$message = "";
-	if ( $action == "bulkignore" || $action == "bulkcaptured" ) {
-		if ( $action == "bulkignore" ) {
+	if ($action == "bulkignore" || $action == "bulkcaptured") {
+		if ($action == "bulkignore") {
 			$status = WBZ404_IGNORED;
 		} else {
 			$status = WBZ404_CAPTURED;
 		}
 		$count = 0;
-		foreach ( $ids as $id ) {
-			$s = wbz404_setIgnore( $id, $status );
-			if ( $s == "" ) {
+		foreach ($ids as $id) {
+			$s = wbz404_setIgnore($id, $status);
+			if ($s == "") {
 				$count++;
-			}
+			} 
 		}
-		if ( $action == "bulkignore" ) {
-			$message = $count . " " . wbz404_trans( 'URLs marked as ignored.' );
+		if ($action == "bulkignore") {
+			$message = $count . " " . wbz404_trans('URLs marked as ignored.');
 		} else {
-			$message = $count . " " . wbz404_trans( 'URLs marked as captured.' );
+			$message = $count . " " . wbz404_trans('URLs marked as captured.');
 		}
 	} else {
 		$count = 0;
-		foreach ( $ids as $id ) {
-			$s = wbz404_setTrash( $id, 1 );
-			if ( $s == "" ) {
+		foreach ($ids as $id) {
+			$s = wbz404_setTrash($id, 1);
+			if ($s == "") {
 				$count ++;
 			}
 		}
-		$message = $count . " " . wbz404_trans( 'URLs moved to trash' );
+		$message = $count . " " . wbz404_trans('URLs moved to trash');
 	}
 	return $message;
 }
@@ -887,73 +887,73 @@ function wbz404_adminPage() {
 	$message="";
 
 	//Handle Post Actions
-	if ( isset( $_POST['action'] ) ) {
+	if (isset($_POST['action'])) {
 		$action = $_POST['action'];
 	} else {
 		$action = "";
 	}
 
-	if ( $action == "updateOptions" ) {
-		if ( check_admin_referer( 'wbz404UpdateOptions' ) && is_admin() ) {
+	if ($action == "updateOptions") {
+		if (check_admin_referer('wbz404UpdateOptions') && is_admin()) {
 			$sub="wbz404_options";
 			$message=wbz404_updateOptions();
-			if ( $message == "" ) {
-				$message = wbz404_trans( 'Options Saved Successfully!' );
+			if ($message == "") {
+				$message = wbz404_trans('Options Saved Successfully!');
 			} else {
-				$message .= wbz404_trans( 'Some options were not saved successfully.' );
+				$message .= wbz404_trans('Some options were not saved successfully.');
 			}
 		}
-	} else if ( $action == "addRedirect" ) {
-			if ( check_admin_referer( 'wbz404addRedirect' ) && is_admin() ) {
-				$message=wbz404_addAdminRedirect();
-				if ( $message == "" ) {
-					$message = wbz404_trans( 'New Redirect Added Successfully!' );
-				} else {
-					$message .= wbz404_trans( 'Error: unable to add new redirect successfully.' );
-				}
-			}
-		} else if ( $action == "emptyRedirectTrash" ) {
-			if ( check_admin_referer( 'wbz404_emptyRedirectTrash' ) && is_admin() ) {
-				wbz404_emptyTrash( 'redirects' );
-				$message = wbz404_trans( 'All trashed URLs have been deleted!' );
-			}
-		} else if ( $action == "emptyCapturedTrash" ) {
-			if ( check_admin_referer( 'wbz404_emptyCapturedTrash' ) && is_admin() ) {
-				wbz404_emptyTrash( 'captured' );
-				$message = wbz404_trans( 'All trashed URLs have been deleted!' );
-			}
-		} else if ( $action == "bulkignore" || $action == "bulkcaptured" || $action == "bulktrash" ) {
-			if ( check_admin_referer( 'wbz404_capturedBulkAction' ) && is_admin() ) {
-				$message = wbz404_bulkProcess( $action, $_POST['idnum'] );
-			}
-		} else if ( $action == "purgeRedirects" ) {
-			if ( check_admin_referer( 'wbz404_purgeRedirects' ) && is_admin() ) {
-				$message = wbz404_purgeRedirects();
+	} else if ($action == "addRedirect") {
+		if (check_admin_referer('wbz404addRedirect') && is_admin()) {
+			$message=wbz404_addAdminRedirect();
+			if ($message == "") {
+				$message = wbz404_trans('New Redirect Added Successfully!');
+			} else {
+				$message .= wbz404_trans('Error: unable to add new redirect successfully.');
 			}
 		}
+	} else if ($action == "emptyRedirectTrash") {
+		if (check_admin_referer('wbz404_emptyRedirectTrash') && is_admin()) {
+			wbz404_emptyTrash('redirects');
+			$message = wbz404_trans('All trashed URLs have been deleted!');
+		}
+	} else if ($action == "emptyCapturedTrash") {
+		if (check_admin_referer('wbz404_emptyCapturedTrash') && is_admin()) {
+			wbz404_emptyTrash('captured');
+			$message = wbz404_trans('All trashed URLs have been deleted!');
+		}
+	} else if ($action == "bulkignore" || $action == "bulkcaptured" || $action == "bulktrash") {
+		if (check_admin_referer('wbz404_capturedBulkAction') && is_admin()) {
+			$message = wbz404_bulkProcess($action, $_POST['idnum']);
+		}
+	} else if ($action == "purgeRedirects") {
+		if (check_admin_referer('wbz404_purgeRedirects') && is_admin()) {
+			$message = wbz404_purgeRedirects();
+		}
+	}
 
 	// Handle Trash Functionality
-	if ( isset( $_GET['trash'] ) ) {
-		if ( check_admin_referer( 'wbz404_trashRedirect' ) && is_admin() ) {
+	if (isset($_GET['trash'])) {
+		if (check_admin_referer('wbz404_trashRedirect') && is_admin()) {
 			$trash = "";
-			if ( $_GET['trash'] == 0 ) {
+			if ($_GET['trash'] == 0) {
 				$trash = 0;
-			} else if ( $_GET['trash'] == 1 ) {
-					$trash = 1;
-				}
-			if ( $trash == 0 || $trash == 1 ) {
-				$message = wbz404_setTrash( $_GET['id'], $trash );
-				if ( $message == "" ) {
-					if ( $trash == 1 ) {
-						$message = wbz404_trans( "Redirect moved to trash successfully!" );
+			} else if ($_GET['trash'] == 1) {
+				$trash = 1;
+			}
+			if ($trash == 0 || $trash == 1) {
+				$message = wbz404_setTrash($_GET['id'], $trash);
+				if ($message == "") {
+					if ($trash == 1) {
+						$message = wbz404_trans("Redirect moved to trash successfully!");
 					} else {
-						$message = wbz404_trans( "Redirect restored from trash successfully!" );
+						$message = wbz404_trans("Redirect restored from trash successfully!");
 					}
 				} else {
-					if ( $trash == 1 ) {
-						$message = wbz404_trans( "Error: Unable to move redirect to trash." );
+					if ($trash == 1) {
+						$message = wbz404_trans("Error: Unable to move redirect to trash.");
 					} else {
-						$message = wbz404_trans( "Error: Unable to move redirect from trash." );
+						$message = wbz404_trans("Error: Unable to move redirect from trash.");
 					}
 				}
 			}
@@ -961,38 +961,38 @@ function wbz404_adminPage() {
 	}
 
 	//Handle Delete Functionality
-	if ( isset( $_GET['remove'] ) && $_GET['remove'] == 1 ) {
-		if ( check_admin_referer( 'wbz404_removeRedirect' ) && is_admin() ) {
-			if ( preg_match( '/[0-9]+/', $_GET['id'] ) ) {
+	if (isset($_GET['remove']) && $_GET['remove'] == 1) {
+		if (check_admin_referer('wbz404_removeRedirect') && is_admin()) {
+			if (preg_match('/[0-9]+/', $_GET['id'])) {
 				$sanitize_id = absint( $_GET['id'] );
 				wbz404_cleanRedirect( $sanitize_id );
-				$message = wbz404_trans( 'Redirect Removed Successfully!' );
+				$message = wbz404_trans('Redirect Removed Successfully!');
 			}
 		}
 	}
 
 	//Handle Ignore Functionality
-	if ( isset( $_GET['ignore'] ) ) {
-		if ( check_admin_referer( 'wbz404_ignore404' ) && is_admin() ) {
-			if ( $_GET['ignore'] == 0 || $_GET['ignore'] == 1 ) {
-				if ( preg_match( '/[0-9]+/', $_GET['id'] ) ) {
-					if ( $_GET['ignore'] == 1 ) {
+	if (isset($_GET['ignore'])) {
+		if (check_admin_referer('wbz404_ignore404') && is_admin()) {
+			if ($_GET['ignore'] == 0 || $_GET['ignore'] == 1) {
+				if (preg_match('/[0-9]+/', $_GET['id'])) {
+					if ($_GET['ignore'] == 1) {
 						$newstatus = WBZ404_IGNORED;
 					} else {
 						$newstatus = WBZ404_CAPTURED;
 					}
-					$message = wbz404_setIgnore( $_GET['id'], $newstatus );
-					if ( $message == "" ) {
-						if ( $newstatus == WBZ404_CAPTURED ) {
-							$message = wbz404_trans( 'Removed 404 URL from ignored list successfully!' );
+					$message = wbz404_setIgnore($_GET['id'], $newstatus);
+					if ($message == "") {
+						if ($newstatus == WBZ404_CAPTURED) {
+							$message = wbz404_trans('Removed 404 URL from ignored list successfully!');
 						} else {
-							$message = wbz404_trans( '404 URL marked as ignored successfully!' );
+							$message = wbz404_trans('404 URL marked as ignored successfully!');
 						}
 					} else {
-						if ( $newstatus == WBZ404_CAPTURED ) {
-							$message = wbz404_trans( 'Error: unable to remove URL from ignored list' );
+						if ($newstatus == WBZ404_CAPTURED) {
+							$message = wbz404_trans('Error: unable to remove URL from ignored list');
 						} else {
-							$message = wbz404_trans( 'Error: unable to mark URL as ignored' );
+							$message = wbz404_trans('Error: unable to mark URL as ignored');
 						}
 					}
 				}
@@ -1001,71 +1001,71 @@ function wbz404_adminPage() {
 	}
 
 	//Handle edit posts
-	if ( isset( $_POST['action'] ) && $_POST['action'] == "editRedirect" ) {
-		if ( isset( $_POST['id'] ) && preg_match( '/[0-9]+/', $_POST['id'] ) ) {
-			if ( check_admin_referer( 'wbz404editRedirect' ) && is_admin() ) {
+	if (isset($_POST['action']) && $_POST['action'] == "editRedirect") {
+		if (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
+			if (check_admin_referer('wbz404editRedirect') && is_admin()) {
 				$message = wbz404_editRedirectData();
-				if ( $message == "" ) {
-					$message .= wbz404_trans( "Redirect Information Updated Successfully!" );
+				if ($message == "") {
+					$message .= wbz404_trans("Redirect Information Updated Successfully!");
 					$sub = "redirects";
 				} else {
-					$message .= wbz404_trans( "Error: Unable to update redirect data." );
+					$message .= wbz404_trans("Error: Unable to update redirect data.");
 				}
 			}
 		}
 	}
 
 	// Deal With Page Tabs
-	if ( $sub == "" ) {
-		if ( isset( $_GET['subpage'] ) ) {
-			$sub = strtolower( $_GET['subpage'] );
+	if ($sub == "") {
+		if (isset($_GET['subpage'])) {
+			$sub = strtolower($_GET['subpage']);
 		} else {
 			$sub = "";
 		}
 	}
-	if ( $sub == "wbz404_options" ) {
+	if ($sub == "wbz404_options") {
 		$sub = "options";
-	} else if ( $sub == "wbz404_captured" ) {
-			$sub = "captured";
-		} else if ( $sub == "wbz404_logs" ) {
-			$sub = "logs";
-		} else if ( $sub == "wbz404_edit" ) {
-			$sub = "edit";
-		} else if ( $sub == "wbz404_stats" ) {
-			$sub = "stats";
-		} else if ( $sub == "wbz404_tools" ) {
-			$sub = "tools";
-		} else {
+	} else if ($sub == "wbz404_captured") {
+		$sub = "captured";
+	} else if ($sub == "wbz404_logs") {
+		$sub = "logs";
+	} else if ($sub == "wbz404_edit") {
+		$sub = "edit";
+	} else if ($sub == "wbz404_stats") {
+		$sub = "stats";
+	} else if ($sub == "wbz404_tools") {
+		$sub = "tools";
+	} else {
 		$sub = "redirects";
 	}
 
-	wbz404_adminHeader( $sub, $message );
-	if ( $sub == "redirects" ) {
+	wbz404_adminHeader($sub, $message);
+	if ($sub == "redirects") {
 		wbz404_adminRedirectsPage();
-	} else if ( $sub == "captured" ) {
-			wbz404_adminCapturedPage();
-		} else if ( $sub == "options" ) {
-			wbz404_adminOptionsPage();
-		} else if ( $sub == "logs" ) {
-			wbz404_adminLogsPage();
-		} else if ( $sub == "edit" ) {
-			wbz404_adminEditPage();
-		} else if ( $sub == "stats" ) {
-			wbz404_adminStatsPage();
-		} else if ( $sub == "tools" ) {
-			wbz404_adminToolsPage();
-		} else {
-		echo wbz404_trans( 'Invalid Sub Page ID' );
+	} else if ($sub == "captured") {
+		wbz404_adminCapturedPage();
+	} else if ($sub == "options") {
+		wbz404_adminOptionsPage();
+	} else if ($sub == "logs") {
+		wbz404_adminLogsPage();
+	} else if ($sub == "edit") {
+		wbz404_adminEditPage();
+	} else if ($sub == "stats") {
+		wbz404_adminStatsPage();
+	} else if ($sub == "tools") {
+		wbz404_adminToolsPage();
+	} else {
+		echo wbz404_trans('Invalid Sub Page ID');
 	}
 	wbz404_adminFooter();
 }
 
-function wbz404_getStatsCount( $query='' ) {
+function wbz404_getStatsCount($query='') {
 	global $wpdb;
 	$results = 0;
-	if ( $query != '' ) {
+	if ($query != '') {
 
-		$row = $wpdb->get_col( $query );
+		$row = $wpdb->get_col($query);
 		$results = $row[0];
 	}
 	return $results;
@@ -1080,127 +1080,127 @@ function wbz404_adminStatsPage() {
 	$hr = "style=\"border: 0px; margin-bottom: 0px; padding-bottom: 4px; border-bottom: 1px dotted #DEDEDE;\"";
 
 	echo "<div class=\"postbox-container\" style=\"float: right; width: 49%;\">";
-	echo "<div class=\"metabox-holder\">";
-	echo " <div class=\"meta-box-sortables\">";
+		echo "<div class=\"metabox-holder\">";
+			echo " <div class=\"meta-box-sortables\">";
 
-	$query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = " . WBZ404_AUTO;
-	$auto301 = wbz404_getStatsCount( $query );
+				$query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = " . WBZ404_AUTO;
+				$auto301 = wbz404_getStatsCount($query);
 
-	$query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = " . WBZ404_AUTO;
-	$auto302 = wbz404_getStatsCount( $query );
+				$query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = " . WBZ404_AUTO;
+				$auto302 = wbz404_getStatsCount($query);
 
-	$query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = " . WBZ404_MANUAL;
-	$manual301 = wbz404_getStatsCount( $query );
+				$query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = " . WBZ404_MANUAL;
+				$manual301 = wbz404_getStatsCount($query);
+				
+				$query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = " . WBZ404_MANUAL;
+				$manual302 = wbz404_getStatsCount($query);
 
-	$query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = " . WBZ404_MANUAL;
-	$manual302 = wbz404_getStatsCount( $query );
+				$query = "select count(id) from $redirects where disabled = 1 and (status = " . WBZ404_AUTO . " or status = " . WBZ404_MANUAL . ")";
+				$trashed = wbz404_getStatsCount($query);
 
-	$query = "select count(id) from $redirects where disabled = 1 and (status = " . WBZ404_AUTO . " or status = " . WBZ404_MANUAL . ")";
-	$trashed = wbz404_getStatsCount( $query );
+				$total = $auto301 + $auto302 + $manual301 + $manual302 + $trashed;
 
-	$total = $auto301 + $auto302 + $manual301 + $manual302 + $trashed;
+				$content = "";
+				$content .= "<p $hr>";
+				$content .= "<strong>" . wbz404_trans('Automatic 301 Redirects') . ":</strong> " . esc_html( $auto301 ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Automatic 302 Redirects') . ":</strong> " . esc_html( $auto302 ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Manual 301 Redirects') . ":</strong> " . esc_html( $manual301 ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Manual 302 Redirects') . ":</strong> " . esc_html( $manual302 ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Trashed Redirects') . ":</strong> " . esc_html( $trashed ) . "</p>";
+				$content .= "<p style=\"margin-top: 4px;\">";
+				$content .= "<strong>" . wbz404_trans('Total Redirects') . ":</strong> " . esc_html( $total );
+				$content .= "</p>";
+				wbz404_postbox( "wbz404-redirectStats", wbz404_trans('Redirects'), $content );
 
-	$content = "";
-	$content .= "<p $hr>";
-	$content .= "<strong>" . wbz404_trans( 'Automatic 301 Redirects' ) . ":</strong> " . esc_html( $auto301 ) . "<br>";
-	$content .= "<strong>" . wbz404_trans( 'Automatic 302 Redirects' ) . ":</strong> " . esc_html( $auto302 ) . "<br>";
-	$content .= "<strong>" . wbz404_trans( 'Manual 301 Redirects' ) . ":</strong> " . esc_html( $manual301 ) . "<br>";
-	$content .= "<strong>" . wbz404_trans( 'Manual 302 Redirects' ) . ":</strong> " . esc_html( $manual302 ) . "<br>";
-	$content .= "<strong>" . wbz404_trans( 'Trashed Redirects' ) . ":</strong> " . esc_html( $trashed ) . "</p>";
-	$content .= "<p style=\"margin-top: 4px;\">";
-	$content .= "<strong>" . wbz404_trans( 'Total Redirects' ) . ":</strong> " . esc_html( $total );
-	$content .= "</p>";
-	wbz404_postbox( "wbz404-redirectStats", wbz404_trans( 'Redirects' ), $content );
+				$query = "select count(id) from $redirects where disabled = 0 and status = " . WBZ404_CAPTURED;
+				$captured = wbz404_getStatsCount($query);
 
-	$query = "select count(id) from $redirects where disabled = 0 and status = " . WBZ404_CAPTURED;
-	$captured = wbz404_getStatsCount( $query );
+				$query = "select count(id) from $redirects where disabled = 0 and status = " . WBZ404_IGNORED;
+				$ignored = wbz404_getStatsCount($query);
 
-	$query = "select count(id) from $redirects where disabled = 0 and status = " . WBZ404_IGNORED;
-	$ignored = wbz404_getStatsCount( $query );
+				$query = "select count(id) from $redirects where disabled = 1 and (status = " . WBZ404_CAPTURED . " or status = " . WBZ404_IGNORED . ")";
+				$trashed = wbz404_getStatsCount($query);
 
-	$query = "select count(id) from $redirects where disabled = 1 and (status = " . WBZ404_CAPTURED . " or status = " . WBZ404_IGNORED . ")";
-	$trashed = wbz404_getStatsCount( $query );
+				$total = $captured + $ignored + $trashed;
+				
+				$content = "";
+				$content .= "<p $hr>";
+				$content .= "<strong>" . wbz404_trans('Captured URLs') . ":</strong> " . esc_html( $captured ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Ignored 404 URLs') . ":</strong> " . esc_html( $ignored ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Trashed URLs') . ":</strong> " . esc_html( $trashed ) . "</p>";
+				$content .= "<p style=\"margin-top: 4px;\">";
+				$content .= "<strong>" . wbz404_trans('Total URLs') . ":</strong> " . esc_html( $total );
+				$content .= "</p>";
+				wbz404_postbox("wbz404-capturedStats", wbz404_trans('Captured URLs'), $content);
 
-	$total = $captured + $ignored + $trashed;
-
-	$content = "";
-	$content .= "<p $hr>";
-	$content .= "<strong>" . wbz404_trans( 'Captured URLs' ) . ":</strong> " . esc_html( $captured ) . "<br>";
-	$content .= "<strong>" . wbz404_trans( 'Ignored 404 URLs' ) . ":</strong> " . esc_html( $ignored ) . "<br>";
-	$content .= "<strong>" . wbz404_trans( 'Trashed URLs' ) . ":</strong> " . esc_html( $trashed ) . "</p>";
-	$content .= "<p style=\"margin-top: 4px;\">";
-	$content .= "<strong>" . wbz404_trans( 'Total URLs' ) . ":</strong> " . esc_html( $total );
-	$content .= "</p>";
-	wbz404_postbox( "wbz404-capturedStats", wbz404_trans( 'Captured URLs' ), $content );
-
-	echo "</div>";
-	echo "</div>";
+			echo "</div>";
+		echo "</div>";
 	echo "</div>";
 
 	echo "<div class=\"postbox-container\" style=\"width: 49%;\">";
-	echo "<div class=\"metabox-holder\">";
-	echo " <div class=\"meta-box-sortables\">";
+		echo "<div class=\"metabox-holder\">";
+			echo " <div class=\"meta-box-sortables\">";
 
-	$today = mktime( 0, 0, 0, date( 'm' ), date( 'd' ), date( 'Y' ) );
-	$firstm = mktime( 0, 0, 0, date( 'm' ), 1, date( 'Y' ) );
-	$firsty = mktime( 0, 0, 0, 1, 1, date( 'Y' ) );
+			$today = mktime(0,0,0, date('m'), date('d'), date('Y'));
+			$firstm = mktime(0,0,0,date('m'), 1, date('Y'));
+			$firsty = mktime(0,0,0,1,1,date('Y'));
 
-	for ( $x=0; $x <= 3; $x++ ) {
-		if ( $x == 0 ) {
-			$title="Today's Stats";
-			$ts = $today;
-		} else if ( $x == 1 ) {
-				$title="This Month";
-				$ts = $firstm;
-			} else if ( $x == 2 ) {
-				$title="This Year";
-				$ts = $firsty;
-			} else if ( $x == 3 ) {
-				$title="All Stats";
-				$ts = 0;
+			for ($x=0; $x <= 3; $x++) {
+				if ($x == 0) {
+					$title="Today's Stats";
+					$ts = $today;
+				} else if ($x == 1) {
+					$title="This Month";
+					$ts = $firstm;
+				} else if ($x == 2) {
+					$title="This Year";
+					$ts = $firsty;
+				} else if ($x == 3) {
+					$title="All Stats";
+					$ts = 0;
+				}
+
+				$query = "select count(id) from $logs where timestamp >= $ts and action = '404'";
+				$disp404 = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action = '404'";
+				$distinct404 = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action = '404'";
+				$visitors404 = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct referrer) from $logs where timestamp >= $ts and action = '404'";
+				$refer404 = wbz404_getStatsCount($query);
+
+				$query = "select count(id) from $logs where timestamp >= $ts and action != '404'";
+				$redirected = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action != '404'";
+				$distinctredirected = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action != '404'";
+				$distinctvisitors = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct referrer) from $logs where timestamp >= $ts and action != '404'";
+				$distinctrefer = wbz404_getStatsCount($query);
+
+				$content = "";
+				$content .= "<p>";
+				$content .= "<strong>" . wbz404_trans('Page Not Found Displayed') . ":</strong> " . esc_html( $disp404 ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique Page Not Found URLs') . ":</strong> " . esc_html( $distinct404 ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique Page Not Found Visitors') . ":</strong> " . esc_html( $visitors404 ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique Page Not Found Referrers') . ":</strong> " . esc_html( $refer404 ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Hits Redirected') . ":</strong> " . esc_html( $redirected ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique URLs Redirected') . ":</strong> " . esc_html( $distinctredirected ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique Redirected Visitors') . ":</strong> " . esc_html( $distinctvisitors ) . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique Redirected Referrers') . ":</strong> " . esc_html( $distinctrefer ) . "<br>";
+				$content .= "</p>";
+				wbz404_postbox("wbz404-stats" . $x, wbz404_trans($title), $content);
 			}
-
-		$query = "select count(id) from $logs where timestamp >= $ts and action = '404'";
-		$disp404 = wbz404_getStatsCount( $query );
-
-		$query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action = '404'";
-		$distinct404 = wbz404_getStatsCount( $query );
-
-		$query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action = '404'";
-		$visitors404 = wbz404_getStatsCount( $query );
-
-		$query = "select count(distinct referrer) from $logs where timestamp >= $ts and action = '404'";
-		$refer404 = wbz404_getStatsCount( $query );
-
-		$query = "select count(id) from $logs where timestamp >= $ts and action != '404'";
-		$redirected = wbz404_getStatsCount( $query );
-
-		$query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action != '404'";
-		$distinctredirected = wbz404_getStatsCount( $query );
-
-		$query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action != '404'";
-		$distinctvisitors = wbz404_getStatsCount( $query );
-
-		$query = "select count(distinct referrer) from $logs where timestamp >= $ts and action != '404'";
-		$distinctrefer = wbz404_getStatsCount( $query );
-
-		$content = "";
-		$content .= "<p>";
-		$content .= "<strong>" . wbz404_trans( 'Page Not Found Displayed' ) . ":</strong> " . esc_html( $disp404 ) . "<br>";
-		$content .= "<strong>" . wbz404_trans( 'Unique Page Not Found URLs' ) . ":</strong> " . esc_html( $distinct404 ) . "<br>";
-		$content .= "<strong>" . wbz404_trans( 'Unique Page Not Found Visitors' ) . ":</strong> " . esc_html( $visitors404 ) . "<br>";
-		$content .= "<strong>" . wbz404_trans( 'Unique Page Not Found Referrers' ) . ":</strong> " . esc_html( $refer404 ) . "<br>";
-		$content .= "<strong>" . wbz404_trans( 'Hits Redirected' ) . ":</strong> " . esc_html( $redirected ) . "<br>";
-		$content .= "<strong>" . wbz404_trans( 'Unique URLs Redirected' ) . ":</strong> " . esc_html( $distinctredirected ) . "<br>";
-		$content .= "<strong>" . wbz404_trans( 'Unique Redirected Visitors' ) . ":</strong> " . esc_html( $distinctvisitors ) . "<br>";
-		$content .= "<strong>" . wbz404_trans( 'Unique Redirected Referrers' ) . ":</strong> " . esc_html( $distinctrefer ) . "<br>";
-		$content .= "</p>";
-		wbz404_postbox( "wbz404-stats" . $x, wbz404_trans( $title ), $content );
-	}
+			echo "</div>";
+		echo "</div>";
 	echo "</div>";
-	echo "</div>";
-	echo "</div>";
-
+	
 }
 
 function wbz404_adminLogsPage() {
@@ -1219,8 +1219,8 @@ function wbz404_adminLogsPage() {
 	$redirects = array();
 	$query = "select id, url from " . $wpdb->prefix . "wbz404_redirects order by url";
 
-	$rows = $wpdb->get_results( $query, ARRAY_A );
-	foreach ( $rows as $row ) {
+	$rows = $wpdb->get_results($query, ARRAY_A);
+	foreach($rows as $row) {
 		$redirects[$row['id']]['id'] = absint( $row['id'] );
 		$redirects[$row['id']]['url'] = esc_url( $row['url'] );
 	}
@@ -1230,20 +1230,20 @@ function wbz404_adminLogsPage() {
 	echo "<form method=\"GET\" action=\"\">";
 	echo "<input type=\"hidden\" name=\"page\" value=\"wbz404_redirected\">";
 	echo "<input type=\"hidden\" name=\"subpage\" value=\"wbz404_logs\">";
-	echo "<strong><label for=\"id\">" . wbz404_trans( 'Viewing Logs For' ) . ":</label></strong> ";
+	echo "<strong><label for=\"id\">" . wbz404_trans('Viewing Logs For') . ":</label></strong> ";
 	echo "<select name=\"id\" id=\"id\">";
-	$selected = "";
-	if ( $tableOptions['logsid'] == 0 ) {
-		$selected = " selected";
-	}
-	echo "<option value=\"0\"" . $selected . ">" . wbz404_trans( 'All Redirects' ) . "</option>";
-	foreach ( $redirects as $redirect ) {
 		$selected = "";
-		if ( $tableOptions['logsid'] == $redirect['id'] ) {
+		if ($tableOptions['logsid'] == 0) {
 			$selected = " selected";
 		}
-		echo "<option value=\"" . esc_attr( $redirect['id'] ) . "\"" . $selected . ">" . esc_html( $redirect['url'] ) . "</option>";
-	}
+		echo "<option value=\"0\"" . $selected . ">" . wbz404_trans('All Redirects') . "</option>";
+		foreach ($redirects as $redirect) {
+			$selected = "";
+			if ($tableOptions['logsid'] == $redirect['id']) {
+				$selected = " selected";
+			}
+			echo "<option value=\"" . esc_attr( $redirect['id'] ) . "\"" . $selected . ">" . esc_html( $redirect['url'] ) . "</option>";
+		}
 	echo "</select><br>";
 	echo "<input type=\"submit\" value=\"View Logs\" class=\"button-secondary\">";
 	echo "</form>";
@@ -1265,71 +1265,71 @@ function wbz404_adminLogsPage() {
 	$columns['timestamp']['width'] = "15%";
 
 	echo "<div class=\"tablenav\">";
-	wbz404_drawPaginationLinks( $sub, $tableOptions );
+		wbz404_drawPaginationLinks($sub, $tableOptions);
 	echo "</div>";
 
 	echo "<table class=\"wp-list-table widefat fixed\">";
-	echo "<thead>";
-	wbz404_buildTableColumns( $sub, $tableOptions, $columns );
-	echo "</thead>";
-	echo "<tfoot>";
-	wbz404_buildTableColumns( $sub, $tableOptions, $columns );
-	echo "</tfoot>";
-	echo "<tbody>";
+		echo "<thead>";
+			wbz404_buildTableColumns($sub, $tableOptions, $columns);
+		echo "</thead>";
+		echo "<tfoot>";
+			wbz404_buildTableColumns($sub, $tableOptions, $columns);
+		echo "</tfoot>";
+		echo "<tbody>";
 
-	$rows = wbz404_getLogRecords( $tableOptions );
-	$displayed = 0;
-	$y=1;
+		$rows = wbz404_getLogRecords($tableOptions);
+		$displayed = 0;
+		$y=1;
 
-	$timezone = get_option( 'timezone_string' );
-	if ( '' == $timezone ) {
-		$timezone = 'UTC';
-	}
-	date_default_timezone_set( $timezone );
-	foreach ( $rows as $row ) {
-		$class = "";
-		if ( $y == 0 ) {
-			$class=" class=\"alternate\"";
-			$y++;
-		} else {
-			$y=0;
+		$timezone = get_option('timezone_string');
+		if ( '' == $timezone ) {
+			$timezone = 'UTC';
 		}
-		echo "<tr" . $class . ">";
-		echo "<td></td>";
-		echo "<td>" . esc_html( $redirects[$row['redirect_id']]['url'] ) . "</td>";
-		echo "<td>" . esc_html( $row['remote_host'] ) . "</td>";
-		echo "<td>";
-		if ( $row['referrer'] != "" ) {
-			echo "<a href=\"" . esc_url( $row['referrer'] ) . "\" title=\"" . wbz404_trans( 'Visit' ) . ": " . esc_attr( $row['referrer'] ) . "\" target=\"_blank\">" . esc_html( $row['referrer'] ) . "</a>";
-		} else {
-			echo "&nbsp;";
+		date_default_timezone_set($timezone);
+		foreach ($rows as $row) {
+			$class = "";
+			if ($y == 0) {
+				$class=" class=\"alternate\"";
+				$y++;
+			} else {
+				$y=0;
+			}
+			echo "<tr" . $class . ">";
+				echo "<td></td>";
+				echo "<td>" . esc_html( $redirects[$row['redirect_id']]['url'] ) . "</td>";
+				echo "<td>" . esc_html( $row['remote_host'] ) . "</td>";
+				echo "<td>";
+					if ($row['referrer'] != "") {
+						echo "<a href=\"" . esc_url( $row['referrer'] ) . "\" title=\"" . wbz404_trans('Visit') . ": " . esc_attr( $row['referrer'] ) . "\" target=\"_blank\">" . esc_html( $row['referrer'] ) . "</a>";
+					} else {
+						echo "&nbsp;";
+					}
+				echo "</td>";
+				echo "<td>";
+					if ($row['action'] == "404") {
+						echo wbz404_trans('Displayed 404 Page');
+					} else {
+						echo wbz404_trans('Redirect to') . " ";
+						echo "<a href=\"" . esc_url( $row['action'] ) . "\" title=\"" . wbz404_trans('Visit') . ": " . esc_attr( $row['action'] ) . "\" target=\"_blank\">" . esc_html( $row['action'] ) . "</a>";
+					}
+				echo "</td>";
+				echo "<td>" . esc_html( date('Y/m/d h:i:s A', $row['timestamp'] ) ) . "</td>";
+				echo "<td></td>";
+			echo "</tr>";
+			$displayed++;
+		} 
+		if ($displayed == 0) {
+			echo "<tr>";
+				echo "<td></td>";
+				echo "<td colspan=\"5\" style=\"text-align: center; font-weight: bold;\">" . wbz404_trans('No Results To Display') . "</td>";
+				echo "<td></td>";
+			echo "</tr>";
 		}
-		echo "</td>";
-		echo "<td>";
-		if ( $row['action'] == "404" ) {
-			echo wbz404_trans( 'Displayed 404 Page' );
-		} else {
-			echo wbz404_trans( 'Redirect to' ) . " ";
-			echo "<a href=\"" . esc_url( $row['action'] ) . "\" title=\"" . wbz404_trans( 'Visit' ) . ": " . esc_attr( $row['action'] ) . "\" target=\"_blank\">" . esc_html( $row['action'] ) . "</a>";
-		}
-		echo "</td>";
-		echo "<td>" . esc_html( date( 'Y/m/d h:i:s A', $row['timestamp'] ) ) . "</td>";
-		echo "<td></td>";
-		echo "</tr>";
-		$displayed++;
-	}
-	if ( $displayed == 0 ) {
-		echo "<tr>";
-		echo "<td></td>";
-		echo "<td colspan=\"5\" style=\"text-align: center; font-weight: bold;\">" . wbz404_trans( 'No Results To Display' ) . "</td>";
-		echo "<td></td>";
-		echo "</tr>";
-	}
-	echo "</tbody>";
+		echo "</tbody>";
 	echo "</table>";
-
+	
 	echo "<div class=\"tablenav\">";
-	wbz404_drawPaginationLinks( $sub, $tableOptions );
+		wbz404_drawPaginationLinks($sub, $tableOptions);
 	echo "</div>";
 
 }
@@ -1341,7 +1341,7 @@ function wbz404_adminOptionsPage() {
 
 	//General Options
 	$action = "wbz404UpdateOptions";
-	$link = wp_nonce_url( $url, $action );
+	$link = wp_nonce_url($url, $action);
 
 	echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
 	echo "<div class=\"metabox-holder\">";
@@ -1350,117 +1350,117 @@ function wbz404_adminOptionsPage() {
 	echo "<form method=\"POST\" action=\"" . esc_attr( $link ) . "\">";
 	echo "<input type=\"hidden\" name=\"action\" value=\"updateOptions\">";
 
-	$content = "<p>" . wbz404_trans( 'DB Version Number' ) . ": " . esc_html( $options['DB_VERSION'] ) . "</p>";
-	$content .= "<p>" . wbz404_trans( 'Default redirect type' ) . ": ";
+	$content = "<p>" . wbz404_trans('DB Version Number') . ": " . esc_html( $options['DB_VERSION'] ) . "</p>";
+	$content .= "<p>" . wbz404_trans('Default redirect type') . ": ";
 	$content .= "<select name=\"default_redirect\">";
 	$selected = "";
-	if ( $options['default_redirect'] == '301' ) {
+	if ($options['default_redirect'] == '301') {
 		$selected = " selected";
 	}
-	$content .= "<option value=\"301\"" . $selected . ">" . wbz404_trans( 'Permanent 301' ) . "</option>";
+	$content .= "<option value=\"301\"" . $selected . ">" . wbz404_trans('Permanent 301') . "</option>";
 	$selected = "";
-	if ( $options['default_redirect'] == '302' ) {
+	if ($options['default_redirect'] == '302') {
 		$selected = " selected";
 	}
-	$content .= "<option value=\"302\"" . $selected . ">" . wbz404_trans( 'Temporary 302' ) . "</option>";
+	$content .= "<option value=\"302\"" . $selected . ">" . wbz404_trans('Temporary 302') . "</option>";
 	$content .= "</select></p>";
 
 	$selected = "";
-	if ( $options['capture_404'] == '1' ) {
+	if ($options['capture_404'] == '1') {
 		$selected = " checked";
 	}
-	$content .= "<p>" . wbz404_trans( 'Collect incoming 404 URLs' ) . ": <input type=\"checkbox\" name=\"capture_404\" value=\"1\"" . $selected . "></p>";
+	$content .= "<p>" . wbz404_trans('Collect incoming 404 URLs') . ": <input type=\"checkbox\" name=\"capture_404\" value=\"1\"" . $selected . "></p>";
 
-	$content .= "<p>" . wbz404_trans( 'Admin notification level' ) . ": <input type=\"text\" name=\"admin_notification\" value=\"" . esc_attr( $options['admin_notification'] ) . "\" style=\"width: 50px;\"> " . wbz404_trans( 'Captured URLs (0 Disables Notification)' ) . "<br>";
-	$content .= wbz404_trans( 'Display WordPress admin notifications when number of captured URLs goes above specified level' ) . "</p>";
+	$content .= "<p>" . wbz404_trans('Admin notification level') . ": <input type=\"text\" name=\"admin_notification\" value=\"" . esc_attr( $options['admin_notification'] ) . "\" style=\"width: 50px;\"> " . wbz404_trans('Captured URLs (0 Disables Notification)') . "<br>";
+	$content .= wbz404_trans('Display WordPress admin notifications when number of captured URLs goes above specified level') . "</p>";
 
-	$content .= "<p>" . wbz404_trans( 'Collected 404 URL deletion' ) . ": <input type=\"text\" name=\"capture_deletion\" value=\"" . esc_attr( $options['capture_deletion'] ) . "\" style=\"width: 50px;\"> " . wbz404_trans( 'Days (0 Disables Auto Delete)' ) . "<br>";
-	$content .= wbz404_trans( 'Automatically removes 404 URLs that have been captured if they haven\'t been used for the specified amount of time.' ) . "</p>";
+	$content .= "<p>" . wbz404_trans('Collected 404 URL deletion') . ": <input type=\"text\" name=\"capture_deletion\" value=\"" . esc_attr( $options['capture_deletion'] ) . "\" style=\"width: 50px;\"> " . wbz404_trans('Days (0 Disables Auto Delete)') . "<br>";
+	$content .= wbz404_trans('Automatically removes 404 URLs that have been captured if they haven\'t been used for the specified amount of time.') . "</p>";
 
-	$content .= "<p>" . wbz404_trans( 'Manual redirect deletion' ) . ": <input type=\"text\" name=\"manual_deletion\" value=\"" . esc_attr( $options['manual_deletion'] ) . "\" style=\"width: 50px;\"> " . wbz404_trans( 'Days (0 Disables Auto Delete)' ) . "<br>";
-	$content .= wbz404_trans( 'Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.' ) . "</p>";
+	$content .= "<p>" . wbz404_trans('Manual redirect deletion') . ": <input type=\"text\" name=\"manual_deletion\" value=\"" . esc_attr( $options['manual_deletion'] ) . "\" style=\"width: 50px;\"> " . wbz404_trans('Days (0 Disables Auto Delete)') . "<br>";
+	$content .= wbz404_trans('Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.') . "</p>";
 
 	$selected = "";
-	if ( $options['remove_matches'] == '1' ) {
+	if ($options['remove_matches'] == '1') {
 		$selected = " checked";
 	}
-	$content .= "<p>" . wbz404_trans( 'Remove redirect upon matching permalink' ) . ": <input type=\"checkbox\" value=\"1\" name=\"remove_matches\"" . $selected . "><br>";
-	$content .= wbz404_trans( 'Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.' ) . "</p>";
+	$content .= "<p>" . wbz404_trans('Remove redirect upon matching permalink') . ": <input type=\"checkbox\" value=\"1\" name=\"remove_matches\"" . $selected . "><br>";
+	$content .= wbz404_trans('Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.') . "</p>";
 
-	wbz404_postbox( "wbz404-generaloptions", wbz404_trans( 'General Settings' ), $content );
+	wbz404_postbox("wbz404-generaloptions", wbz404_trans('General Settings'), $content);
 
 	// Suggested Alternatives Options
 	$selected = "";
-	if ( $options['display_suggest'] == '1' ) {
+	if ($options['display_suggest'] == '1') {
 		$selected = " checked";
 	}
-	$content = "<p>" . wbz404_trans( 'Turn on 404 suggestions' ) . ": <input type=\"checkbox\" name=\"display_suggest\" value=\"1\"" . $selected . "><br>";
-	$content .= wbz404_trans( 'Activates the 404 page suggestions function. Only works if the code is in your 404 page template.' ) . "</p>";
+	$content = "<p>" . wbz404_trans('Turn on 404 suggestions') . ": <input type=\"checkbox\" name=\"display_suggest\" value=\"1\"" . $selected . "><br>";
+	$content .= wbz404_trans('Activates the 404 page suggestions function. Only works if the code is in your 404 page template.') . "</p>";
 
 	$selected = "";
-	if ( $options['suggest_cats'] == '1' ) {
+	if ($options['suggest_cats'] == '1') {
 		$selected = " checked";
 	}
-	$content .= "<p>" . wbz404_trans( 'Allow category suggestions' ) . ": <input type=\"checkbox\" name=\"suggest_cats\" value=\"1\"" . $selected . "><br>";
+	$content .= "<p>" . wbz404_trans('Allow category suggestions') . ": <input type=\"checkbox\" name=\"suggest_cats\" value=\"1\"" . $selected . "><br>";
 
 	$selected = "";
-	if ( $options['suggest_tags'] == '1' ) {
+	if ($options['suggest_tags'] == '1') {
 		$selected = " checked";
 	}
-	$content .= "<p>" . wbz404_trans( 'Allow tag suggestions' ) . ": <input type=\"checkbox\" name=\"suggest_tags\" value=\"1\"" . $selected . "><br>";
+	$content .= "<p>" . wbz404_trans('Allow tag suggestions') . ": <input type=\"checkbox\" name=\"suggest_tags\" value=\"1\"" . $selected . "><br>";
+	
+	$content .= "<p>" . wbz404_trans('Minimum score of suggestions to display') . ": <input type=\"text\" name=\"suggest_minscore\" value=\"" . esc_attr( $options['suggest_minscore'] ) . "\" style=\"width: 50px;\"></p>"
+;
+	$content .= "<p>" . wbz404_trans('Maximum number of suggestions to display') . ": <input type=\"text\" name=\"suggest_max\" value=\"" . esc_attr( $options['suggest_max'] ) . "\" style=\"width: 50px;\"></p>";
 
-	$content .= "<p>" . wbz404_trans( 'Minimum score of suggestions to display' ) . ": <input type=\"text\" name=\"suggest_minscore\" value=\"" . esc_attr( $options['suggest_minscore'] ) . "\" style=\"width: 50px;\"></p>"
-	;
-	$content .= "<p>" . wbz404_trans( 'Maximum number of suggestions to display' ) . ": <input type=\"text\" name=\"suggest_max\" value=\"" . esc_attr( $options['suggest_max'] ) . "\" style=\"width: 50px;\"></p>";
+	$content .= "<p>" . wbz404_trans('Page suggestions title') . ": <input type=\"text\" name=\"suggest_title\" value=\"" . esc_attr( $options['suggest_title'] ) . "\" style=\"width: 200px;\"></p>";
 
-	$content .= "<p>" . wbz404_trans( 'Page suggestions title' ) . ": <input type=\"text\" name=\"suggest_title\" value=\"" . esc_attr( $options['suggest_title'] ) . "\" style=\"width: 200px;\"></p>";
-
-	$content .= "<p>" . wbz404_trans( 'Display Before/After page suggestions' ) . ": ";
+	$content .= "<p>" . wbz404_trans('Display Before/After page suggestions') . ": ";
 	$content .= "<input type=\"text\" name=\"suggest_before\" value=\"" . esc_attr( $options['suggest_before'] ) . "\" style=\"width: 100px;\"> / ";
 	$content .= "<input type=\"text\" name=\"suggest_after\" value=\"" . esc_attr( $options['suggest_after'] ) . "\" style=\"width: 100px;\">";
 
-	$content .= "<p>" . wbz404_trans( 'Display Before/After each suggested entry' ) . ": ";
+	$content .= "<p>" . wbz404_trans('Display Before/After each suggested entry') . ": ";
 	$content .= "<input type=\"text\" name=\"suggest_entrybefore\" value=\"" . esc_attr( $options['suggest_entrybefore'] ) . "\" style=\"width: 100px;\"> / ";
 	$content .= "<input type=\"text\" name=\"suggest_entryafter\" value=\"" . esc_attr( $options['suggest_entryafter'] ) . "\" style=\"width: 100px;\">";
 
-	$content .= "<p>" . wbz404_trans( 'Display if no suggestion results' ) . ": ";
+	$content .= "<p>" . wbz404_trans('Display if no suggestion results') . ": ";
 	$content .= "<input type=\"text\" name=\"suggest_noresults\" value=\"" . esc_attr( $options['suggest_noresults'] ) . "\" style=\"width: 200px;\">";
 
-	wbz404_postbox( "wbz404-suggestoptions", wbz404_trans( '404 Page Suggestions' ), $content );
+	wbz404_postbox("wbz404-suggestoptions", wbz404_trans('404 Page Suggestions'), $content);
 
 	$selected = "";
-	if ( $options['auto_redirects'] == '1' ) {
+	if ($options['auto_redirects'] == '1') {
 		$selected = " checked";
 	}
-	$content = "<p>" . wbz404_trans( 'Create automatic redirects' ) . ": <input type=\"checkbox\" name=\"auto_redirects\" value=\"1\"" . $selected . "><br>";
-	$content .= wbz404_trans( 'Automatically creates redirects based on best possible suggested page.' ) . "</p>";
+	$content = "<p>" . wbz404_trans('Create automatic redirects') . ": <input type=\"checkbox\" name=\"auto_redirects\" value=\"1\"" . $selected . "><br>";
+	$content .= wbz404_trans('Automatically creates redirects based on best possible suggested page.') . "</p>"; 
 
-	$content .= "<p>" . wbz404_trans( 'Minimum match score' ) . ": <input type=\"text\" name=\"auto_score\" value=\"" . esc_attr( $options['auto_score'] ) . "\" style=\"width: 50px;\"><br>";
-	$content .= wbz404_trans( 'Only create an automatic redirect if the suggested page has a score above the specified number' ) . "</p>";
+	$content .= "<p>" . wbz404_trans('Minimum match score') . ": <input type=\"text\" name=\"auto_score\" value=\"" . esc_attr( $options['auto_score'] ) . "\" style=\"width: 50px;\"><br>";
+	$content .= wbz404_trans('Only create an automatic redirect if the suggested page has a score above the specified number') . "</p>";
 
 	$selected = "";
-	if ( $options['auto_cats'] == '1' ) {
+	if ($options['auto_cats'] == '1') {
 		$selected = " checked";
 	}
-	$content .= "<p>" . wbz404_trans( 'Create automatic redirects for categories' ) . ": <input type=\"checkbox\" name=\"auto_cats\" value=\"1\"" . $selected . "></p>";
+	$content .= "<p>" . wbz404_trans('Create automatic redirects for categories') . ": <input type=\"checkbox\" name=\"auto_cats\" value=\"1\"" . $selected . "></p>";
 
 	$selected = "";
-	if ( $options['auto_tags'] == '1' ) {
+	if ($options['auto_tags'] == '1') {
 		$selected = " checked";
 	}
-	$content .= "<p>" . wbz404_trans( 'Create automatic redirects for tags' ) . ": <input type=\"checkbox\" name=\"auto_tags\" value=\"1\"" . $selected . "></p>";
+	$content .= "<p>" . wbz404_trans('Create automatic redirects for tags') . ": <input type=\"checkbox\" name=\"auto_tags\" value=\"1\"" . $selected . "></p>";
 
 	$selected = "";
-	if ( $options['force_permalinks'] == '1' ) {
+	if ($options['force_permalinks'] == '1') {
 		$selected = " checked";
 	}
-	$content .= "<p>" . wbz404_trans( 'Force current permalinks' ) . ": <input type=\"checkbox\" name=\"force_permalinks\" value=\"1\"" . $selected . "><br>";
-	$content .= wbz404_trans( 'Creates auto redirects for any url resolving to a post/page that doesn\'t match the current permalinks' ) . "</p>";
+	$content .= "<p>" . wbz404_trans('Force current permalinks') . ": <input type=\"checkbox\" name=\"force_permalinks\" value=\"1\"" . $selected . "><br>";
+	$content .= wbz404_trans('Creates auto redirects for any url resolving to a post/page that doesn\'t match the current permalinks') . "</p>";
 
-	$content .= "<p>" . wbz404_trans( 'Auto redirect deletion' ) . ": <input type=\"text\" name=\"auto_deletion\" value=\"" . esc_attr( $options['auto_deletion'] ) . "\" style=\"width: 50px;\"> " . wbz404_trans( 'Days (0 Disables Auto Delete)' ) . "<br>";
-	$content .= wbz404_trans( 'Removes auto created redirects if they haven\'t been used for the specified amount of time.' ) . "</p>";
-
-	wbz404_postbox( "wbz404-autooptions", wbz404_trans( 'Automatic Redirects' ), $content );
+	$content .= "<p>" . wbz404_trans('Auto redirect deletion') . ": <input type=\"text\" name=\"auto_deletion\" value=\"" . esc_attr( $options['auto_deletion'] ) . "\" style=\"width: 50px;\"> " . wbz404_trans('Days (0 Disables Auto Delete)') . "<br>";
+	$content .= wbz404_trans('Removes auto created redirects if they haven\'t been used for the specified amount of time.') . "</p>";
+	
+	wbz404_postbox("wbz404-autooptions", wbz404_trans('Automatic Redirects'), $content);	
 	echo "<input type=\"submit\" id=\"wbz404-optionssub\" value=\"Save Settings\" class=\"button-primary\">";
 	echo "</form>";
 
@@ -1473,7 +1473,7 @@ function wbz404_adminOptionsPage() {
 function wbz404_adminRedirectsPage() {
 	global $wpdb;
 	$sub = "redirects";
-
+	
 	$options = wbz404_getOptions();
 	$tableOptions = wbz404_getTableOptions();
 
@@ -1483,7 +1483,7 @@ function wbz404_adminRedirectsPage() {
 		$tableOptions[$key] = wp_kses_post( $value );
 	}
 
-	wbz404_drawFilters( $sub, $tableOptions );
+	wbz404_drawFilters($sub, $tableOptions);
 
 	$columns['url']['title'] = "URL";
 	$columns['url']['orderby'] = "url";
@@ -1510,302 +1510,302 @@ function wbz404_adminRedirectsPage() {
 	$columns['last_used']['orderby'] = "";
 	$columns['last_used']['width'] = "10%";
 
-	$timezone = get_option( 'timezone_string' );
+	$timezone = get_option('timezone_string');
 	if ( '' == $timezone ) {
 		$timezone = 'UTC';
 	}
-	date_default_timezone_set( $timezone );
+	date_default_timezone_set($timezone);
 
 	echo "<div class=\"tablenav\">";
-	wbz404_drawPaginationLinks( $sub, $tableOptions );
+		wbz404_drawPaginationLinks($sub, $tableOptions);
 
-	if ( $tableOptions['filter'] == '-1' ) {
-		echo "<div class=\"alignleft actions\">";
-		$eturl = "?page=wbz404_redirected&filter=-1";
-		$trashaction = "wbz404_emptyRedirectTrash";
-		$eturl = wp_nonce_url( $eturl, $trashaction );
+		if ($tableOptions['filter'] == '-1') {
+			echo "<div class=\"alignleft actions\">";
+				$eturl = "?page=wbz404_redirected&filter=-1";
+								$trashaction = "wbz404_emptyRedirectTrash";
+								$eturl = wp_nonce_url($eturl, $trashaction);
 
-		echo "<form method=\"POST\" action=\"" . esc_url( $eturl ) . "\">";
-		echo "<input type=\"hidden\" name=\"action\" value=\"emptyRedirectTrash\">";
-		echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . wbz404_trans( 'Empty Trash' ) . "\">";
-		echo "</form>";
-		echo "</div>";
-	}
+				echo "<form method=\"POST\" action=\"" . esc_url( $eturl ) . "\">";
+				echo "<input type=\"hidden\" name=\"action\" value=\"emptyRedirectTrash\">";
+				echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . wbz404_trans('Empty Trash') . "\">";
+				echo "</form>";
+			echo "</div>";		
+		}
 	echo "</div>";
 
 	echo "<table class=\"wp-list-table widefat fixed\">";
-	echo "<thead>";
-	wbz404_buildTableColumns( $sub, $tableOptions, $columns );
-	echo "</thead>";
-	echo "<tfoot>";
-	wbz404_buildTableColumns( $sub, $tableOptions, $columns );
-	echo "</tfoot>";
-	echo "<tbody id=\"the-list\">";
-	$rows = wbz404_getRecords( $sub, $tableOptions );
-	$displayed = 0;
-	$y=1;
-	foreach ( $rows as $row ) {
-		$displayed++;
-		$status = "";
-		if ( $row['status'] == WBZ404_MANUAL ) {
-			$status = wbz404_trans( 'Manual' );
-		} else if ( $row['status'] == WBZ404_AUTO ) {
-				$status = wbz404_trans( 'Automatic' );
+		echo "<thead>";
+			wbz404_buildTableColumns($sub, $tableOptions, $columns);
+		echo "</thead>";
+		echo "<tfoot>";
+			wbz404_buildTableColumns($sub, $tableOptions, $columns);
+		echo "</tfoot>";
+		echo "<tbody id=\"the-list\">";
+			$rows = wbz404_getRecords($sub, $tableOptions);
+			$displayed = 0;
+			$y=1;
+			foreach ($rows as $row) {
+				$displayed++;
+				$status = "";
+				if ($row['status'] == WBZ404_MANUAL) {
+					$status = wbz404_trans('Manual');
+				} else if ($row['status'] == WBZ404_AUTO) {
+					$status = wbz404_trans('Automatic');
+				}
+
+				$type = "";
+				$dest = "";
+				$link = "";
+				$title = wbz404_trans('Visit') . " ";
+				if ($row['type'] == WBZ404_EXTERNAL) {
+					$type = wbz404_trans('External');
+					$dest = $row['final_dest'];
+					$link = $row['final_dest'];
+					$title .= $row['final_dest'];
+				} else if ($row['type'] == WBZ404_POST) {
+					$type = wbz404_trans('Post/Page');
+					$permalink = wbz404_permalinkInfo($row['final_dest'] . "|POST", 0);
+					$dest = $permalink['title'];
+					$link = $permalink['link'];
+					$title .= $permalink['title'];
+				} else if ($row['type'] == WBZ404_CAT) {
+					$type = wbz404_trans('Category');
+					$permalink = wbz404_permalinkInfo($row['final_dest'] . "|CAT", 0);
+					$dest = $permalink['title'];
+					$link = $permalink['link'];
+					$title .= wbz404_trans('Category:') . " " . $permalink['title'];
+				} else if ($row['type'] == WBZ404_TAG) {
+					$type = wbz404_trans('Tag');
+					$permalink = wbz404_permalinkInfo($row['final_dest'] . "|TAG", 0);
+					$dest = $permalink['title'];
+					$link = $permalink['link'];
+					$title .= wbz404_trans('Tag:') . " " . $permalink['title'];
+				}
+
+
+				$hits = $row['hits'];
+				$last_used = wbz404_getRedirectLastUsed($row['id']);
+				if ($last_used != 0) {
+					$last = date("Y/m/d h:i:s A", $last_used);
+				} else {
+					$last = wbz404_trans('Never Used');
+				}
+
+				$editlink = "?page=wbz404_redirected&subpage=wbz404_edit&id=" . absint( $row['id'] );
+				$logslink = "?page=wbz404_redirected&subpage=wbz404_logs&id=" . absint( $row['id'] );
+				$trashlink = "?page=wbz404_redirected&id=" . absint( $row['id'] );
+				$deletelink = "?page=wbz404_redirected&remove=1&id=" . absint( $row['id'] );
+
+				if ($tableOptions['filter'] == -1) {
+					$trashlink .= "&trash=0";
+					$trashtitle = wbz404_trans('Restore');
+				} else {
+					$trashlink .= "&trash=1";
+					$trashtitle = wbz404_trans('Trash');
+				}
+
+				if (!($tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC")) {
+					$trashlink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+					$deletelink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+				}
+				if ($tableOptions['filter'] != 0) {
+					$trashlink .= "&filter=" . $tableOptions['filter'];
+					$deletelink .= "&filter=" . $tableOptions['filter'];
+				}
+
+				$trashaction = "wbz404_trashRedirect";
+				$trashlink = wp_nonce_url($trashlink, $trashaction);
+
+				if ($tableOptions['filter'] == -1) {
+					$deleteaction = "wbz404_removeRedirect";
+					$deletelink = wp_nonce_url($deletelink, $deleteaction);
+				}
+
+							$class = "";
+							if ($y == 0) {
+									$class=" class=\"alternate\"";
+									$y++;
+							} else {
+									$y=0;
+							}
+
+				echo "<tr id=\"post-" . esc_attr( $row['id'] ) . "\"" . $class . ">";
+					echo "<td></td>";
+					echo "<td>";
+						echo "<strong><a href=\"" . esc_url( $editlink ) . "\" title=\"" . wbz404_trans('Edit Redirect Details') . "\">" . esc_html( $row['url'] ) . "</a></strong>";
+						echo "<div class=\"row-actions\">";
+							if ($tableOptions['filter'] != -1) {
+								echo "<span class=\"edit\"><a href=\"" . esc_url( $editlink ) . "\" title=\"" . wbz404_trans('Edit Redirect Details') . "\">" . wbz404_trans('Edit') . "</a></span>";
+								echo " | ";
+							}
+							echo "<span class=\"trash\"><a href=\"" . esc_url( $trashlink ) . "\" title=\"" . wbz404_trans('Trash Redirected URL') . "\">" . esc_html( $trashtitle ) . "</a></span>";
+							echo " | ";
+							echo "<span class=\"view\"><a href=\"" . esc_url( $logslink ) . "\" title=\"" . wbz404_trans('View Redirect Logs') . "\">" . wbz404_trans('View Logs') . "</a></span>";
+							if ($tableOptions['filter'] == -1) {
+								echo " | ";
+								echo "<span class=\"delete\"><a href=\"" . esc_url( $deletelink ) . "\" title=\"" . wbz404_trans('Delete Redirect Permanently') . "\">" . wbz404_trans('Delete Permanently') . "</a></span>";
+							}
+						echo "</div>";
+					echo "</td>";
+					echo "<td>" . esc_html( $status ) . "</td>";
+					echo "<td>" . esc_html( $type ) . "</td>";
+					echo "<td><a href=\"" . esc_url( $link ) . "\" title=\"" . $title . "\" target=\"_blank\">" . esc_html( $dest ) . "</a></td>";
+					echo "<td>" . esc_html( $row['code'] ) . "</td>";
+					echo "<td>" . esc_html( $hits ) . "</td>";
+					echo "<td>" . esc_html( date("Y/m/d h:i:s A", $row['timestamp'] ) ) . "</td>";
+					echo "<td>" . esc_html( $last ) . "</td>";
+					echo "<td></td>";
+				echo "</tr>";
 			}
-
-		$type = "";
-		$dest = "";
-		$link = "";
-		$title = wbz404_trans( 'Visit' ) . " ";
-		if ( $row['type'] == WBZ404_EXTERNAL ) {
-			$type = wbz404_trans( 'External' );
-			$dest = $row['final_dest'];
-			$link = $row['final_dest'];
-			$title .= $row['final_dest'];
-		} else if ( $row['type'] == WBZ404_POST ) {
-				$type = wbz404_trans( 'Post/Page' );
-				$permalink = wbz404_permalinkInfo( $row['final_dest'] . "|POST", 0 );
-				$dest = $permalink['title'];
-				$link = $permalink['link'];
-				$title .= $permalink['title'];
-			} else if ( $row['type'] == WBZ404_CAT ) {
-				$type = wbz404_trans( 'Category' );
-				$permalink = wbz404_permalinkInfo( $row['final_dest'] . "|CAT", 0 );
-				$dest = $permalink['title'];
-				$link = $permalink['link'];
-				$title .= wbz404_trans( 'Category:' ) . " " . $permalink['title'];
-			} else if ( $row['type'] == WBZ404_TAG ) {
-				$type = wbz404_trans( 'Tag' );
-				$permalink = wbz404_permalinkInfo( $row['final_dest'] . "|TAG", 0 );
-				$dest = $permalink['title'];
-				$link = $permalink['link'];
-				$title .= wbz404_trans( 'Tag:' ) . " " . $permalink['title'];
+			if ($displayed == 0) {
+				echo "<tr>";
+					echo "<td></td>";
+					echo "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . wbz404_trans('No Records To Display') . "</td>";
+					echo "<td></td>";
+				echo "</tr>";
 			}
-
-
-		$hits = $row['hits'];
-		$last_used = wbz404_getRedirectLastUsed( $row['id'] );
-		if ( $last_used != 0 ) {
-			$last = date( "Y/m/d h:i:s A", $last_used );
-		} else {
-			$last = wbz404_trans( 'Never Used' );
-		}
-
-		$editlink = "?page=wbz404_redirected&subpage=wbz404_edit&id=" . absint( $row['id'] );
-		$logslink = "?page=wbz404_redirected&subpage=wbz404_logs&id=" . absint( $row['id'] );
-		$trashlink = "?page=wbz404_redirected&id=" . absint( $row['id'] );
-		$deletelink = "?page=wbz404_redirected&remove=1&id=" . absint( $row['id'] );
-
-		if ( $tableOptions['filter'] == -1 ) {
-			$trashlink .= "&trash=0";
-			$trashtitle = wbz404_trans( 'Restore' );
-		} else {
-			$trashlink .= "&trash=1";
-			$trashtitle = wbz404_trans( 'Trash' );
-		}
-
-		if ( !( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" ) ) {
-			$trashlink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-			$deletelink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-		}
-		if ( $tableOptions['filter'] != 0 ) {
-			$trashlink .= "&filter=" . $tableOptions['filter'];
-			$deletelink .= "&filter=" . $tableOptions['filter'];
-		}
-
-		$trashaction = "wbz404_trashRedirect";
-		$trashlink = wp_nonce_url( $trashlink, $trashaction );
-
-		if ( $tableOptions['filter'] == -1 ) {
-			$deleteaction = "wbz404_removeRedirect";
-			$deletelink = wp_nonce_url( $deletelink, $deleteaction );
-		}
-
-		$class = "";
-		if ( $y == 0 ) {
-			$class=" class=\"alternate\"";
-			$y++;
-		} else {
-			$y=0;
-		}
-
-		echo "<tr id=\"post-" . esc_attr( $row['id'] ) . "\"" . $class . ">";
-		echo "<td></td>";
-		echo "<td>";
-		echo "<strong><a href=\"" . esc_url( $editlink ) . "\" title=\"" . wbz404_trans( 'Edit Redirect Details' ) . "\">" . esc_html( $row['url'] ) . "</a></strong>";
-		echo "<div class=\"row-actions\">";
-		if ( $tableOptions['filter'] != -1 ) {
-			echo "<span class=\"edit\"><a href=\"" . esc_url( $editlink ) . "\" title=\"" . wbz404_trans( 'Edit Redirect Details' ) . "\">" . wbz404_trans( 'Edit' ) . "</a></span>";
-			echo " | ";
-		}
-		echo "<span class=\"trash\"><a href=\"" . esc_url( $trashlink ) . "\" title=\"" . wbz404_trans( 'Trash Redirected URL' ) . "\">" . esc_html( $trashtitle ) . "</a></span>";
-		echo " | ";
-		echo "<span class=\"view\"><a href=\"" . esc_url( $logslink ) . "\" title=\"" . wbz404_trans( 'View Redirect Logs' ) . "\">" . wbz404_trans( 'View Logs' ) . "</a></span>";
-		if ( $tableOptions['filter'] == -1 ) {
-			echo " | ";
-			echo "<span class=\"delete\"><a href=\"" . esc_url( $deletelink ) . "\" title=\"" . wbz404_trans( 'Delete Redirect Permanently' ) . "\">" . wbz404_trans( 'Delete Permanently' ) . "</a></span>";
-		}
-		echo "</div>";
-		echo "</td>";
-		echo "<td>" . esc_html( $status ) . "</td>";
-		echo "<td>" . esc_html( $type ) . "</td>";
-		echo "<td><a href=\"" . esc_url( $link ) . "\" title=\"" . $title . "\" target=\"_blank\">" . esc_html( $dest ) . "</a></td>";
-		echo "<td>" . esc_html( $row['code'] ) . "</td>";
-		echo "<td>" . esc_html( $hits ) . "</td>";
-		echo "<td>" . esc_html( date( "Y/m/d h:i:s A", $row['timestamp'] ) ) . "</td>";
-		echo "<td>" . esc_html( $last ) . "</td>";
-		echo "<td></td>";
-		echo "</tr>";
-	}
-	if ( $displayed == 0 ) {
-		echo "<tr>";
-		echo "<td></td>";
-		echo "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . wbz404_trans( 'No Records To Display' ) . "</td>";
-		echo "<td></td>";
-		echo "</tr>";
-	}
-	echo "</tbody>";
+		echo "</tbody>";
 	echo "</table>";
 
 	echo "<div class=\"tablenav\">";
-	wbz404_drawPaginationLinks( $sub, $tableOptions );
+		wbz404_drawPaginationLinks($sub, $tableOptions);
 	echo "</div>";
 
-	if ( $tableOptions['filter'] != -1 ) {
-		echo "<h3>" . wbz404_trans( 'Add Manual Redirect' ) . "</h3>";
+	if ($tableOptions['filter'] != -1) {
+		echo "<h3>" . wbz404_trans('Add Manual Redirect') . "</h3>";
 
 		$url = "?page=wbz404_redirected";
 
-		if ( !( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" ) ) {
+		if (!($tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC")) {
 			$url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
 		}
-		if ( $tableOptions['filter'] != 0 ) {
+		if ($tableOptions['filter'] != 0) {
 			$url .= "&filter=" . $tableOptions['filter'];
 		}
 
 		$action = "wbz404addRedirect";
-		$link = wp_nonce_url( $url, $action );
+			$link = wp_nonce_url($url, $action);
 
 		echo "<form method=\"POST\" action=\"" . $link . "\">";
 		echo "<input type=\"hidden\" name=\"action\" value=\"addRedirect\">";
-		if ( isset( $_POST['url'] ) ) {
+		if (isset($_POST['url'])) {
 			$postedURL = $_POST['url'];
 		} else {
 			$postedURL = "";
 		}
-		echo "<strong><label for=\"url\">" . wbz404_trans( 'URL' ) . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . esc_attr( $postedURL ) . "\"> (" . wbz404_trans( 'Required' ) . ")<br>";
-		echo "<strong><label for=\"dest\">" . wbz404_trans( 'Redirect to' ) . ":</strong> <select id=\"dest\" name=\"dest\">";
-		$selected = "";
-		if ( isset( $_POST['dest'] ) && $_POST['dest'] == "EXTERNAL" ) {
-			$selected = " selected";
-		}
-		echo "<option value=\"EXTERNAL\"" . $selected . ">" . wbz404_trans( 'External Page' ) . "</options>";
-
-		$query = "select id from $wpdb->posts where post_status='publish' and post_type='post' order by post_date desc";
-		$rows = $wpdb->get_results( $query );
-		foreach ( $rows as $row ) {
-			$id = $row->id;
-			$theTitle = get_the_title( $id );
-			$thisval = $id . "|POST";
-
+		echo "<strong><label for=\"url\">" . wbz404_trans('URL') . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . esc_attr( $postedURL ) . "\"> (" . wbz404_trans('Required') . ")<br>";
+		echo "<strong><label for=\"dest\">" . wbz404_trans('Redirect to') . ":</strong> <select id=\"dest\" name=\"dest\">";
 			$selected = "";
-			if ( isset( $_POST['dest'] ) && $_POST['dest'] == $thisval ) {
+			if (isset($_POST['dest']) && $_POST['dest'] == "EXTERNAL") {
 				$selected = " selected";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans( 'Post' ) . ": " . esc_html( $theTitle ) . "</option>";
-		}
-
-		$rows = get_pages();
-		foreach ( $rows as $row ) {
-			$id = $row->ID;
-			$theTitle = $row->post_title;
-			$thisval = $id . "|POST";
-
-			$parent = $row->post_parent;
-			while ( $parent != 0 ) {
-				$parent = absint( $parent );
-				$query = "select id, post_parent from $wpdb->posts where post_status='publish' and post_type='page' and id = $parent";
-				$prow = $wpdb->get_row( $query, OBJECT );
-				if ( ! ( $prow == NULL ) ) {
-					$theTitle = get_the_title( $prow->id ) . " &raquo; " . $theTitle;
-					$parent = $prow->post_parent;
-				} else {
-					break;
+			echo "<option value=\"EXTERNAL\"" . $selected . ">" . wbz404_trans('External Page') . "</options>";
+	
+			$query = "select id from $wpdb->posts where post_status='publish' and post_type='post' order by post_date desc";
+			$rows = $wpdb->get_results($query);
+			foreach ($rows as $row) {
+				$id = $row->id;
+				$theTitle = get_the_title($id);
+				$thisval = $id . "|POST";
+	
+				$selected = "";
+				if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
+					$selected = " selected";
 				}
+				echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans('Post') . ": " . esc_html( $theTitle ) . "</option>";
 			}
+	
+			$rows = get_pages();
+			foreach ($rows as $row) {
+				$id = $row->ID;
+				$theTitle = $row->post_title;
+				$thisval = $id . "|POST";
 
-			$selected = "";
-			if ( isset( $_POST['dest'] ) && $_POST['dest'] == $thisval ) {
-				$selected = " selected";
+				$parent = $row->post_parent;
+				while ($parent != 0) {
+					$parent = absint( $parent );
+					$query = "select id, post_parent from $wpdb->posts where post_status='publish' and post_type='page' and id = $parent";
+					$prow = $wpdb->get_row($query, OBJECT);
+					if (! ($prow == NULL)) {
+						$theTitle = get_the_title($prow->id) . " &raquo; " . $theTitle;
+						$parent = $prow->post_parent;
+					} else {
+						break;
+					}
+				}
+
+				$selected = "";
+				if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
+					$selected = " selected";
+				}
+				echo "<option value=\"" . esc_url( $thisval ) . "\"" . $selected . ">" . wbz404_trans('Page') . ": " . esc_html( $theTitle ) . "</option>";
 			}
-			echo "<option value=\"" . esc_url( $thisval ) . "\"" . $selected . ">" . wbz404_trans( 'Page' ) . ": " . esc_html( $theTitle ) . "</option>";
-		}
-
-		$cats = get_categories( 'hierarchical=0' );
-		foreach ( $cats as $cat ) {
-			$id = $cat->term_id;
-			$theTitle = $cat->name;
-			$thisval = $id . "|CAT";
-
-			$selected = "";
-			if ( isset( $_POST['dest'] ) && $_POST['dest'] == $thisval ) {
-				$selected = " selected";
+	
+			$cats = get_categories('hierarchical=0');
+			foreach ($cats as $cat) {
+				$id = $cat->term_id;
+				$theTitle = $cat->name;
+				$thisval = $id . "|CAT";
+				
+				$selected = "";
+				if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
+					$selected = " selected";
+				}
+				echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans('Category') . ": " . esc_html( $theTitle ) . "</option>";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans( 'Category' ) . ": " . esc_html( $theTitle ) . "</option>";
-		}
-
-		$tags = get_tags( 'hierarchical=0' );
-		foreach ( $tags as $tag ) {
-			$id = $tag->term_id;
-			$theTitle = $tag->name;
-			$thisval = $id . "|TAG";
-
-			$selected = "";
-			if ( isset( $_POST['dest'] ) && $_POST['dest'] == $thisval ) {
-				$selected = " selected";
+	
+			$tags = get_tags('hierarchical=0');
+			foreach ($tags as $tag) {
+				$id = $tag->term_id;
+				$theTitle = $tag->name;
+				$thisval = $id . "|TAG";
+				
+				$selected = "";
+				if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
+					$selected = " selected";
+				}
+				echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans('Tag') . ": " . esc_html( $theTitle ) . "</option>";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans( 'Tag' ) . ": " . esc_html( $theTitle ) . "</option>";
-		}
-
+			
 		echo "</select><br>";
-		if ( isset( $_POST['external'] ) ) {
+		if (isset($_POST['external'])) {
 			$postedExternal = $_POST['external'];
 		} else {
 			$postedExternal = "";
 		}
-		echo "<strong><label for=\"external\">" . wbz404_trans( 'External URL' ) . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . esc_attr( $postedExternal ) . "\"> (" . wbz404_trans( 'Required if Redirect to is set to External Page' ) . ")<br>";
-		echo "<strong><label for=\"code\">" . wbz404_trans( 'Redirect Type' ) . ":</label></strong> <select id=\"code\" name=\"code\">";
-		if ( ( ! isset( $_POST['code'] ) ) || $_POST['code'] == "" ) {
-			$codeselected = $options['default_redirect'];
-		} else {
-			$codeselected = $_POST['code'];
-		}
-		$codes = array( 301, 302 );
-		foreach ( $codes as $code ) {
-			$selected = "";
-			if ( $code == $codeselected ) {
-				$selected = " selected";
-			}
-			if ( $code == 301 ) {
-				$title = wbz404_trans( '301 Permanent Redirect' );
+		echo "<strong><label for=\"external\">" . wbz404_trans('External URL') . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . esc_attr( $postedExternal ) . "\"> (" . wbz404_trans('Required if Redirect to is set to External Page') . ")<br>";
+		echo "<strong><label for=\"code\">" . wbz404_trans('Redirect Type') . ":</label></strong> <select id=\"code\" name=\"code\">";
+			if ((! isset($_POST['code'])) || $_POST['code'] == "") {
+				$codeselected = $options['default_redirect'];
 			} else {
-				$title = wbz404_trans( '302 Temporary Redirect' );
+				$codeselected = $_POST['code'];
 			}
-			echo "<option value=\"" . esc_attr( $code ) . "\"" . $selected . ">" . esc_html( $title ) . "</option>";
-		}
+			$codes = array(301,302);
+			foreach ($codes as $code) {
+				$selected = "";
+				if ($code == $codeselected) {
+					$selected = " selected";
+				}
+				if ($code == 301) {
+					$title = wbz404_trans('301 Permanent Redirect');
+				} else {
+					$title = wbz404_trans('302 Temporary Redirect');
+				}
+				echo "<option value=\"" . esc_attr( $code ) . "\"" . $selected . ">" . esc_html( $title ) . "</option>";
+			}
 		echo "</select><br>";
-		echo "<input type=\"submit\" value=\"" . wbz404_trans( 'Add Redirect' ) . "\" class=\"button-secondary\">";
+		echo "<input type=\"submit\" value=\"" . wbz404_trans('Add Redirect') . "\" class=\"button-secondary\">";
 		echo "</form>";
 	}
 }
 
 function wbz404_adminCapturedPage() {
 	$sub = "captured";
-
+	
 	$options = wbz404_getOptions();
 	$tableOptions = wbz404_getTableOptions();
 
-	wbz404_drawFilters( $sub, $tableOptions );
+	wbz404_drawFilters($sub, $tableOptions);
 
 	$columns['url']['title'] = "URL";
 	$columns['url']['orderby'] = "url";
@@ -1820,174 +1820,174 @@ function wbz404_adminCapturedPage() {
 	$columns['last_used']['orderby'] = "";
 	$columns['last_used']['width'] = "20%";
 
-	$timezone = get_option( 'timezone_string' );
+	$timezone = get_option('timezone_string');
 	if ( '' == $timezone ) {
 		$timezone = 'UTC';
 	}
-	date_default_timezone_set( $timezone );
+	date_default_timezone_set($timezone);
 
 
 	echo "<div class=\"tablenav\">";
-	wbz404_drawPaginationLinks( $sub, $tableOptions );
+		wbz404_drawPaginationLinks($sub, $tableOptions);
 
-	if ( $tableOptions['filter'] == '-1' ) {
-		echo "<div class=\"alignleft actions\">";
-		$eturl = "?page=wbz404_redirected&subpage=wbz404_captured&filter=-1";
-		$trashaction = "wbz404_emptyCapturedTrash";
-		$eturl = wp_nonce_url( $eturl, $trashaction );
+		if ($tableOptions['filter'] == '-1') {
+			echo "<div class=\"alignleft actions\">";
+				$eturl = "?page=wbz404_redirected&subpage=wbz404_captured&filter=-1";
+								$trashaction = "wbz404_emptyCapturedTrash";
+								$eturl = wp_nonce_url($eturl, $trashaction);
 
-		echo "<form method=\"POST\" action=\"" . esc_url( $eturl ) . "\">";
-		echo "<input type=\"hidden\" name=\"action\" value=\"emptyCapturedTrash\">";
-		echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . wbz404_trans( 'Empty Trash' ) . "\">";
-		echo "</form>";
-		echo "</div>";
-	} else {
-		echo "<div class=\"alignleft actions\">";
-		$url = "?page=wbz404_redirected&subpage=wbz404_captured";
-		if ( $tableOptions['filter'] != 0 ) {
-			$url .= "&filter=" . $tableOptions['filter'];
-		}
-		if ( !( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" ) ) {
-			$url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-		}
-
-		$bulkaction = "wbz404_capturedBulkAction";
-		$url = wp_nonce_url( $url, $bulkaction );
-
-		echo "<form method=\"POST\" action=\"" . $url . "\">";
-		echo "<select name=\"action\">";
-		if ( $tableOptions['filter'] != WBZ404_IGNORED ) {
-			echo "<option value=\"bulkignore\">" . wbz404_trans( 'Mark as ignored' ) . "</option>";
+				echo "<form method=\"POST\" action=\"" . esc_url( $eturl ) . "\">";
+				echo "<input type=\"hidden\" name=\"action\" value=\"emptyCapturedTrash\">";
+				echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . wbz404_trans('Empty Trash') . "\">";
+				echo "</form>";
+			echo "</div>";		
 		} else {
-			echo "<option value=\"bulkcaptured\">" . wbz404_trans( 'Mark as captured' ) . "</option>";
+			echo "<div class=\"alignleft actions\">";
+				$url = "?page=wbz404_redirected&subpage=wbz404_captured";
+				if ($tableOptions['filter'] != 0) {
+					$url .= "&filter=" . $tableOptions['filter'];
+				}
+				if (!($tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC")) {
+					$url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+				}
+
+								$bulkaction = "wbz404_capturedBulkAction";
+								$url = wp_nonce_url($url, $bulkaction);
+
+				echo "<form method=\"POST\" action=\"" . $url . "\">";
+				echo "<select name=\"action\">";
+					if ($tableOptions['filter'] != WBZ404_IGNORED) {
+						echo "<option value=\"bulkignore\">" . wbz404_trans('Mark as ignored') . "</option>";
+					} else {
+						echo "<option value=\"bulkcaptured\">" . wbz404_trans('Mark as captured') . "</option>";
+					}
+					echo "<option value=\"bulktrash\">" . wbz404_trans('Trash') . "</option>";
+				echo "</select>";
+				echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . wbz404_trans('Apply') . "\">";
+			echo "</div>";
 		}
-		echo "<option value=\"bulktrash\">" . wbz404_trans( 'Trash' ) . "</option>";
-		echo "</select>";
-		echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . wbz404_trans( 'Apply' ) . "\">";
-		echo "</div>";
-	}
 	echo "</div>";
-
+	
 	echo "<table class=\"wp-list-table widefat fixed\">";
-	echo "<thead>";
-	wbz404_buildTableColumns( $sub, $tableOptions, $columns );
-	echo "</thead>";
-	echo "<tfoot>";
-	wbz404_buildTableColumns( $sub, $tableOptions, $columns );
-	echo "</tfoot>";
-	echo "<tbody id=\"the-list\">";
-	$rows = wbz404_getRecords( $sub, $tableOptions );
-	$displayed = 0;
-	$y=1;
-	foreach ( $rows as $row ) {
-		$displayed++;
+		echo "<thead>";
+			wbz404_buildTableColumns($sub, $tableOptions, $columns);
+		echo "</thead>";
+		echo "<tfoot>";
+			wbz404_buildTableColumns($sub, $tableOptions, $columns);
+		echo "</tfoot>";
+		echo "<tbody id=\"the-list\">";
+			$rows = wbz404_getRecords($sub, $tableOptions);
+			$displayed = 0;
+			$y=1;
+			foreach ($rows as $row) {
+				$displayed++;
 
-		$hits = $row['hits'];
-		$last_used = wbz404_getRedirectLastUsed( $row['id'] );
-		if ( $last_used != 0 ) {
-			$last = date( "Y/m/d h:i:s A", $last_used );
-		} else {
-			$last = wbz404_trans( 'Never Used' );
-		}
+				$hits = $row['hits'];
+				$last_used = wbz404_getRedirectLastUsed($row['id']);
+				if ($last_used != 0) {
+					$last = date("Y/m/d h:i:s A", $last_used);
+				} else {
+					$last = wbz404_trans('Never Used');
+				}
 
-		$editlink = "?page=wbz404_redirected&subpage=wbz404_edit&id=" . $row['id'];
-		$logslink = "?page=wbz404_redirected&subpage=wbz404_logs&id=" . $row['id'];
-		$trashlink = "?page=wbz404_redirected&&subpage=wbz404_captured&id=" . $row['id'];
-		$ignorelink = "?page=wbz404_redirected&&subpage=wbz404_captured&id=" . $row['id'];
-		$deletelink = "?page=wbz404_redirected&subpage=wbz404_captured&remove=1&id=" . $row['id'];
+				$editlink = "?page=wbz404_redirected&subpage=wbz404_edit&id=" . $row['id'];
+				$logslink = "?page=wbz404_redirected&subpage=wbz404_logs&id=" . $row['id'];
+				$trashlink = "?page=wbz404_redirected&&subpage=wbz404_captured&id=" . $row['id'];
+				$ignorelink = "?page=wbz404_redirected&&subpage=wbz404_captured&id=" . $row['id'];
+				$deletelink = "?page=wbz404_redirected&subpage=wbz404_captured&remove=1&id=" . $row['id'];
 
-		if ( $tableOptions['filter'] == -1 ) {
-			$trashlink .= "&trash=0";
-			$trashtitle = wbz404_trans( 'Restore' );
-		} else {
-			$trashlink .= "&trash=1";
-			$trashtitle = wbz404_trans( 'Trash' );
-		}
+				if ($tableOptions['filter'] == -1) {
+					$trashlink .= "&trash=0";
+					$trashtitle = wbz404_trans('Restore');
+				} else {
+					$trashlink .= "&trash=1";
+					$trashtitle = wbz404_trans('Trash');
+				}
 
-		if ( $tableOptions['filter'] == WBZ404_IGNORED ) {
-			$ignorelink .= "&ignore=0";
-			$ignoretitle = wbz404_trans( 'Remove Ignore Status' );
-		} else {
-			$ignorelink .= "&ignore=1";
-			$ignoretitle = wbz404_trans( 'Ignore 404 Error' );
-		}
+				if ($tableOptions['filter'] == WBZ404_IGNORED) {
+					$ignorelink .= "&ignore=0";
+					$ignoretitle = wbz404_trans('Remove Ignore Status');
+				} else {
+					$ignorelink .= "&ignore=1";
+					$ignoretitle = wbz404_trans('Ignore 404 Error');
+				}
 
-		if ( !( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" ) ) {
-			$trashlink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-			$ignorelink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-			$deletelink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-		}
-		if ( $tableOptions['filter'] != 0 ) {
-			$trashlink .= "&filter=" . $tableOptions['filter'];
-			$ignorelink .= "&filter=" . $tableOptions['filter'];
-			$deletelink .= "&filter=" . $tableOptions['filter'];
-		}
+				if (!($tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC")) {
+					$trashlink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+					$ignorelink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+					$deletelink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+				}
+				if ($tableOptions['filter'] != 0) {
+					$trashlink .= "&filter=" . $tableOptions['filter'];
+					$ignorelink .= "&filter=" . $tableOptions['filter'];
+					$deletelink .= "&filter=" . $tableOptions['filter'];
+				}
 
-		$trashaction = "wbz404_trashRedirect";
-		$trashlink = wp_nonce_url( $trashlink, $trashaction );
+				$trashaction = "wbz404_trashRedirect";
+				$trashlink = wp_nonce_url($trashlink, $trashaction);
 
-		if ( $tableOptions['filter'] == -1 ) {
-			$deleteaction = "wbz404_removeRedirect";
-			$deletelink = wp_nonce_url( $deletelink, $deleteaction );
-		}
+				if ($tableOptions['filter'] == -1) {
+					$deleteaction = "wbz404_removeRedirect";
+					$deletelink = wp_nonce_url($deletelink, $deleteaction);
+				}
 
-		$ignoreaction = "wbz404_ignore404";
-		$ignorelink = wp_nonce_url( $ignorelink, $ignoreaction );
+				$ignoreaction = "wbz404_ignore404";
+				$ignorelink = wp_nonce_url($ignorelink, $ignoreaction);
 
-		$class = "";
-		if ( $y == 0 ) {
-			$class=" class=\"alternate\"";
-			$y++;
-		} else {
-			$y=0;
-		}
+							$class = "";
+							if ($y == 0) {
+									$class=" class=\"alternate\"";
+									$y++;
+							} else {
+									$y=0;
+							}
 
-		echo "<tr id=\"post-" . esc_attr( $row['id'] ) . "\"" . $class . ">";
-		echo "<th class=\"check-column\">";
-		if ( $tableOptions['filter'] != '-1' ) {
-			echo "<input type=\"checkbox\" name=\"idnum[]\" value=\"" . esc_attr( $row['id'] ) . "\">";
-		}
-		echo "</th>";
-		echo "<td>";
-		echo "<strong><a href=\"" . esc_url( $editlink ) . "\" title=\"" . wbz404_trans( 'Edit Redirect Details' ) . "\">" . esc_html( $row['url'] ) . "</a></strong>";
-		echo "<div class=\"row-actions\">";
-		if ( $tableOptions['filter'] != -1 ) {
-			echo "<span class=\"edit\"><a href=\"" . esc_url( $editlink ) . "\" title=\"" . wbz404_trans( 'Edit Redirect Details' ) . "\">" . wbz404_trans( 'Edit' ) . "</a></span>";
-			echo " | ";
-		}
-		echo "<span class=\"trash\"><a href=\"" . esc_url( $trashlink ) . "\" title=\"" . wbz404_trans( 'Trash Redirected URL' ) . "\">" . esc_html( $trashtitle ) . "</a></span>";
-		echo " | ";
-		echo "<span class=\"view\"><a href=\"" . esc_url( $logslink ) . "\" title=\"" . wbz404_trans( 'View Redirect Logs' ) . "\">" . wbz404_trans( 'View Logs' ) . "</a></span>";
-		if ( $tableOptions['filter'] != -1 ) {
-			echo " | ";
-			echo "<span class=\"ignore\"><a href=\"" . esc_url( $ignorelink ) . "\" title=\"" . $ignoretitle . "\">" . esc_html( $ignoretitle ) . "</a></span>";
-		} else {
-			echo " | ";
-			echo "<span class=\"delete\"><a href=\"" . esc_url( $deletelink ) . "\" title=\"" . wbz404_trans( 'Delete Redirect Permanently' ) . "\">" . wbz404_trans( 'Delete Permanently' ) . "</a></span>";
-		}
-		echo "</div>";
-		echo "</td>";
-		echo "<td>" . esc_html( $hits ) . "</td>";
-		echo "<td>" . esc_html( date( "Y/m/d h:i:s A", $row['timestamp'] ) ) . "</td>";
-		echo "<td>" . esc_html( $last ) . "</td>";
-		echo "<td></td>";
-		echo "</tr>";
-	}
-	if ( $displayed == 0 ) {
-		echo "<tr>";
-		echo "<td></td>";
-		echo "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . wbz404_trans( 'No Records To Display' ) . "</td>";
-		echo "<td></td>";
-		echo "</tr>";
-	}
-	echo "</tbody>";
+				echo "<tr id=\"post-" . esc_attr( $row['id'] ) . "\"" . $class . ">";
+					echo "<th class=\"check-column\">";
+						if ($tableOptions['filter'] != '-1') {
+							echo "<input type=\"checkbox\" name=\"idnum[]\" value=\"" . esc_attr( $row['id'] ) . "\">";
+						}
+					echo "</th>";
+					echo "<td>";
+						echo "<strong><a href=\"" . esc_url( $editlink ) . "\" title=\"" . wbz404_trans('Edit Redirect Details') . "\">" . esc_html( $row['url'] ) . "</a></strong>";
+						echo "<div class=\"row-actions\">";
+							if ($tableOptions['filter'] != -1) {
+								echo "<span class=\"edit\"><a href=\"" . esc_url( $editlink ) . "\" title=\"" . wbz404_trans('Edit Redirect Details') . "\">" . wbz404_trans('Edit') . "</a></span>";
+								echo " | ";
+							}
+							echo "<span class=\"trash\"><a href=\"" . esc_url( $trashlink ) . "\" title=\"" . wbz404_trans('Trash Redirected URL') . "\">" . esc_html( $trashtitle ) . "</a></span>";
+							echo " | ";
+							echo "<span class=\"view\"><a href=\"" . esc_url( $logslink ) . "\" title=\"" . wbz404_trans('View Redirect Logs') . "\">" . wbz404_trans('View Logs') . "</a></span>";
+							if ($tableOptions['filter'] != -1) {
+								echo " | ";
+								echo "<span class=\"ignore\"><a href=\"" . esc_url( $ignorelink ) . "\" title=\"" . $ignoretitle . "\">" . esc_html( $ignoretitle ) . "</a></span>";
+							} else {
+								echo " | ";
+								echo "<span class=\"delete\"><a href=\"" . esc_url( $deletelink ) . "\" title=\"" . wbz404_trans('Delete Redirect Permanently') . "\">" . wbz404_trans('Delete Permanently') . "</a></span>";
+							}
+						echo "</div>";
+					echo "</td>";
+					echo "<td>" . esc_html( $hits ) . "</td>";
+					echo "<td>" . esc_html( date("Y/m/d h:i:s A", $row['timestamp']) ) . "</td>";
+					echo "<td>" . esc_html( $last ) . "</td>";
+					echo "<td></td>";
+				echo "</tr>";
+			}
+			if ($displayed == 0) {
+				echo "<tr>";
+					echo "<td></td>";
+					echo "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . wbz404_trans('No Records To Display') . "</td>";
+					echo "<td></td>";
+				echo "</tr>";
+			}
+		echo "</tbody>";
 	echo "</table>";
-
+	
 	echo "<div class=\"tablenav\">";
-	if ( $tableOptions['filter'] != '-1' ) {
-		echo "</form>";
-	}
-	wbz404_drawPaginationLinks( $sub, $tableOptions );
+		if ($tableOptions['filter'] != '-1') {
+			echo "</form>";
+		}
+		wbz404_drawPaginationLinks($sub, $tableOptions);
 	echo "</div>";
 }
 
@@ -1995,133 +1995,133 @@ function wbz404_adminEditPage() {
 	global $wpdb;
 	$sub = "edit";
 
-	if ( ! ( isset( $_GET['id'] ) && preg_match( '/[0-9]+/', $_GET['id'] ) ) ) {
-		if ( ! ( isset( $_POST['id'] ) && preg_match( '/[0-9]+/', $_POST['id'] ) ) ) {
+	if (! (isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id']))) {
+		if (! (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id']))) {
 			echo "Error: Invalid ID Number";
 			return;
 		} else {
-			$recnum = $_POST['id'];
+			$recnum = absint( $_POST['id'] );
 		}
 	} else {
-		$recnum = $_GET['id'];
+		$recnum = absint( $_GET['id'] );
 	}
 
 	$query = "select id, url, type, final_dest, code from " . $wpdb->prefix . "wbz404_redirects where 1 ";
-	$query .= "and id = " . esc_sql( esc_html( $recnum ) );
-	$redirect = $wpdb->get_row( $query, ARRAY_A );
+	$query .= "and id = " . $wpdb->escape($recnum);
+	
+	$redirect = $wpdb->get_row($query, ARRAY_A);
 
-	if ( ! ( $redirect == null ) ) {
-		echo "<h3>" . wbz404_trans( 'Redirect Details' ) . "</h3>";
+	if (! ($redirect == null)) {
+		echo "<h3>" . wbz404_trans('Redirect Details') . "</h3>";
 
 		$url = "?page=wbz404_redirected&subpage=wbz404_edit";
 
 		$action = "wbz404editRedirect";
-		$link = wp_nonce_url( $url, $action );
+	        $link = wp_nonce_url($url, $action);
 
-		echo "<form method=\"POST\" action=\"" . esc_url( $link ) . "\">";
+		echo "<form method=\"POST\" action=\"" . esc_attr( $link ) . "\">";
 		echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
-		echo "<input type=\"hidden\" name=\"id\" value=\"" .  esc_url( $redirect['id'] ) . "\">";
-		echo "<strong><label for=\"url\">" . wbz404_trans( 'URL' ) . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . esc_url( $redirect['url'] ) . "\"> (" . wbz404_trans( 'Required' ) . ")<br>";
-		echo "<strong><label for=\"dest\">" . wbz404_trans( 'Redirect to' ) . ":</strong> <select id=\"dest\" name=\"dest\">";
-		$selected = "";
-		if ( $redirect['type'] == WBZ404_EXTERNAL ) {
-			$selected = " selected";
-		}
-		echo "<option value=\"" . WBZ404_EXTERNAL . "\"" . $selected . ">" . wbz404_trans( 'External Page' ) . "</options>";
-		$query = "select id from $wpdb->posts where post_status='publish' and post_type='post' order by post_date desc";
-		$rows = $wpdb->get_results( $query );
-		foreach ( $rows as $row ) {
-			$id = $row->id;
-			$theTitle = get_the_title( $id );
-			$thisval = $id . "|" . WBZ404_POST;
-
+		echo "<input type=\"hidden\" name=\"id\" value=\"" . esc_attr( $redirect['id'] ) . "\">";
+		echo "<strong><label for=\"url\">" . wbz404_trans('URL') . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . esc_attr( $redirect['url'] ) . "\"> (" . wbz404_trans('Required') . ")<br>";
+		echo "<strong><label for=\"dest\">" . wbz404_trans('Redirect to') . ":</strong> <select id=\"dest\" name=\"dest\">";
 			$selected = "";
-			if ( $redirect['type'] == WBZ404_POST && $redirect['final_dest'] == $id ) {
+			if ($redirect['type'] == WBZ404_EXTERNAL) {
 				$selected = " selected";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans( 'Post' ) . ": " . esc_html( $theTitle ) . "</option>";
-		}
+			echo "<option value=\"" . WBZ404_EXTERNAL . "\"" . $selected . ">" . wbz404_trans('External Page') . "</options>";
+	
+			$query = "select id from $wpdb->posts where post_status='publish' and post_type='post' order by post_date desc";
+			$rows = $wpdb->get_results($query);
+			foreach ($rows as $row) {
+				$id = $row->id;
+				$theTitle = get_the_title($id);
+				$thisval = $id . "|" . WBZ404_POST;
 
-		$rows = get_pages();
-		foreach ( $rows as $row ) {
-			$id = $row->ID;
-			$theTitle = $row->post_title;
-			$thisval = $id . "|" . WBZ404_POST;
-
-			$parent = $row->post_parent;
-			while ( $parent != 0 ) {
-				$parent = absint( $parent );
-				$temp = esc_html( $wpdb->posts );
-				$query = "select id, post_parent from $temp where post_status='publish' and post_type='page' and id = $parent";
-				$prow = $wpdb->get_row( $query, OBJECT );
-				if ( ! ( $prow == NULL ) ) {
-					$theTitle = get_the_title( $prow->id ) . " &raquo; " . $theTitle;
-					$parent = $prow->post_parent;
-				} else {
-					break;
+				$selected = "";
+				if ($redirect['type'] == WBZ404_POST && $redirect['final_dest'] == $id) {
+					$selected = " selected";
 				}
+				echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans('Post') . ": " . $theTitle . "</option>";
 			}
+	
+			$rows = get_pages();
+			foreach ($rows as $row) {
+				$id = $row->ID;
+				$theTitle = $row->post_title;
+				$thisval = $id . "|" . WBZ404_POST;
 
-			$selected = "";
-			if ( $redirect['type'] == WBZ404_POST && $redirect['final_dest'] == $id ) {
-				$selected = " selected";
+				$parent = $row->post_parent;
+				while ($parent != 0) {
+					$query = "select id, post_parent from $wpdb->posts where post_status='publish' and post_type='page' and id = $parent";
+					$prow = $wpdb->get_row($query, OBJECT);
+					if (! ($prow == NULL)) {
+						$theTitle = get_the_title($prow->id) . " &raquo; " . $theTitle;
+						$parent = $prow->post_parent;
+					} else {
+						break;
+					}
+				}
+
+				$selected = "";
+				if ($redirect['type'] == WBZ404_POST && $redirect['final_dest'] == $id) {
+					$selected = " selected";
+				}
+				echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans('Page') . ": " . $theTitle . "</option>\n";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans( 'Page' ) . ": " . esc_html( $theTitle ) . "</option>\n";
-		}
-
-		$cats = get_categories( 'hierarchical=0' );
-		foreach ( $cats as $cat ) {
-			$id = $cat->term_id;
-			$theTitle = $cat->name;
-			$thisval = $id . "|" . WBZ404_CAT;
-
-			$selected = "";
-			if ( $redirect['type'] == WBZ404_CAT && $redirect['final_dest'] == $id ) {
-				$selected = " selected";
+	
+			$cats = get_categories('hierarchical=0');
+			foreach ($cats as $cat) {
+				$id = $cat->term_id;
+				$theTitle = $cat->name;
+				$thisval = $id . "|" . WBZ404_CAT;
+				
+				$selected = "";
+				if ($redirect['type'] == WBZ404_CAT && $redirect['final_dest'] == $id) {
+					$selected = " selected";
+				}
+				echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans('Category') . ": " . $theTitle . "</option>";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans( 'Category' ) . ": " . esc_html( $theTitle ) . "</option>";
-		}
-
-		$tags = get_tags( 'hierarchical=0' );
-		foreach ( $tags as $tag ) {
-			$id = $tag->term_id;
-			$theTitle = $tag->name;
-			$thisval = $id . "|" . WBZ404_TAG;
-
-			$selected = "";
-			if ( $redirect['type'] == WBZ404_TAG && $redirect['final_dest'] == $id ) {
-				$selected = " selected";
+	
+			$tags = get_tags('hierarchical=0');
+			foreach ($tags as $tag) {
+				$id = $tag->term_id;
+				$theTitle = $tag->name;
+				$thisval = $id . "|" . WBZ404_TAG;
+				
+				$selected = "";
+				if ($redirect['type'] == WBZ404_TAG && $redirect['final_dest'] == $id) {
+					$selected = " selected";
+				}
+				echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans('Tag') . ": " . $theTitle . "</option>";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . wbz404_trans( 'Tag' ) . ": " . esc_html( $theTitle ) . "</option>";
-		}
-
+			
 		echo "</select><br>";
 		$final = "";
-		if ( $redirect['type'] == WBZ404_EXTERNAL ) {
+		if ($redirect['type'] == WBZ404_EXTERNAL) {
 			$final = $redirect['final_dest'];
 		}
-		echo "<strong><label for=\"external\">" . wbz404_trans( 'External URL' ) . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . esc_attr( $final ) . "\"> (" . wbz404_trans( 'Required if Redirect to is set to External Page' ) . ")<br>";
-		echo "<strong><label for=\"code\">" . wbz404_trans( 'Redirect Type' ) . ":</label></strong> <select id=\"code\" name=\"code\">";
-		if ( $redirect['code'] == "" ) {
-			$codeselected = $options['default_redirect'];
-		} else {
-			$codeselected = $redirect['code'];
-		}
-		$codes = array( 301, 302 );
-		foreach ( $codes as $code ) {
-			$selected = "";
-			if ( $code == $codeselected ) {
-				$selected = " selected";
-			}
-			if ( $code == 301 ) {
-				$title = wbz404_trans( '301 Permanent Redirect' );
+		echo "<strong><label for=\"external\">" . wbz404_trans('External URL') . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . $final . "\"> (" . wbz404_trans('Required if Redirect to is set to External Page') . ")<br>";
+		echo "<strong><label for=\"code\">" . wbz404_trans('Redirect Type') . ":</label></strong> <select id=\"code\" name=\"code\">";
+			if ($redirect['code'] == "") {
+				$codeselected = $options['default_redirect'];
 			} else {
-				$title = wbz404_trans( '302 Temporary Redirect' );
+				$codeselected = $redirect['code'];
 			}
-			echo "<option value=\"" . esc_attr( $code ) . "\"" . $selected . ">" . esc_html( $title ) . "</option>";
-		}
+			$codes = array(301,302);
+			foreach ($codes as $code) {
+				$selected = "";
+				if ($code == $codeselected) {
+					$selected = " selected";
+				}
+				if ($code == 301) {
+					$title = wbz404_trans('301 Permanent Redirect');
+				} else {
+					$title = wbz404_trans('302 Temporary Redirect');
+				}
+				echo "<option value=\"" . esc_attr( $code ) . "\"" . $selected . ">" . $title . "</option>";
+			}
 		echo "</select><br>";
-		echo "<input type=\"submit\" value=\"" . wbz404_trans( 'Update Redirect' ) . "\" class=\"button-secondary\">";
+		echo "<input type=\"submit\" value=\"" . wbz404_trans('Update Redirect') . "\" class=\"button-secondary\">";
 		echo "</form>";
 	} else {
 		echo "Error: Invalid ID Number!";
@@ -2136,7 +2136,7 @@ function wbz404_AdminToolsPage() {
 	$url = "?page=wbz404_redirected&subpage=wbz404_tools";
 	$action = "wbz404_purgeRedirects";
 
-	$link = wp_nonce_url( $url, $action );
+		$link = wp_nonce_url($url, $action);
 
 
 	echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
@@ -2148,30 +2148,30 @@ function wbz404_AdminToolsPage() {
 	$content .= "<input type=\"hidden\" name=\"action\" value=\"purgeRedirects\">";
 
 	$content .= "<p>";
-	$content .= "<strong><label for=\"purgetype\">" . wbz404_trans( 'Purge Type' ) . ":</label></strong> <select name=\"purgetype\" id=\"purgetype\">";
-	$content .= "<option value=\"logs\">" . wbz404_trans( 'Logs Only' ) . "</option>";
-	$content .= "<option value=\"redirects\">" . wbz404_trans( 'Logs & Redirects' ) . "</option>";
+	$content .= "<strong><label for=\"purgetype\">" . wbz404_trans('Purge Type') . ":</label></strong> <select name=\"purgetype\" id=\"purgetype\">";
+	$content .= "<option value=\"logs\">" . wbz404_trans('Logs Only') . "</option>";
+	$content .= "<option value=\"redirects\">" . wbz404_trans('Logs & Redirects') . "</option>";
 	$content .= "</select><br><br>";
 
-	$content .= "<strong>" . wbz404_trans( 'Redirect Types' ) . ":</strong><br>";
+	$content .= "<strong>" . wbz404_trans('Redirect Types') . ":</strong><br>";
 	$content .= "<ul style=\"margin-left: 40px;\">";
-	$content .= "<li><input type=\"checkbox\" id=\"auto\" name=\"types[]\" value=\"" . WBZ404_AUTO . "\"> <label for=\"auto\">" . wbz404_trans( 'Automatic Redirects' ) . "</label></li>";
-	$content .= "<li><input type=\"checkbox\" id=\"manual\" name=\"types[]\" value=\"" . WBZ404_MANUAL . "\"> <label for=\"manual\">" . wbz404_trans( 'Manual Redirects' ) . "</label></li>";
-	$content .= "<li><input type=\"checkbox\" id=\"captured\" name=\"types[]\" value=\"" . WBZ404_CAPTURED . "\"> <label for=\"captured\">" . wbz404_trans( 'Captured URLs' ) . "</label></li>";
-	$content .= "<li><input type=\"checkbox\" id=\"ignored\" name=\"types[]\" value=\"" . WBZ404_IGNORED . "\"> <label for=\"ignored\">" . wbz404_trans( 'Ignored URLs' ) . "</label></li>";
+	$content .= "<li><input type=\"checkbox\" id=\"auto\" name=\"types[]\" value=\"" . WBZ404_AUTO . "\"> <label for=\"auto\">" . wbz404_trans('Automatic Redirects') . "</label></li>";
+	$content .= "<li><input type=\"checkbox\" id=\"manual\" name=\"types[]\" value=\"" . WBZ404_MANUAL . "\"> <label for=\"manual\">" . wbz404_trans('Manual Redirects') . "</label></li>";
+	$content .= "<li><input type=\"checkbox\" id=\"captured\" name=\"types[]\" value=\"" . WBZ404_CAPTURED . "\"> <label for=\"captured\">" . wbz404_trans('Captured URLs') . "</label></li>";
+	$content .= "<li><input type=\"checkbox\" id=\"ignored\" name=\"types[]\" value=\"" . WBZ404_IGNORED . "\"> <label for=\"ignored\">" . wbz404_trans('Ignored URLs') . "</label></li>";
 	$content .= "</ul>";
 
-	$content .= "<strong>" . wbz404_trans( 'Sanity Check' ) . "</strong><br>";
-	$content .= wbz404_trans( 'Using the purge options will delete logs and redirects matching the boxes selected above. This action is not reversible. Hopefully you know what you\'re doing.' ) . "<br>";
+	$content .= "<strong>" . wbz404_trans('Sanity Check') . "</strong><br>";
+	$content .= wbz404_trans('Using the purge options will delete logs and redirects matching the boxes selected above. This action is not reversible. Hopefully you know what you\'re doing.') . "<br>";
 	$content .= "<br>";
-	$content .= "<input type=\"checkbox\" id=\"sanity\" name=\"sanity\" value=\"1\"> " . wbz404_trans( 'I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!' ) . "<br>";
+	$content .= "<input type=\"checkbox\" id=\"sanity\" name=\"sanity\" value=\"1\"> " . wbz404_trans('I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!') . "<br>";
 	$content .= "<br>";
-	$content .= "<input type=\"submit\" value=\"" . wbz404_trans( 'Purge Entries!' ) . "\" class=\"button-secondary\">";
+	$content .= "<input type=\"submit\" value=\"" . wbz404_trans('Purge Entries!') . "\" class=\"button-secondary\">";
 	$content .= "</p>";
 
 	$content .= "</form>";
 
-	wbz404_postbox( "wbz404-purgeRedirects", wbz404_trans( 'Purge Options' ), $content );
+	wbz404_postbox("wbz404-purgeRedirects", wbz404_trans('Purge Options'), $content);
 
 	echo "</div></div></div>";
 }
@@ -2184,15 +2184,15 @@ function wbz404_purgeRedirects() {
 	$logs = $wpdb->prefix . "wbz404_logs";
 
 	$sanity = $_POST['sanity'];
-	if ( $sanity == "1" ) {
+	if ($sanity == "1") {
 		$type = $_POST['types'];
-		if ( $type != "" ) {
-			if ( is_array( $type ) ) {
+		if ($type != "") {
+			if (is_array($type)) {
 				$types = "";
 				$x=0;
-				for ( $i=0; $i < count( $type ); $i++ ) {
-					if ( preg_match( '/[0-9]+/', $type[$i] ) ) {
-						if ( $x > 0 ) {
+				for ($i=0; $i < count($type); $i++) {
+					if (preg_match('/[0-9]+/', $type[$i])) {
+						if ($x > 0) {
 							$types .= ",";
 						}
 						$types .= $type[$i];
@@ -2200,32 +2200,33 @@ function wbz404_purgeRedirects() {
 					}
 				}
 
-				if ( $types != "" ) {
+				if ($types != "") {
 					$purge = $_POST['purgetype'];
-					if ( $purge == "logs" || $purge == "redirects" ) {
+					if ($purge == "logs" || $purge == "redirects") {
 						$query = "delete from " . esc_html( $logs ) . " where redirect_id in (select id from " . esc_html( $redirects ) . " where status in (" . esc_html( $types ) . "))";
-						$message = $logcount . " " . wbz404_trans( 'Log entries were purged.' );
+						$message = $logcount . " " . wbz404_trans('Log entries were purged.');
 
-						if ( $purge == "redirects" ) {
+						if ($purge == "redirects") {
 							$query = "delete from " . esc_html( $redirects ) . " where status in (" . esc_html( $types ) . ")";
-							$count = $wpdb->query( $query );
+							$count = $wpdb->query($query);
 							$message .= "<br>";
-							$message .= $count . " " . wbz404_trans( 'Redirect entries were purged.' );
+							$message .= $count . " " . wbz404_trans('Redirect entries were purged.');
 						}
 					} else {
-						$message = wbz404_trans( 'Error: An invalid purge type was selected. Exiting.' );
+						$message = wbz404_trans('Error: An invalid purge type was selected. Exiting.');
 					}
 				} else {
-					$message = wbz404_trans( 'Error: No valid redirect types were selected. Exiting.' );
+					$message = wbz404_trans('Error: No valid redirect types were selected. Exiting.');
 				}
 			} else {
-				$message = wbz404_trans( 'An unknown error has occurred.' );
+				$message = wbz404_trans('An unknown error has occurred.');
 			}
 		} else {
-			$message = wbz404_trans( 'Error: No redirect types were selected. No purges will be done.' );
+			$message = wbz404_trans('Error: No redirect types were selected. No purges will be done.');
 		}
 	} else {
-		$message = wbz404_trans( 'Error: You didn\'t check the I understand checkbox. No purging of records for you!' );
+		$message = wbz404_trans('Error: You didn\'t check the I understand checkbox. No purging of records for you!');
 	}
 	return $message;
 }
+
