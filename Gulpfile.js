@@ -207,6 +207,24 @@ gulp.task('wp-pot', ['clean:pot'], function() {
 });
 
 /**
+ * Convert the readme.txt to a README.MD file.
+ *
+ * https://github.com/ahoereth/gulp-readme-to-markdown
+ */
+var readme = require('gulp-readme-to-markdown');
+gulp.task('readme', function() {
+  gulp.src([ 'readme.txt' ])
+  .pipe(readme({
+    details: false,
+    screenshot_ext: ['jpg', 'jpg', 'png'],
+    extract: {
+      'changelog': 'CHANGELOG'
+    }
+  }))
+  .pipe(gulp.dest('.'));
+});
+
+/**
  * Create indivdual tasks.
  */
 gulp.task('i18n', ['wp-pot']);
