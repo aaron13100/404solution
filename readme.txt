@@ -12,7 +12,7 @@ Creates automatic redirects for 404 traffic and page suggestions when matches ar
 
 404 Redirected allows WordPress admins to have control over their dead links and redirects from inside the admin panel. 404 Redirected records all URLs that users have visited and allows the admin to easily create 301 and 302 redirects to valid pages on their site. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
 
-= Features:=
+= Features: =
 
 * Get list of 404 URLs as they happen inside the admin panel
 * Easily redirect 404 URLs to existing pages or choose to ignore the 404 error
