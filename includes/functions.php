@@ -11,14 +11,6 @@ add_action('init', 'wbz404_load_translations');
 add_action('wbz404_duplicateCronAction', 'wbz404_removeDuplicatesCron');
 add_action('wbz404_cleanupCronAction', 'wbz404_cleaningCron');
 
-function wbz404_load_translations() {
-	$trans_path = WBZ404_PATH . '/translations';
-	load_plugin_textdomain(WBZ404_TRANS, '', $trans_path);
-}
-
-function wbz404_trans($text = '') {
-	return esc_html__($text, WBZ404_TRANS); // Escaping added here to be on the safe side
-}
 
 function wbz404_updateDBVersion() {
 	$options = wbz404_getOptions(1);
@@ -80,12 +72,12 @@ function wbz404_getDefaultOptions() {
 		'display_suggest' => '1',
 		'suggest_minscore' => '25',
 		'suggest_max' => '5',
-		'suggest_title' => '<h3>Suggested Alternatives</h3>',
+		'suggest_title' => '<h3>' . __( 'Suggested Alternatives', '404-redirected' ) . '</h3>',
 		'suggest_before' => '<ol>',
 		'suggest_after' => '</ol>',
 		'suggest_entrybefore' => '<li>',
 		'suggest_entryafter' => '</li>',
-		'suggest_noresults' => '<p>No Results To Display.</p>',
+		'suggest_noresults' => '<p>' . __( 'No Results To Display.', '404-redirected' ) . '</p>',
 		'suggest_cats' => '1',
 		'suggest_tags' => '1',
 		'auto_redirects' => '1',
@@ -158,7 +150,7 @@ function wbz404_registerCrons() {
 	$timestamp = wp_next_scheduled('wbz404_duplicateCronAction');
 	if ($timestamp == False) {
 		wp_schedule_event(current_time( 'timestamp' ) - 3600, 'hourly', 'wbz404_duplicateCronAction');
-	}	
+	}
 }
 
 function wbz404_unregisterCrons() {
@@ -292,7 +284,7 @@ function wbz404_setupRedirect($url, $status, $type, $final_dest, $code, $disable
 	global $wpdb;
 
 	$now = time();
-	$wpdb->insert($wpdb->prefix . 'wbz404_redirects', 
+	$wpdb->insert($wpdb->prefix . 'wbz404_redirects',
 		array(
 			'url' => esc_url( $url ),
 			'status' => esc_html( $status ),
@@ -312,7 +304,7 @@ function wbz404_setupRedirect($url, $status, $type, $final_dest, $code, $disable
 			'%d'
 		)
 	);
-	return $wpdb->insert_id;	
+	return $wpdb->insert_id;
 }
 
 function wbz404_logRedirectHit($id, $action) {
@@ -323,7 +315,7 @@ function wbz404_logRedirectHit($id, $action) {
 		$referer=$_SERVER['HTTP_REFERER'];
 	} else {
 		$referer = "";
-	}	
+	}
 
 	$wpdb->insert($wpdb->prefix . "wbz404_logs",
 		array(
@@ -433,17 +425,17 @@ function wbz404_removeDuplicatesCron() {
 
 	$rtable = $wpdb->prefix . "wbz404_redirects";
 	$ltable = $wpdb->prefix . "wbz404_logs";
-	
+
 	$query = "SELECT COUNT(id) as repetitions, url FROM " . esc_html( $rtable ) . " GROUP BY url HAVING repetitions > 1";
 	$rows = $wpdb->get_results($query, ARRAY_A);
 	foreach ($rows as $row) {
 		$url = $row['url'];
-		
+
 		$query2 = "select id from " . esc_html( $rtable ) . " where url = '" . esc_sql( esc_url( $url) ) . "' order by id limit 0,1";
 		$orig = $wpdb->get_row($query2, ARRAY_A, 0);
 		if ($orig['id'] != 0) {
 			$original = $orig['id'];
-			
+
 			//Fix the logs table
 			$query2 = "update " . $ltable . " set redirect_id = " . esc_sql($original) . " where redirect_id in (select id from " . esc_html( $rtable ) . " where url = '" . esc_sql($url) . "' and id != " . esc_sql($original) . ")";
 			$wpdb->query($query2);
