@@ -6,19 +6,10 @@
 
 register_activation_hook( WBZ404_NAME, 'wbz404_pluginActivation' );
 register_deactivation_hook( WBZ404_NAME, 'wbz404_pluginRemove' );
-add_action( 'init', 'wbz404_load_translations' );
 
 add_action( 'wbz404_duplicateCronAction', 'wbz404_removeDuplicatesCron' );
 add_action( 'wbz404_cleanupCronAction', 'wbz404_cleaningCron' );
 
-function wbz404_load_translations() {
-	$trans_path = WBZ404_PATH . '/translations';
-	load_plugin_textdomain( WBZ404_TRANS, '', $trans_path );
-}
-
-function wbz404_trans( $text = '' ) {
-	return esc_html__( $text, WBZ404_TRANS ); // Escaping added here to be on the safe side
-}
 
 function wbz404_updateDBVersion() {
 	$options = wbz404_getOptions( 1 );
@@ -80,12 +71,12 @@ function wbz404_getDefaultOptions() {
 		'display_suggest' => '1',
 		'suggest_minscore' => '25',
 		'suggest_max' => '5',
-		'suggest_title' => '<h3>Suggested Alternatives</h3>',
+		'suggest_title' => '<h3>' . __( 'Suggested Alternatives', '404-redirected' ) . '</h3>',
 		'suggest_before' => '<ol>',
 		'suggest_after' => '</ol>',
 		'suggest_entrybefore' => '<li>',
 		'suggest_entryafter' => '</li>',
-		'suggest_noresults' => '<p>No Results To Display.</p>',
+		'suggest_noresults' => '<p>' . __( 'No Results To Display.', '404-redirected' ) . '</p>',
 		'suggest_cats' => '1',
 		'suggest_tags' => '1',
 		'auto_redirects' => '1',

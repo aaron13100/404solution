@@ -1,10 +1,21 @@
 === 404 Redirected ===
+
+Plugin Name: 404 Redirected
+Plugin URI:  https://remkusdevries.com/plugins/404-redirected
 Contributors: DeFries
-Donate link: https://remkusdevries.com/donate/
+Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
+Version:     1.4.2
+Author:      Remkus de Vries
+Author URI:  https://remkusdevries.com
+License:     GPL2
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Domain Path: /languages
+Text Domain: 404-redirected
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
 Tested up to: 4.5.2
-Stable tag: 1.4.0
+Stable tag: 1.4.2
+
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 
@@ -58,10 +69,6 @@ Yes! 404 Redirected records the page/post ID number and looks up the most curren
 
 No, that's not what this plugin is for. This plugin is designed to make your visitors experience better by automatically fixing 404 problems caused by typos.
 
-= Why doesn't anyone answer in the support forums? =
-
-I try to get to the support forums as often as I can. This plugin is just one of many things I have to work on. Sometimes it takes 6-8 months for me to get back to working it, I will work on trying to get better about this. In the meantime, please be patient or try finding me on Twitter/Facebook.
-
 == Screenshots ==
 
 1. Admin Options Screen
@@ -70,8 +77,21 @@ I try to get to the support forums as often as I can. This plugin is just one of
 
 == Changelog ==
 
+= Version 1.4.2 =
+
+* Introducing WordPress Coding Standards
+* Replace `wpdb::escape` for `esc_sql()`
+* Removing exotic translation function and replacing with default translation setup. In other words, the plugin is now translatable.
+
+= Version 1.4.1 =
+
+Released: 2016-06-06
+
+* Improved security hardening (bugfixing)
+
 = Version 1.4.0 =
 
+* Plugin takeover from rrolfe because of lack of maintenance in four years
 * Data sanitization added where needed (everywhere)
 * Fixed PHP notices
 
@@ -88,10 +108,6 @@ Bug Fixes:
 * Remember way back when 1.3.1 was released (yesterday) and I said the cron jobs were fixed? They weren't. This update fixes crons for users who are upgrading by implementing a version check on the DB.
 * Added upgrade script functionality by implementing DB version checking
 * Performed general code cleanup to get rid of PHP NOTICES
-
-= Version 2.0.0 =
-* Fixed PHP notices
-* Added a bunch of data validation
 
 = Version 1.3.1 =
 
