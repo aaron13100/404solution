@@ -1,10 +1,21 @@
 === 404 Redirected ===
+
+Plugin Name: 404 Redirected
+Plugin URI:  https://remkusdevries.com/plugins/404-redirected
 Contributors: DeFries
-Donate link: https://remkusdevries.com/donate/
+Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
+Version:     1.4.2
+Author:      Remkus de Vries
+Author URI:  https://remkusdevries.com
+License:     GPL2
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Domain Path: /languages
+Text Domain: 404-redirected
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
 Tested up to: 4.5.2
-Stable tag: 1.4.1
+Stable tag: 1.4.2
+
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 
@@ -65,6 +76,12 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 1.4.2 =
+
+* Introducing WordPress Coding Standards
+* Replace `wpdb::escape` for `esc_sql()`
+* Removing exotic translation function and replacing with default translation setup. In other words, the plugin is now translatable.
 
 = Version 1.4.1 =
 
