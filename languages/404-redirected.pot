@@ -17,6 +17,186 @@ msgstr ""
 "X-Poedit-SearchPathExcluded-0: *.js\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n\n"
 
+#: includes/admin.php:37, includes/admin.php:786
+msgid "404 Redirected"
+msgstr ""
+
+#: includes/admin.php:37
+msgid "There are .esc_html$captured. captured 404 URLs that need to be processed."
+msgstr ""
+
+#: includes/admin.php:70
+msgid "Error: Invalid value specified for default redirect type"
+msgstr ""
+
+#: includes/admin.php:86
+msgid "Collected URL deletion value must be a number greater or equal to zero"
+msgstr ""
+
+#: includes/admin.php:92
+msgid "Manual redirect deletion value must be a number greater or equal to zero"
+msgstr ""
+
+#: includes/admin.php:122
+msgid "Suggestion minimum score value must be a number between 1 and 99"
+msgstr ""
+
+#: includes/admin.php:128
+msgid "Maximum number of suggest value must be a number greater or equal to 1"
+msgstr ""
+
+#: includes/admin.php:159
+msgid "Auto match score value must be a number between 0 and 99"
+msgstr ""
+
+#: includes/admin.php:166
+msgid "Auto redirect deletion value must be a number greater or equal to zero"
+msgstr ""
+
+#: includes/admin.php:378
+msgid "All"
+msgstr ""
+
+#: includes/admin.php:419, includes/admin.php:1604, includes/admin.php:1864, includes/admin.php:1904
+msgid "Trash"
+msgstr ""
+
+#: includes/admin.php:460
+msgid "items"
+msgstr ""
+
+#: includes/admin.php:467
+msgid "Go to first page"
+msgstr ""
+
+#: includes/admin.php:476
+msgid "Go to previous page"
+msgstr ""
+
+#: includes/admin.php:478, includes/admin.php:1741, includes/admin.php:2069
+msgid "Page"
+msgstr ""
+
+#: includes/admin.php:478
+msgid "of"
+msgstr ""
+
+#: includes/admin.php:492
+msgid "Go to next page"
+msgstr ""
+
+#: includes/admin.php:504
+msgid "Go to last page"
+msgstr ""
+
+#: includes/admin.php:601, includes/admin.php:656
+msgid "Error: URL must start with /"
+msgstr ""
+
+#: includes/admin.php:604, includes/admin.php:659
+msgid "Error: URL is a required field."
+msgstr ""
+
+#: includes/admin.php:609, includes/admin.php:664
+msgid "Error: You selected external URL but did not enter a URL."
+msgstr ""
+
+#: includes/admin.php:612, includes/admin.php:667
+msgid "Error: External URL's must start with http://, https://, or ftp://"
+msgstr ""
+
+#: includes/admin.php:643, includes/admin.php:721
+msgid "Error: Data not formatted properly."
+msgstr ""
+
+#: includes/admin.php:742, includes/admin.php:761
+msgid "Error: Unknown Database Error!"
+msgstr ""
+
+#: includes/admin.php:768, includes/admin.php:826
+msgid "Options"
+msgstr ""
+
+#: includes/admin.php:770, includes/admin.php:811
+msgid "Logs"
+msgstr ""
+
+#: includes/admin.php:772, includes/admin.php:816, includes/admin.php:816
+msgid "Stats"
+msgstr ""
+
+#: includes/admin.php:774
+msgid "Edit Redirect"
+msgstr ""
+
+#: includes/admin.php:790
+msgid "by"
+msgstr ""
+
+#: includes/admin.php:791
+msgid "Version"
+msgstr ""
+
+#: includes/admin.php:792, includes/admin.php:792
+msgid "Plugin Home Page"
+msgstr ""
+
+#: includes/admin.php:801, includes/admin.php:801
+msgid "Page Redirects"
+msgstr ""
+
+#: includes/admin.php:806, includes/admin.php:806
+msgid "Captured 404 URLs"
+msgstr ""
+
+#: includes/admin.php:811
+msgid "Redirect & Capture Logs"
+msgstr ""
+
+#: includes/admin.php:821, includes/admin.php:821
+msgid "Tools"
+msgstr ""
+
+#: includes/admin.php:835
+msgid "is maintained"
+msgstr ""
+
+#: includes/admin.php:838
+msgid "It's released under the GNU GPL version 2 License."
+msgstr ""
+
+#: includes/admin.php:868
+msgid "URLs marked as ignored."
+msgstr ""
+
+#: includes/admin.php:870
+msgid "URLs marked as captured."
+msgstr ""
+
+#: includes/admin.php:880
+msgid "URLs moved to trash"
+msgstr ""
+
+#: includes/admin.php:901
+msgid "Options Saved Successfully!"
+msgstr ""
+
+#: includes/admin.php:903
+msgid "Some options were not saved successfully."
+msgstr ""
+
+#: includes/admin.php:910
+msgid "New Redirect Added Successfully!"
+msgstr ""
+
+#: includes/admin.php:912
+msgid "Error: unable to add new redirect successfully."
+msgstr ""
+
+#: includes/admin.php:918, includes/admin.php:923
+msgid "All trashed URLs have been deleted!"
+msgstr ""
+
 #: includes/admin.php:948
 msgid "Redirect moved to trash successfully!"
 msgstr ""
@@ -361,10 +541,6 @@ msgstr ""
 msgid "Restore"
 msgstr ""
 
-#: includes/admin.php:1604, includes/admin.php:1864, includes/admin.php:1904
-msgid "Trash"
-msgstr ""
-
 #: includes/admin.php:1635, includes/admin.php:1638, includes/admin.php:1952, includes/admin.php:1955
 msgid "Edit Redirect Details"
 msgstr ""
@@ -407,10 +583,6 @@ msgstr ""
 
 #: includes/admin.php:1715, includes/admin.php:2044
 msgid "Post"
-msgstr ""
-
-#: includes/admin.php:1741, includes/admin.php:2069
-msgid "Page"
 msgstr ""
 
 #: includes/admin.php:1776, includes/admin.php:2103
@@ -533,10 +705,14 @@ msgstr ""
 msgid "Error: No redirect types were selected. No purges will be done."
 msgstr ""
 
-#: includes/functions.php:75
+#: includes/admin.php:2228
+msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
+msgstr ""
+
+#: includes/functions.php:74
 msgid "Suggested Alternatives"
 msgstr ""
 
-#: includes/functions.php:80
+#: includes/functions.php:79
 msgid "No Results To Display."
 msgstr ""
