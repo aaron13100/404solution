@@ -1,12 +1,14 @@
 <?php
 /*
 	Plugin Name: 404 Redirected
-	Plugin URI: https://wordpress.org/plugins/404-redirected/
-	Description: A smart 404 redirection plugin that provides the ability to log incoming 404 URLs in real time, automatically redirect visitors to most relevant content, and provides page suggestions when relevant content can not be found. Admins can also manually add redirects to system and control automatic deletion of old redirects when they are no longer being used.
-	Version: 1.4.1
-	Author: Remkus de Vries
-	Author URI: https://remkusdevries.com/
-	License: GPLv2
+	Plugin URI:  https://remkusdevries.com/plugins/404-redirected
+	Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
+	Author:      Remkus de Vries
+	Author URI:  https://remkusdevries.com
+	License:     GPL2
+	License URI: https://www.gnu.org/licenses/gpl-2.0.html
+	Domain Path: /languages
+	Text Domain: 404-redirected
 
 	Developed by Weberz Hosting. Maintained by Remkus de Vries.
 
@@ -32,8 +34,8 @@
 define( 'WBZ404_URL', plugin_dir_url( __FILE__ ) );
 define( 'WBZ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WBZ404_NAME', plugin_basename( __FILE__ ) );
-define( 'WBZ404_VERSION', '1.4' );
-define( 'WBZ404_HOME', 'https://wordpress.org/plugins/404-redirected/' );
+define( 'WBZ404_VERSION', '1.4.2' );
+define( 'WBZ404_HOME', 'https://remkusdevries/plugins/404-redirected/' );
 define( 'WBZ404_TRANS', 'wbz404_redirected' );
 
 //URL Types
