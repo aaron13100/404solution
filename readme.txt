@@ -1,21 +1,11 @@
 === 404 Redirected ===
-
-Plugin Name: 404 Redirected
-Plugin URI:  https://remkusdevries.com/plugins/404-redirected
 Contributors: DeFries
-Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
-Version:     1.4.2
-Author:      Remkus de Vries
-Author URI:  https://remkusdevries.com
-License:     GPL2
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Domain Path: /languages
-Text Domain: 404-redirected
+Donate link: https://remkusdevries.com/donate/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
+Version: 1.4.2
 Tested up to: 4.5.2
 Stable tag: 1.4.2
-
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 
@@ -49,7 +39,7 @@ Installation of 404 Redirect is simple:
 1. Use the `Settings -> 404 Redirected` options page to enable desired features.
 
 For the `suggested pages` feature to work you need to edit your 404.php template file to include the following code:
-`<?php if (function_exists('wbz404_suggestions')) { wbz404_suggestions(); } ?>`
+`<?php if (function_exists( 'wbz404_suggestions' ) ) { wbz404_suggestions(); } ?>`
 
 == Frequently Asked Questions ==
 
@@ -59,7 +49,7 @@ As long as the "Capture incoming 404 URLs" option is enabled in the options sect
 
 = Will there be a slow down on my site when running the plugin? =
 
-No there should be no noticeable slow down when running the plugin on your site.
+No, there should be no noticeable slow down when running the plugin on your site.
 
 = Will this plugin redirect my pages if I change my permalinks structure? =
 
