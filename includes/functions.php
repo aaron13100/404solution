@@ -34,7 +34,7 @@ function wbz404_getOptions( $skip_db_check="0" ) {
 	$keys = array_keys( $defaults );
 	for ( $i=0; $i < count( $keys ); $i++ ) {
 		$key = $keys[$i];
-		if ( $options[$key] == "" ) {
+		if ( isset( $options[$key] ) && $options[$key] == "" ) {
 			$options[$key] = $defaults[$key];
 			$missing++;
 		}
@@ -94,13 +94,11 @@ function wbz404_pluginActivation() {
 	add_option( 'wbz404_settings', '', '', 'no' );
 
 	$charset_collate = '';
-	if ( version_compare( mysql_get_server_info(), '4.1.0', '>=' ) ) {
-		if ( !empty( $wpdb->charset ) ) {
-			$charset_collate .= " DEFAULT CHARACTER SET $wpdb->charset";
-		}
-		if ( !empty( $wpdb->collate ) ) {
-			$charset_collate .= " COLLATE $wpdb->collate";
-		}
+	if ( !empty( $wpdb->charset ) ) {
+		$charset_collate .= " DEFAULT CHARACTER SET $wpdb->charset";
+	}
+	if ( !empty( $wpdb->collate ) ) {
+		$charset_collate .= " COLLATE $wpdb->collate";
 	}
 	$query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_redirects` (
 	  `id` bigint(30) NOT NULL auto_increment,
