@@ -1,27 +1,21 @@
 === 404 Redirected ===
-
-Plugin Name: 404 Redirected
-Plugin URI:  https://remkusdevries.com/plugins/404-redirected
 Contributors: DeFries
-Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
-Version:     1.4.2
-Author:      Remkus de Vries
-Author URI:  https://remkusdevries.com
-License:     GPL2
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Domain Path: /languages
-Text Domain: 404-redirected
+Donate link: https://remkusdevries.com/donate/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
+Version: 1.4.3
 Tested up to: 4.5.2
-Stable tag: 1.4.2
-
+Stable tag: 1.4.3
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 
 == Description ==
 
 404 Redirected allows WordPress admins to have control over their dead links and redirects from inside the admin panel. 404 Redirected records all URLs that users have visited and allows the admin to easily create 301 and 302 redirects to valid pages on their site. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
+
+> <strong>Support & Bug Reports</strong><br>
+> If you're in need of support or would like to file a bug report, please head over to our Github repository and [create a new issue.](https://github.com/defries/404-redirected/issues)
+>
 
 = Features: =
 
@@ -49,7 +43,7 @@ Installation of 404 Redirect is simple:
 1. Use the `Settings -> 404 Redirected` options page to enable desired features.
 
 For the `suggested pages` feature to work you need to edit your 404.php template file to include the following code:
-`<?php if (function_exists('wbz404_suggestions')) { wbz404_suggestions(); } ?>`
+`<?php if (function_exists( 'wbz404_suggestions' ) ) { wbz404_suggestions(); } ?>`
 
 == Frequently Asked Questions ==
 
@@ -59,7 +53,7 @@ As long as the "Capture incoming 404 URLs" option is enabled in the options sect
 
 = Will there be a slow down on my site when running the plugin? =
 
-No there should be no noticeable slow down when running the plugin on your site.
+No, there should be no noticeable slow down when running the plugin on your site.
 
 = Will this plugin redirect my pages if I change my permalinks structure? =
 
@@ -76,6 +70,12 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 1.4.3 =
+
+* Updating a bug where a check for an ancient MySQL version would throw an error
+* Fixing integer bug in SQL query
+* General debug errors fixed as well.
 
 = Version 1.4.2 =
 
