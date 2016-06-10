@@ -5,6 +5,9 @@
 	Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
 	Author:      Remkus de Vries
 	Author URI:  https://remkusdevries.com
+
+	Version: 1.4.3
+
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
 	Domain Path: /languages

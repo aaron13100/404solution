@@ -34,7 +34,7 @@ function wbz404_getOptions( $skip_db_check="0" ) {
 	$keys = array_keys( $defaults );
 	for ( $i=0; $i < count( $keys ); $i++ ) {
 		$key = $keys[$i];
-		if ( $options[$key] == "" ) {
+		if ( isset( $options[$key] ) && $options[$key] == "" ) {
 			$options[$key] = $defaults[$key];
 			$missing++;
 		}
@@ -94,13 +94,11 @@ function wbz404_pluginActivation() {
 	add_option( 'wbz404_settings', '', '', 'no' );
 
 	$charset_collate = '';
-	if ( version_compare( mysql_get_server_info(), '4.1.0', '>=' ) ) {
-		if ( !empty( $wpdb->charset ) ) {
-			$charset_collate .= " DEFAULT CHARACTER SET $wpdb->charset";
-		}
-		if ( !empty( $wpdb->collate ) ) {
-			$charset_collate .= " COLLATE $wpdb->collate";
-		}
+	if ( !empty( $wpdb->charset ) ) {
+		$charset_collate .= " DEFAULT CHARACTER SET $wpdb->charset";
+	}
+	if ( !empty( $wpdb->collate ) ) {
+		$charset_collate .= " COLLATE $wpdb->collate";
 	}
 	$query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_redirects` (
 	  `id` bigint(30) NOT NULL auto_increment,
@@ -334,13 +332,15 @@ function wbz404_logRedirectHit( $id, $action ) {
 	);
 }
 
-function wbz404_cleanRedirect( $id ) {
+function wbz404_cleanRedirect($id) {
 	global $wpdb;
-	if ( $id != "" && $id != '0' ) {
+	if ($id != "" && $id != '0') {
 		$id = absint( $id );
-		$query="delete from " . $wpdb->prefix . "wbz404_redirects where id = " . esc_sql( absint( $id ) );
-		$query="delete from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . esc_sql( absint( $id ) );
-		$wpdb->query( $query );
+		$id = (string) $id;
+		$query="delete from " . $wpdb->prefix . "wbz404_redirects where id = " . $wpdb->escape($id);
+		$wpdb->query($query);
+		$query="delete from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . $wpdb->escape($id);
+		$wpdb->query($query);
 	}
 }
 
