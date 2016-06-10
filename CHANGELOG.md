@@ -1,5 +1,11 @@
 # Changelog #
 
+## Version 1.4.3 ##
+
+* Updating a bug where a check for an ancient MySQL version would throw an error
+* Fixing integer bug in SQL query
+* General debug errors fixed as well.
+
 ## Version 1.4.2 ##
 
 * Introducing WordPress Coding Standards
