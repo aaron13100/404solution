@@ -334,13 +334,15 @@ function wbz404_logRedirectHit( $id, $action ) {
 	);
 }
 
-function wbz404_cleanRedirect( $id ) {
+function wbz404_cleanRedirect($id) {
 	global $wpdb;
-	if ( $id != "" && $id != '0' ) {
+	if ($id != "" && $id != '0') {
 		$id = absint( $id );
-		$query="delete from " . $wpdb->prefix . "wbz404_redirects where id = " . esc_sql( absint( $id ) );
-		$query="delete from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . esc_sql( absint( $id ) );
-		$wpdb->query( $query );
+		$id = (string) $id;
+		$query="delete from " . $wpdb->prefix . "wbz404_redirects where id = " . $wpdb->escape($id);
+		$wpdb->query($query);
+		$query="delete from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . $wpdb->escape($id);
+		$wpdb->query($query);
 	}
 }
 
