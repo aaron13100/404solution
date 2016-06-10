@@ -10,9 +10,9 @@ function wbz404_addAdminPage() {
 	$pageName = "404 Redirected";
 
 	// Admin notice
-	if ( $options['admin_notification'] != '0' ) {
+	if ( isset( $options['admin_notification'] ) && $options['admin_notification'] != '0' ) {
 		$captured = wbz404_capturedCount();
-		if ( $captured >= $options['admin_notification'] ) {
+		if ( isset( $options['admin_notification'] ) && $captured >= $options['admin_notification'] ) {
 			$pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . esc_html( $captured ) . "</span></span>";
 			$pos = strpos( $menu[80][0], 'update-plugins' );
 			if ( $pos === false ) {
