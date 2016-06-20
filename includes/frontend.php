@@ -7,7 +7,7 @@
 function wbz404_suggestions() {
 	if ( is_404() ) {
 		$options = wbz404_getOptions();
-		if ( $options['display_suggest'] == '1' ) {
+		if ( isset( $options['display_suggest'] ) && $options['display_suggest'] == '1' ) {
 			echo "<div class=\"404suggest\">";
 			$requestedURL = $_SERVER['REQUEST_URI'];
 			$requestedURL = esc_url( $requestedURL );
@@ -69,7 +69,7 @@ function wbz404_process404() {
 		} else {
 			//No redirect record.
 			$found = 0;
-			if ( $options['auto_redirects'] == '1' ) {
+			if ( isset( $options['auto_redirects'] ) && $options['auto_redirects'] == '1' ) {
 				//Site owner wants automatic redirects
 				$permalinks = wbz404_rankPermalinks( $requestedURL, $options['auto_cats'], $options['auto_tags'] );
 				$minScore = $options['auto_score'];
@@ -108,7 +108,7 @@ function wbz404_process404() {
 				exit;
 			} else {
 				//Check for incoming 404 settings
-				if ( $options['capture_404'] == '1' ) {
+				if ( isset( $options['capture_404'] ) && $options['capture_404'] == '1' ) {
 					$redirect_id = wbz404_setupRedirect( $requestedURL, WBZ404_CAPTURED, 0, 0, $options['default_redirect'], 0 );
 					wbz404_logRedirectHit( $redirect_id, '404' );
 				}
@@ -140,7 +140,7 @@ function wbz404_process404() {
 				$perma_link .= wbz404_SortQuery( $urlParts );
 
 				//Check for forced permalinks
-				if ( $options['force_permalinks'] == '1' && $options['auto_redirects'] == '1' ) {
+				if ( isset( $options['force_permalinks'] ) && isset( $options['auto_redirects'] ) && $options['force_permalinks'] == '1' && $options['auto_redirects'] == '1' ) {
 					if ( $requestedURL != $perma_link ) {
 						if ( $redirect['id'] != '0' ) {
 							wbz404_ProcessRedirect( $redirect );
