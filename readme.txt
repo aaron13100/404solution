@@ -3,7 +3,7 @@ Contributors: DeFries
 Donate link: https://remkusdevries.com/donate/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
-Version: 1.4.3
+Version: 1.4.4
 Tested up to: 4.5.2
 Stable tag: 1.4.3
 
