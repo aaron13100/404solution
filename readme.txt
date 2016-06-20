@@ -3,7 +3,7 @@ Contributors: DeFries
 Donate link: https://remkusdevries.com/donate/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
-Version: 1.4.3
+Version: 1.4.4
 Tested up to: 4.5.2
 Stable tag: 1.4.3
 
@@ -70,6 +70,12 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 1.4.4 =
+* Fixed a [SQL bug](https://github.com/defries/404-redirected/issues/7)
+* Fixed a bug where [logs wouldn't get deleted](https://github.com/defries/404-redirected/issues/8)
+* Fixed a bug where [deactivating and activating the plugin would reset the stats to 0](https://github.com/defries/404-redirected/issues/9)
+* Fixed various [PHP notices](https://github.com/defries/404-redirected/issues/10)
 
 = Version 1.4.3 =
 
@@ -173,6 +179,12 @@ Released: 2011-11-20
 * Initial Release
 
 == Upgrade Notice ==
+
+= Version 1.4.4 =
+* Fixed a [SQL bug](https://github.com/defries/404-redirected/issues/7)
+* Fixed a bug where [logs wouldn't get deleted](https://github.com/defries/404-redirected/issues/8)
+* Fixed a bug where [deactivating and activating the plugin would reset the stats to 0](https://github.com/defries/404-redirected/issues/9)
+* Fixed various [PHP notices](https://github.com/defries/404-redirected/issues/10)
 
 = Version 1.3 =
 
