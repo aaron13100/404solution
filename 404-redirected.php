@@ -6,7 +6,7 @@
 	Author:      Remkus de Vries
 	Author URI:  https://remkusdevries.com
 
-	Version: 1.4.4
+	Version: 1.4.5
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
