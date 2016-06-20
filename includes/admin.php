@@ -31,7 +31,7 @@ function wbz404_dashboardNotification() {
 	if ( current_user_can( 'manage_options' ) ) {
 		if ( ( isset( $_GET['page'] ) && $_GET['page'] == "wbz404_redirected" ) || ( $pagenow == 'index.php' && ( !( isset( $_GET['page'] ) ) ) ) ) {
 			$options = wbz404_getOptions();
-			if ( $options['admin_notification'] != '0' ) {
+			if ( isset( $options['admin_notification'] ) && $options['admin_notification'] != '0' ) {
 				$captured = wbz404_capturedCount();
 				if ( $captured >= $options['admin_notification'] ) {
 					echo "<div class=\"updated\"><p><strong>" . esc_html( __( '404 Redirected', '404-redirected' ) ) . ":</strong> " . __( 'There are ' . esc_html( $captured ) . ' captured 404 URLs that need to be processed.', '404-redirected' ) . "</p></div>";
