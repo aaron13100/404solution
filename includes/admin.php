@@ -2204,6 +2204,7 @@ function wbz404_purgeRedirects() {
 					$purge = $_POST['purgetype'];
 					if ( $purge == "logs" || $purge == "redirects" ) {
 						$query = "delete from " . esc_html( $logs ) . " where redirect_id in (select id from " . esc_html( $redirects ) . " where status in (" . esc_html( $types ) . "))";
+						$logcount = $wpdb->query( $query );
 						$message = $logcount . " " . __( 'Log entries were purged.', '404-redirected' );
 
 						if ( $purge == "redirects" ) {
