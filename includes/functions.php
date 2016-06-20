@@ -172,7 +172,7 @@ function wbz404_unregisterCrons() {
 }
 
 function wbz404_pluginRemove() {
-	delete_option( 'wbz404_settings' );
+	//delete_option( 'wbz404_settings' );
 	wbz404_unregisterCrons();
 }
 
