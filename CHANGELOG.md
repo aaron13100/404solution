@@ -1,5 +1,11 @@
 # Changelog #
 
+## Version 1.4.4 ##
+* Fixed a [SQL bug](https://github.com/defries/404-redirected/issues/7)
+* Fixed a bug where [logs wouldn't get deleted](https://github.com/defries/404-redirected/issues/8)
+* Fixed a bug where [deactivating and activating the plugin would reset the stats to 0](https://github.com/defries/404-redirected/issues/9)
+* Fixed various [PHP notices](https://github.com/defries/404-redirected/issues/10)
+
 ## Version 1.4.3 ##
 
 * Updating a bug where a check for an ancient MySQL version would throw an error
