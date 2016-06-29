@@ -229,5 +229,5 @@ function wbz404_redirectCanonical( $redirect, $request ) {
 	return $redirect;
 }
 
-add_action( 'template_redirect', 'wbz404_process404' );
+add_action( 'template_redirect', 'wbz404_process404', 9999 );
 add_filter( 'redirect_canonical', 'wbz404_redirectCanonical', 10, 2 );
