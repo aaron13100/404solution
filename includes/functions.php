@@ -512,6 +512,9 @@ function wbz404_ProcessRedirect( $redirect ) {
 	}
 }
 
+/**
+ * Modifies the request_uri to avoid the plugin redirecting pages when used with query vars.
+ */
 class Bypass404Redirect {
     function __construct(){
         add_action('template_redirect', array($this, 'strip'), 9998);
