@@ -500,12 +500,6 @@ function wbz404_ProcessRedirect( $redirect ) {
 				} else if ( $redirect['type'] == WBZ404_TAG ) {
 					$key = $redirect['final_dest'] . "|TAG";
 				}
-			if ( $key != "" ) {
-				$permalink = wbz404_permalinkInfo( $key, 0 );
-				wbz404_logRedirectHit( $redirect['id'], $permalink['link'] );
-				wp_redirect( esc_url( $permalink['link'] ), esc_html( $redirect['code'] ) );
-				exit;
-			}
 		}
 	} else {
 		wbz404_logRedirectHit( esc_html( $redirect['id'] ), '404' );
