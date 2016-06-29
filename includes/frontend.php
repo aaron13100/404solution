@@ -51,6 +51,12 @@ function wbz404_suggestions() {
 }
 
 function wbz404_process404() {
+
+	// Bail out if not on 404 error page
+	if ( ! is_404() ) {
+		return;
+	}
+
 	$options = wbz404_getOptions();
 
 	$urlRequest = $_SERVER['REQUEST_URI'];
