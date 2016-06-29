@@ -511,3 +511,21 @@ function wbz404_ProcessRedirect( $redirect ) {
 		wbz404_logRedirectHit( esc_html( $redirect['id'] ), '404' );
 	}
 }
+
+class Bypass404Redirect {
+    function __construct(){
+        add_action('template_redirect', array($this, 'strip'), 9998);
+        add_action('template_redirect', array($this, 'restore'), 10000);
+    }
+    private $uri = '';
+
+    function strip(){
+        $this->uri = $_SERVER['REQUEST_URI'];
+        $_SERVER['REQUEST_URI'] = preg_replace('/\?.*/', '', $_SERVER['REQUEST_URI']);
+    }
+
+    function restore(){
+        $_SERVER['REQUEST_URI'] = $this->uri;
+    }
+}
+new Bypass404Redirect();
