@@ -589,7 +589,12 @@ function wbz404_getRedirectLastUsed( $id ) {
 
 	$query = "select timestamp from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . esc_sql( $id ) . " order by timestamp desc";
 	$row = $wpdb->get_col( $query );
-	return $row[0];
+
+	if ( isset( $row[0] ) ) {
+		return $row[0];
+	} else {
+		return;
+	}
 }
 
 function wbz404_addAdminRedirect() {
