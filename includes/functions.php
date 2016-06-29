@@ -496,11 +496,17 @@ function wbz404_ProcessRedirect( $redirect ) {
 			if ( $redirect['type'] == WBZ404_POST ) {
 				$key = $redirect['final_dest'] . "|POST";
 			} else if ( $redirect['type'] == WBZ404_CAT ) {
-					$key = $redirect['final_dest'] . "|CAT";
-				} else if ( $redirect['type'] == WBZ404_TAG ) {
-					$key = $redirect['final_dest'] . "|TAG";
-				}
-		}
+				$key = $redirect['final_dest'] . "|CAT";
+			} else if ( $redirect['type'] == WBZ404_TAG ) {
+				$key = $redirect['final_dest'] . "|TAG";
+			}
+			if ( $key != "" ) {		
+				$permalink = wbz404_permalinkInfo( $key, 0 );		
+				wbz404_logRedirectHit( $redirect['id'], $permalink['link'] );		
+				wp_redirect( esc_url( $permalink['link'] ), esc_html( $redirect['code'] ) );		
+				exit;		
+			}
+ 		}
 	} else {
 		wbz404_logRedirectHit( esc_html( $redirect['id'] ), '404' );
 	}
