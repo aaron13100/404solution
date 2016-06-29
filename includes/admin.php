@@ -2185,8 +2185,8 @@ function wbz404_purgeRedirects() {
 
 	$sanity = $_POST['sanity'];
 	if ( $sanity == "1" ) {
-		$type = $_POST['types'];
-		if ( $type != "" ) {
+		if ( isset( $_POST['types'] ) && '' != $_POST['types'] ) {
+			$type = $_POST['types'];
 			if ( is_array( $type ) ) {
 				$types = "";
 				$x=0;
@@ -2202,6 +2202,7 @@ function wbz404_purgeRedirects() {
 
 				if ( $types != "" ) {
 					$purge = $_POST['purgetype'];
+
 					if ( $purge == "logs" || $purge == "redirects" ) {
 						$query = "delete from " . esc_html( $logs ) . " where redirect_id in (select id from " . esc_html( $redirects ) . " where status in (" . esc_html( $types ) . "))";
 						$logcount = $wpdb->query( $query );
@@ -2228,5 +2229,6 @@ function wbz404_purgeRedirects() {
 	} else {
 		$message = __( 'Error: You didn\'t check the I understand checkbox. No purging of records for you!', '404-redirected' );
 	}
+
 	return $message;
 }
