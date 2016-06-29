@@ -496,12 +496,39 @@ function wbz404_ProcessRedirect( $redirect ) {
 			if ( $redirect['type'] == WBZ404_POST ) {
 				$key = $redirect['final_dest'] . "|POST";
 			} else if ( $redirect['type'] == WBZ404_CAT ) {
-					$key = $redirect['final_dest'] . "|CAT";
-				} else if ( $redirect['type'] == WBZ404_TAG ) {
-					$key = $redirect['final_dest'] . "|TAG";
-				}
-		}
+				$key = $redirect['final_dest'] . "|CAT";
+			} else if ( $redirect['type'] == WBZ404_TAG ) {
+				$key = $redirect['final_dest'] . "|TAG";
+			}
+			if ( $key != "" ) {		
+				$permalink = wbz404_permalinkInfo( $key, 0 );		
+				wbz404_logRedirectHit( $redirect['id'], $permalink['link'] );		
+				wp_redirect( esc_url( $permalink['link'] ), esc_html( $redirect['code'] ) );		
+				exit;		
+			}
+ 		}
 	} else {
 		wbz404_logRedirectHit( esc_html( $redirect['id'] ), '404' );
 	}
 }
+
+/**
+ * Modifies the request_uri to avoid the plugin redirecting pages when used with query vars.
+ */
+class Bypass404Redirect {
+    function __construct(){
+        add_action('template_redirect', array($this, 'strip'), 9998);
+        add_action('template_redirect', array($this, 'restore'), 10000);
+    }
+    private $uri = '';
+
+    function strip(){
+        $this->uri = $_SERVER['REQUEST_URI'];
+        $_SERVER['REQUEST_URI'] = preg_replace('/\?.*/', '', $_SERVER['REQUEST_URI']);
+    }
+
+    function restore(){
+        $_SERVER['REQUEST_URI'] = $this->uri;
+    }
+}
+new Bypass404Redirect();
