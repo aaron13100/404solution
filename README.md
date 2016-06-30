@@ -71,6 +71,12 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 
 ## Upgrade Notice ##
 
+### Version 1.4.6 ###
+* Fixed bug where query vars were being stripped
+* Fixed a bug caused by plugin incorrectly injecting end-points turning up as 404s
+* Fixed log purging issues
+* General code improvements
+
 ### Version 1.4.4 ###
 * Fixed a [SQL bug](https://github.com/defries/404-redirected/issues/7)
 * Fixed a bug where [logs wouldn't get deleted](https://github.com/defries/404-redirected/issues/8)

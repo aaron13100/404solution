@@ -3,9 +3,9 @@ Contributors: DeFries
 Donate link: https://remkusdevries.com/donate/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
-Version: 1.4.5
+Version: 1.4.6
 Tested up to: 4.5.2
-Stable tag: 1.4.5
+Stable tag: 1.4.6
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 
@@ -70,6 +70,11 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 1.4.6 =
+* Fixed bug where query vars were being stripped
+* Fixed a bug caused by plugin incorrectly injecting end-points turning up as 404s
+* Fixed log purging issues
 
 = Version 1.4.4 =
 * Fixed a [SQL bug](https://github.com/defries/404-redirected/issues/7)
@@ -179,6 +184,12 @@ Released: 2011-11-20
 * Initial Release
 
 == Upgrade Notice ==
+
+= Version 1.4.6 =
+* Fixed bug where query vars were being stripped
+* Fixed a bug caused by plugin incorrectly injecting end-points turning up as 404s
+* Fixed log purging issues
+* General code improvements
 
 = Version 1.4.4 =
 * Fixed a [SQL bug](https://github.com/defries/404-redirected/issues/7)
