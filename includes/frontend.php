@@ -51,6 +51,12 @@ function wbz404_suggestions() {
 }
 
 function wbz404_process404() {
+
+	// Bail out if not on 404 error page
+	if ( ! is_404() ) {
+		return;
+	}
+
 	$options = wbz404_getOptions();
 
 	$urlRequest = $_SERVER['REQUEST_URI'];
@@ -229,5 +235,5 @@ function wbz404_redirectCanonical( $redirect, $request ) {
 	return $redirect;
 }
 
-add_action( 'template_redirect', 'wbz404_process404' );
+add_action( 'template_redirect', 'wbz404_process404', 9999 );
 add_filter( 'redirect_canonical', 'wbz404_redirectCanonical', 10, 2 );

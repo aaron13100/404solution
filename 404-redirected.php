@@ -6,7 +6,7 @@
 	Author:      Remkus de Vries
 	Author URI:  https://remkusdevries.com
 
-	Version: 1.4.5
+	Version: 1.4.6
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -37,7 +37,7 @@
 define( 'WBZ404_URL', plugin_dir_url( __FILE__ ) );
 define( 'WBZ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WBZ404_NAME', plugin_basename( __FILE__ ) );
-define( 'WBZ404_VERSION', '1.4.2' );
+define( 'WBZ404_VERSION', '1.4.6' );
 define( 'WBZ404_HOME', 'https://remkusdevries/plugins/404-redirected/' );
 define( 'WBZ404_TRANS', 'wbz404_redirected' );
 
@@ -55,6 +55,8 @@ define( 'WBZ404_EXTERNAL', 4 );
 
 require WBZ404_PATH."includes/functions.php";
 require WBZ404_PATH."includes/frontend.php";
+require WBZ404_PATH."includes/class-wbz404-bypass-404-redirect.php";
+
 if ( is_admin() ) {
 	require WBZ404_PATH."includes/admin.php";
 }

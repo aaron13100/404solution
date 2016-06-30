@@ -589,7 +589,12 @@ function wbz404_getRedirectLastUsed( $id ) {
 
 	$query = "select timestamp from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . esc_sql( $id ) . " order by timestamp desc";
 	$row = $wpdb->get_col( $query );
-	return $row[0];
+
+	if ( isset( $row[0] ) ) {
+		return $row[0];
+	} else {
+		return;
+	}
 }
 
 function wbz404_addAdminRedirect() {
@@ -2185,8 +2190,8 @@ function wbz404_purgeRedirects() {
 
 	$sanity = $_POST['sanity'];
 	if ( $sanity == "1" ) {
-		$type = $_POST['types'];
-		if ( $type != "" ) {
+		if ( isset( $_POST['types'] ) && '' != $_POST['types'] ) {
+			$type = $_POST['types'];
 			if ( is_array( $type ) ) {
 				$types = "";
 				$x=0;
@@ -2202,6 +2207,7 @@ function wbz404_purgeRedirects() {
 
 				if ( $types != "" ) {
 					$purge = $_POST['purgetype'];
+
 					if ( $purge == "logs" || $purge == "redirects" ) {
 						$query = "delete from " . esc_html( $logs ) . " where redirect_id in (select id from " . esc_html( $redirects ) . " where status in (" . esc_html( $types ) . "))";
 						$logcount = $wpdb->query( $query );
@@ -2228,5 +2234,6 @@ function wbz404_purgeRedirects() {
 	} else {
 		$message = __( 'Error: You didn\'t check the I understand checkbox. No purging of records for you!', '404-redirected' );
 	}
+
 	return $message;
 }
