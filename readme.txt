@@ -4,7 +4,7 @@ Donate link: https://remkusdevries.com/donate/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
 Version: 1.4.6
-Tested up to: 4.5.2
+Tested up to: 4.5.3
 Stable tag: 1.4.6
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
