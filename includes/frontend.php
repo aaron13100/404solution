@@ -4,17 +4,34 @@
  *
 */
 
+/**
+ * Suggesting 404 content based on defaults and settings
+ */
 function wbz404_suggestions() {
+
 	if ( is_404() ) {
 		$options = wbz404_getOptions();
 		if ( isset( $options['display_suggest'] ) && $options['display_suggest'] == '1' ) {
-			echo "<div class=\"404suggest\">";
+			echo "<div class=\"suggest-404s\">";
 			$requestedURL = $_SERVER['REQUEST_URI'];
 			$requestedURL = esc_url( $requestedURL );
 			$urlParts = parse_url( $requestedURL );
 			$permalinks = wbz404_rankPermalinks( $urlParts['path'], $options['suggest_cats'], $options['suggest_tags'] );
 
-			echo esc_html( $options['suggest_title'] );
+			// Allowing some HTML.
+			echo wp_kses( $options['suggest_title'],
+				array(
+					'h1' 		=> array(),
+					'h2' 		=> array(),
+					'h3' 		=> array(),
+					'h4' 		=> array(),
+					'h5' 		=> array(),
+					'h6' 		=> array(),
+					'i'			=> array(),
+					'em'		=> array(),
+					'strong'	=> array(),
+			      ) 
+				);
 			$displayed = 0;
 
 			foreach ( $permalinks as $k=>$v ) {
@@ -22,15 +39,34 @@ function wbz404_suggestions() {
 
 				if ( $permalink['score'] >= $options['suggest_minscore'] ) {
 					if ( $displayed == 0 ) {
-						echo esc_html( $options['suggest_before'] );
+						// No need to escape since we're expecting HTML
+						echo wp_kses( $options['suggest_before'],
+							array(
+								'ul' 		=> array(),
+								'ol' 		=> array(),
+								'li'		=> array(),
+							)
+						);
 					}
 
-					echo $options['suggest_entrybefore'];
-					echo "<a href=\"" . esc_url( $permalink['link'] ) . "\" title=\"" . esc_attr( $permalink['title'] ) . "\">" . esc_html( $permalink['title'] ) . "</a>";
+					echo wp_kses( $options['suggest_entrybefore'],
+						array(
+								'ul' 		=> array(),
+								'ol' 		=> array(),
+								'li'		=> array(),
+							)
+					 );
+					echo "<a href=\"" . esc_url( $permalink['link'] ) . "\" title=\"" . esc_attr( $permalink['title'] ) . "\">" . esc_attr( $permalink['title'] ) . "</a>";
 					if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) {
 						echo " (" . esc_html( $permalink['score'] ) . ")";
 					}
-					echo esc_html( $options['suggest_entryafter'] );
+					echo wp_kses( $options['suggest_entryafter'],
+						array(
+								'ul' 		=> array(),
+								'ol' 		=> array(),
+								'li'		=> array(),
+							)
+					 );
 					$displayed++;
 					if ( $displayed >= $options['suggest_max'] ) {
 						break;
@@ -40,9 +76,15 @@ function wbz404_suggestions() {
 				}
 			}
 			if ( $displayed >= 1 ) {
-				echo esc_html( $options['suggest_after'] );
+				echo wp_kses( $options['suggest_after'], 
+					array(
+						'ul' 		=> array(),
+						'ol' 		=> array(),
+						'li'		=> array(),
+					)
+				);
 			} else {
-				echo esc_html( $options['suggest_noresults'] );
+				echo wp_kses( $options['suggest_noresults'], $allowedtags );
 			}
 
 			echo "</div>";
@@ -50,9 +92,13 @@ function wbz404_suggestions() {
 	}
 }
 
+add_action( 'template_redirect', 'wbz404_process404', 9999 );
+/**
+ * Process the 404s
+ */
 function wbz404_process404() {
 
-	// Bail out if not on 404 error page
+	// Bail out if not on 404 error page.
 	if ( ! is_404() ) {
 		return;
 	}
@@ -70,13 +116,13 @@ function wbz404_process404() {
 
 	if ( is_404() && $requestedURL != "" ) {
 		if ( $redirect['id'] != '0' ) {
-			//A redirect record exists.
+			// A redirect record exists.
 			wbz404_ProcessRedirect( $redirect );
 		} else {
-			//No redirect record.
+			// No redirect record.
 			$found = 0;
 			if ( isset( $options['auto_redirects'] ) && $options['auto_redirects'] == '1' ) {
-				//Site owner wants automatic redirects
+				// Site owner wants automatic redirects.
 				$permalinks = wbz404_rankPermalinks( $requestedURL, $options['auto_cats'], $options['auto_tags'] );
 				$minScore = $options['auto_score'];
 
@@ -87,13 +133,13 @@ function wbz404_process404() {
 						$found = 1;
 						break;
 					} else {
-						//Score not high enough
+						// Score not high enough.
 						break;
 					}
 				}
 
 				if ( $found == 1 ) {
-					//We found a permalink that will work!
+					// We found a permalink that will work!
 					$type = 0;
 					if ( $permalink['type'] == "POST" ) {
 						$type = WBZ404_POST;
@@ -108,12 +154,12 @@ function wbz404_process404() {
 				}
 			}
 			if ( $found == 1 ) {
-				//Perform actual redirect
+				// Perform actual redirect.
 				wbz404_logRedirectHit( $redirect_id, $permalink['link'] );
 				wp_redirect( esc_url( $permalink['link'] ), esc_html( $options['default_redirect'] ) );
 				exit;
 			} else {
-				//Check for incoming 404 settings
+				// Check for incoming 404 settings.
 				if ( isset( $options['capture_404'] ) && $options['capture_404'] == '1' ) {
 					$redirect_id = wbz404_setupRedirect( $requestedURL, WBZ404_CAPTURED, 0, 0, $options['default_redirect'], 0 );
 					wbz404_logRedirectHit( $redirect_id, '404' );
@@ -145,7 +191,7 @@ function wbz404_process404() {
 
 				$perma_link .= wbz404_SortQuery( $urlParts );
 
-				//Check for forced permalinks
+				// Check for forced permalinks.
 				if ( isset( $options['force_permalinks'] ) && isset( $options['auto_redirects'] ) && $options['force_permalinks'] == '1' && $options['auto_redirects'] == '1' ) {
 					if ( $requestedURL != $perma_link ) {
 						if ( $redirect['id'] != '0' ) {
@@ -160,7 +206,7 @@ function wbz404_process404() {
 				}
 
 				if ( $requestedURL == $perma_link ) {
-					//Not a 404 Link. Check for matches
+					// Not a 404 Link. Check for matches.
 					if ( $options['remove_matches'] == '1' ) {
 						if ( $redirect['id'] != '0' ) {
 							wbz404_cleanRedirect( $redirect['id'] );
@@ -172,14 +218,17 @@ function wbz404_process404() {
 	}
 }
 
+add_filter( 'redirect_canonical', 'wbz404_redirectCanonical', 10, 2 );
+/**
+ * Redirect canonicals
+ */
 function wbz404_redirectCanonical( $redirect, $request ) {
 	if ( is_single() || is_page() ) {
 		if ( !is_feed() && !is_trackback() && !is_preview() ) {
 			$options = wbz404_getOptions();
 
-			/**
-			 * Sanitizing options.
-			 */
+			
+			// Sanitizing options.
 			foreach ( $options as $key => $value ) {
 				$key = wp_kses_post( $key );
 				$options[$key] = wp_kses_post( $value );
@@ -192,7 +241,7 @@ function wbz404_redirectCanonical( $redirect, $request ) {
 			$requestedURL = $urlParts['path'];
 			$requestedURL .= wbz404_SortQuery( $urlParts );
 
-			////Get URL data if it's already in our database
+			// Get URL data if it's already in our database.
 			$data = wbz404_loadRedirectData( $requestedURL );
 
 			if ( $data['id'] != '0' ) {
@@ -231,9 +280,10 @@ function wbz404_redirectCanonical( $redirect, $request ) {
 		}
 	}
 
-	if ( is_404() ) { return false; }
+	if ( is_404() ) { 
+		return false; 
+	}
+	
 	return $redirect;
-}
 
-add_action( 'template_redirect', 'wbz404_process404', 9999 );
-add_filter( 'redirect_canonical', 'wbz404_redirectCanonical', 10, 2 );
+}
