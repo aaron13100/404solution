@@ -3,9 +3,9 @@ Contributors: DeFries
 Donate link: https://remkusdevries.com/donate/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
-Version: 1.4.6
-Tested up to: 4.5.3
-Stable tag: 1.4.6
+Version: 1.4.7
+Tested up to: 4.6.0
+Stable tag: 1.4.7
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 
@@ -70,6 +70,10 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 1.4.7 = 
+* Fixed too strict data sanitation for the `wbz404_suggestions()` template tag
+* Fixed CSS class for suggested 404s div wrapper.
 
 = Version 1.4.6 =
 * Fixed bug where query vars were being stripped
