@@ -28,19 +28,17 @@ function wbz404_getOptions( $skip_db_check="0" ) {
 		add_option( 'wbz404_settings', '', '', 'no' );
 	}
 
-	//Check to make sure we aren't missing any new options
+	// Check to make sure we aren't missing any new options.
 	$defaults = wbz404_getDefaultOptions();
-	$missing = 0;
-	$keys = array_keys( $defaults );
-	for ( $i=0; $i < count( $keys ); $i++ ) {
-		$key = $keys[$i];
-		if ( isset( $options[$key] ) && $options[$key] == "" ) {
-			$options[$key] = $defaults[$key];
-			$missing++;
+	$missing = false;
+	foreach ( $defaults as $key => $value ) {
+		if ( ! isset( $options[ $key ] ) || '' === $options[ $key ] ) {
+			$options[ $key ] = $value;
+			$missing = true;
 		}
 	}
 
-	if ( $missing != 0 ) {
+	if ( $missing ) {
 		update_option( 'wbz404_settings', $options );
 	}
 
