@@ -457,7 +457,7 @@ function wbz404_drawPaginationLinks( $sub, $tableOptions ) {
 	}
 
 	echo "<div class=\"tablenav-pages\">";
-	echo "<span class=\"displaying-num\">" . $tableOptions['perpage'] . " " . __( 'items', '404-redirected' ) . "</span>";
+	echo "<span class=\"displaying-num\">" . $num_records . " " . __( 'items', '404-redirected' ) . "</span>";
 	echo "<span class=\"pagination-links\">";
 	$class = "";
 	if ( $tableOptions['paged'] == 1 ) {
