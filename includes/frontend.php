@@ -105,7 +105,7 @@ function wbz404_process404() {
 
 	$options = wbz404_getOptions();
 
-	$urlRequest = $_SERVER['REQUEST_URI'];
+	$urlRequest = preg_replace( '/\?.*/', '', $_SERVER['REQUEST_URI'] );
 	$urlRequest = esc_url( $urlRequest );
 	$urlParts = parse_url( $urlRequest );
 	$requestedURL = $urlParts['path'];

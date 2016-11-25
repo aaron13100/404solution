@@ -55,7 +55,6 @@ define( 'WBZ404_EXTERNAL', 4 );
 
 require WBZ404_PATH."includes/functions.php";
 require WBZ404_PATH."includes/frontend.php";
-require WBZ404_PATH."includes/class-wbz404-bypass-404-redirect.php";
 
 if ( is_admin() ) {
 	require WBZ404_PATH."includes/admin.php";
