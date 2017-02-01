@@ -1,4 +1,4 @@
-# 404 Redirected #
+# Redirectioner #
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 

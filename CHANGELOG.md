@@ -1,5 +1,9 @@
 # Changelog #
 
+## Trunk ###
+* Rename to Redirectioner
+* Update branding links
+
 ## Version 1.4.7 ##
 * Fixed too strict data sanitation for the `wbz404_suggestions()` template tag
 * Fixed CSS class for suggested 404s div wrapper.
