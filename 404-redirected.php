@@ -1,10 +1,10 @@
 <?php
 /*
-	Plugin Name: 404 Redirected
-	Plugin URI:  https://remkusdevries.com/plugins/404-redirected
+	Plugin Name: Redirectioner
+	Plugin URI:  https://redirectioner.com
 	Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
-	Author:      Remkus de Vries
-	Author URI:  https://remkusdevries.com
+	Author:      ThemeMix
+	Author URI:  https://thememix.com
 
 	Version: 1.4.7
 
@@ -13,10 +13,10 @@
 	Domain Path: /languages
 	Text Domain: 404-redirected
 
-	Developed by Weberz Hosting. Maintained by Remkus de Vries.
+	Developed by Weberz Hosting. Maintained by ThemeMix.
 
 	Copyright 2009  Weberz Hosting  (email: rob@weberz.com)
-	Copyright 2016  Remkus de Vries
+	Copyright 2016  ThemeMix
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ define( 'WBZ404_URL', plugin_dir_url( __FILE__ ) );
 define( 'WBZ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WBZ404_NAME', plugin_basename( __FILE__ ) );
 define( 'WBZ404_VERSION', '1.4.7' );
-define( 'WBZ404_HOME', 'https://remkusdevries/plugins/404-redirected/' );
+define( 'WBZ404_HOME', 'https://redirectioner.com/' );
 define( 'WBZ404_TRANS', 'wbz404_redirected' );
 
 //URL Types

@@ -199,9 +199,9 @@ gulp.task('wp-pot', ['clean:pot'], function() {
 		domain: '404-redirected',
 		destFile:'404-redirected.pot',
 		package: '404-redirected',
-		bugReport: 'https://github.com/defries/404-redirected/issues/',
+		bugReport: 'https://github.com/thememix/redirectioner/issues/',
 		lastTranslator: 'Remkus de Vries <mail@devries.frl>',
-		team: 'Team <translations@devries.frl>'
+		team: 'Team <translations@thememix.com>'
 	}))
 	.pipe(gulp.dest('languages/'));
 });

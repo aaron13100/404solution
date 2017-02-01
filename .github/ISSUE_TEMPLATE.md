@@ -1,5 +1,5 @@
 <!--
-Thanks for contributing to 404 Redirected! Enter a clear title (e.g. "Search error when using plus sign") and proceed.
+Thanks for contributing to Redirectioner! Enter a clear title (e.g. "Search error when using plus sign") and proceed.
 -->
 
 #### What I Expected To Happen

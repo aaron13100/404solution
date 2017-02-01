@@ -1,4 +1,4 @@
-=== 404 Redirected ===
+=== Redirectioner ===
 Contributors: DeFries
 Donate link: https://remkusdevries.com/donate/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
@@ -14,7 +14,7 @@ Creates automatic redirects for 404 traffic and page suggestions when matches ar
 404 Redirected allows WordPress admins to have control over their dead links and redirects from inside the admin panel. 404 Redirected records all URLs that users have visited and allows the admin to easily create 301 and 302 redirects to valid pages on their site. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
 
 > <strong>Support & Bug Reports</strong><br>
-> If you're in need of support or would like to file a bug report, please head over to our Github repository and [create a new issue.](https://github.com/defries/404-redirected/issues)
+> If you're in need of support or would like to file a bug report, please head over to our Github repository and [create a new issue.](https://github.com/thememix/redirectioner/issues)
 >
 
 = Features: =
