@@ -1,6 +1,6 @@
 === 404 Killer ===
 Contributors: aaron13100
-Website: https://www.wealth-psychology.com/
+Website: http://stinkycheese.ajexperience.com/about/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect
 Requires at least: 3.1
 Version: 1.4.7
