@@ -71,6 +71,10 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 
 ## Upgrade Notice ##
 
+### Version 1.4.7 ###
+* Fixed too strict data sanitation for the `wbz404_suggestions()` template tag
+* Fixed CSS class for suggested 404s div wrapper.
+
 ### Version 1.4.6 ###
 * Fixed bug where query vars were being stripped
 * Fixed a bug caused by plugin incorrectly injecting end-points turning up as 404s
