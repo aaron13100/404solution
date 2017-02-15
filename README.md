@@ -59,10 +59,10 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 ## Screenshots ##
 
 1. Admin Options Screen
-![1. Admin Options Screen](https://ps.w.org/404-redirected/trunk/screenshot-1.jpg)
+![1. Admin Options Screen](https://ps.w.org/404-redirected/trunk/screenshot-1.png)
 
 2. Logs
-![2. Logs](https://ps.w.org/404-redirected/trunk/screenshot-2.jpg)
+![2. Logs](https://ps.w.org/404-redirected/trunk/screenshot-2.png)
 
 3. Create New Redirect
 ![3. Create New Redirect](https://ps.w.org/404-redirected/trunk/screenshot-3.png)
