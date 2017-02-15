@@ -1,13 +1,13 @@
-# Redirectioner #
+# 404 Killer #
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 
 ## Description ##
 
-404 Redirected allows WordPress admins to have control over their dead links and redirects from inside the admin panel. 404 Redirected records all URLs that users have visited and allows the admin to easily create 301 and 302 redirects to valid pages on their site. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
+Allows WordPress admins to have control over their dead links and redirects from inside the admin panel. Records all URLs that users have visited and allows the admin to easily create 301 and 302 redirects to valid pages on their site. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
 
 > <strong>Support & Bug Reports</strong><br>
-> If you're in need of support or would like to file a bug report, please head over to our Github repository and [create a new issue.](https://github.com/defries/404-redirected/issues)
+> If you're in need of support or would like to file a bug report, please head over to our Github repository and [create a new issue.](https://github.com/aaron13100/404killer/issues)
 >
 
 ### Features: ###
@@ -29,11 +29,11 @@ Convert your 404 traffic by providing your site visitors with a better browsing 
 
 ## Installation ##
 
-Installation of 404 Redirect is simple:
+Installation is simple:
 
-1. Unzip `404-redirected.zip` and upload contents to the `/wp-content/plugins/` directory
-1. Activate the plugin through the 'Plugins' menu in WordPress Admin
-1. Use the `Settings -> 404 Redirected` options page to enable desired features.
+1. Unzip the file and upload the contents to the `/wp-content/plugins/` directory
+1. Activate the plugin.
+1. Use the `Settings -> 404 Killer` options page to enable desired features.
 
 For the `suggested pages` feature to work you need to edit your 404.php template file to include the following code:
 `<?php if (function_exists( 'wbz404_suggestions' ) ) { wbz404_suggestions(); } ?>`
@@ -59,13 +59,13 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 ## Screenshots ##
 
 1. Admin Options Screen
-![1. Admin Options Screen](https://ps.w.org/404-redirected/assets/screenshot-1.jpg)
+![1. Admin Options Screen](https://ps.w.org/404-redirected/trunk/screenshot-1.jpg)
 
 2. Logs
-![2. Logs](https://ps.w.org/404-redirected/assets/screenshot-2.jpg)
+![2. Logs](https://ps.w.org/404-redirected/trunk/screenshot-2.jpg)
 
 3. Create New Redirect
-![3. Create New Redirect](https://ps.w.org/404-redirected/assets/screenshot-3.png)
+![3. Create New Redirect](https://ps.w.org/404-redirected/trunk/screenshot-3.png)
 
 
 
