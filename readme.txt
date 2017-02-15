@@ -39,8 +39,8 @@ Convert your 404 traffic by providing your site visitors with a better browsing 
 Installation of 404 Redirect is simple:
 
 1. Unzip the files and upload the contents to the `/wp-content/plugins/` directory
-1. Activate the plugin through the 'Plugins' menu in WordPress Admin
-1. Use the `Settings -> 404 Redirected` options page to enable desired features.
+2. Activate the plugin
+3. Use the `Settings -> 404 Killer` options page to set the options.
 
 For the `suggested pages` feature to work you need to edit your 404.php template file to include the following code:
 `<?php if (function_exists( 'wbz404_suggestions' ) ) { wbz404_suggestions(); } ?>`
