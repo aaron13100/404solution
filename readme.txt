@@ -1,6 +1,6 @@
 === 404 Killer ===
 Contributors: aaron13100
-Website: http://stinkycheese.ajexperience.com/about/
+Website: http://www.wealth-psychology.com/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect
 Requires at least: 3.1
 Version: 1.4.7
@@ -11,7 +11,7 @@ Creates automatic redirects for 404 traffic and page suggestions when matches ar
 
 == Description ==
 
-404 Redirected allows WordPress admins to have control over their dead links and redirects from inside the admin panel. 404 Redirected records all URLs that users have visited and allows the admin to easily create 301 and 302 redirects to valid pages on their site. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
+404 Killer allows WordPress admins to have control over their dead links and redirects from inside the admin panel. 404 Redirected records all URLs that users have visited and allows the admin to easily create 301 and 302 redirects to valid pages on their site. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
 
 > <strong>Support & Bug Reports</strong><br>
 > If you're in need of support or would like to file a bug report, please head over to our Github repository and [create a new issue.](https://github.com/aaron13100/404killer/issues)
@@ -43,7 +43,7 @@ Installation of 404 Redirect is simple:
 3. Use the `Settings -> 404 Killer` options page to set the options.
 
 For the `suggested pages` feature to work you need to edit your 404.php template file to include the following code:
-`<?php if (function_exists( 'wbz404_suggestions' ) ) { wbz404_suggestions(); } ?>`
+`<?php if (function_exists( 'abj404_suggestions' ) ) { abj404_suggestions(); } ?>`
 
 == Frequently Asked Questions ==
 
@@ -72,7 +72,7 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 == Changelog ==
 
 = Version 1.4.7 = 
-* Fixed too strict data sanitation for the `wbz404_suggestions()` template tag
+* Fixed too strict data sanitation for the `abj404_suggestions()` template tag
 * Fixed CSS class for suggested 404s div wrapper.
 
 = Version 1.4.6 =

@@ -183,7 +183,7 @@ gulp.task('uglify', ['concat'], function() {
  * Delete the theme's .pot before we create a new one
  */
 gulp.task('clean:pot', function() {
-	return del(['languages/404-redirected.pot']);
+	return del(['languages/404-killer.pot']);
 });
 
 /**
@@ -196,12 +196,12 @@ gulp.task('wp-pot', ['clean:pot'], function() {
 	.pipe(plumber({ errorHandler: handleErrors }))
 	.pipe(sort())
 	.pipe(wpPot({
-		domain: '404-redirected',
-		destFile:'404-redirected.pot',
-		package: '404-redirected',
-		bugReport: 'https://github.com/thememix/redirectioner/issues/',
+		domain: '404-killer',
+		destFile:'404-killer.pot',
+		package: '404-killer',
+		bugReport: 'https://github.com/aaron13100/404killer/issues/',
 		lastTranslator: 'Remkus de Vries <mail@devries.frl>',
-		team: 'Team <translations@thememix.com>'
+		team: 'Team <developer@wealth-psychology.com>'
 	}))
 	.pipe(gulp.dest('languages/'));
 });

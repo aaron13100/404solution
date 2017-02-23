@@ -1,7 +1,7 @@
 {
-  "name": "404-redirected",
-  "version": "1.4.7",
-  "description": "The 404 Redirected Plugin.",
+  "name": "404-killer",
+  "version": "1.5.0",
+  "description": "The 404 Killer Plugin.",
   "main": "Gulpfile.js",
   "dependencies": {
     "autoprefixer": "^6.3.1",
@@ -31,15 +31,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/defries/404-redirected"
+    "url": "git+thtps://github.com/aaron13100/404killer"
   },
   "keywords": [
     "plugin"
   ],
-  "author": "Remkus de Vries",
+  "author": "Aaron J",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/defries/404-redirected/issues"
+    "url": "https://github.com/aaron13100/404killer/issues"
   },
-  "homepage": "https://github.com/defries/404-redirected"
+  "homepage": "https://github.com/aaron13100/404killer"
 }

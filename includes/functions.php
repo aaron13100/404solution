@@ -4,32 +4,32 @@
  *
 */
 
-register_activation_hook( WBZ404_NAME, 'wbz404_pluginActivation' );
-register_deactivation_hook( WBZ404_NAME, 'wbz404_pluginRemove' );
+register_activation_hook( ABJ404_NAME, 'abj404_pluginActivation' );
+register_deactivation_hook( ABJ404_NAME, 'abj404_pluginRemove' );
 
-add_action( 'wbz404_duplicateCronAction', 'wbz404_removeDuplicatesCron' );
-add_action( 'wbz404_cleanupCronAction', 'wbz404_cleaningCron' );
+add_action( 'abj404_duplicateCronAction', 'abj404_removeDuplicatesCron' );
+add_action( 'abj404_cleanupCronAction', 'abj404_cleaningCron' );
 
 
-function wbz404_updateDBVersion() {
-	$options = wbz404_getOptions( 1 );
+function abj404_updateDBVersion() {
+	$options = abj404_getOptions( 1 );
 
-	$options['DB_VERSION'] = WBZ404_VERSION;
+	$options['DB_VERSION'] = ABJ404_VERSION;
 
-	update_option( 'wbz404_settings', $options );
+	update_option( 'abj404_settings', $options );
 
 	return $options;
 }
 
-function wbz404_getOptions( $skip_db_check="0" ) {
-	$options = get_option( 'wbz404_settings' );
+function abj404_getOptions( $skip_db_check="0" ) {
+	$options = get_option( 'abj404_settings' );
 
 	if ( $options == "" ) {
-		add_option( 'wbz404_settings', '', '', 'no' );
+		add_option( 'abj404_settings', '', '', 'no' );
 	}
 
 	// Check to make sure we aren't missing any new options.
-	$defaults = wbz404_getDefaultOptions();
+	$defaults = abj404_getDefaultOptions();
 	$missing = false;
 	foreach ( $defaults as $key => $value ) {
 		if ( ! isset( $options[ $key ] ) || '' === $options[ $key ] ) {
@@ -39,26 +39,26 @@ function wbz404_getOptions( $skip_db_check="0" ) {
 	}
 
 	if ( $missing ) {
-		update_option( 'wbz404_settings', $options );
+		update_option( 'abj404_settings', $options );
 	}
 
 	if ( $skip_db_check == "0" ) {
-		if ( $options['DB_VERSION'] != WBZ404_VERSION ) {
-			if ( WBZ404_VERSION == "1.3.2" ) {
+		if ( $options['DB_VERSION'] != ABJ404_VERSION ) {
+			if ( ABJ404_VERSION == "1.3.2" ) {
 				//Unregister all crons. Some were bad.
-				wbz404_unregisterCrons();
+				abj404_unregisterCrons();
 
 				//Register the good ones
-				wbz404_registerCrons();
+				abj404_registerCrons();
 			}
-			$options = wbz404_updateDBVersion();
+			$options = abj404_updateDBVersion();
 		}
 	}
 
 	return $options;
 }
 
-function wbz404_getDefaultOptions() {
+function abj404_getDefaultOptions() {
 	$options = array(
 		'default_redirect' => '301',
 		'capture_404' => '1',
@@ -69,12 +69,12 @@ function wbz404_getDefaultOptions() {
 		'display_suggest' => '1',
 		'suggest_minscore' => '25',
 		'suggest_max' => '5',
-		'suggest_title' => '<h3>' . __( 'Suggested Alternatives', '404-redirected' ) . '</h3>',
+		'suggest_title' => '<h3>' . __( 'Suggested Alternatives', '404-killer' ) . '</h3>',
 		'suggest_before' => '<ol>',
 		'suggest_after' => '</ol>',
 		'suggest_entrybefore' => '<li>',
 		'suggest_entryafter' => '</li>',
-		'suggest_noresults' => '<p>' . __( 'No Results To Display.', '404-redirected' ) . '</p>',
+		'suggest_noresults' => '<p>' . __( 'No Results To Display.', '404-killer' ) . '</p>',
 		'suggest_cats' => '1',
 		'suggest_tags' => '1',
 		'auto_redirects' => '1',
@@ -83,13 +83,14 @@ function wbz404_getDefaultOptions() {
 		'auto_cats' => '1',
 		'auto_tags' => '1',
 		'force_permalinks' => '1',
+                'dest404page' => 'none',
 	);
 	return $options;
 }
 
-function wbz404_pluginActivation() {
+function abj404_pluginActivation() {
 	global $wpdb;
-	add_option( 'wbz404_settings', '', '', 'no' );
+	add_option( 'abj404_settings', '', '', 'no' );
 
 	$charset_collate = '';
 	if ( !empty( $wpdb->charset ) ) {
@@ -98,7 +99,7 @@ function wbz404_pluginActivation() {
 	if ( !empty( $wpdb->collate ) ) {
 		$charset_collate .= " COLLATE $wpdb->collate";
 	}
-	$query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_redirects` (
+	$query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "abj404_redirects` (
 	  `id` bigint(30) NOT NULL auto_increment,
 	  `url` varchar(512) NOT NULL,
 	  `status` bigint(20) NOT NULL,
@@ -115,10 +116,10 @@ function wbz404_pluginActivation() {
 	  KEY `disabled` (`disabled`),
 	  FULLTEXT KEY `url` (`url`),
 	  FULLTEXT KEY `final_dest` (`final_dest`)
-	) ENGINE=MyISAM " . esc_html( $charset_collate ) . " COMMENT='404 Redirected Plugin Redirects Table' AUTO_INCREMENT=1";
+	) ENGINE=MyISAM " . esc_html( $charset_collate ) . " COMMENT='404 Killer Plugin Redirects Table' AUTO_INCREMENT=1";
 	$wpdb->query( $query );
 
-	$query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_logs` (
+	$query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "abj404_logs` (
 	  `id` bigint(40) NOT NULL auto_increment,
 	  `redirect_id` bigint(40) NOT NULL,
 	  `timestamp` bigint(40) NOT NULL,
@@ -128,29 +129,29 @@ function wbz404_pluginActivation() {
 	  PRIMARY KEY  (`id`),
 	  KEY `redirect_id` (`redirect_id`),
 	  KEY `timestamp` (`timestamp`)
-	) ENGINE=MyISAM " . esc_html( $charset_collate ) . " COMMENT='404 Redirected Plugin Logs Table' AUTO_INCREMENT=1";
+	) ENGINE=MyISAM " . esc_html( $charset_collate ) . " COMMENT='404 Killer Plugin Logs Table' AUTO_INCREMENT=1";
 	$wpdb->query( $query );
 
-	wbz404_registerCrons();
+	abj404_registerCrons();
 
-	$options = wbz404_updateDBVersion();
+	$options = abj404_updateDBVersion();
 }
 
-function wbz404_registerCrons() {
-	$timestamp = wp_next_scheduled( 'wbz404_cleanupCronAction' );
+function abj404_registerCrons() {
+	$timestamp = wp_next_scheduled( 'abj404_cleanupCronAction' );
 	if ( $timestamp == False ) {
-		wp_schedule_event( current_time( 'timestamp' ) - 86400, 'daily', 'wbz404_cleanupCronAction' );
+		wp_schedule_event( current_time( 'timestamp' ) - 86400, 'daily', 'abj404_cleanupCronAction' );
 	}
 
-	$timestamp = wp_next_scheduled( 'wbz404_duplicateCronAction' );
+	$timestamp = wp_next_scheduled( 'abj404_duplicateCronAction' );
 	if ( $timestamp == False ) {
-		wp_schedule_event( current_time( 'timestamp' ) - 3600, 'hourly', 'wbz404_duplicateCronAction' );
+		wp_schedule_event( current_time( 'timestamp' ) - 3600, 'hourly', 'abj404_duplicateCronAction' );
 	}
 }
 
-function wbz404_unregisterCrons() {
+function abj404_unregisterCrons() {
 
-	$crons = array( 'wbz404_cleanupCronAction', 'wbz404_duplicateCronAction', 'wbz404_removeDuplicatesCron', 'wbz404_cleaningCron' );
+	$crons = array( 'abj404_cleanupCronAction', 'abj404_duplicateCronAction', 'abj404_removeDuplicatesCron', 'abj404_cleaningCron' );
 	for ( $i=0; $i < count( $crons ); $i++ ) {
 		$cron_name = $crons[$i];
 		$timestamp = wp_next_scheduled( $cron_name );
@@ -169,12 +170,12 @@ function wbz404_unregisterCrons() {
 	}
 }
 
-function wbz404_pluginRemove() {
-	//delete_option( 'wbz404_settings' );
-	wbz404_unregisterCrons();
+function abj404_pluginRemove() {
+	//delete_option( 'abj404_settings' );
+	abj404_unregisterCrons();
 }
 
-function wbz404_rankPermalinks( $url, $includeCats = '1', $includeTags = '1' ) {
+function abj404_rankPermalinks( $url, $includeCats = '1', $includeTags = '1' ) {
 	global $wpdb;
 	$permalinks = array();
 
@@ -188,6 +189,26 @@ function wbz404_rankPermalinks( $url, $includeCats = '1', $includeTags = '1' ) {
 		$levscore = levenshtein( $url, $urlParts['path'], 1, 1, 1 );
 		$score = 100 - ( ( $levscore / $scoreBasis )*100 );
 		$permalinks[$id . "|POST"] = number_format( $score, 4, '.', '' );
+                
+                // if the slug is in the URL then the user wants the post with the same slug.
+                // to avoid an issue where a slug is a subset of another slug, we prefer the matching slug
+                // with the longest length. e.g.
+                /* url from user: www.site.com/a-post-slug
+                 * post 1 slug: a-post-slug  // matches (contained in url).
+                 * post 2 slug: a-post-slug-longer // does not match the url (not contained in url).
+                 * 
+                /* url from user: www.site.com/a-post-slug-longer
+                 * post 1 slug: a-post-slug  // matches with a score + length of the slug.
+                 * post 2 slug: a-post-slug-longer // matches with a score + length of the slug.
+                 * 
+                 * therefore the longer slug has a higher score and takes priority.
+                 * this is important for when permalinks change.
+                 */
+                $post = get_post($id);
+                $postSlug = strtolower($post->post_name);
+                if (strpos(strtolower($url), $postSlug) !== false) {
+        		$permalinks[$id . "|POST"] = number_format( 100 + strlen($postSlug), 4, '.', '' );
+                }
 	}
 
 	if ( $includeTags == "1" ) {
@@ -226,15 +247,20 @@ function wbz404_rankPermalinks( $url, $includeCats = '1', $includeTags = '1' ) {
 	return $permalinks;
 }
 
-function wbz404_permalinkInfo( $k, $v ) {
+/** Turns ID|TYPE, SCORE into an array with id, type, score, link, and title.
+ * 
+ * @param type $idAndType e.g. 15|POST is a page ID of 15 and a type POST.
+ * @param type $linkScore
+ * @return type an array with id, type, score, link, and title.
+ */
+function abj404_permalinkInfo( $idAndType, $linkScore ) {
 	$permalink = array();
 
-	$meta = $k;
-	$meta = explode( "|", $meta );
+	$meta = explode( "|", $idAndType );
 
 	$permalink['id'] = $meta[0];
 	$permalink['type'] = $meta[1];
-	$permalink['score'] = $v;
+	$permalink['score'] = $linkScore;
 
 	if ( $permalink['type'] == "POST" ) {
 		$permalink['link'] = get_permalink( $permalink['id'] );
@@ -253,11 +279,11 @@ function wbz404_permalinkInfo( $k, $v ) {
 }
 
 
-function wbz404_loadRedirectData( $url ) {
+function abj404_loadRedirectData( $url ) {
 	global $wpdb;
 	$redirect = array();
 
-	$query="select * from " . esc_html( $wpdb->prefix ) . "wbz404_redirects where url = '" . esc_sql( esc_url( $url ) ) . "'";
+	$query="select * from " . esc_html( $wpdb->prefix ) . "abj404_redirects where url = '" . esc_sql( esc_url( $url ) ) . "'";
 
 	$row = $wpdb->get_row( $query, ARRAY_A );
 	if ( $row == NULL ) {
@@ -275,11 +301,22 @@ function wbz404_loadRedirectData( $url ) {
 	return $redirect;
 }
 
-function wbz404_setupRedirect( $url, $status, $type, $final_dest, $code, $disabled = 0 ) {
+/**
+ * Inserts data about the redirect that was done.
+ * @global type $wpdb
+ * @param type $url
+ * @param type $status
+ * @param type $type
+ * @param type $final_dest
+ * @param type $code
+ * @param type $disabled
+ * @return type
+ */
+function abj404_setupRedirect( $url, $status, $type, $final_dest, $code, $disabled = 0 ) {
 	global $wpdb;
 
 	$now = time();
-	$wpdb->insert( $wpdb->prefix . 'wbz404_redirects',
+	$wpdb->insert( $wpdb->prefix . 'abj404_redirects',
 		array(
 			'url' => esc_url( $url ),
 			'status' => esc_html( $status ),
@@ -302,7 +339,7 @@ function wbz404_setupRedirect( $url, $status, $type, $final_dest, $code, $disabl
 	return $wpdb->insert_id;
 }
 
-function wbz404_logRedirectHit( $id, $action ) {
+function abj404_logRedirectHit( $id, $action ) {
 	global $wpdb;
 	$now = time();
 
@@ -312,7 +349,7 @@ function wbz404_logRedirectHit( $id, $action ) {
 		$referer = "";
 	}
 
-	$wpdb->insert( $wpdb->prefix . "wbz404_logs",
+	$wpdb->insert( $wpdb->prefix . "abj404_logs",
 		array(
 			'redirect_id' => absint( $id ),
 			'timestamp' => esc_html( $now ),
@@ -330,21 +367,21 @@ function wbz404_logRedirectHit( $id, $action ) {
 	);
 }
 
-function wbz404_cleanRedirect($id) {
+function abj404_cleanRedirect($id) {
 	global $wpdb;
 	if ($id != "" && $id != '0') {
 		$id = absint( $id );
 		$id = (string) $id;
-		$query="delete from " . $wpdb->prefix . "wbz404_redirects where id = " . $wpdb->escape($id);
+		$query="delete from " . $wpdb->prefix . "abj404_redirects where id = " . $wpdb->escape($id);
 		$wpdb->query($query);
-		$query="delete from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . $wpdb->escape($id);
+		$query="delete from " . $wpdb->prefix . "abj404_logs where redirect_id = " . $wpdb->escape($id);
 		$wpdb->query($query);
 	}
 }
 
-function wbz404_cleaningCron() {
+function abj404_cleaningCron() {
 	global $wpdb;
-	$options = wbz404_getOptions();
+	$options = abj404_getOptions();
 	$now = time();
 
 	//Remove Captured URLs
@@ -353,20 +390,20 @@ function wbz404_cleaningCron() {
 		$then = $now - $capture_time;
 
 		//Clean up old logs
-		$query = "delete from " . $wpdb->prefix . "wbz404_logs where ";
-		$query .= "redirect_id in (select id from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql( WBZ404_CAPTURED ) . " or status = " . esc_sql( WBZ404_IGNORED ) . ") ";
+		$query = "delete from " . $wpdb->prefix . "abj404_logs where ";
+		$query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . esc_sql( ABJ404_CAPTURED ) . " or status = " . esc_sql( ABJ404_IGNORED ) . ") ";
 		$query .= "and timestamp < " . esc_sql( $then );
 		$wpdb->query( $query );
 
 		//Find unused urls
-		$query = "select id from " . $wpdb->prefix . "wbz404_redirects where (status = " . esc_sql( WBZ404_CAPTURED ) . " or status = " . esc_sql( WBZ404_IGNORED ) . ") and ";
+		$query = "select id from " . $wpdb->prefix . "abj404_redirects where (status = " . esc_sql( ABJ404_CAPTURED ) . " or status = " . esc_sql( ABJ404_IGNORED ) . ") and ";
 		$query .= "timestamp <= " . esc_sql( $then ) . " and id not in (";
-		$query .= "select redirect_id from " . $wpdb->prefix . "wbz404_logs";
+		$query .= "select redirect_id from " . $wpdb->prefix . "abj404_logs";
 		$query .= ")";
 		$rows = $wpdb->get_results( $query, ARRAY_A );
 		foreach ( $rows as $row ) {
 			//Remove Them
-			wbz404_cleanRedirect( $row['id'] );
+			abj404_cleanRedirect( $row['id'] );
 		}
 	}
 
@@ -376,20 +413,20 @@ function wbz404_cleaningCron() {
 		$then = $now - $auto_time;
 
 		//Clean up old logs
-		$query = "delete from " . $wpdb->prefix . "wbz404_logs where ";
-		$query .= "redirect_id in (select id from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql( WBZ404_AUTO ) . ") ";
+		$query = "delete from " . $wpdb->prefix . "abj404_logs where ";
+		$query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . esc_sql( ABJ404_AUTO ) . ") ";
 		$query .= "and timestamp < " . esc_sql( $then );
 		$wpdb->query( $query );
 
 		//Find unused urls
-		$query = "select id from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql( WBZ404_AUTO ) . " and ";
+		$query = "select id from " . $wpdb->prefix . "abj404_redirects where status = " . esc_sql( ABJ404_AUTO ) . " and ";
 		$query .= "timestamp <= " . esc_sql( $then ) . " and id not in (";
-		$query .= "select redirect_id from " . $wpdb->prefix . "wbz404_logs";
+		$query .= "select redirect_id from " . $wpdb->prefix . "abj404_logs";
 		$query .= ")";
 		$rows = $wpdb->get_results( $query, ARRAY_A );
 		foreach ( $rows as $row ) {
 			//Remove Them
-			wbz404_cleanRedirect( $row['id'] );
+			abj404_cleanRedirect( $row['id'] );
 		}
 	}
 
@@ -399,29 +436,29 @@ function wbz404_cleaningCron() {
 		$then = $now - $manual_time;
 
 		//Clean up old logs
-		$query = "delete from " . $wpdb->prefix . "wbz404_logs where ";
-		$query .= "redirect_id in (select id from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql( WBZ404_MANUAL ) . ") ";
+		$query = "delete from " . $wpdb->prefix . "abj404_logs where ";
+		$query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . esc_sql( ABJ404_MANUAL ) . ") ";
 		$query .= "and timestamp < " . esc_sql( $then );
 		$wpdb->query( $query );
 
 		//Find unused urls
-		$query = "select id from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql( WBZ404_MANUAL ) . " and ";
+		$query = "select id from " . $wpdb->prefix . "abj404_redirects where status = " . esc_sql( ABJ404_MANUAL ) . " and ";
 		$query .= "timestamp <= " . esc_sql( $then ) . " and id not in (";
-		$query .= "select redirect_id from " . $wpdb->prefix . "wbz404_logs";
+		$query .= "select redirect_id from " . $wpdb->prefix . "abj404_logs";
 		$query .= ")";
 		$rows = $wpdb->get_results( $query, ARRAY_A );
 		foreach ( $rows as $row ) {
 			//Remove Them
-			wbz404_cleanRedirect( $row['id'] );
+			abj404_cleanRedirect( $row['id'] );
 		}
 	}
 }
 
-function wbz404_removeDuplicatesCron() {
+function abj404_removeDuplicatesCron() {
 	global $wpdb;
 
-	$rtable = $wpdb->prefix . "wbz404_redirects";
-	$ltable = $wpdb->prefix . "wbz404_logs";
+	$rtable = $wpdb->prefix . "abj404_redirects";
+	$ltable = $wpdb->prefix . "abj404_logs";
 
 	$query = "SELECT COUNT(id) as repetitions, url FROM " . esc_html( $rtable ) . " GROUP BY url HAVING repetitions > 1";
 	$rows = $wpdb->get_results( $query, ARRAY_A );
@@ -445,7 +482,7 @@ function wbz404_removeDuplicatesCron() {
 
 }
 
-function wbz404_SortQuery( $urlParts ) {
+function abj404_SortQuery( $urlParts ) {
 	$url = "";
 	if ( isset( $urlParts['query'] ) && $urlParts['query'] != "" ) {
 		$queryString = array();
@@ -480,32 +517,34 @@ function wbz404_SortQuery( $urlParts ) {
 	return esc_url( $url );
 }
 
-function wbz404_ProcessRedirect( $redirect ) {
+function abj404_ProcessRedirect( $redirect ) {
 	//A redirect record has already been found.
-	if ( ( $redirect['status'] == WBZ404_MANUAL || $redirect['status'] == WBZ404_AUTO ) && $redirect['disabled'] == 0 ) {
+	if ( ( $redirect['status'] == ABJ404_MANUAL || $redirect['status'] == ABJ404_AUTO ) && $redirect['disabled'] == 0 ) {
 		//It's a redirect, not a captured or ignored URL
-		if ( $redirect['type'] == WBZ404_EXTERNAL ) {
+		if ( $redirect['type'] == ABJ404_EXTERNAL ) {
 			//It's a external url setup by the user
-			wbz404_logRedirectHit( $redirect['id'], $redirect['final_dest'] );
+			abj404_logRedirectHit( $redirect['id'], $redirect['final_dest'] );
 			wp_redirect( esc_url( $redirect['final_dest'] ), esc_html( $redirect['code'] ) );
 			exit;
 		} else {
 			$key="";
-			if ( $redirect['type'] == WBZ404_POST ) {
+			if ( $redirect['type'] == ABJ404_POST ) {
 				$key = $redirect['final_dest'] . "|POST";
-			} else if ( $redirect['type'] == WBZ404_CAT ) {
+			} else if ( $redirect['type'] == ABJ404_CAT ) {
 				$key = $redirect['final_dest'] . "|CAT";
-			} else if ( $redirect['type'] == WBZ404_TAG ) {
+			} else if ( $redirect['type'] == ABJ404_TAG ) {
 				$key = $redirect['final_dest'] . "|TAG";
-			}
+			} else {
+                                error_log("ABJ_404KILLER: Unrecognized redirect type: " . $redirect['type']);
+                        }
 			if ( $key != "" ) {		
-				$permalink = wbz404_permalinkInfo( $key, 0 );		
-				wbz404_logRedirectHit( $redirect['id'], $permalink['link'] );		
+				$permalink = abj404_permalinkInfo( $key, 0 );		
+				abj404_logRedirectHit( $redirect['id'], $permalink['link'] );		
 				wp_redirect( esc_url( $permalink['link'] ), esc_html( $redirect['code'] ) );		
 				exit;		
 			}
 		}
 	} else {
-		wbz404_logRedirectHit( esc_html( $redirect['id'] ), '404' );
+		abj404_logRedirectHit( esc_html( $redirect['id'] ), '404' );
 	}
 }
