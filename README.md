@@ -1,39 +1,30 @@
-# 404 Killer #
+# 404 Solution #
 
-Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
+Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
 ## Description ##
 
-Allows WordPress admins to have control over their dead links and redirects from inside the admin panel. Records all URLs that users have visited and allows the admin to easily create 301 and 302 redirects to valid pages on their site. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
-
-> <strong>Support & Bug Reports</strong><br>
-> If you're in need of support or would like to file a bug report, please head over to our Github repository and [create a new issue.](https://github.com/aaron13100/404killer/issues)
->
+404 Solution logs 404s and allows them to be redirected to pages that exist. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
 
 ### Features: ###
 
-* Get list of 404 URLs as they happen inside the admin panel
-* Easily redirect 404 URLs to existing pages or choose to ignore the 404 error
-* Provides the ability to automatically create redirects based on the URL the visitor was most likely trying to visit
-* Provide visitors with a list of suggested pages on the 404 page when a automatic redirect can not be made
-* Ability to suggest tag and category pages
-* Ability to create automatic redirect for misspelled tag and category pages
-* Ability to view logs of hits to 404 pages and redirects including referrer data
-* Ability to remove automatically remove redirects when the URL matches a new page or post permalink
-* Ability to automatically remove manual and automatic redirects once they are no longer being used
-* All features work with both pages and posts
-* Create automatic redirects for any URL resolving to a single page or post that isn't the current permalink
-* Basic stats of plugin usage
+* Get list of 404 URLs as they happen.
+* Redirect 404 URLs to existing pages or ignore them.
+* Automatically create redirects based on the URL the visitor was most likely trying to visit.
+* View logs of hits to 404 pages and redirects including referrer data.
+* Automatically remove redirects when the URL matches a new page or post permalink.
+* Automatically remove manual and automatic redirects once they are no longer being used.
+* All features work with both pages and posts.
+* Create automatic redirects for any URL resolving to a single page or post that isn't the current permalink.
+* Basic plugin usage statistics.
 
-Convert your 404 traffic by providing your site visitors with a better browsing experience and eliminate 404 URLs on your site.
+Convert your 404 traffic by providing your visitors with a better browsing experience and eliminate 404 URLs on your site.
 
 ## Installation ##
 
-Installation is simple:
-
-1. Unzip the file and upload the contents to the `/wp-content/plugins/` directory
-1. Activate the plugin.
-1. Use the `Settings -> 404 Killer` options page to enable desired features.
+1. Unzip the files and upload the contents to `/wp-content/plugins/`.
+2. Activate the plugin.
+3. Use the `Settings -> 404 Solution` options page to set the options.
 
 For the `suggested pages` feature to work you need to edit your 404.php template file to include the following code:
 `<?php if (function_exists( 'abj404_suggestions' ) ) { abj404_suggestions(); } ?>`
@@ -50,11 +41,11 @@ No, there should be no noticeable slow down when running the plugin on your site
 
 ### Will this plugin redirect my pages if I change my permalinks structure? ###
 
-Yes! 404 Killer records the page/post ID number and looks up the most current permalink before redirecting the user.
+Yes! 404 Solution records the page/post ID number and looks up the most current permalink before redirecting the user.
 
 ### Can I redirect all 404's to a particular page? ###
 
-No, that's not what this plugin is for. This plugin is designed to make your visitors experience better by automatically fixing 404 problems caused by typos.
+Yes. It's as easy as turning on this feature in the options.
 
 ## Screenshots ##
 
@@ -68,8 +59,13 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 ![3. Create New Redirect](https://ps.w.org/404-redirected/trunk/screenshot-3.png)
 
 
+## Changelog ##
 
-## Upgrade Notice ##
+### Version 1.5.0 ###
+* Rename to 404 Solution (forked from 404 Redirected at https://github.com/ThemeMix/redirectioner)
+* Update branding links
+* Add an option to redirect all 404s to a specific page.
+* When the a slug matches a post exactly then redirect to that post (score +100). This covers cases when permalinks change.
 
 ### Version 1.4.7 ###
 * Fixed too strict data sanitation for the `abj404_suggestions()` template tag

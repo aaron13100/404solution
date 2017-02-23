@@ -183,7 +183,7 @@ gulp.task('uglify', ['concat'], function() {
  * Delete the theme's .pot before we create a new one
  */
 gulp.task('clean:pot', function() {
-	return del(['languages/404-killer.pot']);
+	return del(['languages/404-solution.pot']);
 });
 
 /**
@@ -196,10 +196,10 @@ gulp.task('wp-pot', ['clean:pot'], function() {
 	.pipe(plumber({ errorHandler: handleErrors }))
 	.pipe(sort())
 	.pipe(wpPot({
-		domain: '404-killer',
-		destFile:'404-killer.pot',
-		package: '404-killer',
-		bugReport: 'https://github.com/aaron13100/404killer/issues/',
+		domain: '404-solution',
+		destFile:'404-solution.pot',
+		package: '404-solution',
+		bugReport: 'https://github.com/aaron13100/404solution/issues/',
 		lastTranslator: 'Remkus de Vries <mail@devries.frl>',
 		team: 'Team <developer@wealth-psychology.com>'
 	}))

@@ -1,17 +1,17 @@
 <?php
 /*
-	Plugin Name: 404 Killer
-	Plugin URI:  http://www.wealth-psychology.com
+	Plugin Name: 404 Solution
+	Plugin URI:  http://www.wealth-psychology.com/404-solution/
 	Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
 	Author:      Aaron J
-	Author URI:  http://www.wealth-psychology.com
+	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 1.4.7
+	Version: 1.5.0
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
 	Domain Path: /languages
-	Text Domain: 404-killer
+	Text Domain: 404-solution
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -32,9 +32,9 @@
 define( 'ABJ404_URL', plugin_dir_url( __FILE__ ) );
 define( 'ABJ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );
-define( 'ABJ404_VERSION', '1.4.7' );
-define( 'ABJ404_HOME', 'http://www.wealth-psychology.com' );
-define( 'ABJ404_TRANS', 'abj404_killer' );
+define( 'ABJ404_VERSION', '1.5.0' );
+define( 'ABJ404_HOME', 'http://www.wealth-psychology.com/404-solution/' );
+define( 'ABJ404_TRANS', 'abj404_solution' );
 
 //URL Types
 define( 'ABJ404_MANUAL', 1 );
@@ -61,4 +61,4 @@ if ( is_admin() ) {
  * @since 1.4.2
  */
 // Load text domain.
-load_plugin_textdomain( '404-killer', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+load_plugin_textdomain( '404-solution', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );

@@ -1,7 +1,7 @@
 # Changelog #
 
 ## Version 1.5.0 ##
-* Rename to 404 Killer
+* Rename to 404 Solution
 * Update branding links
 * Add an option to redirect all 404s to a specific page.
 * When the a slug matches a post exactly then redirect to that post (score +100). This covers cases when permalinks change.

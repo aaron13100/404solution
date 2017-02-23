@@ -7,7 +7,7 @@
 function abj404_addAdminPage() {
 	global $menu;
 	$options = abj404_getOptions();
-	$pageName = "404 Killer";
+	$pageName = "404 Solution";
 
 	// Admin notice
 	if ( isset( $options['admin_notification'] ) && $options['admin_notification'] != '0' ) {
@@ -21,7 +21,7 @@ function abj404_addAdminPage() {
 		}
 	}
 
-	add_options_page( '404 Killer', $pageName, 'manage_options', 'abj404_killer', 'abj404_adminPage' );
+	add_options_page( '404 Solution', $pageName, 'manage_options', 'abj404_solution', 'abj404_adminPage' );
 }
 
 add_action( 'admin_menu', 'abj404_addAdminPage' );
@@ -29,12 +29,12 @@ add_action( 'admin_menu', 'abj404_addAdminPage' );
 function abj404_dashboardNotification() {
 	global $pagenow;
 	if ( current_user_can( 'manage_options' ) ) {
-		if ( ( isset( $_GET['page'] ) && $_GET['page'] == "abj404_killer" ) || ( $pagenow == 'index.php' && ( !( isset( $_GET['page'] ) ) ) ) ) {
+		if ( ( isset( $_GET['page'] ) && $_GET['page'] == "abj404_solution" ) || ( $pagenow == 'index.php' && ( !( isset( $_GET['page'] ) ) ) ) ) {
 			$options = abj404_getOptions();
 			if ( isset( $options['admin_notification'] ) && $options['admin_notification'] != '0' ) {
 				$captured = abj404_capturedCount();
 				if ( $captured >= $options['admin_notification'] ) {
-					echo "<div class=\"updated\"><p><strong>" . esc_html( __( '404 Killer', '404-killer' ) ) . ":</strong> " . __( 'There are ' . esc_html( $captured ) . ' captured 404 URLs that need to be processed.', '404-killer' ) . "</p></div>";
+					echo "<div class=\"updated\"><p><strong>" . esc_html( __( '404 Solution', '404-solution' ) ) . ":</strong> " . __( 'There are ' . esc_html( $captured ) . ' captured 404 URLs that need to be processed.', '404-solution' ) . "</p></div>";
 				}
 			}
 		}
@@ -67,7 +67,7 @@ function abj404_updateOptions() {
 	if ( $_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302" ) {
 		$options['default_redirect'] = $_POST['default_redirect'];
 	} else {
-		$message.= __( 'Error: Invalid value specified for default redirect type', '404-killer' ) . ".<br>";
+		$message.= __( 'Error: Invalid value specified for default redirect type', '404-solution' ) . ".<br>";
 	}
 
 	if ( $_POST['capture_404'] == "1" ) {
@@ -83,13 +83,13 @@ function abj404_updateOptions() {
 	if ( preg_match( '/^[0-9]+$/', $_POST['capture_deletion'] )==1 && $_POST['capture_deletion'] >= 0 ) {
 		$options['capture_deletion'] = $_POST['capture_deletion'];
 	} else {
-		$message.= __( 'Collected URL deletion value must be a number greater or equal to zero', '404-killer' ) . ".<br>";
+		$message.= __( 'Collected URL deletion value must be a number greater or equal to zero', '404-solution' ) . ".<br>";
 	}
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['manual_deletion'] )==1 && $_POST['manual_deletion'] >= 0 ) {
 		$options['manual_deletion'] = $_POST['manual_deletion'];
 	} else {
-		$message.= __( 'Manual redirect deletion value must be a number greater or equal to zero', '404-killer' ) . ".<br>";
+		$message.= __( 'Manual redirect deletion value must be a number greater or equal to zero', '404-solution' ) . ".<br>";
 	}
 
 	if ( $_POST['remove_matches'] == "1" ) {
@@ -119,13 +119,13 @@ function abj404_updateOptions() {
 	if ( preg_match( '/^[0-9]+$/', $_POST['suggest_minscore'] ) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99 ) {
 		$options['suggest_minscore'] = $_POST['suggest_minscore'];
 	} else {
-		$message.= __( 'Suggestion minimum score value must be a number between 1 and 99', '404-killer' ) . ".<br>";
+		$message.= __( 'Suggestion minimum score value must be a number between 1 and 99', '404-solution' ) . ".<br>";
 	}
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['suggest_max'] ) == 1 && $_POST['suggest_max'] >= 1 ) {
 		$options['suggest_max'] = $_POST['suggest_max'];
 	} else {
-		$message.= __( 'Maximum number of suggest value must be a number greater or equal to 1', '404-killer' ) . ".<br>";
+		$message.= __( 'Maximum number of suggest value must be a number greater or equal to 1', '404-solution' ) . ".<br>";
 	}
 
 	$options['suggest_title'] = $_POST['suggest_title'];
@@ -162,14 +162,14 @@ function abj404_updateOptions() {
 	if ( preg_match( '/^[0-9]+$/', $_POST['auto_score'] ) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99 ) {
 		$options['auto_score'] = $_POST['auto_score'];
 	} else {
-		$message .= __( 'Auto match score value must be a number between 0 and 99', '404-killer' ) . ".<br>";
+		$message .= __( 'Auto match score value must be a number between 0 and 99', '404-solution' ) . ".<br>";
 	}
 
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['auto_deletion'] )==1 && $_POST['auto_deletion'] >= 0 ) {
 		$options['auto_deletion'] = $_POST['auto_deletion'];
 	} else {
-		$message.= __( 'Auto redirect deletion value must be a number greater or equal to zero', '404-killer' ) . ".<br>";
+		$message.= __( 'Auto redirect deletion value must be a number greater or equal to zero', '404-solution' ) . ".<br>";
 	}
 
 	if ( $_POST['force_permalinks'] == "1" ) {
@@ -361,7 +361,7 @@ function abj404_drawFilters( $sub, $tableOptions ) {
 	echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\">";
 	echo "<ul class=\"subsubsub\">";
 
-	$url = "?page=abj404_killer";
+	$url = "?page=abj404_solution";
 	if ( $sub == "captured" ) {
 		$url .= "&subpage=abj404_captured";
 	}
@@ -382,7 +382,7 @@ function abj404_drawFilters( $sub, $tableOptions ) {
 
 	if ( $sub != "captured" ) {
                 echo "<li>";
-		echo "<a href=\"" . $url . "\"" . $class . ">" . __( 'All', '404-killer' );
+		echo "<a href=\"" . $url . "\"" . $class . ">" . __( 'All', '404-solution' );
 		echo " <span class=\"count\">(" . abj404_getRecordCount( $types ) . ")</span>";
 		echo "</a>";
 		echo "</li>";
@@ -425,7 +425,7 @@ function abj404_drawFilters( $sub, $tableOptions ) {
 		$class = " class=\"current\"";
 	}
 	echo "<li> | ";
-	echo "<a href=\"" . esc_url( $trashurl ) . "\"" . $class . ">" . __( 'Trash', '404-killer' );
+	echo "<a href=\"" . esc_url( $trashurl ) . "\"" . $class . ">" . __( 'Trash', '404-solution' );
 	echo " <span class=\"count\">(" . abj404_getRecordCount( $types, 1 ) . ")</span>";
 	echo "</a>";
 	echo "</li>";
@@ -435,7 +435,7 @@ function abj404_drawFilters( $sub, $tableOptions ) {
 }
 
 function abj404_drawPaginationLinks( $sub, $tableOptions ) {
-	$url = "?page=abj404_killer";
+	$url = "?page=abj404_solution";
 	if ( $sub == "captured" ) {
 		$url .= "&subpage=abj404_captured";
 	} else if ( $sub == "logs" ) {
@@ -467,14 +467,14 @@ function abj404_drawPaginationLinks( $sub, $tableOptions ) {
 	}
 
 	echo "<div class=\"tablenav-pages\">";
-	echo "<span class=\"displaying-num\">" . $num_records . " " . __( 'items', '404-killer' ) . "</span>";
+	echo "<span class=\"displaying-num\">" . $num_records . " " . __( 'items', '404-solution' ) . "</span>";
 	echo "<span class=\"pagination-links\">";
 	$class = "";
 	if ( $tableOptions['paged'] == 1 ) {
 		$class=" disabled";
 	}
 	$firsturl = $url;
-	echo "<a href=\"" . esc_url( $firsturl ) . "\" class=\"first-page" . $class . "\" title=\"" . __( 'Go to first page', '404-killer' ) . "\">&laquo;</a>";
+	echo "<a href=\"" . esc_url( $firsturl ) . "\" class=\"first-page" . $class . "\" title=\"" . __( 'Go to first page', '404-solution' ) . "\">&laquo;</a>";
 	$class = "";
 	if ( $tableOptions['paged'] == 1 ) {
 		$class=" disabled";
@@ -483,9 +483,9 @@ function abj404_drawPaginationLinks( $sub, $tableOptions ) {
 		$prev = $tableOptions['paged'] -1;
 		$prevurl = $url . "&paged=" . $prev;
 	}
-	echo "<a href=\"" . esc_url( $prevurl ) . "\" class=\"prev-page" . $class . "\" title=\"" . __( 'Go to previous page', '404-killer' ) . "\">&lsaquo;</a>";
+	echo "<a href=\"" . esc_url( $prevurl ) . "\" class=\"prev-page" . $class . "\" title=\"" . __( 'Go to previous page', '404-solution' ) . "\">&lsaquo;</a>";
 	echo " ";
-	echo __( 'Page', '404-killer' ) . " " . $tableOptions['paged'] . " " . __( 'of', '404-killer' ) . " " . esc_html( $total_pages );
+	echo __( 'Page', '404-solution' ) . " " . $tableOptions['paged'] . " " . __( 'of', '404-solution' ) . " " . esc_html( $total_pages );
 	echo " ";
 	$class = "";
 	if ( $tableOptions['paged'] + 1 > $total_pages ) {
@@ -499,7 +499,7 @@ function abj404_drawPaginationLinks( $sub, $tableOptions ) {
 		$next = $tableOptions['paged'] + 1;
 		$nexturl = $url . "&paged=" . $next;
 	}
-	echo "<a href=\"" . esc_url( $nexturl ) . "\" class=\"next-page" . $class . "\" title=\"" . __( 'Go to next page', '404-killer' ) . "\">&rsaquo;</a>";
+	echo "<a href=\"" . esc_url( $nexturl ) . "\" class=\"next-page" . $class . "\" title=\"" . __( 'Go to next page', '404-solution' ) . "\">&rsaquo;</a>";
 	$class = "";
 	if ( $tableOptions['paged'] + 1 > $total_pages ) {
 		$class=" disabled";
@@ -511,7 +511,7 @@ function abj404_drawPaginationLinks( $sub, $tableOptions ) {
 	} else {
 		$lasturl = $url . "&paged=" . $total_pages;
 	}
-	echo "<a href=\"" . esc_url( $lasturl ) . "\" class=\"last-page" . $class . "\" title=\"" . __( 'Go to last page', '404-killer' ) . "\">&raquo;</a>";
+	echo "<a href=\"" . esc_url( $lasturl ) . "\" class=\"last-page" . $class . "\" title=\"" . __( 'Go to last page', '404-solution' ) . "\">&raquo;</a>";
 	echo "</span>";
 	echo "</div>";
 }
@@ -560,7 +560,7 @@ function abj404_buildTableColumns( $sub, $tableOptions, $columns ) {
 			}
 		}
 
-		$url = "?page=abj404_killer";
+		$url = "?page=abj404_solution";
 		if ( $sub == "captured" ) {
 			$url .= "&subpage=abj404_captured";
 		} else if ( $sub == "logs" ) {
@@ -613,18 +613,18 @@ function abj404_addAdminRedirect() {
 
 	if ( $_POST['url'] != "" ) {
 		if ( substr( $_POST['url'], 0, 1 ) != "/" ) {
-			$message .= __( 'Error: URL must start with /', '404-killer' ) . "<br>";
+			$message .= __( 'Error: URL must start with /', '404-solution' ) . "<br>";
 		}
 	} else {
-		$message .= __( 'Error: URL is a required field.', '404-killer' ) . "<br>";
+		$message .= __( 'Error: URL is a required field.', '404-solution' ) . "<br>";
 	}
 
 	if ( $_POST['dest'] == "EXTERNAL" ) {
 		if ( $_POST['external'] == "" ) {
-			$message .= __( 'Error: You selected external URL but did not enter a URL.', '404-killer' ) . "<br>";
+			$message .= __( 'Error: You selected external URL but did not enter a URL.', '404-solution' ) . "<br>";
 		} else {
 			if ( substr( $_POST['external'], 0, 7 ) != "http://" && substr( $_POST['external'], 0, 8 ) != "https://" && substr( $_POST['external'], 0, 6 ) != "ftp://" ) {
-				$message .= __( 'Error: External URL\'s must start with http://, https://, or ftp://', '404-killer' ) . "<br>";
+				$message .= __( 'Error: External URL\'s must start with http://, https://, or ftp://', '404-solution' ) . "<br>";
 			}
 		}
 	}
@@ -655,7 +655,7 @@ function abj404_addAdminRedirect() {
 			$_POST['external'] = "";
 			$_POST['dest'] = "";
 		} else {
-			$message .= __( 'Error: Data not formatted properly.', '404-killer' ) . "<br>";
+			$message .= __( 'Error: Data not formatted properly.', '404-solution' ) . "<br>";
 		}
 	}
 
@@ -668,18 +668,18 @@ function abj404_editRedirectData() {
 
 	if ( $_POST['url'] != "" ) {
 		if ( substr( $_POST['url'], 0, 1 ) != "/" ) {
-			$message .= __( 'Error: URL must start with /', '404-killer' ) . "<br>";
+			$message .= __( 'Error: URL must start with /', '404-solution' ) . "<br>";
 		}
 	} else {
-		$message .= __( 'Error: URL is a required field.', '404-killer' ) . "<br>";
+		$message .= __( 'Error: URL is a required field.', '404-solution' ) . "<br>";
 	}
 
 	if ( $_POST['dest'] == "EXTERNAL" ) {
 		if ( $_POST['external'] == "" ) {
-			$message .= __( 'Error: You selected external URL but did not enter a URL.', '404-killer' ) . "<br>";
+			$message .= __( 'Error: You selected external URL but did not enter a URL.', '404-solution' ) . "<br>";
 		} else {
 			if ( substr( $_POST['external'], 0, 7 ) != "http://" && substr( $_POST['external'], 0, 8 ) != "https://" && substr( $_POST['external'], 0, 6 ) != "ftp://" ) {
-				$message .= __( 'Error: External URL\'s must start with http://, https://, or ftp://', '404-killer' ) . "<br>";
+				$message .= __( 'Error: External URL\'s must start with http://, https://, or ftp://', '404-solution' ) . "<br>";
 			}
 		}
 	}
@@ -733,7 +733,7 @@ function abj404_editRedirectData() {
 			$_POST['external'] = "";
 			$_POST['dest'] = "";
 		} else {
-			$message .= __( 'Error: Data not formatted properly.', '404-killer' ) . "<br>";
+			$message .= __( 'Error: Data not formatted properly.', '404-solution' ) . "<br>";
 		}
 	}
 
@@ -754,7 +754,7 @@ function abj404_setTrash( $id, $trash ) {
 		);
 	}
 	if ( $result == false ) {
-		$message = __( 'Error: Unknown Database Error!', '404-killer' );
+		$message = __( 'Error: Unknown Database Error!', '404-solution' );
 	}
 	return $message;
 }
@@ -773,20 +773,20 @@ function abj404_setIgnore( $id, $newstatus ) {
 		);
 	}
 	if ( $result == false ) {
-		$message = __( 'Error: Unknown Database Error!', '404-killer' );
+		$message = __( 'Error: Unknown Database Error!', '404-solution' );
 	}
 	return $message;
 }
 
 function abj404_adminHeader( $sub = 'list', $message = '' ) {
 	if ( $sub == "options" ) {
-		$header = " " . __( 'Options', '404-killer' );
+		$header = " " . __( 'Options', '404-solution' );
 	} else if ( $sub == "logs" ) {
-			$header = " " . __( 'Logs', '404-killer' );
+			$header = " " . __( 'Logs', '404-solution' );
 		} else if ( $sub == "stats" ) {
-			$header = " " . __( 'Stats', '404-killer' );
+			$header = " " . __( 'Stats', '404-solution' );
 		} else if ( $sub == "edit" ) {
-			$header = ": " . __( 'Edit Redirect', '404-killer' );
+			$header = ": " . __( 'Edit Redirect', '404-solution' );
 		} else if ( $sub == "redirects" ) {
 			$header = "";
 		} else {
@@ -798,7 +798,7 @@ function abj404_adminHeader( $sub = 'list', $message = '' ) {
 	} else {
 		echo "<div id=\"icon-tools\" class=\"icon32\"></div>";
 	}
-	echo "<h2>" . __( '404 Killer', '404-killer' ) . esc_html( $header ) . "</h2>";
+	echo "<h2>" . __( '404 Solution', '404-solution' ) . esc_html( $header ) . "</h2>";
 	if ( $message != "" ) {
                 // esc_html to wp_kses by schlessera
 		$allowed_tags = [
@@ -808,41 +808,41 @@ function abj404_adminHeader( $sub = 'list', $message = '' ) {
  		];
  		echo "<div class=\"message updated\"><p>" . wp_kses( $message, $allowed_tags ) . "</p></div>";
         }
-	echo __( 'by', '404-killer' ) . " <a href=\"https://www.wealth-psychology.com\" title=\"404 Killer\" target=\"_blank\">404 Killer</a><br>";
-	echo __( 'Version', '404-killer' ) . ": " . ABJ404_VERSION . " | ";
-	echo "<a href=\"" . ABJ404_HOME . "\" title=\"" . __( 'Plugin Home Page', '404-killer' ) . "\" target=\"_blank\">" . __( 'Plugin Home Page', '404-killer' ) . "</a> | ";
+	echo __( 'by', '404-solution' ) . " <a href=\"http://www.wealth-psychology.com/404-solution/\" title=\"404 Solution\" target=\"_blank\">404 Solution</a><br>";
+	echo __( 'Version', '404-solution' ) . ": " . ABJ404_VERSION . " | ";
+	echo "<a href=\"" . ABJ404_HOME . "\" title=\"" . __( 'Plugin Home Page', '404-solution' ) . "\" target=\"_blank\">" . __( 'Plugin Home Page', '404-solution' ) . "</a> | ";
 	echo "<br>";
 
 	$class="";
 	if ( $sub == "redirects" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=abj404_killer\" title=\"" . __( 'Page Redirects', '404-killer' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Page Redirects', '404-killer' ) . "</a>";
+	echo "<a href=\"?page=abj404_solution\" title=\"" . __( 'Page Redirects', '404-solution' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Page Redirects', '404-solution' ) . "</a>";
 	$class="";
 	if ( $sub == "captured" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=abj404_killer&subpage=abj404_captured\" title=\"" . __( 'Captured 404 URLs', '404-killer' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Captured 404 URLs', '404-killer' ) . "</a>";
+	echo "<a href=\"?page=abj404_solution&subpage=abj404_captured\" title=\"" . __( 'Captured 404 URLs', '404-solution' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Captured 404 URLs', '404-solution' ) . "</a>";
 	$class="";
 	if ( $sub == "logs" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=abj404_killer&subpage=abj404_logs\" title=\"" . __( 'Redirect & Capture Logs', '404-killer' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Logs', '404-killer' ) . "</a>";
+	echo "<a href=\"?page=abj404_solution&subpage=abj404_logs\" title=\"" . __( 'Redirect & Capture Logs', '404-solution' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Logs', '404-solution' ) . "</a>";
 	$class="";
 	if ( $sub == "stats" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=abj404_killer&subpage=abj404_stats\" title=\"" . __( 'Stats', '404-killer' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Stats', '404-killer' ) . "</a>";
+	echo "<a href=\"?page=abj404_solution&subpage=abj404_stats\" title=\"" . __( 'Stats', '404-solution' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Stats', '404-solution' ) . "</a>";
 	$class="";
 	if ( $sub == "tools" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=abj404_killer&subpage=abj404_tools\" title=\"" . __( 'Tools', '404-killer' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Tools', '404-killer' ) . "</a>";
+	echo "<a href=\"?page=abj404_solution&subpage=abj404_tools\" title=\"" . __( 'Tools', '404-solution' ) . "\" class=\"nav-tab " . $class . "\">" . __( 'Tools', '404-solution' ) . "</a>";
 	$class="";
 	if ( $sub == "options" ) {
 		$class="nav-tab-active";
 	}
-	echo "<a href=\"?page=abj404_killer&subpage=abj404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . __( 'Options', '404-killer' ) . "</a>";
+	echo "<a href=\"?page=abj404_solution&subpage=abj404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . __( 'Options', '404-solution' ) . "</a>";
 	echo "<hr style=\"border: 0px; border-bottom: 1px solid #DFDFDF; margin-top: 0px; margin-bottom: 0px; \">";
 }
 
@@ -850,10 +850,10 @@ function abj404_adminFooter() {
 	echo "<div style=\"clear: both;\">";
 	echo "<br>";
 	echo "<strong>Credits:</strong><br>";
-	echo "<a href=\"" . ABJ404_HOME . "\" title=\"" . __( '404 Killer' ) . "\" target=\"_blank\">" . __( '404 Killer' ) . "</a> ";
-	echo __( 'is maintained by', '404-killer' );
+	echo "<a href=\"" . ABJ404_HOME . "\" title=\"" . __( '404 Solution' ) . "\" target=\"_blank\">" . __( '404 Solution' ) . "</a> ";
+	echo __( 'is maintained by', '404-solution' );
 	echo " ";
-	echo "<a href=\"http://www.wealth-psychology.com/\" title=\"Aaron J\" target=\"_blank\">Aaron J</a>. ";
+	echo "<a href=\"http://www.wealth-psychology.com/404-solution/\" title=\"Aaron J\" target=\"_blank\">Aaron J</a>. ";
 	echo "</div>";
 	echo "</div>";
 }
@@ -883,9 +883,9 @@ function abj404_bulkProcess( $action, $ids ) {
 			}
 		}
 		if ( $action == "bulkignore" ) {
-			$message = $count . " " . __( 'URLs marked as ignored.', '404-killer' );
+			$message = $count . " " . __( 'URLs marked as ignored.', '404-solution' );
 		} else {
-			$message = $count . " " . __( 'URLs marked as captured.', '404-killer');
+			$message = $count . " " . __( 'URLs marked as captured.', '404-solution');
 		}
 	} else {
 		$count = 0;
@@ -895,7 +895,7 @@ function abj404_bulkProcess( $action, $ids ) {
 				$count ++;
 			}
 		}
-		$message = $count . " " . __( 'URLs moved to trash', '404-killer' );
+		$message = $count . " " . __( 'URLs moved to trash', '404-solution' );
 	}
 	return $message;
 }
@@ -916,29 +916,29 @@ function abj404_adminPage() {
 			$sub="abj404_options";
 			$message=abj404_updateOptions();
 			if ( $message == "" ) {
-				$message = __( 'Options Saved Successfully!', '404-killer' );
+				$message = __( 'Options Saved Successfully!', '404-solution' );
 			} else {
-				$message .= __( 'Some options were not saved successfully.', '404-killer' );
+				$message .= __( 'Some options were not saved successfully.', '404-solution' );
 			}
 		}
 	} else if ( $action == "addRedirect" ) {
 			if ( check_admin_referer( 'abj404addRedirect' ) && is_admin() ) {
 				$message=abj404_addAdminRedirect();
 				if ( $message == "" ) {
-					$message = __( 'New Redirect Added Successfully!', '404-killer' );
+					$message = __( 'New Redirect Added Successfully!', '404-solution' );
 				} else {
-					$message .= __( 'Error: unable to add new redirect successfully.', '404-killer' );
+					$message .= __( 'Error: unable to add new redirect successfully.', '404-solution' );
 				}
 			}
 		} else if ( $action == "emptyRedirectTrash" ) {
 			if ( check_admin_referer( 'abj404_emptyRedirectTrash' ) && is_admin() ) {
 				abj404_emptyTrash( 'redirects' );
-				$message = __( 'All trashed URLs have been deleted!', '404-killer' );
+				$message = __( 'All trashed URLs have been deleted!', '404-solution' );
 			}
 		} else if ( $action == "emptyCapturedTrash" ) {
 			if ( check_admin_referer( 'abj404_emptyCapturedTrash' ) && is_admin() ) {
 				abj404_emptyTrash( 'captured' );
-				$message = __( 'All trashed URLs have been deleted!', '404-killer' );
+				$message = __( 'All trashed URLs have been deleted!', '404-solution' );
 			}
 		} else if ( $action == "bulkignore" || $action == "bulkcaptured" || $action == "bulktrash" ) {
 			if ( check_admin_referer( 'abj404_capturedBulkAction' ) && is_admin() ) {
@@ -963,15 +963,15 @@ function abj404_adminPage() {
 				$message = abj404_setTrash( $_GET['id'], $trash );
 				if ( $message == "" ) {
 					if ( $trash == 1 ) {
-						$message = __( 'Redirect moved to trash successfully!', '404-killer' );
+						$message = __( 'Redirect moved to trash successfully!', '404-solution' );
 					} else {
-						$message = __( 'Redirect restored from trash successfully!', '404-killer' );
+						$message = __( 'Redirect restored from trash successfully!', '404-solution' );
 					}
 				} else {
 					if ( $trash == 1 ) {
-						$message = __( 'Error: Unable to move redirect to trash.', '404-killer' );
+						$message = __( 'Error: Unable to move redirect to trash.', '404-solution' );
 					} else {
-						$message = __( 'Error: Unable to move redirect from trash.', '404-killer' );
+						$message = __( 'Error: Unable to move redirect from trash.', '404-solution' );
 					}
 				}
 			}
@@ -984,7 +984,7 @@ function abj404_adminPage() {
 			if ( preg_match( '/[0-9]+/', $_GET['id'] ) ) {
 				$sanitize_id = absint( $_GET['id'] );
 				abj404_cleanRedirect( $sanitize_id );
-				$message = __( 'Redirect Removed Successfully!', '404-killer' );
+				$message = __( 'Redirect Removed Successfully!', '404-solution' );
 			}
 		}
 	}
@@ -1002,15 +1002,15 @@ function abj404_adminPage() {
 					$message = abj404_setIgnore( $_GET['id'], $newstatus );
 					if ( $message == "" ) {
 						if ( $newstatus == ABJ404_CAPTURED ) {
-							$message = __( 'Removed 404 URL from ignored list successfully!', '404-killer' );
+							$message = __( 'Removed 404 URL from ignored list successfully!', '404-solution' );
 						} else {
-							$message = __( '404 URL marked as ignored successfully!', '404-killer' );
+							$message = __( '404 URL marked as ignored successfully!', '404-solution' );
 						}
 					} else {
 						if ( $newstatus == ABJ404_CAPTURED ) {
-							$message = __( 'Error: unable to remove URL from ignored list', '404-killer' );
+							$message = __( 'Error: unable to remove URL from ignored list', '404-solution' );
 						} else {
-							$message = __( 'Error: unable to mark URL as ignored', '404-killer' );
+							$message = __( 'Error: unable to mark URL as ignored', '404-solution' );
 						}
 					}
 				}
@@ -1024,10 +1024,10 @@ function abj404_adminPage() {
 			if ( check_admin_referer( 'abj404editRedirect' ) && is_admin() ) {
 				$message = abj404_editRedirectData();
 				if ( $message == "" ) {
-					$message .= __( 'Redirect Information Updated Successfully!', '404-killer' );
+					$message .= __( 'Redirect Information Updated Successfully!', '404-solution' );
 					$sub = "redirects";
 				} else {
-					$message .= __( 'Error: Unable to update redirect data.', '404-killer' );
+					$message .= __( 'Error: Unable to update redirect data.', '404-solution' );
 				}
 			}
 		}
@@ -1073,7 +1073,7 @@ function abj404_adminPage() {
 		} else if ( $sub == "tools" ) {
 			abj404_adminToolsPage();
 		} else {
-		echo __( 'Invalid Sub Page ID', '404-killer' );
+		echo __( 'Invalid Sub Page ID', '404-solution' );
 	}
 	abj404_adminFooter();
 }
@@ -1120,15 +1120,15 @@ function abj404_adminStatsPage() {
 
 	$content = "";
 	$content .= "<p $hr>";
-	$content .= "<strong>" . __( 'Automatic 301 Redirects', '404-killer' ) . ":</strong> " . esc_html( $auto301 ) . "<br>";
-	$content .= "<strong>" . __( 'Automatic 302 Redirects', '404-killer' ) . ":</strong> " . esc_html( $auto302 ) . "<br>";
-	$content .= "<strong>" . __( 'Manual 301 Redirects', '404-killer' ) . ":</strong> " . esc_html( $manual301 ) . "<br>";
-	$content .= "<strong>" . __( 'Manual 302 Redirects', '404-killer' ) . ":</strong> " . esc_html( $manual302 ) . "<br>";
-	$content .= "<strong>" . __( 'Trashed Redirects', '404-killer' ) . ":</strong> " . esc_html( $trashed ) . "</p>";
+	$content .= "<strong>" . __( 'Automatic 301 Redirects', '404-solution' ) . ":</strong> " . esc_html( $auto301 ) . "<br>";
+	$content .= "<strong>" . __( 'Automatic 302 Redirects', '404-solution' ) . ":</strong> " . esc_html( $auto302 ) . "<br>";
+	$content .= "<strong>" . __( 'Manual 301 Redirects', '404-solution' ) . ":</strong> " . esc_html( $manual301 ) . "<br>";
+	$content .= "<strong>" . __( 'Manual 302 Redirects', '404-solution' ) . ":</strong> " . esc_html( $manual302 ) . "<br>";
+	$content .= "<strong>" . __( 'Trashed Redirects', '404-solution' ) . ":</strong> " . esc_html( $trashed ) . "</p>";
 	$content .= "<p style=\"margin-top: 4px;\">";
-	$content .= "<strong>" . __( 'Total Redirects', '404-killer' ) . ":</strong> " . esc_html( $total );
+	$content .= "<strong>" . __( 'Total Redirects', '404-solution' ) . ":</strong> " . esc_html( $total );
 	$content .= "</p>";
-	abj404_postbox( "abj404-redirectStats", __( 'Redirects', '404-killer' ), $content );
+	abj404_postbox( "abj404-redirectStats", __( 'Redirects', '404-solution' ), $content );
 
 	$query = "select count(id) from $redirects where disabled = 0 and status = " . ABJ404_CAPTURED;
 	$captured = abj404_getStatsCount( $query );
@@ -1143,13 +1143,13 @@ function abj404_adminStatsPage() {
 
 	$content = "";
 	$content .= "<p $hr>";
-	$content .= "<strong>" . __( 'Captured URLs', '404-killer' ) . ":</strong> " . esc_html( $captured ) . "<br>";
-	$content .= "<strong>" . __( 'Ignored 404 URLs', '404-killer' ) . ":</strong> " . esc_html( $ignored ) . "<br>";
-	$content .= "<strong>" . __( 'Trashed URLs', '404-killer' ) . ":</strong> " . esc_html( $trashed ) . "</p>";
+	$content .= "<strong>" . __( 'Captured URLs', '404-solution' ) . ":</strong> " . esc_html( $captured ) . "<br>";
+	$content .= "<strong>" . __( 'Ignored 404 URLs', '404-solution' ) . ":</strong> " . esc_html( $ignored ) . "<br>";
+	$content .= "<strong>" . __( 'Trashed URLs', '404-solution' ) . ":</strong> " . esc_html( $trashed ) . "</p>";
 	$content .= "<p style=\"margin-top: 4px;\">";
-	$content .= "<strong>" . __( 'Total URLs', '404-killer' ) . ":</strong> " . esc_html( $total );
+	$content .= "<strong>" . __( 'Total URLs', '404-solution' ) . ":</strong> " . esc_html( $total );
 	$content .= "</p>";
-	abj404_postbox( "abj404-capturedStats", __( 'Captured URLs', '404-killer' ), $content );
+	abj404_postbox( "abj404-capturedStats", __( 'Captured URLs', '404-solution' ), $content );
 
 	echo "</div>";
 	echo "</div>";
@@ -1204,14 +1204,14 @@ function abj404_adminStatsPage() {
 
 		$content = "";
 		$content .= "<p>";
-		$content .= "<strong>" . __( 'Page Not Found Displayed', '404-killer' ) . ":</strong> " . esc_html( $disp404 ) . "<br>";
-		$content .= "<strong>" . __( 'Unique Page Not Found URLs', '404-killer' ) . ":</strong> " . esc_html( $distinct404 ) . "<br>";
-		$content .= "<strong>" . __( 'Unique Page Not Found Visitors', '404-killer' ) . ":</strong> " . esc_html( $visitors404 ) . "<br>";
-		$content .= "<strong>" . __( 'Unique Page Not Found Referrers', '404-killer' ) . ":</strong> " . esc_html( $refer404 ) . "<br>";
-		$content .= "<strong>" . __( 'Hits Redirected', '404-killer' ) . ":</strong> " . esc_html( $redirected ) . "<br>";
-		$content .= "<strong>" . __( 'Unique URLs Redirected', '404-killer' ) . ":</strong> " . esc_html( $distinctredirected ) . "<br>";
-		$content .= "<strong>" . __( 'Unique Redirected Visitors', '404-killer' ) . ":</strong> " . esc_html( $distinctvisitors ) . "<br>";
-		$content .= "<strong>" . __( 'Unique Redirected Referrers', '404-killer' ) . ":</strong> " . esc_html( $distinctrefer ) . "<br>";
+		$content .= "<strong>" . __( 'Page Not Found Displayed', '404-solution' ) . ":</strong> " . esc_html( $disp404 ) . "<br>";
+		$content .= "<strong>" . __( 'Unique Page Not Found URLs', '404-solution' ) . ":</strong> " . esc_html( $distinct404 ) . "<br>";
+		$content .= "<strong>" . __( 'Unique Page Not Found Visitors', '404-solution' ) . ":</strong> " . esc_html( $visitors404 ) . "<br>";
+		$content .= "<strong>" . __( 'Unique Page Not Found Referrers', '404-solution' ) . ":</strong> " . esc_html( $refer404 ) . "<br>";
+		$content .= "<strong>" . __( 'Hits Redirected', '404-solution' ) . ":</strong> " . esc_html( $redirected ) . "<br>";
+		$content .= "<strong>" . __( 'Unique URLs Redirected', '404-solution' ) . ":</strong> " . esc_html( $distinctredirected ) . "<br>";
+		$content .= "<strong>" . __( 'Unique Redirected Visitors', '404-solution' ) . ":</strong> " . esc_html( $distinctvisitors ) . "<br>";
+		$content .= "<strong>" . __( 'Unique Redirected Referrers', '404-solution' ) . ":</strong> " . esc_html( $distinctrefer ) . "<br>";
 		$content .= "</p>";
 		abj404_postbox( "abj404-stats" . $x, __( $title ), $content );
 	}
@@ -1232,7 +1232,7 @@ function abj404_adminLogsPage() {
 		$tableOptions[$key] = wp_kses_post( $value );
 	}
 
-	$url = "?page=abj404_killer&subpage=abj404_logs";
+	$url = "?page=abj404_solution&subpage=abj404_logs";
 
 	$redirects = array();
 	$query = "select id, url from " . $wpdb->prefix . "abj404_redirects order by url";
@@ -1246,15 +1246,15 @@ function abj404_adminLogsPage() {
 
 	echo "<br>";
 	echo "<form method=\"GET\" action=\"\" style=\"clear: both; display: block;\" class=\"clearbothdisplayblock\">";
-	echo "<input type=\"hidden\" name=\"page\" value=\"abj404_killer\">";
+	echo "<input type=\"hidden\" name=\"page\" value=\"abj404_solution\">";
 	echo "<input type=\"hidden\" name=\"subpage\" value=\"abj404_logs\">";
-	echo "<strong><label for=\"id\">" . __( 'Viewing Logs For', '404-killer' ) . ":</label></strong> ";
+	echo "<strong><label for=\"id\">" . __( 'Viewing Logs For', '404-solution' ) . ":</label></strong> ";
 	echo "<select name=\"id\" id=\"id\">";
 	$selected = "";
 	if ( $tableOptions['logsid'] == 0 ) {
 		$selected = " selected";
 	}
-	echo "<option value=\"0\"" . $selected . ">" . __( 'All Redirects', '404-killer' ) . "</option>";
+	echo "<option value=\"0\"" . $selected . ">" . __( 'All Redirects', '404-solution' ) . "</option>";
 	foreach ( $redirects as $redirect ) {
 		$selected = "";
 		if ( $tableOptions['logsid'] == $redirect['id'] ) {
@@ -1318,17 +1318,17 @@ function abj404_adminLogsPage() {
 		echo "<td>" . esc_html( $row['remote_host'] ) . "</td>";
 		echo "<td>";
 		if ( $row['referrer'] != "" ) {
-			echo "<a href=\"" . esc_url( $row['referrer'] ) . "\" title=\"" . __( 'Visit', '404-killer' ) . ": " . esc_attr( $row['referrer'] ) . "\" target=\"_blank\">" . esc_html( $row['referrer'] ) . "</a>";
+			echo "<a href=\"" . esc_url( $row['referrer'] ) . "\" title=\"" . __( 'Visit', '404-solution' ) . ": " . esc_attr( $row['referrer'] ) . "\" target=\"_blank\">" . esc_html( $row['referrer'] ) . "</a>";
 		} else {
 			echo "&nbsp;";
 		}
 		echo "</td>";
 		echo "<td>";
 		if ( $row['action'] == "404" ) {
-			echo __( 'Displayed 404 Page', '404-killer' );
+			echo __( 'Displayed 404 Page', '404-solution' );
 		} else {
-			echo __( 'Redirect to', '404-killer' ) . " ";
-			echo "<a href=\"" . esc_url( $row['action'] ) . "\" title=\"" . __( 'Visit', '404-killer' ) . ": " . esc_attr( $row['action'] ) . "\" target=\"_blank\">" . esc_html( $row['action'] ) . "</a>";
+			echo __( 'Redirect to', '404-solution' ) . " ";
+			echo "<a href=\"" . esc_url( $row['action'] ) . "\" title=\"" . __( 'Visit', '404-solution' ) . ": " . esc_attr( $row['action'] ) . "\" target=\"_blank\">" . esc_html( $row['action'] ) . "</a>";
 		}
 		echo "</td>";
 		echo "<td>" . esc_html( date( 'Y/m/d h:i:s A', $row['timestamp'] ) ) . "</td>";
@@ -1339,7 +1339,7 @@ function abj404_adminLogsPage() {
 	if ( $displayed == 0 ) {
 		echo "<tr>";
 		echo "<td></td>";
-		echo "<td colspan=\"5\" style=\"text-align: center; font-weight: bold;\">" . __( 'No Results To Display', '404-killer' ) . "</td>";
+		echo "<td colspan=\"5\" style=\"text-align: center; font-weight: bold;\">" . __( 'No Results To Display', '404-solution' ) . "</td>";
 		echo "<td></td>";
 		echo "</tr>";
 	}
@@ -1355,7 +1355,7 @@ function abj404_adminLogsPage() {
 function abj404_adminOptionsPage() {
 	$options = abj404_getOptions();
 
-	$url = "?page=abj404_killer";
+	$url = "?page=abj404_solution";
 
 	//General Options
 	$action = "abj404UpdateOptions";
@@ -1369,13 +1369,13 @@ function abj404_adminOptionsPage() {
 	echo "<input type=\"hidden\" name=\"action\" value=\"updateOptions\">";
 
         $contentAutomaticRedirects = abj404_adminOptionsPageAutomaticRedirects($options);
-	abj404_postbox( "abj404-autooptions", __( 'Automatic Redirects', '404-killer' ), $contentAutomaticRedirects );
+	abj404_postbox( "abj404-autooptions", __( 'Automatic Redirects', '404-solution' ), $contentAutomaticRedirects );
         
         $contentGeneralSettings = abj404_adminOptionsPageGeneralSettings($options);
-	abj404_postbox( "abj404-generaloptions", __( 'General Settings', '404-killer' ), $contentGeneralSettings );
+	abj404_postbox( "abj404-generaloptions", __( 'General Settings', '404-solution' ), $contentGeneralSettings );
 
         $content404PageSuggestions = abj404_adminOptionsPage404PageSuggestions($options);
-	abj404_postbox( "abj404-suggestoptions", __( '404 Page Suggestions', '404-killer' ), $content404PageSuggestions );
+	abj404_postbox( "abj404-suggestoptions", __( '404 Page Suggestions', '404-solution' ), $content404PageSuggestions );
 
 	echo "<input type=\"submit\" id=\"abj404-optionssub\" value=\"Save Settings\" class=\"button-primary\">";
 	echo "</form>";
@@ -1386,42 +1386,42 @@ function abj404_adminOptionsPage() {
 
 }
 function abj404_adminOptionsPageGeneralSettings($options) {
-	$content = "<p>" . __( 'DB Version Number', '404-killer' ) . ": " . esc_html( $options['DB_VERSION'] ) . "</p>";
-	$content .= "<p>" . __( 'Default redirect type', '404-killer' ) . ": ";
+	$content = "<p>" . __( 'DB Version Number', '404-solution' ) . ": " . esc_html( $options['DB_VERSION'] ) . "</p>";
+	$content .= "<p>" . __( 'Default redirect type', '404-solution' ) . ": ";
 	$content .= "<select name=\"default_redirect\">";
 	$selectedDefaultRedirect301 = "";
 	if ( $options['default_redirect'] == '301' ) {
 		$selectedDefaultRedirect301 = " selected";
 	}
-	$content .= "<option value=\"301\"" . $selectedDefaultRedirect301 . ">" . __( 'Permanent 301', '404-killer' ) . "</option>";
+	$content .= "<option value=\"301\"" . $selectedDefaultRedirect301 . ">" . __( 'Permanent 301', '404-solution' ) . "</option>";
 	$selectedDefaultRedirect302 = "";
 	if ( $options['default_redirect'] == '302' ) {
 		$selectedDefaultRedirect302 = " selected";
 	}
-	$content .= "<option value=\"302\"" . $selectedDefaultRedirect302 . ">" . __( 'Temporary 302', '404-killer' ) . "</option>";
+	$content .= "<option value=\"302\"" . $selectedDefaultRedirect302 . ">" . __( 'Temporary 302', '404-solution' ) . "</option>";
 	$content .= "</select></p>";
 
 	$selectedCapture404 = "";
 	if ( $options['capture_404'] == '1' ) {
 		$selectedCapture404 = " checked";
 	}
-	$content .= "<p>" . __( 'Collect incoming 404 URLs', '404-killer' ) . ": <input type=\"checkbox\" name=\"capture_404\" value=\"1\"" . $selectedCapture404 . "></p>";
+	$content .= "<p>" . __( 'Collect incoming 404 URLs', '404-solution' ) . ": <input type=\"checkbox\" name=\"capture_404\" value=\"1\"" . $selectedCapture404 . "></p>";
 
-	$content .= "<p>" . __( 'Admin notification level', '404-killer' ) . ": <input type=\"text\" name=\"admin_notification\" value=\"" . esc_attr( $options['admin_notification'] ) . "\" style=\"width: 50px;\"> " . __( 'Captured URLs (0 Disables Notification)', '404-killer' ) . "<br>";
-	$content .= __( 'Display WordPress admin notifications when number of captured URLs goes above specified level', '404-killer' ) . "</p>";
+	$content .= "<p>" . __( 'Admin notification level', '404-solution' ) . ": <input type=\"text\" name=\"admin_notification\" value=\"" . esc_attr( $options['admin_notification'] ) . "\" style=\"width: 50px;\"> " . __( 'Captured URLs (0 Disables Notification)', '404-solution' ) . "<br>";
+	$content .= __( 'Display WordPress admin notifications when number of captured URLs goes above specified level', '404-solution' ) . "</p>";
 
-	$content .= "<p>" . __( 'Collected 404 URL deletion', '404-killer' ) . ": <input type=\"text\" name=\"capture_deletion\" value=\"" . esc_attr( $options['capture_deletion'] ) . "\" style=\"width: 50px;\"> " . __( 'Days (0 Disables Auto Delete)', '404-killer' ) . "<br>";
-	$content .= __( 'Automatically removes 404 URLs that have been captured if they haven\'t been used for the specified amount of time.', '404-killer' ) . "</p>";
+	$content .= "<p>" . __( 'Collected 404 URL deletion', '404-solution' ) . ": <input type=\"text\" name=\"capture_deletion\" value=\"" . esc_attr( $options['capture_deletion'] ) . "\" style=\"width: 50px;\"> " . __( 'Days (0 Disables Auto Delete)', '404-solution' ) . "<br>";
+	$content .= __( 'Automatically removes 404 URLs that have been captured if they haven\'t been used for the specified amount of time.', '404-solution' ) . "</p>";
 
-	$content .= "<p>" . __( 'Manual redirect deletion', '404-killer' ) . ": <input type=\"text\" name=\"manual_deletion\" value=\"" . esc_attr( $options['manual_deletion'] ) . "\" style=\"width: 50px;\"> " . __( 'Days (0 Disables Auto Delete)', '404-killer' ) . "<br>";
-	$content .= __( 'Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.', '404-killer' ) . "</p>";
+	$content .= "<p>" . __( 'Manual redirect deletion', '404-solution' ) . ": <input type=\"text\" name=\"manual_deletion\" value=\"" . esc_attr( $options['manual_deletion'] ) . "\" style=\"width: 50px;\"> " . __( 'Days (0 Disables Auto Delete)', '404-solution' ) . "<br>";
+	$content .= __( 'Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.', '404-solution' ) . "</p>";
 
 	$selectedRemoveMatches = "";
 	if ( $options['remove_matches'] == '1' ) {
 		$selectedRemoveMatches = " checked";
 	}
-	$content .= "<p>" . __( 'Remove redirect upon matching permalink', '404-killer' ) . ": <input type=\"checkbox\" value=\"1\" name=\"remove_matches\"" . $selectedRemoveMatches . "><br>";
-	$content .= __( 'Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.', '404-killer' ) . "</p>";
+	$content .= "<p>" . __( 'Remove redirect upon matching permalink', '404-solution' ) . ": <input type=\"checkbox\" value=\"1\" name=\"remove_matches\"" . $selectedRemoveMatches . "><br>";
+	$content .= __( 'Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.', '404-solution' ) . "</p>";
 
         return $content;
 }
@@ -1432,36 +1432,36 @@ function abj404_adminOptionsPage404PageSuggestions($options) {
 	if ( $options['display_suggest'] == '1' ) {
 		$selectedDisplaySuggest = " checked";
 	}
-	$content = "<p>" . __( 'Turn on 404 suggestions', '404-killer' ) . ": <input type=\"checkbox\" name=\"display_suggest\" value=\"1\"" . $selectedDisplaySuggest . "><br>";
-	$content .= __( 'Activates the 404 page suggestions function. Only works if the code is in your 404 page template.', '404-killer' ) . "</p>";
+	$content = "<p>" . __( 'Turn on 404 suggestions', '404-solution' ) . ": <input type=\"checkbox\" name=\"display_suggest\" value=\"1\"" . $selectedDisplaySuggest . "><br>";
+	$content .= __( 'Activates the 404 page suggestions function. Only works if the code is in your 404 page template.', '404-solution' ) . "</p>";
 
 	$selectedSuggestCats = "";
 	if ( $options['suggest_cats'] == '1' ) {
 		$selectedSuggestCats = " checked";
 	}
-	$content .= "<p>" . __( 'Allow category suggestions', '404-killer' ) . ": <input type=\"checkbox\" name=\"suggest_cats\" value=\"1\"" . $selectedSuggestCats . "><br>";
+	$content .= "<p>" . __( 'Allow category suggestions', '404-solution' ) . ": <input type=\"checkbox\" name=\"suggest_cats\" value=\"1\"" . $selectedSuggestCats . "><br>";
 
 	$selectedSuggestTags = "";
 	if ( $options['suggest_tags'] == '1' ) {
 		$selectedSuggestTags = " checked";
 	}
-	$content .= "<p>" . __( 'Allow tag suggestions', '404-killer' ) . ": <input type=\"checkbox\" name=\"suggest_tags\" value=\"1\"" . $selectedSuggestTags . "><br>";
+	$content .= "<p>" . __( 'Allow tag suggestions', '404-solution' ) . ": <input type=\"checkbox\" name=\"suggest_tags\" value=\"1\"" . $selectedSuggestTags . "><br>";
 
-	$content .= "<p>" . __( 'Minimum score of suggestions to display', '404-killer' ) . ": <input type=\"text\" name=\"suggest_minscore\" value=\"" . esc_attr( $options['suggest_minscore'] ) . "\" style=\"width: 50px;\"></p>"
+	$content .= "<p>" . __( 'Minimum score of suggestions to display', '404-solution' ) . ": <input type=\"text\" name=\"suggest_minscore\" value=\"" . esc_attr( $options['suggest_minscore'] ) . "\" style=\"width: 50px;\"></p>"
 	;
-	$content .= "<p>" . __( 'Maximum number of suggestions to display', '404-killer' ) . ": <input type=\"text\" name=\"suggest_max\" value=\"" . esc_attr( $options['suggest_max'] ) . "\" style=\"width: 50px;\"></p>";
+	$content .= "<p>" . __( 'Maximum number of suggestions to display', '404-solution' ) . ": <input type=\"text\" name=\"suggest_max\" value=\"" . esc_attr( $options['suggest_max'] ) . "\" style=\"width: 50px;\"></p>";
 
-	$content .= "<p>" . __( 'Page suggestions title', '404-killer' ) . ": <input type=\"text\" name=\"suggest_title\" value=\"" . esc_attr( $options['suggest_title'] ) . "\" style=\"width: 200px;\"></p>";
+	$content .= "<p>" . __( 'Page suggestions title', '404-solution' ) . ": <input type=\"text\" name=\"suggest_title\" value=\"" . esc_attr( $options['suggest_title'] ) . "\" style=\"width: 200px;\"></p>";
 
-	$content .= "<p>" . __( 'Display Before/After page suggestions', '404-killer' ) . ": ";
+	$content .= "<p>" . __( 'Display Before/After page suggestions', '404-solution' ) . ": ";
 	$content .= "<input type=\"text\" name=\"suggest_before\" value=\"" . esc_attr( $options['suggest_before'] ) . "\" style=\"width: 100px;\"> / ";
 	$content .= "<input type=\"text\" name=\"suggest_after\" value=\"" . esc_attr( $options['suggest_after'] ) . "\" style=\"width: 100px;\">";
 
-	$content .= "<p>" . __( 'Display Before/After each suggested entry', '404-killer' ) . ": ";
+	$content .= "<p>" . __( 'Display Before/After each suggested entry', '404-solution' ) . ": ";
 	$content .= "<input type=\"text\" name=\"suggest_entrybefore\" value=\"" . esc_attr( $options['suggest_entrybefore'] ) . "\" style=\"width: 100px;\"> / ";
 	$content .= "<input type=\"text\" name=\"suggest_entryafter\" value=\"" . esc_attr( $options['suggest_entryafter'] ) . "\" style=\"width: 100px;\">";
 
-	$content .= "<p>" . __( 'Display if no suggestion results', '404-killer' ) . ": ";
+	$content .= "<p>" . __( 'Display if no suggestion results', '404-solution' ) . ": ";
 	$content .= "<input type=\"text\" name=\"suggest_noresults\" value=\"" . esc_attr( $options['suggest_noresults'] ) . "\" style=\"width: 200px;\">";
     
         return $content;
@@ -1472,7 +1472,7 @@ function abj404_adminOptionsPageAutomaticRedirects($options) {
         // ****** BEGIN added -- probably buggy
         $selected = "";
         global $wpdb;
-        $content .=  "<label for=\"dest404page\">" . __( 'Redirect all unhandled 404s to', '404-killer' ) . ": <select id=\"dest404page\" name=\"dest404page\">";
+        $content .=  "<label for=\"dest404page\">" . __( 'Redirect all unhandled 404s to', '404-solution' ) . ": <select id=\"dest404page\" name=\"dest404page\">";
         
         $userSelected = (isset($options['dest404page']) ? $options['dest404page'] : null);
         if ($userSelected == 'none') {
@@ -1505,7 +1505,7 @@ function abj404_adminOptionsPageAutomaticRedirects($options) {
                         $selected = "";
                 }
 
-                $content .=  "<option value=\"" . $thisval . "\"" . $selected . ">" . __( 'Page', '404-killer' ) . ": " . esc_html( $theTitle ) . "</option>";
+                $content .=  "<option value=\"" . $thisval . "\"" . $selected . ">" . __( 'Page', '404-solution' ) . ": " . esc_html( $theTitle ) . "</option>";
         }
 
         $content .=  "</select><br>";        
@@ -1516,33 +1516,33 @@ function abj404_adminOptionsPageAutomaticRedirects($options) {
 		$selectedAutoRedirects = " checked";
 	}
         
-	$content .= "<p>" . __( 'Create automatic redirects', '404-killer' ) . ": <input type=\"checkbox\" name=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><br>";
-	$content .= __( 'Automatically creates redirects based on best possible suggested page.', '404-killer' ) . "</p>";
+	$content .= "<p>" . __( 'Create automatic redirects', '404-solution' ) . ": <input type=\"checkbox\" name=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><br>";
+	$content .= __( 'Automatically creates redirects based on best possible suggested page.', '404-solution' ) . "</p>";
 
-	$content .= "<p>" . __( 'Minimum match score', '404-killer' ) . ": <input type=\"text\" name=\"auto_score\" value=\"" . esc_attr( $options['auto_score'] ) . "\" style=\"width: 50px;\"><br>";
-	$content .= __( 'Only create an automatic redirect if the suggested page has a score above the specified number', '404-killer' ) . "</p>";
+	$content .= "<p>" . __( 'Minimum match score', '404-solution' ) . ": <input type=\"text\" name=\"auto_score\" value=\"" . esc_attr( $options['auto_score'] ) . "\" style=\"width: 50px;\"><br>";
+	$content .= __( 'Only create an automatic redirect if the suggested page has a score above the specified number', '404-solution' ) . "</p>";
 
 	$selectedAutoCats = "";
 	if ( $options['auto_cats'] == '1' ) {
 		$selectedAutoCats = " checked";
 	}
-	$content .= "<p>" . __( 'Create automatic redirects for categories', '404-killer' ) . ": <input type=\"checkbox\" name=\"auto_cats\" value=\"1\"" . $selectedAutoCats . "></p>";
+	$content .= "<p>" . __( 'Create automatic redirects for categories', '404-solution' ) . ": <input type=\"checkbox\" name=\"auto_cats\" value=\"1\"" . $selectedAutoCats . "></p>";
 
 	$selectedAutoTags = "";
 	if ( $options['auto_tags'] == '1' ) {
 		$selectedAutoTags = " checked";
 	}
-	$content .= "<p>" . __( 'Create automatic redirects for tags', '404-killer' ) . ": <input type=\"checkbox\" name=\"auto_tags\" value=\"1\"" . $selectedAutoTags . "></p>";
+	$content .= "<p>" . __( 'Create automatic redirects for tags', '404-solution' ) . ": <input type=\"checkbox\" name=\"auto_tags\" value=\"1\"" . $selectedAutoTags . "></p>";
 
 	$selectedForcePermaLinks = "";
 	if ( $options['force_permalinks'] == '1' ) {
 		$selectedForcePermaLinks = " checked";
 	}
-	$content .= "<p>" . __( 'Force current permalinks', '404-killer' ) . ": <input type=\"checkbox\" name=\"force_permalinks\" value=\"1\"" . $selectedForcePermaLinks . "><br>";
-	$content .= __( 'Creates auto redirects for any url resolving to a post/page that doesn\'t match the current permalinks', '404-killer' ) . "</p>";
+	$content .= "<p>" . __( 'Force current permalinks', '404-solution' ) . ": <input type=\"checkbox\" name=\"force_permalinks\" value=\"1\"" . $selectedForcePermaLinks . "><br>";
+	$content .= __( 'Creates auto redirects for any url resolving to a post/page that doesn\'t match the current permalinks', '404-solution' ) . "</p>";
 
-	$content .= "<p>" . __( 'Auto redirect deletion', '404-killer' ) . ": <input type=\"text\" name=\"auto_deletion\" value=\"" . esc_attr( $options['auto_deletion'] ) . "\" style=\"width: 50px;\"> " . __( 'Days (0 Disables Auto Delete)', '404-killer' ) . "<br>";
-	$content .= __( 'Removes auto created redirects if they haven\'t been used for the specified amount of time.', '404-killer' ) . "</p>";
+	$content .= "<p>" . __( 'Auto redirect deletion', '404-solution' ) . ": <input type=\"text\" name=\"auto_deletion\" value=\"" . esc_attr( $options['auto_deletion'] ) . "\" style=\"width: 50px;\"> " . __( 'Days (0 Disables Auto Delete)', '404-solution' ) . "<br>";
+	$content .= __( 'Removes auto created redirects if they haven\'t been used for the specified amount of time.', '404-solution' ) . "</p>";
 
         return $content;
 }
@@ -1598,13 +1598,13 @@ function abj404_adminRedirectsPage() {
 
 	if ( $tableOptions['filter'] == '-1' ) {
 		echo "<div class=\"alignleft actions\">";
-		$eturl = "?page=abj404_killer&filter=-1";
+		$eturl = "?page=abj404_solution&filter=-1";
 		$trashaction = "abj404_emptyRedirectTrash";
 		$eturl = wp_nonce_url( $eturl, $trashaction );
 
 		echo "<form method=\"POST\" action=\"" . esc_url( $eturl ) . "\">";
 		echo "<input type=\"hidden\" name=\"action\" value=\"emptyRedirectTrash\">";
-		echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . __( 'Empty Trash', '404-killer' ) . "\">";
+		echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . __( 'Empty Trash', '404-solution' ) . "\">";
 		echo "</form>";
 		echo "</div>";
 	}
@@ -1625,38 +1625,38 @@ function abj404_adminRedirectsPage() {
 		$displayed++;
 		$status = "";
 		if ( $row['status'] == ABJ404_MANUAL ) {
-			$status = __( 'Manual', '404-killer' );
+			$status = __( 'Manual', '404-solution' );
 		} else if ( $row['status'] == ABJ404_AUTO ) {
-				$status = __( 'Automatic', '404-killer' );
+				$status = __( 'Automatic', '404-solution' );
 			}
 
 		$type = "";
 		$dest = "";
 		$link = "";
-		$title = __( 'Visit', '404-killer' ) . " ";
+		$title = __( 'Visit', '404-solution' ) . " ";
 		if ( $row['type'] == ABJ404_EXTERNAL ) {
-			$type = __( 'External', '404-killer' );
+			$type = __( 'External', '404-solution' );
 			$dest = $row['final_dest'];
 			$link = $row['final_dest'];
 			$title .= $row['final_dest'];
 		} else if ( $row['type'] == ABJ404_POST ) {
-				$type = __( 'Post/Page', '404-killer' );
+				$type = __( 'Post/Page', '404-solution' );
 				$permalink = abj404_permalinkInfo( $row['final_dest'] . "|POST", 0 );
 				$dest = $permalink['title'];
 				$link = $permalink['link'];
 				$title .= $permalink['title'];
 			} else if ( $row['type'] == ABJ404_CAT ) {
-				$type = __( 'Category', '404-killer' );
+				$type = __( 'Category', '404-solution' );
 				$permalink = abj404_permalinkInfo( $row['final_dest'] . "|CAT", 0 );
 				$dest = $permalink['title'];
 				$link = $permalink['link'];
-				$title .= __( 'Category:', '404-killer' ) . " " . $permalink['title'];
+				$title .= __( 'Category:', '404-solution' ) . " " . $permalink['title'];
 			} else if ( $row['type'] == ABJ404_TAG ) {
-				$type = __( 'Tag', '404-killer' );
+				$type = __( 'Tag', '404-solution' );
 				$permalink = abj404_permalinkInfo( $row['final_dest'] . "|TAG", 0 );
 				$dest = $permalink['title'];
 				$link = $permalink['link'];
-				$title .= __( 'Tag:', '404-killer' ) . " " . $permalink['title'];
+				$title .= __( 'Tag:', '404-solution' ) . " " . $permalink['title'];
 			}
 
 
@@ -1665,20 +1665,20 @@ function abj404_adminRedirectsPage() {
 		if ( $last_used != 0 ) {
 			$last = date( "Y/m/d h:i:s A", $last_used );
 		} else {
-			$last = __( 'Never Used', '404-killer' );
+			$last = __( 'Never Used', '404-solution' );
 		}
 
-		$editlink = "?page=abj404_killer&subpage=abj404_edit&id=" . absint( $row['id'] );
-		$logslink = "?page=abj404_killer&subpage=abj404_logs&id=" . absint( $row['id'] );
-		$trashlink = "?page=abj404_killer&id=" . absint( $row['id'] );
-		$deletelink = "?page=abj404_killer&remove=1&id=" . absint( $row['id'] );
+		$editlink = "?page=abj404_solution&subpage=abj404_edit&id=" . absint( $row['id'] );
+		$logslink = "?page=abj404_solution&subpage=abj404_logs&id=" . absint( $row['id'] );
+		$trashlink = "?page=abj404_solution&id=" . absint( $row['id'] );
+		$deletelink = "?page=abj404_solution&remove=1&id=" . absint( $row['id'] );
 
 		if ( $tableOptions['filter'] == -1 ) {
 			$trashlink .= "&trash=0";
-			$trashtitle = __( 'Restore', '404-killer' );
+			$trashtitle = __( 'Restore', '404-solution' );
 		} else {
 			$trashlink .= "&trash=1";
-			$trashtitle = __( 'Trash', '404-killer' );
+			$trashtitle = __( 'Trash', '404-solution' );
 		}
 
 		if ( !( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" ) ) {
@@ -1709,18 +1709,18 @@ function abj404_adminRedirectsPage() {
 		echo "<tr id=\"post-" . esc_attr( $row['id'] ) . "\"" . $class . ">";
 		echo "<td></td>";
 		echo "<td>";
-		echo "<strong><a href=\"" . esc_url( $editlink ) . "\" title=\"" . __( 'Edit Redirect Details', '404-killer' ) . "\">" . esc_html( $row['url'] ) . "</a></strong>";
+		echo "<strong><a href=\"" . esc_url( $editlink ) . "\" title=\"" . __( 'Edit Redirect Details', '404-solution' ) . "\">" . esc_html( $row['url'] ) . "</a></strong>";
 		echo "<div class=\"row-actions\">";
 		if ( $tableOptions['filter'] != -1 ) {
-			echo "<span class=\"edit\"><a href=\"" . esc_url( $editlink ) . "\" title=\"" . __( 'Edit Redirect Details', '404-killer' ) . "\">" . __( 'Edit' ) . "</a></span>";
+			echo "<span class=\"edit\"><a href=\"" . esc_url( $editlink ) . "\" title=\"" . __( 'Edit Redirect Details', '404-solution' ) . "\">" . __( 'Edit' ) . "</a></span>";
 			echo " | ";
 		}
-		echo "<span class=\"trash\"><a href=\"" . esc_url( $trashlink ) . "\" title=\"" . __( 'Trash Redirected URL', '404-killer' ) . "\">" . esc_html( $trashtitle ) . "</a></span>";
+		echo "<span class=\"trash\"><a href=\"" . esc_url( $trashlink ) . "\" title=\"" . __( 'Trash Redirected URL', '404-solution' ) . "\">" . esc_html( $trashtitle ) . "</a></span>";
 		echo " | ";
-		echo "<span class=\"view\"><a href=\"" . esc_url( $logslink ) . "\" title=\"" . __( 'View Redirect Logs', '404-killer' ) . "\">" . __( 'View Logs' ) . "</a></span>";
+		echo "<span class=\"view\"><a href=\"" . esc_url( $logslink ) . "\" title=\"" . __( 'View Redirect Logs', '404-solution' ) . "\">" . __( 'View Logs' ) . "</a></span>";
 		if ( $tableOptions['filter'] == -1 ) {
 			echo " | ";
-			echo "<span class=\"delete\"><a href=\"" . esc_url( $deletelink ) . "\" title=\"" . __( 'Delete Redirect Permanently', '404-killer' ) . "\">" . __( 'Delete Permanently', '404-killer' ) . "</a></span>";
+			echo "<span class=\"delete\"><a href=\"" . esc_url( $deletelink ) . "\" title=\"" . __( 'Delete Redirect Permanently', '404-solution' ) . "\">" . __( 'Delete Permanently', '404-solution' ) . "</a></span>";
 		}
 		echo "</div>";
 		echo "</td>";
@@ -1737,7 +1737,7 @@ function abj404_adminRedirectsPage() {
 	if ( $displayed == 0 ) {
 		echo "<tr>";
 		echo "<td></td>";
-		echo "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . __( 'No Records To Display', '404-killer' ) . "</td>";
+		echo "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . __( 'No Records To Display', '404-solution' ) . "</td>";
 		echo "<td></td>";
 		echo "</tr>";
 	}
@@ -1749,9 +1749,9 @@ function abj404_adminRedirectsPage() {
 	echo "</div>";
 
 	if ( $tableOptions['filter'] != -1 ) {
-		echo "<h3>" . __( 'Add Manual Redirect', '404-killer' ) . "</h3>";
+		echo "<h3>" . __( 'Add Manual Redirect', '404-solution' ) . "</h3>";
 
-		$url = "?page=abj404_killer";
+		$url = "?page=abj404_solution";
 
 		if ( !( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" ) ) {
 			$url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
@@ -1770,13 +1770,13 @@ function abj404_adminRedirectsPage() {
 		} else {
 			$postedURL = "";
 		}
-		echo "<strong><label for=\"url\">" . __( 'URL', '404-killer' ) . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . esc_attr( $postedURL ) . "\"> (" . __( 'Required', '404-killer' ) . ")<br>";
-		echo "<strong><label for=\"dest\">" . __( 'Redirect to', '404-killer' ) . ":</strong> <select id=\"dest\" name=\"dest\">";
+		echo "<strong><label for=\"url\">" . __( 'URL', '404-solution' ) . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . esc_attr( $postedURL ) . "\"> (" . __( 'Required', '404-solution' ) . ")<br>";
+		echo "<strong><label for=\"dest\">" . __( 'Redirect to', '404-solution' ) . ":</strong> <select id=\"dest\" name=\"dest\">";
 		$selected = "";
 		if ( isset( $_POST['dest'] ) && $_POST['dest'] == "EXTERNAL" ) {
 			$selected = " selected";
 		}
-		echo "<option value=\"EXTERNAL\"" . $selected . ">" . __( 'External Page', '404-killer' ) . "</options>";
+		echo "<option value=\"EXTERNAL\"" . $selected . ">" . __( 'External Page', '404-solution' ) . "</options>";
 
 		$query = "select id from $wpdb->posts where post_status='publish' and post_type='post' order by post_date desc";
 		$rows = $wpdb->get_results( $query );
@@ -1789,7 +1789,7 @@ function abj404_adminRedirectsPage() {
 			if ( isset( $_POST['dest'] ) && $_POST['dest'] == $thisval ) {
 				$selected = " selected";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Post', '404-killer' ) . ": " . esc_html( $theTitle ) . "</option>";
+			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Post', '404-solution' ) . ": " . esc_html( $theTitle ) . "</option>";
 		}
 
 		$rows = get_pages();
@@ -1815,7 +1815,7 @@ function abj404_adminRedirectsPage() {
 			if ( isset( $_POST['dest'] ) && $_POST['dest'] == $thisval ) {
 				$selected = " selected";
 			}
-			echo "<option value=\"" . esc_url( $thisval ) . "\"" . $selected . ">" . __( 'Page', '404-killer' ) . ": " . esc_html( $theTitle ) . "</option>";
+			echo "<option value=\"" . esc_url( $thisval ) . "\"" . $selected . ">" . __( 'Page', '404-solution' ) . ": " . esc_html( $theTitle ) . "</option>";
 		}
 
 		$cats = get_categories( 'hierarchical=0' );
@@ -1828,7 +1828,7 @@ function abj404_adminRedirectsPage() {
 			if ( isset( $_POST['dest'] ) && $_POST['dest'] == $thisval ) {
 				$selected = " selected";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Category', '404-killer' ) . ": " . esc_html( $theTitle ) . "</option>";
+			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Category', '404-solution' ) . ": " . esc_html( $theTitle ) . "</option>";
 		}
 
 		$tags = get_tags( 'hierarchical=0' );
@@ -1841,7 +1841,7 @@ function abj404_adminRedirectsPage() {
 			if ( isset( $_POST['dest'] ) && $_POST['dest'] == $thisval ) {
 				$selected = " selected";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Tag', '404-killer' ) . ": " . esc_html( $theTitle ) . "</option>";
+			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Tag', '404-solution' ) . ": " . esc_html( $theTitle ) . "</option>";
 		}
 
 		echo "</select><br>";
@@ -1850,8 +1850,8 @@ function abj404_adminRedirectsPage() {
 		} else {
 			$postedExternal = "";
 		}
-		echo "<strong><label for=\"external\">" . __( 'External URL', '404-killer' ) . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . esc_attr( $postedExternal ) . "\"> (" . __( 'Required if Redirect to is set to External Page', '404-killer' ) . ")<br>";
-		echo "<strong><label for=\"code\">" . __( 'Redirect Type', '404-killer' ) . ":</label></strong> <select id=\"code\" name=\"code\">";
+		echo "<strong><label for=\"external\">" . __( 'External URL', '404-solution' ) . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . esc_attr( $postedExternal ) . "\"> (" . __( 'Required if Redirect to is set to External Page', '404-solution' ) . ")<br>";
+		echo "<strong><label for=\"code\">" . __( 'Redirect Type', '404-solution' ) . ":</label></strong> <select id=\"code\" name=\"code\">";
 		if ( ( ! isset( $_POST['code'] ) ) || $_POST['code'] == "" ) {
 			$codeselected = $options['default_redirect'];
 		} else {
@@ -1871,7 +1871,7 @@ function abj404_adminRedirectsPage() {
 			echo "<option value=\"" . esc_attr( $code ) . "\"" . $selected . ">" . esc_html( $title ) . "</option>";
 		}
 		echo "</select><br>";
-		echo "<input type=\"submit\" value=\"" . __( 'Add Redirect', '404-killer' ) . "\" class=\"button-secondary\">";
+		echo "<input type=\"submit\" value=\"" . __( 'Add Redirect', '404-solution' ) . "\" class=\"button-secondary\">";
 		echo "</form>";
 	}
 }
@@ -1909,18 +1909,18 @@ function abj404_adminCapturedPage() {
 
 	if ( $tableOptions['filter'] == '-1' ) {
 		echo "<div class=\"alignleft actions\">";
-		$eturl = "?page=abj404_killer&subpage=abj404_captured&filter=-1";
+		$eturl = "?page=abj404_solution&subpage=abj404_captured&filter=-1";
 		$trashaction = "abj404_emptyCapturedTrash";
 		$eturl = wp_nonce_url( $eturl, $trashaction );
 
 		echo "<form method=\"POST\" action=\"" . esc_url( $eturl ) . "\">";
 		echo "<input type=\"hidden\" name=\"action\" value=\"emptyCapturedTrash\">";
-		echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . __( 'Empty Trash', '404-killer' ) . "\">";
+		echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . __( 'Empty Trash', '404-solution' ) . "\">";
 		echo "</form>";
 		echo "</div>";
 	} else {
 		echo "<div class=\"alignleft actions\">";
-		$url = "?page=abj404_killer&subpage=abj404_captured";
+		$url = "?page=abj404_solution&subpage=abj404_captured";
 		if ( $tableOptions['filter'] != 0 ) {
 			$url .= "&filter=" . $tableOptions['filter'];
 		}
@@ -1934,13 +1934,13 @@ function abj404_adminCapturedPage() {
 		echo "<form method=\"POST\" action=\"" . $url . "\">";
 		echo "<select name=\"action\">";
 		if ( $tableOptions['filter'] != ABJ404_IGNORED ) {
-			echo "<option value=\"bulkignore\">" . __( 'Mark as ignored', '404-killer' ) . "</option>";
+			echo "<option value=\"bulkignore\">" . __( 'Mark as ignored', '404-solution' ) . "</option>";
 		} else {
-			echo "<option value=\"bulkcaptured\">" . __( 'Mark as captured', '404-killer' ) . "</option>";
+			echo "<option value=\"bulkcaptured\">" . __( 'Mark as captured', '404-solution' ) . "</option>";
 		}
-		echo "<option value=\"bulktrash\">" . __( 'Trash', '404-killer' ) . "</option>";
+		echo "<option value=\"bulktrash\">" . __( 'Trash', '404-solution' ) . "</option>";
 		echo "</select>";
-		echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . __( 'Apply', '404-killer' ) . "\">";
+		echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . __( 'Apply', '404-solution' ) . "\">";
 		echo "</div>";
 	}
 	echo "</div>";
@@ -1964,29 +1964,29 @@ function abj404_adminCapturedPage() {
 		if ( $last_used != 0 ) {
 			$last = date( "Y/m/d h:i:s A", $last_used );
 		} else {
-			$last = __( 'Never Used', '404-killer' );
+			$last = __( 'Never Used', '404-solution' );
 		}
 
-		$editlink = "?page=abj404_killer&subpage=abj404_edit&id=" . $row['id'];
-		$logslink = "?page=abj404_killer&subpage=abj404_logs&id=" . $row['id'];
-		$trashlink = "?page=abj404_killer&&subpage=abj404_captured&id=" . $row['id'];
-		$ignorelink = "?page=abj404_killer&&subpage=abj404_captured&id=" . $row['id'];
-		$deletelink = "?page=abj404_killer&subpage=abj404_captured&remove=1&id=" . $row['id'];
+		$editlink = "?page=abj404_solution&subpage=abj404_edit&id=" . $row['id'];
+		$logslink = "?page=abj404_solution&subpage=abj404_logs&id=" . $row['id'];
+		$trashlink = "?page=abj404_solution&&subpage=abj404_captured&id=" . $row['id'];
+		$ignorelink = "?page=abj404_solution&&subpage=abj404_captured&id=" . $row['id'];
+		$deletelink = "?page=abj404_solution&subpage=abj404_captured&remove=1&id=" . $row['id'];
 
 		if ( $tableOptions['filter'] == -1 ) {
 			$trashlink .= "&trash=0";
-			$trashtitle = __( 'Restore', '404-killer' );
+			$trashtitle = __( 'Restore', '404-solution' );
 		} else {
 			$trashlink .= "&trash=1";
-			$trashtitle = __( 'Trash', '404-killer' );
+			$trashtitle = __( 'Trash', '404-solution' );
 		}
 
 		if ( $tableOptions['filter'] == ABJ404_IGNORED ) {
 			$ignorelink .= "&ignore=0";
-			$ignoretitle = __( 'Remove Ignore Status', '404-killer' );
+			$ignoretitle = __( 'Remove Ignore Status', '404-solution' );
 		} else {
 			$ignorelink .= "&ignore=1";
-			$ignoretitle = __( 'Ignore 404 Error', '404-killer' );
+			$ignoretitle = __( 'Ignore 404 Error', '404-solution' );
 		}
 
 		if ( !( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" ) ) {
@@ -2026,21 +2026,21 @@ function abj404_adminCapturedPage() {
 		}
 		echo "</th>";
 		echo "<td>";
-		echo "<strong><a href=\"" . esc_url( $editlink ) . "\" title=\"" . __( 'Edit Redirect Details', '404-killer' ) . "\">" . esc_html( $row['url'] ) . "</a></strong>";
+		echo "<strong><a href=\"" . esc_url( $editlink ) . "\" title=\"" . __( 'Edit Redirect Details', '404-solution' ) . "\">" . esc_html( $row['url'] ) . "</a></strong>";
 		echo "<div class=\"row-actions\">";
 		if ( $tableOptions['filter'] != -1 ) {
-			echo "<span class=\"edit\"><a href=\"" . esc_url( $editlink ) . "\" title=\"" . __( 'Edit Redirect Details', '404-killer' ) . "\">" . __( 'Edit', '404-killer' ) . "</a></span>";
+			echo "<span class=\"edit\"><a href=\"" . esc_url( $editlink ) . "\" title=\"" . __( 'Edit Redirect Details', '404-solution' ) . "\">" . __( 'Edit', '404-solution' ) . "</a></span>";
 			echo " | ";
 		}
-		echo "<span class=\"trash\"><a href=\"" . esc_url( $trashlink ) . "\" title=\"" . __( 'Trash Redirected URL', '404-killer' ) . "\">" . esc_html( $trashtitle ) . "</a></span>";
+		echo "<span class=\"trash\"><a href=\"" . esc_url( $trashlink ) . "\" title=\"" . __( 'Trash Redirected URL', '404-solution' ) . "\">" . esc_html( $trashtitle ) . "</a></span>";
 		echo " | ";
-		echo "<span class=\"view\"><a href=\"" . esc_url( $logslink ) . "\" title=\"" . __( 'View Redirect Logs', '404-killer' ) . "\">" . __( 'View Logs', '404-killer' ) . "</a></span>";
+		echo "<span class=\"view\"><a href=\"" . esc_url( $logslink ) . "\" title=\"" . __( 'View Redirect Logs', '404-solution' ) . "\">" . __( 'View Logs', '404-solution' ) . "</a></span>";
 		if ( $tableOptions['filter'] != -1 ) {
 			echo " | ";
 			echo "<span class=\"ignore\"><a href=\"" . esc_url( $ignorelink ) . "\" title=\"" . $ignoretitle . "\">" . esc_html( $ignoretitle ) . "</a></span>";
 		} else {
 			echo " | ";
-			echo "<span class=\"delete\"><a href=\"" . esc_url( $deletelink ) . "\" title=\"" . __( 'Delete Redirect Permanently', '404-killer' ) . "\">" . __( 'Delete Permanently', '404-killer' ) . "</a></span>";
+			echo "<span class=\"delete\"><a href=\"" . esc_url( $deletelink ) . "\" title=\"" . __( 'Delete Redirect Permanently', '404-solution' ) . "\">" . __( 'Delete Permanently', '404-solution' ) . "</a></span>";
 		}
 		echo "</div>";
 		echo "</td>";
@@ -2053,7 +2053,7 @@ function abj404_adminCapturedPage() {
 	if ( $displayed == 0 ) {
 		echo "<tr>";
 		echo "<td></td>";
-		echo "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . __( 'No Records To Display', '404-killer' ) . "</td>";
+		echo "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . __( 'No Records To Display', '404-solution' ) . "</td>";
 		echo "<td></td>";
 		echo "</tr>";
 	}
@@ -2089,9 +2089,9 @@ function abj404_adminEditPage() {
 	$redirect = $wpdb->get_row( $query, ARRAY_A );
 
 	if ( ! ( $redirect == null ) ) {
-		echo "<h3>" . __( 'Redirect Details', '404-killer' ) . "</h3>";
+		echo "<h3>" . __( 'Redirect Details', '404-solution' ) . "</h3>";
 
-		$url = "?page=abj404_killer&subpage=abj404_edit";
+		$url = "?page=abj404_solution&subpage=abj404_edit";
 
 		$action = "abj404editRedirect";
 		$link = wp_nonce_url( $url, $action );
@@ -2099,13 +2099,13 @@ function abj404_adminEditPage() {
 		echo "<form method=\"POST\" action=\"" . esc_attr( $link ) . "\">";
 		echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
 		echo "<input type=\"hidden\" name=\"id\" value=\"" . esc_attr( $redirect['id'] ) . "\">";
-		echo "<strong><label for=\"url\">" . __( 'URL', '404-killer' ) . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . esc_attr( $redirect['url'] ) . "\"> (" . __( 'Required', '404-killer' ) . ")<br>";
-		echo "<strong><label for=\"dest\">" . __( 'Redirect to', '404-killer' ) . ":</strong> <select id=\"dest\" name=\"dest\">";
+		echo "<strong><label for=\"url\">" . __( 'URL', '404-solution' ) . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . esc_attr( $redirect['url'] ) . "\"> (" . __( 'Required', '404-solution' ) . ")<br>";
+		echo "<strong><label for=\"dest\">" . __( 'Redirect to', '404-solution' ) . ":</strong> <select id=\"dest\" name=\"dest\">";
 		$selected = "";
 		if ( $redirect['type'] == ABJ404_EXTERNAL ) {
 			$selected = " selected";
 		}
-		echo "<option value=\"" . ABJ404_EXTERNAL . "\"" . $selected . ">" . __( 'External Page', '404-killer' ) . "</options>";
+		echo "<option value=\"" . ABJ404_EXTERNAL . "\"" . $selected . ">" . __( 'External Page', '404-solution' ) . "</options>";
 
 		$query = "select id from $wpdb->posts where post_status='publish' and post_type='post' order by post_date desc";
 		$rows = $wpdb->get_results( $query );
@@ -2118,7 +2118,7 @@ function abj404_adminEditPage() {
 			if ( $redirect['type'] == ABJ404_POST && $redirect['final_dest'] == $id ) {
 				$selected = " selected";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Post', '404-killer' ) . ": " . $theTitle . "</option>";
+			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Post', '404-solution' ) . ": " . $theTitle . "</option>";
 		}
 
 		$rows = get_pages();
@@ -2143,7 +2143,7 @@ function abj404_adminEditPage() {
 			if ( $redirect['type'] == ABJ404_POST && $redirect['final_dest'] == $id ) {
 				$selected = " selected";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Page', '404-killer' ) . ": " . $theTitle . "</option>\n";
+			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Page', '404-solution' ) . ": " . $theTitle . "</option>\n";
 		}
 
 		$cats = get_categories( 'hierarchical=0' );
@@ -2156,7 +2156,7 @@ function abj404_adminEditPage() {
 			if ( $redirect['type'] == ABJ404_CAT && $redirect['final_dest'] == $id ) {
 				$selected = " selected";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Category', '404-killer' ) . ": " . $theTitle . "</option>";
+			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Category', '404-solution' ) . ": " . $theTitle . "</option>";
 		}
 
 		$tags = get_tags( 'hierarchical=0' );
@@ -2169,7 +2169,7 @@ function abj404_adminEditPage() {
 			if ( $redirect['type'] == ABJ404_TAG && $redirect['final_dest'] == $id ) {
 				$selected = " selected";
 			}
-			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Tag', '404-killer' ) . ": " . $theTitle . "</option>";
+			echo "<option value=\"" . esc_attr( $thisval ) . "\"" . $selected . ">" . __( 'Tag', '404-solution' ) . ": " . $theTitle . "</option>";
 		}
 
 		echo "</select><br>";
@@ -2177,8 +2177,8 @@ function abj404_adminEditPage() {
 		if ( $redirect['type'] == ABJ404_EXTERNAL ) {
 			$final = $redirect['final_dest'];
 		}
-		echo "<strong><label for=\"external\">" . __( 'External URL', '404-killer' ) . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . $final . "\"> (" . __( 'Required if Redirect to is set to External Page', '404-killer' ) . ")<br>";
-		echo "<strong><label for=\"code\">" . __( 'Redirect Type', '404-killer' ) . ":</label></strong> <select id=\"code\" name=\"code\">";
+		echo "<strong><label for=\"external\">" . __( 'External URL', '404-solution' ) . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . $final . "\"> (" . __( 'Required if Redirect to is set to External Page', '404-solution' ) . ")<br>";
+		echo "<strong><label for=\"code\">" . __( 'Redirect Type', '404-solution' ) . ":</label></strong> <select id=\"code\" name=\"code\">";
 		if ( $redirect['code'] == "" ) {
 			$codeselected = $options['default_redirect'];
 		} else {
@@ -2198,7 +2198,7 @@ function abj404_adminEditPage() {
 			echo "<option value=\"" . esc_attr( $code ) . "\"" . $selected . ">" . $title . "</option>";
 		}
 		echo "</select><br>";
-		echo "<input type=\"submit\" value=\"" . __( 'Update Redirect', '404-killer' ) . "\" class=\"button-secondary\">";
+		echo "<input type=\"submit\" value=\"" . __( 'Update Redirect', '404-solution' ) . "\" class=\"button-secondary\">";
 		echo "</form>";
 	} else {
 		echo "Error: Invalid ID Number!";
@@ -2210,7 +2210,7 @@ function abj404_AdminToolsPage() {
 
 	$hr = "style=\"border: 0px; margin-bottom: 0px; padding-bottom: 4px; border-bottom: 1px dotted #DEDEDE;\"";
 
-	$url = "?page=abj404_killer&subpage=abj404_tools";
+	$url = "?page=abj404_solution&subpage=abj404_tools";
 	$action = "abj404_purgeRedirects";
 
 	$link = wp_nonce_url( $url, $action );
@@ -2225,30 +2225,30 @@ function abj404_AdminToolsPage() {
 	$content .= "<input type=\"hidden\" name=\"action\" value=\"purgeRedirects\">";
 
 	$content .= "<p>";
-	$content .= "<strong><label for=\"purgetype\">" . __( 'Purge Type', '404-killer' ) . ":</label></strong> <select name=\"purgetype\" id=\"purgetype\">";
-	$content .= "<option value=\"logs\">" . __( 'Logs Only', '404-killer' ) . "</option>";
-	$content .= "<option value=\"redirects\">" . __( 'Logs & Redirects', '404-killer' ) . "</option>";
+	$content .= "<strong><label for=\"purgetype\">" . __( 'Purge Type', '404-solution' ) . ":</label></strong> <select name=\"purgetype\" id=\"purgetype\">";
+	$content .= "<option value=\"logs\">" . __( 'Logs Only', '404-solution' ) . "</option>";
+	$content .= "<option value=\"redirects\">" . __( 'Logs & Redirects', '404-solution' ) . "</option>";
 	$content .= "</select><br><br>";
 
-	$content .= "<strong>" . __( 'Redirect Types', '404-killer' ) . ":</strong><br>";
+	$content .= "<strong>" . __( 'Redirect Types', '404-solution' ) . ":</strong><br>";
 	$content .= "<ul style=\"margin-left: 40px;\">";
-	$content .= "<li><input type=\"checkbox\" id=\"auto\" name=\"types[]\" value=\"" . ABJ404_AUTO . "\"> <label for=\"auto\">" . __( 'Automatic Redirects', '404-killer' ) . "</label></li>";
-	$content .= "<li><input type=\"checkbox\" id=\"manual\" name=\"types[]\" value=\"" . ABJ404_MANUAL . "\"> <label for=\"manual\">" . __( 'Manual Redirects', '404-killer' ) . "</label></li>";
-	$content .= "<li><input type=\"checkbox\" id=\"captured\" name=\"types[]\" value=\"" . ABJ404_CAPTURED . "\"> <label for=\"captured\">" . __( 'Captured URLs', '404-killer' ) . "</label></li>";
-	$content .= "<li><input type=\"checkbox\" id=\"ignored\" name=\"types[]\" value=\"" . ABJ404_IGNORED . "\"> <label for=\"ignored\">" . __( 'Ignored URLs', '404-killer' ) . "</label></li>";
+	$content .= "<li><input type=\"checkbox\" id=\"auto\" name=\"types[]\" value=\"" . ABJ404_AUTO . "\"> <label for=\"auto\">" . __( 'Automatic Redirects', '404-solution' ) . "</label></li>";
+	$content .= "<li><input type=\"checkbox\" id=\"manual\" name=\"types[]\" value=\"" . ABJ404_MANUAL . "\"> <label for=\"manual\">" . __( 'Manual Redirects', '404-solution' ) . "</label></li>";
+	$content .= "<li><input type=\"checkbox\" id=\"captured\" name=\"types[]\" value=\"" . ABJ404_CAPTURED . "\"> <label for=\"captured\">" . __( 'Captured URLs', '404-solution' ) . "</label></li>";
+	$content .= "<li><input type=\"checkbox\" id=\"ignored\" name=\"types[]\" value=\"" . ABJ404_IGNORED . "\"> <label for=\"ignored\">" . __( 'Ignored URLs', '404-solution' ) . "</label></li>";
 	$content .= "</ul>";
 
-	$content .= "<strong>" . __( 'Sanity Check', '404-killer' ) . "</strong><br>";
-	$content .= __( 'Using the purge options will delete logs and redirects matching the boxes selected above. This action is not reversible. Hopefully you know what you\'re doing.', '404-killer' ) . "<br>";
+	$content .= "<strong>" . __( 'Sanity Check', '404-solution' ) . "</strong><br>";
+	$content .= __( 'Using the purge options will delete logs and redirects matching the boxes selected above. This action is not reversible. Hopefully you know what you\'re doing.', '404-solution' ) . "<br>";
 	$content .= "<br>";
-	$content .= "<input type=\"checkbox\" id=\"sanity\" name=\"sanity\" value=\"1\"> " . __( 'I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!', '404-killer' ) . "<br>";
+	$content .= "<input type=\"checkbox\" id=\"sanity\" name=\"sanity\" value=\"1\"> " . __( 'I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!', '404-solution' ) . "<br>";
 	$content .= "<br>";
-	$content .= "<input type=\"submit\" value=\"" . __( 'Purge Entries!', '404-killer' ) . "\" class=\"button-secondary\">";
+	$content .= "<input type=\"submit\" value=\"" . __( 'Purge Entries!', '404-solution' ) . "\" class=\"button-secondary\">";
 	$content .= "</p>";
 
 	$content .= "</form>";
 
-	abj404_postbox( "abj404-purgeRedirects", __( 'Purge Options', '404-killer' ), $content );
+	abj404_postbox( "abj404-purgeRedirects", __( 'Purge Options', '404-solution' ), $content );
 
 	echo "</div></div></div>";
 }
@@ -2283,28 +2283,28 @@ function abj404_purgeRedirects() {
 					if ( $purge == "logs" || $purge == "redirects" ) {
 						$query = "delete from " . esc_html( $logs ) . " where redirect_id in (select id from " . esc_html( $redirects ) . " where status in (" . esc_html( $types ) . "))";
 						$logcount = $wpdb->query( $query );
-						$message = $logcount . " " . __( 'Log entries were purged.', '404-killer' );
+						$message = $logcount . " " . __( 'Log entries were purged.', '404-solution' );
 
 						if ( $purge == "redirects" ) {
 							$query = "delete from " . esc_html( $redirects ) . " where status in (" . esc_html( $types ) . ")";
 							$count = $wpdb->query( $query );
 							$message .= "<br>";
-							$message .= $count . " " . __( 'Redirect entries were purged.', '404-killer' );
+							$message .= $count . " " . __( 'Redirect entries were purged.', '404-solution' );
 						}
 					} else {
-						$message = __( 'Error: An invalid purge type was selected. Exiting.', '404-killer' );
+						$message = __( 'Error: An invalid purge type was selected. Exiting.', '404-solution' );
 					}
 				} else {
-					$message = __( 'Error: No valid redirect types were selected. Exiting.', '404-killer' );
+					$message = __( 'Error: No valid redirect types were selected. Exiting.', '404-solution' );
 				}
 			} else {
-				$message = __( 'An unknown error has occurred.', '404-killer' );
+				$message = __( 'An unknown error has occurred.', '404-solution' );
 			}
 		} else {
-			$message = __( 'Error: No redirect types were selected. No purges will be done.', '404-killer' );
+			$message = __( 'Error: No redirect types were selected. No purges will be done.', '404-solution' );
 		}
 	} else {
-		$message = __( 'Error: You didn\'t check the I understand checkbox. No purging of records for you!', '404-killer' );
+		$message = __( 'Error: You didn\'t check the I understand checkbox. No purging of records for you!', '404-solution' );
 	}
 
 	return $message;
