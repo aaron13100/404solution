@@ -69,12 +69,12 @@ function abj404_getDefaultOptions() {
 		'display_suggest' => '1',
 		'suggest_minscore' => '25',
 		'suggest_max' => '5',
-		'suggest_title' => '<h3>' . __( 'Suggested Alternatives', '404-killer' ) . '</h3>',
+		'suggest_title' => '<h3>' . __( 'Suggested Alternatives', '404-solution' ) . '</h3>',
 		'suggest_before' => '<ol>',
 		'suggest_after' => '</ol>',
 		'suggest_entrybefore' => '<li>',
 		'suggest_entryafter' => '</li>',
-		'suggest_noresults' => '<p>' . __( 'No Results To Display.', '404-killer' ) . '</p>',
+		'suggest_noresults' => '<p>' . __( 'No Results To Display.', '404-solution' ) . '</p>',
 		'suggest_cats' => '1',
 		'suggest_tags' => '1',
 		'auto_redirects' => '1',
@@ -116,7 +116,7 @@ function abj404_pluginActivation() {
 	  KEY `disabled` (`disabled`),
 	  FULLTEXT KEY `url` (`url`),
 	  FULLTEXT KEY `final_dest` (`final_dest`)
-	) ENGINE=MyISAM " . esc_html( $charset_collate ) . " COMMENT='404 Killer Plugin Redirects Table' AUTO_INCREMENT=1";
+	) ENGINE=MyISAM " . esc_html( $charset_collate ) . " COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1";
 	$wpdb->query( $query );
 
 	$query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "abj404_logs` (
@@ -129,12 +129,15 @@ function abj404_pluginActivation() {
 	  PRIMARY KEY  (`id`),
 	  KEY `redirect_id` (`redirect_id`),
 	  KEY `timestamp` (`timestamp`)
-	) ENGINE=MyISAM " . esc_html( $charset_collate ) . " COMMENT='404 Killer Plugin Logs Table' AUTO_INCREMENT=1";
+	) ENGINE=MyISAM " . esc_html( $charset_collate ) . " COMMENT='404 Solution Plugin Logs Table' AUTO_INCREMENT=1";
 	$wpdb->query( $query );
 
 	abj404_registerCrons();
 
 	$options = abj404_updateDBVersion();
+        
+        // TODO: optionally drop these tables and delete the options on the uninstall hook (not the deactivation hook).
+        // see: https://developer.wordpress.org/plugins/the-basics/uninstall-methods/
 }
 
 function abj404_registerCrons() {
@@ -535,7 +538,7 @@ function abj404_ProcessRedirect( $redirect ) {
 			} else if ( $redirect['type'] == ABJ404_TAG ) {
 				$key = $redirect['final_dest'] . "|TAG";
 			} else {
-                                error_log("ABJ_404KILLER: Unrecognized redirect type: " . $redirect['type']);
+                                error_log("ABJ_404SOLUTION: Unrecognized redirect type: " . $redirect['type']);
                         }
 			if ( $key != "" ) {		
 				$permalink = abj404_permalinkInfo( $key, 0 );		
