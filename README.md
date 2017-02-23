@@ -36,7 +36,7 @@ Installation is simple:
 1. Use the `Settings -> 404 Killer` options page to enable desired features.
 
 For the `suggested pages` feature to work you need to edit your 404.php template file to include the following code:
-`<?php if (function_exists( 'wbz404_suggestions' ) ) { wbz404_suggestions(); } ?>`
+`<?php if (function_exists( 'abj404_suggestions' ) ) { abj404_suggestions(); } ?>`
 
 ## Frequently Asked Questions ##
 
@@ -50,7 +50,7 @@ No, there should be no noticeable slow down when running the plugin on your site
 
 ### Will this plugin redirect my pages if I change my permalinks structure? ###
 
-Yes! 404 Redirected records the page/post ID number and looks up the most current permalink before redirecting the user.
+Yes! 404 Killer records the page/post ID number and looks up the most current permalink before redirecting the user.
 
 ### Can I redirect all 404's to a particular page? ###
 
@@ -72,7 +72,7 @@ No, that's not what this plugin is for. This plugin is designed to make your vis
 ## Upgrade Notice ##
 
 ### Version 1.4.7 ###
-* Fixed too strict data sanitation for the `wbz404_suggestions()` template tag
+* Fixed too strict data sanitation for the `abj404_suggestions()` template tag
 * Fixed CSS class for suggested 404s div wrapper.
 
 ### Version 1.4.6 ###

@@ -1,11 +1,13 @@
 # Changelog #
 
-## Trunk ###
-* Rename to Redirectioner
+## Version 1.5.0 ##
+* Rename to 404 Killer
 * Update branding links
+* Add an option to redirect all 404s to a specific page.
+* When the a slug matches a post exactly then redirect to that post (score +100). This covers cases when permalinks change.
 
 ## Version 1.4.7 ##
-* Fixed too strict data sanitation for the `wbz404_suggestions()` template tag
+* Fixed too strict data sanitation for the `abj404_suggestions()` template tag
 * Fixed CSS class for suggested 404s div wrapper.
 
 ## Version 1.4.6 ##
