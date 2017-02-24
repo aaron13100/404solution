@@ -544,7 +544,7 @@ function abj404_ProcessRedirect( $redirect ) {
 			} else if ( $redirect['type'] == ABJ404_TAG ) {
 				$key = $redirect['final_dest'] . "|TAG";
 			} else {
-                                error_log("ABJ_404SOLUTION: Unrecognized redirect type: " . $redirect['type']);
+                                error_log("ABJ_404_SOLUTION: Unrecognized redirect type: " . esc_html($redirect['type']));
                         }
 			if ( $key != "" ) {		
 				$permalink = abj404_permalinkInfo( $key, 0 );		
