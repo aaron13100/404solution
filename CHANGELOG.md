@@ -1,10 +1,14 @@
 # Changelog #
 
+## Version 1.5.1 ##
+* Prepare for release on WordPress.org.
+* Sanitize, escape, and validate POST calls.
+
 ## Version 1.5.0 ##
 * Rename to 404 Solution
 * Update branding links
 * Add an option to redirect all 404s to a specific page.
-* When the a slug matches a post exactly then redirect to that post (score +100). This covers cases when permalinks change.
+* When a slug matches a post exactly then redirect to that post (score +100). This covers cases when permalinks change.
 
 ## Version 1.4.7 ##
 * Fixed too strict data sanitation for the `abj404_suggestions()` template tag

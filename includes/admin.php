@@ -11,7 +11,7 @@ function abj404_addAdminPage() {
 
 	// Admin notice
 	if ( isset( $options['admin_notification'] ) && $options['admin_notification'] != '0' ) {
-		$captured = abj404_capturedCount();
+		$captured = abj404_getCapturedCount();
 		if ( isset( $options['admin_notification'] ) && $captured >= $options['admin_notification'] ) {
 			$pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . esc_html( $captured ) . "</span></span>";
 			$pos = strpos( $menu[80][0], 'update-plugins' );
@@ -32,7 +32,7 @@ function abj404_dashboardNotification() {
 		if ( ( isset( $_GET['page'] ) && $_GET['page'] == "abj404_solution" ) || ( $pagenow == 'index.php' && ( !( isset( $_GET['page'] ) ) ) ) ) {
 			$options = abj404_getOptions();
 			if ( isset( $options['admin_notification'] ) && $options['admin_notification'] != '0' ) {
-				$captured = abj404_capturedCount();
+				$captured = abj404_getCapturedCount();
 				if ( $captured >= $options['admin_notification'] ) {
 					echo "<div class=\"updated\"><p><strong>" . esc_html( __( '404 Solution', '404-solution' ) ) . ":</strong> " . __( 'There are ' . esc_html( $captured ) . ' captured 404 URLs that need to be processed.', '404-solution' ) . "</p></div>";
 				}
@@ -50,10 +50,14 @@ function abj404_postbox( $id, $title, $content ) {
 	echo "</div>";
 }
 
-function abj404_capturedCount() {
+/**
+ * @global type $wpdb
+ * @return int the total number of redirects that have been captured
+ */
+function abj404_getCapturedCount() {
 	global $wpdb;
 
-	$query = "select count(id) from " . $wpdb->prefix . "abj404_redirects where status = " . esc_sql( ABJ404_CAPTURED );
+	$query = "select count(id) from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_CAPTURED;
 	$captured = $wpdb->get_col( $query, 0 );
 	if ( count( $captured ) == 0 ) {
 		$captured[0] = 0;
@@ -65,7 +69,7 @@ function abj404_updateOptions() {
 	$message="";
 	$options = abj404_getOptions();
 	if ( $_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302" ) {
-		$options['default_redirect'] = $_POST['default_redirect'];
+		$options['default_redirect'] = filter_input(INPUT_POST, "default_redirect", FILTER_SANITIZE_STRING);
 	} else {
 		$message.= __( 'Error: Invalid value specified for default redirect type', '404-solution' ) . ".<br>";
 	}
@@ -77,17 +81,18 @@ function abj404_updateOptions() {
 	}
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['admin_notification'] ) == 1 ) {
-		$options['admin_notification'] = $_POST['admin_notification'];
+		$options['admin_notification'] = filter_input(INPUT_POST, "admin_notification", FILTER_SANITIZE_STRING);                
 	}
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['capture_deletion'] )==1 && $_POST['capture_deletion'] >= 0 ) {
-		$options['capture_deletion'] = $_POST['capture_deletion'];
+		$options['capture_deletion'] = filter_input(INPUT_POST, "capture_deletion", FILTER_SANITIZE_STRING);
 	} else {
 		$message.= __( 'Collected URL deletion value must be a number greater or equal to zero', '404-solution' ) . ".<br>";
 	}
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['manual_deletion'] )==1 && $_POST['manual_deletion'] >= 0 ) {
-		$options['manual_deletion'] = $_POST['manual_deletion'];
+		$options['manual_deletion'] = filter_input(INPUT_POST, "manual_deletion", FILTER_SANITIZE_STRING);
+                
 	} else {
 		$message.= __( 'Manual redirect deletion value must be a number greater or equal to zero', '404-solution' ) . ".<br>";
 	}
@@ -117,26 +122,27 @@ function abj404_updateOptions() {
 	}
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['suggest_minscore'] ) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99 ) {
-		$options['suggest_minscore'] = $_POST['suggest_minscore'];
+		$options['suggest_minscore'] = filter_input(INPUT_POST, "suggest_minscore", FILTER_SANITIZE_STRING);
 	} else {
 		$message.= __( 'Suggestion minimum score value must be a number between 1 and 99', '404-solution' ) . ".<br>";
 	}
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['suggest_max'] ) == 1 && $_POST['suggest_max'] >= 1 ) {
-		$options['suggest_max'] = $_POST['suggest_max'];
+		$options['suggest_max'] = filter_input(INPUT_POST, "suggest_max", FILTER_SANITIZE_STRING);
 	} else {
 		$message.= __( 'Maximum number of suggest value must be a number greater or equal to 1', '404-solution' ) . ".<br>";
 	}
 
-	$options['suggest_title'] = $_POST['suggest_title'];
-	$options['suggest_before'] = $_POST['suggest_before'];
-	$options['suggest_after'] = $_POST['suggest_after'];
-	$options['suggest_entrybefore'] = $_POST['suggest_entrybefore'];
-	$options['suggest_entryafter'] = $_POST['suggest_entryafter'];
-	$options['suggest_noresults'] = $_POST['suggest_noresults'];
+        // the suggest_.* options have html in them.
+	$options['suggest_title'] = wp_kses_post($_POST['suggest_title']);
+	$options['suggest_before'] = wp_kses_post($_POST['suggest_before']);
+	$options['suggest_after'] = wp_kses_post($_POST['suggest_after']);
+	$options['suggest_entrybefore'] = wp_kses_post($_POST['suggest_entrybefore']);
+	$options['suggest_entryafter'] = wp_kses_post($_POST['suggest_entryafter']);
+	$options['suggest_noresults'] = wp_kses_post($_POST['suggest_noresults']);
 
 	if (isset($_POST['dest404page'])) {
-		$options['dest404page'] = $_POST['dest404page'];
+		$options['dest404page'] = filter_input(INPUT_POST, "dest404page", FILTER_SANITIZE_STRING);
 	} else {
 		$options['dest404page'] = 'none';
 	}
@@ -160,14 +166,14 @@ function abj404_updateOptions() {
 	}
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['auto_score'] ) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99 ) {
-		$options['auto_score'] = $_POST['auto_score'];
+		$options['auto_score'] = filter_input(INPUT_POST, "auto_score", FILTER_SANITIZE_STRING);
 	} else {
 		$message .= __( 'Auto match score value must be a number between 0 and 99', '404-solution' ) . ".<br>";
 	}
 
 
 	if ( preg_match( '/^[0-9]+$/', $_POST['auto_deletion'] )==1 && $_POST['auto_deletion'] >= 0 ) {
-		$options['auto_deletion'] = $_POST['auto_deletion'];
+		$options['auto_deletion'] = filter_input(INPUT_POST, "auto_deletion", FILTER_SANITIZE_STRING);
 	} else {
 		$message.= __( 'Auto redirect deletion value must be a number greater or equal to zero', '404-solution' ) . ".<br>";
 	}
@@ -178,9 +184,7 @@ function abj404_updateOptions() {
 		$options['force_permalinks'] = '0';
 	}
 
-	/**
-	 * Crude sanitization of inputted data.
-	 */
+	/** Sanitize all data. */
 	foreach ( $options as $key => $option ) {
 		$new_key = wp_kses_post( $key );
 		$new_option = wp_kses_post( $option );
@@ -203,10 +207,12 @@ function abj404_getTableOptions() {
 				$tableOptions['filter'] = '0';
 			}
 		} else {
-			$tableOptions['filter'] = $_GET['filter'];
+			$tableOptions['filter'] = filter_input(INPUT_GET, "filter", FILTER_SANITIZE_STRING);
+                        
 		}
 	} else {
-		$tableOptions['filter'] = $_POST['filter'];
+		$tableOptions['filter'] = filter_input(INPUT_POST, "filter", FILTER_SANITIZE_STRING);
+                
 	}
 
 	if ( !isset( $_GET['orderby'] ) ) {
@@ -216,7 +222,7 @@ function abj404_getTableOptions() {
 			$tableOptions['orderby'] = "url";
 		}
 	} else {
-		$tableOptions['orderby'] = $_GET['orderby'];
+		$tableOptions['orderby'] = filter_input(INPUT_GET, "orderby", FILTER_SANITIZE_STRING);
 	}
 
 	if ( !isset( $_GET['order'] ) ) {
@@ -226,35 +232,48 @@ function abj404_getTableOptions() {
 			$tableOptions['order'] = "ASC";
 		}
 	} else {
-		$tableOptions['order'] = $_GET['order'];
+		$tableOptions['order'] = filter_input(INPUT_GET, "order", FILTER_SANITIZE_STRING);
 	}
 
 	if ( !isset( $_GET['paged'] ) ) {
 		$tableOptions['paged'] = 1;
 	} else {
-		$tableOptions['paged'] = $_GET['paged'];
-	}
+		$tableOptions['paged'] = filter_input(INPUT_GET, "paged", FILTER_SANITIZE_STRING);
+        }
 
 	if ( !isset( $_GET['perpage'] ) ) {
 		$tableOptions['perpage'] = 25;
 	} else {
-		$tableOptions['perpage'] = $_GET['perpage'];
+		$tableOptions['perpage'] = filter_input(INPUT_GET, "perpage", FILTER_SANITIZE_STRING);
 	}
 
 	if ( isset( $_GET['subpage'] ) && $_GET['subpage'] == "abj404_logs" ) {
 		if ( isset( $_GET['id'] ) && preg_match( '/[0-9]+/', $_GET['id'] ) ) {
-			$tableOptions['logsid'] = $_GET['id'];
+			$tableOptions['logsid'] = filter_input(INPUT_GET, "id", FILTER_SANITIZE_STRING);
 		} else {
 			$tableOptions['logsid'] = 0;
 		}
 	}
 
+        // sanitize all values.
+        foreach ($tableOptions as &$value) {
+                $value = esc_sql(sanitize_text_field($value));
+        }
+        unset($value);
+
 	return $tableOptions;
 }
 
-function abj404_getRecordCount( $types = array(), $trashed = 0 ) {
+/** 
+ * 
+ * @global type $wpdb
+ * @param type $types specified types such as ABJ404_MANUAL, ABJ404_AUTO, ABJ404_CAPTURED, ABJ404_IGNORED.
+ * @param int $trashed 1 to only include disabled redirects. 0 to only include enabled redirects.
+ * @return int the number of records matching the specified types.
+ */
+function abj404_getRecordCount( $types = array(), int $trashed = 0 ) {
 	global $wpdb;
-	$records = 0;
+	$recordCount = 0;
 
 	if ( count( $types )>=1 ) {
 
@@ -262,29 +281,33 @@ function abj404_getRecordCount( $types = array(), $trashed = 0 ) {
 		$x=0;
 		foreach ( $types as $type ) {
 			if ( $x >= 1 ) {
-				$query.=" or ";
+				$query .= " or ";
 			}
-			$query .= "status = " . $type;
+			$query .= "status = " . esc_sql($type);
 			$x++;
 		}
 		$query.=")";
 
-		$query .= " and disabled = " . $trashed;
+		$query .= " and disabled = " . esc_sql($trashed);
 
 		$row = $wpdb->get_row( $query, ARRAY_N );
-		$records = $row[0];
+		$recordCount = $row[0];
 	}
 
-	return $records;
+	return $recordCount;
 }
 
-function abj404_getLogsCount( $id ) {
+/** 
+ * @global type $wpdb
+ * @param int $redirectID only return results from this redirect ID. Use 0 to get all records.
+ * @return int the number of records found.
+ */
+function abj404_getLogsCount(int $redirectID ) {
 	global $wpdb;
-	$records = 0;
 
 	$query = "select count(id) from " . $wpdb->prefix . "abj404_logs where 1 ";
-	if ( $id != 0 ) {
-		$query .= "and redirect_id = " . $id;
+	if ($redirectID != 0) {
+		$query .= "and redirect_id = " . esc_sql($redirectID);
 	}
 	$row = $wpdb->get_row( $query, ARRAY_N );
 	$records = $row[0];
@@ -292,7 +315,14 @@ function abj404_getLogsCount( $id ) {
 	return $records;
 }
 
-function abj404_getRecords( $sub, $tableOptions, $limitEnforced = 1 ) {
+/** 
+ * @global type $wpdb
+ * @param type $sub either "redirects" or "captured".
+ * @param type $tableOptions filter, order by, paged, perpage etc.
+ * @param type $limitEnforced add "limit" to the query.
+ * @return type rows from the redirects table.
+ */
+function abj404_getRecords($sub, $tableOptions, $limitEnforced = 1) {
 	global $wpdb;
 	$rows = array();
 
@@ -307,10 +337,10 @@ function abj404_getRecords( $sub, $tableOptions, $limitEnforced = 1 ) {
 		if ( $sub == "redirects" ) {
 			$query .= "status = " . ABJ404_MANUAL . " or status = " . ABJ404_AUTO;
 		} else if ( $sub == "captured" ) {
-				$query .= "status = " . ABJ404_CAPTURED . " or status = " . ABJ404_IGNORED;
-			}
+			$query .= "status = " . ABJ404_CAPTURED . " or status = " . ABJ404_IGNORED;
+		}
 	} else {
-		$query.="status = " . $tableOptions['filter'];
+		$query .= "status = " . sanitize_text_field($tableOptions['filter']);
 	}
 	$query .= ") ";
 
@@ -322,17 +352,23 @@ function abj404_getRecords( $sub, $tableOptions, $limitEnforced = 1 ) {
 
 	$query .= "group by " . $redirects . ".id ";
 
-	$query .= "order by " . $tableOptions['orderby'] . " " . $tableOptions['order'] . " ";
+	$query .= "order by " . sanitize_text_field($tableOptions['orderby']) . " " . sanitize_text_field($tableOptions['order']) . " ";
 
 	if ( $limitEnforced == 1 ) {
-		$start = ( $tableOptions['paged'] - 1 ) * $tableOptions['perpage'];
-		$query .= "limit " . $start . ", " . $tableOptions['perpage'];
+		$start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
+		$query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
 	}
 
 	$rows = $wpdb->get_results( $query, ARRAY_A );
 	return $rows;
 }
 
+/** 
+ * 
+ * @global type $wpdb
+ * @param type $tableOptions logsid, orderby, paged, perpage, etc.
+ * @return type rows from querying the redirects table.
+ */
 function abj404_getLogRecords( $tableOptions ) {
 	global $wpdb;
 	$rows = array();
@@ -343,13 +379,13 @@ function abj404_getLogRecords( $tableOptions ) {
 	$query = "select " . $logs . ".redirect_id, " . $logs . ".timestamp, " . $logs . ".remote_host, " . $logs . ".referrer, " . $logs . ".action, " . $redirects . ".url from " . $logs;
 	$query .= " left outer join " . $redirects . " on " . $logs . ".redirect_id = " . $redirects . ".id where 1 ";
 	if ( $tableOptions['logsid'] != 0 ) {
-		$query .= " and redirect_id = " . $tableOptions['logsid'] . " ";
+		$query .= " and redirect_id = " . sanitize_text_field($tableOptions['logsid']) . " ";
 	}
 
-	$query .= "order by " . $tableOptions['orderby'] . " " . $tableOptions['order'] . " ";
-	$start = ( $tableOptions['paged'] - 1 ) * $tableOptions['perpage'];
-	$query .= "limit " . $start . ", " . $tableOptions['perpage'];
-
+	$query .= "order by " . sanitize_text_field($tableOptions['orderby']) . " " . sanitize_text_field($tableOptions['order']) . " ";
+        $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
+	$query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
+        
 	$rows = $wpdb->get_results( $query, ARRAY_A );
 	return $rows;
 }
@@ -366,8 +402,8 @@ function abj404_drawFilters( $sub, $tableOptions ) {
 		$url .= "&subpage=abj404_captured";
 	}
 
-	$url .= "&orderby=" . $tableOptions['orderby'];
-	$url .= "&order=" . $tableOptions['order'];
+	$url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']);
+	$url .= "&order=" . sanitize_text_field($tableOptions['order']);
 
 	if ( $sub == "redirects" ) {
 		$types = array( ABJ404_MANUAL, ABJ404_AUTO );
@@ -383,7 +419,7 @@ function abj404_drawFilters( $sub, $tableOptions ) {
 	if ( $sub != "captured" ) {
                 echo "<li>";
 		echo "<a href=\"" . $url . "\"" . $class . ">" . __( 'All', '404-solution' );
-		echo " <span class=\"count\">(" . abj404_getRecordCount( $types ) . ")</span>";
+		echo " <span class=\"count\">(" . esc_html(abj404_getRecordCount($types)) . ")</span>";
 		echo "</a>";
 		echo "</li>";
 	}
@@ -413,7 +449,7 @@ function abj404_drawFilters( $sub, $tableOptions ) {
 			echo " | ";
 		}
 		echo "<a href=\"" . esc_url( $thisurl ) . "\"" . $class . ">" . ( $title );
-		echo " <span class=\"count\">(" . abj404_getRecordCount( array( $type ) ) . ")</span>";
+		echo " <span class=\"count\">(" . esc_html(abj404_getRecordCount(array($type))) . ")</span>";
 		echo "</a>";
 		echo "</li>";
 	}
@@ -426,7 +462,7 @@ function abj404_drawFilters( $sub, $tableOptions ) {
 	}
 	echo "<li> | ";
 	echo "<a href=\"" . esc_url( $trashurl ) . "\"" . $class . ">" . __( 'Trash', '404-solution' );
-	echo " <span class=\"count\">(" . abj404_getRecordCount( $types, 1 ) . ")</span>";
+	echo " <span class=\"count\">(" . esc_html(abj404_getRecordCount($types, 1)) . ")</span>";
 	echo "</a>";
 	echo "</li>";
 
@@ -467,7 +503,7 @@ function abj404_drawPaginationLinks( $sub, $tableOptions ) {
 	}
 
 	echo "<div class=\"tablenav-pages\">";
-	echo "<span class=\"displaying-num\">" . $num_records . " " . __( 'items', '404-solution' ) . "</span>";
+	echo "<span class=\"displaying-num\">" . esc_html($num_records) . " " . __( 'items', '404-solution' ) . "</span>";
 	echo "<span class=\"pagination-links\">";
 	$class = "";
 	if ( $tableOptions['paged'] == 1 ) {
@@ -586,20 +622,12 @@ function abj404_buildTableColumns( $sub, $tableOptions, $columns ) {
 	echo "</tr>";
 }
 
-function abj404_getRedirectHits( $id ) {
-	global $wpdb;
-
-	$query = "select count(id) from " . $wpdb->prefix . "abj404_logs where redirect_id = " . esc_sql();
-	$row = $wpdb->get_col( $query );
-	return $row[0];
-}
-
 function abj404_getRedirectLastUsed( $id ) {
 	global $wpdb;
 
-	$query = "select timestamp from " . $wpdb->prefix . "abj404_logs where redirect_id = " . esc_sql( $id ) . " order by timestamp desc";
+        $query = $wpdb->prepare("select timestamp from " . $wpdb->prefix . "abj404_logs where redirect_id = %d order by timestamp desc", esc_sql($id));
 	$row = $wpdb->get_col( $query );
-
+        
 	if ( isset( $row[0] ) ) {
 		return $row[0];
 	} else {
@@ -634,9 +662,10 @@ function abj404_addAdminRedirect() {
 		$dest = "";
 		if ( $_POST['dest'] == "EXTERNAL" ) {
 			$type = ABJ404_EXTERNAL;
-			$dest = esc_sql( $_POST['external'] );
+			$dest = esc_sql( filter_input(INPUT_POST, "external", FILTER_SANITIZE_URL) );
+                        ;
 		} else {
-			$info = explode( "|", $_POST['dest'] );
+			$info = explode( "|", filter_input(INPUT_POST, "dest", FILTER_SANITIZE_STRING) );
 			if ( count( $info )==2 ) {
 				$dest = $info[0];
 				if ( $info[1] == "POST" ) {
@@ -649,7 +678,7 @@ function abj404_addAdminRedirect() {
 			}
 		}
 		if ( $type != "" && $dest != "" ) {
-			abj404_setupRedirect( esc_sql( $_POST['url'] ), ABJ404_MANUAL, $type, $dest, esc_sql( $_POST['code'] ), 0 );
+			abj404_setupRedirect( esc_sql( filter_input(INPUT_POST, "url", FILTER_SANITIZE_URL) ), ABJ404_MANUAL, $type, $dest, esc_sql( filter_input(INPUT_POST, "code", FILTER_SANITIZE_STRING) ), 0 );
 			$_POST['url'] = "";
 			$_POST['code'] = "";
 			$_POST['external'] = "";
@@ -689,9 +718,9 @@ function abj404_editRedirectData() {
 		$dest = "";
 		if ( $_POST['dest'] === "" . ABJ404_EXTERNAL ) {
 			$type = ABJ404_EXTERNAL;
-			$dest = esc_sql( $_POST['external'] );
+			$dest = esc_sql( filter_input(INPUT_POST, "external", FILTER_SANITIZE_URL) );
 		} else {
-			$info = explode( "|", $_POST['dest'] );
+			$info = explode( "|", filter_input(INPUT_POST, "dest", FILTER_SANITIZE_STRING) );
 			if ( count( $info )==2 ) {
 				$dest = $info[0];
 				if ( $info[1] == ABJ404_POST ) {
@@ -707,14 +736,14 @@ function abj404_editRedirectData() {
 		if ( $type != "" && $dest != "" ) {
 			$wpdb->update( $wpdb->prefix . "abj404_redirects",
 				array(
-					'url' => esc_url( $_POST['url'] ),
+					'url' => esc_url( filter_input(INPUT_POST, "url", FILTER_SANITIZE_URL) ),
 					'status' => ABJ404_MANUAL,
 					'type' => esc_html( $type ),
 					'final_dest' => esc_html( $dest ),
-					'code' => esc_html( $_POST['code'] )
+					'code' => esc_html( filter_input(INPUT_POST, "code", FILTER_SANITIZE_STRING) )
 				),
 				array (
-					'id' => absint( $_POST['id'] )
+					'id' => absint( filter_input(INPUT_POST, "id", FILTER_VALIDATE_INT) )
 				),
 				array(
 					'%s',
@@ -863,7 +892,7 @@ function abj404_emptyTrash( $sub ) {
 
 	$rows = abj404_getRecords( $sub, $tableOptions, 0 );
 	foreach ( $rows as $row ) {
-		abj404_cleanRedirect( $row['id'] );
+		abj404_deleteRedirect( $row['id'] );
 	}
 }
 
@@ -906,7 +935,8 @@ function abj404_adminPage() {
 
 	//Handle Post Actions
 	if ( isset( $_POST['action'] ) ) {
-		$action = $_POST['action'];
+		$action = filter_input(INPUT_POST, "id", FILTER_SANITIZE_STRING);
+                
 	} else {
 		$action = "";
 	}
@@ -942,7 +972,7 @@ function abj404_adminPage() {
 			}
 		} else if ( $action == "bulkignore" || $action == "bulkcaptured" || $action == "bulktrash" ) {
 			if ( check_admin_referer( 'abj404_capturedBulkAction' ) && is_admin() ) {
-				$message = abj404_bulkProcess( $action, $_POST['idnum'] );
+				$message = abj404_bulkProcess( $action, filter_input(INPUT_POST, "idnum", FILTER_SANITIZE_STRING) );
 			}
 		} else if ( $action == "purgeRedirects" ) {
 			if ( check_admin_referer( 'abj404_purgeRedirects' ) && is_admin() ) {
@@ -960,7 +990,7 @@ function abj404_adminPage() {
 					$trash = 1;
 				}
 			if ( $trash == 0 || $trash == 1 ) {
-				$message = abj404_setTrash( $_GET['id'], $trash );
+				$message = abj404_setTrash( filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT), $trash );
 				if ( $message == "" ) {
 					if ( $trash == 1 ) {
 						$message = __( 'Redirect moved to trash successfully!', '404-solution' );
@@ -982,8 +1012,8 @@ function abj404_adminPage() {
 	if ( isset( $_GET['remove'] ) && $_GET['remove'] == 1 ) {
 		if ( check_admin_referer( 'abj404_removeRedirect' ) && is_admin() ) {
 			if ( preg_match( '/[0-9]+/', $_GET['id'] ) ) {
-				$sanitize_id = absint( $_GET['id'] );
-				abj404_cleanRedirect( $sanitize_id );
+				$sanitize_id = absint( filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT));
+				abj404_deleteRedirect( $sanitize_id );
 				$message = __( 'Redirect Removed Successfully!', '404-solution' );
 			}
 		}
@@ -999,7 +1029,7 @@ function abj404_adminPage() {
 					} else {
 						$newstatus = ABJ404_CAPTURED;
 					}
-					$message = abj404_setIgnore( $_GET['id'], $newstatus );
+					$message = abj404_setIgnore( filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT), $newstatus );
 					if ( $message == "" ) {
 						if ( $newstatus == ABJ404_CAPTURED ) {
 							$message = __( 'Removed 404 URL from ignored list successfully!', '404-solution' );
@@ -1036,7 +1066,7 @@ function abj404_adminPage() {
 	// Deal With Page Tabs
 	if ( $sub == "" ) {
 		if ( isset( $_GET['subpage'] ) ) {
-			$sub = strtolower( $_GET['subpage'] );
+			$sub = strtolower( filter_input(INPUT_GET, "subpage", FILTER_SANITIZE_STRING) );
 		} else {
 			$sub = "";
 		}
@@ -1078,15 +1108,23 @@ function abj404_adminPage() {
 	abj404_adminFooter();
 }
 
-function abj404_getStatsCount( $query='' ) {
-	global $wpdb;
-	$results = 0;
-	if ( $query != '' ) {
-
-		$row = $wpdb->get_col( $query );
-		$results = $row[0];
-	}
-	return $results;
+/** 
+ * This returns only the first column of the first row of the result.
+ * @global type $wpdb
+ * @param type $query a query that starts with "select count(id) from ..."
+ * @param array $valueParams values to use to prepare the query.
+ * @return int the count (result) of the query.
+ */
+function abj404_getStatsCount($query='', array $valueParams) {
+    global $wpdb;
+    
+    if ( $query == '' ) {
+        return 0;
+    }
+    
+    $results = $wpdb->get_col($wpdb->prepare( $query, $valueParams));
+    
+    return $results[0];
 }
 
 function abj404_adminStatsPage() {
@@ -1101,20 +1139,20 @@ function abj404_adminStatsPage() {
 	echo "<div class=\"metabox-holder\">";
 	echo " <div class=\"meta-box-sortables\">";
 
-	$query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = " . ABJ404_AUTO;
-	$auto301 = abj404_getStatsCount( $query );
+	$query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d";// . ABJ404_AUTO;
+	$auto301 = abj404_getStatsCount( $query, array(ABJ404_AUTO) );
 
-	$query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = " . ABJ404_AUTO;
-	$auto302 = abj404_getStatsCount( $query );
+	$query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d";// . ABJ404_AUTO;
+	$auto302 = abj404_getStatsCount( $query, array(ABJ404_AUTO) );
 
-	$query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = " . ABJ404_MANUAL;
-	$manual301 = abj404_getStatsCount( $query );
+	$query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d";// . ABJ404_MANUAL;
+	$manual301 = abj404_getStatsCount( $query, array(ABJ404_MANUAL) );
 
-	$query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = " . ABJ404_MANUAL;
-	$manual302 = abj404_getStatsCount( $query );
+	$query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d";// . ABJ404_MANUAL;
+	$manual302 = abj404_getStatsCount( $query, array(ABJ404_MANUAL) );
 
-	$query = "select count(id) from $redirects where disabled = 1 and (status = " . ABJ404_AUTO . " or status = " . ABJ404_MANUAL . ")";
-	$trashed = abj404_getStatsCount( $query );
+	$query = "select count(id) from $redirects where disabled = 1 and (status = %d or status = %d)";
+	$trashed = abj404_getStatsCount( $query, array(ABJ404_AUTO, ABJ404_MANUAL) );
 
 	$total = $auto301 + $auto302 + $manual301 + $manual302 + $trashed;
 
@@ -1130,14 +1168,14 @@ function abj404_adminStatsPage() {
 	$content .= "</p>";
 	abj404_postbox( "abj404-redirectStats", __( 'Redirects', '404-solution' ), $content );
 
-	$query = "select count(id) from $redirects where disabled = 0 and status = " . ABJ404_CAPTURED;
-	$captured = abj404_getStatsCount( $query );
+	$query = "select count(id) from $redirects where disabled = 0 and status = %d";// . ABJ404_CAPTURED;
+	$captured = abj404_getStatsCount( $query, array(ABJ404_CAPTURED) );
 
-	$query = "select count(id) from $redirects where disabled = 0 and status = " . ABJ404_IGNORED;
-	$ignored = abj404_getStatsCount( $query );
+	$query = "select count(id) from $redirects where disabled = 0 and status = %d";// . ABJ404_IGNORED;
+	$ignored = abj404_getStatsCount( $query, array(ABJ404_IGNORED) );
 
-	$query = "select count(id) from $redirects where disabled = 1 and (status = " . ABJ404_CAPTURED . " or status = " . ABJ404_IGNORED . ")";
-	$trashed = abj404_getStatsCount( $query );
+	$query = "select count(id) from $redirects where disabled = 1 and (status = %d or status = %d)";
+	$trashed = abj404_getStatsCount( $query, array(ABJ404_CAPTURED, ABJ404_IGNORED) );
 
 	$total = $captured + $ignored + $trashed;
 
@@ -1178,29 +1216,29 @@ function abj404_adminStatsPage() {
 				$ts = 0;
 			}
 
-		$query = "select count(id) from $logs where timestamp >= $ts and action = '404'";
-		$disp404 = abj404_getStatsCount( $query );
+		$query = "select count(id) from $logs where timestamp >= $ts and action = %s";
+		$disp404 = abj404_getStatsCount( $query, array("404") );
 
-		$query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action = '404'";
-		$distinct404 = abj404_getStatsCount( $query );
+		$query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action = %s";
+		$distinct404 = abj404_getStatsCount( $query, array("404") );
 
-		$query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action = '404'";
-		$visitors404 = abj404_getStatsCount( $query );
+		$query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action = %s";
+		$visitors404 = abj404_getStatsCount( $query, array("404") );
 
-		$query = "select count(distinct referrer) from $logs where timestamp >= $ts and action = '404'";
-		$refer404 = abj404_getStatsCount( $query );
+		$query = "select count(distinct referrer) from $logs where timestamp >= $ts and action = %s";
+		$refer404 = abj404_getStatsCount( $query, array("404") );
 
-		$query = "select count(id) from $logs where timestamp >= $ts and action != '404'";
-		$redirected = abj404_getStatsCount( $query );
+		$query = "select count(id) from $logs where timestamp >= $ts and action != %s";
+		$redirected = abj404_getStatsCount( $query, array("404") );
 
-		$query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action != '404'";
-		$distinctredirected = abj404_getStatsCount( $query );
+		$query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action != %s";
+		$distinctredirected = abj404_getStatsCount( $query, array("404") );
 
-		$query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action != '404'";
-		$distinctvisitors = abj404_getStatsCount( $query );
+		$query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action != %s";
+		$distinctvisitors = abj404_getStatsCount( $query, array("404") );
 
-		$query = "select count(distinct referrer) from $logs where timestamp >= $ts and action != '404'";
-		$distinctrefer = abj404_getStatsCount( $query );
+		$query = "select count(distinct referrer) from $logs where timestamp >= $ts and action != %s";
+		$distinctrefer = abj404_getStatsCount( $query, array("404") );
 
 		$content = "";
 		$content .= "<p>";
@@ -1490,7 +1528,7 @@ function abj404_adminOptionsPageAutomaticRedirects($options) {
                 $parent = $row->post_parent;
                 while ( $parent != 0 ) {
                         $parent = absint( $parent );
-                        $query = "select id, post_parent from $wpdb->posts where post_status='publish' and post_type='page' and id = $parent";
+                        $query = $wpdb->prepare("select id, post_parent from $wpdb->posts where post_status='publish' and post_type='page' and id = %s", $parent);
                         $prow = $wpdb->get_row( $query, OBJECT );
                         if ( ! ( $prow == NULL ) ) {
                                 $theTitle = get_the_title( $prow->id ) . " &raquo; " . $theTitle;
@@ -1766,7 +1804,7 @@ function abj404_adminRedirectsPage() {
 		echo "<form method=\"POST\" action=\"" . $link . "\">";
 		echo "<input type=\"hidden\" name=\"action\" value=\"addRedirect\">";
 		if ( isset( $_POST['url'] ) ) {
-			$postedURL = $_POST['url'];
+			$postedURL = filter_input(INPUT_POST, "url", FILTER_SANITIZE_URL);
 		} else {
 			$postedURL = "";
 		}
@@ -1801,7 +1839,7 @@ function abj404_adminRedirectsPage() {
 			$parent = $row->post_parent;
 			while ( $parent != 0 ) {
 				$parent = absint( $parent );
-				$query = "select id, post_parent from $wpdb->posts where post_status='publish' and post_type='page' and id = $parent";
+				$query = $wpdb->prepare("select id, post_parent from $wpdb->posts where post_status='publish' and post_type='page' and id = %s", $parent);
 				$prow = $wpdb->get_row( $query, OBJECT );
 				if ( ! ( $prow == NULL ) ) {
 					$theTitle = get_the_title( $prow->id ) . " &raquo; " . $theTitle;
@@ -1846,7 +1884,7 @@ function abj404_adminRedirectsPage() {
 
 		echo "</select><br>";
 		if ( isset( $_POST['external'] ) ) {
-			$postedExternal = $_POST['external'];
+			$postedExternal = filter_input(INPUT_POST, "external", FILTER_SANITIZE_URL);
 		} else {
 			$postedExternal = "";
 		}
@@ -1855,7 +1893,7 @@ function abj404_adminRedirectsPage() {
 		if ( ( ! isset( $_POST['code'] ) ) || $_POST['code'] == "" ) {
 			$codeselected = $options['default_redirect'];
 		} else {
-			$codeselected = $_POST['code'];
+			$codeselected = filter_input(INPUT_POST, "code", FILTER_SANITIZE_STRING);
 		}
 		$codes = array( 301, 302 );
 		foreach ( $codes as $code ) {
@@ -2077,15 +2115,13 @@ function abj404_adminEditPage() {
 			echo "Error: Invalid ID Number";
 			return;
 		} else {
-			$recnum = absint( $_POST['id'] );
+			$recnum = absint( filter_input(INPUT_POST, "id", FILTER_VALIDATE_INT) );
 		}
 	} else {
-		$recnum = absint( $_GET['id'] );
+		$recnum = absint( filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT) );
 	}
 
-	$query = "select id, url, type, final_dest, code from " . $wpdb->prefix . "abj404_redirects where 1 ";
-	$query .= "and id = " . esc_sql( $recnum );
-
+	$query = $wpdb->prepare("select id, url, type, final_dest, code from " . $wpdb->prefix . "abj404_redirects where 1 and id = %d", $recnum );
 	$redirect = $wpdb->get_row( $query, ARRAY_A );
 
 	if ( ! ( $redirect == null ) ) {
@@ -2129,7 +2165,7 @@ function abj404_adminEditPage() {
 
 			$parent = $row->post_parent;
 			while ( $parent != 0 ) {
-				$query = "select id, post_parent from $wpdb->posts where post_status='publish' and post_type='page' and id = $parent";
+				$query = $wpdb->prepare("select id, post_parent from $wpdb->posts where post_status='publish' and post_type='page' and id = %d", $parent);
 				$prow = $wpdb->get_row( $query, OBJECT );
 				if ( ! ( $prow == NULL ) ) {
 					$theTitle = get_the_title( $prow->id ) . " &raquo; " . $theTitle;
@@ -2260,10 +2296,10 @@ function abj404_purgeRedirects() {
 	$redirects = $wpdb->prefix . "abj404_redirects";
 	$logs = $wpdb->prefix . "abj404_logs";
 
-	$sanity = $_POST['sanity'];
+	$sanity = filter_input(INPUT_POST, "sanity", FILTER_SANITIZE_STRING);
 	if ( $sanity == "1" ) {
 		if ( isset( $_POST['types'] ) && '' != $_POST['types'] ) {
-			$type = $_POST['types'];
+			$type = filter_input(INPUT_POST, "types", FILTER_SANITIZE_STRING);
 			if ( is_array( $type ) ) {
 				$types = "";
 				$x=0;
@@ -2278,15 +2314,15 @@ function abj404_purgeRedirects() {
 				}
 
 				if ( $types != "" ) {
-					$purge = $_POST['purgetype'];
+					$purge = filter_input(INPUT_POST, "purgetype", FILTER_SANITIZE_STRING);
 
 					if ( $purge == "logs" || $purge == "redirects" ) {
-						$query = "delete from " . esc_html( $logs ) . " where redirect_id in (select id from " . esc_html( $redirects ) . " where status in (" . esc_html( $types ) . "))";
+						$query = $wpdb->prepare("delete from " . $logs . " where redirect_id in (select id from " . $redirects . " where status in (%s))", esc_html($types));
 						$logcount = $wpdb->query( $query );
 						$message = $logcount . " " . __( 'Log entries were purged.', '404-solution' );
 
 						if ( $purge == "redirects" ) {
-							$query = "delete from " . esc_html( $redirects ) . " where status in (" . esc_html( $types ) . ")";
+							$query = $wpdb->prepare("delete from " . $redirects . " where status in (%s)", esc_html($types));
 							$count = $wpdb->query( $query );
 							$message .= "<br>";
 							$message .= $count . " " . __( 'Redirect entries were purged.', '404-solution' );

@@ -347,7 +347,7 @@ function abj404_logRedirectHit( $id, $action ) {
 	$now = time();
 
 	if ( isset( $_SERVER['HTTP_REFERER'] ) ) {
-		$referer=$_SERVER['HTTP_REFERER'];
+		$referer = filter_input(INPUT_SERVER, "HTTP_REFERER", FILTER_SANITIZE_URL);
 	} else {
 		$referer = "";
 	}
@@ -356,7 +356,8 @@ function abj404_logRedirectHit( $id, $action ) {
 		array(
 			'redirect_id' => absint( $id ),
 			'timestamp' => esc_html( $now ),
-			'remote_host' => esc_html( $_SERVER['REMOTE_ADDR'] ),
+			'remote_host' => esc_html( filter_input(INPUT_SERVER, "REMOTE_ADDR", FILTER_SANITIZE_STRING) ),
+                    
 			'referrer' => esc_html( $referer ),
 			'action' => esc_html( $action ),
 		),
@@ -370,14 +371,19 @@ function abj404_logRedirectHit( $id, $action ) {
 	);
 }
 
-function abj404_cleanRedirect($id) {
+/** 
+ *  Remove the redirect from the redirects table and from the logs.
+ * @global type $wpdb
+ * @param type $id
+ */
+function abj404_deleteRedirect($id) {
 	global $wpdb;
-	if ($id != "" && $id != '0') {
-		$id = absint( $id );
-		$id = (string) $id;
-		$query="delete from " . $wpdb->prefix . "abj404_redirects where id = " . $wpdb->escape($id);
+        $cleanedID = absint(sanitize_text_field($id));
+        
+	if ($cleanedID != "" && $cleanedID != '0') {
+		$query = $wpdb->prepare("delete from " . $wpdb->prefix . "abj404_redirects where id = %d", $cleanedID);
 		$wpdb->query($query);
-		$query="delete from " . $wpdb->prefix . "abj404_logs where redirect_id = " . $wpdb->escape($id);
+		$query = $wpdb->prepare("delete from " . $wpdb->prefix . "abj404_logs where redirect_id = %d", $cleanedID);
 		$wpdb->query($query);
 	}
 }
@@ -394,19 +400,19 @@ function abj404_cleaningCron() {
 
 		//Clean up old logs
 		$query = "delete from " . $wpdb->prefix . "abj404_logs where ";
-		$query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . esc_sql( ABJ404_CAPTURED ) . " or status = " . esc_sql( ABJ404_IGNORED ) . ") ";
+		$query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_CAPTURED . " or status = " . ABJ404_IGNORED . ") ";
 		$query .= "and timestamp < " . esc_sql( $then );
 		$wpdb->query( $query );
 
 		//Find unused urls
-		$query = "select id from " . $wpdb->prefix . "abj404_redirects where (status = " . esc_sql( ABJ404_CAPTURED ) . " or status = " . esc_sql( ABJ404_IGNORED ) . ") and ";
+		$query = "select id from " . $wpdb->prefix . "abj404_redirects where (status = " . ABJ404_CAPTURED . " or status = " . ABJ404_IGNORED . ") and ";
 		$query .= "timestamp <= " . esc_sql( $then ) . " and id not in (";
 		$query .= "select redirect_id from " . $wpdb->prefix . "abj404_logs";
 		$query .= ")";
 		$rows = $wpdb->get_results( $query, ARRAY_A );
 		foreach ( $rows as $row ) {
 			//Remove Them
-			abj404_cleanRedirect( $row['id'] );
+			abj404_deleteRedirect( $row['id'] );
 		}
 	}
 
@@ -417,19 +423,19 @@ function abj404_cleaningCron() {
 
 		//Clean up old logs
 		$query = "delete from " . $wpdb->prefix . "abj404_logs where ";
-		$query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . esc_sql( ABJ404_AUTO ) . ") ";
+		$query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_AUTO . ") ";
 		$query .= "and timestamp < " . esc_sql( $then );
 		$wpdb->query( $query );
 
 		//Find unused urls
-		$query = "select id from " . $wpdb->prefix . "abj404_redirects where status = " . esc_sql( ABJ404_AUTO ) . " and ";
+		$query = "select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_AUTO . " and ";
 		$query .= "timestamp <= " . esc_sql( $then ) . " and id not in (";
 		$query .= "select redirect_id from " . $wpdb->prefix . "abj404_logs";
 		$query .= ")";
 		$rows = $wpdb->get_results( $query, ARRAY_A );
 		foreach ( $rows as $row ) {
 			//Remove Them
-			abj404_cleanRedirect( $row['id'] );
+			abj404_deleteRedirect( $row['id'] );
 		}
 	}
 
@@ -440,19 +446,19 @@ function abj404_cleaningCron() {
 
 		//Clean up old logs
 		$query = "delete from " . $wpdb->prefix . "abj404_logs where ";
-		$query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . esc_sql( ABJ404_MANUAL ) . ") ";
+		$query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_MANUAL . ") ";
 		$query .= "and timestamp < " . esc_sql( $then );
 		$wpdb->query( $query );
 
 		//Find unused urls
-		$query = "select id from " . $wpdb->prefix . "abj404_redirects where status = " . esc_sql( ABJ404_MANUAL ) . " and ";
+		$query = "select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_MANUAL . " and ";
 		$query .= "timestamp <= " . esc_sql( $then ) . " and id not in (";
 		$query .= "select redirect_id from " . $wpdb->prefix . "abj404_logs";
 		$query .= ")";
 		$rows = $wpdb->get_results( $query, ARRAY_A );
 		foreach ( $rows as $row ) {
 			//Remove Them
-			abj404_cleanRedirect( $row['id'] );
+			abj404_deleteRedirect( $row['id'] );
 		}
 	}
 }
