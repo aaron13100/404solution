@@ -152,7 +152,7 @@ function abj404_process404() {
 					if ( $type != 0 ) {
 						$redirect_id = abj404_setupRedirect( $requestedURL, ABJ404_AUTO, $type, $permalink['id'], $options['default_redirect'], 0 );
 					} else {
-                                                error_log("ABJ_404SOLUTION: Unrhandled permalink type: " . $permalink['type']);
+                                                error_log("ABJ_404_SOLUTION: Unhandled permalink type: " . esc_html($permalink['type']));
                                         }
 				}
 			}

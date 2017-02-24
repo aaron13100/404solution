@@ -441,7 +441,7 @@ function abj404_drawFilters( $sub, $tableOptions ) {
 		} else if ( $type == ABJ404_IGNORED ) {
 			$title = "Ignored 404's";
 		} else {
-                    error_log("Unrecognized redirect type: " . $type);
+                    error_log("ABJ_404_SOLUTION: Unrecognized redirect type: " . esc_html($type));
                 }
 
 		echo "<li>";
@@ -935,8 +935,7 @@ function abj404_adminPage() {
 
 	//Handle Post Actions
 	if ( isset( $_POST['action'] ) ) {
-		$action = filter_input(INPUT_POST, "id", FILTER_SANITIZE_STRING);
-                
+		$action = filter_input(INPUT_POST, "action", FILTER_SANITIZE_STRING);
 	} else {
 		$action = "";
 	}
