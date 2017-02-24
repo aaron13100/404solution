@@ -13,8 +13,8 @@ function abj404_suggestions() {
 		$options = abj404_getOptions();
 		if ( isset( $options['display_suggest'] ) && $options['display_suggest'] == '1' ) {
 			echo "<div class=\"suggest-404s\">";
-			$requestedURL = $_SERVER['REQUEST_URI'];
-			$requestedURL = esc_url( $requestedURL );
+			$requestedURL = esc_url(filter_input(INPUT_SERVER, "REQUEST_URI", FILTER_SANITIZE_URL));
+                        
 			$urlParts = parse_url( $requestedURL );
 			$permalinks = abj404_rankPermalinks( $urlParts['path'], $options['suggest_cats'], $options['suggest_tags'] );
 
@@ -105,8 +105,7 @@ function abj404_process404() {
 
 	$options = abj404_getOptions();
 
-	$urlRequest = preg_replace( '/\?.*/', '', $_SERVER['REQUEST_URI'] );
-	$urlRequest = esc_url( $urlRequest );
+	$urlRequest = esc_url( preg_replace( '/\?.*/', '', filter_input(INPUT_SERVER, "REQUEST_URI", FILTER_SANITIZE_URL) ) );
 	$urlParts = parse_url( $urlRequest );
 	$requestedURL = $urlParts['path'];
 	$requestedURL .= abj404_SortQuery( $urlParts );
@@ -213,7 +212,7 @@ function abj404_process404() {
 					// Not a 404 Link. Check for matches.
 					if ( $options['remove_matches'] == '1' ) {
 						if ( $redirect['id'] != '0' ) {
-							abj404_cleanRedirect( $redirect['id'] );
+							abj404_deleteRedirect( $redirect['id'] );
 						}
 					}
 				}
@@ -249,8 +248,7 @@ function abj404_redirectCanonical( $redirect, $request ) {
 				$options[$key] = wp_kses_post( $value );
 			}
 
-			$urlRequest = $_SERVER['REQUEST_URI'];
-			$urlRequest = esc_url( $urlRequest );
+			$urlRequest = esc_url( filter_input(INPUT_SERVER, "REQUEST_URI", FILTER_SANITIZE_URL) );
 			$urlParts = parse_url( $urlRequest );
 
 			$requestedURL = $urlParts['path'];

@@ -61,6 +61,10 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+### Version 1.5.1 ###
+* Prepare for release on WordPress.org.
+* Sanitize, escape, and validate POST calls.
+
 ### Version 1.5.0 ###
 * Rename to 404 Solution (forked from 404 Redirected at https://github.com/ThemeMix/redirectioner)
 * Update branding links
