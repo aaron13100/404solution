@@ -322,7 +322,7 @@ msgid "Unique Redirected Referrers"
 msgstr ""
 
 #: includes/admin.php:1233
-msgid "Viewing Logs For"
+msgid "View Logs For"
 msgstr ""
 
 #: includes/admin.php:1239

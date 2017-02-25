@@ -51,7 +51,7 @@ define( 'ABJ404_EXTERNAL', 4 );
 require ABJ404_PATH."includes/functions.php";
 require ABJ404_PATH."includes/frontend.php";
 
-if ( is_admin() ) {
+if (is_admin() ) {
 	require ABJ404_PATH."includes/admin.php";
 }
 
