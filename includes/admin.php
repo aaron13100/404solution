@@ -336,6 +336,9 @@ function abj404_getRecords($sub, $tableOptions, $limitEnforced = 1) {
             $query .= "status = " . ABJ404_MANUAL . " or status = " . ABJ404_AUTO;
         } else if ($sub == "captured") {
             $query .= "status = " . ABJ404_CAPTURED . " or status = " . ABJ404_IGNORED;
+        } else {
+            error_log("ABJ_404-SOLUTION: Unrecognized sub type.");
+            echo "ABJ_404-SOLUTION: Error: Unrecognized sub type.";
         }
     } else {
         $query .= "status = " . sanitize_text_field($tableOptions['filter']);
@@ -416,7 +419,7 @@ function abj404_drawFilters($sub, $tableOptions) {
 
     if ($sub != "captured") {
         echo "<li>";
-        echo "<a href=\"" . $url . "\"" . $class . ">" . __('All', '404-solution');
+        echo "<a href=\"" . esc_url($url) . "\"" . $class . ">" . __('All', '404-solution');
         echo " <span class=\"count\">(" . esc_html(abj404_getRecordCount($types)) . ")</span>";
         echo "</a>";
         echo "</li>";
@@ -676,6 +679,9 @@ function abj404_addAdminRedirect() {
             }
         }
         if ($type != "" && $dest != "") {
+            
+            // nonce already verified.
+            
             abj404_setupRedirect(esc_sql(filter_input(INPUT_POST, "url", FILTER_SANITIZE_URL)), ABJ404_MANUAL, $type, $dest, esc_sql(filter_input(INPUT_POST, "code", FILTER_SANITIZE_STRING)), 0);
             $_POST['url'] = "";
             $_POST['code'] = "";
@@ -763,7 +769,14 @@ function abj404_editRedirectData() {
     return $message;
 }
 
-function abj404_setTrash($id, $trash) {
+/** 
+ * Move a redirect to the "trash"folder.
+ * @global type $wpdb
+ * @param type $id
+ * @param type $trash
+ * @return type
+ */
+function abj404_moveRedirectsToTrash($id, $trash) {
     global $wpdb;
 
     $result = false;
@@ -778,7 +791,7 @@ function abj404_setTrash($id, $trash) {
     return $message;
 }
 
-function abj404_setIgnore($id, $newstatus) {
+function abj404_moveRedirectsToIgnore($id, $newstatus) {
     global $wpdb;
 
     $result = false;
@@ -872,10 +885,17 @@ function abj404_adminFooter() {
     echo "</div>";
 }
 
+/** 
+ * This is for both empty trash buttons (page redirects and captured 404 URLs).
+ * @param type $sub
+ */
 function abj404_emptyTrash($sub) {
     $tableOptions = abj404_getTableOptions();
 
     $rows = abj404_getRecords($sub, $tableOptions, 0);
+
+    // nonce already verified.
+    
     foreach ($rows as $row) {
         abj404_deleteRedirect($row['id']);
     }
@@ -883,33 +903,44 @@ function abj404_emptyTrash($sub) {
 
 function abj404_bulkProcess($action, $ids) {
     $message = "";
+    
+    // nonce already verified.
+    
     if ($action == "bulkignore" || $action == "bulkcaptured") {
         if ($action == "bulkignore") {
             $status = ABJ404_IGNORED;
-        } else {
+        } else if ($action == "bulkcaptured") {
             $status = ABJ404_CAPTURED;
+        } else {
+            error_log("ABJ_404-SOLUTION: Unrecognized bulk action: " + $action);
         }
         $count = 0;
         foreach ($ids as $id) {
-            $s = abj404_setIgnore($id, $status);
+            $s = abj404_moveRedirectsToIgnore($id, $status);
             if ($s == "") {
                 $count++;
             }
         }
         if ($action == "bulkignore") {
             $message = $count . " " . __('URLs marked as ignored.', '404-solution');
-        } else {
+        } else if ($action == "bulkcaptured") {
             $message = $count . " " . __('URLs marked as captured.', '404-solution');
+        } else {
+            error_log("ABJ_404-SOLUTION: Unrecognized bulk action: " + $action);
         }
-    } else {
+        
+    } else if ($action == "bulktrash") {
         $count = 0;
         foreach ($ids as $id) {
-            $s = abj404_setTrash($id, 1);
+            $s = abj404_moveRedirectsToTrash($id, 1);
             if ($s == "") {
                 $count ++;
             }
         }
         $message = $count . " " . __('URLs moved to trash', '404-solution');
+        
+    } else {
+        error_log("ABJ_404-SOLUTION: Unrecognized bulk action: " + $action);
     }
     return $message;
 }
@@ -941,7 +972,7 @@ function abj404_adminPage() {
             if ($message == "") {
                 $message = __('New Redirect Added Successfully!', '404-solution');
             } else {
-                $message .= __('Error: unable to add new redirect successfully.', '404-solution');
+                $message .= __('Error: unable to add new redirect.', '404-solution');
             }
         }
     } else if ($action == "emptyRedirectTrash") {
@@ -955,7 +986,7 @@ function abj404_adminPage() {
             $message = __('All trashed URLs have been deleted!', '404-solution');
         }
     } else if ($action == "bulkignore" || $action == "bulkcaptured" || $action == "bulktrash") {
-        if (check_admin_referer('abj404_capturedBulkAction') && is_admin()) {
+        if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
             $message = abj404_bulkProcess($action, filter_input(INPUT_POST, "idnum", FILTER_SANITIZE_STRING));
         }
     } else if ($action == "purgeRedirects") {
@@ -974,7 +1005,7 @@ function abj404_adminPage() {
                 $trash = 1;
             }
             if ($trash == 0 || $trash == 1) {
-                $message = abj404_setTrash(filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT), $trash);
+                $message = abj404_moveRedirectsToTrash(filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT), $trash);
                 if ($message == "") {
                     if ($trash == 1) {
                         $message = __('Redirect moved to trash successfully!', '404-solution');
@@ -1013,7 +1044,7 @@ function abj404_adminPage() {
                     } else {
                         $newstatus = ABJ404_CAPTURED;
                     }
-                    $message = abj404_setIgnore(filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT), $newstatus);
+                    $message = abj404_moveRedirectsToIgnore(filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT), $newstatus);
                     if ($message == "") {
                         if ($newstatus == ABJ404_CAPTURED) {
                             $message = __('Removed 404 URL from ignored list successfully!', '404-solution');
@@ -1685,6 +1716,7 @@ function abj404_adminRedirectsPage() {
             $last = __('Never Used', '404-solution');
         }
 
+        
         $editlink = "?page=abj404_solution&subpage=abj404_edit&id=" . absint($row['id']);
         $logslink = "?page=abj404_solution&subpage=abj404_logs&id=" . absint($row['id']);
         $trashlink = "?page=abj404_solution&id=" . absint($row['id']);
@@ -1945,8 +1977,10 @@ function abj404_adminCapturedPage() {
             $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
         }
 
-        $bulkaction = "abj404_capturedBulkAction";
-        $url = wp_nonce_url($url, $bulkaction);
+        $bulkaction = "abj404_bulkProcess";
+        // is there a way to use the <select> below and use the selected action (bulkignore, bulkcaptured, bulktrash)
+        // when creating the nonce (instead of using one nonce for all actions)?
+        $url = wp_nonce_url($url, $bulkaction); 
 
         echo "<form method=\"POST\" action=\"" . $url . "\">";
         echo "<select name=\"action\">";
@@ -2089,6 +2123,7 @@ function abj404_adminEditPage() {
     global $wpdb;
     $sub = "edit";
 
+    echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" /> <BR/>";
     if (!( isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id']) )) {
         if (!( isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id']) )) {
             echo "Error: Invalid ID Number";
@@ -2272,6 +2307,8 @@ function abj404_purgeRedirects() {
     global $wpdb;
     $message = "";
 
+    // nonce already verified.
+    
     $redirects = $wpdb->prefix . "abj404_redirects";
     $logs = $wpdb->prefix . "abj404_logs";
 
