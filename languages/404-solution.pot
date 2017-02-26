@@ -190,7 +190,7 @@ msgid "New Redirect Added Successfully!"
 msgstr ""
 
 #: includes/admin.php:912
-msgid "Error: unable to add new redirect successfully."
+msgid "Error: unable to add new redirect."
 msgstr ""
 
 #: includes/admin.php:918, includes/admin.php:923

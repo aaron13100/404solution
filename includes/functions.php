@@ -316,6 +316,9 @@ function abj404_loadRedirectData($url) {
  */
 function abj404_setupRedirect($url, $status, $type, $final_dest, $code, $disabled = 0) {
     global $wpdb;
+    
+    // nonce is verified outside of this method. We can't verify here because 
+    // automatic redirects are sometimes created without user interaction.
 
     $now = time();
     $wpdb->insert($wpdb->prefix . 'abj404_redirects', array(
@@ -339,9 +342,17 @@ function abj404_setupRedirect($url, $status, $type, $final_dest, $code, $disable
     return $wpdb->insert_id;
 }
 
+/** 
+ * Log that a redirect was done.
+ * @global type $wpdb
+ * @param type $id
+ * @param type $action
+ */
 function abj404_logRedirectHit($id, $action) {
     global $wpdb;
     $now = time();
+    
+    // no nonce here because redirects are not user generated.
 
     if (isset($_SERVER['HTTP_REFERER'])) {
         $referer = filter_input(INPUT_SERVER, "HTTP_REFERER", FILTER_SANITIZE_URL);
@@ -373,6 +384,8 @@ function abj404_logRedirectHit($id, $action) {
 function abj404_deleteRedirect($id) {
     global $wpdb;
     $cleanedID = absint(sanitize_text_field($id));
+    
+    // no nonce here because this action is not always user generated.
 
     if ($cleanedID != "" && $cleanedID != '0') {
         $query = $wpdb->prepare("delete from " . $wpdb->prefix . "abj404_redirects where id = %d", $cleanedID);
