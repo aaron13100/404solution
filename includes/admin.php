@@ -854,31 +854,37 @@ function abj404_adminHeader($sub = 'list', $message = '') {
         $class = "nav-tab-active";
     }
     echo "<a href=\"?page=abj404_solution\" title=\"" . __('Page Redirects', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Page Redirects', '404-solution') . "</a>";
+    
     $class = "";
     if ($sub == "captured") {
         $class = "nav-tab-active";
     }
     echo "<a href=\"?page=abj404_solution&subpage=abj404_captured\" title=\"" . __('Captured 404 URLs', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Captured 404 URLs', '404-solution') . "</a>";
+    
     $class = "";
     if ($sub == "logs") {
         $class = "nav-tab-active";
     }
     echo "<a href=\"?page=abj404_solution&subpage=abj404_logs\" title=\"" . __('Redirect & Capture Logs', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Logs', '404-solution') . "</a>";
+    
     $class = "";
     if ($sub == "stats") {
         $class = "nav-tab-active";
     }
     echo "<a href=\"?page=abj404_solution&subpage=abj404_stats\" title=\"" . __('Stats', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Stats', '404-solution') . "</a>";
+    
     $class = "";
     if ($sub == "tools") {
         $class = "nav-tab-active";
     }
     echo "<a href=\"?page=abj404_solution&subpage=abj404_tools\" title=\"" . __('Tools', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Tools', '404-solution') . "</a>";
+    
     $class = "";
     if ($sub == "options") {
         $class = "nav-tab-active";
     }
     echo "<a href=\"?page=abj404_solution&subpage=abj404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . __('Options', '404-solution') . "</a>";
+    
     echo "<hr style=\"border: 0px; border-bottom: 1px solid #DFDFDF; margin-top: 0px; margin-bottom: 0px; \">";
 }
 

@@ -48,11 +48,15 @@ define( 'ABJ404_CAT', 2 );
 define( 'ABJ404_TAG', 3 );
 define( 'ABJ404_EXTERNAL', 4 );
 
-require ABJ404_PATH."includes/functions.php";
-require ABJ404_PATH."includes/frontend.php";
+// help us reference the plugin directory later.
+define("ABJ404_PLUGIN_BASENAME", "" . plugin_basename(__FILE__));
+
+
+require ABJ404_PATH . "includes/functions.php";
+require ABJ404_PATH . "includes/frontend.php";
 
 if (is_admin() ) {
-	require ABJ404_PATH."includes/admin.php";
+    require ABJ404_PATH."includes/admin.php";
 }
 
 /**
