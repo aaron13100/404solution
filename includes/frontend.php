@@ -100,7 +100,6 @@ function abj404_suggestions() {
 }
 
 add_action('template_redirect', 'abj404_process404', 9999);
-
 /**
  * Process the 404s
  */
@@ -119,8 +118,15 @@ function abj404_process404() {
 
     //Get URL data if it's already in our database
     $redirect = abj404_loadRedirectData($requestedURL);
-
-    if (is_404() && $requestedURL != "") {
+    
+    if (isDebug()) {
+        debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " . json_encode($redirect) . 
+                " | is_single(): " . is_single() . " | " . "is_page(): " . is_page() . " | is_feed(): " . is_feed() . 
+                " | is_trackback(): " . is_trackback() . " | is_preview(): " . is_preview() . " | options: " . 
+                json_encode($options));
+    }
+    
+    if ($requestedURL != "") {
         if ($redirect['id'] != '0') {
             // A redirect record exists.
             abj404_ProcessRedirect($redirect);
@@ -159,7 +165,7 @@ function abj404_process404() {
                     if ($type != 0) {
                         $redirect_id = abj404_setupRedirect($requestedURL, ABJ404_AUTO, $type, $permalink['id'], $options['default_redirect'], 0);
                     } else {
-                        error_log("ABJ_404_SOLUTION: Unhandled permalink type: " . esc_html($permalink['type']));
+                        errorMessage("Unhandled permalink type: " . esc_html($permalink['type']));
                     }
                 }
             }
@@ -168,11 +174,20 @@ function abj404_process404() {
                 abj404_logRedirectHit($redirect_id, $permalink['link']);
                 wp_redirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
                 exit;
+                
             } else {
                 // Check for incoming 404 settings.
                 if (isset($options['capture_404']) && $options['capture_404'] == '1') {
                     $redirect_id = abj404_setupRedirect($requestedURL, ABJ404_CAPTURED, 0, 0, $options['default_redirect'], 0);
                     abj404_logRedirectHit($redirect_id, '404');
+                    
+                } else {
+                    if (isDebug()) {
+                        debugMessage("No permalink found to redirect to. capture_404 is off. Requested URL: " . $requestedURL . 
+                                " | Redirect: " . json_encode($redirect) . " | is_single(): " . is_single() . " | " . 
+                                "is_page(): " . is_page() . " | is_feed(): " . is_feed() . " | is_trackback(): " . 
+                                is_trackback() . " | is_preview(): " . is_preview() . " | options: " . json_encode($options));
+                    }
                 }
             }
         }
@@ -238,8 +253,8 @@ function abj404_process404() {
         exit;
     }
 }
-add_filter('redirect_canonical', 'abj404_redirectCanonical', 10, 2);
 
+add_filter('redirect_canonical', 'abj404_redirectCanonical', 10, 2);
 /**
  * Redirect canonicals
  */

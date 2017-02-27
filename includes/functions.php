@@ -548,8 +548,9 @@ function abj404_ProcessRedirect($redirect) {
                 $key = $redirect['final_dest'] . "|CAT";
             } else if ($redirect['type'] == ABJ404_TAG) {
                 $key = $redirect['final_dest'] . "|TAG";
+                
             } else {
-                error_log("ABJ_404_SOLUTION: Unrecognized redirect type: " . esc_html($redirect['type']));
+                errorMessage("Unrecognized redirect type: " . esc_html($redirect['type']));
             }
             if ($key != "") {
                 $permalink = abj404_permalinkInfo($key, 0);
@@ -561,4 +562,34 @@ function abj404_ProcessRedirect($redirect) {
     } else {
         abj404_logRedirectHit(esc_html($redirect['id']), '404');
     }
+}
+
+/** 
+ * @return boolean true if debug mode is on. false otherwise.
+ */
+function isDebug() {
+    $options = abj404_getOptions(1);
+    
+    if (isset($options['debug_mode']) && $options['debug_mode'] == true) {
+        return true;
+    }
+    return false;
+}
+
+/** 
+ * Send a message to the error_log if debug mode is on.
+ * @param type $message
+ */
+function debugMessage($message) {
+    if (isDebug()) {
+        error_log("ABJ-404-SOLUTION: " . $message);
+    }
+}
+
+/** 
+ * Always send a message to the error_log.
+ * @param type $message
+ */
+function errorMessage($message) {
+    error_log("ABJ-404-SOLUTION: " . $message);
 }
