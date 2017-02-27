@@ -96,11 +96,17 @@ function abj404_updateOptions() {
     } else {
         $message .= __('Manual redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<br>";
     }
-
+    
     if ($_POST['remove_matches'] == "1") {
         $options['remove_matches'] = '1';
     } else {
         $options['remove_matches'] = '0';
+    }
+
+    if (isset($_POST['debug_mode']) && $_POST['debug_mode'] == "1") {
+        $options['debug_mode'] = '1';
+    } else {
+        $options['debug_mode'] = '0';
     }
 
     if ($_POST['display_suggest'] == "1") {
@@ -334,11 +340,12 @@ function abj404_getRecords($sub, $tableOptions, $limitEnforced = 1) {
     if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
         if ($sub == "redirects") {
             $query .= "status = " . ABJ404_MANUAL . " or status = " . ABJ404_AUTO;
+            
         } else if ($sub == "captured") {
             $query .= "status = " . ABJ404_CAPTURED . " or status = " . ABJ404_IGNORED;
+            
         } else {
-            error_log("ABJ_404-SOLUTION: Unrecognized sub type.");
-            echo "ABJ_404-SOLUTION: Error: Unrecognized sub type.";
+            errorMessage("Unrecognized sub type: " . esc_html($sub));
         }
     } else {
         $query .= "status = " . sanitize_text_field($tableOptions['filter']);
@@ -442,7 +449,7 @@ function abj404_drawFilters($sub, $tableOptions) {
         } else if ($type == ABJ404_IGNORED) {
             $title = "Ignored 404's";
         } else {
-            error_log("ABJ_404_SOLUTION: Unrecognized redirect type: " . esc_html($type));
+            errorMessage("Unrecognized redirect type: " . esc_html($type));
         }
 
         echo "<li>";
@@ -927,10 +934,11 @@ function abj404_bulkProcess($action, $ids) {
     if ($action == "bulkignore" || $action == "bulkcaptured") {
         if ($action == "bulkignore") {
             $status = ABJ404_IGNORED;
+            
         } else if ($action == "bulkcaptured") {
             $status = ABJ404_CAPTURED;
         } else {
-            error_log("ABJ_404-SOLUTION: Unrecognized bulk action: " + $action);
+            errorMessage("Unrecognized bulk action: " + esc_html($action));
         }
         $count = 0;
         foreach ($ids as $id) {
@@ -944,7 +952,7 @@ function abj404_bulkProcess($action, $ids) {
         } else if ($action == "bulkcaptured") {
             $message = $count . " " . __('URLs marked as captured.', '404-solution');
         } else {
-            error_log("ABJ_404-SOLUTION: Unrecognized bulk action: " + $action);
+            errorMessage("Unrecognized bulk action: " + esc_html($action));
         }
         
     } else if ($action == "bulktrash") {
@@ -958,7 +966,7 @@ function abj404_bulkProcess($action, $ids) {
         $message = $count . " " . __('URLs moved to trash', '404-solution');
         
     } else {
-        error_log("ABJ_404-SOLUTION: Unrecognized bulk action: " + $action);
+        errorMessage("Unrecognized bulk action: " + esc_html($action));
     }
     return $message;
 }
@@ -1454,8 +1462,8 @@ function abj404_adminOptionsPage() {
 
 function abj404_adminOptionsPageGeneralSettings($options) {
     $content = "<p>" . __('DB Version Number', '404-solution') . ": " . esc_html($options['DB_VERSION']) . "</p>";
-    $content .= "<p>" . __('Default redirect type', '404-solution') . ": ";
-    $content .= "<select name=\"default_redirect\">";
+    $content .= "<p><label for=\"default_redirect\">" . __('Default redirect type', '404-solution') . ":</label> ";
+    $content .= "<select name=\"default_redirect\" id=\"default_redirect\">";
     $selectedDefaultRedirect301 = "";
     if ($options['default_redirect'] == '301') {
         $selectedDefaultRedirect301 = " selected";
@@ -1472,23 +1480,29 @@ function abj404_adminOptionsPageGeneralSettings($options) {
     if ($options['capture_404'] == '1') {
         $selectedCapture404 = " checked";
     }
-    $content .= "<p>" . __('Collect incoming 404 URLs', '404-solution') . ": <input type=\"checkbox\" name=\"capture_404\" value=\"1\"" . $selectedCapture404 . "></p>";
+    $content .= "<p><label for=\"capture_404\">" . __('Collect incoming 404 URLs', '404-solution') . ":</label> <input type=\"checkbox\" name=\"capture_404\" id=\"capture_404\" value=\"1\"" . $selectedCapture404 . "></p>";
 
-    $content .= "<p>" . __('Admin notification level', '404-solution') . ": <input type=\"text\" name=\"admin_notification\" value=\"" . esc_attr($options['admin_notification']) . "\" style=\"width: 50px;\"> " . __('Captured URLs (0 Disables Notification)', '404-solution') . "<br>";
+    $content .= "<p><label for=\"admin_notification\">" . __('Admin notification level', '404-solution') . ":</label> <input type=\"text\" name=\"admin_notification\" id=\"admin_notification\" value=\"" . esc_attr($options['admin_notification']) . "\" style=\"width: 50px;\"> " . __('Captured URLs (0 Disables Notification)', '404-solution') . "<br>";
     $content .= __('Display WordPress admin notifications when number of captured URLs goes above specified level', '404-solution') . "</p>";
 
-    $content .= "<p>" . __('Collected 404 URL deletion', '404-solution') . ": <input type=\"text\" name=\"capture_deletion\" value=\"" . esc_attr($options['capture_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
+    $content .= "<p><label for=\"capture_deletion\">" . __('Collected 404 URL deletion', '404-solution') . ":</label> <input type=\"text\" name=\"capture_deletion\" id=\"capture_deletion\" value=\"" . esc_attr($options['capture_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
     $content .= __('Automatically removes 404 URLs that have been captured if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
-    $content .= "<p>" . __('Manual redirect deletion', '404-solution') . ": <input type=\"text\" name=\"manual_deletion\" value=\"" . esc_attr($options['manual_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
+    $content .= "<p><label for=\"manual_deletion\">" . __('Manual redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"manual_deletion\" id=\"manual_deletion\" value=\"" . esc_attr($options['manual_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
     $content .= __('Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
     $selectedRemoveMatches = "";
     if ($options['remove_matches'] == '1') {
         $selectedRemoveMatches = " checked";
     }
-    $content .= "<p>" . __('Remove redirect upon matching permalink', '404-solution') . ": <input type=\"checkbox\" value=\"1\" name=\"remove_matches\"" . $selectedRemoveMatches . "><br>";
+    $content .= "<p><label for=\"remove_matches\">" . __('Remove redirect upon matching permalink', '404-solution') . ":</label> <input type=\"checkbox\" value=\"1\" name=\"remove_matches\" id=\"remove_matches\"" . $selectedRemoveMatches . "><br>";
     $content .= __('Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.', '404-solution') . "</p>";
+
+    $selectedDebugLogging = "";
+    if ($options['debug_mode'] == '1') {
+        $selectedDebugLogging = " checked";
+    }
+    $content .= "<p><label for=\"debug_mode\">" . __('Debug logging', '404-solution') . ":</label> <input type=\"checkbox\" name=\"debug_mode\" id=\"debug_mode\" value=\"1\"" . $selectedDebugLogging . "></p>";
 
     return $content;
 }
@@ -1499,26 +1513,26 @@ function abj404_adminOptionsPage404PageSuggestions($options) {
     if ($options['display_suggest'] == '1') {
         $selectedDisplaySuggest = " checked";
     }
-    $content = "<p>" . __('Turn on 404 suggestions', '404-solution') . ": <input type=\"checkbox\" name=\"display_suggest\" value=\"1\"" . $selectedDisplaySuggest . "><br>";
+    $content = "<p><label for=\"display_suggest\">" . __('Turn on 404 suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"display_suggest\" id=\"display_suggest\" value=\"1\"" . $selectedDisplaySuggest . "><br>";
     $content .= __('Activates the 404 page suggestions function. Only works if the code is in your 404 page template.', '404-solution') . "</p>";
 
     $selectedSuggestCats = "";
     if ($options['suggest_cats'] == '1') {
         $selectedSuggestCats = " checked";
     }
-    $content .= "<p>" . __('Allow category suggestions', '404-solution') . ": <input type=\"checkbox\" name=\"suggest_cats\" value=\"1\"" . $selectedSuggestCats . "><br>";
+    $content .= "<p><label for=\"suggest_cats\">" . __('Allow category suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"suggest_cats\" id=\"suggest_cats\" value=\"1\"" . $selectedSuggestCats . "><br>";
 
     $selectedSuggestTags = "";
     if ($options['suggest_tags'] == '1') {
         $selectedSuggestTags = " checked";
     }
-    $content .= "<p>" . __('Allow tag suggestions', '404-solution') . ": <input type=\"checkbox\" name=\"suggest_tags\" value=\"1\"" . $selectedSuggestTags . "><br>";
+    $content .= "<p><label for=\"suggest_tags\">" . __('Allow tag suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"suggest_tags\" id=\"suggest_tags\" value=\"1\"" . $selectedSuggestTags . "><br>";
 
-    $content .= "<p>" . __('Minimum score of suggestions to display', '404-solution') . ": <input type=\"text\" name=\"suggest_minscore\" value=\"" . esc_attr($options['suggest_minscore']) . "\" style=\"width: 50px;\"></p>"
+    $content .= "<p><label for=\"suggest_minscore\">" . __('Minimum score of suggestions to display', '404-solution') . ":</label> <input type=\"text\" name=\"suggest_minscore\" id=\"suggest_minscore\" value=\"" . esc_attr($options['suggest_minscore']) . "\" style=\"width: 50px;\"></p>"
     ;
-    $content .= "<p>" . __('Maximum number of suggestions to display', '404-solution') . ": <input type=\"text\" name=\"suggest_max\" value=\"" . esc_attr($options['suggest_max']) . "\" style=\"width: 50px;\"></p>";
+    $content .= "<p><label for=\"suggest_max\">" . __('Maximum number of suggestions to display', '404-solution') . ":</label> <input type=\"text\" name=\"suggest_max\" id=\"suggest_max\" value=\"" . esc_attr($options['suggest_max']) . "\" style=\"width: 50px;\"></p>";
 
-    $content .= "<p>" . __('Page suggestions title', '404-solution') . ": <input type=\"text\" name=\"suggest_title\" value=\"" . esc_attr($options['suggest_title']) . "\" style=\"width: 200px;\"></p>";
+    $content .= "<p><label for=\"suggest_title\">" . __('Page suggestions title', '404-solution') . ":</label> <input type=\"text\" name=\"suggest_title\" id=\"suggest_title\" value=\"" . esc_attr($options['suggest_title']) . "\" style=\"width: 200px;\"></p>";
 
     $content .= "<p>" . __('Display Before/After page suggestions', '404-solution') . ": ";
     $content .= "<input type=\"text\" name=\"suggest_before\" value=\"" . esc_attr($options['suggest_before']) . "\" style=\"width: 100px;\"> / ";
@@ -1528,8 +1542,8 @@ function abj404_adminOptionsPage404PageSuggestions($options) {
     $content .= "<input type=\"text\" name=\"suggest_entrybefore\" value=\"" . esc_attr($options['suggest_entrybefore']) . "\" style=\"width: 100px;\"> / ";
     $content .= "<input type=\"text\" name=\"suggest_entryafter\" value=\"" . esc_attr($options['suggest_entryafter']) . "\" style=\"width: 100px;\">";
 
-    $content .= "<p>" . __('Display if no suggestion results', '404-solution') . ": ";
-    $content .= "<input type=\"text\" name=\"suggest_noresults\" value=\"" . esc_attr($options['suggest_noresults']) . "\" style=\"width: 200px;\">";
+    $content .= "<p><label for=\"suggest_noresults\">" . __('Display if no suggestion results', '404-solution') . ":</label> ";
+    $content .= "<input type=\"text\" name=\"suggest_noresults\" id=\"suggest_noresults\" value=\"" . esc_attr($options['suggest_noresults']) . "\" style=\"width: 200px;\">";
 
     return $content;
 }
@@ -1582,32 +1596,32 @@ function abj404_adminOptionsPageAutomaticRedirects($options) {
         $selectedAutoRedirects = " checked";
     }
 
-    $content .= "<p>" . __('Create automatic redirects', '404-solution') . ": <input type=\"checkbox\" name=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><br>";
+    $content .= "<p><label for=\"auto_redirects\">" . __('Create automatic redirects', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_redirects\" id=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><br>";
     $content .= __('Automatically creates redirects based on best possible suggested page.', '404-solution') . "</p>";
 
-    $content .= "<p>" . __('Minimum match score', '404-solution') . ": <input type=\"text\" name=\"auto_score\" value=\"" . esc_attr($options['auto_score']) . "\" style=\"width: 50px;\"><br>";
+    $content .= "<p><label for=\"auto_score\">" . __('Minimum match score', '404-solution') . ":</label> <input type=\"text\" name=\"auto_score\" id=\"auto_score\" value=\"" . esc_attr($options['auto_score']) . "\" style=\"width: 50px;\"><br>";
     $content .= __('Only create an automatic redirect if the suggested page has a score above the specified number', '404-solution') . "</p>";
 
     $selectedAutoCats = "";
     if ($options['auto_cats'] == '1') {
         $selectedAutoCats = " checked";
     }
-    $content .= "<p>" . __('Create automatic redirects for categories', '404-solution') . ": <input type=\"checkbox\" name=\"auto_cats\" value=\"1\"" . $selectedAutoCats . "></p>";
+    $content .= "<p><label for=\"auto_cats\">" . __('Create automatic redirects for categories', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_cats\" id=\"auto_cats\" value=\"1\"" . $selectedAutoCats . "></p>";
 
     $selectedAutoTags = "";
     if ($options['auto_tags'] == '1') {
         $selectedAutoTags = " checked";
     }
-    $content .= "<p>" . __('Create automatic redirects for tags', '404-solution') . ": <input type=\"checkbox\" name=\"auto_tags\" value=\"1\"" . $selectedAutoTags . "></p>";
+    $content .= "<p><label for=\"auto_tags\">" . __('Create automatic redirects for tags', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_tags\" id=\"auto_tags\" value=\"1\"" . $selectedAutoTags . "></p>";
 
     $selectedForcePermaLinks = "";
     if ($options['force_permalinks'] == '1') {
         $selectedForcePermaLinks = " checked";
     }
-    $content .= "<p>" . __('Force current permalinks', '404-solution') . ": <input type=\"checkbox\" name=\"force_permalinks\" value=\"1\"" . $selectedForcePermaLinks . "><br>";
+    $content .= "<p><label for=\"force_permalinks\">" . __('Force current permalinks', '404-solution') . ":</label> <input type=\"checkbox\" name=\"force_permalinks\" id=\"force_permalinks\" value=\"1\"" . $selectedForcePermaLinks . "><br>";
     $content .= __('Creates auto redirects for any url resolving to a post/page that doesn\'t match the current permalinks', '404-solution') . "</p>";
 
-    $content .= "<p>" . __('Auto redirect deletion', '404-solution') . ": <input type=\"text\" name=\"auto_deletion\" value=\"" . esc_attr($options['auto_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
+    $content .= "<p><label for=\"auto_deletion\">" . __('Auto redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"auto_deletion\" id=\"auto_deletion\" value=\"" . esc_attr($options['auto_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
     $content .= __('Removes auto created redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
     return $content;
