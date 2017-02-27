@@ -482,7 +482,7 @@ function abj404_drawPaginationLinks($sub, $tableOptions) {
     $url .= "&orderby=" . $tableOptions['orderby'];
     $url .= "&order=" . $tableOptions['order'];
 
-    if ($tableOptions['filter'] == 0) {
+    if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
         if ($sub == "redirects") {
             $types = array(ABJ404_MANUAL, ABJ404_AUTO);
         } else {
@@ -494,7 +494,14 @@ function abj404_drawPaginationLinks($sub, $tableOptions) {
     }
 
     if ($sub != "logs") {
-        $num_records = abj404_getRecordCount($types);
+        // -1 means Trash. we should create a constant for this value...
+        if ($tableOptions['filter'] == -1) {
+            $num_records = abj404_getRecordCount($types, 1);
+            
+        } else {
+            $num_records = abj404_getRecordCount($types);
+        }
+        
     } else {
         $num_records = abj404_getLogsCount($tableOptions['logsid']);
     }
@@ -504,29 +511,33 @@ function abj404_drawPaginationLinks($sub, $tableOptions) {
     }
 
     echo "<div class=\"tablenav-pages\">";
-    echo "<span class=\"displaying-num\">" . esc_html($num_records) . " " . __('items', '404-solution') . "</span>";
+    $itemsText = sprintf( _n( '%s item', '%s items', $num_records, '404-solution'), $num_records);    
+    echo "<span class=\"displaying-num\">" . " " . $itemsText . "</span>";
     echo "<span class=\"pagination-links\">";
-    $class = "";
+    
+    $classFirstPage = "";
     if ($tableOptions['paged'] == 1) {
-        $class = " disabled";
+        $classFirstPage = " disabled";
     }
     $firsturl = $url;
-    echo "<a href=\"" . esc_url($firsturl) . "\" class=\"first-page" . $class . "\" title=\"" . __('Go to first page', '404-solution') . "\">&laquo;</a>";
-    $class = "";
+    echo "<a href=\"" . esc_url($firsturl) . "\" class=\"first-page" . $classFirstPage . "\" title=\"" . __('Go to first page', '404-solution') . "\">&laquo;</a>";
+    
+    $classPreviousPage = "";
     if ($tableOptions['paged'] == 1) {
-        $class = " disabled";
+        $classPreviousPage = " disabled";
         $prevurl = $url;
     } else {
         $prev = $tableOptions['paged'] - 1;
         $prevurl = $url . "&paged=" . $prev;
     }
-    echo "<a href=\"" . esc_url($prevurl) . "\" class=\"prev-page" . $class . "\" title=\"" . __('Go to previous page', '404-solution') . "\">&lsaquo;</a>";
+    echo "<a href=\"" . esc_url($prevurl) . "\" class=\"prev-page" . $classPreviousPage . "\" title=\"" . __('Go to previous page', '404-solution') . "\">&lsaquo;</a>";
     echo " ";
     echo __('Page', '404-solution') . " " . $tableOptions['paged'] . " " . __('of', '404-solution') . " " . esc_html($total_pages);
     echo " ";
-    $class = "";
+    
+    $classNextPage = "";
     if ($tableOptions['paged'] + 1 > $total_pages) {
-        $class = " disabled";
+        $classNextPage = " disabled";
         if ($tableOptions['paged'] == 1) {
             $nexturl = $url;
         } else {
@@ -536,10 +547,11 @@ function abj404_drawPaginationLinks($sub, $tableOptions) {
         $next = $tableOptions['paged'] + 1;
         $nexturl = $url . "&paged=" . $next;
     }
-    echo "<a href=\"" . esc_url($nexturl) . "\" class=\"next-page" . $class . "\" title=\"" . __('Go to next page', '404-solution') . "\">&rsaquo;</a>";
-    $class = "";
+    echo "<a href=\"" . esc_url($nexturl) . "\" class=\"next-page" . $classNextPage . "\" title=\"" . __('Go to next page', '404-solution') . "\">&rsaquo;</a>";
+    
+    $classLastPage = "";
     if ($tableOptions['paged'] + 1 > $total_pages) {
-        $class = " disabled";
+        $classLastPage = " disabled";
         if ($tableOptions['paged'] == 1) {
             $lasturl = $url;
         } else {
@@ -548,7 +560,7 @@ function abj404_drawPaginationLinks($sub, $tableOptions) {
     } else {
         $lasturl = $url . "&paged=" . $total_pages;
     }
-    echo "<a href=\"" . esc_url($lasturl) . "\" class=\"last-page" . $class . "\" title=\"" . __('Go to last page', '404-solution') . "\">&raquo;</a>";
+    echo "<a href=\"" . esc_url($lasturl) . "\" class=\"last-page" . $classLastPage . "\" title=\"" . __('Go to last page', '404-solution') . "\">&raquo;</a>";
     echo "</span>";
     echo "</div>";
 }

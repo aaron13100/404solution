@@ -62,7 +62,10 @@ msgid "Trash"
 msgstr ""
 
 #: includes/admin.php:460
-msgid "items"
+msgid "%s item"
+msgid_plural "%s items"
+msgstr[0] "%s item"
+msgstr[1] "%s items"
 msgstr ""
 
 #: includes/admin.php:467
