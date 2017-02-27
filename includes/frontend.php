@@ -5,11 +5,22 @@
  *
  */
 
+/** 
+ * Add the Settings link to the WordPress plugins page.
+ * @param type $links
+ * @return type
+ */
+function plugin_add_settings_link($links) {
+    $settings_link = '<a href="options-general.php?page=abj404_solution&subpage=abj404_options">' . __( 'Settings' ) . '</a>';
+    array_unshift($links, $settings_link);
+    return $links;
+}
+add_filter( "plugin_action_links_" . ABJ404_PLUGIN_BASENAME, 'plugin_add_settings_link' );
+
 /**
  * Suggesting 404 content based on defaults and settings
  */
 function abj404_suggestions() {
-
     if (is_404()) {
         $options = abj404_getOptions();
         if (isset($options['display_suggest']) && $options['display_suggest'] == '1') {
@@ -94,7 +105,6 @@ add_action('template_redirect', 'abj404_process404', 9999);
  * Process the 404s
  */
 function abj404_process404() {
-
     // Bail out if not on 404 error page.
     if (!is_404()) {
         return;
@@ -228,7 +238,6 @@ function abj404_process404() {
         exit;
     }
 }
-
 add_filter('redirect_canonical', 'abj404_redirectCanonical', 10, 2);
 
 /**
