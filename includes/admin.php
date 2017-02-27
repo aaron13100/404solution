@@ -269,7 +269,7 @@ function abj404_getTableOptions() {
  * @param int $trashed 1 to only include disabled redirects. 0 to only include enabled redirects.
  * @return int the number of records matching the specified types.
  */
-function abj404_getRecordCount($types = array(), int $trashed = 0) {
+function abj404_getRecordCount($types = array(), $trashed = 0) {
     global $wpdb;
     $recordCount = 0;
 
