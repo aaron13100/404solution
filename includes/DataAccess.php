@@ -244,7 +244,7 @@ class ABJ_404_Solution_DataAccess {
         // no nonce here because redirects are not user generated.
 
         if (isset($_SERVER['HTTP_REFERER'])) {
-            $referer = filter_input(INPUT_SERVER, "HTTP_REFERER", FILTER_SANITIZE_URL);
+            $referer = esc_html($_SERVER['HTTP_REFERER']);
         } else {
             $referer = "";
         }
@@ -252,7 +252,7 @@ class ABJ_404_Solution_DataAccess {
         $wpdb->insert($wpdb->prefix . "abj404_logs", array(
             'redirect_id' => absint($id),
             'timestamp' => esc_html($now),
-            'remote_host' => esc_html(filter_input(INPUT_SERVER, "REMOTE_ADDR", FILTER_SANITIZE_STRING)),
+            'remote_host' => esc_html($_SERVER['REMOTE_ADDR']),
             'referrer' => esc_html($referer),
             'action' => esc_html($action),
                 ), array(
@@ -524,52 +524,59 @@ class ABJ_404_Solution_DataAccess {
         $redirects = $wpdb->prefix . "abj404_redirects";
         $logs = $wpdb->prefix . "abj404_logs";
 
-        $sanity = filter_input(INPUT_POST, "sanity", FILTER_SANITIZE_STRING);
-        if ($sanity == "1") {
-            if (isset($_POST['types']) && '' != $_POST['types']) {
-                $type = filter_input(INPUT_POST, "types", FILTER_SANITIZE_STRING);
-                if (is_array($type)) {
-                    $types = "";
-                    $x = 0;
-                    for ($i = 0; $i < count($type); $i++) {
-                        if (preg_match('/[0-9]+/', $type[$i])) {
-                            if ($x > 0) {
-                                $types .= ",";
-                            }
-                            $types .= $type[$i];
-                            $x++;
-                        }
-                    }
-
-                    if ($types != "") {
-                        $purge = filter_input(INPUT_POST, "purgetype", FILTER_SANITIZE_STRING);
-
-                        if ($purge == "logs" || $purge == "redirects") {
-                            $query = $wpdb->prepare("delete from " . $logs . " where redirect_id in (select id from " . $redirects . " where status in (%s))", esc_sql($types));
-                            $logcount = $wpdb->query($query);
-                            $message = $logcount . " " . __('Log entries were purged.', '404-solution');
-
-                            if ($purge == "redirects") {
-                                $query = $wpdb->prepare("delete from " . $redirects . " where status in (%s)", esc_sql($types));
-                                $count = $wpdb->query($query);
-                                $message .= "<br>";
-                                $message .= $count . " " . __('Redirect entries were purged.', '404-solution');
-                            }
-                        } else {
-                            $message = __('Error: An invalid purge type was selected. Exiting.' . 
-                                    " (" . $purge . ")", '404-solution');
-                        }
-                    } else {
-                        $message = __('Error: No valid redirect types were selected. Exiting.', '404-solution');
-                    }
-                } else {
-                    $message = __('An unknown error has occurred.', '404-solution');
-                }
-            } else {
-                $message = __('Error: No redirect types were selected. No purges will be done.', '404-solution');
-            }
-        } else {
+        
+        if ($_POST['sanity'] != "1") {
             $message = __('Error: You didn\'t check the I understand checkbox. No purging of records for you!', '404-solution');
+            return $message;
+        }
+        
+        if (empty($_POST['types'])) {
+            $message = __('Error: No redirect types were selected. No purges will be done.', '404-solution');
+            return $message;
+        }
+        $type = sanitize_text_field($_POST['types']);
+
+        if (!is_array($type)) {
+            $message = __('An unknown error has occurred.', '404-solution');
+            return $message;
+        }
+
+        $types = "";
+        $x = 0;
+        for ($i = 0; $i < count($type); $i++) {
+            if (preg_match('/[0-9]+/', $type[$i])) {
+                if ($x > 0) {
+                    $types .= ",";
+                }
+                $types .= $type[$i];
+                $x++;
+            }
+        }
+
+        if ($types == "") {
+            $message = __('Error: No valid redirect types were selected. Exiting.', '404-solution');
+            ABJ_404_Solution_Functions::debugMessage("Error: No valid redirect types were selected. Types: " .
+                    wp_kses(json_encode($types)));
+            return $message;
+        }
+        $purge = sanitize_text_field($_POST['sanity']);
+
+        if ($purge != "logs" && $purge != "redirects") {
+            $message = __('Error: An invalid purge type was selected. Exiting.', '404-solution');
+            ABJ_404_Solution_Functions::debugMessage("Error: An invalid purge type was selected. Type: " .
+                    wp_kses(json_encode($purge)));
+            return $message;
+        }
+        
+        $query = $wpdb->prepare("delete from " . $logs . " where redirect_id in (select id from " . $redirects . " where status in (%s))", esc_sql($types));
+        $logcount = $wpdb->query($query);
+        $message = $logcount . " " . __('Log entries were purged.', '404-solution');
+
+        if ($purge == "redirects") {
+            $query = $wpdb->prepare("delete from " . $redirects . " where status in (%s)", esc_sql($types));
+            $count = $wpdb->query($query);
+            $message .= "<br>";
+            $message .= $count . " " . __('Redirect entries were purged.', '404-solution');
         }
 
         return $message;
@@ -602,10 +609,10 @@ class ABJ_404_Solution_DataAccess {
      */
     function getPostOrGetSanitize($name, $defaultValue) {
         if (isset($_GET[$name])) {
-            return filter_input(INPUT_GET, $name, FILTER_SANITIZE_STRING);
+            return sanitize_text_field($_GET[$name]);
 
         } else if (isset($_POST[$name])) {
-            return filter_input(INPUT_POST, $name, FILTER_SANITIZE_STRING);
+            return sanitize_text_field($_POST[$name]);
 
         } else {
             return $defaultValue;
@@ -692,13 +699,13 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         
         $wpdb->update($wpdb->prefix . "abj404_redirects", array(
-            'url' => esc_url(filter_input(INPUT_POST, "url", FILTER_SANITIZE_URL)),
+            'url' => esc_url($_POST['url']),
             'status' => ABJ404_MANUAL,
             'type' => esc_html($type),
             'final_dest' => esc_html($dest),
-            'code' => esc_html(filter_input(INPUT_POST, "code", FILTER_SANITIZE_STRING))
+            'code' => esc_attr($_POST['code'])
                 ), array(
-            'id' => absint(filter_input(INPUT_POST, "id", FILTER_VALIDATE_INT))
+            'id' => absint($_POST['id'])
                 ), array(
             '%s',
             '%d',

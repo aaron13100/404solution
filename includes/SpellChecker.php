@@ -73,7 +73,7 @@ class ABJ_404_Solution_SpellChecker {
             }
         }
 
-        // TODO: why sort this here? the order shouldn't matter.
+        // This is sorted so that the link with the highest score will be first when iterating through.
         arsort($permalinks);
         
         return $permalinks;

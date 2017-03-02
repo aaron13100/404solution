@@ -29,6 +29,12 @@ msgstr ""
 msgid "Error: Invalid value specified for default redirect type"
 msgstr ""
 
+msgid "Error: Bad trash operation specified."
+msgstr ""
+
+msgid "Error: Bad ignore operation specified."
+msgstr ""
+
 #: includes/admin.php:86
 msgid "Collected URL deletion value must be a number greater or equal to zero"
 msgstr ""

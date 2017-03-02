@@ -37,7 +37,7 @@ class ABJ_404_Solution_View {
         // --------------------------------------------------------------------
         // Handle Post Actions
         if (isset($_POST['action'])) {
-            $action = filter_input(INPUT_POST, "action", FILTER_SANITIZE_STRING);
+            $action = sanitize_text_field($_POST['action']);
         } else {
             $action = "";
         }
@@ -66,7 +66,7 @@ class ABJ_404_Solution_View {
         // Deal With Page Tabs
         if ($sub == "") {
             if (isset($_GET['subpage'])) {
-                $sub = strtolower(filter_input(INPUT_GET, "subpage", FILTER_SANITIZE_STRING));
+                $sub = strtolower(sanitize_text_field($_GET['subpage']));
             } else {
                 $sub = "";
             }
@@ -454,9 +454,9 @@ class ABJ_404_Solution_View {
         echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" /> <BR/>";
 
         if (isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {
-            $recnum = absint(filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT));
+            $recnum = absint($_GET['id']);
         } else if (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
-            $recnum = absint(filter_input(INPUT_POST, "id", FILTER_VALIDATE_INT));
+            $recnum = absint($_POST['id']);
         } else {
             ABJ_404_Solution_Functions::errorMessage("No ID found in GET or POSt data for edit request. (" . esc_html($_POST['id']) . ")");
             return;
@@ -480,7 +480,9 @@ class ABJ_404_Solution_View {
         echo "<form method=\"POST\" action=\"" . esc_attr($link) . "\">";
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
         echo "<input type=\"hidden\" name=\"id\" value=\"" . esc_attr($redirect['id']) . "\">";
-        echo "<strong><label for=\"url\">" . __('URL', '404-solution') . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . esc_attr($redirect['url']) . "\"> (" . __('Required', '404-solution') . ")<br>";
+        echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
+                ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
+                esc_attr($redirect['url']) . "\"> (" . __('Required', '404-solution') . ")<br>";
         echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</strong> <select id=\"dest\" name=\"dest\">";
         $selected = "";
         if ($redirect['type'] == ABJ404_EXTERNAL) {
@@ -1000,12 +1002,19 @@ class ABJ_404_Solution_View {
 
             echo "<form method=\"POST\" action=\"" . $link . "\">";
             echo "<input type=\"hidden\" name=\"action\" value=\"addRedirect\">";
-            if (isset($_POST['url'])) {
-                $postedURL = filter_input(INPUT_POST, "url", FILTER_SANITIZE_URL);
+
+            $urlPlaceholder = parse_url(get_home_url(), PHP_URL_PATH) . "/example";
+
+            if (!empty($_POST['url'])) {
+                $postedURL = esc_url($_POST['url']);
             } else {
-                $postedURL = "";
+                $postedURL = $urlPlaceholder;
             }
-            echo "<strong><label for=\"url\">" . __('URL', '404-solution') . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . esc_attr($postedURL) . "\"> (" . __('Required', '404-solution') . ")<br>";
+            
+            echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
+                    ":</label></strong> <input id=\"url\" placeholder=\"" . $urlPlaceholder . 
+                    "\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
+                    esc_attr($postedURL) . "\"> (" . __('Required', '404-solution') . ")<br>";
             echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</strong> <select id=\"dest\" name=\"dest\">";
             $selected = "";
             if (isset($_POST['dest']) && $_POST['dest'] == "EXTERNAL") {
@@ -1078,7 +1087,7 @@ class ABJ_404_Solution_View {
 
             echo "</select><br>";
             if (isset($_POST['external'])) {
-                $postedExternal = filter_input(INPUT_POST, "external", FILTER_SANITIZE_URL);
+                $postedExternal = esc_url($_POST['external']);
             } else {
                 $postedExternal = "";
             }
@@ -1087,7 +1096,7 @@ class ABJ_404_Solution_View {
             if ((!isset($_POST['code']) ) || $_POST['code'] == "") {
                 $codeselected = $options['default_redirect'];
             } else {
-                $codeselected = filter_input(INPUT_POST, "code", FILTER_SANITIZE_STRING);
+                $codeselected = sanitize_text_field($_POST['code']);
             }
             $codes = array(301, 302);
             foreach ($codes as $code) {
@@ -1123,17 +1132,17 @@ class ABJ_404_Solution_View {
         $content .= "<label for=\"dest404page\">" . __('Redirect all unhandled 404s to', '404-solution') . ":</label> <select id=\"dest404page\" name=\"dest404page\">";
 
         $userSelected = (isset($options['dest404page']) ? $options['dest404page'] : null);
-        if ($userSelected == 'none') {
+        if ($userSelected == 0) {
             $selected = "selected";
         }
 
-        $content .= "<option value=\"none\"" . $selected . ">" . "Default 404 Page (Unchanged)" . "</option>";
+        $content .= "<option value=\"0\"" . $selected . ">" . "Default 404 Page (Unchanged)" . "</option>";
 
         $rows = get_pages();
         foreach ($rows as $row) {
             $id = $row->ID;
             $theTitle = $row->post_title;
-            $thisval = $id . "|POST";
+            $thisval = $id;
 
             $parent = $row->post_parent;
             while ($parent != 0) {
