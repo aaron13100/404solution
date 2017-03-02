@@ -43,7 +43,7 @@ class ABJ_404_Solution_WordPress_Connector {
             $options = $abj404logic->getOptions();
             if (isset($options['display_suggest']) && $options['display_suggest'] == '1') {
                 echo "<div class=\"suggest-404s\">";
-                $requestedURL = esc_url(filter_input(INPUT_SERVER, "REQUEST_URI", FILTER_SANITIZE_URL));
+                $requestedURL = esc_url($_SERVER['REQUEST_URI']);
 
                 $urlParts = parse_url($requestedURL);
                 $permalinks = $abj404spellChecker->findMatchingPosts($urlParts['path'], $options['suggest_cats'], $options['suggest_tags']);
@@ -125,17 +125,18 @@ class ABJ_404_Solution_WordPress_Connector {
         if (!is_404()) {
             return;
         }
-
+        
         global $abj404dao;
         global $abj404logic;
         global $abj404spellChecker;
+        global $abj404connector;
         
         $options = $abj404logic->getOptions();
 
-        $urlRequest = esc_url(preg_replace('/\?.*/', '', filter_input(INPUT_SERVER, "REQUEST_URI", FILTER_SANITIZE_URL)));
+        $urlRequest = esc_url(preg_replace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI'])));
         $urlParts = parse_url($urlRequest);
         $requestedURL = $urlParts['path'];
-        $requestedURL .= $this->sortQueryParts($urlParts);
+        $requestedURL .= $abj404connector->sortQueryParts($urlParts);
 
         //Get URL data if it's already in our database
         $redirect = $abj404dao->getRedirectDataFromURL($requestedURL);
@@ -150,7 +151,7 @@ class ABJ_404_Solution_WordPress_Connector {
         if ($requestedURL != "") {
             if ($redirect['id'] != '0') {
                 // A redirect record exists.
-                $this->processRedirect($redirect);
+                $abj404connector->processRedirect($redirect);
             } else {
                 // No redirect record.
                 $found = 0;
@@ -164,11 +165,13 @@ class ABJ_404_Solution_WordPress_Connector {
 
                         if ($permalink['score'] >= $minScore) {
                             $found = 1;
-                            // TODO: this should use the highest score, not the first found?
+                            // this uses the first found insstead of the highest score because the links were
+                            // previously sorted so that the highest score would be first.
                             break;
                         } else {
                             // Score not high enough.
-                            // TODO: verify: why is this in a loop if both cases break??
+                            // since the links were previously sorted so that the highest score would be first, 
+                            // we can just stop looking.
                             break;
                         }
                     }
@@ -235,13 +238,13 @@ class ABJ_404_Solution_WordPress_Connector {
                         }
                     }
 
-                    $perma_link .= $this->sortQueryParts($urlParts);
+                    $perma_link .= $abj404connector->sortQueryParts($urlParts);
 
                     // Check for forced permalinks.
                     if (isset($options['force_permalinks']) && isset($options['auto_redirects']) && $options['force_permalinks'] == '1' && $options['auto_redirects'] == '1') {
                         if ($requestedURL != $perma_link) {
                             if ($redirect['id'] != '0') {
-                                $this->processRedirect($redirect);
+                                $abj404connector->processRedirect($redirect);
                             } else {
                                 $redirect_id = $abj404dao->setupRedirect(esc_url($requestedURL), ABJ404_AUTO, ABJ404_POST, $permalink['id'], $options['default_redirect'], 0);
                                 $abj404dao->logRedirectHit($redirect_id, $permalink['link']);
@@ -264,8 +267,8 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         // if there's a default 404 page specified then use that.
-        $userSelected = (isset($options['dest404page']) ? $options['dest404page'] : 'none');
-        if ($userSelected != "none") {
+        $userSelected = (isset($options['dest404page']) ? $options['dest404page'] : 0);
+        if ($userSelected > 0) {
             $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($userSelected . "|POST", 0);
             $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_AUTO, ABJ404_POST, $permalink['id'], $options['default_redirect'], 0);
             // Perform actual redirect.
@@ -275,14 +278,16 @@ class ABJ_404_Solution_WordPress_Connector {
         }
     }
 
-    /** Sort each of the URL arguments by key. 
-     * TODO: why even do this? the functionality should not change based on the order.
+    /** Sort the QUERY parts of the requested URL. 
+     * This is in place because these are stored as part of the URL in the database and used for forwarding to another page.
+     * This is done because sometimes different query parts result in a completely different page. Therefore we have to 
+     * take into account the query part of the URL (?query=part) when looking for a page to redirect to. 
+     * 
+     * Here we sort the query parts so that the same request will always look the same.
      * @param type $urlParts
      * @return string
      */
     function sortQueryParts($urlParts) {
-        return;
-        
         if (!isset($urlParts['query']) || $urlParts['query'] == "") {
             return "";
         }
@@ -326,6 +331,7 @@ class ABJ_404_Solution_WordPress_Connector {
      */
     static function redirectCanonical($redirect, $request) {
         global $abj404dao;
+        global $abj404connector;
         
         if (is_single() || is_page()) {
             if (!is_feed() && !is_trackback() && !is_preview()) {
@@ -338,17 +344,17 @@ class ABJ_404_Solution_WordPress_Connector {
                     $options[$key] = wp_kses_post($value);
                 }
 
-                $urlRequest = esc_url(filter_input(INPUT_SERVER, "REQUEST_URI", FILTER_SANITIZE_URL));
+                $urlRequest = esc_url($_SERVER['REQUEST_URI']);
                 $urlParts = parse_url($urlRequest);
 
                 $requestedURL = $urlParts['path'];
-                $requestedURL .= $this->sortQueryParts($urlParts);
+                $requestedURL .= $abj404connector->sortQueryParts($urlParts);
 
                 // Get URL data if it's already in our database.
                 $data = $abj404dao->getRedirectDataFromURL($requestedURL);
 
                 if ($data['id'] != '0') {
-                    $this->processRedirect($data);
+                    $abj404connector->processRedirect($data);
                 } else {
                     if ($options['auto_redirects'] == '1' && $options['force_permalinks'] == '1') {
                         $theID = get_the_ID();
@@ -370,7 +376,7 @@ class ABJ_404_Solution_WordPress_Connector {
                             }
                         }
 
-                        $perma_link .= $this->sortQueryParts($urlParts);
+                        $perma_link .= $abj404connector->sortQueryParts($urlParts);
 
                         if ($requestedURL != $perma_link) {
                             $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_AUTO, ABJ404_POST, $theID, $options['default_redirect'], 0);
