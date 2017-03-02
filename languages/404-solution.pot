@@ -68,6 +68,13 @@ msgstr[0] "%s item"
 msgstr[1] "%s items"
 msgstr ""
 
+msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
+msgid_plural "There are <a>%s captured 404 URLs</a> that need to be processed."
+msgstr[0] "There is <a>%s captured 404 URL</a> that needs to be processed."
+msgstr[1] "There are <a>%s captured 404 URLs</a> that need to be processed."
+msgstr ""
+
+
 #: includes/admin.php:467
 msgid "Go to first page"
 msgstr ""

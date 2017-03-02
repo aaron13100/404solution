@@ -33,9 +33,6 @@ Convert your 404 traffic by providing your visitors with a better browsing exper
 2. Activate the plugin.
 3. Use the `Settings -> 404 Solution` options page to set the options.
 
-For the `suggested pages` feature to work you need to edit your 404.php template file to include the following code:
-`<?php if (function_exists( 'abj404_suggestions' ) ) { abj404_suggestions(); } ?>`
-
 == Frequently Asked Questions ==
 
 = How long does it take for 404 URLs to start showing up? =
