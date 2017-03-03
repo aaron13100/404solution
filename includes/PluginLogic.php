@@ -486,17 +486,20 @@ class ABJ_404_Solution_PluginLogic {
             if ($_POST['dest'] == "EXTERNAL") {
                 $type = ABJ404_EXTERNAL;
                 $dest = esc_url($_POST['external']);
-                ;
+                
             } else {
-                $info = explode("|", esc_url($_POST['dest']));
+                $info = explode("|", sanitize_text_field($_POST['dest']));
                 if (count($info) == 2) {
-                    $dest = $info[0];
+                    $dest = absint($info[0]);
                     if ($info[1] == "POST") {
                         $type = ABJ404_POST;
                     } else if ($info[1] == "CAT") {
                         $type = ABJ404_CAT;
                     } else if ($info[1] == "TAG") {
                         $type = ABJ404_TAG;
+                    } else {
+                        ABJ_404_Solution_Functions::debugMessage("Unrecognized redirect type requested: " . 
+                                esc_html($info[1]));
                     }
                 }
             }

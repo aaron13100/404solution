@@ -26,7 +26,7 @@ class ABJ_404_Solution_View {
      * @global type $abj404view
      * @global type $abj404logic
      */
-    static function handleAdminPageActionAndDisplay() {
+    static function handleMainAdminPageActionAndDisplay() {
         if (!is_admin() || !current_user_can('administrator')) { return; }
         
         global $abj404view;
@@ -458,7 +458,8 @@ class ABJ_404_Solution_View {
         } else if (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
             $recnum = absint($_POST['id']);
         } else {
-            ABJ_404_Solution_Functions::errorMessage("No ID found in GET or POSt data for edit request. (" . esc_html($_POST['id']) . ")");
+            echo __('Error: No ID found for edit request.', '404-solution');
+            ABJ_404_Solution_Functions::errorMessage("No ID found in GET or POST data for edit request.");
             return;
         }
 

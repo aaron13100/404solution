@@ -489,7 +489,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         // this adds the settings link at Settings->404 Solution.
         add_options_page('404 Solution', $pageName, 'manage_options', 'abj404_solution', 
-                'ABJ_404_Solution_View::handleAdminPageActionAndDisplay');
+                'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
     }    
 
 }
