@@ -70,11 +70,20 @@ msgstr ""
 msgid "Trash"
 msgstr ""
 
+msgid "(Default 404 Page)"
+msgstr ""
+
 #: includes/admin.php:460
 msgid "%s item"
 msgid_plural "%s items"
 msgstr[0] "%s item"
 msgstr[1] "%s items"
+msgstr ""
+
+msgid "%s log entry was purged."
+msgid_plural "%s log entries were purged."
+msgstr[0] "%s log entry was purged."
+msgstr[1] "%s log entries were purged."
 msgstr ""
 
 msgid "There is <a>%s captured 404 URL</a> that needs to be processed."

@@ -41,7 +41,7 @@ class ABJ_404_Solution_WordPress_Connector {
         
         if (is_404()) {
             $options = $abj404logic->getOptions();
-            if (isset($options['display_suggest']) && $options['display_suggest'] == '1') {
+            if (@$options['display_suggest'] == '1') {
                 echo "<div class=\"suggest-404s\">";
                 $requestedURL = esc_url($_SERVER['REQUEST_URI']);
 
@@ -155,7 +155,7 @@ class ABJ_404_Solution_WordPress_Connector {
             } else {
                 // No redirect record.
                 $found = 0;
-                if (isset($options['auto_redirects']) && $options['auto_redirects'] == '1') {
+                if (@$options['auto_redirects'] == '1') {
                     // Site owner wants automatic redirects.
                     $permalinks = $abj404spellChecker->findMatchingPosts($requestedURL, $options['auto_cats'], $options['auto_tags']);
                     $minScore = $options['auto_score'];
@@ -201,7 +201,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
                 } else {
                     // Check for incoming 404 settings.
-                    if (isset($options['capture_404']) && $options['capture_404'] == '1') {
+                    if (@$options['capture_404'] == '1') {
                         $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_CAPTURED, 0, 0, $options['default_redirect'], 0);
                         $abj404dao->logRedirectHit($redirect_id, '404');
 
@@ -241,7 +241,7 @@ class ABJ_404_Solution_WordPress_Connector {
                     $perma_link .= $abj404connector->sortQueryParts($urlParts);
 
                     // Check for forced permalinks.
-                    if (isset($options['force_permalinks']) && isset($options['auto_redirects']) && $options['force_permalinks'] == '1' && $options['auto_redirects'] == '1') {
+                    if (@$options['force_permalinks'] == '1' && @$options['auto_redirects'] == '1') {
                         if ($requestedURL != $perma_link) {
                             if ($redirect['id'] != '0') {
                                 $abj404connector->processRedirect($redirect);
@@ -288,7 +288,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return string
      */
     function sortQueryParts($urlParts) {
-        if (!isset($urlParts['query']) || $urlParts['query'] == "") {
+        if (@$urlParts['query'] == "") {
             return "";
         }
         $url = "";
@@ -452,7 +452,7 @@ class ABJ_404_Solution_WordPress_Connector {
         global $abj404view;
 
         if (current_user_can('manage_options')) {
-            if (( isset($_GET['page']) && $_GET['page'] == "abj404_solution" ) || ( $pagenow == 'index.php' && (!isset($_GET['page']) ) )) {
+            if (( @$_GET['page'] == "abj404_solution" ) || ( $pagenow == 'index.php' && (!isset($_GET['page']) ) )) {
                 $options = $abj404logic->getOptions();
                 if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
                     $captured = $abj404dao->getCapturedCount();

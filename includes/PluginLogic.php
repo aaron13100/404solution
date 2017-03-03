@@ -245,7 +245,7 @@ class ABJ_404_Solution_PluginLogic {
         $message = "";
         
         //Handle Delete Functionality
-        if (isset($_GET['remove']) && $_GET['remove'] == 1) {
+        if (@$_GET['remove'] == 1) {
             if (check_admin_referer('abj404_removeRedirect') && is_admin()) {
                 if (preg_match('/[0-9]+/', $_GET['id'])) {
                     $abj404dao->deleteRedirect(absint($_GET['id']));
@@ -310,7 +310,7 @@ class ABJ_404_Solution_PluginLogic {
         $message = "";
         
         //Handle edit posts
-        if (isset($_POST['action']) && $_POST['action'] == "editRedirect") {
+        if (@$_POST['action'] == "editRedirect") {
             if (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
                 if (check_admin_referer('abj404editRedirect') && is_admin()) {
                     $message = $this->updateRedirectData();
@@ -443,7 +443,7 @@ class ABJ_404_Solution_PluginLogic {
                     }
                 } else {
                     ABJ_404_Solution_Functions::errorMessage("Unexpected info while updating redirect: " . 
-                            wp_kses(json_encode($info)));
+                            wp_kses_post(json_encode($info)));
                 }
             }
 
@@ -536,7 +536,7 @@ class ABJ_404_Solution_PluginLogic {
 
         $tableOptions['filter'] = $abj404dao->getPostOrGetSanitize("filter", "");
         if ($tableOptions['filter'] == "") {
-            if (isset($_GET['subpage']) && $_GET['subpage'] == 'abj404_captured') {
+            if (@$_GET['subpage'] == 'abj404_captured') {
                 $tableOptions['filter'] = ABJ404_CAPTURED;
             } else {
                 $tableOptions['filter'] = '0';
@@ -545,29 +545,25 @@ class ABJ_404_Solution_PluginLogic {
 
         if (isset($_GET['orderby'])) {
             $tableOptions['orderby'] = esc_sql($_GET['orderby']);
+        } else if (@$_GET['subpage'] == "abj404_logs") {
+            $tableOptions['orderby'] = "timestamp";
         } else {
-            if (isset($_GET['subpage']) && $_GET['subpage'] == "abj404_logs") {
-                $tableOptions['orderby'] = "timestamp";
-            } else {
-                $tableOptions['orderby'] = "url";
-            }
+            $tableOptions['orderby'] = "url";
         }
 
         if (isset($_GET['order'])) {
             $tableOptions['order'] = esc_sql($_GET['order']);
+        } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
+            $tableOptions['order'] = "DESC";
         } else {
-            if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
-                $tableOptions['order'] = "DESC";
-            } else {
-                $tableOptions['order'] = "ASC";
-            }
+            $tableOptions['order'] = "ASC";
         }
 
         $tableOptions['paged'] = $abj404dao->getPostOrGetSanitize("paged", 1);
 
         $tableOptions['perpage'] = $abj404dao->getPostOrGetSanitize("perpage", ABJ404_OPTION_DEFAULT_PERPAGE);
 
-        if (isset($_GET['subpage']) && $_GET['subpage'] == "abj404_logs") {
+        if (@$_GET['subpage'] == "abj404_logs") {
             if (isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {                
                 $tableOptions['logsid'] = absint($_GET['id']);
             } else {
@@ -622,7 +618,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         $options['remove_matches'] = ($_POST['remove_matches'] == "1") ? 1 : 0;
-        $options['debug_mode'] = ($_POST['debug_mode'] == "1") ? 1 : 0;
+        $options['debug_mode'] = (@$_POST['debug_mode'] == "1") ? 1 : 0;
         $options['display_suggest'] = ($_POST['display_suggest'] == "1") ? 1 : 0;
         $options['suggest_cats'] = ($_POST['suggest_cats'] == "1") ? 1 : 0;
         $options['suggest_tags'] = ($_POST['suggest_tags'] == "1") ? 1 : 0;
@@ -653,9 +649,9 @@ class ABJ_404_Solution_PluginLogic {
             $options['dest404page'] = 0;
         }
 
-        $options['auto_redirects'] = ($_POST['auto_redirects'] == "1") ? 1 : 0;
-        $options['auto_cats'] = ($_POST['auto_cats'] == "1") ? 1 : 0;
-        $options['auto_tags'] = ($_POST['auto_tags'] == "1") ? 1 : 0;
+        $options['auto_redirects'] = (@$_POST['auto_redirects'] == "1") ? 1 : 0;
+        $options['auto_cats'] = (@$_POST['auto_cats'] == "1") ? 1 : 0;
+        $options['auto_tags'] = (@$_POST['auto_tags'] == "1") ? 1 : 0;
 
         if (preg_match('/^[0-9]+$/', $_POST['auto_score']) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
             $options['auto_score'] = absint($_POST['auto_score']);
@@ -669,7 +665,7 @@ class ABJ_404_Solution_PluginLogic {
             $message .= __('Auto redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<br>";
         }
 
-        $options['force_permalinks'] = ($_POST['force_permalinks'] == "1") ? 1 : 0;
+        $options['force_permalinks'] = (@$_POST['force_permalinks'] == "1") ? 1 : 0;
 
         /** Sanitize all data. */
         foreach ($options as $key => $option) {

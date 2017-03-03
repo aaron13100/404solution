@@ -36,11 +36,7 @@ class ABJ_404_Solution_View {
 
         // --------------------------------------------------------------------
         // Handle Post Actions
-        if (isset($_POST['action'])) {
-            $action = sanitize_text_field($_POST['action']);
-        } else {
-            $action = "";
-        }
+        $action = sanitize_text_field(@$_POST['action']);
 
         // this should really not pass things by reference so it can be more object oriented (encapsulation etc).
         $message = "";
@@ -65,11 +61,7 @@ class ABJ_404_Solution_View {
 
         // Deal With Page Tabs
         if ($sub == "") {
-            if (isset($_GET['subpage'])) {
-                $sub = strtolower(sanitize_text_field($_GET['subpage']));
-            } else {
-                $sub = "";
-            }
+            $sub = strtolower(sanitize_text_field(@$_GET['subpage']));
         }
         if ($sub == "abj404_options") {
             $sub = "options";
@@ -1031,7 +1023,7 @@ class ABJ_404_Solution_View {
                     esc_attr($postedURL) . "\"> (" . __('Required', '404-solution') . ")<br>";
             echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</strong> <select id=\"dest\" name=\"dest\">";
             $selected = "";
-            if (isset($_POST['dest']) && $_POST['dest'] == "EXTERNAL") {
+            if (@$_POST['dest'] == "EXTERNAL") {
                 $selected = " selected";
             }
             echo "<option value=\"EXTERNAL\"" . $selected . ">" . __('External Page', '404-solution') . "</options>";
@@ -1043,7 +1035,7 @@ class ABJ_404_Solution_View {
                 $thisval = $id . "|POST";
 
                 $selected = "";
-                if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
+                if (@$_POST['dest'] == $thisval) {
                     $selected = " selected";
                 }
                 echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Post', '404-solution') . ": " . esc_html($theTitle) . "</option>";
@@ -1067,7 +1059,7 @@ class ABJ_404_Solution_View {
                 }
 
                 $selected = "";
-                if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
+                if (@$_POST['dest'] == $thisval) {
                     $selected = " selected";
                 }
                 echo "<option value=\"" . esc_url($thisval) . "\"" . $selected . ">" . __('Page', '404-solution') . ": " . esc_html($theTitle) . "</option>";
@@ -1080,7 +1072,7 @@ class ABJ_404_Solution_View {
                 $thisval = $id . "|CAT";
 
                 $selected = "";
-                if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
+                if (@$_POST['dest'] == $thisval) {
                     $selected = " selected";
                 }
                 echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Category', '404-solution') . ": " . esc_html($theTitle) . "</option>";
@@ -1093,21 +1085,18 @@ class ABJ_404_Solution_View {
                 $thisval = $id . "|TAG";
 
                 $selected = "";
-                if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
+                if (@$_POST['dest'] == $thisval) {
                     $selected = " selected";
                 }
                 echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Tag', '404-solution') . ": " . esc_html($theTitle) . "</option>";
             }
 
             echo "</select><br>";
-            if (isset($_POST['external'])) {
-                $postedExternal = esc_url($_POST['external']);
-            } else {
-                $postedExternal = "";
-            }
+            $postedExternal = esc_url(@$_POST['external']);
+            
             echo "<strong><label for=\"external\">" . __('External URL', '404-solution') . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . esc_attr($postedExternal) . "\"> (" . __('Required if Redirect to is set to External Page', '404-solution') . ")<br>";
             echo "<strong><label for=\"code\">" . __('Redirect Type', '404-solution') . ":</label></strong> <select id=\"code\" name=\"code\">";
-            if ((!isset($_POST['code']) ) || $_POST['code'] == "") {
+            if (@$_POST['code'] == "") {
                 $codeselected = $options['default_redirect'];
             } else {
                 $codeselected = sanitize_text_field($_POST['code']);
@@ -1146,7 +1135,7 @@ class ABJ_404_Solution_View {
             $selected = "selected";
         }
 
-        $content .= "<option value=\"0\"" . $selected . ">" . "Default 404 Page (Unchanged)" . "</option>";
+        $content .= "<option value=\"0\"" . $selected . ">" . __('(Default 404 Page)', '404-solution') . "</option>";
 
         $rows = get_pages();
         foreach ($rows as $row) {

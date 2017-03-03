@@ -39,10 +39,7 @@ class ABJ_404_Solution_Functions {
         global $abj404logic;
         $options = $abj404logic->getOptions(1);
 
-        if (isset($options['debug_mode']) && $options['debug_mode'] == true) {
-            return true;
-        }
-        return false;
+        return (@$options['debug_mode'] == true);
     }
     
     /** Send a message to the error_log if debug mode is on. 
