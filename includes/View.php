@@ -1011,7 +1011,7 @@ class ABJ_404_Solution_View {
 
             $urlPlaceholder = parse_url(get_home_url(), PHP_URL_PATH) . "/example";
 
-            if (!empty($_POST['url'])) {
+            if (isset($_POST['url']) && $_POST['url'] != '') {
                 $postedURL = esc_url($_POST['url']);
             } else {
                 $postedURL = $urlPlaceholder;

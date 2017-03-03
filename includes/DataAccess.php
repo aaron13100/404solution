@@ -526,7 +526,7 @@ class ABJ_404_Solution_DataAccess {
             return $message;
         }
         
-        if (empty($_POST['types'])) {
+        if (!isset($_POST['types']) || $_POST['types'] == '') {
             $message = __('Error: No redirect types were selected. No purges will be done.', '404-solution');
             return $message;
         }
