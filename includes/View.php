@@ -443,12 +443,16 @@ class ABJ_404_Solution_View {
         echo "</div>";
     }
     
-    /**
+    /** 
      * @global type $abj404dao
+     * @global type $abj404logic
      * @return type
      */
     function echoAdminEditRedirectPage() {
         global $abj404dao;
+        global $abj404logic;
+        
+        $options = $abj404logic->getOptions();
 
         // this line assures that text will appear below the page tabs at the top.
         echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" /> <BR/>";
@@ -504,13 +508,48 @@ class ABJ_404_Solution_View {
             echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Post', '404-solution') . ": " . $theTitle . "</option>";
         }
 
+        $this->echoAdminEditRedirectPageSelects($redirect);
+
+        echo "</select><br>";
+        $final = "";
+        if ($redirect['type'] == ABJ404_EXTERNAL) {
+            $final = $redirect['final_dest'];
+        }
+        echo "<strong><label for=\"external\">" . __('External URL', '404-solution') . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . $final . "\"> (" . __('Required if Redirect to is set to External Page', '404-solution') . ")<br>";
+        echo "<strong><label for=\"code\">" . __('Redirect Type', '404-solution') . ":</label></strong> <select id=\"code\" name=\"code\">";
+        if ($redirect['code'] == "") {
+            $codeselected = $options['default_redirect'];
+        } else {
+            $codeselected = $redirect['code'];
+        }
+        $codes = array(301, 302);
+        foreach ($codes as $code) {
+            $selected = "";
+            if ($code == $codeselected) {
+                $selected = " selected";
+            }
+
+            $title = ($code == 301) ? '301 Permanent Redirect' : '302 Temporary Redirect';
+            echo "<option value=\"" . $code . "\"" . $selected . ">" . $title . "</option>";
+        }
+        echo "</select><br>";
+        echo "<input type=\"submit\" value=\"" . __('Update Redirect', '404-solution') . "\" class=\"button-secondary\">";
+        echo "</form>";
+    }
+    
+    /** 
+     * @global type $abj404dao
+     */
+    function echoAdminEditRedirectPageSelects($redirect) {
+        global $abj404dao;
+        
         $pagesRows = get_pages();
-        foreach ($pagesRows as $row) {
-            $id = $row->ID;
-            $theTitle = $row->post_title;
+        foreach ($pagesRows as $prow) {
+            $id = $prow->ID;
+            $theTitle = $prow->post_title;
             $thisval = $id . "|" . ABJ404_POST;
 
-            $parent = $row->post_parent;
+            $parent = $prow->post_parent;
             while ($parent != 0) {
                 $abj404dao->getPostParent($parent);
                 if (!( $prow == NULL )) {
@@ -552,33 +591,7 @@ class ABJ_404_Solution_View {
                 $selected = " selected";
             }
             echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Tag', '404-solution') . ": " . $theTitle . "</option>";
-        }
-
-        echo "</select><br>";
-        $final = "";
-        if ($redirect['type'] == ABJ404_EXTERNAL) {
-            $final = $redirect['final_dest'];
-        }
-        echo "<strong><label for=\"external\">" . __('External URL', '404-solution') . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . $final . "\"> (" . __('Required if Redirect to is set to External Page', '404-solution') . ")<br>";
-        echo "<strong><label for=\"code\">" . __('Redirect Type', '404-solution') . ":</label></strong> <select id=\"code\" name=\"code\">";
-        if ($redirect['code'] == "") {
-            $codeselected = $options['default_redirect'];
-        } else {
-            $codeselected = $redirect['code'];
-        }
-        $codes = array(301, 302);
-        foreach ($codes as $code) {
-            $selected = "";
-            if ($code == $codeselected) {
-                $selected = " selected";
-            }
-
-            $title = ($code == 301) ? '301 Permanent Redirect' : '302 Temporary Redirect';
-            echo "<option value=\"" . $code . "\"" . $selected . ">" . $title . "</option>";
-        }
-        echo "</select><br>";
-        echo "<input type=\"submit\" value=\"" . __('Update Redirect', '404-solution') . "\" class=\"button-secondary\">";
-        echo "</form>";
+        }        
     }
 
     /** 
@@ -1105,11 +1118,7 @@ class ABJ_404_Solution_View {
                 if ($code == $codeselected) {
                     $selected = " selected";
                 }
-                if ($code == 301) {
-                    $title = '301 Permanent Redirect';
-                } else {
-                    $title = '302 Temporary Redirect';
-                }
+                $title = ($code == 301) ? '301 Permanent Redirect' : '302 Temporary Redirect';
                 echo "<option value=\"" . esc_attr($code) . "\"" . $selected . ">" . esc_html($title) . "</option>";
             }
             echo "</select><br>";

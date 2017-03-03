@@ -698,11 +698,18 @@ class ABJ_404_Solution_DataAccess {
     function updateRedirect($type, $dest) {
         global $wpdb;
         
+        if (($type <= 0) || ($dest <= 0) || ($_POST['id'] <= 0)) {
+            ABJ_404_Solution_Functions::errorMessage("Bad data passed for update redirect request. Type: " .
+                esc_html($type) . ", Dest: " . esc_html($dest) . ", ID: " . esc_html($_POST['id']));
+            echo __('Error: Bad data passed for update redirect request.', '404-solution');
+            return;
+        }
+        
         $wpdb->update($wpdb->prefix . "abj404_redirects", array(
             'url' => esc_url($_POST['url']),
             'status' => ABJ404_MANUAL,
-            'type' => esc_html($type),
-            'final_dest' => esc_html($dest),
+            'type' => absint($type),
+            'final_dest' => esc_sql($dest),
             'code' => esc_attr($_POST['code'])
                 ), array(
             'id' => absint($_POST['id'])
