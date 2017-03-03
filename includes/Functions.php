@@ -50,7 +50,7 @@ class ABJ_404_Solution_Functions {
      * @param type $message  */
     static function debugMessage($message) {
         if (ABJ_404_Solution_Functions::isDebug()) {
-            error_log("ABJ-404-SOLUTION: " . $message);
+            error_log("ABJ-404-SOLUTION (DEBUG): " . $message);
         }
     }
 
@@ -58,7 +58,7 @@ class ABJ_404_Solution_Functions {
      * This goes to a file and is used by every other class so it goes here.
      * @param type $message  */
     static function errorMessage($message) {
-        error_log("ABJ-404-SOLUTION: " . $message);
+        error_log("ABJ-404-SOLUTION (ERROR): " . $message);
     }
     
 }

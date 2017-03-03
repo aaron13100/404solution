@@ -428,16 +428,22 @@ class ABJ_404_Solution_PluginLogic {
                 $type = ABJ404_EXTERNAL;
                 $dest = esc_url($_POST['external']);
             } else {
-                $info = explode("|", esc_url($_POST['dest']));
+                $info = explode("|", sanitize_text_field($_POST['dest']));
                 if (count($info) == 2) {
-                    $dest = $info[0];
+                    $dest = absint($info[0]);
                     if ($info[1] == ABJ404_POST) {
                         $type = ABJ404_POST;
                     } else if ($info[1] == ABJ404_CAT) {
                         $type = ABJ404_CAT;
                     } else if ($info[1] == ABJ404_TAG) {
                         $type = ABJ404_TAG;
+                    } else {
+                        ABJ_404_Solution_Functions::errorMessage("Unrecognized type while updating redirect: " . 
+                                esc_html($type));
                     }
+                } else {
+                    ABJ_404_Solution_Functions::errorMessage("Unexpected info while updating redirect: " . 
+                            wp_kses(json_encode($info)));
                 }
             }
 
