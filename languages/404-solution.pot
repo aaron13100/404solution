@@ -29,6 +29,9 @@ msgstr ""
 msgid "Error: Invalid value specified for default redirect type"
 msgstr ""
 
+msgid "Error: Unrecognized bulk action. (%s)"
+msgstr ""
+
 msgid "Error: No ID found for edit request."
 msgstr ""
 

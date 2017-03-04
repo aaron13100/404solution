@@ -112,7 +112,7 @@ class ABJ_404_Solution_DataAccess {
      * @param int $redirectID only return results from this redirect ID. Use 0 to get all records.
      * @return int the number of records found.
      */
-    function getLogsCount(int $redirectID) {
+    function getLogsCount($redirectID) {
         global $wpdb;
 
         $query = "select count(id) from " . $wpdb->prefix . "abj404_logs where 1 ";
