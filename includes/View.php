@@ -1671,9 +1671,9 @@ class ABJ_404_Solution_View {
             } else if ($type == ABJ404_AUTO) {
                 $title = "Automatic Redirects";
             } else if ($type == ABJ404_CAPTURED) {
-                $title = "Captured URL's";
+                $title = "Captured URLs";
             } else if ($type == ABJ404_IGNORED) {
-                $title = "Ignored 404's";
+                $title = "Ignored 404s";
             } else {
                 ABJ_404_Solution_Functions::errorMessage("Unrecognized redirect type: " . esc_html($type));
             }

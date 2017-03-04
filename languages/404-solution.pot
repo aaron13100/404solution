@@ -133,7 +133,7 @@ msgid "Error: You selected external URL but did not enter a URL."
 msgstr ""
 
 #: includes/admin.php:612, includes/admin.php:667
-msgid "Error: External URL's must start with http://, https://, or ftp://"
+msgid "Error: External URLs must start with http://, https://, or ftp://"
 msgstr ""
 
 #: includes/admin.php:643, includes/admin.php:721

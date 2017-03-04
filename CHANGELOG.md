@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 1.5.3 ##
+* Refactor all code to prepare for WordPress.org release.
+
 ## Version 1.5.2 ##
 * FIX plugin activation. Avoid "Default value for parameters with a class type hint can only be NULL"
 * Add a Settings link to the WordPress plugins page.
