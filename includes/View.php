@@ -9,12 +9,12 @@ class ABJ_404_Solution_View {
      * @param int $captured the number of captured URLs
      * @return type html
      */
-    function getDashboardNotification(int $captured) {
+    function getDashboardNotification($captured) {
         $capturedMessage = sprintf( _n( 'There is <a>%s captured 404 URL</a> that needs to be processed.', 
                 'There are <a>%s captured 404 URLs</a> that need to be processed.', 
                 $captured, '404-solution'), $captured);
         $capturedMessage = str_replace("<a>", 
-                "<a href=\"?page=abj404_solution&subpage=abj404_captured\" \">", 
+                "<a href=\"options-general.php?page=abj404_solution&subpage=abj404_captured\" \">", 
                 $capturedMessage);
         $capturedMessage = str_replace("</a>", "</a>", $capturedMessage);
 

@@ -180,9 +180,8 @@ class ABJ_404_Solution_PluginLogic {
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             }
         } else if ($action == "bulkignore" || $action == "bulkcaptured" || $action == "bulktrash") {
-            if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
-                
-                $message = $abj404logic->doBulkAction($action, absint($_POST['idnum']));
+            if (check_admin_referer('abj404_bulkProcess') && is_admin()) {          
+                $message = $abj404logic->doBulkAction($action, array_map('absint', $_POST['idnum']));
             }
         } else if ($action == "purgeRedirects") {
             if (check_admin_referer('abj404_purgeRedirects') && is_admin()) {
@@ -346,7 +345,7 @@ class ABJ_404_Solution_PluginLogic {
                 $status = ABJ404_CAPTURED;
             } else {
                 ABJ_404_Solution_Functions::errorMessage("Unrecognized bulk action: " + esc_html($action));
-                echo "Unrecognized bulk action: " + esc_html($action);
+                echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
                 return;
             }
             $count = 0;
@@ -362,6 +361,7 @@ class ABJ_404_Solution_PluginLogic {
                 $message = $count . " " . __('URLs marked as captured.', '404-solution');
             } else {
                 ABJ_404_Solution_Functions::errorMessage("Unrecognized bulk action: " + esc_html($action));
+                echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
             }
 
         } else if ($action == "bulktrash") {
@@ -376,7 +376,7 @@ class ABJ_404_Solution_PluginLogic {
 
         } else {
             ABJ_404_Solution_Functions::errorMessage("Unrecognized bulk action: " + esc_html($action));
-            echo "Unrecognized bulk action: " + esc_html($action);
+            echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
         }
         return $message;
     }
