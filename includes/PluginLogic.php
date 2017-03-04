@@ -37,7 +37,7 @@ class ABJ_404_Solution_PluginLogic {
                     ABJ_404_Solution_PluginLogic::doUnregisterCrons();
 
                     //Register the good ones
-                    $abj404logic->doRegisterCrons();
+                    ABJ_404_Solution_PluginLogic::doRegisterCrons();
                 }
                 $options = $abj404logic->doUpdateDBVersionOption();
             }
@@ -115,18 +115,20 @@ class ABJ_404_Solution_PluginLogic {
     /** Create database tables. Register crons. etc.
      * @global type $abj404dao */
     static function runOnPluginActivation() {
-        global $abj404dao;
         global $abj404logic;
         add_option('abj404_settings', '', '', 'no');
+        
+        ABJ_404_Solution_DataAccess::createDatabaseTables();
 
-        $abj404dao->createDatabaseTables();
+        ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
-        $abj404logic->doRegisterCrons();
-
+        if (!isset($abj404logic)) {
+            $abj404logic = new ABJ_404_Solution_PluginLogic();
+        }
         $abj404logic->doUpdateDBVersionOption();
     }
 
-    function doRegisterCrons() {
+    static function doRegisterCrons() {
         $timestampc = wp_next_scheduled('abj404_cleanupCronAction');
         if ($timestampc == False) {
             wp_schedule_event(current_time('timestamp') - 86400, 'daily', 'abj404_cleanupCronAction');
