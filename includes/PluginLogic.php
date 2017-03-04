@@ -416,7 +416,7 @@ class ABJ_404_Solution_PluginLogic {
                 $message .= __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<br>";
             } else {
                 if (substr($_POST['external'], 0, 7) != "http://" && substr($_POST['external'], 0, 8) != "https://" && substr($_POST['external'], 0, 6) != "ftp://") {
-                    $message .= __('Error: External URL\'s must start with http://, https://, or ftp://', '404-solution') . "<br>";
+                    $message .= __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<br>";
                 }
             }
         }
@@ -481,7 +481,7 @@ class ABJ_404_Solution_PluginLogic {
                 $message .= __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<br>";
             } else {
                 if (substr($_POST['external'], 0, 7) != "http://" && substr($_POST['external'], 0, 8) != "https://" && substr($_POST['external'], 0, 6) != "ftp://") {
-                    $message .= __('Error: External URL\'s must start with http://, https://, or ftp://', '404-solution') . "<br>";
+                    $message .= __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<br>";
                 }
             }
         }
