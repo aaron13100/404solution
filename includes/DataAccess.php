@@ -12,7 +12,7 @@ class ABJ_404_Solution_DataAccess {
     /** Create the tables when the plugin is first activated. 
      * @global type $wpdb
      */
-    function createDatabaseTables() {
+    static function createDatabaseTables() {
         global $wpdb;
         
         $charset_collate = '';

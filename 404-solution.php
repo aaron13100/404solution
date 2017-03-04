@@ -63,7 +63,9 @@ if (is_admin()) {
 }
 
 $abj404dao = new ABJ_404_Solution_DataAccess();
-$abj404logic = new ABJ_404_Solution_PluginLogic();
+if (!isset($abj404logic)) {
+    $abj404logic = new ABJ_404_Solution_PluginLogic();
+}
 $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
 $abj404connector = new ABJ_404_Solution_WordPress_Connector();
 
