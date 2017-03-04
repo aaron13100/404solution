@@ -730,5 +730,12 @@ class ABJ_404_Solution_DataAccess {
                 )
         );
     }
-    
+
+    /** 
+     * @return type
+     */
+    function getCapturedCountForNotification() {
+        global $abj404dao;
+        return $abj404dao->getRecordCount(array(ABJ404_CAPTURED));
+    }
 }

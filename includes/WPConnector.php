@@ -455,7 +455,7 @@ class ABJ_404_Solution_WordPress_Connector {
             if (( @$_GET['page'] == "abj404_solution" ) || ( $pagenow == 'index.php' && (!isset($_GET['page']) ) )) {
                 $options = $abj404logic->getOptions();
                 if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
-                    $captured = $abj404dao->getRecordCount(array(ABJ404_CAPTURED));
+                    $captured = $abj404dao->getCapturedCountForNotification();
                     if ($captured >= $options['admin_notification']) {
                         echo $abj404view->getDashboardNotification($captured);
                     }
@@ -477,7 +477,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         // Admin notice
         if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
-            $captured = $abj404dao->getCapturedCount();
+            $captured = $abj404dao->getCapturedCountForNotification();
             if (isset($options['admin_notification']) && $captured >= $options['admin_notification']) {
                 $pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . esc_html($captured) . "</span></span>";
                 $pos = strpos($menu[80][0], 'update-plugins');
