@@ -455,7 +455,7 @@ class ABJ_404_Solution_WordPress_Connector {
             if (( @$_GET['page'] == "abj404_solution" ) || ( $pagenow == 'index.php' && (!isset($_GET['page']) ) )) {
                 $options = $abj404logic->getOptions();
                 if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
-                    $captured = $abj404dao->getCapturedCount();
+                    $captured = $abj404dao->getRecordCount(array(ABJ404_CAPTURED));
                     if ($captured >= $options['admin_notification']) {
                         echo $abj404view->getDashboardNotification($captured);
                     }
