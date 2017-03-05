@@ -333,6 +333,7 @@ class ABJ_404_Solution_WordPress_Connector {
     static function redirectCanonical($redirect, $request) {
         global $abj404dao;
         global $abj404connector;
+        global $abj404logic;
         
         if (is_single() || is_page()) {
             if (!is_feed() && !is_trackback() && !is_preview()) {
