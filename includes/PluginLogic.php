@@ -621,9 +621,9 @@ class ABJ_404_Solution_PluginLogic {
 
         $options['remove_matches'] = ($_POST['remove_matches'] == "1") ? 1 : 0;
         $options['debug_mode'] = (@$_POST['debug_mode'] == "1") ? 1 : 0;
-        $options['display_suggest'] = ($_POST['display_suggest'] == "1") ? 1 : 0;
-        $options['suggest_cats'] = ($_POST['suggest_cats'] == "1") ? 1 : 0;
-        $options['suggest_tags'] = ($_POST['suggest_tags'] == "1") ? 1 : 0;
+        $options['display_suggest'] = (@$_POST['display_suggest'] == "1") ? 1 : 0;
+        $options['suggest_cats'] = (@$_POST['suggest_cats'] == "1") ? 1 : 0;
+        $options['suggest_tags'] = (@$_POST['suggest_tags'] == "1") ? 1 : 0;
 
         if (preg_match('/^[0-9]+$/', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
             $options['suggest_minscore'] = absint($_POST['suggest_minscore']);

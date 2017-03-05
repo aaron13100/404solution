@@ -37,6 +37,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @global type $abj404spellChecker
      */
     function suggestions() {
+        global $abj404logic;
         global $abj404spellChecker;
         
         if (is_404()) {

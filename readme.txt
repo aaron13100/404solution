@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.1
-Version: 1.5.3
+Version: 1.5.4
 Tested up to: 4.7.2
-Stable tag: 1.5.3
+Stable tag: 1.5.4
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -15,7 +15,7 @@ Automatically redirect 404s when the slug matches (for permalink changes), when 
 
 = Features: =
 
-* Get list of 404 URLs as they happen.
+* Get a list of 404 URLs as they happen.
 * Redirect 404 URLs to existing pages or ignore them.
 * Automatically create redirects based on the URL the visitor was most likely trying to visit.
 * View logs of hits to 404 pages and redirects including referrer data.
@@ -58,6 +58,9 @@ Yes. It's as easy as turning on this feature in the options.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 1.5.4 =
+* FIX: Suggestions can be included via custom PHP code added to 404.php
 
 = Version 1.5.3 =
 * Refactor all code to prepare for WordPress.org release.

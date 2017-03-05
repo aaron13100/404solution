@@ -1124,6 +1124,7 @@ class ABJ_404_Solution_View {
      */
     function getAdminOptionsPageAutoRedirects($options) {
         global $abj404dao;
+        $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         $content = "";
 
         $selected = "";
@@ -1171,10 +1172,10 @@ class ABJ_404_Solution_View {
         }
 
         $content .= "<p><label for=\"auto_redirects\">" . __('Create automatic redirects', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_redirects\" id=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><br>";
-        $content .= __('Automatically creates redirects based on best possible suggested page.', '404-solution') . "</p>";
+        $content .= $sapces . __('Automatically creates redirects based on best possible suggested page.', '404-solution') . "</p>";
 
         $content .= "<p><label for=\"auto_score\">" . __('Minimum match score', '404-solution') . ":</label> <input type=\"text\" name=\"auto_score\" id=\"auto_score\" value=\"" . esc_attr($options['auto_score']) . "\" style=\"width: 50px;\"><br>";
-        $content .= __('Only create an automatic redirect if the suggested page has a score above the specified number', '404-solution') . "</p>";
+        $content .= $sapces . __('Only create an automatic redirect if the suggested page has a score above the specified number', '404-solution') . "</p>";
 
         $selectedAutoCats = "";
         if ($options['auto_cats'] == '1') {
@@ -1193,10 +1194,10 @@ class ABJ_404_Solution_View {
             $selectedForcePermaLinks = " checked";
         }
         $content .= "<p><label for=\"force_permalinks\">" . __('Force current permalinks', '404-solution') . ":</label> <input type=\"checkbox\" name=\"force_permalinks\" id=\"force_permalinks\" value=\"1\"" . $selectedForcePermaLinks . "><br>";
-        $content .= __('Creates auto redirects for any url resolving to a post/page that doesn\'t match the current permalinks', '404-solution') . "</p>";
+        $content .= $sapces . __('Creates auto redirects for any url resolving to a post/page that doesn\'t match the current permalinks', '404-solution') . "</p>";
 
         $content .= "<p><label for=\"auto_deletion\">" . __('Auto redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"auto_deletion\" id=\"auto_deletion\" value=\"" . esc_attr($options['auto_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
-        $content .= __('Removes auto created redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
+        $content .= $sapces . __('Removes auto created redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
         return $content;
     }
@@ -1211,8 +1212,13 @@ class ABJ_404_Solution_View {
         if ($options['display_suggest'] == '1') {
             $selectedDisplaySuggest = " checked";
         }
+        
+        $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
+        
         $content = "<p><label for=\"display_suggest\">" . __('Turn on 404 suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"display_suggest\" id=\"display_suggest\" value=\"1\"" . $selectedDisplaySuggest . "><br>";
-        $content .= __('Activates the 404 page suggestions function. Only works if the code is in your 404 page template.', '404-solution') . "</p>";
+        $content .= $spaces . __('Activates the 404 page suggestions function. Only works if the code is in your 404 page template.', '404-solution');
+        $content .= "<BR/>" . $spaces . "Code: " . 
+                esc_html("<?php if (!empty(\$abj404connector)) {\$abj404connector->suggestions(); } ?>") . "</p>";
 
         $selectedSuggestCats = "";
         if ($options['suggest_cats'] == '1') {
@@ -1251,6 +1257,8 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageGeneralSettings($options) {
+        $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
+
         $content = "<p>" . __('DB Version Number', '404-solution') . ": " . esc_html($options['DB_VERSION']) . "</p>";
         $content .= "<p><label for=\"default_redirect\">" . __('Default redirect type', '404-solution') . ":</label> ";
         $content .= "<select name=\"default_redirect\" id=\"default_redirect\">";
@@ -1273,20 +1281,22 @@ class ABJ_404_Solution_View {
         $content .= "<p><label for=\"capture_404\">" . __('Collect incoming 404 URLs', '404-solution') . ":</label> <input type=\"checkbox\" name=\"capture_404\" id=\"capture_404\" value=\"1\"" . $selectedCapture404 . "></p>";
 
         $content .= "<p><label for=\"admin_notification\">" . __('Admin notification level', '404-solution') . ":</label> <input type=\"text\" name=\"admin_notification\" id=\"admin_notification\" value=\"" . esc_attr($options['admin_notification']) . "\" style=\"width: 50px;\"> " . __('Captured URLs (0 Disables Notification)', '404-solution') . "<br>";
-        $content .= __('Display WordPress admin notifications when number of captured URLs goes above specified level', '404-solution') . "</p>";
+        $content .= $spaces . __('Display WordPress admin notifications when number of captured URLs goes above specified level', '404-solution') . "</p>";
 
         $content .= "<p><label for=\"capture_deletion\">" . __('Collected 404 URL deletion', '404-solution') . ":</label> <input type=\"text\" name=\"capture_deletion\" id=\"capture_deletion\" value=\"" . esc_attr($options['capture_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
-        $content .= __('Automatically removes 404 URLs that have been captured if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
+        $content .= $spaces . __('Automatically removes 404 URLs that have been captured if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
         $content .= "<p><label for=\"manual_deletion\">" . __('Manual redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"manual_deletion\" id=\"manual_deletion\" value=\"" . esc_attr($options['manual_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
-        $content .= __('Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
+        $content .= $spaces . __('Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
         $selectedRemoveMatches = "";
         if ($options['remove_matches'] == '1') {
             $selectedRemoveMatches = " checked";
         }
+        
+
         $content .= "<p><label for=\"remove_matches\">" . __('Remove redirect upon matching permalink', '404-solution') . ":</label> <input type=\"checkbox\" value=\"1\" name=\"remove_matches\" id=\"remove_matches\"" . $selectedRemoveMatches . "><br>";
-        $content .= __('Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.', '404-solution') . "</p>";
+        $content .= $spaces . __('Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.', '404-solution') . "</p>";
 
         $selectedDebugLogging = "";
         if ($options['debug_mode'] == '1') {
