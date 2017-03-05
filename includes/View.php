@@ -1172,10 +1172,10 @@ class ABJ_404_Solution_View {
         }
 
         $content .= "<p><label for=\"auto_redirects\">" . __('Create automatic redirects', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_redirects\" id=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><br>";
-        $content .= $sapces . __('Automatically creates redirects based on best possible suggested page.', '404-solution') . "</p>";
+        $content .= $spaces . __('Automatically creates redirects based on best possible suggested page.', '404-solution') . "</p>";
 
         $content .= "<p><label for=\"auto_score\">" . __('Minimum match score', '404-solution') . ":</label> <input type=\"text\" name=\"auto_score\" id=\"auto_score\" value=\"" . esc_attr($options['auto_score']) . "\" style=\"width: 50px;\"><br>";
-        $content .= $sapces . __('Only create an automatic redirect if the suggested page has a score above the specified number', '404-solution') . "</p>";
+        $content .= $spaces . __('Only create an automatic redirect if the suggested page has a score above the specified number', '404-solution') . "</p>";
 
         $selectedAutoCats = "";
         if ($options['auto_cats'] == '1') {
@@ -1194,10 +1194,10 @@ class ABJ_404_Solution_View {
             $selectedForcePermaLinks = " checked";
         }
         $content .= "<p><label for=\"force_permalinks\">" . __('Force current permalinks', '404-solution') . ":</label> <input type=\"checkbox\" name=\"force_permalinks\" id=\"force_permalinks\" value=\"1\"" . $selectedForcePermaLinks . "><br>";
-        $content .= $sapces . __('Creates auto redirects for any url resolving to a post/page that doesn\'t match the current permalinks', '404-solution') . "</p>";
+        $content .= $spaces . __('Creates auto redirects for any url resolving to a post/page that doesn\'t match the current permalinks', '404-solution') . "</p>";
 
         $content .= "<p><label for=\"auto_deletion\">" . __('Auto redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"auto_deletion\" id=\"auto_deletion\" value=\"" . esc_attr($options['auto_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
-        $content .= $sapces . __('Removes auto created redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
+        $content .= $spaces . __('Removes auto created redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
         return $content;
     }
