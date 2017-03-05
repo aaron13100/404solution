@@ -58,6 +58,9 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 1.5.4 ##
+* FIX: Suggestions can be included via custom PHP code added to 404.php
+
 ### Version 1.5.3 ###
 * Refactor all code to prepare for WordPress.org release.
 

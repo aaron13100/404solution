@@ -488,7 +488,7 @@ class ABJ_404_Solution_DataAccess {
         
         $query = "select " . $wpdb->terms . ".term_id from " . $wpdb->terms . " ";
         $query .= "left outer join " . $wpdb->term_taxonomy . " on " . $wpdb->terms . ".term_id = " . $wpdb->term_taxonomy . ".term_id ";
-        $query .= "where " . $wpdb->term_taxonomy . ".taxonomy='post_tag' and " . $wpdb->term_taxonom . ".count >= 1";
+        $query .= "where " . $wpdb->term_taxonomy . ".taxonomy='post_tag' and " . $wpdb->term_taxonomy . ".count >= 1";
         $rows = $wpdb->get_results($query);
         return $rows;
     }
