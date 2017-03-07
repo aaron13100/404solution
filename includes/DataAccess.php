@@ -243,7 +243,25 @@ class ABJ_404_Solution_DataAccess {
 
         // no nonce here because redirects are not user generated.
 
-        $referer = @$_SERVER['HTTP_REFERER'];
+        $referer = wp_get_referer();
+        if (ABJ_404_Solution_Functions::isDebug()) {
+            $current_user = wp_get_current_user();
+            $current_user_name = "(none)";
+            if (isset($current_user)) {
+                $current_user_name = $current_user->user_login;
+            }
+            $current_user->user_login;
+            
+            $redirect = $this->getRedirectByID($id);
+            $from = "(not yet stored for ID " . esc_html($id) . ")";
+            if (isset($redirect)) {
+                $from = $redirect['url'];
+            }
+            ABJ_404_Solution_Functions::debugMessage("Logging redirect. redirect_id: " . absint($id) . 
+                    " | Referer: " . esc_html($referer) . " | Current user: " . $current_user_name . 
+                    " | is_admin(): " . is_admin() . " | From: " . esc_html($from) . esc_html(", to: ") . 
+                    esc_html($action));
+        }
 
         $wpdb->insert($wpdb->prefix . "abj404_logs", array(
             'redirect_id' => absint($id),
@@ -271,7 +289,7 @@ class ABJ_404_Solution_DataAccess {
 
         // no nonce here because this action is not always user generated.
 
-        if ($cleanedID != "" && $cleanedID != '0') {
+        if ($cleanedID >= 0 && is_numeric($id)) {
             $queryRedirects = $wpdb->prepare("delete from " . $wpdb->prefix . "abj404_redirects where id = %d", $cleanedID);
             $wpdb->query($queryRedirects);
             $queryLogs = $wpdb->prepare("delete from " . $wpdb->prefix . "abj404_logs where redirect_id = %d", $cleanedID);
@@ -434,11 +452,12 @@ class ABJ_404_Solution_DataAccess {
      * @param type $url
      * @return type
      */
-    function getRedirectDataFromURL($url) {
+    function getRedirectForURL($url) {
         global $wpdb;
         $redirect = array();
 
-        $query = "select * from " . $wpdb->prefix . "abj404_redirects where url = '" . esc_sql(esc_url($url)) . "'";
+        $query = "select * from " . $wpdb->prefix . "abj404_redirects where url = '" . esc_sql(esc_url($url)) . "'" .
+                " and disabled = 0 and status in (" . ABJ404_MANUAL . ", " . ABJ404_AUTO . ")";
 
         $row = $wpdb->get_row($query, ARRAY_A);
         if ($row == NULL) {
@@ -629,7 +648,8 @@ class ABJ_404_Solution_DataAccess {
      */
     function getRedirectByID($id) {
         global $wpdb;
-        $query = $wpdb->prepare("select id, url, type, final_dest, code from " . $wpdb->prefix . "abj404_redirects where 1 and id = %d", $id);
+        $query = $wpdb->prepare("select id, url, type, final_dest, code from " . $wpdb->prefix . 
+                "abj404_redirects where 1 and id = %d", $id);
         $redirect = $wpdb->get_row($query, ARRAY_A);
         
         return $redirect;

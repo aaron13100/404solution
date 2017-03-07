@@ -29,6 +29,9 @@ class ABJ_404_Solution_Functions {
             $permalink['link'] = get_category_link($permalink['id']);
             $cat = get_term($permalink['id'], 'category');
             $permalink['title'] = $cat->name;
+        } else {
+            ABJ_404_Solution_Functions::debugMessage("Unrecognized permalink type: " . 
+                    wp_kses_post(json_encode($permalink)));
         }
 
         return $permalink;
