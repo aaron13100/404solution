@@ -58,10 +58,13 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 1.5.6 ##
+* Improvement: Include screenshots on the plugin page, a banner, and an icon.
+
 ## Version 1.5.5 ##
-FIX: Correct duplicate logging. 
-Improvement: Add debug messages.
-Improvement: Reorganize redirect code.
+* FIX: Correct duplicate logging. 
+* Improvement: Add debug messages.
+* Improvement: Reorganize redirect code.
 
 ## Version 1.5.4 ##
 * FIX: Suggestions can be included via custom PHP code added to 404.php
@@ -81,36 +84,4 @@ Improvement: Reorganize redirect code.
 * Rename to 404 Solution (forked from 404 Redirected at https://github.com/ThemeMix/redirectioner)
 * Update branding links
 * Add an option to redirect all 404s to a specific page.
-* When the a slug matches a post exactly then redirect to that post (score +100). This covers cases when permalinks change.
-
-### Version 1.4.7 ###
-* Fixed too strict data sanitation for the `abj404_suggestions()` template tag
-* Fixed CSS class for suggested 404s div wrapper.
-
-### Version 1.4.6 ###
-* Fixed bug where query vars were being stripped
-* Fixed a bug caused by plugin incorrectly injecting end-points turning up as 404s
-* Fixed log purging issues
-* General code improvements
-
-### Version 1.4.4 ###
-* Fixed a [SQL bug](https://github.com/defries/404-redirected/issues/7)
-* Fixed a bug where [logs wouldn't get deleted](https://github.com/defries/404-redirected/issues/8)
-* Fixed a bug where [deactivating and activating the plugin would reset the stats to 0](https://github.com/defries/404-redirected/issues/9)
-* Fixed various [PHP notices](https://github.com/defries/404-redirected/issues/10)
-
-### Version 1.3 ###
-
-Added new purge options and sorting by number of hits. Lots of bug fixes.
-
-### Version 1.2 ###
-
-Major bug fixes. Also added bulk processing of URLs and admin notifications.
-
-### Version 1.1 ###
-
-2 bug fixes in adding/editing redirects
-
-### Version 1.0 ###
-
-Initial Release
+* When a slug matches a post exactly then redirect to that post (score +100). This covers cases when permalinks change.
