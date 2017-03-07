@@ -1395,6 +1395,16 @@ class ABJ_404_Solution_View {
         }
         date_default_timezone_set($timezone);
         foreach ($rows as $row) {
+            $redirect_id = $row['redirect_id'];
+            if (empty($redirect_id)) {
+                // delete the redirect. it only exists in the logs due to an error.
+                $abj404dao->deleteRedirect($redirect_id);
+                
+                ABJ_404_Solution_Functions::debugMessage("Deleted reference to nonexistent redirect from logs table. ID: " .
+                        $redirect_id);
+                continue;
+            }
+            
             $class = "";
             if ($y == 0) {
                 $class = " class=\"alternate\"";
@@ -1404,7 +1414,7 @@ class ABJ_404_Solution_View {
             }
             echo "<tr" . $class . ">";
             echo "<td></td>";
-            echo "<td>" . esc_html($redirects[$row['redirect_id']]['url']) . "</td>";
+            echo "<td>" . esc_html($redirects[$redirect_id]['url']) . "</td>";
             echo "<td>" . esc_html($row['remote_host']) . "</td>";
             echo "<td>";
             if ($row['referrer'] != "") {

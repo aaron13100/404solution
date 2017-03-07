@@ -4,6 +4,58 @@
  * Finds search suggestions. */
 
 class ABJ_404_Solution_SpellChecker {
+    
+    /** Use spell checking to find the correct link. Return the permalink (map) if there is one, otherwise return null.
+     * @global type $abj404spellChecker
+     * @global type $abj404logic
+     * @param type $requestedURL
+     * @return type
+     */
+    function getSpellCheckedRedirectID($requestedURL) {
+        global $abj404spellChecker;
+        global $abj404logic;
+
+        $options = $abj404logic->getOptions();
+
+        $found = 0;
+        if (@$options['auto_redirects'] == '1') {
+            // Site owner wants automatic redirects.
+            $permalinks = $abj404spellChecker->findMatchingPosts($requestedURL, $options['auto_cats'], $options['auto_tags']);
+            $minScore = $options['auto_score'];
+
+            // since the links were previously sorted so that the highest score would be first, 
+            // we only use the first element of the array;
+            $linkScore = reset($permalinks);
+            $idAndType = key($permalinks);
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore);
+
+            if ($permalink['score'] >= $minScore) {
+                $found = 1;
+            }
+
+            if ($found == 1) {
+                // We found a permalink that will work!
+                $type = 0;
+                if ($permalink['type'] == "POST") {
+                    $type = ABJ404_POST;
+                } else if ($permalink['type'] == "CAT") {
+                    $type = ABJ404_CAT;
+                } else if ($permalink['type'] == "TAG") {
+                    $type = ABJ404_TAG;
+                }
+                if ($type != 0) {
+                    return $permalink;
+
+                } else {
+                    ABJ_404_Solution_Functions::errorMessage("Unhandled permalink type: " . 
+                            wp_kses(json_encode($permalink), array()));
+                    return null;
+                }
+            }
+        }
+        
+        return null;
+    }
 
     /** Returns a list of 
      * @global type $wpdb
