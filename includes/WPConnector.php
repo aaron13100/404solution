@@ -171,12 +171,26 @@ class ABJ_404_Solution_WordPress_Connector {
                 // we will never reach this line unless an error happens.
                 return;
             }
+
+            // --------------------------------------------------------------
+            // try a permalink change.
+            $slugPermalink = $abj404spellChecker->getPermalinkUsingSlug($requestedURL);
+            if (!empty($slugPermalink)) {
+                $redirectType = $abj404logic->permalinkTypeToRedirectType($slugPermalink['type']);
+                $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_AUTO, $redirectType, 
+                        $slugPermalink['id'], $options['default_redirect'], 0);
+
+                $abj404dao->logRedirectHit($redirect_id, $slugPermalink['link']);
+                wp_redirect(esc_url($slugPermalink['link']), esc_html($options['default_redirect']));
+                exit;
+            }
             
             // --------------------------------------------------------------
             // try spell checking.
-            $permalink = $abj404spellChecker->getSpellCheckedRedirectID($requestedURL);
+            $permalink = $abj404spellChecker->getPermalinkUsingSpelling($requestedURL);
             if (!empty($permalink)) {
-                $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_AUTO, $permalink['type'], 
+                $redirectType = $abj404logic->permalinkTypeToRedirectType($permalink['type']);
+                $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_AUTO, $redirectType, 
                         $permalink['id'], $options['default_redirect'], 0);
                 
                 $abj404dao->logRedirectHit($redirect_id, $permalink['link']);
@@ -411,7 +425,7 @@ class ABJ_404_Solution_WordPress_Connector {
         } else if ($redirect['type'] == ABJ404_TAG) {
             $key = $redirect['final_dest'] . "|TAG";
         } else {
-            ABJ_404_Solution_Functions::errorMessage("Unrecognized redirect type: " . 
+            ABJ_404_Solution_Functions::errorMessage("Unrecognized redirect type in Connector: " . 
                     wp_kses(json_encode($redirect), array()));
         }
 

@@ -60,6 +60,8 @@ Yes. It's as easy as turning on this feature in the options.
 == Changelog ==
 
 = Version 1.5.6 =
+* FIX: Ignore HTTP_CONNECTION “close” requests to avoid logging false 404s.
+* Improvement: Permalink structure changes for posts are handled better when the slug matches exactly.
 * Improvement: Include screenshots on the plugin page, a banner, and an icon.
 
 = Version 1.5.5 =

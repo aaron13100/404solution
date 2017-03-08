@@ -1695,7 +1695,7 @@ class ABJ_404_Solution_View {
             } else if ($type == ABJ404_IGNORED) {
                 $title = "Ignored 404s";
             } else {
-                ABJ_404_Solution_Functions::errorMessage("Unrecognized redirect type: " . esc_html($type));
+                ABJ_404_Solution_Functions::errorMessage("Unrecognized redirect type in View: " . esc_html($type));
             }
 
             echo "<li>";
