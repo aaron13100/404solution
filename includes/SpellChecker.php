@@ -34,6 +34,8 @@ class ABJ_404_Solution_SpellChecker {
             // more than one post has the same slug. I don't know what to do.
             ABJ_404_Solution_Functions::debugMessage("More than one post found with the slug, so no redirect was " .
                     "created. Slug: " . $postSlug);
+        } else {
+            ABJ_404_Solution_Functions::debugMessage("No posts or pages matching slug: " . esc_html($postSlug));
         }
         
         return null;
