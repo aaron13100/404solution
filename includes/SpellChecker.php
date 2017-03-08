@@ -16,19 +16,17 @@ class ABJ_404_Solution_SpellChecker {
         
         $exploded = preg_split('@/@', $requestedURL, NULL, PREG_SPLIT_NO_EMPTY);
         $postSlug = end($exploded);
-        $postsBySlugRows = $abj404dao->getPublishedPosts($postSlug);
+        $postsBySlugRows = $abj404dao->getPublishedPagesAndPostsIDs($postSlug);
         if (count($postsBySlugRows) == 1) {
             $post = reset($postsBySlugRows);
-            
-            $permalink = array();
-            $permalink['id'] = $post['id'];
+            $permalink['id'] = $post->id;
             // we use post here instead of the constant ABJ404_POST to be consistent with other uses of variables
             // that have the type "permalink"
             $permalink['type'] = "POST";
             // the score doesn't matter.
             $permalink['score'] = 100;
-            $permalink['title'] = $post['post_title'];
-            $permalink['link'] = get_permalink($post['id']);
+            $permalink['title'] = get_the_title($post->id);
+            $permalink['link'] = get_permalink($post->id);
             
             return $permalink;
             
