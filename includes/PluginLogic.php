@@ -680,4 +680,23 @@ class ABJ_404_Solution_PluginLogic {
 
         return $message;
     }
+    
+    /** Translates POST, CAT, TAG into ABJ404_POST, ABJ404_CAT, ABJ404_TAG
+     * @param type $permalinkType
+     */
+    function permalinkTypeToRedirectType($permalinkType) {
+        if ($permalinkType == "POST") {
+            return ABJ404_POST;
+        } else if ($permalinkType == "CAT") {
+            return ABJ404_CAT;
+        } else if ($permalinkType == "TAG") {
+            return ABJ404_TAG;
+        } else if ($permalinkType == "EXTERNAL") {
+            return ABJ404_EXTERNAL;
+        } else {
+            ABJ_404_Solution_Functions::errorMessage("Unexpected permalink type for redirect type conversion: " . 
+                    esc_html($permalinkType));
+            return null;
+        }
+    }
 }

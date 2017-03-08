@@ -425,6 +425,17 @@ class ABJ_404_Solution_DataAccess {
         // nonce is verified outside of this method. We can't verify here because 
         // automatic redirects are sometimes created without user interaction.
 
+        if (!is_numeric($type)) {
+            ABJ_404_Solution_Functions::errorMessage("Wrong data type for redirect. TYPE is non-numeric: " . 
+                    esc_html($type));
+        } else if (absint($type) <= 0) {
+            ABJ_404_Solution_Functions::errorMessage("Wrong range for redirect TYPE: " . 
+                    esc_html($type));
+        } else if (!is_numeric($status)) {
+            ABJ_404_Solution_Functions::errorMessage("Wrong data type for redirect. STATUS is non-numeric: " . 
+                    esc_html($status));
+        }
+            
         $now = time();
         $wpdb->insert($wpdb->prefix . 'abj404_redirects', array(
             'url' => esc_url($url),
@@ -457,7 +468,8 @@ class ABJ_404_Solution_DataAccess {
         $redirect = array();
 
         $query = "select * from " . $wpdb->prefix . "abj404_redirects where url = '" . esc_sql(esc_url($url)) . "'" .
-                " and disabled = 0 and status in (" . ABJ404_MANUAL . ", " . ABJ404_AUTO . ")";
+                " and disabled = 0 and status in (" . ABJ404_MANUAL . ", " . ABJ404_AUTO . ") " .
+                "and type > 0";
 
         $row = $wpdb->get_row($query, ARRAY_A);
         if ($row == NULL) {
@@ -483,6 +495,18 @@ class ABJ_404_Solution_DataAccess {
         
         $query = "select id from $wpdb->posts where post_status='publish' and (post_type='page' or post_type='post')";
         $rows = $wpdb->get_results($query);
+        return $rows;
+    }
+    
+    /** Returns the posts matching the criteria.
+     * @return type
+     */
+    function getPublishedPosts($slug) {
+        global $wpdb;
+        
+        $query = "select id, post_title from $wpdb->posts " . 
+                "where post_status='publish' and post_name='" . esc_sql($slug) . "'";
+        $rows = $wpdb->get_results($query, ARRAY_A);
         return $rows;
     }
     

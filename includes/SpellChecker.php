@@ -4,6 +4,42 @@
  * Finds search suggestions. */
 
 class ABJ_404_Solution_SpellChecker {
+
+    /** If there is a post that has a slug that matches the user requested slug exactly, then return the permalink for that 
+     * post. Otherwise return null.
+     * @global type $abj404dao
+     * @param type $requestedURL
+     * @return type
+     */
+    function getPermalinkUsingSlug($requestedURL) {
+        global $abj404dao;
+        
+        $exploded = preg_split('@/@', $requestedURL, NULL, PREG_SPLIT_NO_EMPTY);
+        $postSlug = end($exploded);
+        $postsBySlugRows = $abj404dao->getPublishedPosts($postSlug);
+        if (count($postsBySlugRows) == 1) {
+            $post = reset($postsBySlugRows);
+            
+            $permalink = array();
+            $permalink['id'] = $post['id'];
+            // we use post here instead of the constant ABJ404_POST to be consistent with other uses of variables
+            // that have the type "permalink"
+            $permalink['type'] = "POST";
+            // the score doesn't matter.
+            $permalink['score'] = 100;
+            $permalink['title'] = $post['post_title'];
+            $permalink['link'] = get_permalink($post['id']);
+            
+            return $permalink;
+            
+        } else if (count($postsBySlugRows) > 1) {
+            // more than one post has the same slug. I don't know what to do.
+            ABJ_404_Solution_Functions::debugMessage("More than one post found with the slug, so no redirect was " .
+                    "created. Slug: " . $postSlug);
+        }
+        
+        return null;
+    }
     
     /** Use spell checking to find the correct link. Return the permalink (map) if there is one, otherwise return null.
      * @global type $abj404spellChecker
@@ -11,7 +47,7 @@ class ABJ_404_Solution_SpellChecker {
      * @param type $requestedURL
      * @return type
      */
-    function getSpellCheckedRedirectID($requestedURL) {
+    function getPermalinkUsingSpelling($requestedURL) {
         global $abj404spellChecker;
         global $abj404logic;
 
@@ -35,15 +71,8 @@ class ABJ_404_Solution_SpellChecker {
 
             if ($found == 1) {
                 // We found a permalink that will work!
-                $type = 0;
-                if ($permalink['type'] == "POST") {
-                    $type = ABJ404_POST;
-                } else if ($permalink['type'] == "CAT") {
-                    $type = ABJ404_CAT;
-                } else if ($permalink['type'] == "TAG") {
-                    $type = ABJ404_TAG;
-                }
-                if ($type != 0) {
+                $redirectType = $abj404logic->permalinkTypeToRedirectType($permalink['type']);
+                if (absint($redirectType) > 0) {
                     return $permalink;
 
                 } else {
