@@ -490,23 +490,14 @@ class ABJ_404_Solution_DataAccess {
     /** Returns rows with the IDs of the published items.
      * @return type
      */
-    function getPublishedPagesAndPostsIDs() {
+    function getPublishedPagesAndPostsIDs($slug = "") {
         global $wpdb;
         
         $query = "select id from $wpdb->posts where post_status='publish' and (post_type='page' or post_type='post')";
+        if ($slug != "") {
+            $query .= " and post_name='" . esc_sql($slug) . "'";
+        }
         $rows = $wpdb->get_results($query);
-        return $rows;
-    }
-    
-    /** Returns the posts matching the criteria.
-     * @return type
-     */
-    function getPublishedPosts($slug) {
-        global $wpdb;
-        
-        $query = "select id, post_title from $wpdb->posts " . 
-                "where post_status='publish' and post_name='" . esc_sql($slug) . "'";
-        $rows = $wpdb->get_results($query, ARRAY_A);
         return $rows;
     }
     
