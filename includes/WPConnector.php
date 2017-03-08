@@ -138,9 +138,7 @@ class ABJ_404_Solution_WordPress_Connector {
         
         $urlRequest = esc_url(preg_replace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI'])));
         
-        $adminURL = parse_url(admin_url(), PHP_URL_PATH);
-        if (substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
-            ABJ_404_Solution_Functions::debugMessage("Ignoring request for admin URL: " . $urlRequest);
+        if ($abj404logic->shouldIgnoreRequest($urlRequest)) {
             return;
         }
         
