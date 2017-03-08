@@ -564,7 +564,7 @@ class ABJ_404_Solution_DataAccess {
         $logs = $wpdb->prefix . "abj404_logs";
 
         
-        if ($_POST['sanity'] != "1") {
+        if (@$_POST['sanity'] != "1") {
             $message = __('Error: You didn\'t check the I understand checkbox. No purging of records for you!', '404-solution');
             return $message;
         }
@@ -584,23 +584,18 @@ class ABJ_404_Solution_DataAccess {
             $message = __('An unknown error has occurred.', '404-solution');
             return $message;
         }
-
-        $types = "";
-        $x = 0;
-        for ($i = 0; $i < count($type); $i++) {
-            if (preg_match('/[0-9]+/', $type[$i])) {
-                if ($x > 0) {
-                    $types .= ",";
-                }
-                $types .= $type[$i];
-                $x++;
+        
+        $redirectTypes = array();
+        foreach ($type as $aType) {
+            if (absint($aType) > 0) {
+                array_push($redirectTypes, absint($aType));
             }
         }
 
-        if ($types == "") {
+        if (empty($redirectTypes)) {
             $message = __('Error: No valid redirect types were selected. Exiting.', '404-solution');
             ABJ_404_Solution_Functions::debugMessage("Error: No valid redirect types were selected. Types: " .
-                    wp_kses_post(json_encode($types)));
+                    wp_kses_post(json_encode($redirectTypes)));
             return $message;
         }
         $purge = sanitize_text_field($_POST['purgetype']);
@@ -612,15 +607,22 @@ class ABJ_404_Solution_DataAccess {
             return $message;
         }
         
-        $query = $wpdb->prepare("delete from " . $logs . " where redirect_id in (select id from " . $redirects . " where status in (%s))", esc_sql($types));
-        $logcount = $wpdb->query($query);
+        // always add the type "0" because it's an invalid type that may exist in the databse. 
+        // Adding it here does some cleanup if any is necessary.
+        array_push($redirectTypes, 0);
+        $typesForSQL = implode(',', $redirectTypes);
+        
+        $queryStringLogs = "delete from " . $logs . " where redirect_id in " . 
+                "(select id from " . $redirects . " where status in (" . $typesForSQL . "))";
+        $logcount = $wpdb->query($queryStringLogs);
         
         $message .= sprintf( _n( '%s log entry was purged.', 
                 '%s log entries were purged.', $logcount, '404-solution'), $logcount);
 
         if ($purge == "redirects") {
-            $query = $wpdb->prepare("delete from " . $redirects . " where status in (%s)", esc_sql($types));
-            $redirectCount = $wpdb->query($query);
+            $queryStringReds = "delete from " . $redirects . " where status in (" . $typesForSQL . ")";
+            $redirectCount = $wpdb->query($queryStringReds);
+            
             $message .= "<br>";
             $message .= sprintf( _n( '%s redirect entry was purged.', 
                     '%s redirect entries were purged.', $redirectCount, '404-solution'), $redirectCount);
