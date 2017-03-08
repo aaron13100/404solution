@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.1
-Version: 1.5.6
+Version: 1.5.7
 Tested up to: 4.7.2
-Stable tag: 1.5.6
+Stable tag: 1.5.7
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -53,11 +53,14 @@ Yes. It's as easy as turning on this feature in the options.
 
 == Screenshots ==
 
-1. Admin Options Screen screenshot-1.(png|jpg|jpeg|gif)
-2. Logs screenshot-2.(png|jpg|jpeg|gif)
-3. Create New Redirect screenshot-3.(png|jpg|jpeg|gif)
+1. Admin Options Screen
+2. Logs
+3. Create New Redirect
 
 == Changelog ==
+
+= Version 1.5.7 =
+* Improvement: Ignore requests for "draft" posts from "Zemanta Aggregator" (from the "WordPress Related Posts" plugin.
 
 = Version 1.5.6 =
 * FIX: Deleting logs and redirects in the "tools" section works again.

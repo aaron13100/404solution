@@ -5,6 +5,30 @@
 class ABJ_404_Solution_PluginLogic {
 
     /** 
+     * @param type $urlRequest
+     * @return boolean true if the request should be ignored. false otherwise.
+     */
+    function shouldIgnoreRequest($urlRequest) {
+        
+        // ignore requests that are supposed to be for an admin.
+        $adminURL = parse_url(admin_url(), PHP_URL_PATH);
+        if (substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
+            ABJ_404_Solution_Functions::debugMessage("Ignoring request for admin URL: " . $urlRequest);
+            return;
+        }
+        
+        // The user agent Zemanta Aggregator/0.9 http://www.zemanta.com causes a lot of false positives on 
+        // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
+        // by https://www.sovrn.com/. This could be improved by letting the user specify when to ignore certain requests.
+        if (strpos(strtolower(@$_SERVER['HTTP_USER_AGENT']), 'zemanta aggregator') !== false) {
+            ABJ_404_Solution_Functions::debugMessage("Ignoring request from user agent: " . 
+                    esc_html($_SERVER['HTTP_USER_AGENT']));
+            return true;
+        }
+        return false;
+    }
+    
+    /** 
      * @param type $skip_db_check
      * @return array
      */
