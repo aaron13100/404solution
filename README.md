@@ -56,13 +56,13 @@ Yes. It's as easy as turning on this feature in the options.
 ## Screenshots ##
 
 1. Admin Options Screen
-![1. Admin Options Screen](https://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-1.png)
+![1. Admin Options Screen](https://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-1.jpg)
 
 2. Logs
-![2. Logs](https://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-2.png)
+![2. Logs](https://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-2.jpg)
 
 3. Create New Redirect
-![3. Create New Redirect](https://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-3.png)
+![3. Create New Redirect](https://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-3.jpg)
 
 ## Changelog ##
 
