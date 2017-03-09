@@ -9,12 +9,11 @@ class ABJ_404_Solution_PluginLogic {
      * @return boolean true if the request should be ignored. false otherwise.
      */
     function shouldIgnoreRequest($urlRequest) {
-        
         // ignore requests that are supposed to be for an admin.
         $adminURL = parse_url(admin_url(), PHP_URL_PATH);
         if (substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
             ABJ_404_Solution_Functions::debugMessage("Ignoring request for admin URL: " . $urlRequest);
-            return;
+            return true;
         }
         
         // The user agent Zemanta Aggregator/0.9 http://www.zemanta.com causes a lot of false positives on 
