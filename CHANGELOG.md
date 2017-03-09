@@ -1,7 +1,7 @@
 # Changelog #
 
 ## Version 1.5.7 ##
-* Improvement: Ignore requests for "draft" posts from "Zemanta Aggregator" (from the "WordPress Related Posts" plugin.
+* Improvement: Ignore requests for "draft" posts from "Zemanta Aggregator" (from the "WordPress Related Posts" plugin).
 
 ## Version 1.5.6 ##
 * FIX: Deleting logs and redirects in the "tools" section works again.

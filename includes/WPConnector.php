@@ -267,7 +267,8 @@ class ABJ_404_Solution_WordPress_Connector {
         
         // give up. log the 404.
         if (@$options['capture_404'] == '1') {
-            $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_CAPTURED, 0, 0, $options['default_redirect'], 0);
+            $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_CAPTURED, ABJ404_404_DISPLAYED, 
+                    ABJ404_404_DISPLAYED, $options['default_redirect'], 0);
             $abj404dao->logRedirectHit($redirect_id, '404');
 
         } else {

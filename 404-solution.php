@@ -43,6 +43,7 @@ define( 'ABJ404_CAPTURED', 3 );
 define( 'ABJ404_IGNORED', 4 );
 
 // Redirect types
+define( 'ABJ404_404_DISPLAYED', 0 );
 define( 'ABJ404_POST', 1 );
 define( 'ABJ404_CAT', 2 );
 define( 'ABJ404_TAG', 3 );

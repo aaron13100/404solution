@@ -426,14 +426,14 @@ class ABJ_404_Solution_DataAccess {
         // automatic redirects are sometimes created without user interaction.
 
         if (!is_numeric($type)) {
-            ABJ_404_Solution_Functions::errorMessage("Wrong data type for redirect. TYPE is non-numeric: " . 
-                    esc_html($type));
-        } else if (absint($type) <= 0) {
-            ABJ_404_Solution_Functions::errorMessage("Wrong range for redirect TYPE: " . 
-                    esc_html($type));
+            ABJ_404_Solution_Functions::errorMessage("Wrong data type for redirect. TYPE is non-numeric. From: " . 
+                    esc_url($url) . ", to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
+        } else if (absint($type) < 0) {
+            ABJ_404_Solution_Functions::errorMessage("Wrong range for redirect TYPE. From: " . 
+                    esc_url($url) . ", to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         } else if (!is_numeric($status)) {
-            ABJ_404_Solution_Functions::errorMessage("Wrong data type for redirect. STATUS is non-numeric: " . 
-                    esc_html($status));
+            ABJ_404_Solution_Functions::errorMessage("Wrong data type for redirect. STATUS is non-numeric. From: " . 
+                    esc_url($url) . ", to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         }
             
         $now = time();
