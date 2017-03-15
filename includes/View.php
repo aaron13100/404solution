@@ -449,23 +449,19 @@ class ABJ_404_Solution_View {
         // this line assures that text will appear below the page tabs at the top.
         echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" /> <BR/>";
 
+        $recnum = null;
         if (isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {
             $recnum = absint($_GET['id']);
         } else if (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
             $recnum = absint($_POST['id']);
+        } else if (isset($_POST['ids_multiple']) && preg_match('/[0-9,]+/', $_POST['id'])) {
+            $recnums_multiple = preg_split('@,@', $_POST['ids_multiple'], NULL, PREG_SPLIT_NO_EMPTY);
         } else {
             echo __('Error: No ID found for edit request.', '404-solution');
             ABJ_404_Solution_Functions::errorMessage("No ID found in GET or POST data for edit request.");
             return;
         }
 
-        $redirect = $abj404dao->getRedirectByID($recnum);
-
-        if ($redirect == null) {
-            echo "Error: Invalid ID Number! (id: " + $recnum . ")";
-            ABJ_404_Solution_Functions::debugMessage("Error: Invalid ID Number! (id: " + $recnum . ")");
-            return;
-        }
 
         echo "<h3>" . __('Redirect Details', '404-solution') . "</h3>";
 
@@ -476,10 +472,48 @@ class ABJ_404_Solution_View {
 
         echo "<form method=\"POST\" action=\"" . esc_attr($link) . "\">";
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
-        echo "<input type=\"hidden\" name=\"id\" value=\"" . esc_attr($redirect['id']) . "\">";
-        echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
-                ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
-                esc_attr($redirect['url']) . "\"> (" . __('Required', '404-solution') . ")<br>";
+
+        // Decide whether we're editing one or multiple redirects.
+        // If we're editing only one then set the ID to that one value.
+        if ($recnum != null) {
+            $redirect = $abj404dao->getRedirectByID($recnum);
+            if ($redirect == null) {
+                echo "Error: Invalid ID Number! (id: " + $recnum . ")";
+                ABJ_404_Solution_Functions::debugMessage("Error: Invalid ID Number! (id: " + $recnum . ")");
+                return;
+            }
+
+            echo "<input type=\"hidden\" name=\"id\" value=\"" . esc_attr($redirect['id']) . "\">";
+            echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
+                    ":</label></strong> ";
+            echo "<input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
+                    esc_attr($redirect['url']) . "\"> (" . __('Required', '404-solution') . ")<br>";
+            
+        } else if ($recnums_multiple != null) {
+            $redirects_multiple = $abj404dao->getRedirectsByIDs($recnums_multiple);
+            if ($redirects_multiple == null) {
+                echo "Error: Invalid ID Numbers! (ids: " + $recnums_multiple . ")";
+                ABJ_404_Solution_Functions::debugMessage("Error: Invalid ID Numbers! (ids: " + $recnums_multiple . ")");
+                return;
+            }
+
+            echo "<input type=\"hidden\" name=\"ids_multiple\" value=\"" . esc_html($recnums_multiple) . "\">";
+            echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
+                    ":</label></strong> ";
+            echo "<label id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
+                    '(multiple)' . "\"> (" . __('Required', '404-solution') . ")<br>";
+            
+            // here we set the variable to the first value returned because it's used to set default values
+            // in the form data.
+            $redirect = reset($redirects_multiple);
+            
+        } else {
+            echo "Error: Invalid ID Number(s) specified! (id: " + $recnum . ", ids: " . $recnums_multiple . ")";
+            ABJ_404_Solution_Functions::debugMessage("Error: Invalid ID Number(s) specified! (id: " + $recnum . 
+                    ", ids: " . $recnums_multiple . ")");
+            return;
+        }
+        
         echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</strong> <select id=\"dest\" name=\"dest\">";
         $selected = "";
         if ($redirect['type'] == ABJ404_EXTERNAL) {
@@ -529,7 +563,7 @@ class ABJ_404_Solution_View {
         echo "</form>";
     }
     
-    /** 
+    /** This is a supporting method for the echoAdminEditRedirectPage() method.
      * @global type $abj404dao
      */
     function echoAdminEditRedirectPageSelects($redirect) {
@@ -655,6 +689,7 @@ class ABJ_404_Solution_View {
                 echo "<option value=\"bulkcaptured\">" . __('Mark as captured', '404-solution') . "</option>";
             }
             echo "<option value=\"bulktrash\">" . __('Trash', '404-solution') . "</option>";
+            // echo "<option value=\"bulkedit\">" . __('Create a redirect', '404-solution') . "</option>";
             echo "</select>";
             echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . __('Apply', '404-solution') . "\">";
             echo "</div>";

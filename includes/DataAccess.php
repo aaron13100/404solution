@@ -438,7 +438,7 @@ class ABJ_404_Solution_DataAccess {
             
         $now = time();
         $wpdb->insert($wpdb->prefix . 'abj404_redirects', array(
-            'url' => esc_url($url),
+            'url' => esc_sql($url),
             'status' => esc_html($status),
             'type' => esc_html($type),
             'final_dest' => esc_html($final_dest),
@@ -670,6 +670,24 @@ class ABJ_404_Solution_DataAccess {
         $redirect = $wpdb->get_row($query, ARRAY_A);
         
         return $redirect;
+    }
+    
+    /** 
+     * @global type $wpdb
+     * @param type $ids
+     * @return type
+     */
+    function getRedirectsByIDs($ids) {
+        global $wpdb;
+        $validids = array_map('absint', $ids);
+        $multipleIds = implode(',', $validids);
+        
+        $query = $wpdb->query("select id, url, type, final_dest, code from " . $wpdb->prefix . 
+                "abj404_redirects where 1 and id in (" . $multipleIds . ")");
+        
+        $rows = $wpdb->get_results($query, ARRAY_A);
+        
+        return $rows;
     }
     
     /** 

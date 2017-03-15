@@ -255,13 +255,13 @@ class ABJ_404_Solution_PluginLogic {
                 $abj404logic->doEmptyTrash('captured');
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             }
-        } else if ($action == "bulkignore" || $action == "bulkcaptured" || $action == "bulktrash") {
-            if (check_admin_referer('abj404_bulkProcess') && is_admin()) {          
-                $message = $abj404logic->doBulkAction($action, array_map('absint', $_POST['idnum']));
-            }
         } else if ($action == "purgeRedirects") {
             if (check_admin_referer('abj404_purgeRedirects') && is_admin()) {
                 $message = $abj404dao->deleteSpecifiedRedirects();
+            }
+        } else if (substr($action, 0, 4) == "bulk") {
+            if (check_admin_referer('abj404_bulkProcess') && is_admin()) {          
+                $message = $abj404logic->doBulkAction($action, array_map('absint', $_POST['idnum']));
             }
         }
         
@@ -450,6 +450,12 @@ class ABJ_404_Solution_PluginLogic {
             }
             $message = $count . " " . __('URLs moved to trash', '404-solution');
 
+        } else if ($action == "bulkedit") {
+            $allids = implode(',', $ids);
+            $editlink = "?page=abj404_solution&subpage=abj404_edit&ids_multiple=" . $allids;
+            wp_redirect(esc_url($editlink), '200');
+            exit;
+            
         } else {
             ABJ_404_Solution_Functions::errorMessage("Unrecognized bulk action: " + esc_html($action));
             echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));

@@ -6,7 +6,7 @@
 	Author:      Aaron J
 	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 1.5.7
+	Version: 1.5.8
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -32,7 +32,7 @@
 define( 'ABJ404_URL', plugin_dir_url( __FILE__ ) );
 define( 'ABJ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );
-define( 'ABJ404_VERSION', '1.5.7' );
+define( 'ABJ404_VERSION', '1.5.8' );
 define( 'ABJ404_HOME', 'http://www.wealth-psychology.com/404-solution/' );
 define( 'ABJ404_TRANS', 'abj404_solution' );
 
