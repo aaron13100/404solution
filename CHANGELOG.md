@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 1.5.8 ##
+* FIX: Store relative URLs correctly (without the "http://" in front).
+
 ## Version 1.5.7 ##
 * Improvement: Ignore requests for "draft" posts from "Zemanta Aggregator" (from the "WordPress Related Posts" plugin).
 * Improvement: Handle normal ?p=# requests.

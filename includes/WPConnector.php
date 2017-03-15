@@ -134,7 +134,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
         
         // remove the home directory from the URL parts because it should not be considered for spell checking.
-        $urlRequest = $abj404logic->removeHomeDirectory($urlRequest);
+        $urlSlugOnly = $abj404logic->removeHomeDirectory($urlRequest);
         
         $urlParts = parse_url($urlRequest);
         $requestedURL = $urlParts['path'];
@@ -164,7 +164,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
             // --------------------------------------------------------------
             // try a permalink change.
-            $slugPermalink = $abj404spellChecker->getPermalinkUsingSlug($requestedURL);
+            $slugPermalink = $abj404spellChecker->getPermalinkUsingSlug($urlSlugOnly);
             if (!empty($slugPermalink)) {
                 $redirectType = $abj404logic->permalinkTypeToRedirectType($slugPermalink['type']);
                 $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_AUTO, $redirectType, 
@@ -177,7 +177,7 @@ class ABJ_404_Solution_WordPress_Connector {
             
             // --------------------------------------------------------------
             // try spell checking.
-            $permalink = $abj404spellChecker->getPermalinkUsingSpelling($requestedURL);
+            $permalink = $abj404spellChecker->getPermalinkUsingSpelling($urlSlugOnly);
             if (!empty($permalink)) {
                 $redirectType = $abj404logic->permalinkTypeToRedirectType($permalink['type']);
                 $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_AUTO, $redirectType, 
