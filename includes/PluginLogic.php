@@ -495,9 +495,9 @@ class ABJ_404_Solution_PluginLogic {
         $fromURL = "";
         $ids_multiple = "";
         
-        if ($_POST['url'] == "" && $_POST['ids_multiple'] != "") {
+        if (@$_POST['url'] == "" && @$_POST['ids_multiple'] != "") {
             $ids_multiple = array_map('absint', explode(',', $_POST['ids_multiple']));
-        } else if ($_POST['url'] != "" && $_POST['ids_multiple'] == "") {
+        } else if (@$_POST['url'] != "" && @$_POST['ids_multiple'] == "") {
             $fromURL = $_POST['url'];
         } else {
             $message .= __('Error: URL is a required field.', '404-solution') . "<br>";
@@ -546,7 +546,7 @@ class ABJ_404_Solution_PluginLogic {
             if ($type != "" && $dest != "") {
                 // decide whether we're updating one or multiple redirects.
                 if ($fromURL != "") {
-                    $abj404dao->updateRedirect($type, $dest, $_POST['url'], $_POST['id'], $_POST['code']);
+                    $abj404dao->updateRedirect($type, $dest, $fromURL, $_POST['id'], $_POST['code']);
                     
                 } else if ($ids_multiple != "") {
                     // get the redirect data for each ID.
