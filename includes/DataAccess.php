@@ -259,7 +259,7 @@ class ABJ_404_Solution_DataAccess {
             }
             ABJ_404_Solution_Functions::debugMessage("Logging redirect. redirect_id: " . absint($id) . 
                     " | Referer: " . esc_html($referer) . " | Current user: " . $current_user_name . 
-                    " | is_admin(): " . is_admin() . " | From: " . esc_html($from) . esc_html(", to: ") . 
+                    " | is_admin(): " . is_admin() . " | From: " . esc_html($from) . esc_html(" to: ") . 
                     esc_html($action));
         }
 
@@ -427,13 +427,13 @@ class ABJ_404_Solution_DataAccess {
 
         if (!is_numeric($type)) {
             ABJ_404_Solution_Functions::errorMessage("Wrong data type for redirect. TYPE is non-numeric. From: " . 
-                    esc_url($url) . ", to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
+                    esc_url($url) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         } else if (absint($type) < 0) {
             ABJ_404_Solution_Functions::errorMessage("Wrong range for redirect TYPE. From: " . 
-                    esc_url($url) . ", to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
+                    esc_url($url) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         } else if (!is_numeric($status)) {
             ABJ_404_Solution_Functions::errorMessage("Wrong data type for redirect. STATUS is non-numeric. From: " . 
-                    esc_url($url) . ", to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
+                    esc_url($url) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         }
             
         $now = time();

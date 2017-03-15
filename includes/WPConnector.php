@@ -122,15 +122,6 @@ class ABJ_404_Solution_WordPress_Connector {
      * Process the 404s
      */
     static function process404() {
-        // Bail out if 
-        // not on 404 error page - because we're not supposed to, or 
-        // if we're currently on an admin screen - because we want admins to see 404s?, or 
-        // if we're receiving a "close connection" signal - because the user is no longer there.
-        // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
-        if ((!is_404()) || (is_admin())) {
-            return;
-        }
-        
         global $abj404dao;
         global $abj404logic;
         global $abj404connector;
@@ -143,10 +134,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
         
         // remove the home directory from the URL parts because it should not be considered for spell checking.
-        $urlHomeDirectory = parse_url(get_home_url(), PHP_URL_PATH);
-        if (substr($urlRequest, 0, strlen($urlHomeDirectory)) == $urlHomeDirectory) {
-            $urlRequest = substr($urlRequest, strlen($urlHomeDirectory));
-        }
+        $urlRequest = $abj404logic->removeHomeDirectory($urlRequest);
         
         $urlParts = parse_url($urlRequest);
         $requestedURL = $urlParts['path'];
@@ -201,6 +189,10 @@ class ABJ_404_Solution_WordPress_Connector {
             }
             
         } else {
+            
+            $abj404logic->tryNormalPostQuery($options);
+
+            // this is for a permalink structure that has changed?
             if (is_single() || is_page()) {
                 if (!is_feed() && !is_trackback() && !is_preview()) {
                     $theID = get_the_ID();

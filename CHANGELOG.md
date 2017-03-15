@@ -2,6 +2,8 @@
 
 ## Version 1.5.7 ##
 * Improvement: Ignore requests for "draft" posts from "Zemanta Aggregator" (from the "WordPress Related Posts" plugin).
+* Improvement: Handle normal ?p=# requests.
+* Improvement: Be a little more relaxed about spelling (e.g. aboutt forwards to about).
 
 ## Version 1.5.6 ##
 * FIX: Deleting logs and redirects in the "tools" section works again.

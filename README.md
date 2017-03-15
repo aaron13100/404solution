@@ -20,14 +20,13 @@ Automatically redirect 404s when the slug matches (for permalink changes), when 
 
 Convert your 404 traffic by providing your visitors with a better browsing experience and eliminate 404 URLs on your site.
 
-## Known Issues ##
+## Etc ##
 * Untested: Test whether changing the permalink structure twice (3 different permalinks structures total) causes us to
     forward to non-existent pages. Test by doing the following: Choose a permalink structre, create a page, change the 
     permalink structure, go to the old URL of the page to create an automatic redirect, change the permalink structure
     to a third type, go to the old URL of the page. Are we forwarded to the second (non-existent) permalink structre and 
     not the current valid one?  Workaround: Delete all redirects and start over.
 * To be added: Multilingual support using icl_object_id.
-* Untested: Forwarding to (private) pages that the user doesn't have access to probably causes issues.
 
 ## Installation ##
 
@@ -68,6 +67,8 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Version 1.5.7 ##
 * Improvement: Ignore requests for "draft" posts from "Zemanta Aggregator" (from the "WordPress Related Posts" plugin).
+* Improvement: Handle normal ?p=# requests.
+* Improvement: Be a little more relaxed about spelling (e.g. aboutt forwards to about).
 
 ## Version 1.5.6 ##
 * FIX: Deleting logs and redirects in the "tools" section works again.
