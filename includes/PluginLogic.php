@@ -4,11 +4,62 @@
 
 class ABJ_404_Solution_PluginLogic {
 
+    /** If a page's URL is /blogName/pageName then this returns /pageName.
+     * @param type $urlRequest
+     * @return type
+     */
+    function removeHomeDirectory($urlRequest) {
+        $urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
+        if (substr($urlRequest, 0, strlen($urlHomeDirectory)) == $urlHomeDirectory) {
+            $urlRequest = substr($urlRequest, strlen($urlHomeDirectory . "/"));
+        }
+        
+        $urlRequest = rtrim($urlRequest, "/");
+        
+        return $urlRequest;
+    }
+    /** Forward to a real page for queries like ?p=10
+     * @global type $wp_query
+     * @param type $options
+     */
+    function tryNormalPostQuery($options) {
+        if (@$options['force_permalinks'] != '1') {
+            return;
+        }
+        
+        global $wp_query;
+        global $abj404dao;
+
+        // this is for requests like website.com/?p=123
+        $query = $wp_query->query;
+        $pageid = $query['p'];
+        if (!empty($pageid)) {
+            $permalink = get_permalink($pageid);
+            $status = get_post_status($pageid);
+            if (($permalink != false) && ($status == 'publish')) {
+                $redirect_id = $abj404dao->setupRedirect("", ABJ404_AUTO, $redirectType, 
+                        $permalink, $options['default_redirect'], 0);
+                $abj404dao->logRedirectHit($redirect_id, $permalink);
+                wp_redirect($permalink, esc_html($options['default_redirect']));
+                exit;
+            }
+        }
+    }
+    
     /** 
      * @param type $urlRequest
      * @return boolean true if the request should be ignored. false otherwise.
      */
     function shouldIgnoreRequest($urlRequest) {
+        // Bail out if 
+        // not on 404 error page - because we're not supposed to, or 
+        // if we're currently on an admin screen - because we want admins to see 404s?, or 
+        // if we're receiving a "close connection" signal - because the user is no longer there.
+        // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
+        if ((!is_404()) || (is_admin())) {
+            return true;
+        }
+        
         // ignore requests that are supposed to be for an admin.
         $adminURL = parse_url(admin_url(), PHP_URL_PATH);
         if (substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
@@ -16,12 +67,12 @@ class ABJ_404_Solution_PluginLogic {
             return true;
         }
         
-        // The user agent Zemanta Aggregator/0.9 http://www.zemanta.com causes a lot of false positives on 
+        // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
         // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
         // by https://www.sovrn.com/. This could be improved by letting the user specify when to ignore certain requests.
         if (strpos(strtolower(@$_SERVER['HTTP_USER_AGENT']), 'zemanta aggregator') !== false) {
             ABJ_404_Solution_Functions::debugMessage("Ignoring request from user agent: " . 
-                    esc_html($_SERVER['HTTP_USER_AGENT']));
+                    esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
             return true;
         }
         return false;
