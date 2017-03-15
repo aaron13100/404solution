@@ -647,7 +647,7 @@ class ABJ_404_Solution_DataAccess {
      * @param type $defaultValue
      * @return type
      */
-    function getPostOrGetSanitize($name, $defaultValue) {
+    function getPostOrGetSanitize($name, $defaultValue = null) {
         if (isset($_GET[$name])) {
             return sanitize_text_field($_GET[$name]);
 
@@ -681,10 +681,9 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         $validids = array_map('absint', $ids);
         $multipleIds = implode(',', $validids);
-        
-        $query = $wpdb->query("select id, url, type, final_dest, code from " . $wpdb->prefix . 
-                "abj404_redirects where 1 and id in (" . $multipleIds . ")");
-        
+    
+        $query = "select id, url, type, final_dest, code from " . $wpdb->prefix . "abj404_redirects " .
+                "where id in (" . $multipleIds . ")";
         $rows = $wpdb->get_results($query, ARRAY_A);
         
         return $rows;
@@ -750,30 +749,29 @@ class ABJ_404_Solution_DataAccess {
         return $message;
     }
 
-    /** Some data is passed in and some comes from the POST request.
-     * This should be redone to be consistent. 
+    /** 
      * @global type $wpdb
-     * @param type $type
+     * @param type $type ABJ404_EXTERNAL, ABJ404_POST, ABJ404_CAT, or ABJ404_TAG.
      * @param type $dest
      */
-    function updateRedirect($type, $dest) {
+    function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode) {
         global $wpdb;
         
-        if (($type <= 0) || ($dest <= 0) || ($_POST['id'] <= 0)) {
+        if (($type <= 0) || ($idForUpdate <= 0)) {
             ABJ_404_Solution_Functions::errorMessage("Bad data passed for update redirect request. Type: " .
-                esc_html($type) . ", Dest: " . esc_html($dest) . ", ID: " . esc_html($_POST['id']));
+                esc_html($type) . ", Dest: " . esc_html($dest) . ", ID(s): " . esc_html($idForUpdate));
             echo __('Error: Bad data passed for update redirect request.', '404-solution');
             return;
         }
         
         $wpdb->update($wpdb->prefix . "abj404_redirects", array(
-            'url' => esc_url($_POST['url']),
+            'url' => esc_sql($fromURL),
             'status' => ABJ404_MANUAL,
             'type' => absint($type),
             'final_dest' => esc_sql($dest),
-            'code' => esc_attr($_POST['code'])
+            'code' => esc_attr($redirectCode)
                 ), array(
-            'id' => absint($_POST['id'])
+            'id' => absint($idForUpdate)
                 ), array(
             '%s',
             '%d',

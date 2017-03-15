@@ -448,17 +448,17 @@ class ABJ_404_Solution_View {
 
         // this line assures that text will appear below the page tabs at the top.
         echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" /> <BR/>";
-
+        
         $recnum = null;
         if (isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {
             $recnum = absint($_GET['id']);
         } else if (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
             $recnum = absint($_POST['id']);
-        } else if (isset($_POST['ids_multiple']) && preg_match('/[0-9,]+/', $_POST['id'])) {
-            $recnums_multiple = preg_split('@,@', $_POST['ids_multiple'], NULL, PREG_SPLIT_NO_EMPTY);
+        } else if (preg_match('/^[0-9,]+/', $abj404dao->getPostOrGetSanitize('ids_multiple'))) {
+            $recnums_multiple = preg_split('@,@', $abj404dao->getPostOrGetSanitize('ids_multiple'), NULL, PREG_SPLIT_NO_EMPTY);
         } else {
-            echo __('Error: No ID found for edit request.', '404-solution');
-            ABJ_404_Solution_Functions::errorMessage("No ID found in GET or POST data for edit request.");
+            echo __('Error: No ID(s) found for edit request.', '404-solution');
+            ABJ_404_Solution_Functions::errorMessage("No ID(s) found in GET or POST data for edit request.");
             return;
         }
 
@@ -467,8 +467,7 @@ class ABJ_404_Solution_View {
 
         $url = "?page=abj404_solution&subpage=abj404_edit";
 
-        $action = "abj404editRedirect";
-        $link = wp_nonce_url($url, $action);
+        $link = wp_nonce_url($url, "abj404editRedirect");
 
         echo "<form method=\"POST\" action=\"" . esc_attr($link) . "\">";
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
@@ -492,16 +491,23 @@ class ABJ_404_Solution_View {
         } else if ($recnums_multiple != null) {
             $redirects_multiple = $abj404dao->getRedirectsByIDs($recnums_multiple);
             if ($redirects_multiple == null) {
-                echo "Error: Invalid ID Numbers! (ids: " + $recnums_multiple . ")";
-                ABJ_404_Solution_Functions::debugMessage("Error: Invalid ID Numbers! (ids: " + $recnums_multiple . ")");
+                echo "Error: Invalid ID Numbers! (ids: " . esc_html(implode(',', $recnums_multiple)) . ")";
+                ABJ_404_Solution_Functions::debugMessage("Error: Invalid ID Numbers! (ids: " . 
+                        esc_html(implode(',', $recnums_multiple)) . ")");
                 return;
             }
 
-            echo "<input type=\"hidden\" name=\"ids_multiple\" value=\"" . esc_html($recnums_multiple) . "\">";
-            echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
-                    ":</label></strong> ";
-            echo "<label id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
-                    '(multiple)' . "\"> (" . __('Required', '404-solution') . ")<br>";
+            echo "<input type=\"hidden\" name=\"ids_multiple\" value=\"" . esc_html(implode(',', $recnums_multiple)) . "\">";
+            echo '<table><tr><td style="vertical-align: top; padding-right: 5px; padding-top: 5px;"><strong>' . "\n";
+            echo "<label for=\"url\">" . __('URLs', '404-solution') . 
+                    ":</label></strong></td> \n";
+            
+            echo '<td style="vertical-align: top; padding: 5px;"><ul style="margin: 0px;">' . "\n";
+            foreach ($redirects_multiple as $redirect) {
+                echo "<li>" . $redirect['url'] . "</li>\n";
+            }
+            echo '</ul>' . "\n";
+            echo "</td></tr></table>\n";
             
             // here we set the variable to the first value returned because it's used to set default values
             // in the form data.
@@ -689,7 +695,7 @@ class ABJ_404_Solution_View {
                 echo "<option value=\"bulkcaptured\">" . __('Mark as captured', '404-solution') . "</option>";
             }
             echo "<option value=\"bulktrash\">" . __('Trash', '404-solution') . "</option>";
-            // echo "<option value=\"bulkedit\">" . __('Create a redirect', '404-solution') . "</option>";
+            echo "<option value=\"bulkedit\">" . __('Create a redirect', '404-solution') . "</option>";
             echo "</select>";
             echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . __('Apply', '404-solution') . "\">";
             echo "</div>";
