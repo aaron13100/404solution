@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 1.5.9 ##
+* FIX: Allow creating and editing redirects to external URLs again. 
+* Improvement: Add the "create redirect" bulk operation to captured 404s.
+
 ## Version 1.5.8 ##
 * FIX: Store relative URLs correctly (without the "http://" in front).
 

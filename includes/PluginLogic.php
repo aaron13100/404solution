@@ -382,11 +382,14 @@ class ABJ_404_Solution_PluginLogic {
      * @return type
      */
     function handleEditAction(&$sub) {
+        global $abj404dao;
         $message = "";
         
         //Handle edit posts
         if (@$_POST['action'] == "editRedirect") {
-            if (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
+            $id = $abj404dao->getPostOrGetSanitize('id');
+            $ids = $abj404dao->getPostOrGetSanitize('ids_multiple');
+            if (!($id === null && $ids === null) && (preg_match('/[0-9]+/', $id) || preg_match('/[0-9]+/', $ids))) {
                 if (check_admin_referer('abj404editRedirect') && is_admin()) {
                     $message = $this->updateRedirectData();
                     if ($message == "") {
@@ -451,9 +454,10 @@ class ABJ_404_Solution_PluginLogic {
             $message = $count . " " . __('URLs moved to trash', '404-solution');
 
         } else if ($action == "bulkedit") {
-            $allids = implode(',', $ids);
+            $cleanedIds = array_map('absint', $ids);
+            $allids = implode(',', $cleanedIds);
             $editlink = "?page=abj404_solution&subpage=abj404_edit&ids_multiple=" . $allids;
-            wp_redirect(esc_url($editlink), '200');
+            wp_redirect($editlink, '302');
             exit;
             
         } else {
@@ -481,19 +485,29 @@ class ABJ_404_Solution_PluginLogic {
         }
     }
     
+    /** 
+     * @global type $abj404dao
+     * @return string
+     */
     function updateRedirectData() {
         global $abj404dao;
         $message = "";
-
-        if ($_POST['url'] != "") {
-            if (substr($_POST['url'], 0, 1) != "/") {
-                $message .= __('Error: URL must start with /', '404-solution') . "<br>";
-            }
+        $fromURL = "";
+        $ids_multiple = "";
+        
+        if ($_POST['url'] == "" && $_POST['ids_multiple'] != "") {
+            $ids_multiple = array_map('absint', explode(',', $_POST['ids_multiple']));
+        } else if ($_POST['url'] != "" && $_POST['ids_multiple'] == "") {
+            $fromURL = $_POST['url'];
         } else {
             $message .= __('Error: URL is a required field.', '404-solution') . "<br>";
         }
 
-        if ($_POST['dest'] == "EXTERNAL") {
+        if ($fromURL != "" && substr($_POST['url'], 0, 1) != "/") {
+            $message .= __('Error: URL must start with /', '404-solution') . "<br>";
+        }
+
+        if ($_POST['dest'] == ABJ404_EXTERNAL) {
             if ($_POST['external'] == "") {
                 $message .= __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<br>";
             } else {
@@ -530,7 +544,21 @@ class ABJ_404_Solution_PluginLogic {
             }
 
             if ($type != "" && $dest != "") {
-                $abj404dao->updateRedirect($type, $dest);
+                // decide whether we're updating one or multiple redirects.
+                if ($fromURL != "") {
+                    $abj404dao->updateRedirect($type, $dest, $_POST['url'], $_POST['id'], $_POST['code']);
+                    
+                } else if ($ids_multiple != "") {
+                    // get the redirect data for each ID.
+                    $redirects_multiple = $abj404dao->getRedirectsByIDs($ids_multiple);
+                    foreach ($redirects_multiple as $redirect) {
+                        $abj404dao->updateRedirect($type, $dest, $redirect['url'], $redirect['id'], $_POST['code']);
+                    }
+                    
+                } else {
+                    ABJ_404_Solution_Functions::errorMessage("Issue determining which redirect(s) to update. " . 
+                        "fromURL: " . $fromURL . ", ids_multiple: " . implode(',', $ids_multiple));
+                }
 
                 $_POST['url'] = "";
                 $_POST['code'] = "";
@@ -544,6 +572,10 @@ class ABJ_404_Solution_PluginLogic {
         return $message;
     }
     
+    /**
+     * @global type $abj404dao
+     * @return string
+     */
     function addAdminRedirect() {
         global $abj404dao;
         $message = "";
