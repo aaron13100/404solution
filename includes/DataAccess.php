@@ -507,7 +507,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function getPublishedPostIDs() {
         global $wpdb;
-        $query = "select id from $wpdb->posts where post_status='publish' and post_type='post' order by post_date desc";
+        $query = "select id from $wpdb->posts where post_status='publish' and post_type='post' order by post_title";
         $rows = $wpdb->get_results($query);
         
         return $rows;
