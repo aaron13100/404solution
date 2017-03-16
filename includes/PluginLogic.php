@@ -260,7 +260,12 @@ class ABJ_404_Solution_PluginLogic {
                 $message = $abj404dao->deleteSpecifiedRedirects();
             }
         } else if (substr($action, 0, 4) == "bulk") {
-            if (check_admin_referer('abj404_bulkProcess') && is_admin()) {          
+            if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
+                if (!isset($_POST['idnum'])) {
+                    ABJ_404_Solution_Functions::errorMessage("No ID(s) specified for bulk action: " + esc_html($action));
+                    echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'), esc_html($action));
+                    return;
+                }
                 $message = $abj404logic->doBulkAction($action, array_map('absint', $_POST['idnum']));
             }
         }
