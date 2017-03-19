@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1); 
 
 /* Static functions that can be used from anywhere.  */
 
@@ -10,6 +10,7 @@ class ABJ_404_Solution_Functions {
      * @return type an array with id, type, score, link, and title.
      */
     static function permalinkInfoToArray($idAndType, $linkScore) {
+        global $abj404logging;
         $permalink = array();
 
         $meta = explode("|", $idAndType);
@@ -18,48 +19,26 @@ class ABJ_404_Solution_Functions {
         $permalink['type'] = $meta[1];
         $permalink['score'] = $linkScore;
 
-        if ($permalink['type'] == "POST") {
+        if ($permalink['type'] == ABJ404_POST) {
             $permalink['link'] = get_permalink($permalink['id']);
             $permalink['title'] = get_the_title($permalink['id']);
-        } else if ($permalink['type'] == "TAG") {
+        } else if ($permalink['type'] == ABJ404_TAG) {
             $permalink['link'] = get_tag_link($permalink['id']);
             $tag = get_term($permalink['id'], 'post_tag');
             $permalink['title'] = $tag->name;
-        } else if ($permalink['type'] == "CAT") {
+        } else if ($permalink['type'] == ABJ404_CAT) {
             $permalink['link'] = get_category_link($permalink['id']);
             $cat = get_term($permalink['id'], 'category');
             $permalink['title'] = $cat->name;
+        } else if ($permalink['type'] == ABJ404_HOME) {
+            $permalink['link'] = get_home_url();
+            $permalink['title'] = get_bloginfo('name');
         } else {
-            ABJ_404_Solution_Functions::debugMessage("Unrecognized permalink type: " . 
+            $abj404logging->errorMessage("Unrecognized permalink type: " . 
                     wp_kses_post(json_encode($permalink)));
         }
 
         return $permalink;
     }
-
-    /** @return boolean true if debug mode is on. false otherwise. */
-    static function isDebug() {
-        global $abj404logic;
-        $options = $abj404logic->getOptions(1);
-
-        return (@$options['debug_mode'] == true);
-    }
-    
-    /** Send a message to the error_log if debug mode is on. 
-     * This goes to a file and is used by every other class so it goes here.
-     * @param type $message  */
-    static function debugMessage($message) {
-        if (ABJ_404_Solution_Functions::isDebug()) {
-            error_log("ABJ-404-SOLUTION (DEBUG): " . $message);
-        }
-    }
-
-    /** Always send a message to the error_log.
-     * This goes to a file and is used by every other class so it goes here.
-     * @param type $message  */
-    static function errorMessage($message) {
-        error_log("ABJ-404-SOLUTION (ERROR): " . $message);
-    }
-    
 }
 

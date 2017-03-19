@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1); 
 /*
 	Plugin Name: 404 Solution
 	Plugin URI:  http://www.wealth-psychology.com/404-solution/
@@ -6,7 +6,7 @@
 	Author:      Aaron J
 	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 1.5.9
+	Version: 1.6.0
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -32,8 +32,8 @@
 define( 'ABJ404_URL', plugin_dir_url( __FILE__ ) );
 define( 'ABJ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );
-define( 'ABJ404_VERSION', '1.5.9' );
-define( 'ABJ404_HOME', 'http://www.wealth-psychology.com/404-solution/' );
+define( 'ABJ404_VERSION', '1.6.0' );
+define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/' );
 define( 'ABJ404_TRANS', 'abj404_solution' );
 
 // URL types
@@ -48,15 +48,21 @@ define( 'ABJ404_POST', 1 );
 define( 'ABJ404_CAT', 2 );
 define( 'ABJ404_TAG', 3 );
 define( 'ABJ404_EXTERNAL', 4 );
+define( 'ABJ404_HOME', 5 );
 
 // other
 define("ABJ404_OPTION_DEFAULT_PERPAGE", 25);
+
+
+require ABJ404_PATH . "includes/Logging.php";
+$abj404logging = new ABJ_404_Solution_Logging();
 
 require ABJ404_PATH . "includes/Functions.php";
 require ABJ404_PATH . "includes/DataAccess.php";
 require ABJ404_PATH . "includes/PluginLogic.php";
 require ABJ404_PATH . "includes/WPConnector.php";
 require ABJ404_PATH . "includes/SpellChecker.php";
+require ABJ404_PATH . "includes/ErrorHandler.php";
 
 if (is_admin()) {
     require ABJ404_PATH . "includes/View.php";

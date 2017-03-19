@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1); 
 
 /* Finds similar pages. 
  * Finds search suggestions. */
@@ -59,8 +59,9 @@ class ABJ_404_Solution_SpellChecker {
      */
     function getPermalinkUsingSlug($requestedURL) {
         global $abj404dao;
+        global $abj404logging;
         
-        $exploded = preg_split('@/@', $requestedURL, NULL, PREG_SPLIT_NO_EMPTY);
+        $exploded = preg_split('@/@', $requestedURL, -1, PREG_SPLIT_NO_EMPTY);
         $postSlug = end($exploded);
         $postsBySlugRows = $abj404dao->getPublishedPagesAndPostsIDs($postSlug);
         if (count($postsBySlugRows) == 1) {
@@ -78,10 +79,10 @@ class ABJ_404_Solution_SpellChecker {
             
         } else if (count($postsBySlugRows) > 1) {
             // more than one post has the same slug. I don't know what to do.
-            ABJ_404_Solution_Functions::debugMessage("More than one post found with the slug, so no redirect was " .
+            $abj404logging->debugMessage("More than one post found with the slug, so no redirect was " .
                     "created. Slug: " . $postSlug);
         } else {
-            ABJ_404_Solution_Functions::debugMessage("No posts or pages matching slug: " . esc_html($postSlug));
+            $abj404logging->debugMessage("No posts or pages matching slug: " . esc_html($postSlug));
         }
         
         return null;
@@ -96,6 +97,7 @@ class ABJ_404_Solution_SpellChecker {
     function getPermalinkUsingSpelling($requestedURL) {
         global $abj404spellChecker;
         global $abj404logic;
+        global $abj404logging;
 
         $options = $abj404logic->getOptions();
 
@@ -117,13 +119,13 @@ class ABJ_404_Solution_SpellChecker {
 
             if ($found == 1) {
                 // We found a permalink that will work!
-                $redirectType = $abj404logic->permalinkTypeToRedirectType($permalink['type']);
+                $redirectType = $permalink['type'];
                 if (absint($redirectType) > 0) {
                     return $permalink;
 
                 } else {
-                    ABJ_404_Solution_Functions::errorMessage("Unhandled permalink type: " . 
-                            wp_kses(json_encode($permalink), array()));
+                    $abj404logging->errorMessage("Unhandled permalink type: " . 
+                            wp_kses_post(json_encode($permalink)));
                     return null;
                 }
             }
@@ -157,7 +159,7 @@ class ABJ_404_Solution_SpellChecker {
                 continue;
             }
             $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
-            $permalinks[$id . "|POST"] = number_format($score, 4, '.', '');
+            $permalinks[$id . "|" . ABJ404_POST] = number_format($score, 4, '.', '');
         }
 
         if ($includeTags == "1") {
@@ -169,7 +171,7 @@ class ABJ_404_Solution_SpellChecker {
                 $scoreBasis = strlen($urlParts['path']);
                 $levscore = levenshtein($url, $urlParts['path'], 1, 1, 1);
                 $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
-                $permalinks[$id . "|TAG"] = number_format($score, 4, '.', '');
+                $permalinks[$id . "|" . ABJ404_TAG] = number_format($score, 4, '.', '');
             }
         }
 
@@ -182,7 +184,7 @@ class ABJ_404_Solution_SpellChecker {
                 $scoreBasis = strlen($urlParts['path']);
                 $levscore = levenshtein($url, $urlParts['path'], 1, 1, 1);
                 $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
-                $permalinks[$id . "|CAT"] = number_format($score, 4, '.', '');
+                $permalinks[$id . "|" . ABJ404_CAT] = number_format($score, 4, '.', '');
             }
         }
 

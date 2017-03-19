@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1); 
 
 /* Functions in this class should all reference the one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
@@ -164,6 +164,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function getRedirects($sub, $tableOptions, $limitEnforced = 1) {
         global $wpdb;
+        global $abj404logging;
 
         $redirects = $wpdb->prefix . "abj404_redirects";
         $logs = $wpdb->prefix . "abj404_logs";
@@ -180,7 +181,7 @@ class ABJ_404_Solution_DataAccess {
                 $query .= "status = " . ABJ404_CAPTURED . " or status = " . ABJ404_IGNORED;
 
             } else {
-                ABJ_404_Solution_Functions::errorMessage("Unrecognized sub type: " . esc_html($sub));
+                $abj404logging->errorMessage("Unrecognized sub type: " . esc_html($sub));
             }
         } else {
             $query .= "status = " . sanitize_text_field($tableOptions['filter']);
@@ -239,12 +240,13 @@ class ABJ_404_Solution_DataAccess {
      */
     function logRedirectHit($id, $action) {
         global $wpdb;
+        global $abj404logging;
         $now = time();
 
         // no nonce here because redirects are not user generated.
 
         $referer = wp_get_referer();
-        if (ABJ_404_Solution_Functions::isDebug()) {
+        if ($abj404logging->isDebug()) {
             $current_user = wp_get_current_user();
             $current_user_name = "(none)";
             if (isset($current_user)) {
@@ -257,7 +259,7 @@ class ABJ_404_Solution_DataAccess {
             if (isset($redirect)) {
                 $from = $redirect['url'];
             }
-            ABJ_404_Solution_Functions::debugMessage("Logging redirect. redirect_id: " . absint($id) . 
+            $abj404logging->debugMessage("Logging redirect. redirect_id: " . absint($id) . 
                     " | Referer: " . esc_html($referer) . " | Current user: " . $current_user_name . 
                     " | is_admin(): " . is_admin() . " | From: " . esc_html($from) . esc_html(" to: ") . 
                     esc_html($action));
@@ -421,18 +423,19 @@ class ABJ_404_Solution_DataAccess {
      */
     function setupRedirect($url, $status, $type, $final_dest, $code, $disabled = 0) {
         global $wpdb;
+        global $abj404logging;
 
         // nonce is verified outside of this method. We can't verify here because 
         // automatic redirects are sometimes created without user interaction.
 
         if (!is_numeric($type)) {
-            ABJ_404_Solution_Functions::errorMessage("Wrong data type for redirect. TYPE is non-numeric. From: " . 
+            $abj404logging->errorMessage("Wrong data type for redirect. TYPE is non-numeric. From: " . 
                     esc_url($url) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         } else if (absint($type) < 0) {
-            ABJ_404_Solution_Functions::errorMessage("Wrong range for redirect TYPE. From: " . 
+            $abj404logging->errorMessage("Wrong range for redirect TYPE. From: " . 
                     esc_url($url) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         } else if (!is_numeric($status)) {
-            ABJ_404_Solution_Functions::errorMessage("Wrong data type for redirect. STATUS is non-numeric. From: " . 
+            $abj404logging->errorMessage("Wrong data type for redirect. STATUS is non-numeric. From: " . 
                     esc_url($url) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         }
             
@@ -547,6 +550,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function deleteSpecifiedRedirects() {
         global $wpdb;
+        global $abj404logging;
         $message = "";
 
         // nonce already verified.
@@ -585,7 +589,7 @@ class ABJ_404_Solution_DataAccess {
 
         if (empty($redirectTypes)) {
             $message = __('Error: No valid redirect types were selected. Exiting.', '404-solution');
-            ABJ_404_Solution_Functions::debugMessage("Error: No valid redirect types were selected. Types: " .
+            $abj404logging->debugMessage("Error: No valid redirect types were selected. Types: " .
                     wp_kses_post(json_encode($redirectTypes)));
             return $message;
         }
@@ -593,7 +597,7 @@ class ABJ_404_Solution_DataAccess {
 
         if ($purge != "logs" && $purge != "redirects") {
             $message = __('Error: An invalid purge type was selected. Exiting.', '404-solution');
-            ABJ_404_Solution_Functions::debugMessage("Error: An invalid purge type was selected. Type: " .
+            $abj404logging->debugMessage("Error: An invalid purge type was selected. Type: " .
                     wp_kses_post(json_encode($purge)));
             return $message;
         }
@@ -712,7 +716,7 @@ class ABJ_404_Solution_DataAccess {
         $message = "";
 
         $result = false;
-        if (preg_match('/[0-9]+/', $id)) {
+        if (preg_match('/[0-9]+/', '' . $id)) {
 
             $result = $wpdb->update($wpdb->prefix . "abj404_redirects", 
                     array('status' => esc_sql($newstatus)), 
@@ -738,7 +742,7 @@ class ABJ_404_Solution_DataAccess {
         
         $message = "";
         $result = false;
-        if (preg_match('/[0-9]+/', $id)) {
+        if (preg_match('/[0-9]+/', '' . $id)) {
 
             $result = $wpdb->update($wpdb->prefix . "abj404_redirects", array('disabled' => esc_html($trash)), array('id' => absint($id)), array('%d'), array('%d')
             );
@@ -758,7 +762,7 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         
         if (($type <= 0) || ($idForUpdate <= 0)) {
-            ABJ_404_Solution_Functions::errorMessage("Bad data passed for update redirect request. Type: " .
+            $abj404logging->errorMessage("Bad data passed for update redirect request. Type: " .
                 esc_html($type) . ", Dest: " . esc_html($dest) . ", ID(s): " . esc_html($idForUpdate));
             echo __('Error: Bad data passed for update redirect request.', '404-solution');
             return;

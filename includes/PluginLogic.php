@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /* the glue that holds it together / everything else. */
 
@@ -37,7 +37,7 @@ class ABJ_404_Solution_PluginLogic {
             $permalink = get_permalink($pageid);
             $status = get_post_status($pageid);
             if (($permalink != false) && ($status == 'publish')) {
-                $redirect_id = $abj404dao->setupRedirect("", ABJ404_AUTO, $redirectType, 
+                $redirect_id = $abj404dao->setupRedirect("", ABJ404_AUTO, ABJ404_POST, 
                         $permalink, $options['default_redirect'], 0);
                 $abj404dao->logRedirectHit($redirect_id, $permalink);
                 wp_redirect($permalink, esc_html($options['default_redirect']));
@@ -51,6 +51,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return boolean true if the request should be ignored. false otherwise.
      */
     function shouldIgnoreRequest($urlRequest) {
+        global $abj404logging;
         // Bail out if 
         // not on 404 error page - because we're not supposed to, or 
         // if we're currently on an admin screen - because we want admins to see 404s?, or 
@@ -63,7 +64,7 @@ class ABJ_404_Solution_PluginLogic {
         // ignore requests that are supposed to be for an admin.
         $adminURL = parse_url(admin_url(), PHP_URL_PATH);
         if (substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
-            ABJ_404_Solution_Functions::debugMessage("Ignoring request for admin URL: " . $urlRequest);
+            $abj404logging->debugMessage("Ignoring request for admin URL: " . $urlRequest);
             return true;
         }
         
@@ -71,7 +72,7 @@ class ABJ_404_Solution_PluginLogic {
         // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
         // by https://www.sovrn.com/. This could be improved by letting the user specify when to ignore certain requests.
         if (strpos(strtolower(@$_SERVER['HTTP_USER_AGENT']), 'zemanta aggregator') !== false) {
-            ABJ_404_Solution_Functions::debugMessage("Ignoring request from user agent: " . 
+            $abj404logging->debugMessage("Ignoring request from user agent: " . 
                     esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
             return true;
         }
@@ -113,6 +114,19 @@ class ABJ_404_Solution_PluginLogic {
                     //Register the good ones
                     ABJ_404_Solution_PluginLogic::doRegisterCrons();
                 }
+                
+                // add the second part of the default destination page.
+                $dest404page = $options['dest404page'];
+                if (strpos($dest404page, '|') === false) {
+                    // not found
+                    if ($dest404page == '0') {
+                        $dest404page .= "|" . ABJ404_404_DISPLAYED;
+                    } else {
+                        $dest404page .= '|' . ABJ404_POST;
+                    }
+                    $options['dest404page'] = $dest404page;
+                }
+                
                 $options = $abj404logic->doUpdateDBVersionOption();
             }
         }
@@ -148,7 +162,7 @@ class ABJ_404_Solution_PluginLogic {
             'auto_cats' => '1',
             'auto_tags' => '1',
             'force_permalinks' => '1',
-            'dest404page' => '0',
+            'dest404page' => '0|404',
         );
         return $options;
     }
@@ -223,6 +237,7 @@ class ABJ_404_Solution_PluginLogic {
     function handlePluginAction($action, &$sub) {
         global $abj404logic;
         global $abj404dao;
+        global $abj404logging;
         
         $message = "";
         
@@ -259,15 +274,26 @@ class ABJ_404_Solution_PluginLogic {
             if (check_admin_referer('abj404_purgeRedirects') && is_admin()) {
                 $message = $abj404dao->deleteSpecifiedRedirects();
             }
-        } else if (substr($action, 0, 4) == "bulk") {
+        } else if (substr($action . '', 0, 4) == "bulk") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 if (!isset($_POST['idnum'])) {
-                    ABJ_404_Solution_Functions::errorMessage("No ID(s) specified for bulk action: " + esc_html($action));
+                    $abj404logging->errorMessage("No ID(s) specified for bulk action: " + esc_html($action));
                     echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'), esc_html($action));
                     return;
                 }
                 $message = $abj404logic->doBulkAction($action, array_map('absint', $_POST['idnum']));
             }
+        } else if ($action == "deleteDebugFile") {
+            if (check_admin_referer('abj404_deleteDebugFile') && is_admin()) {
+                $filepath = $abj404logging->getDebugFilePath();
+                if (!file_exists($filepath)) {
+                    $message = sprintf(__("Debug file not found. (%s)", '404-solution'), $filepath);
+                } else if ($abj404logging->deleteDebugFile()) {
+                    $message = sprintf(__("Debug file deleted. (%s)", '404-solution'), $filepath);
+                } else {
+                    $message = sprintf(__("Issue deleting debug file. (%s)", '404-solution'), $filepath);
+                }
+            }            
         }
         
         return $message;
@@ -278,6 +304,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function hanldeTrashAction() {
         global $abj404dao;
+        global $abj404logging;
         
         $message = "";
         // Handle Trash Functionality
@@ -289,7 +316,7 @@ class ABJ_404_Solution_PluginLogic {
                 } else if ($_GET['trash'] == 1) {
                     $trash = 1;
                 } else {
-                    ABJ_404_Solution_Functions::debugMessage("Unexpected trash operation: " . 
+                    $abj404logging->debugMessage("Unexpected trash operation: " . 
                             esc_html($_GET['trash']));
                     $message = __('Error: Bad trash operation specified.', '404-solution');
                     return $message;
@@ -313,6 +340,20 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
         
+        return $message;
+    }
+    
+    function handleDeleteLogAction() {
+        $message = "";
+
+        //Handle Delete Functionality
+        if (@$_GET['deleteDebugFile'] == '1') {
+            if (check_admin_referer('abj404_deleteDebugFile') && is_admin()) {
+                $abj404dao->deleteRedirect(absint($_GET['id']));
+                $message = __('Redirect Removed Successfully!', '404-solution');
+            }
+        }
+
         return $message;
     }
     
@@ -342,13 +383,14 @@ class ABJ_404_Solution_PluginLogic {
      */
     function handleIgnoreAction() {
         global $abj404dao;
+        global $abj404logging;
         $message = "";
         
         //Handle Ignore Functionality
         if (isset($_GET['ignore'])) {
             if (check_admin_referer('abj404_ignore404') && is_admin()) {
                 if ($_GET['ignore'] != 0 && $_GET['ignore'] != 1) {
-                    ABJ_404_Solution_Functions::debugMessage("Unexpected ignore operation: " . 
+                    $abj404logging->debugMessage("Unexpected ignore operation: " . 
                             esc_html($_GET['ignore']));
                     $message = __('Error: Bad ignore operation specified.', '404-solution');
                     return $message;                    
@@ -394,7 +436,7 @@ class ABJ_404_Solution_PluginLogic {
         if (@$_POST['action'] == "editRedirect") {
             $id = $abj404dao->getPostOrGetSanitize('id');
             $ids = $abj404dao->getPostOrGetSanitize('ids_multiple');
-            if (!($id === null && $ids === null) && (preg_match('/[0-9]+/', $id) || preg_match('/[0-9]+/', $ids))) {
+            if (!($id === null && $ids === null) && (preg_match('/[0-9]+/', '' . $id) || preg_match('/[0-9]+/', '' . $ids))) {
                 if (check_admin_referer('abj404editRedirect') && is_admin()) {
                     $message = $this->updateRedirectData();
                     if ($message == "") {
@@ -418,9 +460,13 @@ class ABJ_404_Solution_PluginLogic {
      */
     function doBulkAction($action, $ids) {
         global $abj404dao;
+        global $abj404logging;
         $message = "";
 
         // nonce already verified.
+        
+        $abj404logging->debugMessage("In doBulkAction. Action: " . 
+                esc_html($action == '' ? '(none)' : $action)) . ", ids: " . wp_kses_post(json_encode($ids));
 
         if ($action == "bulkignore" || $action == "bulkcaptured") {
             if ($action == "bulkignore") {
@@ -428,7 +474,7 @@ class ABJ_404_Solution_PluginLogic {
             } else if ($action == "bulkcaptured") {
                 $status = ABJ404_CAPTURED;
             } else {
-                ABJ_404_Solution_Functions::errorMessage("Unrecognized bulk action: " + esc_html($action));
+                $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action));
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
                 return;
             }
@@ -444,7 +490,7 @@ class ABJ_404_Solution_PluginLogic {
             } else if ($action == "bulkcaptured") {
                 $message = $count . " " . __('URLs marked as captured.', '404-solution');
             } else {
-                ABJ_404_Solution_Functions::errorMessage("Unrecognized bulk action: " + esc_html($action));
+                $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action));
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
             }
 
@@ -462,11 +508,12 @@ class ABJ_404_Solution_PluginLogic {
             $cleanedIds = array_map('absint', $ids);
             $allids = implode(',', $cleanedIds);
             $editlink = "?page=abj404_solution&subpage=abj404_edit&ids_multiple=" . $allids;
+            $abj404logging->debugMessage("Redirecting for edit: " . esc_html($editlink));
             wp_redirect($editlink, '302');
             exit;
             
         } else {
-            ABJ_404_Solution_Functions::errorMessage("Unrecognized bulk action: " + esc_html($action));
+            $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action));
             echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
         }
         return $message;
@@ -496,6 +543,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function updateRedirectData() {
         global $abj404dao;
+        global $abj404logging;
         $message = "";
         $fromURL = "";
         $ids_multiple = "";
@@ -512,69 +560,78 @@ class ABJ_404_Solution_PluginLogic {
             $message .= __('Error: URL must start with /', '404-solution') . "<br>";
         }
 
-        if ($_POST['dest'] == ABJ404_EXTERNAL) {
-            if ($_POST['external'] == "") {
-                $message .= __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<br>";
-            } else {
-                if (substr($_POST['external'], 0, 7) != "http://" && substr($_POST['external'], 0, 8) != "https://" && substr($_POST['external'], 0, 6) != "ftp://") {
-                    $message .= __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<br>";
-                }
-            }
+        $typeAndDest = $this->getRedirectTypeAndDest();
+
+        if ($typeAndDest['message'] != "") {
+            return $typeAndDest['message'];
         }
 
-        if ($message == "") {
-            $type = "";
-            $dest = "";
-            if ($_POST['dest'] === "" . ABJ404_EXTERNAL) {
-                $type = ABJ404_EXTERNAL;
-                $dest = esc_url($_POST['external']);
-            } else {
-                $info = explode("|", sanitize_text_field($_POST['dest']));
-                if (count($info) == 2) {
-                    $dest = absint($info[0]);
-                    if ($info[1] == ABJ404_POST) {
-                        $type = ABJ404_POST;
-                    } else if ($info[1] == ABJ404_CAT) {
-                        $type = ABJ404_CAT;
-                    } else if ($info[1] == ABJ404_TAG) {
-                        $type = ABJ404_TAG;
-                    } else {
-                        ABJ_404_Solution_Functions::errorMessage("Unrecognized type while updating redirect: " . 
-                                esc_html($type));
-                    }
-                } else {
-                    ABJ_404_Solution_Functions::errorMessage("Unexpected info while updating redirect: " . 
-                            wp_kses_post(json_encode($info)));
-                }
-            }
+        if ($typeAndDest['type'] != "" && $typeAndDest['dest'] !== "") {
+            // decide whether we're updating one or multiple redirects.
+            if ($fromURL != "") {
+                $abj404dao->updateRedirect($typeAndDest['type'], $typeAndDest['dest'], $fromURL, $_POST['id'], $_POST['code']);
 
-            if ($type != "" && $dest != "") {
-                // decide whether we're updating one or multiple redirects.
-                if ($fromURL != "") {
-                    $abj404dao->updateRedirect($type, $dest, $fromURL, $_POST['id'], $_POST['code']);
-                    
-                } else if ($ids_multiple != "") {
-                    // get the redirect data for each ID.
-                    $redirects_multiple = $abj404dao->getRedirectsByIDs($ids_multiple);
-                    foreach ($redirects_multiple as $redirect) {
-                        $abj404dao->updateRedirect($type, $dest, $redirect['url'], $redirect['id'], $_POST['code']);
-                    }
-                    
-                } else {
-                    ABJ_404_Solution_Functions::errorMessage("Issue determining which redirect(s) to update. " . 
-                        "fromURL: " . $fromURL . ", ids_multiple: " . implode(',', $ids_multiple));
+            } else if ($ids_multiple != "") {
+                // get the redirect data for each ID.
+                $redirects_multiple = $abj404dao->getRedirectsByIDs($ids_multiple);
+                foreach ($redirects_multiple as $redirect) {
+                    $abj404dao->updateRedirect($typeAndDest['type'], $typeAndDest['dest'], 
+                            $redirect['url'], $redirect['id'], $_POST['code']);
                 }
 
-                $_POST['url'] = "";
-                $_POST['code'] = "";
-                $_POST['external'] = "";
-                $_POST['dest'] = "";
             } else {
-                $message .= __('Error: Data not formatted properly.', '404-solution') . "<br>";
+                $abj404logging->errorMessage("Issue determining which redirect(s) to update. " . 
+                    "fromURL: " . $fromURL . ", ids_multiple: " . implode(',', $ids_multiple));
             }
+
+            $_POST['url'] = "";
+            $_POST['code'] = "";
+            $_POST['external'] = "";
+            $_POST['dest'] = "";
+        } else {
+            $message .= __('Error: Data not formatted properly.', '404-solution') . "<br>";
+            $abj404logging->errorMessage("Update redirect data issue. Type: " . esc_html($typeAndDest['type']) . ", dest: " .
+                    esc_html($typeAndDest['dest']));
         }
 
         return $message;
+    }
+    
+    function getRedirectTypeAndDest() {
+        $response = array();
+        $response['type'] = "";
+        $response['dest'] = "";
+        $response['message'] = "";
+        
+        if ($_POST['dest'] == ABJ404_EXTERNAL . '|' . ABJ404_EXTERNAL) {
+            if ($_POST['external'] == "") {
+                $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<br>";
+            } else {
+                if (substr($_POST['external'], 0, 7) != "http://" && substr($_POST['external'], 0, 8) != "https://" && substr($_POST['external'], 0, 6) != "ftp://") {
+                    $response['message'] = __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<br>";
+                }
+            }
+        }
+
+        if ($response['message'] != "") {
+            return $response;
+        }
+        $info = explode("|", sanitize_text_field($_POST['dest']));
+
+        if ($_POST['dest'] == ABJ404_EXTERNAL . '|' . ABJ404_EXTERNAL) {
+            $response['type'] = ABJ404_EXTERNAL;
+            $response['dest'] = esc_url($_POST['external']);
+        } else {
+            if (count($info) == 2) {
+                $response['dest'] = absint($info[0]);
+                $response['type'] = $info[1];
+            } else {
+                $abj404logging->errorMessage("Unexpected info while updating redirect: " . 
+                        wp_kses_post(json_encode($info)));
+            }
+        }
+        
+        return $response;
     }
     
     /**
@@ -583,6 +640,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function addAdminRedirect() {
         global $abj404dao;
+        global $abj404logging;
         $message = "";
 
         if ($_POST['url'] == "") {
@@ -595,52 +653,25 @@ class ABJ_404_Solution_PluginLogic {
             return $message;
         }
 
-        if ($_POST['dest'] == "EXTERNAL") {
-            if ($_POST['external'] == "") {
-                $message .= __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<br>";
-            } else {
-                if (substr($_POST['external'], 0, 7) != "http://" && substr($_POST['external'], 0, 8) != "https://" && substr($_POST['external'], 0, 6) != "ftp://") {
-                    $message .= __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<br>";
-                }
-            }
+        $typeAndDest = $this->getRedirectTypeAndDest();
+
+        if ($typeAndDest['message'] != "") {
+            return $typeAndDest['message'];
         }
 
-        if ($message == "") {
-            $type = "";
-            $dest = "";
-            if ($_POST['dest'] == "EXTERNAL") {
-                $type = ABJ404_EXTERNAL;
-                $dest = esc_url($_POST['external']);
-                
-            } else {
-                $info = explode("|", sanitize_text_field($_POST['dest']));
-                if (count($info) == 2) {
-                    $dest = absint($info[0]);
-                    if ($info[1] == "POST") {
-                        $type = ABJ404_POST;
-                    } else if ($info[1] == "CAT") {
-                        $type = ABJ404_CAT;
-                    } else if ($info[1] == "TAG") {
-                        $type = ABJ404_TAG;
-                    } else {
-                        ABJ_404_Solution_Functions::debugMessage("Unrecognized redirect type requested: " . 
-                                esc_html($info[1]));
-                    }
-                }
-            }
-            if ($type != "" && $dest != "") {
-
-                // nonce already verified.
-
-                $abj404dao->setupRedirect(esc_url($_POST['url']), ABJ404_MANUAL, $type, $dest, sanitize_text_field($_POST['code']), 0);
-                $_POST['url'] = "";
-                $_POST['code'] = "";
-                $_POST['external'] = "";
-                $_POST['dest'] = "";
-            } else {
-                $message .= __('Error: Data not formatted properly.', '404-solution') . "<br>";
-            }
+        if ($typeAndDest['type'] != "" && $typeAndDest['dest'] !== "") {
+            $abj404dao->setupRedirect(esc_url($_POST['url']), ABJ404_MANUAL, 
+                    $typeAndDest['type'], $typeAndDest['dest'], sanitize_text_field($_POST['code']), 0);
+            $_POST['url'] = "";
+            $_POST['code'] = "";
+            $_POST['external'] = "";
+            $_POST['dest'] = "";
+        } else {
+            $message .= __('Error: Data not formatted properly.', '404-solution') . "<br>";
+            $abj404logging->errorMessage("Add redirect data issue. Type: " . esc_html($typeAndDest['type']) . ", dest: " .
+                    esc_html($typeAndDest['dest']));
         }
+        
 
         return $message;
     }
@@ -762,11 +793,7 @@ class ABJ_404_Solution_PluginLogic {
         $options['suggest_entryafter'] = wp_kses_post($_POST['suggest_entryafter']);
         $options['suggest_noresults'] = wp_kses_post($_POST['suggest_noresults']);
 
-        if (preg_match('/^[0-9]+$/', $_POST['dest404page']) == 1 && $_POST['dest404page'] >= 1) {
-            $options['dest404page'] = absint($_POST['dest404page']);
-        } else {
-            $options['dest404page'] = 0;
-        }
+        $options['dest404page'] = sanitize_text_field(@$_POST['dest404page']);
 
         $options['auto_redirects'] = (@$_POST['auto_redirects'] == "1") ? 1 : 0;
         $options['auto_cats'] = (@$_POST['auto_cats'] == "1") ? 1 : 0;
@@ -796,24 +823,5 @@ class ABJ_404_Solution_PluginLogic {
         update_option('abj404_settings', $new_options);
 
         return $message;
-    }
-    
-    /** Translates POST, CAT, TAG into ABJ404_POST, ABJ404_CAT, ABJ404_TAG
-     * @param type $permalinkType
-     */
-    function permalinkTypeToRedirectType($permalinkType) {
-        if ($permalinkType == "POST") {
-            return ABJ404_POST;
-        } else if ($permalinkType == "CAT") {
-            return ABJ404_CAT;
-        } else if ($permalinkType == "TAG") {
-            return ABJ404_TAG;
-        } else if ($permalinkType == "EXTERNAL") {
-            return ABJ404_EXTERNAL;
-        } else {
-            ABJ_404_Solution_Functions::errorMessage("Unexpected permalink type for redirect type conversion: " . 
-                    esc_html($permalinkType));
-            return null;
-        }
     }
 }

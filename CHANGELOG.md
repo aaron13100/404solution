@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 1.6.0 ##
+* Improvement: Allow the default 404 page to be the "home page."
+* Improvement: Add a debug and error log file for Dave.
+
 ## Version 1.5.9 ##
 * FIX: Allow creating and editing redirects to external URLs again. 
 * Improvement: Add the "create redirect" bulk operation to captured 404s.
