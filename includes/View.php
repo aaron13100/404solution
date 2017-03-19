@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1); 
 
 /* Turns data into an html display and vice versa.
  * Houses all displayed pages. Logs, options page, captured 404s, stats, etc. */
@@ -31,24 +31,36 @@ class ABJ_404_Solution_View {
         
         global $abj404view;
         global $abj404logic;
+        global $abj404logging;
+        global $abj404dao;
         
-        $sub = "";
+        try {
 
-        // --------------------------------------------------------------------
-        // Handle Post Actions
-        $action = sanitize_text_field(@$_POST['action']);
+            $sub = "";
 
-        // this should really not pass things by reference so it can be more object oriented (encapsulation etc).
-        $message = "";
-        $message .= $abj404logic->handlePluginAction($action, $sub);
-        $message .= $abj404logic->hanldeTrashAction();
-        $message .= $abj404logic->handleDeleteAction();
-        $message .= $abj404logic->handleIgnoreAction();
-        $message .= $abj404logic->handleEditAction($sub);
+            // --------------------------------------------------------------------
+            // Handle Post Actions
+            $action = $abj404dao->getPostOrGetSanitize('action');
+            $abj404logging->debugMessage("Processing request for action: " . 
+                    esc_html($action == '' ? '(none)' : $action));
 
-        // --------------------------------------------------------------------
-        // Output the correct page.
-        $abj404view->echoChosenAdminTab($sub, $message);
+            // this should really not pass things by reference so it can be more object oriented (encapsulation etc).
+            $message = "";
+            $message .= $abj404logic->handlePluginAction($action, $sub);
+            $message .= $abj404logic->hanldeTrashAction();
+            $message .= $abj404logic->handleDeleteAction();
+            $message .= $abj404logic->handleIgnoreAction();
+            $message .= $abj404logic->handleEditAction($sub);
+            $message .= $abj404logic->handleDeleteLogAction();
+
+            // --------------------------------------------------------------------
+            // Output the correct page.
+            $abj404view->echoChosenAdminTab($sub, $message);
+            
+        } catch (Exception $e) {
+            $abj404logging->errorMessage("Caught exception: " + stripcslashes(wp_kses_post(json_encode($e))));
+            throw $e;
+        }
     }
     
     /** Display the chosen admin page.
@@ -58,6 +70,7 @@ class ABJ_404_Solution_View {
      */
     function echoChosenAdminTab($sub, $message) {
         global $abj404view;
+        global $abj404logging;
 
         // Deal With Page Tabs
         if ($sub == "") {
@@ -77,11 +90,13 @@ class ABJ_404_Solution_View {
             $sub = "tools";
         } else if ($sub == "abj404_redirects") {
             $sub = "redirects";
-
+        } else if ($sub == "abj404_debugfile") {
+            $sub = "debugfile";
         } else {
             // default page when clicking the settigns submenu.
             $sub = "redirects";
         }
+        $abj404logging->debugMessage("Displaying sub page: " . esc_html($sub == '' ? '(none)' : $sub));
         
         $abj404view->outputAdminHeaderTabs($sub, $message);
         
@@ -99,9 +114,11 @@ class ABJ_404_Solution_View {
             $abj404view->outputAdminStatsPage();
         } else if ($sub == "tools") {
             $abj404view->echoAdminToolsPage();
+        } else if ($sub == "debugfile") {
+            $abj404view->echoAdminDebugFile();
         } else {
             echo __('Invalid Sub Page ID', '404-solution') . " (" + esc_html($sub) . ")";
-            ABJ_404_Solution_Functions::debugMessage("Invalid sub page ID: " + esc_html($sub));
+            $abj404logging->debugMessage("Invalid sub page ID: " + esc_html($sub));
         }
         
         $abj404view->echoAdminFooter();
@@ -112,7 +129,7 @@ class ABJ_404_Solution_View {
         echo "<div style=\"clear: both;\">";
         echo "<BR/>";
         echo "<HR/><strong>Credits:</strong><br>";
-        echo "<a href=\"" . ABJ404_HOME . "\" title=\"" . __('404 Solution') . "\" target=\"_blank\">" . __('404 Solution') . "</a> ";
+        echo "<a href=\"" . ABJ404_HOME_URL . "\" title=\"" . __('404 Solution') . "\" target=\"_blank\">" . __('404 Solution') . "</a> ";
         echo __('is maintained by', '404-solution');
         echo " ";
         echo "<a href=\"http://www.wealth-psychology.com/404-solution/\" title=\"Aaron J\" target=\"_blank\">Aaron J</a>. | ";
@@ -286,9 +303,9 @@ class ABJ_404_Solution_View {
         echo "<div class=\"metabox-holder\">";
         echo " <div class=\"meta-box-sortables\">";
 
-        $today = mktime(0, 0, 0, date('m'), date('d'), date('Y'));
-        $firstm = mktime(0, 0, 0, date('m'), 1, date('Y'));
-        $firsty = mktime(0, 0, 0, 1, 1, date('Y'));
+        $today = mktime(0, 0, 0, abs(intval(date('m'))), abs(intval(date('d'))), abs(intval(date('Y'))));
+        $firstm = mktime(0, 0, 0, abs(intval(date('m'))), 1, abs(intval(date('Y'))));
+        $firsty = mktime(0, 0, 0, 1, 1, abs(intval(date('Y'))));
 
         for ($x = 0; $x <= 3; $x++) {
             if ($x == 0) {
@@ -345,6 +362,21 @@ class ABJ_404_Solution_View {
         echo "</div>";
         echo "</div>";
         echo "</div>";
+    }
+    
+    function echoAdminDebugFile() {
+        global $abj404logging;
+        if (check_admin_referer('abj404_debugfile') && is_admin()) {
+            // read the file and replace new lines with <BR/>.
+            $filecontents = esc_html(file_get_contents($abj404logging->getDebugFilePath()));
+            
+            echo "<div style=\"clear: both;\">";
+            echo nl2br($filecontents);
+            
+        } else {
+            echo "Wrong nonce or non-admin request to view debug file.";
+            $abj404logging->errorMessage("Wrong nonce or non-admin request to view debug file.");
+        }
     }
 
     /** Display the tools page.
@@ -443,42 +475,48 @@ class ABJ_404_Solution_View {
     function echoAdminEditRedirectPage() {
         global $abj404dao;
         global $abj404logic;
+        global $abj404logging;
         
         $options = $abj404logic->getOptions();
-
+        
         // this line assures that text will appear below the page tabs at the top.
         echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" /> <BR/>";
         
-        $recnum = null;
-        if (isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {
-            $recnum = absint($_GET['id']);
-        } else if (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
-            $recnum = absint($_POST['id']);
-        } else if (preg_match('/^[0-9,]+/', $abj404dao->getPostOrGetSanitize('ids_multiple'))) {
-            $recnums_multiple = preg_split('@,@', $abj404dao->getPostOrGetSanitize('ids_multiple'), NULL, PREG_SPLIT_NO_EMPTY);
-        } else {
-            echo __('Error: No ID(s) found for edit request.', '404-solution');
-            ABJ_404_Solution_Functions::errorMessage("No ID(s) found in GET or POST data for edit request.");
-            return;
-        }
-
-
         echo "<h3>" . __('Redirect Details', '404-solution') . "</h3>";
 
-        $url = "?page=abj404_solution&subpage=abj404_edit";
-
-        $link = wp_nonce_url($url, "abj404editRedirect");
+        $link = wp_nonce_url("?page=abj404_solution&subpage=abj404_edit", "abj404editRedirect");
 
         echo "<form method=\"POST\" action=\"" . esc_attr($link) . "\">";
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
 
+        $recnum = null;
+        if (isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {
+            $abj404logging->debugMessage("Edit redirect page. GET ID: " . 
+                    wp_kses_post(json_encode($_GET['id'])));
+            $recnum = absint($_GET['id']);
+        } else if (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
+            $abj404logging->debugMessage("Edit redirect page. POST ID: " . 
+                    wp_kses_post(json_encode($_POST['id'])));
+            $recnum = absint($_POST['id']);
+        } else if (preg_match('/^[0-9,]+/', '' . $abj404dao->getPostOrGetSanitize('ids_multiple'))) {
+            $ids_multiple = $abj404dao->getPostOrGetSanitize('ids_multiple');
+            $abj404logging->debugMessage("Edit redirect page. ids_multiple: " . 
+                    wp_kses_post(json_encode($ids_multiple)));
+
+            $recnums_multiple = preg_split('@,@', $ids_multiple, -1, PREG_SPLIT_NO_EMPTY);
+        } else {
+            echo __('Error: No ID(s) found for edit request.', '404-solution');
+            $abj404logging->errorMessage("No ID(s) found in GET or POST data for edit request.");
+            return;
+        }
+        
         // Decide whether we're editing one or multiple redirects.
         // If we're editing only one then set the ID to that one value.
         if ($recnum != null) {
             $redirect = $abj404dao->getRedirectByID($recnum);
             if ($redirect == null) {
-                echo "Error: Invalid ID Number! (id: " + $recnum . ")";
-                ABJ_404_Solution_Functions::debugMessage("Error: Invalid ID Number! (id: " + $recnum . ")");
+                echo "Error: Invalid ID Number! (id: " . esc_html($recnum) . ")";
+                $abj404logging->errorMessage("Error: Invalid ID Number! (id: " . esc_html($recnum) . ")");
                 return;
             }
 
@@ -492,7 +530,7 @@ class ABJ_404_Solution_View {
             $redirects_multiple = $abj404dao->getRedirectsByIDs($recnums_multiple);
             if ($redirects_multiple == null) {
                 echo "Error: Invalid ID Numbers! (ids: " . esc_html(implode(',', $recnums_multiple)) . ")";
-                ABJ_404_Solution_Functions::debugMessage("Error: Invalid ID Numbers! (ids: " . 
+                $abj404logging->debugMessage("Error: Invalid ID Numbers! (ids: " . 
                         esc_html(implode(',', $recnums_multiple)) . ")");
                 return;
             }
@@ -515,66 +553,70 @@ class ABJ_404_Solution_View {
             
         } else {
             echo "Error: Invalid ID Number(s) specified! (id: " + $recnum . ", ids: " . $recnums_multiple . ")";
-            ABJ_404_Solution_Functions::debugMessage("Error: Invalid ID Number(s) specified! (id: " + $recnum . 
+            $abj404logging->debugMessage("Error: Invalid ID Number(s) specified! (id: " + $recnum . 
                     ", ids: " . $recnums_multiple . ")");
             return;
         }
         
-        echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</strong> <select id=\"dest\" name=\"dest\">";
-        $selected = "";
-        if ($redirect['type'] == ABJ404_EXTERNAL) {
-            $selected = " selected";
-        }
-        echo "<option value=\"" . ABJ404_EXTERNAL . "\"" . $selected . ">" . __('External Page', '404-solution') . "</options>";
-
-        $postRows = $abj404dao->getPublishedPostIDs();
-        foreach ($postRows as $row) {
-            $id = $row->id;
-            $theTitle = get_the_title($id);
-            $thisval = $id . "|" . ABJ404_POST;
-
-            $selected = "";
-            if ($redirect['type'] == ABJ404_POST && $redirect['final_dest'] == $id) {
-                $selected = " selected";
-            }
-            echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Post', '404-solution') . ": " . $theTitle . "</option>";
-        }
-
-        $this->echoAdminEditRedirectPageSelects($redirect);
+        echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</strong> \n";
+        echo "<select id=\"dest\" name=\"dest\">";
+        echo $this->echoRedirectDestinationOptionsDefaults($redirect['type']);
+        echo $this->echoRedirectDestinationOptionsPosts($redirect['final_dest'] . '|' . $redirect['type']);
+        echo $this->echoRedirectDestinationOptionsPages($redirect['final_dest'] . '|' . $redirect['type']);
 
         echo "</select><br>";
         $final = "";
         if ($redirect['type'] == ABJ404_EXTERNAL) {
             $final = $redirect['final_dest'];
         }
-        echo "<strong><label for=\"external\">" . __('External URL', '404-solution') . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . $final . "\"> (" . __('Required if Redirect to is set to External Page', '404-solution') . ")<br>";
-        echo "<strong><label for=\"code\">" . __('Redirect Type', '404-solution') . ":</label></strong> <select id=\"code\" name=\"code\">";
+        
         if ($redirect['code'] == "") {
-            $codeselected = $options['default_redirect'];
+            $codeSelected = $options['default_redirect'];
         } else {
-            $codeselected = $redirect['code'];
+            $codeSelected = $redirect['code'];
         }
-        $codes = array(301, 302);
-        foreach ($codes as $code) {
-            $selected = "";
-            if ($code == $codeselected) {
-                $selected = " selected";
-            }
-
-            $title = ($code == 301) ? '301 Permanent Redirect' : '302 Temporary Redirect';
-            echo "<option value=\"" . $code . "\"" . $selected . ">" . $title . "</option>";
-        }
-        echo "</select><br>";
-        echo "<input type=\"submit\" value=\"" . __('Update Redirect', '404-solution') . "\" class=\"button-secondary\">";
+        $this->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'));
+        
         echo "</form>";
     }
     
     /** This is a supporting method for the echoAdminEditRedirectPage() method.
      * @global type $abj404dao
      */
-    function echoAdminEditRedirectPageSelects($redirect) {
+    function echoRedirectDestinationOptionsPages($dest) {
         global $abj404dao;
-        
+
+        echo $this->echoRedirectDestinationOptionsPagesOnly($dest);
+
+        $cats = get_categories('hierarchical=0');
+        foreach ($cats as $cat) {
+            $id = $cat->term_id;
+            $theTitle = $cat->name;
+            $thisval = $id . "|" . ABJ404_CAT;
+
+            $selected = "";
+            if ($thisval == $dest) {
+                $selected = " selected";
+            }
+            echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Category', '404-solution') . ": " . $theTitle . "</option>";
+        }
+
+        $tags = get_tags('hierarchical=0');
+        foreach ($tags as $tag) {
+            $id = $tag->term_id;
+            $theTitle = $tag->name;
+            $thisval = $id . "|" . ABJ404_TAG;
+
+            $selected = "";
+            if ($thisval == $dest) {
+                $selected = " selected";
+            }
+            echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Tag', '404-solution') . ": " . $theTitle . "</option>";
+        }        
+    }
+    
+    function echoRedirectDestinationOptionsPagesOnly($dest) {
+        $content = "";
         $pagesRows = get_pages();
         foreach ($pagesRows as $prow) {
             $id = $prow->ID;
@@ -593,37 +635,14 @@ class ABJ_404_Solution_View {
             }
 
             $selected = "";
-            if ($redirect['type'] == ABJ404_POST && $redirect['final_dest'] == $id) {
+            if ($thisval == $dest) {
                 $selected = " selected";
             }
-            echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Page', '404-solution') . ": " . $theTitle . "</option>\n";
+            $content .= "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Page', '404-solution') . ": " . 
+                    $theTitle . "</option>\n";
         }
-
-        $cats = get_categories('hierarchical=0');
-        foreach ($cats as $cat) {
-            $id = $cat->term_id;
-            $theTitle = $cat->name;
-            $thisval = $id . "|" . ABJ404_CAT;
-
-            $selected = "";
-            if ($redirect['type'] == ABJ404_CAT && $redirect['final_dest'] == $id) {
-                $selected = " selected";
-            }
-            echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Category', '404-solution') . ": " . $theTitle . "</option>";
-        }
-
-        $tags = get_tags('hierarchical=0');
-        foreach ($tags as $tag) {
-            $id = $tag->term_id;
-            $theTitle = $tag->name;
-            $thisval = $id . "|" . ABJ404_TAG;
-
-            $selected = "";
-            if ($redirect['type'] == ABJ404_TAG && $redirect['final_dest'] == $id) {
-                $selected = " selected";
-            }
-            echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Tag', '404-solution') . ": " . $theTitle . "</option>";
-        }        
+        
+        return $content;
     }
 
     /** 
@@ -719,7 +738,7 @@ class ABJ_404_Solution_View {
             $hits = $row['hits'];
             $last_used = $abj404dao->getRedirectLastUsed($row['id']);
             if ($last_used != 0) {
-                $last = date("Y/m/d h:i:s A", $last_used);
+                $last = date("Y/m/d h:i:s A", abs(intval($last_used)));
             } else {
                 $last = __('Never Used', '404-solution');
             }
@@ -802,7 +821,7 @@ class ABJ_404_Solution_View {
             echo "</div>";
             echo "</td>";
             echo "<td>" . esc_html($hits) . "</td>";
-            echo "<td>" . esc_html(date("Y/m/d h:i:s A", $row['timestamp'])) . "</td>";
+            echo "<td>" . esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))) . "</td>";
             echo "<td>" . esc_html($last) . "</td>";
             echo "<td></td>";
             echo "</tr>";
@@ -925,29 +944,35 @@ class ABJ_404_Solution_View {
                 $title .= $row['final_dest'];
             } else if ($row['type'] == ABJ404_POST) {
                 $type = __('Post/Page', '404-solution');
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|POST", 0);
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_POST, 0);
                 $dest = $permalink['title'];
                 $link = $permalink['link'];
                 $title .= $permalink['title'];
             } else if ($row['type'] == ABJ404_CAT) {
                 $type = __('Category', '404-solution');
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|CAT", 0);
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_CAT, 0);
                 $dest = $permalink['title'];
                 $link = $permalink['link'];
                 $title .= __('Category:', '404-solution') . " " . $permalink['title'];
             } else if ($row['type'] == ABJ404_TAG) {
                 $type = __('Tag', '404-solution');
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|TAG", 0);
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TAG, 0);
                 $dest = $permalink['title'];
                 $link = $permalink['link'];
                 $title .= __('Tag:', '404-solution') . " " . $permalink['title'];
+            } else if ($row['type'] == ABJ404_HOME) {
+                $type = __('Home Page', '404-solution');
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_HOME, 0);
+                $dest = $permalink['title'];
+                $link = $permalink['link'];
+                $title .= __('Home Page:', '404-solution') . " " . $permalink['title'];
             }
 
 
             $hits = $row['hits'];
             $last_used = $abj404dao->getRedirectLastUsed($row['id']);
             if ($last_used != 0) {
-                $last = date("Y/m/d h:i:s A", $last_used);
+                $last = date("Y/m/d h:i:s A", abs(intval($last_used)));
             } else {
                 $last = __('Never Used', '404-solution');
             }
@@ -1013,7 +1038,7 @@ class ABJ_404_Solution_View {
             echo "<td><a href=\"" . esc_url($link) . "\" title=\"" . $title . "\" target=\"_blank\">" . esc_html($dest) . "</a></td>";
             echo "<td>" . esc_html($row['code']) . "</td>";
             echo "<td>" . esc_html($hits) . "</td>";
-            echo "<td>" . esc_html(date("Y/m/d h:i:s A", $row['timestamp'])) . "</td>";
+            echo "<td>" . esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))) . "</td>";
             echo "<td>" . esc_html($last) . "</td>";
             echo "<td></td>";
             echo "</tr>";
@@ -1062,99 +1087,92 @@ class ABJ_404_Solution_View {
                     ":</label></strong> <input id=\"url\" placeholder=\"" . $urlPlaceholder . 
                     "\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
                     esc_attr($postedURL) . "\"> (" . __('Required', '404-solution') . ")<br>";
-            echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</strong> <select id=\"dest\" name=\"dest\">";
-            $selected = "";
-            if (@$_POST['dest'] == "EXTERNAL") {
-                $selected = " selected";
-            }
-            echo "<option value=\"EXTERNAL\"" . $selected . ">" . __('External Page', '404-solution') . "</options>";
-
-            $rows = $abj404dao->getPublishedPostIDs();
-            foreach ($rows as $row) {
-                $id = $row->id;
-                $theTitle = get_the_title($id);
-                $thisval = $id . "|POST";
-
-                $selected = "";
-                if (@$_POST['dest'] == $thisval) {
-                    $selected = " selected";
-                }
-                echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Post', '404-solution') . ": " . esc_html($theTitle) . "</option>";
-            }
-
-            $rows = get_pages();
-            foreach ($rows as $row) {
-                $id = $row->ID;
-                $theTitle = $row->post_title;
-                $thisval = $id . "|POST";
-
-                $parent = $row->post_parent;
-                while ($parent != 0) {
-                    $prow = $abj404dao->getPostParent(absint($parent));
-                    if (!( $prow == NULL )) {
-                        $theTitle = get_the_title($prow->id) . " &raquo; " . $theTitle;
-                        $parent = $prow->post_parent;
-                    } else {
-                        break;
-                    }
-                }
-
-                $selected = "";
-                if (@$_POST['dest'] == $thisval) {
-                    $selected = " selected";
-                }
-                echo "<option value=\"" . esc_url($thisval) . "\"" . $selected . ">" . __('Page', '404-solution') . ": " . esc_html($theTitle) . "</option>";
-            }
-
-            $cats = get_categories('hierarchical=0');
-            foreach ($cats as $cat) {
-                $id = $cat->term_id;
-                $theTitle = $cat->name;
-                $thisval = $id . "|CAT";
-
-                $selected = "";
-                if (@$_POST['dest'] == $thisval) {
-                    $selected = " selected";
-                }
-                echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Category', '404-solution') . ": " . esc_html($theTitle) . "</option>";
-            }
-
-            $tags = get_tags('hierarchical=0');
-            foreach ($tags as $tag) {
-                $id = $tag->term_id;
-                $theTitle = $tag->name;
-                $thisval = $id . "|TAG";
-
-                $selected = "";
-                if (@$_POST['dest'] == $thisval) {
-                    $selected = " selected";
-                }
-                echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Tag', '404-solution') . ": " . esc_html($theTitle) . "</option>";
-            }
+            
+            echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</strong> \n";
+            echo "<select id=\"dest\" name=\"dest\">";
+            echo $this->echoRedirectDestinationOptionsDefaults(@$_POST['dest']);
+            echo $this->echoRedirectDestinationOptionsPosts(@$_POST['dest'] . '|' . @$_POST['type']);
+            echo $this->echoRedirectDestinationOptionsPages(@$_POST['dest'] . '|' . @$_POST['type']);
 
             echo "</select><br>";
-            $postedExternal = esc_url(@$_POST['external']);
             
-            echo "<strong><label for=\"external\">" . __('External URL', '404-solution') . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . esc_attr($postedExternal) . "\"> (" . __('Required if Redirect to is set to External Page', '404-solution') . ")<br>";
-            echo "<strong><label for=\"code\">" . __('Redirect Type', '404-solution') . ":</label></strong> <select id=\"code\" name=\"code\">";
+            $externalDestination = esc_url(@$_POST['external']);
             if (@$_POST['code'] == "") {
                 $codeselected = $options['default_redirect'];
             } else {
                 $codeselected = sanitize_text_field($_POST['code']);
             }
-            $codes = array(301, 302);
-            foreach ($codes as $code) {
-                $selected = "";
-                if ($code == $codeselected) {
-                    $selected = " selected";
-                }
-                $title = ($code == 301) ? '301 Permanent Redirect' : '302 Temporary Redirect';
-                echo "<option value=\"" . esc_attr($code) . "\"" . $selected . ">" . esc_html($title) . "</option>";
-            }
-            echo "</select><br>";
-            echo "<input type=\"submit\" value=\"" . __('Add Redirect', '404-solution') . "\" class=\"button-secondary\">";
+            $this->echoEditRedirect($externalDestination, $codeselected, __('Add Redirect', '404-solution'));
+            
             echo "</form>";
         }
+    }
+    
+    /** This is used both to add and to edit a redirect.
+     * @param type $destination
+     * @param type $codeselected
+     * @param type $label
+     */
+    function echoEditRedirect($destination, $codeselected, $label) {
+        echo "<strong><label for=\"external\">" . __('External URL', '404-solution') . 
+                ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . 
+                esc_attr($destination) . "\"> (" . __('Required if Redirect to is set to External Page', '404-solution') . 
+                ")<br>";
+        echo "<strong><label for=\"code\">" . __('Redirect Type', '404-solution') . 
+                ":</label></strong> <select id=\"code\" name=\"code\">";
+        
+        $codes = array(301, 302);
+        foreach ($codes as $code) {
+            $selected = "";
+            if ($code == $codeselected) {
+                $selected = " selected";
+            }
+
+            $title = ($code == 301) ? '301 Permanent Redirect' : '302 Temporary Redirect';
+            echo "<option value=\"" . esc_attr($code) . "\"" . $selected . ">" . esc_html($title) . "</option>";
+        }
+        echo "</select><br>";
+        echo "<input type=\"submit\" value=\"" . $label . "\" class=\"button-secondary\">";
+    }
+    
+    function echoRedirectDestinationOptionsDefaults($currentlySelected) {
+        $content = "";
+        $selected = "";
+        if ($currentlySelected == ABJ404_EXTERNAL) {
+            $selected = " selected";
+        }
+        $content .= "<option value=\"" . ABJ404_EXTERNAL . "|" . ABJ404_EXTERNAL . "\"" . $selected . ">" . 
+                __('External Page', '404-solution') . "</options>";
+
+        if ($currentlySelected == ABJ404_HOME) {
+            $selected = " selected";
+        } else {
+            $selected = "";
+        }
+        $content .= "<option value=\"" . ABJ404_HOME . "|" . ABJ404_HOME . "\"" . $selected . ">" . 
+                __('Home Page', '404-solution') . "</options>";
+        
+        return $content;
+    }
+    
+    function echoRedirectDestinationOptionsPosts($dest) {
+        global $abj404dao;
+        $content = "";
+        
+        $postRows = $abj404dao->getPublishedPostIDs();
+        foreach ($postRows as $row) {
+            $id = $row->id;
+            $theTitle = get_the_title($id);
+            $thisval = $id . "|" . ABJ404_POST;
+
+            $selected = "";
+            if ($thisval == $dest) {
+                $selected = " selected";
+            }
+            $content .= "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Post', '404-solution') . ": " . $theTitle . "</option>";
+        }
+        
+        return $content;
     }
 
     /** 
@@ -1173,37 +1191,17 @@ class ABJ_404_Solution_View {
         $content .= "<label for=\"dest404page\">" . __('Redirect all unhandled 404s to', '404-solution') . ":</label> <select id=\"dest404page\" name=\"dest404page\">";
 
         $userSelected = (isset($options['dest404page']) ? $options['dest404page'] : null);
-        if ($userSelected == 0) {
-            $selected = "selected";
-        }
+        $dest404page = ABJ404_404_DISPLAYED . '|' . ABJ404_404_DISPLAYED;
+        $selected = $userSelected == $dest404page ? "selected" : "";
+        $content .= '<option value="' . ABJ404_404_DISPLAYED . '|' . ABJ404_404_DISPLAYED . '"' . $selected . ">" . 
+                __('(Default 404 Page)', '404-solution') . "</option>";
 
-        $content .= "<option value=\"0\"" . $selected . ">" . __('(Default 404 Page)', '404-solution') . "</option>";
+        $destHomepage = ABJ404_HOME . '|' . ABJ404_HOME;
+        $selected = $userSelected == $destHomepage ? "selected" : "";
+        $content .= '<option value="' . ABJ404_HOME . '|' . ABJ404_HOME . '"' . 
+                $selected . ">" . __('(Home Page)', '404-solution') . "</option>";
 
-        $rows = get_pages();
-        foreach ($rows as $row) {
-            $id = $row->ID;
-            $theTitle = $row->post_title;
-            $thisval = $id;
-
-            $parent = $row->post_parent;
-            while ($parent != 0) {
-                $parent = absint($parent);
-                $prow = $abj404dao->getPostParent($parent);
-                if (!( $prow == NULL )) {
-                    $theTitle = get_the_title($prow->id) . " &raquo; " . $theTitle;
-                    $parent = $prow->post_parent;
-                } else {
-                    break;
-                }
-            }
-            if ($userSelected == $thisval) {
-                $selected = "selected";
-            } else {
-                $selected = "";
-            }
-
-            $content .= "<option value=\"" . $thisval . "\"" . $selected . ">" . __('Page', '404-solution') . ": " . esc_html($theTitle) . "</option>";
-        }
+        $content .= $this->echoRedirectDestinationOptionsPagesOnly($userSelected);
 
         $content .= "</select><br>";
 
@@ -1298,6 +1296,8 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageGeneralSettings($options) {
+        global $abj404logging;
+        
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
 
         $content = "<p>" . __('DB Version Number', '404-solution') . ": " . esc_html($options['DB_VERSION']) . "</p>";
@@ -1336,14 +1336,27 @@ class ABJ_404_Solution_View {
         }
         
 
-        $content .= "<p><label for=\"remove_matches\">" . __('Remove redirect upon matching permalink', '404-solution') . ":</label> <input type=\"checkbox\" value=\"1\" name=\"remove_matches\" id=\"remove_matches\"" . $selectedRemoveMatches . "><br>";
+        $content .= "<p><label for=\"remove_matches\">" . __('Remove redirect upon matching permalink', '404-solution') . ":</label> <input type=\"checkbox\" value=\"1\" name=\"remove_matches\" id=\"remove_matches\"" . $selectedRemoveMatches . "><BR/>";
         $content .= $spaces . __('Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.', '404-solution') . "</p>";
 
         $selectedDebugLogging = "";
         if ($options['debug_mode'] == '1') {
             $selectedDebugLogging = " checked";
         }
-        $content .= "<p><label for=\"debug_mode\">" . __('Debug logging', '404-solution') . ":</label> <input type=\"checkbox\" name=\"debug_mode\" id=\"debug_mode\" value=\"1\"" . $selectedDebugLogging . "></p>";
+        $content .= "<p><label for=\"debug_mode\">" . __('Debug logging', '404-solution') . ":</label> <input type=\"checkbox\" name=\"debug_mode\" id=\"debug_mode\" value=\"1\"" . $selectedDebugLogging . "><BR/>";
+        $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
+        $explanationLink = wp_nonce_url("?page=abj404_solution&subpage=abj404_debugfile", "abj404_debugfile");
+        $debugExplanation = str_replace('<a>', '<a href="' . $explanationLink . '" target="_blank" >', $debugExplanation);
+
+        $debugDelete = __('<a>Delete</a> the debug file.', '404-solution');
+        $deleteLink = wp_nonce_url("?page=abj404_solution&subpage=abj404_options&action=deleteDebugFile", 
+                "abj404_deleteDebugFile");
+        $debugDelete = str_replace('<a>', '<a href="' . $deleteLink . '" >', $debugDelete);
+        
+        $kbFileSize = round($abj404logging->getDebugFileSize() / 1024);
+        $debugFileSize = sprintf(__("Debug file size: %s KB.", '404-solution'), $kbFileSize);
+    
+        $content .= $spaces . $debugExplanation . ' ' . $debugDelete . ' ' . $debugFileSize . "</p>";
 
         return $content;
     }
@@ -1354,6 +1367,7 @@ class ABJ_404_Solution_View {
     function echoAdminLogsPage() {
         global $abj404dao;
         global $abj404logic;
+        global $abj404logging;
 
         $sub = "logs";
         $tableOptions = $abj404logic->getTableOptions();
@@ -1373,7 +1387,7 @@ class ABJ_404_Solution_View {
             $redirects[$row['id']]['url'] = esc_url($row['url']);
             $redirectsFound++;
         }
-        ABJ_404_Solution_Functions::debugMessage($redirectsFound . " redirects found for logs page select option.");
+        $abj404logging->debugMessage($redirectsFound . " redirects found for logs page select option.");
 
         echo "<br>";
         echo "<form method=\"GET\" action=\"\" style=\"clear: both; display: block;\" class=\"clearbothdisplayblock\">";
@@ -1441,7 +1455,7 @@ class ABJ_404_Solution_View {
                 // delete the redirect. it only exists in the logs due to an error.
                 $abj404dao->deleteRedirect($redirect_id);
                 
-                ABJ_404_Solution_Functions::debugMessage("Deleted reference to nonexistent redirect from logs table. ID: " .
+                $abj404logging->debugMessage("Deleted reference to nonexistent redirect from logs table. ID: " .
                         $redirect_id);
                 continue;
             }
@@ -1472,12 +1486,12 @@ class ABJ_404_Solution_View {
                 echo "<a href=\"" . esc_url($row['action']) . "\" title=\"" . __('Visit', '404-solution') . ": " . esc_attr($row['action']) . "\" target=\"_blank\">" . esc_html($row['action']) . "</a>";
             }
             echo "</td>";
-            echo "<td>" . esc_html(date('Y/m/d h:i:s A', $row['timestamp'])) . "</td>";
+            echo "<td>" . esc_html(date('Y/m/d h:i:s A', abs(intval($row['timestamp'])))) . "</td>";
             echo "<td></td>";
             echo "</tr>";
             $redirectsDisplayed++;
         }
-        ABJ_404_Solution_Functions::debugMessage($redirectsDisplayed . " log records displayed on the page.");
+        $abj404logging->debugMessage($redirectsDisplayed . " log records displayed on the page.");
         if ($redirectsDisplayed == 0) {
             echo "<tr>";
             echo "<td></td>";
@@ -1575,6 +1589,7 @@ class ABJ_404_Solution_View {
      */
     function echoPaginationLinks($sub, $tableOptions) {
         global $abj404dao;
+        global $abj404logging;
 
         $url = "?page=abj404_solution";
         if ($sub == "captured") {
@@ -1608,9 +1623,9 @@ class ABJ_404_Solution_View {
                 $num_records = $abj404dao->getRecordCount($types);
             }
         }
-        if (ABJ_404_Solution_Functions::isDebug()) {
-            ABJ_404_Solution_Functions::debugMessage(esc_html($num_records) . " total log records found. Table options: " .
-                    wp_kses(json_encode($tableOptions), array()));
+        if ($abj404logging->isDebug()) {
+            $abj404logging->debugMessage("Pagination links: " . esc_html($num_records) . 
+                    " total log records found. Table options: " . wp_kses_post(json_encode($tableOptions)));
         }
 
         $total_pages = ceil($num_records / $tableOptions['perpage']);
@@ -1681,6 +1696,7 @@ class ABJ_404_Solution_View {
     function echoTabFilters($sub, $tableOptions) {
         global $abj404dao;
         global $abj404logic;
+        global $abj404logging;
 
         if (count($tableOptions) == 0) {
             $tableOptions = $abj404logic->getTableOptions();
@@ -1694,7 +1710,7 @@ class ABJ_404_Solution_View {
         } else if ($sub == "redirects") {
             $url .= "&subpage=abj404_redirects";
         } else {
-            ABJ_404_Solution_Functions::errorMessage("Unexpected sub page: " + $sub);
+            $abj404logging->errorMessage("Unexpected sub page: " + $sub);
         }
 
         $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']);
@@ -1736,7 +1752,7 @@ class ABJ_404_Solution_View {
             } else if ($type == ABJ404_IGNORED) {
                 $title = "Ignored 404s";
             } else {
-                ABJ_404_Solution_Functions::errorMessage("Unrecognized redirect type in View: " . esc_html($type));
+                $abj404logging->errorMessage("Unrecognized redirect type in View: " . esc_html($type));
             }
 
             echo "<li>";
