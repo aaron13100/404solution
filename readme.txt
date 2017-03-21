@@ -4,7 +4,7 @@ Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.1
 Version: 1.6.0
-Tested up to: 4.7.2
+Tested up to: 4.7.3
 Stable tag: 1.6.0
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
