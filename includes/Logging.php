@@ -1,4 +1,4 @@
-<?php declare(strict_types=1); 
+<?php
 
 /* Static functions that can be used from anywhere.  */
 
@@ -26,12 +26,25 @@ class ABJ_404_Solution_Logging {
 
     /** Always send a message to the error_log.
      * This goes to a file and is used by every other class so it goes here.
-     * @param type $message  */
-    function errorMessage($message) {
+     * @param type $message
+     * @param type $sendTo404Page if false then we don't echo the 404 page. default is true.
+     */
+    function errorMessage($message, $sendTo404Page = true) {
+        $e = new Exception;
+        $stacktrace = $e->getTraceAsString();
+        
         $prefix = "ABJ-404-SOLUTION (ERROR): ";
         $timestamp = date('Y-m-d H:i:s') . ' (ERROR): ';
         error_log($prefix . $message);
-        $this->writeLineToDebugFile($timestamp . $message);
+        $this->writeLineToDebugFile($timestamp . $message . ", \nTrace: " . $stacktrace);
+        
+        if ($sendTo404Page) {
+            // send the user to a 404 page. otherwise the user might just get a blank page.
+            status_header(404);
+            nocache_headers();
+            include(get_query_template('404'));
+            exit();
+        }
     }
 
     /** Write the line to the debug file. 

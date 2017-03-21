@@ -1,4 +1,4 @@
-<?php declare(strict_types=1); 
+<?php
 
 /* Static functions that can be used from anywhere.  */
 

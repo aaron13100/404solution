@@ -1,4 +1,4 @@
-<?php declare(strict_types=1); 
+<?php
 
 /* Turns data into an html display and vice versa.
  * Houses all displayed pages. Logs, options page, captured 404s, stats, etc. */
@@ -58,7 +58,7 @@ class ABJ_404_Solution_View {
             $abj404view->echoChosenAdminTab($sub, $message);
             
         } catch (Exception $e) {
-            $abj404logging->errorMessage("Caught exception: " + stripcslashes(wp_kses_post(json_encode($e))));
+            $abj404logging->errorMessage("Caught exception: " + stripcslashes(wp_kses_post(json_encode($e))), false);
             throw $e;
         }
     }
@@ -510,7 +510,7 @@ class ABJ_404_Solution_View {
             $recnums_multiple = preg_split('@,@', $ids_multiple, -1, PREG_SPLIT_NO_EMPTY);
         } else {
             echo __('Error: No ID(s) found for edit request.', '404-solution');
-            $abj404logging->errorMessage("No ID(s) found in GET or POST data for edit request.");
+            $abj404logging->errorMessage("No ID(s) found in GET or POST data for edit request.", false);
             return;
         }
         
@@ -520,7 +520,7 @@ class ABJ_404_Solution_View {
             $redirect = $abj404dao->getRedirectByID($recnum);
             if ($redirect == null) {
                 echo "Error: Invalid ID Number! (id: " . esc_html($recnum) . ")";
-                $abj404logging->errorMessage("Error: Invalid ID Number! (id: " . esc_html($recnum) . ")");
+                $abj404logging->errorMessage("Error: Invalid ID Number! (id: " . esc_html($recnum) . ")", false);
                 return;
             }
 
@@ -1714,7 +1714,7 @@ class ABJ_404_Solution_View {
         } else if ($sub == "redirects") {
             $url .= "&subpage=abj404_redirects";
         } else {
-            $abj404logging->errorMessage("Unexpected sub page: " + $sub);
+            $abj404logging->errorMessage("Unexpected sub page: " + $sub, false);
         }
 
         $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']);
@@ -1756,7 +1756,7 @@ class ABJ_404_Solution_View {
             } else if ($type == ABJ404_STATUS_IGNORED) {
                 $title = "Ignored 404s";
             } else {
-                $abj404logging->errorMessage("Unrecognized redirect type in View: " . esc_html($type));
+                $abj404logging->errorMessage("Unrecognized redirect type in View: " . esc_html($type), false);
             }
 
             echo "<li>";

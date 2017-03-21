@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php
 
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 
@@ -161,7 +161,7 @@ class ABJ_404_Solution_WordPress_Connector {
                 // A redirect record exists.
                 $abj404connector->processRedirect($redirect);
 
-                // we only reach this line unless an error happens.
+                // we only reach this line if an error happens.
                 exit;
             }
 
@@ -247,7 +247,8 @@ class ABJ_404_Solution_WordPress_Connector {
         // if there's a default 404 page specified then use that.
         $dest404page = (isset($options['dest404page']) ? $options['dest404page'] : 
             ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
-        if ($dest404page != ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) {
+        if (($dest404page != ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) && 
+                ($dest404page != ABJ404_TYPE_404_DISPLAYED)) {
             $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0);
             $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, $permalink['id'], $options['default_redirect'], 0);
             $abj404dao->logRedirectHit($redirect_id, $permalink['link']);
