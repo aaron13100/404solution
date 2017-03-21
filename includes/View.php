@@ -441,11 +441,8 @@ class ABJ_404_Solution_View {
 
         $options = $abj404logic->getOptions();
 
-        $url = "?page=abj404_solution";
-
         //General Options
-        $action = "abj404UpdateOptions";
-        $link = wp_nonce_url($url, $action);
+        $link = wp_nonce_url("?page=abj404_solution", "abj404UpdateOptions");
 
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
