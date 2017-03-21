@@ -77,7 +77,7 @@ class ABJ_404_Solution_DataAccess {
 
     /**
      * @global type $wpdb
-     * @param type $types specified types such as ABJ404_MANUAL, ABJ404_AUTO, ABJ404_CAPTURED, ABJ404_IGNORED.
+     * @param type $types specified types such as ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO, ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED.
      * @param int $trashed 1 to only include disabled redirects. 0 to only include enabled redirects.
      * @return int the number of records matching the specified types.
      */
@@ -466,12 +466,13 @@ class ABJ_404_Solution_DataAccess {
      * @param type $url
      * @return type
      */
-    function getRedirectForURL($url) {
+    function getActiveRedirectForURL($url) {
         global $wpdb;
         $redirect = array();
 
+        // a disabled value of '1' means in the trash.
         $query = "select * from " . $wpdb->prefix . "abj404_redirects where url = '" . esc_sql(esc_url($url)) . "'" .
-                " and disabled = 0 and status in (" . ABJ404_MANUAL . ", " . ABJ404_AUTO . ") " .
+                " and disabled = 0 and status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ") " .
                 "and type > 0";
 
         $row = $wpdb->get_row($query, ARRAY_A);
@@ -485,6 +486,30 @@ class ABJ_404_Solution_DataAccess {
         return $redirect;
     }
 
+    /** Get the redirect for the URL. 
+     * @global type $wpdb
+     * @param type $url
+     * @return type
+     */
+    function getExistingRedirectForURL($url) {
+        global $wpdb;
+        $redirect = array();
+
+        // a disabled value of '1' means in the trash.
+        $query = "select * from " . $wpdb->prefix . "abj404_redirects where url = '" . esc_sql(esc_url($url)) . "'" .
+                " and disabled = 0 "; 
+
+        $row = $wpdb->get_row($query, ARRAY_A);
+        if ($row == NULL) {
+            $redirect['id'] = 0;
+        } else {
+            foreach($row as $key => $value) {
+                $redirect[$key] = $value;
+            }
+        }
+        return $redirect;
+    }
+    
     /** Returns rows with the IDs of the published items.
      * @return type
      */

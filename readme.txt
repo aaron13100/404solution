@@ -62,6 +62,7 @@ Yes. It's as easy as turning on this feature in the options.
 = Version 1.6.0 =
 * Improvement: Allow the default 404 page to be the "home page."
 * Improvement: Add a debug and error log file for Dave.
+* FIX: No duplicate captured URLs are created when a URL already exists and is not in the trash.
 
 = Version 1.5.9 =
 * FIX: Allow creating and editing redirects to external URLs again. 

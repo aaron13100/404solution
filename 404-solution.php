@@ -43,12 +43,12 @@ define( 'ABJ404_STATUS_CAPTURED', 3 );
 define( 'ABJ404_STATUS_IGNORED', 4 );
 
 // Redirect types
-define( 'ABJ404_404_DISPLAYED', 0 );
-define( 'ABJ404_POST', 1 );
-define( 'ABJ404_CAT', 2 );
-define( 'ABJ404_TAG', 3 );
-define( 'ABJ404_EXTERNAL', 4 );
-define( 'ABJ404_HOME', 5 );
+define( 'ABJ404_TYPE_404_DISPLAYED', 0 );
+define( 'ABJ404_TYPE_POST', 1 );
+define( 'ABJ404_TYPE_CAT', 2 );
+define( 'ABJ404_TYPE_TAG', 3 );
+define( 'ABJ404_TYPE_EXTERNAL', 4 );
+define( 'ABJ404_TYPE_HOME', 5 );
 
 // other
 define("ABJ404_OPTION_DEFAULT_PERPAGE", 25);
