@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php
 
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 

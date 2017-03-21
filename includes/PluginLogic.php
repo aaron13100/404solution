@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 
 /* the glue that holds it together / everything else. */
 
@@ -125,6 +125,7 @@ class ABJ_404_Solution_PluginLogic {
                         $dest404page .= '|' . ABJ404_TYPE_POST;
                     }
                     $options['dest404page'] = $dest404page;
+                    update_option('abj404_settings', $options);
                 }
                 
                 $options = $abj404logic->doUpdateDBVersionOption();
@@ -162,8 +163,9 @@ class ABJ_404_Solution_PluginLogic {
             'auto_cats' => '1',
             'auto_tags' => '1',
             'force_permalinks' => '1',
-            'dest404page' => '0|404',
+            'dest404page' => '0|' . ABJ404_TYPE_404_DISPLAYED,
         );
+        
         return $options;
     }
 
@@ -278,7 +280,8 @@ class ABJ_404_Solution_PluginLogic {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 if (!isset($_POST['idnum'])) {
                     $abj404logging->errorMessage("No ID(s) specified for bulk action: " + esc_html($action));
-                    echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'), esc_html($action));
+                    echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'), esc_html($action),
+                            false);
                     return;
                 }
                 $message = $abj404logic->doBulkAction($action, array_map('absint', $_POST['idnum']));
@@ -474,7 +477,8 @@ class ABJ_404_Solution_PluginLogic {
             } else if ($action == "bulkcaptured") {
                 $status = ABJ404_STATUS_CAPTURED;
             } else {
-                $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action));
+                $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action),
+                        false);
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
                 return;
             }
@@ -490,7 +494,8 @@ class ABJ_404_Solution_PluginLogic {
             } else if ($action == "bulkcaptured") {
                 $message = $count . " " . __('URLs marked as captured.', '404-solution');
             } else {
-                $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action));
+                $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action),
+                        false);
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
             }
 
@@ -513,7 +518,8 @@ class ABJ_404_Solution_PluginLogic {
             exit;
             
         } else {
-            $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action));
+            $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action),
+                    false);
             echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
         }
         return $message;
@@ -581,7 +587,8 @@ class ABJ_404_Solution_PluginLogic {
 
             } else {
                 $abj404logging->errorMessage("Issue determining which redirect(s) to update. " . 
-                    "fromURL: " . $fromURL . ", ids_multiple: " . implode(',', $ids_multiple));
+                    "fromURL: " . $fromURL . ", ids_multiple: " . implode(',', $ids_multiple),
+                        false);
             }
 
             $_POST['url'] = "";
@@ -591,7 +598,7 @@ class ABJ_404_Solution_PluginLogic {
         } else {
             $message .= __('Error: Data not formatted properly.', '404-solution') . "<br>";
             $abj404logging->errorMessage("Update redirect data issue. Type: " . esc_html($typeAndDest['type']) . ", dest: " .
-                    esc_html($typeAndDest['dest']));
+                    esc_html($typeAndDest['dest']), false);
         }
 
         return $message;
@@ -627,7 +634,7 @@ class ABJ_404_Solution_PluginLogic {
                 $response['type'] = $info[1];
             } else {
                 $abj404logging->errorMessage("Unexpected info while updating redirect: " . 
-                        wp_kses_post(json_encode($info)));
+                        wp_kses_post(json_encode($info)), false);
             }
         }
         
@@ -669,7 +676,7 @@ class ABJ_404_Solution_PluginLogic {
         } else {
             $message .= __('Error: Data not formatted properly.', '404-solution') . "<br>";
             $abj404logging->errorMessage("Add redirect data issue. Type: " . esc_html($typeAndDest['type']) . ", dest: " .
-                    esc_html($typeAndDest['dest']));
+                    esc_html($typeAndDest['dest']), false);
         }
         
 

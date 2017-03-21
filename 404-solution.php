@@ -1,4 +1,4 @@
-<?php declare(strict_types=1); 
+<?php
 /*
 	Plugin Name: 404 Solution
 	Plugin URI:  http://www.wealth-psychology.com/404-solution/

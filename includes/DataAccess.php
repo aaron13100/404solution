@@ -1,4 +1,4 @@
-<?php declare(strict_types=1); 
+<?php
 
 /* Functions in this class should all reference the one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
@@ -181,7 +181,7 @@ class ABJ_404_Solution_DataAccess {
                 $query .= "status = " . ABJ404_STATUS_CAPTURED . " or status = " . ABJ404_STATUS_IGNORED;
 
             } else {
-                $abj404logging->errorMessage("Unrecognized sub type: " . esc_html($sub));
+                $abj404logging->errorMessage("Unrecognized sub type: " . esc_html($sub), false);
             }
         } else {
             $query .= "status = " . sanitize_text_field($tableOptions['filter']);
@@ -783,7 +783,8 @@ class ABJ_404_Solution_DataAccess {
         
         if (($type <= 0) || ($idForUpdate <= 0)) {
             $abj404logging->errorMessage("Bad data passed for update redirect request. Type: " .
-                esc_html($type) . ", Dest: " . esc_html($dest) . ", ID(s): " . esc_html($idForUpdate));
+                esc_html($type) . ", Dest: " . esc_html($dest) . ", ID(s): " . esc_html($idForUpdate),
+                    false);
             echo __('Error: Bad data passed for update redirect request.', '404-solution');
             return;
         }
