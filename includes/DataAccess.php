@@ -473,7 +473,7 @@ class ABJ_404_Solution_DataAccess {
         // a disabled value of '1' means in the trash.
         $query = "select * from " . $wpdb->prefix . "abj404_redirects where url = '" . esc_sql(esc_url($url)) . "'" .
                 " and disabled = 0 and status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ") " .
-                "and type > 0";
+                "and type not in (" . ABJ404_TYPE_404_DISPLAYED . ", " . ABJ404_TYPE_HOME . ") ";
 
         $row = $wpdb->get_row($query, ARRAY_A);
         if ($row == NULL) {
@@ -602,7 +602,7 @@ class ABJ_404_Solution_DataAccess {
         
         $redirectTypes = array();
         foreach ($type as $aType) {
-            if (absint($aType) > 0) {
+            if (('' . $aType != ABJ404_TYPE_HOME) && ('' . $aType != ABJ404_TYPE_HOME)) {
                 array_push($redirectTypes, absint($aType));
             }
         }

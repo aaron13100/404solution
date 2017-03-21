@@ -118,7 +118,7 @@ class ABJ_404_Solution_SpellChecker {
             if ($found == 1) {
                 // We found a permalink that will work!
                 $redirectType = $permalink['type'];
-                if (absint($redirectType) > 0) {
+                if (('' . $redirectType != ABJ404_TYPE_404_DISPLAYED) && ('' . $redirectType != ABJ404_TYPE_HOME)) {
                     return $permalink;
 
                 } else {
