@@ -240,19 +240,19 @@ class ABJ_404_Solution_View {
         $hr = "style=\"border: 0px; margin-bottom: 0px; padding-bottom: 4px; border-bottom: 1px dotted #DEDEDE;\"";
 
         $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d"; // . ABJ404_AUTO;
-        $auto301 = $abj404dao->getStatsCount($query, array(ABJ404_AUTO));
+        $auto301 = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_AUTO));
 
         $query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d"; // . ABJ404_AUTO;
-        $auto302 = $abj404dao->getStatsCount($query, array(ABJ404_AUTO));
+        $auto302 = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_AUTO));
 
         $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d"; // . ABJ404_MANUAL;
-        $manual301 = $abj404dao->getStatsCount($query, array(ABJ404_MANUAL));
+        $manual301 = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_MANUAL));
 
         $query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d"; // . ABJ404_MANUAL;
-        $manual302 = $abj404dao->getStatsCount($query, array(ABJ404_MANUAL));
+        $manual302 = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_MANUAL));
 
         $query = "select count(id) from $redirects where disabled = 1 and (status = %d or status = %d)";
-        $trashed = $abj404dao->getStatsCount($query, array(ABJ404_AUTO, ABJ404_MANUAL));
+        $trashed = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_AUTO, ABJ404_STATUS_MANUAL));
 
         $total = $auto301 + $auto302 + $manual301 + $manual302 + $trashed;
 
@@ -274,13 +274,13 @@ class ABJ_404_Solution_View {
 
         // -------------------------------------------
         $query = "select count(id) from $redirects where disabled = 0 and status = %d"; // . ABJ404_CAPTURED;
-        $captured = $abj404dao->getStatsCount($query, array(ABJ404_CAPTURED));
+        $captured = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED));
 
         $query = "select count(id) from $redirects where disabled = 0 and status = %d"; // . ABJ404_IGNORED;
-        $ignored = $abj404dao->getStatsCount($query, array(ABJ404_IGNORED));
+        $ignored = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_IGNORED));
 
         $query = "select count(id) from $redirects where disabled = 1 and (status = %d or status = %d)";
-        $trashed = $abj404dao->getStatsCount($query, array(ABJ404_CAPTURED, ABJ404_IGNORED));
+        $trashed = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED));
 
         $total = $captured + $ignored + $trashed;
 
@@ -410,10 +410,10 @@ class ABJ_404_Solution_View {
 
         $content .= "<strong>" . __('Redirect Types', '404-solution') . ":</strong><br>";
         $content .= "<ul style=\"margin-left: 40px;\">";
-        $content .= "<li><input type=\"checkbox\" id=\"auto\" name=\"types[]\" value=\"" . ABJ404_AUTO . "\"> <label for=\"auto\">" . __('Automatic Redirects', '404-solution') . "</label></li>";
-        $content .= "<li><input type=\"checkbox\" id=\"manual\" name=\"types[]\" value=\"" . ABJ404_MANUAL . "\"> <label for=\"manual\">" . __('Manual Redirects', '404-solution') . "</label></li>";
-        $content .= "<li><input type=\"checkbox\" id=\"captured\" name=\"types[]\" value=\"" . ABJ404_CAPTURED . "\"> <label for=\"captured\">" . __('Captured URLs', '404-solution') . "</label></li>";
-        $content .= "<li><input type=\"checkbox\" id=\"ignored\" name=\"types[]\" value=\"" . ABJ404_IGNORED . "\"> <label for=\"ignored\">" . __('Ignored URLs', '404-solution') . "</label></li>";
+        $content .= "<li><input type=\"checkbox\" id=\"auto\" name=\"types[]\" value=\"" . ABJ404_STATUS_AUTO . "\"> <label for=\"auto\">" . __('Automatic Redirects', '404-solution') . "</label></li>";
+        $content .= "<li><input type=\"checkbox\" id=\"manual\" name=\"types[]\" value=\"" . ABJ404_STATUS_MANUAL . "\"> <label for=\"manual\">" . __('Manual Redirects', '404-solution') . "</label></li>";
+        $content .= "<li><input type=\"checkbox\" id=\"captured\" name=\"types[]\" value=\"" . ABJ404_STATUS_CAPTURED . "\"> <label for=\"captured\">" . __('Captured URLs', '404-solution') . "</label></li>";
+        $content .= "<li><input type=\"checkbox\" id=\"ignored\" name=\"types[]\" value=\"" . ABJ404_STATUS_IGNORED . "\"> <label for=\"ignored\">" . __('Ignored URLs', '404-solution') . "</label></li>";
         $content .= "</ul>";
 
         $content .= "<strong>" . __('Sanity Check', '404-solution') . "</strong><br>";
@@ -708,7 +708,7 @@ class ABJ_404_Solution_View {
 
             echo "<form method=\"POST\" action=\"" . $url . "\">";
             echo "<select name=\"action\">";
-            if ($tableOptions['filter'] != ABJ404_IGNORED) {
+            if ($tableOptions['filter'] != ABJ404_STATUS_IGNORED) {
                 echo "<option value=\"bulkignore\">" . __('Mark as ignored', '404-solution') . "</option>";
             } else {
                 echo "<option value=\"bulkcaptured\">" . __('Mark as captured', '404-solution') . "</option>";
@@ -757,7 +757,7 @@ class ABJ_404_Solution_View {
                 $trashtitle = __('Trash', '404-solution');
             }
 
-            if ($tableOptions['filter'] == ABJ404_IGNORED) {
+            if ($tableOptions['filter'] == ABJ404_STATUS_IGNORED) {
                 $ignorelink .= "&ignore=0";
                 $ignoretitle = __('Remove Ignore Status', '404-solution');
             } else {
@@ -927,9 +927,9 @@ class ABJ_404_Solution_View {
         foreach ($rows as $row) {
             $displayed++;
             $status = "";
-            if ($row['status'] == ABJ404_MANUAL) {
+            if ($row['status'] == ABJ404_STATUS_MANUAL) {
                 $status = __('Manual', '404-solution');
-            } else if ($row['status'] == ABJ404_AUTO) {
+            } else if ($row['status'] == ABJ404_STATUS_AUTO) {
                 $status = __('Automatic', '404-solution');
             }
 
@@ -1603,9 +1603,9 @@ class ABJ_404_Solution_View {
 
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
             if ($sub == "redirects") {
-                $types = array(ABJ404_MANUAL, ABJ404_AUTO);
+                $types = array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO);
             } else {
-                $types = array(ABJ404_CAPTURED, ABJ404_IGNORED);
+                $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED);
             }
         } else {
             $types = array($tableOptions['filter']);
@@ -1717,9 +1717,9 @@ class ABJ_404_Solution_View {
         $url .= "&order=" . sanitize_text_field($tableOptions['order']);
 
         if ($sub == "redirects") {
-            $types = array(ABJ404_MANUAL, ABJ404_AUTO);
+            $types = array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO);
         } else {
-            $types = array(ABJ404_CAPTURED, ABJ404_IGNORED);
+            $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED);
         }
 
         $class = "";
@@ -1743,20 +1743,20 @@ class ABJ_404_Solution_View {
                 $class = " class=\"current\"";
             }
 
-            if ($type == ABJ404_MANUAL) {
+            if ($type == ABJ404_STATUS_MANUAL) {
                 $title = "Manual Redirects";
-            } else if ($type == ABJ404_AUTO) {
+            } else if ($type == ABJ404_STATUS_AUTO) {
                 $title = "Automatic Redirects";
-            } else if ($type == ABJ404_CAPTURED) {
+            } else if ($type == ABJ404_STATUS_CAPTURED) {
                 $title = "Captured URLs";
-            } else if ($type == ABJ404_IGNORED) {
+            } else if ($type == ABJ404_STATUS_IGNORED) {
                 $title = "Ignored 404s";
             } else {
                 $abj404logging->errorMessage("Unrecognized redirect type in View: " . esc_html($type));
             }
 
             echo "<li>";
-            if ($sub != "captured" || $type != ABJ404_CAPTURED) {
+            if ($sub != "captured" || $type != ABJ404_STATUS_CAPTURED) {
                 echo " | ";
             }
             echo "<a href=\"" . esc_url($thisurl) . "\"" . $class . ">" . ( $title );

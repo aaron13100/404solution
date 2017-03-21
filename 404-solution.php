@@ -36,11 +36,11 @@ define( 'ABJ404_VERSION', '1.6.0' );
 define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/' );
 define( 'ABJ404_TRANS', 'abj404_solution' );
 
-// URL types
-define( 'ABJ404_MANUAL', 1 );
-define( 'ABJ404_AUTO', 2 );
-define( 'ABJ404_CAPTURED', 3 );
-define( 'ABJ404_IGNORED', 4 );
+// STATUS types
+define( 'ABJ404_STATUS_MANUAL', 1 );
+define( 'ABJ404_STATUS_AUTO', 2 );
+define( 'ABJ404_STATUS_CAPTURED', 3 );
+define( 'ABJ404_STATUS_IGNORED', 4 );
 
 // Redirect types
 define( 'ABJ404_404_DISPLAYED', 0 );
