@@ -37,7 +37,7 @@ class ABJ_404_Solution_PluginLogic {
             $permalink = get_permalink($pageid);
             $status = get_post_status($pageid);
             if (($permalink != false) && ($status == 'publish')) {
-                $redirect_id = $abj404dao->setupRedirect("", ABJ404_AUTO, ABJ404_POST, 
+                $redirect_id = $abj404dao->setupRedirect("", ABJ404_STATUS_AUTO, ABJ404_POST, 
                         $permalink, $options['default_redirect'], 0);
                 $abj404dao->logRedirectHit($redirect_id, $permalink);
                 wp_redirect($permalink, esc_html($options['default_redirect']));
@@ -398,20 +398,20 @@ class ABJ_404_Solution_PluginLogic {
                 
                 if (preg_match('/[0-9]+/', $_GET['id'])) {
                     if ($_GET['ignore'] == 1) {
-                        $newstatus = ABJ404_IGNORED;
+                        $newstatus = ABJ404_STATUS_IGNORED;
                     } else {
-                        $newstatus = ABJ404_CAPTURED;
+                        $newstatus = ABJ404_STATUS_CAPTURED;
                     }
                     
                     $message = $abj404dao->updateRedirectTypeStatus(absint($_GET['id']), $newstatus);
                     if ($message == "") {
-                        if ($newstatus == ABJ404_CAPTURED) {
+                        if ($newstatus == ABJ404_STATUS_CAPTURED) {
                             $message = __('Removed 404 URL from ignored list successfully!', '404-solution');
                         } else {
                             $message = __('404 URL marked as ignored successfully!', '404-solution');
                         }
                     } else {
-                        if ($newstatus == ABJ404_CAPTURED) {
+                        if ($newstatus == ABJ404_STATUS_CAPTURED) {
                             $message = __('Error: unable to remove URL from ignored list', '404-solution');
                         } else {
                             $message = __('Error: unable to mark URL as ignored', '404-solution');
@@ -470,9 +470,9 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($action == "bulkignore" || $action == "bulkcaptured") {
             if ($action == "bulkignore") {
-                $status = ABJ404_IGNORED;
+                $status = ABJ404_STATUS_IGNORED;
             } else if ($action == "bulkcaptured") {
-                $status = ABJ404_CAPTURED;
+                $status = ABJ404_STATUS_CAPTURED;
             } else {
                 $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action));
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
@@ -660,7 +660,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if ($typeAndDest['type'] != "" && $typeAndDest['dest'] !== "") {
-            $abj404dao->setupRedirect(esc_url($_POST['url']), ABJ404_MANUAL, 
+            $abj404dao->setupRedirect(esc_url($_POST['url']), ABJ404_STATUS_MANUAL, 
                     $typeAndDest['type'], $typeAndDest['dest'], sanitize_text_field($_POST['code']), 0);
             $_POST['url'] = "";
             $_POST['code'] = "";
@@ -687,7 +687,7 @@ class ABJ_404_Solution_PluginLogic {
         $tableOptions['filter'] = $abj404dao->getPostOrGetSanitize("filter", "");
         if ($tableOptions['filter'] == "") {
             if (@$_GET['subpage'] == 'abj404_captured') {
-                $tableOptions['filter'] = ABJ404_CAPTURED;
+                $tableOptions['filter'] = ABJ404_STATUS_CAPTURED;
             } else {
                 $tableOptions['filter'] = '0';
             }
