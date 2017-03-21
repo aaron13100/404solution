@@ -22,7 +22,7 @@ Convert your 404 traffic by providing your visitors with a better browsing exper
 
 ## Etc ##
 * Untested: Test whether changing the permalink structure twice (3 different permalinks structures total) causes us to
-    forward to non-existent pages. Test by doing the following: Choose a permalink structre, create a page, change the 
+    forward twice unnecessarily. Test by doing the following: Choose a permalink structre, create a page, change the 
     permalink structure, go to the old URL of the page to create an automatic redirect, change the permalink structure
     to a third type, go to the old URL of the page. Are we forwarded to the second (non-existent) permalink structre and 
     not the current valid one?  Workaround: Delete all redirects and start over.
@@ -68,6 +68,7 @@ Yes. It's as easy as turning on this feature in the options.
 ## Version 1.6.0 ##
 * Improvement: Allow the default 404 page to be the "home page."
 * Improvement: Add a debug and error log file for Dave.
+* FIX: No duplicate captured URLs are created when a URL already exists and is not in the trash.
 
 ## Version 1.5.9 ##
 * FIX: Allow creating and editing redirects to external URLs again. 

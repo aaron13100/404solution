@@ -37,7 +37,7 @@ class ABJ_404_Solution_PluginLogic {
             $permalink = get_permalink($pageid);
             $status = get_post_status($pageid);
             if (($permalink != false) && ($status == 'publish')) {
-                $redirect_id = $abj404dao->setupRedirect("", ABJ404_STATUS_AUTO, ABJ404_POST, 
+                $redirect_id = $abj404dao->setupRedirect("", ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, 
                         $permalink, $options['default_redirect'], 0);
                 $abj404dao->logRedirectHit($redirect_id, $permalink);
                 wp_redirect($permalink, esc_html($options['default_redirect']));
@@ -120,9 +120,9 @@ class ABJ_404_Solution_PluginLogic {
                 if (strpos($dest404page, '|') === false) {
                     // not found
                     if ($dest404page == '0') {
-                        $dest404page .= "|" . ABJ404_404_DISPLAYED;
+                        $dest404page .= "|" . ABJ404_TYPE_404_DISPLAYED;
                     } else {
-                        $dest404page .= '|' . ABJ404_POST;
+                        $dest404page .= '|' . ABJ404_TYPE_POST;
                     }
                     $options['dest404page'] = $dest404page;
                 }
@@ -603,7 +603,7 @@ class ABJ_404_Solution_PluginLogic {
         $response['dest'] = "";
         $response['message'] = "";
         
-        if ($_POST['dest'] == ABJ404_EXTERNAL . '|' . ABJ404_EXTERNAL) {
+        if ($_POST['dest'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             if ($_POST['external'] == "") {
                 $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<br>";
             } else {
@@ -618,8 +618,8 @@ class ABJ_404_Solution_PluginLogic {
         }
         $info = explode("|", sanitize_text_field($_POST['dest']));
 
-        if ($_POST['dest'] == ABJ404_EXTERNAL . '|' . ABJ404_EXTERNAL) {
-            $response['type'] = ABJ404_EXTERNAL;
+        if ($_POST['dest'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
+            $response['type'] = ABJ404_TYPE_EXTERNAL;
             $response['dest'] = esc_url($_POST['external']);
         } else {
             if (count($info) == 2) {

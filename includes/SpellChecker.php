@@ -67,7 +67,7 @@ class ABJ_404_Solution_SpellChecker {
         if (count($postsBySlugRows) == 1) {
             $post = reset($postsBySlugRows);
             $permalink['id'] = $post->id;
-            $permalink['type'] = ABJ404_POST;
+            $permalink['type'] = ABJ404_TYPE_POST;
             // the score doesn't matter.
             $permalink['score'] = 100;
             $permalink['title'] = get_the_title($post->id);
@@ -157,7 +157,7 @@ class ABJ_404_Solution_SpellChecker {
                 continue;
             }
             $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
-            $permalinks[$id . "|" . ABJ404_POST] = number_format($score, 4, '.', '');
+            $permalinks[$id . "|" . ABJ404_TYPE_POST] = number_format($score, 4, '.', '');
         }
 
         if ($includeTags == "1") {
@@ -169,7 +169,7 @@ class ABJ_404_Solution_SpellChecker {
                 $scoreBasis = strlen($urlParts['path']);
                 $levscore = levenshtein($url, $urlParts['path'], 1, 1, 1);
                 $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
-                $permalinks[$id . "|" . ABJ404_TAG] = number_format($score, 4, '.', '');
+                $permalinks[$id . "|" . ABJ404_TYPE_TAG] = number_format($score, 4, '.', '');
             }
         }
 
@@ -182,7 +182,7 @@ class ABJ_404_Solution_SpellChecker {
                 $scoreBasis = strlen($urlParts['path']);
                 $levscore = levenshtein($url, $urlParts['path'], 1, 1, 1);
                 $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
-                $permalinks[$id . "|" . ABJ404_CAT] = number_format($score, 4, '.', '');
+                $permalinks[$id . "|" . ABJ404_TYPE_CAT] = number_format($score, 4, '.', '');
             }
         }
 

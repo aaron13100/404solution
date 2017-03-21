@@ -144,7 +144,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $requestedURL .= $abj404connector->sortQueryParts($urlParts);
 
         // Get URL data if it's already in our database
-        $redirect = $abj404dao->getRedirectForURL($requestedURL);
+        $redirect = $abj404dao->getActiveRedirectForURL($requestedURL);
 
         $options = $abj404logic->getOptions();
 
@@ -196,7 +196,7 @@ class ABJ_404_Solution_WordPress_Connector {
             if (is_single() || is_page()) {
                 if (!is_feed() && !is_trackback() && !is_preview()) {
                     $theID = get_the_ID();
-                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($theID . "|" . ABJ404_POST, 0);
+                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($theID . "|" . ABJ404_TYPE_POST, 0);
 
                     $urlParts = parse_url($permalink['link']);
                     $perma_link = $urlParts['path'];
@@ -223,7 +223,7 @@ class ABJ_404_Solution_WordPress_Connector {
                             if ($redirect['id'] != '0') {
                                 $abj404connector->processRedirect($redirect);
                             } else {
-                                $redirect_id = $abj404dao->setupRedirect(esc_url($requestedURL), ABJ404_STATUS_AUTO, ABJ404_POST, $permalink['id'], $options['default_redirect'], 0);
+                                $redirect_id = $abj404dao->setupRedirect(esc_url($requestedURL), ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, $permalink['id'], $options['default_redirect'], 0);
                                 $abj404dao->logRedirectHit($redirect_id, $permalink['link']);
                                 wp_redirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
                                 exit;
@@ -246,10 +246,10 @@ class ABJ_404_Solution_WordPress_Connector {
         // ---------------------------------------
         // if there's a default 404 page specified then use that.
         $dest404page = (isset($options['dest404page']) ? $options['dest404page'] : 
-            ABJ404_404_DISPLAYED . '|' . ABJ404_404_DISPLAYED);
-        if ($dest404page != ABJ404_404_DISPLAYED . '|' . ABJ404_404_DISPLAYED) {
+            ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
+        if ($dest404page != ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) {
             $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0);
-            $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, ABJ404_POST, $permalink['id'], $options['default_redirect'], 0);
+            $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, $permalink['id'], $options['default_redirect'], 0);
             $abj404dao->logRedirectHit($redirect_id, $permalink['link']);
             wp_redirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
             exit;
@@ -258,7 +258,13 @@ class ABJ_404_Solution_WordPress_Connector {
         // ---------------------------------------
         // give up. log the 404.
         if (@$options['capture_404'] == '1') {
-            $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_CAPTURED, ABJ404_404_DISPLAYED, ABJ404_404_DISPLAYED, $options['default_redirect'], 0);
+            // get the existing redirect before adding a new one.
+            $redirect = $abj404dao->getExistingRedirectForURL($requestedURL);
+            if ($redirect['id'] != 0) {
+                $redirect_id = $redirect['id'];
+            } else {
+                $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_CAPTURED, ABJ404_TYPE_404_DISPLAYED, ABJ404_TYPE_404_DISPLAYED, $options['default_redirect'], 0);
+            }
             $abj404dao->logRedirectHit($redirect_id, '404');
         } else {
             if ($abj404logging->isDebug()) {
@@ -342,14 +348,14 @@ class ABJ_404_Solution_WordPress_Connector {
                 $requestedURL .= $abj404connector->sortQueryParts($urlParts);
 
                 // Get URL data if it's already in our database.
-                $data = $abj404dao->getRedirectForURL($requestedURL);
+                $data = $abj404dao->getActiveRedirectForURL($requestedURL);
 
                 if ($data['id'] != '0' && $data['final_dest'] != 0) {
                     $abj404connector->processRedirect($data);
                 } else {
                     if ($options['auto_redirects'] == '1' && $options['force_permalinks'] == '1') {
                         $theID = get_the_ID();
-                        $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($theID . "|" . ABJ404_POST, 0);
+                        $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($theID . "|" . ABJ404_TYPE_POST, 0);
                         $urlParts = parse_url($permalink['link']);
 
                         $perma_link = $urlParts['path'];
@@ -370,7 +376,7 @@ class ABJ_404_Solution_WordPress_Connector {
                         $perma_link .= $abj404connector->sortQueryParts($urlParts);
 
                         if ($requestedURL != $perma_link) {
-                            $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, ABJ404_POST, $theID, $options['default_redirect'], 0);
+                            $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, $theID, $options['default_redirect'], 0);
                             $abj404dao->logRedirectHit($redirect_id, $perma_link);
                             wp_redirect(esc_url($perma_link), esc_html($options['default_redirect']));
                             exit;
@@ -402,21 +408,21 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
 
-        if ($redirect['type'] == ABJ404_EXTERNAL) {
+        if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
             $abj404dao->logRedirectHit($redirect['id'], $redirect['final_dest']);
             wp_redirect(esc_url($redirect['final_dest']), esc_html($redirect['code']));
             exit;
         }
 
         $key = "";
-        if ($redirect['type'] == ABJ404_POST) {
-            $key = $redirect['final_dest'] . "|" . ABJ404_POST;
-        } else if ($redirect['type'] == ABJ404_CAT) {
-            $key = $redirect['final_dest'] . "|" . ABJ404_CAT;
-        } else if ($redirect['type'] == ABJ404_TAG) {
-            $key = $redirect['final_dest'] . "|" . ABJ404_TAG;
-        } else if ($redirect['type'] == ABJ404_HOME) {
-            $key = $redirect['final_dest'] . "|" . ABJ404_HOME;
+        if ($redirect['type'] == ABJ404_TYPE_POST) {
+            $key = $redirect['final_dest'] . "|" . ABJ404_TYPE_POST;
+        } else if ($redirect['type'] == ABJ404_TYPE_CAT) {
+            $key = $redirect['final_dest'] . "|" . ABJ404_TYPE_CAT;
+        } else if ($redirect['type'] == ABJ404_TYPE_TAG) {
+            $key = $redirect['final_dest'] . "|" . ABJ404_TYPE_TAG;
+        } else if ($redirect['type'] == ABJ404_TYPE_HOME) {
+            $key = $redirect['final_dest'] . "|" . ABJ404_TYPE_HOME;
         } else {
             $abj404logging->errorMessage("Unrecognized redirect type in Connector: " .
                     wp_kses_post(json_encode($redirect)));
