@@ -181,7 +181,7 @@ class ABJ_404_Solution_DataAccess {
                 $query .= "status = " . ABJ404_STATUS_CAPTURED . " or status = " . ABJ404_STATUS_IGNORED;
 
             } else {
-                $abj404logging->errorMessage("Unrecognized sub type: " . esc_html($sub), false);
+                $abj404logging->errorMessage("Unrecognized sub type: " . esc_html($sub));
             }
         } else {
             $query .= "status = " . sanitize_text_field($tableOptions['filter']);
@@ -780,11 +780,11 @@ class ABJ_404_Solution_DataAccess {
      */
     function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode) {
         global $wpdb;
+        global $abj404logging;
         
         if (($type <= 0) || ($idForUpdate <= 0)) {
             $abj404logging->errorMessage("Bad data passed for update redirect request. Type: " .
-                esc_html($type) . ", Dest: " . esc_html($dest) . ", ID(s): " . esc_html($idForUpdate),
-                    false);
+                esc_html($type) . ", Dest: " . esc_html($dest) . ", ID(s): " . esc_html($idForUpdate));
             echo __('Error: Bad data passed for update redirect request.', '404-solution');
             return;
         }
