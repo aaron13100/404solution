@@ -27,9 +27,10 @@ class ABJ_404_Solution_Logging {
     /** Always send a message to the error_log.
      * This goes to a file and is used by every other class so it goes here.
      * @param type $message
-     * @param type $sendTo404Page if false then we don't echo the 404 page. default is true.
+     * @param type $sendTo404Page if false then we don't echo the 404 page. default is true iff the user is an admin or 
+     * is on an admin page.
      */
-    function errorMessage($message, $sendTo404Page = true) {
+    function errorMessage($message) {
         $e = new Exception;
         $stacktrace = $e->getTraceAsString();
         
@@ -37,8 +38,9 @@ class ABJ_404_Solution_Logging {
         $timestamp = date('Y-m-d H:i:s') . ' (ERROR): ';
         error_log($prefix . $message);
         $this->writeLineToDebugFile($timestamp . $message . ", \nTrace: " . $stacktrace);
-        
-        if ($sendTo404Page) {
+
+        // display a 404 page if the user is NOT an admin and is not on an admin page.
+        if (!is_admin() && !current_user_can('administrator')) {
             // send the user to a 404 page. otherwise the user might just get a blank page.
             status_header(404);
             nocache_headers();

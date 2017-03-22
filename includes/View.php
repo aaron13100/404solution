@@ -58,7 +58,7 @@ class ABJ_404_Solution_View {
             $abj404view->echoChosenAdminTab($sub, $message);
             
         } catch (Exception $e) {
-            $abj404logging->errorMessage("Caught exception: " + stripcslashes(wp_kses_post(json_encode($e))), false);
+            $abj404logging->errorMessage("Caught exception: " + stripcslashes(wp_kses_post(json_encode($e))));
             throw $e;
         }
     }
@@ -507,7 +507,7 @@ class ABJ_404_Solution_View {
             $recnums_multiple = preg_split('@,@', $ids_multiple, -1, PREG_SPLIT_NO_EMPTY);
         } else {
             echo __('Error: No ID(s) found for edit request.', '404-solution');
-            $abj404logging->errorMessage("No ID(s) found in GET or POST data for edit request.", false);
+            $abj404logging->errorMessage("No ID(s) found in GET or POST data for edit request.");
             return;
         }
         
@@ -517,7 +517,7 @@ class ABJ_404_Solution_View {
             $redirect = $abj404dao->getRedirectByID($recnum);
             if ($redirect == null) {
                 echo "Error: Invalid ID Number! (id: " . esc_html($recnum) . ")";
-                $abj404logging->errorMessage("Error: Invalid ID Number! (id: " . esc_html($recnum) . ")", false);
+                $abj404logging->errorMessage("Error: Invalid ID Number! (id: " . esc_html($recnum) . ")");
                 return;
             }
 
@@ -1349,6 +1349,7 @@ class ABJ_404_Solution_View {
         $explanationLink = wp_nonce_url("?page=abj404_solution&subpage=abj404_debugfile", "abj404_debugfile");
         $debugExplanation = str_replace('<a>', '<a href="' . $explanationLink . '" target="_blank" >', $debugExplanation);
 
+        // TODO make the delete link use a POST request instead of a GET request.
         $debugDelete = __('<a>Delete</a> the debug file.', '404-solution');
         $deleteLink = wp_nonce_url("?page=abj404_solution&subpage=abj404_options&action=deleteDebugFile", 
                 "abj404_deleteDebugFile");
@@ -1711,7 +1712,7 @@ class ABJ_404_Solution_View {
         } else if ($sub == "redirects") {
             $url .= "&subpage=abj404_redirects";
         } else {
-            $abj404logging->errorMessage("Unexpected sub page: " + $sub, false);
+            $abj404logging->errorMessage("Unexpected sub page: " + $sub);
         }
 
         $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']);
@@ -1753,7 +1754,7 @@ class ABJ_404_Solution_View {
             } else if ($type == ABJ404_STATUS_IGNORED) {
                 $title = "Ignored 404s";
             } else {
-                $abj404logging->errorMessage("Unrecognized redirect type in View: " . esc_html($type), false);
+                $abj404logging->errorMessage("Unrecognized redirect type in View: " . esc_html($type));
             }
 
             echo "<li>";
