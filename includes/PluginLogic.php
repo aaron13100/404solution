@@ -252,6 +252,9 @@ class ABJ_404_Solution_PluginLogic {
                 } else {
                     $message .= __('Some options were not saved successfully.', '404-solution');
                 }
+            } else {
+                $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
+                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
             }
         } else if ($action == "addRedirect") {
             if (check_admin_referer('abj404addRedirect') && is_admin()) {
@@ -261,30 +264,45 @@ class ABJ_404_Solution_PluginLogic {
                 } else {
                     $message .= __('Error: unable to add new redirect.', '404-solution');
                 }
+            } else {
+                $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
+                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
             }
         } else if ($action == "emptyRedirectTrash") {
             if (check_admin_referer('abj404_emptyRedirectTrash') && is_admin()) {
                 $abj404logic->doEmptyTrash('redirects');
                 $message = __('All trashed URLs have been deleted!', '404-solution');
+            } else {
+                $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
+                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
             }
         } else if ($action == "emptyCapturedTrash") {
             if (check_admin_referer('abj404_emptyCapturedTrash') && is_admin()) {
                 $abj404logic->doEmptyTrash('captured');
                 $message = __('All trashed URLs have been deleted!', '404-solution');
+            } else {
+                $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
+                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
             }
         } else if ($action == "purgeRedirects") {
             if (check_admin_referer('abj404_purgeRedirects') && is_admin()) {
                 $message = $abj404dao->deleteSpecifiedRedirects();
+            } else {
+                $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
+                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
             }
         } else if (substr($action . '', 0, 4) == "bulk") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 if (!isset($_POST['idnum'])) {
-                    $abj404logging->errorMessage("No ID(s) specified for bulk action: " + esc_html($action));
+                    $abj404logging->errorMessage("No ID(s) specified for bulk action: " . esc_html($action));
                     echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'), esc_html($action),
                             false);
                     return;
                 }
                 $message = $abj404logic->doBulkAction($action, array_map('absint', $_POST['idnum']));
+            } else {
+                $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
+                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
             }
         } else if ($action == "deleteDebugFile") {
             if (check_admin_referer('abj404_deleteDebugFile') && is_admin()) {
@@ -296,9 +314,12 @@ class ABJ_404_Solution_PluginLogic {
                 } else {
                     $message = sprintf(__("Issue deleting debug file. (%s)", '404-solution'), $filepath);
                 }
-            }            
+            }  else {
+                $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
+                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
+            }           
         }
-        
+                
         return $message;
     }
 
@@ -444,7 +465,7 @@ class ABJ_404_Solution_PluginLogic {
                     $message = $this->updateRedirectData();
                     if ($message == "") {
                         $message .= __('Redirect Information Updated Successfully!', '404-solution');
-                        $sub = "redirects";
+                        $sub = 'abj404_redirects';
                     } else {
                         $message .= __('Error: Unable to update redirect data.', '404-solution');
                     }
@@ -477,7 +498,7 @@ class ABJ_404_Solution_PluginLogic {
             } else if ($action == "bulkcaptured") {
                 $status = ABJ404_STATUS_CAPTURED;
             } else {
-                $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action));
+                $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
                 return;
             }
@@ -493,7 +514,7 @@ class ABJ_404_Solution_PluginLogic {
             } else if ($action == "bulkcaptured") {
                 $message = $count . " " . __('URLs marked as captured.', '404-solution');
             } else {
-                $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action));
+                $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
             }
 
@@ -507,16 +528,8 @@ class ABJ_404_Solution_PluginLogic {
             }
             $message = $count . " " . __('URLs moved to trash', '404-solution');
 
-        } else if ($action == "bulkedit") {
-            $cleanedIds = array_map('absint', $ids);
-            $allids = implode(',', $cleanedIds);
-            $editlink = "?page=abj404_solution&subpage=abj404_edit&ids_multiple=" . $allids;
-            $abj404logging->debugMessage("Redirecting for edit: " . esc_html($editlink));
-            wp_redirect($editlink, '302');
-            exit;
-            
         } else {
-            $abj404logging->errorMessage("Unrecognized bulk action: " + esc_html($action));
+            $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
             echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
         }
         return $message;

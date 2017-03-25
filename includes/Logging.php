@@ -37,8 +37,10 @@ class ABJ_404_Solution_Logging {
         $prefix = "ABJ-404-SOLUTION (ERROR): ";
         $timestamp = date('Y-m-d H:i:s') . ' (ERROR): ';
         error_log($prefix . $message);
-        $this->writeLineToDebugFile($timestamp . $message . ", \nTrace: " . $stacktrace);
-
+        $this->writeLineToDebugFile($timestamp . $message . ", PHP version: " . PHP_VERSION . 
+                ", WP ver: " . get_bloginfo('version') . ", Plugin ver: " . ABJ404_VERSION . 
+                "Referrer: " . esc_html($_SERVER['HTTP_REFERER']) . ", \nTrace: " . $stacktrace);
+        
         // display a 404 page if the user is NOT an admin and is not on an admin page.
         if (!is_admin() && !current_user_can('administrator')) {
             // send the user to a 404 page. otherwise the user might just get a blank page.
@@ -47,6 +49,19 @@ class ABJ_404_Solution_Logging {
             include(get_query_template('404'));
             exit();
         }
+    }
+    
+    /** Log the user capabilities.
+     * @param type $msg 
+     */
+    function logUserCapabilities($msg) {
+        $user = wp_get_current_user();
+        $usercaps = str_replace(',"', ', "', wp_kses_post(json_encode($user->get_role_caps())));
+        
+        $this->debugMessage("User caps msg: " . esc_html($msg == '' ? '(none)' : $msg) . ", is_admin(): " . is_admin() . 
+                ", current_user_can('administrator'): " . current_user_can('administrator') . 
+                ", user caps: " . wp_kses_post(json_encode($user->caps)) . ", get_role_caps: " . 
+                $usercaps . ", WP ver: " . get_bloginfo('version'));
     }
 
     /** Write the line to the debug file. 
