@@ -174,10 +174,10 @@ class ABJ_404_Solution_DataAccess {
         $query .= " left outer join " . $logs . " on " . $redirects . ".id = " . $logs . ".redirect_id ";
         $query .= " where 1 and (";
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
-            if ($sub == "redirects") {
+            if ($sub == 'abj404_redirects') {
                 $query .= "status = " . ABJ404_STATUS_MANUAL . " or status = " . ABJ404_STATUS_AUTO;
 
-            } else if ($sub == "captured") {
+            } else if ($sub == 'abj404_captured') {
                 $query .= "status = " . ABJ404_STATUS_CAPTURED . " or status = " . ABJ404_STATUS_IGNORED;
 
             } else {
@@ -615,7 +615,7 @@ class ABJ_404_Solution_DataAccess {
         }
         $purge = sanitize_text_field($_POST['purgetype']);
 
-        if ($purge != "logs" && $purge != "redirects") {
+        if ($purge != 'abj404_logs' && $purge != 'abj404_redirects') {
             $message = __('Error: An invalid purge type was selected. Exiting.', '404-solution');
             $abj404logging->debugMessage("Error: An invalid purge type was selected. Type: " .
                     wp_kses_post(json_encode($purge)));
@@ -634,7 +634,7 @@ class ABJ_404_Solution_DataAccess {
         $message .= sprintf( _n( '%s log entry was purged.', 
                 '%s log entries were purged.', $logcount, '404-solution'), $logcount);
 
-        if ($purge == "redirects") {
+        if ($purge == 'abj404_redirects') {
             $queryStringReds = "delete from " . $redirects . " where status in (" . $typesForSQL . ")";
             $redirectCount = $wpdb->query($queryStringReds);
             
@@ -673,9 +673,15 @@ class ABJ_404_Solution_DataAccess {
      */
     function getPostOrGetSanitize($name, $defaultValue = null) {
         if (isset($_GET[$name])) {
+            if (is_array($_POST[$name])) {
+                return array_map('sanitize_text_field', $_GET[$name]);
+            }
             return sanitize_text_field($_GET[$name]);
 
         } else if (isset($_POST[$name])) {
+            if (is_array($_POST[$name])) {
+                return array_map('sanitize_text_field', $_POST[$name]);
+            }
             return sanitize_text_field($_POST[$name]);
 
         } else {

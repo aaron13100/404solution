@@ -20,17 +20,21 @@ class ABJ_404_Solution_WordPress_Connector {
         add_action('admin_menu', 'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
     }
 
-    /**
-     * Add the Settings link to the WordPress plugins page (next to activate/deactivate and edit).
+    /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).
      * @param type $links
      * @return type
      */
     static function addSettingsLinkToPluginPage($links) {
+        global $abj404logging;
+        
         if (!is_admin() || !current_user_can('administrator')) {
+            $abj404logging->logUserCapabilities("addSettingsLinkToPluginPage");
+
             return $links;
         }
 
-        $settings_link = '<a href="options-general.php?page=abj404_solution&subpage=abj404_options">' . __('Settings') . '</a>';
+        $settings_link = '<a href="options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options">' . 
+                __('Settings') . '</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
@@ -445,7 +449,10 @@ class ABJ_404_Solution_WordPress_Connector {
      * @global type $abj404view
      */
     static function echoDashboardNotification() {
+        global $abj404logging;
+        
         if (!is_admin() || !current_user_can('administrator')) {
+            $abj404logging->logUserCapabilities("echoDashboardNotification");
             return;
         }
 
@@ -455,26 +462,36 @@ class ABJ_404_Solution_WordPress_Connector {
         global $abj404view;
 
         if (current_user_can('manage_options')) {
-            if (( @$_GET['page'] == "abj404_solution" ) || ( $pagenow == 'index.php' && (!isset($_GET['page']) ) )) {
+            if (( @$_GET['page'] == ABJ404_PP ) || ( $pagenow == 'index.php' && (!isset($_GET['page']) ) )) {
                 $options = $abj404logic->getOptions();
                 if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
                     $captured = $abj404dao->getCapturedCountForNotification();
                     if ($captured >= $options['admin_notification']) {
-                        echo $abj404view->getDashboardNotification($captured);
+                        $msg = $abj404view->getDashboardNotificationCaptured($captured);
+                        echo $msg;
                     }
                 }
             }
         }
     }
 
+    /** Adds a link under the "Settings" link to the plugin page.
+     * @global string $menu
+     * @global type $abj404dao
+     * @global type $abj404logic
+     * @global type $abj404logging
+     * @return type
+     */
     static function addMainSettingsPageLink() {
-        if (!is_admin() || !current_user_can('administrator')) {
-            return;
-        }
-
         global $menu;
         global $abj404dao;
         global $abj404logic;
+        global $abj404logging;
+        
+        if (!is_admin() || !current_user_can('administrator')) {
+            $abj404logging->logUserCapabilities("addMainSettingsPageLink");
+            return;
+        }
 
         $options = $abj404logic->getOptions();
         $pageName = "404 Solution";
@@ -492,7 +509,8 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         // this adds the settings link at Settings->404 Solution.
-        add_options_page('404 Solution', $pageName, 'manage_options', 'abj404_solution', 'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
+        add_submenu_page('options-general.php', '404 Solution', $pageName, 'manage_options', ABJ404_PP, 
+                'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
     }
 
 }
