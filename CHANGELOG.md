@@ -3,7 +3,7 @@
 ## Version 1.6.1 ##
 * FIX: In some cases editing multiple captured 404s was not possible (when header information was already sent to
     the browser by a different plugin).
-* Improvement: Forward using a the fallback method of JavaScript (window.location.replace() if sending the Location:
+* Improvement: Forward using the fallback method of JavaScript (window.location.replace() if sending the Location:
     header does not work due to premature outptut).
 
 ## Version 1.6.0 ##
