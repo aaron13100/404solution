@@ -40,7 +40,7 @@ class ABJ_404_Solution_PluginLogic {
                 $redirect_id = $abj404dao->setupRedirect("", ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, 
                         $permalink, $options['default_redirect'], 0);
                 $abj404dao->logRedirectHit($redirect_id, $permalink);
-                wp_redirect($permalink, esc_html($options['default_redirect']));
+                $this->forceRedirect($permalink, esc_html($options['default_redirect']));
                 exit;
             }
         }
@@ -841,5 +841,28 @@ class ABJ_404_Solution_PluginLogic {
         update_option('abj404_settings', $new_options);
 
         return $message;
+    }
+    
+    /** First try a wp_redirect. Then try a redirect with JavaScript. The wp_redirect usually works, but doesn't 
+     * if some other plugin has already output any kind of data. 
+     * @param type $location
+     * @param type $status
+     */
+    function forceRedirect($location, $status = 302) {
+        // try a normal redirect using a header.
+        wp_redirect($location, $status);
+        
+        // TODO add an ajax request here that fires after 5 seconds. 
+        // upon getting the request the server will log the error. the plugin could then notify an admin.
+        
+        // This javascript redirect will only appear if the header redirect did not work for some reason.
+        $c = '<script>' . 'function doRedirect() {' . "\n" .
+                '   window.location.replace("' . $location . '");' . "\n" .
+                '}' . "\n" .
+                'setTimeout(doRedirect, 1);' . "\n" .
+                '</script>' . "\n" .
+                'Page moved: <a href="' . $location . '">' . $location . '</a>';
+        echo $c;
+        exit;
     }
 }

@@ -68,6 +68,8 @@ Yes. It's as easy as turning on this feature in the options.
 ## Version 1.6.1 ##
 * FIX: In some cases editing multiple captured 404s was not possible (when header information was already sent to
     the browser by a different plugin).
+* Improvement: Forward using a the fallback method of JavaScript (window.location.replace() if sending the Location:
+    header does not work due to premature outptut).
 
 ## Version 1.6.0 ##
 * Improvement: Allow the default 404 page to be the "home page."
