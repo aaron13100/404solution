@@ -270,7 +270,7 @@ class ABJ_404_Solution_PluginLogic {
             }
         } else if ($action == "emptyRedirectTrash") {
             if (check_admin_referer('abj404_emptyRedirectTrash') && is_admin()) {
-                $abj404logic->doEmptyTrash('redirects');
+                $abj404logic->doEmptyTrash('abj404_redirects');
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             } else {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
@@ -278,7 +278,7 @@ class ABJ_404_Solution_PluginLogic {
             }
         } else if ($action == "emptyCapturedTrash") {
             if (check_admin_referer('abj404_emptyCapturedTrash') && is_admin()) {
-                $abj404logic->doEmptyTrash('captured');
+                $abj404logic->doEmptyTrash('abj404_captured');
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             } else {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 

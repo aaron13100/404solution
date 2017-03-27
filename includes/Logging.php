@@ -39,7 +39,7 @@ class ABJ_404_Solution_Logging {
         error_log($prefix . $message);
         $this->writeLineToDebugFile($timestamp . $message . ", PHP version: " . PHP_VERSION . 
                 ", WP ver: " . get_bloginfo('version') . ", Plugin ver: " . ABJ404_VERSION . 
-                "Referrer: " . esc_html($_SERVER['HTTP_REFERER']) . ", \nTrace: " . $stacktrace);
+                ", Referrer: " . esc_html($_SERVER['HTTP_REFERER']) . ", \nTrace: " . $stacktrace);
         
         // display a 404 page if the user is NOT an admin and is not on an admin page.
         if (!is_admin() && !current_user_can('administrator')) {
