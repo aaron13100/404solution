@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.1
-Version: 1.6.1
+Version: 1.6.2
 Tested up to: 4.7.3
-Stable tag: 1.6.1
+Stable tag: 1.6.2
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -58,6 +58,10 @@ Yes. It's as easy as turning on this feature in the options.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 1.6.2 =
+* FIX: Pagination links keep you on the same tab again.
+* FIX: You can empty the trash again.
 
 = Version 1.6.1 =
 * FIX: In some cases editing multiple captured 404s was not possible (when header information was already sent to

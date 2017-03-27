@@ -1602,8 +1602,8 @@ class ABJ_404_Solution_View {
             }
         } else {
             $types = array($tableOptions['filter']);
-            $url .= "&filter=" . $tableOptions['filter'];
         }
+        $url .= "&filter=" . $tableOptions['filter'];
 
         if ($sub == 'abj404_logs') {
             $num_records = $abj404dao->getLogsCount($tableOptions['logsid']);

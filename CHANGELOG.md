@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 1.6.2 ##
+* FIX: Pagination links keep you on the same tab again.
+* FIX: You can empty the trash again.
+
 ## Version 1.6.1 ##
 * FIX: In some cases editing multiple captured 404s was not possible (when header information was already sent to
     the browser by a different plugin).
