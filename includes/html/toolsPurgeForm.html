@@ -6,9 +6,9 @@
             <option value="abj404_logs">{Logs Only}</option>
             <option value="abj404_redirects">{Logs &amp; Redirects}</option>
         </select>
-        <br>
-        <br><strong>{Redirect Types}:</strong>
-        <br>
+        <BR/>
+        <BR/><strong>{Redirect Types}:</strong>
+        <BR/>
     </p>
     <ul style="margin-left: 40px;">
         <li>
@@ -29,12 +29,13 @@
         </li>
     </ul>
     <strong>{Sanity Check}</strong>
-    <br>{Using the purge options will delete logs and redirects matching the boxes selected above. This action is not reversible. Hopefully you know what you're doing.}
-    <br>
-    <br>
-    <input type="checkbox" id="sanity" name="sanity" value="1">{I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!}
-    <br>
-    <br>
+    <BR/>{Using the purge options will delete logs and redirects matching the boxes selected above. This action is not reversible. Hopefully you know what you're doing.}
+    <BR/>
+    <BR/>
+    <input type="checkbox" id="sanity_purge" name="sanity_purge" value="1">
+    <label for="sanity_purge">{I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!}</label>
+    <BR/>
+    <BR/>
     <input type="submit" value="{Purge Entries!}" class="button-secondary">
     <p></p>
 </form>

@@ -27,11 +27,12 @@ class ABJ_404_Solution_Logging {
     /** Always send a message to the error_log.
      * This goes to a file and is used by every other class so it goes here.
      * @param type $message
-     * @param type $sendTo404Page if false then we don't echo the 404 page. default is true iff the user is an admin or 
-     * is on an admin page.
+     * @param Exception $e
      */
-    function errorMessage($message) {
-        $e = new Exception;
+    function errorMessage($message, $e = null) {
+        if ($e == null) {
+            $e = new Exception;
+        }
         $stacktrace = $e->getTraceAsString();
         
         $prefix = "ABJ-404-SOLUTION (ERROR): ";

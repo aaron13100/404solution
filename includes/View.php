@@ -56,6 +56,7 @@ class ABJ_404_Solution_View {
             $message .= $abj404logic->handleIgnoreAction();
             $message .= $abj404logic->handleEditAction($sub);
             $message .= $abj404logic->handleDeleteLogAction();
+            $message .= $abj404logic->handleImportRedirectsAction();
 
             // --------------------------------------------------------------------
             // Output the correct page.
@@ -114,7 +115,7 @@ class ABJ_404_Solution_View {
     function echoAdminFooter() {
         echo "<div style=\"clear: both;\">";
         echo "<BR/>";
-        echo "<HR/><strong>Credits:</strong><br>";
+        echo "<HR/><strong>Credits:</strong><BR/>";
         echo "<a href=\"" . ABJ404_HOME_URL . "\" title=\"" . __('404 Solution') . "\" target=\"_blank\">" . __('404 Solution') . "</a> ";
         echo __('is maintained by', '404-solution');
         echo " ";
@@ -255,10 +256,10 @@ class ABJ_404_Solution_View {
 
         $content = "";
         $content .= "<p $hr>";
-        $content .= "<strong>" . __('Automatic 301 Redirects', '404-solution') . ":</strong> " . esc_html($auto301) . "<br>";
-        $content .= "<strong>" . __('Automatic 302 Redirects', '404-solution') . ":</strong> " . esc_html($auto302) . "<br>";
-        $content .= "<strong>" . __('Manual 301 Redirects', '404-solution') . ":</strong> " . esc_html($manual301) . "<br>";
-        $content .= "<strong>" . __('Manual 302 Redirects', '404-solution') . ":</strong> " . esc_html($manual302) . "<br>";
+        $content .= "<strong>" . __('Automatic 301 Redirects', '404-solution') . ":</strong> " . esc_html($auto301) . "<BR/>";
+        $content .= "<strong>" . __('Automatic 302 Redirects', '404-solution') . ":</strong> " . esc_html($auto302) . "<BR/>";
+        $content .= "<strong>" . __('Manual 301 Redirects', '404-solution') . ":</strong> " . esc_html($manual301) . "<BR/>";
+        $content .= "<strong>" . __('Manual 302 Redirects', '404-solution') . ":</strong> " . esc_html($manual302) . "<BR/>";
         $content .= "<strong>" . __('Trashed Redirects', '404-solution') . ":</strong> " . esc_html($trashed) . "</p>";
         $content .= "<p style=\"margin-top: 4px;\">";
         $content .= "<strong>" . __('Total Redirects', '404-solution') . ":</strong> " . esc_html($total);
@@ -279,8 +280,8 @@ class ABJ_404_Solution_View {
 
         $content = "";
         $content .= "<p $hr>";
-        $content .= "<strong>" . __('Captured URLs', '404-solution') . ":</strong> " . esc_html($captured) . "<br>";
-        $content .= "<strong>" . __('Ignored 404 URLs', '404-solution') . ":</strong> " . esc_html($ignored) . "<br>";
+        $content .= "<strong>" . __('Captured URLs', '404-solution') . ":</strong> " . esc_html($captured) . "<BR/>";
+        $content .= "<strong>" . __('Ignored 404 URLs', '404-solution') . ":</strong> " . esc_html($ignored) . "<BR/>";
         $content .= "<strong>" . __('Trashed URLs', '404-solution') . ":</strong> " . esc_html($trashed) . "</p>";
         $content .= "<p style=\"margin-top: 4px;\">";
         $content .= "<strong>" . __('Total URLs', '404-solution') . ":</strong> " . esc_html($total);
@@ -341,14 +342,14 @@ class ABJ_404_Solution_View {
 
             $content = "";
             $content .= "<p>";
-            $content .= "<strong>" . __('Page Not Found Displayed', '404-solution') . ":</strong> " . esc_html($disp404) . "<br>";
-            $content .= "<strong>" . __('Unique Page Not Found URLs', '404-solution') . ":</strong> " . esc_html($distinct404) . "<br>";
-            $content .= "<strong>" . __('Unique Page Not Found Visitors', '404-solution') . ":</strong> " . esc_html($visitors404) . "<br>";
-            $content .= "<strong>" . __('Unique Page Not Found Referrers', '404-solution') . ":</strong> " . esc_html($refer404) . "<br>";
-            $content .= "<strong>" . __('Hits Redirected', '404-solution') . ":</strong> " . esc_html($redirected) . "<br>";
-            $content .= "<strong>" . __('Unique URLs Redirected', '404-solution') . ":</strong> " . esc_html($distinctredirected) . "<br>";
-            $content .= "<strong>" . __('Unique Redirected Visitors', '404-solution') . ":</strong> " . esc_html($distinctvisitors) . "<br>";
-            $content .= "<strong>" . __('Unique Redirected Referrers', '404-solution') . ":</strong> " . esc_html($distinctrefer) . "<br>";
+            $content .= "<strong>" . __('Page Not Found Displayed', '404-solution') . ":</strong> " . esc_html($disp404) . "<BR/>";
+            $content .= "<strong>" . __('Unique Page Not Found URLs', '404-solution') . ":</strong> " . esc_html($distinct404) . "<BR/>";
+            $content .= "<strong>" . __('Unique Page Not Found Visitors', '404-solution') . ":</strong> " . esc_html($visitors404) . "<BR/>";
+            $content .= "<strong>" . __('Unique Page Not Found Referrers', '404-solution') . ":</strong> " . esc_html($refer404) . "<BR/>";
+            $content .= "<strong>" . __('Hits Redirected', '404-solution') . ":</strong> " . esc_html($redirected) . "<BR/>";
+            $content .= "<strong>" . __('Unique URLs Redirected', '404-solution') . ":</strong> " . esc_html($distinctredirected) . "<BR/>";
+            $content .= "<strong>" . __('Unique Redirected Visitors', '404-solution') . ":</strong> " . esc_html($distinctvisitors) . "<BR/>";
+            $content .= "<strong>" . __('Unique Redirected Referrers', '404-solution') . ":</strong> " . esc_html($distinctrefer) . "<BR/>";
             $content .= "</p>";
             $abj404view->echoPostBox("abj404-stats" . $x, __($title), $content);
         }
@@ -401,7 +402,7 @@ class ABJ_404_Solution_View {
         echo "</div></div></div>";
         
         // ------------------------------------
-        /*
+        
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
         $link = wp_nonce_url($url, "abj404_importRedirects");
         
@@ -417,7 +418,7 @@ class ABJ_404_Solution_View {
         echo " <div class=\"meta-box-sortables\">";
         $abj404view->echoPostBox("abj404-purgeRedirects", __('Import Options', '404-solution'), $html);
         echo "</div></div></div>";
-        */
+        
     }
     
     /** Replace constants and translations.
@@ -544,7 +545,7 @@ class ABJ_404_Solution_View {
             echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
                     ":</label></strong> ";
             echo "<input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
-                    esc_attr($redirect['url']) . "\"> (" . __('Required', '404-solution') . ")<br>";
+                    esc_attr($redirect['url']) . "\"> (" . __('Required', '404-solution') . ")<BR/>";
             
         } else if ($recnums_multiple != null) {
             $redirects_multiple = $abj404dao->getRedirectsByIDs($recnums_multiple);
@@ -583,7 +584,7 @@ class ABJ_404_Solution_View {
         echo $this->echoRedirectDestinationOptionsPosts($redirect['final_dest'] . '|' . $redirect['type']);
         echo $this->echoRedirectDestinationOptionsPages($redirect['final_dest'] . '|' . $redirect['type']);
 
-        echo "</select><br>";
+        echo "</select><BR/>";
         $final = "";
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
             $final = $redirect['final_dest'];
@@ -1105,7 +1106,7 @@ class ABJ_404_Solution_View {
             echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
                     ":</label></strong> <input id=\"url\" placeholder=\"" . $urlPlaceholder . 
                     "\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
-                    esc_attr($postedURL) . "\"> (" . __('Required', '404-solution') . ")<br>";
+                    esc_attr($postedURL) . "\"> (" . __('Required', '404-solution') . ")<BR/>";
             
             echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</label></strong> \n";
             echo '<select style="max-width: 75%;" id="dest" name="dest">';
@@ -1113,7 +1114,7 @@ class ABJ_404_Solution_View {
             echo $this->echoRedirectDestinationOptionsPosts(@$_POST['dest'] . '|' . @$_POST['type']);
             echo $this->echoRedirectDestinationOptionsPages(@$_POST['dest'] . '|' . @$_POST['type']);
 
-            echo "</select><br>";
+            echo "</select><BR/>";
             
             $externalDestination = esc_url(@$_POST['external']);
             if (@$_POST['code'] == "") {
@@ -1136,7 +1137,7 @@ class ABJ_404_Solution_View {
         echo "<strong><label for=\"external\">" . __('External URL', '404-solution') . 
                 ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . 
                 esc_attr($destination) . "\"> (" . __('Required if Redirect to is set to External Page', '404-solution') . 
-                ")<br>";
+                ")<BR/>";
         echo "<strong><label for=\"code\">" . __('Redirect Type', '404-solution') . 
                 ":</label></strong> <select id=\"code\" name=\"code\">";
         
@@ -1150,7 +1151,7 @@ class ABJ_404_Solution_View {
             $title = ($code == 301) ? '301 Permanent Redirect' : '302 Temporary Redirect';
             echo "<option value=\"" . esc_attr($code) . "\"" . $selected . ">" . esc_html($title) . "</option>";
         }
-        echo "</select><br>";
+        echo "</select><BR/>";
         echo "<input type=\"submit\" value=\"" . $label . "\" class=\"button-secondary\">";
     }
     
@@ -1223,17 +1224,17 @@ class ABJ_404_Solution_View {
 
         $content .= $this->echoRedirectDestinationOptionsPagesOnly($userSelected);
 
-        $content .= "</select><br>";
+        $content .= "</select><BR/>";
 
         $selectedAutoRedirects = "";
         if ($options['auto_redirects'] == '1') {
             $selectedAutoRedirects = " checked";
         }
 
-        $content .= "<p><label for=\"auto_redirects\">" . __('Create automatic redirects', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_redirects\" id=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><br>";
+        $content .= "<p><label for=\"auto_redirects\">" . __('Create automatic redirects', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_redirects\" id=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><BR/>";
         $content .= $spaces . __('Automatically creates redirects based on best possible suggested page.', '404-solution') . "</p>";
 
-        $content .= "<p><label for=\"auto_score\">" . __('Minimum match score', '404-solution') . ":</label> <input type=\"text\" name=\"auto_score\" id=\"auto_score\" value=\"" . esc_attr($options['auto_score']) . "\" style=\"width: 50px;\"><br>";
+        $content .= "<p><label for=\"auto_score\">" . __('Minimum match score', '404-solution') . ":</label> <input type=\"text\" name=\"auto_score\" id=\"auto_score\" value=\"" . esc_attr($options['auto_score']) . "\" style=\"width: 50px;\"><BR/>";
         $content .= $spaces . __('Only create an automatic redirect if the suggested page has a score above the specified number', '404-solution') . "</p>";
 
         $selectedAutoCats = "";
@@ -1252,10 +1253,10 @@ class ABJ_404_Solution_View {
         if ($options['force_permalinks'] == '1') {
             $selectedForcePermaLinks = " checked";
         }
-        $content .= "<p><label for=\"force_permalinks\">" . __('Force current permalinks', '404-solution') . ":</label> <input type=\"checkbox\" name=\"force_permalinks\" id=\"force_permalinks\" value=\"1\"" . $selectedForcePermaLinks . "><br>";
+        $content .= "<p><label for=\"force_permalinks\">" . __('Force current permalinks', '404-solution') . ":</label> <input type=\"checkbox\" name=\"force_permalinks\" id=\"force_permalinks\" value=\"1\"" . $selectedForcePermaLinks . "><BR/>";
         $content .= $spaces . __('Creates auto redirects for any url resolving to a post/page that doesn\'t match the current permalinks', '404-solution') . "</p>";
 
-        $content .= "<p><label for=\"auto_deletion\">" . __('Auto redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"auto_deletion\" id=\"auto_deletion\" value=\"" . esc_attr($options['auto_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
+        $content .= "<p><label for=\"auto_deletion\">" . __('Auto redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"auto_deletion\" id=\"auto_deletion\" value=\"" . esc_attr($options['auto_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
         $content .= $spaces . __('Removes auto created redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
         return $content;
@@ -1274,7 +1275,7 @@ class ABJ_404_Solution_View {
         
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         
-        $content = "<p><label for=\"display_suggest\">" . __('Turn on 404 suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"display_suggest\" id=\"display_suggest\" value=\"1\"" . $selectedDisplaySuggest . "><br>";
+        $content = "<p><label for=\"display_suggest\">" . __('Turn on 404 suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"display_suggest\" id=\"display_suggest\" value=\"1\"" . $selectedDisplaySuggest . "><BR/>";
         $content .= $spaces . __('Activates the 404 page suggestions function. Only works if the code is in your 404 page template.', '404-solution');
         $content .= "<BR/>" . $spaces . "Code: " . 
                 esc_html("<?php if (!empty(\$abj404connector)) {\$abj404connector->suggestions(); } ?>") . "</p>";
@@ -1283,13 +1284,13 @@ class ABJ_404_Solution_View {
         if ($options['suggest_cats'] == '1') {
             $selectedSuggestCats = " checked";
         }
-        $content .= "<p><label for=\"suggest_cats\">" . __('Allow category suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"suggest_cats\" id=\"suggest_cats\" value=\"1\"" . $selectedSuggestCats . "><br>";
+        $content .= "<p><label for=\"suggest_cats\">" . __('Allow category suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"suggest_cats\" id=\"suggest_cats\" value=\"1\"" . $selectedSuggestCats . "><BR/>";
 
         $selectedSuggestTags = "";
         if ($options['suggest_tags'] == '1') {
             $selectedSuggestTags = " checked";
         }
-        $content .= "<p><label for=\"suggest_tags\">" . __('Allow tag suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"suggest_tags\" id=\"suggest_tags\" value=\"1\"" . $selectedSuggestTags . "><br>";
+        $content .= "<p><label for=\"suggest_tags\">" . __('Allow tag suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"suggest_tags\" id=\"suggest_tags\" value=\"1\"" . $selectedSuggestTags . "><BR/>";
 
         $content .= "<p><label for=\"suggest_minscore\">" . __('Minimum score of suggestions to display', '404-solution') . ":</label> <input type=\"text\" name=\"suggest_minscore\" id=\"suggest_minscore\" value=\"" . esc_attr($options['suggest_minscore']) . "\" style=\"width: 50px;\"></p>"
         ;
@@ -1341,13 +1342,13 @@ class ABJ_404_Solution_View {
         }
         $content .= "<p><label for=\"capture_404\">" . __('Collect incoming 404 URLs', '404-solution') . ":</label> <input type=\"checkbox\" name=\"capture_404\" id=\"capture_404\" value=\"1\"" . $selectedCapture404 . "></p>";
 
-        $content .= "<p><label for=\"admin_notification\">" . __('Admin notification level', '404-solution') . ":</label> <input type=\"text\" name=\"admin_notification\" id=\"admin_notification\" value=\"" . esc_attr($options['admin_notification']) . "\" style=\"width: 50px;\"> " . __('Captured URLs (0 Disables Notification)', '404-solution') . "<br>";
+        $content .= "<p><label for=\"admin_notification\">" . __('Admin notification level', '404-solution') . ":</label> <input type=\"text\" name=\"admin_notification\" id=\"admin_notification\" value=\"" . esc_attr($options['admin_notification']) . "\" style=\"width: 50px;\"> " . __('Captured URLs (0 Disables Notification)', '404-solution') . "<BR/>";
         $content .= $spaces . __('Display WordPress admin notifications when number of captured URLs goes above specified level', '404-solution') . "</p>";
 
-        $content .= "<p><label for=\"capture_deletion\">" . __('Collected 404 URL deletion', '404-solution') . ":</label> <input type=\"text\" name=\"capture_deletion\" id=\"capture_deletion\" value=\"" . esc_attr($options['capture_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
+        $content .= "<p><label for=\"capture_deletion\">" . __('Collected 404 URL deletion', '404-solution') . ":</label> <input type=\"text\" name=\"capture_deletion\" id=\"capture_deletion\" value=\"" . esc_attr($options['capture_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
         $content .= $spaces . __('Automatically removes 404 URLs that have been captured if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
-        $content .= "<p><label for=\"manual_deletion\">" . __('Manual redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"manual_deletion\" id=\"manual_deletion\" value=\"" . esc_attr($options['manual_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<br>";
+        $content .= "<p><label for=\"manual_deletion\">" . __('Manual redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"manual_deletion\" id=\"manual_deletion\" value=\"" . esc_attr($options['manual_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
         $content .= $spaces . __('Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
         $selectedRemoveMatches = "";
@@ -1410,7 +1411,7 @@ class ABJ_404_Solution_View {
         }
         $abj404logging->debugMessage($redirectsFound . " redirects found for logs page select option.");
 
-        echo "<br>";
+        echo "<BR/>";
         echo "<form method=\"GET\" action=\"\" style=\"clear: both; display: block;\" class=\"clearbothdisplayblock\">";
         echo '<input type="hidden" name="page" value="' . ABJ404_PP . '">';
         echo "<input type=\"hidden\" name=\"subpage\" value=\"abj404_logs\">";
@@ -1428,7 +1429,7 @@ class ABJ_404_Solution_View {
             }
             echo "<option value=\"" . esc_attr($redirect['id']) . "\"" . $selected . ">" . esc_html($redirect['url']) . "</option>";
         }
-        echo "</select><br>";
+        echo "</select><BR/>";
         echo "<input type=\"submit\" value=\"View Logs\" class=\"button-secondary\">";
         echo "</form>";
 
