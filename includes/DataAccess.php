@@ -59,6 +59,49 @@ class ABJ_404_Solution_DataAccess {
         // see: https://developer.wordpress.org/plugins/the-basics/uninstall-methods/
         // don't drop the other table though because that would lose all previous settings.
     }
+    
+    /** 
+     * @global type $wpdb
+     */
+    function importDataFromPluginRedirectioner() {
+        global $wpdb;
+        
+        $query = readFileContents(__DIR__ . "/sql/importDataFromPluginRedirectioner.sql");
+        $wpdb->get_results($wpdb->prepare($query));
+    }
+    
+    /** 
+     * @param type $path
+     * @return type
+     * @throws Exception
+     */
+    function readFileContents($path) {
+        if (!file_exists($path)) {
+            throw new Exception("Error: Can't find file: " . $path);
+        }
+        
+        $fileContents = file_get_contents($path);
+        if ($fileContents !== false) {
+            return $fileContents;
+        }
+        
+        // if we can't read the file that way then try curl.
+        if (!function_exists('curl_init')) {
+            throw new Exception("Error: Can't read file: " . $path .
+                    "\n   file_get_contents didn't work and curl is not installed.");
+        }
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'file://' . $path);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $output = curl_exec($ch);
+        curl_close($ch);
+        
+        if ($output == null) {
+            throw new Exception("Error: Can't read file, even with cURL: " . $path);
+        }
+        
+        return $output;        
+    }
 
    /**
     * @global type $wpdb
@@ -237,8 +280,9 @@ class ABJ_404_Solution_DataAccess {
      * @global type $wpdb
      * @param type $id
      * @param type $action
+     * @param type $matchReason
      */
-    function logRedirectHit($id, $action) {
+    function logRedirectHit($id, $action, $matchReason) {
         global $wpdb;
         global $abj404logging;
         $now = time();
@@ -261,8 +305,8 @@ class ABJ_404_Solution_DataAccess {
             }
             $abj404logging->debugMessage("Logging redirect. redirect_id: " . absint($id) . 
                     " | Referer: " . esc_html($referer) . " | Current user: " . $current_user_name . 
-                    " | is_admin(): " . is_admin() . " | From: " . esc_html($from) . esc_html(" to: ") . 
-                    esc_html($action));
+                    " | From: " . esc_html($from) . esc_html(" to: ") . esc_html($action) . 
+                    ', Reason: ' . $matchReason);
         }
 
         $wpdb->insert($wpdb->prefix . "abj404_logs", array(
@@ -413,7 +457,7 @@ class ABJ_404_Solution_DataAccess {
     /**
      * Store a redirect for future use.
      * @global type $wpdb
-     * @param type $url
+     * @param type $fromURL
      * @param type $status
      * @param type $type
      * @param type $final_dest
@@ -421,7 +465,7 @@ class ABJ_404_Solution_DataAccess {
      * @param type $disabled
      * @return type
      */
-    function setupRedirect($url, $status, $type, $final_dest, $code, $disabled = 0) {
+    function setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled = 0) {
         global $wpdb;
         global $abj404logging;
 
@@ -430,18 +474,18 @@ class ABJ_404_Solution_DataAccess {
 
         if (!is_numeric($type)) {
             $abj404logging->errorMessage("Wrong data type for redirect. TYPE is non-numeric. From: " . 
-                    esc_url($url) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
+                    esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         } else if (absint($type) < 0) {
             $abj404logging->errorMessage("Wrong range for redirect TYPE. From: " . 
-                    esc_url($url) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
+                    esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         } else if (!is_numeric($status)) {
             $abj404logging->errorMessage("Wrong data type for redirect. STATUS is non-numeric. From: " . 
-                    esc_url($url) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
+                    esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         }
             
         $now = time();
         $wpdb->insert($wpdb->prefix . 'abj404_redirects', array(
-            'url' => esc_sql($url),
+            'url' => esc_sql($fromURL),
             'status' => esc_html($status),
             'type' => esc_html($type),
             'final_dest' => esc_html($final_dest),
@@ -584,7 +628,7 @@ class ABJ_404_Solution_DataAccess {
             return $message;
         }
         
-        if (!isset($_POST['types']) || $_POST['types'] == '') {
+        if (!array_key_exists('types', $_POST) || !isset($_POST['types']) || $_POST['types'] == '') {
             $message = __('Error: No redirect types were selected. No purges will be done.', '404-solution');
             return $message;
         }
@@ -672,13 +716,13 @@ class ABJ_404_Solution_DataAccess {
      * @return type
      */
     function getPostOrGetSanitize($name, $defaultValue = null) {
-        if (isset($_GET[$name])) {
-            if (is_array($_POST[$name])) {
+        if (array_key_exists($name, $_GET) && isset($_GET[$name])) {
+            if (is_array($_GET[$name])) {
                 return array_map('sanitize_text_field', $_GET[$name]);
             }
             return sanitize_text_field($_GET[$name]);
 
-        } else if (isset($_POST[$name])) {
+        } else if (array_key_exists($name, $_POST) && isset($_POST[$name])) {
             if (is_array($_POST[$name])) {
                 return array_map('sanitize_text_field', $_POST[$name]);
             }

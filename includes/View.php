@@ -152,11 +152,11 @@ class ABJ_404_Solution_View {
         }
         echo "<h2>" . __('404 Solution', '404-solution') . esc_html($header) . "</h2>";
         if ($message != "") {
-            $allowed_tags = [
-                'br' => [],
-                'em' => [],
-                'strong' => [],
-            ];
+            $allowed_tags = array(
+                'br' => array(),
+                'em' => array(),
+                'strong' => array(),
+            );
             
             if ((strlen($message) >= 6) && (substr(strtolower($message), 0, 6) == 'error:')) {
                 $cssClasses = 'notice notice-error';
@@ -381,51 +381,78 @@ class ABJ_404_Solution_View {
      */
     function echoAdminToolsPage() {
         global $abj404view;
-        $sub = 'abj404_tools';
-
-        $hr = "style=\"border: 0px; margin-bottom: 0px; padding-bottom: 4px; border-bottom: 1px dotted #DEDEDE;\"";
+        global $abj404dao;
+        global $abj404logging;
 
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
-        $action = "abj404_purgeRedirects";
-
-        $link = wp_nonce_url($url, $action);
-
-
+        $link = wp_nonce_url($url, "abj404_purgeRedirects");
+        
+        // read the html content.
+        $html = $abj404dao->readFileContents(__DIR__ . "/html/toolsPurgeForm.html");
+        // do special replacements
+        $html = str_replace('{toolsPurgeFormActionLink}', $link, $html);
+        // constants and translations.
+        $html = $this->doNormalReplacements($html);
+        
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
         echo " <div class=\"meta-box-sortables\">";
-
-        $content = "";
-        $content .= "<form method=\"POST\" action=\"" . esc_url($link) . "\">";
-        $content .= "<input type=\"hidden\" name=\"action\" value=\"purgeRedirects\">";
-
-        $content .= "<p>";
-        $content .= "<strong><label for=\"purgetype\">" . __('Purge Type', '404-solution') . ":</label></strong> <select name=\"purgetype\" id=\"purgetype\">";
-        $content .= '<option value="abj404_logs">' . __('Logs Only', '404-solution') . "</option>";
-        $content .= '<option value="abj404_redirects">' . __('Logs & Redirects', '404-solution') . "</option>";
-        $content .= "</select><br><br>";
-
-        $content .= "<strong>" . __('Redirect Types', '404-solution') . ":</strong><br>";
-        $content .= "<ul style=\"margin-left: 40px;\">";
-        $content .= "<li><input type=\"checkbox\" id=\"auto\" name=\"types[]\" value=\"" . ABJ404_STATUS_AUTO . "\"> <label for=\"auto\">" . __('Automatic Redirects', '404-solution') . "</label></li>";
-        $content .= "<li><input type=\"checkbox\" id=\"manual\" name=\"types[]\" value=\"" . ABJ404_STATUS_MANUAL . "\"> <label for=\"manual\">" . __('Manual Redirects', '404-solution') . "</label></li>";
-        $content .= "<li><input type=\"checkbox\" id=\"captured\" name=\"types[]\" value=\"" . ABJ404_STATUS_CAPTURED . "\"> <label for=\"captured\">" . __('Captured URLs', '404-solution') . "</label></li>";
-        $content .= "<li><input type=\"checkbox\" id=\"ignored\" name=\"types[]\" value=\"" . ABJ404_STATUS_IGNORED . "\"> <label for=\"ignored\">" . __('Ignored URLs', '404-solution') . "</label></li>";
-        $content .= "</ul>";
-
-        $content .= "<strong>" . __('Sanity Check', '404-solution') . "</strong><br>";
-        $content .= __('Using the purge options will delete logs and redirects matching the boxes selected above. This action is not reversible. Hopefully you know what you\'re doing.', '404-solution') . "<br>";
-        $content .= "<br>";
-        $content .= "<input type=\"checkbox\" id=\"sanity\" name=\"sanity\" value=\"1\"> " . __('I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!', '404-solution') . "<br>";
-        $content .= "<br>";
-        $content .= "<input type=\"submit\" value=\"" . __('Purge Entries!', '404-solution') . "\" class=\"button-secondary\">";
-        $content .= "</p>";
-
-        $content .= "</form>";
-
-        $abj404view->echoPostBox("abj404-purgeRedirects", __('Purge Options', '404-solution'), $content);
-
+        $abj404view->echoPostBox("abj404-purgeRedirects", __('Purge Options', '404-solution'), $html);
         echo "</div></div></div>";
+        
+        // ------------------------------------
+        /*
+        $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
+        $link = wp_nonce_url($url, "abj404_importRedirects");
+        
+        // read the html content.
+        $html = $abj404dao->readFileContents(__DIR__ . "/html/toolsImportForm.html");
+        // do special replacements
+        $html = str_replace('{toolsImportFormActionLink}', $link, $html);
+        // constants and translations.
+        $html = $this->doNormalReplacements($html);
+        
+        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
+        echo "<div class=\"metabox-holder\">";
+        echo " <div class=\"meta-box-sortables\">";
+        $abj404view->echoPostBox("abj404-purgeRedirects", __('Import Options', '404-solution'), $html);
+        echo "</div></div></div>";
+        */
+    }
+    
+    /** Replace constants and translations.
+     * @param type $text
+     * @return type
+     */
+    function doNormalReplacements($text) {
+        // known strings that do not exist in the translation file.
+        $knownReplacements = array(
+            '{ABJ404_STATUS_AUTO}' => ABJ404_STATUS_AUTO,
+            '{ABJ404_STATUS_MANUAL}' => ABJ404_STATUS_MANUAL,
+            '{ABJ404_STATUS_CAPTURED}' => ABJ404_STATUS_CAPTURED,
+            '{ABJ404_STATUS_IGNORED}' => ABJ404_STATUS_IGNORED,
+            '{ABJ404_TYPE_404_DISPLAYED}' => ABJ404_TYPE_404_DISPLAYED,
+            '{ABJ404_TYPE_POST}' => ABJ404_TYPE_POST,
+            '{ABJ404_TYPE_CAT}' => ABJ404_TYPE_CAT,
+            '{ABJ404_TYPE_TAG}' => ABJ404_TYPE_TAG,
+            '{ABJ404_TYPE_EXTERNAL}' => ABJ404_TYPE_EXTERNAL,
+            '{ABJ404_TYPE_HOME}' => ABJ404_TYPE_HOME,
+            );
+
+        // replace known strings that do not exist in the translation file.
+        $text = str_replace(array_keys($knownReplacements), array_values($knownReplacements), $text);
+        
+        // find the strings to replace in the content
+        $re = '/\{(.+?)\}/x';
+        preg_match_all($re, $text, $stringsToReplace, PREG_PATTERN_ORDER);
+
+        // iterate through each string to replace.
+        foreach ($stringsToReplace[1] as $stringToReplace) {
+            $text = str_replace('{' . $stringToReplace . '}', 
+                    __($stringToReplace, '404-solution'), $text);
+        }
+        
+        return $text;
     }
 
     function echoAdminOptionsPage() {
@@ -484,11 +511,11 @@ class ABJ_404_Solution_View {
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
 
         $recnum = null;
-        if (isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {
+        if (array_key_exists('id', $_GET) && isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {
             $abj404logging->debugMessage("Edit redirect page. GET ID: " . 
                     wp_kses_post(json_encode($_GET['id'])));
             $recnum = absint($_GET['id']);
-        } else if (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
+        } else if (array_key_exists('id', $_POST) && isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
             $abj404logging->debugMessage("Edit redirect page. POST ID: " . 
                     wp_kses_post(json_encode($_POST['id'])));
             $recnum = absint($_POST['id']);
@@ -674,7 +701,7 @@ class ABJ_404_Solution_View {
 
         if ($tableOptions['filter'] == '-1') {
             echo "<div class=\"alignleft actions\">";
-            $eturl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=-1";
+            $eturl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=-1&subpage=abj404_captured";
             $trashaction = "abj404_emptyCapturedTrash";
             $eturl = wp_nonce_url($eturl, $trashaction);
 
@@ -893,7 +920,7 @@ class ABJ_404_Solution_View {
 
         if ($tableOptions['filter'] == '-1') {
             echo "<div class=\"alignleft actions\">";
-            $eturl = "?page=" . ABJ404_PP . "&filter=-1";
+            $eturl = "?page=" . ABJ404_PP . "&filter=-1&subpage=abj404_redirects";
             $trashaction = "abj404_emptyRedirectTrash";
             $eturl = wp_nonce_url($eturl, $trashaction);
 
@@ -1069,7 +1096,7 @@ class ABJ_404_Solution_View {
 
             $urlPlaceholder = parse_url(get_home_url(), PHP_URL_PATH) . "/example";
 
-            if (isset($_POST['url']) && $_POST['url'] != '') {
+            if (array_key_exists('url', $_POST) && isset($_POST['url']) && $_POST['url'] != '') {
                 $postedURL = esc_url($_POST['url']);
             } else {
                 $postedURL = $urlPlaceholder;
@@ -1182,7 +1209,8 @@ class ABJ_404_Solution_View {
         global $wpdb;
         $content .= "<label for=\"dest404page\">" . __('Redirect all unhandled 404s to', '404-solution') . ":</label> <select id=\"dest404page\" name=\"dest404page\">";
 
-        $userSelected = (isset($options['dest404page']) ? $options['dest404page'] : null);
+        $userSelected = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
+                $options['dest404page'] : null);
         $dest404page = ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED;
         $selected = $userSelected == $dest404page ? "selected" : "";
         $content .= '<option value="' . ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED . '"' . $selected . ">" . 
