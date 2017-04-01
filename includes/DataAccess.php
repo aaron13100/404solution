@@ -65,9 +65,26 @@ class ABJ_404_Solution_DataAccess {
      */
     function importDataFromPluginRedirectioner() {
         global $wpdb;
+        global $abj404logging;
         
-        $query = readFileContents(__DIR__ . "/sql/importDataFromPluginRedirectioner.sql");
-        $wpdb->get_results($wpdb->prepare($query));
+        $oldTable = $wpdb->prefix . 'wbz404_redirects';
+        $newTable = $wpdb->prefix . 'abj404_redirects';
+        // wp_wbz404_redirects -- old table
+        // wp_abj404_redirects -- new table
+        
+        $query = $this->readFileContents(__DIR__ . "/sql/importDataFromPluginRedirectioner.sql");
+        $query = str_replace('{OLD_TABLE}', $oldTable, $query);
+        $query = str_replace('{NEW_TABLE}', $newTable, $query);
+
+        $wpdb->query($query);
+        $result['last_error'] = $wpdb->last_error;
+        $result['last_result'] = $wpdb->last_result;
+        $result['rows_affected'] = $wpdb->rows_affected;
+        
+        $abj404logging->debugMessage("Importing redirectioner SQL result: " . 
+                wp_kses_post(json_encode($result)));
+        
+        return $result;
     }
     
     /** 
@@ -623,7 +640,7 @@ class ABJ_404_Solution_DataAccess {
         $logs = $wpdb->prefix . "abj404_logs";
 
         
-        if (@$_POST['sanity'] != "1") {
+        if (@$_POST['sanity_purge'] != "1") {
             $message = __('Error: You didn\'t check the I understand checkbox. No purging of records for you!', '404-solution');
             return $message;
         }
@@ -682,7 +699,7 @@ class ABJ_404_Solution_DataAccess {
             $queryStringReds = "delete from " . $redirects . " where status in (" . $typesForSQL . ")";
             $redirectCount = $wpdb->query($queryStringReds);
             
-            $message .= "<br>";
+            $message .= "<BR/>";
             $message .= sprintf( _n( '%s redirect entry was purged.', 
                     '%s redirect entries were purged.', $redirectCount, '404-solution'), $redirectCount);
         }

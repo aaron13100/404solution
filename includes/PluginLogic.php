@@ -380,6 +380,37 @@ class ABJ_404_Solution_PluginLogic {
         return $message;
     }
     
+    function handleImportRedirectsAction() {
+        global $abj404dao;
+        global $abj404logging;
+        $message = "";
+        
+        
+        if ($abj404dao->getPostOrGetSanitize('action') == 'importRedirects') {
+            
+            if ($abj404dao->getPostOrGetSanitize('sanity_404redirected') != '1') {
+                $message = __("Error: You didn't check the I understand checkbox. No importing for you!", '404-solution');
+                return $message;
+            }
+            
+            try {
+                $result = $abj404dao->importDataFromPluginRedirectioner();
+                if ($result['last_error'] != '') {
+                    $message = sprintf(__("Error: No records were imported. SQL result: %s", '404-solution'), 
+                            wp_kses_post(json_encode($result['last_error'])));
+                } else {
+                    $message = sprintf(__("Records imported: %s", '404-solution'), esc_html($result['rows_affected']));
+                }
+                
+            } catch (Exception $e) {
+                $message = "Error: Importing failed. Message: " . $e->getMessage();
+                $abj404logging->errorMessage('Error importing redirects.', $e);
+            }
+        }
+        
+        return $message;
+    }
+    
     function handleDeleteLogAction() {
         $message = "";
 
@@ -582,11 +613,11 @@ class ABJ_404_Solution_PluginLogic {
         } else if (@$_POST['url'] != "" && @$_POST['ids_multiple'] == "") {
             $fromURL = $_POST['url'];
         } else {
-            $message .= __('Error: URL is a required field.', '404-solution') . "<br>";
+            $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
         }
 
         if ($fromURL != "" && substr($_POST['url'], 0, 1) != "/") {
-            $message .= __('Error: URL must start with /', '404-solution') . "<br>";
+            $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
         }
 
         $typeAndDest = $this->getRedirectTypeAndDest();
@@ -618,7 +649,7 @@ class ABJ_404_Solution_PluginLogic {
             $_POST['external'] = "";
             $_POST['dest'] = "";
         } else {
-            $message .= __('Error: Data not formatted properly.', '404-solution') . "<br>";
+            $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
             $abj404logging->errorMessage("Update redirect data issue. Type: " . esc_html($typeAndDest['type']) . ", dest: " .
                     esc_html($typeAndDest['dest']));
         }
@@ -636,10 +667,10 @@ class ABJ_404_Solution_PluginLogic {
         
         if ($_POST['dest'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             if ($_POST['external'] == "") {
-                $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<br>";
+                $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<BR/>";
             } else {
                 if (substr($_POST['external'], 0, 7) != "http://" && substr($_POST['external'], 0, 8) != "https://" && substr($_POST['external'], 0, 6) != "ftp://") {
-                    $response['message'] = __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<br>";
+                    $response['message'] = __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<BR/>";
                 }
             }
         }
@@ -675,12 +706,12 @@ class ABJ_404_Solution_PluginLogic {
         $message = "";
 
         if ($_POST['url'] == "") {
-            $message .= __('Error: URL is a required field.', '404-solution') . "<br>";
+            $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
             return $message;
         }
             
         if (substr($_POST['url'], 0, 1) != "/") {
-            $message .= __('Error: URL must start with /', '404-solution') . "<br>";
+            $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
             return $message;
         }
 
@@ -698,7 +729,7 @@ class ABJ_404_Solution_PluginLogic {
             $_POST['external'] = "";
             $_POST['dest'] = "";
         } else {
-            $message .= __('Error: Data not formatted properly.', '404-solution') . "<br>";
+            $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
             $abj404logging->errorMessage("Add redirect data issue. Type: " . esc_html($typeAndDest['type']) . ", dest: " .
                     esc_html($typeAndDest['dest']));
         }
@@ -773,7 +804,7 @@ class ABJ_404_Solution_PluginLogic {
         if ($_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302") {
             $options['default_redirect'] = intval($_POST['default_redirect']);
         } else {
-            $message .= __('Error: Invalid value specified for default redirect type', '404-solution') . ".<br>";
+            $message .= __('Error: Invalid value specified for default redirect type', '404-solution') . ".<BR/>";
         }
 
         if ($_POST['capture_404'] == "1") {
@@ -789,13 +820,13 @@ class ABJ_404_Solution_PluginLogic {
         if (preg_match('/^[0-9]+$/', $_POST['capture_deletion']) == 1 && $_POST['capture_deletion'] >= 0) {
             $options['capture_deletion'] = absint($_POST['capture_deletion']);
         } else {
-            $message .= __('Collected URL deletion value must be a number greater or equal to zero', '404-solution') . ".<br>";
+            $message .= __('Collected URL deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
         }
 
         if (preg_match('/^[0-9]+$/', $_POST['manual_deletion']) == 1 && $_POST['manual_deletion'] >= 0) {
             $options['manual_deletion'] = absint($_POST['manual_deletion']);
         } else {
-            $message .= __('Manual redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<br>";
+            $message .= __('Manual redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
         }
 
         $options['remove_matches'] = ($_POST['remove_matches'] == "1") ? 1 : 0;
@@ -807,13 +838,13 @@ class ABJ_404_Solution_PluginLogic {
         if (preg_match('/^[0-9]+$/', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
             $options['suggest_minscore'] = absint($_POST['suggest_minscore']);
         } else {
-            $message .= __('Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<br>";
+            $message .= __('Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
         }
 
         if (preg_match('/^[0-9]+$/', $_POST['suggest_max']) == 1 && $_POST['suggest_max'] >= 1) {
             $options['suggest_max'] = absint($_POST['suggest_max']);
         } else {
-            $message .= __('Maximum number of suggest value must be a number greater or equal to 1', '404-solution') . ".<br>";
+            $message .= __('Maximum number of suggest value must be a number greater or equal to 1', '404-solution') . ".<BR/>";
         }
 
         // the suggest_.* options have html in them.
@@ -833,13 +864,13 @@ class ABJ_404_Solution_PluginLogic {
         if (preg_match('/^[0-9]+$/', $_POST['auto_score']) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
             $options['auto_score'] = absint($_POST['auto_score']);
         } else {
-            $message .= __('Auto match score value must be a number between 0 and 99', '404-solution') . ".<br>";
+            $message .= __('Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
         }
 
         if (preg_match('/^[0-9]+$/', $_POST['auto_deletion']) == 1 && $_POST['auto_deletion'] >= 0) {
             $options['auto_deletion'] = absint($_POST['auto_deletion']);
         } else {
-            $message .= __('Auto redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<br>";
+            $message .= __('Auto redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
         }
 
         $options['force_permalinks'] = (@$_POST['force_permalinks'] == "1") ? 1 : 0;
