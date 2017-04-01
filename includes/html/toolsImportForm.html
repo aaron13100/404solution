@@ -1,0 +1,40 @@
+<form method="POST" action="{toolsImportFormActionLink}">
+    <input type="hidden" name="action" value="importRedirects">
+    <p>
+        <strong><label for="purgetype">{Purge Type}:</label></strong>
+        <select name="purgetype" id="purgetype">
+            <option value="abj404_logs">{Logs Only}</option>
+            <option value="abj404_redirects">{Logs &amp; Redirects}</option>
+        </select>
+        <br>
+        <br><strong>{Redirect Types}:</strong>
+        <br>
+    </p>
+    <ul style="margin-left: 40px;">
+        <li>
+            <input type="checkbox" id="auto" name="types[]" value="{ABJ404_STATUS_AUTO}">
+            <label for="auto">{Automatic Redirects}</label>
+        </li>
+        <li>
+            <input type="checkbox" id="manual" name="types[]" value="{ABJ404_STATUS_MANUAL}">
+            <label for="manual">{Manual Redirects}</label>
+        </li>
+        <li>
+            <input type="checkbox" id="captured" name="types[]" value="{ABJ404_STATUS_CAPTURED}">
+            <label for="captured">{Captured URLs}</label>
+        </li>
+        <li>
+            <input type="checkbox" id="ignored" name="types[]" value="{ABJ404_STATUS_IGNORED}">
+            <label for="ignored">{Ignored URLs}</label>
+        </li>
+    </ul>
+    <strong>{Sanity Check}</strong>
+    <br>{Using the purge options will delete logs and redirects matching the boxes selected above. This action is not reversible. Hopefully you know what you're doing.}
+    <br>
+    <br>
+    <input type="checkbox" id="sanity" name="sanity" value="1">{I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!}
+    <br>
+    <br>
+    <input type="submit" value="{Purge Entries!}" class="button-secondary">
+    <p></p>
+</form>

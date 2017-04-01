@@ -23,7 +23,8 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $options
      */
     function tryNormalPostQuery($options) {
-        if (@$options['force_permalinks'] != '1') {
+        if (array_key_exists('force_permalinks', $options) && isset($options['force_permalinks']) && 
+                $options['force_permalinks'] != '1') {
             return;
         }
         
@@ -32,14 +33,25 @@ class ABJ_404_Solution_PluginLogic {
 
         // this is for requests like website.com/?p=123
         $query = $wp_query->query;
+        // if it's not set then don't use it.
+        if (!array_key_exists('p', $query) || !isset($query['p'])) {
+            return;
+        }
         $pageid = $query['p'];
         if (!empty($pageid)) {
             $permalink = get_permalink($pageid);
             $status = get_post_status($pageid);
             if (($permalink != false) && ($status == 'publish')) {
-                $redirect_id = $abj404dao->setupRedirect("", ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, 
-                        $permalink, $options['default_redirect'], 0);
-                $abj404dao->logRedirectHit($redirect_id, $permalink);
+                $urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
+                $fromURL = $urlHomeDirectory . '/?p=' . $pageid;
+                $redirect = $abj404dao->getExistingRedirectForURL($fromURL);
+                if ($redirect['id'] != 0) {
+                    $redirect_id = $redirect['id'];
+                } else {
+                    $redirect_id = $abj404dao->setupRedirect($fromURL, ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, 
+                            $pageid, $options['default_redirect'], 0);
+                }
+                $abj404dao->logRedirectHit($redirect_id, $permalink, 'page ID');
                 $this->forceRedirect($permalink, esc_html($options['default_redirect']));
                 exit;
             }
@@ -95,9 +107,10 @@ class ABJ_404_Solution_PluginLogic {
         $defaults = $this->getDefaultOptions();
         $missing = false;
         foreach ($defaults as $key => $value) {
-            if (!isset( $options[$key]) || '' == $options[$key]) {
+            if (!array_key_exists($key, $options) || !isset($options[$key]) || '' == $options[$key]) {
                 $options[$key] = $value;
                 $missing = true;
+                break;
             }
         }
 
@@ -293,7 +306,7 @@ class ABJ_404_Solution_PluginLogic {
             }
         } else if (substr($action . '', 0, 4) == "bulk") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
-                if (!isset($_POST['idnum'])) {
+                if (!array_key_exists('idnum', $_POST) || !isset($_POST['idnum'])) {
                     $abj404logging->errorMessage("No ID(s) specified for bulk action: " . esc_html($action));
                     echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'), esc_html($action),
                             false);
@@ -332,7 +345,7 @@ class ABJ_404_Solution_PluginLogic {
         
         $message = "";
         // Handle Trash Functionality
-        if (isset($_GET['trash'])) {
+        if (array_key_exists('trash', $_GET) && isset($_GET['trash'])) {
             if (check_admin_referer('abj404_trashRedirect') && is_admin()) {
                 $trash = "";
                 if ($_GET['trash'] == 0) {
@@ -411,7 +424,7 @@ class ABJ_404_Solution_PluginLogic {
         $message = "";
         
         //Handle Ignore Functionality
-        if (isset($_GET['ignore'])) {
+        if (array_key_exists('ignore', $_GET) && isset($_GET['ignore'])) {
             if (check_admin_referer('abj404_ignore404') && is_admin()) {
                 if ($_GET['ignore'] != 0 && $_GET['ignore'] != 1) {
                     $abj404logging->debugMessage("Unexpected ignore operation: " . 
@@ -711,7 +724,7 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
 
-        if (isset($_GET['orderby'])) {
+        if (array_key_exists('orderby', $_GET) && isset($_GET['orderby'])) {
             $tableOptions['orderby'] = esc_sql($_GET['orderby']);
         } else if (@$_GET['subpage'] == "abj404_logs") {
             $tableOptions['orderby'] = "timestamp";
@@ -719,7 +732,7 @@ class ABJ_404_Solution_PluginLogic {
             $tableOptions['orderby'] = "url";
         }
 
-        if (isset($_GET['order'])) {
+        if (array_key_exists('order', $_GET) && isset($_GET['order'])) {
             $tableOptions['order'] = esc_sql($_GET['order']);
         } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
             $tableOptions['order'] = "DESC";
@@ -732,7 +745,7 @@ class ABJ_404_Solution_PluginLogic {
         $tableOptions['perpage'] = $abj404dao->getPostOrGetSanitize("perpage", ABJ404_OPTION_DEFAULT_PERPAGE);
 
         if (@$_GET['subpage'] == "abj404_logs") {
-            if (isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {                
+            if (array_key_exists('id', $_GET) && isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {                
                 $tableOptions['logsid'] = absint($_GET['id']);
             } else {
                 $tableOptions['logsid'] = 0;
