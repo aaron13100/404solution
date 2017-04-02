@@ -1,0 +1,18 @@
+
+<div class="tablenav-pages">
+    <form method="POST" action="{changeItemsPerPage}" style="display: inline">
+        {TEXT_SHOW_ROWS}
+        <select name="perpage" onchange="this.form.submit();">
+            <!-- PERPAGE-OPTIONS -->
+        </select>
+    </form>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <span class="displaying-num"> {TEXT_BEFORE_LINKS}</span>
+  <span class="pagination-links">
+    <a href="{LINK_FIRST_PAGE}" class="first-page disabled" title="{Go to first page}">«</a>
+    <a href="{LINK_PREVIOUS_PAGE}" class="prev-page disabled" title="{Go to previous page}">‹</a>
+    {TEXT_CURRENT_PAGE}
+    <a href="{LINK_NEXT_PAGE}" class="next-page" title="{Go to next page}">›</a>
+    <a href="{LINK_LAST_PAGE}" class="last-page" title="{Go to last page}">»</a>
+  </span>
+</div>

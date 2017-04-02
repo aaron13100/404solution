@@ -380,7 +380,26 @@ class ABJ_404_Solution_PluginLogic {
         return $message;
     }
     
-    function handleImportRedirectsAction() {
+    function handleActionChangeItemsPerRow() {
+        global $abj404dao;
+        global $abj404logging;
+        
+        if ($abj404dao->getPostOrGetSanitize('action') == 'changeItemsPerRow') {
+            $showRows = max(absint($abj404dao->getPostOrGetSanitize('perpage')), ABJ404_OPTION_MIN_PERPAGE);
+
+            $options = $this->getOptions();
+            $options['perpage'] = $showRows;
+            update_option('abj404_settings', $options);
+        }
+    }
+    
+    /** 
+     * 
+     * @global type $abj404dao
+     * @global type $abj404logging
+     * @return string
+     */
+    function handleActionImportRedirects() {
         global $abj404dao;
         global $abj404logging;
         $message = "";
@@ -411,7 +430,7 @@ class ABJ_404_Solution_PluginLogic {
         return $message;
     }
     
-    function handleDeleteLogAction() {
+    function handleActionDeleteLog() {
         $message = "";
 
         //Handle Delete Functionality
@@ -496,7 +515,7 @@ class ABJ_404_Solution_PluginLogic {
     /** Edit redirect data.
      * @return type
      */
-    function handleEditAction(&$sub) {
+    function handleActionEdit(&$sub) {
         global $abj404dao;
         $message = "";
         
@@ -745,6 +764,7 @@ class ABJ_404_Solution_PluginLogic {
     function getTableOptions() {
         global $abj404dao;
         $tableOptions = array();
+        $options = $this->getOptions();
 
         $tableOptions['filter'] = $abj404dao->getPostOrGetSanitize("filter", "");
         if ($tableOptions['filter'] == "") {
@@ -773,7 +793,11 @@ class ABJ_404_Solution_PluginLogic {
 
         $tableOptions['paged'] = $abj404dao->getPostOrGetSanitize("paged", 1);
 
-        $tableOptions['perpage'] = $abj404dao->getPostOrGetSanitize("perpage", ABJ404_OPTION_DEFAULT_PERPAGE);
+        $perPageOption = ABJ404_OPTION_DEFAULT_PERPAGE;
+        if (array_key_exists('perpage', $options) && isset($options['perpage'])) {
+            $perPageOption = max(absint($options['perpage']), ABJ404_OPTION_MIN_PERPAGE);
+        }
+        $tableOptions['perpage'] = $abj404dao->getPostOrGetSanitize("perpage", $perPageOption);
 
         if (@$_GET['subpage'] == "abj404_logs") {
             if (array_key_exists('id', $_GET) && isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {                
@@ -801,79 +825,87 @@ class ABJ_404_Solution_PluginLogic {
 
         $message = "";
         $options = $abj404logic->getOptions();
-        if ($_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302") {
-            $options['default_redirect'] = intval($_POST['default_redirect']);
-        } else {
-            $message .= __('Error: Invalid value specified for default redirect type', '404-solution') . ".<BR/>";
+        
+        // options with custom messages.
+        if (array_key_exists('default_redirect', $_POST) && isset($_POST['default_redirect'])) {
+            if ($_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302") {
+                $options['default_redirect'] = intval($_POST['default_redirect']);
+            } else {
+                $message .= __('Error: Invalid value specified for default redirect type', '404-solution') . ".<BR/>";
+            }
         }
 
-        if ($_POST['capture_404'] == "1") {
-            $options['capture_404'] = '1';
-        } else {
-            $options['capture_404'] = '0';
+        if (array_key_exists('admin_notification', $_POST) && isset($_POST['admin_notification'])) {
+            if (preg_match('/^[0-9]+$/', $_POST['admin_notification']) == 1) {
+                $options['admin_notification'] = absint($_POST['admin_notification']);
+            }
+        }
+        
+        if (array_key_exists('capture_deletion', $_POST) && isset($_POST['capture_deletion'])) {
+            if (preg_match('/^[0-9]+$/', $_POST['capture_deletion']) == 1 && $_POST['capture_deletion'] >= 0) {
+                $options['capture_deletion'] = absint($_POST['capture_deletion']);
+            } else {
+                $message .= __('Collected URL deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+            }
         }
 
-        if (preg_match('/^[0-9]+$/', $_POST['admin_notification']) == 1) {
-            $options['admin_notification'] = absint($_POST['admin_notification']);
+        if (array_key_exists('manual_deletion', $_POST) && isset($_POST['manual_deletion'])) {
+            if (preg_match('/^[0-9]+$/', $_POST['manual_deletion']) == 1 && $_POST['manual_deletion'] >= 0) {
+                $options['manual_deletion'] = absint($_POST['manual_deletion']);
+            } else {
+                $message .= __('Manual redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+            }
         }
 
-        if (preg_match('/^[0-9]+$/', $_POST['capture_deletion']) == 1 && $_POST['capture_deletion'] >= 0) {
-            $options['capture_deletion'] = absint($_POST['capture_deletion']);
-        } else {
-            $message .= __('Collected URL deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+        if (array_key_exists('suggest_minscore', $_POST) && isset($_POST['suggest_minscore'])) {
+            if (preg_match('/^[0-9]+$/', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
+                $options['suggest_minscore'] = absint($_POST['suggest_minscore']);
+            } else {
+                $message .= __('Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
+            }
         }
 
-        if (preg_match('/^[0-9]+$/', $_POST['manual_deletion']) == 1 && $_POST['manual_deletion'] >= 0) {
-            $options['manual_deletion'] = absint($_POST['manual_deletion']);
-        } else {
-            $message .= __('Manual redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+        if (array_key_exists('suggest_max', $_POST) && isset($_POST['suggest_max'])) {
+            if (preg_match('/^[0-9]+$/', $_POST['suggest_max']) == 1 && $_POST['suggest_max'] >= 1) {
+                $options['suggest_max'] = absint($_POST['suggest_max']);
+            } else {
+                $message .= __('Maximum number of suggest value must be a number greater or equal to 1', '404-solution') . ".<BR/>";
+            }
         }
-
-        $options['remove_matches'] = ($_POST['remove_matches'] == "1") ? 1 : 0;
-        $options['debug_mode'] = (@$_POST['debug_mode'] == "1") ? 1 : 0;
-        $options['display_suggest'] = (@$_POST['display_suggest'] == "1") ? 1 : 0;
-        $options['suggest_cats'] = (@$_POST['suggest_cats'] == "1") ? 1 : 0;
-        $options['suggest_tags'] = (@$_POST['suggest_tags'] == "1") ? 1 : 0;
-
-        if (preg_match('/^[0-9]+$/', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
-            $options['suggest_minscore'] = absint($_POST['suggest_minscore']);
-        } else {
-            $message .= __('Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
+        
+        if (array_key_exists('auto_score', $_POST) && isset($_POST['auto_score'])) {
+            if (preg_match('/^[0-9]+$/', $_POST['auto_score']) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
+                $options['auto_score'] = absint($_POST['auto_score']);
+            } else {
+                $message .= __('Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
+            }
         }
-
-        if (preg_match('/^[0-9]+$/', $_POST['suggest_max']) == 1 && $_POST['suggest_max'] >= 1) {
-            $options['suggest_max'] = absint($_POST['suggest_max']);
-        } else {
-            $message .= __('Maximum number of suggest value must be a number greater or equal to 1', '404-solution') . ".<BR/>";
+        
+        if (array_key_exists('auto_deletion', $_POST) && isset($_POST['auto_deletion'])) {
+            if (preg_match('/^[0-9]+$/', $_POST['auto_deletion']) == 1 && $_POST['auto_deletion'] >= 0) {
+                $options['auto_deletion'] = absint($_POST['auto_deletion']);
+            } else {
+                $message .= __('Auto redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+            }
+        }
+        
+        // these options all default to 0 if they're not specifically set to 1.
+        $optionsList = array('remove_matches', 'debug_mode', 'display_suggest', 'suggest_cats', 'suggest_tags', 
+            'auto_redirects', 'auto_cats', 'auto_tags', 'force_permalinks', 'capture_404');
+        foreach ($optionsList as $optionName) {
+            $options[$optionName] = ($_POST[$optionName] == "1") ? 1 : 0;
         }
 
         // the suggest_.* options have html in them.
-        $options['suggest_title'] = wp_kses_post($_POST['suggest_title']);
-        $options['suggest_before'] = wp_kses_post($_POST['suggest_before']);
-        $options['suggest_after'] = wp_kses_post($_POST['suggest_after']);
-        $options['suggest_entrybefore'] = wp_kses_post($_POST['suggest_entrybefore']);
-        $options['suggest_entryafter'] = wp_kses_post($_POST['suggest_entryafter']);
-        $options['suggest_noresults'] = wp_kses_post($_POST['suggest_noresults']);
-
-        $options['dest404page'] = sanitize_text_field(@$_POST['dest404page']);
-
-        $options['auto_redirects'] = (@$_POST['auto_redirects'] == "1") ? 1 : 0;
-        $options['auto_cats'] = (@$_POST['auto_cats'] == "1") ? 1 : 0;
-        $options['auto_tags'] = (@$_POST['auto_tags'] == "1") ? 1 : 0;
-
-        if (preg_match('/^[0-9]+$/', $_POST['auto_score']) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
-            $options['auto_score'] = absint($_POST['auto_score']);
-        } else {
-            $message .= __('Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
+        $optionsListSuggest = array('suggest_title', 'suggest_before', 'suggest_after', 'suggest_entrybefore', 
+            'suggest_entryafter', 'suggest_noresults');
+        foreach ($optionsListSuggest as $optionName) {
+            $options[$optionName] = wp_kses_post($_POST[$optionName]);
         }
 
-        if (preg_match('/^[0-9]+$/', $_POST['auto_deletion']) == 1 && $_POST['auto_deletion'] >= 0) {
-            $options['auto_deletion'] = absint($_POST['auto_deletion']);
-        } else {
-            $message .= __('Auto redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+        if (array_key_exists('dest404page', $_POST) && isset($_POST['dest404page'])) {
+            $options['dest404page'] = sanitize_text_field(@$_POST['dest404page']);
         }
-
-        $options['force_permalinks'] = (@$_POST['force_permalinks'] == "1") ? 1 : 0;
 
         /** Sanitize all data. */
         foreach ($options as $key => $option) {
