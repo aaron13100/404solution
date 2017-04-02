@@ -54,9 +54,10 @@ class ABJ_404_Solution_View {
             $message .= $abj404logic->hanldeTrashAction();
             $message .= $abj404logic->handleDeleteAction();
             $message .= $abj404logic->handleIgnoreAction();
-            $message .= $abj404logic->handleEditAction($sub);
-            $message .= $abj404logic->handleDeleteLogAction();
-            $message .= $abj404logic->handleImportRedirectsAction();
+            $message .= $abj404logic->handleActionEdit($sub);
+            $message .= $abj404logic->handleActionDeleteLog();
+            $message .= $abj404logic->handleActionImportRedirects();
+            $message .= $abj404logic->handleActionChangeItemsPerRow();
 
             // --------------------------------------------------------------------
             // Output the correct page.
@@ -443,11 +444,11 @@ class ABJ_404_Solution_View {
         // replace known strings that do not exist in the translation file.
         $text = str_replace(array_keys($knownReplacements), array_values($knownReplacements), $text);
         
-        // find the strings to replace in the content
+        // Find the strings to replace in the content.
         $re = '/\{(.+?)\}/x';
         preg_match_all($re, $text, $stringsToReplace, PREG_PATTERN_ORDER);
 
-        // iterate through each string to replace.
+        // Iterate through each string to replace.
         foreach ($stringsToReplace[1] as $stringToReplace) {
             $text = str_replace('{' . $stringToReplace . '}', 
                     __($stringToReplace, '404-solution'), $text);
@@ -1611,7 +1612,6 @@ class ABJ_404_Solution_View {
      */
     function echoPaginationLinks($sub, $tableOptions) {
         global $abj404dao;
-        global $abj404logging;
 
         $url = "?page=" . ABJ404_PP;
         if ($sub == 'abj404_captured') {
@@ -1645,27 +1645,19 @@ class ABJ_404_Solution_View {
                 $num_records = $abj404dao->getRecordCount($types);
             }
         }
-        if ($abj404logging->isDebug()) {
-            $abj404logging->debugMessage("Pagination links: " . esc_html($num_records) . 
-                    " total log records found. Table options: " . wp_kses_post(json_encode($tableOptions)));
-        }
 
         $total_pages = ceil($num_records / $tableOptions['perpage']);
         if ($total_pages == 0) {
             $total_pages = 1;
         }
 
-        echo "<div class=\"tablenav-pages\">";
         $itemsText = sprintf( _n( '%s item', '%s items', $num_records, '404-solution'), $num_records);
-        echo "<span class=\"displaying-num\">" . " " . $itemsText . "</span>";
-        echo "<span class=\"pagination-links\">";
 
         $classFirstPage = "";
         if ($tableOptions['paged'] == 1) {
             $classFirstPage = " disabled";
         }
         $firsturl = $url;
-        echo "<a href=\"" . esc_url($firsturl) . "\" class=\"first-page" . $classFirstPage . "\" title=\"" . __('Go to first page', '404-solution') . "\">&laquo;</a>";
 
         $classPreviousPage = "";
         if ($tableOptions['paged'] == 1) {
@@ -1675,10 +1667,6 @@ class ABJ_404_Solution_View {
             $prev = $tableOptions['paged'] - 1;
             $prevurl = $url . "&paged=" . $prev;
         }
-        echo "<a href=\"" . esc_url($prevurl) . "\" class=\"prev-page" . $classPreviousPage . "\" title=\"" . __('Go to previous page', '404-solution') . "\">&lsaquo;</a>";
-        echo " ";
-        echo __('Page', '404-solution') . " " . $tableOptions['paged'] . " " . __('of', '404-solution') . " " . esc_html($total_pages);
-        echo " ";
 
         $classNextPage = "";
         if ($tableOptions['paged'] + 1 > $total_pages) {
@@ -1692,7 +1680,6 @@ class ABJ_404_Solution_View {
             $next = $tableOptions['paged'] + 1;
             $nexturl = $url . "&paged=" . $next;
         }
-        echo "<a href=\"" . esc_url($nexturl) . "\" class=\"next-page" . $classNextPage . "\" title=\"" . __('Go to next page', '404-solution') . "\">&rsaquo;</a>";
 
         $classLastPage = "";
         if ($tableOptions['paged'] + 1 > $total_pages) {
@@ -1705,9 +1692,42 @@ class ABJ_404_Solution_View {
         } else {
             $lasturl = $url . "&paged=" . $total_pages;
         }
-        echo "<a href=\"" . esc_url($lasturl) . "\" class=\"last-page" . $classLastPage . "\" title=\"" . __('Go to last page', '404-solution') . "\">&raquo;</a>";
-        echo "</span>";
-        echo "</div>";
+        
+        // ------------
+        $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage'])) + 1;
+        $end = min($start + absint(sanitize_text_field($tableOptions['perpage'])) - 1, $num_records);
+        $currentlyShowingText = sprintf(__('%s - %s of %s', '404-solution'), $start, $end, $num_records);
+        $currentPageText = __('Page', '404-solution') . " " . $tableOptions['paged'] . " " . __('of', '404-solution') . " " . esc_html($total_pages);
+        $showRowsText = __('Rows per page:', '404-solution');
+        $showRowsLink = wp_nonce_url($url . '&action=changeItemsPerRow', "abj404_importRedirects");
+        
+        // create the options for the "per page" dropdown list.
+        $perPageOptionValues = array(10, 25, 50, 100, 200);
+        $perPageOptions = '';
+        foreach ($perPageOptionValues as $val) {
+            $perPageOptions .= '<option value="' . $val . '" ';
+            if ($tableOptions['perpage'] == $val) {
+                $perPageOptions .= 'selected';
+            }
+            $perPageOptions .= '>' . $val . '</option>';
+        }
+        
+        // read the html content.
+        $html = $abj404dao->readFileContents(__DIR__ . "/html/paginationLinks.html");
+        // do special replacements
+        $html = str_replace('<!-- PERPAGE-OPTIONS -->', $perPageOptions, $html);
+        $html = str_replace('{changeItemsPerPage}', $showRowsLink, $html);
+        $html = str_replace('{TEXT_BEFORE_LINKS}', $currentlyShowingText, $html);
+        $html = str_replace('{TEXT_SHOW_ROWS}', $showRowsText, $html);
+        $html = str_replace('{LINK_FIRST_PAGE}', esc_url($firsturl), $html);
+        $html = str_replace('{LINK_PREVIOUS_PAGE}', esc_url($prevurl), $html);
+        $html = str_replace('{TEXT_CURRENT_PAGE}', $currentPageText, $html);
+        $html = str_replace('{LINK_NEXT_PAGE}', esc_url($nexturl), $html);
+        $html = str_replace('{LINK_LAST_PAGE}', esc_url($lasturl), $html);
+        // constants and translations.
+        $html = $this->doNormalReplacements($html);
+        
+        echo $html;
     }    
     
     /** Output the filters for a tab.
