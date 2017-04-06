@@ -33,10 +33,15 @@ class ABJ_404_Solution_ErrorHandler {
                     break;
 
                 default:
-                    $abj404logging->errorMessage("ABJ404-SOLUTION Normal error handler error: errno: " .
-                            wp_kses_post(json_encode($errno)) . ", errstr: " . wp_kses_post(json_encode($errstr)) .
-                            ", errfile: " . stripcslashes(wp_kses_post(json_encode($errfile))) .
-                            ", errline: " . wp_kses_post(json_encode($errline)));
+                    $errmsg = "ABJ404-SOLUTION Normal error handler error: errno: " .
+                                wp_kses_post(json_encode($errno)) . ", errstr: " . wp_kses_post(json_encode($errstr)) .
+                                ", errfile: " . stripcslashes(wp_kses_post(json_encode($errfile))) .
+                                ", errline: " . wp_kses_post(json_encode($errline));
+                    if ($abj404logging != null) {
+                        $abj404logging->errorMessage($errmsg);
+                    } else {
+                        echo $errmsg;
+                    }
                     break;
             }
         } catch (Exception $ex) { 
@@ -48,6 +53,7 @@ class ABJ_404_Solution_ErrorHandler {
 
     static function FatalErrorHandler() {
         global $abj404logging;
+        
         $lasterror = error_get_last();
 
         try {
@@ -66,8 +72,12 @@ class ABJ_404_Solution_ErrorHandler {
                     break;
 
                 default:
-                    $abj404logging->errorMessage("ABJ404-SOLUTION Fatal error handler: " .
-                            stripcslashes(wp_kses_post(json_encode($lasterror))));
+                    $errmsg = "ABJ404-SOLUTION Fatal error handler: " . stripcslashes(wp_kses_post(json_encode($lasterror))); 
+                    if ($abj404logging != null) {
+                        $abj404logging->errorMessage($errmsg);
+                    } else {
+                        echo $errmsg;
+                    }
                     break;
             }
         } catch (Exception $ex) {
