@@ -1701,21 +1701,12 @@ class ABJ_404_Solution_View {
         $showRowsText = __('Rows per page:', '404-solution');
         $showRowsLink = wp_nonce_url($url . '&action=changeItemsPerRow', "abj404_importRedirects");
         
-        // create the options for the "per page" dropdown list.
-        $perPageOptionValues = array(10, 25, 50, 100, 200);
-        $perPageOptions = '';
-        foreach ($perPageOptionValues as $val) {
-            $perPageOptions .= '<option value="' . $val . '" ';
-            if ($tableOptions['perpage'] == $val) {
-                $perPageOptions .= 'selected';
-            }
-            $perPageOptions .= '>' . $val . '</option>';
-        }
-        
         // read the html content.
         $html = $abj404dao->readFileContents(__DIR__ . "/html/paginationLinks.html");
         // do special replacements
-        $html = str_replace('<!-- PERPAGE-OPTIONS -->', $perPageOptions, $html);
+        $html = str_replace(' value="' . $tableOptions['perpage'] . '"', 
+                ' value="' . $tableOptions['perpage'] . '" selected', 
+                $html);
         $html = str_replace('{changeItemsPerPage}', $showRowsLink, $html);
         $html = str_replace('{TEXT_BEFORE_LINKS}', $currentlyShowingText, $html);
         $html = str_replace('{TEXT_SHOW_ROWS}', $showRowsText, $html);

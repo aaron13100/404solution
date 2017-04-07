@@ -397,7 +397,7 @@ class ABJ_404_Solution_DataAccess {
         }
 
         //Remove Automatic Redirects
-        if ($options['auto_deletion'] != '0') {
+        if (array_key_exists('auto_deletion', $options) && isset($options['auto_deletion']) && $options['auto_deletion'] != '0') {
             $auto_time = $options['auto_deletion'] * 86400;
             $then = $now - $auto_time;
 
@@ -420,7 +420,7 @@ class ABJ_404_Solution_DataAccess {
         }
 
         //Remove Manual Redirects
-        if ($options['manual_deletion'] != '0') {
+        if (array_key_exists('manual_deletion', $options) && isset($options['manual_deletion']) && $options['manual_deletion'] != '0') {
             $manual_time = $options['manual_deletion'] * 86400;
             $then = $now - $manual_time;
 
