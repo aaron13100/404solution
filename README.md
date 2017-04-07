@@ -65,6 +65,9 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 1.6.5 ##
+* Improvement: Add 500 and "all" to the rows per page option to close issue #8 (Move ALL Captured 404 URLs to Trash).
+
 ## Version 1.6.4 ##
 * Improvement: Add a "rows per page" option for pagination for ozzymuppet.
 * FIX: Allow an error message to be logged when the logger hasn't been initialized (for totalfood).
