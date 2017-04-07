@@ -83,6 +83,10 @@ class ABJ_404_Solution_View {
         if ($sub == "") {
             $sub = strtolower($abj404dao->getPostOrGetSanitize('subpage'));
         }
+        if ($sub == "") {
+            $sub = 'abj404_redirects';
+            $abj404logging->debugMessage('No tab selected. Displaying the "redirects" tab.');
+        }
         
         $abj404logging->debugMessage("Displaying sub page: " . esc_html($sub == '' ? '(none)' : $sub));
         

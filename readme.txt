@@ -61,8 +61,9 @@ Yes. It's as easy as turning on this feature in the options.
 
 = Version 1.6.5 =
 * Improvement: Add 500 and "all" to the rows per page option to close issue #8 (Move ALL Captured 404 URLs to Trash).
+* FIX: Correct the "Redirects" tab display when the user clicks the link from the settings menu.
 
-= Version 1.6.4 =
+= Version 1.6.4 = (April 6, 2017)
 * Improvement: Add a "rows per page" option for pagination for ozzymuppet.
 * FIX: Allow an error message to be logged when the logger hasn't been initialized (for totalfood).
 
