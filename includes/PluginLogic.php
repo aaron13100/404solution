@@ -107,7 +107,8 @@ class ABJ_404_Solution_PluginLogic {
         $defaults = $this->getDefaultOptions();
         $missing = false;
         foreach ($defaults as $key => $value) {
-            if (!array_key_exists($key, $options) || !isset($options[$key]) || '' == $options[$key]) {
+            if (!isset($options) || $options == '' ||
+                    !array_key_exists($key, $options) || !isset($options[$key]) || '' == $options[$key]) {
                 $options[$key] = $value;
                 $missing = true;
                 break;

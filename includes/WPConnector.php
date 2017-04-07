@@ -53,7 +53,7 @@ class ABJ_404_Solution_WordPress_Connector {
                 $requestedURL = esc_url($_SERVER['REQUEST_URI']);
 
                 $urlParts = parse_url($requestedURL);
-                $permalinks = $abj404spellChecker->findMatchingPosts($urlParts['path'], $options['suggest_cats'], $options['suggest_tags']);
+                $permalinks = $abj404spellChecker->findMatchingPosts($urlParts['path'], @$options['suggest_cats'], @$options['suggest_tags']);
 
                 // Allowing some HTML.
                 echo wp_kses($options['suggest_title'], array(
@@ -94,7 +94,7 @@ class ABJ_404_Solution_WordPress_Connector {
                         if (is_user_logged_in() && current_user_can('manage_options')) {
                             echo " (" . esc_html($permalink['score']) . ")";
                         }
-                        echo wp_kses($options['suggest_entryafter'], array(
+                        echo wp_kses(@$options['suggest_entryafter'], array(
                             'ul' => array(),
                             'ol' => array(),
                             'li' => array(),
