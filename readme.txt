@@ -59,7 +59,7 @@ Yes. It's as easy as turning on this feature in the options.
 
 == Changelog ==
 
-= Version 1.6.6 = (April 20, 2017)
+= Version 1.6.6 (April 20, 2017) =
 * Improvement: Avoid logging redirects from exact slug matches missing only the trailing slash (avoid canonical 
     redirects - let WordPress handle them).
 * Improvement: Remove the "force permalinks" option. That option is always on now.
@@ -68,11 +68,11 @@ Yes. It's as easy as turning on this feature in the options.
 * Improvement: Add 500 and "all" to the rows per page option to close issue #8 (Move ALL Captured 404 URLs to Trash).
 * FIX: Correct the "Redirects" tab display when the user clicks the link from the settings menu.
 
-= Version 1.6.4 = (April 6, 2017)
+= Version 1.6.4 (April 6, 2017) =
 * Improvement: Add a "rows per page" option for pagination for ozzymuppet.
 * FIX: Allow an error message to be logged when the logger hasn't been initialized (for totalfood).
 
-= Version 1.6.3 = (April 1, 2017)
+= Version 1.6.3 (April 1, 2017) =
 * FIX: Log URLs with queries correctly and add REMOTE_ADDR, HTTP_USER_AGENT, and REQUEST_URI to the debug log for ozzymuppet.
 * Improvement: Add a way to import redirects (Tools -> Import) from the old "404 Redirected" plugin for Dave and Mark.
 
