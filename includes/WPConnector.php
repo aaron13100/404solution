@@ -8,7 +8,6 @@ class ABJ_404_Solution_WordPress_Connector {
     static function init() {
         add_filter("plugin_action_links_" . ABJ404_NAME, 'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
         add_action('template_redirect', 'ABJ_404_Solution_WordPress_Connector::process404', 9999);
-        add_filter('redirect_canonical', 'ABJ_404_Solution_WordPress_Connector::redirectCanonical', 10, 2);
 
         add_action('abj404_duplicateCronAction', 'ABJ_404_Solution_DataAccess::removeDuplicatesCron');
         add_action('abj404_cleanupCronAction', 'ABJ_404_Solution_DataAccess::deleteOldRedirectsCron');
@@ -155,8 +154,7 @@ class ABJ_404_Solution_WordPress_Connector {
         if ($abj404logging->isDebug()) {
             $debugOptionsMsg = esc_html('auto_redirects: ' . $options['auto_redirects'] . ', auto_score: ' . 
                     $options['auto_score'] . ', auto_cats: ' . $options['auto_cats'] . ', auto_tags: ' .
-                    $options['auto_tags'] . ', force_permalinks: ' . $options['force_permalinks'] . 
-                    ', dest404page: ' . $options['dest404page']);
+                    $options['auto_tags'] . ', dest404page: ' . $options['dest404page']);
             $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $_SERVER['HTTP_USER_AGENT'] . ', REMOTE_ADDR: ' . 
                     $_SERVER['REMOTE_ADDR'] . ', REQUEST_URI: ' . $_SERVER['REQUEST_URI']);
             $abj404logging->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
@@ -227,7 +225,7 @@ class ABJ_404_Solution_WordPress_Connector {
                     $perma_link .= $abj404connector->sortQueryParts($urlParts);
 
                     // Check for forced permalinks.
-                    if (@$options['force_permalinks'] == '1' && @$options['auto_redirects'] == '1') {
+                    if (@$options['auto_redirects'] == '1') {
                         if ($requestedURL != $perma_link) {
                             if ($redirect['id'] != '0') {
                                 $abj404connector->processRedirect($redirect, 'single page 3');
@@ -335,76 +333,6 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         return esc_url($url);
-    }
-
-    /**
-     * Redirect canonicals
-     */
-    static function redirectCanonical($redirect, $request) {
-        global $abj404dao;
-        global $abj404connector;
-        global $abj404logic;
-
-        if (is_single() || is_page()) {
-            if (!is_feed() && !is_trackback() && !is_preview()) {
-                $options = $abj404logic->getOptions();
-
-                // Sanitizing options.
-                foreach ($options as $key => $value) {
-                    $key = wp_kses_post($key);
-                    $options[$key] = wp_kses_post($value);
-                }
-
-                $urlRequest = esc_url($_SERVER['REQUEST_URI']);
-                $urlParts = parse_url($urlRequest);
-
-                $requestedURL = $urlParts['path'];
-                $requestedURL .= $abj404connector->sortQueryParts($urlParts);
-
-                // Get URL data if it's already in our database.
-                $data = $abj404dao->getActiveRedirectForURL($requestedURL);
-
-                if ($data['id'] != '0' && $data['final_dest'] != 0) {
-                    $abj404connector->processRedirect($data, 'single page 4');
-                } else {
-                    if ($options['auto_redirects'] == '1' && $options['force_permalinks'] == '1') {
-                        $theID = get_the_ID();
-                        $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($theID . "|" . ABJ404_TYPE_POST, 0);
-                        $urlParts = parse_url($permalink['link']);
-
-                        $perma_link = $urlParts['path'];
-                        $paged = get_query_var('page') ? esc_html(get_query_var('page')) : FALSE;
-
-                        if (!$paged === FALSE) {
-                            if ($urlParts[query] == "") {
-                                if (substr($perma_link, -1) == "/") {
-                                    $perma_link .= $paged . "/";
-                                } else {
-                                    $perma_link .= "/" . $paged;
-                                }
-                            } else {
-                                $urlParts['query'] .= "&page=" . $paged;
-                            }
-                        }
-
-                        $perma_link .= $abj404connector->sortQueryParts($urlParts);
-
-                        if ($requestedURL != $perma_link) {
-                            $redirect_id = $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, $theID, $options['default_redirect'], 0);
-                            $abj404dao->logRedirectHit($redirect_id, $perma_link, 'single page 2');
-                            $abj404logic->forceRedirect(esc_url($perma_link), esc_html($options['default_redirect']));
-                            exit;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (is_404()) {
-            return false;
-        }
-
-        return $redirect;
     }
 
     /** Redirect to the page specified. 

@@ -23,11 +23,6 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $options
      */
     function tryNormalPostQuery($options) {
-        if (array_key_exists('force_permalinks', $options) && isset($options['force_permalinks']) && 
-                $options['force_permalinks'] != '1') {
-            return;
-        }
-        
         global $wp_query;
         global $abj404dao;
 
@@ -176,7 +171,6 @@ class ABJ_404_Solution_PluginLogic {
             'auto_deletion' => '1095',
             'auto_cats' => '1',
             'auto_tags' => '1',
-            'force_permalinks' => '1',
             'dest404page' => '0|' . ABJ404_TYPE_404_DISPLAYED,
         );
         
@@ -435,7 +429,7 @@ class ABJ_404_Solution_PluginLogic {
         $message = "";
 
         //Handle Delete Functionality
-        if (@$_GET['deleteDebugFile'] == '1') {
+        if (array_key_exists('deleteDebugFile', $_GET) && @$_GET['deleteDebugFile'] == '1') {
             if (check_admin_referer('abj404_deleteDebugFile') && is_admin()) {
                 $abj404dao->deleteRedirect(absint($_GET['id']));
                 $message = __('Redirect Removed Successfully!', '404-solution');
@@ -454,7 +448,7 @@ class ABJ_404_Solution_PluginLogic {
         $message = "";
         
         //Handle Delete Functionality
-        if (@$_GET['remove'] == 1) {
+        if (array_key_exists('remove', $_GET) && @$_GET['remove'] == 1) {
             if (check_admin_referer('abj404_removeRedirect') && is_admin()) {
                 if (preg_match('/[0-9]+/', $_GET['id'])) {
                     $abj404dao->deleteRedirect(absint($_GET['id']));
@@ -521,7 +515,7 @@ class ABJ_404_Solution_PluginLogic {
         $message = "";
         
         //Handle edit posts
-        if (@$_POST['action'] == "editRedirect") {
+        if (array_key_exists('action', $_POST) && @$_POST['action'] == "editRedirect") {
             $id = $abj404dao->getPostOrGetSanitize('id');
             $ids = $abj404dao->getPostOrGetSanitize('ids_multiple');
             if (!($id === null && $ids === null) && (preg_match('/[0-9]+/', '' . $id) || preg_match('/[0-9]+/', '' . $ids))) {
@@ -892,7 +886,7 @@ class ABJ_404_Solution_PluginLogic {
         
         // these options all default to 0 if they're not specifically set to 1.
         $optionsList = array('remove_matches', 'debug_mode', 'display_suggest', 'suggest_cats', 'suggest_tags', 
-            'auto_redirects', 'auto_cats', 'auto_tags', 'force_permalinks', 'capture_404');
+            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404');
         foreach ($optionsList as $optionName) {
             $options[$optionName] = ($_POST[$optionName] == "1") ? 1 : 0;
         }

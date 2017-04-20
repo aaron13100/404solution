@@ -65,6 +65,11 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 1.6.6 ## (April 20, 2017)
+* Improvement: Avoid logging redirects from exact slug matches missing only the trailing slash (avoid canonical 
+    redirects - let WordPress handle them).
+* Improvement: Remove the "force permalinks" option. That option is always on now.
+
 ## Version 1.6.5 ##
 * Improvement: Add 500 and "all" to the rows per page option to close issue #8 (Move ALL Captured 404 URLs to Trash).
 * FIX: Correct the "Redirects" tab display when the user clicks the link from the settings menu.
