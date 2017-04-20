@@ -1254,13 +1254,6 @@ class ABJ_404_Solution_View {
         }
         $content .= "<p><label for=\"auto_tags\">" . __('Create automatic redirects for tags', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_tags\" id=\"auto_tags\" value=\"1\"" . $selectedAutoTags . "></p>";
 
-        $selectedForcePermaLinks = "";
-        if ($options['force_permalinks'] == '1') {
-            $selectedForcePermaLinks = " checked";
-        }
-        $content .= "<p><label for=\"force_permalinks\">" . __('Force current permalinks', '404-solution') . ":</label> <input type=\"checkbox\" name=\"force_permalinks\" id=\"force_permalinks\" value=\"1\"" . $selectedForcePermaLinks . "><BR/>";
-        $content .= $spaces . __('Creates auto redirects for any url resolving to a post/page that doesn\'t match the current permalinks', '404-solution') . "</p>";
-
         $content .= "<p><label for=\"auto_deletion\">" . __('Auto redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"auto_deletion\" id=\"auto_deletion\" value=\"" . esc_attr($options['auto_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
         $content .= $spaces . __('Removes auto created redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
