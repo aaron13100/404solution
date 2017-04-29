@@ -65,6 +65,9 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 1.6.7 ## 
+* FIX: Correctly log URLs with only special characters at the end, like /&.
+
 ## Version 1.6.6 (April 20, 2017) ##
 * Improvement: Avoid logging redirects from exact slug matches missing only the trailing slash (avoid canonical 
     redirects - let WordPress handle them).
