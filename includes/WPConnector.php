@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
 
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 
@@ -404,7 +406,8 @@ class ABJ_404_Solution_WordPress_Connector {
         global $abj404view;
 
         if (current_user_can('manage_options')) {
-            if (( @$_GET['page'] == ABJ404_PP ) || ( $pagenow == 'index.php' && (!isset($_GET['page']) ) )) {
+            if ( (array_key_exists('page', $_GET) && $_GET['page'] == ABJ404_PP) ||
+                 ($pagenow == 'index.php' && !isset($_GET['page'])) ) {
                 $options = $abj404logic->getOptions();
                 if (array_key_exists('admin_notification', $options) && isset($options['admin_notification']) && $options['admin_notification'] != '0') {
                     $captured = $abj404dao->getCapturedCountForNotification();

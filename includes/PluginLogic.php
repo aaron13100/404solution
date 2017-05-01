@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
 
 /* the glue that holds it together / everything else. */
 
@@ -59,20 +61,23 @@ class ABJ_404_Solution_PluginLogic {
      */
     function shouldIgnoreRequest($urlRequest) {
         global $abj404logging;
+        global $abj404dao;
+        
         // Bail out if 
         // not on 404 error page - because we're not supposed to, or 
         // if we're currently on an admin screen - because we want admins to see 404s?, or 
-        // if we're receiving a "close connection" signal - because the user is no longer there.
         // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
         if ((!is_404()) || (is_admin())) {
             return true;
         }
         
+        $ignoreReason = '';
+        
         // ignore requests that are supposed to be for an admin.
         $adminURL = parse_url(admin_url(), PHP_URL_PATH);
         if (substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
             $abj404logging->debugMessage("Ignoring request for admin URL: " . $urlRequest);
-            return true;
+            $ignoreReason = 'admin URL ignored';
         }
         
         // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
@@ -81,8 +86,14 @@ class ABJ_404_Solution_PluginLogic {
         if (strpos(strtolower(@$_SERVER['HTTP_USER_AGENT']), 'zemanta aggregator') !== false) {
             $abj404logging->debugMessage("Ignoring request from user agent: " . 
                     esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
+            $ignoreReason = 'User agent ignored: zemanta aggregator';
+        }
+        
+        if ($ignoreReason != '') {
+            // TODO $abj404dao->logRedirectHit($redirect_id, '404', $ignoreReason);
             return true;
         }
+        
         return false;
     }
     
@@ -116,13 +127,8 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($skip_db_check == "0") {
             if ($options['DB_VERSION'] != ABJ404_VERSION) {
-                if (ABJ404_VERSION == "1.3.2") {
-                    //Unregister all crons. Some were bad.
-                    ABJ_404_Solution_PluginLogic::doUnregisterCrons();
-
-                    //Register the good ones
-                    ABJ_404_Solution_PluginLogic::doRegisterCrons();
-                }
+                // make sure the database is up to date.
+                ABJ_404_Solution_DataAccess::createDatabaseTables();
                 
                 // add the second part of the default destination page.
                 $dest404page = $options['dest404page'];
@@ -153,6 +159,7 @@ class ABJ_404_Solution_PluginLogic {
             'capture_404' => '1',
             'capture_deletion' => 1095,
             'manual_deletion' => '0',
+            'log_deletion' => '365',
             'admin_notification' => '200',
             'remove_matches' => '1',
             'display_suggest' => '1',
@@ -849,6 +856,14 @@ class ABJ_404_Solution_PluginLogic {
                 $options['manual_deletion'] = absint($_POST['manual_deletion']);
             } else {
                 $message .= __('Manual redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+            }
+        }
+
+        if (array_key_exists('log_deletion', $_POST) && isset($_POST['log_deletion'])) {
+            if (preg_match('/^[0-9]+$/', $_POST['log_deletion']) == 1 && $_POST['log_deletion'] >= 0) {
+                $options['log_deletion'] = absint($_POST['log_deletion']);
+            } else {
+                $message .= __('Log deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
             }
         }
 

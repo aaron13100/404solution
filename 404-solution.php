@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
 /*
 	Plugin Name: 404 Solution
 	Plugin URI:  http://www.wealth-psychology.com/404-solution/
