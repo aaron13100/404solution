@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
 
 /* Turns data into an html display and vice versa.
  * Houses all displayed pages. Logs, options page, captured 404s, stats, etc. */
@@ -1349,6 +1351,9 @@ class ABJ_404_Solution_View {
         $content .= "<p><label for=\"manual_deletion\">" . __('Manual redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"manual_deletion\" id=\"manual_deletion\" value=\"" . esc_attr($options['manual_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
         $content .= $spaces . __('Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
+        $content .= "<p><label for=\"log_deletion\">" . __('Log deletion', '404-solution') . ":</label> <input type=\"text\" name=\"log_deletion\" id=\"log_deletion\" value=\"" . esc_attr($options['log_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
+        $content .= $spaces . __('Automatically removes logs older than this many days.', '404-solution') . "</p>";
+
         $selectedRemoveMatches = "";
         if ($options['remove_matches'] == '1') {
             $selectedRemoveMatches = " checked";
@@ -1470,16 +1475,6 @@ class ABJ_404_Solution_View {
         }
         date_default_timezone_set($timezone);
         foreach ($rows as $row) {
-            $redirect_id = $row['redirect_id'];
-            if (empty($redirect_id)) {
-                // delete the redirect. it only exists in the logs due to an error.
-                $abj404dao->deleteRedirect($redirect_id);
-                
-                $abj404logging->debugMessage("Deleted reference to nonexistent redirect from logs table. ID: " .
-                        $redirect_id);
-                continue;
-            }
-            
             $class = "";
             if ($y == 0) {
                 $class = " class=\"alternate\"";
@@ -1489,7 +1484,7 @@ class ABJ_404_Solution_View {
             }
             echo "<tr" . $class . ">";
             echo "<td></td>";
-            echo "<td>" . esc_html($redirects[$redirect_id]['url']) . "</td>";
+            echo "<td>" . esc_html($row['url']) . "</td>";
             echo "<td>" . esc_html($row['remote_host']) . "</td>";
             echo "<td>";
             if ($row['referrer'] != "") {

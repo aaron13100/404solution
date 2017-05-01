@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
 
 /* Functions in this class should all reference the one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
@@ -42,18 +44,16 @@ class ABJ_404_Solution_DataAccess {
             ) ENGINE=MyISAM " . esc_html($charset_collate) . " COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1";
         $wpdb->query($query);
 
-        $query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "abj404_logs` (
-              `id` bigint(40) NOT NULL auto_increment,
-              `redirect_id` bigint(40) NOT NULL,
-              `timestamp` bigint(40) NOT NULL,
-              `remote_host` varchar(512) NOT NULL,
-              `referrer` varchar(512) NOT NULL,
-              `action` varchar(512) NOT NULL,
-              PRIMARY KEY  (`id`),
-              KEY `redirect_id` (`redirect_id`),
-              KEY `timestamp` (`timestamp`)
-            ) ENGINE=MyISAM " . esc_html($charset_collate) . " COMMENT='404 Solution Plugin Logs Table' AUTO_INCREMENT=1";
-        $wpdb->query($query);
+        $query = $this->readFileContents(__DIR__ . "/sql/createLogTable.sql");
+        $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
+        $query = str_replace('{charset_collate}', esc_html($charset_collate), $query);
+        $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+
+        $query = $this->readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
+        $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
+        $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
+        $query = str_replace('{charset_collate}', esc_html($charset_collate), $query);
+        $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         
         // TODO: optionally drop the logs table on the uninstall hook (not the deactivation hook).
         // see: https://developer.wordpress.org/plugins/the-basics/uninstall-methods/
@@ -75,14 +75,26 @@ class ABJ_404_Solution_DataAccess {
         $query = $this->readFileContents(__DIR__ . "/sql/importDataFromPluginRedirectioner.sql");
         $query = str_replace('{OLD_TABLE}', $oldTable, $query);
         $query = str_replace('{NEW_TABLE}', $newTable, $query);
+        
+        $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
 
+        $abj404logging->debugMessage("Importing redirectioner SQL result: " . 
+                wp_kses_post(json_encode($result)));
+        
+        return $result;
+    }
+    
+    /** Return the results of the query in a variable.
+     * @param type $query
+     * @return type
+     */
+    static function queryAndGetResults($query) {
+        global $wpdb;
+        
         $wpdb->query($query);
         $result['last_error'] = $wpdb->last_error;
         $result['last_result'] = $wpdb->last_result;
         $result['rows_affected'] = $wpdb->rows_affected;
-        
-        $abj404logging->debugMessage("Importing redirectioner SQL result: " . 
-                wp_kses_post(json_encode($result)));
         
         return $result;
     }
@@ -175,10 +187,16 @@ class ABJ_404_Solution_DataAccess {
     function getLogsCount($redirectID) {
         global $wpdb;
 
-        $query = "select count(id) from " . $wpdb->prefix . "abj404_logs where 1 ";
+        $query = $this->readFileContents(__DIR__ . "/sql/getLogsCount.sql");
+        $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
+        
         if ($redirectID != 0) {
-            $query .= "and redirect_id = " . esc_sql($redirectID);
+            $query = str_replace('/* {SPECIFIC_ID}', '', $query);
+            $query = str_replace('{redirect_id}', $redirectID, $query);
+            $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
+            
         }
+        
         $row = $wpdb->get_row($query, ARRAY_N);
         $records = $row[0];
 
@@ -194,7 +212,10 @@ class ABJ_404_Solution_DataAccess {
     function getRedirectLastUsed($id) {
         global $wpdb;
 
-        $query = $wpdb->prepare("select timestamp from " . $wpdb->prefix . "abj404_logs where redirect_id = %d order by timestamp desc", esc_sql($id));
+        $query = $wpdb->prepare("select timestamp from " . $wpdb->prefix . "abj404_logsv2 where " .
+                " requested_url in (select url from " . $wpdb->prefix . 
+                "abj404_redirects where redirect_id = %d) " .
+                " order by timestamp desc", esc_sql($id));
         $row = $wpdb->get_col($query);
 
         if (isset($row[0])) {
@@ -227,11 +248,11 @@ class ABJ_404_Solution_DataAccess {
         global $abj404logging;
 
         $redirects = $wpdb->prefix . "abj404_redirects";
-        $logs = $wpdb->prefix . "abj404_logs";
+        $logs = $wpdb->prefix . "abj404_logsv2";
 
         $query = "select " . $redirects . ".id, " . $redirects . ".url, " . $redirects . ".status, " . $redirects . ".type, " . $redirects . ".final_dest, " . $redirects . ".code, " . $redirects . ".timestamp";
         $query .= ", count(" . $logs . ".id) as hits from " . $redirects . " ";
-        $query .= " left outer join " . $logs . " on " . $redirects . ".id = " . $logs . ".redirect_id ";
+        $query .= " left outer join " . $logs . " on " . $redirects . ".url = " . $logs . ".requested_url ";
         $query .= " where 1 and (";
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
             if ($sub == 'abj404_redirects') {
@@ -275,13 +296,14 @@ class ABJ_404_Solution_DataAccess {
     function getLogRecords($tableOptions) {
         global $wpdb;
 
-        $logs = $wpdb->prefix . "abj404_logs";
+        $logs = $wpdb->prefix . "abj404_logsv2";
         $redirects = $wpdb->prefix . "abj404_redirects";
 
-        $query = "select " . $logs . ".redirect_id, " . $logs . ".timestamp, " . $logs . ".remote_host, " . $logs . ".referrer, " . $logs . ".action, " . $redirects . ".url from " . $logs;
-        $query .= " left outer join " . $redirects . " on " . $logs . ".redirect_id = " . $redirects . ".id where 1 ";
+        $query = "select " . $logs . ".timestamp, " . $logs . ".user_ip as remote_host, " . $logs . ".referrer, " . $logs . ".dest_url as action, " . $redirects . ".url from " . $logs;
+        $query .= " left outer join " . $redirects . " on " . $logs . ".requested_url = " . $redirects . ".url where 1 ";
         if ($tableOptions['logsid'] != 0) {
-            $query .= " and redirect_id = " . sanitize_text_field($tableOptions['logsid']) . " ";
+            $query .= " and " . $logs . ".requested_url in (select url from " . $redirects . 
+                    " where id = " . sanitize_text_field($tableOptions['logsid']) . ") ";
         }
 
         $query .= "order by " . sanitize_text_field($tableOptions['orderby']) . " " . sanitize_text_field($tableOptions['order']) . " ";
@@ -326,15 +348,17 @@ class ABJ_404_Solution_DataAccess {
                     ', Reason: ' . $matchReason);
         }
 
-        $wpdb->insert($wpdb->prefix . "abj404_logs", array(
-            'redirect_id' => absint($id),
-            'timestamp' => esc_html($now),
-            'remote_host' => esc_html($_SERVER['REMOTE_ADDR']),
-            'referrer' => esc_html($referer),
-            'action' => esc_html($action),
+        $wpdb->insert($wpdb->prefix . "abj404_logsv2", array(
+            'timestamp' => esc_sql($now),
+            'user_ip' => esc_sql($_SERVER['REMOTE_ADDR']),
+            'referrer' => esc_sql($referer),
+            'dest_url' => esc_sql($action),
+            'reason' => esc_sql($matchReason),
+            'requested_url' => esc_sql($from),
                 ), array(
             '%d',
-            '%d',
+            '%s',
+            '%s',
             '%s',
             '%s',
             '%s'
@@ -355,8 +379,6 @@ class ABJ_404_Solution_DataAccess {
         if ($cleanedID >= 0 && is_numeric($id)) {
             $queryRedirects = $wpdb->prepare("delete from " . $wpdb->prefix . "abj404_redirects where id = %d", $cleanedID);
             $wpdb->query($queryRedirects);
-            $queryLogs = $wpdb->prepare("delete from " . $wpdb->prefix . "abj404_logs where redirect_id = %d", $cleanedID);
-            $wpdb->query($queryLogs);
         }
     }
 
@@ -369,30 +391,28 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         global $abj404dao;
         global $abj404logic;
+        global $abj404logging;
 
         $options = $abj404logic->getOptions();
         $now = time();
+        $capturedURLsCount = 0;
+        $autoRedirectsCount = 0;
+        $manualRedirectsCount = 0;
+        $oldLogsCount = 0;
 
         //Remove Captured URLs
         if ($options['capture_deletion'] != '0') {
             $capture_time = $options['capture_deletion'] * 86400;
             $then = $now - $capture_time;
 
-            //Clean up old logs
-            $query = "delete from " . $wpdb->prefix . "abj404_logs where ";
-            $query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_STATUS_CAPTURED . " or status = " . ABJ404_STATUS_IGNORED . ") ";
-            $query .= "and timestamp < " . esc_sql($then);
-            $wpdb->query($query);
-
             //Find unused urls
             $query = "select id from " . $wpdb->prefix . "abj404_redirects where (status = " . ABJ404_STATUS_CAPTURED . " or status = " . ABJ404_STATUS_IGNORED . ") and ";
-            $query .= "timestamp <= " . esc_sql($then) . " and id not in (";
-            $query .= "select redirect_id from " . $wpdb->prefix . "abj404_logs";
-            $query .= ")";
+            $query .= "timestamp <= " . esc_sql($then);
             $rows = $wpdb->get_results($query, ARRAY_A);
             foreach ($rows as $row) {
                 //Remove Them
                 $abj404dao->deleteRedirect($row['id']);
+                $capturedURLsCount++;
             }
         }
 
@@ -401,21 +421,14 @@ class ABJ_404_Solution_DataAccess {
             $auto_time = $options['auto_deletion'] * 86400;
             $then = $now - $auto_time;
 
-            //Clean up old logs
-            $query = "delete from " . $wpdb->prefix . "abj404_logs where ";
-            $query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_STATUS_AUTO . ") ";
-            $query .= "and timestamp < " . esc_sql($then);
-            $wpdb->query($query);
-
             //Find unused urls
             $query = "select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_STATUS_AUTO . " and ";
-            $query .= "timestamp <= " . esc_sql($then) . " and id not in (";
-            $query .= "select redirect_id from " . $wpdb->prefix . "abj404_logs";
-            $query .= ")";
+            $query .= "timestamp <= " . esc_sql($then);
             $rows = $wpdb->get_results($query, ARRAY_A);
             foreach ($rows as $row) {
                 //Remove Them
                 $abj404dao->deleteRedirect($row['id']);
+                $autoRedirectsCount++;
             }
         }
 
@@ -424,23 +437,33 @@ class ABJ_404_Solution_DataAccess {
             $manual_time = $options['manual_deletion'] * 86400;
             $then = $now - $manual_time;
 
-            //Clean up old logs
-            $query = "delete from " . $wpdb->prefix . "abj404_logs where ";
-            $query .= "redirect_id in (select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_STATUS_MANUAL . ") ";
-            $query .= "and timestamp < " . esc_sql($then);
-            $wpdb->query($query);
-
             //Find unused urls
             $query = "select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_STATUS_MANUAL . " and ";
-            $query .= "timestamp <= " . esc_sql($then) . " and id not in (";
-            $query .= "select redirect_id from " . $wpdb->prefix . "abj404_logs";
-            $query .= ")";
+            $query .= "timestamp <= " . esc_sql($then);
             $rows = $wpdb->get_results($query, ARRAY_A);
             foreach ($rows as $row) {
                 //Remove Them
                 $abj404dao->deleteRedirect($row['id']);
+                $manualRedirectsCount++;
             }
         }
+        
+        //Clean up old logs
+        if ($options['log_deletion'] != '0') {
+            $log_time = $options['log_deletion'] * 86400;
+            $then = $now - $log_time;
+
+            //Clean up old logs
+            $query = "delete from " . $wpdb->prefix . "abj404_logsv2 where ";
+            $query .= " timestamp < " . esc_sql($then);
+            $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $oldLogsCount = $results['rows_affected'];
+        }
+
+        $abj404logging->debugMessage("ABJ404_SOLUTION cron job run. Old captured URLs removed: " . 
+                $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
+                ", Old manual redirects removed: " . $manualRedirectsCount . 
+                ", Old log lines removed: " . $oldLogsCount);
     }
     /** Remove duplicates. 
      * @global type $wpdb
@@ -449,7 +472,6 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
 
         $rtable = $wpdb->prefix . "abj404_redirects";
-        $ltable = $wpdb->prefix . "abj404_logs";
 
         $query = "SELECT COUNT(id) as repetitions, url FROM " . $rtable . " GROUP BY url HAVING repetitions > 1";
         $rows = $wpdb->get_results($query, ARRAY_A);
@@ -460,10 +482,6 @@ class ABJ_404_Solution_DataAccess {
             $orig = $wpdb->get_row($queryr1, ARRAY_A, 0);
             if ($orig['id'] != 0) {
                 $original = $orig['id'];
-
-                //Fix the logs table
-                $queryr = "update " . $ltable . " set redirect_id = " . esc_sql($original) . " where redirect_id in (select id from " . esc_html($rtable) . " where url = '" . esc_sql($url) . "' and id != " . esc_sql($original) . ")";
-                $wpdb->query($queryr);
 
                 $queryl = "delete from " . $rtable . " where url='" . esc_sql(esc_url($url)) . "' and id != " . esc_sql($original);
                 $wpdb->query($queryl);
@@ -637,7 +655,7 @@ class ABJ_404_Solution_DataAccess {
         // nonce already verified.
 
         $redirects = $wpdb->prefix . "abj404_redirects";
-        $logs = $wpdb->prefix . "abj404_logs";
+        $logs = $wpdb->prefix . "abj404_logsv2";
 
         
         if (@$_POST['sanity_purge'] != "1") {
@@ -688,20 +706,12 @@ class ABJ_404_Solution_DataAccess {
         array_push($redirectTypes, 0);
         $typesForSQL = implode(',', $redirectTypes);
         
-        $queryStringLogs = "delete from " . $logs . " where redirect_id in " . 
-                "(select id from " . $redirects . " where status in (" . $typesForSQL . "))";
-        $logcount = $wpdb->query($queryStringLogs);
-        
-        $message .= sprintf( _n( '%s log entry was purged.', 
-                '%s log entries were purged.', $logcount, '404-solution'), $logcount);
-
         if ($purge == 'abj404_redirects') {
-            $queryStringReds = "delete from " . $redirects . " where status in (" . $typesForSQL . ")";
+            $queryStringReds = "update " . $redirects . " set disabled = 1 where status in (" . $typesForSQL . ")";
             $redirectCount = $wpdb->query($queryStringReds);
             
-            $message .= "<BR/>";
-            $message .= sprintf( _n( '%s redirect entry was purged.', 
-                    '%s redirect entries were purged.', $redirectCount, '404-solution'), $redirectCount);
+            $message .= sprintf( _n( '%s redirect entry was moved to the trash.', 
+                    '%s redirect entries were moved to the trash.', $redirectCount, '404-solution'), $redirectCount);
         }
 
         return $message;

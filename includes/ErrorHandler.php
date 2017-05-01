@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
 
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 

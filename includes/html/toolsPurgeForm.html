@@ -3,8 +3,7 @@
     <p>
         <strong><label for="purgetype">{Purge Type}:</label></strong>
         <select name="purgetype" id="purgetype">
-            <option value="abj404_logs">{Logs Only}</option>
-            <option value="abj404_redirects">{Logs &amp; Redirects}</option>
+            <option value="abj404_redirects">{Redirects}</option>
         </select>
         <BR/>
         <BR/><strong>{Redirect Types}:</strong>
@@ -29,7 +28,7 @@
         </li>
     </ul>
     <strong>{Sanity Check}</strong>
-    <BR/>{Using the purge options will delete logs and redirects matching the boxes selected above. This action is not reversible. Hopefully you know what you're doing.}
+    <BR/>{Using the purge options will move all selected redirects to the trash. You must then empty the trash to delete them.}
     <BR/>
     <BR/>
     <input type="checkbox" id="sanity_purge" name="sanity_purge" value="1">
