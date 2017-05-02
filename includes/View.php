@@ -606,11 +606,8 @@ class ABJ_404_Solution_View {
     }
     
     /** This is a supporting method for the echoAdminEditRedirectPage() method.
-     * @global type $abj404dao
      */
     function echoRedirectDestinationOptionsPages($dest) {
-        global $abj404dao;
-
         echo $this->echoRedirectDestinationOptionsPagesOnly($dest);
 
         $cats = get_categories('hierarchical=0');
@@ -647,17 +644,6 @@ class ABJ_404_Solution_View {
             $id = $prow->ID;
             $theTitle = $prow->post_title;
             $thisval = $id . "|" . ABJ404_TYPE_POST;
-
-            $parent = $prow->post_parent;
-            while ($parent != 0) {
-                $abj404dao->getPostParent($parent);
-                if (!( $prow == NULL )) {
-                    $theTitle = get_the_title($prow->id) . " &raquo; " . $theTitle;
-                    $parent = $prow->post_parent;
-                } else {
-                    break;
-                }
-            }
 
             $selected = "";
             if ($thisval == $dest) {
@@ -1207,12 +1193,10 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageAutoRedirects($options) {
-        global $abj404dao;
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         $content = "";
 
         $selected = "";
-        global $wpdb;
         $content .= "<label for=\"dest404page\">" . __('Redirect all unhandled 404s to', '404-solution') . ":</label> <select id=\"dest404page\" name=\"dest404page\">";
 
         $userSelected = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
