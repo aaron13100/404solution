@@ -790,18 +790,6 @@ class ABJ_404_Solution_DataAccess {
         return $rows;
     }
     
-    /** 
-     * @param type $id
-     * @return type
-     */
-    function getPostParent($id) {
-        global $wpdb;
-        $query = $wpdb->prepare("select id, post_parent from $wpdb->posts where post_status='publish' and post_type='page' and id = %d", $id);
-        $prow = $wpdb->get_row($query, OBJECT);
-        
-        return $prow;
-    }
-    
     /** Change the status to "trash" or "ignored," for example.
      * @global type $wpdb
      * @param type $id
