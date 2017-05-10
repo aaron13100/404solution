@@ -2,6 +2,7 @@
 
 ## Version 1.6.7 ## 
 * FIX: Correctly log URLs with only special characters at the end, like /&.
+* FIX: Fix a blank options page when a page exists with a parent page (for Mike and wdyim).
 
 ## Version 1.6.6 (April 20, 2017) ## 
 * Improvement: Avoid logging redirects from exact slug matches missing only the trailing slash (avoid canonical 
