@@ -16,6 +16,7 @@ class ABJ_404_Solution_DataAccess {
      */
     static function createDatabaseTables() {
         global $wpdb;
+        global $abj404logging;
         
         $charset_collate = '';
         if (!empty($wpdb->charset)) {
@@ -52,12 +53,17 @@ class ABJ_404_Solution_DataAccess {
         $query = $this->readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
         $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
         $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
+        $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
         $query = str_replace('{charset_collate}', esc_html($charset_collate), $query);
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         
-        // TODO: optionally drop the logs table on the uninstall hook (not the deactivation hook).
-        // see: https://developer.wordpress.org/plugins/the-basics/uninstall-methods/
-        // don't drop the other table though because that would lose all previous settings.
+        // if anything was successfully imported then delete the old table.
+        if ($result['rows_affected'] > 0) {
+            $abj404logging->infoMessage($result['rows_affected'] . 
+                    ' log rows were migrated to the new table structre.');
+            // ##log rows inserted/migrated.
+            $wpdb->query('drop table ' . $wpdb->prefix . 'abj404_logs');
+        }
     }
     
     /** 
@@ -78,7 +84,7 @@ class ABJ_404_Solution_DataAccess {
         
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
 
-        $abj404logging->debugMessage("Importing redirectioner SQL result: " . 
+        $abj404logging->infoMessage("Importing redirectioner SQL result: " . 
                 wp_kses_post(json_encode($result)));
         
         return $result;
@@ -249,6 +255,23 @@ class ABJ_404_Solution_DataAccess {
     function getRedirectsAll() {
         global $wpdb;
         $query = "select id, url from " . $wpdb->prefix . "abj404_redirects order by url";
+        $rows = $wpdb->get_results($query, ARRAY_A);
+        return $rows;
+    }
+    
+    /** Only return redirects that have a log entry.
+     * @global type $wpdb
+     * @global type $abj404dao
+     * @return type
+     */
+    function getRedirectsWithLogs() {
+        global $wpdb;
+        global $abj404dao;
+        
+        $query = $abj404dao->readFileContents(__DIR__ . "/sql/getRedirectsWithLogs.sql");
+        $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
+        $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
+        
         $rows = $wpdb->get_results($query, ARRAY_A);
         return $rows;
     }
@@ -467,7 +490,7 @@ class ABJ_404_Solution_DataAccess {
         
         //Clean up old logs. prepare the query. get the disk usage in bytes). compare to the max requested
         // disk usage (MB to bytes). delete 1k rows at a time until the size is acceptable.
-        $query = $this->readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
+        $query = $abj404dao->readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
         $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
         $maxLogSizeBytes = $options['maximum_log_disk_usage'] * 1024 * 1000;
@@ -477,10 +500,13 @@ class ABJ_404_Solution_DataAccess {
             $logsSizeBytes = $abj404dao->getLogDiskUsage();
         }
 
-        $abj404logging->infoMessage("deleteOldRedirectsCron. Old captured URLs removed: " . 
+        $message = "deleteOldRedirectsCron. Old captured URLs removed: " . 
                 $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
                 ", Old manual redirects removed: " . $manualRedirectsCount . 
-                ", Old log lines removed: " . $oldLogRowsDeleted);
+                ", Old log lines removed: " . $oldLogRowsDeleted;
+        $abj404logging->infoMessage($message);
+        
+        return $message;
     }
     /** Remove duplicates. 
      * @global type $wpdb

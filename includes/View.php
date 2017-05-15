@@ -426,6 +426,22 @@ class ABJ_404_Solution_View {
         $abj404view->echoPostBox("abj404-purgeRedirects", __('Import Options', '404-solution'), $html);
         echo "</div></div></div>";
         
+        // ------------------------------------
+        
+        $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_runMaintenance");
+        
+        // read the html content.
+        $html = $abj404dao->readFileContents(__DIR__ . "/html/toolsEtcForm.html");
+        // do special replacements
+        $html = str_replace('{toolsMaintenanceFormActionLink}', $link, $html);
+        // constants and translations.
+        $html = $this->doNormalReplacements($html);
+        
+        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
+        echo "<div class=\"metabox-holder\">";
+        echo " <div class=\"meta-box-sortables\">";
+        $abj404view->echoPostBox("abj404-purgeRedirects", __('Etcetera', '404-solution'), $html);
+        echo "</div></div></div>";
     }
     
     /** Replace constants and translations.
@@ -1397,7 +1413,7 @@ class ABJ_404_Solution_View {
         $redirects = array();
         $redirectsFound = 0;
         
-        $rows = $abj404dao->getRedirectsAll();
+        $rows = $abj404dao->getRedirectsWithLogs();
         foreach ($rows as $row) {
             $redirects[$row['id']]['id'] = absint($row['id']);
             $redirects[$row['id']]['url'] = esc_url($row['url']);
