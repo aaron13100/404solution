@@ -179,6 +179,7 @@ class ABJ_404_Solution_PluginLogic {
             'auto_cats' => '1',
             'auto_tags' => '1',
             'dest404page' => '0|' . ABJ404_TYPE_404_DISPLAYED,
+            'maximum_log_disk_usage' => '10',
         );
         
         return $options;
@@ -847,7 +848,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['capture_deletion']) == 1 && $_POST['capture_deletion'] >= 0) {
                 $options['capture_deletion'] = absint($_POST['capture_deletion']);
             } else {
-                $message .= __('Collected URL deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+                $message .= __('Collected URL deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
 
@@ -855,7 +856,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['manual_deletion']) == 1 && $_POST['manual_deletion'] >= 0) {
                 $options['manual_deletion'] = absint($_POST['manual_deletion']);
             } else {
-                $message .= __('Manual redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+                $message .= __('Manual redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
 
@@ -863,7 +864,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['log_deletion']) == 1 && $_POST['log_deletion'] >= 0) {
                 $options['log_deletion'] = absint($_POST['log_deletion']);
             } else {
-                $message .= __('Log deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+                $message .= __('Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
 
@@ -879,7 +880,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['suggest_max']) == 1 && $_POST['suggest_max'] >= 1) {
                 $options['suggest_max'] = absint($_POST['suggest_max']);
             } else {
-                $message .= __('Maximum number of suggest value must be a number greater or equal to 1', '404-solution') . ".<BR/>";
+                $message .= __('Maximum number of suggest value must be a number greater than or equal to 1', '404-solution') . ".<BR/>";
             }
         }
         
@@ -895,10 +896,18 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['auto_deletion']) == 1 && $_POST['auto_deletion'] >= 0) {
                 $options['auto_deletion'] = absint($_POST['auto_deletion']);
             } else {
-                $message .= __('Auto redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+                $message .= __('Auto redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
-        
+
+        if (array_key_exists('maximum_log_disk_usage', $_POST) && isset($_POST['maximum_log_disk_usage'])) {
+            if (preg_match('/^[0-9]+$/', $_POST['maximum_log_disk_usage']) == 1 && $_POST['maximum_log_disk_usage'] > 0) {
+                $options['maximum_log_disk_usage'] = absint($_POST['maximum_log_disk_usage']);
+            } else {
+                $message .= __('Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";
+            }
+        }
+
         // these options all default to 0 if they're not specifically set to 1.
         $optionsList = array('remove_matches', 'debug_mode', 'display_suggest', 'suggest_cats', 'suggest_tags', 
             'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404');

@@ -1302,6 +1302,7 @@ class ABJ_404_Solution_View {
      */
     function getAdminOptionsPageGeneralSettings($options) {
         global $abj404logging;
+        global $abj404dao;
         
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
 
@@ -1335,8 +1336,14 @@ class ABJ_404_Solution_View {
         $content .= "<p><label for=\"manual_deletion\">" . __('Manual redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"manual_deletion\" id=\"manual_deletion\" value=\"" . esc_attr($options['manual_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
         $content .= $spaces . __('Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
 
-        $content .= "<p><label for=\"log_deletion\">" . __('Log deletion', '404-solution') . ":</label> <input type=\"text\" name=\"log_deletion\" id=\"log_deletion\" value=\"" . esc_attr($options['log_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
-        $content .= $spaces . __('Automatically removes logs older than this many days.', '404-solution') . "</p>";
+        $content .= "<p><label for=\"maximum_log_disk_usage\">" . __('Maximum log disk usage (MB)', '404-solution') . ":</label> <input type=\"text\" name=\"maximum_log_disk_usage\" id=\"maximum_log_disk_usage\" value=\"" . esc_attr($options['maximum_log_disk_usage']) . "\" style=\"width: 50px;\"> " . "<BR/>";
+        $content .= $spaces . __('Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit.', '404-solution');
+        $logSizeBytes = $abj404dao->getLogDiskUsage();
+        $logSizeKB = round($logSizeBytes / 1024, 2);
+        $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
+        $logSize = sprintf(__("Current approximate log disk usage: %s MB (%s KB).", '404-solution'), 
+                $logSizeMB, $logSizeKB);
+        $content .= "<BR/>" . $spaces . $logSize . '  ' . __('Cleanup is done daily.', '404-solution') . "</p>";
 
         $selectedRemoveMatches = "";
         if ($options['remove_matches'] == '1') {
