@@ -146,6 +146,23 @@ class ABJ_404_Solution_DataAccess {
        }
        return intval($captured[0]);
    }
+   
+   /** Get the approximate number of bytes used by the logs table.
+    * @global type $wpdb
+    * @return type
+    */
+   function getLogDiskUsage() {
+       global $wpdb;
+
+       $query = 'SELECT (data_length+index_length) tablesize FROM information_schema.tables ' . 
+               'WHERE table_name=\'' . $wpdb->prefix . 'abj404_logsv2\'';
+
+       $size = $wpdb->get_col($query, 0);
+       if (count($size) == 0) {
+           $size[0] = 0;
+       }
+       return intval($size[0]);
+   }
 
     /**
      * @global type $wpdb
@@ -398,7 +415,7 @@ class ABJ_404_Solution_DataAccess {
         $capturedURLsCount = 0;
         $autoRedirectsCount = 0;
         $manualRedirectsCount = 0;
-        $oldLogsCount = 0;
+        $oldLogRowsDeleted = 0;
 
         //Remove Captured URLs
         if ($options['capture_deletion'] != '0') {
@@ -448,29 +465,31 @@ class ABJ_404_Solution_DataAccess {
             }
         }
         
-        //Clean up old logs
-        if ($options['log_deletion'] != '0') {
-            $log_time = $options['log_deletion'] * 86400;
-            $then = $now - $log_time;
-
-            //Clean up old logs
-            $query = "delete from " . $wpdb->prefix . "abj404_logsv2 where ";
-            $query .= " timestamp < " . esc_sql($then);
+        //Clean up old logs. prepare the query. get the disk usage in bytes). compare to the max requested
+        // disk usage (MB to bytes). delete 1k rows at a time until the size is acceptable.
+        $query = $this->readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
+        $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
+        $logsSizeBytes = $abj404dao->getLogDiskUsage();
+        $maxLogSizeBytes = $options['maximum_log_disk_usage'] * 1024 * 1000;
+        while ($logsSizeBytes > $maxLogSizeBytes) {
             $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-            $oldLogsCount = $results['rows_affected'];
+            $oldLogRowsDeleted += $results['rows_affected'];
+            $logsSizeBytes = $abj404dao->getLogDiskUsage();
         }
 
-        $abj404logging->debugMessage("ABJ404_SOLUTION cron job run. Old captured URLs removed: " . 
+        $abj404logging->infoMessage("deleteOldRedirectsCron. Old captured URLs removed: " . 
                 $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
                 ", Old manual redirects removed: " . $manualRedirectsCount . 
-                ", Old log lines removed: " . $oldLogsCount);
+                ", Old log lines removed: " . $oldLogRowsDeleted);
     }
     /** Remove duplicates. 
      * @global type $wpdb
      */
     static function removeDuplicatesCron() {
         global $wpdb;
-
+        global $abj404logging;
+        
+        $rowsDeleted = 0;
         $rtable = $wpdb->prefix . "abj404_redirects";
 
         $query = "SELECT COUNT(id) as repetitions, url FROM " . $rtable . " GROUP BY url HAVING repetitions > 1";
@@ -485,8 +504,11 @@ class ABJ_404_Solution_DataAccess {
 
                 $queryl = "delete from " . $rtable . " where url='" . esc_sql(esc_url($url)) . "' and id != " . esc_sql($original);
                 $wpdb->query($queryl);
+                $rowsDeleted++;
             }
         }
+        
+        $abj404logging->infoMessage("removeDuplicatesCron: rows deleted: " . $rowsDeleted);
     }
 
     /**

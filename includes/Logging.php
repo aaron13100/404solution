@@ -26,6 +26,14 @@ class ABJ_404_Solution_Logging {
         }
     }
 
+    /** Send a message to the log. 
+     * This goes to a file and is used by every other class so it goes here.
+     * @param type $message  */
+    function infoMessage($message) {
+        $timestamp = date('Y-m-d H:i:s') . ' (INFO): ';
+        $this->writeLineToDebugFile($timestamp . $message);
+    }
+
     /** Always send a message to the error_log.
      * This goes to a file and is used by every other class so it goes here.
      * @param type $message
