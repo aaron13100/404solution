@@ -307,6 +307,13 @@ class ABJ_404_Solution_PluginLogic {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
                         is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
             }
+        } else if ($action == "runMaintenance") {
+            if (check_admin_referer('abj404_runMaintenance') && is_admin()) {
+                $message = $abj404dao->deleteOldRedirectsCron();
+            } else {
+                $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
+                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
+            }
         } else if (substr($action . '', 0, 4) == "bulk") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 if (!array_key_exists('idnum', $_POST) || !isset($_POST['idnum'])) {
@@ -409,11 +416,12 @@ class ABJ_404_Solution_PluginLogic {
         
         
         if ($abj404dao->getPostOrGetSanitize('action') == 'importRedirects') {
-            
             if ($abj404dao->getPostOrGetSanitize('sanity_404redirected') != '1') {
                 $message = __("Error: You didn't check the I understand checkbox. No importing for you!", '404-solution');
                 return $message;
             }
+
+            check_admin_referer('abj404_importRedirects');
             
             try {
                 $result = $abj404dao->importDataFromPluginRedirectioner();
