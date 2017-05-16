@@ -13,6 +13,6 @@ on ol.redirect_id = reds.id
 This is not perfect because a URL may have been requested multiple times at the same instant,
 but it's probably good enough. */ 
 
-left outer join wp_abj404_logsv2 lv2
+left outer join {wp_abj404_logsv2} lv2
 on ol.timestamp = lv2.timestamp
 where lv2.timestamp is null
