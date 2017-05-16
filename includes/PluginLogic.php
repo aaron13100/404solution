@@ -127,9 +127,12 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($skip_db_check == "0") {
             if ($options['DB_VERSION'] != ABJ404_VERSION) {
-                // make sure the database is up to date.
+                // wp_abj404_logsv2 exists since 1.7.
                 ABJ_404_Solution_DataAccess::createDatabaseTables();
                 
+                // abj404_duplicateCronAction is no longer needed as of 1.7.
+                wp_clear_scheduled_hook('abj404_duplicateCronAction');
+
                 // add the second part of the default destination page.
                 $dest404page = $options['dest404page'];
                 if (strpos($dest404page, '|') === false) {
@@ -238,11 +241,6 @@ class ABJ_404_Solution_PluginLogic {
         $timestampc = wp_next_scheduled('abj404_cleanupCronAction');
         if ($timestampc == False) {
             wp_schedule_event(current_time('timestamp') - 86400, 'daily', 'abj404_cleanupCronAction');
-        }
-
-        $timestampd = wp_next_scheduled('abj404_duplicateCronAction');
-        if ($timestampd == False) {
-            wp_schedule_event(current_time('timestamp') - 3600, 'hourly', 'abj404_duplicateCronAction');
         }
     }
     
