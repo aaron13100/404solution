@@ -1,6 +1,12 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
+
+// turn on debug for localhost etc
+$whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
+if (in_array($_SERVER['HTTP_HOST'], $whitelist)) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
+
 /*
 	Plugin Name: 404 Solution
 	Plugin URI:  http://www.wealth-psychology.com/404-solution/
