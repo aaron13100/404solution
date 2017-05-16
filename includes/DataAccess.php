@@ -439,6 +439,7 @@ class ABJ_404_Solution_DataAccess {
         $autoRedirectsCount = 0;
         $manualRedirectsCount = 0;
         $oldLogRowsDeleted = 0;
+        $duplicateRowsDeleted = $abj404dao->removeDuplicatesCron();
 
         //Remove Captured URLs
         if ($options['capture_deletion'] != '0') {
@@ -503,7 +504,8 @@ class ABJ_404_Solution_DataAccess {
         $message = "deleteOldRedirectsCron. Old captured URLs removed: " . 
                 $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
                 ", Old manual redirects removed: " . $manualRedirectsCount . 
-                ", Old log lines removed: " . $oldLogRowsDeleted;
+                ", Old log lines removed: " . $oldLogRowsDeleted . ", Duplicate rows deleted: " . 
+                $duplicateRowsDeleted;
         $abj404logging->infoMessage($message);
         
         return $message;
@@ -513,7 +515,6 @@ class ABJ_404_Solution_DataAccess {
      */
     static function removeDuplicatesCron() {
         global $wpdb;
-        global $abj404logging;
         
         $rowsDeleted = 0;
         $rtable = $wpdb->prefix . "abj404_redirects";
@@ -534,7 +535,7 @@ class ABJ_404_Solution_DataAccess {
             }
         }
         
-        $abj404logging->infoMessage("removeDuplicatesCron: rows deleted: " . $rowsDeleted);
+        return $rowsDeleted;
     }
 
     /**
