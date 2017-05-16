@@ -17,6 +17,7 @@ class ABJ_404_Solution_DataAccess {
     static function createDatabaseTables() {
         global $wpdb;
         global $abj404logging;
+        global $abj404dao;
         
         $charset_collate = '';
         if (!empty($wpdb->charset)) {
@@ -45,12 +46,12 @@ class ABJ_404_Solution_DataAccess {
             ) ENGINE=MyISAM " . esc_html($charset_collate) . " COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1";
         $wpdb->query($query);
 
-        $query = $this->readFileContents(__DIR__ . "/sql/createLogTable.sql");
+        $query = $abj404dao->readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
         $query = str_replace('{charset_collate}', esc_html($charset_collate), $query);
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
 
-        $query = $this->readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
+        $query = $abj404dao->readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
         $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
         $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
         $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);

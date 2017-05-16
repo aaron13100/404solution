@@ -103,6 +103,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function getOptions($skip_db_check = "0") {
         global $abj404logic;
+        global $abj404logging;
         $options = get_option('abj404_settings');
 
         if ($options == "") {
@@ -127,6 +128,8 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($skip_db_check == "0") {
             if ($options['DB_VERSION'] != ABJ404_VERSION) {
+                $abj404logging->infoMessage("Updating database version (begin).");
+
                 // wp_abj404_logsv2 exists since 1.7.
                 ABJ_404_Solution_DataAccess::createDatabaseTables();
                 
@@ -147,6 +150,7 @@ class ABJ_404_Solution_PluginLogic {
                 }
                 
                 $options = $abj404logic->doUpdateDBVersionOption();
+                $abj404logging->infoMessage("Updating database version (end).");
             }
         }
 
