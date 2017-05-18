@@ -863,7 +863,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['capture_deletion']) == 1 && $_POST['capture_deletion'] >= 0) {
                 $options['capture_deletion'] = absint($_POST['capture_deletion']);
             } else {
-                $message .= __('Collected URL deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+                $message .= __('Error: Collected URL deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
 
@@ -871,7 +871,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['manual_deletion']) == 1 && $_POST['manual_deletion'] >= 0) {
                 $options['manual_deletion'] = absint($_POST['manual_deletion']);
             } else {
-                $message .= __('Manual redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+                $message .= __('Error: Manual redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
 
@@ -879,7 +879,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['log_deletion']) == 1 && $_POST['log_deletion'] >= 0) {
                 $options['log_deletion'] = absint($_POST['log_deletion']);
             } else {
-                $message .= __('Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+                $message .= __('Error: Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
 
@@ -887,7 +887,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
                 $options['suggest_minscore'] = absint($_POST['suggest_minscore']);
             } else {
-                $message .= __('Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
+                $message .= __('Error: Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
             }
         }
 
@@ -895,7 +895,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['suggest_max']) == 1 && $_POST['suggest_max'] >= 1) {
                 $options['suggest_max'] = absint($_POST['suggest_max']);
             } else {
-                $message .= __('Maximum number of suggest value must be a number greater than or equal to 1', '404-solution') . ".<BR/>";
+                $message .= __('Error: Maximum number of suggest value must be a number greater than or equal to 1', '404-solution') . ".<BR/>";
             }
         }
         
@@ -903,7 +903,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['auto_score']) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
                 $options['auto_score'] = absint($_POST['auto_score']);
             } else {
-                $message .= __('Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
+                $message .= __('Error: Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
             }
         }
         
@@ -911,7 +911,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['auto_deletion']) == 1 && $_POST['auto_deletion'] >= 0) {
                 $options['auto_deletion'] = absint($_POST['auto_deletion']);
             } else {
-                $message .= __('Auto redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+                $message .= __('Error: Auto redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
 
@@ -919,7 +919,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['maximum_log_disk_usage']) == 1 && $_POST['maximum_log_disk_usage'] > 0) {
                 $options['maximum_log_disk_usage'] = absint($_POST['maximum_log_disk_usage']);
             } else {
-                $message .= __('Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";
+                $message .= __('Error: Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";
             }
         }
 
