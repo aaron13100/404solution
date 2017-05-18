@@ -2,7 +2,7 @@
 
 // turn on debug for localhost etc
 $whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
-if (in_array($_SERVER['HTTP_HOST'], $whitelist)) {
+if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -495,16 +495,22 @@ class ABJ_404_Solution_DataAccess {
             }
         }
         
-        //Clean up old logs. prepare the query. get the disk usage in bytes). compare to the max requested
+        //Clean up old logs. prepare the query. get the disk usage in bytes. compare to the max requested
         // disk usage (MB to bytes). delete 1k rows at a time until the size is acceptable.
         $query = $abj404dao->readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
         $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
         $maxLogSizeBytes = $options['maximum_log_disk_usage'] * 1024 * 1000;
+        $iterations = 0;
         while ($logsSizeBytes > $maxLogSizeBytes) {
             $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
             $oldLogRowsDeleted += $results['rows_affected'];
             $logsSizeBytes = $abj404dao->getLogDiskUsage();
+            $iterations++;
+            if ($iterations > 10000) {
+                $abj404logging->errorMessage("There was an issue deleting old log records (too many iterations)!");
+                break;
+            }
         }
 
         $message = "deleteOldRedirectsCron. Old captured URLs removed: " . 
@@ -788,6 +794,10 @@ class ABJ_404_Solution_DataAccess {
 
         $results = $wpdb->get_col($wpdb->prepare($query, $valueParams));
 
+        if (sizeof($results) == 0) {
+            throw new Exception("No results for query: " . esc_html($query));
+        }
+        
         return intval($results[0]);
     }
     
