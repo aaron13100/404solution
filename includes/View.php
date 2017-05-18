@@ -2,7 +2,7 @@
 
 // turn on debug for localhost etc
 $whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
-if (in_array($_SERVER['HTTP_HOST'], $whitelist)) {
+if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -242,7 +242,7 @@ class ABJ_404_Solution_View {
         global $abj404view;
 
         $redirects = $wpdb->prefix . "abj404_redirects";
-        $logs = $wpdb->prefix . "abj404_logs";
+        $logs = $wpdb->prefix . "abj404_logsv2";
         $hr = "style=\"border: 0px; margin-bottom: 0px; padding-bottom: 4px; border-bottom: 1px dotted #DEDEDE;\"";
 
         $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d"; // . ABJ404_STATUS_AUTO;
@@ -328,28 +328,28 @@ class ABJ_404_Solution_View {
                 $ts = 0;
             }
 
-            $query = "select count(id) from $logs where timestamp >= $ts and action = %s";
+            $query = "select count(id) from $logs where timestamp >= $ts and dest_url = %s";
             $disp404 = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action = %s";
+            $query = "select count(distinct requested_url) from $logs where timestamp >= $ts and dest_url = %s";
             $distinct404 = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action = %s";
+            $query = "select count(distinct user_ip) from $logs where timestamp >= $ts and dest_url = %s";
             $visitors404 = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct referrer) from $logs where timestamp >= $ts and action = %s";
+            $query = "select count(distinct referrer) from $logs where timestamp >= $ts and dest_url = %s";
             $refer404 = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(id) from $logs where timestamp >= $ts and action != %s";
+            $query = "select count(id) from $logs where timestamp >= $ts and dest_url != %s";
             $redirected = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action != %s";
+            $query = "select count(distinct requested_url) from $logs where timestamp >= $ts and dest_url != %s";
             $distinctredirected = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action != %s";
+            $query = "select count(distinct user_ip) from $logs where timestamp >= $ts and dest_url != %s";
             $distinctvisitors = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct referrer) from $logs where timestamp >= $ts and action != %s";
+            $query = "select count(distinct referrer) from $logs where timestamp >= $ts and dest_url != %s";
             $distinctrefer = $abj404dao->getStatsCount($query, array("404"));
 
             $content = "";
