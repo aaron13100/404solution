@@ -1513,7 +1513,9 @@ class ABJ_404_Solution_View {
                 echo "<a href=\"" . esc_url($row['action']) . "\" title=\"" . __('Visit', '404-solution') . ": " . esc_attr($row['action']) . "\" target=\"_blank\">" . esc_html($row['action']) . "</a>";
             }
             echo "</td>";
-            echo "<td>" . esc_html(date('Y/m/d h:i:s A', abs(intval($row['timestamp'])))) . "</td>";
+            $timeToDisplay = abs(intval($row['timestamp']));
+            echo "<td>" . date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
+                    date('A', $timeToDisplay) . "</td>";
             echo "<td></td>";
             echo "</tr>";
             $redirectsDisplayed++;
