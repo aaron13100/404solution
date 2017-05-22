@@ -491,7 +491,7 @@ class ABJ_404_Solution_View {
         $options = $abj404logic->getOptions();
 
         //General Options
-        $link = wp_nonce_url("?page=" . ABJ404_PP, "abj404UpdateOptions");
+        $link = wp_nonce_url("?page=" . ABJ404_PP . '&subpage=abj404_options', "abj404UpdateOptions");
 
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
@@ -1362,8 +1362,15 @@ class ABJ_404_Solution_View {
         $logSizeBytes = $abj404dao->getLogDiskUsage();
         $logSizeKB = round($logSizeBytes / 1024, 2);
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
-        $logSize = sprintf(__("Current approximate log disk usage: %s MB (%s KB).", '404-solution'), 
-                $logSizeMB, $logSizeKB);
+        $totalLogLines = $abj404dao->getLogsCount(0);
+        $logSize = sprintf(__("Current approximate log disk usage: %s MB (%s KB, %s rows).", '404-solution'), 
+                $logSizeMB, $logSizeKB, $totalLogLines);
+
+        $timeToDisplay = $abj404dao->getEarliestLogTimestamp();
+        $earliestLogDate = date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
+                    date('A', $timeToDisplay);
+        $logSize .= ' ' . sprintf(__("Earliest log date: %s.", '404-solution'), $earliestLogDate) . ' ';
+        
         $content .= "<BR/>" . $spaces . $logSize . '  ' . __('Cleanup is done daily.', '404-solution') . "</p>";
 
         $selectedRemoveMatches = "";
