@@ -165,7 +165,17 @@ class ABJ_404_Solution_DataAccess {
     */
    function getLogDiskUsage() {
        global $wpdb;
+       global $abj404logging;
+       
+       // we have to analyze the table first for the query to be valid.
+       $analyzeQuery = "OPTIMIZE TABLE " . $wpdb->prefix . 'abj404_logsv2';
+       $result = $this->queryAndGetResults($analyzeQuery);
 
+       if ($result['last_error'] != '') {
+           $abj404logging->errorMessage("Error: " . esc_html($result['last_error']));
+           return -1;
+       }
+       
        $query = 'SELECT (data_length+index_length) tablesize FROM information_schema.tables ' . 
                'WHERE table_name=\'' . $wpdb->prefix . 'abj404_logsv2\'';
 
@@ -793,6 +803,24 @@ class ABJ_404_Solution_DataAccess {
         }
 
         $results = $wpdb->get_col($wpdb->prepare($query, $valueParams));
+
+        if (sizeof($results) == 0) {
+            throw new Exception("No results for query: " . esc_html($query));
+        }
+        
+        return intval($results[0]);
+    }
+
+    /** 
+     * @global type $wpdb
+     * @return type
+     * @throws Exception
+     */
+    function getEarliestLogTimestamp() {
+        global $wpdb;
+
+        $query = 'SELECT min(timestamp) as timestamp FROM ' . $wpdb->prefix . 'abj404_logsv2';
+        $results = $wpdb->get_col($query);
 
         if (sizeof($results) == 0) {
             throw new Exception("No results for query: " . esc_html($query));
