@@ -1,7 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-$whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
+$whitelist = array('127.0.0.1', '::1', 'localhost');
 if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
@@ -1360,11 +1360,10 @@ class ABJ_404_Solution_View {
         $content .= "<p><label for=\"maximum_log_disk_usage\">" . __('Maximum log disk usage (MB)', '404-solution') . ":</label> <input type=\"text\" name=\"maximum_log_disk_usage\" id=\"maximum_log_disk_usage\" value=\"" . esc_attr($options['maximum_log_disk_usage']) . "\" style=\"width: 50px;\"> " . "<BR/>";
         $content .= $spaces . __('Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit.', '404-solution');
         $logSizeBytes = $abj404dao->getLogDiskUsage();
-        $logSizeKB = round($logSizeBytes / 1024, 2);
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
         $totalLogLines = $abj404dao->getLogsCount(0);
-        $logSize = sprintf(__("Current approximate log disk usage: %s MB (%s KB, %s rows).", '404-solution'), 
-                $logSizeMB, $logSizeKB, $totalLogLines);
+        $logSize = sprintf(__("Current approximate log disk usage: %s MB (%s rows).", '404-solution'), 
+                $logSizeMB, $totalLogLines);
 
         $timeToDisplay = $abj404dao->getEarliestLogTimestamp();
         $earliestLogDate = date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 

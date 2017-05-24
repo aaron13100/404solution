@@ -1,7 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-$whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
+$whitelist = array('127.0.0.1', '::1', 'localhost');
 if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
@@ -371,7 +371,7 @@ class ABJ_404_Solution_DataAccess {
     }
     
     /** 
-     * Log that a redirect was done.
+     * Log that a redirect was done. Insert into the logs table.
      * @global type $wpdb
      * @param type $id
      * @param type $action
@@ -409,11 +409,9 @@ class ABJ_404_Solution_DataAccess {
             'user_ip' => esc_sql($_SERVER['REMOTE_ADDR']),
             'referrer' => esc_sql($referer),
             'dest_url' => esc_sql($action),
-            'reason' => esc_sql($matchReason),
             'requested_url' => esc_sql($from),
                 ), array(
             '%d',
-            '%s',
             '%s',
             '%s',
             '%s',
