@@ -1,5 +1,12 @@
 <?php
 
+// turn on debug for localhost etc
+$whitelist = array('127.0.0.1', '::1', 'localhost');
+if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
+
 /* Turns data into an html display and vice versa.
  * Houses all displayed pages. Logs, options page, captured 404s, stats, etc. */
 
@@ -235,7 +242,7 @@ class ABJ_404_Solution_View {
         global $abj404view;
 
         $redirects = $wpdb->prefix . "abj404_redirects";
-        $logs = $wpdb->prefix . "abj404_logs";
+        $logs = $wpdb->prefix . "abj404_logsv2";
         $hr = "style=\"border: 0px; margin-bottom: 0px; padding-bottom: 4px; border-bottom: 1px dotted #DEDEDE;\"";
 
         $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d"; // . ABJ404_STATUS_AUTO;
@@ -321,28 +328,28 @@ class ABJ_404_Solution_View {
                 $ts = 0;
             }
 
-            $query = "select count(id) from $logs where timestamp >= $ts and action = %s";
+            $query = "select count(id) from $logs where timestamp >= $ts and dest_url = %s";
             $disp404 = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action = %s";
+            $query = "select count(distinct requested_url) from $logs where timestamp >= $ts and dest_url = %s";
             $distinct404 = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action = %s";
+            $query = "select count(distinct user_ip) from $logs where timestamp >= $ts and dest_url = %s";
             $visitors404 = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct referrer) from $logs where timestamp >= $ts and action = %s";
+            $query = "select count(distinct referrer) from $logs where timestamp >= $ts and dest_url = %s";
             $refer404 = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(id) from $logs where timestamp >= $ts and action != %s";
+            $query = "select count(id) from $logs where timestamp >= $ts and dest_url != %s";
             $redirected = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action != %s";
+            $query = "select count(distinct requested_url) from $logs where timestamp >= $ts and dest_url != %s";
             $distinctredirected = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action != %s";
+            $query = "select count(distinct user_ip) from $logs where timestamp >= $ts and dest_url != %s";
             $distinctvisitors = $abj404dao->getStatsCount($query, array("404"));
 
-            $query = "select count(distinct referrer) from $logs where timestamp >= $ts and action != %s";
+            $query = "select count(distinct referrer) from $logs where timestamp >= $ts and dest_url != %s";
             $distinctrefer = $abj404dao->getStatsCount($query, array("404"));
 
             $content = "";
@@ -424,6 +431,22 @@ class ABJ_404_Solution_View {
         $abj404view->echoPostBox("abj404-purgeRedirects", __('Import Options', '404-solution'), $html);
         echo "</div></div></div>";
         
+        // ------------------------------------
+        
+        $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_runMaintenance");
+        
+        // read the html content.
+        $html = $abj404dao->readFileContents(__DIR__ . "/html/toolsEtcForm.html");
+        // do special replacements
+        $html = str_replace('{toolsMaintenanceFormActionLink}', $link, $html);
+        // constants and translations.
+        $html = $this->doNormalReplacements($html);
+        
+        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
+        echo "<div class=\"metabox-holder\">";
+        echo " <div class=\"meta-box-sortables\">";
+        $abj404view->echoPostBox("abj404-purgeRedirects", __('Etcetera', '404-solution'), $html);
+        echo "</div></div></div>";
     }
     
     /** Replace constants and translations.
@@ -468,7 +491,7 @@ class ABJ_404_Solution_View {
         $options = $abj404logic->getOptions();
 
         //General Options
-        $link = wp_nonce_url("?page=" . ABJ404_PP, "abj404UpdateOptions");
+        $link = wp_nonce_url("?page=" . ABJ404_PP . '&subpage=abj404_options', "abj404UpdateOptions");
 
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
@@ -1300,6 +1323,7 @@ class ABJ_404_Solution_View {
      */
     function getAdminOptionsPageGeneralSettings($options) {
         global $abj404logging;
+        global $abj404dao;
         
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
 
@@ -1332,6 +1356,21 @@ class ABJ_404_Solution_View {
 
         $content .= "<p><label for=\"manual_deletion\">" . __('Manual redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"manual_deletion\" id=\"manual_deletion\" value=\"" . esc_attr($options['manual_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
         $content .= $spaces . __('Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
+
+        $content .= "<p><label for=\"maximum_log_disk_usage\">" . __('Maximum log disk usage (MB)', '404-solution') . ":</label> <input type=\"text\" name=\"maximum_log_disk_usage\" id=\"maximum_log_disk_usage\" value=\"" . esc_attr($options['maximum_log_disk_usage']) . "\" style=\"width: 50px;\"> " . "<BR/>";
+        $content .= $spaces . __('Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit.', '404-solution');
+        $logSizeBytes = $abj404dao->getLogDiskUsage();
+        $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
+        $totalLogLines = $abj404dao->getLogsCount(0);
+        $logSize = sprintf(__("Current approximate log disk usage: %s MB (%s rows).", '404-solution'), 
+                $logSizeMB, $totalLogLines);
+
+        $timeToDisplay = $abj404dao->getEarliestLogTimestamp();
+        $earliestLogDate = date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
+                    date('A', $timeToDisplay);
+        $logSize .= ' ' . sprintf(__("Earliest log date: %s.", '404-solution'), $earliestLogDate) . ' ';
+        
+        $content .= "<BR/>" . $spaces . $logSize . '  ' . __('Cleanup is done daily.', '404-solution') . "</p>";
 
         $selectedRemoveMatches = "";
         if ($options['remove_matches'] == '1') {
@@ -1385,7 +1424,7 @@ class ABJ_404_Solution_View {
         $redirects = array();
         $redirectsFound = 0;
         
-        $rows = $abj404dao->getRedirectsAll();
+        $rows = $abj404dao->getRedirectsWithLogs();
         foreach ($rows as $row) {
             $redirects[$row['id']]['id'] = absint($row['id']);
             $redirects[$row['id']]['url'] = esc_url($row['url']);
@@ -1454,16 +1493,6 @@ class ABJ_404_Solution_View {
         }
         date_default_timezone_set($timezone);
         foreach ($rows as $row) {
-            $redirect_id = $row['redirect_id'];
-            if (empty($redirect_id)) {
-                // delete the redirect. it only exists in the logs due to an error.
-                $abj404dao->deleteRedirect($redirect_id);
-                
-                $abj404logging->debugMessage("Deleted reference to nonexistent redirect from logs table. ID: " .
-                        $redirect_id);
-                continue;
-            }
-            
             $class = "";
             if ($y == 0) {
                 $class = " class=\"alternate\"";
@@ -1473,7 +1502,7 @@ class ABJ_404_Solution_View {
             }
             echo "<tr" . $class . ">";
             echo "<td></td>";
-            echo "<td>" . esc_html($redirects[$redirect_id]['url']) . "</td>";
+            echo "<td>" . esc_html($row['url']) . "</td>";
             echo "<td>" . esc_html($row['remote_host']) . "</td>";
             echo "<td>";
             if ($row['referrer'] != "") {
@@ -1490,7 +1519,9 @@ class ABJ_404_Solution_View {
                 echo "<a href=\"" . esc_url($row['action']) . "\" title=\"" . __('Visit', '404-solution') . ": " . esc_attr($row['action']) . "\" target=\"_blank\">" . esc_html($row['action']) . "</a>";
             }
             echo "</td>";
-            echo "<td>" . esc_html(date('Y/m/d h:i:s A', abs(intval($row['timestamp'])))) . "</td>";
+            $timeToDisplay = abs(intval($row['timestamp']));
+            echo "<td>" . date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
+                    date('A', $timeToDisplay) . "</td>";
             echo "<td></td>";
             echo "</tr>";
             $redirectsDisplayed++;

@@ -1,5 +1,12 @@
 <?php
 
+// turn on debug for localhost etc
+$whitelist = array('127.0.0.1', '::1', 'localhost');
+if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
+
 /* the glue that holds it together / everything else. */
 
 class ABJ_404_Solution_PluginLogic {
@@ -59,20 +66,23 @@ class ABJ_404_Solution_PluginLogic {
      */
     function shouldIgnoreRequest($urlRequest) {
         global $abj404logging;
+        global $abj404dao;
+        
         // Bail out if 
         // not on 404 error page - because we're not supposed to, or 
         // if we're currently on an admin screen - because we want admins to see 404s?, or 
-        // if we're receiving a "close connection" signal - because the user is no longer there.
         // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
         if ((!is_404()) || (is_admin())) {
             return true;
         }
         
+        $ignoreReason = '';
+        
         // ignore requests that are supposed to be for an admin.
         $adminURL = parse_url(admin_url(), PHP_URL_PATH);
         if (substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
             $abj404logging->debugMessage("Ignoring request for admin URL: " . $urlRequest);
-            return true;
+            $ignoreReason = 'admin URL ignored';
         }
         
         // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
@@ -81,8 +91,13 @@ class ABJ_404_Solution_PluginLogic {
         if (strpos(strtolower(@$_SERVER['HTTP_USER_AGENT']), 'zemanta aggregator') !== false) {
             $abj404logging->debugMessage("Ignoring request from user agent: " . 
                     esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
+            $ignoreReason = 'User agent ignored: zemanta aggregator';
+        }
+        
+        if ($ignoreReason != '') {
             return true;
         }
+        
         return false;
     }
     
@@ -92,6 +107,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function getOptions($skip_db_check = "0") {
         global $abj404logic;
+        global $abj404logging;
         $options = get_option('abj404_settings');
 
         if ($options == "") {
@@ -116,14 +132,14 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($skip_db_check == "0") {
             if ($options['DB_VERSION'] != ABJ404_VERSION) {
-                if (ABJ404_VERSION == "1.3.2") {
-                    //Unregister all crons. Some were bad.
-                    ABJ_404_Solution_PluginLogic::doUnregisterCrons();
+                $abj404logging->infoMessage("Updating database version (begin).");
 
-                    //Register the good ones
-                    ABJ_404_Solution_PluginLogic::doRegisterCrons();
-                }
+                // wp_abj404_logsv2 exists since 1.7.
+                ABJ_404_Solution_DataAccess::createDatabaseTables();
                 
+                // abj404_duplicateCronAction is no longer needed as of 1.7.
+                wp_clear_scheduled_hook('abj404_duplicateCronAction');
+
                 // add the second part of the default destination page.
                 $dest404page = $options['dest404page'];
                 if (strpos($dest404page, '|') === false) {
@@ -138,6 +154,7 @@ class ABJ_404_Solution_PluginLogic {
                 }
                 
                 $options = $abj404logic->doUpdateDBVersionOption();
+                $abj404logging->infoMessage("Updating database version (end).");
             }
         }
 
@@ -153,6 +170,7 @@ class ABJ_404_Solution_PluginLogic {
             'capture_404' => '1',
             'capture_deletion' => 1095,
             'manual_deletion' => '0',
+            'log_deletion' => '365',
             'admin_notification' => '200',
             'remove_matches' => '1',
             'display_suggest' => '1',
@@ -172,6 +190,7 @@ class ABJ_404_Solution_PluginLogic {
             'auto_cats' => '1',
             'auto_tags' => '1',
             'dest404page' => '0|' . ABJ404_TYPE_404_DISPLAYED,
+            'maximum_log_disk_usage' => '100',
         );
         
         return $options;
@@ -230,11 +249,6 @@ class ABJ_404_Solution_PluginLogic {
         $timestampc = wp_next_scheduled('abj404_cleanupCronAction');
         if ($timestampc == False) {
             wp_schedule_event(current_time('timestamp') - 86400, 'daily', 'abj404_cleanupCronAction');
-        }
-
-        $timestampd = wp_next_scheduled('abj404_duplicateCronAction');
-        if ($timestampd == False) {
-            wp_schedule_event(current_time('timestamp') - 3600, 'hourly', 'abj404_duplicateCronAction');
         }
     }
     
@@ -295,6 +309,13 @@ class ABJ_404_Solution_PluginLogic {
         } else if ($action == "purgeRedirects") {
             if (check_admin_referer('abj404_purgeRedirects') && is_admin()) {
                 $message = $abj404dao->deleteSpecifiedRedirects();
+            } else {
+                $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
+                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
+            }
+        } else if ($action == "runMaintenance") {
+            if (check_admin_referer('abj404_runMaintenance') && is_admin()) {
+                $message = $abj404dao->deleteOldRedirectsCron();
             } else {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
                         is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
@@ -401,11 +422,12 @@ class ABJ_404_Solution_PluginLogic {
         
         
         if ($abj404dao->getPostOrGetSanitize('action') == 'importRedirects') {
-            
             if ($abj404dao->getPostOrGetSanitize('sanity_404redirected') != '1') {
                 $message = __("Error: You didn't check the I understand checkbox. No importing for you!", '404-solution');
                 return $message;
             }
+
+            check_admin_referer('abj404_importRedirects');
             
             try {
                 $result = $abj404dao->importDataFromPluginRedirectioner();
@@ -840,7 +862,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['capture_deletion']) == 1 && $_POST['capture_deletion'] >= 0) {
                 $options['capture_deletion'] = absint($_POST['capture_deletion']);
             } else {
-                $message .= __('Collected URL deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+                $message .= __('Error: Collected URL deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
 
@@ -848,7 +870,15 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['manual_deletion']) == 1 && $_POST['manual_deletion'] >= 0) {
                 $options['manual_deletion'] = absint($_POST['manual_deletion']);
             } else {
-                $message .= __('Manual redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+                $message .= __('Error: Manual redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+            }
+        }
+
+        if (array_key_exists('log_deletion', $_POST) && isset($_POST['log_deletion'])) {
+            if (preg_match('/^[0-9]+$/', $_POST['log_deletion']) == 1 && $_POST['log_deletion'] >= 0) {
+                $options['log_deletion'] = absint($_POST['log_deletion']);
+            } else {
+                $message .= __('Error: Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
 
@@ -856,7 +886,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
                 $options['suggest_minscore'] = absint($_POST['suggest_minscore']);
             } else {
-                $message .= __('Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
+                $message .= __('Error: Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
             }
         }
 
@@ -864,7 +894,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['suggest_max']) == 1 && $_POST['suggest_max'] >= 1) {
                 $options['suggest_max'] = absint($_POST['suggest_max']);
             } else {
-                $message .= __('Maximum number of suggest value must be a number greater or equal to 1', '404-solution') . ".<BR/>";
+                $message .= __('Error: Maximum number of suggest value must be a number greater than or equal to 1', '404-solution') . ".<BR/>";
             }
         }
         
@@ -872,7 +902,7 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['auto_score']) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
                 $options['auto_score'] = absint($_POST['auto_score']);
             } else {
-                $message .= __('Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
+                $message .= __('Error: Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
             }
         }
         
@@ -880,10 +910,18 @@ class ABJ_404_Solution_PluginLogic {
             if (preg_match('/^[0-9]+$/', $_POST['auto_deletion']) == 1 && $_POST['auto_deletion'] >= 0) {
                 $options['auto_deletion'] = absint($_POST['auto_deletion']);
             } else {
-                $message .= __('Auto redirect deletion value must be a number greater or equal to zero', '404-solution') . ".<BR/>";
+                $message .= __('Error: Auto redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
-        
+
+        if (array_key_exists('maximum_log_disk_usage', $_POST) && isset($_POST['maximum_log_disk_usage'])) {
+            if (preg_match('/^[0-9]+$/', $_POST['maximum_log_disk_usage']) == 1 && $_POST['maximum_log_disk_usage'] > 0) {
+                $options['maximum_log_disk_usage'] = absint($_POST['maximum_log_disk_usage']);
+            } else {
+                $message .= __('Error: Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";
+            }
+        }
+
         // these options all default to 0 if they're not specifically set to 1.
         $optionsList = array('remove_matches', 'debug_mode', 'display_suggest', 'suggest_cats', 'suggest_tags', 
             'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404');

@@ -89,6 +89,12 @@ msgstr[0] "%s log entry was purged."
 msgstr[1] "%s log entries were purged."
 msgstr ""
 
+msgid "%s redirect entry was moved to the trash."
+msgid_plural "%s redirect entries were moved to the trash."
+msgstr[0] "%s redirect entry was moved to the trash."
+msgstr[1] "%s redirect entries were moved to the trash."
+msgstr ""
+
 msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
 msgid_plural "There are <a>%s captured 404 URLs</a> that need to be processed."
 msgstr[0] "There is <a>%s captured 404 URL</a> that needs to be processed."
@@ -697,7 +703,7 @@ msgid "Sanity Check"
 msgstr ""
 
 #: includes/admin.php:2165
-msgid "Using the purge options will delete logs and redirects matching the boxes selected above. This action is not reversible. Hopefully you know what you're doing."
+msgid "Using the purge options will move all selected redirects to the trash. You must then empty the trash to delete them."
 msgstr ""
 
 #: includes/admin.php:2167
@@ -717,7 +723,7 @@ msgid "Log entries were purged."
 msgstr ""
 
 #: includes/admin.php:2213
-msgid "Redirect entries were purged."
+msgid "Redirect entries were moved to the trash."
 msgstr ""
 
 #: includes/admin.php:2216

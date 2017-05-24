@@ -1,5 +1,12 @@
 <?php
 
+// turn on debug for localhost etc
+$whitelist = array('127.0.0.1', '::1', 'localhost');
+if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
+
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 
 class ABJ_404_Solution_WordPress_Connector {
@@ -9,7 +16,6 @@ class ABJ_404_Solution_WordPress_Connector {
         add_filter("plugin_action_links_" . ABJ404_NAME, 'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
         add_action('template_redirect', 'ABJ_404_Solution_WordPress_Connector::process404', 9999);
 
-        add_action('abj404_duplicateCronAction', 'ABJ_404_Solution_DataAccess::removeDuplicatesCron');
         add_action('abj404_cleanupCronAction', 'ABJ_404_Solution_DataAccess::deleteOldRedirectsCron');
 
         register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::doUnregisterCrons');
@@ -404,7 +410,8 @@ class ABJ_404_Solution_WordPress_Connector {
         global $abj404view;
 
         if (current_user_can('manage_options')) {
-            if (( @$_GET['page'] == ABJ404_PP ) || ( $pagenow == 'index.php' && (!isset($_GET['page']) ) )) {
+            if ( (array_key_exists('page', $_GET) && $_GET['page'] == ABJ404_PP) ||
+                 ($pagenow == 'index.php' && !isset($_GET['page'])) ) {
                 $options = $abj404logic->getOptions();
                 if (array_key_exists('admin_notification', $options) && isset($options['admin_notification']) && $options['admin_notification'] != '0') {
                     $captured = $abj404dao->getCapturedCountForNotification();
