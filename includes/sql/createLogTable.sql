@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_logsv2} (
     `referrer` varchar(512) NOT NULL,
     `requested_url` varchar(512) NOT NULL,
     `dest_url` varchar(512) NOT NULL,
-    `reason` varchar(512) NOT NULL,
     PRIMARY KEY  (`id`),
     KEY `timestamp` (`timestamp`)
 ) ENGINE=MyISAM {charset_collate} COMMENT='404 Solution Plugin Logs Table' AUTO_INCREMENT=1

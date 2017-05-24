@@ -1,7 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-$whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
+$whitelist = array('127.0.0.1', '::1', 'localhost');
 if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
@@ -191,7 +191,7 @@ class ABJ_404_Solution_PluginLogic {
             'auto_cats' => '1',
             'auto_tags' => '1',
             'dest404page' => '0|' . ABJ404_TYPE_404_DISPLAYED,
-            'maximum_log_disk_usage' => '10',
+            'maximum_log_disk_usage' => '100',
         );
         
         return $options;
