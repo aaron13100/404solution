@@ -1,5 +1,12 @@
 <?php
 
+// turn on debug for localhost etc
+$whitelist = array('127.0.0.1', '::1', 'localhost');
+if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
+
 /* Static functions that can be used from anywhere.  */
 
 class ABJ_404_Solution_Logging {
@@ -22,6 +29,14 @@ class ABJ_404_Solution_Logging {
             error_log($prefix . $message);
             $this->writeLineToDebugFile($timestamp . $message);
         }
+    }
+
+    /** Send a message to the log. 
+     * This goes to a file and is used by every other class so it goes here.
+     * @param type $message  */
+    function infoMessage($message) {
+        $timestamp = date('Y-m-d H:i:s') . ' (INFO): ';
+        $this->writeLineToDebugFile($timestamp . $message);
     }
 
     /** Always send a message to the error_log.
