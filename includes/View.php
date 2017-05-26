@@ -1,8 +1,8 @@
 <?php
 
 // turn on debug for localhost etc
-$whitelist = array('127.0.0.1', '::1', 'localhost');
-if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
+$whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
+if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -770,7 +770,7 @@ class ABJ_404_Solution_View {
             $displayed++;
 
             $hits = $row['hits'];
-            $last_used = $abj404dao->getRedirectLastUsed($row['id']);
+            $last_used = $abj404dao->getRedirectLastUsed($row['logsid']);
             if ($last_used != 0) {
                 $last = date("Y/m/d h:i:s A", abs(intval($last_used)));
             } else {
@@ -778,7 +778,7 @@ class ABJ_404_Solution_View {
             }
 
             $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $row['id'];
-            $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $row['id'];
+            $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $row['logsid'];
             $trashlink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'];
             $ignorelink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'];
             $deletelink = "?page=" . ABJ404_PP . "&subpage=abj404_captured&remove=1&id=" . $row['id'];
@@ -843,8 +843,13 @@ class ABJ_404_Solution_View {
                 echo " | ";
             }
             echo "<span class=\"trash\"><a href=\"" . esc_url($trashlink) . "\" title=\"" . __('Trash Redirected URL', '404-solution') . "\">" . esc_html($trashtitle) . "</a></span>";
+            
             echo " | ";
-            echo "<span class=\"view\"><a href=\"" . esc_url($logslink) . "\" title=\"" . __('View Redirect Logs', '404-solution') . "\">" . __('View Logs', '404-solution') . "</a></span>";
+            if ($row['logsid'] > 0) {
+                echo "<span class=\"view\"><a href=\"" . esc_url($logslink) . "\" title=\"" . __('View Redirect Logs', '404-solution') . "\">" . __('View Logs', '404-solution') . "</a></span>";
+            } else {
+                echo "<span class=\"view\">" . __('(No logs)') . "</a></span>";
+            }
             if ($tableOptions['filter'] != -1) {
                 echo " | ";
                 echo "<span class=\"ignore\"><a href=\"" . esc_url($ignorelink) . "\" title=\"" . $ignoretitle . "\">" . esc_html($ignoretitle) . "</a></span>";
@@ -1004,7 +1009,7 @@ class ABJ_404_Solution_View {
 
 
             $hits = $row['hits'];
-            $last_used = $abj404dao->getRedirectLastUsed($row['id']);
+            $last_used = $abj404dao->getRedirectLastUsed($row['logsid']);
             if ($last_used != 0) {
                 $last = date("Y/m/d h:i:s A", abs(intval($last_used)));
             } else {
@@ -1012,7 +1017,7 @@ class ABJ_404_Solution_View {
             }
 
             $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . absint($row['id']);
-            $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . absint($row['id']);
+            $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . absint($row['logsid']);
             $trashlink = "?page=" . ABJ404_PP . "&id=" . absint($row['id']);
             $deletelink = "?page=" . ABJ404_PP . "&remove=1&id=" . absint($row['id']);
 
@@ -1060,7 +1065,11 @@ class ABJ_404_Solution_View {
             }
             echo "<span class=\"trash\"><a href=\"" . esc_url($trashlink) . "\" title=\"" . __('Trash Redirected URL', '404-solution') . "\">" . esc_html($trashtitle) . "</a></span>";
             echo " | ";
-            echo "<span class=\"view\"><a href=\"" . esc_url($logslink) . "\" title=\"" . __('View Redirect Logs', '404-solution') . "\">" . __('View Logs') . "</a></span>";
+            if ($row['logsid'] > 0) {
+                echo "<span class=\"view\"><a href=\"" . esc_url($logslink) . "\" title=\"" . __('View Redirect Logs', '404-solution') . "\">" . __('View Logs') . "</a></span>";
+            } else {
+                echo "<span class=\"view\">" . __('(No logs)') . "</a></span>";
+            }
             if ($tableOptions['filter'] == -1) {
                 echo " | ";
                 echo "<span class=\"delete\"><a href=\"" . esc_url($deletelink) . "\" title=\"" . __('Delete Redirect Permanently', '404-solution') . "\">" . __('Delete Permanently', '404-solution') . "</a></span>";
@@ -1421,16 +1430,16 @@ class ABJ_404_Solution_View {
             $tableOptions[$key] = wp_kses_post($value);
         }
 
-        $redirects = array();
-        $redirectsFound = 0;
+        $logRows = array();
+        $logRowsFound = 0;
         
-        $rows = $abj404dao->getRedirectsWithLogs();
+        $rows = $abj404dao->getLogsIDandURL();
         foreach ($rows as $row) {
-            $redirects[$row['id']]['id'] = absint($row['id']);
-            $redirects[$row['id']]['url'] = esc_url($row['url']);
-            $redirectsFound++;
+            $logRows[$row['id']]['id'] = absint($row['id']);
+            $logRows[$row['id']]['url'] = esc_url($row['url']);
+            $logRowsFound++;
         }
-        $abj404logging->debugMessage($redirectsFound . " redirects found for logs page select option.");
+        $abj404logging->debugMessage($logRowsFound . " log rows found for logs page select option.");
 
         echo "<BR/>";
         echo "<form method=\"GET\" action=\"\" style=\"clear: both; display: block;\" class=\"clearbothdisplayblock\">";
@@ -1438,17 +1447,18 @@ class ABJ_404_Solution_View {
         echo "<input type=\"hidden\" name=\"subpage\" value=\"abj404_logs\">";
         echo "<strong><label for=\"id\">" . __('View Logs For', '404-solution') . ":</label></strong> ";
         echo "<select name=\"id\" id=\"id\">";
+        
         $selected = "";
         if ($tableOptions['logsid'] == 0) {
             $selected = " selected";
         }
         echo "<option value=\"0\"" . $selected . ">" . __('All Redirects', '404-solution') . "</option>";
-        foreach ($redirects as $redirect) {
+        foreach ($logRows as $logRow) {
             $selected = "";
-            if ($tableOptions['logsid'] == $redirect['id']) {
+            if ($tableOptions['logsid'] == $logRow['id']) {
                 $selected = " selected";
             }
-            echo "<option value=\"" . esc_attr($redirect['id']) . "\"" . $selected . ">" . esc_html($redirect['url']) . "</option>";
+            echo "<option value=\"" . esc_attr($logRow['id']) . "\"" . $selected . ">" . esc_html($logRow['url']) . "</option>";
         }
         echo "</select><BR/>";
         echo "<input type=\"submit\" value=\"View Logs\" class=\"button-secondary\">";

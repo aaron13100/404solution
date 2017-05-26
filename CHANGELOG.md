@@ -1,6 +1,10 @@
 # Changelog #
 
-## Version 1.7.0 ##
+## Version 1.7.1 (May 27, 2017) ##
+* FIX: Always show the requested URL on the "Logs" tab (even after a redirect is deleted).
+* FIX: "View Logs For" on the logs tab shows all of the URLs found in the logs.
+
+## Version 1.7.0 (May 24, 2017) ##
 * Improvement: Old log entries are deleted automatically based on the maximum log size.
 * Improvement: Log structure improved. Log entries no longer require redirects. 
 This means additional functionality can be added in the future, 
