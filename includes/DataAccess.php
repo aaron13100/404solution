@@ -1,8 +1,8 @@
 <?php
 
 // turn on debug for localhost etc
-$whitelist = array('127.0.0.1', '::1', 'localhost');
-if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
+$whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
+if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -220,20 +220,18 @@ class ABJ_404_Solution_DataAccess {
 
     /**
      * @global type $wpdb
-     * @param int $redirectID only return results from this redirect ID. Use 0 to get all records.
+     * @param int $logID only return results that correspond to the URL of this $logID. Use 0 to get all records.
      * @return int the number of records found.
      */
-    function getLogsCount($redirectID) {
+    function getLogsCount($logID) {
         global $wpdb;
 
         $query = $this->readFileContents(__DIR__ . "/sql/getLogsCount.sql");
         $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
         
-        if ($redirectID != 0) {
+        if ($logID != 0) {
             $query = str_replace('/* {SPECIFIC_ID}', '', $query);
-            $query = str_replace('{redirect_id}', $redirectID, $query);
-            $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
-            
+            $query = str_replace('{logID}', $logID, $query);
         }
         
         $row = $wpdb->get_row($query, ARRAY_N);
@@ -248,13 +246,13 @@ class ABJ_404_Solution_DataAccess {
      * @param type $id
      * @return type
      */
-    function getRedirectLastUsed($id) {
+    function getRedirectLastUsed($logsid) {
         global $wpdb;
 
-        $query = $wpdb->prepare("select timestamp from " . $wpdb->prefix . "abj404_logsv2 where " .
-                " requested_url in (select url from " . $wpdb->prefix . 
-                "abj404_redirects where redirect_id = %d) " .
-                " order by timestamp desc", esc_sql($id));
+        $query = $wpdb->prepare("select max(timestamp) as timestamp from " . $wpdb->prefix . "abj404_logsv2 \n " .
+                "where requested_url = (select requested_url from " . $wpdb->prefix . "abj404_logsv2 \n " .
+                "where id = %d) " .
+                " order by timestamp desc", esc_sql($logsid));
         $row = $wpdb->get_col($query);
 
         if (isset($row[0])) {
@@ -306,9 +304,19 @@ class ABJ_404_Solution_DataAccess {
         $redirects = $wpdb->prefix . "abj404_redirects";
         $logs = $wpdb->prefix . "abj404_logsv2";
 
-        $query = "select " . $redirects . ".id, " . $redirects . ".url, " . $redirects . ".status, " . $redirects . ".type, " . $redirects . ".final_dest, " . $redirects . ".code, " . $redirects . ".timestamp";
-        $query .= ", count(" . $logs . ".id) as hits from " . $redirects . " ";
+        $query = "select " . $redirects . ".id, " . $redirects . ".url, " . $redirects . ".status, " . 
+                $redirects . ".type, " . $redirects . ".final_dest, " . $redirects . ".code, " . 
+                $redirects . ".timestamp";
+        $query .= ", count(" . $logs . ".id) as hits, \n" .
+                "innerlogs.id as logsid \n" . 
+                "from " . $redirects . " ";
         $query .= " left outer join " . $logs . " on " . $redirects . ".url = " . $logs . ".requested_url ";
+
+        $query .= "LEFT OUTER JOIN (SELECT MIN(id) as id, requested_url \n" .
+            "FROM " . $logs . " \n" .
+            "GROUP BY requested_url) innerlogs \n" .
+            "ON " . $redirects . ".url = innerlogs.requested_url \n";
+
         $query .= " where 1 and (";
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
             if ($sub == 'abj404_redirects') {
@@ -339,14 +347,23 @@ class ABJ_404_Solution_DataAccess {
             $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
             $query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
         }
-
+        
         $rows = $wpdb->get_results($query, ARRAY_A);
         return $rows;
     }
 
+    function getLogsIDandURL() {
+        global $wpdb;
+        
+        $logs = $wpdb->prefix . "abj404_logsv2";
+        $query = "select min(" . $logs . ".id) as id, " . $logs . ".requested_url as url from " . $logs . 
+                " group by url order by url";
+        $rows = $wpdb->get_results($query, ARRAY_A);
+        return $rows;
+    }
     /**
      * @global type $wpdb
-     * @param type $tableOptions logsid, orderby, paged, perpage, etc.
+     * @param type $tableOptions orderby, paged, perpage, etc.
      * @return type rows from querying the logs table.
      */
     function getLogRecords($tableOptions) {
@@ -355,17 +372,18 @@ class ABJ_404_Solution_DataAccess {
         $logs = $wpdb->prefix . "abj404_logsv2";
         $redirects = $wpdb->prefix . "abj404_redirects";
 
-        $query = "select " . $logs . ".timestamp, " . $logs . ".user_ip as remote_host, " . $logs . ".referrer, " . $logs . ".dest_url as action, " . $redirects . ".url from " . $logs;
-        $query .= " left outer join " . $redirects . " on " . $logs . ".requested_url = " . $redirects . ".url where 1 ";
+        $query = "select " . $logs . ".timestamp, " . $logs . ".user_ip as remote_host, " . $logs . ".referrer, " . 
+                $logs . ".dest_url as action, " . $logs . ".requested_url as url from " . $logs;
+        $query .= "\n where 1 ";
         if ($tableOptions['logsid'] != 0) {
-            $query .= " and " . $logs . ".requested_url in (select url from " . $redirects . 
-                    " where id = " . sanitize_text_field($tableOptions['logsid']) . ") ";
+            $query .= " and " . $logs . ".requested_url = (select innerid.requested_url from " . $logs . " innerid " .
+                    " where innerid.id = " . esc_sql($tableOptions['logsid']) . ") ";
         }
 
         $query .= "order by " . sanitize_text_field($tableOptions['orderby']) . " " . sanitize_text_field($tableOptions['order']) . " ";
         $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
         $query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
-
+        
         $rows = $wpdb->get_results($query, ARRAY_A);
         return $rows;
     }

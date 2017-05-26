@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.1
-Version: 1.7.0
+Version: 1.7.1
 Tested up to: 4.7.5
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -59,7 +59,11 @@ Yes. It's as easy as turning on this feature in the options.
 
 == Changelog ==
 
-= Version 1.7.0 =
+= Version 1.7.1 (May 27, 2017) =
+* FIX: Always show the requested URL on the "Logs" tab (even after a redirect is deleted).
+* FIX: "View Logs For" on the logs tab shows all of the URLs found in the logs.
+
+= Version 1.7.0 (May 24, 2017) =
 * Improvement: Old log entries are deleted automatically based on the maximum log size.
 * Improvement: Log structure improved. Log entries no longer require redirects. 
 This means additional functionality can be added in the future, 
