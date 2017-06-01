@@ -14,7 +14,7 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
 	Author:      Aaron J
 	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 1.7.1
+	Version: 1.7.2
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -40,7 +40,7 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
 define( 'ABJ404_URL', plugin_dir_url( __FILE__ ) );
 define( 'ABJ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );
-define( 'ABJ404_VERSION', '1.7.1' );
+define( 'ABJ404_VERSION', '1.7.2' );
 define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/' );
 define( 'ABJ404_PP', 'abj404_solution'); // plugin path
 
@@ -63,25 +63,23 @@ define("ABJ404_OPTION_DEFAULT_PERPAGE", 25);
 define("ABJ404_OPTION_MIN_PERPAGE", 10);
 
 
-require ABJ404_PATH . "includes/Logging.php";
+require_once ABJ404_PATH . "includes/Logging.php";
 $abj404logging = new ABJ_404_Solution_Logging();
 
-require ABJ404_PATH . "includes/Functions.php";
-require ABJ404_PATH . "includes/DataAccess.php";
-require ABJ404_PATH . "includes/PluginLogic.php";
-require ABJ404_PATH . "includes/WPConnector.php";
-require ABJ404_PATH . "includes/SpellChecker.php";
-require ABJ404_PATH . "includes/ErrorHandler.php";
+require_once ABJ404_PATH . "includes/Functions.php";
+require_once ABJ404_PATH . "includes/DataAccess.php";
+require_once ABJ404_PATH . "includes/PluginLogic.php";
+require_once ABJ404_PATH . "includes/WPConnector.php";
+require_once ABJ404_PATH . "includes/SpellChecker.php";
+require_once ABJ404_PATH . "includes/ErrorHandler.php";
 
 if (is_admin()) {
-    require ABJ404_PATH . "includes/View.php";
+    require_once ABJ404_PATH . "includes/View.php";
     $abj404view = new ABJ_404_Solution_View();
 }
 
 $abj404dao = new ABJ_404_Solution_DataAccess();
-if (!isset($abj404logic)) {
-    $abj404logic = new ABJ_404_Solution_PluginLogic();
-}
+$abj404logic = new ABJ_404_Solution_PluginLogic();
 $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
 $abj404connector = new ABJ_404_Solution_WordPress_Connector();
 

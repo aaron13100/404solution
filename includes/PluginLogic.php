@@ -230,18 +230,29 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /** Create database tables. Register crons. etc.
-     * @global type $abj404dao */
+     * @global type $abj404logic
+     * @global type $abj404dao
+     */
     static function runOnPluginActivation() {
         global $abj404logic;
+        global $abj404dao;
+        global $abj404logging;
         add_option('abj404_settings', '', '', 'no');
+        
+        if (!isset($abj404logging)) {
+            $abj404logging = new ABJ_404_Solution_Logging();
+        }
+        if (!isset($abj404dao)) {
+            $abj404dao = new ABJ_404_Solution_DataAccess();
+        }
+        if (!isset($abj404logic)) {
+            $abj404logic = new ABJ_404_Solution_PluginLogic();
+        }
         
         ABJ_404_Solution_DataAccess::createDatabaseTables();
 
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
-        if (!isset($abj404logic)) {
-            $abj404logic = new ABJ_404_Solution_PluginLogic();
-        }
         $abj404logic->doUpdateDBVersionOption();
     }
 

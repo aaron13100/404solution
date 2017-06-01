@@ -65,6 +65,9 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 1.7.2 (June 1, 2017) ##
+* FIX: Try to fix issue #12 for scidave (Call to a member function readFileContents() on a non-object).
+
 ## Version 1.7.1 (May 27, 2017) ##
 * FIX: Always show the requested URL on the "Logs" tab (even after a redirect is deleted).
 * FIX: "View Logs For" on the logs tab shows all of the URLs found in the logs.
