@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 1.7.3 (June 2, 2017) ##
+* FIX: Try to fix issue #12 for scidave (Illegal mix of collations).
+
 ## Version 1.7.2 (June 1, 2017) ##
 * FIX: Try to fix issue #12 for scidave (Call to a member function readFileContents() on a non-object).
 
