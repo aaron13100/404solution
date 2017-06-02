@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.1
-Version: 1.7.2
+Version: 1.7.3
 Tested up to: 4.8
-Stable tag: 1.7.2
+Stable tag: 1.7.3
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -58,6 +58,9 @@ Yes. It's as easy as turning on this feature in the options.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 1.7.3 (June 2, 2017) =
+* FIX: Try to fix issue #12 for scidave (Illegal mix of collations).
 
 = Version 1.7.2 (June 1, 2017) =
 * FIX: Try to fix issue #12 for scidave (Call to a member function readFileContents() on a non-object).
