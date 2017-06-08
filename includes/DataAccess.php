@@ -310,12 +310,13 @@ class ABJ_404_Solution_DataAccess {
         $query .= ", count(" . $logs . ".id) as hits, \n" .
                 "innerlogs.id as logsid \n" . 
                 "from " . $redirects . " ";
-        $query .= " left outer join " . $logs . " on " . $redirects . ".url = " . $logs . ".requested_url ";
+        $query .= " left outer join " . $logs . " on cast(" . $redirects . ".url as binary) = cast(" . 
+                $logs . ".requested_url as binary)";
 
         $query .= "LEFT OUTER JOIN (SELECT MIN(id) as id, requested_url \n" .
             "FROM " . $logs . " \n" .
             "GROUP BY requested_url) innerlogs \n" .
-            "ON " . $redirects . ".url = innerlogs.requested_url \n";
+            "ON cast(" . $redirects . ".url as binary) = cast(innerlogs.requested_url as binary) \n";
 
         $query .= " where 1 and (";
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
@@ -391,11 +392,11 @@ class ABJ_404_Solution_DataAccess {
     /** 
      * Log that a redirect was done. Insert into the logs table.
      * @global type $wpdb
-     * @param type $id
+     * @param type $requestedURL
      * @param type $action
      * @param type $matchReason
      */
-    function logRedirectHit($id, $action, $matchReason) {
+    function logRedirectHit($requestedURL, $action, $matchReason) {
         global $wpdb;
         global $abj404logging;
         $now = time();
@@ -411,15 +412,9 @@ class ABJ_404_Solution_DataAccess {
             }
             $current_user->user_login;
             
-            $redirect = $this->getRedirectByID($id);
-            $from = "(not yet stored for ID " . esc_html($id) . ")";
-            if (isset($redirect)) {
-                $from = $redirect['url'];
-            }
-            $abj404logging->debugMessage("Logging redirect. redirect_id: " . absint($id) . 
-                    " | Referer: " . esc_html($referer) . " | Current user: " . $current_user_name . 
-                    " | From: " . esc_html($from) . esc_html(" to: ") . esc_html($action) . 
-                    ', Reason: ' . $matchReason);
+            $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
+                    " | Current user: " . $current_user_name . " | From: " . esc_html($requestedURL) . 
+                    esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason);
         }
 
         $wpdb->insert($wpdb->prefix . "abj404_logsv2", array(
@@ -427,7 +422,7 @@ class ABJ_404_Solution_DataAccess {
             'user_ip' => esc_sql($_SERVER['REMOTE_ADDR']),
             'referrer' => esc_sql($referer),
             'dest_url' => esc_sql($action),
-            'requested_url' => esc_sql($from),
+            'requested_url' => esc_sql($requestedURL),
                 ), array(
             '%d',
             '%s',
@@ -604,6 +599,18 @@ class ABJ_404_Solution_DataAccess {
             $abj404logging->errorMessage("Wrong data type for redirect. STATUS is non-numeric. From: " . 
                     esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         }
+        
+        // TODO ###### get options etc
+        $userAgents = explode("\n", strtolower($options['ignore_dontprocess']));
+        $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
+        foreach ($userAgents as $agentToIgnore) {
+            if (strpos($httpUserAgent, $agentToIgnore) !== false) {
+                $abj404logging->debugMessage("Ignoring request from user agent: " . 
+                        esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
+                $ignoreReason = 'User agent ignored: ' . $agentToIgnore;
+            }
+        }
+        
             
         $now = time();
         $wpdb->insert($wpdb->prefix . 'abj404_redirects', array(
@@ -624,6 +631,7 @@ class ABJ_404_Solution_DataAccess {
             '%d'
                 )
         );
+        
         return $wpdb->insert_id;
     }
 
