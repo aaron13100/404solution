@@ -24,13 +24,7 @@ class ABJ_404_Solution_DataAccess {
         global $abj404logging;
         global $abj404dao;
         
-        $charset_collate = '';
-        if (!empty($wpdb->charset)) {
-            $charset_collate .= " DEFAULT CHARACTER SET $wpdb->charset";
-        }
-        if (!empty($wpdb->collate)) {
-            $charset_collate .= " COLLATE $wpdb->collate";
-        }
+        $charset_collate = 'utf8_general_ci';
         $query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "abj404_redirects` (
               `id` bigint(30) NOT NULL auto_increment,
               `url` varchar(512) NOT NULL,
@@ -51,8 +45,12 @@ class ABJ_404_Solution_DataAccess {
             ) ENGINE=MyISAM " . esc_html($charset_collate) . " COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1";
         $wpdb->query($query);
 
+        $logsTable = $wpdb->prefix . 'abj404_logsv2';
+        $query = 'ALTER TABLE ' . $logsTable . ' CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci';
+        $wpdb->query($query);
+
         $query = $abj404dao->readFileContents(__DIR__ . "/sql/createLogTable.sql");
-        $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
+        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         $query = str_replace('{charset_collate}', esc_html($charset_collate), $query);
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
 
@@ -350,6 +348,12 @@ class ABJ_404_Solution_DataAccess {
         }
         
         $rows = $wpdb->get_results($query, ARRAY_A);
+        
+        // check for errors
+        if ($wpdb->last_error) {
+            $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+        }  
+        
         return $rows;
     }
 

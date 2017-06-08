@@ -1,5 +1,10 @@
 <!--
-Thanks for contributing to 404 Solution! Enter a clear title (e.g. "Search error when using plus sign") and proceed.
+Thanks for contributing to 404 Solution! Enter a clear title (e.g. "Search error when using plus sign"), 
+fill in the template below, include lines from the debug log (or note "not applicable"), and explain the issue in detail.
+
+- These comments won't show up when you submit the issue.
+- Try to add as much detail as possible. Be specific!
+- If you're requesting a new feature, explain why you'd like it to be added.
 -->
 
 #### What I Expected To Happen
@@ -8,10 +13,5 @@ Thanks for contributing to 404 Solution! Enter a clear title (e.g. "Search error
 
 #### Steps to Reproduce the Bug
 
-<!--
-PLEASE NOTE:
-- These comments won't show up when you submit the issue.
-- Try to add as much detail as possible. Be specific!
-- GitHub issues aren't for support! If you have questions, use the forums here https://wordpress.org/support/plugin/404-solution
-- If you're requesting a new feature, explain why you'd like it to be added.
--->
+#### Debug Lines
+

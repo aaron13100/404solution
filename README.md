@@ -65,6 +65,9 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 1.7.4 (June 8, 2017) ##
+* FIX: Try to fix issue #19 for totalfood (Redirects & Captured 404s Not Recording Hits).
+
 ## Version 1.7.3 (June 2, 2017) ##
 * FIX: Try to fix issue #12 for scidave (Illegal mix of collations).
 
