@@ -1136,9 +1136,19 @@ class ABJ_404_Solution_View {
             
             echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</label></strong> \n";
             echo '<select style="max-width: 75%;" id="dest" name="dest">';
-            echo $this->echoRedirectDestinationOptionsDefaults(@$_POST['dest']);
-            echo $this->echoRedirectDestinationOptionsPosts(@$_POST['dest'] . '|' . @$_POST['type']);
-            echo $this->echoRedirectDestinationOptionsPages(@$_POST['dest'] . '|' . @$_POST['type']);
+            
+            $defaultDestination = '';
+            $defaultType = '';
+            if (!array_key_exists('dest', $_POST)) {
+                $defaultDestination = $_POST['dest'];
+            }
+            if (!array_key_exists('type', $_POST)) {
+                $defaultType = $_POST['type'];
+            }
+        
+            echo $this->echoRedirectDestinationOptionsDefaults($defaultDestination);
+            echo $this->echoRedirectDestinationOptionsPosts($defaultDestination . '|' . $defaultType);
+            echo $this->echoRedirectDestinationOptionsPages($defaultDestination . '|' . $defaultType);
 
             echo "</select><BR/>";
             
