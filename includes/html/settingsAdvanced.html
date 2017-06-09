@@ -3,25 +3,35 @@
 
 <table border=1>
     <tr><td valign="top">
-            <label for="ignore_dontprocess">{Internal Process User Agents. <BR/><BR/>}
-            {Do not redirect 404s from the user agents listed here. <BR/><BR/>}
-            {User agents that contain these strings will be ignored. The strings are case insensitive. }
-            {This is best for internal processes that don't need to be redirected when slug structure changes. }
-            {Search engine user agents should not go here so that they will be redirected when the slug structure changes. }
-            {Requests will appear in the log, but captured 404 URLs will not be created. <BR/><BR/>}
-            {Use one line per user agent. If the text is found anywhere in the user agent string then it applies. }</label>
+            <label for="ignore_dontprocess">{Internal Process User Agents. } 
+            <ul>
+                <li>{* Do not redirect 404s from the user agents listed here.}</li>
+                <li>{* Do not capture 404 URLs.}</li>
+                <li>{* Strings are case insensitive.}</li>
+                <li>{* One string per line.}</li>
+                <li>{* If the string appears anywhere within the user agent string then it's a match.}</li>
+            </ul>
+                {This is best for internal processes that don't need to be redirected when the slug structure changes. }
+                {Search engine user agents should not go here so that they will be redirected when the slug structure changes. }
+            </label>
     </td><td>
         <textarea rows="6" cols="60" name="ignore_dontprocess" id="ignore_dontprocess" >{ignore_dontprocess}</textarea>
                     
     </td></tr>
     
     <tr><td valign="top">
-            <label for="ignore_doprocess">{External User Agents <BR/><BR/>}
-            {Redirect, but do not create captured URLs for the user agents listed here. <BR/><BR/>}
-            {User agents that contain these strings may be redirected, but will not create captured 404 URLs. }
-            {The strings are case insensitive. }
-            {This is best for search engine bots that do need to be redirected when the slug structure changes. <BR/><BR/>}
-            {Use one line per user agent. If the text is found anywhere in the user agent string then it applies. }</label>
+            <label for="ignore_doprocess">{External User Agents. } 
+            <ul>
+                <li>{* 404s are still redirected when possible.}</li>
+                <li>{* Do not capture 404 URLs.}</li>
+                <li>{* Strings are case insensitive.}</li>
+                <li>{* One string per line.}</li>
+                <li>{* If the string appears anywhere within the user agent string then it's a match.}</li>
+            </ul>
+            {This is best for search engine bots that do need to be redirected when the slug structure changes. }
+            {Use one line per user agent. If the text is found anywhere in the user agent string then it applies. }
+            </label>
+            
     </td><td>
         <textarea rows="6" cols="60" name="ignore_doprocess" id="ignore_doprocess" >{ignore_doprocess}</textarea>
                     

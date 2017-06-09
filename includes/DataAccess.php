@@ -418,9 +418,11 @@ class ABJ_404_Solution_DataAccess {
             
             $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
                     " | Current user: " . $current_user_name . " | From: " . esc_html($requestedURL) . 
-                    esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason);
+                    esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg: " . 
+                    $_REQUEST[ABJ404_PP]['ignore_doprocess']);
         }
 
+        // TODO insert the $matchReason and the ignore reason into the log table?
         $wpdb->insert($wpdb->prefix . "abj404_logsv2", array(
             'timestamp' => esc_sql($now),
             'user_ip' => esc_sql($_SERVER['REMOTE_ADDR']),
@@ -529,6 +531,12 @@ class ABJ_404_Solution_DataAccess {
         $iterations = 0;
         while ($logsSizeBytes > $maxLogSizeBytes) {
             $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            
+            if ($results['last_error']) {
+                $abj404logging->errorMessage("Error deleting old log records. " . $result['last_error']);
+                break;
+            }
+            
             $oldLogRowsDeleted += $results['rows_affected'];
             $logsSizeBytes = $abj404dao->getLogDiskUsage();
             $iterations++;
@@ -603,38 +611,29 @@ class ABJ_404_Solution_DataAccess {
             $abj404logging->errorMessage("Wrong data type for redirect. STATUS is non-numeric. From: " . 
                     esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         }
-        
-        // TODO ###### get options etc
-        $userAgents = explode("\n", strtolower($options['ignore_dontprocess']));
-        $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
-        foreach ($userAgents as $agentToIgnore) {
-            if (strpos($httpUserAgent, $agentToIgnore) !== false) {
-                $abj404logging->debugMessage("Ignoring request from user agent: " . 
-                        esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
-                $ignoreReason = 'User agent ignored: ' . $agentToIgnore;
-            }
+
+        // if we should not capture a 404 then don't.
+        if (!$_REQUEST[ABJ404_PP]['ignore_doprocess']) {
+            $now = time();
+            $wpdb->insert($wpdb->prefix . 'abj404_redirects', array(
+                'url' => esc_sql($fromURL),
+                'status' => esc_html($status),
+                'type' => esc_html($type),
+                'final_dest' => esc_html($final_dest),
+                'code' => esc_html($code),
+                'disabled' => esc_html($disabled),
+                'timestamp' => esc_html($now)
+                    ), array(
+                '%s',
+                '%d',
+                '%d',
+                '%s',
+                '%d',
+                '%d',
+                '%d'
+                    )
+            );
         }
-        
-            
-        $now = time();
-        $wpdb->insert($wpdb->prefix . 'abj404_redirects', array(
-            'url' => esc_sql($fromURL),
-            'status' => esc_html($status),
-            'type' => esc_html($type),
-            'final_dest' => esc_html($final_dest),
-            'code' => esc_html($code),
-            'disabled' => esc_html($disabled),
-            'timestamp' => esc_html($now)
-                ), array(
-            '%s',
-            '%d',
-            '%d',
-            '%s',
-            '%d',
-            '%d',
-            '%d'
-                )
-        );
         
         return $wpdb->insert_id;
     }

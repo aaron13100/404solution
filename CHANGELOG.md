@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 1.8.0 (June 15, 2017) ##
+* Improvement: Do not create captured URLs for specified user agent strings (such as search engine bots).
+
 ## Version 1.7.4 (June 8, 2017) ##
 * FIX: Try to fix issue #19 for totalfood (Redirects & Captured 404s Not Recording Hits).
 

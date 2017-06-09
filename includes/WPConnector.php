@@ -139,13 +139,20 @@ class ABJ_404_Solution_WordPress_Connector {
         global $abj404spellChecker;
         global $abj404logging;
 
-        $urlRequest = esc_url(preg_replace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI'])));
-
-        if ($abj404logic->shouldIgnoreRequest($urlRequest)) {
-            // TODO ##### log ignored request
+        if (!is_404()) {
             return;
         }
 
+        $urlRequest = esc_url(preg_replace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI'])));
+        
+        // setup ignore variables on $_REQUEST['abj404solution']
+        $abj404logic->initializeIgnoreValues($urlRequest);
+        
+        if ($_REQUEST[ABJ404_PP]['ignore_donotprocess']) {
+            $abj404dao->logRedirectHit($urlRequest, '404', 'ignored');
+            return;
+        }
+        
         // remove the home directory from the URL parts because it should not be considered for spell checking.
         $urlSlugOnly = $abj404logic->removeHomeDirectory($urlRequest);
 
@@ -273,7 +280,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return string
      */
     function sortQueryParts($urlParts) {
-        if (@$urlParts['query'] == "") {
+        if (!array_key_exists('query', $urlParts) || @$urlParts['query'] == "") {
             return "";
         }
         $url = "";
