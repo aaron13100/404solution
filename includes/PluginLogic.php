@@ -62,24 +62,20 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $urlRequest
      * @return boolean true if the request should be ignored. false otherwise.
      */
-    function shouldIgnoreRequest($urlRequest) {
+    function initializeIgnoreValues($urlRequest) {
         global $abj404logging;
+        global $abj404logic;
         
-        // Bail out if 
-        // not on 404 error page - because we're not supposed to, or 
-        // if we're currently on an admin screen - because we want admins to see 404s?, or 
+        $options = $abj404logic->getOptions();
+        $ignoreReasonDoNotProcess = null;
+        $ignoreReasonDoProcess = null;
+        
         // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
-        if ((!is_404()) || (is_admin())) {
-            return true;
-        }
-        
-        $ignoreReason = '';
-        
         // ignore requests that are supposed to be for an admin.
         $adminURL = parse_url(admin_url(), PHP_URL_PATH);
-        if (substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
-            $abj404logging->debugMessage("Ignoring request for admin URL: " . $urlRequest);
-            $ignoreReason = 'admin URL ignored';
+        if (is_admin() || substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
+            $abj404logging->debugMessage("Ignoring admin URL: " . $urlRequest);
+            $ignoreReasonDoNotProcess = 'Admin URL';
         }
         
         // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
@@ -88,18 +84,26 @@ class ABJ_404_Solution_PluginLogic {
         $userAgents = preg_split("@\n@", strtolower($options['ignore_dontprocess']), NULL, PREG_SPLIT_NO_EMPTY);
         $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
-            if (strpos($httpUserAgent, $agentToIgnore) !== false) {
+            if (strpos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring request from user agent: " . 
                         esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
-                $ignoreReason = 'User agent ignored: ' . $agentToIgnore;
+                $ignoreReasonDoNotProcess = 'User agent: ' . $_SERVER['HTTP_USER_AGENT'];
             }
         }
+        $_REQUEST[ABJ404_PP]['ignore_donotprocess'] = $ignoreReasonDoNotProcess;
         
-        if ($ignoreReason != '') {
-            return true;
+        // -----
+        // ignore and process
+        $userAgents = preg_split("@\n@", strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
+        $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
+        foreach ($userAgents as $agentToIgnore) {
+            if (strpos($httpUserAgent, trim($agentToIgnore)) !== false) {
+                $abj404logging->debugMessage("Ignoring request from user agent: " . 
+                        esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
+                $ignoreReasonDoProcess = 'User agent ignored: ' . $agentToIgnore;
+            }
         }
-        
-        return false;
+        $_REQUEST[ABJ404_PP]['ignore_doprocess'] = $ignoreReasonDoProcess;
     }
     
     /** The passed in reason will be appended to the automatically generated reason.
@@ -998,10 +1002,10 @@ class ABJ_404_Solution_PluginLogic {
             $options['dest404page'] = sanitize_text_field(@$_POST['dest404page']);
         }
         if (array_key_exists('ignore_dontprocess', $_POST) && isset($_POST['ignore_dontprocess'])) {
-            $options['ignore_dontprocess'] = sanitize_text_field(@$_POST['ignore_dontprocess']);
+            $options['ignore_dontprocess'] = wp_kses_post(@$_POST['ignore_dontprocess']);
         }
         if (array_key_exists('ignore_doprocess', $_POST) && isset($_POST['ignore_doprocess'])) {
-            $options['ignore_doprocess'] = sanitize_text_field(@$_POST['ignore_doprocess']);
+            $options['ignore_doprocess'] = wp_kses_post(@$_POST['ignore_doprocess']);
         }
 
 
