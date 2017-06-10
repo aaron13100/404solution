@@ -5,7 +5,7 @@ Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary red
 Requires at least: 3.1
 Version: 1.8.0
 Tested up to: 4.8
-Stable tag: 1.8.0
+Stable tag: 1.7.4
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
