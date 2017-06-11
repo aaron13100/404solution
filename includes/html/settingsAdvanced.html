@@ -1,15 +1,20 @@
 <p>{DB Version Number}: {DATABASE_VERSION}</p>
 <!-- .............................. -->
 
+<style>
+    .closeLI {
+        margin-bottom: initial;
+    }
+</style>
 <table border=1>
     <tr><td valign="top">
             <label for="ignore_dontprocess">{Internal Process User Agents. } 
             <ul>
-                <li>{* Do not redirect 404s from the user agents listed here.}</li>
-                <li>{* Do not capture 404 URLs.}</li>
-                <li>{* Strings are case insensitive.}</li>
-                <li>{* One string per line.}</li>
-                <li>{* If the string appears anywhere within the user agent string then it's a match.}</li>
+                <li class="closeLI">{* Do not redirect 404s from the user agents listed here.}</li>
+                <li class="closeLI">{* Do not capture 404 URLs.}</li>
+                <li class="closeLI">{* Strings are case insensitive.}</li>
+                <li class="closeLI">{* One string per line.}</li>
+                <li class="closeLI">{* If the string appears anywhere within the user agent string then it's a match.}</li>
             </ul>
                 {This is best for internal processes that don't need to be redirected when the slug structure changes. }
                 {Search engine user agents should not go here so that they will be redirected when the slug structure changes. }
@@ -22,11 +27,11 @@
     <tr><td valign="top">
             <label for="ignore_doprocess">{External User Agents. } 
             <ul>
-                <li>{* 404s are still redirected when possible.}</li>
-                <li>{* Do not capture 404 URLs.}</li>
-                <li>{* Strings are case insensitive.}</li>
-                <li>{* One string per line.}</li>
-                <li>{* If the string appears anywhere within the user agent string then it's a match.}</li>
+                <li class="closeLI">{* 404s are still redirected when possible.}</li>
+                <li class="closeLI">{* Do not capture 404 URLs.}</li>
+                <li class="closeLI">{* Strings are case insensitive.}</li>
+                <li class="closeLI">{* One string per line.}</li>
+                <li class="closeLI">{* If the string appears anywhere within the user agent string then it's a match.}</li>
             </ul>
             {This is best for search engine bots that do need to be redirected when the slug structure changes. }
             {Use one line per user agent. If the text is found anywhere in the user agent string then it applies. }
