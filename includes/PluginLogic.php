@@ -87,7 +87,7 @@ class ABJ_404_Solution_PluginLogic {
             if (strpos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring request from user agent: " . 
                         esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
-                $ignoreReasonDoNotProcess = 'User agent: ' . $_SERVER['HTTP_USER_AGENT'];
+                $ignoreReasonDoNotProcess = 'User agent (do not process): ' . $_SERVER['HTTP_USER_AGENT'];
             }
         }
         $_REQUEST[ABJ404_PP]['ignore_donotprocess'] = $ignoreReasonDoNotProcess;
@@ -100,7 +100,7 @@ class ABJ_404_Solution_PluginLogic {
             if (strpos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring request from user agent: " . 
                         esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
-                $ignoreReasonDoProcess = 'User agent ignored: ' . $agentToIgnore;
+                $ignoreReasonDoProcess = 'User agent (do process): ' . $agentToIgnore;
             }
         }
         $_REQUEST[ABJ404_PP]['ignore_doprocess'] = $ignoreReasonDoProcess;
