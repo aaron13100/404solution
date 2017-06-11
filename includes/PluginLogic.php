@@ -47,13 +47,11 @@ class ABJ_404_Solution_PluginLogic {
                 $urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
                 $fromURL = $urlHomeDirectory . '/?p=' . $pageid;
                 $redirect = $abj404dao->getExistingRedirectForURL($fromURL);
-                if ($redirect['id'] != 0) {
-                    $redirect_id = $redirect['id'];
-                } else {
-                    $redirect_id = $abj404dao->setupRedirect($fromURL, ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, 
+                if (!isset($redirect['id']) || $redirect['id'] == 0) {
+                    $abj404dao->setupRedirect($fromURL, ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, 
                             $pageid, $options['default_redirect'], 0);
                 }
-                $abj404dao->logRedirectHit($redirect_id, $permalink, 'page ID');
+                $abj404dao->logRedirectHit($fromURL, $permalink, 'page ID');
                 $this->forceRedirect($permalink, esc_html($options['default_redirect']));
                 exit;
             }
@@ -64,41 +62,91 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $urlRequest
      * @return boolean true if the request should be ignored. false otherwise.
      */
-    function shouldIgnoreRequest($urlRequest) {
+    function initializeIgnoreValues($urlRequest) {
         global $abj404logging;
-        global $abj404dao;
+        global $abj404logic;
         
-        // Bail out if 
-        // not on 404 error page - because we're not supposed to, or 
-        // if we're currently on an admin screen - because we want admins to see 404s?, or 
+        $options = $abj404logic->getOptions();
+        $ignoreReasonDoNotProcess = null;
+        $ignoreReasonDoProcess = null;
+        
         // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
-        if ((!is_404()) || (is_admin())) {
-            return true;
-        }
-        
-        $ignoreReason = '';
-        
         // ignore requests that are supposed to be for an admin.
         $adminURL = parse_url(admin_url(), PHP_URL_PATH);
-        if (substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
-            $abj404logging->debugMessage("Ignoring request for admin URL: " . $urlRequest);
-            $ignoreReason = 'admin URL ignored';
+        if (is_admin() || substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
+            $abj404logging->debugMessage("Ignoring admin URL: " . $urlRequest);
+            $ignoreReasonDoNotProcess = 'Admin URL';
         }
         
         // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
         // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
         // by https://www.sovrn.com/. This could be improved by letting the user specify when to ignore certain requests.
-        if (strpos(strtolower(@$_SERVER['HTTP_USER_AGENT']), 'zemanta aggregator') !== false) {
-            $abj404logging->debugMessage("Ignoring request from user agent: " . 
-                    esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
-            $ignoreReason = 'User agent ignored: zemanta aggregator';
+        $userAgents = preg_split("@\n@", strtolower($options['ignore_dontprocess']), NULL, PREG_SPLIT_NO_EMPTY);
+        $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
+        foreach ($userAgents as $agentToIgnore) {
+            if (strpos($httpUserAgent, trim($agentToIgnore)) !== false) {
+                $abj404logging->debugMessage("Ignoring request from user agent: " . 
+                        esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
+                $ignoreReasonDoNotProcess = 'User agent (do not process): ' . $_SERVER['HTTP_USER_AGENT'];
+            }
         }
+        $_REQUEST[ABJ404_PP]['ignore_donotprocess'] = $ignoreReasonDoNotProcess;
         
-        if ($ignoreReason != '') {
-            return true;
+        // -----
+        // ignore and process
+        $userAgents = preg_split("@\n@", strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
+        $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
+        foreach ($userAgents as $agentToIgnore) {
+            if (strpos($httpUserAgent, trim($agentToIgnore)) !== false) {
+                $abj404logging->debugMessage("Ignoring request from user agent: " . 
+                        esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
+                $ignoreReasonDoProcess = 'User agent (do process): ' . $agentToIgnore;
+            }
         }
+        $_REQUEST[ABJ404_PP]['ignore_doprocess'] = $ignoreReasonDoProcess;
+    }
+    
+    /** The passed in reason will be appended to the automatically generated reason.
+     * @param type $reason
+     */
+    function sendTo404Page($requestedURL, $reason = '') {
+        global $abj404dao;
+        global $abj404logic;
+        global $abj404logging;
         
-        return false;
+        $options = $abj404logic->getOptions();
+        
+        // ---------------------------------------
+        // if there's a default 404 page specified then use that.
+        $dest404page = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ? 
+                $options['dest404page'] : 
+            ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
+        if (($dest404page != ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) && 
+                ($dest404page != ABJ404_TYPE_404_DISPLAYED)) {
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0);
+            $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_CAPTURED, $permalink['type'], $permalink['id'], $options['default_redirect'], 0);
+            $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'user specified 404 page. ' . $reason);
+            $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
+            exit;
+        }
+
+        // ---------------------------------------
+        // give up. log the 404.
+        if (@$options['capture_404'] == '1') {
+            // get the existing redirect before adding a new one.
+            $redirect = $abj404dao->getExistingRedirectForURL($requestedURL);
+            if (!isset($redirect['id']) || $redirect['id'] == 0) {
+                $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_CAPTURED, ABJ404_TYPE_404_DISPLAYED, ABJ404_TYPE_404_DISPLAYED, $options['default_redirect'], 0);
+            }
+            $abj404dao->logRedirectHit($requestedURL, '404', 'gave up. ' . $reason);
+        } else {
+            if ($abj404logging->isDebug()) {
+                $abj404logging->debugMessage("No permalink found to redirect to. capture_404 is off. Requested URL: " . $requestedURL .
+                        " | Redirect: " . wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " .
+                        "is_page(): " . is_page() . " | is_feed(): " . is_feed() . " | is_trackback(): " .
+                        is_trackback() . " | is_preview(): " . is_preview() . " | options: " . wp_kses_post(json_encode($options)));
+            }
+        }
     }
     
     /** 
@@ -132,7 +180,8 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($skip_db_check == "0") {
             if ($options['DB_VERSION'] != ABJ404_VERSION) {
-                $abj404logging->infoMessage("Updating database version (begin).");
+                $abj404logging->infoMessage("Updating database version from " . $options['DB_VERSION'] . 
+                        " to " . ABJ404_VERSION . " (begin).");
 
                 // wp_abj404_logsv2 exists since 1.7.
                 ABJ_404_Solution_DataAccess::createDatabaseTables();
@@ -154,7 +203,7 @@ class ABJ_404_Solution_PluginLogic {
                 }
                 
                 $options = $abj404logic->doUpdateDBVersionOption();
-                $abj404logging->infoMessage("Updating database version (end).");
+                $abj404logging->infoMessage("Updating database version to " . ABJ404_VERSION . " (end).");
             }
         }
 
@@ -191,6 +240,8 @@ class ABJ_404_Solution_PluginLogic {
             'auto_tags' => '1',
             'dest404page' => '0|' . ABJ404_TYPE_404_DISPLAYED,
             'maximum_log_disk_usage' => '100',
+            'ignore_dontprocess' => 'zemanta aggregator',
+            'ignore_doprocess' => "Googlebot\nMediapartners-Google\nAdsBot-Google\ndevelopers.google.com\nBingbot\nSlurp\nDuckDuckBot\nBaiduspider\nYandexBot\nwww.sogou.com\nSogou-Test-Spider\nExabot\nfacebot\nfacebookexternalhit\nia_archiver",
         );
         
         return $options;
@@ -937,7 +988,7 @@ class ABJ_404_Solution_PluginLogic {
         $optionsList = array('remove_matches', 'debug_mode', 'display_suggest', 'suggest_cats', 'suggest_tags', 
             'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404');
         foreach ($optionsList as $optionName) {
-            $options[$optionName] = ($_POST[$optionName] == "1") ? 1 : 0;
+            $options[$optionName] = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;
         }
 
         // the suggest_.* options have html in them.
@@ -950,6 +1001,13 @@ class ABJ_404_Solution_PluginLogic {
         if (array_key_exists('dest404page', $_POST) && isset($_POST['dest404page'])) {
             $options['dest404page'] = sanitize_text_field(@$_POST['dest404page']);
         }
+        if (array_key_exists('ignore_dontprocess', $_POST) && isset($_POST['ignore_dontprocess'])) {
+            $options['ignore_dontprocess'] = wp_kses_post(@$_POST['ignore_dontprocess']);
+        }
+        if (array_key_exists('ignore_doprocess', $_POST) && isset($_POST['ignore_doprocess'])) {
+            $options['ignore_doprocess'] = wp_kses_post(@$_POST['ignore_doprocess']);
+        }
+
 
         /** Sanitize all data. */
         foreach ($options as $key => $option) {

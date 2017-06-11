@@ -506,6 +506,9 @@ class ABJ_404_Solution_View {
         $contentGeneralSettings = $abj404view->getAdminOptionsPageGeneralSettings($options);
         $abj404view->echoPostBox("abj404-generaloptions", __('General Settings', '404-solution'), $contentGeneralSettings);
 
+        $contentAdvancedSettings = $abj404view->getAdminOptionsPageAdvancedSettings($options);
+        $abj404view->echoPostBox("abj404-advancedoptions", __('Advanced Settings (Etc)', '404-solution'), $contentAdvancedSettings);
+
         $content404PageSuggestions = $abj404view->getAdminOptionsPage404Suggestions($options);
         $abj404view->echoPostBox("abj404-suggestoptions", __('404 Page Suggestions', '404-solution'), $content404PageSuggestions);
 
@@ -1336,6 +1339,46 @@ class ABJ_404_Solution_View {
         return $content;
     }
 
+    function getAdminOptionsPageAdvancedSettings($options) {
+        global $abj404logging;
+        global $abj404dao;
+
+        $selectedDebugLogging = "";
+        if ($options['debug_mode'] == '1') {
+            $selectedDebugLogging = " checked";
+        }
+        $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
+        $explanationLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_debugfile", "abj404_debugfile");
+        $debugExplanation = str_replace('<a>', '<a href="' . $explanationLink . '" target="_blank" >', $debugExplanation);
+
+        // TODO make the delete link use a POST request instead of a GET request.
+        $debugDelete = __('<a>Delete</a> the debug file.', '404-solution');
+        $deleteLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_options&action=deleteDebugFile", 
+                "abj404_deleteDebugFile");
+        $debugDelete = str_replace('<a>', '<a href="' . $deleteLink . '" >', $debugDelete);
+        
+        $kbFileSize = round($abj404logging->getDebugFileSize() / 1024);
+        $debugFileSize = sprintf(__("Debug file size: %s KB.", '404-solution'), $kbFileSize);
+        
+        
+        // ----
+        // read the html content.
+        $html = $abj404dao->readFileContents(__DIR__ . "/html/settingsAdvanced.html");
+        $html = str_replace('{DATABASE_VERSION}', esc_html($options['DB_VERSION']), $html);
+        $html = str_replace('checked=""', $selectedDebugLogging, $html);
+        $html = str_replace('{<a>View</a> the debug file.}', $debugExplanation, $html);
+        $html = str_replace('{<a>Delete</a> the debug file.}', $debugDelete, $html);
+        $html = str_replace('{Debug file size: %s KB.}', $debugFileSize, $html);
+        $html = str_replace('{ignore_dontprocess}', wp_kses_post($options['ignore_dontprocess']), $html);
+        $html = str_replace('{ignore_doprocess}', wp_kses_post($options['ignore_doprocess']), $html);
+        // constants and translations.
+        $html = $this->doNormalReplacements($html);
+        
+        // ------------------
+         
+        return $html;
+    }
+
     /** 
      * @param type $options
      * @return string
@@ -1346,8 +1389,7 @@ class ABJ_404_Solution_View {
         
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
 
-        $content = "<p>" . __('DB Version Number', '404-solution') . ": " . esc_html($options['DB_VERSION']) . "</p>";
-        $content .= "<p><label for=\"default_redirect\">" . __('Default redirect type', '404-solution') . ":</label> ";
+        $content = "<p><label for=\"default_redirect\">" . __('Default redirect type', '404-solution') . ":</label> ";
         $content .= "<select name=\"default_redirect\" id=\"default_redirect\">";
         $selectedDefaultRedirect301 = "";
         if ($options['default_redirect'] == '301') {
@@ -1399,26 +1441,6 @@ class ABJ_404_Solution_View {
 
         $content .= "<p><label for=\"remove_matches\">" . __('Remove redirect upon matching permalink', '404-solution') . ":</label> <input type=\"checkbox\" value=\"1\" name=\"remove_matches\" id=\"remove_matches\"" . $selectedRemoveMatches . "><BR/>";
         $content .= $spaces . __('Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.', '404-solution') . "</p>";
-
-        $selectedDebugLogging = "";
-        if ($options['debug_mode'] == '1') {
-            $selectedDebugLogging = " checked";
-        }
-        $content .= "<p><label for=\"debug_mode\">" . __('Debug logging', '404-solution') . ":</label> <input type=\"checkbox\" name=\"debug_mode\" id=\"debug_mode\" value=\"1\"" . $selectedDebugLogging . "><BR/>";
-        $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
-        $explanationLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_debugfile", "abj404_debugfile");
-        $debugExplanation = str_replace('<a>', '<a href="' . $explanationLink . '" target="_blank" >', $debugExplanation);
-
-        // TODO make the delete link use a POST request instead of a GET request.
-        $debugDelete = __('<a>Delete</a> the debug file.', '404-solution');
-        $deleteLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_options&action=deleteDebugFile", 
-                "abj404_deleteDebugFile");
-        $debugDelete = str_replace('<a>', '<a href="' . $deleteLink . '" >', $debugDelete);
-        
-        $kbFileSize = round($abj404logging->getDebugFileSize() / 1024);
-        $debugFileSize = sprintf(__("Debug file size: %s KB.", '404-solution'), $kbFileSize);
-    
-        $content .= $spaces . $debugExplanation . ' ' . $debugDelete . ' ' . $debugFileSize . "</p>";
 
         return $content;
     }
