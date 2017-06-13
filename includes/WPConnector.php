@@ -31,6 +31,7 @@ class ABJ_404_Solution_WordPress_Connector {
      */
     static function addSettingsLinkToPluginPage($links) {
         global $abj404logging;
+        global $abj404logic;
         
         if (!is_admin() || !current_user_can('administrator')) {
             $abj404logging->logUserCapabilities("addSettingsLinkToPluginPage");
@@ -41,6 +42,13 @@ class ABJ_404_Solution_WordPress_Connector {
         $settings_link = '<a href="options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options">' . 
                 __('Settings') . '</a>';
         array_unshift($links, $settings_link);
+        
+        $debugExplanation = __('Debug Log', '404-solution');
+        $debugLogLink = $abj404logic->getDebugLogFileLink();
+        $debugExplanation = '<a href="options-general.php' . $debugLogLink . '" target="_blank" >' . $debugExplanation .
+                '</a>';
+        array_push($links, $debugExplanation);
+        
         return $links;
     }
 

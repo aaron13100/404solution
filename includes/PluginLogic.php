@@ -314,6 +314,10 @@ class ABJ_404_Solution_PluginLogic {
         }
     }
     
+    function getDebugLogFileLink() {
+        return "?page=" . ABJ404_PP . "&subpage=abj404_debugfile";
+    }
+
     /** Do the passed in action and return the associated message. 
      * @global type $abj404logic
      * @param type $action

@@ -24,7 +24,6 @@ class ABJ_404_Solution_DataAccess {
         global $abj404logging;
         global $abj404dao;
         
-        $charset_collate = 'utf8_general_ci';
         $query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "abj404_redirects` (
               `id` bigint(30) NOT NULL auto_increment,
               `url` varchar(512) NOT NULL,
@@ -42,7 +41,7 @@ class ABJ_404_Solution_DataAccess {
               KEY `disabled` (`disabled`),
               FULLTEXT KEY `url` (`url`),
               FULLTEXT KEY `final_dest` (`final_dest`)
-            ) ENGINE=MyISAM " . esc_html($charset_collate) . " COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1";
+            ) ENGINE=MyISAM character set utf8 COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1";
         $wpdb->query($query);
 
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
@@ -51,14 +50,12 @@ class ABJ_404_Solution_DataAccess {
 
         $query = $abj404dao->readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-        $query = str_replace('{charset_collate}', esc_html($charset_collate), $query);
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
 
         $query = $abj404dao->readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
         $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
         $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
         $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
-        $query = str_replace('{charset_collate}', esc_html($charset_collate), $query);
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         
         // if anything was successfully imported then delete the old table.
@@ -233,6 +230,9 @@ class ABJ_404_Solution_DataAccess {
         }
         
         $row = $wpdb->get_row($query, ARRAY_N);
+        if (count($row) == 0) {
+            $row[0] = 0;
+        }
         $records = $row[0];
 
         return intval($records);
