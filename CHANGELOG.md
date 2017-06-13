@@ -1,6 +1,9 @@
 # Changelog #
 
-## Version 1.8.0 (June 15, 2017) ##
+## Version 1.8.1 (June 13, 2017) ##
+* Add a new link and don't require a link to view the debug file (for perthmetro).
+
+## Version 1.8.0 ##
 * Improvement: Do not create captured URLs for specified user agent strings (such as search engine bots).
 
 ## Version 1.7.4 (June 8, 2017) ##

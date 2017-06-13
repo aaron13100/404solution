@@ -372,7 +372,7 @@ class ABJ_404_Solution_View {
     
     function echoAdminDebugFile() {
         global $abj404logging;
-        if (check_admin_referer('abj404_debugfile') && is_admin()) {
+        if (current_user_can('administrator')) {
             // read the file and replace new lines with <BR/>.
             if (file_exists($abj404logging->getDebugFilePath())) {
                 $filecontents = esc_html(file_get_contents($abj404logging->getDebugFilePath()));
@@ -384,8 +384,8 @@ class ABJ_404_Solution_View {
             echo nl2br($filecontents);
             
         } else {
-            echo "Wrong nonce or non-admin request to view debug file.";
-            $abj404logging->errorMessage("Wrong nonce or non-admin request to view debug file.");
+            echo "Non-admin request to view debug file.";
+            $abj404logging->errorMessage("Non-admin request to view debug file.");
         }
     }
 
@@ -1338,18 +1338,19 @@ class ABJ_404_Solution_View {
 
         return $content;
     }
-
+    
     function getAdminOptionsPageAdvancedSettings($options) {
         global $abj404logging;
         global $abj404dao;
+        global $abj404logic;
 
         $selectedDebugLogging = "";
         if ($options['debug_mode'] == '1') {
             $selectedDebugLogging = " checked";
         }
         $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
-        $explanationLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_debugfile", "abj404_debugfile");
-        $debugExplanation = str_replace('<a>', '<a href="' . $explanationLink . '" target="_blank" >', $debugExplanation);
+        $debugLogLink = $abj404logic->getDebugLogFileLink();
+        $debugExplanation = str_replace('<a>', '<a href="' . $debugLogLink . '" target="_blank" >', $debugExplanation);
 
         // TODO make the delete link use a POST request instead of a GET request.
         $debugDelete = __('<a>Delete</a> the debug file.', '404-solution');
