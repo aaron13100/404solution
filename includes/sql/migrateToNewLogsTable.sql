@@ -16,3 +16,7 @@ but it's probably good enough. */
 left outer join {wp_abj404_logsv2} lv2
 on ol.timestamp = lv2.timestamp
 where lv2.timestamp is null
+
+/* the old logs table required redirects to exist. when they don't the URLs are null. 
+   this causes corrupt log lines in the new logs table, so they are skipped. */
+and reds.url is not null

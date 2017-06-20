@@ -23,6 +23,8 @@ class ABJ_404_Solution_WordPress_Connector {
 
         add_action('admin_notices', 'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
         add_action('admin_menu', 'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
+        
+        ABJ_404_Solution_PluginLogic::doRegisterCrons();
     }
 
     /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).
