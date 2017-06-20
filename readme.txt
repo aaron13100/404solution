@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.1
-Version: 1.8.1
+Version: 1.8.2
 Tested up to: 4.8
-Stable tag: 1.8.1
+Stable tag: 1.8.2
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -59,8 +59,11 @@ Yes. It's as easy as turning on this feature in the options.
 
 == Changelog ==
 
+= Version 1.8.2 (June, 2017) =
+* FIX: Verify that the daily cleanup cron job is running.
+
 = Version 1.8.1 (June 13, 2017) =
-* Add a new link and don't require a link to view the debug file (for perthmetro).
+* Improvement: Add a new link and don't require a link to view the debug file (for perthmetro).
 
 = Version 1.8.0 =
 * Improvement: Do not create captured URLs for specified user agent strings (such as search engine bots).

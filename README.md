@@ -65,8 +65,11 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 1.8.2 (June, 2017) ##
+* FIX: Verify that the daily cleanup cron job is running.
+
 ## Version 1.8.1 (June 13, 2017) ##
-* Add a new link and don't require a link to view the debug file (for perthmetro).
+* Improvement: Add a new link and don't require a link to view the debug file (for perthmetro).
 
 ## Version 1.8.0 ##
 * Improvement: Do not create captured URLs for specified user agent strings (such as search engine bots).

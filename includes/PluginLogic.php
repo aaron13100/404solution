@@ -85,9 +85,9 @@ class ABJ_404_Solution_PluginLogic {
         $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (strpos($httpUserAgent, trim($agentToIgnore)) !== false) {
-                $abj404logging->debugMessage("Ignoring request from user agent: " . 
+                $abj404logging->debugMessage("Ignoring user agent (do not redirect): " . 
                         esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
-                $ignoreReasonDoNotProcess = 'User agent (do not process): ' . $_SERVER['HTTP_USER_AGENT'];
+                $ignoreReasonDoNotProcess = 'User agent (do not redirect): ' . $_SERVER['HTTP_USER_AGENT'];
             }
         }
         $_REQUEST[ABJ404_PP]['ignore_donotprocess'] = $ignoreReasonDoNotProcess;
@@ -98,9 +98,9 @@ class ABJ_404_Solution_PluginLogic {
         $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (strpos($httpUserAgent, trim($agentToIgnore)) !== false) {
-                $abj404logging->debugMessage("Ignoring request from user agent: " . 
+                $abj404logging->debugMessage("Ignoring user agent (process ok): " . 
                         esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
-                $ignoreReasonDoProcess = 'User agent (do process): ' . $agentToIgnore;
+                $ignoreReasonDoProcess = 'User agent (process ok): ' . $agentToIgnore;
             }
         }
         $_REQUEST[ABJ404_PP]['ignore_doprocess'] = $ignoreReasonDoProcess;
@@ -188,6 +188,9 @@ class ABJ_404_Solution_PluginLogic {
                 
                 // abj404_duplicateCronAction is no longer needed as of 1.7.
                 wp_clear_scheduled_hook('abj404_duplicateCronAction');
+
+                // added in 1.8.2
+                ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
                 // add the second part of the default destination page.
                 $dest404page = $options['dest404page'];
@@ -308,9 +311,8 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     static function doRegisterCrons() {
-        $timestampc = wp_next_scheduled('abj404_cleanupCronAction');
-        if ($timestampc == False) {
-            wp_schedule_event(current_time('timestamp') - 86400, 'daily', 'abj404_cleanupCronAction');
+        if (!wp_next_scheduled('abj404_cleanupCronAction')) {
+            wp_schedule_event(time(), 'daily', 'abj404_cleanupCronAction');
         }
     }
     

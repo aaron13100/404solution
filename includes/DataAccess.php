@@ -421,6 +421,11 @@ class ABJ_404_Solution_DataAccess {
                     esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg: " . 
                     $_REQUEST[ABJ404_PP]['ignore_doprocess']);
         }
+        
+        $wpdb->query("delete from " . $wpdb->prefix . "abj404_logsv2 where requested_url is null");
+        if ($wpdb->last_error != '') {
+            $abj404logging->infoMessage("tmp Error msg: " . $wpdb->last_error);
+        }
 
         // TODO insert the $matchReason and the ignore reason into the log table?
         $wpdb->insert($wpdb->prefix . "abj404_logsv2", array(
@@ -437,6 +442,10 @@ class ABJ_404_Solution_DataAccess {
             '%s'
                 )
         );
+        
+       if ($wpdb->last_error != '') {
+           $abj404logging->errorMessage("Error inserting data: " . esc_html($wpdb->last_error));
+       }
     }
 
     /** Remove the redirect from the redirects table and from the logs.
@@ -455,7 +464,7 @@ class ABJ_404_Solution_DataAccess {
         }
     }
 
-    /** Delete old redirects based on how old they are. 
+    /** Delete old redirects based on how old they are. This runs daily.
      * @global type $wpdb
      * @global type $abj404dao
      * @global type $abj404logic
@@ -552,6 +561,9 @@ class ABJ_404_Solution_DataAccess {
                 ", Old log lines removed: " . $oldLogRowsDeleted . ", Duplicate rows deleted: " . 
                 $duplicateRowsDeleted;
         $abj404logging->infoMessage($message);
+        
+        // temporary fix for a temporary problem found related to https://github.com/aaron13100/404solution/issues/19
+        $wpdb->query("delete from " . $wpdb->prefix . "abj404_logsv2 where requested_url is null");
         
         return $message;
     }
