@@ -422,9 +422,10 @@ class ABJ_404_Solution_DataAccess {
                     $_REQUEST[ABJ404_PP]['ignore_doprocess']);
         }
         
+        // TODO remove this after a few versions. introduced in 1.8.2.
         $wpdb->query("delete from " . $wpdb->prefix . "abj404_logsv2 where requested_url is null");
         if ($wpdb->last_error != '') {
-            $abj404logging->infoMessage("tmp Error msg: " . $wpdb->last_error);
+            $abj404logging->debugMessage("Issue removing log lines with blank URLs. msg: " . $wpdb->last_error);
         }
 
         // TODO insert the $matchReason and the ignore reason into the log table?
@@ -562,6 +563,7 @@ class ABJ_404_Solution_DataAccess {
                 $duplicateRowsDeleted;
         $abj404logging->infoMessage($message);
         
+        // TODO remove this after a few versions. introduced in 1.8.2.
         // temporary fix for a temporary problem found related to https://github.com/aaron13100/404solution/issues/19
         $wpdb->query("delete from " . $wpdb->prefix . "abj404_logsv2 where requested_url is null");
         
@@ -705,7 +707,8 @@ class ABJ_404_Solution_DataAccess {
     function getPublishedPagesAndPostsIDs($slug = "") {
         global $wpdb;
         
-        $query = "select id from $wpdb->posts where post_status='publish' and (post_type='page' or post_type='post')";
+        $query = "select id from $wpdb->posts where post_status='publish' and " . 
+                "( lcase(post_type) in ('page', 'post', 'product') )";
         if ($slug != "") {
             $query .= " and post_name='" . esc_sql($slug) . "'";
         }

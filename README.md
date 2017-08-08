@@ -65,8 +65,10 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
-## Version 1.8.2 (June, 2017) ##
+## Version 1.8.2 (August 8, 2017) ##
 * FIX: Verify that the daily cleanup cron job is running.
+* FIX: Include post type "product" in the spell checker for compatibility with WooCommerce (fix part 1/?).
+* FIX: Ignore characters -, _, ., and ~ in URLs when spell checking slugs (for ozzymuppet).
 
 ## Version 1.8.1 (June 13, 2017) ##
 * Improvement: Add a new link and don't require a link to view the debug file (for perthmetro).

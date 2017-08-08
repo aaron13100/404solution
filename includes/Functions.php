@@ -20,6 +20,11 @@ class ABJ_404_Solution_Functions {
         global $abj404logging;
         $permalink = array();
 
+        if ($idAndType == NULL) {
+            $permalink['score'] = -999;
+            return $permalink;
+        }
+        
         $meta = explode("|", $idAndType);
 
         $permalink['id'] = $meta[0];
