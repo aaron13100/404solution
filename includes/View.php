@@ -512,7 +512,8 @@ class ABJ_404_Solution_View {
         $content404PageSuggestions = $abj404view->getAdminOptionsPage404Suggestions($options);
         $abj404view->echoPostBox("abj404-suggestoptions", __('404 Page Suggestions', '404-solution'), $content404PageSuggestions);
 
-        echo "<input type=\"submit\" id=\"abj404-optionssub\" value=\"Save Settings\" class=\"button-primary\">";
+        echo "<input type=\"submit\" name=\"abj404-optionssub\" id=\"abj404-optionssub\" " .
+            "value=\"Save Settings\" class=\"button-primary\">";
         echo "</form>";
 
         echo "</div>";
@@ -1350,12 +1351,6 @@ class ABJ_404_Solution_View {
         $debugLogLink = $abj404logic->getDebugLogFileLink();
         $debugExplanation = str_replace('<a>', '<a href="' . $debugLogLink . '" target="_blank" >', $debugExplanation);
 
-        // TODO make the delete link use a POST request instead of a GET request.
-        $debugDelete = __('<a>Delete</a> the debug file.', '404-solution');
-        $deleteLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_options&action=deleteDebugFile", 
-                "abj404_deleteDebugFile");
-        $debugDelete = str_replace('<a>', '<a href="' . $deleteLink . '" >', $debugDelete);
-        
         $kbFileSize = round($abj404logging->getDebugFileSize() / 1024);
         $debugFileSize = sprintf(__("Debug file size: %s KB.", '404-solution'), $kbFileSize);
         
@@ -1366,7 +1361,6 @@ class ABJ_404_Solution_View {
         $html = str_replace('{DATABASE_VERSION}', esc_html($options['DB_VERSION']), $html);
         $html = str_replace('checked=""', $selectedDebugLogging, $html);
         $html = str_replace('{<a>View</a> the debug file.}', $debugExplanation, $html);
-        $html = str_replace('{<a>Delete</a> the debug file.}', $debugDelete, $html);
         $html = str_replace('{Debug file size: %s KB.}', $debugFileSize, $html);
         $html = str_replace('{ignore_dontprocess}', wp_kses_post($options['ignore_dontprocess']), $html);
         $html = str_replace('{ignore_doprocess}', wp_kses_post($options['ignore_doprocess']), $html);
