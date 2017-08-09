@@ -612,8 +612,13 @@ class ABJ_404_Solution_View {
         echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</label></strong> \n";
         echo '<select style="max-width: 75%;" id="dest" name="dest">';
         echo $this->echoRedirectDestinationOptionsDefaults($redirect['type']);
-        echo $this->echoRedirectDestinationOptionsPosts($redirect['final_dest'] . '|' . $redirect['type']);
-        echo $this->echoRedirectDestinationOptionsPages($redirect['final_dest'] . '|' . $redirect['type']);
+        
+        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs();
+        echo $this->echoRedirectDestinationOptionsOthers($redirect['final_dest'] . '|' . $redirect['type'], 
+                $rowsOtherTypes);
+        
+        echo $this->echoRedirectDestinationOptionsCatsTags($redirect['final_dest'] . '|' . $redirect['type']);
+        
 
         echo "</select><BR/>";
         $final = "";
@@ -631,11 +636,28 @@ class ABJ_404_Solution_View {
         echo "</form>";
     }
     
-    /** This is a supporting method for the echoAdminEditRedirectPage() method.
-     */
-    function echoRedirectDestinationOptionsPages($dest) {
-        echo $this->echoRedirectDestinationOptionsPagesOnly($dest);
+    function echoRedirectDestinationOptionsOthers($dest, $rows) {
+        global $abj404dao;
+        $content = "";
+        
+        foreach ($rows as $row) {
+            $id = $row->id;
+            $theTitle = get_the_title($id);
+            $thisval = $id . "|" . ABJ404_TYPE_POST;
 
+            $selected = "";
+            if ($thisval == $dest) {
+                $selected = " selected";
+            }
+            $content .= "\n <option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . 
+                    __(ucwords($row->post_type), '404-solution') . ": " . $theTitle . "</option>";
+        }
+        
+        return $content;
+    }
+
+    function echoRedirectDestinationOptionsCatsTags($dest) {
+        $content = "";
         $cats = get_categories('hierarchical=0');
         foreach ($cats as $cat) {
             $id = $cat->term_id;
@@ -646,7 +668,7 @@ class ABJ_404_Solution_View {
             if ($thisval == $dest) {
                 $selected = " selected";
             }
-            echo "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Category', '404-solution') . ": " . $theTitle . "</option>";
+            $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Category', '404-solution') . ": " . $theTitle . "</option>";
         }
 
         $tags = get_tags('hierarchical=0');
@@ -659,29 +681,12 @@ class ABJ_404_Solution_View {
             if ($thisval == $dest) {
                 $selected = " selected";
             }
-            echo "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Tag', '404-solution') . ": " . $theTitle . "</option>";
-        }        
-    }
-    
-    function echoRedirectDestinationOptionsPagesOnly($dest) {
-        $content = "";
-        $pagesRows = get_pages();
-        foreach ($pagesRows as $prow) {
-            $id = $prow->ID;
-            $theTitle = $prow->post_title;
-            $thisval = $id . "|" . ABJ404_TYPE_POST;
-
-            $selected = "";
-            if ($thisval == $dest) {
-                $selected = " selected";
-            }
-            $content .= "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Page', '404-solution') . ": " . 
-                    $theTitle . "</option>\n";
+            $content .= "<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Tag', '404-solution') . ": " . $theTitle . "</option>";
         }
         
         return $content;
     }
-
+    
     /** 
      * @global type $abj404dao
      */
@@ -893,7 +898,8 @@ class ABJ_404_Solution_View {
     function echoAdminRedirectsPage() {
         global $abj404dao;
         global $abj404logic;
-
+        global $abj404logging;
+        
         $sub = 'abj404_redirects';
 
         $options = $abj404logic->getOptions();
@@ -984,12 +990,6 @@ class ABJ_404_Solution_View {
                 $dest = $row['final_dest'];
                 $link = $row['final_dest'];
                 $title .= $row['final_dest'];
-            } else if ($row['type'] == ABJ404_TYPE_POST) {
-                $type = __('Post/Page', '404-solution');
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_POST, 0);
-                $dest = $permalink['title'];
-                $link = $permalink['link'];
-                $title .= $permalink['title'];
             } else if ($row['type'] == ABJ404_TYPE_CAT) {
                 $type = __('Category', '404-solution');
                 $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_CAT, 0);
@@ -1008,8 +1008,16 @@ class ABJ_404_Solution_View {
                 $dest = $permalink['title'];
                 $link = $permalink['link'];
                 $title .= __('Home Page:', '404-solution') . " " . $permalink['title'];
+            } else if ($row['type'] == ABJ404_TYPE_POST) {
+                $type = __(ucwords($row['wp_post_type']), '404-solution');
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_POST, 0);
+                $dest = $permalink['title'];
+                $link = $permalink['link'];
+                $title .= $permalink['title'];
+                
+            } else {
+                $abj404logging->errorMessage("Unexpected row type while displaying table: " . $row['type']);
             }
-
 
             $hits = $row['hits'];
             $last_used = $abj404dao->getRedirectLastUsed($row['logsid']);
@@ -1147,9 +1155,13 @@ class ABJ_404_Solution_View {
             }
         
             echo $this->echoRedirectDestinationOptionsDefaults($defaultDestination);
-            echo $this->echoRedirectDestinationOptionsPosts($defaultDestination . '|' . $defaultType);
-            echo $this->echoRedirectDestinationOptionsPages($defaultDestination . '|' . $defaultType);
 
+            $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs();
+            echo $this->echoRedirectDestinationOptionsOthers($redirect['final_dest'] . '|' . $redirect['type'], 
+                    $rowsOtherTypes);
+
+            echo $this->echoRedirectDestinationOptionsCatsTags($redirect['final_dest'] . '|' . $redirect['type']);
+            
             echo "</select><BR/>";
             
             $externalDestination = esc_url(@$_POST['external']);
@@ -1211,26 +1223,6 @@ class ABJ_404_Solution_View {
         return $content;
     }
     
-    function echoRedirectDestinationOptionsPosts($dest) {
-        global $abj404dao;
-        $content = "";
-        
-        $postRows = $abj404dao->getPublishedPostIDs();
-        foreach ($postRows as $row) {
-            $id = $row->id;
-            $theTitle = get_the_title($id);
-            $thisval = $id . "|" . ABJ404_TYPE_POST;
-
-            $selected = "";
-            if ($thisval == $dest) {
-                $selected = " selected";
-            }
-            $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Post', '404-solution') . ": " . $theTitle . "</option>";
-        }
-        
-        return $content;
-    }
-
     /** 
      * @global type $abj404dao
      * @global type $wpdb
@@ -1238,6 +1230,8 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageAutoRedirects($options) {
+        global $abj404dao;
+        
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         $content = "";
 
@@ -1256,7 +1250,11 @@ class ABJ_404_Solution_View {
         $content .= '<option value="' . ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME . '"' . 
                 $selected . ">" . __('(Home Page)', '404-solution') . "</option>";
 
-        $content .= $this->echoRedirectDestinationOptionsPagesOnly($userSelected);
+        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs();
+        $content .= $this->echoRedirectDestinationOptionsOthers($userSelected, 
+                $rowsOtherTypes);
+        
+        $content .= $this->echoRedirectDestinationOptionsCatsTags($userSelected);
 
         $content .= "</select><BR/>";
 
@@ -1269,7 +1267,7 @@ class ABJ_404_Solution_View {
         $content .= $spaces . __('Automatically creates redirects based on best possible suggested page.', '404-solution') . "</p>";
 
         $content .= "<p><label for=\"auto_score\">" . __('Minimum match score', '404-solution') . ":</label> <input type=\"text\" name=\"auto_score\" id=\"auto_score\" value=\"" . esc_attr($options['auto_score']) . "\" style=\"width: 50px;\"><BR/>";
-        $content .= $spaces . __('Only create an automatic redirect if the suggested page has a score above the specified number', '404-solution') . "</p>";
+        $content .= $spaces . __('Only create an automatic redirect if the suggested page has a score above the specified number (default 90)', '404-solution') . "</p>";
 
         $selectedAutoCats = "";
         if ($options['auto_cats'] == '1') {
@@ -1372,6 +1370,7 @@ class ABJ_404_Solution_View {
         $html = str_replace('{Debug file size: %s KB.}', $debugFileSize, $html);
         $html = str_replace('{ignore_dontprocess}', wp_kses_post($options['ignore_dontprocess']), $html);
         $html = str_replace('{ignore_doprocess}', wp_kses_post($options['ignore_doprocess']), $html);
+        $html = str_replace('{recognized_post_types}', wp_kses_post($options['recognized_post_types']), $html);
         // constants and translations.
         $html = $this->doNormalReplacements($html);
         

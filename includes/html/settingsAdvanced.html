@@ -8,7 +8,7 @@
 </style>
 <table border=1>
     <tr><td valign="top">
-            <label for="ignore_dontprocess">{Internal Process User Agents. } 
+            <label for="ignore_dontprocess">{Internal Process User Agents - Do Not Log} 
             <ul>
                 <li class="closeLI">{* Do not redirect 404s from the user agents listed here.}</li>
                 <li class="closeLI">{* Do not capture 404 URLs.}</li>
@@ -25,7 +25,7 @@
     </td></tr>
     
     <tr><td valign="top">
-            <label for="ignore_doprocess">{External User Agents. } 
+            <label for="ignore_doprocess">{External User Agents - Do Not Log} 
             <ul>
                 <li class="closeLI">{* 404s are still redirected when possible.}</li>
                 <li class="closeLI">{* Do not capture 404 URLs.}</li>
@@ -41,6 +41,28 @@
         <textarea rows="6" cols="60" name="ignore_doprocess" id="ignore_doprocess" >{ignore_doprocess}</textarea>
                     
     </td></tr>
+
+    <tr><td valign="top">
+            <label for="recognized_post_types">{Recognized Post Types} 
+                <BR/><BR/>
+
+            {The plugin will only redirect the post types specified here. }
+            {Default WordPress post types are "post" and "page." }
+            {The "product" type is for WooCommerce users.}
+            <BR/><BR/>
+            {If you've created custom post types and would like to redirect users to them, you'll have to enter them here. }
+            {You can see which post types are recognized by looking at default 404 destination option, which has a list of pages, posts, products, etc. }
+            <ul>
+                <li class="closeLI">{* Strings are case insensitive.}</li>
+                <li class="closeLI">{* One type per line.}</li>
+            </ul>
+            </label>
+            
+    </td><td>
+        <textarea rows="6" cols="60" name="recognized_post_types" id="recognized_post_types" >{recognized_post_types}</textarea>
+                    
+    </td></tr>
+
 </table> 
    
 

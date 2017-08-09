@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 1.9.0 (August 10, 2017) ##
+* FIX: Allow manual redirects to forward to the home page.
+* Improvement: Support post type "product" (for WooCommerce) and other user defined post types.
+
 ## Version 1.8.2 (August 8, 2017) ##
 * FIX: Verify that the daily cleanup cron job is running.
 * FIX: Include post type "product" in the spell checker for compatibility with WooCommerce (fix part 1/?).

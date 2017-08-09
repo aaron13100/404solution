@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.1
-Version: 1.8.2
+Version: 1.9.0
 Tested up to: 4.8
-Stable tag: 1.8.2
+Stable tag: 1.9.0
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -58,6 +58,10 @@ Yes. It's as easy as turning on this feature in the options.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 1.9.0 (August 10, 2017) =
+* FIX: Allow manual redirects to forward to the home page.
+* Improvement: Support post type "product" (for WooCommerce) and other user defined post types.
 
 = Version 1.8.2 (August 8, 2017) =
 * FIX: Verify that the daily cleanup cron job is running.

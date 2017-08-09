@@ -244,7 +244,8 @@ class ABJ_404_Solution_PluginLogic {
             'dest404page' => '0|' . ABJ404_TYPE_404_DISPLAYED,
             'maximum_log_disk_usage' => '100',
             'ignore_dontprocess' => 'zemanta aggregator',
-            'ignore_doprocess' => "Googlebot\nMediapartners-Google\nAdsBot-Google\ndevelopers.google.com\nBingbot\nSlurp\nDuckDuckBot\nBaiduspider\nYandexBot\nwww.sogou.com\nSogou-Test-Spider\nExabot\nfacebot\nfacebookexternalhit\nia_archiver",
+            'ignore_doprocess' => "Googlebot\nMediapartners-Google\nAdsBot-Google\ndevelopers.google.com\nBingbot\nYahoo! Slurp\nDuckDuckBot\nBaiduspider\nYandexBot\nwww.sogou.com\nSogou-Test-Spider\nExabot\nfacebot\nfacebookexternalhit\nia_archiver",
+            'recognized_post_types' => "page\npost\nproduct",
         );
         
         return $options;
@@ -1012,6 +1013,9 @@ class ABJ_404_Solution_PluginLogic {
         }
         if (array_key_exists('ignore_doprocess', $_POST) && isset($_POST['ignore_doprocess'])) {
             $options['ignore_doprocess'] = wp_kses_post(@$_POST['ignore_doprocess']);
+        }
+        if (array_key_exists('recognized_post_types', $_POST) && isset($_POST['recognized_post_types'])) {
+            $options['recognized_post_types'] = wp_kses_post(@$_POST['recognized_post_types']);
         }
 
 
