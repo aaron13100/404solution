@@ -503,7 +503,7 @@ msgid "Minimum match score"
 msgstr ""
 
 #: includes/admin.php:1439
-msgid "Only create an automatic redirect if the suggested page has a score above the specified number"
+msgid "Only create an automatic redirect if the suggested page has a score above the specified number (default 90)"
 msgstr ""
 
 #: includes/admin.php:1445

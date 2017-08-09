@@ -302,12 +302,15 @@ class ABJ_404_Solution_DataAccess {
         $redirects = $wpdb->prefix . "abj404_redirects";
         $logs = $wpdb->prefix . "abj404_logsv2";
 
-        $query = "select " . $redirects . ".id, " . $redirects . ".url, " . $redirects . ".status, " . 
-                $redirects . ".type, " . $redirects . ".final_dest, " . $redirects . ".code, " . 
-                $redirects . ".timestamp";
-        $query .= ", count(" . $logs . ".id) as hits, \n" .
-                "innerlogs.id as logsid \n" . 
-                "from " . $redirects . " ";
+        $query = "select \n  " . $redirects . ".id,\n  " . $redirects . ".url,\n  " . $redirects . ".status,\n  " . 
+                $redirects . ".type,\n  " . $redirects . ".final_dest,\n  " . $redirects . ".code,\n  " . 
+                $redirects . ".timestamp,\n  ";
+        $query .= "count(" . $logs . ".id) as hits,\n  " .
+                "innerlogs.id as logsid,\n  " . 
+                $wpdb->posts . ".post_type as wp_post_type\n  " .
+                "from " . $redirects . "\n " .
+                "  LEFT OUTER JOIN " . $wpdb->posts . " \n " .
+                "  on " . $redirects . ".final_dest = " . $wpdb->posts . ".id \n ";
         $query .= " left outer join " . $logs . " on cast(" . $redirects . ".url as binary) = cast(" . 
                 $logs . ".requested_url as binary)";
 
@@ -627,7 +630,7 @@ class ABJ_404_Solution_DataAccess {
         }
 
         // if we should not capture a 404 then don't.
-        if (!$_REQUEST[ABJ404_PP]['ignore_doprocess']) {
+        if (!@$_REQUEST[ABJ404_PP]['ignore_doprocess']) {
             $now = time();
             $wpdb->insert($wpdb->prefix . 'abj404_redirects', array(
                 'url' => esc_sql($fromURL),
@@ -664,7 +667,7 @@ class ABJ_404_Solution_DataAccess {
         // a disabled value of '1' means in the trash.
         $query = "select * from " . $wpdb->prefix . "abj404_redirects where url = '" . esc_sql(esc_url($url)) . "'" .
                 " and disabled = 0 and status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ") " .
-                "and type not in (" . ABJ404_TYPE_404_DISPLAYED . ", " . ABJ404_TYPE_HOME . ") ";
+                "and type not in (" . ABJ404_TYPE_404_DISPLAYED . ") ";
 
         $row = $wpdb->get_row($query, ARRAY_A);
         if ($row == NULL) {
@@ -706,25 +709,24 @@ class ABJ_404_Solution_DataAccess {
      */
     function getPublishedPagesAndPostsIDs($slug = "") {
         global $wpdb;
+        global $abj404logic;
         
-        $query = "select id from $wpdb->posts where post_status='publish' and " . 
-                "( lcase(post_type) in ('page', 'post', 'product') )";
+        // get the valid post types
+        $options = $abj404logic->getOptions();
+        $postTypes = preg_split("@\n@", strtolower($options['recognized_post_types']), NULL, PREG_SPLIT_NO_EMPTY);
+        $recognizedPostTypes = '';
+        foreach ($postTypes as $postType) {
+            $recognizedPostTypes .= "'" . trim(strtolower($postType)) . "', ";
+        }
+        $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
+        // ----------------
+        
+        $query = "select id, post_type from $wpdb->posts \n where post_status='publish' \n and " . 
+                " lcase(post_type) in (" . $recognizedPostTypes . ") \n order by post_type, post_title";
         if ($slug != "") {
-            $query .= " and post_name='" . esc_sql($slug) . "'";
+            $query .= "\n and post_name='" . esc_sql($slug) . "'";
         }
         $rows = $wpdb->get_results($query);
-        return $rows;
-    }
-    
-    /** 
-     * @global type $wpdb
-     * @return type
-     */
-    function getPublishedPostIDs() {
-        global $wpdb;
-        $query = "select id from $wpdb->posts where post_status='publish' and post_type='post' order by post_title";
-        $rows = $wpdb->get_results($query);
-        
         return $rows;
     }
     
