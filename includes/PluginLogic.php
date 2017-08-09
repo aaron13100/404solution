@@ -336,6 +336,21 @@ class ABJ_404_Solution_PluginLogic {
         
         if ($action == "updateOptions") {
             if (check_admin_referer('abj404UpdateOptions') && is_admin()) {
+                // delete the debug file and lose all changes, or
+                $shouldDeleteDebugFile = @$_POST['deleteDebugFile'];
+                if ($shouldDeleteDebugFile) {
+                    $filepath = $abj404logging->getDebugFilePath();
+                    if (!file_exists($filepath)) {
+                        $message = sprintf(__("Debug file not found. (%s)", '404-solution'), $filepath);
+                    } else if ($abj404logging->deleteDebugFile()) {
+                        $message = sprintf(__("Debug file deleted. (%s)", '404-solution'), $filepath);
+                    } else {
+                        $message = sprintf(__("Issue deleting debug file. (%s)", '404-solution'), $filepath);
+                    }
+                    return $message;
+                }
+                
+                // save all changes.
                 $sub = "abj404_options";
                 $message = $this->updateOptionsFromPOST();
                 if ($message == "") {
@@ -402,20 +417,6 @@ class ABJ_404_Solution_PluginLogic {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
                         is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
             }
-        } else if ($action == "deleteDebugFile") {
-            if (check_admin_referer('abj404_deleteDebugFile') && is_admin()) {
-                $filepath = $abj404logging->getDebugFilePath();
-                if (!file_exists($filepath)) {
-                    $message = sprintf(__("Debug file not found. (%s)", '404-solution'), $filepath);
-                } else if ($abj404logging->deleteDebugFile()) {
-                    $message = sprintf(__("Debug file deleted. (%s)", '404-solution'), $filepath);
-                } else {
-                    $message = sprintf(__("Issue deleting debug file. (%s)", '404-solution'), $filepath);
-                }
-            }  else {
-                $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
-                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
-            }           
         }
                 
         return $message;
