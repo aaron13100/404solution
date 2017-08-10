@@ -154,8 +154,6 @@ class ABJ_404_Solution_PluginLogic {
      * @return array
      */
     function getOptions($skip_db_check = "0") {
-        global $abj404logic;
-        global $abj404logging;
         $options = get_option('abj404_settings');
 
         if ($options == "") {
@@ -180,36 +178,101 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($skip_db_check == "0") {
             if ($options['DB_VERSION'] != ABJ404_VERSION) {
-                $abj404logging->infoMessage("Updating database version from " . $options['DB_VERSION'] . 
-                        " to " . ABJ404_VERSION . " (begin).");
-
-                // wp_abj404_logsv2 exists since 1.7.
-                ABJ_404_Solution_DataAccess::createDatabaseTables();
-                
-                // abj404_duplicateCronAction is no longer needed as of 1.7.
-                wp_clear_scheduled_hook('abj404_duplicateCronAction');
-
-                // added in 1.8.2
-                ABJ_404_Solution_PluginLogic::doRegisterCrons();
-
-                // add the second part of the default destination page.
-                $dest404page = $options['dest404page'];
-                if (strpos($dest404page, '|') === false) {
-                    // not found
-                    if ($dest404page == '0') {
-                        $dest404page .= "|" . ABJ404_TYPE_404_DISPLAYED;
-                    } else {
-                        $dest404page .= '|' . ABJ404_TYPE_POST;
-                    }
-                    $options['dest404page'] = $dest404page;
-                    update_option('abj404_settings', $options);
-                }
-                
-                $options = $abj404logic->doUpdateDBVersionOption();
-                $abj404logging->infoMessage("Updating database version to " . ABJ404_VERSION . " (end).");
+                $options = $this->updateToNewVersion($options);
             }
         }
 
+        return $options;
+    }
+    
+    /** Do any maintenance when upgrading to a new version.
+     * @global type $abj404logic
+     * @global type $abj404logging
+     * @global type $wpdb
+     * @global type $abj404dao
+     * @param type $options
+     * @return type
+     */
+    function updateToNewVersion($options) {
+        global $abj404logic;
+        global $abj404logging;
+        global $wpdb;
+        global $abj404dao;
+        
+        $abj404logging->infoMessage("Updating database version from " . $options['DB_VERSION'] . 
+                " to " . ABJ404_VERSION . " (begin).");
+
+        // wp_abj404_logsv2 exists since 1.7.
+        ABJ_404_Solution_DataAccess::createDatabaseTables();
+
+        // abj404_duplicateCronAction is no longer needed as of 1.7.
+        wp_clear_scheduled_hook('abj404_duplicateCronAction');
+
+        // added in 1.8.2
+        ABJ_404_Solution_PluginLogic::doRegisterCrons();
+
+        // since 1.9.0. ignore_doprocess add SeznamBot, Pinterestbot, UptimeRobot and "Slurp" -> "Yahoo! Slurp"
+        if (version_compare($options['DB_VERSION'], '1.9.0') < 0) {
+            $userAgents = preg_split("@\n@", $options['ignore_doprocess'], NULL, PREG_SPLIT_NO_EMPTY);
+            $uasForSearch = preg_split("@\n@", strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
+
+            foreach ($userAgents as &$str) {
+                if (strtolower(trim($str)) == "slurp") {
+                    $str = "Yahoo! Slurp";
+                    $abj404logging->infoMessage('Changed user agent "Slurp" to "Yahoo! Slurp" in the do not log list.');
+                }
+            }
+
+            if (!in_array("seznambot", $uasForSearch)) {
+                $userAgents[] = 'SeznamBot';
+                $abj404logging->infoMessage('Added user agent "SeznamBot" to do not log list."');
+            }
+            if (!in_array("pinterestbot", $uasForSearch)) {
+                $userAgents[] = 'Pinterestbot';
+                $abj404logging->infoMessage('Added user agent "Pinterestbot" to do not log list."');
+            }
+            if (!in_array("uptimerobot", $uasForSearch)) {
+                $userAgents[] = 'UptimeRobot';
+                $abj404logging->infoMessage('Added user agent "UptimeRobot" to do not log list."');
+            }
+
+            $options['ignore_doprocess'] = implode("\n",$userAgents);
+            update_option('abj404_settings', $options);
+        }
+
+        // move to the new log table
+        if (version_compare($options['DB_VERSION'], '1.8.0') < 0) {
+            $query = $abj404dao->readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
+            $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
+            $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
+            $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
+            $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+
+            // if anything was successfully imported then delete the old table.
+            if ($result['rows_affected'] > 0) {
+                $abj404logging->infoMessage($result['rows_affected'] . 
+                        ' log rows were migrated to the new table structre.');
+                // log the rows inserted/migrated.
+                $wpdb->query('drop table ' . $wpdb->prefix . 'abj404_logs');
+            }
+        }
+
+        // add the second part of the default destination page.
+        $dest404page = $options['dest404page'];
+        if (strpos($dest404page, '|') === false) {
+            // not found
+            if ($dest404page == '0') {
+                $dest404page .= "|" . ABJ404_TYPE_404_DISPLAYED;
+            } else {
+                $dest404page .= '|' . ABJ404_TYPE_POST;
+            }
+            $options['dest404page'] = $dest404page;
+            update_option('abj404_settings', $options);
+        }
+
+        $options = $abj404logic->doUpdateDBVersionOption();
+        $abj404logging->infoMessage("Updating database version to " . ABJ404_VERSION . " (end).");
+        
         return $options;
     }
 
@@ -244,7 +307,9 @@ class ABJ_404_Solution_PluginLogic {
             'dest404page' => '0|' . ABJ404_TYPE_404_DISPLAYED,
             'maximum_log_disk_usage' => '100',
             'ignore_dontprocess' => 'zemanta aggregator',
-            'ignore_doprocess' => "Googlebot\nMediapartners-Google\nAdsBot-Google\ndevelopers.google.com\nBingbot\nYahoo! Slurp\nDuckDuckBot\nBaiduspider\nYandexBot\nwww.sogou.com\nSogou-Test-Spider\nExabot\nfacebot\nfacebookexternalhit\nia_archiver",
+            'ignore_doprocess' => "Googlebot\nMediapartners-Google\nAdsBot-Google\ndevelopers.google.com\n"
+            . "Bingbot\nYahoo! Slurp\nDuckDuckBot\nBaiduspider\nYandexBot\nwww.sogou.com\nSogou-Test-Spider\n"
+            . "Exabot\nfacebot\nfacebookexternalhit\nia_archiver\nSeznamBot\nPinterestbot\nUptimeRobot",
             'recognized_post_types' => "page\npost\nproduct",
         );
         
@@ -855,7 +920,7 @@ class ABJ_404_Solution_PluginLogic {
 
         $tableOptions['filter'] = $abj404dao->getPostOrGetSanitize("filter", "");
         if ($tableOptions['filter'] == "") {
-            if (@$_GET['subpage'] == 'abj404_captured') {
+            if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == 'abj404_captured') {
                 $tableOptions['filter'] = ABJ404_STATUS_CAPTURED;
             } else {
                 $tableOptions['filter'] = '0';
@@ -864,7 +929,7 @@ class ABJ_404_Solution_PluginLogic {
 
         if (array_key_exists('orderby', $_GET) && isset($_GET['orderby'])) {
             $tableOptions['orderby'] = esc_sql($_GET['orderby']);
-        } else if (@$_GET['subpage'] == "abj404_logs") {
+        } else if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == "abj404_logs") {
             $tableOptions['orderby'] = "timestamp";
         } else {
             $tableOptions['orderby'] = "url";
@@ -886,7 +951,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         $tableOptions['perpage'] = $abj404dao->getPostOrGetSanitize("perpage", $perPageOption);
 
-        if (@$_GET['subpage'] == "abj404_logs") {
+        if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == "abj404_logs") {
             if (array_key_exists('id', $_GET) && isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {                
                 $tableOptions['logsid'] = absint($_GET['id']);
             } else {

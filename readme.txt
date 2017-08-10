@@ -2,7 +2,7 @@
 Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
-Requires at least: 3.1
+Requires at least: 4.1
 Version: 1.9.0
 Tested up to: 4.8
 Stable tag: 1.9.0
@@ -15,15 +15,15 @@ Automatically redirect 404s when the slug matches (for permalink changes), when 
 
 = Features: =
 
-* Get a list of 404 URLs as they happen.
 * Redirect 404 URLs to existing pages or ignore them.
 * Automatically create redirects based on the URL the visitor was most likely trying to visit.
+* Get a list of 404 URLs as they happen.
 * View logs of hits to 404 pages and redirects including referrer data.
-* Automatically remove redirects when the URL matches a new page or post permalink.
-* Automatically remove manual and automatic redirects once they are no longer being used.
-* All features work with both pages and posts.
+* WooCommerce compatible - pages, posts, products, and custom post types are supported.
 * Create automatic redirects for any URL resolving to a single page or post that isn't the current permalink.
 * Basic plugin usage statistics.
+* Automatically remove redirects when the URL matches a new page or post permalink.
+* Automatically remove manual and automatic redirects once they are no longer being used.
 
 Convert your 404 traffic by providing your visitors with a better browsing experience and eliminate 404 URLs on your site.
 
@@ -61,7 +61,8 @@ Yes. It's as easy as turning on this feature in the options.
 
 = Version 1.9.0 (August 10, 2017) =
 * FIX: Allow manual redirects to forward to the home page.
-* Improvement: Support post type "product" (for WooCommerce) and other user defined post types.
+* Improvement: Support user defined post types (defaults are post, page, and product).
+* Improvement: Change "Slurp" to "Yahoo! Slurp" and add SeznamBot, Pinterestbot, and UptimeRobot to the list of known bots for the do not log list.
 
 = Version 1.8.2 (August 8, 2017) =
 * FIX: Verify that the daily cleanup cron job is running.
