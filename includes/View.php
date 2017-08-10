@@ -1149,6 +1149,7 @@ class ABJ_404_Solution_View {
             $defaultDestination = '';
             $defaultType = '';
             if (!array_key_exists('dest', $_POST)) {
+                // TODO ugh. why is this like this? this makes no sense...
                 $defaultDestination = $_POST['dest'];
             }
             if (!array_key_exists('type', $_POST)) {

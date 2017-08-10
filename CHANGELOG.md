@@ -2,7 +2,8 @@
 
 ## Version 1.9.0 (August 10, 2017) ##
 * FIX: Allow manual redirects to forward to the home page.
-* Improvement: Support post type "product" (for WooCommerce) and other user defined post types.
+* Improvement: Support user defined post types (defaults are post, page, and product).
+* Improvement: Change "Slurp" to "Yahoo! Slurp" and add SeznamBot, Pinterestbot, and UptimeRobot to the list of known bots for the do not log list.
 
 ## Version 1.8.2 (August 8, 2017) ##
 * FIX: Verify that the daily cleanup cron job is running.

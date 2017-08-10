@@ -51,20 +51,6 @@ class ABJ_404_Solution_DataAccess {
         $query = $abj404dao->readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-
-        $query = $abj404dao->readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
-        $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
-        $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
-        $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
-        $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-        
-        // if anything was successfully imported then delete the old table.
-        if ($result['rows_affected'] > 0) {
-            $abj404logging->infoMessage($result['rows_affected'] . 
-                    ' log rows were migrated to the new table structre.');
-            // log the rows inserted/migrated.
-            $wpdb->query('drop table ' . $wpdb->prefix . 'abj404_logs');
-        }
     }
     
     /** 
