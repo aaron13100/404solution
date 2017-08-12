@@ -59,7 +59,7 @@ Yes. It's as easy as turning on this feature in the options.
 
 == Changelog ==
 
-= Version 1.9.0 (August 10, 2017) =
+= Version 1.9.0 (August 12, 2017) =
 * FIX: Allow manual redirects to forward to the home page.
 * Improvement: Support user defined post types (defaults are post, page, and product).
 * Improvement: Change "Slurp" to "Yahoo! Slurp" and add SeznamBot, Pinterestbot, and UptimeRobot to the list of known bots for the do not log list.
