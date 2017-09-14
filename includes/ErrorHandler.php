@@ -79,7 +79,10 @@ class ABJ_404_Solution_ErrorHandler {
                     break;
 
                 default:
-                    $errmsg = "ABJ404-SOLUTION Fatal error handler: " . stripcslashes(wp_kses_post(json_encode($lasterror))); 
+                    $errmsg = "ABJ404-SOLUTION Fatal error handler: " . 
+                        stripcslashes(wp_kses_post(json_encode($lasterror))) .
+                        ', Additional info: ' . 
+                        stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
                     if ($abj404logging != null) {
                         $abj404logging->errorMessage($errmsg);
                     } else {
