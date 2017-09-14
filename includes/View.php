@@ -641,7 +641,10 @@ class ABJ_404_Solution_View {
         global $abj404dao;
         $content = "";
         
+        $rowCounter = 0;
+        
         foreach ($rows as $row) {
+            $rowCounter++;
             $id = $row->id;
             $theTitle = get_the_title($id);
             $thisval = $id . "|" . ABJ404_TYPE_POST;
@@ -650,9 +653,15 @@ class ABJ_404_Solution_View {
             if ($thisval == $dest) {
                 $selected = " selected";
             }
+            
+            $_REQUEST[ABJ404_PP]['debug_info'] = 'Row: ' . $rowCounter . ', Title: ' . $theTitle . 
+                    ', Current content length: ' . strlen($content);
+            
             $content .= "\n <option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . 
-                    __(ucwords($row->post_type), '404-solution') . ": " . $theTitle . "</option>";
+                    __(ucwords($row->post_type), '404-solution') . ": " . esc_html($theTitle) . "</option>";
         }
+
+        $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after building redirect destination page list.';
         
         return $content;
     }

@@ -65,6 +65,9 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 1.9.1 (September 14, 2017) ##
+* FIX: Try to fix techjockey's out of memory issue on the options page.
+
 ## Version 1.9.0 (August 12, 2017) ##
 * FIX: Allow manual redirects to forward to the home page.
 * Improvement: Support user defined post types (defaults are post, page, and product).
