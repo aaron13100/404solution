@@ -65,6 +65,9 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 1.9.2 (September 15, 2017) ##
+* FIX: Try to fix techjockey's out of memory issue on the options page with an array.
+
 ## Version 1.9.1 (September 14, 2017) ##
 * FIX: Try to fix techjockey's out of memory issue on the options page.
 
