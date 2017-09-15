@@ -638,8 +638,7 @@ class ABJ_404_Solution_View {
     }
     
     function echoRedirectDestinationOptionsOthers($dest, $rows) {
-        global $abj404dao;
-        $content = "";
+        $content = array();
         
         $rowCounter = 0;
         
@@ -654,16 +653,28 @@ class ABJ_404_Solution_View {
                 $selected = " selected";
             }
             
-            $_REQUEST[ABJ404_PP]['debug_info'] = 'Row: ' . $rowCounter . ', Title: ' . $theTitle . 
-                    ', Current content length: ' . strlen($content);
+            $_REQUEST[ABJ404_PP]['debug_info'] = 'Before row: ' . $rowCounter . ', Title: ' . $theTitle . 
+                    ', Post type: ' . $row->post_type;
+
+            // this is split in this ridiculous way to help me figure out how to resolve a memory issue.
+            // (https://wordpress.org/support/topic/options-tab-is-not-loading/)
+            $content[] = "\n <option value=\"";
+            $content[] = esc_attr($thisval);
+            $content[] = "\"";
+            $content[] = $selected;
+            $content[] = ">";
+            $content[] = __(ucwords($row->post_type), '404-solution');
+            $content[] = ": ";
+            $content[] = esc_html($theTitle);
+            $content[] = "</option>";
             
-            $content .= "\n <option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . 
-                    __(ucwords($row->post_type), '404-solution') . ": " . esc_html($theTitle) . "</option>";
+            $_REQUEST[ABJ404_PP]['debug_info'] = 'After row: ' . $rowCounter . ', Title: ' . $theTitle . 
+                    ', Post type: ' . $row->post_type;
         }
 
         $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after building redirect destination page list.';
         
-        return $content;
+        return implode('', $content);
     }
 
     function echoRedirectDestinationOptionsCatsTags($dest) {
