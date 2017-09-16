@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 1.9.3 (September 16, 2017) ##
+* FIX: Try to fix Rickard's MAX_JOIN_SIZE issue.
+
 ## Version 1.9.2 (September 15, 2017) ##
 * FIX: Try to fix techjockey's out of memory issue on the options page with an array.
 

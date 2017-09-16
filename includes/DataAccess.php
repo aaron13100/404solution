@@ -21,7 +21,6 @@ class ABJ_404_Solution_DataAccess {
      */
     static function createDatabaseTables() {
         global $wpdb;
-        global $abj404logging;
         global $abj404dao;
         
         $query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "abj404_redirects` (
@@ -46,6 +45,10 @@ class ABJ_404_Solution_DataAccess {
 
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
         $query = 'ALTER TABLE ' . $logsTable . ' CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci';
+        $wpdb->query($query);
+        
+        // since 1.9.3. added for Svard. https://wordpress.org/support/topic/cannot-see-the-manual-redirects/
+        $query = "ALTER TABLE " . $logsTable . " ADD INDEX requested_url (`requested_url`)";
         $wpdb->query($query);
 
         $query = $abj404dao->readFileContents(__DIR__ . "/sql/createLogTable.sql");
@@ -291,19 +294,20 @@ class ABJ_404_Solution_DataAccess {
         $query = "select \n  " . $redirects . ".id,\n  " . $redirects . ".url,\n  " . $redirects . ".status,\n  " . 
                 $redirects . ".type,\n  " . $redirects . ".final_dest,\n  " . $redirects . ".code,\n  " . 
                 $redirects . ".timestamp,\n  ";
-        $query .= "count(" . $logs . ".id) as hits,\n  " .
-                "innerlogs.id as logsid,\n  " . 
-                $wpdb->posts . ".post_type as wp_post_type\n  " .
+        $query .= "count(" . $logs . ".id) as hits,\n  ";
+        
+        $query .= "  (select min(" . $logs . ".id) as logsid \n" .
+                  "  from " . $logs . " \n" .
+                  "  where " . $redirects . ".url = " . $logs . ".requested_url \n" .
+                  "  group by " . $logs . ".requested_url \n " .
+                  "  ) as logsid, \n ";
+        
+        $query .= $wpdb->posts . ".post_type as wp_post_type\n  " .
                 "from " . $redirects . "\n " .
                 "  LEFT OUTER JOIN " . $wpdb->posts . " \n " .
                 "  on " . $redirects . ".final_dest = " . $wpdb->posts . ".id \n ";
         $query .= " left outer join " . $logs . " on cast(" . $redirects . ".url as binary) = cast(" . 
-                $logs . ".requested_url as binary)";
-
-        $query .= "LEFT OUTER JOIN (SELECT MIN(id) as id, requested_url \n" .
-            "FROM " . $logs . " \n" .
-            "GROUP BY requested_url) innerlogs \n" .
-            "ON cast(" . $redirects . ".url as binary) = cast(innerlogs.requested_url as binary) \n";
+                $logs . ".requested_url as binary)\n";
 
         $query .= " where 1 and (";
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
@@ -336,8 +340,9 @@ class ABJ_404_Solution_DataAccess {
             $query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
         }
         
+        // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
+        // they can use a different ID - not the ID from the logs table.
         $rows = $wpdb->get_results($query, ARRAY_A);
-        
         // check for errors
         if ($wpdb->last_error) {
             $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
