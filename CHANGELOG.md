@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.0.0 (September 20, 2017) ##
+* Improvement: Speed up the Captured 404s page for blankpagestl.
+
 ## Version 1.9.3 (September 16, 2017) ##
 * FIX: Try to fix Rickard's MAX_JOIN_SIZE issue.
 

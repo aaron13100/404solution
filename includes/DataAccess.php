@@ -294,21 +294,24 @@ class ABJ_404_Solution_DataAccess {
         $query = "select \n  " . $redirects . ".id,\n  " . $redirects . ".url,\n  " . $redirects . ".status,\n  " . 
                 $redirects . ".type,\n  " . $redirects . ".final_dest,\n  " . $redirects . ".code,\n  " . 
                 $redirects . ".timestamp,\n  ";
-        $query .= "count(" . $logs . ".id) as hits,\n  ";
-        
-        $query .= "  (select min(" . $logs . ".id) as logsid \n" .
-                  "  from " . $logs . " \n" .
-                  "  where " . $redirects . ".url = " . $logs . ".requested_url \n" .
-                  "  group by " . $logs . ".requested_url \n " .
-                  "  ) as logsid, \n ";
-        
+
+        $query .= "logstable.hits, \n" .
+                "logstable.logsid, \n";
+
         $query .= $wpdb->posts . ".post_type as wp_post_type\n  " .
                 "from " . $redirects . "\n " .
                 "  LEFT OUTER JOIN " . $wpdb->posts . " \n " .
-                "  on " . $redirects . ".final_dest = " . $wpdb->posts . ".id \n ";
-        $query .= " left outer join " . $logs . " on cast(" . $redirects . ".url as binary) = cast(" . 
-                $logs . ".requested_url as binary)\n";
-
+                "    on " . $redirects . ".final_dest = " . $wpdb->posts . ".id \n ";
+        
+        $query .= "  LEFT OUTER JOIN ( \n " .
+                "    SELECT requested_url, \n " .
+                "    MIN(" . $logs . ".id) AS logsid, \n " .
+                "    count(requested_url) as hits \n " .
+                "    FROM " . $logs . " \n " .
+                "    group by requested_url \n " .
+                "  ) logstable \n " . 
+                "  on " . $redirects . ".url = logstable.requested_url \n ";
+        
         $query .= " where 1 and (";
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
             if ($sub == 'abj404_redirects') {
@@ -331,8 +334,6 @@ class ABJ_404_Solution_DataAccess {
             $query .= "and disabled = 1 ";
         }
 
-        $query .= "group by " . $redirects . ".id ";
-
         $query .= "order by " . sanitize_text_field($tableOptions['orderby']) . " " . sanitize_text_field($tableOptions['order']) . " ";
 
         if ($limitEnforced == 1) {
@@ -346,7 +347,7 @@ class ABJ_404_Solution_DataAccess {
         // check for errors
         if ($wpdb->last_error) {
             $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
-        }  
+        }
         
         return $rows;
     }

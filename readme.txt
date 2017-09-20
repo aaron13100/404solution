@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 4.1
-Version: 1.9.3
+Version: 2.0.0
 Tested up to: 4.8
-Stable tag: 1.9.3
+Stable tag: 2.0.0
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -58,6 +58,9 @@ Yes. It's as easy as turning on this feature in the options.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.0.0 (September 20, 2017) =
+* Improvement: Speed up the Captured 404s page for blankpagestl.
 
 = Version 1.9.3 (September 16, 2017) =
 * FIX: Try to fix Rickard's MAX_JOIN_SIZE issue.
