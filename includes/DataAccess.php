@@ -293,7 +293,7 @@ class ABJ_404_Solution_DataAccess {
 
         $query = "select \n  " . $redirects . ".id,\n  " . $redirects . ".url,\n  " . $redirects . ".status,\n  " . 
                 $redirects . ".type,\n  " . $redirects . ".final_dest,\n  " . $redirects . ".code,\n  " . 
-                $redirects . ".timestamp,\n  ";
+                $redirects . ".timestamp,\n " . $wpdb->posts . ".id as wp_post_id,\n ";
 
         $query .= "logstable.hits, \n" .
                 "logstable.logsid, \n";
@@ -702,6 +702,8 @@ class ABJ_404_Solution_DataAccess {
     function getPublishedPagesAndPostsIDs($slug = "") {
         global $wpdb;
         global $abj404logic;
+        global $abj404dao;
+        global $abj404logging;
         
         // get the valid post types
         $options = $abj404logic->getOptions();
@@ -713,12 +715,26 @@ class ABJ_404_Solution_DataAccess {
         $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
         // ----------------
         
-        $query = "select id, post_type from $wpdb->posts \n where post_status='publish' \n and " . 
-                " lcase(post_type) in (" . $recognizedPostTypes . ") \n order by post_type, post_title";
         if ($slug != "") {
-            $query .= "\n and post_name='" . esc_sql($slug) . "'";
+            $specifiedSlug = " */ and wp_posts.post_name='" . esc_sql($slug) . "' \n ";
+        } else {
+            $specifiedSlug = '';
         }
+        
+        // load the query and do the replacements.
+        $query = $abj404dao->readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
+        $query = str_replace('{wp_posts}', $wpdb->posts, $query);
+        $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
+        $query = str_replace('{wp_terms}', $wpdb->terms, $query);
+        $query = str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
+        $query = str_replace('{specifiedSlug}', $specifiedSlug, $query);
+        
         $rows = $wpdb->get_results($query);
+        // check for errors
+        if ($wpdb->last_error) {
+            $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+        }
+        
         return $rows;
     }
     

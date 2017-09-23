@@ -68,7 +68,7 @@ class ABJ_404_Solution_WordPress_Connector {
                 $requestedURL = esc_url($_SERVER['REQUEST_URI']);
 
                 $urlParts = parse_url($requestedURL);
-                $permalinks = $abj404spellChecker->findMatchingPosts($urlParts['path'], @$options['suggest_cats'], @$options['suggest_tags']);
+                $permalinkSuggestions = $abj404spellChecker->findMatchingPosts($urlParts['path'], @$options['suggest_cats'], @$options['suggest_tags']);
 
                 // Allowing some HTML.
                 echo wp_kses($options['suggest_title'], array(
@@ -85,7 +85,7 @@ class ABJ_404_Solution_WordPress_Connector {
                 );
                 $displayed = 0;
 
-                foreach ($permalinks as $k => $v) {
+                foreach ($permalinkSuggestions as $k => $v) {
                     $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($k, $v);
 
                     if ($permalink['score'] >= $options['suggest_minscore']) {
