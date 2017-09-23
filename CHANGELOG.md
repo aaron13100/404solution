@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.1.0 (September 23, 2017) ##
+* Improvement: Don't suggest or forward to product pages that are hidden in WooCommerce, for ajna667.
+
 ## Version 2.0.0 (September 20, 2017) ##
 * Improvement: Speed up the Captured 404s page for blankpagestl.
 
