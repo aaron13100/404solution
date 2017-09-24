@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.1.1 (September 24, 2017) ##
+* FIX: Order the list of pages, posts, etc in dropdown boxes again (broken since 2.1.0. thanks to Hans im Glyk for reporting this).
+
 ## Version 2.1.0 (September 23, 2017) ##
 * Improvement: Don't suggest or forward to product pages that are hidden in WooCommerce, for ajna667.
 
