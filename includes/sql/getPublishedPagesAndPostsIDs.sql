@@ -35,3 +35,5 @@ and ( usefulterms.grouped_terms is null or
 	  usefulterms.grouped_terms not like '%exclude-from-search%'
 	  or usefulterms.grouped_terms not like '%exclude-from-catalog%'
     )
+
+order by wp_posts.post_type, wp_posts.post_title
