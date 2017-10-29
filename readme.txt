@@ -59,6 +59,9 @@ Yes. It's as easy as turning on this feature in the options.
 
 == Changelog ==
 
+= Version 2.2.0 (October 29, 2017) =
+* FIX: Display child pages under their parent pages on admin screen dropdowns (for wireplay).
+
 = Version 2.1.1 (September 24, 2017) =
 * FIX: Order the list of pages, posts, etc in dropdown boxes again (broken since 2.1.0. thanks to Hans im Glyk for reporting this).
 

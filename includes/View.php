@@ -487,6 +487,7 @@ class ABJ_404_Solution_View {
     function echoAdminOptionsPage() {
         global $abj404logic;
         global $abj404view;
+        global $abj404viewSuggestions;
 
         $options = $abj404logic->getOptions();
 
@@ -509,7 +510,7 @@ class ABJ_404_Solution_View {
         $contentAdvancedSettings = $abj404view->getAdminOptionsPageAdvancedSettings($options);
         $abj404view->echoPostBox("abj404-advancedoptions", __('Advanced Settings (Etc)', '404-solution'), $contentAdvancedSettings);
 
-        $content404PageSuggestions = $abj404view->getAdminOptionsPage404Suggestions($options);
+        $content404PageSuggestions = $abj404viewSuggestions->getAdminOptionsPage404Suggestions($options);
         $abj404view->echoPostBox("abj404-suggestoptions", __('404 Page Suggestions', '404-solution'), $content404PageSuggestions);
 
         echo "<input type=\"submit\" name=\"abj404-optionssub\" id=\"abj404-optionssub\" " .
@@ -614,7 +615,7 @@ class ABJ_404_Solution_View {
         echo '<select style="max-width: 75%;" id="dest" name="dest">';
         echo $this->echoRedirectDestinationOptionsDefaults($redirect['type']);
         
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs();
+        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', true);
         echo $this->echoRedirectDestinationOptionsOthers($redirect['final_dest'] . '|' . $redirect['type'], 
                 $rowsOtherTypes);
         
@@ -663,6 +664,12 @@ class ABJ_404_Solution_View {
             $content[] = "\"";
             $content[] = $selected;
             $content[] = ">";
+            
+            // insert some spaces for child pages.
+            for ($i = 0; $i < $row->depth; $i++) {
+                $content[] = "&nbsp;&nbsp;&nbsp;";
+            }
+            
             $content[] = __(ucwords($row->post_type), '404-solution');
             $content[] = ": ";
             $content[] = esc_html($theTitle);
@@ -1178,7 +1185,7 @@ class ABJ_404_Solution_View {
         
             echo $this->echoRedirectDestinationOptionsDefaults($defaultDestination);
 
-            $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs();
+            $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', true);
             echo $this->echoRedirectDestinationOptionsOthers($redirect['final_dest'] . '|' . $redirect['type'], 
                     $rowsOtherTypes);
 
@@ -1272,7 +1279,7 @@ class ABJ_404_Solution_View {
         $content .= '<option value="' . ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME . '"' . 
                 $selected . ">" . __('(Home Page)', '404-solution') . "</option>";
 
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs();
+        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', true);
         $content .= $this->echoRedirectDestinationOptionsOthers($userSelected, 
                 $rowsOtherTypes);
         
@@ -1287,9 +1294,6 @@ class ABJ_404_Solution_View {
 
         $content .= "<p><label for=\"auto_redirects\">" . __('Create automatic redirects', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_redirects\" id=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><BR/>";
         $content .= $spaces . __('Automatically creates redirects based on best possible suggested page.', '404-solution') . "</p>";
-
-        $content .= "<p><label for=\"auto_score\">" . __('Minimum match score', '404-solution') . ":</label> <input type=\"text\" name=\"auto_score\" id=\"auto_score\" value=\"" . esc_attr($options['auto_score']) . "\" style=\"width: 50px;\"><BR/>";
-        $content .= $spaces . __('Only create an automatic redirect if the suggested page has a score above the specified number (default 90)', '404-solution') . "</p>";
 
         $selectedAutoCats = "";
         if ($options['auto_cats'] == '1') {
@@ -1309,56 +1313,6 @@ class ABJ_404_Solution_View {
         return $content;
     }
 
-    /** 
-     * @param type $options
-     * @return string
-     */
-    function getAdminOptionsPage404Suggestions($options) {
-        // Suggested Alternatives Options
-        $selectedDisplaySuggest = "";
-        if ($options['display_suggest'] == '1') {
-            $selectedDisplaySuggest = " checked";
-        }
-        
-        $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
-        
-        $content = "<p><label for=\"display_suggest\">" . __('Turn on 404 suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"display_suggest\" id=\"display_suggest\" value=\"1\"" . $selectedDisplaySuggest . "><BR/>";
-        $content .= $spaces . __('Activates the 404 page suggestions function. Only works if the code is in your 404 page template.', '404-solution');
-        $content .= "<BR/>" . $spaces . "Code: " . 
-                esc_html("<?php if (!empty(\$abj404connector)) {\$abj404connector->suggestions(); } ?>") . "</p>";
-
-        $selectedSuggestCats = "";
-        if ($options['suggest_cats'] == '1') {
-            $selectedSuggestCats = " checked";
-        }
-        $content .= "<p><label for=\"suggest_cats\">" . __('Allow category suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"suggest_cats\" id=\"suggest_cats\" value=\"1\"" . $selectedSuggestCats . "><BR/>";
-
-        $selectedSuggestTags = "";
-        if ($options['suggest_tags'] == '1') {
-            $selectedSuggestTags = " checked";
-        }
-        $content .= "<p><label for=\"suggest_tags\">" . __('Allow tag suggestions', '404-solution') . ":</label> <input type=\"checkbox\" name=\"suggest_tags\" id=\"suggest_tags\" value=\"1\"" . $selectedSuggestTags . "><BR/>";
-
-        $content .= "<p><label for=\"suggest_minscore\">" . __('Minimum score of suggestions to display', '404-solution') . ":</label> <input type=\"text\" name=\"suggest_minscore\" id=\"suggest_minscore\" value=\"" . esc_attr($options['suggest_minscore']) . "\" style=\"width: 50px;\"></p>"
-        ;
-        $content .= "<p><label for=\"suggest_max\">" . __('Maximum number of suggestions to display', '404-solution') . ":</label> <input type=\"text\" name=\"suggest_max\" id=\"suggest_max\" value=\"" . esc_attr($options['suggest_max']) . "\" style=\"width: 50px;\"></p>";
-
-        $content .= "<p><label for=\"suggest_title\">" . __('Page suggestions title', '404-solution') . ":</label> <input type=\"text\" name=\"suggest_title\" id=\"suggest_title\" value=\"" . esc_attr($options['suggest_title']) . "\" style=\"width: 200px;\"></p>";
-
-        $content .= "<p>" . __('Display Before/After page suggestions', '404-solution') . ": ";
-        $content .= "<input type=\"text\" name=\"suggest_before\" value=\"" . esc_attr($options['suggest_before']) . "\" style=\"width: 100px;\"> / ";
-        $content .= "<input type=\"text\" name=\"suggest_after\" value=\"" . esc_attr($options['suggest_after']) . "\" style=\"width: 100px;\">";
-
-        $content .= "<p>" . __('Display Before/After each suggested entry', '404-solution') . ": ";
-        $content .= "<input type=\"text\" name=\"suggest_entrybefore\" value=\"" . esc_attr($options['suggest_entrybefore']) . "\" style=\"width: 100px;\"> / ";
-        $content .= "<input type=\"text\" name=\"suggest_entryafter\" value=\"" . esc_attr($options['suggest_entryafter']) . "\" style=\"width: 100px;\">";
-
-        $content .= "<p><label for=\"suggest_noresults\">" . __('Display if no suggestion results', '404-solution') . ":</label> ";
-        $content .= "<input type=\"text\" name=\"suggest_noresults\" id=\"suggest_noresults\" value=\"" . esc_attr($options['suggest_noresults']) . "\" style=\"width: 200px;\">";
-
-        return $content;
-    }
-    
     function getAdminOptionsPageAdvancedSettings($options) {
         global $abj404logging;
         global $abj404dao;
@@ -1386,6 +1340,8 @@ class ABJ_404_Solution_View {
         $html = str_replace('{ignore_dontprocess}', wp_kses_post($options['ignore_dontprocess']), $html);
         $html = str_replace('{ignore_doprocess}', wp_kses_post($options['ignore_doprocess']), $html);
         $html = str_replace('{recognized_post_types}', wp_kses_post($options['recognized_post_types']), $html);
+        $html = str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($options['auto_score']), $html);
+        
         // constants and translations.
         $html = $this->doNormalReplacements($html);
         

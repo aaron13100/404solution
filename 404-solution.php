@@ -14,7 +14,7 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
 	Author:      Aaron J
 	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 2.1.1
+	Version: 2.2.0
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -40,7 +40,7 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
 define( 'ABJ404_URL', plugin_dir_url( __FILE__ ) );
 define( 'ABJ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );
-define( 'ABJ404_VERSION', '2.1.1' );
+define( 'ABJ404_VERSION', '2.2.0' );
 define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/' );
 define( 'ABJ404_PP', 'abj404_solution'); // plugin path
 
@@ -75,7 +75,9 @@ require_once ABJ404_PATH . "includes/ErrorHandler.php";
 
 if (is_admin()) {
     require_once ABJ404_PATH . "includes/View.php";
+    require_once ABJ404_PATH . "includes/View_Suggestions.php";
     $abj404view = new ABJ_404_Solution_View();
+    $abj404viewSuggestions = new ABJ_404_Solution_View_Suggestions();
 }
 
 $abj404dao = new ABJ_404_Solution_DataAccess();

@@ -1,6 +1,12 @@
 
 select wp_posts.id,
        wp_posts.post_type,
+       wp_posts.post_parent,
+       wp_posts.post_title,
+
+       /* the depth is only here to initialize the value to something. later it's used for sorting. */
+       '0' as depth,
+
        usefulterms.grouped_terms
 
 from {wp_posts} wp_posts
@@ -36,4 +42,3 @@ and ( usefulterms.grouped_terms is null or
 	  or usefulterms.grouped_terms not like '%exclude-from-catalog%'
     )
 
-order by wp_posts.post_type, wp_posts.post_title

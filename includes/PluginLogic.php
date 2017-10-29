@@ -1119,4 +1119,132 @@ class ABJ_404_Solution_PluginLogic {
         echo $c;
         exit;
     }
+
+    /** Order pages and set the page depth for child pages.
+     * @param type $pages
+     */    
+    function orderPageResults($pages) {
+        global $abj404logging;
+        
+        // sort by type then title.
+        usort($pages, array($this, "sortByTypeThenTitle"));
+        
+        // move the children to be underneath the parents.
+        
+        // find all child pages (pages that have parents).
+        $childPages = $this->findChildPages($pages);
+        
+        // find all pages with no parents.
+        $mainPages = $this->findAllMainPages($pages);
+        
+        $oldChildPageCount = -1;
+        do {
+            // add every page to a new list, while looking for parents.
+            $orderedPages = array();
+            foreach ($mainPages as $page) {
+                // always add the main page.
+                $orderedPages[] = $page;
+                
+                // if this page is the parent of any children then add the children.
+                $removeThese = array();
+                foreach ($childPages as $child) {
+                    if ($child->post_parent == $page->id) {
+                        // set the page depth based on the parent's page depth.
+                        $child->depth = $page->depth + 1;
+
+                        $removeThese[] = $child;
+                        $orderedPages[] = $child;
+                    }
+                }
+                
+                // remove any child pages that have been placed already
+                $childPages = $this->removeUsedChildPages($childPages, $removeThese);
+            }
+            
+            // the new list becomes the list that we will iterate over next time. 
+            // this prepares us for the next iteration and for child pages with a depth greater than 1.
+            $mainPages = $orderedPages;
+            
+            // if the count has not changed then there's no point in looping again.
+            if (count($childPages) == $oldChildPageCount) {
+                break;
+            }
+            $oldChildPageCount = count($childPages);
+            // stop the loop once there are no more children to add.
+        } while (count($childPages) > 0);
+
+        // if there are child pages left over then there's an issue. it means there's a child page that was
+        // returned but the parent for that child was not returned. so we don't have any place to display
+        // the child page.
+        if (count($childPages) > 0) {
+            $abj404logging->debugMessage("There was an issue finding the parent pages for some child pages. " .
+                    "Pages: " . wp_kses_post(json_encode($childPages)));
+        }
+        
+        return $orderedPages;
+    }
+    
+    /** 
+     * @param type $pages
+     * @return type
+     */
+    function findAllMainPages($pages) {
+        $mainPages = array();
+        foreach ($pages as $page) {
+            // if there's no parent then just add the page.
+            if ($page->post_parent == 0) {
+                $mainPages[] = $page;
+            }
+        }
+        
+        return $mainPages;
+    }
+    
+    /** 
+     * @param type $childPages
+     * @param type $removeThese
+     * @return type
+     */
+    function removeUsedChildPages($childPages, $removeThese) {
+        // if any children were added then remove them from the list.
+        foreach ($removeThese as $removeThis) {
+            $key = array_search($removeThis, $childPages);
+            if ($key !== false) {
+               unset($childPages[$key]);
+            }
+        }
+        
+        return $childPages;
+    }
+    
+    /** Return pages that have a non-0 parent.
+     * @param type $pages
+     * @return type
+     */
+    function findChildPages($pages) {
+        $childPages = array();
+        foreach ($pages as $page) {
+            if ($page->post_parent != 0) {
+                $childPages[] = $page;
+            }
+        }
+        return $childPages;
+    }
+
+    /** 
+     * @param type $a
+     * @param type $b
+     * @return type
+     */
+    function sortByTypeThenTitle($a, $b) {
+        // first sort by type
+        $result = strcmp($a->post_type, $b->post_type);
+        if ($result != 0) {
+            return $result;
+        }
+        
+        // then by title.
+        return strcmp($a->post_title, $b->post_title);
+    }
+
 }
