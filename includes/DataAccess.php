@@ -697,9 +697,15 @@ class ABJ_404_Solution_DataAccess {
     }
     
     /** Returns rows with the IDs of the published items.
+     * @global type $wpdb
+     * @global type $abj404logic
+     * @global type $abj404dao
+     * @global type $abj404logging
+     * @param type $slug only get results for this slug. (empty means all posts)
+     * @param type $orderTheResults use true for displaying data to users, otherwise use false.
      * @return type
      */
-    function getPublishedPagesAndPostsIDs($slug = "") {
+    function getPublishedPagesAndPostsIDs($slug, $orderTheResults) {
         global $wpdb;
         global $abj404logic;
         global $abj404dao;
@@ -735,9 +741,16 @@ class ABJ_404_Solution_DataAccess {
             $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
         }
         
-        return $rows;
+        if ($orderTheResults) {
+            // manually order the results if neessary. this also sets the page depth (for child pages).
+            $pages = $abj404logic->orderPageResults($rows);
+        } else {
+            $pages = $rows;
+        }
+        
+        return $pages;
     }
-    
+
     /** Returns rows with the defined terms (tags).
      * @global type $wpdb
      * @return type

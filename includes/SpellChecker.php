@@ -70,7 +70,7 @@ class ABJ_404_Solution_SpellChecker {
         
         $exploded = preg_split('@/@', $requestedURL, -1, PREG_SPLIT_NO_EMPTY);
         $postSlug = end($exploded);
-        $postsBySlugRows = $abj404dao->getPublishedPagesAndPostsIDs($postSlug);
+        $postsBySlugRows = $abj404dao->getPublishedPagesAndPostsIDs($postSlug, false);
         if (count($postsBySlugRows) == 1) {
             $post = reset($postsBySlugRows);
             $permalink['id'] = $post->id;
@@ -153,7 +153,7 @@ class ABJ_404_Solution_SpellChecker {
         $requestedURLCleaned = $this->getLastURLPart($requestedURLSpaces);
 
         // match based on the slug.
-        $rows = $abj404dao->getPublishedPagesAndPostsIDs();
+        $rows = $abj404dao->getPublishedPagesAndPostsIDs('', false);
         foreach ($rows as $row) {
             $id = $row->id;
             $the_permalink = get_permalink($id);
