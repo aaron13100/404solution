@@ -750,9 +750,10 @@ class ABJ_404_Solution_View {
         echo "<div class=\"tablenav\">";
         $this->echoPaginationLinks($sub, $tableOptions);
 
-        if ($tableOptions['filter'] == '-1') {
+        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             echo "<div class=\"alignleft actions\">";
-            $eturl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=-1&subpage=abj404_captured";
+            $eturl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ABJ404_TRASH_FILTER . 
+                    "&subpage=abj404_captured";
             $trashaction = "abj404_emptyCapturedTrash";
             $eturl = wp_nonce_url($eturl, $trashaction);
 
@@ -819,7 +820,7 @@ class ABJ_404_Solution_View {
             $ignorelink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'];
             $deletelink = "?page=" . ABJ404_PP . "&subpage=abj404_captured&remove=1&id=" . $row['id'];
 
-            if ($tableOptions['filter'] == -1) {
+            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $trashlink .= "&trash=0";
                 $trashtitle = __('Restore', '404-solution');
             } else {
@@ -849,7 +850,7 @@ class ABJ_404_Solution_View {
             $trashaction = "abj404_trashRedirect";
             $trashlink = wp_nonce_url($trashlink, $trashaction);
 
-            if ($tableOptions['filter'] == -1) {
+            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $deleteaction = "abj404_removeRedirect";
                 $deletelink = wp_nonce_url($deletelink, $deleteaction);
             }
@@ -867,14 +868,14 @@ class ABJ_404_Solution_View {
 
             echo "<tr id=\"post-" . esc_attr($row['id']) . "\"" . $class . ">";
             echo "<th class=\"check-column\">";
-            if ($tableOptions['filter'] != '-1') {
+            if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
                 echo "<input type=\"checkbox\" name=\"idnum[]\" value=\"" . esc_attr($row['id']) . "\">";
             }
             echo "</th>";
             echo "<td>";
             echo "<strong><a href=\"" . esc_url($editlink) . "\" title=\"" . __('Edit Redirect Details', '404-solution') . "\">" . esc_html($row['url']) . "</a></strong>";
             echo "<div class=\"row-actions\">";
-            if ($tableOptions['filter'] != -1) {
+            if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
                 echo "<span class=\"edit\"><a href=\"" . esc_url($editlink) . "\" title=\"" . __('Edit Redirect Details', '404-solution') . "\">" . __('Edit', '404-solution') . "</a></span>";
                 echo " | ";
             }
@@ -886,12 +887,12 @@ class ABJ_404_Solution_View {
             } else {
                 echo "<span class=\"view\">" . __('(No logs)') . "</a></span>";
             }
-            if ($tableOptions['filter'] != -1) {
-                echo " | ";
-                echo "<span class=\"ignore\"><a href=\"" . esc_url($ignorelink) . "\" title=\"" . $ignoretitle . "\">" . esc_html($ignoretitle) . "</a></span>";
-            } else {
+            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 echo " | ";
                 echo "<span class=\"delete\"><a href=\"" . esc_url($deletelink) . "\" title=\"" . __('Delete Redirect Permanently', '404-solution') . "\">" . __('Delete Permanently', '404-solution') . "</a></span>";
+            } else {
+                echo " | ";
+                echo "<span class=\"ignore\"><a href=\"" . esc_url($ignorelink) . "\" title=\"" . $ignoretitle . "\">" . esc_html($ignoretitle) . "</a></span>";
             }
             echo "</div>";
             echo "</td>";
@@ -912,7 +913,7 @@ class ABJ_404_Solution_View {
         echo "</table>";
 
         echo "<div class=\"tablenav\">";
-        if ($tableOptions['filter'] != '-1') {
+        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             echo "</form>";
         }
         $this->echoPaginationLinks($sub, $tableOptions);
@@ -975,9 +976,9 @@ class ABJ_404_Solution_View {
         echo "<div class=\"tablenav\">";
         $this->echoPaginationLinks($sub, $tableOptions);
 
-        if ($tableOptions['filter'] == '-1') {
+        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             echo "<div class=\"alignleft actions\">";
-            $eturl = "?page=" . ABJ404_PP . "&filter=-1&subpage=abj404_redirects";
+            $eturl = "?page=" . ABJ404_PP . "&filter=" . ABJ404_TRASH_FILTER . "&subpage=abj404_redirects";
             $trashaction = "abj404_emptyRedirectTrash";
             $eturl = wp_nonce_url($eturl, $trashaction);
 
@@ -1060,7 +1061,7 @@ class ABJ_404_Solution_View {
             $trashlink = "?page=" . ABJ404_PP . "&id=" . absint($row['id']);
             $deletelink = "?page=" . ABJ404_PP . "&remove=1&id=" . absint($row['id']);
 
-            if ($tableOptions['filter'] == -1) {
+            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $trashlink .= "&trash=0";
                 $trashtitle = __('Restore', '404-solution');
             } else {
@@ -1080,7 +1081,7 @@ class ABJ_404_Solution_View {
             $trashaction = "abj404_trashRedirect";
             $trashlink = wp_nonce_url($trashlink, $trashaction);
 
-            if ($tableOptions['filter'] == -1) {
+            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $deleteaction = "abj404_removeRedirect";
                 $deletelink = wp_nonce_url($deletelink, $deleteaction);
             }
@@ -1098,7 +1099,7 @@ class ABJ_404_Solution_View {
             echo "<td>";
             echo "<strong><a href=\"" . esc_url($editlink) . "\" title=\"" . __('Edit Redirect Details', '404-solution') . "\">" . esc_html($row['url']) . "</a></strong>";
             echo "<div class=\"row-actions\">";
-            if ($tableOptions['filter'] != -1) {
+            if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
                 echo "<span class=\"edit\"><a href=\"" . esc_url($editlink) . "\" title=\"" . __('Edit Redirect Details', '404-solution') . "\">" . __('Edit') . "</a></span>";
                 echo " | ";
             }
@@ -1109,7 +1110,7 @@ class ABJ_404_Solution_View {
             } else {
                 echo "<span class=\"view\">" . __('(No logs)') . "</a></span>";
             }
-            if ($tableOptions['filter'] == -1) {
+            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 echo " | ";
                 echo "<span class=\"delete\"><a href=\"" . esc_url($deletelink) . "\" title=\"" . __('Delete Redirect Permanently', '404-solution') . "\">" . __('Delete Permanently', '404-solution') . "</a></span>";
             }
@@ -1139,7 +1140,8 @@ class ABJ_404_Solution_View {
         $this->echoPaginationLinks($sub, $tableOptions);
         echo "</div>";
 
-        if ($tableOptions['filter'] != -1) {
+        // don't show the "add manual redirect" form on the trash page.
+        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             echo "<h3>" . __('Add Manual Redirect', '404-solution') . "</h3>";
 
             $url = "?page=" . ABJ404_PP;
@@ -1562,13 +1564,13 @@ class ABJ_404_Solution_View {
      */
     function echoTableColumns($sub, $tableOptions, $columns) {
         echo "<tr>";
-        if ($sub == 'abj404_captured' && $tableOptions['filter'] != '-1') {
+        if ($sub == 'abj404_captured' && $tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             $cbinfo = "class=\"manage-column column-cb check-column\" style=\"vertical-align: middle; padding-bottom: 6px;\"";
         } else {
             $cbinfo = "style=\"width: 1px;\"";
         }
         echo "<th " . $cbinfo . ">";
-        if ($sub == 'abj404_captured' && $tableOptions['filter'] != '-1') {
+        if ($sub == 'abj404_captured' && $tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             echo "<input type=\"checkbox\">";
         }
         echo "</th>";
@@ -1648,7 +1650,7 @@ class ABJ_404_Solution_View {
         $url .= "&orderby=" . $tableOptions['orderby'];
         $url .= "&order=" . $tableOptions['order'];
 
-        if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
+        if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             if ($sub == 'abj404_redirects') {
                 $types = array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO);
             } else {
@@ -1662,8 +1664,7 @@ class ABJ_404_Solution_View {
         if ($sub == 'abj404_logs') {
             $num_records = $abj404dao->getLogsCount($tableOptions['logsid']);
         } else {
-            // -1 means Trash. we should create a constant for this value...
-            if ($tableOptions['filter'] == -1) {
+            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $num_records = $abj404dao->getRecordCount($types, 1);
 
             } else {
@@ -1824,9 +1825,9 @@ class ABJ_404_Solution_View {
         }
 
 
-        $trashurl = $url . "&filter=-1";
+        $trashurl = $url . "&filter=" . ABJ404_TRASH_FILTER;
         $class = "";
-        if ($tableOptions['filter'] == -1) {
+        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             $class = " class=\"current\"";
         }
         echo "<li> | ";

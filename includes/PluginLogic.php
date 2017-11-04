@@ -504,7 +504,7 @@ class ABJ_404_Solution_PluginLogic {
                 } else if ($_GET['trash'] == 1) {
                     $trash = 1;
                 } else {
-                    $abj404logging->debugMessage("Unexpected trash operation: " . 
+                    $abj404logging->errorMessage("Unexpected trash operation: " . 
                             esc_html($_GET['trash']));
                     $message = __('Error: Bad trash operation specified.', '404-solution');
                     return $message;

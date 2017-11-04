@@ -313,7 +313,7 @@ class ABJ_404_Solution_DataAccess {
                 "  on " . $redirects . ".url = logstable.requested_url \n ";
         
         $query .= " where 1 and (";
-        if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
+        if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             if ($sub == 'abj404_redirects') {
                 $query .= "status = " . ABJ404_STATUS_MANUAL . " or status = " . ABJ404_STATUS_AUTO;
 
@@ -328,10 +328,10 @@ class ABJ_404_Solution_DataAccess {
         }
         $query .= ") ";
 
-        if ($tableOptions['filter'] != -1) {
-            $query .= "and disabled = 0 ";
-        } else {
+        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             $query .= "and disabled = 1 ";
+        } else {
+            $query .= "and disabled = 0 ";
         }
 
         $query .= "order by " . sanitize_text_field($tableOptions['orderby']) . " " . sanitize_text_field($tableOptions['order']) . " ";
@@ -485,7 +485,8 @@ class ABJ_404_Solution_DataAccess {
             $then = $now - $capture_time;
 
             //Find unused urls
-            $query = "select id from " . $wpdb->prefix . "abj404_redirects where (status = " . ABJ404_STATUS_CAPTURED . " or status = " . ABJ404_STATUS_IGNORED . ") and ";
+            $query = "select id from " . $wpdb->prefix . "abj404_redirects where (status in (" . 
+                    ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ") ) and ";
             $query .= "timestamp <= " . esc_sql($then);
             $rows = $wpdb->get_results($query, ARRAY_A);
             foreach ($rows as $row) {
