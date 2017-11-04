@@ -45,6 +45,7 @@ define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/' );
 define( 'ABJ404_PP', 'abj404_solution'); // plugin path
 
 // STATUS types
+define( 'ABJ404_TRASH_FILTER', -1 );
 define( 'ABJ404_STATUS_MANUAL', 1 );
 define( 'ABJ404_STATUS_AUTO', 2 );
 define( 'ABJ404_STATUS_CAPTURED', 3 );
