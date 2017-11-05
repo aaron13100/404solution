@@ -282,11 +282,11 @@ class ABJ_404_Solution_View {
         $query = "select count(id) from $redirects where disabled = 0 and status = %d"; // . ABJ404_STATUS_CAPTURED;
         $captured = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED));
 
-        $query = "select count(id) from $redirects where disabled = 0 and status = %d"; // . ABJ404_STATUS_IGNORED;
-        $ignored = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_IGNORED));
+        $query = "select count(id) from $redirects where disabled = 0 and status in (%d, %d)"; // . ABJ404_STATUS_IGNORED;
+        $ignored = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
 
-        $query = "select count(id) from $redirects where disabled = 1 and (status = %d or status = %d)";
-        $trashed = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED));
+        $query = "select count(id) from $redirects where disabled = 1 and (status in (%d, %d, %d) )";
+        $trashed = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
 
         $total = $captured + $ignored + $trashed;
 
@@ -460,6 +460,7 @@ class ABJ_404_Solution_View {
             '{ABJ404_STATUS_MANUAL}' => ABJ404_STATUS_MANUAL,
             '{ABJ404_STATUS_CAPTURED}' => ABJ404_STATUS_CAPTURED,
             '{ABJ404_STATUS_IGNORED}' => ABJ404_STATUS_IGNORED,
+            '{ABJ404_STATUS_LATER}' => ABJ404_STATUS_LATER,
             '{ABJ404_TYPE_404_DISPLAYED}' => ABJ404_TYPE_404_DISPLAYED,
             '{ABJ404_TYPE_POST}' => ABJ404_TYPE_POST,
             '{ABJ404_TYPE_CAT}' => ABJ404_TYPE_CAT,
@@ -721,6 +722,7 @@ class ABJ_404_Solution_View {
     function echoAdminCapturedURLsPage() {
         global $abj404dao;
         global $abj404logic;
+        
         $sub = 'abj404_captured';
 
         $tableOptions = $abj404logic->getTableOptions();
@@ -779,10 +781,14 @@ class ABJ_404_Solution_View {
 
             echo "<form method=\"POST\" action=\"" . $url . "\">";
             echo "<select name=\"action\">";
+            if ($tableOptions['filter'] != ABJ404_STATUS_CAPTURED) {
+                echo "<option value=\"bulkcaptured\">" . __('Mark as captured', '404-solution') . "</option>";
+            }
             if ($tableOptions['filter'] != ABJ404_STATUS_IGNORED) {
                 echo "<option value=\"bulkignore\">" . __('Mark as ignored', '404-solution') . "</option>";
-            } else {
-                echo "<option value=\"bulkcaptured\">" . __('Mark as captured', '404-solution') . "</option>";
+            }
+            if ($tableOptions['filter'] != ABJ404_STATUS_LATER) {
+                echo "<option value=\"bulklater\">" . __('Organize Later', '404-solution') . "</option>";
             }
             echo "<option value=\"bulktrash\">" . __('Trash', '404-solution') . "</option>";
             echo "<option value=\"editRedirect\">" . __('Create a redirect', '404-solution') . "</option>";
@@ -831,10 +837,10 @@ class ABJ_404_Solution_View {
             if ($tableOptions['filter'] == ABJ404_STATUS_IGNORED) {
                 $ignorelink .= "&ignore=0";
                 $ignoretitle = __('Remove Ignore Status', '404-solution');
-            } else {
+            } else if ($tableOptions['filter'] == ABJ404_STATUS_CAPTURED || $tableOptions['filter'] == ABJ404_STATUS_LATER) {
                 $ignorelink .= "&ignore=1";
                 $ignoretitle = __('Ignore 404 Error', '404-solution');
-            }
+            } 
 
             if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
                 $trashlink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
@@ -1654,7 +1660,7 @@ class ABJ_404_Solution_View {
             if ($sub == 'abj404_redirects') {
                 $types = array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO);
             } else {
-                $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED);
+                $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
             }
         } else {
             $types = array($tableOptions['filter']);
@@ -1778,7 +1784,7 @@ class ABJ_404_Solution_View {
         if ($sub == 'abj404_redirects') {
             $types = array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO);
         } else {
-            $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED);
+            $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
         }
 
         $class = "";
@@ -1810,6 +1816,8 @@ class ABJ_404_Solution_View {
                 $title = "Captured URLs";
             } else if ($type == ABJ404_STATUS_IGNORED) {
                 $title = "Ignored 404s";
+            } else if ($type == ABJ404_STATUS_LATER) {
+                $title = "Organize Later";
             } else {
                 $abj404logging->errorMessage("Unrecognized redirect type in View: " . esc_html($type));
             }
