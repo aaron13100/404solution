@@ -65,6 +65,9 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 2.2.2 (November 5, 2017) ##
+* FIX: The first usage of the options page didn't work on fresh installations (Lee Hodson).
+
 ## Version 2.2.1 (November 4, 2017) ##
 * FIX: The options page was unusable on fresh installations (Lee Hodson).
 

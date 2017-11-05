@@ -1175,30 +1175,21 @@ class ABJ_404_Solution_View {
             echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</label></strong> \n";
             echo '<select style="max-width: 75%;" id="dest" name="dest">';
             
-            $defaultDestination = '';
-            $defaultType = '';
-            if (!array_key_exists('dest', $_POST)) {
-                // TODO ugh. why is this like this? this makes no sense...
-                $defaultDestination = $_POST['dest'];
-            }
-            if (!array_key_exists('type', $_POST)) {
-                $defaultType = $_POST['type'];
-            }
-        
-            echo $this->echoRedirectDestinationOptionsDefaults($defaultDestination);
+            echo $this->echoRedirectDestinationOptionsDefaults('');
 
             $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', true);
-            echo $this->echoRedirectDestinationOptionsOthers($redirect['final_dest'] . '|' . $redirect['type'], 
-                    $rowsOtherTypes);
+            echo $this->echoRedirectDestinationOptionsOthers('', $rowsOtherTypes);
 
-            echo $this->echoRedirectDestinationOptionsCatsTags($redirect['final_dest'] . '|' . $redirect['type']);
+            echo $this->echoRedirectDestinationOptionsCatsTags('');
             
             echo "</select><BR/>";
             
-            $externalDestination = esc_url(@$_POST['external']);
-            if (@$_POST['code'] == "") {
-                $codeselected = $options['default_redirect'];
-            } else {
+            $externalDestination = '';
+            if (array_key_exists('external', $_POST)) {
+                $externalDestination = $_POST['external'];
+            }
+            $codeselected = $options['default_redirect'];
+            if (array_key_exists('code', $_POST)) {
                 $codeselected = sanitize_text_field($_POST['code']);
             }
             $this->echoEditRedirect($externalDestination, $codeselected, __('Add Redirect', '404-solution'));
