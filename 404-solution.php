@@ -14,7 +14,7 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
 	Author:      Aaron J
 	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 2.2.0
+	Version: 2.2.1
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html

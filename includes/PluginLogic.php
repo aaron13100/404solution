@@ -168,7 +168,6 @@ class ABJ_404_Solution_PluginLogic {
                     !array_key_exists($key, $options) || !isset($options[$key]) || '' == $options[$key]) {
                 $options[$key] = $value;
                 $missing = true;
-                break;
             }
         }
 
@@ -177,7 +176,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if ($skip_db_check == "0") {
-            if ($options['DB_VERSION'] != ABJ404_VERSION) {
+            if (!array_key_exists('DB_VERSION', $options) || $options['DB_VERSION'] != ABJ404_VERSION) {
                 $options = $this->updateToNewVersion($options);
             }
         }
@@ -199,7 +198,11 @@ class ABJ_404_Solution_PluginLogic {
         global $wpdb;
         global $abj404dao;
         
-        $abj404logging->infoMessage("Updating database version from " . $options['DB_VERSION'] . 
+        $currentDBVersion = "(unknown)";
+        if (array_key_exists('DB_VERSION', $options)) {
+            $currentDBVersion = $options['DB_VERSION'];
+        }
+        $abj404logging->infoMessage("Updating database version from " . $currentDBVersion . 
                 " to " . ABJ404_VERSION . " (begin).");
 
         // wp_abj404_logsv2 exists since 1.7.
@@ -212,7 +215,7 @@ class ABJ_404_Solution_PluginLogic {
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
         // since 1.9.0. ignore_doprocess add SeznamBot, Pinterestbot, UptimeRobot and "Slurp" -> "Yahoo! Slurp"
-        if (version_compare($options['DB_VERSION'], '1.9.0') < 0) {
+        if (version_compare($currentDBVersion, '1.9.0') < 0) {
             $userAgents = preg_split("@\n@", $options['ignore_doprocess'], NULL, PREG_SPLIT_NO_EMPTY);
             $uasForSearch = preg_split("@\n@", strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
 
@@ -241,7 +244,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         // move to the new log table
-        if (version_compare($options['DB_VERSION'], '1.8.0') < 0) {
+        if (version_compare($currentDBVersion, '1.8.0') < 0) {
             $query = $abj404dao->readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
             $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
             $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
@@ -311,6 +314,8 @@ class ABJ_404_Solution_PluginLogic {
             . "Bingbot\nYahoo! Slurp\nDuckDuckBot\nBaiduspider\nYandexBot\nwww.sogou.com\nSogou-Test-Spider\n"
             . "Exabot\nfacebot\nfacebookexternalhit\nia_archiver\nSeznamBot\nPinterestbot\nUptimeRobot",
             'recognized_post_types' => "page\npost\nproduct",
+            'debug_mode' => 0,
+            'DB_VERSION' => '0.0.0',
         );
         
         return $options;

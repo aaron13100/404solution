@@ -65,6 +65,9 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Changelog ##
 
+## Version 2.2.1 (November 4, 2017) ##
+* FIX: The options page was unusable on fresh installations (Lee Hodson).
+
 ## Version 2.2.0 (October 29, 2017) ##
 * FIX: Display child pages under their parent pages on admin screen dropdowns (for wireplay).
 
