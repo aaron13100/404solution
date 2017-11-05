@@ -707,11 +707,14 @@ class ABJ_404_Solution_PluginLogic {
         $abj404logging->debugMessage("In doBulkAction. Action: " . 
                 esc_html($action == '' ? '(none)' : $action)) . ", ids: " . wp_kses_post(json_encode($ids));
 
-        if ($action == "bulkignore" || $action == "bulkcaptured") {
+        if ($action == "bulkignore" || $action == "bulkcaptured" || $action == "bulklater") {
             if ($action == "bulkignore") {
                 $status = ABJ404_STATUS_IGNORED;
             } else if ($action == "bulkcaptured") {
                 $status = ABJ404_STATUS_CAPTURED;
+            } else if ($action == "bulklater") {
+                $status = ABJ404_STATUS_LATER;
+                
             } else {
                 $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
@@ -728,6 +731,8 @@ class ABJ_404_Solution_PluginLogic {
                 $message = $count . " " . __('URLs marked as ignored.', '404-solution');
             } else if ($action == "bulkcaptured") {
                 $message = $count . " " . __('URLs marked as captured.', '404-solution');
+            } else if ($action == "bulklater") {
+                $message = $count . " " . __('URLs marked as Later.', '404-solution');
             } else {
                 $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));

@@ -50,6 +50,7 @@ define( 'ABJ404_STATUS_MANUAL', 1 );
 define( 'ABJ404_STATUS_AUTO', 2 );
 define( 'ABJ404_STATUS_CAPTURED', 3 );
 define( 'ABJ404_STATUS_IGNORED', 4 );
+define( 'ABJ404_STATUS_LATER', 5 );
 
 // Redirect types
 define( 'ABJ404_TYPE_404_DISPLAYED', 0 );

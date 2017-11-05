@@ -318,7 +318,8 @@ class ABJ_404_Solution_DataAccess {
                 $query .= "status = " . ABJ404_STATUS_MANUAL . " or status = " . ABJ404_STATUS_AUTO;
 
             } else if ($sub == 'abj404_captured') {
-                $query .= "status = " . ABJ404_STATUS_CAPTURED . " or status = " . ABJ404_STATUS_IGNORED;
+                $query .= "status in (" . ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . 
+                        ", " . ABJ404_STATUS_LATER . ") ";
 
             } else {
                 $abj404logging->errorMessage("Unrecognized sub type: " . esc_html($sub));
@@ -486,7 +487,7 @@ class ABJ_404_Solution_DataAccess {
 
             //Find unused urls
             $query = "select id from " . $wpdb->prefix . "abj404_redirects where (status in (" . 
-                    ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ") ) and ";
+                    ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER . ") ) and ";
             $query .= "timestamp <= " . esc_sql($then);
             $rows = $wpdb->get_results($query, ARRAY_A);
             foreach ($rows as $row) {

@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.3.0 (November 29, 2017) ##
+* FIX: Add an "Organize Later" category for captured 404s (for wireplay).
+
 ## Version 2.2.0 (October 29, 2017) ##
 * FIX: Display child pages under their parent pages on admin screen dropdowns (for wireplay).
 
