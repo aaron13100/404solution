@@ -158,6 +158,7 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($options == "") {
             add_option('abj404_settings', '', '', 'no');
+            $options = array();
         }
 
         // Check to make sure we aren't missing any new options.
