@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 4.1
-Version: 2.2.0
+Version: 2.2.1
 Tested up to: 4.8
-Stable tag: 2.2.0
+Stable tag: 2.2.1
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -58,6 +58,9 @@ Yes. It's as easy as turning on this feature in the options.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.2.1 (November 4, 2017) =
+* FIX: The options page was unusable on fresh installations (Lee Hodson).
 
 = Version 2.2.0 (October 29, 2017) =
 * FIX: Display child pages under their parent pages on admin screen dropdowns (for wireplay).

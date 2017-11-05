@@ -1321,7 +1321,7 @@ class ABJ_404_Solution_View {
         global $abj404logic;
 
         $selectedDebugLogging = "";
-        if ($options['debug_mode'] == '1') {
+        if (array_key_exists('debug_mode', $options) && $options['debug_mode'] == '1') {
             $selectedDebugLogging = " checked";
         }
         $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
