@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.3.0 (November 10, 2017) ##
+* Improvement: Add an "Organize Later" category for captured 404s (for wireplay).
+
 ## Version 2.2.2 (November 5, 2017) ##
 * FIX: The first usage of the options page didn't work on fresh installations (Lee Hodson).
 
