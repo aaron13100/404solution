@@ -663,13 +663,58 @@ class ABJ_404_Solution_PluginLogic {
                         }
                     }
                 }
-
             }
         }
 
         return $message;
     }
     
+    /** Set a redirect as "organize later".
+     * @return type
+     */
+    function handleLaterAction() {
+        global $abj404dao;
+        global $abj404logging;
+        $message = "";
+        
+        //Handle Ignore Functionality
+        if (array_key_exists('later', $_GET) && isset($_GET['later'])) {
+            if (check_admin_referer('abj404_organizeLater') && is_admin()) {
+                if ($_GET['later'] != 0 && $_GET['later'] != 1) {
+                    $abj404logging->debugMessage("Unexpected organize later operation: " . 
+                            esc_html($_GET['later']));
+                    $message = __('Error: Bad organize later operation specified.', '404-solution');
+                    return $message;                    
+                }
+                
+                if (preg_match('/[0-9]+/', $_GET['id'])) {
+                    if ($_GET['later'] == 1) {
+                        $newstatus = ABJ404_STATUS_LATER;
+                    } else {
+                        $newstatus = ABJ404_STATUS_CAPTURED;
+                    }
+                    
+                    $message = $abj404dao->updateRedirectTypeStatus(absint($_GET['id']), $newstatus);
+                    if ($message == "") {
+                        if ($newstatus == ABJ404_STATUS_CAPTURED) {
+                            $message = __('Removed 404 URL from organize later list successfully!', '404-solution');
+                        } else {
+                            $message = __('404 URL marked as organize later successfully!', '404-solution');
+                        }
+                    } else {
+                        if ($newstatus == ABJ404_STATUS_CAPTURED) {
+                            $message = __('Error: unable to remove URL from organize later list', '404-solution');
+                        } else {
+                            $message = __('Error: unable to mark URL as organize later', '404-solution');
+                        }
+                    }
+                }
+            }
+        }
+
+        return $message;
+    }
+
     /** Edit redirect data.
      * @return type
      */
@@ -713,11 +758,14 @@ class ABJ_404_Solution_PluginLogic {
         $abj404logging->debugMessage("In doBulkAction. Action: " . 
                 esc_html($action == '' ? '(none)' : $action)) . ", ids: " . wp_kses_post(json_encode($ids));
 
-        if ($action == "bulkignore" || $action == "bulkcaptured") {
+        if ($action == "bulkignore" || $action == "bulkcaptured" || $action == "bulklater") {
             if ($action == "bulkignore") {
                 $status = ABJ404_STATUS_IGNORED;
             } else if ($action == "bulkcaptured") {
                 $status = ABJ404_STATUS_CAPTURED;
+            } else if ($action == "bulklater") {
+                $status = ABJ404_STATUS_LATER;
+                
             } else {
                 $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
@@ -734,6 +782,8 @@ class ABJ_404_Solution_PluginLogic {
                 $message = $count . " " . __('URLs marked as ignored.', '404-solution');
             } else if ($action == "bulkcaptured") {
                 $message = $count . " " . __('URLs marked as captured.', '404-solution');
+            } else if ($action == "bulklater") {
+                $message = $count . " " . __('URLs marked as Later.', '404-solution');
             } else {
                 $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
