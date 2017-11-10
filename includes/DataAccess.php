@@ -410,12 +410,14 @@ class ABJ_404_Solution_DataAccess {
             if (isset($current_user)) {
                 $current_user_name = $current_user->user_login;
             }
-            $current_user->user_login;
             
+            $reasonMessage = implode(", ", 
+                        array_filter(
+                        array($_REQUEST[ABJ404_PP]['ignore_doprocess'], $_REQUEST[ABJ404_PP]['ignore_donotprocess'])));
             $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
                     " | Current user: " . $current_user_name . " | From: " . esc_html($requestedURL) . 
-                    esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg: " . 
-                    $_REQUEST[ABJ404_PP]['ignore_doprocess']);
+                    esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . 
+                    $reasonMessage);
         }
         
         // TODO remove this after a few versions. introduced in 1.8.2.

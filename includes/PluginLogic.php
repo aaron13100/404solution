@@ -59,10 +59,12 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     /** 
-     * @param type $urlRequest
-     * @return boolean true if the request should be ignored. false otherwise.
+     * @global type $abj404logging
+     * @global type $abj404logic
+     * @param type $urlRequest the requested URL. e.g. /404killer/aboutt
+     * @param type $urlSlugOnly only the slug. e.g. /aboutt
      */
-    function initializeIgnoreValues($urlRequest) {
+    function initializeIgnoreValues($urlRequest, $urlSlugOnly) {
         global $abj404logging;
         global $abj404logic;
         
@@ -80,7 +82,7 @@ class ABJ_404_Solution_PluginLogic {
         
         // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
         // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
-        // by https://www.sovrn.com/. This could be improved by letting the user specify when to ignore certain requests.
+        // by https://www.sovrn.com/. 
         $userAgents = preg_split("@\n@", strtolower($options['ignore_dontprocess']), NULL, PREG_SPLIT_NO_EMPTY);
         $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
@@ -88,6 +90,18 @@ class ABJ_404_Solution_PluginLogic {
                 $abj404logging->debugMessage("Ignoring user agent (do not redirect): " . 
                         esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
                 $ignoreReasonDoNotProcess = 'User agent (do not redirect): ' . $_SERVER['HTTP_USER_AGENT'];
+            }
+        }
+        
+        // ----- ignore based on regex file path
+        $patternsToIgnore = $options['folders_files_ignore_usable'];
+        if (!empty($patternsToIgnore)) {
+            foreach ($patternsToIgnore as $patternToIgnore) {
+                if (preg_match("/" . $patternToIgnore . "/", $urlSlugOnly, $matches)) {
+                    $abj404logging->debugMessage("Ignoring file/folder (do not redirect) for URL: " . 
+                            esc_html($urlSlugOnly) . ", pattern used: " . $patternToIgnore);
+                    $ignoreReasonDoNotProcess = 'Files and folders (do not redirect) pattern: ' . esc_html($patternToIgnore);
+                }
             }
         }
         $_REQUEST[ABJ404_PP]['ignore_donotprocess'] = $ignoreReasonDoNotProcess;
@@ -315,6 +329,8 @@ class ABJ_404_Solution_PluginLogic {
             . "Bingbot\nYahoo! Slurp\nDuckDuckBot\nBaiduspider\nYandexBot\nwww.sogou.com\nSogou-Test-Spider\n"
             . "Exabot\nfacebot\nfacebookexternalhit\nia_archiver\nSeznamBot\nPinterestbot\nUptimeRobot",
             'recognized_post_types' => "page\npost\nproduct",
+            'folders_files_ignore' => "",
+            'folders_files_ignore_usable' => "",
             'debug_mode' => 0,
             'DB_VERSION' => '0.0.0',
         );
@@ -1139,7 +1155,19 @@ class ABJ_404_Solution_PluginLogic {
         if (array_key_exists('recognized_post_types', $_POST) && isset($_POST['recognized_post_types'])) {
             $options['recognized_post_types'] = wp_kses_post(@$_POST['recognized_post_types']);
         }
-
+        if (array_key_exists('folders_files_ignore', $_POST) && isset($_POST['folders_files_ignore'])) {
+            $options['folders_files_ignore'] = wp_unslash(wp_kses_post(@$_POST['folders_files_ignore']));
+            
+            // make the regular expressions usable.
+            $patternsToIgnore = preg_split("@\n@", $options['folders_files_ignore'], NULL, PREG_SPLIT_NO_EMPTY);
+            $usableFilePatterns = array();
+            foreach ($patternsToIgnore as $patternToIgnore) {
+                $newPattern = '^' . preg_quote($patternToIgnore, '/') . '$';
+                $newPattern = str_replace("\*",".*", $newPattern);
+                $usableFilePatterns[] = $newPattern;
+            }
+            $options['folders_files_ignore_usable'] = $usableFilePatterns;
+        }
 
         /** Sanitize all data. */
         foreach ($options as $key => $option) {

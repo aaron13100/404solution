@@ -67,6 +67,54 @@
                     
     </td></tr>
 
+    <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
+    <tr><td valign="top">
+            <label for="folders_files_ignore">{Files and Folders Ignore Strings - Do Not Process} 
+                <BR/><BR/>
+
+            {Files and folders listed here will be ignored. }
+            
+            <ul>
+                <li class="closeLI">{* Do not redirect 404s for the patterns listed here.}</li>
+                <li class="closeLI">{* Do not capture 404 URLs.}</li>
+                <li class="closeLI">{* Strings are case sensitive.}</li>
+                <li class="closeLI">{* One string per line.}</li>
+                <li class="closeLI">{* Use an asterisk (*) to match "any pattern." }</li>
+            </ul>
+            {Examples: }
+            <ul>
+                <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;wp-content/cache/* </li>
+                <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(ignore everything in the cache directory)}</div>
+                <BR/>
+                
+                <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;wp-content/media/pdffiles/* </li>
+                <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(ignore everything in this directory)}</div>
+                <BR/>
+                
+                <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;*.php </li>
+                <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(ignore all .php files)}</div>
+                <BR/>
+                
+                <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;*.js </li>
+                <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(ignore all .js files)}</div>
+                <BR/>
+                
+                <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;*.jpg </li>
+                <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(ignore all .jpg files)}</div>
+                
+            </ul>
+                
+            {Note: Do not include the parenthesis or explanations shown in the examples above. }
+            <BR/><BR/>
+            <div style="font-weight: bold; color: red;">{WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing. }</div>
+            
+            </label>
+            
+    </td><td>
+        <textarea rows="6" cols="60" name="folders_files_ignore" id="folders_files_ignore" >{folders_files_ignore}</textarea>
+                    
+    </td></tr>
+    
 </table> 
    
 
