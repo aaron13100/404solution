@@ -52,6 +52,10 @@ Yes! 404 Solution records the page/post ID number and looks up the most current 
 
 Yes. It's as easy as turning on this feature in the options.
 
+### How do I delete log files? How do I purge log lines? ###
+
+Deleting old log lines to limit disk space usage is done automatically. You can set the maximum size to as low as 1MB under Options -> General Settings -> Maximum log disk usage.
+
 ## Screenshots ##
 
 1. Admin Options Screen
@@ -67,6 +71,7 @@ Yes. It's as easy as turning on this feature in the options.
 
 ## Version 2.3.0 (November 10, 2017) ##
 * Improvement: Add an "Organize Later" category for captured 404s (for wireplay).
+* Improvement: Add an advanced option to ignore a set of files or folders (for Hans Glyk).
 
 ## Version 2.2.2 (November 5, 2017) ##
 * FIX: The first usage of the options page didn't work on fresh installations (Lee Hodson).

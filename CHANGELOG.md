@@ -2,6 +2,7 @@
 
 ## Version 2.3.0 (November 10, 2017) ##
 * Improvement: Add an "Organize Later" category for captured 404s (for wireplay).
+* Improvement: Add an advanced option to ignore a set of files or folders (for Hans Glyk).
 
 ## Version 2.2.2 (November 5, 2017) ##
 * FIX: The first usage of the options page didn't work on fresh installations (Lee Hodson).
@@ -13,7 +14,7 @@
 * FIX: Display child pages under their parent pages on admin screen dropdowns (for wireplay).
 
 ## Version 2.1.1 (September 24, 2017) ##
-* FIX: Order the list of pages, posts, etc in dropdown boxes again (broken since 2.1.0. thanks to Hans im Glyk for reporting this).
+* FIX: Order the list of pages, posts, etc in dropdown boxes again (broken since 2.1.0. thanks to Hans Glyk for reporting this).
 
 ## Version 2.1.0 (September 23, 2017) ##
 * Improvement: Don't suggest or forward to product pages that are hidden in WooCommerce, for ajna667.

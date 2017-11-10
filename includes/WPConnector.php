@@ -154,18 +154,18 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         $urlRequest = esc_url(preg_replace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI'])));
-        
+
+        // remove the home directory from the URL parts because it should not be considered for spell checking.
+        $urlSlugOnly = $abj404logic->removeHomeDirectory($urlRequest);
+
         // setup ignore variables on $_REQUEST['abj404solution']
-        $abj404logic->initializeIgnoreValues($urlRequest);
+        $abj404logic->initializeIgnoreValues($urlRequest, $urlSlugOnly);
         
         if ($_REQUEST[ABJ404_PP]['ignore_donotprocess']) {
             $abj404dao->logRedirectHit($urlRequest, '404', 'ignored');
             return;
         }
         
-        // remove the home directory from the URL parts because it should not be considered for spell checking.
-        $urlSlugOnly = $abj404logic->removeHomeDirectory($urlRequest);
-
         $urlParts = parse_url(esc_url($_SERVER['REQUEST_URI']));
         $requestedURL = $urlParts['path'];
         $requestedURL .= $abj404connector->sortQueryParts($urlParts);
