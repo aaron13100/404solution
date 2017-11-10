@@ -51,6 +51,10 @@ Yes! 404 Solution records the page/post ID number and looks up the most current 
 
 Yes. It's as easy as turning on this feature in the options.
 
+= How do I delete log files? How do I purge log lines? =
+
+Deleting old log lines to limit disk space usage is done automatically. You can set the maximum size to as low as 1MB under Options -> General Settings -> Maximum log disk usage.
+
 == Screenshots ==
 
 1. Admin Options Screen
