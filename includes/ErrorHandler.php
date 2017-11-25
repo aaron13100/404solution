@@ -79,10 +79,13 @@ class ABJ_404_Solution_ErrorHandler {
                     break;
 
                 default:
+                    $extraInfo = "(none)";
+                    if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('debug_info', $_REQUEST[ABJ404_PP])) {
+                        $extraInfo = stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
+                    }
                     $errmsg = "ABJ404-SOLUTION Fatal error handler: " . 
                         stripcslashes(wp_kses_post(json_encode($lasterror))) .
-                        ', Additional info: ' . 
-                        stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
+                        ', Additional info: ' . $extraInfo;
                     if ($abj404logging != null) {
                         $abj404logging->errorMessage($errmsg);
                     } else {
