@@ -358,8 +358,6 @@ class ABJ_404_Solution_DataAccess {
             $query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
         }
         
-        $abj404logging->debugMessage("query: " . $query);
-        
         // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
         // they can use a different ID - not the ID from the logs table.
         $rows = $wpdb->get_results($query, ARRAY_A);
