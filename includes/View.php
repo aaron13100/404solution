@@ -1449,12 +1449,7 @@ class ABJ_404_Solution_View {
         $logRowsFound = 0;
         
         $rows = $abj404dao->getLogsIDandURL();
-        foreach ($rows as $row) {
-            $logRows[$row['id']]['id'] = absint($row['id']);
-            $logRows[$row['id']]['url'] = esc_url($row['url']);
-            $logRowsFound++;
-        }
-        $abj404logging->debugMessage($logRowsFound . " log rows found for logs page select option.");
+        $abj404logging->debugMessage(sizeof($rows) . " log rows found for logs page select option.");
 
         echo "<BR/>";
         echo "<form method=\"GET\" action=\"\" style=\"clear: both; display: block;\" class=\"clearbothdisplayblock\">";
@@ -1468,7 +1463,10 @@ class ABJ_404_Solution_View {
             $selected = " selected";
         }
         echo "<option value=\"0\"" . $selected . ">" . __('All Redirects', '404-solution') . "</option>";
-        foreach ($logRows as $logRow) {
+        foreach ($rows as $row) {
+            $logRow['id'] = absint($row['id']);
+            $logRow['url'] = esc_url($row['url']);
+
             $selected = "";
             if ($tableOptions['logsid'] == $logRow['id']) {
                 $selected = " selected";

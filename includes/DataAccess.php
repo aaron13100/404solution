@@ -24,42 +24,44 @@ class ABJ_404_Solution_DataAccess {
         global $abj404dao;
         
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
-        
-        $query = "CREATE TABLE IF NOT EXISTS " . $redirectsTable . " (
-              `id` bigint(30) NOT NULL auto_increment,
-              `url` varchar(512) NOT NULL,
-              `status` bigint(20) NOT NULL,
-              `type` bigint(20) NOT NULL,
-              `final_dest` varchar(512) NOT NULL,
-              `code` bigint(20) NOT NULL,
-              `disabled` int(10) NOT NULL default '0',
-              `timestamp` bigint(30) NOT NULL,
-              PRIMARY KEY  (`id`),
-              KEY `status` (`status`),
-              KEY `type` (`type`),
-              KEY `code` (`code`),
-              KEY `timestamp` (`timestamp`),
-              KEY `disabled` (`disabled`),
-              KEY `url` (`url`) USING BTREE,
-              KEY `final_dest` (`final_dest`) USING BTREE
-            ) ENGINE=MyISAM character set utf8 COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1";
-        $wpdb->query($query);
-
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
-        $query = 'ALTER TABLE ' . $logsTable . ' CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci';
-        $wpdb->query($query);
         
-        // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
-        $query = "ALTER TABLE " . $logsTable . " DROP INDEX requested_url, ADD INDEX requested_url (`requested_url`) USING BTREE";
-        $wpdb->query($query);
-        $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX url, ADD INDEX url (`url`) USING BTREE";
-        $wpdb->query($query);
-        $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX final_dest, ADD INDEX final_dest (`final_dest`) USING BTREE";
-        $wpdb->query($query);
+        $query = $abj404dao->readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
+        $query = str_replace('{redirectsTable}', $redirectsTable, $query);
+        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
 
         $query = $abj404dao->readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-        $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        
+        // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
+        $result = ABJ_404_Solution_DataAccess::queryAndGetResults("show create table " . $redirectsTable);
+        // this encode/decode turns the results into an array from a "stdClass"
+        $rows = json_decode(json_encode($result['last_result'][0]), true);
+        $tableSQL = array_values($rows)[1];
+        // if the column does not have btree then drop and recreate the index.
+        if (!preg_match("/url.+ USING BTREE/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX url, ADD INDEX url (`url`) USING BTREE";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+        if (!preg_match("/final_dest.+ USING BTREE/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX final_dest, ADD INDEX final_dest (`final_dest`) USING BTREE";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+        
+        $result = ABJ_404_Solution_DataAccess::queryAndGetResults("show create table " . $logsTable);
+        // this encode/decode turns the results into an array from a "stdClass"
+        $rows = json_decode(json_encode($result['last_result'][0]), true);
+        $tableSQL = array_values($rows)[1];
+        // if the column does not have btree then drop and recreate the index. ""
+        if (!preg_match("/requested_url.+ USING BTREE/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $logsTable . " DROP INDEX requested_url, ADD INDEX requested_url (`requested_url`) USING BTREE";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+        if (!preg_match("/CHARSET=utf8/i", $tableSQL)) {
+            $query = 'ALTER TABLE ' . $logsTable . ' CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci';
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
     }
     
     /** 
@@ -92,11 +94,17 @@ class ABJ_404_Solution_DataAccess {
      */
     static function queryAndGetResults($query) {
         global $wpdb;
+        global $abj404logging;
         
-        $wpdb->query($query);
+        $wpdb->get_results($query, ARRAY_A);
         $result['last_error'] = $wpdb->last_error;
         $result['last_result'] = $wpdb->last_result;
         $result['rows_affected'] = $wpdb->rows_affected;
+        
+        if ($result['last_error'] != '') {
+            $abj404logging->errorMessage("Ugh. SQL error: " . esc_html($result['last_error']));
+            $abj404logging->debugMessage("The SQL that caused the error: " . esc_html($query));
+        }        
         
         return $result;
     }
@@ -349,6 +357,8 @@ class ABJ_404_Solution_DataAccess {
             $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
             $query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
         }
+        
+        $abj404logging->debugMessage("query: " . $query);
         
         // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
         // they can use a different ID - not the ID from the logs table.

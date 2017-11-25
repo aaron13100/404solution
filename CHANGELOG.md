@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.3.2 (November 25, 2017) ##
+* Improvement: Minor efficiency improvements to work better on larger sites.
+
 ## Version 2.3.1 (November 24, 2017) ##
 * FIX: Try to fix the Captured 404 URLs page when there is a lot in the logs table (for Christos).
 
