@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 4.1
-Version: 2.3.0
-Tested up to: 4.8
-Stable tag: 2.3.0
+Version: 2.3.1
+Tested up to: 4.9
+Stable tag: 2.3.1
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -62,6 +62,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.3.1 (November 24, 2017) =
+* FIX: Try to fix the Captured 404 URLs page when there is a lot in the logs table (for Christos).
 
 = Version 2.3.0 (November 10, 2017) =
 * Improvement: Add an "Organize Later" category for captured 404s (for wireplay).
