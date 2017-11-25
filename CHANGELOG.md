@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.3.1 (November 24, 2017) ##
+* FIX: Try to fix the Captured 404 URLs page when there is a lot in the logs table (for Christos).
+
 ## Version 2.3.0 (November 10, 2017) ##
 * Improvement: Add an "Organize Later" category for captured 404s (for wireplay).
 * Improvement: Add an advanced option to ignore a set of files or folders (for Hans Glyk).

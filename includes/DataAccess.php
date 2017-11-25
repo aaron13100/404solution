@@ -23,7 +23,9 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         global $abj404dao;
         
-        $query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "abj404_redirects` (
+        $redirectsTable = $wpdb->prefix . "abj404_redirects";
+        
+        $query = "CREATE TABLE IF NOT EXISTS " . $redirectsTable . " (
               `id` bigint(30) NOT NULL auto_increment,
               `url` varchar(512) NOT NULL,
               `status` bigint(20) NOT NULL,
@@ -38,8 +40,8 @@ class ABJ_404_Solution_DataAccess {
               KEY `code` (`code`),
               KEY `timestamp` (`timestamp`),
               KEY `disabled` (`disabled`),
-              FULLTEXT KEY `url` (`url`),
-              FULLTEXT KEY `final_dest` (`final_dest`)
+              KEY `url` (`url`) USING BTREE,
+              KEY `final_dest` (`final_dest`) USING BTREE
             ) ENGINE=MyISAM character set utf8 COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1";
         $wpdb->query($query);
 
@@ -47,8 +49,12 @@ class ABJ_404_Solution_DataAccess {
         $query = 'ALTER TABLE ' . $logsTable . ' CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci';
         $wpdb->query($query);
         
-        // since 1.9.3. added for Svard. https://wordpress.org/support/topic/cannot-see-the-manual-redirects/
-        $query = "ALTER TABLE " . $logsTable . " ADD INDEX requested_url (`requested_url`)";
+        // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
+        $query = "ALTER TABLE " . $logsTable . " DROP INDEX requested_url, ADD INDEX requested_url (`requested_url`) USING BTREE";
+        $wpdb->query($query);
+        $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX url, ADD INDEX url (`url`) USING BTREE";
+        $wpdb->query($query);
+        $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX final_dest, ADD INDEX final_dest (`final_dest`) USING BTREE";
         $wpdb->query($query);
 
         $query = $abj404dao->readFileContents(__DIR__ . "/sql/createLogTable.sql");
@@ -305,9 +311,11 @@ class ABJ_404_Solution_DataAccess {
         
         $query .= "  LEFT OUTER JOIN ( \n " .
                 "    SELECT requested_url, \n " .
-                "    MIN(" . $logs . ".id) AS logsid, \n " .
-                "    count(requested_url) as hits \n " .
+                "           MIN(" . $logs . ".id) AS logsid, \n " .
+                "           count(requested_url) as hits \n " .
                 "    FROM " . $logs . " \n " .
+                "         inner join " . $redirects . " \n " .
+                "         on " . $logs . ".requested_url = " . $redirects . ".url " . " \n " .
                 "    group by requested_url \n " .
                 "  ) logstable \n " . 
                 "  on " . $redirects . ".url = logstable.requested_url \n ";
