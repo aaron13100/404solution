@@ -50,7 +50,7 @@ Yes! 404 Solution records the page/post ID number and looks up the most current 
 
 ### Can I redirect all 404's to a particular page? ###
 
-Yes. It's as easy as turning on this feature in the options.
+Yes. It's as easy as turning on this feature in the options. 
 
 ### How do I delete log files? How do I purge log lines? ###
 
@@ -68,6 +68,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 ![3. Create New Redirect](http://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-3.jpg)
 
 ## Changelog ##
+
+## Version 2.4.0 (November 26, 2017) ##
+* Improvement: Major speed improvement on 'Redirects' and 'Captured' tabs when there are lots of logs.
 
 ## Version 2.3.2 (November 25, 2017) ##
 * Improvement: Minor efficiency improvements to work better on larger sites.

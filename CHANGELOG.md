@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.4.0 (November 26, 2017) ##
+* Improvement: Major speed improvement on 'Redirects' and 'Captured' tabs when there are lots of logs.
+
 ## Version 2.3.2 (November 25, 2017) ##
 * Improvement: Minor efficiency improvements to work better on larger sites.
 
