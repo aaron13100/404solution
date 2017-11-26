@@ -812,7 +812,7 @@ class ABJ_404_Solution_View {
         foreach ($rows as $row) {
             $displayed++;
 
-            $hits = $row['hits'];
+            $hits = $row['logshits'];
             $last_used = $abj404dao->getRedirectLastUsed($row['logsid']);
             if ($last_used != 0) {
                 $last = date("Y/m/d h:i:s A", abs(intval($last_used)));
@@ -1066,7 +1066,7 @@ class ABJ_404_Solution_View {
                 $abj404logging->errorMessage("Unexpected row type while displaying table: " . $row['type']);
             }
 
-            $hits = $row['hits'];
+            $hits = $row['logshits'];
             $last_used = $abj404dao->getRedirectLastUsed($row['logsid']);
             if ($last_used != 0) {
                 $last = date("Y/m/d h:i:s A", abs(intval($last_used)));
@@ -1464,8 +1464,8 @@ class ABJ_404_Solution_View {
         }
         echo "<option value=\"0\"" . $selected . ">" . __('All Redirects', '404-solution') . "</option>";
         foreach ($rows as $row) {
-            $logRow['id'] = absint($row['id']);
-            $logRow['url'] = esc_url($row['url']);
+            $logRow['id'] = absint($row['logsid']);
+            $logRow['url'] = esc_url($row['requested_url']);
 
             $selected = "";
             if ($tableOptions['logsid'] == $logRow['id']) {

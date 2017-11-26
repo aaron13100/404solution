@@ -96,10 +96,11 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         global $abj404logging;
         
-        $wpdb->get_results($query, ARRAY_A);
+        $rows = $wpdb->get_results($query, ARRAY_A);
         $result['last_error'] = $wpdb->last_error;
         $result['last_result'] = $wpdb->last_result;
         $result['rows_affected'] = $wpdb->rows_affected;
+        $result['rows'] = $rows;
         
         if ($result['last_error'] != '') {
             $abj404logging->errorMessage("Ugh. SQL error: " . esc_html($result['last_error']));
@@ -308,25 +309,34 @@ class ABJ_404_Solution_DataAccess {
         $query = "select \n  " . $redirects . ".id,\n  " . $redirects . ".url,\n  " . $redirects . ".status,\n  " . 
                 $redirects . ".type,\n  " . $redirects . ".final_dest,\n  " . $redirects . ".code,\n  " . 
                 $redirects . ".timestamp,\n " . $wpdb->posts . ".id as wp_post_id,\n ";
-
-        $query .= "logstable.hits, \n" .
-                "logstable.logsid, \n";
-
+        
+        // if we're showing all rows include all of the log data in the query already. this makes the query very slow. 
+        // this should be replaced by the dynamic loading of log data using ajax queries as the page is viewed.
+        $showingAllRowsAtOnce = ($tableOptions['perpage'] > 5000);
+        if ($showingAllRowsAtOnce) {
+            $query .= "logstable.logshits as logshits, \n" .
+                    "logstable.logsid, \n";
+        } else {
+            $query .= "null as logshits, \n null as logsid, \n";
+        }
+        
         $query .= $wpdb->posts . ".post_type as wp_post_type\n  " .
                 "from " . $redirects . "\n " .
                 "  LEFT OUTER JOIN " . $wpdb->posts . " \n " .
                 "    on " . $redirects . ".final_dest = " . $wpdb->posts . ".id \n ";
-        
-        $query .= "  LEFT OUTER JOIN ( \n " .
-                "    SELECT requested_url, \n " .
-                "           MIN(" . $logs . ".id) AS logsid, \n " .
-                "           count(requested_url) as hits \n " .
-                "    FROM " . $logs . " \n " .
-                "         inner join " . $redirects . " \n " .
-                "         on " . $logs . ".requested_url = " . $redirects . ".url " . " \n " .
-                "    group by requested_url \n " .
-                "  ) logstable \n " . 
-                "  on " . $redirects . ".url = logstable.requested_url \n ";
+
+        if ($showingAllRowsAtOnce) {
+            $query .= "  LEFT OUTER JOIN ( \n " .
+                    "    SELECT requested_url, \n " .
+                    "           MIN(" . $logs . ".id) AS logsid, \n " .
+                    "           count(requested_url) as logshits \n " .
+                    "    FROM " . $logs . " \n " .
+                    "         inner join " . $redirects . " \n " .
+                    "         on " . $logs . ".requested_url = " . $redirects . ".url " . " \n " .
+                    "    group by requested_url \n " .
+                    "  ) logstable \n " . 
+                    "  on " . $redirects . ".url = logstable.requested_url \n ";
+        }
         
         $query .= " where 1 and (";
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
@@ -360,24 +370,56 @@ class ABJ_404_Solution_DataAccess {
         
         // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
         // they can use a different ID - not the ID from the logs table.
-        $rows = $wpdb->get_results($query, ARRAY_A);
-        // check for errors
-        if ($wpdb->last_error) {
-            $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+        $rows = $this->queryAndGetResults($query)['rows'];
+        
+        // populate the logs data if we need to
+        if (!$showingAllRowsAtOnce) {
+            $rows = $this->populateLogsData($rows);
+        }
+        
+        return $rows;
+    }
+    
+    /** 
+     * @param type $rows
+     */
+    function populateLogsData($rows) {
+        // note: according to https://stackoverflow.com/a/10121508 we should not used a pointer here to modify
+        // the data that we're currently looping through.
+        foreach ($rows as &$row) {
+            $logsData = $this->getLogsIDandURL($row['url']);
+            if (!empty($logsData)) {
+                $row['logsid'] = $logsData[0]['logsid'];
+                $row['logshits'] = $logsData[0]['logshits'];
+            }
         }
         
         return $rows;
     }
 
-    function getLogsIDandURL() {
+    /** 
+     * @global type $wpdb
+     * @param type $specificURL
+     * @return type
+     */
+    function getLogsIDandURL($specificURL = '') {
         global $wpdb;
         
-        $logs = $wpdb->prefix . "abj404_logsv2";
-        $query = "select min(" . $logs . ".id) as id, " . $logs . ".requested_url as url from " . $logs . 
-                " group by url order by url";
-        $rows = $wpdb->get_results($query, ARRAY_A);
+        $whereClause = '';
+        if ($specificURL != '') {
+            $whereClause = "where requested_url = '" . $specificURL . "'";
+        }
+        
+        $logsTable = $wpdb->prefix . 'abj404_logsv2';
+        $query = $this->readFileContents(__DIR__ . "/sql/getLogsIDandURL.sql");
+        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+        $query = str_replace('{where_clause_here}', $whereClause, $query);
+        
+        $rows = ABJ_404_Solution_DataAccess::queryAndGetResults($query)['rows'];
+
         return $rows;
     }
+    
     /**
      * @global type $wpdb
      * @param type $tableOptions orderby, paged, perpage, etc.
