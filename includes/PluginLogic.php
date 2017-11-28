@@ -827,17 +827,27 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $sub
      */
     function doEmptyTrash($sub) {
-        global $abj404dao;
-
-        $tableOptions = $this->getTableOptions();
-
-        $rows = $abj404dao->getRedirects($sub, $tableOptions, 0);
-
-        // nonce already verified.
-
-        foreach ($rows as $row) {
-            $abj404dao->deleteRedirect($row['id']);
+        global $abj404logging;
+        global $wpdb;
+        
+        $redirectsTable = $wpdb->prefix . "abj404_redirects";
+        $query = "";
+        if ($sub == "abj404_captured") {
+            $query = "delete FROM " . $redirectsTable . " \n" .
+                    "where disabled = 1 \n" .
+                    "      and status = " . ABJ404_STATUS_CAPTURED;
+            
+        } else if ($sub == "abj404_redirects") {
+            $query = "delete FROM " . $redirectsTable . " \n" .
+                    "where disabled = 1 \n" .
+                    "      and status = " . ABJ404_STATUS_AUTO;
+            
+        } else {
+            $abj404logging->errorMessage("Unrecognized type in doEmptyTrash(" . $sub . ")");
         }
+
+        $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        $abj404logging->debugMessage("doEmptyTrash deleted " . $result['rows_affected'] . " rows total. (" . $sub . ")");
     }
     
     /** 
