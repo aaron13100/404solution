@@ -37,8 +37,8 @@ class ABJ_404_Solution_DataAccess {
         // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults("show create table " . $redirectsTable);
         // this encode/decode turns the results into an array from a "stdClass"
-        $rows = json_decode(json_encode($result['last_result'][0]), true);
-        $tableSQL = array_values($rows)[1];
+        $rows = $result['rows'];
+        $tableSQL = array_values($rows[0])[1];
         // if the column does not have btree then drop and recreate the index.
         if (!preg_match("/url.+ USING BTREE/i", $tableSQL)) {
             $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX url, ADD INDEX url (`url`) USING BTREE";
@@ -51,8 +51,8 @@ class ABJ_404_Solution_DataAccess {
         
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults("show create table " . $logsTable);
         // this encode/decode turns the results into an array from a "stdClass"
-        $rows = json_decode(json_encode($result['last_result'][0]), true);
-        $tableSQL = array_values($rows)[1];
+        $rows = $result['rows'];
+        $tableSQL = array_values($rows[0])[1];
         // if the column does not have btree then drop and recreate the index. ""
         if (!preg_match("/requested_url.+ USING BTREE/i", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " DROP INDEX requested_url, ADD INDEX requested_url (`requested_url`) USING BTREE";
@@ -96,11 +96,10 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         global $abj404logging;
         
-        $rows = $wpdb->get_results($query, ARRAY_A);
+        $result['rows'] = $wpdb->get_results($query, ARRAY_A);
         $result['last_error'] = $wpdb->last_error;
         $result['last_result'] = $wpdb->last_result;
         $result['rows_affected'] = $wpdb->rows_affected;
-        $result['rows'] = $rows;
         
         if ($result['last_error'] != '') {
             $abj404logging->errorMessage("Ugh. SQL error: " . esc_html($result['last_error']));
@@ -296,10 +295,9 @@ class ABJ_404_Solution_DataAccess {
      * @global type $wpdb
      * @param type $sub either "redirects" or "captured".
      * @param type $tableOptions filter, order by, paged, perpage etc.
-     * @param type $limitEnforced add "limit" to the query.
      * @return type rows from the redirects table.
      */
-    function getRedirects($sub, $tableOptions, $limitEnforced = 1) {
+    function getRedirects($sub, $tableOptions) {
         global $wpdb;
         global $abj404logging;
 
@@ -363,10 +361,9 @@ class ABJ_404_Solution_DataAccess {
 
         $query .= "order by " . sanitize_text_field($tableOptions['orderby']) . " " . sanitize_text_field($tableOptions['order']) . " ";
 
-        if ($limitEnforced == 1) {
-            $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
-            $query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
-        }
+        // for normal page views we limit the rows returned based on user preferences for paginaiton.
+        $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
+        $query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
         
         // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
         // they can use a different ID - not the ID from the logs table.
@@ -505,7 +502,7 @@ class ABJ_404_Solution_DataAccess {
        }
     }
 
-    /** Remove the redirect from the redirects table and from the logs.
+    /** 
      * @global type $wpdb
      * @param type $id
      */
