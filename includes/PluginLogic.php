@@ -848,6 +848,8 @@ class ABJ_404_Solution_PluginLogic {
 
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         $abj404logging->debugMessage("doEmptyTrash deleted " . $result['rows_affected'] . " rows total. (" . $sub . ")");
+        
+        ABJ_404_Solution_DataAccess::queryAndGetResults("optimize table " . $redirectsTable);
     }
     
     /** 

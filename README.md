@@ -69,6 +69,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Changelog ##
 
+## Version 2.? (??) ##
+* Improvement: Optimize the redirects table after emptying the trash (thanks Christos).
+
 ## Version 2.4.1 (November 27, 2017) ##
 * FIX: Make the 'Empty Trash' button work for lots of data (for Christos).
 
