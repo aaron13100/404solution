@@ -162,7 +162,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logic->initializeIgnoreValues($urlRequest, $urlSlugOnly);
         
         if ($_REQUEST[ABJ404_PP]['ignore_donotprocess']) {
-            $abj404dao->logRedirectHit($urlRequest, '404', 'ignored');
+            $abj404dao->logRedirectHit($urlRequest, '404', 'ignore_donotprocess');
             return;
         }
         

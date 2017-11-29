@@ -733,7 +733,7 @@ class ABJ_404_Solution_View {
         $columns['url']['orderby'] = "url";
         $columns['url']['width'] = "50%";
         $columns['hits']['title'] = "Hits";
-        $columns['hits']['orderby'] = "hits";
+        $columns['hits']['orderby'] = "logshits";
         $columns['hits']['width'] = "10%";
         $columns['timestamp']['title'] = "Created";
         $columns['timestamp']['orderby'] = "timestamp";
@@ -976,7 +976,7 @@ class ABJ_404_Solution_View {
         $columns['code']['orderby'] = "code";
         $columns['code']['width'] = "5%";
         $columns['hits']['title'] = "Hits";
-        $columns['hits']['orderby'] = "hits";
+        $columns['hits']['orderby'] = "logshits";
         $columns['hits']['width'] = "10%";
         $columns['timestamp']['title'] = "Created";
         $columns['timestamp']['orderby'] = "timestamp";
@@ -1370,39 +1370,20 @@ class ABJ_404_Solution_View {
         global $abj404logging;
         global $abj404dao;
         
-        $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
-
-        $content = "<p><label for=\"default_redirect\">" . __('Default redirect type', '404-solution') . ":</label> ";
-        $content .= "<select name=\"default_redirect\" id=\"default_redirect\">";
         $selectedDefaultRedirect301 = "";
         if ($options['default_redirect'] == '301') {
             $selectedDefaultRedirect301 = " selected";
         }
-        $content .= "<option value=\"301\"" . $selectedDefaultRedirect301 . ">" . __('Permanent 301', '404-solution') . "</option>";
         $selectedDefaultRedirect302 = "";
         if ($options['default_redirect'] == '302') {
             $selectedDefaultRedirect302 = " selected";
         }
-        $content .= "<option value=\"302\"" . $selectedDefaultRedirect302 . ">" . __('Temporary 302', '404-solution') . "</option>";
-        $content .= "</select></p>";
 
         $selectedCapture404 = "";
         if ($options['capture_404'] == '1') {
             $selectedCapture404 = " checked";
         }
-        $content .= "<p><label for=\"capture_404\">" . __('Collect incoming 404 URLs', '404-solution') . ":</label> <input type=\"checkbox\" name=\"capture_404\" id=\"capture_404\" value=\"1\"" . $selectedCapture404 . "></p>";
 
-        $content .= "<p><label for=\"admin_notification\">" . __('Admin notification level', '404-solution') . ":</label> <input type=\"text\" name=\"admin_notification\" id=\"admin_notification\" value=\"" . esc_attr($options['admin_notification']) . "\" style=\"width: 50px;\"> " . __('Captured URLs (0 Disables Notification)', '404-solution') . "<BR/>";
-        $content .= $spaces . __('Display WordPress admin notifications when number of captured URLs goes above specified level', '404-solution') . "</p>";
-
-        $content .= "<p><label for=\"capture_deletion\">" . __('Collected 404 URL deletion', '404-solution') . ":</label> <input type=\"text\" name=\"capture_deletion\" id=\"capture_deletion\" value=\"" . esc_attr($options['capture_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
-        $content .= $spaces . __('Automatically removes 404 URLs that have been captured if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
-
-        $content .= "<p><label for=\"manual_deletion\">" . __('Manual redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"manual_deletion\" id=\"manual_deletion\" value=\"" . esc_attr($options['manual_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
-        $content .= $spaces . __('Automatically removes manually created page redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
-
-        $content .= "<p><label for=\"maximum_log_disk_usage\">" . __('Maximum log disk usage (MB)', '404-solution') . ":</label> <input type=\"text\" name=\"maximum_log_disk_usage\" id=\"maximum_log_disk_usage\" value=\"" . esc_attr($options['maximum_log_disk_usage']) . "\" style=\"width: 50px;\"> " . "<BR/>";
-        $content .= $spaces . __('Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit.', '404-solution');
         $logSizeBytes = $abj404dao->getLogDiskUsage();
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
         $totalLogLines = $abj404dao->getLogsCount(0);
@@ -1414,18 +1395,27 @@ class ABJ_404_Solution_View {
                     date('A', $timeToDisplay);
         $logSize .= ' ' . sprintf(__("Earliest log date: %s.", '404-solution'), $earliestLogDate) . ' ';
         
-        $content .= "<BR/>" . $spaces . $logSize . '  ' . __('Cleanup is done daily.', '404-solution') . "</p>";
-
         $selectedRemoveMatches = "";
         if ($options['remove_matches'] == '1') {
             $selectedRemoveMatches = " checked";
         }
         
-
-        $content .= "<p><label for=\"remove_matches\">" . __('Remove redirect upon matching permalink', '404-solution') . ":</label> <input type=\"checkbox\" value=\"1\" name=\"remove_matches\" id=\"remove_matches\"" . $selectedRemoveMatches . "><BR/>";
-        $content .= $spaces . __('Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.', '404-solution') . "</p>";
-
-        return $content;
+        $html = $abj404dao->readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
+        $html = str_replace('{selectedDefaultRedirect301}', $selectedDefaultRedirect301, $html);
+        $html = str_replace('{selectedDefaultRedirect302}', $selectedDefaultRedirect302, $html);
+        $html = str_replace('{selectedCapture404}', $selectedCapture404, $html);
+        $html = str_replace('{admin_notification}', $options['admin_notification'], $html);
+        $html = str_replace('{capture_deletion}', $options['capture_deletion'], $html);
+        $html = str_replace('{manual_deletion}', $options['manual_deletion'], $html);
+        $html = str_replace('{maximum_log_disk_usage}', $options['maximum_log_disk_usage'], $html);
+        $html = str_replace('{logCurrentSizeDiskUsage}', $logSizeMB, $html);
+        $html = str_replace('{logCurrentRowCount}', $totalLogLines, $html);
+        $html = str_replace('{earliestLogDate}', $earliestLogDate, $html);
+        $html = str_replace('{selectedRemoveMatches}', $selectedRemoveMatches, $html);
+        // constants and translations.
+        $html = $this->doNormalReplacements($html);
+        
+        return $html;
     }
 
     /** 
