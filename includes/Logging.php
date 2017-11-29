@@ -87,6 +87,110 @@ class ABJ_404_Solution_Logging {
         file_put_contents($this->getDebugFilePath(), $line . "\n", FILE_APPEND);
     }
     
+    /** Email the log file to the plugin developer. */
+    function emailErrorLogIfNecessary() {
+        if (!file_exists($this->getDebugFilePath())) {
+            $this->debugMessage("No log file found so no errors were found.");
+            return false;
+        }
+
+        // get the number of the last line with an error message.
+        $latestErrorLineFound = $this->getLatestErrorLine();
+        
+        // if no error was found then we're done.
+        if ($latestErrorLineFound == -1) {
+            $this->debugMessage("No errors found in the log file.");
+            return false;
+        }
+        
+        // -------------------
+        // get/check the last line that was emailed to the admin.
+        $sentDateFile = $this->getDebugFilePathSentFile();
+        
+        if (file_exists($sentDateFile)) {
+            $sentLine = absint(ABJ_404_Solution_Functions::readFileContents($sentDateFile));
+        } else {
+            $sentLine = -1;
+        }
+        
+        // if we already sent the error line then don't send the log file again.
+        if ($latestErrorLineFound <= $sentLine) {
+            $this->debugMessage("The latest error line from the log file was already emailed. " . $latestErrorLineFound . 
+                    ' <= ' . $sentLine);
+            return false;
+        }
+        
+        $this->emailLogFileToDeveloper();
+
+        // update the latest error line emailed to the developer.
+        file_put_contents($sentDateFile, $latestErrorLineFound);
+        
+        return true;
+    }
+    
+    function emailLogFileToDeveloper() {
+        // email the log file.
+        $this->debugMessage("Creating zip file of error log file.");
+        $logFileZip = ABJ404_PATH . "abj404_debug.zip";
+        if (file_exists($logFileZip)) {
+            unlink($logFileZip);
+        }
+        $zip = new ZipArchive;
+        if ($zip->open($logFileZip, ZipArchive::CREATE) === TRUE) {
+            $zip->addFile($this->getDebugFilePath(), basename($this->getDebugFilePath()));
+            $zip->close();
+        }
+        
+        $attachments = array();
+        $attachments[] = $logFileZip;
+        $to = ABJ404_AUTHOR_EMAIL;
+        $subject = ABJ404_PP . ' error log file';
+        $body = $subject . "\n\nSent " . date('Y/m/d h:i:s');
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        $headers[] = 'From: ' . ABJ404_PP . ' User <' . ABJ404_PP . '@wealth-psychology.com>';
+        
+        // send the email
+        $this->debugMessage("Sending error log zip file as attachment.");
+        wp_mail( $to, $subject, $body, $headers, $attachments );
+        
+        // delete the zip file.
+        $this->debugMessage("Mail sent. Deleting error log zip file.");
+        unlink($logFileZip);
+    }
+    
+    /** 
+     * @return int
+     */
+    function getLatestErrorLine() {
+        $latestErrorLineFound = -1;
+        $linesRead = 0;
+        $handle = null;
+        try {
+            if ($handle = fopen($this->getDebugFilePath(), "r")) {
+                // read the file one line at a time.
+                while (($line = fgets($handle)) !== false) {
+                    $linesRead++;
+                    // if the line has an error then save the line number.
+                    if (stripos($line, '(ERROR)') !== false) {
+                        $latestErrorLineFound = $linesRead;
+                    }
+                }
+            } else {
+                $this->errorMessage("Error reading log file (1).", $e);
+            }
+            
+        } catch (Exception $e) {
+            $this->errorMessage("Error reading log file. (2)", $e);
+            
+        } finally {
+            if ($handle != null) {
+                fclose($handle);
+            }
+        }
+        
+        return $latestErrorLineFound;
+    }
+    
     /** 
      * @return type
      */
@@ -94,10 +198,19 @@ class ABJ_404_Solution_Logging {
         return ABJ404_PATH . 'abj404_debug.txt';
     }
     
+    function getDebugFilePathSentFile() {
+        return ABJ404_PATH . "abj404_debug_sent_line.txt";
+    }
+    
     /** 
      * @return type true if the file was deleted.
      */
     function deleteDebugFile() {
+        // since the debug file is being deleted we reset the last error line that was sent.
+        if (file_exists($this->getDebugFilePathSentFile())) {
+            unlink($this->getDebugFilePathSentFile());
+        }
+        
         if (!file_exists($this->getDebugFilePath())) {
             return true;
         }

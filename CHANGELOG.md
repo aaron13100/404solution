@@ -3,6 +3,7 @@
 ## Version 2.? (??) ##
 * FIX: Ordering redirects and 404s by the 'Hits' column works again (broken in 2.4.0) (thanks Christos).
 * Improvement: Optimize the redirects table after emptying the trash (thanks Christos).
+* Improvement: Add an option to email the log file to the developer when there's an error in the log file.
 
 ## Version 2.4.1 (November 27, 2017) ##
 * FIX: Make the 'Empty Trash' button work for lots of data (for Christos).

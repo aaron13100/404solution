@@ -52,5 +52,39 @@ class ABJ_404_Solution_Functions {
 
         return $permalink;
     }
+    
+    /** Reads an entire file at once into a string and return it.
+     * @param type $path
+     * @return type
+     * @throws Exception
+     */
+    static function readFileContents($path) {
+        if (!file_exists($path)) {
+            throw new Exception("Error: Can't find file: " . $path);
+        }
+        
+        $fileContents = file_get_contents($path);
+        if ($fileContents !== false) {
+            return $fileContents;
+        }
+        
+        // if we can't read the file that way then try curl.
+        if (!function_exists('curl_init')) {
+            throw new Exception("Error: Can't read file: " . $path .
+                    "\n   file_get_contents didn't work and curl is not installed.");
+        }
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'file://' . $path);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $output = curl_exec($ch);
+        curl_close($ch);
+        
+        if ($output == null) {
+            throw new Exception("Error: Can't read file, even with cURL: " . $path);
+        }
+        
+        return $output;        
+    }
+    
 }
 

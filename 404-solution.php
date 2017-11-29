@@ -37,6 +37,7 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
 */
 
 // Constants
+define( 'ABJ404_AUTHOR_EMAIL', 'aaron@wealth-psychology.com' );
 define( 'ABJ404_URL', plugin_dir_url( __FILE__ ) );
 define( 'ABJ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );

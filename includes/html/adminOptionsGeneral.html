@@ -1,4 +1,12 @@
 <p>
+    <label for="send_error_logs">{Help the developer by sending error logs}:</label>
+    <input type="checkbox" name="send_error_logs" id="send_error_logs" value="1" {selectedSendErrorLogs}>
+    <BR/>&nbsp;&nbsp;&nbsp;{When an error is detected by the plugin, email the entire log file to the developer. }
+    {This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. }
+    {This reveals the admin email address to the developer. Log files are checked daily when maintenance is run.}
+</p>
+
+<p>
     <label for="default_redirect">{Default redirect type}:</label>
     <select name="default_redirect" id="default_redirect">
         <option value="301" {selectedDefaultRedirect301}>{Permanent 301}</option>

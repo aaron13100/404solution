@@ -26,11 +26,11 @@ class ABJ_404_Solution_DataAccess {
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
         
-        $query = $abj404dao->readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
         $query = str_replace('{redirectsTable}', $redirectsTable, $query);
         ABJ_404_Solution_DataAccess::queryAndGetResults($query);
 
-        $query = $abj404dao->readFileContents(__DIR__ . "/sql/createLogTable.sql");
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         
@@ -76,7 +76,7 @@ class ABJ_404_Solution_DataAccess {
         // wp_wbz404_redirects -- old table
         // wp_abj404_redirects -- new table
         
-        $query = $this->readFileContents(__DIR__ . "/sql/importDataFromPluginRedirectioner.sql");
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/importDataFromPluginRedirectioner.sql");
         $query = str_replace('{OLD_TABLE}', $oldTable, $query);
         $query = str_replace('{NEW_TABLE}', $newTable, $query);
         
@@ -109,39 +109,6 @@ class ABJ_404_Solution_DataAccess {
         return $result;
     }
     
-    /** 
-     * @param type $path
-     * @return type
-     * @throws Exception
-     */
-    function readFileContents($path) {
-        if (!file_exists($path)) {
-            throw new Exception("Error: Can't find file: " . $path);
-        }
-        
-        $fileContents = file_get_contents($path);
-        if ($fileContents !== false) {
-            return $fileContents;
-        }
-        
-        // if we can't read the file that way then try curl.
-        if (!function_exists('curl_init')) {
-            throw new Exception("Error: Can't read file: " . $path .
-                    "\n   file_get_contents didn't work and curl is not installed.");
-        }
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'file://' . $path);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $output = curl_exec($ch);
-        curl_close($ch);
-        
-        if ($output == null) {
-            throw new Exception("Error: Can't read file, even with cURL: " . $path);
-        }
-        
-        return $output;        
-    }
-
    /**
     * @global type $wpdb
     * @return int the total number of redirects that have been captured.
@@ -224,7 +191,7 @@ class ABJ_404_Solution_DataAccess {
     function getLogsCount($logID) {
         global $wpdb;
 
-        $query = $this->readFileContents(__DIR__ . "/sql/getLogsCount.sql");
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsCount.sql");
         $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
         
         if ($logID != 0) {
@@ -283,7 +250,7 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         global $abj404dao;
         
-        $query = $abj404dao->readFileContents(__DIR__ . "/sql/getRedirectsWithLogs.sql");
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsWithLogs.sql");
         $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
         $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
         
@@ -408,7 +375,7 @@ class ABJ_404_Solution_DataAccess {
         }
         
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
-        $query = $this->readFileContents(__DIR__ . "/sql/getLogsIDandURL.sql");
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsIDandURL.sql");
         $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         $query = str_replace('{where_clause_here}', $whereClause, $query);
         
@@ -588,7 +555,7 @@ class ABJ_404_Solution_DataAccess {
         
         //Clean up old logs. prepare the query. get the disk usage in bytes. compare to the max requested
         // disk usage (MB to bytes). delete 1k rows at a time until the size is acceptable.
-        $query = $abj404dao->readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
         $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
         $maxLogSizeBytes = $options['maximum_log_disk_usage'] * 1024 * 1000;
@@ -615,6 +582,14 @@ class ABJ_404_Solution_DataAccess {
                 ", Old manual redirects removed: " . $manualRedirectsCount . 
                 ", Old log lines removed: " . $oldLogRowsDeleted . ", Duplicate rows deleted: " . 
                 $duplicateRowsDeleted;
+
+        if (array_key_exists('send_error_logs', $options) && isset($options['send_error_logs']) && 
+                $options['send_error_logs'] == '1') {
+            if ($abj404logging->emailErrorLogIfNecessary()) {
+                $message .= ", Log file emailed to developer.";
+            }
+        }
+        
         $abj404logging->infoMessage($message);
         
         // TODO remove this after a few versions. introduced in 1.8.2.
@@ -623,6 +598,7 @@ class ABJ_404_Solution_DataAccess {
         
         return $message;
     }
+    
     /** Remove duplicates. 
      * @global type $wpdb
      */
@@ -787,7 +763,7 @@ class ABJ_404_Solution_DataAccess {
         }
         
         // load the query and do the replacements.
-        $query = $abj404dao->readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
         $query = str_replace('{wp_posts}', $wpdb->posts, $query);
         $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
         $query = str_replace('{wp_terms}', $wpdb->terms, $query);
