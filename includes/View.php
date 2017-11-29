@@ -402,7 +402,7 @@ class ABJ_404_Solution_View {
         $link = wp_nonce_url($url, "abj404_purgeRedirects");
         
         // read the html content.
-        $html = $abj404dao->readFileContents(__DIR__ . "/html/toolsPurgeForm.html");
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsPurgeForm.html");
         // do special replacements
         $html = str_replace('{toolsPurgeFormActionLink}', $link, $html);
         // constants and translations.
@@ -420,7 +420,7 @@ class ABJ_404_Solution_View {
         $link = wp_nonce_url($url, "abj404_importRedirects");
         
         // read the html content.
-        $html = $abj404dao->readFileContents(__DIR__ . "/html/toolsImportForm.html");
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsImportForm.html");
         // do special replacements
         $html = str_replace('{toolsImportFormActionLink}', $link, $html);
         // constants and translations.
@@ -437,7 +437,7 @@ class ABJ_404_Solution_View {
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_runMaintenance");
         
         // read the html content.
-        $html = $abj404dao->readFileContents(__DIR__ . "/html/toolsEtcForm.html");
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsEtcForm.html");
         // do special replacements
         $html = str_replace('{toolsMaintenanceFormActionLink}', $link, $html);
         // constants and translations.
@@ -1160,7 +1160,7 @@ class ABJ_404_Solution_View {
 
         // don't show the "add manual redirect" form on the trash page.
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
-            echo "<h3>" . __('Add Manual Redirect', '404-solution') . "</h3>";
+            echo "<h3>" . __('Add a Manual Redirect', '404-solution') . "</h3>";
 
             $url = "?page=" . ABJ404_PP;
 
@@ -1343,7 +1343,7 @@ class ABJ_404_Solution_View {
         
         // ----
         // read the html content.
-        $html = $abj404dao->readFileContents(__DIR__ . "/html/settingsAdvanced.html");
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvanced.html");
         $html = str_replace('{DATABASE_VERSION}', esc_html($options['DB_VERSION']), $html);
         $html = str_replace('checked=""', $selectedDebugLogging, $html);
         $html = str_replace('{<a>View</a> the debug file.}', $debugExplanation, $html);
@@ -1383,6 +1383,10 @@ class ABJ_404_Solution_View {
         if ($options['capture_404'] == '1') {
             $selectedCapture404 = " checked";
         }
+        $selectedSendErrorLogs = "";
+        if ($options['send_error_logs'] == '1') {
+            $selectedSendErrorLogs = " checked";
+        }
 
         $logSizeBytes = $abj404dao->getLogDiskUsage();
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
@@ -1400,7 +1404,8 @@ class ABJ_404_Solution_View {
             $selectedRemoveMatches = " checked";
         }
         
-        $html = $abj404dao->readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
+        $html = str_replace('{selectedSendErrorLogs}', $selectedSendErrorLogs, $html);
         $html = str_replace('{selectedDefaultRedirect301}', $selectedDefaultRedirect301, $html);
         $html = str_replace('{selectedDefaultRedirect302}', $selectedDefaultRedirect302, $html);
         $html = str_replace('{selectedCapture404}', $selectedCapture404, $html);
@@ -1726,7 +1731,7 @@ class ABJ_404_Solution_View {
         $showRowsLink = wp_nonce_url($url . '&action=changeItemsPerRow', "abj404_importRedirects");
         
         // read the html content.
-        $html = $abj404dao->readFileContents(__DIR__ . "/html/paginationLinks.html");
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinks.html");
         // do special replacements
         $html = str_replace(' value="' . $tableOptions['perpage'] . '"', 
                 ' value="' . $tableOptions['perpage'] . '" selected', 

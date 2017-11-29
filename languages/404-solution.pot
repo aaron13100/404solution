@@ -603,7 +603,7 @@ msgid "No Records To Display"
 msgstr ""
 
 #: includes/admin.php:1675
-msgid "Add Manual Redirect"
+msgid "Add a Manual Redirect"
 msgstr ""
 
 #: includes/admin.php:1696, includes/admin.php:2025

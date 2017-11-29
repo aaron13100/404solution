@@ -86,7 +86,7 @@ class ABJ_404_Solution_PluginLogic {
         $userAgents = preg_split("@\n@", strtolower($options['ignore_dontprocess']), NULL, PREG_SPLIT_NO_EMPTY);
         $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
-            if (strpos($httpUserAgent, trim($agentToIgnore)) !== false) {
+            if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (do not redirect): " . 
                         esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
                 $ignoreReasonDoNotProcess = 'User agent (do not redirect): ' . $_SERVER['HTTP_USER_AGENT'];
@@ -111,7 +111,7 @@ class ABJ_404_Solution_PluginLogic {
         $userAgents = preg_split("@\n@", strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
         $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
-            if (strpos($httpUserAgent, trim($agentToIgnore)) !== false) {
+            if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (process ok): " . 
                         esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
                 $ignoreReasonDoProcess = 'User agent (process ok): ' . $agentToIgnore;
@@ -260,7 +260,7 @@ class ABJ_404_Solution_PluginLogic {
 
         // move to the new log table
         if (version_compare($currentDBVersion, '1.8.0') < 0) {
-            $query = $abj404dao->readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
+            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
             $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
             $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
             $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
@@ -300,6 +300,7 @@ class ABJ_404_Solution_PluginLogic {
     function getDefaultOptions() {
         $options = array(
             'default_redirect' => '301',
+            'send_error_logs' => '0',
             'capture_404' => '1',
             'capture_deletion' => 1095,
             'manual_deletion' => '0',
@@ -1143,7 +1144,7 @@ class ABJ_404_Solution_PluginLogic {
 
         // these options all default to 0 if they're not specifically set to 1.
         $optionsList = array('remove_matches', 'debug_mode', 'display_suggest', 'suggest_cats', 'suggest_tags', 
-            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404');
+            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs');
         foreach ($optionsList as $optionName) {
             $options[$optionName] = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;
         }

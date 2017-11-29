@@ -35,7 +35,7 @@ class ABJ_404_Solution_View_Suggestions {
         }
         
         // read the html content.
-        $html = $abj404dao->readFileContents(__DIR__ . "/html/viewSuggestions.html");
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/viewSuggestions.html");
         // do special replacements
         $html = str_replace('{SELECTED_DISPLAY_SUGGEST}', $selectedDisplaySuggest, $html);
         $html = str_replace('{SELECTED_SUGGEST_CATS}', $selectedSuggestCats, $html);
