@@ -1,0 +1,38 @@
+<p>
+    <label for="default_redirect">{Default redirect type}:</label>
+    <select name="default_redirect" id="default_redirect">
+        <option value="301" {selectedDefaultRedirect301}>{Permanent 301}</option>
+        <option value="302" {selectedDefaultRedirect302}>{Temporary 302}</option>
+    </select>
+</p>
+<p>
+    <label for="capture_404">{Collect incoming 404 URLs}:</label>
+    <input type="checkbox" name="capture_404" id="capture_404" value="1" {selectedCapture404}>
+</p>
+<p>
+    <label for="admin_notification">{Admin notification level}:</label>
+    <input type="text" name="admin_notification" id="admin_notification" value="{admin_notification}" style="width: 50px;"> {Captured URLs (0 Disables Notification)}
+    <BR/>&nbsp;&nbsp;&nbsp;{Display WordPress admin notifications when number of captured URLs goes above specified level}
+</p>
+<p>
+    <label for="capture_deletion">{Collected 404 URL deletion}:</label>
+    <input type="text" name="capture_deletion" id="capture_deletion" value="{capture_deletion}" style="width: 50px;"> {Days (0 Disables Auto Delete)}
+    <BR/>&nbsp;&nbsp;&nbsp;{Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time.}
+</p>
+<p>
+    <label for="manual_deletion">{Manual redirect deletion}:</label>
+    <input type="text" name="manual_deletion" id="manual_deletion" value="{manual_deletion}" style="width: 50px;"> {Days (0 Disables Auto Delete)}
+    <BR/>&nbsp;&nbsp;&nbsp;{Automatically removes manually created page redirects if they haven't been used for the specified amount of time.}
+</p>
+<p>
+    <label for="maximum_log_disk_usage">{Maximum log disk usage (MB)}:</label>
+    <input type="text" name="maximum_log_disk_usage" id="maximum_log_disk_usage" value="{maximum_log_disk_usage}" style="width: 50px;">
+    <BR/>&nbsp;&nbsp;&nbsp;{Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit.}
+    <BR/>&nbsp;&nbsp;&nbsp;{Current approximate log disk usage}: {logCurrentSizeDiskUsage} {MB} ({logCurrentRowCount} {rows}). {Earliest log date}: {earliestLogDate}. {Cleanup is done daily.}
+</p>
+<p>
+    <label for="remove_matches">{Remove redirect upon matching permalink}:</label>
+    <input type="checkbox" value="1" name="remove_matches" id="remove_matches" {selectedRemoveMatches}>
+    <BR/>&nbsp;&nbsp;&nbsp;{Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.}
+</p>
+

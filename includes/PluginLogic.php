@@ -327,7 +327,7 @@ class ABJ_404_Solution_PluginLogic {
             'ignore_dontprocess' => 'zemanta aggregator',
             'ignore_doprocess' => "Googlebot\nMediapartners-Google\nAdsBot-Google\ndevelopers.google.com\n"
             . "Bingbot\nYahoo! Slurp\nDuckDuckBot\nBaiduspider\nYandexBot\nwww.sogou.com\nSogou-Test-Spider\n"
-            . "Exabot\nfacebot\nfacebookexternalhit\nia_archiver\nSeznamBot\nPinterestbot\nUptimeRobot",
+            . "Exabot\nfacebot\nfacebookexternalhit\nia_archiver\nSeznamBot\nPinterestbot\nUptimeRobot\nMJ12bot",
             'recognized_post_types' => "page\npost\nproduct",
             'folders_files_ignore' => "",
             'folders_files_ignore_usable' => "",

@@ -1,6 +1,7 @@
 # Changelog #
 
 ## Version 2.? (??) ##
+* FIX: Ordering redirects and 404s by the 'Hits' column works again (broken in 2.4.0) (thanks Christos).
 * Improvement: Optimize the redirects table after emptying the trash (thanks Christos).
 
 ## Version 2.4.1 (November 27, 2017) ##
