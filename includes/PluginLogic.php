@@ -960,13 +960,13 @@ class ABJ_404_Solution_PluginLogic {
         global $abj404dao;
         global $abj404logging;
         $message = "";
-
-        if ($_POST['url'] == "") {
+        
+        if ($_POST['manual_redirect_url'] == "") {
             $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
             return $message;
         }
             
-        if (substr($_POST['url'], 0, 1) != "/") {
+        if (substr($_POST['manual_redirect_url'], 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
             return $message;
         }
@@ -978,9 +978,9 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if ($typeAndDest['type'] != "" && $typeAndDest['dest'] !== "") {
-            $abj404dao->setupRedirect(esc_url($_POST['url']), ABJ404_STATUS_MANUAL, 
+            $abj404dao->setupRedirect(esc_url($_POST['manual_redirect_url']), ABJ404_STATUS_MANUAL, 
                     $typeAndDest['type'], $typeAndDest['dest'], sanitize_text_field($_POST['code']), 0);
-            $_POST['url'] = "";
+            $_POST['manual_redirect_url'] = "";
             $_POST['code'] = "";
             $_POST['external'] = "";
             $_POST['dest'] = "";
