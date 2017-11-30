@@ -992,6 +992,10 @@ class ABJ_404_Solution_View {
         date_default_timezone_set($timezone);
 
         echo "<div class=\"tablenav\">";
+        
+        $htmlTop = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinksTop.html");
+        echo $this->doNormalReplacements($htmlTop);
+        
         $this->echoPaginationLinks($sub, $tableOptions);
 
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
@@ -1160,7 +1164,7 @@ class ABJ_404_Solution_View {
 
         // don't show the "add manual redirect" form on the trash page.
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
-            echo "<h3>" . __('Add a Manual Redirect', '404-solution') . "</h3>";
+            echo '<h3 id="add_manual_redirect">' . __('Add a Manual Redirect', '404-solution') . "</h3>";
 
             $url = "?page=" . ABJ404_PP;
 
@@ -1185,9 +1189,9 @@ class ABJ_404_Solution_View {
                 $postedURL = $urlPlaceholder;
             }
             
-            echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
-                    ":</label></strong> <input id=\"url\" placeholder=\"" . $urlPlaceholder . 
-                    "\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
+            echo "<strong><label for=\"manual_redirect_url\">" . __('URL', '404-solution') . 
+                    ":</label></strong> <input id=\"manual_redirect_url\" placeholder=\"" . $urlPlaceholder . 
+                    "\" style=\"width: 200px;\" type=\"text\" name=\"manual_redirect_url\" value=\"" . 
                     esc_attr($postedURL) . "\"> (" . __('Required', '404-solution') . ")<BR/>";
             
             echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</label></strong> \n";
