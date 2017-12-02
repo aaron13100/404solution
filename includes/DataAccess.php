@@ -41,11 +41,19 @@ class ABJ_404_Solution_DataAccess {
         $tableSQL = array_values($rows[0])[1];
         // if the column does not have btree then drop and recreate the index.
         if (!preg_match("/url.+ USING BTREE/i", $tableSQL)) {
-            $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX url, ADD INDEX url (`url`) USING BTREE";
+            if (preg_match("/KEY.+url/i", $tableSQL)) {
+                $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX url";
+                ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            }
+            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX url (`url`) USING BTREE";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
         if (!preg_match("/final_dest.+ USING BTREE/i", $tableSQL)) {
-            $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX final_dest, ADD INDEX final_dest (`final_dest`) USING BTREE";
+            if (preg_match("/KEY.+final_dest/i", $tableSQL)) {
+                $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX final_dest";
+                ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            }
+            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX final_dest (`final_dest`) USING BTREE";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
         
@@ -55,7 +63,11 @@ class ABJ_404_Solution_DataAccess {
         $tableSQL = array_values($rows[0])[1];
         // if the column does not have btree then drop and recreate the index. ""
         if (!preg_match("/requested_url.+ USING BTREE/i", $tableSQL)) {
-            $query = "ALTER TABLE " . $logsTable . " DROP INDEX requested_url, ADD INDEX requested_url (`requested_url`) USING BTREE";
+            if (preg_match("/KEY.+requested_url/i", $tableSQL)) {
+                $query = "ALTER TABLE " . $logsTable . " DROP INDEX requested_url";
+                ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            }
+            $query = "ALTER TABLE " . $logsTable . " ADD INDEX requested_url (`requested_url`) USING BTREE";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
         if (!preg_match("/CHARSET=utf8/i", $tableSQL)) {

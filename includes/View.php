@@ -374,14 +374,40 @@ class ABJ_404_Solution_View {
     function echoAdminDebugFile() {
         global $abj404logging;
         if (current_user_can('administrator')) {
+            echo "<div style=\"clear: both;\">";
             // read the file and replace new lines with <BR/>.
             if (file_exists($abj404logging->getDebugFilePath())) {
-                $filecontents = esc_html(file_get_contents($abj404logging->getDebugFilePath()));
+                $linesRead = 0;
+                $handle = null;
+                try {
+                    if ($handle = fopen($abj404logging->getDebugFilePath(), "r")) {
+                        // read the file one line at a time.
+                        while (($line = fgets($handle)) !== false) {
+                            $linesRead++;
+                            echo nl2br(esc_html($line));
+                            
+                            if ($linesRead > 1000000) {
+                                echo "<BR/><BR/>Read " . $linesRead . " lines. Download debug file to see more.";
+                                break;
+                            }
+                        }
+                    } else {
+                        $this->errorMessage("Error reading debug file (3).", $e);
+                    }
+
+                } catch (Exception $e) {
+                    $this->errorMessage("Error reading debug file. (4)", $e);
+
+                } finally {
+                    if ($handle != null) {
+                        fclose($handle);
+                    }
+                }
+                
             } else {
-                $filecontents = __('(The file does not exist.)', '404-solution');
+                echo nl2br(__('(The file does not exist.)', '404-solution'));
             }
             
-            echo "<div style=\"clear: both;\">";
             echo nl2br($filecontents);
             
         } else {
