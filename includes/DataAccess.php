@@ -21,7 +21,6 @@ class ABJ_404_Solution_DataAccess {
      */
     static function createDatabaseTables() {
         global $wpdb;
-        global $abj404dao;
         
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $logsTable = $wpdb->prefix . 'abj404_logsv2';

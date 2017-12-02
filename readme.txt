@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 4.1
-Version: 2.4.1
+Version: 2.5.0
 Tested up to: 4.9
-Stable tag: 2.4.1
+Stable tag: 2.5.0
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -63,11 +63,13 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 == Changelog ==
 
-= Version 2.5.0 (??) =
+= Version 2.5.0 (December 2, 2017) =
+* FIX: Avoid a critical issue that may have caused an infinite loop in rare cases when updating versions.
 * Feature: Add an option to email the log file to the developer when there's an error in the log file.
 * Feature: Add the [abj404_solution_page_suggestions] shortcode to display page suggestions on custom 404 pages.
 * Improvement: Optimize the redirects table after emptying the trash (thanks Christos).
 * Improvement: Add a button to the "Page Redirects" to scroll to the "Add a Manual Redirect" section (for wireplay).
+* Improvement: Remove the page suggestions on/off option. To turn it off, don't include the shortcode.
 * FIX: Ordering redirects and 404s by the 'Hits' column works again (broken in 2.4.0) (thanks Christos).
 * FIX: Duplicate redirects are no longer created when a user specified 404 page is used.
 

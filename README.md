@@ -13,7 +13,8 @@ Automatically redirect 404s when the slug matches (for permalink changes), when 
 * Get a list of 404 URLs as they happen.
 * View logs of hits to 404 pages and redirects including referrer data.
 * WooCommerce compatible - pages, posts, products, and custom post types are supported.
-* Create automatic redirects for any URL resolving to a single page or post that isn't the current permalink.
+* Automatically redirect to the correct page after a permalink structure change.
+* Show possible page matches on a 404 page.
 * Basic plugin usage statistics.
 * Automatically remove redirects when the URL matches a new page or post permalink.
 * Automatically remove manual and automatic redirects once they are no longer being used.
@@ -69,11 +70,13 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Changelog ##
 
-## Version 2.5.0 (??) ##
+## Version 2.5.0 (December 2, 2017) ##
+* FIX: Avoid a critical issue that may have caused an infinite loop in rare cases when updating versions.
 * Feature: Add an option to email the log file to the developer when there's an error in the log file.
 * Feature: Add the [abj404_solution_page_suggestions] shortcode to display page suggestions on custom 404 pages.
 * Improvement: Optimize the redirects table after emptying the trash (thanks Christos).
 * Improvement: Add a button to the "Page Redirects" to scroll to the "Add a Manual Redirect" section (for wireplay).
+* Improvement: Remove the page suggestions on/off option. To turn it off, don't include the shortcode.
 * FIX: Ordering redirects and 404s by the 'Hits' column works again (broken in 2.4.0) (thanks Christos).
 * FIX: Duplicate redirects are no longer created when a user specified 404 page is used.
 

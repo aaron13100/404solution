@@ -408,8 +408,6 @@ class ABJ_404_Solution_View {
                 echo nl2br(__('(The file does not exist.)', '404-solution'));
             }
             
-            echo nl2br($filecontents);
-            
         } else {
             echo "Non-admin request to view debug file.";
             $abj404logging->errorMessage("Non-admin request to view debug file.");

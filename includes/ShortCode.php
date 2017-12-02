@@ -42,8 +42,13 @@ class ABJ_404_Solution_ShortCode {
                     '   var expires = "expires="+ d.toUTCString(); ' . "\n" . 
                     '   document.cookie = "' . $cookieName . '=;" + expires + ";path=/"; ' . "\n" .
                     "</script> \n";
-    
-        } else {
+        }
+        if (array_key_exists(ABJ404_PP, $_REQUEST) && isset($_REQUEST[ABJ404_PP]) && 
+                array_key_exists($cookieName, $_REQUEST[ABJ404_PP]) && isset($_REQUEST[ABJ404_PP][$cookieName])) {
+            $urlRequest = $_REQUEST[ABJ404_PP][$cookieName];
+        }
+        
+        if ($urlRequest == '') {
             // if no 404 was detected then we don't offer any suggestions
             return "<!-- " . ABJ404_PP . " - No 404 was detected. No suggestions to offer. -->\n";
         }

@@ -14,7 +14,7 @@ class ABJ_404_Solution_Logging {
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
         global $abj404logic;
-        $options = $abj404logic->getOptions();
+        $options = $abj404logic->getOptions(1);
 
         return (@$options['debug_mode'] == true);
     }
@@ -144,8 +144,9 @@ class ABJ_404_Solution_Logging {
         $attachments = array();
         $attachments[] = $logFileZip;
         $to = ABJ404_AUTHOR_EMAIL;
-        $subject = ABJ404_PP . ' error log file';
-        $body = $subject . "\n\nSent " . date('Y/m/d h:i:s');
+        $subject = ABJ404_PP . ' error log file. Plugin ver: ' . ABJ404_VERSION;
+        $body = $subject . "\nSent " . date('Y/m/d h:i:s') . "\n\n" . "PHP version: " . PHP_VERSION . 
+                ", \nWP ver: " . get_bloginfo('version') . ", \nPlugin ver: " . ABJ404_VERSION;
         $headers = array('Content-Type: text/html; charset=UTF-8');
         $headers[] = 'From: ' . ABJ404_PP . ' User <' . ABJ404_PP . '@wealth-psychology.com>';
         
