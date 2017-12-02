@@ -10,6 +10,10 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
 /* the glue that holds it together / everything else. */
 
 class ABJ_404_Solution_PluginLogic {
+    
+    /** Track whether we're already in the method that updates the database that may be called recursively.
+     * @var type */
+    private $currentlyUpdatingDatabaseVersion = false;
 
     /** If a page's URL is /blogName/pageName then this returns /pageName.
      * @param type $urlRequest
@@ -128,10 +132,12 @@ class ABJ_404_Solution_PluginLogic {
         global $abj404logic;
         global $abj404logging;
 
+        
         // this may be used later when displaying suggestions.
         $cookieName = ABJ404_PP . '_REQUEST_URI';
         setcookie($cookieName, esc_url($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
-
+        $_REQUEST[ABJ404_PP][$cookieName] = esc_url($_SERVER['REQUEST_URI']);
+        
         $options = $abj404logic->getOptions();
         
         // ---------------------------------------
@@ -208,20 +214,41 @@ class ABJ_404_Solution_PluginLogic {
 
         return $options;
     }
+
+    /** Do any maintenance when upgrading to a new version.
+     * @global type $abj404logging
+     * @param type $options
+     * @return type
+     */
+    function updateToNewVersion($options) {
+        global $abj404logging;
+        
+        if ($this->currentlyUpdatingDatabaseVersion) {
+            $abj404logging->errorMessage("Avoiding infinite loop on database update.");
+            return $options;
+        }
+
+        try {
+            $this->currentlyUpdatingDatabaseVersion = true;
+            $returnValue = $this->updateToNewVersionAction($options);
+        } finally {
+            $this->currentlyUpdatingDatabaseVersion = false;
+        }
+        
+        return $returnValue;
+    }
     
     /** Do any maintenance when upgrading to a new version.
      * @global type $abj404logic
      * @global type $abj404logging
      * @global type $wpdb
-     * @global type $abj404dao
      * @param type $options
      * @return type
      */
-    function updateToNewVersion($options) {
+    function updateToNewVersionAction($options) {
         global $abj404logic;
         global $abj404logging;
         global $wpdb;
-        global $abj404dao;
         
         $currentDBVersion = "(unknown)";
         if (array_key_exists('DB_VERSION', $options)) {

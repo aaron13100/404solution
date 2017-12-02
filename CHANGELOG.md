@@ -1,10 +1,12 @@
 # Changelog #
 
-## Version 2.5.0 (??) ##
+## Version 2.5.0 (December 2, 2017) ##
+* FIX: Avoid a critical issue that may have caused an infinite loop in rare cases when updating versions.
 * Feature: Add an option to email the log file to the developer when there's an error in the log file.
 * Feature: Add the [abj404_solution_page_suggestions] shortcode to display page suggestions on custom 404 pages.
 * Improvement: Optimize the redirects table after emptying the trash (thanks Christos).
 * Improvement: Add a button to the "Page Redirects" to scroll to the "Add a Manual Redirect" section (for wireplay).
+* Improvement: Remove the page suggestions on/off option. To turn it off, don't include the shortcode.
 * FIX: Ordering redirects and 404s by the 'Hits' column works again (broken in 2.4.0) (thanks Christos).
 * FIX: Duplicate redirects are no longer created when a user specified 404 page is used.
 
