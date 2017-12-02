@@ -288,8 +288,8 @@ class ABJ_404_Solution_DataAccess {
         
         // if we're showing all rows include all of the log data in the query already. this makes the query very slow. 
         // this should be replaced by the dynamic loading of log data using ajax queries as the page is viewed.
-        $showingAllRowsAtOnce = ($tableOptions['perpage'] > 5000);
-        if ($showingAllRowsAtOnce) {
+        $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits');
+        if ($queryAllRowsAtOnce) {
             $query .= "logstable.logshits as logshits, \n" .
                     "logstable.logsid, \n";
         } else {
@@ -301,7 +301,7 @@ class ABJ_404_Solution_DataAccess {
                 "  LEFT OUTER JOIN " . $wpdb->posts . " \n " .
                 "    on " . $redirects . ".final_dest = " . $wpdb->posts . ".id \n ";
 
-        if ($showingAllRowsAtOnce) {
+        if ($queryAllRowsAtOnce) {
             $query .= "  LEFT OUTER JOIN ( \n " .
                     "    SELECT requested_url, \n " .
                     "           MIN(" . $logs . ".id) AS logsid, \n " .
@@ -348,7 +348,7 @@ class ABJ_404_Solution_DataAccess {
         $rows = $this->queryAndGetResults($query)['rows'];
         
         // populate the logs data if we need to
-        if (!$showingAllRowsAtOnce) {
+        if (!$queryAllRowsAtOnce) {
             $rows = $this->populateLogsData($rows);
         }
         
