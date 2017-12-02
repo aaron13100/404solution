@@ -127,7 +127,11 @@ class ABJ_404_Solution_PluginLogic {
         global $abj404dao;
         global $abj404logic;
         global $abj404logging;
-        
+
+        // this may be used later when displaying suggestions.
+        $cookieName = ABJ404_PP . '_REQUEST_URI';
+        setcookie($cookieName, esc_url($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
+
         $options = $abj404logic->getOptions();
         
         // ---------------------------------------
@@ -138,7 +142,13 @@ class ABJ_404_Solution_PluginLogic {
         if (($dest404page != ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) && 
                 ($dest404page != ABJ404_TYPE_404_DISPLAYED)) {
             $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0);
-            $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_CAPTURED, $permalink['type'], $permalink['id'], $options['default_redirect'], 0);
+            
+            // get the existing redirect before adding a new one.
+            $redirect = $abj404dao->getExistingRedirectForURL($requestedURL);
+            if (!isset($redirect['id']) || $redirect['id'] == 0) {
+                $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_CAPTURED, $permalink['type'], $permalink['id'], $options['default_redirect'], 0);
+            }
+            
             $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'user specified 404 page. ' . $reason);
             $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
             exit;
@@ -307,15 +317,14 @@ class ABJ_404_Solution_PluginLogic {
             'log_deletion' => '365',
             'admin_notification' => '200',
             'remove_matches' => '1',
-            'display_suggest' => '1',
             'suggest_minscore' => '25',
             'suggest_max' => '5',
-            'suggest_title' => '<h3>' . __('Suggested Alternatives', '404-solution') . '</h3>',
+            'suggest_title' => '<h3>' . __('Here are some other great pages', '404-solution') . '</h3>',
             'suggest_before' => '<ol>',
             'suggest_after' => '</ol>',
             'suggest_entrybefore' => '<li>',
             'suggest_entryafter' => '</li>',
-            'suggest_noresults' => '<p>' . __('No Results To Display.', '404-solution') . '</p>',
+            'suggest_noresults' => '<p>' . __('No suggestions. :/ ', '404-solution') . '</p>',
             'suggest_cats' => '1',
             'suggest_tags' => '1',
             'auto_redirects' => '1',
@@ -1104,7 +1113,7 @@ class ABJ_404_Solution_PluginLogic {
 
         if (array_key_exists('suggest_minscore', $_POST) && isset($_POST['suggest_minscore'])) {
             if (preg_match('/^[0-9]+$/', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
-                $options['suggest_minscore'] = absint($_POST['suggest_minscore']);
+                $options['suggest_minscore'] = min(max(absint($_POST['suggest_minscore']), 10), 90);
             } else {
                 $message .= __('Error: Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
             }
@@ -1143,7 +1152,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         // these options all default to 0 if they're not specifically set to 1.
-        $optionsList = array('remove_matches', 'debug_mode', 'display_suggest', 'suggest_cats', 'suggest_tags', 
+        $optionsList = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags', 
             'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs');
         foreach ($optionsList as $optionName) {
             $options[$optionName] = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;

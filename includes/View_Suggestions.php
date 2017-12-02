@@ -21,10 +21,6 @@ class ABJ_404_Solution_View_Suggestions {
         global $abj404view;
         
         // Suggested Alternatives Options
-        $selectedDisplaySuggest = "";
-        if ($options['display_suggest'] == '1') {
-            $selectedDisplaySuggest = " checked";
-        }
         $selectedSuggestCats = "";
         if ($options['suggest_cats'] == '1') {
             $selectedSuggestCats = " checked";
@@ -37,7 +33,6 @@ class ABJ_404_Solution_View_Suggestions {
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/viewSuggestions.html");
         // do special replacements
-        $html = str_replace('{SELECTED_DISPLAY_SUGGEST}', $selectedDisplaySuggest, $html);
         $html = str_replace('{SELECTED_SUGGEST_CATS}', $selectedSuggestCats, $html);
         $html = str_replace('{SELECTED_SUGGEST_TAGS}', $selectedSuggestTags, $html);
         $html = str_replace('{SUGGEST_MIN_SCORE}', esc_attr($options['suggest_minscore']), $html);

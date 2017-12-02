@@ -442,12 +442,6 @@ class ABJ_404_Solution_DataAccess {
                     $reasonMessage);
         }
         
-        // TODO remove this after a few versions. introduced in 1.8.2.
-        $wpdb->query("delete from " . $wpdb->prefix . "abj404_logsv2 where requested_url is null");
-        if ($wpdb->last_error != '') {
-            $abj404logging->debugMessage("Issue removing log lines with blank URLs. msg: " . $wpdb->last_error);
-        }
-
         // TODO insert the $matchReason and the ignore reason into the log table?
         $wpdb->insert($wpdb->prefix . "abj404_logsv2", array(
             'timestamp' => esc_sql($now),

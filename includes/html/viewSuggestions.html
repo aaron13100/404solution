@@ -1,39 +1,50 @@
     <p>
-        <label for="display_suggest">{Turn on 404 suggestions}:</label>
-        <input type="checkbox" name="display_suggest" id="display_suggest" value="1" {SELECTED_DISPLAY_SUGGEST}>
-        <br>&nbsp;&nbsp;&nbsp;{Activates the 404 page suggestions function. Only works if the code is in your 404 page template.}
-        <br>&nbsp;&nbsp;&nbsp;{Code}: &lt;?php if (!empty($abj404connector)) {{}$abj404connector-&gt;suggestions(); {}} ?&gt;</p>
+        {Display the closest matching pages by using the shortcode <span style="font-weight: bold;">[abj404_solution_page_suggestions]</span>. }
+        <BR/><BR/>
+        {This shortcode can be used on the 404 page and will display a list of suggested pages. }
+        {This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page. }
+        <BR/>
+        <BR/>
+        {Note: The "scores" that appear in the format of "(75.7576)" after the page links are only displayed for admin users.}
+        <HR/>
     <p>
         <label for="suggest_cats">{Allow category suggestions}:</label>
         <input type="checkbox" name="suggest_cats" id="suggest_cats" value="1" {SELECTED_SUGGEST_CATS}>
-        <br>
     </p>
     <p>
         <label for="suggest_tags">{Allow tag suggestions}:</label>
         <input type="checkbox" name="suggest_tags" id="suggest_tags" value="1" {SELECTED_SUGGEST_TAGS}>
-        <br>
     </p>
     <p>
         <label for="suggest_minscore">{Minimum score of suggestions to display}:</label>
         <input type="text" name="suggest_minscore" id="suggest_minscore" value="{SUGGEST_MIN_SCORE}" style="width: 50px;">
+        <BR/>&nbsp;&nbsp;&nbsp;{The suggested page must "score" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)}
+        
     </p>
     <p>
         <label for="suggest_max">{Maximum number of suggestions to display}:</label>
         <input type="text" name="suggest_max" id="suggest_max" value="{SUGGEST_MAX_SUGGESTIONS}" style="width: 50px;">
+        <BR/>&nbsp;&nbsp;&nbsp;{Even if more pages could be suggested, show at most this many (default: 5)}
     </p>
     <p>
         <label for="suggest_title">{Page suggestions title}:</label>
-        <input type="text" name="suggest_title" id="suggest_title" value="{SUGGEST_USER_TITLE}" style="width: 200px; background-image: url(&quot;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABHklEQVQ4EaVTO26DQBD1ohQWaS2lg9JybZ+AK7hNwx2oIoVf4UPQ0Lj1FdKktevIpel8AKNUkDcWMxpgSaIEaTVv3sx7uztiTdu2s/98DywOw3Dued4Who/M2aIx5lZV1aEsy0+qiwHELyi+Ytl0PQ69SxAxkWIA4RMRTdNsKE59juMcuZd6xIAFeZ6fGCdJ8kY4y7KAuTRNGd7jyEBXsdOPE3a0QGPsniOnnYMO67LgSQN9T41F2QGrQRRFCwyzoIF2qyBuKKbcOgPXdVeY9rMWgNsjf9ccYesJhk3f5dYT1HX9gR0LLQR30TnjkUEcx2uIuS4RnI+aj6sJR0AM8AaumPaM/rRehyWhXqbFAA9kh3/8/NvHxAYGAsZ/il8IalkCLBfNVAAAAABJRU5ErkJggg==&quot;); background-repeat: no-repeat; background-attachment: scroll; background-size: 16px 18px; background-position: 98% 50%;">
+        <input type="text" name="suggest_title" id="suggest_title" value="{SUGGEST_USER_TITLE}" style="width: 400px; background-image: url(&quot;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABHklEQVQ4EaVTO26DQBD1ohQWaS2lg9JybZ+AK7hNwx2oIoVf4UPQ0Lj1FdKktevIpel8AKNUkDcWMxpgSaIEaTVv3sx7uztiTdu2s/98DywOw3Dued4Who/M2aIx5lZV1aEsy0+qiwHELyi+Ytl0PQ69SxAxkWIA4RMRTdNsKE59juMcuZd6xIAFeZ6fGCdJ8kY4y7KAuTRNGd7jyEBXsdOPE3a0QGPsniOnnYMO67LgSQN9T41F2QGrQRRFCwyzoIF2qyBuKKbcOgPXdVeY9rMWgNsjf9ccYesJhk3f5dYT1HX9gR0LLQR30TnjkUEcx2uIuS4RnI+aj6sJR0AM8AaumPaM/rRehyWhXqbFAA9kh3/8/NvHxAYGAsZ/il8IalkCLBfNVAAAAABJRU5ErkJggg==&quot;); background-repeat: no-repeat; background-attachment: scroll; background-size: 16px 18px; background-position: 98% 50%;">
+        <BR/>&nbsp;&nbsp;&nbsp;{This text will appear before the list of suggestions (default: &lt;h3&gt;Here are some other great pages&lt;/h3&gt;)}
     </p>
-    <p>{Display Before/After page suggestions}:
-        <input type="text" name="suggest_before" value="{SUGGEST_USER_BEFORE}" style="width: 100px;"> /
+    <p>
+        <label for="suggest_before">{Display Before/After page suggestions}:</label>
+        <input type="text" name="suggest_before" id="suggest_before" value="{SUGGEST_USER_BEFORE}" style="width: 150px;"> /
         <input type="text" name="suggest_after" value="{SUGGEST_USER_AFTER}" style="width: 100px;">
+        <BR/>&nbsp;&nbsp;&nbsp;{This creates the list. For example, use &lt;ol style="list-style-type: none;"&gt; to hide the numbers in the list. (defaults: &lt;ol&gt; / &lt;/ol&gt;)}
     </p>
-    <p>{Display Before/After each suggested entry}:
-        <input type="text" name="suggest_entrybefore" value="{SUGGEST_USER_ENTRY_BEFORE}" style="width: 100px;"> /
+    <p>
+        <label for="suggest_entrybefore">{Display Before/After each suggested page}:</label>
+        <input type="text" name="suggest_entrybefore" id="suggest_entrybefore" value="{SUGGEST_USER_ENTRY_BEFORE}" style="width: 100px;"> /
         <input type="text" name="suggest_entryafter" value="{SUGGEST_USER_ENTRY_AFTER}" style="width: 100px;">
+        <BR/>&nbsp;&nbsp;&nbsp;{This surrounds each item in the list. (defaults: &lt;li&gt; / &lt;/li&gt;)}
     </p>
     <p>
         <label for="suggest_noresults">{Display if no suggestion results}:</label>
-        <input type="text" name="suggest_noresults" id="suggest_noresults" value="{SUGGEST_USER_NO_RESULTS}" style="width: 200px;">
+        <input type="text" name="suggest_noresults" id="suggest_noresults" value="{SUGGEST_USER_NO_RESULTS}" style="width: 400px;">
+        <BR/>&nbsp;&nbsp;&nbsp;{If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)}
     </p>
