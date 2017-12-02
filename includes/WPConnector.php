@@ -54,88 +54,17 @@ class ABJ_404_Solution_WordPress_Connector {
         return $links;
     }
 
-    /**
-     * @global type $abj404spellChecker
+    /** This is called directly by php code inserted into the page by the user.
+     * Code: <?php if (!empty($abj404connector)) {$abj404connector->suggestions(); } ?>
+     * @global type $abj404shortCode
      */
     function suggestions() {
-        global $abj404logic;
-        global $abj404spellChecker;
+        global $abj404shortCode;
 
         if (is_404()) {
-            $options = $abj404logic->getOptions();
-            if (@$options['display_suggest'] == '1') {
-                echo "<div class=\"suggest-404s\">";
-                $requestedURL = esc_url($_SERVER['REQUEST_URI']);
+            $content = $abj404shortCode->shortcodePageSuggestions(array());
 
-                $urlParts = parse_url($requestedURL);
-                $permalinkSuggestions = $abj404spellChecker->findMatchingPosts($urlParts['path'], @$options['suggest_cats'], @$options['suggest_tags']);
-
-                // Allowing some HTML.
-                echo wp_kses($options['suggest_title'], array(
-                    'h1' => array(),
-                    'h2' => array(),
-                    'h3' => array(),
-                    'h4' => array(),
-                    'h5' => array(),
-                    'h6' => array(),
-                    'i' => array(),
-                    'em' => array(),
-                    'strong' => array(),
-                        )
-                );
-                $displayed = 0;
-
-                foreach ($permalinkSuggestions as $k => $v) {
-                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($k, $v);
-
-                    if ($permalink['score'] >= $options['suggest_minscore']) {
-                        if ($displayed == 0) {
-                            // No need to escape since we're expecting HTML
-                            echo wp_kses($options['suggest_before'], array(
-                                'ul' => array(),
-                                'ol' => array(),
-                                'li' => array(),
-                                    )
-                            );
-                        }
-
-                        echo wp_kses($options['suggest_entrybefore'], array(
-                            'ul' => array(),
-                            'ol' => array(),
-                            'li' => array(),
-                                )
-                        );
-                        echo "<a href=\"" . esc_url($permalink['link']) . "\" title=\"" . esc_attr($permalink['title']) . "\">" . esc_attr($permalink['title']) . "</a>";
-                        if (is_user_logged_in() && current_user_can('manage_options')) {
-                            echo " (" . esc_html($permalink['score']) . ")";
-                        }
-                        echo wp_kses(@$options['suggest_entryafter'], array(
-                            'ul' => array(),
-                            'ol' => array(),
-                            'li' => array(),
-                                )
-                        );
-                        $displayed++;
-                        if ($displayed >= $options['suggest_max']) {
-                            break;
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                if ($displayed >= 1) {
-                    echo wp_kses($options['suggest_after'], array(
-                        'ul' => array(),
-                        'ol' => array(),
-                        'li' => array(),
-                            )
-                    );
-                } else {
-                    echo wp_kses($options['suggest_noresults'], $allowedtags);
-                }
-
-                echo "</div>";
-            }
+            echo $content;
         }
     }
 

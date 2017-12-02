@@ -1,0 +1,110 @@
+<?php
+
+// turn on debug for localhost etc
+$whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
+if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
+
+/* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
+
+class ABJ_404_Solution_ShortCode {
+    
+    /** 
+     * @param type $atts
+     */
+    static function shortcodePageSuggestions( $atts ) {
+        global $abj404logic;
+        global $abj404spellChecker;
+        
+        // Attributes
+        $atts = shortcode_atts(
+                array(
+                    ),
+                $atts
+            );
+
+        $options = $abj404logic->getOptions();
+        
+        $content = "\n<!-- " . ABJ404_PP . " - Begin 404 suggestions. -->\n";
+
+        // get the slug that caused the 404 from the session.
+        $urlRequest = '';
+        $cookieName = ABJ404_PP . '_REQUEST_URI';
+        if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
+            $urlRequest = esc_url(preg_replace('/\?.*/', '', esc_url($_COOKIE[$cookieName])));
+            // delete the cookie because the request was a one-time thing.
+            // we use javascript to delete the cookie because the headers have already been sent.
+            $content .= "<script> \n" .
+                    "   var d = new Date(); \n" . 
+                    "   d.setTime(d.getTime() - (60 * 5)); \n" .
+                    '   var expires = "expires="+ d.toUTCString(); ' . "\n" . 
+                    '   document.cookie = "' . $cookieName . '=;" + expires + ";path=/"; ' . "\n" .
+                    "</script> \n";
+    
+        } else {
+            // if no 404 was detected then we don't offer any suggestions
+            return "<!-- " . ABJ404_PP . " - No 404 was detected. No suggestions to offer. -->\n";
+        }
+        
+        $urlSlugOnly = $abj404logic->removeHomeDirectory($urlRequest);
+        $permalinkSuggestions = $abj404spellChecker->findMatchingPosts($urlSlugOnly, @$options['suggest_cats'], @$options['suggest_tags']);
+
+
+        // allow some HTML.
+        $content .= '<div class="suggest-404s">' . "\n";
+        $content .= wp_kses_post($options['suggest_title']) . "\n";
+        
+        $currentSlug = $abj404logic->removeHomeDirectory(
+                esc_url(preg_replace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI']))));
+        $displayed = 0;
+
+        foreach ($permalinkSuggestions as $idAndType => $linkScore) {
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore);
+
+            // only display the suggestion if the score is high enough 
+            // and if we're not currently on the page we're about to suggest.
+            if ($permalink['score'] >= $options['suggest_minscore'] &&
+                    basename($permalink['link']) != $currentSlug) {
+                if ($displayed == 0) {
+                    // <ol>
+                    $content .= wp_kses_post($options['suggest_before']);
+                }
+
+                // <li>
+                $content .= wp_kses_post($options['suggest_entrybefore']);
+                
+                $content .= "<a href=\"" . esc_url($permalink['link']) . "\" title=\"" . esc_attr($permalink['title']) . "\">" . esc_attr($permalink['title']) . "</a>";
+                
+                // display the score after the page link
+                if (is_user_logged_in() && current_user_can('manage_options')) {
+                    $content .= " (" . esc_html($permalink['score']) . ")";
+                }
+                
+                // </li>
+                $content .= wp_kses_post(@$options['suggest_entryafter']) . "\n";
+                $displayed++;
+                if ($displayed >= $options['suggest_max']) {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        if ($displayed >= 1) {
+            // </ol>
+            $content .= wp_kses_post($options['suggest_after']) . "\n";
+            
+        } else {
+            $content .= wp_kses_post($options['suggest_noresults']);
+        }
+
+        $content .= "\n</div>";
+        $content .= "\n<!-- " . ABJ404_PP . " - End 404 suggestions. -->\n";
+
+        return $content;
+    }
+
+}
+add_shortcode('abj404_solution_page_suggestions', 'ABJ_404_Solution_ShortCode::shortcodePageSuggestions');

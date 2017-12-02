@@ -63,11 +63,13 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 == Changelog ==
 
-= Version 2.? (??) =
-* FIX: Ordering redirects and 404s by the 'Hits' column works again (broken in 2.4.0) (thanks Christos).
+= Version 2.5.0 (??) =
+* Feature: Add an option to email the log file to the developer when there's an error in the log file.
+* Feature: Add the [abj404_solution_page_suggestions] shortcode to display page suggestions on custom 404 pages.
 * Improvement: Optimize the redirects table after emptying the trash (thanks Christos).
-* Improvement: Add an option to email the log file to the developer when there's an error in the log file.
 * Improvement: Add a button to the "Page Redirects" to scroll to the "Add a Manual Redirect" section (for wireplay).
+* FIX: Ordering redirects and 404s by the 'Hits' column works again (broken in 2.4.0) (thanks Christos).
+* FIX: Duplicate redirects are no longer created when a user specified 404 page is used.
 
 = Version 2.4.1 (November 27, 2017) =
 * FIX: Make the 'Empty Trash' button work for lots of data (for Christos).

@@ -75,6 +75,7 @@ require_once ABJ404_PATH . "includes/PluginLogic.php";
 require_once ABJ404_PATH . "includes/WPConnector.php";
 require_once ABJ404_PATH . "includes/SpellChecker.php";
 require_once ABJ404_PATH . "includes/ErrorHandler.php";
+require_once ABJ404_PATH . "includes/ShortCode.php";
 
 if (is_admin()) {
     require_once ABJ404_PATH . "includes/View.php";
@@ -87,6 +88,7 @@ $abj404dao = new ABJ_404_Solution_DataAccess();
 $abj404logic = new ABJ_404_Solution_PluginLogic();
 $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
 $abj404connector = new ABJ_404_Solution_WordPress_Connector();
+$abj404shortCode = new ABJ_404_Solution_ShortCode();
 
 /**
  * Load the text domain for translation of the plugin.
