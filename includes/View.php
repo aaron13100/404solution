@@ -397,11 +397,10 @@ class ABJ_404_Solution_View {
 
                 } catch (Exception $e) {
                     $this->errorMessage("Error reading debug file. (4)", $e);
-
-                } finally {
-                    if ($handle != null) {
-                        fclose($handle);
-                    }
+                }
+                
+                if ($handle != null) {
+                    fclose($handle);
                 }
                 
             } else {

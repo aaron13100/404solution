@@ -231,9 +231,11 @@ class ABJ_404_Solution_PluginLogic {
         try {
             $this->currentlyUpdatingDatabaseVersion = true;
             $returnValue = $this->updateToNewVersionAction($options);
-        } finally {
-            $this->currentlyUpdatingDatabaseVersion = false;
+            
+        } catch (Exception $e) {
+            $this->errorMessage("Error updating to new version. ", $e);
         }
+        $this->currentlyUpdatingDatabaseVersion = false;
         
         return $returnValue;
     }

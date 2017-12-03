@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.5.1 (December 3, 2017) ##
+* FIX: Work with PHP version 5.4 again (5.5 required otherwise) (thanks moneyman910!).
+
 ## Version 2.5.0 (December 2, 2017) ##
 * FIX: Avoid a critical issue that may have caused an infinite loop in rare cases when updating versions.
 * Feature: Add an option to email the log file to the developer when there's an error in the log file.
