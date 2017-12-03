@@ -182,11 +182,10 @@ class ABJ_404_Solution_Logging {
             
         } catch (Exception $e) {
             $this->errorMessage("Error reading log file. (2)", $e);
+        }
             
-        } finally {
-            if ($handle != null) {
-                fclose($handle);
-            }
+        if ($handle != null) {
+            fclose($handle);
         }
         
         return $latestErrorLineFound;
