@@ -37,7 +37,8 @@ class ABJ_404_Solution_DataAccess {
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults("show create table " . $redirectsTable);
         // this encode/decode turns the results into an array from a "stdClass"
         $rows = $result['rows'];
-        $tableSQL = array_values($rows[0])[1];
+        $row1 = array_values($rows[0]);
+        $tableSQL = $row1[1];
         // if the column does not have btree then drop and recreate the index.
         if (!preg_match("/url.+ USING BTREE/i", $tableSQL)) {
             if (preg_match("/KEY.+url/i", $tableSQL)) {
@@ -59,7 +60,8 @@ class ABJ_404_Solution_DataAccess {
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults("show create table " . $logsTable);
         // this encode/decode turns the results into an array from a "stdClass"
         $rows = $result['rows'];
-        $tableSQL = array_values($rows[0])[1];
+        $row1 = array_values($rows[0]);
+        $tableSQL = $row1[1];
         // if the column does not have btree then drop and recreate the index. ""
         if (!preg_match("/requested_url.+ USING BTREE/i", $tableSQL)) {
             if (preg_match("/KEY.+requested_url/i", $tableSQL)) {
@@ -345,7 +347,8 @@ class ABJ_404_Solution_DataAccess {
         
         // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
         // they can use a different ID - not the ID from the logs table.
-        $rows = $this->queryAndGetResults($query)['rows'];
+        $results = $this->queryAndGetResults($query);
+        $rows = $results['rows'];
         
         // populate the logs data if we need to
         if (!$queryAllRowsAtOnce) {
@@ -390,7 +393,8 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         $query = str_replace('{where_clause_here}', $whereClause, $query);
         
-        $rows = ABJ_404_Solution_DataAccess::queryAndGetResults($query)['rows'];
+        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        $rows = $results['rows'];
 
         return $rows;
     }

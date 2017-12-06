@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.5.2 (December 3, 2017) ##
+* FIX: Work with PHP version 5.2 again (5.5 required otherwise) (thanks Peter Ford).
+
 ## Version 2.5.1 (December 3, 2017) ##
 * FIX: Work with PHP version 5.4 again (5.5 required otherwise) (thanks moneyman910!).
 
