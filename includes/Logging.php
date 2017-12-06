@@ -14,7 +14,7 @@ class ABJ_404_Solution_Logging {
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
         global $abj404logic;
-        $options = $abj404logic->getOptions(1);
+        $options = $abj404logic->getOptions(true);
 
         return (@$options['debug_mode'] == true);
     }

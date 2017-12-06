@@ -29,7 +29,7 @@ class ABJ_404_Solution_ErrorHandler {
         global $abj404logging;
         try {
             // if the error file does not contain the name of our plugin then we ignore it.
-            $pluginFolder = substr(ABJ404_NAME, 0, strpos(ABJ404_NAME, '/'));
+            $pluginFolder = mb_substr(ABJ404_NAME, 0, strpos(ABJ404_NAME, '/'));
             if (strpos($errfile, $pluginFolder) === false) {
                 return false;
             }
@@ -66,7 +66,7 @@ class ABJ_404_Solution_ErrorHandler {
         try {
             $errno = $lasterror['type'];
             $errfile = $lasterror['file'];
-            $pluginFolder = substr(ABJ404_NAME, 0, strpos(ABJ404_NAME, '/'));
+            $pluginFolder = mb_substr(ABJ404_NAME, 0, strpos(ABJ404_NAME, '/'));
 
             // if the error file does not contain the name of our plugin then we ignore it.
             if (strpos($errfile, $pluginFolder) === false) {

@@ -31,8 +31,8 @@ class ABJ_404_Solution_SpellChecker {
 //                continue;
 //            }
 //            
-//            $levscore = levenshtein($word, $potential);
-//            $scoreBasis = strlen($potential) * 3;
+//            $levscore = $this->customLevenshtein($word, $potential);
+//            $scoreBasis = mb_strlen($potential) * 3;
 //            $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
 //            
 //            $matches[$potential] = $score;
@@ -47,7 +47,7 @@ class ABJ_404_Solution_SpellChecker {
 //        
 //        // if the top two results have the same levenshiein score then we can't really tell which
 //        // one is the more correct answer.
-//        if (levenshtein($word, key($bestMatch)) == levenshtein($word, key($secondBest))) {
+//        if ($this->customLevenshtein($word, key($bestMatch)) == $this->customLevenshtein($word, key($secondBest))) {
 //            return null;
 //        }
 //        
@@ -162,8 +162,8 @@ class ABJ_404_Solution_SpellChecker {
             $existingPageURLSpaces = str_replace($separatingCharacters, " ", $existingPageURL);
             $existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
             
-            $levscore = levenshtein($requestedURLCleaned, $existingPageURLCleaned, 1, 1, 1);
-            $scoreBasis = strlen($existingPageURLCleaned) * 3;
+            $levscore = $this->customLevenshtein($requestedURLCleaned, $existingPageURLCleaned, 1, 1, 1);
+            $scoreBasis = mb_strlen($existingPageURLCleaned) * 3;
 
             if ($scoreBasis == 0) {
                 continue;
@@ -179,8 +179,8 @@ class ABJ_404_Solution_SpellChecker {
                 $id = $row->term_id;
                 $the_permalink = get_tag_link($id);
                 $urlParts = parse_url($the_permalink);
-                $scoreBasis = strlen($urlParts['path']);
-                $levscore = levenshtein($requestedURLCleaned, $urlParts['path'], 1, 1, 1);
+                $scoreBasis = mb_strlen($urlParts['path']);
+                $levscore = $this->customLevenshtein($requestedURLCleaned, $urlParts['path'], 1, 1, 1);
                 $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
                 $permalinks[$id . "|" . ABJ404_TYPE_TAG] = number_format($score, 4, '.', '');
             }
@@ -193,8 +193,8 @@ class ABJ_404_Solution_SpellChecker {
                 $id = $row->term_id;
                 $the_permalink = get_category_link($id);
                 $urlParts = parse_url($the_permalink);
-                $scoreBasis = strlen($urlParts['path']);
-                $levscore = levenshtein($requestedURLCleaned, $urlParts['path'], 1, 1, 1);
+                $scoreBasis = mb_strlen($urlParts['path']);
+                $levscore = $this->customLevenshtein($requestedURLCleaned, $urlParts['path'], 1, 1, 1);
                 $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
                 $permalinks[$id . "|" . ABJ404_TYPE_CAT] = number_format($score, 4, '.', '');
             }
@@ -214,10 +214,61 @@ class ABJ_404_Solution_SpellChecker {
         $newURL = $url;
         
         if (strrpos($url, "/")) {
-            $newURL = substr($url, strrpos($url, "/") + 1);
+            $newURL = mb_substr($url, strrpos($url, "/") + 1);
         }
         
         return $newURL;
+    }
+
+    /** This custom levenshtein function has no 255 character limit.
+     * 
+     * It was modified to work with early versions of php. This is copied from 
+     * https://github.com/GordonLesti/levenshtein which had a very liberal MIT license at the time of this writing.
+     * @param type $str1
+     * @param type $str2
+     * @param type $costIns
+     * @param type $costRep
+     * @param type $costDel
+     * @return type
+     */
+    public function customLevenshtein($str1, $str2, $costIns = 1.0, $costRep = 1.0, $costDel = 1.0) {
+        $matrix = array();
+        $str1Array = self::multiByteStringToArray($str1);
+        $str2Array = self::multiByteStringToArray($str2);
+        $str1Length = count($str1Array);
+        $str2Length = count($str2Array);
+        $row = array();
+        $row[0] = 0.0;
+        for ($j = 1; $j < $str2Length + 1; $j++) {
+            $row[$j] = $j * $costIns;
+        }
+        $matrix[0] = $row;
+        for ($i = 0; $i < $str1Length; $i++) {
+            $row = array();
+            $row[0] = ($i + 1) * $costDel;
+            for ($j = 0; $j < $str2Length; $j++) {
+                $row[$j + 1] = min(
+                    $matrix[$i][$j + 1] + $costDel,
+                    $row[$j] + $costIns,
+                    $matrix[$i][$j] + ($str1Array[$i] === $str2Array[$j] ? 0.0 : $costRep)
+                );
+            }
+            $matrix[$i + 1] = $row;
+        }
+        return $matrix[$str1Length][$str2Length];
+    }
+    
+    /** 
+     * @param type $str
+     * @return type
+     */
+    private function multiByteStringToArray($str) {
+        $length = mb_strlen($str);
+        $array = array();
+        for ($i = 0; $i < $length; $i++) {
+            $array[$i] = mb_substr($str, $i, 1);
+        }
+        return $array;
     }
 
 }
