@@ -594,7 +594,6 @@ class ABJ_404_Solution_PluginLogic {
     
     function handleActionChangeItemsPerRow() {
         global $abj404dao;
-        global $abj404logging;
         
         if ($abj404dao->getPostOrGetSanitize('action') == 'changeItemsPerRow') {
             $showRows = max(absint($abj404dao->getPostOrGetSanitize('perpage')), ABJ404_OPTION_MIN_PERPAGE);
