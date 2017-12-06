@@ -21,8 +21,8 @@ class ABJ_404_Solution_PluginLogic {
      */
     function removeHomeDirectory($urlRequest) {
         $urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
-        if (substr($urlRequest, 0, strlen($urlHomeDirectory)) == $urlHomeDirectory) {
-            $urlRequest = substr($urlRequest, strlen($urlHomeDirectory . "/"));
+        if (substr($urlRequest, 0, mb_strlen($urlHomeDirectory)) == $urlHomeDirectory) {
+            $urlRequest = mb_substr($urlRequest, mb_strlen($urlHomeDirectory . "/"));
         }
         
         $urlRequest = rtrim($urlRequest, "/");
@@ -79,7 +79,7 @@ class ABJ_404_Solution_PluginLogic {
         // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
         // ignore requests that are supposed to be for an admin.
         $adminURL = parse_url(admin_url(), PHP_URL_PATH);
-        if (is_admin() || substr($urlRequest, 0, strlen($adminURL)) == $adminURL) {
+        if (is_admin() || mb_substr($urlRequest, 0, mb_strlen($adminURL)) == $adminURL) {
             $abj404logging->debugMessage("Ignoring admin URL: " . $urlRequest);
             $ignoreReasonDoNotProcess = 'Admin URL';
         }
@@ -183,7 +183,7 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $skip_db_check
      * @return array
      */
-    function getOptions($skip_db_check = "0") {
+    function getOptions($skip_db_check = false) {
         $options = get_option('abj404_settings');
 
         if ($options == "") {
@@ -206,7 +206,7 @@ class ABJ_404_Solution_PluginLogic {
             update_option('abj404_settings', $options);
         }
 
-        if ($skip_db_check == "0") {
+        if ($skip_db_check == false) {
             if (!array_key_exists('DB_VERSION', $options) || $options['DB_VERSION'] != ABJ404_VERSION) {
                 $options = $this->updateToNewVersion($options);
             }
@@ -380,7 +380,7 @@ class ABJ_404_Solution_PluginLogic {
     function doUpdateDBVersionOption() {
         global $abj404logic;
 
-        $options = $abj404logic->getOptions(1);
+        $options = $abj404logic->getOptions(true);
 
         $options['DB_VERSION'] = ABJ404_VERSION;
 
@@ -909,7 +909,7 @@ class ABJ_404_Solution_PluginLogic {
             $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
         }
 
-        if ($fromURL != "" && substr($_POST['url'], 0, 1) != "/") {
+        if ($fromURL != "" && mb_substr($_POST['url'], 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
         }
 
@@ -962,7 +962,7 @@ class ABJ_404_Solution_PluginLogic {
             if ($_POST['external'] == "") {
                 $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<BR/>";
             } else {
-                if (substr($_POST['external'], 0, 7) != "http://" && substr($_POST['external'], 0, 8) != "https://" && substr($_POST['external'], 0, 6) != "ftp://") {
+                if (substr($_POST['external'], 0, 7) != "http://" && mb_substr($_POST['external'], 0, 8) != "https://" && mb_substr($_POST['external'], 0, 6) != "ftp://") {
                     $response['message'] = __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<BR/>";
                 }
             }
@@ -1038,7 +1038,7 @@ class ABJ_404_Solution_PluginLogic {
     function getTableOptions() {
         global $abj404dao;
         $tableOptions = array();
-        $options = $this->getOptions();
+        $options = $this->getOptions(true);
 
         $tableOptions['filter'] = $abj404dao->getPostOrGetSanitize("filter", "");
         if ($tableOptions['filter'] == "") {

@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.5.3 (December 6, 2017) ##
+* FIX: Work with URLs longer than 255 characters (for lestadt).
+
 ## Version 2.5.2 (December 3, 2017) ##
 * FIX: Work with PHP version 5.2 again (5.5 required otherwise) (thanks Peter Ford).
 

@@ -2,10 +2,10 @@
 Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
-Requires at least: 4.1
-Version: 2.5.2
+Requires at least: 3.9
+Version: 2.5.3
 Tested up to: 4.9
-Stable tag: 2.5.2
+Stable tag: 2.5.3
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -21,6 +21,7 @@ Automatically redirect 404s when the slug matches (for permalink changes), when 
 * View logs of hits to 404 pages and redirects including referrer data.
 * WooCommerce compatible - pages, posts, products, and custom post types are supported.
 * Create automatic redirects for any URL resolving to a single page or post that isn't the current permalink.
+* Display a list of page suggestions on a custom 404 page with a shortcode (custom 404 page not included).
 * Basic plugin usage statistics.
 * Automatically remove redirects when the URL matches a new page or post permalink.
 * Automatically remove manual and automatic redirects once they are no longer being used.
@@ -62,6 +63,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.5.3 (December 6, 2017) =
+* FIX: Work with URLs longer than 255 characters (for lestadt).
 
 = Version 2.5.2 (December 3, 2017) =
 * FIX: Work with PHP version 5.2 again (5.5 required otherwise) (thanks Peter Ford).
