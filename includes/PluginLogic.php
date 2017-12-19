@@ -299,18 +299,23 @@ class ABJ_404_Solution_PluginLogic {
 
         // move to the new log table
         if (version_compare($currentDBVersion, '1.8.0') < 0) {
-            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
-            $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
-            $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
-            $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
+            $query = "SHOW TABLES LIKE '" . $wpdb->prefix . 'abj404_logs' . "'";
             $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $rows = $result['rows'];
+            if (!empty(array_filter($rows))) {
+                $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
+                $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
+                $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
+                $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
+                $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
 
-            // if anything was successfully imported then delete the old table.
-            if ($result['rows_affected'] > 0) {
-                $abj404logging->infoMessage($result['rows_affected'] . 
-                        ' log rows were migrated to the new table structre.');
-                // log the rows inserted/migrated.
-                $wpdb->query('drop table ' . $wpdb->prefix . 'abj404_logs');
+                // if anything was successfully imported then delete the old table.
+                if ($result['rows_affected'] > 0) {
+                    $abj404logging->infoMessage($result['rows_affected'] . 
+                            ' log rows were migrated to the new table structre.');
+                    // log the rows inserted/migrated.
+                    $wpdb->query('drop table ' . $wpdb->prefix . 'abj404_logs');
+                }
             }
         }
 
