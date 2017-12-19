@@ -299,7 +299,12 @@ class ABJ_404_Solution_WordPress_Connector {
 
         if ($key != "") {
             $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($key, 0);
-            $abj404dao->logRedirectHit($requestedURL, $permalink['link'], $matchReason);
+
+            // log only the path part of the URL
+            $urlParts = parse_url(esc_url($permalink['link']));
+            $redirectedTo = $urlParts['path'];
+            
+            $abj404dao->logRedirectHit($requestedURL, $redirectedTo, $matchReason);
             $abj404logic->forceRedirect($permalink['link'], esc_html($redirect['code']));
             exit;
         }

@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.5.3
+Version: 2.5.4
 Tested up to: 4.9
-Stable tag: 2.5.3
+Stable tag: 2.5.4
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -63,6 +63,11 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.5.4 (December 18, 2017) =
+* Improvememt: Improved error message for the customLevenshtein function.
+* FIX: Handle a version upgrade without an SQL error when the old logs table doesn't exist 
+    (thanks to the user error reporting option).
 
 = Version 2.5.3 (December 6, 2017) =
 * FIX: Work with URLs longer than 255 characters (for lestadt).

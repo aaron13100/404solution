@@ -232,6 +232,8 @@ class ABJ_404_Solution_SpellChecker {
      * @return type
      */
     public function customLevenshtein($str1, $str2, $costIns = 1.0, $costRep = 1.0, $costDel = 1.0) {
+        $_REQUEST[ABJ404_PP]['debug_info'] = 'customLevenshtein. str1: ' . esc_html($str1) . ', str2: ' . esc_html($str2);
+        
         $matrix = array();
         $str1Array = self::multiByteStringToArray($str1);
         $str2Array = self::multiByteStringToArray($str2);
@@ -247,14 +249,15 @@ class ABJ_404_Solution_SpellChecker {
             $row = array();
             $row[0] = ($i + 1) * $costDel;
             for ($j = 0; $j < $str2Length; $j++) {
-                $row[$j + 1] = min(
-                    $matrix[$i][$j + 1] + $costDel,
-                    $row[$j] + $costIns,
-                    $matrix[$i][$j] + ($str1Array[$i] === $str2Array[$j] ? 0.0 : $costRep)
-                );
+                $minPart1 = $matrix[$i][$j + 1] + $costDel;
+                $minPart2 = $row[$j] + $costIns;
+                $minPart3 = $matrix[$i][$j] + ($str1Array[$i] === $str2Array[$j] ? 0.0 : $costRep);
+                $row[$j + 1] = min($minPart1, $minPart2, $minPart3);
             }
             $matrix[$i + 1] = $row;
         }
+        
+        $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after customLevenshtein.';
         return $matrix[$str1Length][$str2Length];
     }
     
