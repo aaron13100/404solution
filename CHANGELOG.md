@@ -1,7 +1,7 @@
 # Changelog #
 
 ## Version 2.5.4 (December 18, 2017) ##
-* Improvememt: Improved error message for the customLevenshtein function.
+* Improvement: Improved error message for the customLevenshtein function.
 * FIX: Handle a version upgrade without an SQL error when the old logs table doesn't exist 
     (thanks to the user error reporting option).
 
