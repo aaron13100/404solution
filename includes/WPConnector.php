@@ -333,13 +333,10 @@ class ABJ_404_Solution_WordPress_Connector {
         if (current_user_can('manage_options')) {
             if ( (array_key_exists('page', $_GET) && $_GET['page'] == ABJ404_PP) ||
                  ($pagenow == 'index.php' && !isset($_GET['page'])) ) {
-                $options = $abj404logic->getOptions();
-                if (array_key_exists('admin_notification', $options) && isset($options['admin_notification']) && $options['admin_notification'] != '0') {
-                    $captured = $abj404dao->getCapturedCountForNotification();
-                    if ($captured >= $options['admin_notification']) {
-                        $msg = $abj404view->getDashboardNotificationCaptured($captured);
-                        echo $msg;
-                    }
+                $captured404Count = $abj404dao->getCapturedCountForNotification();
+                if ($abj404logic->shouldNotifyAboutCaptured404s($captured404Count)) {
+                    $msg = $abj404view->getDashboardNotificationCaptured($captured404Count);
+                    echo $msg;
                 }
             }
         }

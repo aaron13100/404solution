@@ -1470,6 +1470,8 @@ class ABJ_404_Solution_View {
         $html = str_replace('{selectedRemoveMatches}', $selectedRemoveMatches, $html);
         $html = str_replace('{selectedUnderSettings}', $selectedUnderSettings, $html);
         $html = str_replace('{selecteSsettingsLevel}', $selecteSsettingsLevel, $html);
+        $html = str_replace('{admin_notification_email}', $options['admin_notification_email'], $html);
+        $html = str_replace('{default_wordpress_admin_email}', get_option('admin_email'), $html);
         // constants and translations.
         $html = $this->doNormalReplacements($html);
         

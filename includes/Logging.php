@@ -193,15 +193,15 @@ class ABJ_404_Solution_Logging {
         $attachments = array();
         $attachments[] = $logFileZip;
         $to = ABJ404_AUTHOR_EMAIL;
-        $subject = ABJ404_PP . ' error log file. Plugin ver: ' . ABJ404_VERSION;
-        $body = $subject . "\nSent " . date('Y/m/d h:i:s') . "\n\n" . "PHP version: " . PHP_VERSION . 
-                ", \nWP ver: " . get_bloginfo('version') . ", \nPlugin ver: " . ABJ404_VERSION;
+        $subject = ABJ404_PP . ' error log file. Plugin version: ' . ABJ404_VERSION;
+        $body = $subject . "\nSent " . date('Y/m/d h:i:s T') . "<BR/><BR/>\n\n" . "PHP version: " . PHP_VERSION . 
+                ", <BR/>\nWordPress version: " . get_bloginfo('version') . ", <BR/>\nPlugin version: " . ABJ404_VERSION;
         $headers = array('Content-Type: text/html; charset=UTF-8');
         $headers[] = 'From: ' . get_option('admin_email');
         
         // send the email
         $this->debugMessage("Sending error log zip file as attachment.");
-        wp_mail( $to, $subject, $body, $headers, $attachments );
+        wp_mail($to, $subject, $body, $headers, $attachments);
         
         // delete the zip file.
         $this->debugMessage("Mail sent. Deleting error log zip file.");

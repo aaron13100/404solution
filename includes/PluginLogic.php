@@ -378,6 +378,7 @@ class ABJ_404_Solution_PluginLogic {
             'debug_mode' => 0,
             'DB_VERSION' => '0.0.0',
             'menuLocation' => 'underSettings',
+            'admin_notification_email' => '',
         );
         
         return $options;
@@ -1209,9 +1210,11 @@ class ABJ_404_Solution_PluginLogic {
         if (array_key_exists('recognized_post_types', $_POST) && isset($_POST['recognized_post_types'])) {
             $options['recognized_post_types'] = wp_kses_post(@$_POST['recognized_post_types']);
         }
-        
         if (array_key_exists('menuLocation', $_POST) && isset($_POST['menuLocation'])) {
             $options['menuLocation'] = wp_kses_post(@$_POST['menuLocation']);
+        }
+        if (array_key_exists('admin_notification_email', $_POST) && isset($_POST['admin_notification_email'])) {
+            $options['admin_notification_email'] = trim(wp_kses_post(@$_POST['admin_notification_email']));
         }
         
         if (array_key_exists('folders_files_ignore', $_POST) && isset($_POST['folders_files_ignore'])) {
@@ -1390,4 +1393,57 @@ class ABJ_404_Solution_PluginLogic {
         return strcmp($a->post_title, $b->post_title);
     }
 
+    /** Send an email if a notification should be displayed. Return true if an email is sent, or false otherwise.
+     * @global type $abj404dao
+     * @return boolean
+     */
+    function emailCaptured404Notification() {
+        global $abj404dao;
+        global $abj404logging;
+        
+        $options = $this->getOptions(true);
+        
+        $captured404Count = $abj404dao->getCapturedCountForNotification();
+        if (!$this->shouldNotifyAboutCaptured404s($captured404Count)) {
+            return false;
+        }
+        
+        $captured404URLSettings = admin_url() . "options-general.php?page=" . ABJ404_PP . '&subpage=abj404_captured';
+        $generalSettings = admin_url() . "options-general.php?page=" . ABJ404_PP . '&subpage=abj404_options';
+        $to = $options['admin_notification_email'];
+        $subject = '404 Solution: Captured 404 Notification';
+        $body = "There are currently " . $captured404Count . " captured 404s to look at. <BR/><BR/>\n\n";
+        $body .= 'Visit <a href="' . $captured404URLSettings . '">' . $captured404URLSettings . 
+                '</a> to see them.<BR/><BR/>' . "\n";
+        $body .= 'To stop getting these emails, update the settings at <a href="' . $generalSettings . '">' . 
+                $generalSettings . '</a>' . "<BR/>\n";
+        $body .= "<BR/><BR/>\n\nSent " . date('Y/m/d h:i:s T') . "<BR/>\n" . "PHP version: " . PHP_VERSION . 
+                ", <BR/>\nWordPress version: " . get_bloginfo('version') . ", <BR/>\nPlugin version: " . ABJ404_VERSION;
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        $headers[] = 'From: ' . get_option('admin_email') . '<' . get_option('admin_email') . '>';
+        
+        // send the email
+        $abj404logging->debugMessage("Sending captured 404 notification email to: " . $options['admin_notification_email']);
+        wp_mail($to, $subject, $body, $headers);
+        $abj404logging->debugMessage("Captured 404 notification email sent.");
+        
+        return true;
+    }
+    
+    /** Return true if a notification should be displayed, or false otherwise.
+     * @global type $abj404dao
+     * @param type $captured404Count the number of captured 404s
+     * @return boolean
+     */
+    function shouldNotifyAboutCaptured404s($captured404Count) {
+        $options = $this->getOptions(true);
+        
+        if (array_key_exists('admin_notification', $options) && isset($options['admin_notification']) && $options['admin_notification'] != '0') {
+            if ($captured404Count >= $options['admin_notification']) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
 }

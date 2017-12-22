@@ -72,6 +72,7 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Version 2.6.0 (December 22, 2017) ##
 * Feature: New option: The Settings menu can be under "Settings" or at the same level as the "Settings" and "Tools" menus.
+* Feature: Optionally send an email notification when a certain number of 404s are captured.
 
 ## Version 2.5.4 (December 18, 2017) ##
 * Improvement: Improved error message for the customLevenshtein function.
