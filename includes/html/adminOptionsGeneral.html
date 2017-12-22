@@ -43,4 +43,12 @@
     <input type="checkbox" value="1" name="remove_matches" id="remove_matches" {selectedRemoveMatches}>
     <BR/>&nbsp;&nbsp;&nbsp;{Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted.}
 </p>
+<p>
+    <label for="menuLocation">{The 404 Solution menu should appear}:</label>
+    <select name="menuLocation" id="menuLocation">
+        <option value="underSettings" {selectedUnderSettings}>{Under the Settings menu}</option>
+        <option value="settingsLevel" {selecteSsettingsLevel}>{At the same level as the Settings and Tools menu}</option>
+    </select>
+    <BR/>&nbsp;&nbsp;&nbsp;{Choose whether the 404 Settings link appears under the "Settings" menu or elsewhere.}
+</p>
 

@@ -513,8 +513,24 @@ class ABJ_404_Solution_View {
         global $abj404logic;
         global $abj404view;
         global $abj404viewSuggestions;
-
+        
         $options = $abj404logic->getOptions();
+
+        // if the current URL does not match the chosen menuLocation then redirect to the correct URL
+        $urlParts = parse_url(esc_url($_SERVER['REQUEST_URI']));
+        $currentURL = $urlParts['path'];
+        if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
+                $options['menuLocation'] == 'settingsLevel') {
+            if (strpos($currentURL, 'options-general.php') != false) {
+                // the option changed and we're at the wrong URL now, so we redirect to the correct one.
+                $abj404logic->forceRedirect(admin_url() . "admin.php?page=" . 
+                        ABJ404_PP . '&subpage=abj404_options');
+            }
+        } else if (strpos($currentURL, 'admin.php') != false) {
+            // if the current URL has admin.php then the URLs don't match and we need to reload.
+            $abj404logic->forceRedirect(admin_url() . "options-general.php?page=" . 
+                    ABJ404_PP . '&subpage=abj404_options');
+        }
 
         //General Options
         $link = wp_nonce_url("?page=" . ABJ404_PP . '&subpage=abj404_options', "abj404UpdateOptions");
@@ -1415,6 +1431,14 @@ class ABJ_404_Solution_View {
             $selectedSendErrorLogs = " checked";
         }
 
+        $selectedUnderSettings = "";
+        $selecteSsettingsLevel = "";
+        if ($options['menuLocation'] == 'settingsLevel') {
+            $selecteSsettingsLevel = " selected";
+        } else {
+            $selectedUnderSettings = " selected";
+        }
+
         $logSizeBytes = $abj404dao->getLogDiskUsage();
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
         $totalLogLines = $abj404dao->getLogsCount(0);
@@ -1444,6 +1468,8 @@ class ABJ_404_Solution_View {
         $html = str_replace('{logCurrentRowCount}', $totalLogLines, $html);
         $html = str_replace('{earliestLogDate}', $earliestLogDate, $html);
         $html = str_replace('{selectedRemoveMatches}', $selectedRemoveMatches, $html);
+        $html = str_replace('{selectedUnderSettings}', $selectedUnderSettings, $html);
+        $html = str_replace('{selecteSsettingsLevel}', $selecteSsettingsLevel, $html);
         // constants and translations.
         $html = $this->doNormalReplacements($html);
         

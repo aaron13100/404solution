@@ -377,6 +377,7 @@ class ABJ_404_Solution_PluginLogic {
             'folders_files_ignore_usable' => "",
             'debug_mode' => 0,
             'DB_VERSION' => '0.0.0',
+            'menuLocation' => 'underSettings',
         );
         
         return $options;
@@ -481,7 +482,7 @@ class ABJ_404_Solution_PluginLogic {
                     return $message;
                 }
                 
-                // save all changes.
+                // save all changes. saveOptions, saveSettings
                 $sub = "abj404_options";
                 $message = $this->updateOptionsFromPOST();
                 if ($message == "") {
@@ -1100,10 +1101,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return string
      */
     function updateOptionsFromPOST() {
-        global $abj404logic;
-
         $message = "";
-        $options = $abj404logic->getOptions();
+        $options = $this->getOptions();
         
         // options with custom messages.
         if (array_key_exists('default_redirect', $_POST) && isset($_POST['default_redirect'])) {
@@ -1210,6 +1209,11 @@ class ABJ_404_Solution_PluginLogic {
         if (array_key_exists('recognized_post_types', $_POST) && isset($_POST['recognized_post_types'])) {
             $options['recognized_post_types'] = wp_kses_post(@$_POST['recognized_post_types']);
         }
+        
+        if (array_key_exists('menuLocation', $_POST) && isset($_POST['menuLocation'])) {
+            $options['menuLocation'] = wp_kses_post(@$_POST['menuLocation']);
+        }
+        
         if (array_key_exists('folders_files_ignore', $_POST) && isset($_POST['folders_files_ignore'])) {
             $options['folders_files_ignore'] = wp_unslash(wp_kses_post(@$_POST['folders_files_ignore']));
             

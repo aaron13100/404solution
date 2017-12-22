@@ -70,6 +70,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Changelog ##
 
+## Version 2.6.0 (December 22, 2017) ##
+* Feature: New option: The Settings menu can be under "Settings" or at the same level as the "Settings" and "Tools" menus.
+
 ## Version 2.5.4 (December 18, 2017) ##
 * Improvement: Improved error message for the customLevenshtein function.
 * FIX: Handle a version upgrade without an SQL error when the old logs table doesn't exist 
