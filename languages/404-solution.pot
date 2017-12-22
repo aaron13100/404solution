@@ -411,7 +411,7 @@ msgid "Captured URLs (0 Disables Notification)"
 msgstr ""
 
 #: includes/admin.php:1375
-msgid "Display WordPress admin notifications when number of captured URLs goes above specified level"
+msgid "Display a WordPress admin notifications when the number of captured URLs goes above this number"
 msgstr ""
 
 #: includes/admin.php:1377

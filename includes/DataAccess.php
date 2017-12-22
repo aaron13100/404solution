@@ -591,6 +591,13 @@ class ABJ_404_Solution_DataAccess {
                 ", Old manual redirects removed: " . $manualRedirectsCount . 
                 ", Old log lines removed: " . $oldLogRowsDeleted . ", Duplicate rows deleted: " . 
                 $duplicateRowsDeleted;
+        
+        if (array_key_exists('admin_notification_email', $options) && isset($options['admin_notification_email']) && 
+                strlen(trim($options['admin_notification_email'])) > 5) {
+            if ($abj404logic->emailCaptured404Notification()) {
+                $message .= ", Captured 404 notification email sent to: " . trim($options['admin_notification_email']);
+            }
+        }
 
         if (array_key_exists('send_error_logs', $options) && isset($options['send_error_logs']) && 
                 $options['send_error_logs'] == '1') {
