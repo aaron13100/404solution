@@ -101,11 +101,14 @@ class ABJ_404_Solution_PluginLogic {
         $patternsToIgnore = $options['folders_files_ignore_usable'];
         if (!empty($patternsToIgnore)) {
             foreach ($patternsToIgnore as $patternToIgnore) {
+                $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex pattern to ignore \"' . 
+                        $patternToIgnore . '\" to URL slug: ' . $urlSlugOnly;
                 if (preg_match("/" . $patternToIgnore . "/", $urlSlugOnly, $matches)) {
                     $abj404logging->debugMessage("Ignoring file/folder (do not redirect) for URL: " . 
                             esc_html($urlSlugOnly) . ", pattern used: " . $patternToIgnore);
                     $ignoreReasonDoNotProcess = 'Files and folders (do not redirect) pattern: ' . esc_html($patternToIgnore);
                 }
+                $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex pattern to ignore.';
             }
         }
         $_REQUEST[ABJ404_PP]['ignore_donotprocess'] = $ignoreReasonDoNotProcess;
@@ -1022,7 +1025,15 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if ($typeAndDest['type'] != "" && $typeAndDest['dest'] !== "") {
-            $abj404dao->setupRedirect(esc_url($_POST['manual_redirect_url']), ABJ404_STATUS_MANUAL, 
+            // url match type. regex or normal exact match.
+            $statusType = ABJ404_STATUS_MANUAL;
+            if (array_key_exists('is_regex_url', $_POST) && isset($_POST['is_regex_url']) && 
+                $_POST['is_regex_url'] != '0') {
+                
+                $statusType = ABJ404_STATUS_REGEX;
+            }
+            
+            $abj404dao->setupRedirect(esc_url($_POST['manual_redirect_url']), $statusType, 
                     $typeAndDest['type'], $typeAndDest['dest'], sanitize_text_field($_POST['code']), 0);
             $_POST['manual_redirect_url'] = "";
             $_POST['code'] = "";

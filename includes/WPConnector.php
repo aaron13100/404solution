@@ -122,7 +122,7 @@ class ABJ_404_Solution_WordPress_Connector {
                 // A redirect record exists.
                 $abj404connector->processRedirect($requestedURL, $redirect, 'existing');
 
-                // we only reach this line if an error happens.
+                // we only reach this line if an error happens because the user should already be redirected.
                 exit;
             }
 
@@ -138,6 +138,18 @@ class ABJ_404_Solution_WordPress_Connector {
                 exit;
             }
 
+            // --------------------------------------------------------------
+            // try the regex URLs.
+            $regexPermalink = $abj404spellChecker->getPermalinkUsingRegEx($requestedURL);
+            if (!empty($regexPermalink)) {
+                $redirectType = $regexPermalink['type'];
+
+                $abj404dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match', 
+                        $requestedURL);
+                $abj404logic->forceRedirect(esc_url($regexPermalink['link']), esc_html($options['default_redirect']));
+                exit;
+            }
+            
             // --------------------------------------------------------------
             // try spell checking.
             $permalink = $abj404spellChecker->getPermalinkUsingSpelling($urlSlugOnly);

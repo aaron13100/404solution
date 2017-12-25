@@ -52,10 +52,14 @@ class ABJ_404_Solution_Logging {
         
         $prefix = "ABJ-404-SOLUTION (ERROR): ";
         $timestamp = date('Y-m-d H:i:s') . ' (ERROR): ';
+        $referrer = '';
+        if (array_key_exists('HTTP_REFERER', $_SERVER) && !empty($_SERVER['HTTP_REFERER'])) {
+            $referrer = $_SERVER['HTTP_REFERER'];
+        }
         error_log($prefix . $message);
         $this->writeLineToDebugFile($timestamp . $message . ", PHP version: " . PHP_VERSION . 
                 ", WP ver: " . get_bloginfo('version') . ", Plugin ver: " . ABJ404_VERSION . 
-                ", Referrer: " . esc_html($_SERVER['HTTP_REFERER']) . ", \nTrace: " . $stacktrace);
+                ", Referrer: " . esc_html($referrer) . ", \nTrace: " . $stacktrace);
         
         // display a 404 page if the user is NOT an admin and is not on an admin page.
         if (!is_admin() && !current_user_can('administrator')) {

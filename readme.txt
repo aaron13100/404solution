@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.5.4
+Version: 2.6.0
 Tested up to: 4.9
-Stable tag: 2.5.4
+Stable tag: 2.6.0
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -65,6 +65,7 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 == Changelog ==
 
 = Version 2.6.0 (December 22, 2017) =
+* Feature: Use RegEx (regular expressions) to match URLs and redirect to specific pages.
 * Feature: New option: The Settings menu can be under "Settings" or at the same level as the "Settings" and "Tools" menus.
 * Feature: Optionally send an email notification when a certain number of 404s are captured.
 
