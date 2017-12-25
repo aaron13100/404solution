@@ -234,28 +234,6 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /** 
-     * Return the dates/times when a redirect was used.
-     * @global type $wpdb
-     * @param type $id
-     * @return type
-     */
-    function getRedirectLastUsed($logsid) {
-        global $wpdb;
-
-        $query = $wpdb->prepare("select max(timestamp) as timestamp from " . $wpdb->prefix . "abj404_logsv2 \n " .
-                "where requested_url = (select requested_url from " . $wpdb->prefix . "abj404_logsv2 \n " .
-                "where id = %d) " .
-                " order by timestamp desc", esc_sql($logsid));
-        $row = $wpdb->get_col($query);
-
-        if (isset($row[0])) {
-            return $row[0];
-        } else {
-            return;
-        }
-    }
-    
-    /** 
      * @global type $wpdb
      * @return type
      */
@@ -325,12 +303,14 @@ class ABJ_404_Solution_DataAccess {
         
         // if we're showing all rows include all of the log data in the query already. this makes the query very slow. 
         // this should be replaced by the dynamic loading of log data using ajax queries as the page is viewed.
-        $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits');
+        $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits')
+                || ($tableOptions['orderby'] == 'last_used');
         if ($queryAllRowsAtOnce) {
             $query .= "logstable.logshits as logshits, \n" .
-                    "logstable.logsid, \n";
+                    "logstable.logsid, \n" .
+                    "logstable.last_used, \n";
         } else {
-            $query .= "null as logshits, \n null as logsid, \n";
+            $query .= "null as logshits, \n null as logsid, \n null as last_used, \n";
         }
         
         $query .= $wpdb->posts . ".post_type as wp_post_type\n  " .
@@ -342,6 +322,7 @@ class ABJ_404_Solution_DataAccess {
             $query .= "  LEFT OUTER JOIN ( \n " .
                     "    SELECT requested_url, \n " .
                     "           MIN(" . $logs . ".id) AS logsid, \n " .
+                    "           max(" . $logs . ".timestamp) as last_used, \n " .
                     "           count(requested_url) as logshits \n " .
                     "    FROM " . $logs . " \n " .
                     "         inner join " . $redirects . " \n " .
@@ -409,6 +390,7 @@ class ABJ_404_Solution_DataAccess {
             if (!empty($logsData)) {
                 $row['logsid'] = $logsData[0]['logsid'];
                 $row['logshits'] = $logsData[0]['logshits'];
+                $row['last_used'] = $logsData[0]['last_used'];
             }
         }
         
