@@ -1,7 +1,7 @@
 
 SELECT requested_url, 
        Min({wp_abj404_logsv2}.id) AS logsid, 
-       max(wp_abj404_logsv2.timestamp) as last_used,
+       max({wp_abj404_logsv2}.timestamp) as last_used,
        Count(requested_url)      AS logshits 
 FROM {wp_abj404_logsv2} 
 
