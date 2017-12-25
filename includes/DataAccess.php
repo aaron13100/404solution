@@ -56,6 +56,13 @@ class ABJ_404_Solution_DataAccess {
             $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX final_dest (`final_dest`) USING BTREE";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
+        if (!preg_match("/status.+TINYINT\(1\)/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $redirectsTable . "   CHANGE `status` `status` TINYINT(1) NOT NULL, \n" .
+                    "  CHANGE `type` `type` TINYINT(1) NOT NULL, \n" .
+                    "  CHANGE `code` `code` SMALLINT(3) NOT NULL, \n" .
+                    "  CHANGE `disabled` `disabled` TINYINT(1) NOT NULL DEFAULT '0' \n"; 
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
         
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults("show create table " . $logsTable);
         // this encode/decode turns the results into an array from a "stdClass"
@@ -73,6 +80,11 @@ class ABJ_404_Solution_DataAccess {
         }
         if (!preg_match("/CHARSET=utf8/i", $tableSQL)) {
             $query = 'ALTER TABLE ' . $logsTable . ' CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci';
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+        if (!preg_match("/requested_url_detail/i", $tableSQL)) {
+            $query = 'ALTER TABLE ' . $logsTable . ' ADD `requested_url_detail` varchar(512) DEFAULT NULL '
+                    . 'after `requested_url` ';
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
     }
@@ -271,13 +283,36 @@ class ABJ_404_Solution_DataAccess {
         return $rows;
     }
 
+    /** 
+     * @global type $wpdb
+     * @return type
+     */
+    function getRedirectsWithRegEx() {
+        global $wpdb;
+        $redirects = $wpdb->prefix . "abj404_redirects";
+        
+        $query = "select \n  " . $redirects . ".id,\n  " . $redirects . ".url,\n  " . $redirects . ".status,\n  " . 
+                $redirects . ".type,\n  " . $redirects . ".final_dest,\n  " . $redirects . ".code,\n  " . 
+                $redirects . ".timestamp,\n " . $wpdb->posts . ".id as wp_post_id\n ";
+        $query .= "from " . $redirects . "\n " .
+                "  LEFT OUTER JOIN " . $wpdb->posts . " \n " .
+                "    on " . $redirects . ".final_dest = " . $wpdb->posts . ".id \n ";
+        
+        $query .= "where status in (" . ABJ404_STATUS_REGEX . ") \n " .
+                "     and disabled = 0";
+        
+        $results = $this->queryAndGetResults($query);
+        
+        return $results['rows'];
+    }
+
     /** Returns the redirects that are in place.
      * @global type $wpdb
      * @param type $sub either "redirects" or "captured".
      * @param type $tableOptions filter, order by, paged, perpage etc.
      * @return type rows from the redirects table.
      */
-    function getRedirects($sub, $tableOptions) {
+    function getRedirectsForView($sub, $tableOptions) {
         global $wpdb;
         global $abj404logging;
 
@@ -319,7 +354,8 @@ class ABJ_404_Solution_DataAccess {
         $query .= " where 1 and (";
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             if ($sub == 'abj404_redirects') {
-                $query .= "status = " . ABJ404_STATUS_MANUAL . " or status = " . ABJ404_STATUS_AUTO;
+                $query .= "status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ", " . 
+                        ABJ404_STATUS_REGEX . ")";
 
             } else if ($sub == 'abj404_captured') {
                 $query .= "status in (" . ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . 
@@ -328,6 +364,10 @@ class ABJ_404_Solution_DataAccess {
             } else {
                 $abj404logging->errorMessage("Unrecognized sub type: " . esc_html($sub));
             }
+            
+        } else if ($tableOptions['filter'] == ABJ404_STATUS_MANUAL) {
+            $query .= "status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_REGEX . ")";
+            
         } else {
             $query .= "status = " . sanitize_text_field($tableOptions['filter']);
         }
@@ -411,7 +451,8 @@ class ABJ_404_Solution_DataAccess {
         $redirects = $wpdb->prefix . "abj404_redirects";
 
         $query = "select " . $logs . ".timestamp, " . $logs . ".user_ip as remote_host, " . $logs . ".referrer, " . 
-                $logs . ".dest_url as action, " . $logs . ".requested_url as url from " . $logs;
+                $logs . ".dest_url as action, " . $logs . ".requested_url as url, " .
+                $logs . ".requested_url_detail as url_detail from " . $logs;
         $query .= "\n where 1 ";
         if ($tableOptions['logsid'] != 0) {
             $query .= " and " . $logs . ".requested_url = (select innerid.requested_url from " . $logs . " innerid " .
@@ -429,11 +470,13 @@ class ABJ_404_Solution_DataAccess {
     /** 
      * Log that a redirect was done. Insert into the logs table.
      * @global type $wpdb
+     * @global type $abj404logging
      * @param type $requestedURL
      * @param type $action
      * @param type $matchReason
+     * @param type $requestedURLDetail the exact URL that was requested, for cases when a regex URL was matched.
      */
-    function logRedirectHit($requestedURL, $action, $matchReason) {
+    function logRedirectHit($requestedURL, $action, $matchReason, $requestedURLDetail = null) {
         global $wpdb;
         global $abj404logging;
         $now = time();
@@ -464,8 +507,10 @@ class ABJ_404_Solution_DataAccess {
             'referrer' => esc_sql($referer),
             'dest_url' => esc_sql($action),
             'requested_url' => esc_sql($requestedURL),
+            'requested_url_detail' => esc_sql($requestedURLDetail),
                 ), array(
             '%d',
+            '%s',
             '%s',
             '%s',
             '%s',
@@ -551,8 +596,11 @@ class ABJ_404_Solution_DataAccess {
             $manual_time = $options['manual_deletion'] * 86400;
             $then = $now - $manual_time;
 
+            // TODO use the logs table to see when the last time the URL was used.
+            
             //Find unused urls
-            $query = "select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_STATUS_MANUAL . " and ";
+            $query = "select id from " . $wpdb->prefix . "abj404_redirects "
+                    . "where status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_REGEX . ") and ";
             $query .= "timestamp <= " . esc_sql($then);
             $rows = $wpdb->get_results($query, ARRAY_A);
             foreach ($rows as $row) {
@@ -607,10 +655,6 @@ class ABJ_404_Solution_DataAccess {
         }
         
         $abj404logging->infoMessage($message);
-        
-        // TODO remove this after a few versions. introduced in 1.8.2.
-        // temporary fix for a temporary problem found related to https://github.com/aaron13100/404solution/issues/19
-        $wpdb->query("delete from " . $wpdb->prefix . "abj404_logsv2 where requested_url is null");
         
         return $message;
     }

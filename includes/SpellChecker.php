@@ -11,52 +11,34 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
  * Finds search suggestions. */
 
 class ABJ_404_Solution_SpellChecker {
-    
-//    /** Spell check the user's word against correctly spelled words.
-//     * 
-//     * @param type $misspelledWord
-//     * @param type $correctlySpelledWord
-//     * @return type
-//     */
-//    function getSpellingMatch($misspelledWord, $correctlySpelledWord) {
-//        $matches = array();
-//        $word = strtolower($misspelledWord);
-//        
-//        // give every word a likelihood score.
-//        foreach ($correctlySpelledWord as $potentialMatch) {
-//            $potential = strtolower($potentialMatch);
-//            
-//            if ($word == $potential) {
-//                $matches[$potential] = 100;
-//                continue;
-//            }
-//            
-//            $levscore = $this->customLevenshtein($word, $potential);
-//            $scoreBasis = mb_strlen($potential) * 3;
-//            $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
-//            
-//            $matches[$potential] = $score;
-//        }
-//        
-//        // sort the array to find the words with the highest scores.
-//        arsort($matches);
-//        
-//        // if the top two words have the same score then return null.
-//        $bestMatch = array_slice($matches, 0, 1);
-//        $secondBest = array_slice($matches, 1, 1);
-//        
-//        // if the top two results have the same levenshiein score then we can't really tell which
-//        // one is the more correct answer.
-//        if ($this->customLevenshtein($word, key($bestMatch)) == $this->customLevenshtein($word, key($secondBest))) {
-//            return null;
-//        }
-//        
-//        if (reset($bestMatch) > 90) {
-//            return key($bestMatch);
-//        }
-//    
-//        return null;
-//    }
+    /** 
+     * @global type $abj404dao
+     * @param type $requestedURL
+     * @return type
+     */
+    function getPermalinkUsingRegEx($requestedURL) {
+        global $abj404dao;
+        
+        $regexURLsRows = $abj404dao->getRedirectsWithRegEx();
+        
+        foreach ($regexURLsRows as $row) {
+            $regexURL = $row['url'];
+            
+            $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex \"' . $regexURL . '\" to URL: ' . $requestedURL;
+            $preparedURL = str_replace('/', '\/', $regexURL);
+            if (preg_match('/' . $preparedURL . '/', $requestedURL)) {
+                $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
+                $idAndType = $row['final_dest'] . '|' . $row['type'];
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, '0');
+                $permalink['matching_regex'] = $regexURL;
+                
+                return $permalink;
+            }
+            
+            $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
+        }
+        return null;
+    }
 
     /** If there is a post that has a slug that matches the user requested slug exactly, then return the permalink for that 
      * post. Otherwise return null.
