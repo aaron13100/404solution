@@ -564,28 +564,53 @@ class ABJ_404_Solution_DataAccess {
             $then = $now - $capture_time;
 
             //Find unused urls
-            $query = "select id from " . $wpdb->prefix . "abj404_redirects where (status in (" . 
-                    ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER . ") ) and ";
-            $query .= "timestamp <= " . esc_sql($then);
-            $rows = $wpdb->get_results($query, ARRAY_A);
+            $status_list = ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER;
+
+            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
+            $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . "abj404_redirects", $query);
+            $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . "abj404_logsv2", $query);
+            $query = str_replace('{wp_posts}', $wpdb->posts, $query);
+            $query = str_replace('{wp_options}', $wpdb->options, $query);
+            $query = str_replace('{status_list}', $status_list, $query);
+            $query = str_replace('{timelimit}', $then, $query);
+            
+            // Find unused redirects
+            $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $rows = $results['rows'];
+            
             foreach ($rows as $row) {
-                //Remove Them
+                // Remove Them
+                $abj404logging->debugMessage("Captured 404 for \"" . $row['from_url'] . 
+                        '" deleted (unused since ' . $row['last_used_formatted'] . ').');
                 $abj404dao->deleteRedirect($row['id']);
                 $capturedURLsCount++;
             }
         }
 
-        //Remove Automatic Redirects
+        // Remove Automatic Redirects
         if (array_key_exists('auto_deletion', $options) && isset($options['auto_deletion']) && $options['auto_deletion'] != '0') {
             $auto_time = $options['auto_deletion'] * 86400;
             $then = $now - $auto_time;
 
-            //Find unused urls
-            $query = "select id from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_STATUS_AUTO . " and ";
-            $query .= "timestamp <= " . esc_sql($then);
-            $rows = $wpdb->get_results($query, ARRAY_A);
+            $status_list = ABJ404_STATUS_AUTO;
+
+            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
+            $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . "abj404_redirects", $query);
+            $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . "abj404_logsv2", $query);
+            $query = str_replace('{wp_posts}', $wpdb->posts, $query);
+            $query = str_replace('{wp_options}', $wpdb->options, $query);
+            $query = str_replace('{status_list}', $status_list, $query);
+            $query = str_replace('{timelimit}', $then, $query);
+            
+            // Find unused redirects
+            $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $rows = $results['rows'];
+            
+            $rows = $results['rows'];
             foreach ($rows as $row) {
-                //Remove Them
+                // Remove Them
+                $abj404logging->debugMessage("Automatic redirect from: " . $row['from_url'] . ' to: ' . 
+                        $row['best_guess_dest'] . ' deleted (unused since ' . $row['last_used_formatted'] . ').');
                 $abj404dao->deleteRedirect($row['id']);
                 $autoRedirectsCount++;
             }
@@ -595,16 +620,25 @@ class ABJ_404_Solution_DataAccess {
         if (array_key_exists('manual_deletion', $options) && isset($options['manual_deletion']) && $options['manual_deletion'] != '0') {
             $manual_time = $options['manual_deletion'] * 86400;
             $then = $now - $manual_time;
-
-            // TODO use the logs table to see when the last time the URL was used.
             
+            $status_list = ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_REGEX;
+
             //Find unused urls
-            $query = "select id from " . $wpdb->prefix . "abj404_redirects "
-                    . "where status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_REGEX . ") and ";
-            $query .= "timestamp <= " . esc_sql($then);
-            $rows = $wpdb->get_results($query, ARRAY_A);
+            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
+            $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . "abj404_redirects", $query);
+            $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . "abj404_logsv2", $query);
+            $query = str_replace('{wp_posts}', $wpdb->posts, $query);
+            $query = str_replace('{wp_options}', $wpdb->options, $query);
+            $query = str_replace('{status_list}', $status_list, $query);
+            $query = str_replace('{timelimit}', $then, $query);
+            
+            $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $rows = $results['rows'];
+            
             foreach ($rows as $row) {
-                //Remove Them
+                // Remove Them
+                $abj404logging->debugMessage("Manual redirect from: " . $row['from_url'] . ' to: ' . 
+                        $row['best_guess_dest'] . ' deleted (unused since ' . $row['last_used_formatted'] . ').');
                 $abj404dao->deleteRedirect($row['id']);
                 $manualRedirectsCount++;
             }
