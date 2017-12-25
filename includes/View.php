@@ -796,7 +796,7 @@ class ABJ_404_Solution_View {
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "20%";
         $columns['last_used']['title'] = "Last Used";
-        $columns['last_used']['orderby'] = "";
+        $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "20%";
 
         $timezone = get_option('timezone_string');
@@ -870,7 +870,8 @@ class ABJ_404_Solution_View {
             $displayed++;
 
             $hits = $row['logshits'];
-            $last_used = $abj404dao->getRedirectLastUsed($row['logsid']);
+            
+            $last_used = $row['last_used'];
             if ($last_used != 0) {
                 $last = date("Y/m/d h:i:s A", abs(intval($last_used)));
             } else {
@@ -1038,7 +1039,7 @@ class ABJ_404_Solution_View {
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "10%";
         $columns['last_used']['title'] = "Last Used";
-        $columns['last_used']['orderby'] = "";
+        $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "10%";
 
         $timezone = get_option('timezone_string');
@@ -1131,7 +1132,8 @@ class ABJ_404_Solution_View {
             }
 
             $hits = $row['logshits'];
-            $last_used = $abj404dao->getRedirectLastUsed($row['logsid']);
+            
+            $last_used = $row['last_used'];
             if ($last_used != 0) {
                 $last = date("Y/m/d h:i:s A", abs(intval($last_used)));
             } else {
@@ -1680,7 +1682,7 @@ class ABJ_404_Solution_View {
             } else {
                 if ($column['orderby'] != "") {
                     $class = " sortable";
-                    if ($column['orderby'] == "timestamp" || $column['orderby'] == "lastused") {
+                    if ($column['orderby'] == "timestamp" || $column['orderby'] == "last_used") {
                         $class .= " asc";
                         $sortorder = "DESC";
                     } else {
