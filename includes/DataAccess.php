@@ -532,6 +532,8 @@ class ABJ_404_Solution_DataAccess {
         global $abj404logic;
         global $abj404logging;
 
+        $redirectsTable = $wpdb->prefix . "abj404_redirects";
+        $logsTable = $wpdb->prefix . "abj404_logsv2";
         $options = $abj404logic->getOptions();
         $now = time();
         $capturedURLsCount = 0;
@@ -549,8 +551,8 @@ class ABJ_404_Solution_DataAccess {
             $status_list = ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER;
 
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
-            $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . "abj404_redirects", $query);
-            $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . "abj404_logsv2", $query);
+            $query = str_replace('{wp_abj404_redirects}', $redirectsTable, $query);
+            $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
             $query = str_replace('{wp_posts}', $wpdb->posts, $query);
             $query = str_replace('{wp_options}', $wpdb->options, $query);
             $query = str_replace('{status_list}', $status_list, $query);
@@ -577,8 +579,8 @@ class ABJ_404_Solution_DataAccess {
             $status_list = ABJ404_STATUS_AUTO;
 
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
-            $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . "abj404_redirects", $query);
-            $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . "abj404_logsv2", $query);
+            $query = str_replace('{wp_abj404_redirects}', $redirectsTable, $query);
+            $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
             $query = str_replace('{wp_posts}', $wpdb->posts, $query);
             $query = str_replace('{wp_options}', $wpdb->options, $query);
             $query = str_replace('{status_list}', $status_list, $query);
@@ -607,8 +609,8 @@ class ABJ_404_Solution_DataAccess {
 
             //Find unused urls
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
-            $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . "abj404_redirects", $query);
-            $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . "abj404_logsv2", $query);
+            $query = str_replace('{wp_abj404_redirects}', $redirectsTable, $query);
+            $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
             $query = str_replace('{wp_posts}', $wpdb->posts, $query);
             $query = str_replace('{wp_options}', $wpdb->options, $query);
             $query = str_replace('{status_list}', $status_list, $query);
@@ -629,7 +631,7 @@ class ABJ_404_Solution_DataAccess {
         //Clean up old logs. prepare the query. get the disk usage in bytes. compare to the max requested
         // disk usage (MB to bytes). delete 1k rows at a time until the size is acceptable.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
-        $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
+        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
         $maxLogSizeBytes = $options['maximum_log_disk_usage'] * 1024 * 1000;
         $iterations = 0;
@@ -671,6 +673,8 @@ class ABJ_404_Solution_DataAccess {
         }
         
         $abj404logging->infoMessage($message);
+
+        ABJ_404_Solution_DataAccess::queryAndGetResults("optimize table " . $redirectsTable);
         
         return $message;
     }

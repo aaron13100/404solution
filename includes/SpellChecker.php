@@ -126,13 +126,19 @@ class ABJ_404_Solution_SpellChecker {
     function findMatchingPosts($requestedURL, $includeCats = '1', $includeTags = '1') {
         global $abj404dao;
         global $abj404logic;
-        global $abj404logging;
         
         $permalinks = array();
         
-        $separatingCharacters = array("-", "_", ".", "~");
+        $separatingCharacters = array("-", "_", ".", "~", '%20');
         $requestedURLSpaces = str_replace($separatingCharacters, " ", $requestedURL);
         $requestedURLCleaned = $this->getLastURLPart($requestedURLSpaces);
+        // this is the URL with the full path where / is replaces by spaces (" ").
+        // this is useful for looking at URLs such as /category/behavior/. 
+        $fullURLspaces = str_replace('/', " ", $requestedURLSpaces);
+        // if there is no extra stuff in the path then we ignore this to save time.
+        if ($fullURLspaces == $requestedURLCleaned) {
+            $fullURLspaces = '';
+        }
 
         // match based on the slug.
         $rows = $abj404dao->getPublishedPagesAndPostsIDs('', false);
@@ -143,12 +149,14 @@ class ABJ_404_Solution_SpellChecker {
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
             $existingPageURLSpaces = str_replace($separatingCharacters, " ", $existingPageURL);
             $existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
-            
-            $levscore = $this->customLevenshtein($requestedURLCleaned, $existingPageURLCleaned, 1, 1, 1);
             $scoreBasis = mb_strlen($existingPageURLCleaned) * 3;
-
             if ($scoreBasis == 0) {
                 continue;
+            }
+            
+            $levscore = $this->customLevenshtein($requestedURLCleaned, $existingPageURLCleaned);
+            if ($fullURLspaces != '') {
+                $levscore = min($levscore, $this->customLevenshtein($fullURLspaces, $existingPageURLCleaned));
             }
             $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
             $permalinks[$id . "|" . ABJ404_TYPE_POST] = number_format($score, 4, '.', '');
@@ -161,8 +169,14 @@ class ABJ_404_Solution_SpellChecker {
                 $id = $row->term_id;
                 $the_permalink = get_tag_link($id);
                 $urlParts = parse_url($the_permalink);
-                $scoreBasis = mb_strlen($urlParts['path']);
-                $levscore = $this->customLevenshtein($requestedURLCleaned, $urlParts['path'], 1, 1, 1);
+                $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
+                $scoreBasis = mb_strlen($pathOnly);
+                
+                $levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
+                if ($fullURLspaces != '') {
+                    $pathOnlySpaces = str_replace('/', " ", $pathOnly);
+                    $levscore = min($levscore, $this->customLevenshtein($fullURLspaces, $pathOnlySpaces));
+                }
                 $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
                 $permalinks[$id . "|" . ABJ404_TYPE_TAG] = number_format($score, 4, '.', '');
             }
@@ -175,8 +189,14 @@ class ABJ_404_Solution_SpellChecker {
                 $id = $row->term_id;
                 $the_permalink = get_category_link($id);
                 $urlParts = parse_url($the_permalink);
-                $scoreBasis = mb_strlen($urlParts['path']);
-                $levscore = $this->customLevenshtein($requestedURLCleaned, $urlParts['path'], 1, 1, 1);
+                $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
+                $scoreBasis = mb_strlen($pathOnly);
+                
+                $levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
+                if ($fullURLspaces != '') {
+                    $pathOnlySpaces = str_replace('/', " ", $pathOnly);
+                    $levscore = min($levscore, $this->customLevenshtein($fullURLspaces, $pathOnlySpaces));
+                }
                 $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
                 $permalinks[$id . "|" . ABJ404_TYPE_CAT] = number_format($score, 4, '.', '');
             }
@@ -202,47 +222,6 @@ class ABJ_404_Solution_SpellChecker {
         return $newURL;
     }
 
-    /** This custom levenshtein function has no 255 character limit.
-     * 
-     * It was modified to work with early versions of php. This is copied from 
-     * https://github.com/GordonLesti/levenshtein which had a very liberal MIT license at the time of this writing.
-     * @param type $str1
-     * @param type $str2
-     * @param type $costIns
-     * @param type $costRep
-     * @param type $costDel
-     * @return type
-     */
-    public function customLevenshtein($str1, $str2, $costIns = 1.0, $costRep = 1.0, $costDel = 1.0) {
-        $_REQUEST[ABJ404_PP]['debug_info'] = 'customLevenshtein. str1: ' . esc_html($str1) . ', str2: ' . esc_html($str2);
-        
-        $matrix = array();
-        $str1Array = self::multiByteStringToArray($str1);
-        $str2Array = self::multiByteStringToArray($str2);
-        $str1Length = count($str1Array);
-        $str2Length = count($str2Array);
-        $row = array();
-        $row[0] = 0.0;
-        for ($j = 1; $j < $str2Length + 1; $j++) {
-            $row[$j] = $j * $costIns;
-        }
-        $matrix[0] = $row;
-        for ($i = 0; $i < $str1Length; $i++) {
-            $row = array();
-            $row[0] = ($i + 1) * $costDel;
-            for ($j = 0; $j < $str2Length; $j++) {
-                $minPart1 = $matrix[$i][$j + 1] + $costDel;
-                $minPart2 = $row[$j] + $costIns;
-                $minPart3 = $matrix[$i][$j] + ($str1Array[$i] === $str2Array[$j] ? 0.0 : $costRep);
-                $row[$j + 1] = min($minPart1, $minPart2, $minPart3);
-            }
-            $matrix[$i + 1] = $row;
-        }
-        
-        $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after customLevenshtein.';
-        return $matrix[$str1Length][$str2Length];
-    }
-    
     /** 
      * @param type $str
      * @return type
@@ -254,6 +233,91 @@ class ABJ_404_Solution_SpellChecker {
             $array[$i] = mb_substr($str, $i, 1);
         }
         return $array;
+    }
+    
+    /** This custom levenshtein function has no 255 character limit.
+     * From https://www.codeproject.com/Articles/13525/Fast-memory-efficient-Levenshtein-algorithm
+     * @param type $str1
+     * @param type $str2
+     * @return type
+     * @throws Exception
+     */
+    function customLevenshtein($str1, $str2) {
+        $_REQUEST[ABJ404_PP]['debug_info'] = 'customLevenshtein. str1: ' . esc_html($str1) . ', str2: ' . esc_html($str2);
+
+        $sRow = $this->multiByteStringToArray($str1);
+        $sCol = $this->multiByteStringToArray($str2);
+        $RowLen = count($sRow);
+        $ColLen = count($sCol);
+        $cost = 0;
+        
+        /// Test string length
+        if (max($RowLen, $ColLen) > pow(2, 12)) {
+            throw new Exception("Maximum string length in customLevenshtein is " . pow(2, 12) . ". Yours is " . 
+                    max($RowLen, $ColLen) + ".");
+        }
+        
+        // Step 1
+        if ($RowLen == 0) {
+            return $ColLen;
+        } else if ($ColLen == 0) {
+            return $RowLen;
+        }
+
+        /// Create the two vectors
+        $v0 = array_fill(0, $RowLen + 1, 0);
+        $v1 = array_fill(0, $RowLen + 1, 0);
+            
+        /// Step 2
+        /// Initialize the first vector
+        for ($RowIdx = 1; $RowIdx <= $RowLen; $RowIdx++) {
+            $v0[$RowIdx] = $RowIdx;
+        }
+        
+        // Step 3
+        /// For each column
+        for ($ColIdx = 1; $ColIdx <= $ColLen; $ColIdx++) {
+            /// Set the 0'th element to the column number
+            $v1[0] = $ColIdx;
+            
+            $Col_j = $sCol[$ColIdx - 1];
+
+            // Step 4
+            /// For each row
+            for ($RowIdx = 1; $RowIdx <= $RowLen; $RowIdx++) {
+                $Row_i = $sRow[$RowIdx - 1];
+                
+                // Step 5
+                if ($Row_i == $Col_j) {
+                    $cost = 0;
+                } else {
+                    $cost = 1;
+                }
+
+                // Step 6
+                /// Find minimum
+                $m_min = $v0[$RowIdx] + 1;
+                $b = $v1[$RowIdx - 1] + 1;
+                $c = $v0[$RowIdx - 1] + $cost;
+                
+                if ($b < $m_min) {
+                    $m_min = $b;
+                }
+                if ($c < $m_min) {
+                    $m_min = $c;
+                }
+
+                $v1[$RowIdx] = $m_min;
+            }
+
+            /// Swap the vectors
+            $vTmp = $v0;
+            $v0 = $v1;
+            $v1 = $vTmp;
+        }
+
+        $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after customLevenshtein.';
+        return $v0[$RowLen];
     }
 
 }
