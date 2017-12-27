@@ -70,6 +70,8 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 * Feature: Optionally send an email notification when a certain number of 404s are captured.
 * FIX: Delete old redirects based on when they were last used instead of the date they were created.
 * Improvement: Allow ordering redirects and captured 404s by the "Last Used" (most recently used date) column.
+* Improvement: Matching categories and tags works a little better than before.
+* Improvement: Use a faster, more memory efficient Levenshtein algorithm.
 
 = Version 2.5.4 (December 18, 2017) =
 * Improvement: Improved error message for the customLevenshtein function.

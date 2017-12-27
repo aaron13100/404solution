@@ -1309,7 +1309,7 @@ class ABJ_404_Solution_View {
     
     function echoRedirectDestinationOptionsDefaults($currentlySelected) {
         $content = "";
-        $content .= "\n" . '<optgroup label="Special">' . "\n";
+        $content .= "\n" . '<optgroup label="' . __('Special', '404-solution') . '">' . "\n";
 
         $selected = "";
         if ($currentlySelected == ABJ404_TYPE_EXTERNAL) {
@@ -1346,6 +1346,8 @@ class ABJ_404_Solution_View {
         $selected = "";
         $content .= "<label for=\"dest404page\">" . __('Redirect all unhandled 404s to', '404-solution') . ":</label> <select id=\"dest404page\" name=\"dest404page\">";
 
+        $content .= "\n" . '<optgroup label="' . __('Special', '404-solution') . '">' . "\n";
+        
         $userSelected = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
                 $options['dest404page'] : null);
         $dest404page = ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED;
@@ -1357,6 +1359,8 @@ class ABJ_404_Solution_View {
         $selected = $userSelected == $destHomepage ? "selected" : "";
         $content .= '<option value="' . ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME . '"' . 
                 $selected . ">" . __('(Home Page)', '404-solution') . "</option>";
+        
+        $content .= "\n" . '</optgroup>' . "\n";
 
         $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', true);
         $content .= $this->echoRedirectDestinationOptionsOthers($userSelected, 
@@ -1557,7 +1561,7 @@ class ABJ_404_Solution_View {
         $columns['url']['width'] = "25%";
         $columns['host']['title'] = "IP Address";
         $columns['host']['orderby'] = "remote_host";
-        $columns['host']['width'] = "10%";
+        $columns['host']['width'] = "11%";
         $columns['refer']['title'] = "Referrer";
         $columns['refer']['orderby'] = "referrer";
         $columns['refer']['width'] = "25%";
