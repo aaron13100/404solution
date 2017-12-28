@@ -25,7 +25,7 @@ class ABJ_404_Solution_Logging {
     function debugMessage($message) {
         if ($this->isDebug()) {
             $prefix = "ABJ-404-SOLUTION (DEBUG): ";
-            $timestamp = date('Y-m-d H:i:s') . ' (DEBUG): ';
+            $timestamp = date('Y-m-d H:i:s T') . ' (DEBUG): ';
             error_log($prefix . $message);
             $this->writeLineToDebugFile($timestamp . $message);
         }
@@ -35,7 +35,7 @@ class ABJ_404_Solution_Logging {
      * This goes to a file and is used by every other class so it goes here.
      * @param type $message  */
     function infoMessage($message) {
-        $timestamp = date('Y-m-d H:i:s') . ' (INFO): ';
+        $timestamp = date('Y-m-d H:i:s T') . ' (INFO): ';
         $this->writeLineToDebugFile($timestamp . $message);
     }
 
@@ -51,7 +51,7 @@ class ABJ_404_Solution_Logging {
         $stacktrace = $e->getTraceAsString();
         
         $prefix = "ABJ-404-SOLUTION (ERROR): ";
-        $timestamp = date('Y-m-d H:i:s') . ' (ERROR): ';
+        $timestamp = date('Y-m-d H:i:s T') . ' (ERROR): ';
         $referrer = '';
         if (array_key_exists('HTTP_REFERER', $_SERVER) && !empty($_SERVER['HTTP_REFERER'])) {
             $referrer = $_SERVER['HTTP_REFERER'];
@@ -184,7 +184,7 @@ class ABJ_404_Solution_Logging {
     function emailLogFileToDeveloper() {
         // email the log file.
         $this->debugMessage("Creating zip file of error log file.");
-        $logFileZip = ABJ404_PATH . "abj404_debug.zip";
+        $logFileZip = $this->getZipFilePath();
         if (file_exists($logFileZip)) {
             unlink($logFileZip);
         }
@@ -244,15 +244,59 @@ class ABJ_404_Solution_Logging {
         return $latestErrorLineFound;
     }
     
-    /** 
+    /** Return the path to the debug file.
      * @return type
      */
     function getDebugFilePath() {
-        return ABJ404_PATH . 'abj404_debug.txt';
+        return $this->getFilePathAndMoveOldFile(ABJ404_PATH . 'temp/', 'abj404_debug.txt');
     }
     
+    /** Return the path to the file that stores the latest error line in the log file.
+     * @return type
+     */
     function getDebugFilePathSentFile() {
-        return ABJ404_PATH . "abj404_debug_sent_line.txt";
+        return $this->getFilePathAndMoveOldFile(ABJ404_PATH . 'temp/', 'abj404_debug_sent_line.txt');
+    }
+    
+    /** Return the path to the zip file for sending the debug file. 
+     * @return type
+     */
+    function getZipFilePath() {
+        return $this->getFilePathAndMoveOldFile(ABJ404_PATH . 'temp/', 'abj404_debug.zip');
+    }
+    
+    function getFilePathAndMoveOldFile($directory, $filename) {
+        // create the directory and move the file
+        if (!$this->createDirectoryWithErrorMessages($directory)) {
+            return ABJ404_PATH . $filename;
+        }
+        
+        if (file_exists(ABJ404_PATH . $filename)) {
+            // move the file to the new location
+            rename(ABJ404_PATH . $filename, $directory . $filename);
+        }
+        
+        return $directory . $filename;
+    }
+    
+    /** 
+     * @param type $directory
+     * @return boolean
+     */
+    function createDirectoryWithErrorMessages($directory) {
+        if (!is_dir($directory)) {
+            if (file_exists(rtrim($directory, '/'))) {
+                error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " . 
+                        $directory . ". A file with that name alraedy exists.");
+                return false;
+                
+            } else if (!mkdir($directory)) {
+                error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
+                        $directory . ". Unknown issue.");
+                return false;
+            }
+        }
+        return true;
     }
     
     /** 
