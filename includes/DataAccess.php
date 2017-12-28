@@ -87,6 +87,11 @@ class ABJ_404_Solution_DataAccess {
                     . 'after `requested_url` ';
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
+        if (!preg_match("/username.+varchar/i", $tableSQL)) {
+            $query = 'ALTER TABLE ' . $logsTable . ' ADD `username` varchar(60) DEFAULT NULL '
+                    . 'after `requested_url_detail` ';
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
     }
     
     /** 
@@ -429,24 +434,30 @@ class ABJ_404_Solution_DataAccess {
     function getLogRecords($tableOptions) {
         global $wpdb;
 
-        $logs = $wpdb->prefix . "abj404_logsv2";
-        $redirects = $wpdb->prefix . "abj404_redirects";
+        $logsTable = $wpdb->prefix . "abj404_logsv2";
 
-        $query = "select " . $logs . ".timestamp, " . $logs . ".user_ip as remote_host, " . $logs . ".referrer, " . 
-                $logs . ".dest_url as action, " . $logs . ".requested_url as url, " .
-                $logs . ".requested_url_detail as url_detail from " . $logs;
-        $query .= "\n where 1 ";
+        $logsid_included = '';
+        $logsid = '';
         if ($tableOptions['logsid'] != 0) {
-            $query .= " and " . $logs . ".requested_url = (select innerid.requested_url from " . $logs . " innerid " .
-                    " where innerid.id = " . esc_sql($tableOptions['logsid']) . ") ";
+            $logsid_included = 'specific logs id included. */';
+            $logsid = esc_sql($tableOptions['logsid']);
         }
-
-        $query .= "order by " . sanitize_text_field($tableOptions['orderby']) . " " . sanitize_text_field($tableOptions['order']) . " ";
+        $orderby = esc_sql(sanitize_text_field($tableOptions['orderby']));
+        $order = esc_sql(sanitize_text_field($tableOptions['order']));
         $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
-        $query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
+        $perpage = absint(sanitize_text_field($tableOptions['perpage']));
         
-        $rows = $wpdb->get_results($query, ARRAY_A);
-        return $rows;
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogRecords.sql");
+        $query = str_replace('{logsid_included}', $logsid_included, $query);
+        $query = str_replace('{logsid}', $logsid, $query);
+        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+        $query = str_replace('{orderby}', $orderby, $query);
+        $query = str_replace('{order}', $order, $query);
+        $query = str_replace('{start}', $start, $query);
+        $query = str_replace('{perpage}', $perpage, $query);
+
+        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        return $results['rows'];
     }
     
     /** 
@@ -466,13 +477,13 @@ class ABJ_404_Solution_DataAccess {
         // no nonce here because redirects are not user generated.
 
         $referer = wp_get_referer();
-        if ($abj404logging->isDebug()) {
-            $current_user = wp_get_current_user();
-            $current_user_name = "(none)";
-            if (isset($current_user)) {
-                $current_user_name = $current_user->user_login;
-            }
+        $current_user = wp_get_current_user();
+        $current_user_name = "(none)";
+        if (isset($current_user)) {
+            $current_user_name = $current_user->user_login;
+        }
             
+        if ($abj404logging->isDebug()) {
             $reasonMessage = implode(", ", 
                         array_filter(
                         array($_REQUEST[ABJ404_PP]['ignore_doprocess'], $_REQUEST[ABJ404_PP]['ignore_donotprocess'])));
@@ -490,8 +501,10 @@ class ABJ_404_Solution_DataAccess {
             'dest_url' => esc_sql($action),
             'requested_url' => esc_sql($requestedURL),
             'requested_url_detail' => esc_sql($requestedURLDetail),
+            'username' => esc_sql($current_user_name),
                 ), array(
             '%d',
+            '%s',
             '%s',
             '%s',
             '%s',

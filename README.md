@@ -75,7 +75,8 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 * Feature: New option: The Settings menu can be under "Settings" or at the same level as the "Settings" and "Tools" menus.
 * Feature: Optionally send an email notification when a certain number of 404s are captured.
 * FIX: Delete old redirects based on when they were last used instead of the date they were created.
-* Improvement: Allow ordering redirects and captured 404s by the "Last Used" (most recently used date) column.
+* Improvement: Allow ordering redirects and captured 404s by the "Last Used" (most recently used date) column on the admin page.
+* Improvement: Add the logged in "user" column to the logs table.
 * Improvement: Matching categories and tags works a little better than before.
 * Improvement: Use a faster, more memory efficient Levenshtein algorithm.
 
