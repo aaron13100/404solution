@@ -1524,9 +1524,6 @@ class ABJ_404_Solution_View {
             $tableOptions[$key] = wp_kses_post($value);
         }
 
-        $logRows = array();
-        $logRowsFound = 0;
-        
         $rows = $abj404dao->getLogsIDandURL();
         $abj404logging->debugMessage(sizeof($rows) . " log rows found for logs page select option.");
 
@@ -1571,6 +1568,9 @@ class ABJ_404_Solution_View {
         $columns['timestamp']['title'] = "Date";
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "15%";
+        $columns['username']['title'] = "User";
+        $columns['username']['orderby'] = "username";
+        $columns['username']['width'] = "10%";
 
         echo "<div class=\"tablenav\">";
         $this->echoPaginationLinks($sub, $tableOptions);
@@ -1630,6 +1630,10 @@ class ABJ_404_Solution_View {
             $timeToDisplay = abs(intval($row['timestamp']));
             echo "<td>" . date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
                     date('A', $timeToDisplay) . "</td>";
+            
+            echo "<td>" . esc_html($row['username']);
+            echo "</td>";
+            
             echo "<td></td>";
             echo "</tr>";
             $redirectsDisplayed++;

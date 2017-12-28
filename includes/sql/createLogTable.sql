@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_logsv2} (
     `referrer` varchar(512) NOT NULL,
     `requested_url` varchar(512) NOT NULL,
     `requested_url_detail` varchar(512) DEFAULT NULL,
+    `username` varchar(60) DEFAULT NULL,
     `dest_url` varchar(512) NOT NULL,
     PRIMARY KEY  (`id`),
     KEY `timestamp` (`timestamp`),
