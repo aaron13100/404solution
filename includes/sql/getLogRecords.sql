@@ -5,8 +5,11 @@ select {wp_abj404_logsv2}.timestamp,
        {wp_abj404_logsv2}.dest_url as action,
        {wp_abj404_logsv2}.requested_url as url,
        {wp_abj404_logsv2}.requested_url_detail as url_detail,
-       {wp_abj404_logsv2}.username as username
+       usernameLookup.lkup_value as username
 from {wp_abj404_logsv2}
+
+     left outer join {wp_abj404_lookup} usernameLookup
+     on {wp_abj404_logsv2}.username = usernameLookup.id
 where 1
 
 /* {logsid_included}
