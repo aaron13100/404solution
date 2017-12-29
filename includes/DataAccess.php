@@ -24,6 +24,7 @@ class ABJ_404_Solution_DataAccess {
         
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
+        $lookupTable = $wpdb->prefix . 'abj404_lookup';
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
         $query = str_replace('{redirectsTable}', $redirectsTable, $query);
@@ -31,6 +32,10 @@ class ABJ_404_Solution_DataAccess {
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
+        $query = str_replace('{wp_abj404_lookup}', $lookupTable, $query);
         ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         
         // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
@@ -87,9 +92,22 @@ class ABJ_404_Solution_DataAccess {
                     . 'after `requested_url` ';
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
-        if (!preg_match("/username.+varchar/i", $tableSQL)) {
-            $query = 'ALTER TABLE ' . $logsTable . ' ADD `username` varchar(60) DEFAULT NULL '
+        if (!preg_match("/username.+bigint/i", $tableSQL)) {
+            $query = 'ALTER TABLE ' . $logsTable . ' ADD `username` bigint(20) DEFAULT NULL '
                     . 'after `requested_url_detail` ';
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+        if (!preg_match("/location.+bigint/i", $tableSQL)) {
+            $query = 'ALTER TABLE ' . $logsTable . ' ADD `location` bigint(20) DEFAULT NULL '
+                    . 'after `username` ';
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+        if (!preg_match("/username.+ USING BTREE/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $logsTable . " ADD INDEX username (`username`) USING BTREE";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+        if (!preg_match("/location.+ USING BTREE/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $logsTable . " ADD INDEX location (`location`) USING BTREE";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
     }
@@ -130,6 +148,7 @@ class ABJ_404_Solution_DataAccess {
         $result['last_error'] = $wpdb->last_error;
         $result['last_result'] = $wpdb->last_result;
         $result['rows_affected'] = $wpdb->rows_affected;
+        $result['insert_id'] = $wpdb->insert_id;
         
         if ($result['last_error'] != '') {
             $abj404logging->errorMessage("Ugh. SQL error: " . esc_html($result['last_error']));
@@ -435,6 +454,7 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
 
         $logsTable = $wpdb->prefix . "abj404_logsv2";
+        $lookupTable = $wpdb->prefix . 'abj404_lookup';
 
         $logsid_included = '';
         $logsid = '';
@@ -451,6 +471,7 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace('{logsid_included}', $logsid_included, $query);
         $query = str_replace('{logsid}', $logsid, $query);
         $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+        $query = str_replace('{wp_abj404_lookup}', $lookupTable, $query);
         $query = str_replace('{orderby}', $orderby, $query);
         $query = str_replace('{order}', $order, $query);
         $query = str_replace('{start}', $start, $query);
@@ -478,7 +499,7 @@ class ABJ_404_Solution_DataAccess {
 
         $referer = wp_get_referer();
         $current_user = wp_get_current_user();
-        $current_user_name = "(none)";
+        $current_user_name = null;
         if (isset($current_user)) {
             $current_user_name = $current_user->user_login;
         }
@@ -494,6 +515,10 @@ class ABJ_404_Solution_DataAccess {
         }
         
         // TODO insert the $matchReason and the ignore reason into the log table?
+        
+        // insert the username into the lookup table and get the ID from the lookup table.
+        $usernameLookupID = $this->insertLookupValueAndGetID($current_user_name);
+        
         $wpdb->insert($wpdb->prefix . "abj404_logsv2", array(
             'timestamp' => esc_sql($now),
             'user_ip' => esc_sql($_SERVER['REMOTE_ADDR']),
@@ -501,7 +526,7 @@ class ABJ_404_Solution_DataAccess {
             'dest_url' => esc_sql($action),
             'requested_url' => esc_sql($requestedURL),
             'requested_url_detail' => esc_sql($requestedURLDetail),
-            'username' => esc_sql($current_user_name),
+            'username' => esc_sql($usernameLookupID),
                 ), array(
             '%d',
             '%s',
@@ -509,13 +534,37 @@ class ABJ_404_Solution_DataAccess {
             '%s',
             '%s',
             '%s',
-            '%s'
+            '%d'
                 )
         );
         
        if ($wpdb->last_error != '') {
            $abj404logging->errorMessage("Error inserting data: " . esc_html($wpdb->last_error));
        }
+    }
+    
+    /** Insert a value into the lookup table and return the ID of the value. 
+     * @param type $valueToInsert
+     */
+    function insertLookupValueAndGetID($valueToInsert) {
+        global $wpdb;
+        
+        $lookupTable = $wpdb->prefix . 'abj404_lookup';
+        $query = "select id from " . $lookupTable . " where lkup_value = '" . $valueToInsert . "'";
+        $results = $this->queryAndGetResults($query);
+        
+        if (sizeof($results['rows']) > 0) {
+            // the value already exists so we only need to return the ID.
+            $rows = $results['rows'];
+            $row1 = $rows[0];
+            $id = $row1['id'];
+            return $id;
+        }
+        
+        $query = "insert into " . $lookupTable . " (lkup_value) values ('" . $valueToInsert . "')";
+        $results = $this->queryAndGetResults($query);
+        
+        return $results['insert_id'];
     }
 
     /** 

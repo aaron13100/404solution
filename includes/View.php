@@ -1558,7 +1558,7 @@ class ABJ_404_Solution_View {
         $columns['url']['width'] = "25%";
         $columns['host']['title'] = "IP Address";
         $columns['host']['orderby'] = "remote_host";
-        $columns['host']['width'] = "11%";
+        $columns['host']['width'] = "12%";
         $columns['refer']['title'] = "Referrer";
         $columns['refer']['orderby'] = "referrer";
         $columns['refer']['width'] = "25%";
