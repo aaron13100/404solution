@@ -160,11 +160,11 @@ class ABJ_404_Solution_View {
         }
         echo "<div class=\"wrap\">";
         if ($sub == "abj404_options") {
-            echo "<div id=\"icon-options-general\" class=\"icon32\"></div>";
+            echo "\n<div id=\"icon-options-general\" class=\"icon32\"></div>";
         } else {
-            echo "<div id=\"icon-tools\" class=\"icon32\"></div>";
+            echo "\n<div id=\"icon-tools\" class=\"icon32\"></div>";
         }
-        echo "<h2>" . __('404 Solution', '404-solution') . esc_html($header) . "</h2>";
+        echo "\n<h2>" . __('404 Solution', '404-solution') . esc_html($header) . "</h2>";
         if ($message != "") {
             $allowed_tags = array(
                 'br' => array(),
@@ -178,44 +178,44 @@ class ABJ_404_Solution_View {
                 $cssClasses = 'notice notice-success';
             }
             
-            echo '<div class="' . $cssClasses . '"><p>' . wp_kses($message, $allowed_tags) . "</p></div>";
+            echo '<div class="' . $cssClasses . '"><p>' . wp_kses($message, $allowed_tags) . "</p></div>\n";
         }
 
         $class = "";
         if ($sub == 'abj404_redirects') {
             $class = "nav-tab-active";
         }
-        echo "<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_redirects\" title=\"" . __('Page Redirects', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Page Redirects', '404-solution') . "</a>";
+        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_redirects\" title=\"" . __('Page Redirects', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Page Redirects', '404-solution') . "</a>";
 
         $class = "";
         if ($sub == 'abj404_captured') {
             $class = "nav-tab-active";
         }
-        echo "<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_captured\" title=\"" . __('Captured 404 URLs', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Captured 404 URLs', '404-solution') . "</a>";
+        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_captured\" title=\"" . __('Captured 404 URLs', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Captured 404 URLs', '404-solution') . "</a>";
 
         $class = "";
         if ($sub == 'abj404_logs') {
             $class = "nav-tab-active";
         }
-        echo "<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_logs\" title=\"" . __('Redirect & Capture Logs', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Logs', '404-solution') . "</a>";
+        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_logs\" title=\"" . __('Redirect & Capture Logs', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Logs', '404-solution') . "</a>";
 
         $class = "";
         if ($sub == 'abj404_stats') {
             $class = "nav-tab-active";
         }
-        echo "<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_stats\" title=\"" . __('Stats', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Stats', '404-solution') . "</a>";
+        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_stats\" title=\"" . __('Stats', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Stats', '404-solution') . "</a>";
 
         $class = "";
         if ($sub == 'abj404_tools') {
             $class = "nav-tab-active";
         }
-        echo "<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_tools\" title=\"" . __('Tools', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Tools', '404-solution') . "</a>";
+        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_tools\" title=\"" . __('Tools', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Tools', '404-solution') . "</a>";
 
         $class = "";
         if ($sub == "abj404_options") {
             $class = "nav-tab-active";
         }
-        echo "<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . __('Options', '404-solution') . "</a>";
+        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . __('Options', '404-solution') . "</a>";
 
         echo "<hr style=\"border: 0px; border-bottom: 1px solid #DFDFDF; margin-top: 0px; margin-bottom: 0px; \">";
     }
@@ -831,13 +831,12 @@ class ABJ_404_Solution_View {
                 $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
             }
 
-            $bulkaction = "abj404_bulkProcess";
             // is there a way to use the <select> below and use the selected action (bulkignore, bulkcaptured, bulktrash)
             // when creating the nonce (instead of using one nonce for all actions)?
-            $url = wp_nonce_url($url, $bulkaction); 
+            $url = wp_nonce_url($url, "abj404_bulkProcess");
 
             echo "<form method=\"POST\" action=\"" . $url . "\">";
-            echo "<select name=\"action\">";
+            echo "<select name=\"action\" id=\"bulkCaptured404select\" >";
             if ($tableOptions['filter'] != ABJ404_STATUS_CAPTURED) {
                 echo "<option value=\"bulkcaptured\">" . __('Mark as captured', '404-solution') . "</option>";
             }
@@ -850,7 +849,7 @@ class ABJ_404_Solution_View {
             echo "<option value=\"bulktrash\">" . __('Trash', '404-solution') . "</option>";
             echo "<option value=\"editRedirect\">" . __('Create a redirect', '404-solution') . "</option>";
             echo "</select>";
-            echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . __('Apply', '404-solution') . "\">";
+            echo "<input type=\"submit\" id=\"captured_404s_bulk_apply\" class=\"button-secondary\" value=\"" . __('Apply', '404-solution') . "\">";
             echo "</div>";
         }
         echo "</div>";
@@ -921,12 +920,10 @@ class ABJ_404_Solution_View {
                 $laterlink .= "&filter=" . $tableOptions['filter'];
             }
 
-            $trashaction = "abj404_trashRedirect";
-            $trashlink = wp_nonce_url($trashlink, $trashaction);
+            $trashlink = wp_nonce_url($trashlink, "abj404_trashRedirect");
 
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-                $deleteaction = "abj404_removeRedirect";
-                $deletelink = wp_nonce_url($deletelink, $deleteaction);
+                $deletelink = wp_nonce_url($deletelink, "abj404_removeRedirect");
             }
 
             $ignorelink = wp_nonce_url($ignorelink, "abj404_ignore404");
@@ -943,7 +940,8 @@ class ABJ_404_Solution_View {
             echo "<tr id=\"post-" . esc_attr($row['id']) . "\"" . $class . ">";
             echo "<th class=\"check-column\">";
             if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
-                echo "<input type=\"checkbox\" name=\"idnum[]\" value=\"" . esc_attr($row['id']) . "\">";
+                echo "\n<input type=\"checkbox\" name=\"idnum[]\" value=\"" . esc_attr($row['id']) . "\" " .
+                        "onchange=\"enableDisableApplyButton();\" >";
             }
             echo "</th>";
             echo "<td>";
@@ -994,6 +992,12 @@ class ABJ_404_Solution_View {
         }
         $this->echoPaginationLinks($sub, $tableOptions);
         echo "</div>";
+        
+        // make sure the "apply" button is only enabled if at least one checkbox is selected
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/enableDisableApplyButton.js");
+        $html = str_replace('{altText}', __('Choose at least one URL', '404-solution'), $html);
+        $html = $this->doNormalReplacements($html);
+        echo $html;
     }
 
     /** 
@@ -1668,7 +1672,7 @@ class ABJ_404_Solution_View {
         }
         echo "<th " . $cbinfo . ">";
         if ($sub == 'abj404_captured' && $tableOptions['filter'] != ABJ404_TRASH_FILTER) {
-            echo "<input type=\"checkbox\">";
+            echo "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" >";
         }
         echo "</th>";
         foreach ($columns as $column) {
