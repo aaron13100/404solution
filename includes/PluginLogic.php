@@ -268,6 +268,7 @@ class ABJ_404_Solution_PluginLogic {
         // abj404_duplicateCronAction is no longer needed as of 1.7.
         wp_clear_scheduled_hook('abj404_duplicateCronAction');
 
+        ABJ_404_Solution_PluginLogic::doUnregisterCrons();
         // added in 1.8.2
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
@@ -449,7 +450,7 @@ class ABJ_404_Solution_PluginLogic {
 
     static function doRegisterCrons() {
         if (!wp_next_scheduled('abj404_cleanupCronAction')) {
-            wp_schedule_event(time(), 'daily', 'abj404_cleanupCronAction');
+            wp_schedule_event(strtotime('02:02:02'), 'daily', 'abj404_cleanupCronAction');
         }
     }
     

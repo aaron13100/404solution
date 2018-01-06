@@ -734,6 +734,10 @@ class ABJ_404_Solution_DataAccess {
             }
         }
         
+        // If true then the user clicked the button to execute the mantenance.
+        $manually_fired = $abj404dao->getPostOrGetSanitize('manually_fired', 'false');
+        $message .= ", User initiated: " . $manually_fired;
+                
         $abj404logging->infoMessage($message);
 
         ABJ_404_Solution_DataAccess::queryAndGetResults("optimize table " . $redirectsTable);
