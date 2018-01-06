@@ -96,6 +96,10 @@ class ABJ_404_Solution_WordPress_Connector {
         }
         
         $urlParts = parse_url(esc_url($_SERVER['REQUEST_URI']));
+        if (!is_array($urlParts)) {
+            $abj404logging->errorMessage('parse_url returned a non-array value. REQUEST_URI: "' . 
+                    $_SERVER['REQUEST_URI'] . '", parse_url result: "' . json_encode($urlParts) . '"');
+        }
         $requestedURL = $urlParts['path'];
         $requestedURL .= $abj404connector->sortQueryParts($urlParts);
 
@@ -231,9 +235,12 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return string
      */
     function sortQueryParts($urlParts) {
+        $_REQUEST[ABJ404_PP]['debug_info'] = 'urlParts in sortQueryParts() function: ' . json_encode($urlParts);
         if (!array_key_exists('query', $urlParts) || @$urlParts['query'] == "") {
+            $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared in sortQueryParts() function.';
             return "";
         }
+        $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared in sortQueryParts() function.';
         $url = "";
 
         $queryString = array();

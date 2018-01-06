@@ -40,10 +40,15 @@ class ABJ_404_Solution_ErrorHandler {
                     break;
 
                 default:
+                    $extraInfo = "(none)";
+                    if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('debug_info', $_REQUEST[ABJ404_PP])) {
+                        $extraInfo = stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
+                    }
                     $errmsg = "ABJ404-SOLUTION Normal error handler error: errno: " .
                                 wp_kses_post(json_encode($errno)) . ", errstr: " . wp_kses_post(json_encode($errstr)) .
                                 ", errfile: " . stripcslashes(wp_kses_post(json_encode($errfile))) .
-                                ", errline: " . wp_kses_post(json_encode($errline));
+                                ", errline: " . wp_kses_post(json_encode($errline)) .
+                                ', Additional info: ' . $extraInfo;
                     if ($abj404logging != null) {
                         $abj404logging->errorMessage($errmsg);
                     } else {
