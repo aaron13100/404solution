@@ -24,7 +24,7 @@ class ABJ_404_Solution_SpellChecker {
         foreach ($regexURLsRows as $row) {
             $regexURL = $row['url'];
             
-            $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex \"' . $regexURL . '\" to URL: ' . $requestedURL;
+            $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex "' . $regexURL . '" to URL: ' . $requestedURL;
             $preparedURL = str_replace('/', '\/', $regexURL);
             if (preg_match('/' . $preparedURL . '/', $requestedURL)) {
                 $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
@@ -251,9 +251,9 @@ class ABJ_404_Solution_SpellChecker {
         $ColLen = count($sCol);
         $cost = 0;
         
-        /// Test string length
-        if (max($RowLen, $ColLen) > pow(2, 12)) {
-            throw new Exception("Maximum string length in customLevenshtein is " . pow(2, 12) . ". Yours is " . 
+        /// Test string length. URLs should not be more than 2,083 characters
+        if (max($RowLen, $ColLen) > 4096) {
+            throw new Exception("Maximum string length in customLevenshtein is " . 4096 . ". Yours is " . 
                     max($RowLen, $ColLen) + ".");
         }
         
