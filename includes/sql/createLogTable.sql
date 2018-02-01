@@ -14,12 +14,12 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_logsv2} (
     `requested_url` varchar(512) NOT NULL,
     `requested_url_detail` varchar(512) DEFAULT NULL,
     `username` bigint(20) DEFAULT NULL,
-    `location` bigint(20) DEFAULT NULL,
+    `country` bigint(20) DEFAULT NULL,
     `dest_url` varchar(512) NOT NULL,
     PRIMARY KEY  (`id`),
     KEY `timestamp` (`timestamp`),
     KEY `requested_url` (`requested_url`) USING BTREE,
     KEY `username` (`username`) USING BTREE,
-    KEY `location` (`location`) USING BTREE
+    KEY `country` (`country`) USING BTREE
 ) ENGINE=MyISAM character set utf8 COMMENT='404 Solution Plugin Logs Table' AUTO_INCREMENT=1
 

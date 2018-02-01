@@ -97,8 +97,8 @@ class ABJ_404_Solution_DataAccess {
                     . 'after `requested_url_detail` ';
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
-        if (!preg_match("/location.+bigint/i", $tableSQL)) {
-            $query = 'ALTER TABLE ' . $logsTable . ' ADD `location` bigint(20) DEFAULT NULL '
+        if (!preg_match("/country.+bigint/i", $tableSQL)) {
+            $query = 'ALTER TABLE ' . $logsTable . ' ADD `country` bigint(20) DEFAULT NULL '
                     . 'after `username` ';
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
@@ -106,8 +106,8 @@ class ABJ_404_Solution_DataAccess {
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX username (`username`) USING BTREE";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
-        if (!preg_match("/location.+ USING BTREE/i", $tableSQL)) {
-            $query = "ALTER TABLE " . $logsTable . " ADD INDEX location (`location`) USING BTREE";
+        if (!preg_match("/country.+ USING BTREE/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $logsTable . " ADD INDEX country (`country`) USING BTREE";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
     }
@@ -493,15 +493,26 @@ class ABJ_404_Solution_DataAccess {
     function logRedirectHit($requestedURL, $action, $matchReason, $requestedURLDetail = null) {
         global $wpdb;
         global $abj404logging;
+        global $abj404ip2Location;
+        global $abj404logic;
+        
         $now = time();
 
         // no nonce here because redirects are not user generated.
 
+        $options = $abj404logic->getOptions(true);
         $referer = wp_get_referer();
         $current_user = wp_get_current_user();
         $current_user_name = null;
         if (isset($current_user)) {
             $current_user_name = $current_user->user_login;
+        }
+        $countryName = null;
+        $countryNameLookupID = null;
+        if ($abj404ip2Location->isSupported() && ($options['geo2ip'] == '1') && 
+            $abj404ip2Location->readerIsInitialized()) {
+            $countryName = $abj404ip2Location->getCountry($_SERVER['REMOTE_ADDR']);
+            $countryNameLookupID = $this->insertLookupValueAndGetID($countryName);
         }
             
         if ($abj404logging->isDebug()) {
@@ -511,10 +522,8 @@ class ABJ_404_Solution_DataAccess {
             $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
                     " | Current user: " . $current_user_name . " | From: " . esc_html($requestedURL) . 
                     esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . 
-                    $reasonMessage);
+                    $reasonMessage . ", Country: " . $countryName);
         }
-        
-        // TODO insert the $matchReason and the ignore reason into the log table?
         
         // insert the username into the lookup table and get the ID from the lookup table.
         $usernameLookupID = $this->insertLookupValueAndGetID($current_user_name);
@@ -527,6 +536,7 @@ class ABJ_404_Solution_DataAccess {
             'requested_url' => esc_sql($requestedURL),
             'requested_url_detail' => esc_sql($requestedURLDetail),
             'username' => esc_sql($usernameLookupID),
+            'country' => $countryNameLookupID,
                 ), array(
             '%d',
             '%s',
@@ -534,6 +544,7 @@ class ABJ_404_Solution_DataAccess {
             '%s',
             '%s',
             '%s',
+            '%d',
             '%d'
                 )
         );
@@ -541,6 +552,39 @@ class ABJ_404_Solution_DataAccess {
        if ($wpdb->last_error != '') {
            $abj404logging->errorMessage("Error inserting data: " . esc_html($wpdb->last_error));
        }
+    }
+    
+    /** 
+     * @global type $wpdb
+     * @return type
+     */
+    function getIPsThatNeedACountry($maxRows = null) {
+        global $wpdb;
+        
+        $query = 'select distinct user_ip from ' . $wpdb->prefix . 'abj404_logsv2' . " WHERE country is null ";
+        if ($maxRows != null) {
+            $query .= "\n limit " . $maxRows;
+        }
+        
+        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        return $results['rows'];
+    }
+    
+    function updateCountry($ips, $countryName) {
+        global $wpdb;
+        
+        $logsTable = $wpdb->prefix . "abj404_logsv2";
+        $countryLookupID = $this->insertLookupValueAndGetID($countryName);
+        
+        $inClause = implode("','", $ips);
+        
+        $query = "update " . $logsTable . " set country = " . $countryLookupID . " \n " .
+                "where user_ip in ('" . $inClause . "') \n " . 
+                "and country is null";
+        
+        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        
+        return $results['rows_affected'];
     }
     
     /** Insert a value into the lookup table and return the ID of the value. 
@@ -593,6 +637,7 @@ class ABJ_404_Solution_DataAccess {
         global $abj404dao;
         global $abj404logic;
         global $abj404logging;
+        global $abj404ip2Location;
 
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $logsTable = $wpdb->prefix . "abj404_logsv2";
@@ -602,6 +647,13 @@ class ABJ_404_Solution_DataAccess {
         $autoRedirectsCount = 0;
         $manualRedirectsCount = 0;
         $oldLogRowsDeleted = 0;
+
+        // If true then the user clicked the button to execute the mantenance.
+        $manually_fired = $abj404dao->getPostOrGetSanitize('manually_fired', false);
+        if (mb_strtolower($manually_fired) == 'true') {
+            $manually_fired = true;
+        }
+
         $duplicateRowsDeleted = $abj404dao->removeDuplicatesCron();
 
         //Remove Captured URLs
@@ -720,11 +772,18 @@ class ABJ_404_Solution_DataAccess {
                 ", Old log lines removed: " . $oldLogRowsDeleted . ", Duplicate rows deleted: " . 
                 $duplicateRowsDeleted;
         
+        // only send a 404 notification email during daily maintenance.
         if (array_key_exists('admin_notification_email', $options) && isset($options['admin_notification_email']) && 
                 strlen(trim($options['admin_notification_email'])) > 5) {
-            if ($abj404logic->emailCaptured404Notification()) {
-                $message .= ", Captured 404 notification email sent to: " . trim($options['admin_notification_email']);
+            
+            if ($manually_fired) {
+                $message .= ', The admin email notification option is skipped for user '
+                        . 'initiated maintenance runs.';
+            } else {
+                $message .= ', ' . $abj404logic->emailCaptured404Notification();
             }
+        } else {
+            $message .= ', Admin email notification option turned off.';
         }
 
         if (array_key_exists('send_error_logs', $options) && isset($options['send_error_logs']) && 
@@ -734,9 +793,19 @@ class ABJ_404_Solution_DataAccess {
             }
         }
         
-        // If true then the user clicked the button to execute the mantenance.
-        $manually_fired = $abj404dao->getPostOrGetSanitize('manually_fired', 'false');
-        $message .= ", User initiated: " . $manually_fired;
+        if ($abj404ip2Location->isSupported() && ($options['geo2ip'] == '1')) {
+            $countryRecordsUpdated = $abj404ip2Location->updateCountriesInDatabase();
+            $message .= ", Country updated for " . $countryRecordsUpdated . " log record(s).";
+            
+        } else if (!$abj404ip2Location->isSupported()) {
+            // $message .= ", (No countries updated because IP2Location is not supported for PHP " . PHP_VERSION . ")";
+            
+        } else if ($options['geo2ip'] == '0') {
+            $message .= ", No countries updated because the option is turned off.";
+        }
+        
+        $manually_fired_String = ($manually_fired) ? 'true' : 'false';
+        $message .= ", User initiated: " . $manually_fired_String;
                 
         $abj404logging->infoMessage($message);
 
@@ -894,10 +963,10 @@ class ABJ_404_Solution_DataAccess {
         
         // get the valid post types
         $options = $abj404logic->getOptions();
-        $postTypes = preg_split("@\n@", strtolower($options['recognized_post_types']), NULL, PREG_SPLIT_NO_EMPTY);
+        $postTypes = preg_split("@\n@", mb_strtolower($options['recognized_post_types']), NULL, PREG_SPLIT_NO_EMPTY);
         $recognizedPostTypes = '';
         foreach ($postTypes as $postType) {
-            $recognizedPostTypes .= "'" . trim(strtolower($postType)) . "', ";
+            $recognizedPostTypes .= "'" . trim(mb_strtolower($postType)) . "', ";
         }
         $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
         // ----------------

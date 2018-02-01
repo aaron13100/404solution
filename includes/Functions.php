@@ -8,7 +8,6 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
 }
 
 /* Static functions that can be used from anywhere.  */
-
 class ABJ_404_Solution_Functions {
     /** Turns ID|TYPE, SCORE into an array with id, type, score, link, and title.
      *
@@ -57,6 +56,28 @@ class ABJ_404_Solution_Functions {
         return $permalink;
     }
     
+    /** Returns true if the file does not exist after calling this method. 
+     * @param type $path
+     * @return boolean
+     */
+    static function safeUnlink($path) {
+        if (file_exists($path)) {
+            return unlink($path);
+        }
+        return true;
+    }
+    
+    /** Returns true if the file does not exist after calling this method. 
+     * @param type $path
+     * @return boolean
+     */
+    static function safeRmdir($path) {
+        if (file_exists($path)) {
+            return rmdir($path);
+        }
+        return true;
+    }
+    
     /** Reads an entire file at once into a string and return it.
      * @param type $path
      * @return type
@@ -88,6 +109,47 @@ class ABJ_404_Solution_Functions {
         }
         
         return $output;        
+    }
+
+    /** Deletes the existing file at $filePath and puts the URL contents in it's place.
+     * @global type $abj404logging
+     * @param type $url
+     * @param type $filePath
+     * @return type
+     */
+    static function readURLtoFile($url, $filePath) {
+        global $abj404logging;
+        
+        ABJ_404_Solution_Functions::safeUnlink($filePath);
+
+        // if we can't read the file that way then try curl.
+        if (function_exists('curl_init')) {
+            try {
+                //This is the file where we save the information
+                $destinationFileWriteHandle = fopen($filePath, 'w+');
+                //Here is the file we are downloading, replace spaces with %20
+                $ch = curl_init(str_replace(" ", "%20", $url));
+                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 '
+                . '(KHTML, like Gecko) Chrome/27.0.1453.94 Safari/537.36 (404 Solution WordPress Plugin)');
+                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                // write curl response to file
+                curl_setopt($ch, CURLOPT_FILE, $destinationFileWriteHandle); 
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                // get curl response
+                curl_exec($ch); 
+                curl_close($ch);
+                fclose($destinationFileWriteHandle);        
+                
+                if (file_exists($filePath) && filesize($filePath) > 0) {
+                    return;
+                }
+            } catch (Exception $e) {
+                $abj404logging->debugMessage("curl didn't work for downloading a URL. " . $e->getMessage());
+            }
+        }
+        
+        ABJ_404_Solution_Functions::safeUnlink($filePath);
+        file_put_contents($filePath, fopen($url, 'r'));
     }
     
 }

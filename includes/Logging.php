@@ -186,7 +186,7 @@ class ABJ_404_Solution_Logging {
         $this->debugMessage("Creating zip file of error log file.");
         $logFileZip = $this->getZipFilePath();
         if (file_exists($logFileZip)) {
-            unlink($logFileZip);
+            ABJ_404_Solution_Functions::safeUnlink($logFileZip);
         }
         $zip = new ZipArchive;
         if ($zip->open($logFileZip, ZipArchive::CREATE) === TRUE) {
@@ -209,7 +209,7 @@ class ABJ_404_Solution_Logging {
         
         // delete the zip file.
         $this->debugMessage("Mail sent. Deleting error log zip file.");
-        unlink($logFileZip);
+        ABJ_404_Solution_Functions::safeUnlink($logFileZip);
     }
     
     /** 
@@ -305,13 +305,13 @@ class ABJ_404_Solution_Logging {
     function deleteDebugFile() {
         // since the debug file is being deleted we reset the last error line that was sent.
         if (file_exists($this->getDebugFilePathSentFile())) {
-            unlink($this->getDebugFilePathSentFile());
+            ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathSentFile());
         }
         
         if (!file_exists($this->getDebugFilePath())) {
             return true;
         }
-        return unlink($this->getDebugFilePath());
+        return ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePath());
     }
     
     /** 

@@ -81,7 +81,7 @@ class ABJ_404_Solution_WordPress_Connector {
         if (!is_404()) {
             return;
         }
-
+        
         $urlRequest = esc_url(preg_replace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI'])));
 
         // remove the home directory from the URL parts because it should not be considered for spell checking.
@@ -330,7 +330,7 @@ class ABJ_404_Solution_WordPress_Connector {
     }
 
     /** Display an admin dashboard notification.
-     * e.g. There are 29 captured 404 URLs that need to be processed.
+     * e.g. There are 29 captured 404 URLs to be processed.
      * @global type $pagenow
      * @global type $abj404dao
      * @global type $abj404logic
