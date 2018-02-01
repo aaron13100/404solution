@@ -87,8 +87,8 @@ class ABJ_404_Solution_PluginLogic {
         // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
         // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
         // by https://www.sovrn.com/. 
-        $userAgents = preg_split("@\n@", strtolower($options['ignore_dontprocess']), NULL, PREG_SPLIT_NO_EMPTY);
-        $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
+        $userAgents = preg_split("@\n@", mb_strtolower($options['ignore_dontprocess']), NULL, PREG_SPLIT_NO_EMPTY);
+        $httpUserAgent = mb_strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (do not redirect): " . 
@@ -101,8 +101,8 @@ class ABJ_404_Solution_PluginLogic {
         $patternsToIgnore = $options['folders_files_ignore_usable'];
         if (!empty($patternsToIgnore)) {
             foreach ($patternsToIgnore as $patternToIgnore) {
-                $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex pattern to ignore \"' . 
-                        $patternToIgnore . '\" to URL slug: ' . $urlSlugOnly;
+                $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex pattern to ignore\"' . 
+                        $patternToIgnore . '" to URL slug: ' . $urlSlugOnly;
                 if (preg_match("/" . $patternToIgnore . "/", $urlSlugOnly, $matches)) {
                     $abj404logging->debugMessage("Ignoring file/folder (do not redirect) for URL: " . 
                             esc_html($urlSlugOnly) . ", pattern used: " . $patternToIgnore);
@@ -115,8 +115,8 @@ class ABJ_404_Solution_PluginLogic {
         
         // -----
         // ignore and process
-        $userAgents = preg_split("@\n@", strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
-        $httpUserAgent = strtolower(@$_SERVER['HTTP_USER_AGENT']);
+        $userAgents = preg_split("@\n@", mb_strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
+        $httpUserAgent = mb_strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (process ok): " . 
@@ -135,10 +135,21 @@ class ABJ_404_Solution_PluginLogic {
         global $abj404logic;
         global $abj404logging;
 
-        
         // this may be used later when displaying suggestions.
         $cookieName = ABJ404_PP . '_REQUEST_URI';
-        setcookie($cookieName, esc_url($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
+        try {
+            setcookie($cookieName, esc_url($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
+            
+        } catch (Exception $e) {
+            $abj404logging->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
+            // This javascript redirect will only appear if the header redirect did not work for some reason.
+            // document.cookie = "username=John Doe; expires=Thu, 18 Dec 2013 12:00:00 UTC";
+            $expireTime = date("D, d M Y H:i:s T", time() + (60 * 4));
+            $c = "\n" . '<script>document.cookie = "' . $cookieName . '=' . esc_url($_SERVER['REQUEST_URI']) . 
+                    '; expires=' . $expireTime . '";</script>' . "\n";
+            echo $c;
+        }
+        
         $_REQUEST[ABJ404_PP][$cookieName] = esc_url($_SERVER['REQUEST_URI']);
         
         $options = $abj404logic->getOptions();
@@ -189,7 +200,7 @@ class ABJ_404_Solution_PluginLogic {
     function getOptions($skip_db_check = false) {
         $options = get_option('abj404_settings');
 
-        if ($options == "") {
+        if (!is_array($options)) {
             add_option('abj404_settings', '', '', 'no');
             $options = array();
         }
@@ -275,10 +286,10 @@ class ABJ_404_Solution_PluginLogic {
         // since 1.9.0. ignore_doprocess add SeznamBot, Pinterestbot, UptimeRobot and "Slurp" -> "Yahoo! Slurp"
         if (version_compare($currentDBVersion, '1.9.0') < 0) {
             $userAgents = preg_split("@\n@", $options['ignore_doprocess'], NULL, PREG_SPLIT_NO_EMPTY);
-            $uasForSearch = preg_split("@\n@", strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
+            $uasForSearch = preg_split("@\n@", mb_strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
 
             foreach ($userAgents as &$str) {
-                if (strtolower(trim($str)) == "slurp") {
+                if (mb_strtolower(trim($str)) == "slurp") {
                     $str = "Yahoo! Slurp";
                     $abj404logging->infoMessage('Changed user agent "Slurp" to "Yahoo! Slurp" in the do not log list.');
                 }
@@ -383,6 +394,7 @@ class ABJ_404_Solution_PluginLogic {
             'DB_VERSION' => '0.0.0',
             'menuLocation' => 'underSettings',
             'admin_notification_email' => '',
+            'geo2ip' => '1',
         );
         
         return $options;
@@ -450,7 +462,10 @@ class ABJ_404_Solution_PluginLogic {
 
     static function doRegisterCrons() {
         if (!wp_next_scheduled('abj404_cleanupCronAction')) {
-            wp_schedule_event(strtotime('02:02:02'), 'daily', 'abj404_cleanupCronAction');
+            // we randomize this so that when the geo2ip file is downloaded, there aren't a whole
+            // lot of users that request the file at the same time.
+            $timeForEvent = '0' . rand(0, 5) . ':' . rand(10, 59) . ':' . rand(10, 59);
+            wp_schedule_event(strtotime($timeForEvent), 'daily', 'abj404_cleanupCronAction');
         }
     }
     
@@ -1225,6 +1240,9 @@ class ABJ_404_Solution_PluginLogic {
         if (array_key_exists('menuLocation', $_POST) && isset($_POST['menuLocation'])) {
             $options['menuLocation'] = wp_kses_post(@$_POST['menuLocation']);
         }
+        if (array_key_exists('geo2ip', $_POST) && isset($_POST['geo2ip'])) {
+            $options['geo2ip'] = wp_kses_post(@$_POST['geo2ip']);
+        }
         if (array_key_exists('admin_notification_email', $_POST) && isset($_POST['admin_notification_email'])) {
             $options['admin_notification_email'] = trim(wp_kses_post(@$_POST['admin_notification_email']));
         }
@@ -1407,7 +1425,8 @@ class ABJ_404_Solution_PluginLogic {
 
     /** Send an email if a notification should be displayed. Return true if an email is sent, or false otherwise.
      * @global type $abj404dao
-     * @return boolean
+     * @global type $abj404logging
+     * @return type
      */
     function emailCaptured404Notification() {
         global $abj404dao;
@@ -1417,7 +1436,7 @@ class ABJ_404_Solution_PluginLogic {
         
         $captured404Count = $abj404dao->getCapturedCountForNotification();
         if (!$this->shouldNotifyAboutCaptured404s($captured404Count)) {
-            return false;
+            return "Not enough 404s found to send an admin notification email (" . $captured404Count . ").";
         }
         
         $captured404URLSettings = admin_url() . "options-general.php?page=" . ABJ404_PP . '&subpage=abj404_captured';
@@ -1428,9 +1447,9 @@ class ABJ_404_Solution_PluginLogic {
         $body .= 'Visit <a href="' . $captured404URLSettings . '">' . $captured404URLSettings . 
                 '</a> to see them.<BR/><BR/>' . "\n";
         $body .= 'To stop getting these emails, update the settings at <a href="' . $generalSettings . '">' . 
-                $generalSettings . '</a>' . "<BR/>\n";
+                $generalSettings . '</a>, or contact the site administrator.' . "<BR/>\n";
         $body .= "<BR/><BR/>\n\nSent " . date('Y/m/d h:i:s T') . "<BR/>\n" . "PHP version: " . PHP_VERSION . 
-                ", <BR/>\nWordPress version: " . get_bloginfo('version') . ", <BR/>\nPlugin version: " . ABJ404_VERSION;
+                ", <BR>\nWP ver: " . get_bloginfo('version') . ", <BR/>\nPlugin version: " . ABJ404_VERSION;
         $headers = array('Content-Type: text/html; charset=UTF-8');
         $headers[] = 'From: ' . get_option('admin_email') . '<' . get_option('admin_email') . '>';
         
@@ -1438,8 +1457,7 @@ class ABJ_404_Solution_PluginLogic {
         $abj404logging->debugMessage("Sending captured 404 notification email to: " . $options['admin_notification_email']);
         wp_mail($to, $subject, $body, $headers);
         $abj404logging->debugMessage("Captured 404 notification email sent.");
-        
-        return true;
+        return "Captured 404 notification email sent to: " . trim($options['admin_notification_email']);
     }
     
     /** Return true if a notification should be displayed, or false otherwise.

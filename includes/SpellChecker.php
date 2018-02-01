@@ -11,6 +11,9 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
  * Finds search suggestions. */
 
 class ABJ_404_Solution_SpellChecker {
+    
+    private $separatingCharacters = array("-", "_", ".", "~", '%20');
+
     /** 
      * @global type $abj404dao
      * @param type $requestedURL
@@ -126,11 +129,11 @@ class ABJ_404_Solution_SpellChecker {
     function findMatchingPosts($requestedURL, $includeCats = '1', $includeTags = '1') {
         global $abj404dao;
         global $abj404logic;
+        global $abj404logging;
         
         $permalinks = array();
         
-        $separatingCharacters = array("-", "_", ".", "~", '%20');
-        $requestedURLSpaces = str_replace($separatingCharacters, " ", $requestedURL);
+        $requestedURLSpaces = str_replace($this->separatingCharacters, " ", $requestedURL);
         $requestedURLCleaned = $this->getLastURLPart($requestedURLSpaces);
         // this is the URL with the full path where / is replaces by spaces (" ").
         // this is useful for looking at URLs such as /category/behavior/. 
@@ -142,12 +145,16 @@ class ABJ_404_Solution_SpellChecker {
 
         // match based on the slug.
         $rows = $abj404dao->getPublishedPagesAndPostsIDs('', false);
-        foreach ($rows as $row) {
-            $id = $row->id;
+        
+        // pre-filter some pages based on the min and max possible levenshtein distances.
+        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rows, 'pages');
+        
+        // use the levenshtein distance formula here.
+        foreach ($likelyMatchIDs as $id) {
             $the_permalink = get_permalink($id);
             $urlParts = parse_url($the_permalink);
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
-            $existingPageURLSpaces = str_replace($separatingCharacters, " ", $existingPageURL);
+            $existingPageURLSpaces = str_replace($this->separatingCharacters, " ", $existingPageURL);
             $existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
             $scoreBasis = mb_strlen($existingPageURLCleaned) * 3;
             if ($scoreBasis == 0) {
@@ -165,8 +172,11 @@ class ABJ_404_Solution_SpellChecker {
         // search for a similar tag.
         if ($includeTags == "1") {
             $rows = $abj404dao->getPublishedTags();
-            foreach ($rows as $row) {
-                $id = $row->term_id;
+
+            // pre-filter some pages based on the min and max possible levenshtein distances.
+            $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rows, 'tags');
+            
+            foreach ($likelyMatchIDs as $id) {
                 $the_permalink = get_tag_link($id);
                 $urlParts = parse_url($the_permalink);
                 $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
@@ -185,8 +195,11 @@ class ABJ_404_Solution_SpellChecker {
         // search for a similar category.
         if ($includeCats == "1") {
             $rows = $abj404dao->getPublishedCategories();
-            foreach ($rows as $row) {
-                $id = $row->term_id;
+            
+            // pre-filter some pages based on the min and max possible levenshtein distances.
+            $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rows, 'categories');
+            
+            foreach ($likelyMatchIDs as $id) {
                 $the_permalink = get_category_link($id);
                 $urlParts = parse_url($the_permalink);
                 $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
@@ -206,6 +219,127 @@ class ABJ_404_Solution_SpellChecker {
         arsort($permalinks);
         
         return $permalinks;
+    }
+    
+    /** This algorithm uses the lengths of the strings to weed out some strings before using the levenshtein 
+     * distance formula. It uses the minimum and maximum possible levenshtein distance based on the difference in 
+     * string length. The min distance based on length between "abc" and "def" is 0 and the max distance is 3. 
+     * The min distance based on length between "abc" and "123456" is 3 and the max distance is 6. 
+     * 1) Get a list of minumum and maximum levenshtein distances - two lists, one ordered by the min distance 
+     * and one ordered by the max distance. 
+     * 2) Get the first X strings from the max-distance list. The X is the number we have to display in the list 
+     * of suggestions on the 404 page. Note the highest max distance of the strings we're using here.
+     * 3) Look at the min distance list and remove all strings where the min distance is more than the highest 
+     * max distance taken from the previous step. The strings we remove here will always be further away than the 
+     * strings we found in the previous step and can be removed without applying the levenshtein algorithm.
+     * *
+     * @global type $abj404logic
+     * @param type $requestedURLCleaned
+     * @param type $fullURLspaces
+     * @param type $rows
+     * @param type $rowType
+     * @return array
+     * @throws type
+     */
+    function getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rows, $rowType) {
+        global $abj404logic;
+        
+        $options = $abj404logic->getOptions();
+        
+        // create a list sorted by min levenshstein distance and max levelshtein distance.
+        /* 1) Get a list of minumum and maximum levenshtein distances - two lists, one ordered by the min 
+         * distance and one ordered by the max distance. */
+        $minDistances = array();
+        $maxDistances = array();
+        for ($currentDistanceIndex = 0; $currentDistanceIndex <= 300; $currentDistanceIndex++) {
+            $maxDistances[$currentDistanceIndex] = array();
+            $minDistances[$currentDistanceIndex] = array();
+        }
+        $requestedURLCleanedLength = mb_strlen($requestedURLCleaned);
+        $fullURLspacesLength = mb_strlen($fullURLspaces);
+        foreach ($rows as $row) {
+            $pagePacket = array();
+            
+            $id = null;
+            
+            if ($rowType == 'pages') {
+                $id = $row->id;
+                $the_permalink = get_permalink($id);
+                
+            } else if ($rowType == 'tags') {
+                $id = $row->term_id;
+                $the_permalink = get_tag_link($id);
+                
+            } else if ($rowType == 'categories') {
+                $id = $row->term_id;
+                $the_permalink = get_category_link($id);
+                
+            } else {
+                throw Exception("Unknown row type ...");
+            }
+            
+            $urlParts = parse_url($the_permalink);
+            $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
+            $existingPageURLSpaces = str_replace($this->separatingCharacters, " ", $existingPageURL);
+            $existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
+            
+            // the minimum distance is the minimum of the two possibilities. one is longer anyway, so 
+            // it shouldn't matter.
+            $minDist = abs(mb_strlen($existingPageURLCleaned) - $requestedURLCleanedLength);
+            if ($fullURLspaces != '') {
+                $minDist2 = abs(mb_strlen($fullURLspacesLength) - $requestedURLCleanedLength);
+                $minDist = min($minDist, $minDist2);
+            }
+            $maxDist = mb_strlen($existingPageURLCleaned);
+            if ($fullURLspaces != '') {
+                $maxDist2 = $fullURLspacesLength;
+                $maxDist = min($maxDist, $maxDist2);
+            }
+            
+            // create a data packet.
+            $pagePacket['id'] = $id;
+            $pagePacket['min-dist'] = $minDist;
+            $pagePacket['max-dist'] = $maxDist;
+            
+            // add the packet to the list.
+            array_push($minDistances[$minDist], $pagePacket);
+            array_push($maxDistances[$maxDist], $pagePacket);
+        }
+        
+        // look at the first X IDs with the lowest maximum levenshtein distance.
+        /* 2) Get the first X strings from the max-distance list. The X is the number we have to display in the 
+         * list of suggestions on the 404 page. Note the highest max distance of the strings we're using here. */
+        $pagesSeenSoFar = 0;
+        $currentDistanceIndex = 0;
+        $maxDistFound = 300;
+        $onlyNeedThisManyPages = absint($options['suggest_max']);
+        for ($currentDistanceIndex = 0; $currentDistanceIndex <= 300; $currentDistanceIndex++) {
+            $pagesSeenSoFar += sizeof($maxDistances[$currentDistanceIndex]);
+            
+            // we only need the closest matching X pages. where X is the number of suggestions 
+            // to display on the 404 page.
+            if ($pagesSeenSoFar >= $onlyNeedThisManyPages) {
+                $maxDistFound = $currentDistanceIndex;
+                break;
+            }
+        }
+        
+        // now use the maxDistFound to ignore all of the pages that have a higher minimum distance
+        // than that number. All of those pages could never be a better match than the pages we 
+        // have already found.
+        /* 3) Look at the min distance list and remove all strings where the min distance is more than the 
+         * highest max distance taken from the previous step. The strings we remove here will always be further 
+         * away than the strings we found in the previous step and can be removed without applying the 
+         * levenshtein algorithm. */
+        $listOfIDs = array();
+        for ($currentDistanceIndex = 0; $currentDistanceIndex <= $maxDistFound; $currentDistanceIndex++) {
+            $listOfPackets = $minDistances[$currentDistanceIndex];
+            foreach ($listOfPackets as $pagePacket) {
+                array_push($listOfIDs, $pagePacket['id']);
+            }
+        }
+        
+        return $listOfIDs;
     }
     
     /** Turns "/abc/defg" into "defg"

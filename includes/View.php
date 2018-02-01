@@ -18,7 +18,7 @@ class ABJ_404_Solution_View {
      */
     function getDashboardNotificationCaptured($captured) {
         $capturedMessage = sprintf( _n( 'There is <a>%s captured 404 URL</a> that needs to be processed.', 
-                'There are <a>%s captured 404 URLs</a> that need to be processed.', 
+                'There are <a>%s captured 404 URLs</a> to be processed.', 
                 $captured, '404-solution'), $captured);
         $capturedMessage = str_replace("<a>", 
                 "<a href=\"options-general.php?page=" . ABJ404_PP . "&subpage=abj404_captured\" >", 
@@ -89,7 +89,7 @@ class ABJ_404_Solution_View {
 
         // Deal With Page Tabs
         if ($sub == "") {
-            $sub = strtolower($abj404dao->getPostOrGetSanitize('subpage'));
+            $sub = mb_strtolower($abj404dao->getPostOrGetSanitize('subpage'));
         }
         if ($sub == "") {
             $sub = 'abj404_redirects';
@@ -172,7 +172,7 @@ class ABJ_404_Solution_View {
                 'strong' => array(),
             );
             
-            if ((strlen($message) >= 6) && (substr(strtolower($message), 0, 6) == 'error:')) {
+            if ((strlen($message) >= 6) && (substr(mb_strtolower($message), 0, 6) == 'error:')) {
                 $cssClasses = 'notice notice-error';
             } else {
                 $cssClasses = 'notice notice-success';
@@ -419,7 +419,7 @@ class ABJ_404_Solution_View {
     function echoAdminToolsPage() {
         global $abj404view;
         global $abj404dao;
-        global $abj404logging;
+        global $wpdb;
 
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
         $link = wp_nonce_url($url, "abj404_purgeRedirects");
@@ -439,16 +439,24 @@ class ABJ_404_Solution_View {
         
         // ------------------------------------
         
+        $results = $abj404dao->queryAndGetResults("SHOW TABLES LIKE '" .
+                $wpdb->prefix . 'wbz404_redirects' . "'");
+        
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
         $link = wp_nonce_url($url, "abj404_importRedirects");
-        
-        // read the html content.
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsImportForm.html");
-        // do special replacements
-        $html = str_replace('{toolsImportFormActionLink}', $link, $html);
-        // constants and translations.
-        $html = $this->doNormalReplacements($html);
-        
+
+        if (empty($results['rows'])) {
+            $html = __('(No Redirectioner table found.)', '404-solution');
+            
+        } else {
+            // read the html content.
+            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsImportFormRed.html");
+            // do special replacements
+            $html = str_replace('{toolsImportFormActionLink}', $link, $html);
+            // constants and translations.
+            $html = $this->doNormalReplacements($html);
+        }
+
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
         echo " <div class=\"meta-box-sortables\">";
@@ -457,8 +465,8 @@ class ABJ_404_Solution_View {
         
         // ------------------------------------
         
-        $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_runMaintenance") .
-                '&manually_fired=true';
+        $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_runMaintenance");
+        $link .= '&manually_fired=true';
         
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsEtcForm.html");
@@ -1446,6 +1454,7 @@ class ABJ_404_Solution_View {
     function getAdminOptionsPageGeneralSettings($options) {
         global $abj404logging;
         global $abj404dao;
+        global $abj404ip2Location;
         
         $selectedDefaultRedirect301 = "";
         if ($options['default_redirect'] == '301') {
@@ -1472,6 +1481,14 @@ class ABJ_404_Solution_View {
         } else {
             $selectedUnderSettings = " selected";
         }
+        
+        $selectedGeo2IPtrue = "";
+        $selectedGeo2IPfalse = "";
+        if ($options['geo2ip'] == '1') {
+            $selectedGeo2IPtrue = " selected";
+        } else {
+            $selectedGeo2IPfalse = " selected";
+        }
 
         $logSizeBytes = $abj404dao->getLogDiskUsage();
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
@@ -1487,6 +1504,13 @@ class ABJ_404_Solution_View {
         $selectedRemoveMatches = "";
         if ($options['remove_matches'] == '1') {
             $selectedRemoveMatches = " checked";
+        }
+        
+        $geo2ip_support_message = "";
+        if ($abj404ip2Location->isSupported()) {
+            $geo2ip_support_message = "{IS supported.}";
+        } else {
+            $geo2ip_support_message = "<span style=\"font-weight: bold;\">{is NOT supported.}</span>";
         }
         
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
@@ -1506,6 +1530,11 @@ class ABJ_404_Solution_View {
         $html = str_replace('{selecteSsettingsLevel}', $selecteSsettingsLevel, $html);
         $html = str_replace('{admin_notification_email}', $options['admin_notification_email'], $html);
         $html = str_replace('{default_wordpress_admin_email}', get_option('admin_email'), $html);
+        $html = str_replace('{selectedGeo2IPtrue}', $selectedGeo2IPtrue, $html);
+        $html = str_replace('{selectedGeo2IPfalse}', $selectedGeo2IPfalse, $html);
+        $html = str_replace('{geo2ip_support_message}', $geo2ip_support_message, $html);
+        $html = str_replace('{PHP_VERSION}', PHP_VERSION, $html);
+
         // constants and translations.
         $html = $this->doNormalReplacements($html);
         
@@ -1519,18 +1548,17 @@ class ABJ_404_Solution_View {
         global $abj404dao;
         global $abj404logic;
         global $abj404logging;
-
+        global $abj404ip2Location;
+        
         $sub = 'abj404_logs';
         $tableOptions = $abj404logic->getTableOptions();
+        $options = $abj404logic->getOptions(true);
 
         // Sanitizing unchecked table options
         foreach ($tableOptions as $key => $value) {
             $key = wp_kses_post($key);
             $tableOptions[$key] = wp_kses_post($value);
         }
-
-        $rows = $abj404dao->getLogsIDandURL();
-        $abj404logging->debugMessage(sizeof($rows) . " log rows found for logs page select option.");
 
         echo "<BR/>";
         echo "<form method=\"GET\" action=\"\" style=\"clear: both; display: block;\" class=\"clearbothdisplayblock\">";
@@ -1544,6 +1572,9 @@ class ABJ_404_Solution_View {
             $selected = " selected";
         }
         echo "<option value=\"0\"" . $selected . ">" . __('All Redirects', '404-solution') . "</option>";
+        
+        $rows = $abj404dao->getLogsIDandURL();
+        $abj404logging->debugMessage(sizeof($rows) . " log rows found for logs page select option.");
         foreach ($rows as $row) {
             $logRow['id'] = absint($row['logsid']);
             $logRow['url'] = esc_url($row['requested_url']);
@@ -1558,24 +1589,29 @@ class ABJ_404_Solution_View {
         echo "<input type=\"submit\" value=\"View Logs\" class=\"button-secondary\">";
         echo "</form>";
 
-        $columns['url']['title'] = "URL";
+        $columns['url']['title'] = __('URL', '404-solution');
         $columns['url']['orderby'] = "url";
         $columns['url']['width'] = "25%";
-        $columns['host']['title'] = "IP Address";
+        $columns['host']['title'] = __('IP Address', '404-solution');
         $columns['host']['orderby'] = "remote_host";
         $columns['host']['width'] = "12%";
-        $columns['refer']['title'] = "Referrer";
+        $columns['refer']['title'] = __('Referrer', '404-solution');
         $columns['refer']['orderby'] = "referrer";
         $columns['refer']['width'] = "25%";
-        $columns['dest']['title'] = "Action Taken";
+        $columns['dest']['title'] = __('Action Taken', '404-solution');
         $columns['dest']['orderby'] = "action";
         $columns['dest']['width'] = "25%";
-        $columns['timestamp']['title'] = "Date";
+        $columns['timestamp']['title'] = __('Date', '404-solution');
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "15%";
-        $columns['username']['title'] = "User";
+        $columns['username']['title'] = __('User', '404-solution');
         $columns['username']['orderby'] = "username";
         $columns['username']['width'] = "10%";
+        if ($abj404ip2Location->isSupported() && ($options['geo2ip'] == '1')) {
+            $columns['country']['title'] = __('Country', '404-solution');
+            $columns['country']['orderby'] = "country";
+            $columns['country']['width'] = "14%";
+        }
 
         echo "<div class=\"tablenav\">";
         $this->echoPaginationLinks($sub, $tableOptions);
@@ -1590,15 +1626,19 @@ class ABJ_404_Solution_View {
         echo "</tfoot>";
         echo "<tbody>";
 
-        $rows = $abj404dao->getLogRecords($tableOptions);
-        $redirectsDisplayed = 0;
-        $y = 1;
-
         $timezone = get_option('timezone_string');
         if ('' == $timezone) {
             $timezone = 'UTC';
         }
         date_default_timezone_set($timezone);
+
+        $logslink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_logs&action=runMaintenance",
+                "abj404_runMaintenance");
+        $logslink .= '&manually_fired=true';
+        $rows = $abj404dao->getLogRecords($tableOptions);
+        $logRecordsDisplayed = 0;
+        $y = 1;
+
         foreach ($rows as $row) {
             $class = "";
             if ($y == 0) {
@@ -1636,15 +1676,27 @@ class ABJ_404_Solution_View {
             echo "<td>" . date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
                     date('A', $timeToDisplay) . "</td>";
             
-            echo "<td>" . esc_html($row['username']);
-            echo "</td>";
+            echo "<td>" . esc_html($row['username']) . "</td>";
+            
+            if ($abj404ip2Location->isSupported() && ($options['geo2ip'] == '1')) {
+                if ($row['country_id'] == null) {
+                    echo "<td><a href=\"" . $logslink . "\">" . __('(Click to populate)', '404-solution') .
+                            "</a></td>";
+                } else {
+                    $countryText = $row['country'];
+                    if (empty($row['country'])) {
+                        $countryText = __('(Unknown)', '404-solution');
+                    }
+                    echo "<td>" . esc_html($countryText) . "</td>";
+                }
+            }
             
             echo "<td></td>";
             echo "</tr>";
-            $redirectsDisplayed++;
+            $logRecordsDisplayed++;
         }
-        $abj404logging->debugMessage($redirectsDisplayed . " log records displayed on the page.");
-        if ($redirectsDisplayed == 0) {
+        $abj404logging->debugMessage($logRecordsDisplayed . " log records displayed on the page.");
+        if ($logRecordsDisplayed == 0) {
             echo "<tr>";
             echo "<td></td>";
             echo "<td colspan=\"5\" style=\"text-align: center; font-weight: bold;\">" . __('No Results To Display', '404-solution') . "</td>";

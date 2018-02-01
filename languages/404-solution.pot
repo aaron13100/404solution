@@ -22,7 +22,7 @@ msgid "404 Solution"
 msgstr ""
 
 #: includes/admin.php:37
-msgid "There are .esc_html$captured. captured 404 URLs that need to be processed."
+msgid "There are .esc_html$captured. captured 404 URLs to be processed."
 msgstr ""
 
 #: includes/admin.php:70
@@ -96,9 +96,9 @@ msgstr[1] "%s redirect entries were moved to the trash."
 msgstr ""
 
 msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
-msgid_plural "There are <a>%s captured 404 URLs</a> that need to be processed."
-msgstr[0] "There is <a>%s captured 404 URL</a> that needs to be processed."
-msgstr[1] "There are <a>%s captured 404 URLs</a> that need to be processed."
+msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
+msgstr[0] "There is <a>%s captured 404 URL</a> to be processed."
+msgstr[1] "There are <a>%s captured 404 URLs</a> to be processed."
 msgstr ""
 
 
