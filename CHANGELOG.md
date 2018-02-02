@@ -1,6 +1,6 @@
 # Changelog #
 
-## Version 2.6.0 (December 22, 2017) ##
+## Version 2.6.0 (February 2, 2018) ##
 * Feature: Use RegEx (regular expressions) to match URLs and redirect to specific pages.
 * Feature: New option: The Settings menu can be under "Settings" or at the same level as the "Settings" and "Tools" menus.
 * Feature: Optionally send an email notification when a certain number of 404s are captured.
