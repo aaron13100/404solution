@@ -1449,7 +1449,7 @@ class ABJ_404_Solution_PluginLogic {
         $body .= 'To stop getting these emails, update the settings at <a href="' . $generalSettings . '">' . 
                 $generalSettings . '</a>, or contact the site administrator.' . "<BR/>\n";
         $body .= "<BR/><BR/>\n\nSent " . date('Y/m/d h:i:s T') . "<BR/>\n" . "PHP version: " . PHP_VERSION . 
-                ", <BR>\nWP ver: " . get_bloginfo('version') . ", <BR/>\nPlugin version: " . ABJ404_VERSION;
+                ", <BR/>\nPlugin version: " . ABJ404_VERSION;
         $headers = array('Content-Type: text/html; charset=UTF-8');
         $headers[] = 'From: ' . get_option('admin_email') . '<' . get_option('admin_email') . '>';
         
