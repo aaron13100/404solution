@@ -102,7 +102,7 @@ class ABJ_404_Solution_Logging {
         $latestErrorLineFound = $this->getLatestErrorLine();
         
         // if no error was found then we're done.
-        if ($latestErrorLineFound == -1) {
+        if ($latestErrorLineFound['num'] == -1) {
             $this->debugMessage("No errors found in the log file.");
             return false;
         }
@@ -118,8 +118,8 @@ class ABJ_404_Solution_Logging {
         }
         
         // if we already sent the error line then don't send the log file again.
-        if ($latestErrorLineFound <= $sentLine) {
-            $this->debugMessage("The latest error line from the log file was already emailed. " . $latestErrorLineFound . 
+        if ($latestErrorLineFound['num'] <= $sentLine) {
+            $this->debugMessage("The latest error line from the log file was already emailed. " . $latestErrorLineFound['num'] . 
                     ' <= ' . $sentLine);
             return false;
         }
@@ -129,10 +129,10 @@ class ABJ_404_Solution_Logging {
             return false;
         }
         
-        $this->emailLogFileToDeveloper();
+        $this->emailLogFileToDeveloper($latestErrorLineFound['line']);
 
         // update the latest error line emailed to the developer.
-        file_put_contents($sentDateFile, $latestErrorLineFound);
+        file_put_contents($sentDateFile, $latestErrorLineFound['num']);
         
         return true;
     }
@@ -181,7 +181,7 @@ class ABJ_404_Solution_Logging {
         return false;
     }
     
-    function emailLogFileToDeveloper() {
+    function emailLogFileToDeveloper($errorLineMessage) {
         // email the log file.
         $this->debugMessage("Creating zip file of error log file.");
         $logFileZip = $this->getZipFilePath();
@@ -199,7 +199,8 @@ class ABJ_404_Solution_Logging {
         $to = ABJ404_AUTHOR_EMAIL;
         $subject = ABJ404_PP . ' error log file. Plugin version: ' . ABJ404_VERSION;
         $body = $subject . "\nSent " . date('Y/m/d h:i:s T') . "<BR/><BR/>\n\n" . "PHP version: " . PHP_VERSION . 
-                ", <BR/>\nWordPress version: " . get_bloginfo('version') . ", <BR/>\nPlugin version: " . ABJ404_VERSION;
+                ", <BR/>\nWordPress version: " . get_bloginfo('version') . ", <BR/>\nPlugin version: " . 
+                ABJ404_VERSION . "<BR/>\nError: " . $errorLineMessage;
         $headers = array('Content-Type: text/html; charset=UTF-8');
         $headers[] = 'From: ' . get_option('admin_email');
         
@@ -216,7 +217,9 @@ class ABJ_404_Solution_Logging {
      * @return int
      */
     function getLatestErrorLine() {
-        $latestErrorLineFound = -1;
+        $latestErrorLineFound = array();
+        $latestErrorLineFound['num'] = -1;
+        $latestErrorLineFound['line'] = null;
         $linesRead = 0;
         $handle = null;
         try {
@@ -226,7 +229,8 @@ class ABJ_404_Solution_Logging {
                     $linesRead++;
                     // if the line has an error then save the line number.
                     if (stripos($line, '(ERROR)') !== false) {
-                        $latestErrorLineFound = $linesRead;
+                        $latestErrorLineFound['num'] = $linesRead;
+                        $latestErrorLineFound['line'] = $line;
                     }
                 }
             } else {

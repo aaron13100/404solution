@@ -1,5 +1,10 @@
 # Changelog #
 
+## Version 2.6.1 (February 24, 2018) ##
+* FIX: RegEx redirects support external URLs.
+* FIX: The Levenshtein algorithm improvement works with URLs up to 2083 characters in length (up from 300).
+* FIX: Try to avoid an issue where strange URLs starting with ///? are returned.
+
 ## Version 2.6.0 (February 2, 2018) ##
 * Feature: Use RegEx (regular expressions) to match URLs and redirect to specific pages.
 * Feature: New option: The Settings menu can be under "Settings" or at the same level as the "Settings" and "Tools" menus.

@@ -48,6 +48,9 @@ class ABJ_404_Solution_Functions {
             $permalink['link'] = get_home_url();
             $permalink['title'] = get_bloginfo('name');
             
+        } else if ($permalink['type'] == ABJ404_TYPE_EXTERNAL) {
+            $permalink['link'] = $permalink['id'];
+            
         } else {
             $abj404logging->errorMessage("Unrecognized permalink type: " . 
                     wp_kses_post(json_encode($permalink)));
