@@ -251,7 +251,7 @@ class ABJ_404_Solution_SpellChecker {
          * distance and one ordered by the max distance. */
         $minDistances = array();
         $maxDistances = array();
-        for ($currentDistanceIndex = 0; $currentDistanceIndex <= 300; $currentDistanceIndex++) {
+        for ($currentDistanceIndex = 0; $currentDistanceIndex <= 2083; $currentDistanceIndex++) {
             $maxDistances[$currentDistanceIndex] = array();
             $minDistances[$currentDistanceIndex] = array();
         }

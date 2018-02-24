@@ -77,6 +77,7 @@ class ABJ_404_Solution_WordPress_Connector {
         global $abj404connector;
         global $abj404spellChecker;
         global $abj404logging;
+        global $wp;
 
         if (!is_404()) {
             return;
@@ -95,10 +96,18 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
         
-        $urlParts = parse_url(esc_url($_SERVER['REQUEST_URI']));
+        // hanlde the case where '///?gf_page=upload' is returned as the request URI.
+        $urlToParse = $_SERVER['REQUEST_URI'];
+        if (!is_array(parse_url(esc_url($urlToParse)))) {
+            if (substr($urlToParse, 0, 3) == "///") {
+                $urlToParse = home_url($wp->request) . substr($urlToParse, 4);
+            }
+        }
+        $urlParts = parse_url(esc_url($urlToParse));
         if (!is_array($urlParts)) {
             $abj404logging->errorMessage('parse_url returned a non-array value. REQUEST_URI: "' . 
-                    $_SERVER['REQUEST_URI'] . '", parse_url result: "' . json_encode($urlParts) . '"');
+                    $_SERVER['REQUEST_URI'] . '", parse_url result: "' . json_encode($urlParts) . '", ' .
+                    'urlToParse result: ' . $urlToParse);
         }
         $requestedURL = $urlParts['path'];
         $requestedURL .= $abj404connector->sortQueryParts($urlParts);

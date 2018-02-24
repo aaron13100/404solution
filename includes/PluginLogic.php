@@ -559,7 +559,7 @@ class ABJ_404_Solution_PluginLogic {
         } else if (substr($action . '', 0, 4) == "bulk") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 if (!array_key_exists('idnum', $_POST) || !isset($_POST['idnum'])) {
-                    $abj404logging->errorMessage("No ID(s) specified for bulk action: " . esc_html($action));
+                    $abj404logging->debugMessage("No ID(s) specified for bulk action: " . esc_html($action));
                     echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'), esc_html($action),
                             false);
                     return;
@@ -1351,10 +1351,10 @@ class ABJ_404_Solution_PluginLogic {
 
         // if there are child pages left over then there's an issue. it means there's a child page that was
         // returned but the parent for that child was not returned. so we don't have any place to display
-        // the child page.
+        // the child page. this could be because the parent page is not "published"
         if (count($childPages) > 0) {
             $abj404logging->debugMessage("There was an issue finding the parent pages for some child pages. " .
-                    "Pages: " . wp_kses_post(json_encode($childPages)));
+                    "These pages' parents may not have a 'published' status. Pages: " . wp_kses_post(json_encode($childPages)));
         }
         
         return $orderedPages;
