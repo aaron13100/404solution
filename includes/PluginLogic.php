@@ -1285,10 +1285,11 @@ class ABJ_404_Solution_PluginLogic {
      * if some other plugin has already output any kind of data. 
      * @param type $location
      * @param type $status
+     * @param type $queryParts The query part of a URL. e.g. "?s=queryPart"
      */
-    function forceRedirect($location, $status = 302) {
+    function forceRedirect($location, $status = 302, $queryParts = '') {
         // try a normal redirect using a header.
-        wp_redirect($location, $status);
+        wp_redirect($location . $queryParts, $status);
         
         // TODO add an ajax request here that fires after 5 seconds. 
         // upon getting the request the server will log the error. the plugin could then notify an admin.
@@ -1299,7 +1300,7 @@ class ABJ_404_Solution_PluginLogic {
                 '}' . "\n" .
                 'setTimeout(doRedirect, 1);' . "\n" .
                 '</script>' . "\n" .
-                'Page moved: <a href="' . $location . '">' . $location . '</a>';
+                'Page moved: <a href="' . $location . $queryParts . '">' . $location . '</a>';
         echo $c;
         exit;
     }

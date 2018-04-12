@@ -110,6 +110,7 @@ class ABJ_404_Solution_WordPress_Connector {
                     'urlToParse result: ' . $urlToParse);
         }
         $requestedURL = $urlParts['path'];
+        $unsortedQueryParts = $abj404connector->getUnsortedQueryParts($urlParts);
         $requestedURL .= $abj404connector->sortQueryParts($urlParts);
 
         // Get URL data if it's already in our database
@@ -147,7 +148,8 @@ class ABJ_404_Solution_WordPress_Connector {
                 $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $slugPermalink['id'], $options['default_redirect'], 0);
 
                 $abj404dao->logRedirectHit($requestedURL, $slugPermalink['link'], 'exact slug');
-                $abj404logic->forceRedirect(esc_url($slugPermalink['link']), esc_html($options['default_redirect']));
+                $abj404logic->forceRedirect(esc_url($slugPermalink['link']), esc_html($options['default_redirect']), 
+                        $unsortedQueryParts);
                 exit;
             }
 
@@ -159,7 +161,8 @@ class ABJ_404_Solution_WordPress_Connector {
 
                 $abj404dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match', 
                         $requestedURL);
-                $abj404logic->forceRedirect(esc_url($regexPermalink['link']), esc_html($options['default_redirect']));
+                $abj404logic->forceRedirect(esc_url($regexPermalink['link']), esc_html($options['default_redirect']), 
+                        $unsortedQueryParts);
                 exit;
             }
             
@@ -171,7 +174,8 @@ class ABJ_404_Solution_WordPress_Connector {
                 $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $permalink['id'], $options['default_redirect'], 0);
 
                 $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'spell check');
-                $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
+                $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']), 
+                        $unsortedQueryParts);
                 exit;
             }
 
@@ -210,7 +214,8 @@ class ABJ_404_Solution_WordPress_Connector {
                             } else {
                                 $abj404dao->setupRedirect(esc_url($requestedURL), ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, $permalink['id'], $options['default_redirect'], 0);
                                 $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'single page');
-                                $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
+                                $abj404logic->forceRedirect(esc_url($permalink['link']), 
+                                        esc_html($options['default_redirect']), $unsortedQueryParts);
                                 exit;
                             }
                         }
@@ -234,6 +239,18 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logic->sendTo404Page($requestedURL, '');
     }
 
+    /** 
+     * @param type $urlParts
+     * @return string
+     */
+    function getUnsortedQueryParts($urlParts) {
+        if (!array_key_exists('query', $urlParts) || @$urlParts['query'] == "") {
+            return '';
+        }
+        
+        return '?' . $urlParts['query'];
+    }
+    
     /** Sort the QUERY parts of the requested URL. 
      * This is in place because these are stored as part of the URL in the database and used for forwarding to another page.
      * This is done because sometimes different query parts result in a completely different page. Therefore we have to 
@@ -244,13 +261,13 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return string
      */
     function sortQueryParts($urlParts) {
-        $_REQUEST[ABJ404_PP]['debug_info'] = 'urlParts in sortQueryParts() function: ' . json_encode($urlParts);
-        if (!array_key_exists('query', $urlParts) || @$urlParts['query'] == "") {
-            $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared in sortQueryParts() function.';
-            return "";
+        $urlQuery = $this->getUnsortedQueryParts($urlParts);
+        
+        if ($urlQuery == '') {
+            return '';
         }
-        $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared in sortQueryParts() function.';
-        $url = "";
+        
+        $_REQUEST[ABJ404_PP]['debug_info'] = 'urlParts in sortQueryParts() function: ' . json_encode($urlParts);
 
         $queryString = array();
         $urlQuery = $urlParts['query'];
@@ -278,10 +295,11 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         if ($newQS != "") {
-            $url .= "?" . $newQS;
+            $newQS = "?" . $newQS;
         }
 
-        return esc_url($url);
+        $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared in sortQueryParts() function.';
+        return esc_url($newQS);
     }
 
     /** Redirect to the page specified. 
