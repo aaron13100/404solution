@@ -1,0 +1,38 @@
+
+<a id="showInfoLink" onclick="showHideRegexExplanation()" href="javascript:void(0);">{(Explain)}</a>
+<a id="hideInfoLink" onclick="showHideRegexExplanation()" href="javascript:void(0);" style="display: none;">{(Hide Info)}</a>
+
+<BR/>
+<div id="regex_explanation" style="display: none; margin-left: 100px;">
+<span style="font-style: italic;">
+<p>{When checked, the text is treated as a regular expression.} 
+<span style="font-weight: bold;">{Note that including a bad regular expression or one that takes too long will break your website.}</span>
+{So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin).}</p>
+<p>{Example}: &nbsp;&nbsp;&nbsp;<span style="font-weight: bold;">/events/.+</span></p>
+<p>
+<span style="font-weight: bold;">/events/.+</span> {will match any URL that begins with} 
+<span style="font-weight: bold;">/events/</span> {and redirect to the specified page.}
+{First, all of the normal "exact match" URLs are checked, then all of the regular expression URLs are checked.}
+</p>
+    
+</span>
+</div>
+
+
+<script>
+    function showHideRegexExplanation() {
+        var hiddenBlock = document.getElementById("regex_explanation");
+        var hideInfoLink = document.getElementById("hideInfoLink");
+        var showInfoLink = document.getElementById("showInfoLink");
+        if (hiddenBlock.style.display === "none") {
+            hiddenBlock.style.display = "block";
+            hideInfoLink.style.display = "inline";
+            showInfoLink.style.display = "none";
+            
+        } else {
+            hiddenBlock.style.display = "none";
+            hideInfoLink.style.display = "none";
+            showInfoLink.style.display = "inline";
+        }
+    }
+</script>

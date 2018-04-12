@@ -225,7 +225,7 @@ class ABJ_404_Solution_SpellChecker {
      * distance formula. It uses the minimum and maximum possible levenshtein distance based on the difference in 
      * string length. The min distance based on length between "abc" and "def" is 0 and the max distance is 3. 
      * The min distance based on length between "abc" and "123456" is 3 and the max distance is 6. 
-     * 1) Get a list of minumum and maximum levenshtein distances - two lists, one ordered by the min distance 
+     * 1) Get a list of minimum and maximum levenshtein distances - two lists, one ordered by the min distance 
      * and one ordered by the max distance. 
      * 2) Get the first X strings from the max-distance list. The X is the number we have to display in the list 
      * of suggestions on the 404 page. Note the highest max distance of the strings we're using here.
@@ -311,9 +311,9 @@ class ABJ_404_Solution_SpellChecker {
          * list of suggestions on the 404 page. Note the highest max distance of the strings we're using here. */
         $pagesSeenSoFar = 0;
         $currentDistanceIndex = 0;
-        $maxDistFound = 300;
+        $maxDistFound = 4096;
         $onlyNeedThisManyPages = absint($options['suggest_max']);
-        for ($currentDistanceIndex = 0; $currentDistanceIndex <= 300; $currentDistanceIndex++) {
+        for ($currentDistanceIndex = 0; $currentDistanceIndex <= 4096; $currentDistanceIndex++) {
             $pagesSeenSoFar += sizeof($maxDistances[$currentDistanceIndex]);
             
             // we only need the closest matching X pages. where X is the number of suggestions 
@@ -430,18 +430,11 @@ class ABJ_404_Solution_SpellChecker {
 
                 // Step 6
                 /// Find minimum
-                $m_min = $v0[$RowIdx] + 1;
-                $b = $v1[$RowIdx - 1] + 1;
-                $c = $v0[$RowIdx - 1] + $cost;
+                // cost to delete/insert: = $m_min = $v0[$RowIdx] + 1;
+                // cost to delete/isnert: = $v1[$RowIdx - 1] + 1;
+                // cost to replace: = $v0[$RowIdx - 1] + $cost;
                 
-                if ($b < $m_min) {
-                    $m_min = $b;
-                }
-                if ($c < $m_min) {
-                    $m_min = $c;
-                }
-
-                $v1[$RowIdx] = $m_min;
+                $v1[$RowIdx] = min($v0[$RowIdx] + 1, $v1[$RowIdx - 1] + 1, $v0[$RowIdx - 1] + $cost);
             }
 
             /// Swap the vectors

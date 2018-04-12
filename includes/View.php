@@ -623,13 +623,26 @@ class ABJ_404_Solution_View {
                 $abj404logging->errorMessage("Error: Invalid ID Number! (id: " . esc_html($recnum) . ")");
                 return;
             }
+            
+            $isRegexChecked = '';
+            if ($redirect['status'] == ABJ404_STATUS_REGEX) {
+                $isRegexChecked = ' checked ';
+            }
 
             echo "<input type=\"hidden\" name=\"id\" value=\"" . esc_attr($redirect['id']) . "\">";
             echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
                     ":</label></strong> ";
             echo "<input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
-                    esc_attr($redirect['url']) . "\"> (" . __('Required', '404-solution') . ")<BR/>";
+                    esc_attr($redirect['url']) . "\"> (" . __('Required', '404-solution') . ")<BR/>\n\n";
+            echo "\n\n" . '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" name="is_regex_url" ';
+            echo 'id="is_regex_url" value="1" ' . $isRegexChecked . '>' . "\n";
+            $html = '<label for="is_regex_url">{Treat this URL as a regular expression}</label> ' . "\n";
+            $html .= '<a id="showInfoLink" onclick="showHideRegexExplanation()" ';
             
+            $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/showHideRegexExplanation.html");
+            $html = $this->doNormalReplacements($html);
+            echo $html;
+
         } else if ($recnums_multiple != null) {
             $redirects_multiple = $abj404dao->getRedirectsByIDs($recnums_multiple);
             if ($redirects_multiple == null) {
