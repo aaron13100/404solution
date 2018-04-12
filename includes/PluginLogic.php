@@ -946,16 +946,24 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if ($typeAndDest['type'] != "" && $typeAndDest['dest'] !== "") {
+            $statusType = ABJ404_STATUS_MANUAL;
+            if (array_key_exists('is_regex_url', $_POST) && isset($_POST['is_regex_url']) && 
+                $_POST['is_regex_url'] != '0') {
+                
+                $statusType = ABJ404_STATUS_REGEX;
+            }
+            
             // decide whether we're updating one or multiple redirects.
             if ($fromURL != "") {
-                $abj404dao->updateRedirect($typeAndDest['type'], $typeAndDest['dest'], $fromURL, $_POST['id'], $_POST['code']);
+                $abj404dao->updateRedirect($typeAndDest['type'], $typeAndDest['dest'], $fromURL, $_POST['id'], 
+                        $_POST['code'], $statusType);
 
             } else if ($ids_multiple != "") {
                 // get the redirect data for each ID.
                 $redirects_multiple = $abj404dao->getRedirectsByIDs($ids_multiple);
                 foreach ($redirects_multiple as $redirect) {
                     $abj404dao->updateRedirect($typeAndDest['type'], $typeAndDest['dest'], 
-                            $redirect['url'], $redirect['id'], $_POST['code']);
+                            $redirect['url'], $redirect['id'], $_POST['code'], $statusType);
                 }
 
             } else {

@@ -1174,7 +1174,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function getRedirectByID($id) {
         global $wpdb;
-        $query = $wpdb->prepare("select id, url, type, final_dest, code from " . $wpdb->prefix . 
+        $query = $wpdb->prepare("select id, url, type, status, final_dest, code from " . $wpdb->prefix . 
                 "abj404_redirects where 1 and id = %d", $id);
         $redirect = $wpdb->get_row($query, ARRAY_A);
         
@@ -1248,10 +1248,16 @@ class ABJ_404_Solution_DataAccess {
 
     /** 
      * @global type $wpdb
+     * @global type $abj404logging
      * @param type $type ABJ404_EXTERNAL, ABJ404_POST, ABJ404_CAT, or ABJ404_TAG.
      * @param type $dest
+     * @param type $fromURL
+     * @param type $idForUpdate
+     * @param type $redirectCode
+     * @param type $statusType ABJ404_STATUS_MANUAL or ABJ404_STATUS_REGEX
+     * @return type
      */
-    function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode) {
+    function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType) {
         global $wpdb;
         global $abj404logging;
         
@@ -1264,7 +1270,7 @@ class ABJ_404_Solution_DataAccess {
         
         $wpdb->update($wpdb->prefix . "abj404_redirects", array(
             'url' => esc_sql($fromURL),
-            'status' => ABJ404_STATUS_MANUAL,
+            'status' => $statusType,
             'type' => absint($type),
             'final_dest' => esc_sql($dest),
             'code' => esc_attr($redirectCode)
