@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.6.2 (April 12, 2018) ##
+* FIX: Allow editing a RegEx URL and keeping the RegEx status (thanks joseph_t).
+* FIX: Maintain a query string when redirecting in some cases (such as RegEx redirects) (thanks joseph_t).
+
 ## Version 2.6.1 (February 24, 2018) ##
 * FIX: RegEx redirects support external URLs.
 * FIX: The Levenshtein algorithm improvement works with URLs up to 2083 characters in length (up from 300).
