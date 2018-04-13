@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.6.3 (April 13, 2018) ##
+* FIX: Correct a minor levenshtein algorithm bug introduced in 2.6.2 when no pages match a URL.
+
 ## Version 2.6.2 (April 12, 2018) ##
 * FIX: Allow editing a RegEx URL and keeping the RegEx status (thanks joseph_t).
 * FIX: Maintain a query string when redirecting in some cases (such as RegEx redirects) (thanks joseph_t).
