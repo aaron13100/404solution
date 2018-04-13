@@ -311,9 +311,9 @@ class ABJ_404_Solution_SpellChecker {
          * list of suggestions on the 404 page. Note the highest max distance of the strings we're using here. */
         $pagesSeenSoFar = 0;
         $currentDistanceIndex = 0;
-        $maxDistFound = 4096;
+        $maxDistFound = 300;
         $onlyNeedThisManyPages = absint($options['suggest_max']);
-        for ($currentDistanceIndex = 0; $currentDistanceIndex <= 4096; $currentDistanceIndex++) {
+        for ($currentDistanceIndex = 0; $currentDistanceIndex <= 300; $currentDistanceIndex++) {
             $pagesSeenSoFar += sizeof($maxDistances[$currentDistanceIndex]);
             
             // we only need the closest matching X pages. where X is the number of suggestions 
