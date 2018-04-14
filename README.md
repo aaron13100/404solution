@@ -71,6 +71,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Changelog ##
 
+## Version 2.6.4 (April 14, 2018) ##
+* FIX: Try to avoid an activation error on older php versions for HuntersServices.
+
 ## Version 2.6.3 (April 13, 2018) ##
 * FIX: Correct a minor levenshtein algorithm bug introduced in 2.6.2 when no pages match a URL.
 

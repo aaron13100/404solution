@@ -317,7 +317,12 @@ class ABJ_404_Solution_PluginLogic {
             $query = "SHOW TABLES LIKE '" . $wpdb->prefix . 'abj404_logs' . "'";
             $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
             $rows = $result['rows'];
-            if (!empty(array_filter($rows))) {
+            
+            // make sure empty() only sees a variable and not a function for older PHP versions, due to
+            // https://stackoverflow.com/a/2173318 and 
+            // https://wordpress.org/support/topic/fatal-error-will-latest-release/
+            $filteredRows = array_filter($rows);
+            if (!empty($filteredRows)) {
                 $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
                 $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
                 $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
