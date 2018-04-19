@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.6.4
+Version: 2.7.0
 Tested up to: 4.9
-Stable tag: 2.6.4
+Stable tag: 2.7.0
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -64,6 +64,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.7.0 (April 19, 2018) =
+* FIX: Hash IP addresses before storing them to be General Data Protection Regulation (GDPR) friendly (for Marc).
 
 = Version 2.6.4 (April 14, 2018) =
 * FIX: Try to avoid an activation error on older php versions for HuntersServices.
