@@ -1424,13 +1424,17 @@ class ABJ_404_Solution_View {
 
     function getAdminOptionsPageAdvancedSettings($options) {
         global $abj404logging;
-        global $abj404dao;
         global $abj404logic;
 
         $selectedDebugLogging = "";
         if (array_key_exists('debug_mode', $options) && $options['debug_mode'] == '1') {
             $selectedDebugLogging = " checked";
         }
+        $selectedLogRawIPs = '';
+        if (array_key_exists('log_raw_ips', $options) && $options['log_raw_ips'] == '1') {
+            $selectedLogRawIPs = " checked";
+        }
+        
         $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
         $debugLogLink = $abj404logic->getDebugLogFileLink();
         $debugExplanation = str_replace('<a>', '<a href="' . $debugLogLink . '" target="_blank" >', $debugExplanation);
@@ -1443,7 +1447,8 @@ class ABJ_404_Solution_View {
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvanced.html");
         $html = str_replace('{DATABASE_VERSION}', esc_html($options['DB_VERSION']), $html);
-        $html = str_replace('checked=""', $selectedDebugLogging, $html);
+        $html = str_replace('checked="debug_mode"', $selectedDebugLogging, $html);
+        $html = str_replace('checked="log_raw_ips"', $selectedLogRawIPs, $html);
         $html = str_replace('{<a>View</a> the debug file.}', $debugExplanation, $html);
         $html = str_replace('{Debug file size: %s KB.}', $debugFileSize, $html);
         $html = str_replace('{ignore_dontprocess}', wp_kses_post($options['ignore_dontprocess']), $html);

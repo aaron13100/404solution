@@ -514,6 +514,11 @@ class ABJ_404_Solution_DataAccess {
             $countryName = $abj404ip2Location->getCountry($_SERVER['REMOTE_ADDR']);
             $countryNameLookupID = $this->insertLookupValueAndGetID($countryName);
         }
+        
+        $ipAddressToSave = esc_sql($_SERVER['REMOTE_ADDR']);
+        if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
+            $ipAddressToSave = md5($ipAddressToSave);
+        }
             
         if ($abj404logging->isDebug()) {
             $reasonMessage = implode(", ", 
@@ -530,7 +535,7 @@ class ABJ_404_Solution_DataAccess {
         
         $wpdb->insert($wpdb->prefix . "abj404_logsv2", array(
             'timestamp' => esc_sql($now),
-            'user_ip' => esc_sql($_SERVER['REMOTE_ADDR']),
+            'user_ip' => $ipAddressToSave,
             'referrer' => esc_sql($referer),
             'dest_url' => esc_sql($action),
             'requested_url' => esc_sql($requestedURL),

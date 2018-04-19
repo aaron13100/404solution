@@ -1,5 +1,14 @@
 <p>{DB Version Number}: {DATABASE_VERSION}</p>
 
+<!-- .............................. -->
+<p>
+   <label for="log_raw_ips">{Log raw IPs}:</label>
+   <input type="checkbox" name="log_raw_ips" id="log_raw_ips" value="1" checked="log_raw_ips" />
+<BR/>
+&nbsp;&nbsp;&nbsp;{Logging raw IPs may not meet the EU General Data Protection Regulation (GDPR) guidelines.}</p>
+
+<!-- .............................. -->
+
 <p><label for="auto_score">{Minimum match score}:</label> <input type="text" name="auto_score" id="auto_score" value="{OPTION_MIN_AUTO_SCORE}" style="width: 50px;"><BR/>
 &nbsp;&nbsp;&nbsp;{Only create an automatic redirect if the suggested page has a score above the specified number (default 90)}
 </p>
@@ -121,7 +130,7 @@
 <!-- .............................. -->
 <p>
    <label for="debug_mode">{Debug logging}:</label>
-   <input type="checkbox" name="debug_mode" id="debug_mode" value="1" checked="" />
+   <input type="checkbox" name="debug_mode" id="debug_mode" value="1" checked="debug_mode" />
    <br/>&nbsp;&nbsp;&nbsp;
 
    {<a>View</a> the debug file.}

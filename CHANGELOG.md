@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.7.0 (April 19, 2018) ##
+* FIX: Hash IP addresses before storing them to be General Data Protection Regulation (GDPR) friendly (for Marc).
+
 ## Version 2.6.4 (April 14, 2018) ##
 * FIX: Try to avoid an activation error on older php versions for HuntersServices.
 

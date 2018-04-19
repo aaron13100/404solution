@@ -1226,7 +1226,7 @@ class ABJ_404_Solution_PluginLogic {
 
         // these options all default to 0 if they're not specifically set to 1.
         $optionsList = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags', 
-            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs');
+            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips');
         foreach ($optionsList as $optionName) {
             $options[$optionName] = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;
         }
