@@ -54,8 +54,10 @@ class ABJ_404_Solution_ShortCode {
         }
         
         $urlSlugOnly = $abj404logic->removeHomeDirectory($urlRequest);
-        $permalinkSuggestions = $abj404spellChecker->findMatchingPosts($urlSlugOnly, @$options['suggest_cats'], @$options['suggest_tags']);
-
+        $permalinkSuggestionsPacket = $abj404spellChecker->findMatchingPosts($urlSlugOnly, 
+                @$options['suggest_cats'], @$options['suggest_tags']);
+        $permalinkSuggestions = $permalinkSuggestionsPacket[0];
+        $rowType = $permalinkSuggestionsPacket[1];
 
         // allow some HTML.
         $content .= '<div class="suggest-404s">' . "\n";
@@ -66,7 +68,7 @@ class ABJ_404_Solution_ShortCode {
         $displayed = 0;
 
         foreach ($permalinkSuggestions as $idAndType => $linkScore) {
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore);
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore, $rowType);
 
             // only display the suggestion if the score is high enough 
             // and if we're not currently on the page we're about to suggest.

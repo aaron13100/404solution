@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.8.0 (April 26, 2018) ##
+* Feature: When a recognized image extension is requested, only images are used as possible matches.
+
 ## Version 2.7.0 (April 19, 2018) ##
 * FIX: Hash IP addresses before storing them to be General Data Protection Regulation (GDPR) friendly (for Marc).
 

@@ -13,9 +13,10 @@ class ABJ_404_Solution_Functions {
      *
      * @param type $idAndType e.g. 15|POST is a page ID of 15 and a type POST.
      * @param type $linkScore
+     * @param type $rowType if this is "image" then wp_get_attachment_image_src() is used.
      * @return type an array with id, type, score, link, and title.
      */
-    static function permalinkInfoToArray($idAndType, $linkScore) {
+    static function permalinkInfoToArray($idAndType, $linkScore, $rowType = null) {
         global $abj404logging;
         $permalink = array();
 
@@ -31,7 +32,12 @@ class ABJ_404_Solution_Functions {
         $permalink['score'] = $linkScore;
 
         if ($permalink['type'] == ABJ404_TYPE_POST) {
-            $permalink['link'] = get_permalink($permalink['id']);
+            if ($rowType == 'image') {
+                $imageURL = wp_get_attachment_image_src($permalink['id'], "attached-image");
+                $permalink['link'] = $imageURL[0];
+            } else {
+                $permalink['link'] = get_permalink($permalink['id']);
+            }
             $permalink['title'] = get_the_title($permalink['id']);
             
         } else if ($permalink['type'] == ABJ404_TYPE_TAG) {
@@ -155,5 +161,21 @@ class ABJ_404_Solution_Functions {
         file_put_contents($filePath, fopen($url, 'r'));
     }
     
+    /** 
+     * @param type $haystack
+     * @param type $needle
+     * @return type
+     */
+    static function endsWithCaseInsensitive($haystack, $needle) {
+        $length = mb_strlen($needle);
+        if (mb_strlen($haystack) < $length) {
+            return false;
+        }
+        
+        $lowerNeedle = mb_strtolower($needle);
+        $lowerHay = mb_strtolower($haystack);
+        
+        return (mb_substr($lowerHay, -$length) == $lowerNeedle);
+    }
 }
 

@@ -963,7 +963,6 @@ class ABJ_404_Solution_DataAccess {
     function getPublishedPagesAndPostsIDs($slug, $orderTheResults) {
         global $wpdb;
         global $abj404logic;
-        global $abj404dao;
         global $abj404logging;
         
         // get the valid post types
@@ -1004,6 +1003,47 @@ class ABJ_404_Solution_DataAccess {
         }
         
         return $pages;
+    }
+
+    /** Returns rows with the IDs of the published images.
+     * @global type $wpdb
+     * @global type $abj404logic
+     * @global type $abj404dao
+     * @global type $abj404logging
+     * @param type $slug only get results for this slug. (empty means all posts)
+     * @param type $orderTheResults use true for displaying data to users, otherwise use false.
+     * @return type
+     */
+    function getPublishedImagesIDs() {
+        global $wpdb;
+        global $abj404logic;
+        global $abj404logging;
+        
+        // get the valid post types
+        $options = $abj404logic->getOptions();
+        $postTypes = preg_split("@\n@", mb_strtolower($options['recognized_post_types']), NULL, PREG_SPLIT_NO_EMPTY);
+        $recognizedPostTypes = '';
+        foreach ($postTypes as $postType) {
+            $recognizedPostTypes .= "'" . trim(mb_strtolower($postType)) . "', ";
+        }
+        $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
+        // ----------------
+        
+        // load the query and do the replacements.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedImageIDs.sql");
+        $query = str_replace('{wp_posts}', $wpdb->posts, $query);
+        $query = str_replace('{wp_postmeta}', $wpdb->postmeta, $query);
+        $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
+        $query = str_replace('{wp_terms}', $wpdb->terms, $query);
+        $query = str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
+        
+        $rows = $wpdb->get_results($query);
+        // check for errors
+        if ($wpdb->last_error) {
+            $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+        }
+        
+        return $rows;
     }
 
     /** Returns rows with the defined terms (tags).
