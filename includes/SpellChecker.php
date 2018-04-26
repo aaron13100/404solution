@@ -13,6 +13,9 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
 class ABJ_404_Solution_SpellChecker {
     
     private $separatingCharacters = array("-", "_", ".", "~", '%20');
+    
+    /** Same as above except without the period (.) because of the extension in the file name. */
+    private $separatingCharactersForImages = array("-", "_", "~", '%20');
 
     /** 
      * @global type $abj404dao
@@ -93,14 +96,18 @@ class ABJ_404_Solution_SpellChecker {
 
         if (@$options['auto_redirects'] == '1') {
             // Site owner wants automatic redirects.
-            $permalinks = $abj404spellChecker->findMatchingPosts($requestedURL, $options['auto_cats'], $options['auto_tags']);
+            $permalinksPacket = $abj404spellChecker->findMatchingPosts($requestedURL, 
+                    $options['auto_cats'], $options['auto_tags']);
+            $permalinks = $permalinksPacket[0];
+            $rowType = $permalinksPacket[1];
+            
             $minScore = $options['auto_score'];
 
             // since the links were previously sorted so that the highest score would be first, 
             // we only use the first element of the array;
             $linkScore = reset($permalinks);
             $idAndType = key($permalinks);
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore);
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore, $rowType);
 
             if ($permalink['score'] >= $minScore) {
                 // We found a permalink that will work!
@@ -118,40 +125,67 @@ class ABJ_404_Solution_SpellChecker {
         
         return null;
     }
+    
+    /** 
+     * Return true if the last characters of the URL represent an image extension (like jpg, gif, etc).
+     * @param type $requestedURL
+     */
+    function requestIsForAnImage($requestedURL) {
+        $imageExtensions = array(".jpg", ".jpeg", ".gif", ".png", ".tif", ".tiff", ".bmp", ".pdf", 
+            ".jif", ".jif", ".jp2", ".jpx", ".j2k", ".j2c", ".pcd");
+        
+        $returnVal = false;
+        
+        foreach ($imageExtensions as $extension) {
+            if (ABJ_404_Solution_Functions::endsWithCaseInsensitive($requestedURL, $extension)) {
+                $returnVal = true;
+                break;
+            }
+        }
+        
+        return $returnVal;
+    }
 
     /** Returns a list of 
      * @global type $wpdb
-     * @param type $requestedURL
+     * @param type $requestedURLRaw
      * @param type $includeCats
      * @param type $includeTags
      * @return type
      */
-    function findMatchingPosts($requestedURL, $includeCats = '1', $includeTags = '1') {
+    function findMatchingPosts($requestedURLRaw, $includeCats = '1', $includeTags = '1') {
         global $abj404dao;
         global $abj404logic;
-        global $abj404logging;
         
         $permalinks = array();
         
-        $requestedURLSpaces = str_replace($this->separatingCharacters, " ", $requestedURL);
+        $requestedURLSpaces = str_replace($this->separatingCharacters, " ", $requestedURLRaw);
         $requestedURLCleaned = $this->getLastURLPart($requestedURLSpaces);
         // this is the URL with the full path where / is replaces by spaces (" ").
         // this is useful for looking at URLs such as /category/behavior/. 
-        $fullURLspaces = str_replace('/', " ", $requestedURLSpaces);
+        $fullURLRaw = str_replace('/', " ", $requestedURLRaw);
+        $fullURLspacesCleaned = str_replace('/', " ", $requestedURLSpaces);
         // if there is no extra stuff in the path then we ignore this to save time.
-        if ($fullURLspaces == $requestedURLCleaned) {
-            $fullURLspaces = '';
+        if ($fullURLspacesCleaned == $requestedURLCleaned) {
+            $fullURLspacesCleaned = '';
         }
 
-        // match based on the slug.
-        $rows = $abj404dao->getPublishedPagesAndPostsIDs('', false);
-        
+        $rowType = 'pages';
+        $rows = array();
+        if ($this->requestIsForAnImage($requestedURLRaw)) {
+            $rows = $abj404dao->getPublishedImagesIDs();
+            $rowType = 'image';
+            
+        } else {
+            // match based on the slug.
+            $rows = $abj404dao->getPublishedPagesAndPostsIDs('', false);
+        }
         // pre-filter some pages based on the min and max possible levenshtein distances.
-        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rows, 'pages');
+        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
         
         // use the levenshtein distance formula here.
         foreach ($likelyMatchIDs as $id) {
-            $the_permalink = get_permalink($id);
+            $the_permalink = $this->getPermalink($id, $rowType);
             $urlParts = parse_url($the_permalink);
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
             $existingPageURLSpaces = str_replace($this->separatingCharacters, " ", $existingPageURL);
@@ -162,30 +196,53 @@ class ABJ_404_Solution_SpellChecker {
             }
             
             $levscore = $this->customLevenshtein($requestedURLCleaned, $existingPageURLCleaned);
-            if ($fullURLspaces != '') {
-                $levscore = min($levscore, $this->customLevenshtein($fullURLspaces, $existingPageURLCleaned));
+            if ($fullURLspacesCleaned != '') {
+                $levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $existingPageURLCleaned));
+            }
+            if ($rowType == 'image') {
+                // strip the image size from the file name and try again.
+                // the image size is at the end of the file in the format of -640x480
+                $strippedImageName = preg_replace('/(.+)([-]\d{1,5}[x]\d{1,5})([.].+)/', 
+                        '$1$3', $requestedURLRaw);
+                
+                if (($strippedImageName != null) && ($strippedImageName != $requestedURLRaw)) {
+                    $strippedImageName = str_replace($this->separatingCharactersForImages, " ", $strippedImageName);
+                    $levscore = min($levscore, $this->customLevenshtein($strippedImageName, $existingPageURL));
+                    
+                    $strippedImageName = $this->getLastURLPart($strippedImageName);
+                    $levscore = min($levscore, $this->customLevenshtein($strippedImageName, $existingPageURLCleaned));
+                }
             }
             $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
+            
             $permalinks[$id . "|" . ABJ404_TYPE_POST] = number_format($score, 4, '.', '');
         }
 
+        // TODO ugh. find a better way than repeating this code.
+        if ($rowType == 'image') {
+            // This is sorted so that the link with the highest score will be first when iterating through.
+            arsort($permalinks);
+            $anArray = array($permalinks, $rowType);
+            return $anArray;
+        }
+        
         // search for a similar tag.
         if ($includeTags == "1") {
             $rows = $abj404dao->getPublishedTags();
 
             // pre-filter some pages based on the min and max possible levenshtein distances.
-            $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rows, 'tags');
+            $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'tags');
             
             foreach ($likelyMatchIDs as $id) {
-                $the_permalink = get_tag_link($id);
+                $the_permalink = $this->getPermalink($id, 'tags');
                 $urlParts = parse_url($the_permalink);
                 $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
                 $scoreBasis = mb_strlen($pathOnly);
                 
                 $levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
-                if ($fullURLspaces != '') {
+                if ($fullURLspacesCleaned != '') {
                     $pathOnlySpaces = str_replace('/', " ", $pathOnly);
-                    $levscore = min($levscore, $this->customLevenshtein($fullURLspaces, $pathOnlySpaces));
+                    $levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $pathOnlySpaces));
                 }
                 $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
                 $permalinks[$id . "|" . ABJ404_TYPE_TAG] = number_format($score, 4, '.', '');
@@ -197,18 +254,18 @@ class ABJ_404_Solution_SpellChecker {
             $rows = $abj404dao->getPublishedCategories();
             
             // pre-filter some pages based on the min and max possible levenshtein distances.
-            $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rows, 'categories');
+            $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'categories');
             
             foreach ($likelyMatchIDs as $id) {
-                $the_permalink = get_category_link($id);
+                $the_permalink = $this->getPermalink($id, 'categories');
                 $urlParts = parse_url($the_permalink);
                 $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
                 $scoreBasis = mb_strlen($pathOnly);
                 
                 $levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
-                if ($fullURLspaces != '') {
+                if ($fullURLspacesCleaned != '') {
                     $pathOnlySpaces = str_replace('/', " ", $pathOnly);
-                    $levscore = min($levscore, $this->customLevenshtein($fullURLspaces, $pathOnlySpaces));
+                    $levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $pathOnlySpaces));
                 }
                 $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
                 $permalinks[$id . "|" . ABJ404_TYPE_CAT] = number_format($score, 4, '.', '');
@@ -217,8 +274,33 @@ class ABJ_404_Solution_SpellChecker {
 
         // This is sorted so that the link with the highest score will be first when iterating through.
         arsort($permalinks);
-        
-        return $permalinks;
+        return array($permalinks, $rowType);
+    }
+    
+    /** 
+     * Get the permalink for the passed in type (pages, tags, categories, image, etc.
+     * @param type $id
+     * @param type $rowType
+     * @return type
+     * @throws type
+     */
+    function getPermalink($id, $rowType) {
+        if ($rowType == 'pages') {
+            return get_permalink($id);
+
+        } else if ($rowType == 'tags') {
+            return get_tag_link($id);
+
+        } else if ($rowType == 'categories') {
+            return get_category_link($id);
+
+        } else if ($rowType == 'image') {
+            $src = wp_get_attachment_image_src( $id, "attached-image");
+            return $src[0];
+
+        } else {
+            throw Exception("Unknown row type ...");
+        }        
     }
     
     /** This algorithm uses the lengths of the strings to weed out some strings before using the levenshtein 
@@ -264,19 +346,20 @@ class ABJ_404_Solution_SpellChecker {
             
             if ($rowType == 'pages') {
                 $id = $row->id;
-                $the_permalink = get_permalink($id);
                 
             } else if ($rowType == 'tags') {
                 $id = $row->term_id;
-                $the_permalink = get_tag_link($id);
                 
             } else if ($rowType == 'categories') {
                 $id = $row->term_id;
-                $the_permalink = get_category_link($id);
+                
+            } else if ($rowType == 'image') {
+                $id = $row->id;
                 
             } else {
                 throw Exception("Unknown row type ...");
             }
+            $the_permalink = $this->getPermalink($id, $rowType);
             
             $urlParts = parse_url($the_permalink);
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
