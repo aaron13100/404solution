@@ -18,13 +18,17 @@
 <p>{When checked, the text is treated as a regular expression.} 
 <span style="font-weight: bold;">{Note that including a bad regular expression or one that takes too long will break your website.}</span>
 {So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin).}</p>
-<p>{Example}: &nbsp;&nbsp;&nbsp;<span style="font-weight: bold;">/events/.+</span></p>
+
+<p>{Example}: &nbsp;&nbsp;&nbsp;<span style="font-weight: bold;">/events/(.+)</span></p>
 <p>
-<span style="font-weight: bold;">/events/.+</span> {will match any URL that begins with} 
+<span style="font-weight: bold;">/events/(.+)</span> {will match any URL that begins with} 
 <span style="font-weight: bold;">/events/</span> {and redirect to the specified page.}
-{First, all of the normal "exact match" URLs are checked, then all of the regular expression URLs are checked.}
+{Since a capture group is used, you can use a $1 replacement in the destination string of an external URL.}
 </p>
-    
+
+<p>
+{First, all of the normal "exact match" URLs are checked, then all of the regular expression URLs are checked.}
+</p>    
 </span>
 </div>
 
