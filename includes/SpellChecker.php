@@ -38,6 +38,22 @@ class ABJ_404_Solution_SpellChecker {
                 $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, '0');
                 $permalink['matching_regex'] = $regexURL;
                 
+                // if the matching regex contains a group and the destination contains a replacement, 
+                // then use them
+                if ((preg_match("/\.*\(.+\).*/", $regexURL) != 0) && (strpos($permalink['link'], '$') !== FALSE)) {
+                    $results = '';
+                    $matcherQuoted = str_replace('~', '\~', $regexURL);
+                    preg_match("~" . $matcherQuoted . "~", $requestedURL, $results);
+                    
+                    // do a repacement for all of the groups found.
+                    $final = $permalink['link'];
+                    for ($x = 1; $x < count($results); $x++) {
+                        $final = str_replace('$' . $x , $results[$x] , $final);
+                    } 
+                    
+                    $permalink['link'] = $final;
+                }
+                
                 return $permalink;
             }
             

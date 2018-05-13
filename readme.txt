@@ -67,6 +67,7 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 = Version 2.9.0 (May 17, 2018) =
 * Improvement: Support custom taxonomies.
+* Improvement: Allow group matching and replacements in regular expression matches.
 
 = Version 2.8.0 (April 26, 2018) =
 * Feature: When a recognized image extension is requested, only images are used as possible matches.
