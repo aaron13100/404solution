@@ -393,6 +393,7 @@ class ABJ_404_Solution_PluginLogic {
             . "Bingbot\nYahoo! Slurp\nDuckDuckBot\nBaiduspider\nYandexBot\nwww.sogou.com\nSogou-Test-Spider\n"
             . "Exabot\nfacebot\nfacebookexternalhit\nia_archiver\nSeznamBot\nPinterestbot\nUptimeRobot\nMJ12bot",
             'recognized_post_types' => "page\npost\nproduct",
+            'recognized_categories' => "",
             'folders_files_ignore' => "",
             'folders_files_ignore_usable' => "",
             'debug_mode' => 0,
@@ -1249,6 +1250,9 @@ class ABJ_404_Solution_PluginLogic {
         }
         if (array_key_exists('recognized_post_types', $_POST) && isset($_POST['recognized_post_types'])) {
             $options['recognized_post_types'] = wp_kses_post(@$_POST['recognized_post_types']);
+        }
+        if (array_key_exists('recognized_categories', $_POST) && isset($_POST['recognized_categories'])) {
+            $options['recognized_categories'] = wp_kses_post(@$_POST['recognized_categories']);
         }
         if (array_key_exists('menuLocation', $_POST) && isset($_POST['menuLocation'])) {
             $options['menuLocation'] = wp_kses_post(@$_POST['menuLocation']);

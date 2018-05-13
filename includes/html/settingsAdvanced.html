@@ -78,6 +78,26 @@
 
     <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
     <tr><td valign="top">
+            <label for="recognized_categories">{Custom Taxonomies} 
+                <BR/><BR/>
+
+            {The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here.}
+            <BR/><BR/>
+            {If you've created custom taxonomies and would like to redirect users to them, you'll have to enter them here. }
+            {You can see which are recognized by looking at the default 404 destination option.}
+            <ul>
+                <li class="closeLI">{* Strings are case insensitive.}</li>
+                <li class="closeLI">{* One type per line.}</li>
+            </ul>
+            </label>
+            
+    </td><td>
+        <textarea rows="6" cols="60" name="recognized_categories" id="recognized_categories" >{recognized_categories}</textarea>
+                    
+    </td></tr>
+
+    <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
+    <tr><td valign="top">
             <label for="folders_files_ignore">{Files and Folders Ignore Strings - Do Not Process} 
                 <BR/><BR/>
 
