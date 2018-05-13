@@ -1097,6 +1097,9 @@ class ABJ_404_Solution_DataAccess {
 
         $categories = preg_split("@\n@", mb_strtolower($options['recognized_categories']), NULL, PREG_SPLIT_NO_EMPTY);
         $recognizedCategories = '';
+        if (count($categories) == 0) {
+            $recognizedCategories = "''";
+        }
         foreach ($categories as $category) {
             $recognizedCategories .= "'" . trim(mb_strtolower($category)) . "', ";
         }
