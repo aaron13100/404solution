@@ -7,7 +7,7 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
     ini_set('display_errors', '1');
 }
 
-/* Functions in this class should all reference the one of the following variables or support functions that do.
+/* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
  * everything $wpdb related.
  * everything $_GET, $_POST, (etc) related.
@@ -1052,11 +1052,34 @@ class ABJ_404_Solution_DataAccess {
      */
     function getPublishedTags() {
         global $wpdb;
+        global $abj404logic;
+        global $abj404logging;
         
-        $query = "select " . $wpdb->terms . ".term_id from " . $wpdb->terms . " ";
-        $query .= "left outer join " . $wpdb->term_taxonomy . " on " . $wpdb->terms . ".term_id = " . $wpdb->term_taxonomy . ".term_id ";
-        $query .= "where " . $wpdb->term_taxonomy . ".taxonomy='post_tag' and " . $wpdb->term_taxonomy . ".count >= 1";
+        // get the valid post types
+        $options = $abj404logic->getOptions();
+
+        $categories = preg_split("@\n@", mb_strtolower($options['recognized_categories']), NULL, PREG_SPLIT_NO_EMPTY);
+        $recognizedCategories = '';
+        foreach ($categories as $category) {
+            $recognizedCategories .= "'" . trim(mb_strtolower($category)) . "', ";
+        }
+        $recognizedCategories = rtrim($recognizedCategories, ", ");
+
+        // load the query and do the replacements.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedTags.sql");
+        $query = str_replace('{wp_posts}', $wpdb->posts, $query);
+        $query = str_replace('{wp_postmeta}', $wpdb->postmeta, $query);
+        $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
+        $query = str_replace('{wp_terms}', $wpdb->terms, $query);
+        $query = str_replace('{wp_term_taxonomy}', $wpdb->term_taxonomy, $query);
+        $query = str_replace('{recognizedCategories}', $recognizedCategories, $query);
+        
         $rows = $wpdb->get_results($query);
+        // check for errors
+        if ($wpdb->last_error) {
+            $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+        }
+        
         return $rows;
     }
     
@@ -1066,11 +1089,34 @@ class ABJ_404_Solution_DataAccess {
      */
     function getPublishedCategories() {
         global $wpdb;
+        global $abj404logic;
+        global $abj404logging;
         
-        $query = "select " . $wpdb->terms . ".term_id from " . $wpdb->terms . " ";
-        $query .= "left outer join " . $wpdb->term_taxonomy . " on " . $wpdb->terms . ".term_id = " . $wpdb->term_taxonomy . ".term_id ";
-        $query .= "where " . $wpdb->term_taxonomy . ".taxonomy='category' and " . $wpdb->term_taxonomy . ".count >= 1";
+        // get the valid post types
+        $options = $abj404logic->getOptions();
+
+        $categories = preg_split("@\n@", mb_strtolower($options['recognized_categories']), NULL, PREG_SPLIT_NO_EMPTY);
+        $recognizedCategories = '';
+        foreach ($categories as $category) {
+            $recognizedCategories .= "'" . trim(mb_strtolower($category)) . "', ";
+        }
+        $recognizedCategories = rtrim($recognizedCategories, ", ");
+
+        // load the query and do the replacements.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedCategories.sql");
+        $query = str_replace('{wp_posts}', $wpdb->posts, $query);
+        $query = str_replace('{wp_postmeta}', $wpdb->postmeta, $query);
+        $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
+        $query = str_replace('{wp_terms}', $wpdb->terms, $query);
+        $query = str_replace('{wp_term_taxonomy}', $wpdb->term_taxonomy, $query);
+        $query = str_replace('{recognizedCategories}', $recognizedCategories, $query);
+        
         $rows = $wpdb->get_results($query);
+        // check for errors
+        if ($wpdb->last_error) {
+            $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+        }
+        
         return $rows;
     }
 

@@ -761,11 +761,28 @@ class ABJ_404_Solution_View {
     }
 
     function echoRedirectDestinationOptionsCatsTags($dest) {
+        global $abj404dao;
         $content = "";
         $content .= "\n" . '<optgroup label="Categories">' . "\n";
+        
+        $customTagsEtc = array();
 
-        $cats = get_categories('hierarchical=0');
+        // categories ---------------------------------------------
+        $cats = $abj404dao->getPublishedCategories();
         foreach ($cats as $cat) {
+            $taxonomy = $cat->taxonomy;
+            if ($taxonomy != 'category') {
+                // for custom categories we create a Map<String, List> where the key is the name
+                // of the taxonomy and the list holds the rows that have the category info.
+                if (!array_key_exists($taxonomy, $customTagsEtc) || $customTagsEtc[$taxonomy] == null) {
+                    $customTagsEtc[$taxonomy] = array($cat);
+                } else {
+                    array_push($customTagsEtc[$taxonomy], $cat);
+                }
+                
+                continue;
+            }
+            
             $id = $cat->term_id;
             $theTitle = $cat->name;
             $thisval = $id . "|" . ABJ404_TYPE_CAT;
@@ -778,8 +795,9 @@ class ABJ_404_Solution_View {
         }
         $content .= "\n" . '</optgroup>' . "\n";
 
+        // tags ---------------------------------------------
         $content .= "\n" . '<optgroup label="Tags">' . "\n";
-        $tags = get_tags('hierarchical=0');
+        $tags = $abj404dao->getPublishedTags();
         foreach ($tags as $tag) {
             $id = $tag->term_id;
             $theTitle = $tag->name;
@@ -792,6 +810,25 @@ class ABJ_404_Solution_View {
             $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Tag', '404-solution') . ": " . $theTitle . "</option>";
         }
         $content .= "\n" . '</optgroup>' . "\n";
+        
+        // custom ---------------------------------------------
+        foreach ($customTagsEtc as $taxonomy => $catRow) {
+            $content .= "\n" . '<optgroup label="' . esc_html($taxonomy) . '">' . "\n";
+            
+            foreach ($catRow as $cat) {
+                $id = $cat->term_id;
+                $theTitle = $cat->name;
+                $thisval = $id . "|" . ABJ404_TYPE_CAT;
+
+                $selected = "";
+                if ($thisval == $dest) {
+                    $selected = " selected";
+                }
+                $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Custom', '404-solution') . ": " . $theTitle . "</option>";
+            }
+            
+            $content .= "\n" . '</optgroup>' . "\n";
+        }
         
         return $content;
     }
@@ -1454,6 +1491,7 @@ class ABJ_404_Solution_View {
         $html = str_replace('{ignore_dontprocess}', wp_kses_post($options['ignore_dontprocess']), $html);
         $html = str_replace('{ignore_doprocess}', wp_kses_post($options['ignore_doprocess']), $html);
         $html = str_replace('{recognized_post_types}', wp_kses_post($options['recognized_post_types']), $html);
+        $html = str_replace('{recognized_categories}', wp_kses_post($options['recognized_categories']), $html);
         $html = str_replace('{folders_files_ignore}', wp_kses_post($options['folders_files_ignore']), $html);
         $html = str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($options['auto_score']), $html);
         
