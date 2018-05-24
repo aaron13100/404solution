@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.9.1 (May 24, 2018) ##
+* FIX: Custom taxonomies: allow entering the taxonomy name instead of the children of taxonomies to use them.
+
 ## Version 2.9.0 (May 17, 2018) ##
 * Improvement: Support custom taxonomies.
 * Improvement: Allow group matching and replacements in regular expression matches.
