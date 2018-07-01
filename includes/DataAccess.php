@@ -359,12 +359,10 @@ class ABJ_404_Solution_DataAccess {
         $query .= " where 1 and (";
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             if ($sub == 'abj404_redirects') {
-                $query .= "status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ", " . 
-                        ABJ404_STATUS_REGEX . ")";
+                $query .= "status in (" . implode(", ", REDIRECT_TYPES) . ")";
 
             } else if ($sub == 'abj404_captured') {
-                $query .= "status in (" . ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . 
-                        ", " . ABJ404_STATUS_LATER . ") ";
+                $query .= "status in (" . implode(", ", CAPTURED_TYPES) . ") ";
 
             } else {
                 $abj404logging->errorMessage("Unrecognized sub type: " . esc_html($sub));

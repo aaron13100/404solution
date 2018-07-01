@@ -905,12 +905,12 @@ class ABJ_404_Solution_PluginLogic {
         if ($sub == "abj404_captured") {
             $query = "delete FROM " . $redirectsTable . " \n" .
                     "where disabled = 1 \n" .
-                    "      and status = " . ABJ404_STATUS_CAPTURED;
+                    "      and status in (" . implode(", ", CAPTURED_TYPES) . ")";
             
         } else if ($sub == "abj404_redirects") {
             $query = "delete FROM " . $redirectsTable . " \n" .
                     "where disabled = 1 \n" .
-                    "      and status = " . ABJ404_STATUS_AUTO;
+                    "      and status in (" . implode(", ", REDIRECT_TYPES) . ")";
             
         } else {
             $abj404logging->errorMessage("Unrecognized type in doEmptyTrash(" . $sub . ")");

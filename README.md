@@ -71,6 +71,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Changelog ##
 
+## Version 2.9.2 (July 1, 2018) ##
+* FIX: Regex redirects can now be emptied from the trash (for VA3DBJ bug #23).
+
 ## Version 2.9.1 (May 24, 2018) ##
 * FIX: Custom taxonomies: allow entering the taxonomy name instead of the children of taxonomies to use them.
 
