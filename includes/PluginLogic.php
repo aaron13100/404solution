@@ -1271,7 +1271,7 @@ class ABJ_404_Solution_PluginLogic {
             $patternsToIgnore = preg_split("@\n@", $options['folders_files_ignore'], NULL, PREG_SPLIT_NO_EMPTY);
             $usableFilePatterns = array();
             foreach ($patternsToIgnore as $patternToIgnore) {
-                $newPattern = '^' . preg_quote($patternToIgnore, '/') . '$';
+                $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
                 $newPattern = str_replace("\*",".*", $newPattern);
                 $usableFilePatterns[] = $newPattern;
             }
