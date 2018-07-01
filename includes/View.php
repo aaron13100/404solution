@@ -1862,12 +1862,17 @@ class ABJ_404_Solution_View {
 
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             if ($sub == 'abj404_redirects') {
-                $types = array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO);
+                $types = REDIRECT_TYPES;
             } else {
-                $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
+                $types = CAPTURED_TYPES;
             }
         } else {
-            $types = array($tableOptions['filter']);
+            // if "manual redirects" are being shown then also include regex redirects.
+            if ($tableOptions['filter'] == ABJ404_STATUS_MANUAL) {
+                $types = array($tableOptions['filter'], ABJ404_STATUS_REGEX);
+            } else {
+                $types = array($tableOptions['filter']);
+            }
         }
         $url .= "&filter=" . $tableOptions['filter'];
 
@@ -1986,9 +1991,12 @@ class ABJ_404_Solution_View {
         $url .= "&order=" . sanitize_text_field($tableOptions['order']);
 
         if ($sub == 'abj404_redirects') {
-            $types = array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO);
+            $types = REDIRECT_TYPES;
+        } else if ($sub == 'abj404_captured') {
+            $types = CAPTURED_TYPES;
         } else {
-            $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
+            $abj404logging->debugMessage("Unexpected sub type for tab filter: " . $sub);
+            $types = CAPTURED_TYPES;
         }
 
         $class = "";
@@ -2012,16 +2020,25 @@ class ABJ_404_Solution_View {
                 $class = " class=\"current\"";
             }
 
+            $recordCount = 0;
             if ($type == ABJ404_STATUS_MANUAL) {
                 $title = "Manual Redirects";
+                $recordCount = $abj404dao->getRecordCount(array($type, ABJ404_STATUS_REGEX));
             } else if ($type == ABJ404_STATUS_AUTO) {
                 $title = "Automatic Redirects";
+                $recordCount = $abj404dao->getRecordCount(array($type));
             } else if ($type == ABJ404_STATUS_CAPTURED) {
                 $title = "Captured URLs";
+                $recordCount = $abj404dao->getRecordCount(array($type));
             } else if ($type == ABJ404_STATUS_IGNORED) {
                 $title = "Ignored 404s";
+                $recordCount = $abj404dao->getRecordCount(array($type));
             } else if ($type == ABJ404_STATUS_LATER) {
                 $title = "Organize Later";
+                $recordCount = $abj404dao->getRecordCount(array($type));
+            } else if ($type == ABJ404_STATUS_REGEX) {
+                // don't include a tab here because these are included in the manual redirects.
+                continue;
             } else {
                 $abj404logging->errorMessage("Unrecognized redirect type in View: " . esc_html($type));
             }
@@ -2031,7 +2048,7 @@ class ABJ_404_Solution_View {
                 echo " | ";
             }
             echo "<a href=\"" . esc_url($thisurl) . "\"" . $class . ">" . ( $title );
-            echo " <span class=\"count\">(" . esc_html($abj404dao->getRecordCount(array($type))) . ")</span>";
+            echo " <span class=\"count\">(" . esc_html($recordCount) . ")</span>";
             echo "</a>";
             echo "</li>";
         }
