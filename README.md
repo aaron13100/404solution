@@ -71,6 +71,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Changelog ##
 
+## Version 2.9.3 (July 1, 2018) ##
+* FIX: The "Files and Folders Ignore Strings" setting now works better (for Phil).
+
 ## Version 2.9.2 (July 1, 2018) ##
 * FIX: Regex redirects can now be emptied from the trash (for VA3DBJ bug #23).
 

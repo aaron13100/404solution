@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.9.2
+Version: 2.9.3
 Tested up to: 4.9
-Stable tag: 2.9.2
+Stable tag: 2.9.3
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -64,6 +64,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.9.3 (July 1, 2018) =
+* FIX: The "Files and Folders Ignore Strings" setting now works better (for Phil).
 
 = Version 2.9.2 (July 1, 2018) =
 * FIX: Regex redirects can now be emptied from the trash (for VA3DBJ bug #23).
