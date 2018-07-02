@@ -71,6 +71,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Changelog ##
 
+## Version 2.9.4 (July 2, 2018) ##
+* FIX: Work with earlier versions of PHP again (bug introduced in 2.9.3).
+
 ## Version 2.9.3 (July 1, 2018) ##
 * FIX: The "Files and Folders Ignore Strings" setting now works better (for Phil).
 
