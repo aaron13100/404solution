@@ -1849,6 +1849,9 @@ class ABJ_404_Solution_View {
      */
     function echoPaginationLinks($sub, $tableOptions) {
         global $abj404dao;
+        global $abj404logging;
+        global $abj404_redirect_types;
+        global $abj404_captured_types;
 
         $url = "?page=" . ABJ404_PP;
         if ($sub == 'abj404_captured') {
@@ -1862,9 +1865,12 @@ class ABJ_404_Solution_View {
 
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             if ($sub == 'abj404_redirects') {
-                $types = REDIRECT_TYPES;
+                $types = $abj404_redirect_types;
+            } else if ($sub == 'abj404_captured') {
+                $types = $abj404_captured_types;
             } else {
-                $types = CAPTURED_TYPES;
+                $abj404logging->debugMessage("Unexpected sub type for pagination links: " . $sub);
+                $types = $abj404_captured_types;
             }
         } else {
             // if "manual redirects" are being shown then also include regex redirects.
@@ -1971,6 +1977,8 @@ class ABJ_404_Solution_View {
         global $abj404dao;
         global $abj404logic;
         global $abj404logging;
+        global $abj404_redirect_types;
+        global $abj404_captured_types;
 
         if (count($tableOptions) == 0) {
             $tableOptions = $abj404logic->getTableOptions();
@@ -1991,12 +1999,12 @@ class ABJ_404_Solution_View {
         $url .= "&order=" . sanitize_text_field($tableOptions['order']);
 
         if ($sub == 'abj404_redirects') {
-            $types = REDIRECT_TYPES;
+            $types = $abj404_redirect_types;
         } else if ($sub == 'abj404_captured') {
-            $types = CAPTURED_TYPES;
+            $types = $abj404_captured_types;
         } else {
             $abj404logging->debugMessage("Unexpected sub type for tab filter: " . $sub);
-            $types = CAPTURED_TYPES;
+            $types = $abj404_captured_types;
         }
 
         $class = "";

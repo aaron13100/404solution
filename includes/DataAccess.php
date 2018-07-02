@@ -317,6 +317,8 @@ class ABJ_404_Solution_DataAccess {
     function getRedirectsForView($sub, $tableOptions) {
         global $wpdb;
         global $abj404logging;
+        global $abj404_redirect_types;
+        global $abj404_captured_types;
 
         $redirects = $wpdb->prefix . "abj404_redirects";
         $logs = $wpdb->prefix . "abj404_logsv2";
@@ -359,10 +361,10 @@ class ABJ_404_Solution_DataAccess {
         $query .= " where 1 and (";
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             if ($sub == 'abj404_redirects') {
-                $query .= "status in (" . implode(", ", REDIRECT_TYPES) . ")";
+                $query .= "status in (" . implode(", ", $abj404_redirect_types) . ")";
 
             } else if ($sub == 'abj404_captured') {
-                $query .= "status in (" . implode(", ", CAPTURED_TYPES) . ") ";
+                $query .= "status in (" . implode(", ", $abj404_captured_types) . ") ";
 
             } else {
                 $abj404logging->errorMessage("Unrecognized sub type: " . esc_html($sub));

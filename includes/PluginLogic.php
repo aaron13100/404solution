@@ -899,18 +899,20 @@ class ABJ_404_Solution_PluginLogic {
     function doEmptyTrash($sub) {
         global $abj404logging;
         global $wpdb;
+        global $abj404_redirect_types;
+        global $abj404_captured_types;
         
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $query = "";
         if ($sub == "abj404_captured") {
             $query = "delete FROM " . $redirectsTable . " \n" .
                     "where disabled = 1 \n" .
-                    "      and status in (" . implode(", ", CAPTURED_TYPES) . ")";
+                    "      and status in (" . implode(", ", $abj404_captured_types) . ")";
             
         } else if ($sub == "abj404_redirects") {
             $query = "delete FROM " . $redirectsTable . " \n" .
                     "where disabled = 1 \n" .
-                    "      and status in (" . implode(", ", REDIRECT_TYPES) . ")";
+                    "      and status in (" . implode(", ", $abj404_redirect_types) . ")";
             
         } else {
             $abj404logging->errorMessage("Unrecognized type in doEmptyTrash(" . $sub . ")");
