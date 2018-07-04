@@ -173,6 +173,26 @@ class ABJ_404_Solution_DataAccess {
        return intval($captured[0]);
    }
    
+   /** Get all of the post types from the wp_posts table.
+    * @global type $wpdb
+    * @return type
+    */
+   function getAllPostTypes() {
+       global $wpdb;
+       
+       $query = "SELECT DISTINCT post_type FROM " . $wpdb->posts . " order by post_type";
+       $results = $this->queryAndGetResults($query);
+       $rows = $results['rows'];
+       
+       $postType = array();
+       
+       foreach ($rows as $row) {
+           array_push($postType, $row['post_type']);
+       }
+       
+       return $postType;
+   }
+   
    /** Get the approximate number of bytes used by the logs table.
     * @global type $wpdb
     * @return type

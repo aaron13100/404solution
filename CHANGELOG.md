@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.9.5 (July 4, 2018) ##
+* FIX: Include a list of all of the post types in the database on the options page (for Mauricio).
+
 ## Version 2.9.4 (July 2, 2018) ##
 * FIX: Work with earlier versions of PHP again (bug introduced in 2.9.3).
 
