@@ -1462,7 +1462,8 @@ class ABJ_404_Solution_View {
     function getAdminOptionsPageAdvancedSettings($options) {
         global $abj404logging;
         global $abj404logic;
-
+        global $abj404dao;
+        
         $selectedDebugLogging = "";
         if (array_key_exists('debug_mode', $options) && $options['debug_mode'] == '1') {
             $selectedDebugLogging = " checked";
@@ -1479,6 +1480,8 @@ class ABJ_404_Solution_View {
         $kbFileSize = round($abj404logging->getDebugFileSize() / 1024);
         $debugFileSize = sprintf(__("Debug file size: %s KB.", '404-solution'), $kbFileSize);
         
+        $allPostTypesTemp = $abj404dao->getAllPostTypes();
+        $allPostTypes = esc_html(implode(', ', $allPostTypesTemp));
         
         // ----
         // read the html content.
@@ -1491,6 +1494,8 @@ class ABJ_404_Solution_View {
         $html = str_replace('{ignore_dontprocess}', wp_kses_post($options['ignore_dontprocess']), $html);
         $html = str_replace('{ignore_doprocess}', wp_kses_post($options['ignore_doprocess']), $html);
         $html = str_replace('{recognized_post_types}', wp_kses_post($options['recognized_post_types']), $html);
+        $html = str_replace('{all_post_types}', $allPostTypes, $html);
+        
         $html = str_replace('{recognized_categories}', wp_kses_post($options['recognized_categories']), $html);
         $html = str_replace('{folders_files_ignore}', wp_kses_post($options['folders_files_ignore']), $html);
         $html = str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($options['auto_score']), $html);
