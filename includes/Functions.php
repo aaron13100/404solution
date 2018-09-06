@@ -43,12 +43,20 @@ class ABJ_404_Solution_Functions {
         } else if ($permalink['type'] == ABJ404_TYPE_TAG) {
             $permalink['link'] = get_tag_link($permalink['id']);
             $tag = get_term($permalink['id'], 'post_tag');
-            $permalink['title'] = $tag->name;
+            if ($tag != null) {
+                $permalink['title'] = $tag->name;
+            } else {
+                $permalink['title'] = $permalink['link'];
+            }
             
         } else if ($permalink['type'] == ABJ404_TYPE_CAT) {
             $permalink['link'] = get_category_link($permalink['id']);
             $cat = get_term($permalink['id'], 'category');
-            $permalink['title'] = $cat->name;
+            if ($cat != null) {
+                $permalink['title'] = $cat->name;
+            } else {
+                $permalink['title'] = $permalink['link'];
+            }
             
         } else if ($permalink['type'] == ABJ404_TYPE_HOME) {
             $permalink['link'] = get_home_url();

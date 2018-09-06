@@ -848,12 +848,12 @@ class ABJ_404_Solution_DataAccess {
         $rowsDeleted = 0;
         $rtable = $wpdb->prefix . "abj404_redirects";
 
-        $query = "SELECT COUNT(id) as repetitions, url FROM " . $rtable . " GROUP BY url HAVING repetitions > 1";
+        $query = "SELECT COUNT(id) as repetitions, url FROM " . $rtable . " GROUP BY url HAVING repetitions > 1 ";
         $rows = $wpdb->get_results($query, ARRAY_A);
         foreach ($rows as $row) {
             $url = $row['url'];
 
-            $queryr1 = "select id from " . $rtable . " where url = '" . esc_sql(esc_url($url)) . "' order by id limit 0,1";
+            $queryr1 = "select id from " . $rtable . " where url = '" . esc_sql(esc_url($url)) . "' order by timestamp desc limit 0,1";
             $orig = $wpdb->get_row($queryr1, ARRAY_A, 0);
             if ($orig['id'] != 0) {
                 $original = $orig['id'];

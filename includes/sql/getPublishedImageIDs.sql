@@ -36,7 +36,7 @@ left outer join (
     	group by wptr.object_id
 
 	) usefulterms
-    on wp_posts.ID = usefulterms.object_id
+    on cast(wp_posts.ID as binary) = cast(usefulterms.object_id as binary)
 
 where wp_posts_parents.post_status = 'publish'
         

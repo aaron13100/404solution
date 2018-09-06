@@ -401,8 +401,12 @@ class ABJ_404_Solution_SpellChecker {
             $pagePacket['max-dist'] = $maxDist;
             
             // add the packet to the list.
-            array_push($minDistances[$minDist], $pagePacket);
-            array_push($maxDistances[$maxDist], $pagePacket);
+            if (is_array($minDistances[$minDist])) {
+                array_push($minDistances[$minDist], $pagePacket);
+            }
+            if (is_array($maxDistances[$maxDist])) {
+                array_push($maxDistances[$maxDist], $pagePacket);
+            }
         }
         
         // look at the first X IDs with the lowest maximum levenshtein distance.
