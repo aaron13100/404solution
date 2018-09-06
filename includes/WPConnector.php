@@ -99,8 +99,8 @@ class ABJ_404_Solution_WordPress_Connector {
         // hanlde the case where '///?gf_page=upload' is returned as the request URI.
         $urlToParse = $_SERVER['REQUEST_URI'];
         if (!is_array(parse_url(esc_url($urlToParse)))) {
-            if (substr($urlToParse, 0, 3) == "///") {
-                $urlToParse = home_url($wp->request) . substr($urlToParse, 4);
+            if (substr($urlToParse, 0, 1) == "/") {
+                $urlToParse = home_url($wp->request) . substr($urlToParse, 1);
             }
         }
         $urlParts = parse_url(esc_url($urlToParse));
@@ -108,6 +108,7 @@ class ABJ_404_Solution_WordPress_Connector {
             $abj404logging->errorMessage('parse_url returned a non-array value. REQUEST_URI: "' . 
                     $_SERVER['REQUEST_URI'] . '", parse_url result: "' . json_encode($urlParts) . '", ' .
                     'urlToParse result: ' . $urlToParse);
+            return;
         }
         $requestedURL = $urlParts['path'];
         $unsortedQueryParts = $abj404connector->getUnsortedQueryParts($urlParts);
@@ -122,8 +123,14 @@ class ABJ_404_Solution_WordPress_Connector {
             $debugOptionsMsg = esc_html('auto_redirects: ' . $options['auto_redirects'] . ', auto_score: ' . 
                     $options['auto_score'] . ', auto_cats: ' . $options['auto_cats'] . ', auto_tags: ' .
                     $options['auto_tags'] . ', dest404page: ' . $options['dest404page']);
+            
+            $remoteAddress = esc_sql($_SERVER['REMOTE_ADDR']);
+            if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
+                $remoteAddress = md5($remoteAddress);
+            }
+            
             $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $_SERVER['HTTP_USER_AGENT'] . ', REMOTE_ADDR: ' . 
-                    $_SERVER['REMOTE_ADDR'] . ', REQUEST_URI: ' . $_SERVER['REQUEST_URI']);
+                    $remoteAddress . ', REQUEST_URI: ' . $_SERVER['REQUEST_URI']);
             $abj404logging->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
                     wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " . "is_page(): " . is_page() .
                     " | is_feed(): " . is_feed() . " | is_trackback(): " . is_trackback() . " | is_preview(): " .

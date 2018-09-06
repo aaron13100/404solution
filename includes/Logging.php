@@ -63,11 +63,13 @@ class ABJ_404_Solution_Logging {
         
         // display a 404 page if the user is NOT an admin and is not on an admin page.
         if (!is_admin() && !current_user_can('administrator')) {
-            // send the user to a 404 page. otherwise the user might just get a blank page.
+            // try to send the user to a 404 page. otherwise the user might just get a blank page.
             status_header(404);
             nocache_headers();
-            include(get_query_template('404'));
-            exit();
+            $queryTemplate = get_query_template('404');
+            if ($queryTemplate != null && $queryTemplate != '') {
+                include(get_query_template('404'));
+            }
         }
     }
     
