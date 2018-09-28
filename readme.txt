@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.10.0
+Version: 2.10.1
 Tested up to: 4.9
-Stable tag: 2.10.0
+Stable tag: 2.10.1
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -65,9 +65,12 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 == Changelog ==
 
+= Version 2.10.1 (September 29, 2018) =
+* Improvement: Minor changes to avoid error messages for some users (for lestadt).
+
 = Version 2.10.0 (September 6, 2018) =
 * FIX: Maintenance to delete duplicates now deletes the oldest duplicate rows instead of the most recent ones (thanks Marc Siepman).
-* FIX: A debug line that is now GDPR compliant (according to the options).
+* FIX: A debug line is now GDPR compliant (according to the options) (thanks Marc Siepman).
 * Improvement: Minor changes to avoid rare error messages for some users.
 
 = Version 2.9.5 (July 4, 2018) =

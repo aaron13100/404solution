@@ -610,7 +610,7 @@ class ABJ_404_Solution_View {
 
         } else {
             echo __('Error: No ID(s) found for edit request.', '404-solution');
-            $abj404logging->errorMessage("No ID(s) found in GET or POST data for edit request.");
+            $abj404logging->debugMessage("No ID(s) found in GET or POST data for edit request.");
             return;
         }
         

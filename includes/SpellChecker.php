@@ -341,8 +341,15 @@ class ABJ_404_Solution_SpellChecker {
      */
     function getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rows, $rowType) {
         global $abj404logic;
+        global $abj404logging;
         
         $options = $abj404logic->getOptions();
+        
+        // if there were no results then there are no likely matches.
+        if (!is_array($rows)) {
+            $abj404logging->debugMessage("Non-array value found in getLikelyMatchIDs: " . $rows);
+            return array();
+        }
         
         // create a list sorted by min levenshstein distance and max levelshtein distance.
         /* 1) Get a list of minumum and maximum levenshtein distances - two lists, one ordered by the min 
