@@ -1,8 +1,11 @@
 # Changelog #
 
+## Version 2.10.1 (September 29, 2018) ##
+* Improvement: Minor changes to avoid error messages for some users (for lestadt).
+
 ## Version 2.10.0 (September 6, 2018) ##
 * FIX: Maintenance to delete duplicates now deletes the oldest duplicate rows instead of the most recent ones (thanks Marc Siepman).
-* FIX: A debug line that is now GDPR compliant (according to the options).
+* FIX: A debug line is now GDPR compliant (according to the options) (thanks Marc Siepman).
 * Improvement: Minor changes to avoid rare error messages for some users.
 
 ## Version 2.9.5 (July 4, 2018) ##

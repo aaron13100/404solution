@@ -629,8 +629,11 @@ class ABJ_404_Solution_DataAccess {
             $id = $row1['id'];
             return $id;
         }
-        
-        $query = "insert into " . $lookupTable . " (lkup_value) values ('" . $valueToInsert . "')";
+
+        // insert the value since it's not there already.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertIntoLookupTable.sql");
+        $query = str_replace('{wp_abj404_lookup}', $lookupTable, $query);
+        $query = str_replace('{lkup_value}', $valueToInsert, $query);
         $results = $this->queryAndGetResults($query);
         
         return $results['insert_id'];
@@ -996,7 +999,8 @@ class ABJ_404_Solution_DataAccess {
         // ----------------
         
         if ($slug != "") {
-            $specifiedSlug = " */ and wp_posts.post_name='" . esc_sql($slug) . "' \n ";
+            $specifiedSlug = " */ and cast(wp_posts.post_name as binary) = "
+                    . "cast('" . esc_sql($slug) . "' as binary) \n ";
         } else {
             $specifiedSlug = '';
         }

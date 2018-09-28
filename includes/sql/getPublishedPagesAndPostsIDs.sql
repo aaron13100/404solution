@@ -29,11 +29,11 @@ left outer join (
 	) usefulterms
     on cast(wp_posts.ID as binary) = cast(usefulterms.object_id as binary)
 
-where wp_posts.post_status = 'publish'
+where cast(wp_posts.post_status as binary) = cast('publish' as binary)
       and lcase(wp_posts.post_type) in ({recognizedPostTypes})
         
 /* only include this line if a slug has been specified. e.g.
-      and post_name='specifiedSlug'
+      and post_name = 'specifiedSlug'
       {specifiedSlug}
 /*  */
 
