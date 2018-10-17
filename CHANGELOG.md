@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.10.2 (October 17, 2018) ##
+* FIX: Support international characters like Japanese and Hebrew (for arnonalex).
+
 ## Version 2.10.1 (September 29, 2018) ##
 * Improvement: Minor changes to avoid error messages for some users (for lestadt).
 

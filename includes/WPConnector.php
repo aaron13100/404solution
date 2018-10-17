@@ -113,6 +113,9 @@ class ABJ_404_Solution_WordPress_Connector {
         $requestedURL = $urlParts['path'];
         $unsortedQueryParts = $abj404connector->getUnsortedQueryParts($urlParts);
         $requestedURL .= $abj404connector->sortQueryParts($urlParts);
+        // allow us to use foreign characters. and fix bug
+        // https://wordpress.org/support/topic/support-for-non-latin-letters-does-not-work/
+        $requestedURL = utf8_decode(urldecode($requestedURL));
 
         // Get URL data if it's already in our database
         $redirect = $abj404dao->getActiveRedirectForURL($requestedURL);

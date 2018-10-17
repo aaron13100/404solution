@@ -21,6 +21,7 @@ class ABJ_404_Solution_DataAccess {
      */
     static function createDatabaseTables() {
         global $wpdb;
+        global $abj404logging;
         
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
@@ -52,6 +53,7 @@ class ABJ_404_Solution_DataAccess {
             }
             $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX url (`url`) USING BTREE";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404logging->infoMessage("Updated redirects table URL column to use a btree index.");
         }
         if (!preg_match("/final_dest.+ USING BTREE/i", $tableSQL)) {
             if (preg_match("/KEY.+final_dest/i", $tableSQL)) {
@@ -60,6 +62,7 @@ class ABJ_404_Solution_DataAccess {
             }
             $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX final_dest (`final_dest`) USING BTREE";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404logging->infoMessage("Updated redirects table FINAL_DEST column to use a btree index.");
         }
         if (!preg_match("/status.+TINYINT\(1\)/i", $tableSQL)) {
             $query = "ALTER TABLE " . $redirectsTable . "   CHANGE `status` `status` TINYINT(1) NOT NULL, \n" .
@@ -67,6 +70,15 @@ class ABJ_404_Solution_DataAccess {
                     "  CHANGE `code` `code` SMALLINT(3) NOT NULL, \n" .
                     "  CHANGE `disabled` `disabled` TINYINT(1) NOT NULL DEFAULT '0' \n"; 
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404logging->infoMessage("Updated redirects table STATUS column type to TINYINT.");
+        }
+        // look for: `url` varchar(512) CHARACTER SET utf8
+        // convert the charset to utf8 if it's something else.
+        if (!preg_match("/url.+ CHARACTER SET utf8 NOT NULL/i", $tableSQL)) {
+            // ALTER TABLE `wp_abj404_redirects` CHANGE `url` `url` VARCHAR(512) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL;
+            $query = "ALTER TABLE " . $redirectsTable . " CHANGE `url` `url` VARCHAR(512) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404logging->infoMessage("Updated redirects table URL column to UTF-8 character set.");
         }
         
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults("show create table " . $logsTable);
@@ -935,7 +947,7 @@ class ABJ_404_Solution_DataAccess {
         $redirect = array();
 
         // a disabled value of '1' means in the trash.
-        $query = "select * from " . $wpdb->prefix . "abj404_redirects where url = '" . esc_sql(esc_url($url)) . "'" .
+        $query = "select * from " . $wpdb->prefix . "abj404_redirects where url = '" . esc_sql($url) . "'" .
                 " and disabled = 0 and status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ") " .
                 "and type not in (" . ABJ404_TYPE_404_DISPLAYED . ") ";
 
