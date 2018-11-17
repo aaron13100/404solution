@@ -45,7 +45,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         $pageid = $query['p'];
         if (!empty($pageid)) {
-            $permalink = get_permalink($pageid);
+            $permalink = urldecode(get_permalink($pageid));
             $status = get_post_status($pageid);
             if (($permalink != false) && ($status == 'publish')) {
                 $urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
@@ -138,19 +138,20 @@ class ABJ_404_Solution_PluginLogic {
         // this may be used later when displaying suggestions.
         $cookieName = ABJ404_PP . '_REQUEST_URI';
         try {
-            setcookie($cookieName, esc_url($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
+            setcookie($cookieName, urldecode(esc_url($_SERVER['REQUEST_URI'])), time() + (60 * 4), "/");
             
         } catch (Exception $e) {
             $abj404logging->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
             // This javascript redirect will only appear if the header redirect did not work for some reason.
             // document.cookie = "username=John Doe; expires=Thu, 18 Dec 2013 12:00:00 UTC";
             $expireTime = date("D, d M Y H:i:s T", time() + (60 * 4));
-            $c = "\n" . '<script>document.cookie = "' . $cookieName . '=' . esc_url($_SERVER['REQUEST_URI']) . 
+            $c = "\n" . '<script>document.cookie = "' . $cookieName . '=' . 
+                    urldecode(esc_url($_SERVER['REQUEST_URI'])) . 
                     '; expires=' . $expireTime . '";</script>' . "\n";
             echo $c;
         }
         
-        $_REQUEST[ABJ404_PP][$cookieName] = esc_url($_SERVER['REQUEST_URI']);
+        $_REQUEST[ABJ404_PP][$cookieName] = urldecode(esc_url($_SERVER['REQUEST_URI']));
         
         $options = $abj404logic->getOptions();
         
@@ -401,6 +402,10 @@ class ABJ_404_Solution_PluginLogic {
             'menuLocation' => 'underSettings',
             'admin_notification_email' => '',
             'geo2ip' => '1',
+            'page_redirects_order_by' => 'url',
+            'page_redirects_order' => 'ASC',
+            'captured_order_by' => 'logshits',
+            'captured_order' => 'DESC',
         );
         
         return $options;
@@ -1085,7 +1090,7 @@ class ABJ_404_Solution_PluginLogic {
      * @global type $abj404dao
      * @return 
      */
-    function getTableOptions() {
+    function getTableOptions($pageBeingViewed = null) {
         global $abj404dao;
         $tableOptions = array();
         $options = $this->getOptions(true);
@@ -1101,18 +1106,58 @@ class ABJ_404_Solution_PluginLogic {
 
         if (array_key_exists('orderby', $_GET) && isset($_GET['orderby'])) {
             $tableOptions['orderby'] = esc_sql($_GET['orderby']);
+
+            if ($pageBeingViewed == 'abj404_redirects') {
+                $options['page_redirects_order_by'] = $tableOptions['orderby'];
+                update_option('abj404_settings', $options);
+                
+            } else if ($pageBeingViewed == 'abj404_captured') {
+                $options['captured_order_by'] = $tableOptions['orderby'];
+                update_option('abj404_settings', $options);
+            }
+            
         } else if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == "abj404_logs") {
             $tableOptions['orderby'] = "timestamp";
+            
         } else {
-            $tableOptions['orderby'] = "url";
+            
+            if ($pageBeingViewed == 'abj404_redirects') {
+                $tableOptions['orderby'] = $options['page_redirects_order_by'];
+                
+            } else if ($pageBeingViewed == 'abj404_captured') {
+                $tableOptions['orderby'] = $options['captured_order_by'];
+                
+            } else {
+                $tableOptions['orderby'] = "url";
+            }
         }
 
         if (array_key_exists('order', $_GET) && isset($_GET['order'])) {
             $tableOptions['order'] = esc_sql($_GET['order']);
+
+            if ($pageBeingViewed == 'abj404_redirects') {
+                $options['page_redirects_order'] = $tableOptions['order'];
+                update_option('abj404_settings', $options);
+                
+            } else if ($pageBeingViewed == 'abj404_captured') {
+                $options['captured_order'] = $tableOptions['order'];
+                update_option('abj404_settings', $options);
+            }
+            
         } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
             $tableOptions['order'] = "DESC";
+            
         } else {
-            $tableOptions['order'] = "ASC";
+            
+            if ($pageBeingViewed == 'abj404_redirects') {
+                $tableOptions['order'] = $options['page_redirects_order'];
+                
+            } else if ($pageBeingViewed == 'abj404_captured') {
+                $tableOptions['order'] = $options['captured_order'];
+                
+            } else {
+                $tableOptions['order'] = "ASC";
+            }
         }
 
         $tableOptions['paged'] = $abj404dao->getPostOrGetSanitize("paged", 1);

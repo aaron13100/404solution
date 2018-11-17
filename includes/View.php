@@ -526,7 +526,7 @@ class ABJ_404_Solution_View {
         $options = $abj404logic->getOptions();
 
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
-        $urlParts = parse_url(esc_url($_SERVER['REQUEST_URI']));
+        $urlParts = parse_url(urldecode(esc_url($_SERVER['REQUEST_URI'])));
         $currentURL = $urlParts['path'];
         if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
                 $options['menuLocation'] == 'settingsLevel') {
@@ -841,7 +841,7 @@ class ABJ_404_Solution_View {
         global $abj404logic;
         $sub = 'abj404_captured';
 
-        $tableOptions = $abj404logic->getTableOptions();
+        $tableOptions = $abj404logic->getTableOptions($sub);
 
         $this->echoTabFilters($sub, $tableOptions);
 
@@ -1070,7 +1070,7 @@ class ABJ_404_Solution_View {
         
         $sub = 'abj404_redirects';
 
-        $tableOptions = $abj404logic->getTableOptions();
+        $tableOptions = $abj404logic->getTableOptions($sub);
 
         // Sanitizing unchecked table options
         foreach ($tableOptions as $key => $value) {
@@ -1612,7 +1612,7 @@ class ABJ_404_Solution_View {
         global $abj404ip2Location;
         
         $sub = 'abj404_logs';
-        $tableOptions = $abj404logic->getTableOptions();
+        $tableOptions = $abj404logic->getTableOptions($sub);
         $options = $abj404logic->getOptions(true);
 
         // Sanitizing unchecked table options

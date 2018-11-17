@@ -302,17 +302,17 @@ class ABJ_404_Solution_SpellChecker {
      */
     function getPermalink($id, $rowType) {
         if ($rowType == 'pages') {
-            return get_permalink($id);
+            return urldecode(get_permalink($id));
 
         } else if ($rowType == 'tags') {
-            return get_tag_link($id);
+            return urldecode(get_tag_link($id));
 
         } else if ($rowType == 'categories') {
-            return get_category_link($id);
+            return urldecode(get_category_link($id));
 
         } else if ($rowType == 'image') {
             $src = wp_get_attachment_image_src( $id, "attached-image");
-            return $src[0];
+            return urldecode($src[0]);
 
         } else {
             throw Exception("Unknown row type ...");
@@ -383,6 +383,7 @@ class ABJ_404_Solution_SpellChecker {
                 throw Exception("Unknown row type ...");
             }
             $the_permalink = $this->getPermalink($id, $rowType);
+            $the_permalink = urldecode($the_permalink);
             
             $urlParts = parse_url($the_permalink);
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);

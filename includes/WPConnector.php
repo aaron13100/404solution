@@ -84,6 +84,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
         
         $urlRequest = esc_url(preg_replace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI'])));
+        $urlRequest = urldecode($urlRequest);
 
         // remove the home directory from the URL parts because it should not be considered for spell checking.
         $urlSlugOnly = $abj404logic->removeHomeDirectory($urlRequest);
@@ -98,6 +99,7 @@ class ABJ_404_Solution_WordPress_Connector {
         
         // hanlde the case where '///?gf_page=upload' is returned as the request URI.
         $urlToParse = $_SERVER['REQUEST_URI'];
+        $urlToParse = urldecode($urlToParse);
         if (!is_array(parse_url(esc_url($urlToParse)))) {
             if (substr($urlToParse, 0, 1) == "/") {
                 $urlToParse = home_url($wp->request) . substr($urlToParse, 1);
@@ -106,16 +108,16 @@ class ABJ_404_Solution_WordPress_Connector {
         $urlParts = parse_url(esc_url($urlToParse));
         if (!is_array($urlParts)) {
             $abj404logging->errorMessage('parse_url returned a non-array value. REQUEST_URI: "' . 
-                    $_SERVER['REQUEST_URI'] . '", parse_url result: "' . json_encode($urlParts) . '", ' .
+                    urldecode($_SERVER['REQUEST_URI']) . '", parse_url result: "' . json_encode($urlParts) . '", ' .
                     'urlToParse result: ' . $urlToParse);
             return;
         }
         $requestedURL = $urlParts['path'];
         $unsortedQueryParts = $abj404connector->getUnsortedQueryParts($urlParts);
         $requestedURL .= $abj404connector->sortQueryParts($urlParts);
-        // allow us to use foreign characters. and fix bug
+        // allow us to use foreign characters (like for Japanese) and fix bug
         // https://wordpress.org/support/topic/support-for-non-latin-letters-does-not-work/
-        $requestedURL = utf8_decode(urldecode($requestedURL));
+        $requestedURL = urldecode($requestedURL);
 
         // Get URL data if it's already in our database
         $redirect = $abj404dao->getActiveRedirectForURL($requestedURL);
@@ -133,7 +135,7 @@ class ABJ_404_Solution_WordPress_Connector {
             }
             
             $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $_SERVER['HTTP_USER_AGENT'] . ', REMOTE_ADDR: ' . 
-                    $remoteAddress . ', REQUEST_URI: ' . $_SERVER['REQUEST_URI']);
+                    $remoteAddress . ', REQUEST_URI: ' . urldecode($_SERVER['REQUEST_URI']));
             $abj404logging->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
                     wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " . "is_page(): " . is_page() .
                     " | is_feed(): " . is_feed() . " | is_trackback(): " . is_trackback() . " | is_preview(): " .
