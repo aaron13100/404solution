@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.10.2
+Version: 2.10.3
 Tested up to: 4.9
-Stable tag: 2.10.2
+Stable tag: 2.10.3
 
 Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -64,6 +64,10 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.10.3 (November 18, 2018) =
+* Improvement: Remember which column to order by on the page redirects and captured URLs pages (for vijilamarshal).
+* FIX: Support international characters like Japanese and Hebrew (for arnonalex) (second attempt).
 
 = Version 2.10.2 (October 17, 2018) =
 * FIX: Support international characters like Japanese and Hebrew (for arnonalex).

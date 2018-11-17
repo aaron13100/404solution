@@ -64,7 +64,7 @@ class ABJ_404_Solution_ShortCode {
         $content .= wp_kses_post($options['suggest_title']) . "\n";
         
         $currentSlug = $abj404logic->removeHomeDirectory(
-                esc_url(preg_replace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI']))));
+                esc_url(preg_replace('/\?.*/', '', urldecode(esc_url($_SERVER['REQUEST_URI'])))));
         $displayed = 0;
 
         foreach ($permalinkSuggestions as $idAndType => $linkScore) {

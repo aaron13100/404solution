@@ -71,6 +71,10 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Changelog ##
 
+## Version 2.10.3 (November 18, 2018) ##
+* Improvement: Remember which column to order by on the page redirects and captured URLs pages (for vijilamarshal).
+* FIX: Support international characters like Japanese and Hebrew (for arnonalex) (second attempt).
+
 ## Version 2.10.2 (October 17, 2018) ##
 * FIX: Support international characters like Japanese and Hebrew (for arnonalex).
 

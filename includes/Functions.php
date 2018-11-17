@@ -69,6 +69,10 @@ class ABJ_404_Solution_Functions {
             $abj404logging->errorMessage("Unrecognized permalink type: " . 
                     wp_kses_post(json_encode($permalink)));
         }
+        
+        // decode anything that might be encoded to support utf8 characters
+        $permalink['link'] = urldecode($permalink['link']);
+        $permalink['title'] = urldecode($permalink['title']);
 
         return $permalink;
     }
