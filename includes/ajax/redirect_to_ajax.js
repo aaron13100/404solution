@@ -29,7 +29,7 @@ jQuery(document).ready(function($) {
         $( "#redirect_to_user_field" ).catcomplete({
                 source: url,
                 delay: 500,
-                minLength: 1,
+                minLength: 0,
                 select: function(event, ui) {
                     event.preventDefault();
                     $("#redirect_to_user_field").val(ui.item.label);
@@ -37,10 +37,8 @@ jQuery(document).ready(function($) {
                     // TODO change redirect_to_user_field_explanation to say "page selected" or "external URL entered"
                 },
                 focus: function(event, ui) {
+                    // don't change the contents of the textbox just by highlighting something.
                     event.preventDefault();
-                    $("#redirect_to_user_field").val(ui.item.label);
-                    $("#redirect_to_data_field").val(ui.item.value);
-                    // TODO change redirect_to_user_field_explanation to say "page selected" or "external URL entered"
                 }
 
         });	
