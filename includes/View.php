@@ -678,7 +678,10 @@ class ABJ_404_Solution_View {
         echo '<select style="max-width: 75%;" id="dest" name="dest">';
         echo $this->echoRedirectDestinationOptionsDefaults($redirect['type']);
         
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', true);
+        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('');
+        // order the results. this also sets the page depth (for child pages).
+        $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes);
+        
         echo $this->echoRedirectDestinationOptionsOthers($redirect['final_dest'] . '|' . $redirect['type'], 
                 $rowsOtherTypes);
         
@@ -1323,7 +1326,10 @@ class ABJ_404_Solution_View {
         }
         
         $selectOptionsGoHere = $this->echoRedirectDestinationOptionsDefaults('');
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', true);
+        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('');
+        // order the results. this also sets the page depth (for child pages).
+        $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes);
+        
         $selectOptionsGoHere .= $this->echoRedirectDestinationOptionsOthers('', $rowsOtherTypes);
         $selectOptionsGoHere .= $this->echoRedirectDestinationOptionsCatsTags('');
         
@@ -1401,6 +1407,7 @@ class ABJ_404_Solution_View {
      */
     function getAdminOptionsPageAutoRedirects($options) {
         global $abj404dao;
+        global $abj404logic;
         
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         $content = "";
@@ -1424,7 +1431,10 @@ class ABJ_404_Solution_View {
         
         $content .= "\n" . '</optgroup>' . "\n";
 
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', true);
+        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('');
+        // order the results. this also sets the page depth (for child pages).
+        $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes);
+        
         $content .= $this->echoRedirectDestinationOptionsOthers($userSelectedDefault404Page, 
                 $rowsOtherTypes);
         

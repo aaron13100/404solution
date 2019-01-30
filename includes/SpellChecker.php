@@ -74,7 +74,7 @@ class ABJ_404_Solution_SpellChecker {
         
         $exploded = preg_split('@/@', $requestedURL, -1, PREG_SPLIT_NO_EMPTY);
         $postSlug = end($exploded);
-        $postsBySlugRows = $abj404dao->getPublishedPagesAndPostsIDs($postSlug, false);
+        $postsBySlugRows = $abj404dao->getPublishedPagesAndPostsIDs($postSlug);
         if (count($postsBySlugRows) == 1) {
             $post = reset($postsBySlugRows);
             $permalink['id'] = $post->id;
@@ -194,7 +194,7 @@ class ABJ_404_Solution_SpellChecker {
             
         } else {
             // match based on the slug.
-            $rows = $abj404dao->getPublishedPagesAndPostsIDs('', false);
+            $rows = $abj404dao->getPublishedPagesAndPostsIDs('');
         }
         // pre-filter some pages based on the min and max possible levenshtein distances.
         $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
