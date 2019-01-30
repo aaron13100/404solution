@@ -2,7 +2,7 @@
 
 // turn on debug for localhost etc
 $whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
-if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
+if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -76,6 +76,7 @@ $abj404logging = new ABJ_404_Solution_Logging();
 require_once ABJ404_PATH . "includes/Functions.php";
 require_once ABJ404_PATH . "includes/DataAccess.php";
 require_once ABJ404_PATH . "includes/PluginLogic.php";
+require_once ABJ404_PATH . "includes/ajax/Ajax_Php.php";
 require_once ABJ404_PATH . "includes/WPConnector.php";
 require_once ABJ404_PATH . "includes/SpellChecker.php";
 require_once ABJ404_PATH . "includes/ErrorHandler.php";
@@ -99,6 +100,7 @@ $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
 $abj404connector = new ABJ_404_Solution_WordPress_Connector();
 $abj404shortCode = new ABJ_404_Solution_ShortCode();
 $abj404ip2Location = new ABJ_404_Solution_IP2Location();
+$abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
 
 /**
  * Load the text domain for translation of the plugin.

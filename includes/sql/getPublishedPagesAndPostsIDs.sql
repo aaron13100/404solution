@@ -37,6 +37,11 @@ where cast(wp_posts.post_status as binary) = cast('publish' as binary)
       {specifiedSlug}
 /*  */
 
+/* only include this line if a search term has been specified. e.g.
+      and lower(post_name) like 'searchTerm'
+      {searchTerm}
+/*  */
+
 and ( usefulterms.grouped_terms is null or 
 	  usefulterms.grouped_terms not like '%exclude-from-search%'
 	  or usefulterms.grouped_terms not like '%exclude-from-catalog%'
