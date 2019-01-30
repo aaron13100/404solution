@@ -1370,28 +1370,62 @@ class ABJ_404_Solution_PluginLogic {
      */    
     function orderPageResults($pages, $includeMissingParentPages = false) {
         global $abj404logging;
+        global $abj404dao;
         
         // sort by type then title.
         usort($pages, array($this, "sortByTypeThenTitle"));
+        // run this to see if there are any child pages left.
+        $orderedPages = $this->setDepthAndAddChildren($pages);
         
         // The pages are now sorted. We now apply the depth AND we make sure the child pages
         // always immediately follow the parent pages.
 
-        // run this to see if there are any child pages left.
-        $orderedPages = $this->setDepthAndAddChildren($pages);
         // -------------
-        
         if ($includeMissingParentPages && (count($orderedPages) != count($pages))) {
+            $iterations = 0;
             
+            do {
+                $idsOfMissingParentPages = $this->getMissingParentPageIDs($pages);
+                $idCountBefore = count($idsOfMissingParentPages);
+                $iterations = $iterations + 1;
+                
+                // get the parents of the unused pages.
+                foreach ($idsOfMissingParentPages as $pageID) {
+                    $postParent = get_post($pageID);
+                    if ($postParent == null) {
+                        continue;
+                    }
+                    $slug = $postParent->post_name;
+                    $parentPage = $abj404dao->getPublishedPagesAndPostsIDs($slug);
+                    if (count($parentPage != 0)) {
+                        $pages[] = $parentPage[0];
+                    }
+                    $abj404logging->debugMessage('ADDED: ' . json_encode($parentPage));
+                }
+                
+                if ($iterations > 10) {
+                    break;
+                }
+                
+                $idsOfMissingParentPages = $this->getMissingParentPageIDs($pages);
+                
+                // loop until we can't find any more parents. This may happen if a sub-page is published
+                // and the parent page is not published.
+            } while ($idCountBefore != count($idsOfMissingParentPages));
+            
+            // sort everything again
+            usort($pages, array($this, "sortByTypeThenTitle"));
+            $abj404logging->debugMessage("DATE 10: " . microtime(true)); // TODO REMOVE
+            $orderedPages = $this->setDepthAndAddChildren($pages);
+            $abj404logging->debugMessage("DATE 11: " . microtime(true)); // TODO REMOVE
         }
-        
         
         // if there are child pages left over then there's an issue. it means there's a child page that was
         // returned but the parent for that child was not returned. so we don't have any place to display
         // the child page. this could be because the parent page is not "published"
         if ($abj404logging->isDebug()) {
             if (count($orderedPages) != count($pages)) {
-                $unusedPages = $this->getUnusedPages($pages, $orderedPages);
+                $unusedPages = array_udiff($pages, $orderedPages, array($this, 'compareByID'));
                 $abj404logging->debugMessage("There was an issue finding the parent pages for some child pages. " .
                         "These pages' parents may not have a 'published' status. Pages: " . 
                         wp_kses_post(json_encode($unusedPages)));
@@ -1401,29 +1435,45 @@ class ABJ_404_Solution_PluginLogic {
         return $orderedPages;
     }
     
-    function getUnusedPages($allPages, $usedPages) {
-        $unusedPages = array();
+    /** Returns a list of parent IDs that can't be found in the passed in pages.
+     * @param type $pages
+     */
+    function getMissingParentPageIDs($pages) {
+        $listOfIDs = array();
+        $missingParentPageIDs = array();
         
-        // look at all pages
-        foreach ($allPages as $page) {
-            
-            // if the page exists in the used pages list then don't add it to our list.
-            $found = false;
-            foreach ($usedPages as $usedPage) {
-                
-                if ($usedPage->id == $page->id) {
-                    $found = true;
-                    break;
-                }
+        foreach ($pages as $page) {
+            $listOfIDs[] = $page->id;
+        }
+        
+        foreach ($pages as $page) {
+            if ($page->post_parent == 0) {
+                continue;
             }
-            if ($found) {
+            if (in_array($page->post_parent, $listOfIDs)) {
                 continue;
             }
             
-            $unusedPages[] = $page;
+            $missingParentPageIDs[] = $page->post_parent;
         }
-        
-        return $unusedPages;
+
+        $missingParentPageIDs = array_unique($missingParentPageIDs);
+        return $missingParentPageIDs;
+    }
+
+    /** Compare pages based on their ID.
+     * @param type $a
+     * @param type $b
+     * @return int
+     */
+    function compareByID($a, $b) {
+        if ($a->id < $b->id) {
+            return -1;
+        }
+        if ($b->id < $a->id) {
+            return 1;
+        }
+        return 0;
     }
     
     /** Set the depth of each page and add pages under their parents by rebuilding the list
