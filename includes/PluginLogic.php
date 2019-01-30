@@ -1400,7 +1400,6 @@ class ABJ_404_Solution_PluginLogic {
                     if (count($parentPage != 0)) {
                         $pages[] = $parentPage[0];
                     }
-                    $abj404logging->debugMessage('ADDED: ' . json_encode($parentPage));
                 }
                 
                 if ($iterations > 10) {
@@ -1415,9 +1414,7 @@ class ABJ_404_Solution_PluginLogic {
             
             // sort everything again
             usort($pages, array($this, "sortByTypeThenTitle"));
-            $abj404logging->debugMessage("DATE 10: " . microtime(true)); // TODO REMOVE
             $orderedPages = $this->setDepthAndAddChildren($pages);
-            $abj404logging->debugMessage("DATE 11: " . microtime(true)); // TODO REMOVE
         }
         
         // if there are child pages left over then there's an issue. it means there's a child page that was

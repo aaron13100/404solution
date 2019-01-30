@@ -30,16 +30,12 @@ class ABJ_404_Solution_Ajax_Php {
         */
         
         // add the "Home Page" destination.
-        $abj404logging->debugMessage("DATE 01: " . (int)round(microtime(true) * 1000)); // TODO REMOVE
         $specialPages = $abj404AjaxPhp->getDefaultRedirectDestinations();
         // query to get the posts.
-        $abj404logging->debugMessage("DATE 02: " . (int)round(microtime(true) * 1000)); // TODO REMOVE
         $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', $term);
         // order the results. this also sets the page depth (for child pages).
-        $abj404logging->debugMessage("DATE 03: " . (int)round(microtime(true) * 1000)); // TODO REMOVE
         $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes, true);
         
-        $abj404logging->debugMessage("DATE 04: " . (int)round(microtime(true) * 1000)); // TODO REMOVE
         $publishedPosts = $abj404AjaxPhp->formatRedirectDestinations($rowsOtherTypes);
         /*
         $cats = $abj404dao->getPublishedCategories();
@@ -65,7 +61,6 @@ class ABJ_404_Solution_Ajax_Php {
         }
     	*/
         
-        $abj404logging->debugMessage("DATE 05: " . (int)round(microtime(true) * 1000)); // TODO REMOVE
         $suggestions = array_merge($specialPages, $publishedPosts);
     	echo json_encode($suggestions);
         

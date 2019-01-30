@@ -57,14 +57,20 @@
  
   
 <style>
-  .ui-autocomplete-category {
-    display: flex;
-    font-weight: bold;
-    padding: .2em .4em;
-    margin: .8em 0 .2em;
-    line-height: 1.5;
-  }
-  </style>
+    .ui-autocomplete {
+        max-height: 400px;
+        overflow-y: auto;
+        /* prevent horizontal scrollbar */
+        overflow-x: hidden;
+    }
+    .ui-autocomplete-category {
+        display: flex;
+        font-weight: bold;
+        padding: .2em .4em;
+        margin: .8em 0 .2em;
+        line-height: 1.5;
+    }
+</style>
 
 <strong><label for="dest">{Redirect to}:</label></strong>
 <select style="max-width: 75%;" id="dest" name="dest">
