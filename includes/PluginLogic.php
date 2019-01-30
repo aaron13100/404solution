@@ -1368,7 +1368,7 @@ class ABJ_404_Solution_PluginLogic {
      * Move the children to be underneath the parents.
      * @param type $pages
      */    
-    function orderPageResults($pages) {
+    function orderPageResults($pages, $includeMissingParentPages = false) {
         global $abj404logging;
         
         // sort by type then title.
@@ -1378,9 +1378,61 @@ class ABJ_404_Solution_PluginLogic {
         // always immediately follow the parent pages.
 
         // run this to see if there are any child pages left.
-        // -----------
+        $orderedPages = $this->setDepthAndAddChildren($pages);
+        // -------------
+        
+        if ($includeMissingParentPages && (count($orderedPages) != count($pages))) {
+            
+        }
         
         
+        // if there are child pages left over then there's an issue. it means there's a child page that was
+        // returned but the parent for that child was not returned. so we don't have any place to display
+        // the child page. this could be because the parent page is not "published"
+        if ($abj404logging->isDebug()) {
+            if (count($orderedPages) != count($pages)) {
+                $unusedPages = $this->getUnusedPages($pages, $orderedPages);
+                $abj404logging->debugMessage("There was an issue finding the parent pages for some child pages. " .
+                        "These pages' parents may not have a 'published' status. Pages: " . 
+                        wp_kses_post(json_encode($unusedPages)));
+            }
+        }
+        
+        return $orderedPages;
+    }
+    
+    function getUnusedPages($allPages, $usedPages) {
+        $unusedPages = array();
+        
+        // look at all pages
+        foreach ($allPages as $page) {
+            
+            // if the page exists in the used pages list then don't add it to our list.
+            $found = false;
+            foreach ($usedPages as $usedPage) {
+                
+                if ($usedPage->id == $page->id) {
+                    $found = true;
+                    break;
+                }
+            }
+            if ($found) {
+                continue;
+            }
+            
+            $unusedPages[] = $page;
+        }
+        
+        return $unusedPages;
+    }
+    
+    /** Set the depth of each page and add pages under their parents by rebuilding the list
+     * every time we iterate through it and adding the child pages at the right moment every time
+     * the list is built.
+     * @param type $pages
+     * @return type
+     */
+    function setDepthAndAddChildren($pages) {
         // find all child pages (pages that have parents).
         $childPages = $this->findChildPages($pages);
         
@@ -1425,16 +1477,6 @@ class ABJ_404_Solution_PluginLogic {
             $oldChildPageCount = count($childPages);
             // stop the loop once there are no more children to add.
         } while (count($childPages) > 0);
-        // -------------
-        
-        
-        // if there are child pages left over then there's an issue. it means there's a child page that was
-        // returned but the parent for that child was not returned. so we don't have any place to display
-        // the child page. this could be because the parent page is not "published"
-        if (count($childPages) > 0) {
-            $abj404logging->debugMessage("There was an issue finding the parent pages for some child pages. " .
-                    "These pages' parents may not have a 'published' status. Pages: " . wp_kses_post(json_encode($childPages)));
-        }
         
         return $orderedPages;
     }

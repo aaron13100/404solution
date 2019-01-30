@@ -1033,7 +1033,7 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace('{specifiedSlug}', $specifiedSlug, $query);
         $query = str_replace('{searchTerm}', $searchTerm, $query);
         
-        $abj404logging->infoMessage("!! Query: " . $query);
+        // $abj404logging->infoMessage("!! Query: " . $query); // TODO REMOVE
         
         $rows = $wpdb->get_results($query);
         // check for errors
