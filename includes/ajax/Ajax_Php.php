@@ -34,7 +34,7 @@ class ABJ_404_Solution_Ajax_Php {
         // query to get the posts.
         $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', $term);
         // order the results. this also sets the page depth (for child pages).
-        $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes);
+        $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes, true);
         
         $publishedPosts = $abj404AjaxPhp->formatRedirectDestinations($rowsOtherTypes);
         /*
