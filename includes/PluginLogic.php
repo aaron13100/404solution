@@ -1365,6 +1365,7 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /** Order pages and set the page depth for child pages.
+     * Move the children to be underneath the parents.
      * @param type $pages
      */    
     function orderPageResults($pages) {
@@ -1373,7 +1374,12 @@ class ABJ_404_Solution_PluginLogic {
         // sort by type then title.
         usort($pages, array($this, "sortByTypeThenTitle"));
         
-        // move the children to be underneath the parents.
+        // The pages are now sorted. We now apply the depth AND we make sure the child pages
+        // always immediately follow the parent pages.
+
+        // run this to see if there are any child pages left.
+        // -----------
+        
         
         // find all child pages (pages that have parents).
         $childPages = $this->findChildPages($pages);
@@ -1382,6 +1388,8 @@ class ABJ_404_Solution_PluginLogic {
         $mainPages = $this->findAllMainPages($pages);
         
         $oldChildPageCount = -1;
+        
+        // this do{} loop is here because some child pages have children.
         do {
             // add every page to a new list, while looking for parents.
             $orderedPages = array();
@@ -1407,6 +1415,7 @@ class ABJ_404_Solution_PluginLogic {
             
             // the new list becomes the list that we will iterate over next time. 
             // this prepares us for the next iteration and for child pages with a depth greater than 1.
+            // (for child pages that have children).
             $mainPages = $orderedPages;
             
             // if the count has not changed then there's no point in looping again.
@@ -1416,7 +1425,9 @@ class ABJ_404_Solution_PluginLogic {
             $oldChildPageCount = count($childPages);
             // stop the loop once there are no more children to add.
         } while (count($childPages) > 0);
-
+        // -------------
+        
+        
         // if there are child pages left over then there's an issue. it means there's a child page that was
         // returned but the parent for that child was not returned. so we don't have any place to display
         // the child page. this could be because the parent page is not "published"

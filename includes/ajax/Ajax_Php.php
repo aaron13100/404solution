@@ -14,6 +14,7 @@ class ABJ_404_Solution_Ajax_Php {
     /** Find pages to redirect to that match a search term. */
     static function echoRedirectToPages() {
         global $abj404logging;
+        global $abj404logic;
         global $abj404AjaxPhp;
         global $abj404dao;
         
@@ -31,7 +32,10 @@ class ABJ_404_Solution_Ajax_Php {
         // add the "Home Page" destination.
         $specialPages = $abj404AjaxPhp->getDefaultRedirectDestinations();
         // query to get the posts.
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', true, $term);
+        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', $term);
+        // order the results. this also sets the page depth (for child pages).
+        $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes);
+        
         $publishedPosts = $abj404AjaxPhp->formatRedirectDestinations($rowsOtherTypes);
         /*
         $cats = $abj404dao->getPublishedCategories();
@@ -60,8 +64,10 @@ class ABJ_404_Solution_Ajax_Php {
         $suggestions = array_merge($specialPages, $publishedPosts);
     	echo json_encode($suggestions);
         
-        $abj404logging->debugMessage("echoRedirectToPages() suggestions found for '" . 
+        /* $abj404logging->debugMessage("echoRedirectToPages() suggestions found for '" . 
                 esc_html($term) . "': " . sizeof($suggestions) . ' : ' . json_encode($suggestions));
+         * 
+         */
         
     	exit();
     }
