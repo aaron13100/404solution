@@ -2,7 +2,7 @@
 
 // turn on debug for localhost etc
 $whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
-if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
+if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -23,8 +23,35 @@ class ABJ_404_Solution_WordPress_Connector {
 
         add_action('admin_notices', 'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
         add_action('admin_menu', 'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
-        
+
+        /** TEST ajax */
+        add_action( 'admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts' );
+        add_action( 'wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
+        add_action( 'wp_ajax_nopriv_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
+
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
+    }
+    
+    /** TEST ajax */
+    static function add_scripts() {
+        wp_enqueue_script( 'jquery' );
+	wp_enqueue_script( 'jquery-ui-autocomplete' );
+	wp_register_style( 'jquery-ui-styles','http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css' );
+	wp_enqueue_style( 'jquery-ui-styles' );
+
+        wp_register_script( 'redirect_to_ajax', plugin_dir_url(__FILE__) . '/ajax/redirect_to_ajax.js', array( 'jquery', 'jquery-ui-autocomplete' ), '1.0', false );
+        // Localize the script with new data
+        $translation_array = array(
+            'type_a_page_name' => __( '(Type a page name or an external URL)', '404-solution' ),
+            'a_page_has_been_selected' => __( '(A page has been selected.)', '404-solution' ),
+            'an_external_url_will_be_used' => __( '(An external URL will be used.)', '404-solution' )
+        );
+        wp_localize_script( 'redirect_to_ajax', 'abj404localization', $translation_array );        
+
+        // this allows us to refer to the admin-ajax.php URL in JavaScript.
+        wp_localize_script('redirect_to_ajax', 'MyAutoComplete', array('url' => admin_url('admin-ajax.php')));
+        
+        wp_enqueue_script( 'redirect_to_ajax' );
     }
 
     /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).

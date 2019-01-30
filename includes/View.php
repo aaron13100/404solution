@@ -2,7 +2,7 @@
 
 // turn on debug for localhost etc
 $whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
-if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
+if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -683,9 +683,8 @@ class ABJ_404_Solution_View {
                 $rowsOtherTypes);
         
         echo $this->echoRedirectDestinationOptionsCatsTags($redirect['final_dest'] . '|' . $redirect['type']);
-        
-
         echo "</select><BR/>";
+        
         $final = "";
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
             $final = $redirect['final_dest'];
@@ -1407,37 +1406,36 @@ class ABJ_404_Solution_View {
         $content = "";
 
         $selected = "";
-        $content .= "<label for=\"dest404page\">" . __('Redirect all unhandled 404s to', '404-solution') . ":</label> <select id=\"dest404page\" name=\"dest404page\">";
+        $content .= "\n<label for=\"dest404page\">" . __('Redirect all unhandled 404s to', '404-solution') . ":</label> <select id=\"dest404page\" name=\"dest404page\">";
 
         $content .= "\n" . '<optgroup label="' . __('Special', '404-solution') . '">' . "\n";
         
-        $userSelected = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
+        $userSelectedDefault404Page = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
                 $options['dest404page'] : null);
         $dest404page = ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED;
-        $selected = $userSelected == $dest404page ? "selected" : "";
+        $selected = $userSelectedDefault404Page == $dest404page ? "selected" : "";
         $content .= '<option value="' . ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED . '"' . $selected . ">" . 
                 __('(Default 404 Page)', '404-solution') . "</option>";
 
         $destHomepage = ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME;
-        $selected = $userSelected == $destHomepage ? "selected" : "";
+        $selected = $userSelectedDefault404Page == $destHomepage ? "selected" : "";
         $content .= '<option value="' . ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME . '"' . 
                 $selected . ">" . __('(Home Page)', '404-solution') . "</option>";
         
         $content .= "\n" . '</optgroup>' . "\n";
 
         $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', true);
-        $content .= $this->echoRedirectDestinationOptionsOthers($userSelected, 
+        $content .= $this->echoRedirectDestinationOptionsOthers($userSelectedDefault404Page, 
                 $rowsOtherTypes);
         
-        $content .= $this->echoRedirectDestinationOptionsCatsTags($userSelected);
+        $content .= $this->echoRedirectDestinationOptionsCatsTags($userSelectedDefault404Page);
 
         $content .= "</select><BR/>";
-
+        
         $selectedAutoRedirects = "";
         if ($options['auto_redirects'] == '1') {
             $selectedAutoRedirects = " checked";
         }
-
         $content .= "<p><label for=\"auto_redirects\">" . __('Create automatic redirects', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_redirects\" id=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><BR/>";
         $content .= $spaces . __('Automatically creates redirects based on best possible suggested page.', '404-solution') . "</p>";
 

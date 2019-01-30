@@ -2,7 +2,7 @@
 
 // turn on debug for localhost etc
 $whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
-if (in_array($_SERVER['SERVER_NAME'], $whitelist) && is_admin()) {
+if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -993,9 +993,10 @@ class ABJ_404_Solution_DataAccess {
      * @global type $abj404logging
      * @param type $slug only get results for this slug. (empty means all posts)
      * @param type $orderTheResults use true for displaying data to users, otherwise use false.
+     * @param type $searchTerm use this string in a LIKE on the sql.
      * @return type
      */
-    function getPublishedPagesAndPostsIDs($slug, $orderTheResults) {
+    function getPublishedPagesAndPostsIDs($slug, $orderTheResults, $searchTerm = '') {
         global $wpdb;
         global $abj404logic;
         global $abj404logging;
@@ -1017,6 +1018,13 @@ class ABJ_404_Solution_DataAccess {
             $specifiedSlug = '';
         }
         
+        if ($searchTerm != "") {
+            $searchTerm = " */ and cast(lower(wp_posts.post_title) as binary) like "
+                    . "cast('%" . esc_sql(strtolower($searchTerm)) . "%' as binary) \n ";
+        } else {
+            $searchTerm = '';
+        }
+        
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
         $query = str_replace('{wp_posts}', $wpdb->posts, $query);
@@ -1024,6 +1032,9 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace('{wp_terms}', $wpdb->terms, $query);
         $query = str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
         $query = str_replace('{specifiedSlug}', $specifiedSlug, $query);
+        $query = str_replace('{searchTerm}', $searchTerm, $query);
+        
+        // TODO: uncomment: $abj404logging->infoMessage("Query: " . $query);
         
         $rows = $wpdb->get_results($query);
         // check for errors

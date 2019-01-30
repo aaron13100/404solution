@@ -53,11 +53,39 @@
 
 
 <!-- - - - - - - - - - - - - - - - - - - - send to this URL -->
+ <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+ 
+  
+<style>
+  .ui-autocomplete-category {
+    display: flex;
+    font-weight: bold;
+    padding: .2em .4em;
+    margin: .8em 0 .2em;
+    line-height: 1.5;
+  }
+  </style>
+
+<!-- * * * * * * * -->  
+  
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  
+  <label for="search">Search: </label>
+<input id="search">
+
+<!-- * * * * * * * * -->
+
 <strong><label for="dest">{Redirect to}:</label></strong>
 <select style="max-width: 75%;" id="dest" name="dest">
 {selectOptionsGoHere}
 </select>
 <BR/>
+<input id="redirect_to_user_field" placeholder="{(Type a page name or an external URL)}" style="width: 50%;" type="text" name="redirect_to_user_field" value=""> 
+<span id="redirect_to_user_field_explanation" style="font-style: italic;">{(Type a page name or an external URL)}</span>
+<input id="redirect_to_data_field" style="width: 200px;" type="hidden" name="redirect_to_data_field" > 
+<BR/>
+
 
 <!-- - - - - - - - - - - - - - - - - - - - or send to this URL -->
 <strong><label for="external">{External URL}:</label></strong>
@@ -73,5 +101,6 @@
 
 <BR/>
 <input type="submit" value="{Add Redirect}" class="button-secondary">
+
 
 </form>
