@@ -764,6 +764,7 @@ class ABJ_404_Solution_View {
 
     function echoRedirectDestinationOptionsCatsTags($dest) {
         global $abj404dao;
+        global $abj404logic;
         $content = "";
         $content .= "\n" . '<optgroup label="Categories">' . "\n";
         
@@ -774,14 +775,6 @@ class ABJ_404_Solution_View {
         foreach ($cats as $cat) {
             $taxonomy = $cat->taxonomy;
             if ($taxonomy != 'category') {
-                // for custom categories we create a Map<String, List> where the key is the name
-                // of the taxonomy and the list holds the rows that have the category info.
-                if (!array_key_exists($taxonomy, $customTagsEtc) || $customTagsEtc[$taxonomy] == null) {
-                    $customTagsEtc[$taxonomy] = array($cat);
-                } else {
-                    array_push($customTagsEtc[$taxonomy], $cat);
-                }
-                
                 continue;
             }
             
@@ -796,6 +789,7 @@ class ABJ_404_Solution_View {
             $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Category', '404-solution') . ": " . $theTitle . "</option>";
         }
         $content .= "\n" . '</optgroup>' . "\n";
+        $customTagsEtc = $abj404logic->getMapOfCustomCategories($cats);
 
         // tags ---------------------------------------------
         $content .= "\n" . '<optgroup label="Tags">' . "\n";

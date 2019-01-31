@@ -31,43 +31,21 @@ class ABJ_404_Solution_Ajax_Php {
         
         // add the "Home Page" destination.
         $specialPages = $abj404AjaxPhp->getDefaultRedirectDestinations();
-        // query to get the posts.
+        
+        // query to get the posts and pages.
         $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', $term);
         // order the results. this also sets the page depth (for child pages).
         $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes, true);
-        
         $publishedPosts = $abj404AjaxPhp->formatRedirectDestinations($rowsOtherTypes);
-        /*
+        
         $cats = $abj404dao->getPublishedCategories();
-        foreach ($cats as $cat) {
-            $taxonomy = $cat->taxonomy;
-            if ($taxonomy != 'category') {
-                // for custom categories we create a Map<String, List> where the key is the name
-                // of the taxonomy and the list holds the rows that have the category info.
-                if (!array_key_exists($taxonomy, $customTagsEtc) || $customTagsEtc[$taxonomy] == null) {
-                    $customTagsEtc[$taxonomy] = array($cat);
-                } else {
-                    array_push($customTagsEtc[$taxonomy], $cat);
-                }
-                
-                continue;
-            }
-            $suggestion = array();
-            $suggestion['label'] = $cat->name;
-            $suggestion['value'] = $cat->term_id . "|" . ABJ404_TYPE_CAT;
-            $suggestion['category'] = __('Category', '404-solution');
-
-            $suggestions[] = $suggestion;
-        }
-    	*/
+        $categoryOptions = $abj404AjaxPhp->formatCategoryDestinations($cats);
         
-        $suggestions = array_merge($specialPages, $publishedPosts);
+        //$customCategories = $abj404logic->getMapOfCustomCategories($cats);
+        //$abj404AjaxPhp->formatCategoryDestinations($cats);
+        
+        $suggestions = array_merge($specialPages, $publishedPosts, $categoryOptions);
     	echo json_encode($suggestions);
-        
-        /* $abj404logging->debugMessage("echoRedirectToPages() suggestions found for '" . 
-                esc_html($term) . "': " . sizeof($suggestions) . ' : ' . json_encode($suggestions));
-         * 
-         */
         
     	exit();
     }
@@ -82,6 +60,25 @@ class ABJ_404_Solution_Ajax_Php {
         
         $suggestion[] = $newSuggestion;
         return $suggestion;
+    }
+    
+    function formatCategoryDestinations($rows) {
+        $suggestions = array();
+        
+        foreach ($rows as $row) {
+            if ($row->taxonomy != 'category') {
+                continue;
+            }
+            
+            $suggestion = array();
+            $suggestion['label'] = $row->name;
+            $suggestion['category'] = __('Categories', '404-solution');
+            $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_CAT;
+            
+            $suggestions[] = $suggestion;
+        }
+        
+        return $suggestions;
     }
     
     function formatRedirectDestinations($rows) {

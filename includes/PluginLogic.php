@@ -1432,6 +1432,31 @@ class ABJ_404_Solution_PluginLogic {
         return $orderedPages;
     }
     
+    /** For custom categories we create a Map<String, List> where the key is the name 
+     * of the taxonomy and the list holds the rows that have the category info.
+     * @param type $categoryRows
+     * @return type
+     */
+    function getMapOfCustomCategories($categoryRows) {
+        $customTagsEtc = array();
+        
+        foreach ($categoryRows as $cat) {
+            $taxonomy = $cat->taxonomy;
+            if ($taxonomy == 'category') {
+                continue;
+            }
+            // for custom categories we create a Map<String, List> where the key is the name
+            // of the taxonomy and the list holds the rows that have the category info.
+            if (!array_key_exists($taxonomy, $customTagsEtc) || $customTagsEtc[$taxonomy] == null) {
+                $customTagsEtc[$taxonomy] = array($cat);
+            } else {
+                array_push($customTagsEtc[$taxonomy], $cat);
+            }
+            
+        }
+        return $customTagsEtc;
+    }
+    
     /** Returns a list of parent IDs that can't be found in the passed in pages.
      * @param type $pages
      */
