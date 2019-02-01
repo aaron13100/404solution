@@ -41,25 +41,30 @@ class ABJ_404_Solution_Ajax_Php {
         $cats = $abj404dao->getPublishedCategories();
         $categoryOptions = $abj404AjaxPhp->formatCategoryDestinations($cats);
         
-        //$customCategories = $abj404logic->getMapOfCustomCategories($cats);
-        //$abj404AjaxPhp->formatCategoryDestinations($cats);
+        $tags = $abj404dao->getPublishedTags();
+        $tagOptions = $abj404AjaxPhp->formatTagDestinations($tags);
         
-        $suggestions = array_merge($specialPages, $publishedPosts, $categoryOptions);
+        $customCategoriesMap = $abj404logic->getMapOfCustomCategories($cats);
+        $customCategoryOptions = $abj404AjaxPhp->formatCustomCategoryDestinations($customCategoriesMap);
+        
+        $suggestions = array_merge($specialPages, $publishedPosts, $categoryOptions, $tagOptions, 
+                $customCategoryOptions);
     	echo json_encode($suggestions);
         
     	exit();
     }
     
     function getDefaultRedirectDestinations() {
+        $arrayWrapper = array();
         $suggestion = array();
-        $newSuggestion = array();
         
-        $newSuggestion['category'] = __('Special', '404-solution');
-        $newSuggestion['label'] = __('Home Page', '404-solution');
-        $newSuggestion['value'] = ABJ404_TYPE_HOME;
+        $suggestion['category'] = __('Special', '404-solution');
+        $suggestion['label'] = __('Home Page', '404-solution');
+        $suggestion['value'] = ABJ404_TYPE_HOME;
+        $suggestion['depth'] = 'indent-depth-0';
         
-        $suggestion[] = $newSuggestion;
-        return $suggestion;
+        $arrayWrapper[] = $suggestion;
+        return $arrayWrapper;
     }
     
     function formatCategoryDestinations($rows) {
@@ -74,8 +79,45 @@ class ABJ_404_Solution_Ajax_Php {
             $suggestion['label'] = $row->name;
             $suggestion['category'] = __('Categories', '404-solution');
             $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_CAT;
+            $suggestion['depth'] = 'indent-depth-0';
             
             $suggestions[] = $suggestion;
+        }
+        
+        return $suggestions;
+    }
+    
+    function formatTagDestinations($rows) {
+        $suggestions = array();
+        
+        foreach ($rows as $row) {
+            $suggestion = array();
+            $suggestion['label'] = $row->name;
+            $suggestion['category'] = __('Tags', '404-solution');
+            $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_TAG;
+            $suggestion['depth'] = 'indent-depth-0';
+            
+            $suggestions[] = $suggestion;
+        }
+        
+        return $suggestions;
+    }
+    
+    function formatCustomCategoryDestinations($customCategoriesMap) {
+        $suggestions = array();
+        
+        foreach ($customCategoriesMap as $taxonomy => $rows) {
+        
+            foreach ($rows as $row) {
+
+                $suggestion = array();
+                $suggestion['label'] = $row->name;
+                $suggestion['category'] = $taxonomy;
+                $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_CAT;
+                $suggestion['depth'] = 'indent-depth-0';
+
+                $suggestions[] = $suggestion;
+            }
         }
         
         return $suggestions;
@@ -89,41 +131,12 @@ class ABJ_404_Solution_Ajax_Php {
             $suggestion['label'] = $row->post_title;
             $suggestion['category'] = ucwords($row->post_type);
             $suggestion['value'] = $row->id . "|" . ABJ404_TYPE_POST;
+            $suggestion['depth'] = 'indent-depth-' . $row->depth;
             
             $suggestions[] = $suggestion;
         }
         
         return $suggestions;
-    }
-    
-    static function echoRedirectToPages_2() {
-        global $abj404logging;
-        
-        $term = strtolower( $_GET['term'] );
-        $suggestions = array();
-
-        $loop = new WP_Query( 's=' . $term );
-
-        while( $loop->have_posts() ) {
-                $loop->the_post();
-                $suggestion = array();
-                $suggestion['label'] = '99_' . get_the_title();
-                $suggestion['value'] = '88_' . get_permalink();
-                $suggestion['category'] = 'CAT_65_';
-
-                $suggestions[] = $suggestion;
-        }
-
-        wp_reset_query();
-    	
-    	$response = json_encode( $suggestions );
-
-    	echo $response;
-        
-        $abj404logging->debugMessage("echoRedirectToPages() suggestions found for '" . 
-                esc_html($term) . "': " . sizeof($suggestions));
-        
-    	exit();
     }
 
 }

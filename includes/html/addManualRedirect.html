@@ -57,18 +57,85 @@
  
   
 <style>
-    .ui-autocomplete {
+    .indent-depth-0.ui-menu-item {
+        padding-left: 10px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-1.ui-menu-item {
+        padding-left: 20px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-2.ui-menu-item {
+        padding-left: 30px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-3.ui-menu-item {
+        padding-left: 40px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-4.ui-menu-item {
+        padding-left: 50px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-5.ui-menu-item {
+        padding-left: 60px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-6.ui-menu-item {
+        padding-left: 70px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-7.ui-menu-item {
+        padding-left: 80px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-8.ui-menu-item {
+        padding-left: 90px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-9.ui-menu-item {
+        padding-left: 100px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .ui-autocomplete li {
         max-height: 400px;
         overflow-y: auto;
         /* prevent horizontal scrollbar */
         overflow-x: hidden;
+        padding-left: 0px;
     }
     .ui-autocomplete-category {
-        display: flex;
         font-weight: bold;
-        padding: .2em .4em;
         margin: .8em 0 .2em;
         line-height: 1.5;
+        
+        /** custom **/
+        display: flex;
+        color: gray;
+        font-weight: normal;
+    }
+    .ui-menu-item {
+       /* color: black; */
     }
 </style>
 
