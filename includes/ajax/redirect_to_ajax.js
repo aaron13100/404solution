@@ -12,14 +12,13 @@ jQuery(document).ready(function($) {
                   var li;
                   if ( item.category != currentCategory ) {
                       ul.append( "<li class='ui-autocomplete-category'>" + item.category + "</li>" );
-                      //ul.append( "<span class='ui-autocomplete-category'>" + item.category + "</span>" );
-                      //ul.append( item.category);
                       currentCategory = item.category;
                   }
                   li = that._renderItemData( ul, item );
                   if ( item.category ) {
                       li.attr( "aria-label", item.category + " : " + item.label );
                   }
+                  li.addClass(item.depth);
               });
           }
         });
@@ -47,6 +46,7 @@ jQuery(document).ready(function($) {
                     $("#redirect_to_user_field").val(ui.item.label);
                     $("#redirect_to_data_field_title").val(ui.item.label);
                     $("#redirect_to_data_field_id").val(ui.item.value);
+                    
                     // TODO change redirect_to_user_field_explanation to say "page selected" or "external URL entered"
                 },
                 focus: function(event, ui) {
@@ -64,7 +64,7 @@ jQuery(document).ready(function($) {
                 }
         });
         
-        // disable the enter key for the search box
+        // prevent / disable the enter key for the search box.
         $('#redirect_to_user_field').keypress(function(event) {
             if (event.keyCode == 13) {
                 event.preventDefault();
