@@ -1386,7 +1386,7 @@ class ABJ_404_Solution_PluginLogic {
             
             do {
                 $idsOfMissingParentPages = $this->getMissingParentPageIDs($pages);
-                $idCountBefore = count($idsOfMissingParentPages);
+                $pageCountBefore = count($pages);
                 $iterations = $iterations + 1;
                 
                 // get the parents of the unused pages.
@@ -1402,7 +1402,7 @@ class ABJ_404_Solution_PluginLogic {
                     }
                 }
                 
-                if ($iterations > 10) {
+                if ($iterations > 30) {
                     break;
                 }
                 
@@ -1410,7 +1410,7 @@ class ABJ_404_Solution_PluginLogic {
                 
                 // loop until we can't find any more parents. This may happen if a sub-page is published
                 // and the parent page is not published.
-            } while ($idCountBefore != count($idsOfMissingParentPages));
+            } while ($pageCountBefore != count($pages));
             
             // sort everything again
             usort($pages, array($this, "sortByTypeThenTitle"));

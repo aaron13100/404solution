@@ -20,14 +20,6 @@ class ABJ_404_Solution_Ajax_Php {
         
         $term = $_GET['term'];
         $suggestions = array();
-        $customTagsEtc = array();
-        
-        /*  from View.php: 
-        $selectOptionsGoHere = $this->echoRedirectDestinationOptionsDefaults(''); // DONE
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', true);
-        $selectOptionsGoHere .= $this->echoRedirectDestinationOptionsOthers('', $rowsOtherTypes);
-        $selectOptionsGoHere .= $this->echoRedirectDestinationOptionsCatsTags('');
-        */
         
         // add the "Home Page" destination.
         $specialPages = $abj404AjaxPhp->getDefaultRedirectDestinations();
@@ -61,7 +53,7 @@ class ABJ_404_Solution_Ajax_Php {
         $suggestion['category'] = __('Special', '404-solution');
         $suggestion['label'] = __('Home Page', '404-solution');
         $suggestion['value'] = ABJ404_TYPE_HOME;
-        $suggestion['depth'] = 'indent-depth-0';
+        $suggestion['depth'] = '0';
         
         $arrayWrapper[] = $suggestion;
         return $arrayWrapper;
@@ -79,7 +71,7 @@ class ABJ_404_Solution_Ajax_Php {
             $suggestion['label'] = $row->name;
             $suggestion['category'] = __('Categories', '404-solution');
             $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_CAT;
-            $suggestion['depth'] = 'indent-depth-0';
+            $suggestion['depth'] = '0';
             
             $suggestions[] = $suggestion;
         }
@@ -95,7 +87,7 @@ class ABJ_404_Solution_Ajax_Php {
             $suggestion['label'] = $row->name;
             $suggestion['category'] = __('Tags', '404-solution');
             $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_TAG;
-            $suggestion['depth'] = 'indent-depth-0';
+            $suggestion['depth'] = '0';
             
             $suggestions[] = $suggestion;
         }
@@ -131,7 +123,7 @@ class ABJ_404_Solution_Ajax_Php {
             $suggestion['label'] = $row->post_title;
             $suggestion['category'] = ucwords($row->post_type);
             $suggestion['value'] = $row->id . "|" . ABJ404_TYPE_POST;
-            $suggestion['depth'] = 'indent-depth-' . $row->depth;
+            $suggestion['depth'] = $row->depth;
             
             $suggestions[] = $suggestion;
         }
