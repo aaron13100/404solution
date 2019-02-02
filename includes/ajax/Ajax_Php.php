@@ -55,6 +55,10 @@ class ABJ_404_Solution_Ajax_Php {
     }
     
     function filterPages($pagesToFilter, $searchTerm) {
+        if ($searchTerm == "") {
+            return $pagesToFilter;
+        }        
+        
         $newPagesList = array();
         
         foreach ($pagesToFilter as $page) {
