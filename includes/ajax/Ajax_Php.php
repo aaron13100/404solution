@@ -76,7 +76,7 @@ class ABJ_404_Solution_Ajax_Php {
         
         $suggestion['category'] = __('Special', '404-solution');
         $suggestion['label'] = __('Home Page', '404-solution');
-        $suggestion['value'] = ABJ404_TYPE_HOME;
+        $suggestion['value'] = ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME;
         $suggestion['depth'] = '0';
         
         $arrayWrapper[] = $suggestion;
