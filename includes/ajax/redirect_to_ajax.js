@@ -18,7 +18,7 @@ jQuery(document).ready(function($) {
                   if ( item.category ) {
                       li.attr( "aria-label", item.category + " : " + item.label );
                   }
-                  li.addClass(item.depth);
+                  li.addClass('indent-depth-' + item.depth);
               });
           }
         });

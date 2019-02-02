@@ -117,14 +117,14 @@
         width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
         width: stretch;
     }
-    .ui-autocomplete li {
+    .ui-autocomplete {
         max-height: 400px;
         overflow-y: auto;
         /* prevent horizontal scrollbar */
         overflow-x: hidden;
         padding-left: 0px;
     }
-    .ui-autocomplete-category {
+    ul .ui-autocomplete-category {
         font-weight: bold;
         margin: .8em 0 .2em;
         line-height: 1.5;
@@ -133,6 +133,7 @@
         display: flex;
         color: gray;
         font-weight: normal;
+        padding-left: 0px;
     }
     .ui-menu-item {
        /* color: black; */
