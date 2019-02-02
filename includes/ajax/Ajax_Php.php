@@ -39,11 +39,31 @@ class ABJ_404_Solution_Ajax_Php {
         $customCategoriesMap = $abj404logic->getMapOfCustomCategories($cats);
         $customCategoryOptions = $abj404AjaxPhp->formatCustomCategoryDestinations($customCategoriesMap);
         
+        // --------------------------------------- 
+        // now we filter the results.
+        $specialPages = $abj404AjaxPhp->filterPages($specialPages, $term);
+        $categoryOptions = $abj404AjaxPhp->filterPages($categoryOptions, $term);
+        $tagOptions = $abj404AjaxPhp->filterPages($tagOptions, $term);
+        $customCategoryOptions = $abj404AjaxPhp->filterPages($customCategoryOptions, $term);
+                
+        // combine and display the search results.
         $suggestions = array_merge($specialPages, $publishedPosts, $categoryOptions, $tagOptions, 
                 $customCategoryOptions);
     	echo json_encode($suggestions);
         
     	exit();
+    }
+    
+    function filterPages($pagesToFilter, $searchTerm) {
+        $newPagesList = array();
+        
+        foreach ($pagesToFilter as $page) {
+            if (strpos(mb_strtolower($page['label']), mb_strtolower($searchTerm)) != null) {
+                $newPagesList[] = $page;
+            }
+        }
+        
+        return $newPagesList;
     }
     
     function getDefaultRedirectDestinations() {
