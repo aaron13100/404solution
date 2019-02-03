@@ -599,10 +599,12 @@ class ABJ_404_Solution_View {
             $abj404logging->debugMessage("Edit redirect page. GET ID: " . 
                     wp_kses_post(json_encode($_GET['id'])));
             $recnum = absint($_GET['id']);
+            
         } else if (array_key_exists('id', $_POST) && isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
             $abj404logging->debugMessage("Edit redirect page. POST ID: " . 
                     wp_kses_post(json_encode($_POST['id'])));
             $recnum = absint($_POST['id']);
+            
         } else if ($abj404dao->getPostOrGetSanitize('idnum') !== null) {
             $recnums_multiple = array_map('absint', $abj404dao->getPostOrGetSanitize('idnum'));
             $abj404logging->debugMessage("Edit redirect page. ids_multiple: " . 
@@ -617,13 +619,17 @@ class ABJ_404_Solution_View {
         // Decide whether we're editing one or multiple redirects.
         // If we're editing only one then set the ID to that one value.
         if ($recnum != null) {
-            $redirect = $abj404dao->getRedirectByID($recnum);
-            if ($redirect == null) {
+            $recnumAsArray = array();
+            $recnumAsArray[] = $recnum;
+            $redirects_multiple = $abj404dao->getRedirectsByIDs($recnumAsArray);
+            
+            if (count($redirects_multiple) == 0) {
                 echo "Error: Invalid ID Number! (id: " . esc_html($recnum) . ")";
                 $abj404logging->errorMessage("Error: Invalid ID Number! (id: " . esc_html($recnum) . ")");
                 return;
             }
             
+            $redirect = reset($redirects_multiple);
             $isRegexChecked = '';
             if ($redirect['status'] == ABJ404_STATUS_REGEX) {
                 $isRegexChecked = ' checked ';
@@ -632,7 +638,7 @@ class ABJ_404_Solution_View {
             echo "<input type=\"hidden\" name=\"id\" value=\"" . esc_attr($redirect['id']) . "\">";
             echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
                     ":</label></strong> ";
-            echo "<input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . 
+            echo "<input id=\"url\" style=\"width: 45%;\" type=\"text\" name=\"url\" value=\"" . 
                     esc_attr($redirect['url']) . "\"> (" . __('Required', '404-solution') . ")<BR/>\n\n";
             echo "\n\n" . '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" name="is_regex_url" ';
             echo 'id="is_regex_url" value="1" ' . $isRegexChecked . '>' . "\n";
@@ -658,7 +664,7 @@ class ABJ_404_Solution_View {
             
             echo "\n" . '<td style="vertical-align: top; padding: 5px;">' . "\n" . '<ul style="margin: 0px;">';
             foreach ($redirects_multiple as $redirect) {
-                echo "\n<li>" . $redirect['url'] . "</li>\n";
+                echo "\n<li>" . esc_html($redirect['url']) . "</li>\n";
             }
             echo "\n" . '</ul>';
             echo "\n</td></tr></table>\n";
@@ -674,23 +680,16 @@ class ABJ_404_Solution_View {
             return;
         }
         
-        echo "<strong><label for=\"dest\">" . __('Redirect to', '404-solution') . ":</label></strong> \n";
-        echo '<select style="max-width: 75%;" id="dest" name="dest">';
-        echo $this->echoRedirectDestinationOptionsDefaults($redirect['type']);
-        
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('');
-        // order the results. this also sets the page depth (for child pages).
-        $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes);
-        
-        echo $this->echoRedirectDestinationOptionsOthers($redirect['final_dest'] . '|' . $redirect['type'], 
-                $rowsOtherTypes);
-        
-        echo $this->echoRedirectDestinationOptionsCatsTags($redirect['final_dest'] . '|' . $redirect['type']);
-        echo "</select><BR/>";
-        
         $final = "";
+        $pageIDAndType = "";
+        $pageTitle = get_the_title($redirect['final_dest']);
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
             $final = $redirect['final_dest'];
+            $pageIDAndType = ABJ404_TYPE_EXTERNAL . "|" . ABJ404_TYPE_EXTERNAL;
+            
+        } else if ($redirect['final_dest'] != 0) {
+            // if a destination has been specified then let's fill it in.
+            $pageIDAndType = $redirect['final_dest'] . "|" . $redirect['type'];
         }
         
         if ($redirect['code'] == "") {
@@ -698,6 +697,15 @@ class ABJ_404_Solution_View {
         } else {
             $codeSelected = $redirect['code'];
         }
+        
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
+                "/html/addManualRedirectPageSearchDropdown.html");
+        $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
+        $html = str_replace('{pageIDAndType}', $pageIDAndType, $html);
+        $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
+        $html = $this->doNormalReplacements($html);
+        echo $html;
+        
         $this->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'));
         
         echo "</form>";
@@ -1320,7 +1328,13 @@ class ABJ_404_Solution_View {
         }
         
         // read the html content.
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirect.html");
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectTop.html");
+        $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
+                "/html/addManualRedirectPageSearchDropdown.html");
+        $html = str_replace('{redirectPageTitle}', '', $html);
+        $html = str_replace('{pageIDAndType}', '', $html);
+        $html = str_replace('{redirectPageTitle}', '', $html);
+        $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectBottom.html");
         $html = str_replace('{addManualRedirectAction}', $link, $html);
         $html = str_replace('{urlPlaceholder}', $urlPlaceholder, $html);
         $html = str_replace('{postedURL}', $postedURL, $html);
@@ -1339,11 +1353,7 @@ class ABJ_404_Solution_View {
      * @param type $label
      */
     function echoEditRedirect($destination, $codeselected, $label) {
-        echo "<strong><label for=\"external\">" . __('External URL', '404-solution') . 
-                ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . 
-                esc_attr($destination) . "\"> (" . __('Required if Redirect to is set to External Page', '404-solution') . 
-                ")<BR/>";
-        echo "<strong><label for=\"code\">" . __('Redirect Type', '404-solution') . 
+        echo "\r\n<BR/><strong><label for=\"code\">" . __('Redirect Type', '404-solution') . 
                 ":</label></strong> <select id=\"code\" name=\"code\">";
         
         $codes = array(301, 302);

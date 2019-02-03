@@ -968,8 +968,8 @@ class ABJ_404_Solution_PluginLogic {
             
             // decide whether we're updating one or multiple redirects.
             if ($fromURL != "") {
-                $abj404dao->updateRedirect($typeAndDest['type'], $typeAndDest['dest'], $fromURL, $_POST['id'], 
-                        $_POST['code'], $statusType);
+                $abj404dao->updateRedirect($typeAndDest['type'], $typeAndDest['dest'], 
+                        $fromURL, $_POST['id'], $_POST['code'], $statusType);
 
             } else if ($ids_multiple != "") {
                 // get the redirect data for each ID.
@@ -984,14 +984,10 @@ class ABJ_404_Solution_PluginLogic {
                     "fromURL: " . $fromURL . ", ids_multiple: " . implode(',', $ids_multiple));
             }
 
-            $_POST['url'] = "";
-            $_POST['code'] = "";
-            $_POST['external'] = "";
-            $_POST['dest'] = "";
         } else {
             $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
-            $abj404logging->errorMessage("Update redirect data issue. Type: " . esc_html($typeAndDest['type']) . ", dest: " .
-                    esc_html($typeAndDest['dest']));
+            $abj404logging->errorMessage("Update redirect data issue. Type: " . esc_html($typeAndDest['type']) . 
+                    ", dest: " . esc_html($typeAndDest['dest']));
         }
 
         return $message;
@@ -1002,7 +998,7 @@ class ABJ_404_Solution_PluginLogic {
         
         $response = array();
         $response['type'] = "";
-        $response['redirect_to_data_field_id'] = "";
+        $response['dest'] = "";
         $response['message'] = "";
         
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
@@ -1024,10 +1020,10 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             $response['type'] = ABJ404_TYPE_EXTERNAL;
-            $response['redirect_to_data_field_id'] = esc_url($_POST['redirect_to_user_field']);
+            $response['dest'] = esc_url($_POST['redirect_to_user_field']);
         } else {
             if (count($info) == 2) {
-                $response['redirect_to_data_field_id'] = absint($info[0]);
+                $response['dest'] = absint($info[0]);
                 $response['type'] = $info[1];
             } else {
                 $abj404logging->errorMessage("Unexpected info while updating redirect: " . 
@@ -1063,7 +1059,7 @@ class ABJ_404_Solution_PluginLogic {
             return $typeAndDest['message'];
         }
 
-        if ($typeAndDest['type'] != "" && $typeAndDest['redirect_to_data_field_id'] !== "") {
+        if ($typeAndDest['type'] != "" && $typeAndDest['dest'] !== "") {
             // url match type. regex or normal exact match.
             $statusType = ABJ404_STATUS_MANUAL;
             if (array_key_exists('is_regex_url', $_POST) && isset($_POST['is_regex_url']) && 
@@ -1073,19 +1069,14 @@ class ABJ_404_Solution_PluginLogic {
             }
             
             $abj404dao->setupRedirect(esc_url($_POST['manual_redirect_url']), $statusType, 
-                    $typeAndDest['type'], $typeAndDest['redirect_to_data_field_id'], 
+                    $typeAndDest['type'], $typeAndDest['dest'], 
                     sanitize_text_field($_POST['code']), 0);
-            $_POST['manual_redirect_url'] = "";
-            $_POST['code'] = "";
-            $_POST['external'] = "";
-            $_POST['redirect_to_data_field_id'] = "";
             
         } else {
             $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
             $abj404logging->errorMessage("Add redirect data issue. Type: " . esc_html($typeAndDest['type']) . ", dest: " .
-                    esc_html($typeAndDest['redirect_to_data_field_id']));
+                    esc_html($typeAndDest['dest']));
         }
-        
 
         return $message;
     }
