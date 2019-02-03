@@ -1319,20 +1319,11 @@ class ABJ_404_Solution_View {
             $selected302 = " selected ";
         }
         
-        $selectOptionsGoHere = $this->echoRedirectDestinationOptionsDefaults('');
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('');
-        // order the results. this also sets the page depth (for child pages).
-        $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes);
-        
-        $selectOptionsGoHere .= $this->echoRedirectDestinationOptionsOthers('', $rowsOtherTypes);
-        $selectOptionsGoHere .= $this->echoRedirectDestinationOptionsCatsTags('');
-        
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirect.html");
         $html = str_replace('{addManualRedirectAction}', $link, $html);
         $html = str_replace('{urlPlaceholder}', $urlPlaceholder, $html);
         $html = str_replace('{postedURL}', $postedURL, $html);
-        $html = str_replace('{selectOptionsGoHere}', $selectOptionsGoHere, $html);
         $html = str_replace('{301selected}', $selected301, $html);
         $html = str_replace('{302selected}', $selected302, $html);
         
