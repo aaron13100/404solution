@@ -1002,14 +1002,14 @@ class ABJ_404_Solution_PluginLogic {
         
         $response = array();
         $response['type'] = "";
-        $response['dest'] = "";
+        $response['redirect_to_data_field_id'] = "";
         $response['message'] = "";
         
-        if ($_POST['dest'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
-            if ($_POST['external'] == "") {
+        if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
+            if ($_POST['redirect_to_user_field'] == "") {
                 $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<BR/>";
             } else {
-                if (substr($_POST['external'], 0, 7) != "http://" && mb_substr($_POST['external'], 0, 8) != "https://" && mb_substr($_POST['external'], 0, 6) != "ftp://") {
+                if (substr($_POST['redirect_to_user_field'], 0, 7) != "http://" && mb_substr($_POST['external'], 0, 8) != "https://" && mb_substr($_POST['external'], 0, 6) != "ftp://") {
                     $response['message'] = __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<BR/>";
                 }
             }
@@ -1018,14 +1018,14 @@ class ABJ_404_Solution_PluginLogic {
         if ($response['message'] != "") {
             return $response;
         }
-        $info = explode("|", sanitize_text_field($_POST['dest']));
+        $info = explode("|", sanitize_text_field($_POST['redirect_to_data_field_id']));
 
-        if ($_POST['dest'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
+        if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             $response['type'] = ABJ404_TYPE_EXTERNAL;
-            $response['dest'] = esc_url($_POST['external']);
+            $response['redirect_to_data_field_id'] = esc_url($_POST['redirect_to_user_field']);
         } else {
             if (count($info) == 2) {
-                $response['dest'] = absint($info[0]);
+                $response['redirect_to_data_field_id'] = absint($info[0]);
                 $response['type'] = $info[1];
             } else {
                 $abj404logging->errorMessage("Unexpected info while updating redirect: " . 
@@ -1061,7 +1061,10 @@ class ABJ_404_Solution_PluginLogic {
             return $typeAndDest['message'];
         }
 
-        if ($typeAndDest['type'] != "" && $typeAndDest['dest'] !== "") {
+        // dest => redirect_to_data_field_id
+        // external => redirect_to_user_field
+        
+        if ($typeAndDest['type'] != "" && $typeAndDest['redirect_to_data_field_id'] !== "") {
             // url match type. regex or normal exact match.
             $statusType = ABJ404_STATUS_MANUAL;
             if (array_key_exists('is_regex_url', $_POST) && isset($_POST['is_regex_url']) && 
@@ -1071,15 +1074,17 @@ class ABJ_404_Solution_PluginLogic {
             }
             
             $abj404dao->setupRedirect(esc_url($_POST['manual_redirect_url']), $statusType, 
-                    $typeAndDest['type'], $typeAndDest['dest'], sanitize_text_field($_POST['code']), 0);
+                    $typeAndDest['type'], $typeAndDest['redirect_to_data_field_id'], 
+                    sanitize_text_field($_POST['code']), 0);
             $_POST['manual_redirect_url'] = "";
             $_POST['code'] = "";
             $_POST['external'] = "";
-            $_POST['dest'] = "";
+            $_POST['redirect_to_data_field_id'] = "";
+            
         } else {
             $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
             $abj404logging->errorMessage("Add redirect data issue. Type: " . esc_html($typeAndDest['type']) . ", dest: " .
-                    esc_html($typeAndDest['dest']));
+                    esc_html($typeAndDest['redirect_to_data_field_id']));
         }
         
 
