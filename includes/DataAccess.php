@@ -1302,19 +1302,6 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /** 
-     * @param type $id
-     * @return type
-     */
-    function getRedirectByID($id) {
-        global $wpdb;
-        $query = $wpdb->prepare("select id, url, type, status, final_dest, code from " . $wpdb->prefix . 
-                "abj404_redirects where 1 and id = %d", $id);
-        $redirect = $wpdb->get_row($query, ARRAY_A);
-        
-        return $redirect;
-    }
-    
-    /** 
      * @global type $wpdb
      * @param type $ids
      * @return type
@@ -1324,7 +1311,8 @@ class ABJ_404_Solution_DataAccess {
         $validids = array_map('absint', $ids);
         $multipleIds = implode(',', $validids);
     
-        $query = "select id, url, type, final_dest, code from " . $wpdb->prefix . "abj404_redirects " .
+        $query = "select id, url, type, status, final_dest, code from " . 
+                $wpdb->prefix . "abj404_redirects " .
                 "where id in (" . $multipleIds . ")";
         $rows = $wpdb->get_results($query, ARRAY_A);
         

@@ -1,0 +1,98 @@
+
+<!-- - - - - - - - - - - - - - - - - - - -  addManualRedirectPageSearchDropdown.html BEGIN -->
+
+<style>
+    /* This is for the redirect page search dropdown. */
+    .indent-depth-0.ui-menu-item {
+        padding-left: 10px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-1.ui-menu-item {
+        padding-left: 20px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-2.ui-menu-item {
+        padding-left: 30px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-3.ui-menu-item {
+        padding-left: 40px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-4.ui-menu-item {
+        padding-left: 50px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-5.ui-menu-item {
+        padding-left: 60px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-6.ui-menu-item {
+        padding-left: 70px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-7.ui-menu-item {
+        padding-left: 80px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-8.ui-menu-item {
+        padding-left: 90px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .indent-depth-9.ui-menu-item {
+        padding-left: 100px;
+        width: -moz-available;          /* WebKit-based browsers will ignore this. */
+        width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+        width: stretch;
+    }
+    .ui-autocomplete {
+        max-height: 400px;
+        overflow-y: auto;
+        /* prevent horizontal scrollbar */
+        overflow-x: hidden;
+        padding-left: 0px;
+    }
+    ul .ui-autocomplete-category {
+        font-weight: bold;
+        margin: .8em 0 .2em;
+        line-height: 1.5;
+        
+        /** custom **/
+        display: flex;
+        color: gray;
+        font-weight: normal;
+        padding-left: 0px;
+    }
+</style>
+
+<strong><label for="redirect_to_user_field">{Redirect to}:</label></strong>
+<input id="redirect_to_user_field" placeholder="{(Type a page name or an external URL)}" 
+       style="width: 50%;" type="text" name="redirect_to_user_field" 
+       value="{redirectPageTitle}"> 
+<BR/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span id="redirect_to_user_field_explanation" style="font-style: italic;">{(Type a page name or an external URL)}</span>
+<input id="redirect_to_data_field_id" style="width: 50%;"  name="redirect_to_data_field_id" 
+       type="xxxhidden" value="{pageIDAndType}">
+<input id="redirect_to_data_field_title" style="width: 50%;"  name="redirect_to_data_field_title"
+       type="xxxhidden" value="{redirectPageTitle}"> 
+
+<!-- - - - - - - - - - - - - - - - - - - -  addManualRedirectPageSearchDropdown.html END  -->
