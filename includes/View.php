@@ -530,12 +530,12 @@ class ABJ_404_Solution_View {
         $currentURL = $urlParts['path'];
         if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
                 $options['menuLocation'] == 'settingsLevel') {
-            if (strpos($currentURL, 'options-general.php') != false) {
+            if (mb_strpos($currentURL, 'options-general.php') != false) {
                 // the option changed and we're at the wrong URL now, so we redirect to the correct one.
                 $abj404logic->forceRedirect(admin_url() . "admin.php?page=" . 
                         ABJ404_PP . '&subpage=abj404_options');
             }
-        } else if (strpos($currentURL, 'admin.php') != false) {
+        } else if (mb_strpos($currentURL, 'admin.php') != false) {
             // if the current URL has admin.php then the URLs don't match and we need to reload.
             $abj404logic->forceRedirect(admin_url() . "options-general.php?page=" . 
                     ABJ404_PP . '&subpage=abj404_options');

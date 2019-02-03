@@ -342,7 +342,7 @@ class ABJ_404_Solution_PluginLogic {
 
         // add the second part of the default destination page.
         $dest404page = $options['dest404page'];
-        if (strpos($dest404page, '|') === false) {
+        if (mb_strpos($dest404page, '|') === false) {
             // not found
             if ($dest404page == '0') {
                 $dest404page .= "|" . ABJ404_TYPE_404_DISPLAYED;

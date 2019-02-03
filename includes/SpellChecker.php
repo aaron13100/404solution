@@ -40,7 +40,7 @@ class ABJ_404_Solution_SpellChecker {
                 
                 // if the matching regex contains a group and the destination contains a replacement, 
                 // then use them
-                if ((preg_match("/\.*\(.+\).*/", $regexURL) != 0) && (strpos($permalink['link'], '$') !== FALSE)) {
+                if ((preg_match("/\.*\(.+\).*/", $regexURL) != 0) && (mb_strpos($permalink['link'], '$') !== FALSE)) {
                     $results = '';
                     $matcherQuoted = str_replace('~', '\~', $regexURL);
                     preg_match("~" . $matcherQuoted . "~", $requestedURL, $results);

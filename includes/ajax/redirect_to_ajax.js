@@ -47,18 +47,14 @@ jQuery(document).ready(function($) {
             $("#redirect_to_data_field_title").val(ui.item.label);
             $("#redirect_to_data_field_id").val(ui.item.value);
 
-            // TODO change redirect_to_user_field_explanation to say "page selected" or "external URL entered"
+            abj404_updateFeedbackField();
         },
         focus: function(event, ui) {
             // don't change the contents of the textbox just by highlighting something.
             event.preventDefault();
         },
         change: function( event, ui ) {
-            if ( !ui.item ) {
-                event.preventDefault();
-                
-                abj404_validateURLOrSelectedItem();
-            }
+            abj404_validateURLOrSelectedItem();
         }
     });
     
@@ -72,7 +68,6 @@ jQuery(document).ready(function($) {
             $('#redirect_to_user_field').catcomplete("close");
             
             abj404_validateURLOrSelectedItem();
-
         }
     });
 
@@ -86,15 +81,27 @@ function abj404_validateURLOrSelectedItem() {
     if (abj404_isValidURL(userTypedValue)) {
         jQuery("#redirect_to_data_field_title").val(userTypedValue);
         jQuery("#redirect_to_data_field_id").val('4|4'); // 4 => ABJ404_TYPE_EXTERNAL
+        jQuery("#redirect_to_user_field_feedback").text("(External URL selected.)");
 
     } else {
         // if no item was selected then we force the search box to change back to 
         // whatever the user previously selected.
         var selectedVal = jQuery('#redirect_to_data_field_title').val();
         jQuery("#redirect_to_user_field").val(selectedVal);
+        
+        abj404_updateFeedbackField();
     }
 }
 
+function abj404_updateFeedbackField() {
+    var selectedPageID = jQuery("#redirect_to_data_field_id").val();
+    if ((selectedPageID === null) || (selectedPageID === "")) {
+        jQuery("#redirect_to_user_field_feedback").text("(Type a page name or an external URL)");
+        
+    } else {
+        jQuery("#redirect_to_user_field_feedback").text("(Page selected.)");
+    }
+}
 /** 
  * @param {type} url
  * @returns {Boolean} true if the URL is valid. false otherwise.
