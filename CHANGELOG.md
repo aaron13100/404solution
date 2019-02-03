@@ -23,6 +23,7 @@
 
 ## Version 2.9.4 (July 2, 2018) ##
 * FIX: Work with earlier versions of PHP again (bug introduced in 2.9.3).
+    (by using a global variable instead of a constant to store some array values)
 
 ## Version 2.9.3 (July 1, 2018) ##
 * FIX: The "Files and Folders Ignore Strings" setting now works better (for Phil).
@@ -78,9 +79,11 @@
 
 ## Version 2.5.2 (December 3, 2017) ##
 * FIX: Work with PHP version 5.2 again (5.5 required otherwise) (thanks Peter Ford).
+    (by limiting array references to one-level deep when accessing arrays)
 
 ## Version 2.5.1 (December 3, 2017) ##
 * FIX: Work with PHP version 5.4 again (5.5 required otherwise) (thanks moneyman910!).
+    (by removing the "finally" block from a try/catch)
 
 ## Version 2.5.0 (December 2, 2017) ##
 * FIX: Avoid a critical issue that may have caused an infinite loop in rare cases when updating versions.
@@ -118,7 +121,7 @@
 * FIX: Display child pages under their parent pages on admin screen dropdowns (for wireplay).
 
 ## Version 2.1.1 (September 24, 2017) ##
-* FIX: Order the list of pages, posts, etc in dropdown boxes again (broken since 2.1.0. thanks to Hans Glyk for reporting this).
+* FIX: Order the list of pages, posts, etc in dropdown boxes again (broken since 2.1.0. thanks to Hans im Glyk for reporting this).
 
 ## Version 2.1.0 (September 23, 2017) ##
 * Improvement: Don't suggest or forward to product pages that are hidden in WooCommerce, for ajna667.
@@ -174,7 +177,7 @@ such as redirects based on regular expressions and ignoring requests based on us
 * FIX: Correctly log URLs with only special characters at the end, like /&.
 * FIX: Fix a blank options page when a page exists with a parent page (for Mike and wdyim).
 
-## Version 1.6.6 (April 20, 2017) ## 
+## Version 1.6.6 (April 20, 2017) ##
 * Improvement: Avoid logging redirects from exact slug matches missing only the trailing slash (avoid canonical 
     redirects - let WordPress handle them).
 * Improvement: Remove the "force permalinks" option. That option is always on now.
@@ -183,11 +186,11 @@ such as redirects based on regular expressions and ignoring requests based on us
 * Improvement: Add 500 and "all" to the rows per page option to close issue #8 (Move ALL Captured 404 URLs to Trash).
 * FIX: Correct the "Redirects" tab display when the user clicks the link from the settings menu.
 
-## Version 1.6.4 (April 6, 2017) ## 
+## Version 1.6.4 (April 6, 2017) ##
 * Improvement: Add a "rows per page" option for pagination for ozzymuppet.
 * FIX: Allow an error message to be logged when the logger hasn't been initialized (for totalfood).
 
-## Version 1.6.3 (April 1, 2017) ## 
+## Version 1.6.3 (April 1, 2017) ##
 * FIX: Log URLs with queries correctly and add REMOTE_ADDR, HTTP_USER_AGENT, and REQUEST_URI to the debug log for ozzymuppet.
 * Improvement: Add a way to import redirects (Tools -> Import) from the old "404 Redirected" plugin for Dave and Mark.
 
@@ -230,7 +233,7 @@ such as redirects based on regular expressions and ignoring requests based on us
 * Improvement: Reorganize redirect code.
 
 ## Version 1.5.4 ##
-* FIX: Suggestions can be included via custom PHP code added to 404.php 
+* FIX: Suggestions can be included via custom PHP code added to 404.php
 
 ## Version 1.5.3 ##
 * Refactor all code to prepare for WordPress.org release.
