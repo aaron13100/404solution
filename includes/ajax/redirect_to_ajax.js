@@ -60,7 +60,7 @@ jQuery(document).ready(function($) {
     
     // prevent / disable the enter key for the search box.
     $('#redirect_to_user_field').keypress(function(event) {
-        if (event.keyCode == 13) {
+        if (event.keyCode === 13) {
             // don't submit the form.
             event.preventDefault();
             
@@ -69,6 +69,11 @@ jQuery(document).ready(function($) {
             
             abj404_validateURLOrSelectedItem();
         }
+    });
+    
+    // if nothing was entered then reset the already selected value.
+    $('#redirect_to_user_field').focusout(function(event) {
+        abj404_validateURLOrSelectedItem();
     });
 
 });
@@ -81,7 +86,7 @@ function abj404_validateURLOrSelectedItem() {
     if (abj404_isValidURL(userTypedValue)) {
         jQuery("#redirect_to_data_field_title").val(userTypedValue);
         jQuery("#redirect_to_data_field_id").val('4|4'); // 4 => ABJ404_TYPE_EXTERNAL
-        jQuery("#redirect_to_user_field_feedback").text("(External URL selected.)");
+        jQuery("#redirect_to_user_field_explanation").text("(An external URL will be used.)");
 
     } else {
         // if no item was selected then we force the search box to change back to 
@@ -96,10 +101,10 @@ function abj404_validateURLOrSelectedItem() {
 function abj404_updateFeedbackField() {
     var selectedPageID = jQuery("#redirect_to_data_field_id").val();
     if ((selectedPageID === null) || (selectedPageID === "")) {
-        jQuery("#redirect_to_user_field_feedback").text("(Type a page name or an external URL)");
+        jQuery("#redirect_to_user_field_explanation").text("(Type a page name or an external URL)");
         
     } else {
-        jQuery("#redirect_to_user_field_feedback").text("(Page selected.)");
+        jQuery("#redirect_to_user_field_explanation").text("(A page has been selected.)");
     }
 }
 /** 
