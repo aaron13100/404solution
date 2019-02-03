@@ -94,6 +94,7 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Version 2.9.4 (July 2, 2018) ##
 * FIX: Work with earlier versions of PHP again (bug introduced in 2.9.3).
+    (by using a global variable instead of a constant to store some array values)
 
 ## Version 2.9.3 (July 1, 2018) ##
 * FIX: The "Files and Folders Ignore Strings" setting now works better (for Phil).
@@ -149,9 +150,11 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Version 2.5.2 (December 3, 2017) ##
 * FIX: Work with PHP version 5.2 again (5.5 required otherwise) (thanks Peter Ford).
+    (by limiting array references to one-level deep when accessing arrays)
 
 ## Version 2.5.1 (December 3, 2017) ##
 * FIX: Work with PHP version 5.4 again (5.5 required otherwise) (thanks moneyman910!).
+    (by removing the "finally" block from a try/catch)
 
 ## Version 2.5.0 (December 2, 2017) ##
 * FIX: Avoid a critical issue that may have caused an infinite loop in rare cases when updating versions.
@@ -303,18 +306,18 @@ such as redirects based on regular expressions and ignoring requests based on us
 ## Version 1.5.4 ##
 * FIX: Suggestions can be included via custom PHP code added to 404.php
 
-### Version 1.5.3 ###
+## Version 1.5.3 ##
 * Refactor all code to prepare for WordPress.org release.
 
-### Version 1.5.2 ###
+## Version 1.5.2 ##
 * FIX plugin activation. Avoid "Default value for parameters with a class type hint can only be NULL"
 * Add a Settings link to the WordPress plugins page.
 
-### Version 1.5.1 ###
+## Version 1.5.1 ##
 * Prepare for release on WordPress.org.
 * Sanitize, escape, and validate POST calls.
 
-### Version 1.5.0 ###
+## Version 1.5.0 ##
 * Rename to 404 Solution (forked from 404 Redirected at https://github.com/ThemeMix/redirectioner)
 * Update branding links
 * Add an option to redirect all 404s to a specific page.
