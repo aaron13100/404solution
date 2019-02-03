@@ -7,13 +7,12 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
     ini_set('display_errors', '1');
 }
 
-/* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
+/* Funtcions supporting Ajax stuff.  */
 
 class ABJ_404_Solution_Ajax_Php {
 
-    /** Find pages to redirect to that match a search term. */
+    /** Find pages to redirect to that match a search term, then echo the results in a json format. */
     static function echoRedirectToPages() {
-        global $abj404logging;
         global $abj404logic;
         global $abj404AjaxPhp;
         global $abj404dao;
@@ -40,7 +39,7 @@ class ABJ_404_Solution_Ajax_Php {
         $customCategoryOptions = $abj404AjaxPhp->formatCustomCategoryDestinations($customCategoriesMap);
         
         // --------------------------------------- 
-        // now we filter the results.
+        // now we filter the results based on the search term.
         $specialPages = $abj404AjaxPhp->filterPages($specialPages, $term);
         $categoryOptions = $abj404AjaxPhp->filterPages($categoryOptions, $term);
         $tagOptions = $abj404AjaxPhp->filterPages($tagOptions, $term);
@@ -54,11 +53,17 @@ class ABJ_404_Solution_Ajax_Php {
     	exit();
     }
     
+    /** Remove any results from the list that don't match the search term.
+     * @param type $pagesToFilter
+     * @param type $searchTerm
+     * @return type
+     */
     function filterPages($pagesToFilter, $searchTerm) {
         if ($searchTerm == "") {
             return $pagesToFilter;
         }        
-        
+
+        // build a new list with only the included results to return.
         $newPagesList = array();
         
         foreach ($pagesToFilter as $page) {
@@ -72,6 +77,9 @@ class ABJ_404_Solution_Ajax_Php {
         return $newPagesList;
     }
     
+    /** Create a "Home Page" destination.
+     * @return string
+     */
     function getDefaultRedirectDestinations() {
         $arrayWrapper = array();
         $suggestion = array();
@@ -79,12 +87,17 @@ class ABJ_404_Solution_Ajax_Php {
         $suggestion['category'] = __('Special', '404-solution');
         $suggestion['label'] = __('Home Page', '404-solution');
         $suggestion['value'] = ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME;
+        // depth 0 means it's not a child page
         $suggestion['depth'] = '0';
         
         $arrayWrapper[] = $suggestion;
         return $arrayWrapper;
     }
     
+    /** Prepare categories for json output.
+     * @param type $rows
+     * @return string
+     */
     function formatCategoryDestinations($rows) {
         $suggestions = array();
         
@@ -97,6 +110,7 @@ class ABJ_404_Solution_Ajax_Php {
             $suggestion['label'] = $row->name;
             $suggestion['category'] = __('Categories', '404-solution');
             $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_CAT;
+            // depth 0 means it's not a child page
             $suggestion['depth'] = '0';
             
             $suggestions[] = $suggestion;
@@ -105,6 +119,10 @@ class ABJ_404_Solution_Ajax_Php {
         return $suggestions;
     }
     
+    /** Prepare tags for json output.
+     * @param type $rows
+     * @return string
+     */
     function formatTagDestinations($rows) {
         $suggestions = array();
         
@@ -113,6 +131,7 @@ class ABJ_404_Solution_Ajax_Php {
             $suggestion['label'] = $row->name;
             $suggestion['category'] = __('Tags', '404-solution');
             $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_TAG;
+            // depth 0 means it's not a child page
             $suggestion['depth'] = '0';
             
             $suggestions[] = $suggestion;
@@ -121,6 +140,10 @@ class ABJ_404_Solution_Ajax_Php {
         return $suggestions;
     }
     
+    /** Prepare custom categories for json output. 
+     * @param type $customCategoriesMap
+     * @return string
+     */
     function formatCustomCategoryDestinations($customCategoriesMap) {
         $suggestions = array();
         
@@ -132,7 +155,8 @@ class ABJ_404_Solution_Ajax_Php {
                 $suggestion['label'] = $row->name;
                 $suggestion['category'] = $taxonomy;
                 $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_CAT;
-                $suggestion['depth'] = 'indent-depth-0';
+                // depth 0 means it's not a child page
+                $suggestion['depth'] = '0';
 
                 $suggestions[] = $suggestion;
             }
@@ -141,6 +165,10 @@ class ABJ_404_Solution_Ajax_Php {
         return $suggestions;
     }
     
+    /** Prepare pages and posts for json output. 
+     * @param type $rows
+     * @return type
+     */
     function formatRedirectDestinations($rows) {
         $suggestions = array();
         
@@ -149,6 +177,7 @@ class ABJ_404_Solution_Ajax_Php {
             $suggestion['label'] = $row->post_title;
             $suggestion['category'] = ucwords($row->post_type);
             $suggestion['value'] = $row->id . "|" . ABJ404_TYPE_POST;
+            // depth 0 means it's not a child page
             $suggestion['depth'] = $row->depth;
             
             $suggestions[] = $suggestion;

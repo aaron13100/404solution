@@ -1008,10 +1008,12 @@ class ABJ_404_Solution_PluginLogic {
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             if ($_POST['redirect_to_user_field'] == "") {
                 $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<BR/>";
-            } else {
-                if (substr($_POST['redirect_to_user_field'], 0, 7) != "http://" && mb_substr($_POST['external'], 0, 8) != "https://" && mb_substr($_POST['external'], 0, 6) != "ftp://") {
-                    $response['message'] = __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<BR/>";
-                }
+                
+            } else if (mb_strlen($_POST['redirect_to_user_field']) < 8) {
+                $response['message'] = __('Error: External URL is too short.', '404-solution') . "<BR/>";
+                
+            } else if (substr($_POST['redirect_to_user_field'], 0, 7) != "http://" && mb_substr($_POST['external'], 0, 8) != "https://" && mb_substr($_POST['external'], 0, 6) != "ftp://") {
+                $response['message'] = __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<BR/>";
             }
         }
 
@@ -1061,9 +1063,6 @@ class ABJ_404_Solution_PluginLogic {
             return $typeAndDest['message'];
         }
 
-        // dest => redirect_to_data_field_id
-        // external => redirect_to_user_field
-        
         if ($typeAndDest['type'] != "" && $typeAndDest['redirect_to_data_field_id'] !== "") {
             // url match type. regex or normal exact match.
             $statusType = ABJ404_STATUS_MANUAL;

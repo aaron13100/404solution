@@ -24,7 +24,7 @@ class ABJ_404_Solution_WordPress_Connector {
         add_action('admin_notices', 'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
         add_action('admin_menu', 'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
 
-        /** TEST ajax */
+        /** Include things necessary for ajax. */
         add_action( 'admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts' );
         add_action( 'wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
         add_action( 'wp_ajax_nopriv_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
@@ -32,8 +32,17 @@ class ABJ_404_Solution_WordPress_Connector {
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
     }
     
-    /** TEST ajax */
-    static function add_scripts() {
+    /** Include things necessary for ajax. */
+    static function add_scripts($hook) {
+        global $settingsPageName;
+
+        // only load this stuff for this plugin. 
+        // thanks to https://pippinsplugins.com/loading-scripts-correctly-in-the-wordpress-admin/
+        if ($hook != $settingsPageName) {
+            return;
+        }
+        
+        // jquery is used for the searchable dropdown list of pages for adding a redirect.
         wp_enqueue_script( 'jquery' );
 	wp_enqueue_script( 'jquery-ui-autocomplete' );
 	wp_register_style( 'jquery-ui-styles','//ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css' );
@@ -42,7 +51,9 @@ class ABJ_404_Solution_WordPress_Connector {
 	wp_register_style( 'jquery-ui-styles2','//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css' );
 	wp_enqueue_style( 'jquery-ui-styles2' );
  
-        wp_register_script( 'redirect_to_ajax', plugin_dir_url(__FILE__) . '/ajax/redirect_to_ajax.js', array( 'jquery', 'jquery-ui-autocomplete' ), '1.0', false );
+        wp_register_script( 'redirect_to_ajax', plugin_dir_url(__FILE__) . '/ajax/redirect_to_ajax.js', 
+                array( 'jquery', 'jquery-ui-autocomplete' ));
+        
         // Localize the script with new data
         $translation_array = array(
             'type_a_page_name' => __( '(Type a page name or an external URL)', '404-solution' ),
@@ -50,10 +61,6 @@ class ABJ_404_Solution_WordPress_Connector {
             'an_external_url_will_be_used' => __( '(An external URL will be used.)', '404-solution' )
         );
         wp_localize_script( 'redirect_to_ajax', 'abj404localization', $translation_array );        
-
-        // this allows us to refer to the admin-ajax.php URL in JavaScript.
-        wp_localize_script('redirect_to_ajax', 'MyAutoComplete', array('url' => admin_url('admin-ajax.php')));
-        
         wp_enqueue_script( 'redirect_to_ajax' );
     }
 
@@ -442,6 +449,7 @@ class ABJ_404_Solution_WordPress_Connector {
         global $abj404dao;
         global $abj404logic;
         global $abj404logging;
+        global $settingsPageName;
         
         if (!is_admin() || !current_user_can('administrator')) {
             $abj404logging->logUserCapabilities("addMainSettingsPageLink");
@@ -466,12 +474,12 @@ class ABJ_404_Solution_WordPress_Connector {
         if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
                 $options['menuLocation'] == 'settingsLevel') {
             // this adds the settings link at the same level as the "Tools" and "Settings" menu items.
-            add_menu_page('404 Solution', '404 Solution', 'manage_options', 'abj404_solution',
+            $settingsPageName = add_menu_page('404 Solution', '404 Solution', 'manage_options', 'abj404_solution',
                     'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
                 
         } else {
             // this adds the settings link at Settings->404 Solution.
-            add_submenu_page('options-general.php', '404 Solution', $pageName, 'manage_options', ABJ404_PP, 
+            $settingsPageName = add_submenu_page('options-general.php', '404 Solution', $pageName, 'manage_options', ABJ404_PP, 
                     'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
         }
     }
