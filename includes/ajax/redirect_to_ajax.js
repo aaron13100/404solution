@@ -1,6 +1,6 @@
 
 jQuery(document).ready(function($) {	
-	
+    // mostly copied from https://jqueryui.com/autocomplete/#categories	
     $.widget( "custom.catcomplete", $.ui.autocomplete, {
       _create: function() {
         this._super();
@@ -10,7 +10,7 @@ jQuery(document).ready(function($) {
           var that = this, currentCategory = "";
           $.each( items, function( index, item ) {
               var li;
-              if ( item.category != currentCategory ) {
+              if ( item.category !== currentCategory ) {
                   ul.append( "<li class='ui-autocomplete-category'>" + item.category + "</li>" );
                   currentCategory = item.category;
               }
@@ -23,7 +23,6 @@ jQuery(document).ready(function($) {
       }
     });
 
-    var url = MyAutoComplete.url + "?action=echoRedirectToPages";
     var url = "admin-ajax.php?action=echoRedirectToPages";
     var cache = {};
     $( "#redirect_to_user_field" ).catcomplete({
@@ -43,22 +42,24 @@ jQuery(document).ready(function($) {
         minLength: 0,
         select: function(event, ui) {
             event.preventDefault();
+            // when an item is selected then update the hidden fields to store it.
             $("#redirect_to_user_field").val(ui.item.label);
             $("#redirect_to_data_field_title").val(ui.item.label);
             $("#redirect_to_data_field_id").val(ui.item.value);
 
-            abj404_updateFeedbackField();
+            abj404_validateAndUpdateFeedback();
         },
         focus: function(event, ui) {
             // don't change the contents of the textbox just by highlighting something.
             event.preventDefault();
         },
         change: function( event, ui ) {
-            abj404_validateURLOrSelectedItem();
+            abj404_validateAndUpdateFeedback();
         }
     });
     
-    // prevent / disable the enter key for the search box.
+    // prevent/disable the enter key from submitting the form for the search box.
+    // maybe the user pressed enter after entering an external URL.
     $('#redirect_to_user_field').keypress(function(event) {
         if (event.keyCode === 13) {
             // don't submit the form.
@@ -67,52 +68,53 @@ jQuery(document).ready(function($) {
             // close the menu if it's open.
             $('#redirect_to_user_field').catcomplete("close");
             
-            abj404_validateURLOrSelectedItem();
+            abj404_validateAndUpdateFeedback();
         }
     });
     
     // if nothing was entered then reset the already selected value.
     $('#redirect_to_user_field').focusout(function(event) {
-        abj404_validateURLOrSelectedItem();
+        abj404_validateAndUpdateFeedback();
     });
 
 });
 
-/** Validate an external URL or restore the previously selected value.
+/** Validate the selection and update the feedback label.
  * @returns {undefined}
  */
-function abj404_validateURLOrSelectedItem() {
+function abj404_validateAndUpdateFeedback() {
+    // 4 => ABJ404_TYPE_EXTERNAL
+    var ABJ404_TYPE_EXTERNAL = "4|4";
+    
     var userTypedValue = jQuery("#redirect_to_user_field").val();
+    
     if (abj404_isValidURL(userTypedValue)) {
         jQuery("#redirect_to_data_field_title").val(userTypedValue);
-        jQuery("#redirect_to_data_field_id").val('4|4'); // 4 => ABJ404_TYPE_EXTERNAL
-        jQuery("#redirect_to_user_field_explanation").text("(An external URL will be used.)");
-
+        jQuery("#redirect_to_data_field_id").val(ABJ404_TYPE_EXTERNAL);
     } else {
         // if no item was selected then we force the search box to change back to 
         // whatever the user previously selected.
         var selectedVal = jQuery('#redirect_to_data_field_title').val();
         jQuery("#redirect_to_user_field").val(selectedVal);
-        
-        abj404_updateFeedbackField();
     }
-}
 
-function abj404_updateFeedbackField() {
     var selectedPageID = jQuery("#redirect_to_data_field_id").val();
     if ((selectedPageID === null) || (selectedPageID === "")) {
         jQuery("#redirect_to_user_field_explanation").text("(Type a page name or an external URL)");
         
+    } else if (selectedPageID === ABJ404_TYPE_EXTERNAL) {
+        jQuery("#redirect_to_user_field_explanation").text("(An external URL will be used.)");
     } else {
         jQuery("#redirect_to_user_field_explanation").text("(A page has been selected.)");
     }
 }
-/** 
+
+/** Validate a URL.
  * @param {type} url
  * @returns {Boolean} true if the URL is valid. false otherwise.
  */
 function abj404_isValidURL(url) {
-    if ((url.indexOf(' ') == -1) && (url.indexOf("://") > -1)) {
+    if ((url.indexOf(' ') === -1) && (url.indexOf("://") > -1)) {
     	return true;
     }
     return false;
