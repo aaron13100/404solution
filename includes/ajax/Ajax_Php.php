@@ -62,7 +62,9 @@ class ABJ_404_Solution_Ajax_Php {
         $newPagesList = array();
         
         foreach ($pagesToFilter as $page) {
-            if (strpos(mb_strtolower($page['label']), mb_strtolower($searchTerm)) != null) {
+            $haystack = mb_strtolower($page['label']);
+            $needle = mb_strtolower($searchTerm);
+            if (mb_strpos($haystack, $needle) !== false) {
                 $newPagesList[] = $page;
             }
         }

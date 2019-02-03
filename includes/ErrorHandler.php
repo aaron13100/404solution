@@ -30,7 +30,7 @@ class ABJ_404_Solution_ErrorHandler {
         try {
             // if the error file does not contain the name of our plugin then we ignore it.
             $pluginFolder = mb_substr(ABJ404_NAME, 0, strpos(ABJ404_NAME, '/'));
-            if (strpos($errfile, $pluginFolder) === false) {
+            if (mb_strpos($errfile, $pluginFolder) === false) {
                 return false;
             }
 
@@ -74,7 +74,7 @@ class ABJ_404_Solution_ErrorHandler {
             $pluginFolder = mb_substr(ABJ404_NAME, 0, strpos(ABJ404_NAME, '/'));
 
             // if the error file does not contain the name of our plugin then we ignore it.
-            if (strpos($errfile, $pluginFolder) === false) {
+            if (mb_strpos($errfile, $pluginFolder) === false) {
                 return false;
             }
 

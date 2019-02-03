@@ -312,7 +312,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $urlQuery = $urlParts['query'];
         $queryParts = preg_split("/[;&]/", $urlQuery);
         foreach ($queryParts as $query) {
-            if (strpos($query, "=") === false) {
+            if (mb_strpos($query, "=") === false) {
                 $queryString[$query] = '';
             } else {
                 $stringParts = preg_split("/=/", $query);
