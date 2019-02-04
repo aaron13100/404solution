@@ -83,7 +83,7 @@
     }
 </style>
 
-<strong><label for="redirect_to_user_field">{Redirect to}:</label></strong>
+<label  class="add_a_redirect_label" for="redirect_to_user_field">{redirect_to_label}:</label>
 <input id="redirect_to_user_field" placeholder="{(Type a page name or an external URL)}" 
        style="width: 50%;" type="text" name="redirect_to_user_field" 
        value="{redirectPageTitle}"> 
@@ -91,8 +91,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <span id="redirect_to_user_field_explanation" style="font-style: italic;">{(Type a page name or an external URL)}</span>
 <input id="redirect_to_data_field_id" style="width: 50%;"  name="redirect_to_data_field_id" 
-       type="xxxhidden" value="{pageIDAndType}">
+       type="hidden" value="{pageIDAndType}">
 <input id="redirect_to_data_field_title" style="width: 50%;"  name="redirect_to_data_field_title"
-       type="xxxhidden" value="{redirectPageTitle}"> 
+       type="hidden" value="{redirectPageTitle}"> 
 
 <!-- - - - - - - - - - - - - - - - - - - -  addManualRedirectPageSearchDropdown.html END  -->

@@ -700,6 +700,7 @@ class ABJ_404_Solution_View {
         
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/addManualRedirectPageSearchDropdown.html");
+        $html = str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
         $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = str_replace('{pageIDAndType}', $pageIDAndType, $html);
         $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
@@ -1331,6 +1332,7 @@ class ABJ_404_Solution_View {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectTop.html");
         $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/addManualRedirectPageSearchDropdown.html");
+        $html = str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
         $html = str_replace('{redirectPageTitle}', '', $html);
         $html = str_replace('{pageIDAndType}', '', $html);
         $html = str_replace('{redirectPageTitle}', '', $html);
@@ -1408,6 +1410,8 @@ class ABJ_404_Solution_View {
         $content = "";
 
         $selected = "";
+        
+        // -------------
         $content .= "\n<label for=\"dest404page\">" . __('Redirect all unhandled 404s to', '404-solution') . ":</label> <select id=\"dest404page\" name=\"dest404page\">";
 
         $content .= "\n" . '<optgroup label="' . __('Special', '404-solution') . '">' . "\n";
@@ -1437,6 +1441,8 @@ class ABJ_404_Solution_View {
 
         $content .= "</select><BR/>";
         
+        // -------------------------------
+
         $selectedAutoRedirects = "";
         if ($options['auto_redirects'] == '1') {
             $selectedAutoRedirects = " checked";
