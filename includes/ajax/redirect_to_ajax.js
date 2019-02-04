@@ -77,6 +77,8 @@ jQuery(document).ready(function($) {
         abj404_validateAndUpdateFeedback();
     });
 
+    // we run this here for when the user edits an existing redirect.
+    abj404_validateAndUpdateFeedback();
 });
 
 /** Validate the selection and update the feedback label.
