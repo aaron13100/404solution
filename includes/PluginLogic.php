@@ -1008,8 +1008,8 @@ class ABJ_404_Solution_PluginLogic {
             } else if (mb_strlen($_POST['redirect_to_user_field']) < 8) {
                 $response['message'] = __('Error: External URL is too short.', '404-solution') . "<BR/>";
                 
-            } else if (substr($_POST['redirect_to_user_field'], 0, 7) != "http://" && mb_substr($_POST['external'], 0, 8) != "https://" && mb_substr($_POST['external'], 0, 6) != "ftp://") {
-                $response['message'] = __('Error: External URLs must start with http://, https://, or ftp://', '404-solution') . "<BR/>";
+            } else if (mb_strpos($_POST['redirect_to_user_field'], "://") === false) {
+                $response['message'] = __("Error: External doesn't contain ://", '404-solution') . "<BR/>";
             }
         }
 
