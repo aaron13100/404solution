@@ -116,6 +116,9 @@ function abj404_validateAndUpdateFeedback() {
  * @returns {Boolean} true if the URL is valid. false otherwise.
  */
 function abj404_isValidURL(url) {
+    if (url === undefined || url === null) {
+        return false;
+    }
     if ((url.indexOf(' ') === -1) && (url.indexOf("://") > -1)) {
     	return true;
     }

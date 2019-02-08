@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.11.1 (February 8, 2019) ##
+* FIX: Correct a minor JavaScript issue (introduced in 2.11.0).
+
 ## Version 2.11.0 (February 8, 2019) ##
 * Improvement: Adding a manual redirect uses a search and a dropdown list (for samwebdev).
 
