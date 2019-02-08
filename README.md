@@ -71,6 +71,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Changelog ##
 
+## Version 2.11.2 (February 8, 2019) ##
+* FIX: Correct an issue with adding external URLs introduced in 2.11.0 (thanks Людмила via email).
+
 ## Version 2.11.1 (February 8, 2019) ##
 * FIX: Correct a minor JavaScript issue (introduced in 2.11.0).
 
