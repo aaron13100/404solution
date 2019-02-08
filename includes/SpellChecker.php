@@ -30,7 +30,8 @@ class ABJ_404_Solution_SpellChecker {
         foreach ($regexURLsRows as $row) {
             $regexURL = $row['url'];
             
-            $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex "' . $regexURL . '" to URL: ' . $requestedURL;
+            $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying custom regex "' . $regexURL . '" to URL: ' . 
+                    $requestedURL;
             $preparedURL = str_replace('/', '\/', $regexURL);
             if (preg_match('/' . $preparedURL . '/', $requestedURL)) {
                 $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
