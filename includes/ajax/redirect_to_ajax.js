@@ -1,7 +1,7 @@
 
 jQuery(document).ready(function($) {	
     // mostly copied from https://jqueryui.com/autocomplete/#categories	
-    $.widget( "custom.catcomplete", $.ui.autocomplete, {
+    $.widget("custom.catcomplete", $.ui.autocomplete, {
       _create: function() {
         this._super();
         this.widget().menu( "option", "items", "> :not(.ui-autocomplete-category)" );
@@ -22,10 +22,14 @@ jQuery(document).ready(function($) {
           });
       }
     });
+    
+    // highlight the text when the textbox gets focus.
+    $("#redirect_to_user_field").focus(function() { this.select(); });
 
-    var url = "admin-ajax.php?action=echoRedirectToPages";
+    // get the URL from the html page.
+    var url = $("#redirect_to_user_field").attr("data-url");
     var cache = {};
-    $( "#redirect_to_user_field" ).catcomplete({
+    $("#redirect_to_user_field").catcomplete({
         //source: url,
         source: function( request, response ) {
                     var term = request.term;

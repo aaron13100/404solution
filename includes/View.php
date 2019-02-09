@@ -682,7 +682,6 @@ class ABJ_404_Solution_View {
         
         $final = "";
         $pageIDAndType = "";
-        $pageTitle = get_the_title($redirect['final_dest']);
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
             $final = $redirect['final_dest'];
             $pageIDAndType = ABJ404_TYPE_EXTERNAL . "|" . ABJ404_TYPE_EXTERNAL;
@@ -698,12 +697,14 @@ class ABJ_404_Solution_View {
             $codeSelected = $redirect['code'];
         }
         
+        $pageTitle = $abj404logic->getPageTitleFromIDAndType($pageIDAndType, $redirect['final_dest']);        
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/addManualRedirectPageSearchDropdown.html");
         $html = str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
         $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = str_replace('{pageIDAndType}', $pageIDAndType, $html);
         $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
+        $html = str_replace('{includeDefault404Page}', "false", $html);
         $html = $this->doNormalReplacements($html);
         echo $html;
         
@@ -1336,6 +1337,7 @@ class ABJ_404_Solution_View {
         $html = str_replace('{redirectPageTitle}', '', $html);
         $html = str_replace('{pageIDAndType}', '', $html);
         $html = str_replace('{redirectPageTitle}', '', $html);
+        $html = str_replace('{includeDefault404Page}', "false", $html);
         $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectBottom.html");
         $html = str_replace('{addManualRedirectAction}', $link, $html);
         $html = str_replace('{urlPlaceholder}', $urlPlaceholder, $html);
@@ -1403,46 +1405,28 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageAutoRedirects($options) {
-        global $abj404dao;
         global $abj404logic;
         
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         $content = "";
+        $userSelectedDefault404Page = (array_key_exists('dest404page', $options) && 
+                isset($options['dest404page']) ? $options['dest404page'] : null);
+        $urlDestination = (array_key_exists('dest404pageURL', $options) && 
+                isset($options['dest404pageURL']) ? $options['dest404pageURL'] : null);
 
-        $selected = "";
+        $pageTitle = $abj404logic->getPageTitleFromIDAndType($userSelectedDefault404Page, $urlDestination);
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
+                "/html/addManualRedirectPageSearchDropdown.html");
+        $html = str_replace('{redirect_to_label}', __('Redirect all unhandled 404s to', '404-solution'), $html);
+        $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
+        $html = str_replace('{pageIDAndType}', $userSelectedDefault404Page, $html);
+        $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
+        $html = str_replace('{includeDefault404Page}', "true", $html);
+        $html = $this->doNormalReplacements($html);
+        $content .= $html;
         
-        // -------------
-        $content .= "\n<label for=\"dest404page\">" . __('Redirect all unhandled 404s to', '404-solution') . ":</label> <select id=\"dest404page\" name=\"dest404page\">";
-
-        $content .= "\n" . '<optgroup label="' . __('Special', '404-solution') . '">' . "\n";
+        // -----------------------------------------------
         
-        $userSelectedDefault404Page = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
-                $options['dest404page'] : null);
-        $dest404page = ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED;
-        $selected = $userSelectedDefault404Page == $dest404page ? "selected" : "";
-        $content .= '<option value="' . ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED . '"' . $selected . ">" . 
-                __('(Default 404 Page)', '404-solution') . "</option>";
-
-        $destHomepage = ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME;
-        $selected = $userSelectedDefault404Page == $destHomepage ? "selected" : "";
-        $content .= '<option value="' . ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME . '"' . 
-                $selected . ">" . __('(Home Page)', '404-solution') . "</option>";
-        
-        $content .= "\n" . '</optgroup>' . "\n";
-
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('');
-        // order the results. this also sets the page depth (for child pages).
-        $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes);
-        
-        $content .= $this->echoRedirectDestinationOptionsOthers($userSelectedDefault404Page, 
-                $rowsOtherTypes);
-        
-        $content .= $this->echoRedirectDestinationOptionsCatsTags($userSelectedDefault404Page);
-
-        $content .= "</select><BR/>";
-        
-        // -------------------------------
-
         $selectedAutoRedirects = "";
         if ($options['auto_redirects'] == '1') {
             $selectedAutoRedirects = " checked";

@@ -1009,7 +1009,7 @@ class ABJ_404_Solution_PluginLogic {
                 $response['message'] = __('Error: External URL is too short.', '404-solution') . "<BR/>";
                 
             } else if (mb_strpos($_POST['redirect_to_user_field'], "://") === false) {
-                $response['message'] = __("Error: External doesn't contain ://", '404-solution') . "<BR/>";
+                $response['message'] = __("Error: External URL doesn't contain ://", '404-solution') . "<BR/>";
             }
         }
 
@@ -1281,8 +1281,11 @@ class ABJ_404_Solution_PluginLogic {
             $options[$optionName] = wp_kses_post($_POST[$optionName]);
         }
 
-        if (array_key_exists('dest404page', $_POST) && isset($_POST['dest404page'])) {
-            $options['dest404page'] = sanitize_text_field(@$_POST['dest404page']);
+        if (array_key_exists('redirect_to_data_field_id', $_POST) && isset($_POST['redirect_to_data_field_id'])) {
+            $options['dest404page'] = sanitize_text_field(@$_POST['redirect_to_data_field_id']);
+        }
+        if (array_key_exists('redirect_to_data_field_title', $_POST) && isset($_POST['redirect_to_data_field_title'])) {
+            $options['dest404pageURL'] = sanitize_text_field(@$_POST['redirect_to_data_field_title']);
         }
         if (array_key_exists('ignore_dontprocess', $_POST) && isset($_POST['ignore_dontprocess'])) {
             $options['ignore_dontprocess'] = wp_kses_post(@$_POST['ignore_dontprocess']);
@@ -1663,5 +1666,50 @@ class ABJ_404_Solution_PluginLogic {
         }
         
         return false;
+    }
+    
+    /** 0|0 => "(Default 404 Page)"
+     * 5|5 => "(Home Page)"
+     * 10|1 => "About"
+     * 
+     * @param type $userSelectedDefault404Page
+     */
+    function getPageTitleFromIDAndType($idAndType, $externalLinkURL) {
+        global $abj404dao;
+        global $abj404logging;
+        
+        if ($idAndType == '') {
+            return '';
+        } else if ($idAndType == ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) {
+            return __('(Default 404 Page)', '404-solution');
+        } else if ($idAndType == ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME) {
+            return __('(Home Page)', '404-solution');
+        } else if ($idAndType == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
+            return $externalLinkURL;
+        }
+        
+        $meta = explode("|", $idAndType);
+        $id = $meta[0];
+        $type = $meta[1];
+        
+        if ($type == ABJ404_TYPE_POST) {
+            return get_the_title($id);
+            
+        } else if ($type == ABJ404_TYPE_CAT) {
+            $rows = $abj404dao->getPublishedCategories($id);
+            if (count($rows) == 0) {
+                $abj404logging->debugMessage('No TERM (category) found with ID: ' . $id);
+                return '';
+            }
+            $firstRow = $rows[0];
+            return $firstRow->name;
+            
+        } else if ($type == ABJ404_TYPE_TAG) {
+            $tag = get_tag($id);
+            return $tag->name;
+        }
+        
+        $abj404logging->errorMessage("Couldn't get page title. No matching type found for type: " . $type);
+        return '';
     }
 }

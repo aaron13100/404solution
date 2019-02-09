@@ -1124,9 +1124,12 @@ class ABJ_404_Solution_DataAccess {
     
     /** Returns rows with the defined categories.
      * @global type $wpdb
+     * @global type $abj404logic
+     * @global type $abj404logging
+     * @param type $id
      * @return type
      */
-    function getPublishedCategories() {
+    function getPublishedCategories($term_id = null) {
         global $wpdb;
         global $abj404logic;
         global $abj404logging;
@@ -1143,6 +1146,10 @@ class ABJ_404_Solution_DataAccess {
             $recognizedCategories .= "'" . trim(mb_strtolower($category)) . "', ";
         }
         $recognizedCategories = rtrim($recognizedCategories, ", ");
+        
+        if ($term_id != null) {
+            $term_id = "*/ and wp_terms.term_id = " . $term_id;
+        }
 
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedCategories.sql");
@@ -1152,6 +1159,7 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace('{wp_terms}', $wpdb->terms, $query);
         $query = str_replace('{wp_term_taxonomy}', $wpdb->term_taxonomy, $query);
         $query = str_replace('{recognizedCategories}', $recognizedCategories, $query);
+        $query = str_replace('{term_id}', $term_id, $query);
         
         $rows = $wpdb->get_results($query);
         // check for errors

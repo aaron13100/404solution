@@ -86,7 +86,8 @@
 <label  class="add_a_redirect_label" for="redirect_to_user_field">{redirect_to_label}:</label>
 <input id="redirect_to_user_field" placeholder="{(Type a page name or an external URL)}" 
        style="width: 50%;" type="text" name="redirect_to_user_field" 
-       value="{redirectPageTitle}"> 
+       value="{redirectPageTitle}"
+       data-url="admin-ajax.php?action=echoRedirectToPages&includeDefault404Page={includeDefault404Page}" > 
 <BR/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <span id="redirect_to_user_field_explanation" style="font-style: italic;">{(Type a page name or an external URL)}</span>
