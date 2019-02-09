@@ -71,6 +71,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 ## Changelog ##
 
+## Version 2.11.3 (February 20, 2019) ##
+* Improvement: Use a dropdown search when choosing the default 404 destination on the options page.
+
 ## Version 2.11.2 (February 8, 2019) ##
 * FIX: Correct an issue with adding external URLs introduced in 2.11.0 (thanks Людмила via email).
 
