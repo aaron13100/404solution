@@ -7,27 +7,26 @@ Version: 2.11.3
 Tested up to: 5.0.3
 Stable tag: 2.11.3
 
-Automatically redirect 404s when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
+Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
 == Description ==
 
-404 Solution logs 404s and allows them to be redirected to pages that exist. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
+404 Solution redirects page not found errors (404s) to pages that exist and logs the errors. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
 
 = Features: =
 
-* Redirect 404 URLs to existing pages or ignore them.
+* Highly configurable - redirect specific 404 URLs to any existing page.
 * Automatically create redirects based on the URL the visitor was most likely trying to visit.
-* Get a list of 404 URLs as they happen.
-* View logs of hits to 404 pages and redirects including referrer data.
+* Get a list of 404s as they happen.
+* View logs of 404 pages and redirects including referrer data.
 * WooCommerce compatible - pages, posts, products, and custom post types are supported.
-* Create automatic redirects for any URL resolving to a single page or post that isn't the current permalink.
-* Display a list of page suggestions on a custom 404 page with a shortcode (custom 404 page not included).
+* Display a list of page suggestions on a custom 404 page with a shortcode (any page can be a custom 404 page).
 * Basic plugin usage statistics.
-* Automatically remove redirects when the URL matches a new page or post permalink.
-* Automatically remove manual and automatic redirects once they are no longer being used.
-* Redirect based on a RegEx (regular expression) pattern.
+* Automatically remove redirects when the URL matches a new page or post.
+* Automatically remove manual and automatic redirects once they are no longer used.
+* Redirect based on regular expressions and include query data.
 
-Convert your 404 traffic by providing your visitors with a better browsing experience and eliminate 404 URLs on your site.
+Convert your 404 traffic by providing your visitors with a better browsing experience and eliminate 404 errors on your site.
 
 == Installation ==
 
