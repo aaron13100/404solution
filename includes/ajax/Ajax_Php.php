@@ -45,13 +45,47 @@ class ABJ_404_Solution_Ajax_Php {
         $categoryOptions = $abj404AjaxPhp->filterPages($categoryOptions, $term);
         $tagOptions = $abj404AjaxPhp->filterPages($tagOptions, $term);
         $customCategoryOptions = $abj404AjaxPhp->filterPages($customCategoryOptions, $term);
-                
+        
         // combine and display the search results.
         $suggestions = array_merge($specialPages, $publishedPosts, $categoryOptions, $tagOptions, 
                 $customCategoryOptions);
-    	echo json_encode($suggestions);
+
+        // limit search results
+        $suggestions = $abj404AjaxPhp->provideSearchFeedback($suggestions);
+                
+        echo json_encode($suggestions);
         
     	exit();
+    }
+    
+    /** Add a message about whether there are too many results or none at all.
+     * @param type $suggestions
+     * @return string
+     */
+    function provideSearchFeedback($suggestions) {
+        $category = '';
+        
+        if (count($suggestions) == 0) {
+            // tell the user if there are no resluts.
+            $category = __('(No matching results found.)', '404-solution');
+            
+        } else if (count($suggestions) > 1000) {
+            // limit the results if there are too many
+            $suggestions = array_slice($suggestions, 0, 1000);
+            $category = __('(Data truncated. Too many results!)', '404-solution');
+            
+        } else {
+            $category = __('(All results displayed.)', '404-solution');
+        }
+        
+        $suggestion = array();
+        $suggestion['label'] = null;
+        $suggestion['category'] = $category;
+        $suggestion['value'] = null;
+        $suggestion['data_overflow_item'] = 'true';
+        $suggestions[] = $suggestion;
+        
+        return $suggestions;
     }
     
     /** Remove any results from the list that don't match the search term.

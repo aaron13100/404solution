@@ -81,6 +81,17 @@
         font-weight: normal;
         padding-left: 0px;
     }
+    
+    /* This hides the last empty element when the data is truncated and the final element is added only
+        so that the final category will be added. */
+    .hide-me-please {
+        display: none;
+    }
+    ul .ui-autocomplete-category.data-overflow-category {
+        color: black;
+        font-weight: bold;
+        font-style: italic;        
+    }
 </style>
 
 <label  class="add_a_redirect_label" for="redirect_to_user_field">{redirect_to_label}:</label>

@@ -10,15 +10,28 @@ jQuery(document).ready(function($) {
           var that = this, currentCategory = "";
           $.each( items, function( index, item ) {
               var li;
+              // setup the category.
               if ( item.category !== currentCategory ) {
-                  ul.append( "<li class='ui-autocomplete-category'>" + item.category + "</li>" );
+                  var classesForCategoryLabel = "ui-autocomplete-category";
+                  // if we're supposed to hide the item then this is the last category.
+                  if (item.data_overflow_item) {
+                      classesForCategoryLabel += " data-overflow-category";
+                  }
+                  ul.append( "<li class='" + classesForCategoryLabel + "'>" + item.category + "</li>" );
                   currentCategory = item.category;
               }
+              // render the items
               li = that._renderItemData( ul, item );
+              
+              // set attributes and classes on the item.
               if ( item.category ) {
                   li.attr( "aria-label", item.category + " : " + item.label );
               }
-              li.addClass('indent-depth-' + item.depth);
+              if (item.data_overflow_item) {
+                  li.addClass('hide-me-please');
+              } else {
+                  li.addClass('indent-depth-' + item.depth);
+              }
           });
       }
     });
