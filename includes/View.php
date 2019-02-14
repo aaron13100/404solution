@@ -25,7 +25,7 @@ class ABJ_404_Solution_View {
                 $capturedMessage);
         $capturedMessage = str_replace("</a>", "</a>", $capturedMessage);
 
-        return '<div class="notice notice-info"><p><strong>' . esc_html(__('404 Solution', '404-solution')) . 
+        return '<div class="notice notice-info"><p><strong>' . PLUGIN_NAME . 
                 ":</strong> " . $capturedMessage . "</p></div>";
     }
 
@@ -126,18 +126,11 @@ class ABJ_404_Solution_View {
     
     /** Echo the text that appears at the bottom of each admin page. */
     function echoAdminFooter() {
-        echo "<div style=\"clear: both;\">";
-        echo "<BR/>";
-        echo "<HR/><strong>Credits:</strong><BR/>";
-        echo "<a href=\"" . ABJ404_HOME_URL . "\" title=\"" . __('404 Solution') . "\" target=\"_blank\">" . __('404 Solution') . "</a> ";
-        echo __('is maintained by', '404-solution');
-        echo " ";
-        echo "<a href=\"http://www.wealth-psychology.com/404-solution/\" title=\"Aaron J\" target=\"_blank\">Aaron J</a>. | ";
-
-        echo __('Version', '404-solution') . ": " . ABJ404_VERSION;
-
-        echo "</div>";
-        echo "</div>";
+        // read the html content.
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminFooter.html");
+        // constants and translations.
+        $html = $this->doNormalReplacements($html);
+        echo $html;
     }
 
     /** Output the tabs at the top of the plugin page.
@@ -164,7 +157,7 @@ class ABJ_404_Solution_View {
         } else {
             echo "\n<div id=\"icon-tools\" class=\"icon32\"></div>";
         }
-        echo "\n<h2>" . __('404 Solution', '404-solution') . esc_html($header) . "</h2>";
+        echo "\n<h2>" . PLUGIN_NAME . esc_html($header) . "</h2>";
         if ($message != "") {
             $allowed_tags = array(
                 'br' => array(),
@@ -487,6 +480,8 @@ class ABJ_404_Solution_View {
      * @return type
      */
     function doNormalReplacements($text) {
+        global $wpdb;
+        
         // known strings that do not exist in the translation file.
         $knownReplacements = array(
             '{ABJ404_STATUS_AUTO}' => ABJ404_STATUS_AUTO,
@@ -500,6 +495,12 @@ class ABJ_404_Solution_View {
             '{ABJ404_TYPE_TAG}' => ABJ404_TYPE_TAG,
             '{ABJ404_TYPE_EXTERNAL}' => ABJ404_TYPE_EXTERNAL,
             '{ABJ404_TYPE_HOME}' => ABJ404_TYPE_HOME,
+            '{ABJ404_HOME_URL}' => ABJ404_HOME_URL,
+            '{PLUGIN_NAME}' => PLUGIN_NAME,
+            '{ABJ404_VERSION}' => ABJ404_VERSION,
+            '{PHP_VERSION}' => phpversion(),
+            '{WP_VERSION}' => get_bloginfo('version'),
+            '{MYSQL_VERSION}' => $wpdb->db_version(),
             );
 
         // replace known strings that do not exist in the translation file.

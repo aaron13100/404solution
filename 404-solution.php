@@ -44,6 +44,7 @@ define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );
 define( 'ABJ404_VERSION', '2.11.3' );
 define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/' );
 define( 'ABJ404_PP', 'abj404_solution'); // plugin path
+define( 'PLUGIN_NAME', '404 Solution');
 
 // STATUS types
 define( 'ABJ404_TRASH_FILTER', -1 );

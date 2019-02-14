@@ -474,12 +474,12 @@ class ABJ_404_Solution_WordPress_Connector {
         if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
                 $options['menuLocation'] == 'settingsLevel') {
             // this adds the settings link at the same level as the "Tools" and "Settings" menu items.
-            $settingsPageName = add_menu_page('404 Solution', '404 Solution', 'manage_options', 'abj404_solution',
+            $settingsPageName = add_menu_page(PLUGIN_NAME, PLUGIN_NAME, 'manage_options', 'abj404_solution',
                     'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
                 
         } else {
             // this adds the settings link at Settings->404 Solution.
-            $settingsPageName = add_submenu_page('options-general.php', '404 Solution', $pageName, 'manage_options', ABJ404_PP, 
+            $settingsPageName = add_submenu_page('options-general.php', PLUGIN_NAME, $pageName, 'manage_options', ABJ404_PP, 
                     'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
         }
     }
