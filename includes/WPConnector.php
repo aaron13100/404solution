@@ -62,6 +62,8 @@ class ABJ_404_Solution_WordPress_Connector {
         );
         wp_localize_script( 'redirect_to_ajax', 'abj404localization', $translation_array );        
         wp_enqueue_script( 'redirect_to_ajax' );
+        
+        wp_enqueue_style( 'abj404solution-styles', ABJ404_URL . '/includes/html/404solutionStyles.css' );
     }
 
     /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).
