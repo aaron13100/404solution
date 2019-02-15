@@ -26,8 +26,12 @@ class ABJ_404_Solution_WordPress_Connector {
 
         /** Include things necessary for ajax. */
         add_action( 'admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts' );
+        
         add_action( 'wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
         add_action( 'wp_ajax_nopriv_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
+        
+        add_action( 'wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor' );
+        add_action( 'wp_ajax_nopriv_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor' );
 
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
     }

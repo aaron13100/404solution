@@ -463,7 +463,7 @@ class ABJ_404_Solution_DataAccess {
         
         $whereClause = '';
         if ($specificURL != '') {
-            $whereClause = "where requested_url = '" . $specificURL . "'";
+            $whereClause = "where lower(requested_url) like lower('" . $specificURL . "')";
         }
         
         $logsTable = $wpdb->prefix . 'abj404_logsv2';

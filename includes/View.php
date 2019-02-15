@@ -1642,6 +1642,23 @@ class ABJ_404_Solution_View {
         }
         echo "</select><BR/>";
         echo "<input type=\"submit\" value=\"View Logs\" class=\"button-secondary\">";
+        
+        // ----------------- TODO: use a search box for the logs page.
+/*
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
+                "/html/viewLogsForSearchBox.html");
+        $html = str_replace('{redirect_to_label}', __('View logs for', '404-solution'), $html);
+        $html = str_replace('{redirectPageTitle}', '', $html);
+        $html = str_replace('{pageIDAndType}', '', $html);
+        $html = str_replace('{redirectPageTitle}', '', $html);
+        $html = str_replace('{includeDefault404Page}', "false", $html);
+        $html = $this->doNormalReplacements($html);
+        echo $html;
+        
+  */      
+        // -----------------
+        
+        
         echo "</form>";
 
         $columns['url']['title'] = __('URL', '404-solution');
