@@ -11,13 +11,34 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
 
 class ABJ_404_Solution_Ajax_Php {
 
+    /** Find logs to display. */
+    static function echoViewLogsFor() {
+        global $abj404logic;
+        global $abj404AjaxPhp;
+        global $abj404dao;
+        
+        $term = mb_strtolower(sanitize_text_field($_GET['term']));
+        $suggestions = array();
+        
+        $tableOptions = $abj404logic->getTableOptions();
+        $rows = $abj404dao->getLogsIDandURL('%' . $term . '%');
+        $results = $abj404AjaxPhp->formatLogResults($rows);
+        
+        // limit search results
+        $suggestions = $abj404AjaxPhp->provideSearchFeedback($results);
+                
+        echo json_encode($suggestions);
+        
+    	exit();
+    }
+    
     /** Find pages to redirect to that match a search term, then echo the results in a json format. */
     static function echoRedirectToPages() {
         global $abj404logic;
         global $abj404AjaxPhp;
         global $abj404dao;
         
-        $term = sanitize_text_field($_GET['term']);
+        $term = mb_strtolower(sanitize_text_field($_GET['term']));
         $includeDefault404Page = $_GET['includeDefault404Page'] == "true";
         $suggestions = array();
         
@@ -232,4 +253,23 @@ class ABJ_404_Solution_Ajax_Php {
         return $suggestions;
     }
 
+    /** Prepare log results for json output. 
+     * @param type $rows
+     * @return type
+     */
+    function formatLogResults($rows) {
+        $suggestions = array();
+        
+        foreach ($rows as $row) {
+            $suggestion = array();
+            $suggestion['label'] = $row['requested_url'];
+            $suggestion['category'] = '';
+            $suggestion['value'] = $row['logsid'];
+            
+            $suggestions[] = $suggestion;
+        }
+        
+        return $suggestions;
+    }
+    
 }
