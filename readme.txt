@@ -56,6 +56,10 @@ Yes. It's as easy as turning on this feature in the options.
 
 Deleting old log lines to limit disk space usage is done automatically. You can set the maximum size to as low as 1MB under Options -> General Settings -> Maximum log disk usage.
 
+= I see the message "There are (some number of) captured 404 URLs to be processed." What should I do? =
+
+This is nothing to be worried about. It means people tried to access pages on your website that don't exist. You can either change the settings on the options page so that you're not longer notified about it (Options -> General Settings -> Admin notification level), or you can go the "Captured 404 URLs" page and do something with them (either ignore them or specify which existing page they should redirect to).
+
 == Screenshots ==
 
 1. Admin Options Screen
