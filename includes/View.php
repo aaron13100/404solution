@@ -1639,13 +1639,14 @@ class ABJ_404_Solution_View {
         }
 
         echo "<BR/><BR/><BR/>";
-        echo "<form method=\"GET\" action=\"\" style=\"clear: both; display: block;\" class=\"clearbothdisplayblock\">";
+        echo "<form id=\"logs_search_form\" method=\"GET\" action=\"\" "
+        . "style=\"clear: both; display: block;\" class=\"clearbothdisplayblock\">";
         echo '<input type="hidden" name="page" value="' . ABJ404_PP . '">';
         echo "<input type=\"hidden\" name=\"subpage\" value=\"abj404_logs\">";
 
         // ----------------- dropdown search box. begin.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
-                "/html/addManualRedirectPageSearchDropdown.html");
+                "/html/viewLogsForSearchBox.html");
         $html = str_replace('{redirect_to_label}', __('View logs for', '404-solution'), $html);
         $html = str_replace('{redirectPageTitle}', '', $html);
         $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
@@ -1661,10 +1662,6 @@ class ABJ_404_Solution_View {
         echo $html;
         // ----------------- dropdown search box. end.
 
-        echo "<BR/>";
-        echo "<strong><label for=\"id\">" . __('View Logs For', '404-solution') . ":</label></strong> ";
-        echo "<input type=\"submit\" value=\"View Logs\" class=\"button-secondary\">";
-        
         echo "</form>";
 
         $columns['url']['title'] = __('URL', '404-solution');
