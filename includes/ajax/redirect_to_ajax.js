@@ -118,13 +118,16 @@ function abj404_validateAndUpdateFeedback() {
     }
 
     var selectedPageID = jQuery("#redirect_to_data_field_id").val();
+    var tooltip_empty = jQuery("#redirect_to_user_field").attr("data-tooltip-explanation-empty");
+    var tooltip_page = jQuery("#redirect_to_user_field").attr("data-tooltip-explanation-page");
+    var tooltip_url = jQuery("#redirect_to_user_field").attr("data-tooltip-explanation-url");
     if ((selectedPageID === null) || (selectedPageID === "")) {
-        jQuery("#redirect_to_user_field_explanation").text("(Type a page name or an external URL)");
+        jQuery(".redirect_to_user_field_explanation").text(tooltip_empty);
         
     } else if (selectedPageID === ABJ404_TYPE_EXTERNAL) {
-        jQuery("#redirect_to_user_field_explanation").text("(An external URL will be used.)");
+        jQuery("#redirect_to_user_field_explanation").text(tooltip_url);
     } else {
-        jQuery("#redirect_to_user_field_explanation").text("(A page has been selected.)");
+        jQuery("#redirect_to_user_field_explanation").text(tooltip_page);
     }
 }
 

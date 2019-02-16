@@ -702,10 +702,17 @@ class ABJ_404_Solution_View {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/addManualRedirectPageSearchDropdown.html");
         $html = str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
+                __('(Type a page name or an external URL)', '404-solution'), $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
+                __('(A page has been selected.)', '404-solution'), $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
+                __('(An external URL will be used.)', '404-solution'), $html);
         $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = str_replace('{pageIDAndType}', $pageIDAndType, $html);
         $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
-        $html = str_replace('{includeDefault404Page}', "false", $html);
+        $html = str_replace('{data-url}', 
+                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false", $html);
         $html = $this->doNormalReplacements($html);
         echo $html;
         
@@ -1334,11 +1341,20 @@ class ABJ_404_Solution_View {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectTop.html");
         $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/addManualRedirectPageSearchDropdown.html");
+
         $html = str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
+                __('(Type a page name or an external URL)', '404-solution'), $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
+                __('(A page has been selected.)', '404-solution'), $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
+                __('(An external URL will be used.)', '404-solution'), $html);
         $html = str_replace('{redirectPageTitle}', '', $html);
         $html = str_replace('{pageIDAndType}', '', $html);
         $html = str_replace('{redirectPageTitle}', '', $html);
-        $html = str_replace('{includeDefault404Page}', "false", $html);
+        $html = str_replace('{data-url}', 
+                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false", $html);
+
         $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectBottom.html");
         $html = str_replace('{addManualRedirectAction}', $link, $html);
         $html = str_replace('{urlPlaceholder}', $urlPlaceholder, $html);
@@ -1419,10 +1435,17 @@ class ABJ_404_Solution_View {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/addManualRedirectPageSearchDropdown.html");
         $html = str_replace('{redirect_to_label}', __('Redirect all unhandled 404s to', '404-solution'), $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
+                __('(Type a page name or an external URL)', '404-solution'), $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
+                __('(A page has been selected.)', '404-solution'), $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
+                __('(An external URL will be used.)', '404-solution'), $html);
         $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = str_replace('{pageIDAndType}', $userSelectedDefault404Page, $html);
         $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
-        $html = str_replace('{includeDefault404Page}', "true", $html);
+        $html = str_replace('{data-url}', 
+                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true", $html);
         $html = $this->doNormalReplacements($html);
         $content .= $html;
         
@@ -1615,49 +1638,32 @@ class ABJ_404_Solution_View {
             $tableOptions[$key] = wp_kses_post($value);
         }
 
-        echo "<BR/>";
+        echo "<BR/><BR/><BR/>";
         echo "<form method=\"GET\" action=\"\" style=\"clear: both; display: block;\" class=\"clearbothdisplayblock\">";
         echo '<input type="hidden" name="page" value="' . ABJ404_PP . '">';
         echo "<input type=\"hidden\" name=\"subpage\" value=\"abj404_logs\">";
-        echo "<strong><label for=\"id\">" . __('View Logs For', '404-solution') . ":</label></strong> ";
-        echo '<select name="id" id="id"style="max-width: 100%" >';
-        
-        $selected = "";
-        if ($tableOptions['logsid'] == 0) {
-            $selected = " selected";
-        }
-        echo "<option value=\"0\"" . $selected . ">" . __('All Redirects', '404-solution') . "</option>";
-        
-        $rows = $abj404dao->getLogsIDandURL();
-        $abj404logging->debugMessage(sizeof($rows) . " log rows found for logs page select option.");
-        foreach ($rows as $row) {
-            $logRow['id'] = absint($row['logsid']);
-            $logRow['url'] = esc_url($row['requested_url']);
 
-            $selected = "";
-            if ($tableOptions['logsid'] == $logRow['id']) {
-                $selected = " selected";
-            }
-            echo "<option value=\"" . esc_attr($logRow['id']) . "\"" . $selected . ">" . esc_html($logRow['url']) . "</option>";
-        }
-        echo "</select><BR/>";
-        echo "<input type=\"submit\" value=\"View Logs\" class=\"button-secondary\">";
-        
-        // ----------------- TODO: use a search box for the logs page.
-/*
+        // ----------------- dropdown search box. begin.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
-                "/html/viewLogsForSearchBox.html");
+                "/html/addManualRedirectPageSearchDropdown.html");
         $html = str_replace('{redirect_to_label}', __('View logs for', '404-solution'), $html);
         $html = str_replace('{redirectPageTitle}', '', $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
+                __('(Begin typing a URL)', '404-solution'), $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
+                __('(A page has been selected.)', '404-solution'), $html);
+        $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
+                __('(Please choose from the dropdown list instead of typing your own URL.)', '404-solution'), $html);
         $html = str_replace('{pageIDAndType}', '', $html);
         $html = str_replace('{redirectPageTitle}', '', $html);
-        $html = str_replace('{includeDefault404Page}', "false", $html);
+        $html = str_replace('{data-url}', "admin-ajax.php?action=echoViewLogsFor", $html);
         $html = $this->doNormalReplacements($html);
         echo $html;
-        
-  */      
-        // -----------------
-        
+        // ----------------- dropdown search box. end.
+
+        echo "<BR/>";
+        echo "<strong><label for=\"id\">" . __('View Logs For', '404-solution') . ":</label></strong> ";
+        echo "<input type=\"submit\" value=\"View Logs\" class=\"button-secondary\">";
         
         echo "</form>";
 
