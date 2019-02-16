@@ -14,7 +14,7 @@ if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
 	Author:      Aaron J
 	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 2.11.3
+	Version: 2.12.0
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -41,7 +41,7 @@ define( 'ABJ404_AUTHOR_EMAIL', 'aaron@wealth-psychology.com' );
 define( 'ABJ404_URL', plugin_dir_url( __FILE__ ) );
 define( 'ABJ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );
-define( 'ABJ404_VERSION', '2.11.3' );
+define( 'ABJ404_VERSION', '2.12.0' );
 define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/' );
 define( 'ABJ404_PP', 'abj404_solution'); // plugin path
 define( 'PLUGIN_NAME', '404 Solution');

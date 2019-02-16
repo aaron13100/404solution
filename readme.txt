@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.11.3
+Version: 2.12.0
 Tested up to: 5.1.0
-Stable tag: 2.11.3
+Stable tag: 2.12.0
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -64,8 +64,9 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 == Changelog ==
 
-= Version 2.11.3 (February 20, 2019) =
+= Version 2.12.0 (February 16, 2019) =
 * Improvement: Use a dropdown search when choosing the default 404 destination on the options page.
+* Improvement: Use a dropdown search when choosing which URL to view on the Logs page.
 * Improvement: Limit the list of pages to 1000 results when searching for page names on options pages.
 
 = Version 2.11.2 (February 8, 2019) =
