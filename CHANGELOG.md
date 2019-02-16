@@ -1,7 +1,8 @@
 # Changelog #
 
-## Version 2.11.3 (February 20, 2019) ##
+## Version 2.12.0 (February 16, 2019) ##
 * Improvement: Use a dropdown search when choosing the default 404 destination on the options page.
+* Improvement: Use a dropdown search when choosing which URL to view on the Logs page.
 * Improvement: Limit the list of pages to 1000 results when searching for page names on options pages.
 
 ## Version 2.11.2 (February 8, 2019) ##

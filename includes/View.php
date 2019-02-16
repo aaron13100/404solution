@@ -710,7 +710,6 @@ class ABJ_404_Solution_View {
                 __('(An external URL will be used.)', '404-solution'), $html);
         $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = str_replace('{pageIDAndType}', $pageIDAndType, $html);
-        $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = str_replace('{data-url}', 
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false", $html);
         $html = $this->doNormalReplacements($html);
@@ -1647,16 +1646,19 @@ class ABJ_404_Solution_View {
         // ----------------- dropdown search box. begin.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/viewLogsForSearchBox.html");
+        
+        $redirectPageTitle = $abj404dao->getPostOrGetSanitize('redirect_to_data_field_title');
+        $pageIDAndType = $abj404dao->getPostOrGetSanitize('redirect_to_data_field_id');
+        
         $html = str_replace('{redirect_to_label}', __('View logs for', '404-solution'), $html);
-        $html = str_replace('{redirectPageTitle}', '', $html);
         $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
                 __('(Begin typing a URL)', '404-solution'), $html);
         $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
                 __('(A page has been selected.)', '404-solution'), $html);
         $html = str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
                 __('(Please choose from the dropdown list instead of typing your own URL.)', '404-solution'), $html);
-        $html = str_replace('{pageIDAndType}', '', $html);
-        $html = str_replace('{redirectPageTitle}', '', $html);
+        $html = str_replace('{pageIDAndType}', $pageIDAndType, $html);
+        $html = str_replace('{redirectPageTitle}', $redirectPageTitle, $html);
         $html = str_replace('{data-url}', "admin-ajax.php?action=echoViewLogsFor", $html);
         $html = $this->doNormalReplacements($html);
         echo $html;
