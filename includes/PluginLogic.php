@@ -1166,6 +1166,12 @@ class ABJ_404_Solution_PluginLogic {
         if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == "abj404_logs") {
             if (array_key_exists('id', $_GET) && isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {                
                 $tableOptions['logsid'] = absint($_GET['id']);
+                
+            } else if (array_key_exists('redirect_to_data_field_id', $_GET) && 
+                    isset($_GET['redirect_to_data_field_id']) && 
+                    preg_match('/[0-9]+/', $_GET['redirect_to_data_field_id'])) {
+                $tableOptions['logsid'] = absint($_GET['redirect_to_data_field_id']);
+                
             } else {
                 $tableOptions['logsid'] = 0;
             }

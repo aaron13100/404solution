@@ -2,16 +2,21 @@
 <!-- - - - - - - - - - - - - - - - - - - -  addManualRedirectPageSearchDropdown.html BEGIN -->
 
 <label  class="add_a_redirect_label" for="redirect_to_user_field">{redirect_to_label}:</label>
-<input id="redirect_to_user_field" placeholder="{(Type a page name or an external URL)}" 
+<input id="redirect_to_user_field" placeholder="{TOOLTIP_POPUP_EXPLANATION_EMPTY}" 
        style="width: 50%;" type="text" name="redirect_to_user_field" 
        value="{redirectPageTitle}"
-       data-url="admin-ajax.php?action=echoRedirectToPages&includeDefault404Page={includeDefault404Page}" > 
+       data-url="{data-url}"
+       data-lpignore="true"
+       data-tooltip-explanation-empty="{TOOLTIP_POPUP_EXPLANATION_EMTPY}"
+       data-tooltip-explanation-page="{TOOLTIP_POPUP_EXPLANATION_PAGE}"
+       data-tooltip-explanation-url="{TOOLTIP_POPUP_EXPLANATION_URL}"
+       > 
 <div class="lefty-tooltip">?
-  <span class="lefty-tooltiptext">{(Type a page name or an external URL)}</span>
+    <span class="lefty-tooltiptext">{TOOLTIP_POPUP_EXPLANATION_EMPTY}</span>
 </div>
 <BR/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<span id="redirect_to_user_field_explanation" style="font-style: italic;">{(Type a page name or an external URL)}</span>
+<span id="redirect_to_user_field_explanation" style="font-style: italic;">{TOOLTIP_POPUP_EXPLANATION_EMPTY}</span>
 <input id="redirect_to_data_field_id" style="width: 50%;"  name="redirect_to_data_field_id" 
        type="hidden" value="{pageIDAndType}">
 <input id="redirect_to_data_field_title" style="width: 50%;"  name="redirect_to_data_field_title"
