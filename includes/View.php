@@ -1126,8 +1126,10 @@ class ABJ_404_Solution_View {
 
         echo "<div class=\"tablenav\">";
         
-        $htmlTop = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinksTop.html");
-        echo $this->doNormalReplacements($htmlTop);
+        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+            $htmlTop = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinksTop.html");
+            echo $this->doNormalReplacements($htmlTop);
+        }
         
         $this->echoPaginationLinks($sub, $tableOptions);
 

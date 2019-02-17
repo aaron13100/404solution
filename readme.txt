@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.12.1
+Version: 2.12.2
 Tested up to: 5.1.0
-Stable tag: 2.12.1
+Stable tag: 2.12.2
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -67,6 +67,12 @@ This is nothing to be worried about. It means people tried to access pages on yo
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.12.2 (February 17, 2019) =
+* FIX: Don't include unnecessary files for users when redirecting (speed up redirects, introduced in 2.11.0).
+* FIX: Don't show the "Add a Redirect" button on the Trash page where it can't be done.
+* FIX: Sort by Destination using the page title, not the page ID.
+* FIX: Change the hook priority for compatibility with the '404page - your smart custom 404 error page' plugin.
 
 = Version 2.12.1 (February 17, 2019) =
 * FIX: Correct an issue with adding external URLs introduced in 2.12.0 (thanks Людмила via email).

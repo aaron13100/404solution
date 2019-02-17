@@ -75,6 +75,12 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.12.2 (February 17, 2019) ##
+* FIX: Don't include unnecessary files for users when redirecting (speed up redirects, introduced in 2.11.0).
+* FIX: Don't show the "Add a Redirect" button on the Trash page where it can't be done.
+* FIX: Sort by Destination using the page title, not the page ID.
+* FIX: Change the hook priority for compatibility with the '404page - your smart custom 404 error page' plugin.
+
 ## Version 2.12.1 (February 17, 2019) ##
 * FIX: Correct an issue with adding external URLs introduced in 2.12.0 (thanks Людмила via email).
 * FIX: Don't rely on external sources for CSS.

@@ -416,7 +416,17 @@ class ABJ_404_Solution_DataAccess {
             $query .= "and disabled = 0 ";
         }
 
-        $query .= "order by " . sanitize_text_field($tableOptions['orderby']) . " " . sanitize_text_field($tableOptions['order']) . " ";
+        $orderBy = mb_strtolower(sanitize_text_field($tableOptions['orderby']));
+        if ($orderBy == "final_dest") {
+            // TODO change the final dest type to an integer and store external URLs somewhere else.
+            // TODO fix bug: pages that no longer exist appear for redirects. use an inner join on this query with the
+            // wp_posts table. delete redirects for pages that no longer exist? what if they're in the trash and 
+            // are then moved out of the trash?
+            $orderBy = "IF (post_title is null, 'zzzzzzzzz', post_title)";
+        }
+        
+        $query .= "\norder by " . $orderBy . " " . 
+                sanitize_text_field($tableOptions['order']) . " ";
 
         // for normal page views we limit the rows returned based on user preferences for paginaiton.
         $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
@@ -459,6 +469,30 @@ class ABJ_404_Solution_DataAccess {
      * @return type
      */
     function getLogsIDandURL($specificURL = '') {
+        global $wpdb;
+        
+        $whereClause = '';
+        if ($specificURL != '') {
+            $whereClause = "where requested_url = '" . $specificURL . "'";
+        }
+        
+        $logsTable = $wpdb->prefix . 'abj404_logsv2';
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsIDandURL.sql");
+        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+        $query = str_replace('{where_clause_here}', $whereClause, $query);
+        
+        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        $rows = $results['rows'];
+
+        return $rows;
+    }
+    
+    /** 
+     * @global type $wpdb
+     * @param type $specificURL
+     * @return type
+     */
+    function getLogsIDandURLLike($specificURL = '') {
         global $wpdb;
         
         $whereClause = '';
@@ -1032,8 +1066,6 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
         $query = str_replace('{specifiedSlug}', $specifiedSlug, $query);
         $query = str_replace('{searchTerm}', $searchTerm, $query);
-        
-        // $abj404logging->infoMessage("!! Query: " . $query); // TODO REMOVE
         
         $rows = $wpdb->get_results($query);
         // check for errors
