@@ -33,32 +33,5 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // if nothing was entered then reset the already selected value.
-    $('#logs_ajax_search_field').focusout(function(event) {
-        abj404_validateAndUpdateFeedback();
-    });
-
-    // we run this here for when the user edits an existing redirect.
-    abj404_validateAndUpdateFeedback();
 });
 
-/** Validate the selection and update the feedback label.
- * @returns {undefined}
- */
-function abj404_validateAndUpdateFeedback() {
-    // if no item was selected then we force the search box to change back to 
-    // whatever the user previously selected.
-    var selectedVal = jQuery('#redirect_to_data_field_title').val();
-    jQuery("#logs_ajax_search_field").val(selectedVal);
-
-    var selectedPageID = jQuery("#redirect_to_data_field_id").val();
-    var tooltip_empty = jQuery("#logs_ajax_search_field").attr("data-tooltip-explanation-empty");
-    var tooltip_page = jQuery("#logs_ajax_search_field").attr("data-tooltip-explanation-page");
-    var tooltip_url = jQuery("#logs_ajax_search_field").attr("data-tooltip-explanation-url");
-    if ((selectedPageID === null) || (selectedPageID === "")) {
-        jQuery(".redirect_to_user_field_explanation").text(tooltip_empty);
-        
-    } else {
-        jQuery("#logs_ajax_search_field_explanation").text(tooltip_page);
-    }
-}

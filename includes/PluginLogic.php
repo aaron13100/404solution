@@ -995,6 +995,7 @@ class ABJ_404_Solution_PluginLogic {
     
     function getRedirectTypeAndDest() {
         global $abj404logging;
+        global $abj404dao;
         
         $response = array();
         $response['type'] = "";
@@ -1002,13 +1003,14 @@ class ABJ_404_Solution_PluginLogic {
         $response['message'] = "";
         
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
-            if ($_POST['redirect_to_user_field'] == "") {
+            $userEnteredURL = esc_url($abj404dao->getPostOrGetSanitize('redirect_to_user_field'));
+            if ($userEnteredURL == "") {
                 $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<BR/>";
                 
-            } else if (mb_strlen($_POST['redirect_to_user_field']) < 8) {
+            } else if (mb_strlen($userEnteredURL) < 8) {
                 $response['message'] = __('Error: External URL is too short.', '404-solution') . "<BR/>";
                 
-            } else if (mb_strpos($_POST['redirect_to_user_field'], "://") === false) {
+            } else if (mb_strpos($userEnteredURL, "://") === false) {
                 $response['message'] = __("Error: External URL doesn't contain ://", '404-solution') . "<BR/>";
             }
         }

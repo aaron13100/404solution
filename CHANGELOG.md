@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.12.1 (February 17, 2019) ##
+* FIX: Correct an issue with adding external URLs introduced in 2.12.0 (thanks Людмила via email).
+* FIX: Don't rely on external sources for CSS.
+
 ## Version 2.12.0 (February 16, 2019) ##
 * Improvement: Use a dropdown search when choosing the default 404 destination on the options page.
 * Improvement: Use a dropdown search when choosing which URL to view on the Logs page.
