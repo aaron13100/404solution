@@ -14,7 +14,7 @@ class ABJ_404_Solution_WordPress_Connector {
     /** Setup. */
     static function init() {
         add_filter("plugin_action_links_" . ABJ404_NAME, 'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
-        add_action('template_redirect', 'ABJ_404_Solution_WordPress_Connector::process404', 9999);
+        add_action('template_redirect', 'ABJ_404_Solution_WordPress_Connector::process404', 9);
 
         add_action('abj404_cleanupCronAction', 'ABJ_404_Solution_DataAccess::deleteOldRedirectsCron');
 
@@ -28,10 +28,10 @@ class ABJ_404_Solution_WordPress_Connector {
         add_action( 'admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts' );
         
         add_action( 'wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
-        add_action( 'wp_ajax_nopriv_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
+        // fyi use wp_ajax_nopriv_echoViewLogsFor to load things for normal users
         
         add_action( 'wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor' );
-        add_action( 'wp_ajax_nopriv_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor' );
+        // fyi wp_ajax_nopriv_echoViewLogsFor to load things for normal users
 
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
     }

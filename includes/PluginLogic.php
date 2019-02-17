@@ -1340,9 +1340,6 @@ class ABJ_404_Solution_PluginLogic {
 
         update_option('abj404_settings', $new_options);
         
-        global $abj404logging;
-        $abj404logging->infoMessage("POST data: " . json_encode($_POST));
-
         return $message;
     }
     
