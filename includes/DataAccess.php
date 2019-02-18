@@ -1448,6 +1448,8 @@ class ABJ_404_Solution_DataAccess {
             '%d'
                 )
         );
+        
+        $this->moveRedirectsToTrash(absint($idForUpdate), 0);
     }
 
     /** 
