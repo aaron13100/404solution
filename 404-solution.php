@@ -42,7 +42,8 @@ define( 'ABJ404_URL', plugin_dir_url( __FILE__ ) );
 define( 'ABJ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );
 define( 'ABJ404_VERSION', '2.12.2' );
-define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/' );
+define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/'
+        . '?utm_source=404SolutionPlugin&utm_medium=WordPress');
 define( 'ABJ404_PP', 'abj404_solution'); // plugin path
 define( 'PLUGIN_NAME', '404 Solution');
 
