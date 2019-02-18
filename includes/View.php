@@ -858,16 +858,17 @@ class ABJ_404_Solution_View {
 
         $this->echoTabFilters($sub, $tableOptions);
 
-        $columns['url']['title'] = "URL";
+        // these are used for a GET request so they're not translated.
+        $columns['url']['title'] = __('URL', '404-solution');
         $columns['url']['orderby'] = "url";
         $columns['url']['width'] = "50%";
-        $columns['hits']['title'] = "Hits";
+        $columns['hits']['title'] = __('Hits', '404-solution');
         $columns['hits']['orderby'] = "logshits";
         $columns['hits']['width'] = "5%";
-        $columns['timestamp']['title'] = "Created";
+        $columns['timestamp']['title'] = __('Created', '404-solution');
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "20%";
-        $columns['last_used']['title'] = "Last Used";
+        $columns['last_used']['title'] = __('Last Used', '404-solution');
         $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "20%";
 
@@ -882,19 +883,17 @@ class ABJ_404_Solution_View {
         $this->echoPaginationLinks($sub, $tableOptions);
 
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-            echo "<div class=\"alignleft actions\">";
             $eturl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ABJ404_TRASH_FILTER . 
                     "&subpage=abj404_captured";
             $trashaction = "abj404_emptyCapturedTrash";
             $eturl = wp_nonce_url($eturl, $trashaction);
-
-            echo "<form method=\"POST\" action=\"" . esc_url($eturl) . "\">";
-            echo "<input type=\"hidden\" name=\"action\" value=\"emptyCapturedTrash\">";
-            echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . __('Empty Trash', '404-solution') . "\">";
-            echo "</form>";
-            echo "</div>";
+            
+            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
+            $html = str_replace('{action_url}', $eturl, $html);
+            $html = $this->doNormalReplacements($html);
+            echo $html;
+                        
         } else {
-            echo "<div class=\"alignleft actions\">";
             $url = "?page=" . ABJ404_PP . "&subpage=abj404_captured";
             if ($tableOptions['filter'] != 0) {
                 $url .= "&filter=" . $tableOptions['filter'];
@@ -907,22 +906,26 @@ class ABJ_404_Solution_View {
             // when creating the nonce (instead of using one nonce for all actions)?
             $url = wp_nonce_url($url, "abj404_bulkProcess");
 
-            echo "<form method=\"POST\" action=\"" . $url . "\">";
-            echo "<select name=\"action\" id=\"bulkCaptured404select\" >";
+            $bulkOptions = array();
             if ($tableOptions['filter'] != ABJ404_STATUS_CAPTURED) {
-                echo "<option value=\"bulkcaptured\">" . __('Mark as captured', '404-solution') . "</option>";
+                $bulkOptions[] = '<option value="bulkcaptured">{Mark as Captured}</option>';
             }
             if ($tableOptions['filter'] != ABJ404_STATUS_IGNORED) {
-                echo "<option value=\"bulkignore\">" . __('Mark as ignored', '404-solution') . "</option>";
+                $bulkOptions[] = '<option value="bulkignore">{Mark as Ignored}</option>';
             }
             if ($tableOptions['filter'] != ABJ404_STATUS_LATER) {
-                echo "<option value=\"bulklater\">" . __('Organize Later', '404-solution') . "</option>";
+                $bulkOptions[] = '<option value="bulklater">{Organize Later}</option>';
             }
-            echo "<option value=\"bulktrash\">" . __('Trash', '404-solution') . "</option>";
-            echo "<option value=\"editRedirect\">" . __('Create a redirect', '404-solution') . "</option>";
-            echo "</select>";
-            echo "<input type=\"submit\" id=\"captured_404s_bulk_apply\" class=\"button-secondary\" value=\"" . __('Apply', '404-solution') . "\">";
-            echo "</div>";
+            $bulkOptions[] = '<option value="bulktrash">{Trash}</option>';
+            $bulkOptions[] = '<option value="editRedirect">{Create a Redirect}</option>';
+            
+            $allBulkOptions = implode("\n", $bulkOptions);
+            
+            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown.html");
+            $html = str_replace('{action_url}', $url, $html);
+            $html = str_replace('{bulkOptions}', $allBulkOptions, $html);
+            $html = $this->doNormalReplacements($html);
+            echo $html;
         }
         echo "</div>";
 
@@ -1093,28 +1096,29 @@ class ABJ_404_Solution_View {
 
         $this->echoTabFilters($sub, $tableOptions);
 
-        $columns['url']['title'] = "URL";
+        // these are used for a GET request so they're not translated.
+        $columns['url']['title'] = __('URL', '404-solution');
         $columns['url']['orderby'] = "url";
         $columns['url']['width'] = "25%";
-        $columns['status']['title'] = "Status";
+        $columns['status']['title'] = __('Status', '404-solution');
         $columns['status']['orderby'] = "status";
         $columns['status']['width'] = "5%";
-        $columns['type']['title'] = "Type";
+        $columns['type']['title'] = __('Type', '404-solution');
         $columns['type']['orderby'] = "type";
         $columns['type']['width'] = "10%";
-        $columns['dest']['title'] = "Destination";
+        $columns['dest']['title'] = __('Destination', '404-solution');;
         $columns['dest']['orderby'] = "final_dest";
         $columns['dest']['width'] = "25%";
-        $columns['code']['title'] = "Redirect";
+        $columns['code']['title'] = __('Redirect', '404-solution');
         $columns['code']['orderby'] = "code";
         $columns['code']['width'] = "5%";
-        $columns['hits']['title'] = "Hits";
+        $columns['hits']['title'] = __('Hits', '404-solution');
         $columns['hits']['orderby'] = "logshits";
         $columns['hits']['width'] = "5%";
-        $columns['timestamp']['title'] = "Created";
+        $columns['timestamp']['title'] = __('Created', '404-solution');;
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "10%";
-        $columns['last_used']['title'] = "Last Used";
+        $columns['last_used']['title'] = __('Last Used', '404-solution');;
         $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "10%";
 
@@ -1921,8 +1925,6 @@ class ABJ_404_Solution_View {
             $total_pages = 1;
         }
 
-        $itemsText = sprintf( _n( '%s item', '%s items', $num_records, '404-solution'), $num_records);
-
         $classFirstPage = "";
         if ($tableOptions['paged'] == 1) {
             $classFirstPage = " disabled";
@@ -2006,8 +2008,6 @@ class ABJ_404_Solution_View {
         if (count($tableOptions) == 0) {
             $tableOptions = $abj404logic->getTableOptions();
         }
-        echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" ></span>";
-        echo "<ul class=\"subsubsub\">";
 
         $url = "?page=" . ABJ404_PP;
         if ($sub == 'abj404_captured') {
@@ -2035,6 +2035,9 @@ class ABJ_404_Solution_View {
             $class = " class=\"current\"";
         }
 
+        echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" ></span>";
+        echo "<ul class=\"subsubsub\">";
+        
         if ($sub != 'abj404_captured') {
             echo "<li>";
             echo "<a href=\"" . esc_url($url) . "\"" . $class . ">" . __('All', '404-solution');
