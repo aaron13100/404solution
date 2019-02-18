@@ -68,6 +68,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 == Changelog ==
 
+= Version 2.12.3 (March 29, 2019) =
+* Feature: Allow bulk operations on the Captured 404 URLs -> Trash page.
+
 = Version 2.12.2 (February 17, 2019) =
 * FIX: Don't include unnecessary files for users when redirecting (speed up redirects, introduced in 2.11.0).
 * FIX: Don't show the "Add a Redirect" button on the Trash page where it can't be done.

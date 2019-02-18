@@ -1,0 +1,15 @@
+<tr id="post-{rowid}" class="{rowClass}">
+    <th class="check-column">
+        <input type="checkbox" name="idnum[]" value="{rowid}" onchange="enableDisableApplyButton();">
+    </th>
+    <td>
+        <strong><a href="{editLink}" title="Edit Redirect Details">{url}</a></strong>
+        <div class="row-actions">
+            {rowActions}
+        </div>
+    </td>
+    <td>{hits}</td>
+    <td>{created_date}</td>
+    <td>{last_used_date}</td>
+    <td></td>
+</tr>

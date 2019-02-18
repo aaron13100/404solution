@@ -1398,7 +1398,8 @@ class ABJ_404_Solution_DataAccess {
         $result = false;
         if (preg_match('/[0-9]+/', '' . $id)) {
 
-            $result = $wpdb->update($wpdb->prefix . "abj404_redirects", array('disabled' => esc_html($trash)), array('id' => absint($id)), array('%d'), array('%d')
+            $result = $wpdb->update($wpdb->prefix . "abj404_redirects", 
+                    array('disabled' => esc_html($trash)), array('id' => absint($id)), array('%d'), array('%d')
             );
         }
         if ($result == false) {
