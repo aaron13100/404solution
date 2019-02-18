@@ -856,7 +856,67 @@ class ABJ_404_Solution_View {
 
         $tableOptions = $abj404logic->getTableOptions($sub);
 
+        $timezone = get_option('timezone_string');
+        if ('' == $timezone) {
+            $timezone = 'UTC';
+        }
+        date_default_timezone_set($timezone);
+        
+        $url = "?page=" . ABJ404_PP . "&subpage=abj404_captured";
+        if ($tableOptions['filter'] != 0) {
+            $url .= "&filter=" . $tableOptions['filter'];
+        }
+        if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
+            $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+        }
+        // is there a way to use the <select> below and use the selected action (bulkignore, bulkcaptured, bulktrash)
+        // when creating the nonce (instead of using one nonce for all actions)?
+        $url = wp_nonce_url($url, "abj404_bulkProcess");
+        
         $this->echoTabFilters($sub, $tableOptions);
+
+        echo "<div class=\"tablenav\">";
+        $this->echoPaginationLinks($sub, $tableOptions);
+
+        // bulk operations dropdown -------------
+        $bulkOptions = array();
+        if ($tableOptions['filter'] != ABJ404_STATUS_CAPTURED) {
+            $bulkOptions[] = '<option value="bulkcaptured">{Mark as Captured}</option>';
+        }
+        if ($tableOptions['filter'] != ABJ404_STATUS_IGNORED) {
+            $bulkOptions[] = '<option value="bulkignore">{Mark as Ignored}</option>';
+        }
+        if ($tableOptions['filter'] != ABJ404_STATUS_LATER) {
+            $bulkOptions[] = '<option value="bulklater">{Organize Later}</option>';
+        }
+        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+            $bulkOptions[] = '<option value="bulktrash">{Move to Trash}</option>';
+        }
+        $bulkOptions[] = '<option value="editRedirect">{Create a Redirect}</option>';
+        $allBulkOptions = implode("\n", $bulkOptions);
+        
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown.html");
+        $html = str_replace('{action_url}', $url, $html);
+        $html = str_replace('{bulkOptions}', $allBulkOptions, $html);
+        $html = $this->doNormalReplacements($html);
+        echo $html;
+
+        // empty trash button -------------
+        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+            $eturl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ABJ404_TRASH_FILTER . 
+                    "&subpage=abj404_captured";
+            $trashaction = "abj404_emptyCapturedTrash";
+            $eturl = wp_nonce_url($eturl, $trashaction);
+
+            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
+            $html = str_replace('{action_url}', $eturl, $html);
+            $html = $this->doNormalReplacements($html);
+            echo $html;
+        }
+        // ----------
+
+        echo "</div>";
+
 
         // these are used for a GET request so they're not translated.
         $columns['url']['title'] = __('URL', '404-solution');
@@ -872,63 +932,6 @@ class ABJ_404_Solution_View {
         $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "20%";
 
-        $timezone = get_option('timezone_string');
-        if ('' == $timezone) {
-            $timezone = 'UTC';
-        }
-        date_default_timezone_set($timezone);
-
-
-        echo "<div class=\"tablenav\">";
-        $this->echoPaginationLinks($sub, $tableOptions);
-
-        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-            $eturl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ABJ404_TRASH_FILTER . 
-                    "&subpage=abj404_captured";
-            $trashaction = "abj404_emptyCapturedTrash";
-            $eturl = wp_nonce_url($eturl, $trashaction);
-            
-            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
-            $html = str_replace('{action_url}', $eturl, $html);
-            $html = $this->doNormalReplacements($html);
-            echo $html;
-                        
-        } else {
-            $url = "?page=" . ABJ404_PP . "&subpage=abj404_captured";
-            if ($tableOptions['filter'] != 0) {
-                $url .= "&filter=" . $tableOptions['filter'];
-            }
-            if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-                $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-            }
-
-            // is there a way to use the <select> below and use the selected action (bulkignore, bulkcaptured, bulktrash)
-            // when creating the nonce (instead of using one nonce for all actions)?
-            $url = wp_nonce_url($url, "abj404_bulkProcess");
-
-            $bulkOptions = array();
-            if ($tableOptions['filter'] != ABJ404_STATUS_CAPTURED) {
-                $bulkOptions[] = '<option value="bulkcaptured">{Mark as Captured}</option>';
-            }
-            if ($tableOptions['filter'] != ABJ404_STATUS_IGNORED) {
-                $bulkOptions[] = '<option value="bulkignore">{Mark as Ignored}</option>';
-            }
-            if ($tableOptions['filter'] != ABJ404_STATUS_LATER) {
-                $bulkOptions[] = '<option value="bulklater">{Organize Later}</option>';
-            }
-            $bulkOptions[] = '<option value="bulktrash">{Trash}</option>';
-            $bulkOptions[] = '<option value="editRedirect">{Create a Redirect}</option>';
-            
-            $allBulkOptions = implode("\n", $bulkOptions);
-            
-            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown.html");
-            $html = str_replace('{action_url}', $url, $html);
-            $html = str_replace('{bulkOptions}', $allBulkOptions, $html);
-            $html = $this->doNormalReplacements($html);
-            echo $html;
-        }
-        echo "</div>";
-
         echo "<table class=\"wp-list-table widefat fixed\">";
         echo "<thead>";
         $this->echoTableColumns($sub, $tableOptions, $columns);
@@ -937,6 +940,7 @@ class ABJ_404_Solution_View {
         $this->echoTableColumns($sub, $tableOptions, $columns);
         echo "</tfoot>";
         echo "<tbody id=\"the-list\">";
+        
         $rows = $abj404dao->getRedirectsForView($sub, $tableOptions);
         $displayed = 0;
         $y = 1;
@@ -967,6 +971,7 @@ class ABJ_404_Solution_View {
                 $trashtitle = __('Trash', '404-solution');
             }
 
+            $ignoretitle = "";
             if ($tableOptions['filter'] == ABJ404_STATUS_IGNORED) {
                 $ignorelink .= "&ignore=0";
                 $ignoretitle = __('Remove Ignore Status', '404-solution');
@@ -1011,46 +1016,46 @@ class ABJ_404_Solution_View {
             } else {
                 $y = 0;
             }
-
-            echo "<tr id=\"post-" . esc_attr($row['id']) . "\"" . $class . ">";
-            echo "<th class=\"check-column\">";
-            if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
-                echo "\n<input type=\"checkbox\" name=\"idnum[]\" value=\"" . esc_attr($row['id']) . "\" " .
-                        "onchange=\"enableDisableApplyButton();\" >";
-            }
-            echo "</th>";
-            echo "<td>";
-            echo "<strong><a href=\"" . esc_url($editlink) . "\" title=\"" . __('Edit Redirect Details', '404-solution') . "\">" . esc_html($row['url']) . "</a></strong>";
-            echo "<div class=\"row-actions\">";
-            if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
-                echo "<span class=\"edit\"><a href=\"" . esc_url($editlink) . "\" title=\"" . __('Edit Redirect Details', '404-solution') . "\">" . __('Edit', '404-solution') . "</a></span>";
-                echo " | ";
-            }
-            echo "<span class=\"trash\"><a href=\"" . esc_url($trashlink) . "\" title=\"" . __('Trash Redirected URL', '404-solution') . "\">" . esc_html($trashtitle) . "</a></span>";
             
-            echo " | ";
+            // ------------------------
+            $rowActions = array();
+            if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+                $rowActions[] = '<span class="edit"><a href="{editLink}" title="{Edit Redirect Details}">{Edit}</a></span>';
+            }
+            $rowActions[] = '<span class="trash"><a href="{trashLink}" title="{Trash Redirected URL}">{Trash}</a></span>';
             if ($row['logsid'] > 0) {
-                echo "<span class=\"view\"><a href=\"" . esc_url($logslink) . "\" title=\"" . __('View Redirect Logs', '404-solution') . "\">" . __('View Logs', '404-solution') . "</a></span>";
+                $rowActions[] = '<span class="view"><a href="{logsLink}" title="{View Redirect Logs}">{View Logs}</a></span>';
             } else {
-                echo "<span class=\"view\">" . __('(No logs)') . "</a></span>";
+                $rowActions[] = '<span class="view">{(No logs)}</a></span>';
             }
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-                echo " | ";
-                echo "<span class=\"delete\"><a href=\"" . esc_url($deletelink) . "\" title=\"" . __('Delete Redirect Permanently', '404-solution') . "\">" . __('Delete Permanently', '404-solution') . "</a></span>";
+                $rowActions[] = '<span class="delete"><a href="{deleteLink}" title="{Delete Redirect Permanently}">{Delete Permanently}</a></span>';
             } else {
-                echo " | ";
-                echo "<span class=\"ignore\"><a href=\"" . esc_url($ignorelink) . "\" title=\"" . $ignoretitle . "\">" . esc_html($ignoretitle) . "</a></span>";
-                echo " | ";
-                echo "<span class=\"ignore\"><a href=\"" . esc_url($laterlink) . "\" title=\"" . $latertitle . "\">" . esc_html($latertitle) . "</a></span>";
+                $rowActions[] = '<span class="ignore"><a href="{ignoreLink}" title="{ignoreTitle}">{ignoreTitle}</a></span>';
+                $rowActions[] = '<span class="ignore"><a href="{laterLink}" title="{Organize Later}">{Organize Later}</a></span>';
             }
-            echo "</div>";
-            echo "</td>";
-            echo "<td>" . esc_html($hits) . "</td>";
-            echo "<td>" . esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))) . "</td>";
-            echo "<td>" . esc_html($last) . "</td>";
-            echo "<td></td>";
-            echo "</tr>";
+            $allRowActions = implode("\n | ", $rowActions);
+            
+            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowCapturedURLs.html");
+            $html = str_replace('{rowActions}', $allRowActions, $html);
+            $html = str_replace('{rowid}', $row['id'], $html);
+            $html = str_replace('{editLink}', $editlink, $html);
+            $html = str_replace('{logsLink}', $logslink, $html);
+            $html = str_replace('{trashLink}', $trashlink, $html);
+            $html = str_replace('{ignoreLink}', $ignorelink, $html);
+            $html = str_replace('{ignoreTitle}', $ignoretitle, $html);
+            $html = str_replace('{laterLink}', $laterlink, $html);
+            $html = str_replace('{deleteLink}', $deletelink, $html);
+            $html = str_replace('{url}', esc_html($row['url']), $html);
+            $html = str_replace('{hits}', esc_html($hits), $html);
+            $html = str_replace('{created_date}', 
+                    esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $html);
+            $html = str_replace('{last_used_date}', esc_html($last), $html);
+            
+            $html = $this->doNormalReplacements($html);
+            echo $html;
         }
+        
         if ($displayed == 0) {
             echo "<tr>";
             echo "<td></td>";
@@ -1058,6 +1063,7 @@ class ABJ_404_Solution_View {
             echo "<td></td>";
             echo "</tr>";
         }
+        
         echo "</tbody>";
         echo "</table>";
 
@@ -1096,32 +1102,6 @@ class ABJ_404_Solution_View {
 
         $this->echoTabFilters($sub, $tableOptions);
 
-        // these are used for a GET request so they're not translated.
-        $columns['url']['title'] = __('URL', '404-solution');
-        $columns['url']['orderby'] = "url";
-        $columns['url']['width'] = "25%";
-        $columns['status']['title'] = __('Status', '404-solution');
-        $columns['status']['orderby'] = "status";
-        $columns['status']['width'] = "5%";
-        $columns['type']['title'] = __('Type', '404-solution');
-        $columns['type']['orderby'] = "type";
-        $columns['type']['width'] = "10%";
-        $columns['dest']['title'] = __('Destination', '404-solution');;
-        $columns['dest']['orderby'] = "final_dest";
-        $columns['dest']['width'] = "25%";
-        $columns['code']['title'] = __('Redirect', '404-solution');
-        $columns['code']['orderby'] = "code";
-        $columns['code']['width'] = "5%";
-        $columns['hits']['title'] = __('Hits', '404-solution');
-        $columns['hits']['orderby'] = "logshits";
-        $columns['hits']['width'] = "5%";
-        $columns['timestamp']['title'] = __('Created', '404-solution');;
-        $columns['timestamp']['orderby'] = "timestamp";
-        $columns['timestamp']['width'] = "10%";
-        $columns['last_used']['title'] = __('Last Used', '404-solution');;
-        $columns['last_used']['orderby'] = "last_used";
-        $columns['last_used']['width'] = "10%";
-
         $timezone = get_option('timezone_string');
         if ('' == $timezone) {
             $timezone = 'UTC';
@@ -1150,6 +1130,32 @@ class ABJ_404_Solution_View {
             echo "</div>";
         }
         echo "</div>";
+
+        // these are used for a GET request so they're not translated.
+        $columns['url']['title'] = __('URL', '404-solution');
+        $columns['url']['orderby'] = "url";
+        $columns['url']['width'] = "25%";
+        $columns['status']['title'] = __('Status', '404-solution');
+        $columns['status']['orderby'] = "status";
+        $columns['status']['width'] = "5%";
+        $columns['type']['title'] = __('Type', '404-solution');
+        $columns['type']['orderby'] = "type";
+        $columns['type']['width'] = "10%";
+        $columns['dest']['title'] = __('Destination', '404-solution');;
+        $columns['dest']['orderby'] = "final_dest";
+        $columns['dest']['width'] = "25%";
+        $columns['code']['title'] = __('Redirect', '404-solution');
+        $columns['code']['orderby'] = "code";
+        $columns['code']['width'] = "5%";
+        $columns['hits']['title'] = __('Hits', '404-solution');
+        $columns['hits']['orderby'] = "logshits";
+        $columns['hits']['width'] = "5%";
+        $columns['timestamp']['title'] = __('Created', '404-solution');;
+        $columns['timestamp']['orderby'] = "timestamp";
+        $columns['timestamp']['width'] = "10%";
+        $columns['last_used']['title'] = __('Last Used', '404-solution');;
+        $columns['last_used']['orderby'] = "last_used";
+        $columns['last_used']['width'] = "10%";
 
         echo "<table class=\"wp-list-table widefat fixed\">";
         echo "<thead>";
@@ -1801,16 +1807,16 @@ class ABJ_404_Solution_View {
      */
     function echoTableColumns($sub, $tableOptions, $columns) {
         echo "<tr>";
-        if ($sub == 'abj404_captured' && $tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+        
+        if ($sub == 'abj404_captured') {
             $cbinfo = "class=\"manage-column column-cb check-column\" style=\"vertical-align: middle; padding-bottom: 6px;\"";
-        } else {
-            $cbinfo = "style=\"width: 1px;\"";
-        }
-        echo "<th " . $cbinfo . ">";
-        if ($sub == 'abj404_captured' && $tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+            echo "<th " . $cbinfo . ">";
             echo "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" >";
+            echo "</th>";
+        } else {
+            echo '<th style="width: 1px;"></th>';
         }
-        echo "</th>";
+        
         foreach ($columns as $column) {
             $style = "";
             if ($column['width'] != "") {

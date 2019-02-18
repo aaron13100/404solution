@@ -864,6 +864,7 @@ class ABJ_404_Solution_PluginLogic {
             }
             $count = 0;
             foreach ($ids as $id) {
+                $s = $abj404dao->moveRedirectsToTrash($id, 0);
                 $s = $abj404dao->updateRedirectTypeStatus($id, $status);
                 if ($s == "") {
                     $count++;
