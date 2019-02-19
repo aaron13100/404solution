@@ -546,7 +546,7 @@ class ABJ_404_Solution_PluginLogic {
                         is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
             }
         } else if ($action == "emptyCapturedTrash") {
-            if (check_admin_referer('abj404_emptyCapturedTrash') && is_admin()) {
+            if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 $abj404logic->doEmptyTrash('abj404_captured');
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             } else {
@@ -871,11 +871,11 @@ class ABJ_404_Solution_PluginLogic {
                 }
             }
             if ($action == "bulkignore") {
-                $message = $count . " " . __('URLs marked as ignored.', '404-solution');
+                $message = $count . " " . __('URL(s) marked as Ignored.', '404-solution');
             } else if ($action == "bulkcaptured") {
-                $message = $count . " " . __('URLs marked as captured.', '404-solution');
+                $message = $count . " " . __('URL(s) marked as Captured.', '404-solution');
             } else if ($action == "bulklater") {
-                $message = $count . " " . __('URLs marked as Later.', '404-solution');
+                $message = $count . " " . __('URL(s) marked as Later.', '404-solution');
             } else {
                 $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));

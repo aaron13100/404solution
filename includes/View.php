@@ -853,6 +853,7 @@ class ABJ_404_Solution_View {
         global $abj404dao;
         global $abj404logic;
         $sub = 'abj404_captured';
+        $nonceValue = "abj404_bulkProcess";
 
         $tableOptions = $abj404logic->getTableOptions($sub);
 
@@ -871,7 +872,7 @@ class ABJ_404_Solution_View {
         }
         // is there a way to use the <select> below and use the selected action (bulkignore, bulkcaptured, bulktrash)
         // when creating the nonce (instead of using one nonce for all actions)?
-        $url = wp_nonce_url($url, "abj404_bulkProcess");
+        $url = wp_nonce_url($url, $nonceValue);
         
         $this->echoTabFilters($sub, $tableOptions);
 
@@ -905,8 +906,7 @@ class ABJ_404_Solution_View {
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             $eturl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ABJ404_TRASH_FILTER . 
                     "&subpage=abj404_captured";
-            $trashaction = "abj404_emptyCapturedTrash";
-            $eturl = wp_nonce_url($eturl, $trashaction);
+            $eturl = wp_nonce_url($eturl, $nonceValue);
 
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
             $html = str_replace('{action_url}', $eturl, $html);

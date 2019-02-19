@@ -1,5 +1,7 @@
 
 <form method="POST" action="{action_url}">
     <div class="alignleft actions">
-        <input type="hidden" name="emptyTrashAction" value="emptyCapturedTrash">
-        <input type="submit" class="button-secondary" value="{Empty Trash}">
+        <input type="hidden" name="TEMP_NAME_emptyTrashAction_TEMP_NAME" id="emptyCapturedTrash" value="emptyCapturedTrash" >
+        <input type="submit" class="button-secondary" value="{Empty Trash}"
+               onclick="document.getElementById('emptyCapturedTrash').setAttribute('name','action');"
+               >
