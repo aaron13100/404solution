@@ -1367,22 +1367,11 @@ class ABJ_404_Solution_DataAccess {
      */
     function updateRedirectTypeStatus($id, $newstatus) {
         global $wpdb;
-        $message = "";
 
-        $result = false;
-        if (preg_match('/[0-9]+/', '' . $id)) {
-
-            $result = $wpdb->update($wpdb->prefix . "abj404_redirects", 
-                    array('status' => esc_sql($newstatus)), 
-                    array('id' => absint($id)), 
-                    array('%d'), 
-                    array('%d')
-            );
-        }
-        if ($result == false) {
-            $message = __('Error: Unknown Database Error!', '404-solution');
-        }
-        return $message;
+        $result = $this->queryAndGetResults('update ' . $wpdb->prefix . "abj404_redirects set status = '" . 
+                esc_sql($newstatus) . "' where id = '" . esc_sql($id) . "'");
+        
+        return $result['last_error'];
     }
 
     /** Move a redirect to the "trash" folder.
