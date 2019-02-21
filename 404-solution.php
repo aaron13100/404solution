@@ -70,6 +70,7 @@ $abj404_captured_types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, AB
 // other
 define("ABJ404_OPTION_DEFAULT_PERPAGE", 25);
 define("ABJ404_OPTION_MIN_PERPAGE", 10);
+define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 500);
 
 
 require_once ABJ404_PATH . "includes/Logging.php";
