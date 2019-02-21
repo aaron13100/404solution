@@ -25,7 +25,9 @@ class ABJ_404_Solution_WordPress_Connector {
         add_action('admin_menu', 'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
 
         /** Include things necessary for ajax. */
-        add_action( 'admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts' );
+        // a priority of 11 makes sure our style sheet is more important than jquery's. otherwise the indent
+        // doesn't work for the ajax dropdown list.
+        add_action( 'admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts', 11 );
         
         add_action( 'wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
         // fyi use wp_ajax_nopriv_echoViewLogsFor to load things for normal users
@@ -50,10 +52,10 @@ class ABJ_404_Solution_WordPress_Connector {
         wp_enqueue_script( 'jquery' );
 	wp_enqueue_script( 'jquery-ui-autocomplete' );
 
-        wp_register_script( 'redirect_to_ajax', plugin_dir_url(__FILE__) . '/ajax/redirect_to_ajax.js', 
+        wp_register_script( 'redirect_to_ajax', plugin_dir_url(__FILE__) . 'ajax/redirect_to_ajax.js', 
                 array( 'jquery', 'jquery-ui-autocomplete' ));
         
-        wp_register_script( 'search_logs_ajax', plugin_dir_url(__FILE__) . '/ajax/search_logs_ajax.js', 
+        wp_register_script( 'search_logs_ajax', plugin_dir_url(__FILE__) . 'ajax/search_logs_ajax.js', 
                 array( 'jquery', 'jquery-ui-autocomplete' ));
         
         // Localize the script with new data
@@ -67,7 +69,7 @@ class ABJ_404_Solution_WordPress_Connector {
         
         wp_enqueue_script( 'search_logs_ajax' );
         
-        wp_enqueue_style( 'abj404solution-styles', ABJ404_URL . '/includes/html/404solutionStyles.css' );
+        wp_enqueue_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css');
     }
 
     /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).
