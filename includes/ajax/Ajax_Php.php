@@ -96,9 +96,9 @@ class ABJ_404_Solution_Ajax_Php {
             // tell the user if there are no resluts.
             $category = __('(No matching results found.)', '404-solution');
             
-        } else if (count($suggestions) > 500) {
+        } else if (count($suggestions) > ABJ404_MAX_AJAX_DROPDOWN_SIZE) {
             // limit the results if there are too many
-            $suggestions = array_slice($suggestions, 0, 500);
+            $suggestions = array_slice($suggestions, 0, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
             $category = __('(Data truncated. Too many results!)', '404-solution');
             
         } else {

@@ -501,6 +501,7 @@ class ABJ_404_Solution_View {
             '{PHP_VERSION}' => phpversion(),
             '{WP_VERSION}' => get_bloginfo('version'),
             '{MYSQL_VERSION}' => $wpdb->db_version(),
+            '{ABJ404_MAX_AJAX_DROPDOWN_SIZE}' => ABJ404_MAX_AJAX_DROPDOWN_SIZE,
             );
 
         // replace known strings that do not exist in the translation file.
