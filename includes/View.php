@@ -1124,7 +1124,7 @@ class ABJ_404_Solution_View {
             $bulkOptions[] = '<option value="bulk_edit_redirect">{Edit Redirects}</option>';
         }
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
-            $bulkOptions[] = '<option value="bulk_trash_redirect">{Move to Trash}</option>';
+            $bulkOptions[] = '<option value="bulktrash">{Move to Trash}</option>';
         }
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             $bulkOptions[] = '<option value="bulk_trash_restore">{Restore Redirects}</option>';
@@ -1157,9 +1157,11 @@ class ABJ_404_Solution_View {
             $trashaction = "abj404_emptyRedirectTrash";
             $eturl = wp_nonce_url($eturl, $trashaction);
 
-            echo "<form method=\"POST\" action=\"" . esc_url($eturl) . "\">";
-            echo "<input type=\"hidden\" name=\"action\" value=\"emptyRedirectTrash\">";
-            echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . __('Empty Trash', '404-solution') . "\">";
+            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
+            $html = str_replace('{action_url}', $eturl, $html);
+            $html = $this->doNormalReplacements($html);
+            echo $html;
+            
             echo "</form>";
             echo "</div>";
         }
