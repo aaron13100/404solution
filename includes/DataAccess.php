@@ -122,6 +122,20 @@ class ABJ_404_Solution_DataAccess {
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX country (`country`) USING BTREE";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
+        if (!preg_match("/min_logs_id.+ DEFAULT NULL/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $logsTable . " ADD min_log_id BOOLEAN NULL DEFAULT NULL";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+
+            // set the min_log_id for all logs entries that were created before the column was created.
+            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
+            $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+
+        }
+        if (!preg_match("/KEY .+min_logs_id/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $logsTable . " ADD INDEX min_log_id (min_log_id)";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
     }
     
     /** 
@@ -497,11 +511,12 @@ class ABJ_404_Solution_DataAccess {
         
         $whereClause = '';
         if ($specificURL != '') {
-            $whereClause = "where lower(requested_url) like lower('" . $specificURL . "')";
+            $whereClause = "where lower(requested_url) like lower('" . $specificURL . "')\n";
+            $whereClause .= "and min_log_id = true";
         }
         
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsIDandURL.sql");
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsIDandURLForAjax.sql");
         $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         $query = str_replace('{where_clause_here}', $whereClause, $query);
         
@@ -585,6 +600,14 @@ class ABJ_404_Solution_DataAccess {
         if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
             $ipAddressToSave = md5($ipAddressToSave);
         }
+        
+        // we have to know what to set for the $minLogID value
+        $minLogID = false;
+        $results = $this->queryAndGetResults("select id from " . $wpdb->prefix . "abj404_logsv2" . 
+                " where requested_url = '" . esc_sql($requestedURL) . "' limit 1");
+        if (count($results['rows']) == 0) {
+            $minLogID = true;
+        }
             
         if ($abj404logging->isDebug()) {
             $reasonMessage = implode(", ", 
@@ -608,6 +631,7 @@ class ABJ_404_Solution_DataAccess {
             'requested_url_detail' => esc_sql($requestedURLDetail),
             'username' => esc_sql($usernameLookupID),
             'country' => $countryNameLookupID,
+            'min_log_id' => $minLogID,
                 ), array(
             '%d',
             '%s',
@@ -876,6 +900,14 @@ class ABJ_404_Solution_DataAccess {
             
         } else if ($options['geo2ip'] == '0') {
             $message .= ", No countries updated because the option is turned off.";
+        }
+        
+        if ($manually_fired) {
+            // set the min_log_id for all logs entries that were created before the column was created.
+            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
+            $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+            $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $message .= ", min_log_id column on logs table updated.";
         }
         
         $manually_fired_String = ($manually_fired) ? 'true' : 'false';

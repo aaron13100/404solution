@@ -52,7 +52,7 @@ Yes! 404 Solution records the page/post ID number and looks up the most current 
 
 ### Can I redirect all 404's to a particular page? ###
 
-Yes. It's as easy as turning on this feature in the options. 
+Yes. It's as easy as turning on this feature in the options (404 Solution -> Options -> Redirect all unhandled 404s to). Using this option you can create a custom 404 page by specifying a page you've created for that purpose with the normal WordPress editor.
 
 ### How do I delete log files? How do I purge log lines? ###
 
@@ -77,6 +77,7 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Version 2.12.3 (March 29, 2019) ##
 * Feature: Allow bulk operations on the Captured 404 URLs -> Trash page.
+* Improvement: Faster response on the logs page for the dropdown search.
 
 ## Version 2.12.2 (February 17, 2019) ##
 * FIX: Don't include unnecessary files for users when redirecting (speed up redirects, introduced in 2.11.0).
