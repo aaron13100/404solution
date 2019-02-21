@@ -1,0 +1,34 @@
+<tr class="{class}" id="post-{rowid}">
+    
+    <th class="check-column">
+        <input type="checkbox" name="idnum[]" value="{rowid}" onchange="enableDisableApplyButton();">
+    </th>
+
+    <td>
+        <strong>
+            <a href="{editlink}" title="{Edit Redirect Details}">{rowURL}</a>
+        </strong>
+        <div class="row-actions">
+            
+            {editlinkHTML}
+
+            <span class="trash">
+                <a href="{trashLink}" title="{Trash Redirected URL}">{trashtitle}</a></span> | 
+    
+            {logslinkHTML}
+
+            {deletePermanentlyHTML}
+        
+        </div>
+    </td>
+    <td>{status}</td>
+    <td>{type}</td>
+    <td>
+        <a href="{link}" target="_blank" title="{title}">{dest}</a>
+    </td>
+    <td>{rowCode}</td>
+    <td>{hits}</td>
+    <td>{created_date}</td>
+    <td>{last_used_date}</td>
+    <td/>
+</tr>

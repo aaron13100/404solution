@@ -864,23 +864,21 @@ class ABJ_404_Solution_View {
         }
         date_default_timezone_set($timezone);
         
-        $url = "?page=" . ABJ404_PP . "&subpage=abj404_captured";
-        if ($tableOptions['filter'] != 0) {
-            $url .= "&filter=" . $tableOptions['filter'];
-        }
-        if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-            $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-        }
-        // is there a way to use the <select> below and use the selected action (bulkignore, bulkcaptured, bulktrash)
-        // when creating the nonce (instead of using one nonce for all actions)?
-        $url = wp_nonce_url($url, $nonceValue);
-        
         $this->echoTabFilters($sub, $tableOptions);
 
         echo "<div class=\"tablenav\">";
         $this->echoPaginationLinks($sub, $tableOptions);
 
         // bulk operations dropdown -------------
+        $url = "?page=" . ABJ404_PP . "&subpage=" . $sub;
+        if ($tableOptions['filter'] != 0) {
+            $url .= "&filter=" . $tableOptions['filter'];
+        }
+        if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
+            $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+        }
+        $url = wp_nonce_url($url, $nonceValue);
+        
         $bulkOptions = array();
         if ($tableOptions['filter'] != ABJ404_STATUS_CAPTURED) {
             $bulkOptions[] = '<option value="bulkcaptured">{Mark as Captured}</option>';
@@ -1092,7 +1090,8 @@ class ABJ_404_Solution_View {
         global $abj404logging;
         
         $sub = 'abj404_redirects';
-
+        $nonceValue = "abj404_bulkProcess";
+        
         $tableOptions = $abj404logic->getTableOptions($sub);
 
         // Sanitizing unchecked table options
@@ -1118,9 +1117,43 @@ class ABJ_404_Solution_View {
         
         $this->echoPaginationLinks($sub, $tableOptions);
 
+        
+        // bulk operations dropdown -------------
+        $bulkOptions = array();
+        if ($tableOptions['filter'] != ABJ404_STATUS_AUTO) {
+            $bulkOptions[] = '<option value="bulk_edit_redirect">{Edit Redirects}</option>';
+        }
+        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+            $bulkOptions[] = '<option value="bulk_trash_redirect">{Move to Trash}</option>';
+        }
+        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+            $bulkOptions[] = '<option value="bulk_trash_restore">{Restore Redirects}</option>';
+            $bulkOptions[] = '<option value="bulk_trash_delete_permanently">{Delete Permanently}</option>';
+        }
+        $allBulkOptions = implode("\n", $bulkOptions);
+
+        $url = "?page=" . ABJ404_PP . "&subpage=" . $sub;
+        if ($tableOptions['filter'] != 0) {
+            $url .= "&filter=" . $tableOptions['filter'];
+        }
+        if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
+            $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+        }
+        // is there a way to use the <select> below and use the selected action (bulkignore, bulkcaptured, bulktrash)
+        // when creating the nonce (instead of using one nonce for all actions)?
+        $url = wp_nonce_url($url, $nonceValue);
+        
+        
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown.html");
+        $html = str_replace('{action_url}', $url, $html);
+        $html = str_replace('{bulkOptions}', $allBulkOptions, $html);
+        $html = $this->doNormalReplacements($html);
+        echo $html;
+        
+        // ------------------ empty trash button
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             echo "<div class=\"alignleft actions\">";
-            $eturl = "?page=" . ABJ404_PP . "&filter=" . ABJ404_TRASH_FILTER . "&subpage=abj404_redirects";
+            $eturl = "?page=" . ABJ404_PP . "&filter=" . ABJ404_TRASH_FILTER . "&subpage=" . $sub;
             $trashaction = "abj404_emptyRedirectTrash";
             $eturl = wp_nonce_url($eturl, $trashaction);
 
@@ -1266,38 +1299,54 @@ class ABJ_404_Solution_View {
             } else {
                 $y = 0;
             }
-
-            echo "<tr id=\"post-" . esc_attr($row['id']) . "\"" . $class . ">";
-            echo "<td></td>";
-            echo "<td>";
-            echo "<strong><a href=\"" . esc_url($editlink) . "\" title=\"" . __('Edit Redirect Details', '404-solution') . "\">" . esc_html($row['url']) . "</a></strong>";
-            echo "<div class=\"row-actions\">";
+            
+            // -------------------------------------------
             if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
-                echo "<span class=\"edit\"><a href=\"" . esc_url($editlink) . "\" title=\"" . __('Edit Redirect Details', '404-solution') . "\">" . __('Edit') . "</a></span>";
-                echo " | ";
-            }
-            echo "<span class=\"trash\"><a href=\"" . esc_url($trashlink) . "\" title=\"" . __('Trash Redirected URL', '404-solution') . "\">" . esc_html($trashtitle) . "</a></span>";
-            echo " | ";
-            if ($row['logsid'] > 0) {
-                echo "<span class=\"view\"><a href=\"" . esc_url($logslink) . "\" title=\"" . __('View Redirect Logs', '404-solution') . "\">" . __('View Logs') . "</a></span>";
+                $editlinkHTML = '<span class="edit"><a href="' . esc_url($editlink) . 
+                    '" title="{Edit Redirect Details}">{Edit}</a></span> | ';
             } else {
-                echo "<span class=\"view\">" . __('(No logs)') . "</a></span>";
+                $editlinkHTML = '';
+            }
+            if ($row['logsid'] > 0) {
+                $logslinkHTML = '<span class="view"><a href="{logsLink}" '
+                        . 'title="{View Redirect Logs}">{View Logs}</a></span>';
+            } else {
+                $logslinkHTML = '<span class="view">{(No logs)}</a></span>';
             }
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-                echo " | ";
-                echo "<span class=\"delete\"><a href=\"" . esc_url($deletelink) . "\" title=\"" . __('Delete Redirect Permanently', '404-solution') . "\">" . __('Delete Permanently', '404-solution') . "</a></span>";
+                $deletePermanentlyHTML = '| <span class="delete"><a href="{deletelink}" '
+                        . 'title="{Delete Redirect Permanently}">{Delete Permanently}</a></span>';
+            } else {
+                $deletePermanentlyHTML = '';
             }
-            echo "</div>";
-            echo "</td>";
-            echo "<td>" . esc_html($status) . "</td>";
-            echo "<td>" . esc_html($type) . "</td>";
-            echo "<td><a href=\"" . esc_url($link) . "\" title=\"" . $title . "\" target=\"_blank\">" . esc_html($dest) . "</a></td>";
-            echo "<td>" . esc_html($row['code']) . "</td>";
-            echo "<td>" . esc_html($hits) . "</td>";
-            echo "<td>" . esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))) . "</td>";
-            echo "<td>" . esc_html($last) . "</td>";
-            echo "<td></td>";
-            echo "</tr>";
+            
+            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
+            $html = str_replace('{class}', $class, $html);
+            $html = str_replace('{rowid}', $row['id'], $html);
+            $html = str_replace('{editLink}', $editlink, $html);
+            $html = str_replace('{rowURL}', esc_html($row['url']), $html);
+            $html = str_replace('{editlinkHTML}', $editlinkHTML, $html);
+            $html = str_replace('{logslinkHTML}', $logslinkHTML, $html);
+            $html = str_replace('{deletePermanentlyHTML}', $deletePermanentlyHTML, $html);
+            $html = str_replace('{link}', $link, $html);
+            $html = str_replace('{title}', $title, $html);
+            $html = str_replace('{dest}', $dest, $html);
+            $html = str_replace('{status}', $status, $html);
+            $html = str_replace('{type}', $type, $html);
+            $html = str_replace('{dest}', $dest, $html);
+            $html = str_replace('{rowCode}', $row['code'], $html);
+            $html = str_replace('{hits}', $hits, $html);
+            $html = str_replace('{logsLink}', $logslink, $html);
+            $html = str_replace('{trashLink}', $trashlink, $html);
+            $html = str_replace('{trashtitle}', $trashtitle, $html);
+            $html = str_replace('{deletelink}', $deletelink, $html);
+            $html = str_replace('{hits}', esc_html($hits), $html);
+            $html = str_replace('{created_date}', 
+                    esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $html);
+            $html = str_replace('{last_used_date}', esc_html($last), $html);
+            
+            $html = $this->doNormalReplacements($html);
+            echo $html;
         }
         if ($displayed == 0) {
             echo "<tr>";
@@ -1317,6 +1366,12 @@ class ABJ_404_Solution_View {
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             $this->echoAddManualRedirect($tableOptions);
         }
+        
+        // make sure the "apply" button is only enabled if at least one checkbox is selected
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/enableDisableApplyButton.js");
+        $html = str_replace('{altText}', __('Choose at least one URL', '404-solution'), $html);
+        $html = $this->doNormalReplacements($html);
+        echo $html;
     }
     
     function echoAddManualRedirect($tableOptions) {
@@ -1809,14 +1864,14 @@ class ABJ_404_Solution_View {
     function echoTableColumns($sub, $tableOptions, $columns) {
         echo "<tr>";
         
-        if ($sub == 'abj404_captured') {
+//        if ($sub == 'abj404_captured') {
             $cbinfo = "class=\"manage-column column-cb check-column\" style=\"vertical-align: middle; padding-bottom: 6px;\"";
             echo "<th " . $cbinfo . ">";
             echo "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" >";
             echo "</th>";
-        } else {
-            echo '<th style="width: 1px;"></th>';
-        }
+//        } else {
+//            echo '<th style="width: 1px;"></th>';
+//        }
         
         foreach ($columns as $column) {
             $style = "";
