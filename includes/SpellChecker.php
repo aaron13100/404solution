@@ -255,6 +255,9 @@ class ABJ_404_Solution_SpellChecker {
                 $urlParts = parse_url($the_permalink);
                 $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
                 $scoreBasis = mb_strlen($pathOnly);
+                if ($scoreBasis == 0) {
+                    continue;
+                }
                 
                 $levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
                 if ($fullURLspacesCleaned != '') {
