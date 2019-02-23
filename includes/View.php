@@ -62,7 +62,7 @@ class ABJ_404_Solution_View {
             $message .= $abj404logic->handleDeleteAction();
             $message .= $abj404logic->handleIgnoreAction();
             $message .= $abj404logic->handleLaterAction();
-            $message .= $abj404logic->handleActionEdit($sub);
+            $message .= $abj404logic->handleActionEdit($sub, $action);
             $message .= $abj404logic->handleActionDeleteLog();
             $message .= $abj404logic->handleActionImportRedirects();
             $message .= $abj404logic->handleActionChangeItemsPerRow();
@@ -100,10 +100,10 @@ class ABJ_404_Solution_View {
         
         $abj404view->outputAdminHeaderTabs($sub, $message);
         
-        if ($sub == 'abj404_redirects') {
-            $abj404view->echoAdminRedirectsPage();
-        } else if (($action == 'editRedirect') || ($sub == 'abj404_edit')) {
+        if (($action == 'editRedirect') || ($sub == 'abj404_edit')) {
             $abj404view->echoAdminEditRedirectPage();
+        } else if ($sub == 'abj404_redirects') {
+            $abj404view->echoAdminRedirectsPage();
         } else if ($sub == 'abj404_captured') {
             $abj404view->echoAdminCapturedURLsPage();
         } else if ($sub == "abj404_options") {
@@ -1021,7 +1021,7 @@ class ABJ_404_Solution_View {
             if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
                 $rowActions[] = '<span class="edit"><a href="{editLink}" title="{Edit Redirect Details}">{Edit}</a></span>';
             }
-            $rowActions[] = '<span class="trash"><a href="{trashLink}" title="{Trash Redirected URL}">{Trash}</a></span>';
+            $rowActions[] = '<span class="trash"><a href="{trashLink}" title="{trashtitle}">{trashtitle}</a></span>';
             if ($row['logsid'] > 0) {
                 $rowActions[] = '<span class="view"><a href="{logsLink}" title="{View Redirect Logs}">{View Logs}</a></span>';
             } else {
@@ -1041,6 +1041,7 @@ class ABJ_404_Solution_View {
             $html = str_replace('{editLink}', $editlink, $html);
             $html = str_replace('{logsLink}', $logslink, $html);
             $html = str_replace('{trashLink}', $trashlink, $html);
+            $html = str_replace('{trashtitle}', $trashtitle, $html);
             $html = str_replace('{ignoreLink}', $ignorelink, $html);
             $html = str_replace('{ignoreTitle}', $ignoretitle, $html);
             $html = str_replace('{laterLink}', $laterlink, $html);
@@ -1121,7 +1122,7 @@ class ABJ_404_Solution_View {
         // bulk operations dropdown -------------
         $bulkOptions = array();
         if ($tableOptions['filter'] != ABJ404_STATUS_AUTO) {
-            $bulkOptions[] = '<option value="bulk_edit_redirect">{Edit Redirects}</option>';
+            $bulkOptions[] = '<option value="editRedirect">{Edit Redirects}</option>';
         }
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             $bulkOptions[] = '<option value="bulktrash">{Move to Trash}</option>';
@@ -1162,7 +1163,6 @@ class ABJ_404_Solution_View {
             $html = $this->doNormalReplacements($html);
             echo $html;
             
-            echo "</form>";
             echo "</div>";
         }
         echo "</div>";

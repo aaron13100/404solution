@@ -807,9 +807,12 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /** Edit redirect data.
+     * @global type $abj404dao
+     * @param string $sub
+     * @param type $action
      * @return type
      */
-    function handleActionEdit(&$sub) {
+    function handleActionEdit(&$sub, &$action) {
         global $abj404dao;
         $message = "";
         
@@ -823,6 +826,7 @@ class ABJ_404_Solution_PluginLogic {
                     if ($message == "") {
                         $message .= __('Redirect Information Updated Successfully!', '404-solution');
                         $sub = 'abj404_redirects';
+                        $action = '';
                     } else {
                         $message .= __('Error: Unable to update redirect data.', '404-solution');
                     }
@@ -850,7 +854,7 @@ class ABJ_404_Solution_PluginLogic {
                 esc_html($action == '' ? '(none)' : $action)) . ", ids: " . wp_kses_post(json_encode($ids));
 
         if ($action == "bulkignore" || $action == "bulkcaptured" || $action == "bulklater" || 
-                $action == "bulk_trash_restore" || $action == "bulk_trash_delete_permanently") {
+                $action == "bulk_trash_restore") {
             
             if ($action == "bulkignore") {
                 $status = ABJ404_STATUS_IGNORED;
@@ -862,15 +866,7 @@ class ABJ_404_Solution_PluginLogic {
                 $status = ABJ404_STATUS_LATER;
                 
             } else if ($action == "bulk_trash_restore") {
-                $status = ABJ404_STATUS_AUTO;
-                echo sprintf(__("TODO OOOOOOOOOOOO  "
-                        . "Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
-                return;
-                
-            } else if ($action == "bulk_trash_delete_permanently") {
-                echo sprintf(__("TODO OOOOOOOOOOOO  "
-                        . "Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
-                return;
+                // don't change the status for this case.
                 
             } else {
                 $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
@@ -880,7 +876,9 @@ class ABJ_404_Solution_PluginLogic {
             $count = 0;
             foreach ($ids as $id) {
                 $s = $abj404dao->moveRedirectsToTrash($id, 0);
-                $s = $abj404dao->updateRedirectTypeStatus($id, $status);
+                if ($action != "bulk_trash_restore") {
+                    $s = $abj404dao->updateRedirectTypeStatus($id, $status);
+                }
                 if ($s == "") {
                     $count++;
                 }
@@ -891,10 +889,20 @@ class ABJ_404_Solution_PluginLogic {
                 $message = $count . " " . __('URL(s) marked as Captured.', '404-solution');
             } else if ($action == "bulklater") {
                 $message = $count . " " . __('URL(s) marked as Later.', '404-solution');
+            } else if ($action == "bulk_trash_restore") {
+                $message = $count . " " . __('URL(s) restored.', '404-solution');
             } else {
                 $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
                 echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
             }
+            
+        } else if ($action == "bulk_trash_delete_permanently") {
+            $count = 0;
+            foreach ($ids as $id) {
+                $abj404dao->deleteRedirect(absint($id));
+                $count ++;
+            }
+            $message = $count . " " . __('URL(s) deleted', '404-solution');
 
         } else if ($action == "bulktrash") {
             $count = 0;
@@ -904,7 +912,7 @@ class ABJ_404_Solution_PluginLogic {
                     $count ++;
                 }
             }
-            $message = $count . " " . __('URLs moved to trash', '404-solution');
+            $message = $count . " " . __('URL(s) moved to trash', '404-solution');
 
         } else {
             $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));

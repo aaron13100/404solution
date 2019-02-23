@@ -121,3 +121,7 @@
     .lefty-tooltip:hover .lefty-tooltiptext {
         visibility: visible;
     }
+    
+    #captured_404s_bulk_apply {
+        margin-right: 10px;
+    }

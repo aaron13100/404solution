@@ -3,6 +3,7 @@
 ## Version 2.12.3 (March 29, 2019) ##
 * Feature: Allow bulk operations on the Captured 404 URLs -> Trash page.
 * Improvement: Faster response on the logs page for the dropdown search.
+* FIX: Avoid a rare division by 0 (thanks to an automatically submitted error file).
 
 ## Version 2.12.2 (February 17, 2019) ##
 * FIX: Don't include unnecessary files for users when redirecting (speed up redirects, introduced in 2.11.0).
