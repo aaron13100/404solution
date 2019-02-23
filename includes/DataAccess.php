@@ -122,7 +122,7 @@ class ABJ_404_Solution_DataAccess {
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX country (`country`) USING BTREE";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
-        if (!preg_match("/min_logs_id.+ DEFAULT NULL/i", $tableSQL)) {
+        if (!preg_match("/min_log_id.+ DEFAULT NULL/i", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " ADD min_log_id BOOLEAN NULL DEFAULT NULL";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
 
@@ -132,7 +132,7 @@ class ABJ_404_Solution_DataAccess {
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
 
         }
-        if (!preg_match("/KEY .+min_logs_id/i", $tableSQL)) {
+        if (!preg_match("/KEY .+min_log_id/i", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX min_log_id (min_log_id)";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
