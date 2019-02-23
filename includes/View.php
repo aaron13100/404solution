@@ -138,6 +138,8 @@ class ABJ_404_Solution_View {
      * @param type $message
      */
     function outputAdminHeaderTabs($sub = 'list', $message = '') {
+        ABJ_404_Solution_WPNotices::echoAdminNotices();
+        
         if ($sub == "abj404_options") {
             $header = " " . __('Options', '404-solution');
         } else if ($sub == 'abj404_logs') {

@@ -14,7 +14,7 @@ class ABJ_404_Solution_WPNotices {
     
     /** Add a hook for displaying messages. */
     static function init() {
-        add_action('admin_notices', array(get_called_class(), 'getAdminNotices'));
+        //add_action('admin_notices', array(get_called_class(), 'getAdminNotices'));
     }
     
     /** Display a message with the specified importance level.
@@ -39,14 +39,14 @@ class ABJ_404_Solution_WPNotices {
     /** 
      * @return type the messages to display.
      */
-    static function getAdminNotices() {
+    static function echoAdminNotices() {
         $allHTML = '';
         if (!current_user_can('administrator')) {
             return;
         }
         
         foreach (self::$adminNotices as $oneNotice) {
-            $html = ABJ_FC_FileUtils::readFileContents(ABJ_FC_PATH . "/includes/html/notice.html");
+            $html = ABJ_404_Solution_Functions::readFileContents(ABJ404_PATH . "/includes/html/notice.html");
             $html = str_replace('{class}', 'notice is-dismissable is-dismissible ' . $oneNotice->getType(), $html);
             $html = str_replace('{message}', esc_html($oneNotice->getMessage()), $html);
             
