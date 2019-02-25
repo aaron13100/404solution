@@ -68,8 +68,8 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 == Changelog ==
 
-= Version 2.13.0 (March 29, 2019) =
-* Feature: Allow bulk operations on the Page Redirects tab.
+= Version 2.13.0 (February 25, 2019) =
+* Feature: Allow bulk operations on the Page Redirects tab (for Carol).
 * Feature: Allow bulk operations on the Captured 404 URLs -> Trash page.
 * Improvement: Faster response on the logs page for the dropdown search.
 * Improvement: Page suggestions using the [abj404_solution_page_suggestions] shortcode load twice as fast.
