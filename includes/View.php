@@ -922,10 +922,10 @@ class ABJ_404_Solution_View {
         // these are used for a GET request so they're not translated.
         $columns['url']['title'] = __('URL', '404-solution');
         $columns['url']['orderby'] = "url";
-        $columns['url']['width'] = "50%";
+        $columns['url']['width'] = "48%";
         $columns['hits']['title'] = __('Hits', '404-solution');
         $columns['hits']['orderby'] = "logshits";
-        $columns['hits']['width'] = "5%";
+        $columns['hits']['width'] = "7%";
         $columns['timestamp']['title'] = __('Created', '404-solution');
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "20%";
@@ -1181,13 +1181,13 @@ class ABJ_404_Solution_View {
         $columns['type']['width'] = "10%";
         $columns['dest']['title'] = __('Destination', '404-solution');;
         $columns['dest']['orderby'] = "final_dest";
-        $columns['dest']['width'] = "25%";
+        $columns['dest']['width'] = "22%";
         $columns['code']['title'] = __('Redirect', '404-solution');
         $columns['code']['orderby'] = "code";
         $columns['code']['width'] = "5%";
         $columns['hits']['title'] = __('Hits', '404-solution');
         $columns['hits']['orderby'] = "logshits";
-        $columns['hits']['width'] = "5%";
+        $columns['hits']['width'] = "7%";
         $columns['timestamp']['title'] = __('Created', '404-solution');;
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "10%";
@@ -1209,14 +1209,19 @@ class ABJ_404_Solution_View {
         foreach ($rows as $row) {
             $displayed++;
             $status = "";
+            $statusTitle = '';
             if ($row['status'] == ABJ404_STATUS_MANUAL) {
-                $status = __('Manual', '404-solution');
+                $status = __('Man', '404-solution');
+                $statusTitle = __('Manually created', '404-solution');
             } else if ($row['status'] == ABJ404_STATUS_AUTO) {
-                $status = __('Automatic', '404-solution');
+                $status = __('Auto', '404-solution');
+                $statusTitle = __('Automatically created', '404-solution');
             } else if ($row['status'] == ABJ404_STATUS_REGEX) {
                 $status = __('RegEx', '404-solution');
+                $statusTitle = __('Regular Expression (Manually Created)', '404-solution');
             } else {
                 $status = __('Unknown', '404-solution');
+                $statusTitle = __('Unknown', '404-solution');
             }
 
             $type = "";
@@ -1336,6 +1341,7 @@ class ABJ_404_Solution_View {
             $html = str_replace('{title}', $title, $html);
             $html = str_replace('{dest}', $dest, $html);
             $html = str_replace('{status}', $status, $html);
+            $html = str_replace('{statusTitle}', $statusTitle, $html);
             $html = str_replace('{type}', $type, $html);
             $html = str_replace('{dest}', $dest, $html);
             $html = str_replace('{rowCode}', $row['code'], $html);
@@ -1868,14 +1874,10 @@ class ABJ_404_Solution_View {
     function echoTableColumns($sub, $tableOptions, $columns) {
         echo "<tr>";
         
-//        if ($sub == 'abj404_captured') {
-            $cbinfo = "class=\"manage-column column-cb check-column\" style=\"vertical-align: middle; padding-bottom: 6px;\"";
-            echo "<th " . $cbinfo . ">";
-            echo "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" >";
-            echo "</th>";
-//        } else {
-//            echo '<th style="width: 1px;"></th>';
-//        }
+        $cbinfo = "class=\"manage-column column-cb check-column\" style=\"vertical-align: middle; padding-bottom: 6px;\"";
+        echo "<th " . $cbinfo . ">";
+        echo "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" >";
+        echo "</th>";
         
         foreach ($columns as $column) {
             $style = "";
