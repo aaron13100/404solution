@@ -69,8 +69,10 @@ This is nothing to be worried about. It means people tried to access pages on yo
 == Changelog ==
 
 = Version 2.13.0 (March 29, 2019) =
+* Feature: Allow bulk operations on the Page Redirects tab.
 * Feature: Allow bulk operations on the Captured 404 URLs -> Trash page.
 * Improvement: Faster response on the logs page for the dropdown search.
+* Improvement: Page suggestions using the [abj404_solution_page_suggestions] shortcode load twice as fast.
 * FIX: Avoid a rare division by 0 (thanks to an automatically submitted error file).
 
 = Version 2.12.2 (February 17, 2019) =

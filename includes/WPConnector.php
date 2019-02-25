@@ -16,12 +16,12 @@ class ABJ_404_Solution_WordPress_Connector {
         add_filter("plugin_action_links_" . ABJ404_NAME, 'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
         add_action('template_redirect', 'ABJ_404_Solution_WordPress_Connector::process404', 9);
 
+        add_action('admin_notices', 'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
         add_action('abj404_cleanupCronAction', 'ABJ_404_Solution_DataAccess::deleteOldRedirectsCron');
 
         register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::doUnregisterCrons');
         register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::runOnPluginActivation');
 
-        add_action('admin_notices', 'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
         add_action('admin_menu', 'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
 
         /** Include things necessary for ajax. */
@@ -443,6 +443,8 @@ class ABJ_404_Solution_WordPress_Connector {
                 }
             }
         }
+        
+        ABJ_404_Solution_WPNotices::echoAdminNotices();
     }
 
     /** Adds a link under the "Settings" link to the plugin page.
