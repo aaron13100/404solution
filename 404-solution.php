@@ -91,6 +91,7 @@ require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Decoder.php
 require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Util.php';
 require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Metadata.php';
 require_once ABJ404_PATH . 'includes/IP2Location.php';
+require_once ABJ404_PATH . 'includes/objs/LevDistInfo.php';
 
 if (is_admin()) {
     require_once ABJ404_PATH . "includes/View.php";

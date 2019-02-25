@@ -17,7 +17,7 @@ class ABJ_404_Solution_SpellChecker {
     /** Same as above except without the period (.) because of the extension in the file name. */
     private $separatingCharactersForImages = array("-", "_", "~", '%20');
 
-    /** 
+    /** Find a match using the user-defined regex patterns.
      * @global type $abj404dao
      * @param type $requestedURL
      * @return type
@@ -63,8 +63,9 @@ class ABJ_404_Solution_SpellChecker {
         return null;
     }
 
-    /** If there is a post that has a slug that matches the user requested slug exactly, then return the permalink for that 
-     * post. Otherwise return null.
+    /** Find a match using the an exact slug match.    
+     * If there is a post that has a slug that matches the user requested slug exactly, 
+     * then return the permalink for that post. Otherwise return null.
      * @global type $abj404dao
      * @param type $requestedURL
      * @return type
@@ -98,7 +99,8 @@ class ABJ_404_Solution_SpellChecker {
         return null;
     }
     
-    /** Use spell checking to find the correct link. Return the permalink (map) if there is one, otherwise return null.
+    /** Find a match using the an exact slug match.    
+     * Use spell checking to find the correct link. Return the permalink (map) if there is one, otherwise return null.
      * @global type $abj404spellChecker
      * @global type $abj404logic
      * @param type $requestedURL
@@ -115,6 +117,7 @@ class ABJ_404_Solution_SpellChecker {
             // Site owner wants automatic redirects.
             $permalinksPacket = $abj404spellChecker->findMatchingPosts($requestedURL, 
                     $options['auto_cats'], $options['auto_tags']);
+                        
             $permalinks = $permalinksPacket[0];
             $rowType = $permalinksPacket[1];
             
@@ -174,13 +177,19 @@ class ABJ_404_Solution_SpellChecker {
         global $abj404dao;
         global $abj404logic;
         
+        $options = $abj404logic->getOptions();
+        $onlyNeedThisManyPages = absint($options['suggest_max']);
+        
         $permalinks = array();
+        
+        if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('permalinks_found', $_REQUEST[ABJ404_PP]) &&
+                !empty($_REQUEST[ABJ404_PP]['permalinks_found'])) {
+            $permalinks = json_decode($_REQUEST[ABJ404_PP]['permalinks_found'], true);
+            return $permalinks;
+        }
         
         $requestedURLSpaces = str_replace($this->separatingCharacters, " ", $requestedURLRaw);
         $requestedURLCleaned = $this->getLastURLPart($requestedURLSpaces);
-        // this is the URL with the full path where / is replaces by spaces (" ").
-        // this is useful for looking at URLs such as /category/behavior/. 
-        $fullURLRaw = str_replace('/', " ", $requestedURLRaw);
         $fullURLspacesCleaned = str_replace('/', " ", $requestedURLSpaces);
         // if there is no extra stuff in the path then we ignore this to save time.
         if ($fullURLspacesCleaned == $requestedURLCleaned) {
@@ -197,11 +206,137 @@ class ABJ_404_Solution_SpellChecker {
             // match based on the slug.
             $rows = $abj404dao->getPublishedPagesAndPostsIDs('');
         }
-        // pre-filter some pages based on the min and max possible levenshtein distances.
-        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
         
-        // use the levenshtein distance formula here.
-        foreach ($likelyMatchIDs as $id) {
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on posts
+        $permalinks = $this->matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, 
+                $fullURLspacesCleaned, $rows, $rowType);
+
+        // if we only need images then we're done.
+        if ($rowType == 'image') {
+            // This is sorted so that the link with the highest score will be first when iterating through.
+            arsort($permalinks);
+            $anArray = array($permalinks, $rowType);
+            return $anArray;
+        }
+        
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on tags
+        // search for a similar tag.
+        if ($includeTags == "1") {
+            $permalinks = $this->matchOnTags($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, 'tags');
+        }
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on categories
+        // search for a similar category.
+        if ($includeCats == "1") {
+            $permalinks = $this->matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, 'categories');
+        }
+
+        // This is sorted so that the link with the highest score will be first when iterating through.
+        arsort($permalinks);
+        
+        // only keep what we need. store them for later if necessary.
+        $permalinks = array_splice($permalinks, 0, $onlyNeedThisManyPages);
+        $returnValue = array($permalinks, $rowType);
+        $_REQUEST[ABJ404_PP]['permalinks_found'] = json_encode($returnValue);
+        
+        return $returnValue;
+    }
+    
+    function matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
+        global $abj404dao;
+        global $abj404logic;
+        
+        $rows = $abj404dao->getPublishedCategories();
+
+        // pre-filter some pages based on the min and max possible levenshtein distances.
+        $likelyMatchDistInfos = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'categories');
+
+        // access the array directly instead of using a foreach loop so we can remove items
+        // from the end of the array in the middle of the loop.
+        foreach ($likelyMatchDistInfos as $currentDistInfo) {        
+            $id = $currentDistInfo->getId();
+
+            // use the levenshtein distance formula here.
+            $the_permalink = $this->getPermalink($id, 'categories');
+            $urlParts = parse_url($the_permalink);
+            $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
+            $scoreBasis = mb_strlen($pathOnly);
+            if ($scoreBasis == 0) {
+                continue;
+            }
+
+            $levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
+            if ($fullURLspacesCleaned != '') {
+                $pathOnlySpaces = str_replace('/', " ", $pathOnly);
+                $levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $pathOnlySpaces));
+            }
+            $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
+            $permalinks[$id . "|" . ABJ404_TYPE_CAT] = number_format($score, 4, '.', '');
+        }
+        
+        return $permalinks;
+    }
+    
+    function matchOnTags($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
+        global $abj404dao;
+        global $abj404logic;
+        
+        $rows = $abj404dao->getPublishedTags();
+
+        // pre-filter some pages based on the min and max possible levenshtein distances.
+        $likelyMatchDistInfos = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'tags');
+
+        // access the array directly instead of using a foreach loop so we can remove items
+        // from the end of the array in the middle of the loop.
+        foreach ($likelyMatchDistInfos as $currentDistInfo) {        
+            $id = $currentDistInfo->getId();
+
+            // use the levenshtein distance formula here.
+            $the_permalink = $this->getPermalink($id, 'tags');
+            $urlParts = parse_url($the_permalink);
+            $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
+            $scoreBasis = mb_strlen($pathOnly);
+            if ($scoreBasis == 0) {
+                continue;
+            }
+
+            $levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
+            if ($fullURLspacesCleaned != '') {
+                $pathOnlySpaces = str_replace('/', " ", $pathOnly);
+                $levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $pathOnlySpaces));
+            }
+            $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
+            $permalinks[$id . "|" . ABJ404_TYPE_TAG] = number_format($score, 4, '.', '');
+        }
+        
+        return $permalinks;
+    }
+    
+    function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
+        global $abj404logic;
+        global $abj404logging;
+
+        $options = $abj404logic->getOptions();
+        $onlyNeedThisManyPages = absint($options['suggest_max']);
+
+        // pre-filter some pages based on the min and max possible levenshtein distances.
+        $likelyMatchDistInfos = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
+    
+        // access the array directly instead of using a foreach loop so we can remove items
+        // from the end of the array in the middle of the loop.
+        $topLevScores = array();
+        $worstScoreSoFar = PHP_INT_MAX;
+//        $currentIndex = 0;
+        foreach ($likelyMatchDistInfos as $currentDistInfo) {
+            
+            // if the current page's best case scenario is worse than our worst-case scenario, then skip it.
+//            if ($currentDistInfo->getMinDist() > $worstScoreSoFar) {
+//                continue;
+//            }
+            
+            $id = $currentDistInfo->getId();
+
+            // use the levenshtein distance formula here.
             $the_permalink = $this->getPermalink($id, $rowType);
             $urlParts = parse_url($the_permalink);
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
@@ -231,73 +366,23 @@ class ABJ_404_Solution_SpellChecker {
                 }
             }
             $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
-            
             $permalinks[$id . "|" . ABJ404_TYPE_POST] = number_format($score, 4, '.', '');
-        }
+            $topLevScores[] = $levscore;
+            
+            // every so often we remove pages that will be longer than what we have so far.
+//            if ($currentIndex % 10 == 0 && count($topLevScores) >= $onlyNeedThisManyPages) {
+//                // sort from the lowest lev score to the highest.
+//                asort($topLevScores);
+//                // keep only what we need.
+//                $topLevScores = array_slice($topLevScores, 0, $onlyNeedThisManyPages);
+//                $worstScoreIndex = $onlyNeedThisManyPages - 1;
+//                $worstScoreSoFar = $topLevScores[$worstScoreIndex];
+//            }
 
-        // TODO ugh. find a better way than repeating this code.
-        if ($rowType == 'image') {
-            // This is sorted so that the link with the highest score will be first when iterating through.
-            arsort($permalinks);
-            $anArray = array($permalinks, $rowType);
-            return $anArray;
+//            $currentIndex++;
         }
         
-        // search for a similar tag.
-        if ($includeTags == "1") {
-            $rows = $abj404dao->getPublishedTags();
-
-            // pre-filter some pages based on the min and max possible levenshtein distances.
-            $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'tags');
-            
-            foreach ($likelyMatchIDs as $id) {
-                $the_permalink = $this->getPermalink($id, 'tags');
-                $urlParts = parse_url($the_permalink);
-                $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
-                $scoreBasis = mb_strlen($pathOnly);
-                if ($scoreBasis == 0) {
-                    continue;
-                }
-                
-                $levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
-                if ($fullURLspacesCleaned != '') {
-                    $pathOnlySpaces = str_replace('/', " ", $pathOnly);
-                    $levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $pathOnlySpaces));
-                }
-                $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
-                $permalinks[$id . "|" . ABJ404_TYPE_TAG] = number_format($score, 4, '.', '');
-            }
-        }
-
-        // search for a similar category.
-        if ($includeCats == "1") {
-            $rows = $abj404dao->getPublishedCategories();
-            
-            // pre-filter some pages based on the min and max possible levenshtein distances.
-            $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'categories');
-            
-            foreach ($likelyMatchIDs as $id) {
-                $the_permalink = $this->getPermalink($id, 'categories');
-                $urlParts = parse_url($the_permalink);
-                $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
-                $scoreBasis = mb_strlen($pathOnly);
-                if ($scoreBasis == 0) {
-                    continue;
-                }
-                
-                $levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
-                if ($fullURLspacesCleaned != '') {
-                    $pathOnlySpaces = str_replace('/', " ", $pathOnly);
-                    $levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $pathOnlySpaces));
-                }
-                $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
-                $permalinks[$id . "|" . ABJ404_TYPE_CAT] = number_format($score, 4, '.', '');
-            }
-        }
-
-        // This is sorted so that the link with the highest score will be first when iterating through.
-        arsort($permalinks);
-        return array($permalinks, $rowType);
+        return $permalinks;
     }
     
     /** 
@@ -370,8 +455,6 @@ class ABJ_404_Solution_SpellChecker {
         $requestedURLCleanedLength = mb_strlen($requestedURLCleaned);
         $fullURLspacesLength = mb_strlen($fullURLspaces);
         foreach ($rows as $row) {
-            $pagePacket = array();
-            
             $id = null;
             
             if ($rowType == 'pages') {
@@ -411,9 +494,7 @@ class ABJ_404_Solution_SpellChecker {
             }
             
             // create a data packet.
-            $pagePacket['id'] = $id;
-            $pagePacket['min-dist'] = $minDist;
-            $pagePacket['max-dist'] = $maxDist;
+            $pagePacket = new ABJ_404_Solution_LevDistInfo($id, $minDist, $maxDist);
             
             // add the packet to the list.
             if (is_array($minDistances[$minDist])) {
@@ -449,15 +530,15 @@ class ABJ_404_Solution_SpellChecker {
          * highest max distance taken from the previous step. The strings we remove here will always be further 
          * away than the strings we found in the previous step and can be removed without applying the 
          * levenshtein algorithm. */
-        $listOfIDs = array();
+        $listOfPacketsToReturn = array();
         for ($currentDistanceIndex = 0; $currentDistanceIndex <= $maxDistFound; $currentDistanceIndex++) {
-            $listOfPackets = $minDistances[$currentDistanceIndex];
-            foreach ($listOfPackets as $pagePacket) {
-                array_push($listOfIDs, $pagePacket['id']);
+            $listOfMinDistancePackets = $minDistances[$currentDistanceIndex];
+            foreach ($listOfMinDistancePackets as $pagePacket) {
+                $listOfPacketsToReturn[] = $pagePacket;
             }
         }
         
-        return $listOfIDs;
+        return $listOfPacketsToReturn;
     }
     
     /** Turns "/abc/defg" into "defg"
