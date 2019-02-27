@@ -177,6 +177,8 @@ class ABJ_404_Solution_SpellChecker {
         global $abj404dao;
         global $abj404logic;
         
+        // TODO look at using bktree or symspell
+        
         $options = $abj404logic->getOptions();
         $onlyNeedThisManyPages = absint($options['suggest_max']);
         

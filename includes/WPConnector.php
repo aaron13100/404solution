@@ -35,6 +35,8 @@ class ABJ_404_Solution_WordPress_Connector {
         add_action( 'wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor' );
         // fyi wp_ajax_nopriv_echoViewLogsFor to load things for normal users
 
+        add_action( 'wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction' );
+        
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
     }
     
@@ -58,6 +60,9 @@ class ABJ_404_Solution_WordPress_Connector {
         wp_register_script( 'search_logs_ajax', plugin_dir_url(__FILE__) . 'ajax/search_logs_ajax.js', 
                 array( 'jquery', 'jquery-ui-autocomplete' ));
         
+        wp_register_script( 'trash_link_ajax', plugin_dir_url(__FILE__) . 'ajax/trash_link_ajax.js', 
+                array( 'jquery'));
+        
         // Localize the script with new data
         $translation_array = array(
             'type_a_page_name' => __( '(Type a page name or an external URL)', '404-solution' ),
@@ -68,6 +73,7 @@ class ABJ_404_Solution_WordPress_Connector {
         wp_enqueue_script( 'redirect_to_ajax' );
         
         wp_enqueue_script( 'search_logs_ajax' );
+        wp_enqueue_script( 'trash_link_ajax' );
         
         wp_enqueue_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css');
     }
