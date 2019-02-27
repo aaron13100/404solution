@@ -960,15 +960,18 @@ class ABJ_404_Solution_View {
             $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $row['id'];
             $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $row['logsid'];
             $trashlink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'];
+            $ajaxTrashLink = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']);
             $ignorelink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'];
             $laterlink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'];
             $deletelink = "?page=" . ABJ404_PP . "&subpage=abj404_captured&remove=1&id=" . $row['id'];
 
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $trashlink .= "&trash=0";
+                $ajaxTrashLink .= "&trash=0";
                 $trashtitle = __('Restore', '404-solution');
             } else {
                 $trashlink .= "&trash=1";
+                $ajaxTrashLink .= "&trash=1";
                 $trashtitle = __('Trash', '404-solution');
             }
 
@@ -1002,6 +1005,7 @@ class ABJ_404_Solution_View {
             }
 
             $trashlink = wp_nonce_url($trashlink, "abj404_trashRedirect");
+            $ajaxTrashLink = wp_nonce_url($ajaxTrashLink, "abj404_ajaxTrash");
 
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $deletelink = wp_nonce_url($deletelink, "abj404_removeRedirect");
@@ -1023,7 +1027,7 @@ class ABJ_404_Solution_View {
             if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
                 $rowActions[] = '<span class="edit"><a href="{editLink}" title="{Edit Redirect Details}">{Edit}</a></span>';
             }
-            $rowActions[] = '<span class="trash"><a href="{trashLink}" title="{trashtitle}">{trashtitle}</a></span>';
+            $rowActions[] = '<span class="trash"><a href="#" class="ajax-trash-link" data-url="{ajaxTrashLink}" title="trashtitle}">{trashtitle}</a></span>';
             if ($row['logsid'] > 0) {
                 $rowActions[] = '<span class="view"><a href="{logsLink}" title="{View Redirect Logs}">{View Logs}</a></span>';
             } else {
@@ -1043,6 +1047,7 @@ class ABJ_404_Solution_View {
             $html = str_replace('{editLink}', $editlink, $html);
             $html = str_replace('{logsLink}', $logslink, $html);
             $html = str_replace('{trashLink}', $trashlink, $html);
+            $html = str_replace('{ajaxTrashLink}', $ajaxTrashLink, $html);
             $html = str_replace('{trashtitle}', $trashtitle, $html);
             $html = str_replace('{ignoreLink}', $ignorelink, $html);
             $html = str_replace('{ignoreTitle}', $ignoretitle, $html);

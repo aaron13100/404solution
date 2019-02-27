@@ -15,6 +15,7 @@ jQuery(document).ready(function($) {
             success: function (result) {
                 if (result.startsWith("fail")) {
                     row.css("background-color", "yellow");
+                    alert("Error: " + result);
                     
                 } else {
                     row.hide(1000, function(){ row.remove(); });
