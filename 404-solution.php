@@ -82,6 +82,7 @@ require_once ABJ404_PATH . "includes/Functions.php";
 require_once ABJ404_PATH . "includes/DataAccess.php";
 require_once ABJ404_PATH . "includes/PluginLogic.php";
 require_once ABJ404_PATH . "includes/ajax/Ajax_Php.php";
+require_once ABJ404_PATH . 'includes/ajax/Ajax_TrashAction.php';
 require_once ABJ404_PATH . "includes/WPConnector.php";
 require_once ABJ404_PATH . "includes/SpellChecker.php";
 require_once ABJ404_PATH . "includes/ErrorHandler.php";

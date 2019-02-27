@@ -1274,13 +1274,16 @@ class ABJ_404_Solution_View {
             $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . absint($row['id']);
             $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . absint($row['logsid']);
             $trashlink = "?page=" . ABJ404_PP . "&id=" . absint($row['id']);
+            $ajaxTrashLink = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']);
             $deletelink = "?page=" . ABJ404_PP . "&remove=1&id=" . absint($row['id']);
 
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $trashlink .= "&trash=0";
+                $ajaxTrashLink .= "&trash=0";
                 $trashtitle = __('Restore', '404-solution');
             } else {
                 $trashlink .= "&trash=1";
+                $ajaxTrashLink .= "&trash=1";
                 $trashtitle = __('Trash', '404-solution');
             }
 
@@ -1295,6 +1298,7 @@ class ABJ_404_Solution_View {
 
             $trashaction = "abj404_trashRedirect";
             $trashlink = wp_nonce_url($trashlink, $trashaction);
+            $ajaxTrashLink = wp_nonce_url($ajaxTrashLink, "abj404_ajaxTrash");
 
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $deleteaction = "abj404_removeRedirect";
@@ -1348,6 +1352,7 @@ class ABJ_404_Solution_View {
             $html = str_replace('{hits}', $hits, $html);
             $html = str_replace('{logsLink}', $logslink, $html);
             $html = str_replace('{trashLink}', $trashlink, $html);
+            $html = str_replace('{ajaxTrashLink}', $ajaxTrashLink, $html);
             $html = str_replace('{trashtitle}', $trashtitle, $html);
             $html = str_replace('{deletelink}', $deletelink, $html);
             $html = str_replace('{hits}', esc_html($hits), $html);

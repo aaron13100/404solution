@@ -19,13 +19,34 @@ class ABJ_404_Solution_Logging {
         return (@$options['debug_mode'] == true);
     }
     
+    /** for the current timezone. 
+     * @return string */
+    function getTimestamp() {
+        $date = null;
+        $timezoneString = get_option('timezone_string');
+        
+        if (!empty($timezoneString)) {
+            $date = new DateTime("now", new DateTimeZone($timezoneString));
+        } else {
+            $timezoneOffset = (int)get_option('gmt_offset');
+            $timezoneOffsetString = '+';
+            if ($timezoneOffset < 0) {
+                $timezoneOffsetString = '-';
+            }
+
+            $date = new DateTime("now", new DateTimeZone($timezoneOffsetString . $timezoneOffset));
+        }
+        
+        return $date->format('Y-m-d H:i:s T');
+    }
+    
     /** Send a message to the error_log if debug mode is on. 
      * This goes to a file and is used by every other class so it goes here.
      * @param type $message  */
     function debugMessage($message) {
         if ($this->isDebug()) {
             $prefix = "ABJ-404-SOLUTION (DEBUG): ";
-            $timestamp = date('Y-m-d H:i:s T') . ' (DEBUG): ';
+            $timestamp = $this->getTimestamp() . ' (DEBUG): ';
             error_log($prefix . $message);
             $this->writeLineToDebugFile($timestamp . $message);
         }
@@ -35,7 +56,7 @@ class ABJ_404_Solution_Logging {
      * This goes to a file and is used by every other class so it goes here.
      * @param type $message  */
     function infoMessage($message) {
-        $timestamp = date('Y-m-d H:i:s T') . ' (INFO): ';
+        $timestamp = $this->getTimestamp() . ' (INFO): ';
         $this->writeLineToDebugFile($timestamp . $message);
     }
 
@@ -51,7 +72,7 @@ class ABJ_404_Solution_Logging {
         $stacktrace = $e->getTraceAsString();
         
         $prefix = "ABJ-404-SOLUTION (ERROR): ";
-        $timestamp = date('Y-m-d H:i:s T') . ' (ERROR): ';
+        $timestamp = $this->getTimestamp() . ' (ERROR): ';
         $referrer = '';
         if (array_key_exists('HTTP_REFERER', $_SERVER) && !empty($_SERVER['HTTP_REFERER'])) {
             $referrer = $_SERVER['HTTP_REFERER'];
