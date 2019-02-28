@@ -505,7 +505,7 @@ class ABJ_404_Solution_DataAccess {
      * @param type $specificURL
      * @return type
      */
-    function getLogsIDandURLLike($specificURL = '') {
+    function getLogsIDandURLLike($specificURL = '', $limitResults) {
         global $wpdb;
         
         $whereClause = '';
@@ -518,6 +518,7 @@ class ABJ_404_Solution_DataAccess {
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsIDandURLForAjax.sql");
         $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         $query = str_replace('{where_clause_here}', $whereClause, $query);
+        $query = str_replace('{limit-results}', 'limit ' . $limitResults, $query);
         
         $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         $rows = $results['rows'];

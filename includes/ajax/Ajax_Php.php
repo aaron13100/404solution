@@ -24,7 +24,7 @@ class ABJ_404_Solution_Ajax_Php {
         $suggestion['value'] = 0;
         $specialSuggestion[] = $suggestion;
         
-        $rows = $abj404dao->getLogsIDandURLLike('%' . $term . '%');
+        $rows = $abj404dao->getLogsIDandURLLike('%' . $term . '%', ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         $results = $abj404AjaxPhp->formatLogResults($rows);
         
         // limit search results
