@@ -1,8 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-$whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
-if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
+if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -251,13 +250,11 @@ class ABJ_404_Solution_SpellChecker {
         $rows = $abj404dao->getPublishedCategories();
 
         // pre-filter some pages based on the min and max possible levenshtein distances.
-        $likelyMatchDistInfos = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'categories');
+        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'categories');
 
         // access the array directly instead of using a foreach loop so we can remove items
         // from the end of the array in the middle of the loop.
-        foreach ($likelyMatchDistInfos as $currentDistInfo) {        
-            $id = $currentDistInfo->getId();
-
+        foreach ($likelyMatchIDs as $id) {
             // use the levenshtein distance formula here.
             $the_permalink = $this->getPermalink($id, 'categories');
             $urlParts = parse_url($the_permalink);
@@ -286,13 +283,11 @@ class ABJ_404_Solution_SpellChecker {
         $rows = $abj404dao->getPublishedTags();
 
         // pre-filter some pages based on the min and max possible levenshtein distances.
-        $likelyMatchDistInfos = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'tags');
+        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'tags');
 
         // access the array directly instead of using a foreach loop so we can remove items
         // from the end of the array in the middle of the loop.
-        foreach ($likelyMatchDistInfos as $currentDistInfo) {        
-            $id = $currentDistInfo->getId();
-
+        foreach ($likelyMatchIDs as $id) {        
             // use the levenshtein distance formula here.
             $the_permalink = $this->getPermalink($id, 'tags');
             $urlParts = parse_url($the_permalink);
@@ -317,27 +312,17 @@ class ABJ_404_Solution_SpellChecker {
     function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
         global $abj404logic;
         global $abj404logging;
-
-        $options = $abj404logic->getOptions();
-        $onlyNeedThisManyPages = absint($options['suggest_max']);
+        
+        $ok = get_pages();
+        $firstPage = $ok[0];
 
         // pre-filter some pages based on the min and max possible levenshtein distances.
-        $likelyMatchDistInfos = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
+        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
     
         // access the array directly instead of using a foreach loop so we can remove items
         // from the end of the array in the middle of the loop.
         $topLevScores = array();
-        $worstScoreSoFar = PHP_INT_MAX;
-//        $currentIndex = 0;
-        foreach ($likelyMatchDistInfos as $currentDistInfo) {
-            
-            // if the current page's best case scenario is worse than our worst-case scenario, then skip it.
-//            if ($currentDistInfo->getMinDist() > $worstScoreSoFar) {
-//                continue;
-//            }
-            
-            $id = $currentDistInfo->getId();
-
+        foreach ($likelyMatchIDs as $id) {
             // use the levenshtein distance formula here.
             $the_permalink = $this->getPermalink($id, $rowType);
             $urlParts = parse_url($the_permalink);
@@ -370,18 +355,6 @@ class ABJ_404_Solution_SpellChecker {
             $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
             $permalinks[$id . "|" . ABJ404_TYPE_POST] = number_format($score, 4, '.', '');
             $topLevScores[] = $levscore;
-            
-            // every so often we remove pages that will be longer than what we have so far.
-//            if ($currentIndex % 10 == 0 && count($topLevScores) >= $onlyNeedThisManyPages) {
-//                // sort from the lowest lev score to the highest.
-//                asort($topLevScores);
-//                // keep only what we need.
-//                $topLevScores = array_slice($topLevScores, 0, $onlyNeedThisManyPages);
-//                $worstScoreIndex = $onlyNeedThisManyPages - 1;
-//                $worstScoreSoFar = $topLevScores[$worstScoreIndex];
-//            }
-
-//            $currentIndex++;
         }
         
         return $permalinks;
@@ -437,13 +410,14 @@ class ABJ_404_Solution_SpellChecker {
         global $abj404logic;
         global $abj404logging;
         
-        $options = $abj404logic->getOptions();
-        
         // if there were no results then there are no likely matches.
         if (!is_array($rows)) {
-            $abj404logging->debugMessage("Non-array value found in getLikelyMatchIDs: " . $rows);
+            $abj404logging->errorMessage("Non-array value found in getLikelyMatchIDs: " . $rows);
             return array();
         }
+        
+        $options = $abj404logic->getOptions();
+        $onlyNeedThisManyPages = absint($options['suggest_max']);
         
         // create a list sorted by min levenshstein distance and max levelshtein distance.
         /* 1) Get a list of minumum and maximum levenshtein distances - two lists, one ordered by the min 
@@ -454,11 +428,19 @@ class ABJ_404_Solution_SpellChecker {
             $maxDistances[$currentDistanceIndex] = array();
             $minDistances[$currentDistanceIndex] = array();
         }
+        
         $requestedURLCleanedLength = mb_strlen($requestedURLCleaned);
         $fullURLspacesLength = mb_strlen($fullURLspaces);
+        
+        $index = 0;
+        
         foreach ($rows as $row) {
-            $id = null;
+            $index++;
+            if ($index > 5000) {
+                break;
+            }
             
+            $id = null;
             if ($rowType == 'pages') {
                 $id = $row->id;
                 
@@ -472,48 +454,49 @@ class ABJ_404_Solution_SpellChecker {
                 $id = $row->id;
                 
             } else {
-                throw Exception("Unknown row type ...");
+                throw Exception("Unknown row type ... " . $rowType);
             }
+
+            // TODO this line takes too long to execute when there are 10k+ pages.
             $the_permalink = $this->getPermalink($id, $rowType);
-            $the_permalink = urldecode($the_permalink);
             
+            $the_permalink = urldecode($the_permalink);
             $urlParts = parse_url($the_permalink);
+            $the_permalink = null;
+            
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
+            $urlParts = null;
+            
             $existingPageURLSpaces = str_replace($this->separatingCharacters, " ", $existingPageURL);
             $existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
-            
+            $existingPageURLSpaces = null;
+
             // the minimum distance is the minimum of the two possibilities. one is longer anyway, so 
             // it shouldn't matter.
             $minDist = abs(mb_strlen($existingPageURLCleaned) - $requestedURLCleanedLength);
             if ($fullURLspaces != '') {
-                $minDist2 = abs(mb_strlen($fullURLspacesLength) - $requestedURLCleanedLength);
-                $minDist = min($minDist, $minDist2);
+                $minDist = min($minDist, abs(mb_strlen($fullURLspacesLength) - $requestedURLCleanedLength));
             }
             $maxDist = mb_strlen($existingPageURLCleaned);
             if ($fullURLspaces != '') {
-                $maxDist2 = $fullURLspacesLength;
-                $maxDist = min($maxDist, $maxDist2);
+                $maxDist = min($maxDist, $fullURLspacesLength);
             }
             
-            // create a data packet.
-            $pagePacket = new ABJ_404_Solution_LevDistInfo($id, $minDist, $maxDist);
-            
-            // add the packet to the list.
+            // add the ID to the list.
             if (is_array($minDistances[$minDist])) {
-                array_push($minDistances[$minDist], $pagePacket);
+                array_push($minDistances[$minDist], $id);
             }
             if (is_array($maxDistances[$maxDist])) {
-                array_push($maxDistances[$maxDist], $pagePacket);
+                array_push($maxDistances[$maxDist], $id);
             }
         }
-        
+
         // look at the first X IDs with the lowest maximum levenshtein distance.
         /* 2) Get the first X strings from the max-distance list. The X is the number we have to display in the 
          * list of suggestions on the 404 page. Note the highest max distance of the strings we're using here. */
         $pagesSeenSoFar = 0;
         $currentDistanceIndex = 0;
         $maxDistFound = 300;
-        $onlyNeedThisManyPages = absint($options['suggest_max']);
         for ($currentDistanceIndex = 0; $currentDistanceIndex <= 300; $currentDistanceIndex++) {
             $pagesSeenSoFar += sizeof($maxDistances[$currentDistanceIndex]);
             
@@ -532,15 +515,15 @@ class ABJ_404_Solution_SpellChecker {
          * highest max distance taken from the previous step. The strings we remove here will always be further 
          * away than the strings we found in the previous step and can be removed without applying the 
          * levenshtein algorithm. */
-        $listOfPacketsToReturn = array();
+        $listOfIDsToReturn = array();
         for ($currentDistanceIndex = 0; $currentDistanceIndex <= $maxDistFound; $currentDistanceIndex++) {
-            $listOfMinDistancePackets = $minDistances[$currentDistanceIndex];
-            foreach ($listOfMinDistancePackets as $pagePacket) {
-                $listOfPacketsToReturn[] = $pagePacket;
+            $listOfMinDistanceIDs = $minDistances[$currentDistanceIndex];
+            foreach ($listOfMinDistanceIDs as $oneID) {
+                $listOfIDsToReturn[] = $oneID;
             }
         }
-        
-        return $listOfPacketsToReturn;
+
+        return $listOfIDsToReturn;
     }
     
     /** Turns "/abc/defg" into "defg"

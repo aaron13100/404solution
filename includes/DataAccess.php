@@ -1,8 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-$whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
-if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
+if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -1061,7 +1060,7 @@ class ABJ_404_Solution_DataAccess {
      * @param type $searchTerm use this string in a LIKE on the sql.
      * @return type
      */
-    function getPublishedPagesAndPostsIDs($slug, $searchTerm = '') {
+    function getPublishedPagesAndPostsIDs($slug, $searchTerm = '', $limitResults = '') {
         global $wpdb;
         global $abj404logic;
         global $abj404logging;
@@ -1090,6 +1089,10 @@ class ABJ_404_Solution_DataAccess {
             $searchTerm = '';
         }
         
+        if (!empty($limitResults)) {
+            $limitResults = " */  limit " . $limitResults;
+        }
+        
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
         $query = str_replace('{wp_posts}', $wpdb->posts, $query);
@@ -1098,6 +1101,7 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
         $query = str_replace('{specifiedSlug}', $specifiedSlug, $query);
         $query = str_replace('{searchTerm}', $searchTerm, $query);
+        $query = str_replace('{limit-results}', $limitResults, $query);
         
         $rows = $wpdb->get_results($query);
         // check for errors

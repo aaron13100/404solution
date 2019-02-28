@@ -1,8 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-$whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
-if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
+if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -52,7 +51,7 @@ class ABJ_404_Solution_Ajax_Php {
         $specialPages = $abj404AjaxPhp->getDefaultRedirectDestinations($includeDefault404Page);
         
         // query to get the posts and pages.
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', $term);
+        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', $term, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         // order the results. this also sets the page depth (for child pages).
         $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes, true);
         $publishedPosts = $abj404AjaxPhp->formatRedirectDestinations($rowsOtherTypes);
