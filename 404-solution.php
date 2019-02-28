@@ -1,8 +1,8 @@
 <?php
 
 // turn on debug for localhost etc
-$whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
-if (in_array($_SERVER['SERVER_NAME'], $whitelist)) {
+$abj404_whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
+if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -70,7 +70,7 @@ $abj404_captured_types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, AB
 // other
 define("ABJ404_OPTION_DEFAULT_PERPAGE", 25);
 define("ABJ404_OPTION_MIN_PERPAGE", 10);
-define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 500);
+define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 250);
 
 
 require_once ABJ404_PATH . "includes/Logging.php";
@@ -92,7 +92,6 @@ require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Decoder.php
 require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Util.php';
 require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Metadata.php';
 require_once ABJ404_PATH . 'includes/IP2Location.php';
-require_once ABJ404_PATH . 'includes/objs/LevDistInfo.php';
 
 if (is_admin()) {
     require_once ABJ404_PATH . "includes/View.php";

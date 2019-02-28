@@ -30,7 +30,7 @@ left outer join (
     on cast(wp_posts.ID as binary) = cast(usefulterms.object_id as binary)
 
 where cast(wp_posts.post_status as binary) = cast('publish' as binary)
-      and lcase(wp_posts.post_type) in ({recognizedPostTypes})
+      and lcase(wp_posts.post_type) in ({recognizedPostTypes}) /* 'page', 'post', 'product' */
         
 /* only include this line if a slug has been specified. e.g.
       and post_name = 'specifiedSlug'
@@ -47,3 +47,6 @@ and ( usefulterms.grouped_terms is null or
 	  or usefulterms.grouped_terms not like '%exclude-from-catalog%'
     )
 
+/* limit results. e.g limit 250
+{limit-results}
+/*  */
