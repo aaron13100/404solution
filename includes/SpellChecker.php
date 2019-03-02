@@ -416,6 +416,10 @@ class ABJ_404_Solution_SpellChecker {
             return array();
         }
         
+        // first get all permalinks
+        $permalinkCache = new ABJ_404_Solution_PermalinkCache();
+        $permalinkCache->updatePermalinkCache(25);
+        
         $options = $abj404logic->getOptions();
         $onlyNeedThisManyPages = absint($options['suggest_max']);
         

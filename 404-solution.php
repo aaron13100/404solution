@@ -2,6 +2,7 @@
 
 // turn on debug for localhost etc
 $abj404_whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
+$GLOBALS['abj404_whitelist'] = $abj404_whitelist;
 if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
@@ -92,6 +93,8 @@ require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Decoder.php
 require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Util.php';
 require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Metadata.php';
 require_once ABJ404_PATH . 'includes/IP2Location.php';
+require_once ABJ404_PATH . 'includes/Timer.php';
+require_once ABJ404_PATH . 'includes/PermalinkCache.php';
 
 if (is_admin()) {
     require_once ABJ404_PATH . "includes/View.php";
