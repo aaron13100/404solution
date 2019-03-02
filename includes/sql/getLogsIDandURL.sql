@@ -5,6 +5,7 @@ SELECT requested_url,
        Count(requested_url)      AS logshits 
 FROM {wp_abj404_logsv2} 
 
+/* where requested_url = '" . $specificURL . "'"; */
 {where_clause_here}
 
 GROUP BY requested_url

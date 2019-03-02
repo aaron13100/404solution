@@ -25,6 +25,11 @@ class ABJ_404_Solution_DataAccess {
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
         $lookupTable = $wpdb->prefix . 'abj404_lookup';
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
+        $query = str_replace('{permalinkCacheTable}', $permalinkCacheTable, $query);
+        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
         $query = str_replace('{redirectsTable}', $redirectsTable, $query);
@@ -71,13 +76,20 @@ class ABJ_404_Solution_DataAccess {
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
             $abj404logging->infoMessage("Updated redirects table STATUS column type to TINYINT.");
         }
-        // look for: `url` varchar(512) CHARACTER SET utf8
+        // look for: `url` ... CHARACTER SET utf8
         // convert the charset to utf8 if it's something else.
         if (!preg_match("/url.+ CHARACTER SET utf8 NOT NULL/i", $tableSQL)) {
-            // ALTER TABLE `wp_abj404_redirects` CHANGE `url` `url` VARCHAR(512) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL;
             $query = "ALTER TABLE " . $redirectsTable . " CHANGE `url` `url` VARCHAR(512) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
             $abj404logging->infoMessage("Updated redirects table URL column to UTF-8 character set.");
+        }
+        if (!preg_match("/url.+2048/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $redirectsTable . " CHANGE `url` `url` VARCHAR(2048)";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+        if (!preg_match("/final_dest.+2048/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $redirectsTable . " CHANGE `final_dest` `final_dest` VARCHAR(2048)";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
         
         $result = ABJ_404_Solution_DataAccess::queryAndGetResults("show create table " . $logsTable);
@@ -126,13 +138,27 @@ class ABJ_404_Solution_DataAccess {
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
 
             // set the min_log_id for all logs entries that were created before the column was created.
+            $abj404logging->infoMessage("Setting the min_log_id for the logs table: Begin.");
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
             $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404logging->infoMessage("Setting the min_log_id for the logs table: Done.");
 
         }
         if (!preg_match("/KEY .+min_log_id/i", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX min_log_id (min_log_id)";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+        if (!preg_match("/requested_url.+2048/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $logsTable . " CHANGE `requested_url` `requested_url` VARCHAR(2048) ";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+        if (!preg_match("/requested_url_detail.+2048/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $logsTable . " CHANGE `requested_url_detail` `requested_url_detail` VARCHAR(2048) ";
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+        if (!preg_match("/dest_url.+2048/i", $tableSQL)) {
+            $query = "ALTER TABLE " . $logsTable . " CHANGE `dest_url` `dest_url` VARCHAR(2048) ";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
     }
@@ -182,6 +208,93 @@ class ABJ_404_Solution_DataAccess {
         
         return $result;
     }
+    
+    function truncatePermalinkCacheTable() {
+        global $wpdb;
+       
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        $query = "truncate table " . $permalinkCacheTable;
+        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+    }
+    
+    function removeFromPermalinkCache($post_id) {
+        global $wpdb;
+       
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        $query = "delete from " . $permalinkCacheTable . " where id = '" . $post_id . "'";
+        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+    }
+    
+    function getIDsNeededForPermalinkCache() {
+        global $wpdb;
+        
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getIDsNeededForPermalinkCache.sql");
+        $query = str_replace('{wp_posts}', $wpdb->prefix . 'posts', $query);
+        $query = str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
+        
+        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        
+        return $results['rows'];
+    }
+    
+    function insertPermalinkCache($id, $permalink) {
+        global $wpdb;
+        
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+
+        $dataToInsert = array('id' => $id, 'url' => $permalink);
+        ABJ_404_Solution_DataAccess::insertAndGetResults($permalinkCacheTable, $dataToInsert);
+    }
+    
+    /** Insert data into the database.
+     * @global type $wpdb
+     * @global type $abj404logging
+     * @param type $tableName
+     * @param type $dataToInsert
+     * @return type
+     */
+    static function insertAndGetResults($tableName, $dataToInsert) {
+        global $wpdb;
+        global $abj404logging;
+
+        // get the data types
+        $dataTypes = array();
+        foreach ($dataToInsert as $key => $dataItem) {
+            $currentDataType = gettype($dataItem);
+            if ($currentDataType == 'double' || $currentDataType == 'integer') {
+                $dataTypes[] = '%d';
+                
+            } else if ($currentDataType == 'boolean') {
+                $dataTypes[] = '%s';
+                
+            } else {
+                $dataTypes[] = '%s';
+                
+                // empty strings are stored as null in the database.
+                if (mb_strlen($dataItem) == 0) {
+                    $dataToInsert[$key] = null;
+                }
+            }
+        }
+
+        $wpdb->insert($tableName, $dataToInsert, $dataTypes);
+
+        $results =  array();
+        $results['last_error'] = $wpdb->last_error;
+        $results['last_result'] = $wpdb->last_result;
+        $results['rows_affected'] = $wpdb->rows_affected;
+        $results['insert_id'] = $wpdb->insert_id;
+        $results['last_query'] = $wpdb->last_query;
+
+        if ($wpdb->last_error != '') {
+            $abj404logging->errorMessage("Ugh. SQL error: " . esc_html($wpdb->last_error));
+            $abj404logging->debugMessage("The SQL that caused the error: " . esc_html($wpdb->last_query));
+        }
+
+        return $results;
+    }    
     
    /**
     * @global type $wpdb
@@ -902,13 +1015,10 @@ class ABJ_404_Solution_DataAccess {
             $message .= ", No countries updated because the option is turned off.";
         }
         
-        if ($manually_fired) {
-            // set the min_log_id for all logs entries that were created before the column was created.
-            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
-            $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-            $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-            $message .= ", min_log_id column on logs table updated.";
-        }
+        // add some entries to the permalink cache if necessary
+        $abj404permalinkCache = new ABJ_404_Solution_PermalinkCache();
+        $rowsUpdated = $abj404permalinkCache->updatePermalinkCache(15);
+        $message .= ", Permlink cache rows updated: " . $rowsUpdated;
         
         $manually_fired_String = ($manually_fired) ? 'true' : 'false';
         $message .= ", User initiated: " . $manually_fired_String;
