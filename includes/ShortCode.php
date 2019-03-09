@@ -109,6 +109,8 @@ class ABJ_404_Solution_ShortCode {
         $content .= "\n</div>";
         $content .= "\n<!-- " . ABJ404_PP . " - End 404 suggestions for slug " . esc_html($urlSlugOnly) . " -->\n";
 
+        ABJ_404_Solution_Functions::logExecutionTime();
+        
         return $content;
     }
 

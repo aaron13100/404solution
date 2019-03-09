@@ -503,6 +503,7 @@ class ABJ_404_Solution_View {
             '{WP_VERSION}' => get_bloginfo('version'),
             '{MYSQL_VERSION}' => $wpdb->db_version(),
             '{ABJ404_MAX_AJAX_DROPDOWN_SIZE}' => ABJ404_MAX_AJAX_DROPDOWN_SIZE,
+            '{WP_MEMORY_LIMIT}' => WP_MEMORY_LIMIT,
             );
 
         // replace known strings that do not exist in the translation file.
@@ -1771,11 +1772,6 @@ class ABJ_404_Solution_View {
         $columns['username']['title'] = __('User', '404-solution');
         $columns['username']['orderby'] = "username";
         $columns['username']['width'] = "10%";
-        if ($abj404ip2Location->isSupported() && ($options['geo2ip'] == '1')) {
-            $columns['country']['title'] = __('Country', '404-solution');
-            $columns['country']['orderby'] = "country";
-            $columns['country']['width'] = "14%";
-        }
 
         echo "<div class=\"tablenav\">";
         $this->echoPaginationLinks($sub, $tableOptions);
@@ -1841,19 +1837,6 @@ class ABJ_404_Solution_View {
                     date('A', $timeToDisplay) . "</td>";
             
             echo "<td>" . esc_html($row['username']) . "</td>";
-            
-            if ($abj404ip2Location->isSupported() && ($options['geo2ip'] == '1')) {
-                if ($row['country_id'] == null) {
-                    echo "<td><a href=\"" . $logslink . "\">" . __('(Click to populate)', '404-solution') .
-                            "</a></td>";
-                } else {
-                    $countryText = $row['country'];
-                    if (empty($row['country'])) {
-                        $countryText = __('(Unknown)', '404-solution');
-                    }
-                    echo "<td>" . esc_html($countryText) . "</td>";
-                }
-            }
             
             echo "<td></td>";
             echo "</tr>";
