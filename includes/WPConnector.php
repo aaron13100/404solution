@@ -133,6 +133,7 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
         
+        
         $_REQUEST[ABJ404_PP]['process_start_time'] = microtime(true);
         
         
@@ -198,7 +199,6 @@ class ABJ_404_Solution_WordPress_Connector {
         if ($requestedURL != "") {
             // if we already know where to go then go there.
             if ($redirect['id'] != '0' && $redirect['final_dest'] != '0') {
-                ABJ_404_Solution_Functions::logExecutionTime();
                 // A redirect record exists.
                 $abj404connector->processRedirect($requestedURL, $redirect, 'existing');
 
@@ -214,7 +214,6 @@ class ABJ_404_Solution_WordPress_Connector {
                 $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $slugPermalink['id'], $options['default_redirect'], 0);
 
                 $abj404dao->logRedirectHit($requestedURL, $slugPermalink['link'], 'exact slug');
-                ABJ_404_Solution_Functions::logExecutionTime();
                 $abj404logic->forceRedirect(esc_url($slugPermalink['link']), esc_html($options['default_redirect']), 
                         $unsortedQueryParts);
                 exit;
@@ -228,7 +227,6 @@ class ABJ_404_Solution_WordPress_Connector {
 
                 $abj404dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match', 
                         $requestedURL);
-                ABJ_404_Solution_Functions::logExecutionTime();
                 $abj404logic->forceRedirect(esc_url($regexPermalink['link']), esc_html($options['default_redirect']), 
                         $unsortedQueryParts);
                 exit;
@@ -242,7 +240,6 @@ class ABJ_404_Solution_WordPress_Connector {
                 $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $permalink['id'], $options['default_redirect'], 0);
 
                 $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'spell check');
-                ABJ_404_Solution_Functions::logExecutionTime();
                 $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']), 
                         $unsortedQueryParts);
                 exit;
@@ -305,7 +302,6 @@ class ABJ_404_Solution_WordPress_Connector {
         // this is for requests like website.com/?p=123            
         $abj404logic->tryNormalPostQuery($options);
         
-        ABJ_404_Solution_Functions::logExecutionTime();
         $abj404logic->sendTo404Page($requestedURL, '');
     }
     

@@ -26,7 +26,7 @@ class ABJ_404_Solution_DataAccess {
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
         $lookupTable = $wpdb->prefix . 'abj404_lookup';
         $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-        $wooCommerceCacheTable = $wpdb->prefix . 'abj404_woocommerce_cache';
+
         $termRelationshipsTable = $wpdb->prefix . 'term_relationships';
         $termsTable = $wpdb->prefix . 'wp_terms';
         
@@ -44,12 +44,6 @@ class ABJ_404_Solution_DataAccess {
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
         $query = str_replace('{wp_abj404_lookup}', $lookupTable, $query);
-        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-        
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createWooCommerceCacheTable.sql");
-        $query = str_replace('{wp_abj404_woocommerce_cache}', $wooCommerceCacheTable, $query);
-        $query = str_replace('{wp_term_relationships}', $termRelationshipsTable, $query);
-        $query = str_replace('{wp_terms}', $termsTable, $query);
         ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         
         // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
@@ -218,41 +212,6 @@ class ABJ_404_Solution_DataAccess {
         return $result;
     }
     
-    /** Create a temporary table with a different name.
-     * Rename the old table to _temp. Rename the new table to the old (correct) name.
-     * Drop the old table (currently named (_temp).
-     */
-    function updateWooCommerceCacheTable() {
-        global $wpdb;
-        
-        $wcTable = $wpdb->prefix . 'abj404_woocommerce_cache';
-        $wcTable2 = $wpdb->prefix . 'abj404_woocommerce_cache_2';
-        $wcTableTemp = $wpdb->prefix . 'abj404_woocommerce_cache_temp';
-        $termRelationshipsTable = $wpdb->prefix . 'term_relationships';
-        $termsTable = $wpdb->prefix . 'terms';
-        
-        // drop the old temp tables in case something went wrong the last time we ran this.
-        $query = 'drop table if exists ' . $wcTableTemp;
-        self::queryAndGetResults($query);
-        $query = 'drop table if exists ' . $wcTable2;
-        self::queryAndGetResults($query);
-        
-        // create the new temp table.
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createWooCommerceCacheTable.sql");
-        $query = str_replace('{wp_abj404_woocommerce_cache}', $wcTable2, $query);
-        $query = str_replace('{wp_term_relationships}', $termRelationshipsTable, $query);
-        $query = str_replace('{wp_terms}', $termsTable, $query);
-        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-        
-        // rename the tables.
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/updateWooCommerceCacheTable.sql");
-        $query = str_replace('{wp_abj404_woocommerce_cache}', $wcTable, $query);
-        $query = str_replace('{wp_abj404_woocommerce_cache_temp}', $wcTableTemp, $query);
-        $query = str_replace('{wp_abj404_woocommerce_cache_2}', $wcTable2, $query);
-        $statements = array_filter(explode("-- WP SPLIT HERE", $query), 'trim');
-        $this->executeAsTransaction($statements);
-    }
-    
     function executeAsTransaction($statementArray) {
         $logger = new ABJ_404_Solution_Logging();
         $exception = null;
@@ -304,8 +263,9 @@ class ABJ_404_Solution_DataAccess {
         $query = "delete from " . $permalinkCacheTable . " where id = '" . $post_id . "'";
         ABJ_404_Solution_DataAccess::queryAndGetResults($query);
     }
-    
     function removeOldStructreFromPermalinkCache($correctPermalinkStructure) {
+        global $wpdb;
+        
         $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
         
         $query = "delete from " . $permalinkCacheTable . " where structure != '" . 
@@ -842,7 +802,8 @@ class ABJ_404_Solution_DataAccess {
             $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
                     " | Current user: " . $current_user_name . " | From: " . esc_html($requestedURL) . 
                     esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . 
-                    $reasonMessage);
+                    $reasonMessage . ', Execution time: ' . ABJ_404_Solution_Functions::getExecutionTime() . 
+                    ' seconds');
         }
         
         // insert the username into the lookup table and get the ID from the lookup table.
@@ -1275,20 +1236,13 @@ class ABJ_404_Solution_DataAccess {
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
         $query = str_replace('{wp_posts}', $wpdb->posts, $query);
         $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
-        $query = str_replace('{wp_abj404_woocommerce_cache}', $wpdb->prefix . "abj404_woocommerce_cache", $query);
         $query = str_replace('{wp_terms}', $wpdb->terms, $query);
         $query = str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
         $query = str_replace('{specifiedSlug}', $specifiedSlug, $query);
         $query = str_replace('{searchTerm}', $searchTerm, $query);
         $query = str_replace('{limit-results}', $limitResults, $query);
         
-        
-        $timer = new ABJ_404_Solution_Timer();
         $rows = $wpdb->get_results($query);
-
-        if ($timer->getElapsedTime() > 5) {
-            $abj404logging->debugMessage("Slow query (" . $timer->getElapsedTime() . " seconds): " . $query);
-        }
 
         // check for errors
         if ($wpdb->last_error) {
