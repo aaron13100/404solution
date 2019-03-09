@@ -9,14 +9,17 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_Functions {
     
-    static function logExecutionTime() {
+    static function getExecutionTime() {
         global $abj404logging;
         
         if (array_key_exists(ABJ404_PP, $_REQUEST) && 
                 array_key_exists('process_start_time', $_REQUEST[ABJ404_PP])) {
             $elapsedTime = microtime(true) - $_REQUEST[ABJ404_PP]['process_start_time'];
-            $abj404logging->debugMessage("Took " . $elapsedTime . " seconds to process the 404.");
+            
+            return $elapsedTime;
         }
+        
+        return '';
     }
     
     /** Turns ID|TYPE, SCORE into an array with id, type, score, link, and title.

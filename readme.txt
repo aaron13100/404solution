@@ -68,6 +68,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 == Changelog ==
 
+= Version 2.14.0 (March 25, 2019) =
+* Feature: Now faster with sites with 10k+ pages.
+
 = Version 2.13.0 (February 25, 2019) =
 * Feature: Allow bulk operations on the Page Redirects tab (for Carol).
 * Feature: Allow bulk operations on the Captured 404 URLs -> Trash page.

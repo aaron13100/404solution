@@ -176,18 +176,6 @@ class ABJ_404_Solution_SpellChecker {
         global $abj404dao;
         global $abj404logic;
         
-        $timer = new ABJ_404_Solution_Timer();
-        $timer2 = new ABJ_404_Solution_Timer();
-        $timer2->stop();
-        $timer3 = new ABJ_404_Solution_Timer();
-        $timer3->stop();
-        $timer4 = new ABJ_404_Solution_Timer();
-        $timer4->stop();
-        $timer5 = new ABJ_404_Solution_Timer();
-        $timer5->stop();
-        $timer6 = new ABJ_404_Solution_Timer();
-        $timer6->stop();
-        
         $options = $abj404logic->getOptions();
         $onlyNeedThisManyPages = absint($options['suggest_max']);
         
@@ -212,7 +200,6 @@ class ABJ_404_Solution_SpellChecker {
         $permalinkCache = new ABJ_404_Solution_PermalinkCache();
         $permalinkCache->updatePermalinkCache(25);
         $permalinkCache = null;
-$timer6->start();
         
         $rowType = 'pages';
         $rows = array();
@@ -222,12 +209,8 @@ $timer6->start();
             
         } else {
             // match based on the slug.
-$timer5->start();
             $rows = $abj404dao->getPublishedPagesAndPostsIDs('');
-$timer5->stop();
         }
-$timer2->stop();
-$timer6->stop();
         
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on posts
         $permalinks = $this->matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, 
@@ -253,7 +236,6 @@ $timer6->stop();
             $permalinks = $this->matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, 'categories');
         }
 
-
         // This is sorted so that the link with the highest score will be first when iterating through.
         arsort($permalinks);
         
@@ -261,14 +243,6 @@ $timer6->stop();
         $permalinks = array_splice($permalinks, 0, $onlyNeedThisManyPages);
         $returnValue = array($permalinks, $rowType);
         $_REQUEST[ABJ404_PP]['permalinks_found'] = json_encode($returnValue);
-        
-        global $abj404logging;
-        $abj404logging->debugMessage("Overall for " . __FUNCTION__ . ": " . $timer->getElapsedTime() . 
-                ", timer2: " . $timer2->getElapsedTime() . 
-                ", timer3: " . $timer3->getElapsedTime() . 
-                ", timer4: " . $timer4->getElapsedTime() . 
-                ", timer5: " . $timer5->getElapsedTime() . 
-                ", timer6: " . $timer6->getElapsedTime());
         
         return $returnValue;
     }
@@ -349,7 +323,9 @@ $timer6->stop();
         // access the array directly instead of using a foreach loop so we can remove items
         // from the end of the array in the middle of the loop.
         $topLevScores = array();
-        foreach ($likelyMatchIDs as $id) {
+        while (count($likelyMatchIDs) > 0) {
+            $id = array_shift($likelyMatchIDs);
+            
             // use the levenshtein distance formula here.
             $the_permalink = $this->getPermalink($id, $rowType);
             $urlParts = parse_url($the_permalink);

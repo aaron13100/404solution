@@ -36,9 +36,6 @@ class ABJ_404_Solution_PermalinkCache {
 
         // let's update some links.
         $this->updatePermalinkCache(0.1);
-
-        // update the wooCommerce cache table.
-        $abj404dao->updateWooCommerceCacheTable();
     }
 
     /** If the permalink structure changes then truncate the cache table and update some values.
@@ -48,10 +45,6 @@ class ABJ_404_Solution_PermalinkCache {
      * @return type
      */
     function permalinkStructureChanged($var1, $newStructure) {
-        // TODO make synchronized?
-        // if two changes happen rapidly then the cashe has the wrong data.
-        // doesnt work for pageid=?
-        
         if ($var1 != 'permalink_structure') {
             return;
         }
@@ -81,17 +74,15 @@ class ABJ_404_Solution_PermalinkCache {
 
         $timer = new ABJ_404_Solution_Timer();
         $shouldRunAgain = false;
-        $permalinkStructure = "get permalink structure"; // TODO FIX
+        $permalinkStructure = get_option('permalink_structure');
         $key = "updatePermalinkCache";
         $uniqueID = '';
         try {
             $uniqueID = ABJ_404_Solution_SynchronizationUtils::synchronizerAcquireLockTry($key);
             if ($uniqueID == '') {
                 // the lock wasn't acquired.
-                $abj404logging->debugMessage("The lock wasn't acquired at " . microtime(true) . " for key " . $key);
                 return;
             }
-            $abj404logging->debugMessage("Beginning " . __FUNCTION__ . " execution # " . $executionCount);
             
             $abj404dao->removeOldStructreFromPermalinkCache($permalinkStructure);
 
@@ -110,6 +101,13 @@ class ABJ_404_Solution_PermalinkCache {
                     $shouldRunAgain = true;
                     break;
                 }
+                
+                if ($rowsInserted % 1000 == 0) {
+                    $newPermalinkStructure = get_option('permalink_structure');
+                    if ($permalinkStructure != $newPermalinkStructure) {
+                        break;
+                    }
+                }
             }
             
             // if there's more work to do then do it, up to a maximum of X times.
@@ -118,12 +116,13 @@ class ABJ_404_Solution_PermalinkCache {
                 // run this again right away as a scheduled event.
                 wp_schedule_single_event(time() + 1, ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
                         array(25, $executionCount + 1));
+                $abj404logging->debugMessage($rowsInserted . " rows inserted into the permalink cache table in " .
+                        round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount);
             }
-            $abj404logging->debugMessage($rowsInserted . " rows inserted into the permalink cache table in " .
-                    round($timer->getElapsedTime(), 2) . " seconds.");
             
-            $newPermalinkStructure = "get permalink structure"; // TODO FIX        
+            $newPermalinkStructure = get_option('permalink_structure');
             if ($permalinkStructure != $newPermalinkStructure) {
+                $abj404dao->removeOldStructreFromPermalinkCache($newPermalinkStructure);
                 wp_schedule_single_event(1, ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
                         array(25, $executionCount + 1));
                 $abj404logging->debugMessage("Scheduled another permalink cache updated because the structure changed "
