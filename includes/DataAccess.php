@@ -26,6 +26,9 @@ class ABJ_404_Solution_DataAccess {
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
         $lookupTable = $wpdb->prefix . 'abj404_lookup';
         $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        $wooCommerceCacheTable = $wpdb->prefix . 'abj404_woocommerce_cache';
+        $termRelationshipsTable = $wpdb->prefix . 'term_relationships';
+        $termsTable = $wpdb->prefix . 'wp_terms';
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
         $query = str_replace('{permalinkCacheTable}', $permalinkCacheTable, $query);
@@ -41,6 +44,12 @@ class ABJ_404_Solution_DataAccess {
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
         $query = str_replace('{wp_abj404_lookup}', $lookupTable, $query);
+        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createWooCommerceCacheTable.sql");
+        $query = str_replace('{wp_abj404_woocommerce_cache}', $wooCommerceCacheTable, $query);
+        $query = str_replace('{wp_term_relationships}', $termRelationshipsTable, $query);
+        $query = str_replace('{wp_terms}', $termsTable, $query);
         ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         
         // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
@@ -209,6 +218,77 @@ class ABJ_404_Solution_DataAccess {
         return $result;
     }
     
+    /** Create a temporary table with a different name.
+     * Rename the old table to _temp. Rename the new table to the old (correct) name.
+     * Drop the old table (currently named (_temp).
+     */
+    function updateWooCommerceCacheTable() {
+        global $wpdb;
+        
+        $wcTable = $wpdb->prefix . 'abj404_woocommerce_cache';
+        $wcTable2 = $wpdb->prefix . 'abj404_woocommerce_cache_2';
+        $wcTableTemp = $wpdb->prefix . 'abj404_woocommerce_cache_temp';
+        $termRelationshipsTable = $wpdb->prefix . 'term_relationships';
+        $termsTable = $wpdb->prefix . 'terms';
+        
+        // drop the old temp tables in case something went wrong the last time we ran this.
+        $query = 'drop table if exists ' . $wcTableTemp;
+        self::queryAndGetResults($query);
+        $query = 'drop table if exists ' . $wcTable2;
+        self::queryAndGetResults($query);
+        
+        // create the new temp table.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createWooCommerceCacheTable.sql");
+        $query = str_replace('{wp_abj404_woocommerce_cache}', $wcTable2, $query);
+        $query = str_replace('{wp_term_relationships}', $termRelationshipsTable, $query);
+        $query = str_replace('{wp_terms}', $termsTable, $query);
+        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        
+        // rename the tables.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/updateWooCommerceCacheTable.sql");
+        $query = str_replace('{wp_abj404_woocommerce_cache}', $wcTable, $query);
+        $query = str_replace('{wp_abj404_woocommerce_cache_temp}', $wcTableTemp, $query);
+        $query = str_replace('{wp_abj404_woocommerce_cache_2}', $wcTable2, $query);
+        $statements = array_filter(explode("-- WP SPLIT HERE", $query), 'trim');
+        $this->executeAsTransaction($statements);
+    }
+    
+    function executeAsTransaction($statementArray) {
+        $logger = new ABJ_404_Solution_Logging();
+        $exception = null;
+        $allIsWell = true;
+        
+        global $wpdb;
+        
+        try {
+            $wpdb->query('START TRANSACTION');
+            
+            foreach ($statementArray as $statement) {
+                $wpdb->query($statement);
+                if ($wpdb->last_error != null) {
+                    $allIsWell = false;
+                    $logger->errorMessage("Error executing SQL transaction: " . $wpdb->last_error);
+                    $logger->errorMessage("SQL causing the transaction error: " . $statement);
+                    break;
+                }
+            }
+        } catch (Exception $ex) {
+            $allIsWell = false;
+            $exception = $ex;
+        }
+        
+        if ($allIsWell && $exception == null) {
+            $wpdb->query('commit');
+            
+        } else {
+            $wpdb->query('rollback');
+        }
+        
+        if ($exception != null) {
+            throw new Exception($exception);
+        }
+    }
+    
     function truncatePermalinkCacheTable() {
         global $wpdb;
        
@@ -222,6 +302,15 @@ class ABJ_404_Solution_DataAccess {
        
         $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
         $query = "delete from " . $permalinkCacheTable . " where id = '" . $post_id . "'";
+        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+    }
+    
+    function removeOldStructreFromPermalinkCache($correctPermalinkStructure) {
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        
+        $query = "delete from " . $permalinkCacheTable . " where structure != '" . 
+                esc_sql($correctPermalinkStructure) . "'";
+        
         ABJ_404_Solution_DataAccess::queryAndGetResults($query);
     }
     
@@ -239,13 +328,45 @@ class ABJ_404_Solution_DataAccess {
         return $results['rows'];
     }
     
-    function insertPermalinkCache($id, $permalink) {
+    function insertPermalinkCache($id, $permalink, $permalinkStructure) {
         global $wpdb;
         
         $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
 
-        $dataToInsert = array('id' => $id, 'url' => $permalink);
+        $dataToInsert = array(  'id' => $id, 
+                                'url' => $permalink,
+                                'structure' => $permalinkStructure);
         ABJ_404_Solution_DataAccess::insertAndGetResults($permalinkCacheTable, $dataToInsert);
+    }
+    
+    function getPermalinkFromCache($id) {
+        global $wpdb;
+        
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        
+
+        $query = "select url from " . $permalinkCacheTable . " where id = " . $id;
+        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        
+        $rows = $results['rows'];
+        if (count($rows) == 0) {
+            return null;
+        }
+        
+        $row1 = $rows[0];
+        return $row1['url'];
+    }
+    
+    function getPermalinkCache() {
+        global $wpdb;
+        
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        
+
+        $query = "select id, url from " . $permalinkCacheTable;
+        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        
+        return $results['rows'];
     }
     
     /** Insert data into the database.
@@ -701,14 +822,6 @@ class ABJ_404_Solution_DataAccess {
         if (isset($current_user)) {
             $current_user_name = $current_user->user_login;
         }
-        $countryName = null;
-        $countryNameLookupID = null;
-        if ($abj404ip2Location->isSupported() && ($options['geo2ip'] == '1') && 
-            $abj404ip2Location->readerIsInitialized()) {
-            $countryName = $abj404ip2Location->getCountry($_SERVER['REMOTE_ADDR']);
-            $countryNameLookupID = $this->insertLookupValueAndGetID($countryName);
-        }
-        
         $ipAddressToSave = esc_sql($_SERVER['REMOTE_ADDR']);
         if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
             $ipAddressToSave = md5($ipAddressToSave);
@@ -729,7 +842,7 @@ class ABJ_404_Solution_DataAccess {
             $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
                     " | Current user: " . $current_user_name . " | From: " . esc_html($requestedURL) . 
                     esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . 
-                    $reasonMessage . ", Country: " . $countryName);
+                    $reasonMessage);
         }
         
         // insert the username into the lookup table and get the ID from the lookup table.
@@ -743,7 +856,6 @@ class ABJ_404_Solution_DataAccess {
             'requested_url' => esc_sql($requestedURL),
             'requested_url_detail' => esc_sql($requestedURLDetail),
             'username' => esc_sql($usernameLookupID),
-            'country' => $countryNameLookupID,
             'min_log_id' => $minLogID,
                 ), array(
             '%d',
@@ -760,39 +872,6 @@ class ABJ_404_Solution_DataAccess {
        if ($wpdb->last_error != '') {
            $abj404logging->errorMessage("Error inserting data: " . esc_html($wpdb->last_error));
        }
-    }
-    
-    /** 
-     * @global type $wpdb
-     * @return type
-     */
-    function getIPsThatNeedACountry($maxRows = null) {
-        global $wpdb;
-        
-        $query = 'select distinct user_ip from ' . $wpdb->prefix . 'abj404_logsv2' . " WHERE country is null ";
-        if ($maxRows != null) {
-            $query .= "\n limit " . $maxRows;
-        }
-        
-        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-        return $results['rows'];
-    }
-    
-    function updateCountry($ips, $countryName) {
-        global $wpdb;
-        
-        $logsTable = $wpdb->prefix . "abj404_logsv2";
-        $countryLookupID = $this->insertLookupValueAndGetID($countryName);
-        
-        $inClause = implode("','", $ips);
-        
-        $query = "update " . $logsTable . " set country = " . $countryLookupID . " \n " .
-                "where user_ip in ('" . $inClause . "') \n " . 
-                "and country is null";
-        
-        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-        
-        return $results['rows_affected'];
     }
     
     /** Insert a value into the lookup table and return the ID of the value. 
@@ -848,8 +927,7 @@ class ABJ_404_Solution_DataAccess {
         global $abj404dao;
         global $abj404logic;
         global $abj404logging;
-        global $abj404ip2Location;
-
+        
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $logsTable = $wpdb->prefix . "abj404_logsv2";
         $options = $abj404logic->getOptions();
@@ -1002,17 +1080,6 @@ class ABJ_404_Solution_DataAccess {
             if ($abj404logging->emailErrorLogIfNecessary()) {
                 $message .= ", Log file emailed to developer.";
             }
-        }
-        
-        if ($abj404ip2Location->isSupported() && ($options['geo2ip'] == '1')) {
-            $countryRecordsUpdated = $abj404ip2Location->updateCountriesInDatabase();
-            $message .= ", Country updated for " . $countryRecordsUpdated . " log record(s).";
-            
-        } else if (!$abj404ip2Location->isSupported()) {
-            // $message .= ", (No countries updated because IP2Location is not supported for PHP " . PHP_VERSION . ")";
-            
-        } else if ($options['geo2ip'] == '0') {
-            $message .= ", No countries updated because the option is turned off.";
         }
         
         // add some entries to the permalink cache if necessary
@@ -1208,13 +1275,21 @@ class ABJ_404_Solution_DataAccess {
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
         $query = str_replace('{wp_posts}', $wpdb->posts, $query);
         $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
+        $query = str_replace('{wp_abj404_woocommerce_cache}', $wpdb->prefix . "abj404_woocommerce_cache", $query);
         $query = str_replace('{wp_terms}', $wpdb->terms, $query);
         $query = str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
         $query = str_replace('{specifiedSlug}', $specifiedSlug, $query);
         $query = str_replace('{searchTerm}', $searchTerm, $query);
         $query = str_replace('{limit-results}', $limitResults, $query);
         
+        
+        $timer = new ABJ_404_Solution_Timer();
         $rows = $wpdb->get_results($query);
+
+        if ($timer->getElapsedTime() > 5) {
+            $abj404logging->debugMessage("Slow query (" . $timer->getElapsedTime() . " seconds): " . $query);
+        }
+
         // check for errors
         if ($wpdb->last_error) {
             $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);

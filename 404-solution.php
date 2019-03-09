@@ -88,13 +88,9 @@ require_once ABJ404_PATH . "includes/WPConnector.php";
 require_once ABJ404_PATH . "includes/SpellChecker.php";
 require_once ABJ404_PATH . "includes/ErrorHandler.php";
 require_once ABJ404_PATH . "includes/ShortCode.php";
-require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Reader.php';
-require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Decoder.php';
-require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Util.php';
-require_once ABJ404_PATH . 'includes/GeoIp2/ABJ_404_Solution_MaxMind_Metadata.php';
-require_once ABJ404_PATH . 'includes/IP2Location.php';
 require_once ABJ404_PATH . 'includes/Timer.php';
 require_once ABJ404_PATH . 'includes/PermalinkCache.php';
+require_once ABJ404_PATH . 'includes/SynchronizationUtils.php';
 
 if (is_admin()) {
     require_once ABJ404_PATH . "includes/View.php";
@@ -108,7 +104,6 @@ $abj404logic = new ABJ_404_Solution_PluginLogic();
 $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
 $abj404connector = new ABJ_404_Solution_WordPress_Connector();
 $abj404shortCode = new ABJ_404_Solution_ShortCode();
-$abj404ip2Location = new ABJ_404_Solution_IP2Location();
 $abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
 
 /**

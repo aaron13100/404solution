@@ -27,7 +27,7 @@ left outer join (
     	group by wptr.object_id
 
 	) usefulterms
-    on cast(wp_posts.ID as binary) = cast(usefulterms.object_id as binary)
+    on wp_posts.ID = usefulterms.object_id
 
 where cast(wp_posts.post_status as binary) = cast('publish' as binary)
       and lcase(wp_posts.post_type) in ({recognizedPostTypes}) /* 'page', 'post', 'product' */
