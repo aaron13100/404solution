@@ -6,9 +6,6 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     ini_set('display_errors', '1');
 }
 
-/* Turns data into an html display and vice versa.
- * Houses all displayed pages. Logs, options page, captured 404s, stats, etc. */
-
 class ABJ_404_Solution_View_Suggestions {
 
     /** 
@@ -16,7 +13,6 @@ class ABJ_404_Solution_View_Suggestions {
      * @return string
      */
     function getAdminOptionsPage404Suggestions($options) {
-        global $abj404dao;
         global $abj404view;
         
         // Suggested Alternatives Options

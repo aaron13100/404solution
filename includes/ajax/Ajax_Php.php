@@ -28,7 +28,7 @@ class ABJ_404_Solution_Ajax_Php {
         $results = $abj404AjaxPhp->formatLogResults($rows);
         
         // limit search results
-        $suggestions = $abj404AjaxPhp->provideSearchFeedback($results);
+        $suggestions = $abj404AjaxPhp->provideSearchFeedback($results, $term);
         
         $suggestions = array_merge($specialSuggestion, $suggestions);
                 
@@ -77,7 +77,7 @@ class ABJ_404_Solution_Ajax_Php {
                 $customCategoryOptions);
 
         // limit search results
-        $suggestions = $abj404AjaxPhp->provideSearchFeedback($suggestions);
+        $suggestions = $abj404AjaxPhp->provideSearchFeedback($suggestions, $term);
                 
         echo json_encode($suggestions);
         
@@ -85,23 +85,36 @@ class ABJ_404_Solution_Ajax_Php {
     }
     
     /** Add a message about whether there are too many results or none at all.
-     * @param type $suggestions
+     * @param array $suggestions
+     * @param string $suggestions
      * @return string
      */
-    function provideSearchFeedback($suggestions) {
+    function provideSearchFeedback($suggestions, $term) {
         $category = '';
         
         if (count($suggestions) == 0) {
             // tell the user if there are no resluts.
-            $category = __('(No matching results found.)', '404-solution');
+            if (trim(mb_strlen($term)) == 0) {
+                $category = sprintf(__("(No matching results found.)", '404-solution'));
+            } else {
+                $category = sprintf(__("(No matching results found for \"%s.\")", '404-solution'), $term);
+            }
             
         } else if (count($suggestions) > ABJ404_MAX_AJAX_DROPDOWN_SIZE) {
             // limit the results if there are too many
             $suggestions = array_slice($suggestions, 0, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
-            $category = __('(Data truncated. Too many results!)', '404-solution');
+            if (trim(mb_strlen($term)) == 0) {
+                $category = sprintf(__("(Data truncated. Too many results!)", '404-solution'));
+            } else {
+                $category = sprintf(__("(Data truncated. Too many results for \"%s!\".)", '404-solution'), $term);
+            }
             
         } else {
-            $category = __('(All results displayed.)', '404-solution');
+            if (trim(mb_strlen($term)) == 0) {
+                $category = sprintf(__("(All results displayed.)", '404-solution'));
+            } else {
+                $category = sprintf(__("(All results displayed for \"%s.\")", '404-solution'), $term);
+            }
         }
         
         $suggestion = array();

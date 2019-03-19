@@ -207,7 +207,7 @@ class ABJ_404_Solution_DataAccess {
         if ($result['last_error'] != '') {
             $abj404logging->errorMessage("Ugh. SQL error: " . esc_html($result['last_error']));
             $abj404logging->debugMessage("The SQL that caused the error: " . esc_html($query));
-        }        
+        }
         
         return $result;
     }

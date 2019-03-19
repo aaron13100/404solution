@@ -81,7 +81,7 @@ class ABJ_404_Solution_SynchronizationUtils {
         if ($timePassed > $maxExecutionTime) {
             delete_option($internalSynchronizedKey);
             $logger = new ABJ_404_Solution_Logging();
-            $logger->errorMessage("Forcibly removed synchronization after " . $timePassed . " seconds for the "
+            $logger->debugMessage("Forcibly removed synchronization after " . $timePassed . " seconds for the "
                     . "key " . $internalSynchronizedKey);
         }
     }

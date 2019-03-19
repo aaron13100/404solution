@@ -10,8 +10,6 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 class ABJ_404_Solution_Functions {
     
     static function getExecutionTime() {
-        global $abj404logging;
-        
         if (array_key_exists(ABJ404_PP, $_REQUEST) && 
                 array_key_exists('process_start_time', $_REQUEST[ABJ404_PP])) {
             $elapsedTime = microtime(true) - $_REQUEST[ABJ404_PP]['process_start_time'];
