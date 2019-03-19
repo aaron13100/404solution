@@ -88,7 +88,8 @@ class ABJ_404_Solution_PermalinkCache {
 
             $rowsInserted = 0;
             $rows = $abj404dao->getIDsNeededForPermalinkCache();
-            foreach ($rows as $row) {
+            while (count($rows) > 0) {
+                $row = array_shift ($rows);
                 $id = $row['id'];
 
                 $permalink = get_the_permalink($id);

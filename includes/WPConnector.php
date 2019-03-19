@@ -28,13 +28,13 @@ class ABJ_404_Solution_WordPress_Connector {
         // doesn't work for the ajax dropdown list.
         add_action( 'admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts', 11 );
         
-        add_action( 'wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
-        // fyi use wp_ajax_nopriv_echoViewLogsFor to load things for normal users
-        
         add_action( 'wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor' );
         // fyi wp_ajax_nopriv_echoViewLogsFor to load things for normal users
 
         add_action( 'wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction' );
+                
+        add_action( 'wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
+        // fyi use wp_ajax_nopriv_echoViewLogsFor to load things for normal users
         
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
     }
@@ -48,7 +48,7 @@ class ABJ_404_Solution_WordPress_Connector {
         if ($hook != $settingsPageName) {
             return;
         }
-        
+
         // jquery is used for the searchable dropdown list of pages for adding a redirect.
         wp_enqueue_script( 'jquery' );
 	wp_enqueue_script( 'jquery-ui-autocomplete' );
@@ -129,7 +129,7 @@ class ABJ_404_Solution_WordPress_Connector {
         global $abj404logging;
         global $wp;
 
-        if (!is_404()) {
+        if (!is_404() || is_admin()) {
             return;
         }
         
