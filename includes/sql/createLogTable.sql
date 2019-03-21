@@ -23,5 +23,5 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_logsv2} (
     KEY `username` (`username`) USING BTREE,
     KEY `country` (`country`) USING BTREE,
     KEY `min_log_id` (`min_log_id`)
-) ENGINE=MyISAM character set utf8 COMMENT='404 Solution Plugin Logs Table' AUTO_INCREMENT=1
+) ENGINE=MyISAM COMMENT='404 Solution Plugin Logs Table' AUTO_INCREMENT=1
 

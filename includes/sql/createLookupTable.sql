@@ -7,5 +7,5 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_lookup} (
     `lkup_value` varchar(60) NOT NULL,
     PRIMARY KEY  (`id`),
     UNIQUE KEY `lkup_value` (`lkup_value`) USING BTREE
-) ENGINE=MyISAM character set utf8 COMMENT='404 Solution Plugin Lookup Table' AUTO_INCREMENT=1
+) ENGINE=MyISAM COMMENT='404 Solution Plugin Lookup Table' AUTO_INCREMENT=1
 

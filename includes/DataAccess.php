@@ -54,8 +54,8 @@ class ABJ_404_Solution_DataAccess {
         $result['insert_id'] = $wpdb->insert_id;
         
         if ($result['last_error'] != '') {
-            $abj404logging->errorMessage("Ugh. SQL error: " . esc_html($result['last_error']));
-            $abj404logging->debugMessage("The SQL that caused the error: " . esc_html($query));
+            $abj404logging->errorMessage("Ugh. SQL error: " . esc_html($result['last_error'] . 
+                    ", SQL: " . esc_html($query)));
         }
         
         return $result;
@@ -620,7 +620,6 @@ class ABJ_404_Solution_DataAccess {
     function logRedirectHit($requestedURL, $action, $matchReason, $requestedURLDetail = null) {
         global $wpdb;
         global $abj404logging;
-        global $abj404ip2Location;
         global $abj404logic;
         
         $now = time();
@@ -641,8 +640,10 @@ class ABJ_404_Solution_DataAccess {
         
         // we have to know what to set for the $minLogID value
         $minLogID = false;
+        // cast here to avoid illegal collation issues as in 
+        // https://wordpress.org/support/topic/abj-404-solution-error-ugh-sql-error/
         $results = $this->queryAndGetResults("select id from " . $wpdb->prefix . "abj404_logsv2" . 
-                " where requested_url = '" . esc_sql($requestedURL) . "' limit 1");
+                " where cast(requested_url as binary) = cast('" . esc_sql($requestedURL) . "' as binary) limit 1");
         if (count($results['rows']) == 0) {
             $minLogID = true;
         }

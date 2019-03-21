@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS `{wp_abj404_permalink_cache}` (
     `structure` varchar(256) NOT NULL COMMENT 'e.g. /%postname%/ or /%year%/%monthnum%/%postname%/',
 PRIMARY KEY (`id`),
 INDEX (`structure`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='404 Solution Plugin Permalinks Cache Table'
+) ENGINE=MyISAM COMMENT='404 Solution Plugin Permalinks Cache Table'
