@@ -28,7 +28,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
-        $query = str_replace('{permalinkCacheTable}', $permalinkCacheTable, $query);
+        $query = str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
         ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
