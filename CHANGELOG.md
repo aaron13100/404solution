@@ -2,6 +2,7 @@
 
 ## Version 2.14.0 (March 25, 2019) ##
 * Feature: Now faster with sites with 10k+ pages.
+* FIX: Respect the log size limit (for Phil and others).
 
 ## Version 2.13.0 (February 25, 2019) ##
 * Feature: Allow bulk operations on the Page Redirects tab (for Carol).

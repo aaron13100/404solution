@@ -400,7 +400,6 @@ class ABJ_404_Solution_PluginLogic {
             'DB_VERSION' => '0.0.0',
             'menuLocation' => 'underSettings',
             'admin_notification_email' => '',
-            'geo2ip' => '1',
             'page_redirects_order_by' => 'url',
             'page_redirects_order' => 'ASC',
             'captured_order_by' => 'logshits',
@@ -1332,9 +1331,6 @@ class ABJ_404_Solution_PluginLogic {
         }
         if (array_key_exists('menuLocation', $_POST) && isset($_POST['menuLocation'])) {
             $options['menuLocation'] = wp_kses_post(@$_POST['menuLocation']);
-        }
-        if (array_key_exists('geo2ip', $_POST) && isset($_POST['geo2ip'])) {
-            $options['geo2ip'] = wp_kses_post(@$_POST['geo2ip']);
         }
         if (array_key_exists('admin_notification_email', $_POST) && isset($_POST['admin_notification_email'])) {
             $options['admin_notification_email'] = trim(wp_kses_post(@$_POST['admin_notification_email']));

@@ -1647,14 +1647,6 @@ class ABJ_404_Solution_View {
             $selectedUnderSettings = " selected";
         }
         
-        $selectedGeo2IPtrue = "";
-        $selectedGeo2IPfalse = "";
-        if ($options['geo2ip'] == '1') {
-            $selectedGeo2IPtrue = " selected";
-        } else {
-            $selectedGeo2IPfalse = " selected";
-        }
-
         $logSizeBytes = $abj404dao->getLogDiskUsage();
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
         $totalLogLines = $abj404dao->getLogsCount(0);
@@ -1669,13 +1661,6 @@ class ABJ_404_Solution_View {
         $selectedRemoveMatches = "";
         if ($options['remove_matches'] == '1') {
             $selectedRemoveMatches = " checked";
-        }
-        
-        $geo2ip_support_message = "";
-        if ($abj404ip2Location->isSupported()) {
-            $geo2ip_support_message = "{IS supported.}";
-        } else {
-            $geo2ip_support_message = "<span style=\"font-weight: bold;\">{is NOT supported.}</span>";
         }
         
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
@@ -1695,9 +1680,6 @@ class ABJ_404_Solution_View {
         $html = str_replace('{selecteSsettingsLevel}', $selecteSsettingsLevel, $html);
         $html = str_replace('{admin_notification_email}', $options['admin_notification_email'], $html);
         $html = str_replace('{default_wordpress_admin_email}', get_option('admin_email'), $html);
-        $html = str_replace('{selectedGeo2IPtrue}', $selectedGeo2IPtrue, $html);
-        $html = str_replace('{selectedGeo2IPfalse}', $selectedGeo2IPfalse, $html);
-        $html = str_replace('{geo2ip_support_message}', $geo2ip_support_message, $html);
         $html = str_replace('{PHP_VERSION}', PHP_VERSION, $html);
 
         // constants and translations.
