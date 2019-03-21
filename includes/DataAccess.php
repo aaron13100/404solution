@@ -994,33 +994,28 @@ class ABJ_404_Solution_DataAccess {
         
         //Clean up old logs. prepare the query. get the disk usage in bytes. compare to the max requested
         // disk usage (MB to bytes). delete 1k rows at a time until the size is acceptable.
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
-        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
         $maxLogSizeBytes = $options['maximum_log_disk_usage'] * 1024 * 1000;
-        $iterations = 0;
-        while ($logsSizeBytes > $maxLogSizeBytes) {
-            $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-            
-            if ($results['last_error']) {
-                $abj404logging->errorMessage("Error deleting old log records. " . $result['last_error']);
-                break;
-            }
-            
-            $oldLogRowsDeleted += $results['rows_affected'];
-            $logsSizeBytes = $abj404dao->getLogDiskUsage();
-            $iterations++;
-            if ($iterations > 10000) {
-                $abj404logging->errorMessage("There was an issue deleting old log records (too many iterations)!");
-                break;
-            }
-        }
-
+        
+        $totalLogLines = $abj404dao->getLogsCount(0);
+        $averageSizePerLine = max($logsSizeBytes, 1) / max($totalLogLines, 1);
+        $logLinesToKeep = ceil($maxLogSizeBytes / $averageSizePerLine);
+        $logLinesToDelete = max($totalLogLines - $logLinesToKeep, 0);
+        
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
+        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+        $query = str_replace('{lines_to_delete}', $logLinesToDelete, $query);
+        
+        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        $oldLogRowsDeleted = $results['rows_affected'];
+        $logsSizeBytes = $abj404dao->getLogDiskUsage();
+        $logSizeMB = round($logsSizeBytes / (1024 * 1000), 2);
+        
         $message = "deleteOldRedirectsCron. Old captured URLs removed: " . 
                 $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
                 ", Old manual redirects removed: " . $manualRedirectsCount . 
-                ", Old log lines removed: " . $oldLogRowsDeleted . ", Duplicate rows deleted: " . 
-                $duplicateRowsDeleted;
+                ", Old log lines removed: " . $oldLogRowsDeleted . ", New log size: " . $logSizeMB . 
+                ", Duplicate rows deleted: " . $duplicateRowsDeleted;
         
         // only send a 404 notification email during daily maintenance.
         if (array_key_exists('admin_notification_email', $options) && isset($options['admin_notification_email']) && 
