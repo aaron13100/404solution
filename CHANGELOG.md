@@ -4,6 +4,7 @@
 * Feature: Now faster with sites with 10k+ pages.
 * FIX: Respect the log size limit (for Phil and others).
 * Improvement: Automatically limit the debug file size.
+* FIX: Avoid an "Illegal mix of collations" issue for lestadt (and many others).
 
 ## Version 2.13.0 (February 25, 2019) ##
 * Feature: Allow bulk operations on the Page Redirects tab (for Carol).

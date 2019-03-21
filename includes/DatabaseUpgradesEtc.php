@@ -76,13 +76,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
             $abj404logging->infoMessage("Updated redirects table STATUS column type to TINYINT.");
         }
-        // look for: `url` ... CHARACTER SET utf8
-        // convert the charset to utf8 if it's something else.
-        if (!preg_match("/url.+ CHARACTER SET utf8 NOT NULL/i", $tableSQL)) {
-            $query = "ALTER TABLE " . $redirectsTable . " CHANGE `url` `url` VARCHAR(512) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-            $abj404logging->infoMessage("Updated redirects table URL column to UTF-8 character set.");
-        }
         if (!preg_match("/url.+2048/i", $tableSQL)) {
             $query = "ALTER TABLE " . $redirectsTable . " CHANGE `url` `url` VARCHAR(2048)";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
@@ -104,10 +97,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 ABJ_404_Solution_DataAccess::queryAndGetResults($query);
             }
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX requested_url (`requested_url`) USING BTREE";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-        }
-        if (!preg_match("/CHARSET=utf8/i", $tableSQL)) {
-            $query = 'ALTER TABLE ' . $logsTable . ' CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci';
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
         if (!preg_match("/referrer.+DEFAULT NULL/i", $tableSQL)) {
@@ -163,23 +152,66 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $query = "ALTER TABLE " . $logsTable . " CHANGE `dest_url` `dest_url` VARCHAR(2048) ";
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
+        
+        $me = new ABJ_404_Solution_DatabaseUpgradesEtc();
+        $me->correctCollations();
     }
 
-    function fixError($errorMessage) {
-        $shouldTry = false;
+    function correctCollations() {
+        global $wpdb;
+        global $abj404logging;
         
-        if (preg_match("/Unknown column .+min_log_id/i", $errorMessage)) {
-            $shouldTry = true;
+        $collationNeedsUpdating = false;
+        
+        $redirectsTable = $wpdb->prefix . "abj404_redirects";
+        $logsTable = $wpdb->prefix . "abj404_logsv2";
+        $lookupTable = $wpdb->prefix . "abj404_lookup";
+        $permalinkCacheTable = $wpdb->prefix . "abj404_permalink_cache";
+        $postsTable = $wpdb->prefix . 'posts';
+        
+        $abjTableNames = array($redirectsTable, $logsTable, $lookupTable, $permalinkCacheTable);
+
+        // get the target collation
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
+        $query = str_replace('{table_names}', "'" . $postsTable . "'", $query);
+        $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
+        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        $rows = $results['rows'];
+        $row = $rows[0];
+        $postsTableCollation = $row['table_collation'];
+        $postsTableCharset = $row['character_set_name'];
+        
+        // check our own tables to see if they match.
+        foreach ($abjTableNames as $tableName) {
+            // get collations of our tables and a target table.
+            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
+            $query = str_replace('{table_names}', "'" . $tableName . "'", $query);
+            $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
+            $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $rows = $results['rows'];
+            $row = $rows[0];
+            $abjTableCollation = $row['table_collation'];
             
-        } else if (preg_match("/Column .+referrer.+ cannot be null/i", $errorMessage)) {
-            // Column &#039;referrer&#039; cannot be null
-            $shouldTry = true;
+            if ($abjTableCollation != $postsTableCollation) {
+                $collationNeedsUpdating = true;
+                break;
+            }
         }
         
-        if ($shouldTry) {
-            ABJ_404_Solution_DatabaseUpgradesEtc::createDatabaseTables();
+        // if they match then we're done.
+        if (!$collationNeedsUpdating) {
+            return;
         }
         
-        return $shouldTry;
+        // if they don't match then update our tables to match teh target tables.
+        $abj404logging->infoMessage("Updating collation from " . $abjTableCollation . " to " .
+                $postsTableCollation);
+
+        foreach ($abjTableNames as $tableName) {
+            $query = "alter table {table_name} convert to charset " . $postsTableCharset . 
+                    " collate " . $postsTableCollation;
+            $query = str_replace('{table_name}', $tableName, $query);
+            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
     }
 }
