@@ -81,6 +81,7 @@ require_once ABJ404_PATH . "includes/objs/WPNotice.php";
 require_once ABJ404_PATH . "includes/wordpress/WPNotices.php";
 require_once ABJ404_PATH . "includes/Functions.php";
 require_once ABJ404_PATH . "includes/DataAccess.php";
+require_once ABJ404_PATH . "includes/DatabaseUpgradesEtc.php";
 require_once ABJ404_PATH . "includes/PluginLogic.php";
 require_once ABJ404_PATH . "includes/ajax/Ajax_Php.php";
 require_once ABJ404_PATH . 'includes/ajax/Ajax_TrashAction.php';

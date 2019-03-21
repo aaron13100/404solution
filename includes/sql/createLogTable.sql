@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_logsv2} (
     `id` bigint(40) NOT NULL auto_increment,
     `timestamp` bigint(40) NOT NULL,
     `user_ip` varchar(512) NOT NULL,
-    `referrer` varchar(512) NOT NULL,
+    `referrer` varchar(512) DEFAULT NULL,
     `requested_url` varchar(2048) NOT NULL,
     `requested_url_detail` varchar(2048) DEFAULT NULL,
     `username` bigint(20) DEFAULT NULL,
