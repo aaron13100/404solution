@@ -1417,9 +1417,9 @@ class ABJ_404_Solution_PluginLogic {
                     if ($postParent == null) {
                         continue;
                     }
-                    $slug = $postParent->post_name;
-                    $parentPage = $abj404dao->getPublishedPagesAndPostsIDs($slug);
-                    if (count($parentPage != 0)) {
+                    $parentPageSlug = $postParent->post_name;
+                    $parentPage = $abj404dao->getPublishedPagesAndPostsIDs($parentPageSlug);
+                    if (count($parentPage) != 0) {
                         $pages[] = $parentPage[0];
                     }
                 }
