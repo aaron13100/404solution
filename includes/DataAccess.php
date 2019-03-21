@@ -1011,11 +1011,15 @@ class ABJ_404_Solution_DataAccess {
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
         $logSizeMB = round($logsSizeBytes / (1024 * 1000), 2);
         
+        $renamed = $abj404dao->limitDebugFileSize();
+        $renamed = $renamed ? "true" : "false";
+        
         $message = "deleteOldRedirectsCron. Old captured URLs removed: " . 
                 $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
                 ", Old manual redirects removed: " . $manualRedirectsCount . 
                 ", Old log lines removed: " . $oldLogRowsDeleted . ", New log size: " . $logSizeMB . 
-                ", Duplicate rows deleted: " . $duplicateRowsDeleted;
+                ", Duplicate rows deleted: " . $duplicateRowsDeleted . ", Debug file size limited: " . 
+                $renamed;
         
         // only send a 404 notification email during daily maintenance.
         if (array_key_exists('admin_notification_email', $options) && isset($options['admin_notification_email']) && 
@@ -1051,6 +1055,19 @@ class ABJ_404_Solution_DataAccess {
         ABJ_404_Solution_DataAccess::queryAndGetResults("optimize table " . $redirectsTable);
         
         return $message;
+    }
+    
+    function limitDebugFileSize() {
+        global $abj404logging;
+        $renamed = false;
+        
+        $mbFileSize = $abj404logging->getDebugFileSize() / 1024 / 1000;
+        if ($mbFileSize > 10) {
+            $abj404logging->limitDebugFileSize();
+            $renamed = true;
+        }
+        
+        return $renamed;
     }
     
     /** Remove duplicates. 

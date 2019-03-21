@@ -504,7 +504,7 @@ class ABJ_404_Solution_PluginLogic {
                     if (!file_exists($filepath)) {
                         $message = sprintf(__("Debug file not found. (%s)", '404-solution'), $filepath);
                     } else if ($abj404logging->deleteDebugFile()) {
-                        $message = sprintf(__("Debug file deleted. (%s)", '404-solution'), $filepath);
+                        $message = sprintf(__("Debug file(s) deleted. (%s)", '404-solution'), $filepath);
                     } else {
                         $message = sprintf(__("Issue deleting debug file. (%s)", '404-solution'), $filepath);
                     }

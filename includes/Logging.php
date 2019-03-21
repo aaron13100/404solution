@@ -213,6 +213,7 @@ class ABJ_404_Solution_Logging {
         $zip = new ZipArchive;
         if ($zip->open($logFileZip, ZipArchive::CREATE) === TRUE) {
             $zip->addFile($this->getDebugFilePath(), basename($this->getDebugFilePath()));
+            $zip->addFile($this->getDebugFilePathOld(), basename($this->getDebugFilePathOld()));
             $zip->close();
         }
         
@@ -277,6 +278,10 @@ class ABJ_404_Solution_Logging {
         return $this->getFilePathAndMoveOldFile(ABJ404_PATH . 'temp/', 'abj404_debug.txt');
     }
     
+    function getDebugFilePathOld() {
+        return $this->getDebugFilePath() . "_old.txt";
+    }
+    
     /** Return the path to the file that stores the latest error line in the log file.
      * @return type
      */
@@ -325,6 +330,13 @@ class ABJ_404_Solution_Logging {
         return true;
     }
     
+    function limitDebugFileSize() {
+        // delete _old log file
+        ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathOld());
+        // rename current log file to _old
+        rename($this->getDebugFilePath(), $this->getDebugFilePathOld());
+    }
+    
     /** 
      * @return type true if the file was deleted.
      */
@@ -337,6 +349,7 @@ class ABJ_404_Solution_Logging {
         if (!file_exists($this->getDebugFilePath())) {
             return true;
         }
+        ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathOld());
         return ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePath());
     }
     
@@ -344,10 +357,16 @@ class ABJ_404_Solution_Logging {
      * @return int file size in bytes
      */
     function getDebugFileSize() {
-        if (!file_exists($this->getDebugFilePath())) {
-            return 0;
+        $file1Size = 0;
+        $file2Size = 0;
+        if (file_exists($this->getDebugFilePath())) {
+            $file1Size = filesize($this->getDebugFilePath());
         }
-        return filesize($this->getDebugFilePath());
+        if (file_exists($this->getDebugFilePathOld())) {
+            $file2Size = filesize($this->getDebugFilePathOld());
+        }
+        
+        return $file1Size + $file2Size;
     }
     
 }

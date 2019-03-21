@@ -1581,8 +1581,12 @@ class ABJ_404_Solution_View {
         $debugLogLink = $abj404logic->getDebugLogFileLink();
         $debugExplanation = str_replace('<a>', '<a href="' . $debugLogLink . '" target="_blank" >', $debugExplanation);
 
-        $kbFileSize = round($abj404logging->getDebugFileSize() / 1024);
-        $debugFileSize = sprintf(__("Debug file size: %s KB.", '404-solution'), $kbFileSize);
+        $kbFileSize = $abj404logging->getDebugFileSize() / 1024;
+        $kbFileSizePretty = number_format($kbFileSize, 2, ".", ",");
+        $mbFileSize = $abj404logging->getDebugFileSize() / 1024 / 1000;
+        $mbFileSizePretty = number_format($mbFileSize, 2, ".", ",");
+        $debugFileSize = sprintf(__("Debug file size: %s KB (%s MB).", '404-solution'), 
+                $kbFileSizePretty, $mbFileSizePretty);
         
         $allPostTypesTemp = $abj404dao->getAllPostTypes();
         $allPostTypes = esc_html(implode(', ', $allPostTypesTemp));
