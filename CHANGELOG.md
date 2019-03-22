@@ -1,6 +1,6 @@
 # Changelog #
 
-## Version 2.14.0 (March 25, 2019) ##
+## Version 2.14.0 (March 22, 2019) ##
 * Feature: Now faster with sites with 10k+ pages.
 * FIX: Respect the log size limit (for Phil and others).
 * Improvement: Automatically limit the debug file size.

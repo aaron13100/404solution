@@ -35,6 +35,8 @@ class ABJ_404_Solution_Timer {
         $this->stop = microtime(true);
         $this->elapsed += $this->getElapsedTime();
         $this->isRunning = false;
+        
+        return $this->getElapsedTime();
     }
     
     function restartKeepElapsed() {

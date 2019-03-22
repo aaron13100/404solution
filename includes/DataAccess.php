@@ -47,7 +47,10 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         global $abj404logging;
         
+        $timer = new ABJ_404_Solution_Timer();
+        
         $result['rows'] = $wpdb->get_results($query, ARRAY_A);
+        $timer->stop();
         $result['last_error'] = $wpdb->last_error;
         $result['last_result'] = $wpdb->last_result;
         $result['rows_affected'] = $wpdb->rows_affected;
@@ -55,7 +58,13 @@ class ABJ_404_Solution_DataAccess {
         
         if ($result['last_error'] != '') {
             $abj404logging->errorMessage("Ugh. SQL error: " . esc_html($result['last_error'] . 
-                    ", SQL: " . esc_html($query)));
+                    ", SQL: " . esc_html($query)) . ", Execution time: " . round($timer->getElapsedTime(), 2));
+            
+        } else {
+            if ($timer->getElapsedTime() > 10) {
+                $abj404logging->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " . 
+                        $query);
+            }
         }
         
         return $result;
@@ -643,7 +652,7 @@ class ABJ_404_Solution_DataAccess {
         // cast here to avoid illegal collation issues as in 
         // https://wordpress.org/support/topic/abj-404-solution-error-ugh-sql-error/
         $results = $this->queryAndGetResults("select id from " . $wpdb->prefix . "abj404_logsv2" . 
-                " where cast(requested_url as binary) = cast('" . esc_sql($requestedURL) . "' as binary) limit 1");
+                " where requested_url = '" . esc_sql($requestedURL) . "' limit 1");
         if (count($results['rows']) == 0) {
             $minLogID = true;
         }
@@ -1073,15 +1082,15 @@ class ABJ_404_Solution_DataAccess {
         // ----------------
         
         if ($slug != "") {
-            $specifiedSlug = " */ and cast(wp_posts.post_name as binary) = "
-                    . "cast('" . esc_sql($slug) . "' as binary) \n ";
+            $specifiedSlug = " */ and wp_posts.post_name = "
+                    . "'" . esc_sql($slug) . "' \n ";
         } else {
             $specifiedSlug = '';
         }
         
         if ($searchTerm != "") {
-            $searchTerm = " */ and cast(lower(wp_posts.post_title) as binary) like "
-                    . "cast('%" . esc_sql(strtolower($searchTerm)) . "%' as binary) \n ";
+            $searchTerm = " */ and lower(wp_posts.post_title) like "
+                    . "'%" . esc_sql(strtolower($searchTerm)) . "%' \n ";
         } else {
             $searchTerm = '';
         }
