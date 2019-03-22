@@ -75,6 +75,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.14.1 (March 22, 2019) ##
+* FIX: Correct a minor logging issue for PHP 7.2.
+
 ## Version 2.14.0 (March 22, 2019) ##
 * Feature: Now faster with sites with 10k+ pages.
 * FIX: Respect the log size limit (for Phil and others).

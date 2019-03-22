@@ -1,7 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
+if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -82,7 +82,7 @@ class ABJ_404_Solution_Logging {
                 ", Referrer: " . esc_html($referrer) . ", \nTrace: " . $stacktrace);
         
         // display a 404 page if the user is NOT an admin and is not on an admin page.
-        if (!is_admin() && !current_user_can('administrator')) {
+        if (!is_admin()) {
             // try to send the user to a 404 page. otherwise the user might just get a blank page.
             status_header(404);
             nocache_headers();
