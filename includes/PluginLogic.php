@@ -1215,6 +1215,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return string
      */
     function updateOptionsFromPOST() {
+        global $abj404dao;
+        
         $message = "";
         $options = $this->getOptions();
         
@@ -1358,6 +1360,11 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         update_option('abj404_settings', $new_options);
+        
+        // reset the permalink cache because the post types included may have changed.
+        $abj404dao->truncatePermalinkCacheTable();
+        $permalinkCache = new ABJ_404_Solution_PermalinkCache();
+        $permalinkCache->updatePermalinkCache(2);
         
         return $message;
     }
