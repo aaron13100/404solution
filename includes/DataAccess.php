@@ -930,7 +930,7 @@ class ABJ_404_Solution_DataAccess {
         $message = "deleteOldRedirectsCron. Old captured URLs removed: " . 
                 $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
                 ", Old manual redirects removed: " . $manualRedirectsCount . 
-                ", Old log lines removed: " . $oldLogRowsDeleted . ", New log size: " . $logSizeMB . 
+                ", Old log lines removed: " . $oldLogRowsDeleted . ", New log size: " . $logSizeMB . "MB" . 
                 ", Duplicate rows deleted: " . $duplicateRowsDeleted . ", Debug file size limited: " . 
                 $renamed;
         
