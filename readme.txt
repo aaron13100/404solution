@@ -68,7 +68,8 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 == Changelog ==
 
-= Version 2.14.2 (March 23, 2019) =
+= Version 2.15.0 (March 23, 2019) =
+* Feature: Automatically update the plugin when a new minor version is released (major versions are still manual).
 * Improvement: Only include links in the permalink cache that will actually be used.
 
 = Version 2.14.1 (March 22, 2019) =

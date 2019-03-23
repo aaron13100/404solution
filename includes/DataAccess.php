@@ -14,7 +14,55 @@ if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
  */
 
 class ABJ_404_Solution_DataAccess {
+    
+    function getLatestPluginVersion() {
+        if (!function_exists('plugins_api')) {
+              require_once(ABSPATH . 'wp-admin/includes/plugin-install.php');
+        }        
+        if (!function_exists('plugins_api')) {
+            $this->infoMessage("I couldn't find the plugins_api function to check for the latest version.");
+            return ABJ404_VERSION;
+        }
+        
+        $pluginSlug = dirname(ABJ404_NAME);
+        
+        // set the arguments to get latest info from repository via API ##
+        $args = array(
+            'slug' => $pluginSlug,
+            'fields' => array(
+                'version' => true,
+            )
+        );
 
+        /** Prepare our query */
+        $call_api = plugins_api('plugin_information', $args);
+
+        /** Check for Errors & Display the results */
+        if (is_wp_error($call_api)) {
+            $api_error = $call_api->get_error_message();
+            $this->infoMessage("There was an API issue checking the latest plugin version ("
+                    . esc_html($api_error) . ")");
+            
+            return ABJ404_VERSION;
+        }
+        
+        $version_latest = $call_api->version;
+
+        return $version_latest;
+    }
+    
+    /** Check wordpress.org for the latest version of this plugin. Return true if the latest version is installed, 
+     * false otherwise.
+     * @return boolean
+     */
+    function latestVersionIsInstalled() {
+        global $abj404dao;
+        
+        $version_latest = $abj404dao->getLatestPluginVersion();
+
+        return (ABJ404_VERSION == $version_latest);
+    }
+    
     /** 
      * @global type $wpdb
      */
@@ -918,9 +966,12 @@ class ABJ_404_Solution_DataAccess {
         $abj404logging->infoMessage($message);
         
         // fix any lingering errors
-        ABJ_404_Solution_DatabaseUpgradesEtc::createDatabaseTables();        
-
+        $upgradesEtc = new ABJ_404_Solution_DatabaseUpgradesEtc();
+        $upgradesEtc->createDatabaseTables();
+        
         ABJ_404_Solution_DataAccess::queryAndGetResults("optimize table " . $redirectsTable);
+        
+        $upgradesEtc->updatePlugin();
         
         return $message;
     }

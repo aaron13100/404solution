@@ -274,7 +274,8 @@ class ABJ_404_Solution_PluginLogic {
                 " to " . ABJ404_VERSION . " (begin).");
 
         // wp_abj404_logsv2 exists since 1.7.
-        ABJ_404_Solution_DatabaseUpgradesEtc::createDatabaseTables();
+        $upgradesEtc = new ABJ_404_Solution_DatabaseUpgradesEtc();
+        $upgradesEtc->createDatabaseTables();
 
         // abj404_duplicateCronAction is no longer needed as of 1.7.
         wp_clear_scheduled_hook('abj404_duplicateCronAction');
@@ -462,7 +463,8 @@ class ABJ_404_Solution_PluginLogic {
             $abj404logic = new ABJ_404_Solution_PluginLogic();
         }
         
-        ABJ_404_Solution_DatabaseUpgradesEtc::createDatabaseTables();
+        $upgradesEtc = new ABJ_404_Solution_DatabaseUpgradesEtc();
+        $upgradesEtc->createDatabaseTables();
 
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
 

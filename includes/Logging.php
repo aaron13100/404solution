@@ -115,6 +115,8 @@ class ABJ_404_Solution_Logging {
     
     /** Email the log file to the plugin developer. */
     function emailErrorLogIfNecessary() {
+        global $abj404dao;
+        
         if (!file_exists($this->getDebugFilePath())) {
             $this->debugMessage("No log file found so no errors were found.");
             return false;
@@ -147,7 +149,7 @@ class ABJ_404_Solution_Logging {
         }
         
         // only email the error file if the latest version of the plugin is installed.
-        if (!$this->latestVersionIsInstalled()) {
+        if (!$abj404dao->latestVersionIsInstalled()) {
             return false;
         }
         
@@ -157,50 +159,6 @@ class ABJ_404_Solution_Logging {
         file_put_contents($sentDateFile, $latestErrorLineFound['num']);
         
         return true;
-    }
-    
-    /** Check wordpress.org for the latest version of this plugin. Return true if the latest version is installed, 
-     * false otherwise.
-     * @return boolean
-     */
-    function latestVersionIsInstalled() {
-        if (!function_exists('plugins_api')) {
-              require_once(ABSPATH . 'wp-admin/includes/plugin-install.php');
-        }        
-        if (!function_exists('plugins_api')) {
-            $this->debugMessage("I couldn't find the plugins_api function to check for the latest version, "
-                    . "so I won't be emailing the error file.");
-            return false;
-        }
-        
-        $pluginSlug = dirname(ABJ404_NAME);
-        
-        // set the arguments to get latest info from repository via API ##
-        $args = array(
-            'slug' => $pluginSlug,
-            'fields' => array(
-                'version' => true,
-            )
-        );
-
-        /** Prepare our query */
-        $call_api = plugins_api('plugin_information', $args);
-
-        /** Check for Errors & Display the results */
-        if (is_wp_error($call_api)) {
-            $api_error = $call_api->get_error_message();
-            $this->debugMessage("There was an API issue checking the latest plugin version, "
-                    . "so I won't be emailing the error file. (" . esc_html($api_error) . ")");
-            return false;
-        }
-        
-        $version_latest = $call_api->version;
-
-        if (ABJ404_VERSION == $version_latest) {
-            return true;
-        }
-        
-        return false;
     }
     
     function emailLogFileToDeveloper($errorLineMessage) {
