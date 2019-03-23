@@ -88,6 +88,7 @@ class ABJ_404_Solution_PermalinkCache {
 
             $rowsInserted = 0;
             $rows = $abj404dao->getIDsNeededForPermalinkCache();
+            
             while (count($rows) > 0) {
                 $row = array_shift ($rows);
                 $id = $row['id'];
@@ -118,7 +119,13 @@ class ABJ_404_Solution_PermalinkCache {
                 wp_schedule_single_event(time() + 1, ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
                         array(25, $executionCount + 1));
                 $abj404logging->debugMessage($rowsInserted . " rows inserted into the permalink cache table in " .
-                        round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount);
+                        round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount . 
+                        ". shouldRunAgain: " . ($shouldRunAgain ? 'true' : 'false'));
+
+            } else if ($executionCount > 1) {
+                $abj404logging->debugMessage(__FUNCTION__ . " done updating. " . $rowsInserted . " rows inserted. " .
+                        " in " . round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount . 
+                        ". shouldRunAgain: " . ($shouldRunAgain ? 'true' : 'false'));
             }
             
             $newPermalinkStructure = get_option('permalink_structure');
@@ -147,8 +154,11 @@ class ABJ_404_Solution_PermalinkCache {
     
     function getPermalinkCacheCopy() {
         global $abj404dao;
-
+        
+        $timer = new ABJ_404_Solution_Timer();
         $rows = $abj404dao->getPermalinkCache();
+        $_REQUEST[ABJ404_PP]['debug_info'] = __FUNCTION__ .' got ' . count($rows) . ' rows after ' . 
+                round($timer->getElapsedTime(), 2) . " seconds. ";
         
         $cache = array();
         while (count($rows) > 0) {
@@ -158,6 +168,9 @@ class ABJ_404_Solution_PermalinkCache {
             $link = $row['url'];
             $cache[$id] = $link;
         }
+
+        $_REQUEST[ABJ404_PP]['debug_info'] = __FUNCTION__ .' created cache copy after ' . 
+                round($timer->getElapsedTime(), 2) . " seconds. ";
         
         return $cache;
     }

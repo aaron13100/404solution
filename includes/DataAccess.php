@@ -134,10 +134,23 @@ class ABJ_404_Solution_DataAccess {
     
     function getIDsNeededForPermalinkCache() {
         global $wpdb;
+        global $abj404logic;
         
         $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+
+        // get the valid post types
+        $options = $abj404logic->getOptions();
+        $postTypes = preg_split("@\n@", mb_strtolower($options['recognized_post_types']), NULL, PREG_SPLIT_NO_EMPTY);
+        $recognizedPostTypes = '';
+        foreach ($postTypes as $postType) {
+            $recognizedPostTypes .= "'" . trim(mb_strtolower($postType)) . "', ";
+        }
+        $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getIDsNeededForPermalinkCache.sql");
+        $query = str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
+        $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
+        $query = str_replace('{wp_terms}', $wpdb->terms, $query);
         $query = str_replace('{wp_posts}', $wpdb->prefix . 'posts', $query);
         $query = str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
         
@@ -1066,7 +1079,7 @@ class ABJ_404_Solution_DataAccess {
      * @param type $searchTerm use this string in a LIKE on the sql.
      * @return type
      */
-    function getPublishedPagesAndPostsIDs($slug, $searchTerm = '', $limitResults = '') {
+    function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '', $limitResults = '') {
         global $wpdb;
         global $abj404logic;
         global $abj404logging;

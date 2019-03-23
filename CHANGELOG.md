@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.14.2 (March 23, 2019) ##
+* Improvement: Only include links in the permalink cache that will actually be used.
+
 ## Version 2.14.1 (March 22, 2019) ##
 * FIX: Correct a minor logging issue for PHP 7.2.
 

@@ -465,6 +465,12 @@ class ABJ_404_Solution_SpellChecker {
                 $permalinkCache[$id] = null;
                 unset($permalinkCache[$id]);
                 
+                if ($the_permalink == null) {
+                    $the_permalink = $this->getPermalink($id, $rowType);
+                    $abj404logging->infoMessage("Permalink cache wasn't ready for ID " . $id . " link: " . 
+                            $the_permalink);
+                }
+                
             } else {
                 // this line takes too long to execute when there are 10k+ pages.
                 $the_permalink = $this->getPermalink($id, $rowType);
