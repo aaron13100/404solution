@@ -18,7 +18,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     /** Create the tables when the plugin is first activated. 
      * @global type $wpdb
      */
-    static function createDatabaseTables() {
+    function createDatabaseTables() {
         global $wpdb;
         global $abj404logging;
         
@@ -212,6 +212,48 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     " collate " . $postsTableCollation;
             $query = str_replace('{table_name}', $tableName, $query);
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        }
+    }
+    
+    function updatePlugin() {
+        // I copied this from wordfence.
+        
+        global $abj404logging;
+        global $abj404dao;
+        
+        $latestVersion = $abj404dao->getLatestPluginVersion();
+        if (ABJ404_VERSION == $latestVersion) {
+            $abj404logging->debugMessage("The latest plugin version is already installed (" . 
+                    ABJ404_VERSION . ").");
+            return;
+        }
+        
+        // 1.12.0 becomes array("1", "12", "0")
+        $myVersionArray = explode(".", ABJ404_VERSION);
+        $latestVersionArray = explode(".", $latestVersion);
+        
+        // if there's a new major version then don't automatically upgrade.
+        if ($myVersionArray[0] != $latestVersionArray[0] || $myVersionArray[1] != $latestVersionArray[1]) {
+            $abj404logging->infoMessage("A new major version is available (" . 
+                    $latestVersionArray . "), currently version " + ABJ404_VERSION . " is installed. "
+                    . "Automatic updates are only for minor versions.");
+            return;
+        }
+        
+        ob_start();
+        $upgrader = new Plugin_Upgrader();
+        $upret = $upgrader->upgrade(ABJ404_SOLUTION_BASENAME);
+        if ($upret) {
+            $abj404logging->infoMessage("Plugin successfully upgraded to: " . $latestVersion);
+            
+        } else if ($upret instanceof WP_Error) {
+            $abj404logging->infoMessage("Plugin upgrade error " . 
+                json_encode($upret->get_error_codes()) . ": " . json_encode($upret->get_error_messages()));
+        }
+        $output = @ob_get_contents();
+        @ob_end_clean();
+        if (mb_strlen(trim($output)) > 0) {
+            $abj404logging->infoMessage("Upgrade output: " . $output);
         }
     }
 }
