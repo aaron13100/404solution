@@ -240,6 +240,17 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             return;
         }
         
+        if (!class_exists('WP_Upgrader')) {
+            require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        }        
+        if (!class_exists('Plugin_Upgrader')) {
+            require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
+        }        
+        if (!class_exists('Plugin_Upgrader')) {
+            $abj404logging->infoMessage("There was an issue including the Plugin_Upgrader class.");
+            return;
+        }
+        
         ob_start();
         $upgrader = new Plugin_Upgrader();
         $upret = $upgrader->upgrade(ABJ404_SOLUTION_BASENAME);
@@ -254,6 +265,16 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         @ob_end_clean();
         if (mb_strlen(trim($output)) > 0) {
             $abj404logging->infoMessage("Upgrade output: " . $output);
+        }
+        
+        $activateResult = activate_plugin(ABJ404_NAME);
+        if ($activateResult instanceof WP_Error) {
+            $abj404logging->errorMessage("Plugin activation error " . 
+                json_encode($upret->get_error_codes()) . ": " . json_encode($upret->get_error_messages()));
+            
+        } else if ($activateResult == null) {
+            $abj404logging->infoMessage("Successfully reactivated plugin after upgrade to version " . 
+                $latestVersion);
         }
     }
 }
