@@ -1,7 +1,8 @@
 <?php
 
 // turn on debug for localhost etc
-$abj404_whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 'www.wealth-psychology.com');
+$abj404_whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 
+    'www.wealth-psychology.com', 'wealth-psychology');
 $GLOBALS['abj404_whitelist'] = $abj404_whitelist;
 if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
     error_reporting(E_ALL);
@@ -15,7 +16,7 @@ if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
 	Author:      Aaron J
 	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 2.15.0
+	Version: 2.15.1
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -45,7 +46,7 @@ define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );
 define('ABJ404_SOLUTION_BASENAME', function_exists('plugin_basename') ? plugin_basename(__FILE__) :
 	basename(dirname(__FILE__)) . '/' . basename(__FILE__));
 
-define( 'ABJ404_VERSION', '2.15.0' );
+define( 'ABJ404_VERSION', '2.15.1' );
 define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/'
         . '?utm_source=404SolutionPlugin&utm_medium=WordPress');
 define( 'ABJ404_PP', 'abj404_solution'); // plugin path

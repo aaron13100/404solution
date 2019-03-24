@@ -236,6 +236,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function updateToNewVersion($options) {
         global $abj404logging;
+        global $abj404dao;
         
         if ($this->currentlyUpdatingDatabaseVersion) {
             $abj404logging->errorMessage("Avoiding infinite loop on database update.");
@@ -250,6 +251,11 @@ class ABJ_404_Solution_PluginLogic {
             $this->errorMessage("Error updating to new version. ", $e);
         }
         $this->currentlyUpdatingDatabaseVersion = false;
+        
+        // reset the permalink cache because updating the plugin version may affect it.
+        $abj404dao->truncatePermalinkCacheTable();
+        $permalinkCache = new ABJ_404_Solution_PermalinkCache();
+        $permalinkCache->updatePermalinkCache(1);
         
         return $returnValue;
     }

@@ -719,13 +719,14 @@ class ABJ_404_Solution_DataAccess {
         }
             
         if ($abj404logging->isDebug()) {
+            $helperFunctions = new ABJ_404_Solution_Functions();
             $reasonMessage = implode(", ", 
                         array_filter(
                         array($_REQUEST[ABJ404_PP]['ignore_doprocess'], $_REQUEST[ABJ404_PP]['ignore_donotprocess'])));
             $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
                     " | Current user: " . $current_user_name . " | From: " . esc_html($requestedURL) . 
                     esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . 
-                    $reasonMessage . ', Execution time: ' . ABJ_404_Solution_Functions::getExecutionTime() . 
+                    $reasonMessage . ', Execution time: ' . round($helperFunctions->getExecutionTime(), 2) . 
                     ' seconds');
         }
         
