@@ -162,6 +162,8 @@ class ABJ_404_Solution_Logging {
     }
     
     function emailLogFileToDeveloper($errorLineMessage) {
+        global $wpdb;
+        
         // email the log file.
         $this->debugMessage("Creating zip file of error log file.");
         $logFileZip = $this->getZipFilePath();
@@ -179,9 +181,20 @@ class ABJ_404_Solution_Logging {
         $attachments[] = $logFileZip;
         $to = ABJ404_AUTHOR_EMAIL;
         $subject = ABJ404_PP . ' error log file. Plugin version: ' . ABJ404_VERSION;
-        $body = $subject . "\nSent " . date('Y/m/d h:i:s T') . "<BR/><BR/>\n\n" . "PHP version: " . PHP_VERSION . 
-                ", <BR/>\nWordPress version: " . get_bloginfo('version') . ", <BR/>\nPlugin version: " . 
-                ABJ404_VERSION . "<BR/>\nError: " . $errorLineMessage;
+        $bodyLines = array();
+        $bodyLines[] = $subject . ". Sent " . date('Y/m/d h:i:s T') . "<BR/>\n";
+        $bodyLines[] = "<BR/>\n";
+        $bodyLines[] = "PHP version: " . PHP_VERSION . "<BR/>\n";
+        $bodyLines[] = "WordPress version: " . get_bloginfo('version') . "<BR/>\n";
+        $bodyLines[] = "Plugin version: " . ABJ404_VERSION . "<BR/>\n";
+        $bodyLines[] = "MySQL version: " . $wpdb->db_version() . "<BR/>\n";
+        $bodyLines[] = "Server name: " . $_SERVER['SERVER_NAME'] . "<BR/>\n";
+        $bodyLines[] = "Site URL: " . get_site_url() . "<BR/>\n";
+        
+        $bodyLines[] = "Error: " . $errorLineMessage;
+        
+        $body = implode(" ", $bodyLines);
+        
         $headers = array('Content-Type: text/html; charset=UTF-8');
         $headers[] = 'From: ' . get_option('admin_email');
         
@@ -190,8 +203,8 @@ class ABJ_404_Solution_Logging {
         wp_mail($to, $subject, $body, $headers, $attachments);
         
         // delete the zip file.
-        $this->debugMessage("Mail sent. Deleting error log zip file.");
         ABJ_404_Solution_Functions::safeUnlink($logFileZip);
+        $this->debugMessage("Mail sent. Log zip file deleted.");
     }
     
     /** 

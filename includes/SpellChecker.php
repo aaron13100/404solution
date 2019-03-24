@@ -434,13 +434,15 @@ class ABJ_404_Solution_SpellChecker {
         
         $requestedURLCleanedLength = mb_strlen($requestedURLCleaned);
         $fullURLspacesLength = mb_strlen($fullURLspaces);
-        $permalinkCacheObj = new ABJ_404_Solution_PermalinkCache();
-        $permalinkCache = $permalinkCacheObj->getPermalinkCacheCopy();
-        $permalinkCacheObj = null;
         
-        while (count($publishedPages) > 0) {
-            $row = array_shift($publishedPages);
-            
+        if ($rowType == 'pages') {
+            $permalinkCacheObj = new ABJ_404_Solution_PermalinkCache();
+            $permalinkCache = $permalinkCacheObj->getPermalinkCacheCopy();
+            $permalinkCacheObj = null;
+        }
+        
+        $row = array_shift($publishedPages);
+        while ($row != null) {
             $id = null;
             if ($rowType == 'pages') {
                 $id = $row->id;
@@ -506,6 +508,7 @@ class ABJ_404_Solution_SpellChecker {
                 array_push($maxDistances[$maxDist], $id);
             }
             
+            $row = array_shift($publishedPages);
         }
 
         // look at the first X IDs with the lowest maximum levenshtein distance.

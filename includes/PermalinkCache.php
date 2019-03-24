@@ -156,21 +156,26 @@ class ABJ_404_Solution_PermalinkCache {
         global $abj404dao;
         
         $timer = new ABJ_404_Solution_Timer();
+        $helperFunctions = new ABJ_404_Solution_Functions();
+        
         $rows = $abj404dao->getPermalinkCache();
         $_REQUEST[ABJ404_PP]['debug_info'] = __FUNCTION__ .' got ' . count($rows) . ' rows after ' . 
-                round($timer->getElapsedTime(), 2) . " seconds. ";
+                round($timer->getElapsedTime(), 2) . " seconds. Total execution time so far: " . 
+                round($helperFunctions->getExecutionTime(), 2) . " seconds.";
         
         $cache = array();
-        while (count($rows) > 0) {
-            $row = array_shift($rows);
-            
+        $row = array_shift($rows);
+        while ($row != null) {
             $id = $row['id'];
             $link = $row['url'];
             $cache[$id] = $link;
+            
+            $row = array_shift($rows);
         }
 
         $_REQUEST[ABJ404_PP]['debug_info'] = __FUNCTION__ .' created cache copy after ' . 
-                round($timer->getElapsedTime(), 2) . " seconds. ";
+                round($timer->getElapsedTime(), 2) . " seconds. Total execution time so far: " . 
+                round($helperFunctions->getExecutionTime(), 2) . " seconds.";
         
         return $cache;
     }
