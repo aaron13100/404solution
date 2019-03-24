@@ -122,7 +122,7 @@ class ABJ_404_Solution_PermalinkCache {
                         round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount . 
                         ". shouldRunAgain: " . ($shouldRunAgain ? 'true' : 'false'));
 
-            } else if ($executionCount > 1) {
+            } else if (($executionCount > 1) || ($rowsInserted > 1)) {
                 $abj404logging->debugMessage(__FUNCTION__ . " done updating. " . $rowsInserted . " rows inserted. " .
                         " in " . round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount . 
                         ". shouldRunAgain: " . ($shouldRunAgain ? 'true' : 'false'));

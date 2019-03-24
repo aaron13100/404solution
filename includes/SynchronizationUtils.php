@@ -81,7 +81,7 @@ class ABJ_404_Solution_SynchronizationUtils {
         if ($timePassed > $maxExecutionTime) {
             delete_option($internalSynchronizedKey);
             $logger = new ABJ_404_Solution_Logging();
-            $logger->debugMessage("Forcibly removed synchronization after " . $timePassed . " seconds for the "
+            $logger->errorMessage("Forcibly removed synchronization after " . $timePassed . " seconds for the "
                     . "key " . $internalSynchronizedKey);
         }
     }
@@ -93,6 +93,8 @@ class ABJ_404_Solution_SynchronizationUtils {
     static function synchronizerAcquireLockWithWait($synchronizedKeyFromUser) {
         $uniqueID = self::createUniqueID($synchronizedKeyFromUser);
         $internalSynchronizedKey = self::createInternalKey($synchronizedKeyFromUser);
+        
+        self::fixAnUnforeseenIssue($synchronizedKeyFromUser);
         $iterations = 0;
         
         // acquire the lock.
