@@ -240,6 +240,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             return;
         }
         
+        if (intval($myVersionArray[2]) > intval($latestVersionArray[2])) {
+            $abj404logging->infoMessage("Development version? A more recent version is installed than " . 
+                    "what is available on the WordPress site (" . $latestVersion . " / " . 
+                    ABJ404_VERSION . ").");
+            return;
+        }
+        
         if (!class_exists('WP_Upgrader')) {
             require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         }        
