@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.15.2 (March 25, 2019) ##
+* FIX: Correct a "Call to undefined method" when a database update didn't work (thanks itjebsen).
+
 ## Version 2.15.1 (March 24, 2019) ##
 * Improvement: Include more log information for trying to solve an issue for a developer feedback participant.
 * Improvement: Performance improvements when an unrecognized 404 is captured (speed, memory).

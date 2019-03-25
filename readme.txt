@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.15.1
+Version: 2.15.2
 Tested up to: 5.1.1
-Stable tag: 2.15.1
+Stable tag: 2.15.2
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -58,7 +58,7 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 = I see the message "There are (some number of) captured 404 URLs to be processed." What should I do? =
 
-This is nothing to be worried about. It means people tried to access pages on your website that don't exist. You can either change the settings on the options page so that you're not longer notified about it (Options -> General Settings -> Admin notification level), or you can go the "Captured 404 URLs" page and do something with them (either ignore them or specify which existing page they should redirect to).
+This is nothing to be worried about. It means people tried to access pages on your website that don't exist. You can either change the settings on the options page so that you're no longer notified about it (Options -> General Settings -> Admin notification level), or you can go to the "Captured 404 URLs" page and do something with them (either ignore them or specify which existing page they should redirect to).
 
 == Screenshots ==
 
@@ -67,6 +67,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.15.2 (March 25, 2019) =
+* FIX: Correct a "Call to undefined method" when a database update didn't work (thanks itjebsen).
 
 = Version 2.15.1 (March 24, 2019) =
 * Improvement: Include more log information for trying to solve an issue for a developer feedback participant.
