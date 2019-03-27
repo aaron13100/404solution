@@ -147,7 +147,15 @@ WP Memory Limit: {WP_MEMORY_LIMIT}</p>
     </td></tr>
     
 </table> 
-   
+
+<!-- .............................. -->
+<p>
+    <label for="days_wait_before_major_update">{Major version auto update delay}: </label>
+    <input type="text" name="days_wait_before_major_update" id="days_wait_before_major_update" value="{days_wait_before_major_update}" style="width: 50px;">
+        {days (0 means immediately, default 30)}
+    <BR/>
+    &nbsp;&nbsp;&nbsp;{New major version => wait this many days. New minor version => always automatically updates. }
+</p>
 
 <!-- .............................. -->
 <p>

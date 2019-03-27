@@ -79,7 +79,7 @@ class ABJ_404_Solution_Logging {
         error_log($prefix . $message);
         $this->writeLineToDebugFile($timestamp . $message . ", PHP version: " . PHP_VERSION . 
                 ", WP ver: " . get_bloginfo('version') . ", Plugin ver: " . ABJ404_VERSION . 
-                ", Referrer: " . esc_html($referrer) . ", \nTrace: " . $stacktrace);
+                ", Referrer: " . esc_html($referrer) . ", \nTrace: " . $stacktrace . "\n    END_OF_STACK_TRACE");
         
         // display a 404 page if the user is NOT an admin and is not on an admin page.
         if (!is_admin()) {
@@ -188,8 +188,8 @@ class ABJ_404_Solution_Logging {
         $bodyLines[] = "WordPress version: " . get_bloginfo('version') . "<BR/>\n";
         $bodyLines[] = "Plugin version: " . ABJ404_VERSION . "<BR/>\n";
         $bodyLines[] = "MySQL version: " . $wpdb->db_version() . "<BR/>\n";
-        $bodyLines[] = "Server name: " . $_SERVER['SERVER_NAME'] . "<BR/>\n";
         $bodyLines[] = "Site URL: " . get_site_url() . "<BR/>\n";
+        $bodyLines[] = "WP_MEMORY_LIMIT: " . WP_MEMORY_LIMIT . "<BR/>\n";
         
         $bodyLines[] = "Error: " . $errorLineMessage;
         
@@ -225,6 +225,10 @@ class ABJ_404_Solution_Logging {
                     if (stripos($line, '(ERROR)') !== false) {
                         $latestErrorLineFound['num'] = $linesRead;
                         $latestErrorLineFound['line'] = $line;
+                        
+                    } else if (preg_match("/^#\d+ .+$/", $line)) {
+                        // include the entire stack trace.
+                        $latestErrorLineFound['line'] .= $line;
                     }
                 }
             } else {
@@ -317,9 +321,6 @@ class ABJ_404_Solution_Logging {
             ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathSentFile());
         }
         
-        if (!file_exists($this->getDebugFilePath())) {
-            return true;
-        }
         ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathOld());
         return ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePath());
     }

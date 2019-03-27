@@ -404,6 +404,7 @@ class ABJ_404_Solution_PluginLogic {
             'folders_files_ignore' => "",
             'folders_files_ignore_usable' => "",
             'debug_mode' => 0,
+            'days_wait_before_major_update' => 30,
             'DB_VERSION' => '0.0.0',
             'menuLocation' => 'underSettings',
             'admin_notification_email' => '',
@@ -1266,7 +1267,16 @@ class ABJ_404_Solution_PluginLogic {
                 $message .= __('Error: Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
             }
         }
-
+        
+        if (array_key_exists('days_wait_before_major_update', $_POST) && isset($_POST['days_wait_before_major_update'])) {
+            if (is_numeric($_POST['days_wait_before_major_update'])) {
+                $options['days_wait_before_major_update'] = absint($_POST['days_wait_before_major_update']);
+            } else {
+                $message .= __('Error: The time to wait before an automatic update must be a number '
+                        . 'between 0 and something around ' . PHP_INT_MAX . '.', '404-solution') . "<BR/>";
+            }
+        }
+        
         if (array_key_exists('suggest_minscore', $_POST) && isset($_POST['suggest_minscore'])) {
             if (preg_match('/^[0-9]+$/', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
                 $options['suggest_minscore'] = min(max(absint($_POST['suggest_minscore']), 10), 90);

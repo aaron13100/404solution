@@ -215,38 +215,22 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         }
     }
     
-    function updatePlugin() {
-        // I copied this from wordfence.
-        
-        global $abj404logging;
+    function updatePluginCheck() {
         global $abj404dao;
         
-        $latestVersion = $abj404dao->getLatestPluginVersion();
-        if (ABJ404_VERSION == $latestVersion) {
-            $abj404logging->debugMessage("The latest plugin version is already installed (" . 
-                    ABJ404_VERSION . ").");
-            return;
+        $pluginInfo = $abj404dao->getLatestPluginVersion();
+        
+        $shouldUpdate = $this->shouldUpdate($pluginInfo);
+        
+        if ($shouldUpdate) {
+            $this->doUpdatePlugin($pluginInfo);
         }
+    }
+    
+    function doUpdatePlugin($pluginInfo) {
+        global $abj404logging;
         
-        // 1.12.0 becomes array("1", "12", "0")
-        $myVersionArray = explode(".", ABJ404_VERSION);
-        $latestVersionArray = explode(".", $latestVersion);
-        
-        // if there's a new major version then don't automatically upgrade.
-        if ($myVersionArray[0] != $latestVersionArray[0] || $myVersionArray[1] != $latestVersionArray[1]) {
-            $abj404logging->infoMessage("A new major version is available (" . 
-                    $latestVersionArray . "), currently version " + ABJ404_VERSION . " is installed. "
-                    . "Automatic updates are only for minor versions.");
-            return;
-        }
-        
-        if (intval($myVersionArray[2]) > intval($latestVersionArray[2])) {
-            $abj404logging->infoMessage("Development version? A more recent version is installed than " . 
-                    "what is available on the WordPress site (" . $latestVersion . " / " . 
-                    ABJ404_VERSION . ").");
-            return;
-        }
-        
+        // do the update.
         if (!class_exists('WP_Upgrader')) {
             require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         }        
@@ -262,7 +246,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $upgrader = new Plugin_Upgrader();
         $upret = $upgrader->upgrade(ABJ404_SOLUTION_BASENAME);
         if ($upret) {
-            $abj404logging->infoMessage("Plugin successfully upgraded to: " . $latestVersion);
+            $abj404logging->infoMessage("Plugin successfully upgraded to " . $pluginInfo['version']);
             
         } else if ($upret instanceof WP_Error) {
             $abj404logging->infoMessage("Plugin upgrade error " . 
@@ -281,7 +265,58 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             
         } else if ($activateResult == null) {
             $abj404logging->infoMessage("Successfully reactivated plugin after upgrade to version " . 
-                $latestVersion);
+                $pluginInfo['version']);
+        }        
+    }
+    
+    function shouldUpdate($pluginInfo) {
+        global $abj404logic;
+        global $abj404logging;
+        
+        $options = $abj404logic->getOptions(true);
+        $latestVersion = $pluginInfo['version'];
+        
+        if (ABJ404_VERSION == $latestVersion) {
+            $abj404logging->debugMessage("The latest plugin version is already installed (" . 
+                    ABJ404_VERSION . ").");
+            return false;
         }
+        
+        // don't overwrite development versions.
+        if (version_compare(ABJ404_VERSION, $latestVersion) == 1) {
+            $abj404logging->infoMessage("Development version: A more recent version is installed than " . 
+                    "what is available on the WordPress site (" . ABJ404_VERSION . " / " . 
+                     $latestVersion . ").");
+            return false;
+        }
+        
+        // 1.12.0 becomes array("1", "12", "0")
+        $myVersionArray = explode(".", ABJ404_VERSION);
+        $latestVersionArray = explode(".", $latestVersion);
+        
+        // if there's a new minor version then update.
+        if ($myVersionArray[0] == $latestVersionArray[0] && $myVersionArray[1] == $latestVersionArray[1] 
+                && intval($myVersionArray[2]) < intval($latestVersionArray[2])) {
+            $abj404logging->infoMessage("A new minor version is available (" . 
+                    $latestVersion . "), currently version " + ABJ404_VERSION . " is installed.");
+            return true;
+        }
+
+        // check the latest date to see if it's been long enough to update.
+        $lastUpdated = $pluginInfo['last_updated'];
+        $lastReleaseDate = new DateTime($lastUpdated);
+        $todayDate = new DateTime();
+        $dateInterval = $lastReleaseDate->diff($todayDate);
+        $daysDifference = $dateInterval->days;
+        
+        $minDaysDifference = $options['days_wait_before_major_update'];
+        if ($daysDifference >= $minDaysDifference) {
+            $abj404logging->infoMessage("The latest major version is old enough for updating automatically (" . 
+                    $minDaysDifference . "days minimum, version " . $latestVersion . " is " . $daysDifference . 
+                    " days old), currently version " + ABJ404_VERSION . " is installed.");
+            return true;
+        }
+        
+        return false;
     }
 }
