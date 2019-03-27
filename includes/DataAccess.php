@@ -31,6 +31,7 @@ class ABJ_404_Solution_DataAccess {
             'slug' => $pluginSlug,
             'fields' => array(
                 'version' => true,
+                'last_updated' => true,
             )
         );
 
@@ -43,12 +44,10 @@ class ABJ_404_Solution_DataAccess {
             $this->infoMessage("There was an API issue checking the latest plugin version ("
                     . esc_html($api_error) . ")");
             
-            return ABJ404_VERSION;
+            return array('version' => ABJ404_VERSION, 'last_updated' => null);
         }
         
-        $version_latest = $call_api->version;
-
-        return $version_latest;
+        return array('version' => $call_api->version, 'last_updated' => $call_api->last_updated);
     }
     
     /** Check wordpress.org for the latest version of this plugin. Return true if the latest version is installed, 
@@ -58,9 +57,9 @@ class ABJ_404_Solution_DataAccess {
     function latestVersionIsInstalled() {
         global $abj404dao;
         
-        $version_latest = $abj404dao->getLatestPluginVersion();
+        $pluginInfo = $abj404dao->getLatestPluginVersion();
 
-        return (ABJ404_VERSION == $version_latest);
+        return (ABJ404_VERSION == $pluginInfo['version']);
     }
     
     /** 
@@ -720,9 +719,9 @@ class ABJ_404_Solution_DataAccess {
             
         if ($abj404logging->isDebug()) {
             $helperFunctions = new ABJ_404_Solution_Functions();
-            $reasonMessage = implode(", ", 
+            $reasonMessage = trim(implode(", ", 
                         array_filter(
-                        array($_REQUEST[ABJ404_PP]['ignore_doprocess'], $_REQUEST[ABJ404_PP]['ignore_donotprocess'])));
+                        array($_REQUEST[ABJ404_PP]['ignore_doprocess'], $_REQUEST[ABJ404_PP]['ignore_donotprocess']))));
             $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
                     " | Current user: " . $current_user_name . " | From: " . esc_html($requestedURL) . 
                     esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . 
@@ -972,7 +971,7 @@ class ABJ_404_Solution_DataAccess {
         
         ABJ_404_Solution_DataAccess::queryAndGetResults("optimize table " . $redirectsTable);
         
-        $upgradesEtc->updatePlugin();
+        $upgradesEtc->updatePluginCheck();
         
         return $message;
     }

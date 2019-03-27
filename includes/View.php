@@ -1603,6 +1603,7 @@ class ABJ_404_Solution_View {
         $html = str_replace('{ignore_doprocess}', wp_kses_post($options['ignore_doprocess']), $html);
         $html = str_replace('{recognized_post_types}', wp_kses_post($options['recognized_post_types']), $html);
         $html = str_replace('{all_post_types}', $allPostTypes, $html);
+        $html = str_replace('{days_wait_before_major_update}', $options['days_wait_before_major_update'], $html);
         
         $html = str_replace('{recognized_categories}', wp_kses_post($options['recognized_categories']), $html);
         $html = str_replace('{folders_files_ignore}', wp_kses_post($options['folders_files_ignore']), $html);

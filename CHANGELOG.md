@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.15.3 (March 29, 2019) ##
+* Feature: Automatically update to major versions after waiting 30 days (configurable) after their release.
+
 ## Version 2.15.2 (March 25, 2019) ##
 * FIX: Correct a "Call to undefined method" when a database update didn't work (thanks itjebsen).
 
