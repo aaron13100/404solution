@@ -137,7 +137,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $_REQUEST[ABJ404_PP]['process_start_time'] = microtime(true);
         
         
-        $urlRequest = esc_url(preg_replace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI'])));
+        $urlRequest = esc_url(mb_ereg_replace('\?.*', '', esc_url($_SERVER['REQUEST_URI'])));
         $urlRequest = urldecode($urlRequest);
 
         // remove the home directory from the URL parts because it should not be considered for spell checking.
