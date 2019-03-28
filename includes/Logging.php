@@ -33,7 +33,17 @@ class ABJ_404_Solution_Logging {
                 $timezoneOffsetString = '-';
             }
 
-            $date = new DateTime("now", new DateTimeZone($timezoneOffsetString . $timezoneOffset));
+            try {
+                // PHP versions before 5.5.18 don't accept "+0" in the constructor.
+                // This try/catch fixes https://wordpress.org/support/topic/fatal-error-3172/
+                if (version_compare(phpversion(), "5.5.18", ">=")) {
+                    $date = new DateTime("now", new DateTimeZone($timezoneOffsetString . $timezoneOffset));
+                } else {
+                    $date = new DateTime();
+                }
+            } catch (Exception $e) {
+                $date = new DateTime();
+            }
         }
         
         return $date->format('Y-m-d H:i:s T');

@@ -75,6 +75,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.15.4 (March 28, 2019) ##
+* FIX: Fix a compatibility issue with PHP versions earlier than 5.5.18 (for thowarth91).
+
 ## Version 2.15.3 (March 27, 2019) ##
 * Feature: Automatically update to major versions after waiting 30 days (configurable) after their release.
 
