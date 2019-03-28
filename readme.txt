@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.15.3
+Version: 2.15.4
 Tested up to: 5.1.1
-Stable tag: 2.15.3
+Stable tag: 2.15.4
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -67,6 +67,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.15.4 (March 28, 2019) =
+* FIX: Fix a compatibility issue with PHP versions earlier than 5.5.18 (for thowarth91).
 
 = Version 2.15.3 (March 27, 2019) =
 * Feature: Automatically update to major versions after waiting 30 days (configurable) after their release.
