@@ -26,9 +26,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
         $lookupTable = $wpdb->prefix . 'abj404_lookup';
         $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        $spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
         $query = str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
+        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
+        $query = str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
         ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
@@ -112,11 +117,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         if (!preg_match("/username.+bigint/i", $tableSQL)) {
             $query = 'ALTER TABLE ' . $logsTable . ' ADD `username` bigint(20) DEFAULT NULL '
                     . 'after `requested_url_detail` ';
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
-        }
-        if (!preg_match("/country.+bigint/i", $tableSQL)) {
-            $query = 'ALTER TABLE ' . $logsTable . ' ADD `country` bigint(20) DEFAULT NULL '
-                    . 'after `username` ';
             ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         }
         if (!preg_match("/username.+ USING BTREE/i", $tableSQL)) {

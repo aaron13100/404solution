@@ -179,7 +179,10 @@ class ABJ_404_Solution_SpellChecker {
         $options = $abj404logic->getOptions();
         $onlyNeedThisManyPages = absint($options['suggest_max']);
         
-        $permalinks = array();
+        $permalinks = $this->getFromPermalinkCache($requestedURLRaw);
+        if (!empty($permalinks)) {
+            return $permalinks;
+        }
         
         if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('permalinks_found', $_REQUEST[ABJ404_PP]) &&
                 !empty($_REQUEST[ABJ404_PP]['permalinks_found'])) {
@@ -241,10 +244,25 @@ class ABJ_404_Solution_SpellChecker {
         
         // only keep what we need. store them for later if necessary.
         $permalinks = array_splice($permalinks, 0, $onlyNeedThisManyPages);
+
+        // TODO $this->storePermalinksToCache($permalinks, $rowType);
         $returnValue = array($permalinks, $rowType);
         $_REQUEST[ABJ404_PP]['permalinks_found'] = json_encode($returnValue);
         
         return $returnValue;
+    }
+    
+    function getFromPermalinkCache($requestedURL) {
+        // The request cache is used when the suggested pages shortcode is used.
+        if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('permalinks_found', $_REQUEST[ABJ404_PP]) &&
+                !empty($_REQUEST[ABJ404_PP]['permalinks_found'])) {
+            $permalinks = json_decode($_REQUEST[ABJ404_PP]['permalinks_found'], true);
+            return $permalinks;
+        }
+        
+        // check the database cache.
+        
+        return array();
     }
     
     function matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
@@ -315,7 +333,6 @@ class ABJ_404_Solution_SpellChecker {
     
     function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
         global $abj404logic;
-        global $abj404logging;
         
         // pre-filter some pages based on the min and max possible levenshtein distances.
         $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
@@ -344,7 +361,7 @@ class ABJ_404_Solution_SpellChecker {
             if ($rowType == 'image') {
                 // strip the image size from the file name and try again.
                 // the image size is at the end of the file in the format of -640x480
-                $strippedImageName = preg_replace('/(.+)([-]\d{1,5}[x]\d{1,5})([.].+)/', 
+                $strippedImageName = mb_ereg_replace('(.+)([-]\d{1,5}[x]\d{1,5})([.].+)', 
                         '$1$3', $requestedURLRaw);
                 
                 if (($strippedImageName != null) && ($strippedImageName != $requestedURLRaw)) {
