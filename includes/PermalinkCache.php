@@ -31,7 +31,8 @@ class ABJ_404_Solution_PermalinkCache {
         global $abj404dao;
         global $abj404logging;
         
-        $abj404logging->debugMessage(__FUNCTION__ . ": Delete from permalink cache: " . $post_id);
+        $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
+                ": Delete from permalink cache: " . $post_id);
         $abj404dao->removeFromPermalinkCache($post_id);
 
         // let's update some links.
@@ -53,7 +54,8 @@ class ABJ_404_Solution_PermalinkCache {
         global $abj404dao;
         global $abj404logging;
         
-        $abj404logging->debugMessage("Updating permalink cache because the permalink structure changed to " . 
+        $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
+                ": Truncating and updating permalink cache because the permalink structure changed to " . 
                 $newStructure);
         
         $abj404dao->truncatePermalinkCacheTable();
@@ -72,17 +74,20 @@ class ABJ_404_Solution_PermalinkCache {
         global $abj404dao;
         global $abj404logging;
 
-        $timer = new ABJ_404_Solution_Timer();
-        $shouldRunAgain = false;
-        $permalinkStructure = get_option('permalink_structure');
+        $syncUtils = new ABJ_404_Solution_SynchronizationUtils();
         $key = "updatePermalinkCache";
         $uniqueID = '';
+        
         try {
-            $uniqueID = ABJ_404_Solution_SynchronizationUtils::synchronizerAcquireLockTry($key);
+            $uniqueID = $syncUtils->synchronizerAcquireLockTry($key);
             if ($uniqueID == '') {
                 // the lock wasn't acquired.
                 return;
             }
+            
+            $timer = new ABJ_404_Solution_Timer();
+            $shouldRunAgain = false;
+            $permalinkStructure = get_option('permalink_structure');
             
             $abj404dao->removeOldStructreFromPermalinkCache($permalinkStructure);
 
@@ -138,11 +143,11 @@ class ABJ_404_Solution_PermalinkCache {
             }
 
         } catch (Exception $ex) {
-            ABJ_404_Solution_SynchronizationUtils::synchronizerReleaseLock($uniqueID, $key);
+            $syncUtils->synchronizerReleaseLock($uniqueID, $key);
             throw new Exception($ex);
         }
         
-        ABJ_404_Solution_SynchronizationUtils::synchronizerReleaseLock($uniqueID, $key);
+        $syncUtils->synchronizerReleaseLock($uniqueID, $key);
         
         return $rowsInserted;
     }

@@ -13,12 +13,12 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @var string */
     const SYNC_KEY_PREFIX = 'SYNC_';
     
-    private static function createInternalKey($keyFromUser) {
-        return ABJ404_PP . "_" . self::SYNC_KEY_PREFIX . $keyFromUser;
+    private function createInternalKey($keyFromUser) {
+        return ABJ404_PP . "_" . $this->SYNC_KEY_PREFIX . $keyFromUser;
     }
 
-    private static function createUniqueID($keyFromUser) {
-        return microtime(true) . "_" . $keyFromUser . '_' . self::uniqidReal();
+    private function createUniqueID($keyFromUser) {
+        return microtime(true) . "_" . $keyFromUser . '_' . $this->uniqidReal();
     }
 
     /** Returns an empty string if the lock is not acquired.
@@ -26,12 +26,12 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @return string the unique ID that was used. This is needed to release the lock. Or an empty string if
      * the lock wasn't acquired.
      */
-    static function synchronizerAcquireLockTry($synchronizedKeyFromUser) {
-        $uniqueID = self::createUniqueID($synchronizedKeyFromUser);
-        $internalSynchronizedKey = self::createInternalKey($synchronizedKeyFromUser);
+    function synchronizerAcquireLockTry($synchronizedKeyFromUser) {
+        $uniqueID = $this->createUniqueID($synchronizedKeyFromUser);
+        $internalSynchronizedKey = $this->createInternalKey($synchronizedKeyFromUser);
 
         // don't let anyone hold the lock for too long.
-        self::fixAnUnforeseenIssue($synchronizedKeyFromUser);
+        $this->fixAnUnforeseenIssue($synchronizedKeyFromUser);
         
         // acquire the lock.
         $currentOwner = get_option($internalSynchronizedKey);
@@ -55,8 +55,8 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @param type $synchronizedKeyFromUser
      * @return type
      */
-    static function fixAnUnforeseenIssue($synchronizedKeyFromUser) {
-        $internalSynchronizedKey = self::createInternalKey($synchronizedKeyFromUser);
+    function fixAnUnforeseenIssue($synchronizedKeyFromUser) {
+        $internalSynchronizedKey = $this->createInternalKey($synchronizedKeyFromUser);
 
         $uniqueID = get_option($internalSynchronizedKey);
         
@@ -82,7 +82,7 @@ class ABJ_404_Solution_SynchronizationUtils {
             delete_option($internalSynchronizedKey);
             $logger = new ABJ_404_Solution_Logging();
             $logger->errorMessage("Forcibly removed synchronization after " . $timePassed . " seconds for the "
-                    . "key " . $internalSynchronizedKey);
+                    . "key " . $internalSynchronizedKey . " with value: " . $uniqueID);
         }
     }
     
@@ -90,11 +90,11 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @param string $synchronizedKeyFromUser
      * @return string the unique ID that was used. This is needed to release the lock.
      */
-    static function synchronizerAcquireLockWithWait($synchronizedKeyFromUser) {
-        $uniqueID = self::createUniqueID($synchronizedKeyFromUser);
-        $internalSynchronizedKey = self::createInternalKey($synchronizedKeyFromUser);
+    function synchronizerAcquireLockWithWait($synchronizedKeyFromUser) {
+        $uniqueID = $this->createUniqueID($synchronizedKeyFromUser);
+        $internalSynchronizedKey = $this->createInternalKey($synchronizedKeyFromUser);
         
-        self::fixAnUnforeseenIssue($synchronizedKeyFromUser);
+        $this->fixAnUnforeseenIssue($synchronizedKeyFromUser);
         $iterations = 0;
         
         // acquire the lock.
@@ -111,7 +111,7 @@ class ABJ_404_Solution_SynchronizationUtils {
             
             $iterations++;
             if ($iterations % 500 == 0) {
-                self::fixAnUnforeseenIssue($synchronizedKeyFromUser);
+                $this->fixAnUnforeseenIssue($synchronizedKeyFromUser);
             }
         }
         
@@ -123,8 +123,8 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @param string $internalSynchronizedKey
      * @throws Exception
      */
-    static function synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser) {
-        $internalSynchronizedKey = self::createInternalKey($synchronizedKeyFromUser);
+    function synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser) {
+        $internalSynchronizedKey = $this->createInternalKey($synchronizedKeyFromUser);
         
         $currentLockHolder = get_option($internalSynchronizedKey);
         
@@ -143,7 +143,7 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @return string a random string of characters.
      * @throws Exception
      */
-    static function uniqidReal($lenght = 13) {
+    function uniqidReal($lenght = 13) {
         if (function_exists("random_bytes")) {
             $bytes = random_bytes((int)ceil($lenght / 2));
         } else if (function_exists("openssl_random_pseudo_bytes")) {

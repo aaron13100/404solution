@@ -32,7 +32,7 @@ class ABJ_404_Solution_ShortCode {
         $urlRequest = '';
         $cookieName = ABJ404_PP . '_REQUEST_URI';
         if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
-            $urlRequest = esc_url(preg_replace('/\?.*/', '', esc_url($_COOKIE[$cookieName])));
+            $urlRequest = esc_url(mb_ereg_replace('\?.*', '', esc_url($_COOKIE[$cookieName])));
             // delete the cookie because the request was a one-time thing.
             // we use javascript to delete the cookie because the headers have already been sent.
             $content .= "<script> \n" .
@@ -63,7 +63,7 @@ class ABJ_404_Solution_ShortCode {
         $content .= wp_kses_post($options['suggest_title']) . "\n";
         
         $currentSlug = $abj404logic->removeHomeDirectory(
-                esc_url(preg_replace('/\?.*/', '', urldecode(esc_url($_SERVER['REQUEST_URI'])))));
+                esc_url(mb_ereg_replace('\?.*', '', urldecode(esc_url($_SERVER['REQUEST_URI'])))));
         $displayed = 0;
 
         foreach ($permalinkSuggestions as $idAndType => $linkScore) {
