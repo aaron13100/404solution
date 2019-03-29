@@ -89,7 +89,7 @@ class ABJ_404_Solution_Logging {
         error_log($prefix . $message);
         $this->writeLineToDebugFile($timestamp . $message . ", PHP version: " . PHP_VERSION . 
                 ", WP ver: " . get_bloginfo('version') . ", Plugin ver: " . ABJ404_VERSION . 
-                ", Referrer: " . esc_html($referrer) . ", \nTrace: " . $stacktrace . "\n    END_OF_STACK_TRACE");
+                ", Referrer: " . esc_html($referrer) . ", \nTrace: " . $stacktrace);
         
         // display a 404 page if the user is NOT an admin and is not on an admin page.
         if (!is_admin()) {
@@ -236,9 +236,10 @@ class ABJ_404_Solution_Logging {
                         $latestErrorLineFound['num'] = $linesRead;
                         $latestErrorLineFound['line'] = $line;
                         
-                    } else if (preg_match("/^#\d+ .+$/", $line)) {
+                        // TODO replace preg with ereg???
+                    } else if (mb_ereg("^#\d+ .+$", $line)) {
                         // include the entire stack trace.
-                        $latestErrorLineFound['line'] .= $line;
+                        $latestErrorLineFound['line'] .= "<BR/>\n" . $line;
                     }
                 }
             } else {

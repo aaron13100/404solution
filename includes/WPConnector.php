@@ -85,6 +85,10 @@ class ABJ_404_Solution_WordPress_Connector {
         global $abj404logging;
         global $abj404logic;
         
+        if (!is_array($links)) {
+            $links = array();
+        }
+        
         if (!is_admin() || !current_user_can('administrator')) {
             $abj404logging->logUserCapabilities("addSettingsLinkToPluginPage");
 
@@ -133,11 +137,9 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
         
-        
         $_REQUEST[ABJ404_PP]['process_start_time'] = microtime(true);
         
-        
-        $urlRequest = esc_url(preg_replace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI'])));
+        $urlRequest = esc_url(mb_ereg_replace('\?.*', '', esc_url($_SERVER['REQUEST_URI'])));
         $urlRequest = urldecode($urlRequest);
 
         // remove the home directory from the URL parts because it should not be considered for spell checking.

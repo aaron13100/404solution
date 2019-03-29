@@ -90,7 +90,7 @@ class ABJ_404_Solution_DataAccess {
      * @param type $query
      * @return type
      */
-    static function queryAndGetResults($query) {
+    static function queryAndGetResults($query, $logErrors = true) {
         global $wpdb;
         global $abj404logging;
         
@@ -103,8 +103,13 @@ class ABJ_404_Solution_DataAccess {
         $result['rows_affected'] = $wpdb->rows_affected;
         $result['insert_id'] = $wpdb->insert_id;
         
-        if ($result['last_error'] != '') {
-            $abj404logging->errorMessage("Ugh. SQL error: " . esc_html($result['last_error'] . 
+        if ($logErrors && $result['last_error'] != '') {
+            if (mb_strpos($result['last_error'], 
+                    "is marked as crashed and last (automatic?) repair failed") !== false) {
+                ABJ_404_Solution_DataAccess::repairTable($result['last_error']);
+            }
+            
+            $abj404logging->errorMessage("Ugh. SQL query error: " . esc_html($result['last_error'] . 
                     ", SQL: " . esc_html($query)) . ", Execution time: " . round($timer->getElapsedTime(), 2));
             
         } else {
@@ -115,6 +120,25 @@ class ABJ_404_Solution_DataAccess {
         }
         
         return $result;
+    }
+    
+    static function repairTable($errorMessage) {
+        global $abj404logging;
+        
+        $re = 'Table \'.*\/(.+)\' is marked as crashed and last \(automatic\?\) repair failed';
+        $str = $errorMessage;
+        $matches = null;
+
+        mb_ereg($re, $str, $matches);
+        if ($matches != null && mb_strlen($matches[1]) > 0) {
+            $tableToRepair = $matches[1];
+            if (mb_strpos($tableToRepair, "abj404") !== false) {
+                $query = "repair table " . $tableToRepair;
+                $result = ABJ_404_Solution_DataAccess::queryAndGetResults($query, false);
+                $abj404logging->infoMessage("Attempted to repair table " . $tableToRepair . ". Result: " . 
+                        json_encode($result));
+            }
+        }
     }
     
     function executeAsTransaction($statementArray) {
@@ -210,11 +234,13 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         
         $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertPermalinkCache.sql");
+        $query = str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
+        $query = str_replace('{id}', esc_sql($id), $query);
+        $query = str_replace('{url}', esc_sql($permalink), $query);
+        $query = str_replace('{structure}', esc_sql($permalinkStructure), $query);
 
-        $dataToInsert = array(  'id' => $id, 
-                                'url' => $permalink,
-                                'structure' => $permalinkStructure);
-        ABJ_404_Solution_DataAccess::insertAndGetResults($permalinkCacheTable, $dataToInsert);
+        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
     }
     
     function getPermalinkFromCache($id) {
@@ -245,6 +271,47 @@ class ABJ_404_Solution_DataAccess {
         $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
         
         return $results['rows'];
+    }
+    
+    function storeSpellingPermalinksToCache($requestedURLRaw, $returnValue) {
+        global $wpdb;
+        
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertSpellingCache.sql");
+        $query = str_replace('{wp_abj404_spelling_cache}', $wpdb->prefix . 'abj404_spelling_cache', $query);
+        $query = str_replace('{url}', esc_sql($requestedURLRaw), $query);
+        $query = str_replace('{matchdata}', esc_sql(json_encode($returnValue)), $query);
+
+        $this->queryAndGetResults($query);
+    }
+    
+    function deleteSpellingCache() {
+        global $wpdb;
+        
+        $query = "truncate table {wp_abj404_spelling_cache}";
+        $query = str_replace('{wp_abj404_spelling_cache}', $wpdb->prefix . 'abj404_spelling_cache', $query);
+
+        $this->queryAndGetResults($query);
+    }
+    
+    function getSpellingPermalinksFromCache($requestedURLRaw) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'abj404_spelling_cache';
+        
+        $query = "select * from " . $table . " where url = '" . esc_sql($requestedURLRaw) . "'";
+        $results = $this->queryAndGetResults($query);
+        
+        $rows = $results['rows'];
+        
+        if (count($rows) == 0) {
+            return array();
+        }
+        
+        $row = $rows[0];
+        $json = $row['matchdata'];
+        $returnValue = json_decode($json);
+        
+        return $returnValue;
     }
     
     /** Insert data into the database.
@@ -291,7 +358,7 @@ class ABJ_404_Solution_DataAccess {
         $results['last_query'] = $wpdb->last_query;
 
         if ($wpdb->last_error != '') {
-            $abj404logging->errorMessage("Ugh. SQL error: " . esc_html($errorThisRun) . 
+            $abj404logging->errorMessage("Ugh. SQL insert error: " . esc_html($errorThisRun) . 
                     ", Query: " . esc_html($queryThisRun));
         }
 
@@ -1555,4 +1622,5 @@ class ABJ_404_Solution_DataAccess {
         global $abj404dao;
         return $abj404dao->getRecordCount(array(ABJ404_STATUS_CAPTURED));
     }
+    
 }

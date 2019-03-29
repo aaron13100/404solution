@@ -16,6 +16,36 @@ class ABJ_404_Solution_SpellChecker {
     /** Same as above except without the period (.) because of the extension in the file name. */
     private $separatingCharactersForImages = array("-", "_", "~", '%20');
 
+    static function init() {
+        // any time a page is saved or updated, or the permalink structure changes, then we have to clear
+        // the spelling cache because the results may have changed.
+        $me = new ABJ_404_Solution_SpellChecker();
+        
+        add_action('updated_option', array($me, 'permalinkStructureChanged'), 10, 2);
+        add_action('save_post', array($me, 'save_postListener'), 10, 1);
+        add_action('delete_post', array($me, 'save_postListener'), 10, 1);
+    }
+    
+    function save_postListener($post_id) {
+        global $abj404dao;
+        global $abj404logging;
+        $abj404dao->deleteSpellingCache();
+        $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
+                ": Spelling cache deleted because a post was saved or updated.");
+    }
+
+    function permalinkStructureChanged($var1, $newStructure) {
+        if ($var1 != 'permalink_structure') {
+            return;
+        }
+        
+        global $abj404dao;
+        global $abj404logging;
+        $abj404dao->deleteSpellingCache();
+        $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
+                ": Spelling cache deleted because the permalink structure changed.");
+    }
+    
     /** Find a match using the user-defined regex patterns.
      * @global type $abj404dao
      * @param type $requestedURL
@@ -179,11 +209,8 @@ class ABJ_404_Solution_SpellChecker {
         $options = $abj404logic->getOptions();
         $onlyNeedThisManyPages = absint($options['suggest_max']);
         
-        $permalinks = array();
-        
-        if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('permalinks_found', $_REQUEST[ABJ404_PP]) &&
-                !empty($_REQUEST[ABJ404_PP]['permalinks_found'])) {
-            $permalinks = json_decode($_REQUEST[ABJ404_PP]['permalinks_found'], true);
+        $permalinks = $this->getFromPermalinkCache($requestedURLRaw);
+        if (!empty($permalinks)) {
             return $permalinks;
         }
         
@@ -241,10 +268,30 @@ class ABJ_404_Solution_SpellChecker {
         
         // only keep what we need. store them for later if necessary.
         $permalinks = array_splice($permalinks, 0, $onlyNeedThisManyPages);
+
         $returnValue = array($permalinks, $rowType);
+        $abj404dao->storeSpellingPermalinksToCache($requestedURLRaw, $returnValue);
         $_REQUEST[ABJ404_PP]['permalinks_found'] = json_encode($returnValue);
         
         return $returnValue;
+    }
+    
+    function getFromPermalinkCache($requestedURL) {
+        // The request cache is used when the suggested pages shortcode is used.
+        if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('permalinks_found', $_REQUEST[ABJ404_PP]) &&
+                !empty($_REQUEST[ABJ404_PP]['permalinks_found'])) {
+            $permalinks = json_decode($_REQUEST[ABJ404_PP]['permalinks_found'], true);
+            return $permalinks;
+        }
+        
+        // check the database cache.
+        global $abj404dao;
+        $returnValue = $abj404dao->getSpellingPermalinksFromCache($requestedURL);
+        if (!empty($returnValue)) {
+            return $returnValue;
+        }
+        
+        return array();
     }
     
     function matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
@@ -315,7 +362,6 @@ class ABJ_404_Solution_SpellChecker {
     
     function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
         global $abj404logic;
-        global $abj404logging;
         
         // pre-filter some pages based on the min and max possible levenshtein distances.
         $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
@@ -344,7 +390,7 @@ class ABJ_404_Solution_SpellChecker {
             if ($rowType == 'image') {
                 // strip the image size from the file name and try again.
                 // the image size is at the end of the file in the format of -640x480
-                $strippedImageName = preg_replace('/(.+)([-]\d{1,5}[x]\d{1,5})([.].+)/', 
+                $strippedImageName = mb_ereg_replace('(.+)([-]\d{1,5}[x]\d{1,5})([.].+)', 
                         '$1$3', $requestedURLRaw);
                 
                 if (($strippedImageName != null) && ($strippedImageName != $requestedURLRaw)) {
@@ -441,6 +487,7 @@ class ABJ_404_Solution_SpellChecker {
             $permalinkCacheObj = null;
         }
         
+        $wasntReadyCount = 0;
         $row = array_shift($publishedPages);
         while ($row != null) {
             $id = null;
@@ -469,8 +516,7 @@ class ABJ_404_Solution_SpellChecker {
                 
                 if ($the_permalink == null) {
                     $the_permalink = $this->getPermalink($id, $rowType);
-                    $abj404logging->infoMessage("Permalink cache wasn't ready for ID " . $id . " link: " . 
-                            $the_permalink);
+                    $wasntReadyCount++;
                 }
                 
             } else {
@@ -509,6 +555,10 @@ class ABJ_404_Solution_SpellChecker {
             }
             
             $row = array_shift($publishedPages);
+        }
+        
+        if ($wasntReadyCount > 0) {
+            $abj404logging->infoMessage("The permalink cache wasn't ready for " . $wasntReadyCount . " IDs.");
         }
 
         // look at the first X IDs with the lowest maximum levenshtein distance.
@@ -652,3 +702,6 @@ class ABJ_404_Solution_SpellChecker {
     }
 
 }
+
+ABJ_404_Solution_SpellChecker::init();
+
