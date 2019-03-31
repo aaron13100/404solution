@@ -163,7 +163,7 @@ class ABJ_404_Solution_Logging {
             return false;
         }
         
-        $this->emailLogFileToDeveloper($latestErrorLineFound['line']);
+        $this->emailLogFileToDeveloper($latestErrorLineFound['line'], $latestErrorLineFound['total_error_count']);
 
         // update the latest error line emailed to the developer.
         file_put_contents($sentDateFile, $latestErrorLineFound['num']);
@@ -171,7 +171,7 @@ class ABJ_404_Solution_Logging {
         return true;
     }
     
-    function emailLogFileToDeveloper($errorLineMessage) {
+    function emailLogFileToDeveloper($errorLineMessage, $totalErrorCount) {
         global $wpdb;
         
         // email the log file.
@@ -192,18 +192,19 @@ class ABJ_404_Solution_Logging {
         $to = ABJ404_AUTHOR_EMAIL;
         $subject = ABJ404_PP . ' error log file. Plugin version: ' . ABJ404_VERSION;
         $bodyLines = array();
-        $bodyLines[] = $subject . ". Sent " . date('Y/m/d h:i:s T') . "<BR/>\n";
-        $bodyLines[] = "<BR/>\n";
-        $bodyLines[] = "PHP version: " . PHP_VERSION . "<BR/>\n";
-        $bodyLines[] = "WordPress version: " . get_bloginfo('version') . "<BR/>\n";
-        $bodyLines[] = "Plugin version: " . ABJ404_VERSION . "<BR/>\n";
-        $bodyLines[] = "MySQL version: " . $wpdb->db_version() . "<BR/>\n";
-        $bodyLines[] = "Site URL: " . get_site_url() . "<BR/>\n";
-        $bodyLines[] = "WP_MEMORY_LIMIT: " . WP_MEMORY_LIMIT . "<BR/>\n";
+        $bodyLines[] = $subject . ". Sent " . date('Y/m/d h:i:s T');
+        $bodyLines[] = " ";
+        $bodyLines[] = "PHP version: " . PHP_VERSION;
+        $bodyLines[] = "WordPress version: " . get_bloginfo('version');
+        $bodyLines[] = "Plugin version: " . ABJ404_VERSION;
+        $bodyLines[] = "MySQL version: " . $wpdb->db_version();
+        $bodyLines[] = "Site URL: " . get_site_url();
+        $bodyLines[] = "WP_MEMORY_LIMIT: " . WP_MEMORY_LIMIT;
         
+        $bodyLines[] = "Total error count: " . $totalErrorCount;
         $bodyLines[] = "Error: " . $errorLineMessage;
         
-        $body = implode(" ", $bodyLines);
+        $body = implode("<BR/>\n", $bodyLines);
         
         $headers = array('Content-Type: text/html; charset=UTF-8');
         $headers[] = 'From: ' . get_option('admin_email');
@@ -224,6 +225,7 @@ class ABJ_404_Solution_Logging {
         $latestErrorLineFound = array();
         $latestErrorLineFound['num'] = -1;
         $latestErrorLineFound['line'] = null;
+        $latestErrorLineFound['total_error_count'] = 0;
         $linesRead = 0;
         $handle = null;
         try {
@@ -235,6 +237,7 @@ class ABJ_404_Solution_Logging {
                     if (stripos($line, '(ERROR)') !== false) {
                         $latestErrorLineFound['num'] = $linesRead;
                         $latestErrorLineFound['line'] = $line;
+                        $latestErrorLineFound['total_error_count'] += 1;
                         
                         // TODO replace preg with ereg???
                     } else if (mb_ereg("^#\d+ .+$", $line)) {
