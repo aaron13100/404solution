@@ -49,14 +49,13 @@ class ABJ_404_Solution_Logging {
         return $date->format('Y-m-d H:i:s T');
     }
     
-    /** Send a message to the error_log if debug mode is on. 
+    /** Send a message to the log file if debug mode is on. 
      * This goes to a file and is used by every other class so it goes here.
      * @param type $message  */
     function debugMessage($message) {
         if ($this->isDebug()) {
             $prefix = "ABJ-404-SOLUTION (DEBUG): ";
             $timestamp = $this->getTimestamp() . ' (DEBUG): ';
-            error_log($prefix . $message);
             $this->writeLineToDebugFile($timestamp . $message);
         }
     }
