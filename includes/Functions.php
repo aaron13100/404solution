@@ -120,9 +120,15 @@ class ABJ_404_Solution_Functions {
             throw new Exception("Error: Can't find file: " . $path);
         }
         
+        $extraInfo = "";
+        $file_parts = pathinfo($path);
+        if ($file_parts['extension'] == "sql") {
+            $extraInfo = "\n/* Loaded file name: " . $path . "*/\n";
+        }
+        
         $fileContents = file_get_contents($path);
         if ($fileContents !== false) {
-            return $fileContents;
+            return $fileContents . $extraInfo;
         }
         
         // if we can't read the file that way then try curl.
@@ -140,7 +146,7 @@ class ABJ_404_Solution_Functions {
             throw new Exception("Error: Can't read file, even with cURL: " . $path);
         }
         
-        return $output;        
+        return $output . $extraInfo;        
     }
 
     /** Deletes the existing file at $filePath and puts the URL contents in it's place.

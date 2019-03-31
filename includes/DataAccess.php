@@ -647,11 +647,13 @@ class ABJ_404_Solution_DataAccess {
         // note: according to https://stackoverflow.com/a/10121508 we should not used a pointer here to modify
         // the data that we're currently looping through.
         foreach ($rows as &$row) {
-            $logsData = $this->getLogsIDandURL($row['url']);
-            if (!empty($logsData)) {
-                $row['logsid'] = $logsData[0]['logsid'];
-                $row['logshits'] = $logsData[0]['logshits'];
-                $row['last_used'] = $logsData[0]['last_used'];
+            if ($row['url'] != null && !empty($row['url'])) {
+                $logsData = $this->getLogsIDandURL($row['url']);
+                if (!empty($logsData)) {
+                    $row['logsid'] = $logsData[0]['logsid'];
+                    $row['logshits'] = $logsData[0]['logshits'];
+                    $row['last_used'] = $logsData[0]['last_used'];
+                }
             }
         }
         
