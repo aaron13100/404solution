@@ -1395,7 +1395,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function forceRedirect($location, $status = 302, $queryParts = '') {
         // try a normal redirect using a header.
-        wp_redirect($location . $queryParts, $status);
+        wp_redirect($location . $queryParts, $status, ABJ404_NAME);
         
         // TODO add an ajax request here that fires after 5 seconds. 
         // upon getting the request the server will log the error. the plugin could then notify an admin.
