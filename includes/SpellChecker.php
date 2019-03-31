@@ -229,15 +229,19 @@ class ABJ_404_Solution_SpellChecker {
         $permalinkCache = null;
         
         $rowType = 'pages';
-        $rows = array();
+        $rowsAsObject = array();
         if ($this->requestIsForAnImage($requestedURLRaw)) {
-            $rows = $abj404dao->getPublishedImagesIDs();
+            $rowsAsObject = $abj404dao->getPublishedImagesIDs();
             $rowType = 'image';
             
         } else {
             // match based on the slug.
-            $rows = $abj404dao->getPublishedPagesAndPostsIDs('');
+            $rowsAsObject = $abj404dao->getPublishedPagesAndPostsIDs('');
         }
+        
+        // free memory in the published pages by removing all column data except id and term_id
+        $rows = $this->getOnlyIDandTermID($rowsAsObject);
+        unset($rowsAsObject);
         
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on posts
         $permalinks = $this->matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, 
@@ -276,6 +280,17 @@ class ABJ_404_Solution_SpellChecker {
         return $returnValue;
     }
     
+    function getOnlyIDandTermID($rowsAsObject) {
+        $rows = array();
+        $objectRow = array_shift($rowsAsObject);
+        while ($objectRow != null) {
+            $rows[] = array('id' => $objectRow->id, 'term_id' => $objectRow->term_id);
+            $objectRow = array_shift($rowsAsObject);
+        }
+        
+        return $rows;
+    }
+    
     function getFromPermalinkCache($requestedURL) {
         // The request cache is used when the suggested pages shortcode is used.
         if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('permalinks_found', $_REQUEST[ABJ404_PP]) &&
@@ -297,8 +312,10 @@ class ABJ_404_Solution_SpellChecker {
     function matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
         global $abj404dao;
         global $abj404logic;
-        
+
+        unset($rows);
         $rows = $abj404dao->getPublishedCategories();
+        $rows = $this->getOnlyIDandTermID($rows);
 
         // pre-filter some pages based on the min and max possible levenshtein distances.
         $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'categories');
@@ -331,7 +348,9 @@ class ABJ_404_Solution_SpellChecker {
         global $abj404dao;
         global $abj404logic;
         
+        unset($rows);
         $rows = $abj404dao->getPublishedTags();
+        $rows = $this->getOnlyIDandTermID($rows);
 
         // pre-filter some pages based on the min and max possible levenshtein distances.
         $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'tags');
@@ -492,16 +511,16 @@ class ABJ_404_Solution_SpellChecker {
         while ($row != null) {
             $id = null;
             if ($rowType == 'pages') {
-                $id = $row->id;
+                $id = $row['id'];
                 
             } else if ($rowType == 'tags') {
-                $id = $row->term_id;
+                $id = $row['term_id'];
                 
             } else if ($rowType == 'categories') {
-                $id = $row->term_id;
+                $id = $row['term_id'];
                 
             } else if ($rowType == 'image') {
-                $id = $row->id;
+                $id = $row['id'];
                 
             } else {
                 throw Exception("Unknown row type ... " . $rowType);
