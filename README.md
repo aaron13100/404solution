@@ -75,9 +75,10 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
-## Version 2.16.0 (April 3, 2019) ##
-* Improvement: Cache similar pages when a 404 happens and reuse them when possible.
+## Version 2.16.0 (April 4, 2019) ##
+* Improvement: (Speed) Cache similar pages when a 404 happens and reuse them when possible.
 * Improvement: Use less memory. Tested with about 20k pages and 40M for WordPress.
+* FIX: PHP 7 compatibility fixes and warning messages from debug file participants. 
 
 ## Version 2.15.4 (March 28, 2019) ##
 * FIX: Fix a compatibility issue with PHP versions earlier than 5.5.18 (for thowarth91).
