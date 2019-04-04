@@ -12,8 +12,8 @@ class ABJ_404_Solution_Ajax_Php {
 
     /** Find logs to display. */
     static function echoViewLogsFor() {
-        global $abj404AjaxPhp;
-        global $abj404dao;
+        $abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         
         $term = mb_strtolower(sanitize_text_field($_GET['term']));
         $suggestions = array();
@@ -39,9 +39,9 @@ class ABJ_404_Solution_Ajax_Php {
     
     /** Find pages to redirect to that match a search term, then echo the results in a json format. */
     static function echoRedirectToPages() {
-        global $abj404logic;
-        global $abj404AjaxPhp;
-        global $abj404dao;
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         
         $term = mb_strtolower(sanitize_text_field($_GET['term']));
         $includeDefault404Page = $_GET['includeDefault404Page'] == "true";

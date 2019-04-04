@@ -20,7 +20,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      */
     function createDatabaseTables() {
         global $wpdb;
-        global $abj404logging;
+        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
@@ -30,26 +31,26 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
         $query = str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
-        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        $abj404dao->queryAndGetResults($query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
         $query = str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
-        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        $abj404dao->queryAndGetResults($query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
         $query = str_replace('{redirectsTable}', $redirectsTable, $query);
-        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        $abj404dao->queryAndGetResults($query);
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        $abj404dao->queryAndGetResults($query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
         $query = str_replace('{wp_abj404_lookup}', $lookupTable, $query);
-        ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        $abj404dao->queryAndGetResults($query);
         
         // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
-        $result = ABJ_404_Solution_DataAccess::queryAndGetResults("show create table " . $redirectsTable);
+        $result = $abj404dao->queryAndGetResults("show create table " . $redirectsTable);
         // this encode/decode turns the results into an array from a "stdClass"
         $rows = $result['rows'];
         $row1 = array_values($rows[0]);
@@ -58,19 +59,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         if (!preg_match("/url.+ USING BTREE/i", $tableSQL)) {
             if (preg_match("/KEY.+url/i", $tableSQL)) {
                 $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX url";
-                ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+                $abj404dao->queryAndGetResults($query);
             }
             $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX url (`url`) USING BTREE";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Updated redirects table URL column to use a btree index.");
         }
         if (!preg_match("/final_dest.+ USING BTREE/i", $tableSQL)) {
             if (preg_match("/KEY.+final_dest/i", $tableSQL)) {
                 $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX final_dest";
-                ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+                $abj404dao->queryAndGetResults($query);
             }
             $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX final_dest (`final_dest`) USING BTREE";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Updated redirects table FINAL_DEST column to use a btree index.");
         }
         if (!preg_match("/status.+TINYINT\(1\)/i", $tableSQL)) {
@@ -78,19 +79,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     "  CHANGE `type` `type` TINYINT(1) NOT NULL, \n" .
                     "  CHANGE `code` `code` SMALLINT(3) NOT NULL, \n" .
                     "  CHANGE `disabled` `disabled` TINYINT(1) NOT NULL DEFAULT '0' \n"; 
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Updated redirects table STATUS column type to TINYINT.");
         }
         if (!preg_match("/url.+2048/i", $tableSQL)) {
             $query = "ALTER TABLE " . $redirectsTable . " CHANGE `url` `url` VARCHAR(2048)";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
         }
         if (!preg_match("/final_dest.+2048/i", $tableSQL)) {
             $query = "ALTER TABLE " . $redirectsTable . " CHANGE `final_dest` `final_dest` VARCHAR(2048)";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
         }
         
-        $result = ABJ_404_Solution_DataAccess::queryAndGetResults("show create table " . $logsTable);
+        $result = $abj404dao->queryAndGetResults("show create table " . $logsTable);
         // this encode/decode turns the results into an array from a "stdClass"
         $rows = $result['rows'];
         $row1 = array_values($rows[0]);
@@ -99,58 +100,58 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         if (!preg_match("/requested_url.+ USING BTREE/i", $tableSQL)) {
             if (preg_match("/KEY.+requested_url/i", $tableSQL)) {
                 $query = "ALTER TABLE " . $logsTable . " DROP INDEX requested_url";
-                ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+                $abj404dao->queryAndGetResults($query);
             }
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX requested_url (`requested_url`) USING BTREE";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
         }
         if (!preg_match("/referrer.+DEFAULT NULL/i", $tableSQL)) {
             $query = 'ALTER TABLE ' . $logsTable . ' CHANGE `referrer` `referrer` VARCHAR(512) NULL DEFAULT NULL';
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Changed referrer to allow null on " . $logsTable);
         }
         if (!preg_match("/requested_url_detail/i", $tableSQL)) {
             $query = 'ALTER TABLE ' . $logsTable . ' ADD `requested_url_detail` varchar(512) DEFAULT NULL '
                     . 'after `requested_url` ';
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
         }
         if (!preg_match("/username.+bigint/i", $tableSQL)) {
             $query = 'ALTER TABLE ' . $logsTable . ' ADD `username` bigint(20) DEFAULT NULL '
                     . 'after `requested_url_detail` ';
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
         }
         if (!preg_match("/username.+ USING BTREE/i", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX username (`username`) USING BTREE";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Added index for username on " . $logsTable);
         }
         if (!preg_match("/min_log_id.+ DEFAULT NULL/i", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " ADD min_log_id BOOLEAN NULL DEFAULT NULL";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
 
             // set the min_log_id for all logs entries that were created before the column was created.
             $abj404logging->infoMessage("Setting the min_log_id for the logs table: Begin.");
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
             $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Setting the min_log_id for the logs table: Done.");
         }
         if (!preg_match("/KEY .+min_log_id/i", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX min_log_id (min_log_id)";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Added index for min_log_id on " . $logsTable);
         }
         if (!preg_match("/requested_url.+2048/i", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " CHANGE `requested_url` `requested_url` VARCHAR(2048) ";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
         }
         if (!preg_match("/requested_url_detail.+2048/i", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " CHANGE `requested_url_detail` `requested_url_detail` VARCHAR(2048) ";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
         }
         if (!preg_match("/dest_url.+2048/i", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " CHANGE `dest_url` `dest_url` VARCHAR(2048) ";
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
         }
         
         $me = new ABJ_404_Solution_DatabaseUpgradesEtc();
@@ -159,7 +160,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
     function correctCollations() {
         global $wpdb;
-        global $abj404logging;
+        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         
         $collationNeedsUpdating = false;
         
@@ -175,7 +177,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
         $query = str_replace('{table_names}', "'" . $postsTable . "'", $query);
         $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
-        $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+        $results = $abj404dao->queryAndGetResults($query);
         $rows = $results['rows'];
         $row = $rows[0];
         $postsTableCollation = $row['table_collation'];
@@ -187,7 +189,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
             $query = str_replace('{table_names}', "'" . $tableName . "'", $query);
             $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
-            $results = ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $results = $abj404dao->queryAndGetResults($query);
             $rows = $results['rows'];
             $row = $rows[0];
             $abjTableCollation = $row['table_collation'];
@@ -211,12 +213,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $query = "alter table {table_name} convert to charset " . $postsTableCharset . 
                     " collate " . $postsTableCollation;
             $query = str_replace('{table_name}', $tableName, $query);
-            ABJ_404_Solution_DataAccess::queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query);
         }
     }
     
     function updatePluginCheck() {
-        global $abj404dao;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         
         $pluginInfo = $abj404dao->getLatestPluginVersion();
         
@@ -228,7 +230,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
     
     function doUpdatePlugin($pluginInfo) {
-        global $abj404logging;
+        $abj404logging = new ABJ_404_Solution_Logging();
         
         // do the update.
         if (!class_exists('WP_Upgrader')) {
@@ -270,8 +272,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
     
     function shouldUpdate($pluginInfo) {
-        global $abj404logic;
-        global $abj404logging;
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logging = new ABJ_404_Solution_Logging();
         
         $options = $abj404logic->getOptions(true);
         $latestVersion = $pluginInfo['version'];

@@ -79,8 +79,6 @@ define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 150);
 
 
 require_once ABJ404_PATH . "includes/Logging.php";
-$abj404logging = new ABJ_404_Solution_Logging();
-
 require_once ABJ404_PATH . "includes/objs/WPNotice.php";
 require_once ABJ404_PATH . "includes/wordpress/WPNotices.php";
 require_once ABJ404_PATH . "includes/Functions.php";
@@ -103,13 +101,6 @@ if (is_admin()) {
     $abj404view = new ABJ_404_Solution_View();
     $abj404viewSuggestions = new ABJ_404_Solution_View_Suggestions();
 }
-
-$abj404dao = new ABJ_404_Solution_DataAccess();
-$abj404logic = new ABJ_404_Solution_PluginLogic();
-$abj404spellChecker = new ABJ_404_Solution_SpellChecker();
-$abj404connector = new ABJ_404_Solution_WordPress_Connector();
-$abj404shortCode = new ABJ_404_Solution_ShortCode();
-$abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
 
 /**
  * Load the text domain for translation of the plugin.

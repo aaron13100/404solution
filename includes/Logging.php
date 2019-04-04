@@ -12,7 +12,7 @@ class ABJ_404_Solution_Logging {
 
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
-        global $abj404logic;
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
         $options = $abj404logic->getOptions(true);
 
         return (@$options['debug_mode'] == true);
@@ -124,7 +124,7 @@ class ABJ_404_Solution_Logging {
     
     /** Email the log file to the plugin developer. */
     function emailErrorLogIfNecessary() {
-        global $abj404dao;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         
         if (!file_exists($this->getDebugFilePath())) {
             $this->debugMessage("No log file found so no errors were found.");

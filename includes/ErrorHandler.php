@@ -25,7 +25,7 @@ class ABJ_404_Solution_ErrorHandler {
      * @return boolean
      */
     static function NormalErrorHandler($errno, $errstr, $errfile, $errline) {
-        global $abj404logging;
+        $abj404logging = new ABJ_404_Solution_Logging();
         try {
             // if the error file does not contain the name of our plugin then we ignore it.
             $pluginFolder = mb_substr(ABJ404_NAME, 0, strpos(ABJ404_NAME, '/'));
@@ -63,7 +63,7 @@ class ABJ_404_Solution_ErrorHandler {
     }
 
     static function FatalErrorHandler() {
-        global $abj404logging;
+        $abj404logging = new ABJ_404_Solution_Logging();
         
         $lasterror = error_get_last();
 

@@ -28,7 +28,7 @@ class ABJ_404_Solution_Functions {
      * @return type an array with id, type, score, link, and title.
      */
     static function permalinkInfoToArray($idAndType, $linkScore, $rowType = null) {
-        global $abj404logging;
+        $abj404logging = new ABJ_404_Solution_Logging();
         $permalink = array();
 
         if ($idAndType == NULL) {
@@ -156,7 +156,7 @@ class ABJ_404_Solution_Functions {
      * @return type
      */
     static function readURLtoFile($url, $filePath) {
-        global $abj404logging;
+        $abj404logging = new ABJ_404_Solution_Logging();
         
         ABJ_404_Solution_Functions::safeUnlink($filePath);
 
