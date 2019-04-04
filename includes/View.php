@@ -34,9 +34,9 @@ class ABJ_404_Solution_View {
      */
     static function handleMainAdminPageActionAndDisplay() {
         global $abj404view;
-        global $abj404logic;
-        global $abj404logging;
-        global $abj404dao;
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         
         try {
             $action = $abj404dao->getPostOrGetSanitize('action');
@@ -83,8 +83,8 @@ class ABJ_404_Solution_View {
      */
     function echoChosenAdminTab($action, $sub, $message) {
         global $abj404view;
-        global $abj404logging;
-        global $abj404dao;
+        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = new ABJ_404_Solution_DataAccess();
 
         // Deal With Page Tabs
         if ($sub == "") {
@@ -233,7 +233,7 @@ class ABJ_404_Solution_View {
      */
     function outputAdminStatsPage() {
         global $wpdb;
-        global $abj404dao;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         global $abj404view;
 
         $redirects = $wpdb->prefix . "abj404_redirects";
@@ -366,7 +366,7 @@ class ABJ_404_Solution_View {
     }
     
     function echoAdminDebugFile() {
-        global $abj404logging;
+        $abj404logging = new ABJ_404_Solution_Logging();
         if (current_user_can('administrator')) {
             echo "<div style=\"clear: both;\">";
             // read the file and replace new lines with <BR/>.
@@ -412,7 +412,7 @@ class ABJ_404_Solution_View {
      */
     function echoAdminToolsPage() {
         global $abj404view;
-        global $abj404dao;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         global $wpdb;
 
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
@@ -523,7 +523,7 @@ class ABJ_404_Solution_View {
     }
 
     function echoAdminOptionsPage() {
-        global $abj404logic;
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
         global $abj404view;
         global $abj404viewSuggestions;
         
@@ -582,9 +582,9 @@ class ABJ_404_Solution_View {
      * @return type
      */
     function echoAdminEditRedirectPage() {
-        global $abj404dao;
-        global $abj404logic;
-        global $abj404logging;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logging = new ABJ_404_Solution_Logging();
         
         $options = $abj404logic->getOptions();
         
@@ -783,8 +783,8 @@ class ABJ_404_Solution_View {
     }
 
     function echoRedirectDestinationOptionsCatsTags($dest) {
-        global $abj404dao;
-        global $abj404logic;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
         $content = "";
         $content .= "\n" . '<optgroup label="Categories">' . "\n";
         
@@ -853,8 +853,8 @@ class ABJ_404_Solution_View {
      * @global type $abj404dao
      */
     function echoAdminCapturedURLsPage() {
-        global $abj404dao;
-        global $abj404logic;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
         $sub = 'abj404_captured';
         $nonceValue = "abj404_bulkProcess";
 
@@ -1093,9 +1093,9 @@ class ABJ_404_Solution_View {
      * @global type $abj404logic
      */
     function echoAdminRedirectsPage() {
-        global $abj404dao;
-        global $abj404logic;
-        global $abj404logging;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logging = new ABJ_404_Solution_Logging();
         
         $sub = 'abj404_redirects';
         $nonceValue = "abj404_bulkProcess";
@@ -1395,8 +1395,8 @@ class ABJ_404_Solution_View {
     }
     
     function echoAddManualRedirect($tableOptions) {
-        global $abj404logic;
-        global $abj404dao;
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404dao = new ABJ_404_Solution_DataAccess();
 
         $options = $abj404logic->getOptions();
         
@@ -1509,7 +1509,7 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageAutoRedirects($options) {
-        global $abj404logic;
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
         
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         $content = "";
@@ -1564,9 +1564,9 @@ class ABJ_404_Solution_View {
     }
 
     function getAdminOptionsPageAdvancedSettings($options) {
-        global $abj404logging;
-        global $abj404logic;
-        global $abj404dao;
+        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         
         $selectedDebugLogging = "";
         if (array_key_exists('debug_mode', $options) && $options['debug_mode'] == '1') {
@@ -1622,8 +1622,8 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageGeneralSettings($options) {
-        global $abj404logging;
-        global $abj404dao;
+        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         global $abj404ip2Location;
         
         $selectedDefaultRedirect301 = "";
@@ -1697,9 +1697,9 @@ class ABJ_404_Solution_View {
      * @global type $abj404dao
      */
     function echoAdminLogsPage() {
-        global $abj404dao;
-        global $abj404logic;
-        global $abj404logging;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logging = new ABJ_404_Solution_Logging();
         global $abj404ip2Location;
         
         $sub = 'abj404_logs';
@@ -1922,8 +1922,8 @@ class ABJ_404_Solution_View {
      * @param type $tableOptions
      */
     function echoPaginationLinks($sub, $tableOptions) {
-        global $abj404dao;
-        global $abj404logging;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logging = new ABJ_404_Solution_Logging();
         global $abj404_redirect_types;
         global $abj404_captured_types;
 
@@ -2046,9 +2046,9 @@ class ABJ_404_Solution_View {
      * @param type $tableOptions
      */
     function echoTabFilters($sub, $tableOptions) {
-        global $abj404dao;
-        global $abj404logic;
-        global $abj404logging;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logging = new ABJ_404_Solution_Logging();
         global $abj404_redirect_types;
         global $abj404_captured_types;
 

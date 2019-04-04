@@ -28,8 +28,8 @@ class ABJ_404_Solution_PermalinkCache {
      * @param type $post_id
      */
     function save_postListener($post_id) {
-        global $abj404dao;
-        global $abj404logging;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logging = new ABJ_404_Solution_Logging();
         
         $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
                 ": Delete from permalink cache: " . $post_id);
@@ -51,8 +51,8 @@ class ABJ_404_Solution_PermalinkCache {
         }
         
         // we need to truncate the permlink cache since the structure changed
-        global $abj404dao;
-        global $abj404logging;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logging = new ABJ_404_Solution_Logging();
         
         $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
                 ": Truncating and updating permalink cache because the permalink structure changed to " . 
@@ -71,8 +71,8 @@ class ABJ_404_Solution_PermalinkCache {
      * @return int the number of rows inserted.
      */
     function updatePermalinkCache($maxExecutionTime, $executionCount = 1) {
-        global $abj404dao;
-        global $abj404logging;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logging = new ABJ_404_Solution_Logging();
 
         $syncUtils = new ABJ_404_Solution_SynchronizationUtils();
         $key = "updatePermalinkCache";
@@ -153,12 +153,12 @@ class ABJ_404_Solution_PermalinkCache {
     }
     
     function getPermalinkFromCache($id) {
-        global $abj404dao;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         return $abj404dao->getPermalinkFromCache($id);
     }
     
     function getPermalinkCacheCopy() {
-        global $abj404dao;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         
         $timer = new ABJ_404_Solution_Timer();
         $helperFunctions = new ABJ_404_Solution_Functions();

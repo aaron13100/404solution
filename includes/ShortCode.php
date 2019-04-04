@@ -14,8 +14,8 @@ class ABJ_404_Solution_ShortCode {
      * @param type $atts
      */
     static function shortcodePageSuggestions( $atts ) {
-        global $abj404logic;
-        global $abj404spellChecker;
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
         
         // Attributes
         $atts = shortcode_atts(

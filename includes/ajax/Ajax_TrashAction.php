@@ -11,7 +11,7 @@ class ABJ_404_Solution_Ajax_TrashLink {
 
     /** Find logs to display. */
     static function trashAction() {
-        global $abj404dao;
+        $abj404dao = new ABJ_404_Solution_DataAccess();
 
         if (!check_admin_referer('abj404_ajaxTrash') || !is_admin()) {
             return "fail: old referrer? try reloading the page. ";
