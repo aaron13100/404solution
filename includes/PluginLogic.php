@@ -1,7 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
+if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -456,6 +456,13 @@ class ABJ_404_Solution_PluginLogic {
      * @global type $abj404dao
      */
     static function runOnPluginActivation() {
+        if (!function_exists('mb_strlen')) {
+            deactivate_plugins(ABJ404_NAME);
+            wp_die('The ' . PLUGIN_NAME . ' plugin requires the mbstring PHP extension. '
+                    . 'Please ask your hosting provider to activate that extension before using this plugin. '
+                    . 'Sorry about that.');
+        }
+        
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404dao = new ABJ_404_Solution_DataAccess();
         $abj404logging = new ABJ_404_Solution_Logging();
@@ -508,8 +515,7 @@ class ABJ_404_Solution_PluginLogic {
         if ($action == "updateOptions") {
             if (check_admin_referer('abj404UpdateOptions') && is_admin()) {
                 // delete the debug file and lose all changes, or
-                $shouldDeleteDebugFile = @$_POST['deleteDebugFile'];
-                if ($shouldDeleteDebugFile) {
+                if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile']) {
                     $filepath = $abj404logging->getDebugFilePath();
                     if (!file_exists($filepath)) {
                         $message = sprintf(__("Debug file not found. (%s)", '404-solution'), $filepath);
@@ -684,20 +690,6 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
         
-        return $message;
-    }
-    
-    function handleActionDeleteLog() {
-        $message = "";
-
-        //Handle Delete Functionality
-        if (array_key_exists('deleteDebugFile', $_GET) && @$_GET['deleteDebugFile'] == '1') {
-            if (check_admin_referer('abj404_deleteDebugFile') && is_admin()) {
-                $abj404dao->deleteRedirect(absint($_GET['id']));
-                $message = __('Redirect Removed Successfully!', '404-solution');
-            }
-        }
-
         return $message;
     }
     

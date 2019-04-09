@@ -1,7 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
+if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -238,7 +238,6 @@ class ABJ_404_Solution_Logging {
                         $latestErrorLineFound['line'] = $line;
                         $latestErrorLineFound['total_error_count'] += 1;
                         
-                        // TODO replace preg with ereg???
                     } else if (mb_ereg("^#\d+ .+$", $line)) {
                         // include the entire stack trace.
                         $latestErrorLineFound['line'] .= "<BR/>\n" . $line;

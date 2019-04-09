@@ -1,7 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
+if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -284,7 +284,10 @@ class ABJ_404_Solution_SpellChecker {
         $rows = array();
         $objectRow = array_shift($rowsAsObject);
         while ($objectRow != null) {
-            $rows[] = array('id' => $objectRow->id, 'term_id' => $objectRow->term_id);
+            $rows[] = array(
+                'id' => property_exists($objectRow, 'id') == true ? $objectRow->id : null,
+                'term_id' => property_exists($objectRow, 'term_id') == true ? $objectRow->term_id : null
+                );
             $objectRow = array_shift($rowsAsObject);
         }
         
@@ -529,7 +532,7 @@ class ABJ_404_Solution_SpellChecker {
             // use the permalink cache table if possible.
             $the_permalink = null;
             if ($rowType == 'pages') {
-                $the_permalink = $permalinkCache[$id];
+                $the_permalink = array_key_exists($id, $permalinkCache) == true ? $permalinkCache[$id] : null;
                 $permalinkCache[$id] = null;
                 unset($permalinkCache[$id]);
                 
