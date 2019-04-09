@@ -127,7 +127,7 @@ class ABJ_404_Solution_DataAccess {
         $abj404logging = new ABJ_404_Solution_Logging();
         $f = new ABJ_404_Solution_Functions();
         
-        $re = 'Table \'.*\/(.+)\' is marked as crashed and last \(automatic\?\) repair failed';
+        $re = '/Table \'.*\/(.+)\' is marked as crashed and last \(automatic\?\) repair failed/';
         $str = $errorMessage;
         $matches = null;
 
@@ -1011,7 +1011,7 @@ class ABJ_404_Solution_DataAccess {
         
         // only send a 404 notification email during daily maintenance.
         if (array_key_exists('admin_notification_email', $options) && isset($options['admin_notification_email']) && 
-                strlen(trim($options['admin_notification_email'])) > 5) {
+                $f->strlen(trim($options['admin_notification_email'])) > 5) {
             
             if ($manually_fired) {
                 $message .= ', The admin email notification option is skipped for user '
@@ -1230,7 +1230,7 @@ class ABJ_404_Solution_DataAccess {
         
         if ($searchTerm != "") {
             $searchTerm = " */ and lower(wp_posts.post_title) like "
-                    . "'%" . esc_sql(strtolower($searchTerm)) . "%' \n ";
+                    . "'%" . esc_sql($f->strtolower($searchTerm)) . "%' \n ";
         } else {
             $searchTerm = '';
         }
@@ -1568,10 +1568,11 @@ class ABJ_404_Solution_DataAccess {
      */
     function moveRedirectsToTrash($id, $trash) {
         global $wpdb;
+        $f = new ABJ_404_Solution_Functions();
         
         $message = "";
         $result = false;
-        if (preg_match('/[0-9]+/', '' . $id)) {
+        if ($f->regexMatch('/[0-9]+/', '' . $id)) {
 
             $result = $wpdb->update($wpdb->prefix . "abj404_redirects", 
                     array('disabled' => esc_html($trash)), array('id' => absint($id)), array('%d'), array('%d')

@@ -63,7 +63,7 @@ class ABJ_404_Solution_SpellChecker {
             $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying custom regex "' . $regexURL . '" to URL: ' . 
                     $requestedURL;
             $preparedURL = str_replace('/', '\/', $regexURL);
-            if (preg_match('/' . $preparedURL . '/', $requestedURL)) {
+            if ($f->regexMatch('/' . $preparedURL . '/', $requestedURL)) {
                 $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
                 $idAndType = $row['final_dest'] . '|' . $row['type'];
                 $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, '0');
@@ -71,10 +71,10 @@ class ABJ_404_Solution_SpellChecker {
                 
                 // if the matching regex contains a group and the destination contains a replacement, 
                 // then use them
-                if ((preg_match("/\.*\(.+\).*/", $regexURL) != 0) && ($f->strpos($permalink['link'], '$') !== FALSE)) {
+                if (($f->regexMatch("/\.*\(.+\).*/", $regexURL) != 0) && ($f->strpos($permalink['link'], '$') !== FALSE)) {
                     $results = '';
                     $matcherQuoted = str_replace('~', '\~', $regexURL);
-                    preg_match("~" . $matcherQuoted . "~", $requestedURL, $results);
+                    $f->regexMatch("~" . $matcherQuoted . "~", $requestedURL, $results);
                     
                     // do a repacement for all of the groups found.
                     $final = $permalink['link'];
@@ -417,7 +417,7 @@ class ABJ_404_Solution_SpellChecker {
             if ($rowType == 'image') {
                 // strip the image size from the file name and try again.
                 // the image size is at the end of the file in the format of -640x480
-                $strippedImageName = $f->regexReplace('(.+)([-]\d{1,5}[x]\d{1,5})([.].+)', 
+                $strippedImageName = $f->regexReplace('/(.+)([-]\d{1,5}[x]\d{1,5})([.].+)/', 
                         '$1$3', $requestedURLRaw);
                 
                 if (($strippedImageName != null) && ($strippedImageName != $requestedURLRaw)) {

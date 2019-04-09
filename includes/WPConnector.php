@@ -142,7 +142,7 @@ class ABJ_404_Solution_WordPress_Connector {
         
         $_REQUEST[ABJ404_PP]['process_start_time'] = microtime(true);
         
-        $urlRequest = esc_url($f->regexReplace('\?.*', '', esc_url($_SERVER['REQUEST_URI'])));
+        $urlRequest = esc_url($f->regexReplace('/\?.*/', '', esc_url($_SERVER['REQUEST_URI'])));
         $urlRequest = urldecode($urlRequest);
 
         // remove the home directory from the URL parts because it should not be considered for spell checking.
@@ -160,8 +160,8 @@ class ABJ_404_Solution_WordPress_Connector {
         $urlToParse = $_SERVER['REQUEST_URI'];
         $urlToParse = urldecode($urlToParse);
         if (!is_array(parse_url(esc_url($urlToParse)))) {
-            if (substr($urlToParse, 0, 1) == "/") {
-                $urlToParse = home_url($wp->request) . substr($urlToParse, 1);
+            if ($f->substr($urlToParse, 0, 1) == "/") {
+                $urlToParse = home_url($wp->request) . $f->substr($urlToParse, 1);
             }
         }
         $urlParts = parse_url(esc_url($urlToParse));
@@ -265,7 +265,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
                     if (!$paged === FALSE) {
                         if ($urlParts[query] == "") {
-                            if (substr($perma_link, -1) == "/") {
+                            if ($f->substr($perma_link, -1) == "/") {
                                 $perma_link .= $paged . "/";
                             } else {
                                 $perma_link .= "/" . $paged;
@@ -474,6 +474,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404dao = new ABJ_404_Solution_DataAccess();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         global $settingsPageName;
         
         if (!is_admin() || !current_user_can('administrator')) {
@@ -489,7 +490,7 @@ class ABJ_404_Solution_WordPress_Connector {
             $captured = $abj404dao->getCapturedCountForNotification();
             if (isset($options['admin_notification']) && $captured >= $options['admin_notification']) {
                 $pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . esc_html($captured) . "</span></span>";
-                $pos = strpos($menu[80][0], 'update-plugins');
+                $pos = $f->strpos($menu[80][0], 'update-plugins');
                 if ($pos === false) {
                     $menu[80][0] = $menu[80][0] . " <span class='update-plugins count-1'><span class='update-count'>1</span></span>";
                 }

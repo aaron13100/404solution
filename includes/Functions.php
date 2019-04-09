@@ -41,6 +41,9 @@ class ABJ_404_Solution_Functions {
             return mb_strpos($haystack, $needle, $offset);
         }
         
+        if ($offset == 0) {
+            return strpos($haystack, $needle);
+        }
         return strpos($haystack, $needle, $offset);
     }
     
@@ -49,23 +52,41 @@ class ABJ_404_Solution_Functions {
             return mb_substr($str, $start, $length);
         }
         
+        if ($length == null) {
+            return substr($str, $start);
+        }
         return substr($str, $start, $length);
     }
 
     function regexMatch($pattern, $string, $regs = null) {
         if (function_exists('mb_ereg')) {
+            $delimiter = mb_substr($pattern, 0, 1);
+            $lastOccurrence = mb_strrichr($pattern, $delimiter);
+            // TODO if there's a /i then we need to use mb_eregi()
+            $pattern = mb_substr($pattern, 1, mb_strlen($pattern) - mb_strlen($lastOccurrence) - 1);
             return mb_ereg($pattern, $string, $regs);
         }
         
+        if ($regs == null) {
+            return preg_match($pattern, $string);
+        }
         return preg_match('/' . $pattern . '/', $string, $regs);
     }
     
     function regexReplace($pattern, $replacement, $string) {
         if (function_exists('mb_ereg')) {
+            $delimiter = mb_substr($pattern, 0, 1);
+            $lastOccurrence = mb_strrichr($pattern, $delimiter);
+            // TODO if there's a /i then we need to use mb_eregi_replace()
+            $pattern = mb_substr($pattern, 1, mb_strlen($pattern) - mb_strlen($lastOccurrence) - 1);
             return mb_ereg_replace($pattern, $replacement, $string);
         }
         
-        return preg_replace('/' . $pattern . '/', $replacement, $string);
+        return preg_replace($pattern, $replacement, $string);
+    }
+    
+    function regexSplit() {
+        // TODO
     }
     
     

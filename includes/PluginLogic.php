@@ -21,7 +21,7 @@ class ABJ_404_Solution_PluginLogic {
     function removeHomeDirectory($urlRequest) {
         $f = new ABJ_404_Solution_Functions();
         $urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
-        if (substr($urlRequest, 0, $f->strlen($urlHomeDirectory)) == $urlHomeDirectory) {
+        if ($f->substr($urlRequest, 0, $f->strlen($urlHomeDirectory)) == $urlHomeDirectory) {
             $urlRequest = $f->substr($urlRequest, $f->strlen($urlHomeDirectory . "/"));
         }
         
@@ -105,7 +105,7 @@ class ABJ_404_Solution_PluginLogic {
                 $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex pattern to ignore\"' . 
                         $patternToIgnore . '" to URL slug: ' . $urlSlugOnly;
                 $matches = array();
-                if (preg_match("/" . $patternToIgnore . "/", $urlSlugOnly, $matches)) {
+                if ($f->regexMatch("/" . $patternToIgnore . "/", $urlSlugOnly, $matches)) {
                     $abj404logging->debugMessage("Ignoring file/folder (do not redirect) for URL: " . 
                             esc_html($urlSlugOnly) . ", pattern used: " . $patternToIgnore);
                     $ignoreReasonDoNotProcess = 'Files and folders (do not redirect) pattern: ' . esc_html($patternToIgnore);
@@ -506,6 +506,7 @@ class ABJ_404_Solution_PluginLogic {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404dao = new ABJ_404_Solution_DataAccess();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         $message = "";
         
@@ -578,7 +579,7 @@ class ABJ_404_Solution_PluginLogic {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
                         is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
             }
-        } else if (substr($action . '', 0, 4) == "bulk") {
+        } else if ($f->substr($action . '', 0, 4) == "bulk") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 if (!array_key_exists('idnum', $_POST) || !isset($_POST['idnum'])) {
                     $abj404logging->debugMessage("No ID(s) specified for bulk action: " . esc_html($action));
@@ -711,12 +712,13 @@ class ABJ_404_Solution_PluginLogic {
      */
     function handleDeleteAction() {
         $abj404dao = new ABJ_404_Solution_DataAccess();
+        $f = new ABJ_404_Solution_Functions();
         $message = "";
         
         //Handle Delete Functionality
         if (array_key_exists('remove', $_GET) && @$_GET['remove'] == 1) {
             if (check_admin_referer('abj404_removeRedirect') && is_admin()) {
-                if (preg_match('/[0-9]+/', $_GET['id'])) {
+                if ($f->regexMatch('/[0-9]+/', $_GET['id'])) {
                     $abj404dao->deleteRedirect(absint($_GET['id']));
                     $message = __('Redirect Removed Successfully!', '404-solution');
                 }
@@ -732,6 +734,7 @@ class ABJ_404_Solution_PluginLogic {
     function handleIgnoreAction() {
         $abj404dao = new ABJ_404_Solution_DataAccess();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         $message = "";
         
         //Handle Ignore Functionality
@@ -744,7 +747,7 @@ class ABJ_404_Solution_PluginLogic {
                     return $message;                    
                 }
                 
-                if (preg_match('/[0-9]+/', $_GET['id'])) {
+                if ($f->regexMatch('/[0-9]+/', $_GET['id'])) {
                     if ($_GET['ignore'] == 1) {
                         $newstatus = ABJ404_STATUS_IGNORED;
                     } else {
@@ -778,6 +781,7 @@ class ABJ_404_Solution_PluginLogic {
     function handleLaterAction() {
         $abj404dao = new ABJ_404_Solution_DataAccess();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         $message = "";
         
         //Handle Ignore Functionality
@@ -790,7 +794,7 @@ class ABJ_404_Solution_PluginLogic {
                     return $message;                    
                 }
                 
-                if (preg_match('/[0-9]+/', $_GET['id'])) {
+                if ($f->regexMatch('/[0-9]+/', $_GET['id'])) {
                     if ($_GET['later'] == 1) {
                         $newstatus = ABJ404_STATUS_LATER;
                     } else {
@@ -826,13 +830,14 @@ class ABJ_404_Solution_PluginLogic {
      */
     function handleActionEdit(&$sub, &$action) {
         $abj404dao = new ABJ_404_Solution_DataAccess();
+        $f = new ABJ_404_Solution_Functions();
         $message = "";
         
         //Handle edit posts
         if (array_key_exists('action', $_POST) && @$_POST['action'] == "editRedirect") {
             $id = $abj404dao->getPostOrGetSanitize('id');
             $ids = $abj404dao->getPostOrGetSanitize('ids_multiple');
-            if (!($id === null && $ids === null) && (preg_match('/[0-9]+/', '' . $id) || preg_match('/[0-9]+/', '' . $ids))) {
+            if (!($id === null && $ids === null) && ($f->regexMatch('/[0-9]+/', '' . $id) || $f->regexMatch('/[0-9]+/', '' . $ids))) {
                 if (check_admin_referer('abj404editRedirect') && is_admin()) {
                     $message = $this->updateRedirectData();
                     if ($message == "") {
@@ -1082,6 +1087,7 @@ class ABJ_404_Solution_PluginLogic {
     function addAdminRedirect() {
         $abj404dao = new ABJ_404_Solution_DataAccess();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         $message = "";
         
         if ($_POST['manual_redirect_url'] == "") {
@@ -1089,7 +1095,7 @@ class ABJ_404_Solution_PluginLogic {
             return $message;
         }
             
-        if (substr($_POST['manual_redirect_url'], 0, 1) != "/") {
+        if ($f->substr($_POST['manual_redirect_url'], 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
             return $message;
         }
@@ -1128,6 +1134,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function getTableOptions($pageBeingViewed = null) {
         $abj404dao = new ABJ_404_Solution_DataAccess();
+        $f = new ABJ_404_Solution_Functions();
         $tableOptions = array();
         $options = $this->getOptions(true);
 
@@ -1205,12 +1212,12 @@ class ABJ_404_Solution_PluginLogic {
         $tableOptions['perpage'] = $abj404dao->getPostOrGetSanitize("perpage", $perPageOption);
 
         if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == "abj404_logs") {
-            if (array_key_exists('id', $_GET) && isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {                
+            if (array_key_exists('id', $_GET) && isset($_GET['id']) && $f->regexMatch('/[0-9]+/', $_GET['id'])) {                
                 $tableOptions['logsid'] = absint($_GET['id']);
                 
             } else if (array_key_exists('redirect_to_data_field_id', $_GET) && 
                     isset($_GET['redirect_to_data_field_id']) && 
-                    preg_match('/[0-9]+/', $_GET['redirect_to_data_field_id'])) {
+                    $f->regexMatch('/[0-9]+/', $_GET['redirect_to_data_field_id'])) {
                 $tableOptions['logsid'] = absint($_GET['redirect_to_data_field_id']);
                 
             } else {
@@ -1233,6 +1240,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function updateOptionsFromPOST() {
         $abj404dao = new ABJ_404_Solution_DataAccess();
+        $f = new ABJ_404_Solution_Functions();
         
         $message = "";
         $options = $this->getOptions();
@@ -1247,13 +1255,13 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('admin_notification', $_POST) && isset($_POST['admin_notification'])) {
-            if (preg_match('/^[0-9]+$/', $_POST['admin_notification']) == 1) {
+            if ($f->regexMatch('/^[0-9]+$/', $_POST['admin_notification']) == 1) {
                 $options['admin_notification'] = absint($_POST['admin_notification']);
             }
         }
         
         if (array_key_exists('capture_deletion', $_POST) && isset($_POST['capture_deletion'])) {
-            if (preg_match('/^[0-9]+$/', $_POST['capture_deletion']) == 1 && $_POST['capture_deletion'] >= 0) {
+            if ($f->regexMatch('/^[0-9]+$/', $_POST['capture_deletion']) == 1 && $_POST['capture_deletion'] >= 0) {
                 $options['capture_deletion'] = absint($_POST['capture_deletion']);
             } else {
                 $message .= __('Error: Collected URL deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
@@ -1261,7 +1269,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('manual_deletion', $_POST) && isset($_POST['manual_deletion'])) {
-            if (preg_match('/^[0-9]+$/', $_POST['manual_deletion']) == 1 && $_POST['manual_deletion'] >= 0) {
+            if ($f->regexMatch('/^[0-9]+$/', $_POST['manual_deletion']) == 1 && $_POST['manual_deletion'] >= 0) {
                 $options['manual_deletion'] = absint($_POST['manual_deletion']);
             } else {
                 $message .= __('Error: Manual redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
@@ -1269,7 +1277,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('log_deletion', $_POST) && isset($_POST['log_deletion'])) {
-            if (preg_match('/^[0-9]+$/', $_POST['log_deletion']) == 1 && $_POST['log_deletion'] >= 0) {
+            if ($f->regexMatch('/^[0-9]+$/', $_POST['log_deletion']) == 1 && $_POST['log_deletion'] >= 0) {
                 $options['log_deletion'] = absint($_POST['log_deletion']);
             } else {
                 $message .= __('Error: Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
@@ -1286,7 +1294,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         
         if (array_key_exists('suggest_minscore', $_POST) && isset($_POST['suggest_minscore'])) {
-            if (preg_match('/^[0-9]+$/', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
+            if ($f->regexMatch('/^[0-9]+$/', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
                 $options['suggest_minscore'] = min(max(absint($_POST['suggest_minscore']), 10), 90);
             } else {
                 $message .= __('Error: Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
@@ -1294,7 +1302,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('suggest_max', $_POST) && isset($_POST['suggest_max'])) {
-            if (preg_match('/^[0-9]+$/', $_POST['suggest_max']) == 1 && $_POST['suggest_max'] >= 1) {
+            if ($f->regexMatch('/^[0-9]+$/', $_POST['suggest_max']) == 1 && $_POST['suggest_max'] >= 1) {
                 $options['suggest_max'] = absint($_POST['suggest_max']);
             } else {
                 $message .= __('Error: Maximum number of suggest value must be a number greater than or equal to 1', '404-solution') . ".<BR/>";
@@ -1302,7 +1310,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         
         if (array_key_exists('auto_score', $_POST) && isset($_POST['auto_score'])) {
-            if (preg_match('/^[0-9]+$/', $_POST['auto_score']) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
+            if ($f->regexMatch('/^[0-9]+$/', $_POST['auto_score']) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
                 $options['auto_score'] = absint($_POST['auto_score']);
             } else {
                 $message .= __('Error: Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
@@ -1310,7 +1318,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         
         if (array_key_exists('auto_deletion', $_POST) && isset($_POST['auto_deletion'])) {
-            if (preg_match('/^[0-9]+$/', $_POST['auto_deletion']) == 1 && $_POST['auto_deletion'] >= 0) {
+            if ($f->regexMatch('/^[0-9]+$/', $_POST['auto_deletion']) == 1 && $_POST['auto_deletion'] >= 0) {
                 $options['auto_deletion'] = absint($_POST['auto_deletion']);
             } else {
                 $message .= __('Error: Auto redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
@@ -1318,7 +1326,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('maximum_log_disk_usage', $_POST) && isset($_POST['maximum_log_disk_usage'])) {
-            if (preg_match('/^[0-9]+$/', $_POST['maximum_log_disk_usage']) == 1 && $_POST['maximum_log_disk_usage'] > 0) {
+            if ($f->regexMatch('/^[0-9]+$/', $_POST['maximum_log_disk_usage']) == 1 && $_POST['maximum_log_disk_usage'] > 0) {
                 $options['maximum_log_disk_usage'] = absint($_POST['maximum_log_disk_usage']);
             } else {
                 $message .= __('Error: Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";

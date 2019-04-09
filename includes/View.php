@@ -168,7 +168,7 @@ class ABJ_404_Solution_View {
                 'strong' => array(),
             );
             
-            if ((strlen($message) >= 6) && (substr($f->strtolower($message), 0, 6) == 'error:')) {
+            if (($f->strlen($message) >= 6) && ($f->substr($f->strtolower($message), 0, 6) == 'error:')) {
                 $cssClasses = 'notice notice-error';
             } else {
                 $cssClasses = 'notice notice-success';
@@ -602,12 +602,12 @@ class ABJ_404_Solution_View {
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
 
         $recnum = null;
-        if (array_key_exists('id', $_GET) && isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {
+        if (array_key_exists('id', $_GET) && isset($_GET['id']) && $f->regexMatch('/[0-9]+/', $_GET['id'])) {
             $abj404logging->debugMessage("Edit redirect page. GET ID: " . 
                     wp_kses_post(json_encode($_GET['id'])));
             $recnum = absint($_GET['id']);
             
-        } else if (array_key_exists('id', $_POST) && isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
+        } else if (array_key_exists('id', $_POST) && isset($_POST['id']) && $f->regexMatch('/[0-9]+/', $_POST['id'])) {
             $abj404logging->debugMessage("Edit redirect page. POST ID: " . 
                     wp_kses_post(json_encode($_POST['id'])));
             $recnum = absint($_POST['id']);

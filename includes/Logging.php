@@ -239,8 +239,7 @@ class ABJ_404_Solution_Logging {
                         $latestErrorLineFound['line'] = $line;
                         $latestErrorLineFound['total_error_count'] += 1;
                         
-                        // TODO replace preg with ereg???
-                    } else if ($f->regexMatch("^#\d+ .+$", $line)) {
+                    } else if ($f->regexMatch("/^#\d+ .+$/", $line)) {
                         // include the entire stack trace.
                         $latestErrorLineFound['line'] .= "<BR/>\n" . $line;
                     }
