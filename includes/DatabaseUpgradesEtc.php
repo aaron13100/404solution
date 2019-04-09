@@ -231,6 +231,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     
     function doUpdatePlugin($pluginInfo) {
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         // do the update.
         if (!class_exists('WP_Upgrader')) {
@@ -256,7 +257,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         }
         $output = @ob_get_contents();
         @ob_end_clean();
-        if (mb_strlen(trim($output)) > 0) {
+        if ($f->strlen(trim($output)) > 0) {
             $abj404logging->infoMessage("Upgrade output: " . $output);
         }
         

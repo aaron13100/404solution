@@ -19,9 +19,10 @@ class ABJ_404_Solution_PluginLogic {
      * @return type
      */
     function removeHomeDirectory($urlRequest) {
+        $f = new ABJ_404_Solution_Functions();
         $urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
-        if (substr($urlRequest, 0, mb_strlen($urlHomeDirectory)) == $urlHomeDirectory) {
-            $urlRequest = mb_substr($urlRequest, mb_strlen($urlHomeDirectory . "/"));
+        if (substr($urlRequest, 0, $f->strlen($urlHomeDirectory)) == $urlHomeDirectory) {
+            $urlRequest = $f->substr($urlRequest, $f->strlen($urlHomeDirectory . "/"));
         }
         
         $urlRequest = rtrim($urlRequest, "/");
@@ -70,6 +71,7 @@ class ABJ_404_Solution_PluginLogic {
     function initializeIgnoreValues($urlRequest, $urlSlugOnly) {
         $abj404logging = new ABJ_404_Solution_Logging();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = new ABJ_404_Solution_Functions();
         
         $options = $abj404logic->getOptions();
         $ignoreReasonDoNotProcess = null;
@@ -78,7 +80,7 @@ class ABJ_404_Solution_PluginLogic {
         // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
         // ignore requests that are supposed to be for an admin.
         $adminURL = parse_url(admin_url(), PHP_URL_PATH);
-        if (is_admin() || mb_substr($urlRequest, 0, mb_strlen($adminURL)) == $adminURL) {
+        if (is_admin() || $f->substr($urlRequest, 0, $f->strlen($adminURL)) == $adminURL) {
             $abj404logging->debugMessage("Ignoring admin URL: " . $urlRequest);
             $ignoreReasonDoNotProcess = 'Admin URL';
         }
@@ -86,8 +88,8 @@ class ABJ_404_Solution_PluginLogic {
         // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
         // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
         // by https://www.sovrn.com/. 
-        $userAgents = preg_split("@\n@", mb_strtolower($options['ignore_dontprocess']), NULL, PREG_SPLIT_NO_EMPTY);
-        $httpUserAgent = mb_strtolower(@$_SERVER['HTTP_USER_AGENT']);
+        $userAgents = preg_split("@\n@", $f->strtolower($options['ignore_dontprocess']), NULL, PREG_SPLIT_NO_EMPTY);
+        $httpUserAgent = $f->strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (do not redirect): " . 
@@ -102,6 +104,7 @@ class ABJ_404_Solution_PluginLogic {
             foreach ($patternsToIgnore as $patternToIgnore) {
                 $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex pattern to ignore\"' . 
                         $patternToIgnore . '" to URL slug: ' . $urlSlugOnly;
+                $matches = array();
                 if (preg_match("/" . $patternToIgnore . "/", $urlSlugOnly, $matches)) {
                     $abj404logging->debugMessage("Ignoring file/folder (do not redirect) for URL: " . 
                             esc_html($urlSlugOnly) . ", pattern used: " . $patternToIgnore);
@@ -114,8 +117,8 @@ class ABJ_404_Solution_PluginLogic {
         
         // -----
         // ignore and process
-        $userAgents = preg_split("@\n@", mb_strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
-        $httpUserAgent = mb_strtolower(@$_SERVER['HTTP_USER_AGENT']);
+        $userAgents = preg_split("@\n@", $f->strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
+        $httpUserAgent = $f->strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (process ok): " . 
@@ -272,6 +275,7 @@ class ABJ_404_Solution_PluginLogic {
         $abj404logging = new ABJ_404_Solution_Logging();
         global $wpdb;
         $abj404dao = new ABJ_404_Solution_DataAccess();
+        $f = new ABJ_404_Solution_Functions();
 
         $currentDBVersion = "(unknown)";
         if (array_key_exists('DB_VERSION', $options)) {
@@ -294,10 +298,10 @@ class ABJ_404_Solution_PluginLogic {
         // since 1.9.0. ignore_doprocess add SeznamBot, Pinterestbot, UptimeRobot and "Slurp" -> "Yahoo! Slurp"
         if (version_compare($currentDBVersion, '1.9.0') < 0) {
             $userAgents = preg_split("@\n@", $options['ignore_doprocess'], NULL, PREG_SPLIT_NO_EMPTY);
-            $uasForSearch = preg_split("@\n@", mb_strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
+            $uasForSearch = preg_split("@\n@", $f->strtolower($options['ignore_doprocess']), NULL, PREG_SPLIT_NO_EMPTY);
 
             foreach ($userAgents as &$str) {
-                if (mb_strtolower(trim($str)) == "slurp") {
+                if ($f->strtolower(trim($str)) == "slurp") {
                     $str = "Yahoo! Slurp";
                     $abj404logging->infoMessage('Changed user agent "Slurp" to "Yahoo! Slurp" in the do not log list.');
                 }
@@ -349,7 +353,7 @@ class ABJ_404_Solution_PluginLogic {
 
         // add the second part of the default destination page.
         $dest404page = $options['dest404page'];
-        if (mb_strpos($dest404page, '|') === false) {
+        if ($f->strpos($dest404page, '|') === false) {
             // not found
             if ($dest404page == '0') {
                 $dest404page .= "|" . ABJ404_TYPE_404_DISPLAYED;
@@ -508,8 +512,7 @@ class ABJ_404_Solution_PluginLogic {
         if ($action == "updateOptions") {
             if (check_admin_referer('abj404UpdateOptions') && is_admin()) {
                 // delete the debug file and lose all changes, or
-                $shouldDeleteDebugFile = @$_POST['deleteDebugFile'];
-                if ($shouldDeleteDebugFile) {
+                if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile']) {
                     $filepath = $abj404logging->getDebugFilePath();
                     if (!file_exists($filepath)) {
                         $message = sprintf(__("Debug file not found. (%s)", '404-solution'), $filepath);
@@ -688,12 +691,13 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function handleActionDeleteLog() {
+        $abj404dao = new ABJ_404_Solution_DataAccess();
         $message = "";
 
         //Handle Delete Functionality
         if (array_key_exists('deleteDebugFile', $_GET) && @$_GET['deleteDebugFile'] == '1') {
             if (check_admin_referer('abj404_deleteDebugFile') && is_admin()) {
-                $abj404dao->deleteRedirect(absint($_GET['id']));
+                $abj404dao->deleteRedirect(absint($_GET['id'])); // TODO verify functionality
                 $message = __('Redirect Removed Successfully!', '404-solution');
             }
         }
@@ -969,6 +973,7 @@ class ABJ_404_Solution_PluginLogic {
     function updateRedirectData() {
         $abj404dao = new ABJ_404_Solution_DataAccess();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         $message = "";
         $fromURL = "";
         $ids_multiple = "";
@@ -981,7 +986,7 @@ class ABJ_404_Solution_PluginLogic {
             $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
         }
 
-        if ($fromURL != "" && mb_substr($_POST['url'], 0, 1) != "/") {
+        if ($fromURL != "" && $f->substr($_POST['url'], 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
         }
 
@@ -1029,6 +1034,7 @@ class ABJ_404_Solution_PluginLogic {
     function getRedirectTypeAndDest() {
         $abj404logging = new ABJ_404_Solution_Logging();
         $abj404dao = new ABJ_404_Solution_DataAccess();
+        $f = new ABJ_404_Solution_Functions();
         
         $response = array();
         $response['type'] = "";
@@ -1040,10 +1046,10 @@ class ABJ_404_Solution_PluginLogic {
             if ($userEnteredURL == "") {
                 $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<BR/>";
                 
-            } else if (mb_strlen($userEnteredURL) < 8) {
+            } else if ($f->strlen($userEnteredURL) < 8) {
                 $response['message'] = __('Error: External URL is too short.', '404-solution') . "<BR/>";
                 
-            } else if (mb_strpos($userEnteredURL, "://") === false) {
+            } else if ($f->strpos($userEnteredURL, "://") === false) {
                 $response['message'] = __("Error: External URL doesn't contain ://", '404-solution') . "<BR/>";
             }
         }

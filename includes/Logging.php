@@ -221,6 +221,7 @@ class ABJ_404_Solution_Logging {
      * @return int
      */
     function getLatestErrorLine() {
+        $f = new ABJ_404_Solution_Functions();
         $latestErrorLineFound = array();
         $latestErrorLineFound['num'] = -1;
         $latestErrorLineFound['line'] = null;
@@ -239,7 +240,7 @@ class ABJ_404_Solution_Logging {
                         $latestErrorLineFound['total_error_count'] += 1;
                         
                         // TODO replace preg with ereg???
-                    } else if (mb_ereg("^#\d+ .+$", $line)) {
+                    } else if ($f->regexMatch("^#\d+ .+$", $line)) {
                         // include the entire stack trace.
                         $latestErrorLineFound['line'] .= "<BR/>\n" . $line;
                     }

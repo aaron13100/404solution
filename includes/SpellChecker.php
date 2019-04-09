@@ -53,6 +53,7 @@ class ABJ_404_Solution_SpellChecker {
      */
     function getPermalinkUsingRegEx($requestedURL) {
         $abj404dao = new ABJ_404_Solution_DataAccess();
+        $f = new ABJ_404_Solution_Functions();
         
         $regexURLsRows = $abj404dao->getRedirectsWithRegEx();
         
@@ -70,7 +71,7 @@ class ABJ_404_Solution_SpellChecker {
                 
                 // if the matching regex contains a group and the destination contains a replacement, 
                 // then use them
-                if ((preg_match("/\.*\(.+\).*/", $regexURL) != 0) && (mb_strpos($permalink['link'], '$') !== FALSE)) {
+                if ((preg_match("/\.*\(.+\).*/", $regexURL) != 0) && ($f->strpos($permalink['link'], '$') !== FALSE)) {
                     $results = '';
                     $matcherQuoted = str_replace('~', '\~', $regexURL);
                     preg_match("~" . $matcherQuoted . "~", $requestedURL, $results);
@@ -180,13 +181,14 @@ class ABJ_404_Solution_SpellChecker {
      * @param type $requestedURL
      */
     function requestIsForAnImage($requestedURL) {
+        $f = new ABJ_404_Solution_Functions();
         $imageExtensions = array(".jpg", ".jpeg", ".gif", ".png", ".tif", ".tiff", ".bmp", ".pdf", 
             ".jif", ".jif", ".jp2", ".jpx", ".j2k", ".j2c", ".pcd");
         
         $returnVal = false;
         
         foreach ($imageExtensions as $extension) {
-            if (ABJ_404_Solution_Functions::endsWithCaseInsensitive($requestedURL, $extension)) {
+            if ($f->endsWithCaseInsensitive($requestedURL, $extension)) {
                 $returnVal = true;
                 break;
             }
@@ -284,7 +286,10 @@ class ABJ_404_Solution_SpellChecker {
         $rows = array();
         $objectRow = array_shift($rowsAsObject);
         while ($objectRow != null) {
-            $rows[] = array('id' => $objectRow->id, 'term_id' => $objectRow->term_id);
+            $rows[] = array(
+                'id' => property_exists($objectRow, 'id') == true ? $objectRow->id : null,
+                'term_id' => property_exists($objectRow, 'term_id') == true ? $objectRow->term_id : null
+                );
             $objectRow = array_shift($rowsAsObject);
         }
         
@@ -312,6 +317,7 @@ class ABJ_404_Solution_SpellChecker {
     function matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
         $abj404dao = new ABJ_404_Solution_DataAccess();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = new ABJ_404_Solution_Functions();
 
         unset($rows);
         $rows = $abj404dao->getPublishedCategories();
@@ -327,7 +333,7 @@ class ABJ_404_Solution_SpellChecker {
             $the_permalink = $this->getPermalink($id, 'categories');
             $urlParts = parse_url($the_permalink);
             $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
-            $scoreBasis = mb_strlen($pathOnly);
+            $scoreBasis = $f->strlen($pathOnly);
             if ($scoreBasis == 0) {
                 continue;
             }
@@ -347,6 +353,7 @@ class ABJ_404_Solution_SpellChecker {
     function matchOnTags($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
         $abj404dao = new ABJ_404_Solution_DataAccess();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = new ABJ_404_Solution_Functions();
         
         unset($rows);
         $rows = $abj404dao->getPublishedTags();
@@ -362,7 +369,7 @@ class ABJ_404_Solution_SpellChecker {
             $the_permalink = $this->getPermalink($id, 'tags');
             $urlParts = parse_url($the_permalink);
             $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
-            $scoreBasis = mb_strlen($pathOnly);
+            $scoreBasis = $f->strlen($pathOnly);
             if ($scoreBasis == 0) {
                 continue;
             }
@@ -381,6 +388,7 @@ class ABJ_404_Solution_SpellChecker {
     
     function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = new ABJ_404_Solution_Functions();
         
         // pre-filter some pages based on the min and max possible levenshtein distances.
         $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
@@ -397,7 +405,7 @@ class ABJ_404_Solution_SpellChecker {
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
             $existingPageURLSpaces = str_replace($this->separatingCharacters, " ", $existingPageURL);
             $existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
-            $scoreBasis = mb_strlen($existingPageURLCleaned) * 3;
+            $scoreBasis = $f->strlen($existingPageURLCleaned) * 3;
             if ($scoreBasis == 0) {
                 continue;
             }
@@ -409,7 +417,7 @@ class ABJ_404_Solution_SpellChecker {
             if ($rowType == 'image') {
                 // strip the image size from the file name and try again.
                 // the image size is at the end of the file in the format of -640x480
-                $strippedImageName = mb_ereg_replace('(.+)([-]\d{1,5}[x]\d{1,5})([.].+)', 
+                $strippedImageName = $f->regexReplace('(.+)([-]\d{1,5}[x]\d{1,5})([.].+)', 
                         '$1$3', $requestedURLRaw);
                 
                 if (($strippedImageName != null) && ($strippedImageName != $requestedURLRaw)) {
@@ -477,6 +485,7 @@ class ABJ_404_Solution_SpellChecker {
     function getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $publishedPages, $rowType) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         // if there were no results then there are no likely matches.
         if (!is_array($publishedPages)) {
@@ -497,8 +506,8 @@ class ABJ_404_Solution_SpellChecker {
             $minDistances[$currentDistanceIndex] = array();
         }
         
-        $requestedURLCleanedLength = mb_strlen($requestedURLCleaned);
-        $fullURLspacesLength = mb_strlen($fullURLspaces);
+        $requestedURLCleanedLength = $f->strlen($requestedURLCleaned);
+        $fullURLspacesLength = $f->strlen($fullURLspaces);
         
         if ($rowType == 'pages') {
             $permalinkCacheObj = new ABJ_404_Solution_PermalinkCache();
@@ -529,7 +538,7 @@ class ABJ_404_Solution_SpellChecker {
             // use the permalink cache table if possible.
             $the_permalink = null;
             if ($rowType == 'pages') {
-                $the_permalink = $permalinkCache[$id];
+                $the_permalink = array_key_exists($id, $permalinkCache) == true ? $permalinkCache[$id] : null;
                 $permalinkCache[$id] = null;
                 unset($permalinkCache[$id]);
                 
@@ -556,11 +565,11 @@ class ABJ_404_Solution_SpellChecker {
 
             // the minimum distance is the minimum of the two possibilities. one is longer anyway, so 
             // it shouldn't matter.
-            $minDist = abs(mb_strlen($existingPageURLCleaned) - $requestedURLCleanedLength);
+            $minDist = abs($f->strlen($existingPageURLCleaned) - $requestedURLCleanedLength);
             if ($fullURLspaces != '') {
-                $minDist = min($minDist, abs(mb_strlen($fullURLspacesLength) - $requestedURLCleanedLength));
+                $minDist = min($minDist, abs($f->strlen($fullURLspacesLength) - $requestedURLCleanedLength));
             }
-            $maxDist = mb_strlen($existingPageURLCleaned);
+            $maxDist = $f->strlen($existingPageURLCleaned);
             if ($fullURLspaces != '') {
                 $maxDist = min($maxDist, $fullURLspacesLength);
             }
@@ -620,10 +629,11 @@ class ABJ_404_Solution_SpellChecker {
      * @return type
      */
     function getLastURLPart($url) {
+        $f = new ABJ_404_Solution_Functions();
         $newURL = $url;
         
         if (strrpos($url, "/")) {
-            $newURL = mb_substr($url, strrpos($url, "/") + 1);
+            $newURL = $f->substr($url, strrpos($url, "/") + 1);
         }
         
         return $newURL;
@@ -634,10 +644,11 @@ class ABJ_404_Solution_SpellChecker {
      * @return type
      */
     private function multiByteStringToArray($str) {
-        $length = mb_strlen($str);
+        $f = new ABJ_404_Solution_Functions();
+        $length = $f->strlen($str);
         $array = array();
         for ($i = 0; $i < $length; $i++) {
-            $array[$i] = mb_substr($str, $i, 1);
+            $array[$i] = $f->substr($str, $i, 1);
         }
         return $array;
     }

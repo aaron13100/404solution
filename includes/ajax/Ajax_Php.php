@@ -14,8 +14,9 @@ class ABJ_404_Solution_Ajax_Php {
     static function echoViewLogsFor() {
         $abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
         $abj404dao = new ABJ_404_Solution_DataAccess();
+        $f = new ABJ_404_Solution_Functions();
         
-        $term = mb_strtolower(sanitize_text_field($_GET['term']));
+        $term = $f->strtolower(sanitize_text_field($_GET['term']));
         $suggestions = array();
 
         $suggestion = array();
@@ -42,8 +43,9 @@ class ABJ_404_Solution_Ajax_Php {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
         $abj404dao = new ABJ_404_Solution_DataAccess();
+        $f = new ABJ_404_Solution_Functions();
         
-        $term = mb_strtolower(sanitize_text_field($_GET['term']));
+        $term = $f->strtolower(sanitize_text_field($_GET['term']));
         $includeDefault404Page = $_GET['includeDefault404Page'] == "true";
         $suggestions = array();
         
@@ -90,11 +92,12 @@ class ABJ_404_Solution_Ajax_Php {
      * @return string
      */
     function provideSearchFeedback($suggestions, $term) {
+        $f = new ABJ_404_Solution_Functions();
         $category = '';
         
         if (count($suggestions) == 0) {
             // tell the user if there are no resluts.
-            if (trim(mb_strlen($term)) == 0) {
+            if (trim($f->strlen($term)) == 0) {
                 $category = sprintf(__("(No matching results found.)", '404-solution'));
             } else {
                 $category = sprintf(__("(No matching results found for \"%s.\")", '404-solution'), $term);
@@ -103,14 +106,14 @@ class ABJ_404_Solution_Ajax_Php {
         } else if (count($suggestions) > ABJ404_MAX_AJAX_DROPDOWN_SIZE) {
             // limit the results if there are too many
             $suggestions = array_slice($suggestions, 0, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
-            if (trim(mb_strlen($term)) == 0) {
+            if (trim($f->strlen($term)) == 0) {
                 $category = sprintf(__("(Data truncated. Too many results!)", '404-solution'));
             } else {
                 $category = sprintf(__("(Data truncated. Too many results for \"%s!\".)", '404-solution'), $term);
             }
             
         } else {
-            if (trim(mb_strlen($term)) == 0) {
+            if (trim($f->strlen($term)) == 0) {
                 $category = sprintf(__("(All results displayed.)", '404-solution'));
             } else {
                 $category = sprintf(__("(All results displayed for \"%s.\")", '404-solution'), $term);
@@ -133,6 +136,7 @@ class ABJ_404_Solution_Ajax_Php {
      * @return type
      */
     function filterPages($pagesToFilter, $searchTerm) {
+        $f = new ABJ_404_Solution_Functions();
         if ($searchTerm == "") {
             return $pagesToFilter;
         }        
@@ -141,9 +145,9 @@ class ABJ_404_Solution_Ajax_Php {
         $newPagesList = array();
         
         foreach ($pagesToFilter as $page) {
-            $haystack = mb_strtolower($page['label']);
-            $needle = mb_strtolower($searchTerm);
-            if (mb_strpos($haystack, $needle) !== false) {
+            $haystack = $f->strtolower($page['label']);
+            $needle = $f->strtolower($searchTerm);
+            if ($f->strpos($haystack, $needle) !== false) {
                 $newPagesList[] = $page;
             }
         }

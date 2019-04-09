@@ -133,6 +133,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404connector = new ABJ_404_Solution_WordPress_Connector();
         $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         global $wp;
 
         if (!is_404() || is_admin()) {
@@ -141,7 +142,7 @@ class ABJ_404_Solution_WordPress_Connector {
         
         $_REQUEST[ABJ404_PP]['process_start_time'] = microtime(true);
         
-        $urlRequest = esc_url(mb_ereg_replace('\?.*', '', esc_url($_SERVER['REQUEST_URI'])));
+        $urlRequest = esc_url($f->regexReplace('\?.*', '', esc_url($_SERVER['REQUEST_URI'])));
         $urlRequest = urldecode($urlRequest);
 
         // remove the home directory from the URL parts because it should not be considered for spell checking.
@@ -331,6 +332,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return string
      */
     function sortQueryParts($urlParts) {
+        $f = new ABJ_404_Solution_Functions();
         $urlQuery = $this->getUnsortedQueryParts($urlParts);
         
         if ($urlQuery == '') {
@@ -343,7 +345,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $urlQuery = $urlParts['query'];
         $queryParts = preg_split("/[;&]/", $urlQuery);
         foreach ($queryParts as $query) {
-            if (mb_strpos($query, "=") === false) {
+            if ($f->strpos($query, "=") === false) {
                 $queryString[$query] = '';
             } else {
                 $stringParts = preg_split("/=/", $query);

@@ -20,6 +20,55 @@ class ABJ_404_Solution_Functions {
         return '';
     }
     
+    function strtolower($string) {
+        if (function_exists('mb_strtolower')) {
+            return mb_strtolower($string);
+        }
+        
+        return strtolower($string);
+    }
+    
+    function strlen($string) {
+        if (function_exists('mb_strlen')) {
+            return mb_strlen($string);
+        }
+        
+        return strlen($string);
+    }
+    
+    function strpos($haystack, $needle, $offset = 0) {
+        if (function_exists('mb_strpos')) {
+            return mb_strpos($haystack, $needle, $offset);
+        }
+        
+        return strpos($haystack, $needle, $offset);
+    }
+    
+    function substr($str, $start, $length = null) {
+        if (function_exists('mb_substr')) {
+            return mb_substr($str, $start, $length);
+        }
+        
+        return substr($str, $start, $length);
+    }
+
+    function regexMatch($pattern, $string, $regs = null) {
+        if (function_exists('mb_ereg')) {
+            return mb_ereg($pattern, $string, $regs);
+        }
+        
+        return preg_match('/' . $pattern . '/', $string, $regs);
+    }
+    
+    function regexReplace($pattern, $replacement, $string) {
+        if (function_exists('mb_ereg')) {
+            return mb_ereg_replace($pattern, $replacement, $string);
+        }
+        
+        return preg_replace('/' . $pattern . '/', $replacement, $string);
+    }
+    
+    
     /** Turns ID|TYPE, SCORE into an array with id, type, score, link, and title.
      *
      * @param type $idAndType e.g. 15|POST is a page ID of 15 and a type POST.
@@ -195,16 +244,17 @@ class ABJ_404_Solution_Functions {
      * @param type $needle
      * @return type
      */
-    static function endsWithCaseInsensitive($haystack, $needle) {
-        $length = mb_strlen($needle);
-        if (mb_strlen($haystack) < $length) {
+    function endsWithCaseInsensitive($haystack, $needle) {
+        $f = new ABJ_404_Solution_Functions();
+        $length = $f->strlen($needle);
+        if ($f->strlen($haystack) < $length) {
             return false;
         }
         
-        $lowerNeedle = mb_strtolower($needle);
-        $lowerHay = mb_strtolower($haystack);
+        $lowerNeedle = $this->strtolower($needle);
+        $lowerHay = $this->strtolower($haystack);
         
-        return (mb_substr($lowerHay, -$length) == $lowerNeedle);
+        return ($f->substr($lowerHay, -$length) == $lowerNeedle);
     }
 }
 

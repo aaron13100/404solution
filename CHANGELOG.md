@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.16.1 (April 9, 2019) ##
+* FIX: Avoid a PHP warning message (thanks Marc).
+* FIX: Try to support having the PHP mbstring extension turned off for alexjc347 (attempt 1).
+
 ## Version 2.16.0 (April 4, 2019) ##
 * Improvement: (Speed) Cache similar pages when a 404 happens and reuse them when possible.
 * Improvement: Use less memory. Tested with about 20k pages and 40M for WordPress.
