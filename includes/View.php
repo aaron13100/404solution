@@ -1,7 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
+if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -62,7 +62,6 @@ class ABJ_404_Solution_View {
             $message .= $abj404logic->handleIgnoreAction();
             $message .= $abj404logic->handleLaterAction();
             $message .= $abj404logic->handleActionEdit($sub, $action);
-            $message .= $abj404logic->handleActionDeleteLog();
             $message .= $abj404logic->handleActionImportRedirects();
             $message .= $abj404logic->handleActionChangeItemsPerRow();
 

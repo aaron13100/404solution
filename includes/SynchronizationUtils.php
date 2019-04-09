@@ -1,7 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
+if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -14,7 +14,7 @@ class ABJ_404_Solution_SynchronizationUtils {
     const SYNC_KEY_PREFIX = 'SYNC_';
     
     private function createInternalKey($keyFromUser) {
-        return ABJ404_PP . "_" . $this->SYNC_KEY_PREFIX . $keyFromUser;
+        return ABJ404_PP . "_" . ABJ_404_Solution_SynchronizationUtils::SYNC_KEY_PREFIX . $keyFromUser;
     }
 
     private function createUniqueID($keyFromUser) {
