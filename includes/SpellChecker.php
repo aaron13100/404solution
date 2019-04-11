@@ -225,7 +225,7 @@ class ABJ_404_Solution_SpellChecker {
         }
         
         // prepare to search using permalinks.
-        // first get all permalinks
+        // first cache all permalinks
         $permalinkCache = new ABJ_404_Solution_PermalinkCache();
         $permalinkCache->updatePermalinkCache(25);
         $permalinkCache = null;
@@ -243,6 +243,7 @@ class ABJ_404_Solution_SpellChecker {
         
         // free memory in the published pages by removing all column data except id and term_id
         $rows = $this->getOnlyIDandTermID($rowsAsObject);
+        $rowsAsObject= null;
         unset($rowsAsObject);
         
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on posts

@@ -1214,6 +1214,7 @@ class ABJ_404_Solution_PluginLogic {
         foreach ($tableOptions as &$value) {
             $value = esc_sql(sanitize_text_field($value));
         }
+        $value = null;
         unset($value);
 
         return $tableOptions;
@@ -1627,7 +1628,8 @@ class ABJ_404_Solution_PluginLogic {
         foreach ($removeThese as $removeThis) {
             $key = array_search($removeThis, $childPages);
             if ($key !== false) {
-               unset($childPages[$key]);
+                $childPages[$key] = null;
+                unset($childPages[$key]);
             }
         }
         

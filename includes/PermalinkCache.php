@@ -66,9 +66,10 @@ class ABJ_404_Solution_PermalinkCache {
     }
     
     /** 
-     * @global type $abj404dao
      * @param type $maxExecutionTime
-     * @return int the number of rows inserted.
+     * @param type $executionCount
+     * @return int
+     * @throws Exception
      */
     function updatePermalinkCache($maxExecutionTime, $executionCount = 1) {
         $abj404dao = new ABJ_404_Solution_DataAccess();
@@ -94,8 +95,8 @@ class ABJ_404_Solution_PermalinkCache {
             $rowsInserted = 0;
             $rows = $abj404dao->getIDsNeededForPermalinkCache();
             
-            while (count($rows) > 0) {
-                $row = array_shift ($rows);
+            $row = array_shift($rows);
+            while ($row != null) {
                 $id = $row['id'];
 
                 $permalink = get_the_permalink($id);
@@ -115,6 +116,8 @@ class ABJ_404_Solution_PermalinkCache {
                         break;
                     }
                 }
+                
+                $row = array_shift($rows);
             }
             
             // if there's more work to do then do it, up to a maximum of X times.
