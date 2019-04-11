@@ -42,7 +42,8 @@ class ABJ_404_Solution_ErrorHandler {
                         wp_kses_post(json_encode($errno)) . ", errstr: " . wp_kses_post(json_encode($errstr)) .
                         ", errfile: " . stripcslashes(wp_kses_post(json_encode($errfile))) .
                         ", errline: " . wp_kses_post(json_encode($errline)) .
-                        ', Additional info: ' . $extraInfo;
+                        ', Additional info: ' . $extraInfo . ", mbstring: " . 
+                    (extension_loaded('mbstring') ? 'true' : 'false');
             
             if ($abj404logging != null) {
                 switch ($errno) {
@@ -92,7 +93,8 @@ class ABJ_404_Solution_ErrorHandler {
             }
             $errmsg = "ABJ404-SOLUTION Fatal error handler: " . 
                 stripcslashes(wp_kses_post(json_encode($lasterror))) .
-                ', Additional info: ' . $extraInfo;
+                ', Additional info: ' . $extraInfo . ", mbstring: " . 
+                    (extension_loaded('mbstring') ? 'true' : 'false');
 
             if ($abj404logging != null) {
                 switch ($errno) {

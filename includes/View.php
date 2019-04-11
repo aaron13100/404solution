@@ -505,6 +505,7 @@ class ABJ_404_Solution_View {
             '{MYSQL_VERSION}' => $wpdb->db_version(),
             '{ABJ404_MAX_AJAX_DROPDOWN_SIZE}' => ABJ404_MAX_AJAX_DROPDOWN_SIZE,
             '{WP_MEMORY_LIMIT}' => WP_MEMORY_LIMIT,
+            '{MBSTRING}' => extension_loaded('mbstring') ? 'true' : 'false',
             );
 
         // replace known strings that do not exist in the translation file.

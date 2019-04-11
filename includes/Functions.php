@@ -9,6 +9,8 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_Functions {
     
+    /** Use this to find a delimiter. 
+     * @var array */
     private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
     
     /**  Used with array_filter()
@@ -83,9 +85,6 @@ class ABJ_404_Solution_Functions {
         if (strpos($pattern, "}") !== false) {
             $delimiterA = $delimiterB = $this->findADelimiter($pattern);
         }
-        if ($regs == null) {
-            return preg_match($delimiterA . $pattern . $delimiterB, $string);
-        }
         return preg_match($delimiterA . $pattern . $delimiterB, $string, $regs);
     }
     
@@ -99,9 +98,6 @@ class ABJ_404_Solution_Functions {
         $delimiterB = "}";
         if (strpos($pattern, "}") !== false) {
             $delimiterA = $delimiterB = $this->findADelimiter($pattern);
-        }
-        if ($regs == null) {
-            return preg_match($delimiterA . $pattern . $delimiterB . 'i', $string);
         }
         return preg_match($delimiterA . $pattern . $delimiterB . 'i', $string, $regs);
     }
@@ -125,7 +121,7 @@ class ABJ_404_Solution_Functions {
             $delimiterA = $delimiterB = $this->findADelimiter($pattern);
         }
         $replacementDelimiter = $this->findADelimiter($replacement);
-        $replacement = preg_replace($replacementDelimiter . '\\' . $replacementDelimiter, '\$', $replacement);
+        $replacement = preg_replace($replacementDelimiter . '\\\\' . $replacementDelimiter, '\$', $replacement);
         return preg_replace($delimiterA . $pattern . $delimiterB, $replacement, $string);
     }
     
@@ -144,10 +140,14 @@ class ABJ_404_Solution_Functions {
     }
     
     function findADelimiter($pattern) {
+        if ($pattern == '') {
+            return $this->delimiterChars[0];
+        }
+        
         $charToUse = null;
         foreach ($this->delimiterChars as $char) {
             $anArray = explode($char, $pattern);
-            if (sizeof($anArray) == 0) {
+            if (sizeof($anArray) == 1) {
                 $charToUse = $char;
                 break;
             }
