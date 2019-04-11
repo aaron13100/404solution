@@ -112,7 +112,8 @@ class ABJ_404_Solution_Logging {
         $this->debugMessage("User caps msg: " . esc_html($msg == '' ? '(none)' : $msg) . ", is_admin(): " . is_admin() . 
                 ", current_user_can('administrator'): " . current_user_can('administrator') . 
                 ", user caps: " . wp_kses_post(json_encode($user->caps)) . ", get_role_caps: " . 
-                $usercaps . ", WP ver: " . get_bloginfo('version'));
+                $usercaps . ", WP ver: " . get_bloginfo('version') . ", mbstring: " . 
+                (extension_loaded('mbstring') ? 'true' : 'false'));
     }
 
     /** Write the line to the debug file. 
@@ -199,6 +200,7 @@ class ABJ_404_Solution_Logging {
         $bodyLines[] = "MySQL version: " . $wpdb->db_version();
         $bodyLines[] = "Site URL: " . get_site_url();
         $bodyLines[] = "WP_MEMORY_LIMIT: " . WP_MEMORY_LIMIT;
+        $bodyLines[] = "Extensions: " . implode(", ", get_loaded_extensions());
         
         $bodyLines[] = "Total error count: " . $totalErrorCount;
         $bodyLines[] = "Error: " . $errorLineMessage;
