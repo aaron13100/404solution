@@ -11,6 +11,18 @@ class ABJ_404_Solution_Functions {
     
     private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
     
+    /**  Used with array_filter()
+     * @param type $value
+     * @return boolean
+     */
+    function trimAndRemoveEmpty($value) {
+        if ($value == null) {
+            return false;
+        }
+        $value = trim($value);
+        return $value !== '';
+    }
+    
     function getExecutionTime() {
         if (array_key_exists(ABJ404_PP, $_REQUEST) && 
                 array_key_exists('process_start_time', $_REQUEST[ABJ404_PP])) {
@@ -60,11 +72,8 @@ class ABJ_404_Solution_Functions {
         return substr($str, $start, $length);
     }
 
-    function regexMatch($pattern, $string, $regs = null) {
+    function regexMatch($pattern, $string, &$regs = null) {
         if (function_exists('mb_ereg')) {
-            if ($regs == null) {
-                return mb_ereg($pattern, $string);
-            }
             return mb_ereg($pattern, $string, $regs);
         }
         
@@ -80,11 +89,8 @@ class ABJ_404_Solution_Functions {
         return preg_match($delimiterA . $pattern . $delimiterB, $string, $regs);
     }
     
-    function regexMatchi($pattern, $string, $regs = null) {
+    function regexMatchi($pattern, $string, &$regs = null) {
         if (function_exists('mb_ereg')) {
-            if ($regs == null) {
-                return mb_eregi($pattern, $string);
-            }
             return mb_eregi($pattern, $string, $regs);
         }
         
@@ -100,6 +106,13 @@ class ABJ_404_Solution_Functions {
         return preg_match($delimiterA . $pattern . $delimiterB . 'i', $string, $regs);
     }
     
+    /**  Replace regular expression with multibyte support.
+     * Scans string for matches to pattern, then replaces the matched text with replacement.
+     * @param type $pattern The regular expression pattern.
+     * @param type $replacement The replacement text.
+     * @param type $string The string being checked.
+     * @return type The resultant string on success, or FALSE on error.
+     */
     function regexReplace($pattern, $replacement, $string) {
         if (function_exists('mb_ereg')) {
             return mb_ereg_replace($pattern, $replacement, $string);
@@ -111,6 +124,8 @@ class ABJ_404_Solution_Functions {
         if (strpos($pattern, "}") !== false) {
             $delimiterA = $delimiterB = $this->findADelimiter($pattern);
         }
+        $replacementDelimiter = $this->findADelimiter($replacement);
+        $replacement = preg_replace($replacementDelimiter . '\\' . $replacementDelimiter, '\$', $replacement);
         return preg_replace($delimiterA . $pattern . $delimiterB, $replacement, $string);
     }
     
@@ -210,7 +225,7 @@ class ABJ_404_Solution_Functions {
         
         // decode anything that might be encoded to support utf8 characters
         $permalink['link'] = urldecode($permalink['link']);
-        $permalink['title'] = urldecode($permalink['title']);
+        $permalink['title'] = array_key_exists('title', $permalink) ? urldecode($permalink['title']) : '';
 
         return $permalink;
     }

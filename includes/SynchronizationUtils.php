@@ -14,7 +14,7 @@ class ABJ_404_Solution_SynchronizationUtils {
     const SYNC_KEY_PREFIX = 'SYNC_';
     
     private function createInternalKey($keyFromUser) {
-        return ABJ404_PP . "_" . ABJ_404_Solution_SynchronizationUtils::SYNC_KEY_PREFIX . $keyFromUser;
+        return ABJ404_PP . "_" . self::SYNC_KEY_PREFIX . $keyFromUser;
     }
 
     private function createUniqueID($keyFromUser) {

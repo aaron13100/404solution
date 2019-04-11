@@ -88,7 +88,8 @@ class ABJ_404_Solution_PluginLogic {
         // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
         // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
         // by https://www.sovrn.com/. 
-        $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_dontprocess'])));
+        $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_dontprocess'])),
+                array($f, 'trimAndRemoveEmpty'));
         $httpUserAgent = $f->strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
@@ -117,7 +118,8 @@ class ABJ_404_Solution_PluginLogic {
         
         // -----
         // ignore and process
-        $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_doprocess'])));
+        $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_doprocess'])),
+                array($f, 'trimAndRemoveEmpty'));
         $httpUserAgent = $f->strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
@@ -297,8 +299,10 @@ class ABJ_404_Solution_PluginLogic {
 
         // since 1.9.0. ignore_doprocess add SeznamBot, Pinterestbot, UptimeRobot and "Slurp" -> "Yahoo! Slurp"
         if (version_compare($currentDBVersion, '1.9.0') < 0) {
-            $userAgents = array_filter($f->regexSplit('\n', $options['ignore_doprocess']));
-            $uasForSearch = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_doprocess'])));
+            $userAgents = array_filter($f->regexSplit('\n', $options['ignore_doprocess']),
+                    array($f, 'trimAndRemoveEmpty'));
+            $uasForSearch = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_doprocess'])),
+                    array($f, 'trimAndRemoveEmpty'));
 
             foreach ($userAgents as &$str) {
                 if ($f->strtolower(trim($str)) == "slurp") {
@@ -1051,7 +1055,7 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             $response['type'] = ABJ404_TYPE_EXTERNAL;
-            $response['dest'] = esc_url($_POST['redirect_to_user_field']);
+            $response['dest'] = $_POST['redirect_to_user_field'];
         } else {
             if (count($info) == 2) {
                 $response['dest'] = absint($info[0]);
@@ -1214,8 +1218,6 @@ class ABJ_404_Solution_PluginLogic {
         foreach ($tableOptions as &$value) {
             $value = esc_sql(sanitize_text_field($value));
         }
-        $value = null;
-        unset($value);
 
         return $tableOptions;
     }
@@ -1241,13 +1243,13 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('admin_notification', $_POST) && isset($_POST['admin_notification'])) {
-            if ($f->regexMatch('^[0-9]+$', $_POST['admin_notification']) == 1) {
+            if (is_numeric($_POST['admin_notification'])) {
                 $options['admin_notification'] = absint($_POST['admin_notification']);
             }
         }
         
         if (array_key_exists('capture_deletion', $_POST) && isset($_POST['capture_deletion'])) {
-            if ($f->regexMatch('^[0-9]+$', $_POST['capture_deletion']) == 1 && $_POST['capture_deletion'] >= 0) {
+            if (is_numeric($_POST['capture_deletion']) && $_POST['capture_deletion'] >= 0) {
                 $options['capture_deletion'] = absint($_POST['capture_deletion']);
             } else {
                 $message .= __('Error: Collected URL deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
@@ -1255,7 +1257,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('manual_deletion', $_POST) && isset($_POST['manual_deletion'])) {
-            if ($f->regexMatch('^[0-9]+$', $_POST['manual_deletion']) == 1 && $_POST['manual_deletion'] >= 0) {
+            if (is_numeric($_POST['manual_deletion']) && $_POST['manual_deletion'] >= 0) {
                 $options['manual_deletion'] = absint($_POST['manual_deletion']);
             } else {
                 $message .= __('Error: Manual redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
@@ -1263,7 +1265,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('log_deletion', $_POST) && isset($_POST['log_deletion'])) {
-            if ($f->regexMatch('^[0-9]+$', $_POST['log_deletion']) == 1 && $_POST['log_deletion'] >= 0) {
+            if (is_numeric($_POST['log_deletion']) && $_POST['log_deletion'] >= 0) {
                 $options['log_deletion'] = absint($_POST['log_deletion']);
             } else {
                 $message .= __('Error: Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
@@ -1280,7 +1282,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         
         if (array_key_exists('suggest_minscore', $_POST) && isset($_POST['suggest_minscore'])) {
-            if ($f->regexMatch('^[0-9]+$', $_POST['suggest_minscore']) == 1 && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
+            if (is_numeric($_POST['suggest_minscore']) && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
                 $options['suggest_minscore'] = min(max(absint($_POST['suggest_minscore']), 10), 90);
             } else {
                 $message .= __('Error: Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
@@ -1288,7 +1290,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('suggest_max', $_POST) && isset($_POST['suggest_max'])) {
-            if ($f->regexMatch('^[0-9]+$', $_POST['suggest_max']) == 1 && $_POST['suggest_max'] >= 1) {
+            if (is_numeric($_POST['suggest_max']) && $_POST['suggest_max'] >= 1) {
                 $options['suggest_max'] = absint($_POST['suggest_max']);
             } else {
                 $message .= __('Error: Maximum number of suggest value must be a number greater than or equal to 1', '404-solution') . ".<BR/>";
@@ -1296,7 +1298,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         
         if (array_key_exists('auto_score', $_POST) && isset($_POST['auto_score'])) {
-            if ($f->regexMatch('^[0-9]+$', $_POST['auto_score']) == 1 && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
+            if (is_numeric($_POST['auto_score']) && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
                 $options['auto_score'] = absint($_POST['auto_score']);
             } else {
                 $message .= __('Error: Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
@@ -1304,7 +1306,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         
         if (array_key_exists('auto_deletion', $_POST) && isset($_POST['auto_deletion'])) {
-            if ($f->regexMatch('^[0-9]+$', $_POST['auto_deletion']) == 1 && $_POST['auto_deletion'] >= 0) {
+            if (is_numeric($_POST['auto_deletion']) && $_POST['auto_deletion'] >= 0) {
                 $options['auto_deletion'] = absint($_POST['auto_deletion']);
             } else {
                 $message .= __('Error: Auto redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
@@ -1312,7 +1314,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('maximum_log_disk_usage', $_POST) && isset($_POST['maximum_log_disk_usage'])) {
-            if ($f->regexMatch('^[0-9]+$', $_POST['maximum_log_disk_usage']) == 1 && $_POST['maximum_log_disk_usage'] > 0) {
+            if (is_numeric($_POST['maximum_log_disk_usage']) && $_POST['maximum_log_disk_usage'] > 0) {
                 $options['maximum_log_disk_usage'] = absint($_POST['maximum_log_disk_usage']);
             } else {
                 $message .= __('Error: Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";
@@ -1362,7 +1364,8 @@ class ABJ_404_Solution_PluginLogic {
             $options['folders_files_ignore'] = wp_unslash(wp_kses_post(@$_POST['folders_files_ignore']));
             
             // make the regular expressions usable.
-            $patternsToIgnore = array_filter($f->regexSplit('\n', $options['folders_files_ignore']));
+            $patternsToIgnore = array_filter($f->regexSplit('\n', $options['folders_files_ignore']),
+                    array($f, 'trimAndRemoveEmpty'));
             $usableFilePatterns = array();
             foreach ($patternsToIgnore as $patternToIgnore) {
                 $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
