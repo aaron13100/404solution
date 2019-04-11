@@ -93,6 +93,7 @@ class ABJ_404_Solution_DataAccess {
     function queryAndGetResults($query, $logErrors = true) {
         global $wpdb;
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         $timer = new ABJ_404_Solution_Timer();
         
@@ -104,7 +105,7 @@ class ABJ_404_Solution_DataAccess {
         $result['insert_id'] = $wpdb->insert_id;
         
         if ($logErrors && $result['last_error'] != '') {
-            if (mb_strpos($result['last_error'], 
+            if ($f->strpos($result['last_error'], 
                     "is marked as crashed and last (automatic?) repair failed") !== false) {
                 $this->repairTable($result['last_error']);
             }
@@ -124,15 +125,16 @@ class ABJ_404_Solution_DataAccess {
     
     function repairTable($errorMessage) {
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         $re = 'Table \'.*\/(.+)\' is marked as crashed and last \(automatic\?\) repair failed';
         $str = $errorMessage;
         $matches = null;
 
-        mb_ereg($re, $str, $matches);
-        if ($matches != null && mb_strlen($matches[1]) > 0) {
+        $f->regexMatch($re, $str, $matches);
+        if ($matches != null && $f->strlen($matches[1]) > 0) {
             $tableToRepair = $matches[1];
-            if (mb_strpos($tableToRepair, "abj404") !== false) {
+            if ($f->strpos($tableToRepair, "abj404") !== false) {
                 $query = "repair table " . $tableToRepair;
                 $result = $this->queryAndGetResults($query, false);
                 $abj404logging->infoMessage("Attempted to repair table " . $tableToRepair . ". Result: " . 
@@ -206,15 +208,16 @@ class ABJ_404_Solution_DataAccess {
     function getIDsNeededForPermalinkCache() {
         global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = new ABJ_404_Solution_Functions();
         
         $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
 
         // get the valid post types
         $options = $abj404logic->getOptions();
-        $postTypes = preg_split("@\n@", mb_strtolower($options['recognized_post_types']), NULL, PREG_SPLIT_NO_EMPTY);
+        $postTypes = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_post_types'])));
         $recognizedPostTypes = '';
         foreach ($postTypes as $postType) {
-            $recognizedPostTypes .= "'" . trim(mb_strtolower($postType)) . "', ";
+            $recognizedPostTypes .= "'" . trim($f->strtolower($postType)) . "', ";
         }
         $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
         
@@ -324,6 +327,7 @@ class ABJ_404_Solution_DataAccess {
     function insertAndGetResults($tableName, $dataToInsert) {
         global $wpdb;
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
 
         // get the data types
         $dataTypes = array();
@@ -339,7 +343,7 @@ class ABJ_404_Solution_DataAccess {
                 $dataTypes[] = '%s';
                 
                 // empty strings are stored as null in the database.
-                if (mb_strlen($dataItem) == 0) {
+                if ($f->strlen($dataItem) == 0) {
                     $dataToInsert[$key] = null;
                 }
             }
@@ -546,6 +550,7 @@ class ABJ_404_Solution_DataAccess {
         $abj404logging = new ABJ_404_Solution_Logging();
         global $abj404_redirect_types;
         global $abj404_captured_types;
+        $f = new ABJ_404_Solution_Functions();
 
         $redirects = $wpdb->prefix . "abj404_redirects";
         $logs = $wpdb->prefix . "abj404_logsv2";
@@ -611,7 +616,7 @@ class ABJ_404_Solution_DataAccess {
             $query .= "and disabled = 0 ";
         }
 
-        $orderBy = mb_strtolower(sanitize_text_field($tableOptions['orderby']));
+        $orderBy = $f->strtolower(sanitize_text_field($tableOptions['orderby']));
         if ($orderBy == "final_dest") {
             // TODO change the final dest type to an integer and store external URLs somewhere else.
             // TODO fix bug: pages that no longer exist appear for redirects. use an inner join on this query with the
@@ -870,6 +875,7 @@ class ABJ_404_Solution_DataAccess {
         $abj404dao = new ABJ_404_Solution_DataAccess();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $logsTable = $wpdb->prefix . "abj404_logsv2";
@@ -882,7 +888,7 @@ class ABJ_404_Solution_DataAccess {
 
         // If true then the user clicked the button to execute the mantenance.
         $manually_fired = $abj404dao->getPostOrGetSanitize('manually_fired', false);
-        if (mb_strtolower($manually_fired) == 'true') {
+        if ($f->strtolower($manually_fired) == 'true') {
             $manually_fired = true;
         }
 
@@ -1005,7 +1011,7 @@ class ABJ_404_Solution_DataAccess {
         
         // only send a 404 notification email during daily maintenance.
         if (array_key_exists('admin_notification_email', $options) && isset($options['admin_notification_email']) && 
-                strlen(trim($options['admin_notification_email'])) > 5) {
+                $f->strlen(trim($options['admin_notification_email'])) > 5) {
             
             if ($manually_fired) {
                 $message .= ', The admin email notification option is skipped for user '
@@ -1203,13 +1209,14 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         // get the valid post types
         $options = $abj404logic->getOptions();
-        $postTypes = preg_split("@\n@", mb_strtolower($options['recognized_post_types']), NULL, PREG_SPLIT_NO_EMPTY);
+        $postTypes = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_post_types'])));
         $recognizedPostTypes = '';
         foreach ($postTypes as $postType) {
-            $recognizedPostTypes .= "'" . trim(mb_strtolower($postType)) . "', ";
+            $recognizedPostTypes .= "'" . trim($f->strtolower($postType)) . "', ";
         }
         $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
         // ----------------
@@ -1223,7 +1230,7 @@ class ABJ_404_Solution_DataAccess {
         
         if ($searchTerm != "") {
             $searchTerm = " */ and lower(wp_posts.post_title) like "
-                    . "'%" . esc_sql(strtolower($searchTerm)) . "%' \n ";
+                    . "'%" . esc_sql($f->strtolower($searchTerm)) . "%' \n ";
         } else {
             $searchTerm = '';
         }
@@ -1265,13 +1272,14 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         // get the valid post types
         $options = $abj404logic->getOptions();
-        $postTypes = preg_split("@\n@", mb_strtolower($options['recognized_post_types']), NULL, PREG_SPLIT_NO_EMPTY);
+        $postTypes = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_post_types'])));
         $recognizedPostTypes = '';
         foreach ($postTypes as $postType) {
-            $recognizedPostTypes .= "'" . trim(mb_strtolower($postType)) . "', ";
+            $recognizedPostTypes .= "'" . trim($f->strtolower($postType)) . "', ";
         }
         $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
         // ----------------
@@ -1301,14 +1309,15 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         // get the valid post types
         $options = $abj404logic->getOptions();
 
-        $categories = preg_split("@\n@", mb_strtolower($options['recognized_categories']), NULL, PREG_SPLIT_NO_EMPTY);
+        $categories = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_categories'])));
         $recognizedCategories = '';
         foreach ($categories as $category) {
-            $recognizedCategories .= "'" . trim(mb_strtolower($category)) . "', ";
+            $recognizedCategories .= "'" . trim($f->strtolower($category)) . "', ";
         }
         $recognizedCategories = rtrim($recognizedCategories, ", ");
 
@@ -1341,17 +1350,18 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         // get the valid post types
         $options = $abj404logic->getOptions();
 
-        $categories = preg_split("@\n@", mb_strtolower($options['recognized_categories']), NULL, PREG_SPLIT_NO_EMPTY);
+        $categories = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_categories'])));
         $recognizedCategories = '';
         if (count($categories) == 0) {
             $recognizedCategories = "''";
         }
         foreach ($categories as $category) {
-            $recognizedCategories .= "'" . trim(mb_strtolower($category)) . "', ";
+            $recognizedCategories .= "'" . trim($f->strtolower($category)) . "', ";
         }
         $recognizedCategories = rtrim($recognizedCategories, ", ");
         
@@ -1558,10 +1568,11 @@ class ABJ_404_Solution_DataAccess {
      */
     function moveRedirectsToTrash($id, $trash) {
         global $wpdb;
+        $f = new ABJ_404_Solution_Functions();
         
         $message = "";
         $result = false;
-        if (preg_match('/[0-9]+/', '' . $id)) {
+        if ($f->regexMatch('[0-9]+', '' . $id)) {
 
             $result = $wpdb->update($wpdb->prefix . "abj404_redirects", 
                     array('disabled' => esc_html($trash)), array('id' => absint($id)), array('%d'), array('%d')

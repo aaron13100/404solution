@@ -9,6 +9,8 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_Functions {
     
+    private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
+    
     function getExecutionTime() {
         if (array_key_exists(ABJ404_PP, $_REQUEST) && 
                 array_key_exists('process_start_time', $_REQUEST[ABJ404_PP])) {
@@ -19,6 +21,131 @@ class ABJ_404_Solution_Functions {
         
         return '';
     }
+    
+    function strtolower($string) {
+        if (function_exists('mb_strtolower')) {
+            return mb_strtolower($string);
+        }
+        
+        return strtolower($string);
+    }
+    
+    function strlen($string) {
+        if (function_exists('mb_strlen')) {
+            return mb_strlen($string);
+        }
+        
+        return strlen($string);
+    }
+    
+    function strpos($haystack, $needle, $offset = 0) {
+        if (function_exists('mb_strpos')) {
+            return mb_strpos($haystack, $needle, $offset);
+        }
+        
+        if ($offset == 0) {
+            return strpos($haystack, $needle);
+        }
+        return strpos($haystack, $needle, $offset);
+    }
+    
+    function substr($str, $start, $length = null) {
+        if (function_exists('mb_substr')) {
+            return mb_substr($str, $start, $length);
+        }
+        
+        if ($length == null) {
+            return substr($str, $start);
+        }
+        return substr($str, $start, $length);
+    }
+
+    function regexMatch($pattern, $string, $regs = null) {
+        if (function_exists('mb_ereg')) {
+            if ($regs == null) {
+                return mb_ereg($pattern, $string);
+            }
+            return mb_ereg($pattern, $string, $regs);
+        }
+        
+        // find a character to use for quotes
+        $delimiterA = "{";
+        $delimiterB = "}";
+        if (strpos($pattern, "}") !== false) {
+            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
+        }
+        if ($regs == null) {
+            return preg_match($delimiterA . $pattern . $delimiterB, $string);
+        }
+        return preg_match($delimiterA . $pattern . $delimiterB, $string, $regs);
+    }
+    
+    function regexMatchi($pattern, $string, $regs = null) {
+        if (function_exists('mb_ereg')) {
+            if ($regs == null) {
+                return mb_eregi($pattern, $string);
+            }
+            return mb_eregi($pattern, $string, $regs);
+        }
+        
+        // find a character to use for quotes
+        $delimiterA = "{";
+        $delimiterB = "}";
+        if (strpos($pattern, "}") !== false) {
+            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
+        }
+        if ($regs == null) {
+            return preg_match($delimiterA . $pattern . $delimiterB . 'i', $string);
+        }
+        return preg_match($delimiterA . $pattern . $delimiterB . 'i', $string, $regs);
+    }
+    
+    function regexReplace($pattern, $replacement, $string) {
+        if (function_exists('mb_ereg')) {
+            return mb_ereg_replace($pattern, $replacement, $string);
+        }
+        
+        // find a character to use for quotes
+        $delimiterA = "{";
+        $delimiterB = "}";
+        if (strpos($pattern, "}") !== false) {
+            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
+        }
+        return preg_replace($delimiterA . $pattern . $delimiterB, $replacement, $string);
+    }
+    
+    function regexSplit($pattern, $subject) {
+        if (function_exists('mb_split')) {
+            return mb_split($pattern, $subject);
+        }
+        
+        // find a character to use for quotes
+        $delimiterA = "{";
+        $delimiterB = "}";
+        if (strpos($pattern, "}") !== false) {
+            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
+        }
+        return preg_split($delimiterA . $pattern . $delimiterB, $subject);
+    }
+    
+    function findADelimiter($pattern) {
+        $charToUse = null;
+        foreach ($this->delimiterChars as $char) {
+            $anArray = explode($char, $pattern);
+            if (sizeof($anArray) == 0) {
+                $charToUse = $char;
+                break;
+            }
+        }
+        
+        if ($charToUse == null) {
+            throw new Exception("I can't find a valid delimiter character to use for the regular expression: "
+                    . $pattern);
+        }
+        
+        return $charToUse;
+    }
+    
     
     /** Turns ID|TYPE, SCORE into an array with id, type, score, link, and title.
      *
@@ -195,16 +322,17 @@ class ABJ_404_Solution_Functions {
      * @param type $needle
      * @return type
      */
-    static function endsWithCaseInsensitive($haystack, $needle) {
-        $length = mb_strlen($needle);
-        if (mb_strlen($haystack) < $length) {
+    function endsWithCaseInsensitive($haystack, $needle) {
+        $f = new ABJ_404_Solution_Functions();
+        $length = $f->strlen($needle);
+        if ($f->strlen($haystack) < $length) {
             return false;
         }
         
-        $lowerNeedle = mb_strtolower($needle);
-        $lowerHay = mb_strtolower($haystack);
+        $lowerNeedle = $this->strtolower($needle);
+        $lowerHay = $this->strtolower($haystack);
         
-        return (mb_substr($lowerHay, -$length) == $lowerNeedle);
+        return ($f->substr($lowerHay, -$length) == $lowerNeedle);
     }
 }
 

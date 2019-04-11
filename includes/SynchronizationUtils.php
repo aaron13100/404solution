@@ -144,6 +144,7 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @throws Exception
      */
     function uniqidReal($lenght = 13) {
+        $f = new ABJ_404_Solution_Functions();
         if (function_exists("random_bytes")) {
             $bytes = random_bytes((int)ceil($lenght / 2));
         } else if (function_exists("openssl_random_pseudo_bytes")) {
@@ -152,7 +153,7 @@ class ABJ_404_Solution_SynchronizationUtils {
             throw new Exception("A random_bytes method wasn't found. I don't know what to do.");
         }
         
-        return substr(bin2hex($bytes), 0, $lenght);
+        return $f->substr(bin2hex($bytes), 0, $lenght);
     }
 
 }
