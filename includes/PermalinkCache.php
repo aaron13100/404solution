@@ -82,6 +82,7 @@ class ABJ_404_Solution_PermalinkCache {
         try {
             $uniqueID = $syncUtils->synchronizerAcquireLockTry($key);
             if ($uniqueID == '') {
+                $this->scheduleToRunAgain($executionCount);
                 // the lock wasn't acquired.
                 return;
             }
@@ -121,11 +122,10 @@ class ABJ_404_Solution_PermalinkCache {
             }
             
             // if there's more work to do then do it, up to a maximum of X times.
-            if ($rowsInserted > 0 && $executionCount < 10 && $shouldRunAgain) {
+            if ($executionCount < 10 && $shouldRunAgain) {
                 // if the site has many pages then we might not be done yet, so we'll schedule ourselves to 
                 // run this again right away as a scheduled event.
-                wp_schedule_single_event(time() + 1, ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
-                        array(25, $executionCount + 1));
+                $this->scheduleToRunAgain($executionCount + 1);
                 $abj404logging->debugMessage($rowsInserted . " rows inserted into the permalink cache table in " .
                         round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount . 
                         ". shouldRunAgain: " . ($shouldRunAgain ? 'true' : 'false'));
@@ -139,8 +139,7 @@ class ABJ_404_Solution_PermalinkCache {
             $newPermalinkStructure = get_option('permalink_structure');
             if ($permalinkStructure != $newPermalinkStructure) {
                 $abj404dao->removeOldStructreFromPermalinkCache($newPermalinkStructure);
-                wp_schedule_single_event(1, ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
-                        array(25, $executionCount + 1));
+                $this->scheduleToRunAgain(1);
                 $abj404logging->debugMessage("Scheduled another permalink cache updated because the structure changed "
                         . "while the cache was updating.");
             }
@@ -153,6 +152,14 @@ class ABJ_404_Solution_PermalinkCache {
         $syncUtils->synchronizerReleaseLock($uniqueID, $key);
         
         return $rowsInserted;
+    }
+    
+    function scheduleToRunAgain($executionCount) {
+        $maxExecutionTime = (int)ini_get('max_execution_time') - 5;
+        $maxExecutionTime = max($maxExecutionTime, 25);
+        
+        wp_schedule_single_event(1, ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
+                array($maxExecutionTime, $executionCount));
     }
     
     function getPermalinkFromCache($id) {

@@ -48,7 +48,11 @@ class ABJ_404_Solution_ErrorHandler {
                 switch ($errno) {
                     case E_NOTICE:
                         if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
-                            $abj404logging->debugMessage($errmsg);
+                            if (mb_stripos($errstr, 'Undefined property') !== false) {
+                                break;
+                            }
+                            $e = new Exception;
+                            $abj404logging->debugMessage($errmsg . ', Trace:' . $e->getTraceAsString());
                         }
                         break;
                     
@@ -81,26 +85,29 @@ class ABJ_404_Solution_ErrorHandler {
             if ($f->strpos($errfile, $pluginFolder) === false) {
                 return false;
             }
+            
+            $extraInfo = "(none)";
+            if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('debug_info', $_REQUEST[ABJ404_PP])) {
+                $extraInfo = stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
+            }
+            $errmsg = "ABJ404-SOLUTION Fatal error handler: " . 
+                stripcslashes(wp_kses_post(json_encode($lasterror))) .
+                ', Additional info: ' . $extraInfo;
 
-            switch ($errno) {
-                case E_NOTICE:
-                    // ignore these. it happens when we use the @ symbol to ignore undefined variables.
-                    break;
+            if ($abj404logging != null) {
+                switch ($errno) {
+                    case E_NOTICE:
+                        if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
+                            $abj404logging->debugMessage($errmsg);
+                        }
+                        break;
 
-                default:
-                    $extraInfo = "(none)";
-                    if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('debug_info', $_REQUEST[ABJ404_PP])) {
-                        $extraInfo = stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
-                    }
-                    $errmsg = "ABJ404-SOLUTION Fatal error handler: " . 
-                        stripcslashes(wp_kses_post(json_encode($lasterror))) .
-                        ', Additional info: ' . $extraInfo;
-                    if ($abj404logging != null) {
+                    default:
                         $abj404logging->errorMessage($errmsg);
-                    } else {
-                        echo $errmsg;
-                    }
-                    break;
+                        break;
+                }
+            } else {
+                echo $errmsg;
             }
         } catch (Exception $ex) {
             // ignored

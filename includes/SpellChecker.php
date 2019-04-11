@@ -72,7 +72,7 @@ class ABJ_404_Solution_SpellChecker {
                 // if the matching regex contains a group and the destination contains a replacement, 
                 // then use them
                 if (($f->regexMatch("\.*\(.+\).*", $regexURL) != 0) && ($f->strpos($permalink['link'], '$') !== FALSE)) {
-                    $results = '';
+                    $results = array();
                     $f->regexMatch($regexURL, $requestedURL, $results);
                     
                     // do a repacement for all of the groups found.
@@ -419,7 +419,7 @@ class ABJ_404_Solution_SpellChecker {
                 // strip the image size from the file name and try again.
                 // the image size is at the end of the file in the format of -640x480
                 $strippedImageName = $f->regexReplace('(.+)([-]\d{1,5}[x]\d{1,5})([.].+)', 
-                        '$1$3', $requestedURLRaw);
+                        '\\1\\3', $requestedURLRaw);
                 
                 if (($strippedImageName != null) && ($strippedImageName != $requestedURLRaw)) {
                     $strippedImageName = str_replace($this->separatingCharactersForImages, " ", $strippedImageName);
