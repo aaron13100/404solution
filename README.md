@@ -75,7 +75,7 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
-## Version 2.16.1 (April 9, 2019) ##
+## Version 2.16.2 (April 9, 2019) ##
 * FIX: Avoid a PHP warning message (thanks Marc).
 
 ## Version 2.16.0 (April 4, 2019) ##
