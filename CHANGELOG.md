@@ -1,5 +1,17 @@
 # Changelog #
 
+// TODO things to test:
+* a regex redirect with a replacement value.
+* ignoring files and folders based on regex
+* sending an email with an error line in it (error line # and extracting the error)
+* basic redirect functionality
+* test requesting an image url - only image suggestions should be returned.
+* in SpellChecker.php test: strip the image size from the file name and try again.
+* make sure empty lines and lines with spaces in them are not included in the user-agent strings 
+    in PluginLogic.php for ignore_dontprocess line 91
+* make sure anything that uses regexSplit shouldn't be trimmed to change spaces " " into nothing ""
+
+
 ## Version 2.16.2 (April 9, 2019) ##
 * FIX: Avoid a PHP warning message (thanks Marc).
 

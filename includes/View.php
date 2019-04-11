@@ -84,10 +84,11 @@ class ABJ_404_Solution_View {
         global $abj404view;
         $abj404logging = new ABJ_404_Solution_Logging();
         $abj404dao = new ABJ_404_Solution_DataAccess();
+        $f = new ABJ_404_Solution_Functions();
 
         // Deal With Page Tabs
         if ($sub == "") {
-            $sub = mb_strtolower($abj404dao->getPostOrGetSanitize('subpage'));
+            $sub = $f->strtolower($abj404dao->getPostOrGetSanitize('subpage'));
         }
         if ($sub == "") {
             $sub = 'abj404_redirects';
@@ -136,6 +137,7 @@ class ABJ_404_Solution_View {
      * @param type $message
      */
     function outputAdminHeaderTabs($sub = 'list', $message = '') {
+        $f = new ABJ_404_Solution_Functions();
         ABJ_404_Solution_WPNotices::echoAdminNotices();
         
         if ($sub == "abj404_options") {
@@ -165,7 +167,7 @@ class ABJ_404_Solution_View {
                 'strong' => array(),
             );
             
-            if ((strlen($message) >= 6) && (substr(mb_strtolower($message), 0, 6) == 'error:')) {
+            if (($f->strlen($message) >= 6) && ($f->substr($f->strtolower($message), 0, 6) == 'error:')) {
                 $cssClasses = 'notice notice-error';
             } else {
                 $cssClasses = 'notice notice-success';
@@ -525,6 +527,7 @@ class ABJ_404_Solution_View {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         global $abj404view;
         global $abj404viewSuggestions;
+        $f = new ABJ_404_Solution_Functions();
         
         $options = $abj404logic->getOptions();
 
@@ -533,12 +536,12 @@ class ABJ_404_Solution_View {
         $currentURL = $urlParts['path'];
         if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
                 $options['menuLocation'] == 'settingsLevel') {
-            if (mb_strpos($currentURL, 'options-general.php') != false) {
+            if ($f->strpos($currentURL, 'options-general.php') != false) {
                 // the option changed and we're at the wrong URL now, so we redirect to the correct one.
                 $abj404logic->forceRedirect(admin_url() . "admin.php?page=" . 
                         ABJ404_PP . '&subpage=abj404_options');
             }
-        } else if (mb_strpos($currentURL, 'admin.php') != false) {
+        } else if ($f->strpos($currentURL, 'admin.php') != false) {
             // if the current URL has admin.php then the URLs don't match and we need to reload.
             $abj404logic->forceRedirect(admin_url() . "options-general.php?page=" . 
                     ABJ404_PP . '&subpage=abj404_options');
@@ -584,6 +587,7 @@ class ABJ_404_Solution_View {
         $abj404dao = new ABJ_404_Solution_DataAccess();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         $options = $abj404logic->getOptions();
         
@@ -598,12 +602,12 @@ class ABJ_404_Solution_View {
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
 
         $recnum = null;
-        if (array_key_exists('id', $_GET) && isset($_GET['id']) && preg_match('/[0-9]+/', $_GET['id'])) {
+        if (array_key_exists('id', $_GET) && isset($_GET['id']) && $f->regexMatch('[0-9]+', $_GET['id'])) {
             $abj404logging->debugMessage("Edit redirect page. GET ID: " . 
                     wp_kses_post(json_encode($_GET['id'])));
             $recnum = absint($_GET['id']);
             
-        } else if (array_key_exists('id', $_POST) && isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
+        } else if (array_key_exists('id', $_POST) && isset($_POST['id']) && $f->regexMatch('[0-9]+', $_POST['id'])) {
             $abj404logging->debugMessage("Edit redirect page. POST ID: " . 
                     wp_kses_post(json_encode($_POST['id'])));
             $recnum = absint($_POST['id']);

@@ -26,10 +26,11 @@ class ABJ_404_Solution_ErrorHandler {
      */
     static function NormalErrorHandler($errno, $errstr, $errfile, $errline) {
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         try {
             // if the error file does not contain the name of our plugin then we ignore it.
-            $pluginFolder = mb_substr(ABJ404_NAME, 0, strpos(ABJ404_NAME, '/'));
-            if (mb_strpos($errfile, $pluginFolder) === false) {
+            $pluginFolder = $f->substr(ABJ404_NAME, 0, $f->strpos(ABJ404_NAME, '/'));
+            if ($f->strpos($errfile, $pluginFolder) === false) {
                 return false;
             }
 
@@ -67,16 +68,17 @@ class ABJ_404_Solution_ErrorHandler {
 
     static function FatalErrorHandler() {
         $abj404logging = new ABJ_404_Solution_Logging();
+        $f = new ABJ_404_Solution_Functions();
         
         $lasterror = error_get_last();
 
         try {
             $errno = $lasterror['type'];
             $errfile = $lasterror['file'];
-            $pluginFolder = mb_substr(ABJ404_NAME, 0, strpos(ABJ404_NAME, '/'));
+            $pluginFolder = $f->substr(ABJ404_NAME, 0, $f->strpos(ABJ404_NAME, '/'));
 
             // if the error file does not contain the name of our plugin then we ignore it.
-            if (mb_strpos($errfile, $pluginFolder) === false) {
+            if ($f->strpos($errfile, $pluginFolder) === false) {
                 return false;
             }
 
