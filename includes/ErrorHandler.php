@@ -1,7 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
+if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -33,27 +33,30 @@ class ABJ_404_Solution_ErrorHandler {
                 return false;
             }
 
-            switch ($errno) {
-                case E_NOTICE:
-                    // ignore these. it happens when we use the @ symbol to ignore undefined variables.
-                    break;
-
-                default:
-                    $extraInfo = "(none)";
-                    if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('debug_info', $_REQUEST[ABJ404_PP])) {
-                        $extraInfo = stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
-                    }
-                    $errmsg = "ABJ404-SOLUTION Normal error handler error: errno: " .
-                                wp_kses_post(json_encode($errno)) . ", errstr: " . wp_kses_post(json_encode($errstr)) .
-                                ", errfile: " . stripcslashes(wp_kses_post(json_encode($errfile))) .
-                                ", errline: " . wp_kses_post(json_encode($errline)) .
-                                ', Additional info: ' . $extraInfo;
-                    if ($abj404logging != null) {
+            $extraInfo = "(none)";
+            if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('debug_info', $_REQUEST[ABJ404_PP])) {
+                $extraInfo = stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
+            }
+            $errmsg = "ABJ404-SOLUTION Normal error handler error: errno: " .
+                        wp_kses_post(json_encode($errno)) . ", errstr: " . wp_kses_post(json_encode($errstr)) .
+                        ", errfile: " . stripcslashes(wp_kses_post(json_encode($errfile))) .
+                        ", errline: " . wp_kses_post(json_encode($errline)) .
+                        ', Additional info: ' . $extraInfo;
+            
+            if ($abj404logging != null) {
+                switch ($errno) {
+                    case E_NOTICE:
+                        if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
+                            $abj404logging->debugMessage($errmsg);
+                        }
+                        break;
+                    
+                    default:
                         $abj404logging->errorMessage($errmsg);
-                    } else {
-                        echo $errmsg;
-                    }
-                    break;
+                        break;
+                }
+            } else {
+                echo $errmsg;
             }
         } catch (Exception $ex) { 
             // ignored
