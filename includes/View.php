@@ -1344,7 +1344,7 @@ class ABJ_404_Solution_View {
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
             $html = str_replace('{class}', $class, $html);
             $html = str_replace('{rowid}', $row['id'], $html);
-            $html = str_replace('{editLink}', $editlink, $html);
+            $html = str_replace('{editLink}', get_site_url() . $row['url'], $html);
             $html = str_replace('{rowURL}', esc_html($row['url']), $html);
             $html = str_replace('{editlinkHTML}', $editlinkHTML, $html);
             $html = str_replace('{logslinkHTML}', $logslinkHTML, $html);
