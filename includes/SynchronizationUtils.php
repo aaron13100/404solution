@@ -14,7 +14,7 @@ class ABJ_404_Solution_SynchronizationUtils {
     const SYNC_KEY_PREFIX = 'SYNC_';
     
     private function createInternalKey($keyFromUser) {
-        return ABJ404_PP . "_" . ABJ_404_Solution_SynchronizationUtils::SYNC_KEY_PREFIX . $keyFromUser;
+        return ABJ404_PP . "_" . self::SYNC_KEY_PREFIX . $keyFromUser;
     }
 
     private function createUniqueID($keyFromUser) {
@@ -80,7 +80,7 @@ class ABJ_404_Solution_SynchronizationUtils {
         // it should have been released by now.
         if ($timePassed > $maxExecutionTime) {
             delete_option($internalSynchronizedKey);
-            $logger = new ABJ_404_Solution_Logging();
+            $logger = ABJ_404_Solution_Logging::getInstance();
             $logger->errorMessage("Forcibly removed synchronization after " . $timePassed . " seconds for the "
                     . "key " . $internalSynchronizedKey . " with value: " . $uniqueID);
         }
@@ -144,6 +144,7 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @throws Exception
      */
     function uniqidReal($lenght = 13) {
+        $f = ABJ_404_Solution_Functions::getInstance();
         if (function_exists("random_bytes")) {
             $bytes = random_bytes((int)ceil($lenght / 2));
         } else if (function_exists("openssl_random_pseudo_bytes")) {
@@ -152,7 +153,7 @@ class ABJ_404_Solution_SynchronizationUtils {
             throw new Exception("A random_bytes method wasn't found. I don't know what to do.");
         }
         
-        return substr(bin2hex($bytes), 0, $lenght);
+        return $f->substr(bin2hex($bytes), 0, $lenght);
     }
 
 }

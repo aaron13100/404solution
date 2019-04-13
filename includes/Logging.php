@@ -1,7 +1,7 @@
 <?php
 
 // turn on debug for localhost etc
-if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
+if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
@@ -10,6 +10,16 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 
 class ABJ_404_Solution_Logging {
 
+    private static $instance = null;
+    
+    public static function getInstance() {
+        if (self::$instance == null) {
+            self::$instance = new ABJ_404_Solution_Logging();
+        }
+        
+        return self::$instance;
+    }
+    
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
@@ -54,7 +64,6 @@ class ABJ_404_Solution_Logging {
      * @param type $message  */
     function debugMessage($message) {
         if ($this->isDebug()) {
-            $prefix = "ABJ-404-SOLUTION (DEBUG): ";
             $timestamp = $this->getTimestamp() . ' (DEBUG): ';
             $this->writeLineToDebugFile($timestamp . $message);
         }
@@ -112,7 +121,8 @@ class ABJ_404_Solution_Logging {
         $this->debugMessage("User caps msg: " . esc_html($msg == '' ? '(none)' : $msg) . ", is_admin(): " . is_admin() . 
                 ", current_user_can('administrator'): " . current_user_can('administrator') . 
                 ", user caps: " . wp_kses_post(json_encode($user->caps)) . ", get_role_caps: " . 
-                $usercaps . ", WP ver: " . get_bloginfo('version'));
+                $usercaps . ", WP ver: " . get_bloginfo('version') . ", mbstring: " . 
+                (extension_loaded('mbstring') ? 'true' : 'false'));
     }
 
     /** Write the line to the debug file. 
@@ -124,7 +134,7 @@ class ABJ_404_Solution_Logging {
     
     /** Email the log file to the plugin developer. */
     function emailErrorLogIfNecessary() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         if (!file_exists($this->getDebugFilePath())) {
             $this->debugMessage("No log file found so no errors were found.");
@@ -186,6 +196,11 @@ class ABJ_404_Solution_Logging {
             $zip->close();
         }
         
+        $count_posts = wp_count_posts();
+        $published_posts = $count_posts->publish;
+        $count_pages = wp_count_posts('page');
+        $published_pages = $count_pages->publish;
+        
         $attachments = array();
         $attachments[] = $logFileZip;
         $to = ABJ404_AUTHOR_EMAIL;
@@ -199,6 +214,8 @@ class ABJ_404_Solution_Logging {
         $bodyLines[] = "MySQL version: " . $wpdb->db_version();
         $bodyLines[] = "Site URL: " . get_site_url();
         $bodyLines[] = "WP_MEMORY_LIMIT: " . WP_MEMORY_LIMIT;
+        $bodyLines[] = "Extensions: " . implode(", ", get_loaded_extensions());
+        $bodyLines[] = "Published posts: " . $published_posts . ", published pages: " . $published_pages;
         
         $bodyLines[] = "Total error count: " . $totalErrorCount;
         $bodyLines[] = "Error: " . $errorLineMessage;
@@ -221,6 +238,7 @@ class ABJ_404_Solution_Logging {
      * @return int
      */
     function getLatestErrorLine() {
+        $f = ABJ_404_Solution_Functions::getInstance();
         $latestErrorLineFound = array();
         $latestErrorLineFound['num'] = -1;
         $latestErrorLineFound['line'] = null;
@@ -238,7 +256,7 @@ class ABJ_404_Solution_Logging {
                         $latestErrorLineFound['line'] = $line;
                         $latestErrorLineFound['total_error_count'] += 1;
                         
-                    } else if (mb_ereg("^#\d+ .+$", $line)) {
+                    } else if ($f->regexMatch("^#\d+ .+$", $line)) {
                         // include the entire stack trace.
                         $latestErrorLineFound['line'] .= "<BR/>\n" . $line;
                     }
@@ -318,6 +336,11 @@ class ABJ_404_Solution_Logging {
     }
     
     function limitDebugFileSize() {
+        // delete the sent_line file since it's now incorrect.
+        if (file_exists($this->getDebugFilePathSentFile())) {
+            ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathSentFile());
+        }
+        
         // delete _old log file
         ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathOld());
         // rename current log file to _old

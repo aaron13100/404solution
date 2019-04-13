@@ -21,15 +21,16 @@ class ABJ_404_Solution_WPNotice {
     private $message = '';
     
     public function __construct($type, $message) {
+        $f = ABJ_404_Solution_Functions::getInstance();
         $VALID_TYPES = array(self::ERROR, self::WARNING, self::SUCCESS, self::INFO);
         if (!in_array($type, $VALID_TYPES)) {
-            if (mb_strtolower($type) == 'info') {
+            if ($f->strtolower($type) == 'info') {
                 $type = self::INFO;
-            } else if (mb_strtolower($type) == 'warning') {
+            } else if ($f->strtolower($type) == 'warning') {
                 $type = self::WARNING;
-            } else if (mb_strtolower($type) == 'success') {
+            } else if ($f->strtolower($type) == 'success') {
                 $type = self::SUCCESS;
-            } else if (mb_strtolower($type) == 'error') {
+            } else if ($f->strtolower($type) == 'error') {
                 $type = self::ERROR;
             } else {
                 throw new Exception("Invalid type passed to constructor (" . $type . "). Expected: " . 
