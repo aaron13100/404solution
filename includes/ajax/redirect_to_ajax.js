@@ -37,12 +37,12 @@ jQuery(document).ready(function($) {
     });
     
     // highlight the text when the textbox gets focus.
-    $(".highlight-text-on-focus").focus(function() { this.select(); });
+    jQuery(".highlight-text-on-focus").focus(function() { this.select(); });
 
     // get the URL from the html page.
-    var url = $("#redirect_to_user_field").attr("data-url");
+    var url = jQuery("#redirect_to_user_field").attr("data-url");
     var cache = {};
-    $("#redirect_to_user_field").catcomplete({
+    jQuery("#redirect_to_user_field").catcomplete({
         source: function( request, response ) {
                     var term = request.term;
                     if ( term in cache ) {
@@ -59,9 +59,9 @@ jQuery(document).ready(function($) {
         select: function(event, ui) {
             event.preventDefault();
             // when an item is selected then update the hidden fields to store it.
-            $("#redirect_to_user_field").val(ui.item.label);
-            $("#redirect_to_data_field_title").val(ui.item.label);
-            $("#redirect_to_data_field_id").val(ui.item.value);
+            jQuery("#redirect_to_user_field").val(ui.item.label);
+            jQuery("#redirect_to_data_field_title").val(ui.item.label);
+            jQuery("#redirect_to_data_field_id").val(ui.item.value);
 
             abj404_validateAndUpdateFeedback();
         },
@@ -76,20 +76,20 @@ jQuery(document).ready(function($) {
     
     // prevent/disable the enter key from submitting the form for the search box.
     // maybe the user pressed enter after entering an external URL.
-    $('#redirect_to_user_field').keypress(function(event) {
+    jQuery('#redirect_to_user_field').keypress(function(event) {
         if (event.keyCode === 13) {
             // don't submit the form.
             event.preventDefault();
             
             // close the menu if it's open.
-            $('#redirect_to_user_field').catcomplete("close");
+            jQuery('#redirect_to_user_field').catcomplete("close");
             
             abj404_validateAndUpdateFeedback();
         }
     });
     
     // if nothing was entered then reset the already selected value.
-    $('#redirect_to_user_field').focusout(function(event) {
+    jQuery('#redirect_to_user_field').focusout(function(event) {
         abj404_validateAndUpdateFeedback();
     });
 

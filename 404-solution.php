@@ -74,7 +74,7 @@ $abj404_captured_types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, AB
 
 // other
 define("ABJ404_OPTION_DEFAULT_PERPAGE", 25);
-define("ABJ404_OPTION_MIN_PERPAGE", 10);
+define("ABJ404_OPTION_MIN_PERPAGE", 3);
 define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 150);
 
 
@@ -98,6 +98,9 @@ require_once ABJ404_PATH . 'includes/SynchronizationUtils.php';
 if (is_admin()) {
     require_once ABJ404_PATH . "includes/View.php";
     require_once ABJ404_PATH . "includes/View_Suggestions.php";
+    require_once ABJ404_PATH . "includes/ajax/ViewUpdater.php";
+    
+    // TODO make these not global
     $abj404view = new ABJ_404_Solution_View();
     $abj404viewSuggestions = new ABJ_404_Solution_View_Suggestions();
 }

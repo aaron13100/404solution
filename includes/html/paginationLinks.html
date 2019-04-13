@@ -1,8 +1,13 @@
 
-<div class="tablenav-pages">
+
+<div class="tablenav-pages abj404-pagination-right">
     <form method="POST" action="{changeItemsPerPage}" style="display: inline">
+        <input type="text" name="searchFilter" placeholder="{(Type to filter)}" />
+
         {TEXT_SHOW_ROWS}
-        <select name="perpage" onchange="this.form.submit();">
+        <select name="perpage" onchange="paginationLinksChange(this);">
+            <option value="3">3</option>
+            <option value="5">5</option>
             <option value="10">10</option>
             <option value="25">25</option>
             <option value="50">50</option>
