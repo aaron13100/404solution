@@ -25,8 +25,8 @@ class ABJ_404_Solution_ErrorHandler {
      * @return boolean
      */
     static function NormalErrorHandler($errno, $errstr, $errfile, $errline) {
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         try {
             // if the error file does not contain the name of our plugin then we ignore it.
             $pluginFolder = $f->substr(ABJ404_NAME, 0, $f->strpos(ABJ404_NAME, '/'));
@@ -49,9 +49,9 @@ class ABJ_404_Solution_ErrorHandler {
                 switch ($errno) {
                     case E_NOTICE:
                         if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
-                            if (mb_stripos($errstr, 'Undefined property') !== false) {
-                                break;
-                            }
+//                            if (mb_stripos($errstr, 'Undefined property') !== false) {
+//                                break;
+//                            }
                             $e = new Exception;
                             $abj404logging->debugMessage($errmsg . ', Trace:' . $e->getTraceAsString());
                         }
@@ -72,8 +72,8 @@ class ABJ_404_Solution_ErrorHandler {
     }
 
     static function FatalErrorHandler() {
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $lasterror = error_get_last();
 

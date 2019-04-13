@@ -16,7 +16,7 @@ class ABJ_404_Solution_ShortCode {
     static function shortcodePageSuggestions( $atts ) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         // Attributes
         $atts = shortcode_atts(

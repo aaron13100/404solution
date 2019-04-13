@@ -13,8 +13,8 @@ class ABJ_404_Solution_Ajax_Php {
     /** Find logs to display. */
     static function echoViewLogsFor() {
         $abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $term = $f->strtolower(sanitize_text_field($_GET['term']));
         $suggestions = array();
@@ -42,8 +42,8 @@ class ABJ_404_Solution_Ajax_Php {
     static function echoRedirectToPages() {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $term = $f->strtolower(sanitize_text_field($_GET['term']));
         $includeDefault404Page = $_GET['includeDefault404Page'] == "true";
@@ -92,7 +92,7 @@ class ABJ_404_Solution_Ajax_Php {
      * @return string
      */
     function provideSearchFeedback($suggestions, $term) {
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $category = '';
         
         if (count($suggestions) == 0) {
@@ -136,7 +136,7 @@ class ABJ_404_Solution_Ajax_Php {
      * @return type
      */
     function filterPages($pagesToFilter, $searchTerm) {
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         if ($searchTerm == "") {
             return $pagesToFilter;
         }        

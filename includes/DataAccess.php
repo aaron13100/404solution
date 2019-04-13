@@ -15,6 +15,16 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 
 class ABJ_404_Solution_DataAccess {
     
+    private static $instance = null;
+    
+    public static function getInstance() {
+        if (self::$instance == null) {
+            self::$instance = new ABJ_404_Solution_DataAccess();
+        }
+        
+        return self::$instance;
+    }
+    
     function getLatestPluginVersion() {
         if (!function_exists('plugins_api')) {
               require_once(ABSPATH . 'wp-admin/includes/plugin-install.php');
@@ -55,7 +65,7 @@ class ABJ_404_Solution_DataAccess {
      * @return boolean
      */
     function latestVersionIsInstalled() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         $pluginInfo = $abj404dao->getLatestPluginVersion();
 
@@ -67,7 +77,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function importDataFromPluginRedirectioner() {
         global $wpdb;
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $oldTable = $wpdb->prefix . 'wbz404_redirects';
         $newTable = $wpdb->prefix . 'abj404_redirects';
@@ -92,8 +102,8 @@ class ABJ_404_Solution_DataAccess {
      */
     function queryAndGetResults($query, $logErrors = true) {
         global $wpdb;
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $timer = new ABJ_404_Solution_Timer();
         
@@ -124,8 +134,8 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function repairTable($errorMessage) {
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $re = 'Table \'.*\/(.+)\' is marked as crashed and last \(automatic\?\) repair failed';
         $str = $errorMessage;
@@ -144,7 +154,7 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function executeAsTransaction($statementArray) {
-        $logger = new ABJ_404_Solution_Logging();
+        $logger = ABJ_404_Solution_Logging::getInstance();
         $exception = null;
         $allIsWell = true;
         
@@ -208,7 +218,7 @@ class ABJ_404_Solution_DataAccess {
     function getIDsNeededForPermalinkCache() {
         global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
 
@@ -327,8 +337,8 @@ class ABJ_404_Solution_DataAccess {
      */
     function insertAndGetResults($tableName, $dataToInsert) {
         global $wpdb;
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
 
         // get the data types
         $dataTypes = array();
@@ -411,7 +421,7 @@ class ABJ_404_Solution_DataAccess {
     */
    function getLogDiskUsage() {
        global $wpdb;
-       $abj404logging = new ABJ_404_Solution_Logging();
+       $abj404logging = ABJ_404_Solution_Logging::getInstance();
        
        // we have to analyze the table first for the query to be valid.
        $analyzeQuery = "OPTIMIZE TABLE " . $wpdb->prefix . 'abj404_logsv2';
@@ -507,7 +517,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function getRedirectsWithLogs() {
         global $wpdb;
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsWithLogs.sql");
         $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
@@ -548,10 +558,10 @@ class ABJ_404_Solution_DataAccess {
      */
     function getRedirectsForView($sub, $tableOptions) {
         global $wpdb;
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         global $abj404_redirect_types;
         global $abj404_captured_types;
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
 
         $redirects = $wpdb->prefix . "abj404_redirects";
         $logs = $wpdb->prefix . "abj404_logsv2";
@@ -763,7 +773,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function logRedirectHit($requestedURL, $action, $matchReason, $requestedURLDetail = null) {
         global $wpdb;
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         
         $now = time();
@@ -793,7 +803,7 @@ class ABJ_404_Solution_DataAccess {
         }
             
         if ($abj404logging->isDebug()) {
-            $helperFunctions = new ABJ_404_Solution_Functions();
+            $helperFunctions = ABJ_404_Solution_Functions::getInstance();
             $reasonMessage = trim(implode(", ", 
                         array_filter(
                         array($_REQUEST[ABJ404_PP]['ignore_doprocess'], $_REQUEST[ABJ404_PP]['ignore_donotprocess']))));
@@ -873,10 +883,10 @@ class ABJ_404_Solution_DataAccess {
      */
     function deleteOldRedirectsCron() {
         global $wpdb;
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $logsTable = $wpdb->prefix . "abj404_logsv2";
@@ -1053,7 +1063,7 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function limitDebugFileSize() {
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $renamed = false;
         
         $mbFileSize = $abj404logging->getDebugFileSize() / 1024 / 1000;
@@ -1106,7 +1116,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled = 0) {
         global $wpdb;
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
 
         // nonce is verified outside of this method. We can't verify here because 
         // automatic redirects are sometimes created without user interaction.
@@ -1209,8 +1219,8 @@ class ABJ_404_Solution_DataAccess {
     function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '', $limitResults = '') {
         global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         // get the valid post types
         $options = $abj404logic->getOptions();
@@ -1273,8 +1283,8 @@ class ABJ_404_Solution_DataAccess {
     function getPublishedImagesIDs() {
         global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         // get the valid post types
         $options = $abj404logic->getOptions();
@@ -1311,8 +1321,8 @@ class ABJ_404_Solution_DataAccess {
     function getPublishedTags() {
         global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         // get the valid post types
         $options = $abj404logic->getOptions();
@@ -1353,8 +1363,8 @@ class ABJ_404_Solution_DataAccess {
     function getPublishedCategories($term_id = null) {
         global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         // get the valid post types
         $options = $abj404logic->getOptions();
@@ -1399,7 +1409,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function deleteSpecifiedRedirects() {
         global $wpdb;
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $message = "";
 
         // nonce already verified.
@@ -1573,7 +1583,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function moveRedirectsToTrash($id, $trash) {
         global $wpdb;
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $message = "";
         $result = false;
@@ -1602,7 +1612,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType) {
         global $wpdb;
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         if (($type <= 0) || ($idForUpdate <= 0)) {
             $abj404logging->errorMessage("Bad data passed for update redirect request. Type: " .
@@ -1637,7 +1647,7 @@ class ABJ_404_Solution_DataAccess {
      * @return type
      */
     function getCapturedCountForNotification() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         return $abj404dao->getRecordCount(array(ABJ404_STATUS_CAPTURED));
     }
     

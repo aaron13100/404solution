@@ -10,6 +10,16 @@ if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
 
 class ABJ_404_Solution_Logging {
 
+    private static $instance = null;
+    
+    public static function getInstance() {
+        if (self::$instance == null) {
+            self::$instance = new ABJ_404_Solution_Logging();
+        }
+        
+        return self::$instance;
+    }
+    
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
@@ -54,7 +64,6 @@ class ABJ_404_Solution_Logging {
      * @param type $message  */
     function debugMessage($message) {
         if ($this->isDebug()) {
-            $prefix = "ABJ-404-SOLUTION (DEBUG): ";
             $timestamp = $this->getTimestamp() . ' (DEBUG): ';
             $this->writeLineToDebugFile($timestamp . $message);
         }
@@ -125,7 +134,7 @@ class ABJ_404_Solution_Logging {
     
     /** Email the log file to the plugin developer. */
     function emailErrorLogIfNecessary() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         if (!file_exists($this->getDebugFilePath())) {
             $this->debugMessage("No log file found so no errors were found.");
@@ -187,6 +196,11 @@ class ABJ_404_Solution_Logging {
             $zip->close();
         }
         
+        $count_posts = wp_count_posts();
+        $published_posts = $count_posts->publish;
+        $count_pages = wp_count_posts('page');
+        $published_pages = $count_pages->publish;
+        
         $attachments = array();
         $attachments[] = $logFileZip;
         $to = ABJ404_AUTHOR_EMAIL;
@@ -201,6 +215,7 @@ class ABJ_404_Solution_Logging {
         $bodyLines[] = "Site URL: " . get_site_url();
         $bodyLines[] = "WP_MEMORY_LIMIT: " . WP_MEMORY_LIMIT;
         $bodyLines[] = "Extensions: " . implode(", ", get_loaded_extensions());
+        $bodyLines[] = "Published posts: " . $published_posts . ", published pages: " . $published_pages;
         
         $bodyLines[] = "Total error count: " . $totalErrorCount;
         $bodyLines[] = "Error: " . $errorLineMessage;
@@ -223,7 +238,7 @@ class ABJ_404_Solution_Logging {
      * @return int
      */
     function getLatestErrorLine() {
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $latestErrorLineFound = array();
         $latestErrorLineFound['num'] = -1;
         $latestErrorLineFound['line'] = null;
@@ -321,6 +336,11 @@ class ABJ_404_Solution_Logging {
     }
     
     function limitDebugFileSize() {
+        // delete the sent_line file since it's now incorrect.
+        if (file_exists($this->getDebugFilePathSentFile())) {
+            ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathSentFile());
+        }
+        
         // delete _old log file
         ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathOld());
         // rename current log file to _old
