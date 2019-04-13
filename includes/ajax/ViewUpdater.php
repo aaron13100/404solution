@@ -33,7 +33,15 @@ class ABJ_404_Solution_ViewUpdater {
         
         $data = array();
         $data['paginationLinks'] = $abj404view->getPaginationLinks($subpage);
-        $data['table'] = $abj404view->getAdminRedirectsTable($subpage);
+        if ($subpage == 'abj404_redirects') {
+            $data['table'] = $abj404view->getAdminRedirectsTable($subpage);
+            
+        } else if ($subpage == 'abj404_captured') {
+            $data['table'] = $abj404view->echoCapturedURLSTable($subpage);
+            
+        } else {
+            'Error: Unexpected subpage requested.';
+        }
         
         echo json_encode($data, JSON_PRETTY_PRINT);
         exit;
