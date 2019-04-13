@@ -76,6 +76,8 @@ class ABJ_404_Solution_PluginLogic {
         $options = $abj404logic->getOptions();
         $ignoreReasonDoNotProcess = null;
         $ignoreReasonDoProcess = null;
+        $httpUserAgent = array_key_exists('HTTP_USER_AGENT', $_SERVER) ? 
+                $f->strtolower($_SERVER['HTTP_USER_AGENT']) : '';
         
         // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
         // ignore requests that are supposed to be for an admin.
@@ -90,7 +92,6 @@ class ABJ_404_Solution_PluginLogic {
         // by https://www.sovrn.com/. 
         $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_dontprocess'])),
                 array($f, 'trimAndRemoveEmpty'));
-        $httpUserAgent = $f->strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (do not redirect): " . 
@@ -120,7 +121,6 @@ class ABJ_404_Solution_PluginLogic {
         // ignore and process
         $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_doprocess'])),
                 array($f, 'trimAndRemoveEmpty'));
-        $httpUserAgent = $f->strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (process ok): " . 
