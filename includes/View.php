@@ -2067,8 +2067,8 @@ class ABJ_404_Solution_View {
         $showRowsText = __('Rows per page:', '404-solution');
         $showRowsLink = wp_nonce_url($url . '&action=changeItemsPerRow', "abj404_importRedirects");
 
-        $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&nonce=" .
-                wp_create_nonce('abj404_updatePaginationLink');
+        $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=" . $sub .
+                "&nonce=" . wp_create_nonce('abj404_updatePaginationLink');
         
         $showSearchFilter = $sub == 'abj404_redirects' ? '' : '<!--';
 

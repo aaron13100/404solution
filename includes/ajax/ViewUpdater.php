@@ -44,7 +44,7 @@ class ABJ_404_Solution_ViewUpdater {
             $data['table'] = $abj404view->getAdminLogsPageTable($subpage);
             
         } else {
-            'Error: Unexpected subpage requested.';
+            $data['table'] = 'Error: Unexpected subpage requested.';
         }
         
         echo json_encode($data);

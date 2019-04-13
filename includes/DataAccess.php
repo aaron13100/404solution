@@ -571,29 +571,21 @@ class ABJ_404_Solution_DataAccess {
         $statusTypes = '';
         $trashValue = '';
 
-        $query = "select \n  " . $redirects . ".id,\n  " . $redirects . ".url,\n  " . $redirects . ".status,\n  " . 
-                $redirects . ".type,\n  " . $redirects . ".final_dest,\n  " . $redirects . ".code,\n  " . 
-                $redirects . ".timestamp,\n " . $wpdb->posts . ".id as wp_post_id,\n ";
-        
         // if we're showing all rows include all of the log data in the query already. this makes the query very slow. 
         // this should be replaced by the dynamic loading of log data using ajax queries as the page is viewed.
         $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits')
                 || ($tableOptions['orderby'] == 'last_used');
         if ($queryAllRowsAtOnce) {
-             $query .= $logsTableColumns = "logstable.logshits as logshits, \n" .
+             $logsTableColumns = "logstable.logshits as logshits, \n" .
                     "logstable.logsid, \n" .
                     "logstable.last_used, \n";
         } else {
-            $query .= $logsTableColumns = "null as logshits, \n null as logsid, \n null as last_used, \n";
+            $logsTableColumns = "null as logshits, \n null as logsid, \n null as last_used, \n";
         }
         
-        $query .= $wpdb->posts . ".post_type as wp_post_type\n  " .
-                "from " . $redirects . "\n " .
-                "  LEFT OUTER JOIN " . $wpdb->posts . " \n " .
-                "    on " . $redirects . ".final_dest = " . $wpdb->posts . ".id \n ";
 
         if ($queryAllRowsAtOnce) {
-            $logsTableJoin = $query .= "  LEFT OUTER JOIN ( \n " .
+            $logsTableJoin = "  LEFT OUTER JOIN ( \n " .
                     "    SELECT requested_url, \n " .
                     "           MIN(" . $logs . ".id) AS logsid, \n " .
                     "           max(" . $logs . ".timestamp) as last_used, \n " .
@@ -606,14 +598,11 @@ class ABJ_404_Solution_DataAccess {
                     "  on " . $redirects . ".url = logstable.requested_url \n ";
         }
         
-        $query .= " where 1 and (";
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             if ($sub == 'abj404_redirects') {
-                $query .= "status in (" . implode(", ", $abj404_redirect_types) . ")";
                 $statusTypes = implode(", ", $abj404_redirect_types);
 
             } else if ($sub == 'abj404_captured') {
-                $query .= "status in (" . implode(", ", $abj404_captured_types) . ") ";
                 $statusTypes = implode(", ", $abj404_captured_types);
 
             } else {
@@ -621,20 +610,15 @@ class ABJ_404_Solution_DataAccess {
             }
             
         } else if ($tableOptions['filter'] == ABJ404_STATUS_MANUAL) {
-            $query .= "status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_REGEX . ")";
             $statusTypes = implode(", ", array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_REGEX));
             
         } else {
-            $query .= "status = " . sanitize_text_field($tableOptions['filter']);
             $statusTypes = sanitize_text_field($tableOptions['filter']);
         }
-        $query .= ") ";
 
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-            $query .= "and disabled = 1 ";
             $trashValue = 1;
         } else {
-            $query .= "and disabled = 0 ";
             $trashValue = 0;
         }
 
@@ -648,13 +632,10 @@ class ABJ_404_Solution_DataAccess {
         }
         
         $orderByString = "order by " . $orderBy . " " . sanitize_text_field($tableOptions['order']);
-        $query .= "\norder by " . $orderBy . " " . 
-                sanitize_text_field($tableOptions['order']) . " ";
 
         // for normal page views we limit the rows returned based on user preferences for paginaiton.
         $limitStart = $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
         $limitEnd = absint(sanitize_text_field($tableOptions['perpage']));
-        $query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
 
         // ---
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
