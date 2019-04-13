@@ -924,7 +924,7 @@ class ABJ_404_Solution_View {
         echo "</div>";
 
 
-        $this->echoCapturedURLSTable($sub);
+        echo $this->echoCapturedURLSTable($sub);
 
         echo "<div class=\"tablenav\">";
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
@@ -962,14 +962,14 @@ class ABJ_404_Solution_View {
         $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "20%";
 
-        echo "<table class=\"wp-list-table widefat fixed\">";
-        echo "<thead>";
-        echo $this->getTableColumns($sub, $columns);
-        echo "</thead>";
-        echo "<tfoot>";
-        echo $this->getTableColumns($sub, $columns);
-        echo "</tfoot>";
-        echo "<tbody id=\"the-list\">";
+        $html = "<table class=\"wp-list-table widefat fixed\">";
+        $html .= "<thead>";
+        $html .= $this->getTableColumns($sub, $columns);
+        $html .= "</thead>";
+        $html .= "<tfoot>";
+        $html .= $this->getTableColumns($sub, $columns);
+        $html .= "</tfoot>";
+        $html .= "<tbody id=\"the-list\">";
         
         $rows = $abj404dao->getRedirectsForView($sub, $tableOptions);
         $displayed = 0;
@@ -1070,39 +1070,40 @@ class ABJ_404_Solution_View {
             }
             $allRowActions = implode("\n | ", $rowActions);
             
-            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowCapturedURLs.html");
-            $html = str_replace('{rowActions}', $allRowActions, $html);
-            $html = str_replace('{rowid}', $row['id'], $html);
-            $html = str_replace('{editLink}', $editlink, $html);
-            $html = str_replace('{logsLink}', $logslink, $html);
-            $html = str_replace('{trashLink}', $trashlink, $html);
-            $html = str_replace('{ajaxTrashLink}', $ajaxTrashLink, $html);
-            $html = str_replace('{trashtitle}', $trashtitle, $html);
-            $html = str_replace('{ignoreLink}', $ignorelink, $html);
-            $html = str_replace('{ignoreTitle}', $ignoretitle, $html);
-            $html = str_replace('{laterLink}', $laterlink, $html);
-            $html = str_replace('{deleteLink}', $deletelink, $html);
-            $html = str_replace('{url}', esc_html($row['url']), $html);
-            $html = str_replace('{hits}', esc_html($hits), $html);
-            $html = str_replace('{created_date}', 
-                    esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $html);
-            $html = str_replace('{last_used_date}', esc_html($last), $html);
+            $tempHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowCapturedURLs.html");
+            $tempHtml = str_replace('{rowActions}', $allRowActions, $tempHtml);
+            $tempHtml = str_replace('{rowid}', $row['id'], $tempHtml);
+            $tempHtml = str_replace('{editLink}', $editlink, $tempHtml);
+            $tempHtml = str_replace('{logsLink}', $logslink, $tempHtml);
+            $tempHtml = str_replace('{trashLink}', $trashlink, $tempHtml);
+            $tempHtml = str_replace('{ajaxTrashLink}', $ajaxTrashLink, $tempHtml);
+            $tempHtml = str_replace('{trashtitle}', $trashtitle, $tempHtml);
+            $tempHtml = str_replace('{ignoreLink}', $ignorelink, $tempHtml);
+            $tempHtml = str_replace('{ignoreTitle}', $ignoretitle, $tempHtml);
+            $tempHtml = str_replace('{laterLink}', $laterlink, $tempHtml);
+            $tempHtml = str_replace('{deleteLink}', $deletelink, $tempHtml);
+            $tempHtml = str_replace('{url}', esc_html($row['url']), $tempHtml);
+            $tempHtml = str_replace('{hits}', esc_html($hits), $tempHtml);
+            $tempHtml = str_replace('{created_date}', 
+                    esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $tempHtml);
+            $tempHtml = str_replace('{last_used_date}', esc_html($last), $tempHtml);
             
-            $html = $this->doNormalReplacements($html);
-            echo $html;
+            $tempHtml = $this->doNormalReplacements($tempHtml);
+            $html .= $tempHtml;
         }
         
         if ($displayed == 0) {
-            echo "<tr>";
-            echo "<td></td>";
-            echo "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . __('No Records To Display', '404-solution') . "</td>";
-            echo "<td></td>";
-            echo "</tr>";
+            $html .= "<tr>";
+            $html .= "<td></td>";
+            $html .= "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . __('No Records To Display', '404-solution') . "</td>";
+            $html .= "<td></td>";
+            $html .= "</tr>";
         }
         
-        echo "</tbody>";
-        echo "</table>";
-        // ----------------------------------------------
+        $html .= "</tbody>";
+        $html .= "</table>";
+        
+        return $html;
     }
 
     /** 
