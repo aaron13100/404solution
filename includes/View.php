@@ -924,7 +924,7 @@ class ABJ_404_Solution_View {
         echo "</div>";
 
 
-        echo $this->echoCapturedURLSTable($sub);
+        echo $this->getCapturedURLSPageTable($sub);
 
         echo "<div class=\"tablenav\">";
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
@@ -940,7 +940,7 @@ class ABJ_404_Solution_View {
         echo $html;
     }
     
-    function echoCapturedURLSTable($sub) {
+    function getCapturedURLSPageTable($sub) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         
@@ -1190,7 +1190,7 @@ class ABJ_404_Solution_View {
         }
         echo "</div>";
 
-        echo $this->getAdminRedirectsTable($sub);
+        echo $this->getAdminRedirectsPageTable($sub);
 
         echo "<div class=\"tablenav\">";
         echo $this->getPaginationLinks($sub);
@@ -1208,7 +1208,7 @@ class ABJ_404_Solution_View {
         echo $html;
     }
     
-    function getAdminRedirectsTable($sub) {
+    function getAdminRedirectsPageTable($sub) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -1724,12 +1724,9 @@ class ABJ_404_Solution_View {
     function echoAdminLogsPage() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        global $abj404ip2Location;
         
         $sub = 'abj404_logs';
         $tableOptions = $abj404logic->getTableOptions($sub);
-        $options = $abj404logic->getOptions(true);
 
         // Sanitizing unchecked table options
         foreach ($tableOptions as $key => $value) {
@@ -1766,6 +1763,25 @@ class ABJ_404_Solution_View {
 
         echo "</form>";
 
+
+        echo "<div class=\"tablenav\">";
+        echo $this->getPaginationLinks($sub);
+        echo "</div>";
+
+        echo $this->getAdminLogsPageTable($sub);
+
+        echo "<div class=\"tablenav\">";
+        echo $this->getPaginationLinks($sub);
+        echo "</div>";
+    }
+    
+    function getAdminLogsPageTable($sub) {
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        
+        $tableOptions = $abj404logic->getTableOptions($sub);
+        
         $columns = array();
         $columns['url']['title'] = __('URL', '404-solution');
         $columns['url']['orderby'] = "url";
@@ -1785,19 +1801,15 @@ class ABJ_404_Solution_View {
         $columns['username']['title'] = __('User', '404-solution');
         $columns['username']['orderby'] = "username";
         $columns['username']['width'] = "10%";
-
-        echo "<div class=\"tablenav\">";
-        echo $this->getPaginationLinks($sub);
-        echo "</div>";
-
-        echo "<table class=\"wp-list-table widefat fixed\">";
-        echo "<thead>";
-        echo $this->getTableColumns($sub, $columns);
-        echo "</thead>";
-        echo "<tfoot>";
-        echo $this->getTableColumns($sub, $columns);
-        echo "</tfoot>";
-        echo "<tbody>";
+        
+        $html = "<table class=\"wp-list-table widefat fixed\">";
+        $html .= "<thead>";
+        $html .= $this->getTableColumns($sub, $columns);
+        $html .= "</thead>";
+        $html .= "<tfoot>";
+        $html .= $this->getTableColumns($sub, $columns);
+        $html .= "</tfoot>";
+        $html .= "<tbody>";
 
         $timezone = get_option('timezone_string');
         if ('' == $timezone) {
@@ -1820,55 +1832,53 @@ class ABJ_404_Solution_View {
             } else {
                 $y = 0;
             }
-            echo "<tr" . $class . ">";
-            echo "<td></td>";
+            $html .= "<tr" . $class . ">";
+            $html .= "<td></td>";
             
-            echo "<td>" . esc_html($row['url']);
+            $html .= "<td>" . esc_html($row['url']);
             if (trim($row['url_detail']) != '') {
-                echo ' (' . esc_html(trim($row['url_detail'])) . ')';
+                $html .= ' (' . esc_html(trim($row['url_detail'])) . ')';
             }
-            echo "</td>";
+            $html .= "</td>";
             
-            echo "<td>" . esc_html($row['remote_host']) . "</td>";
-            echo "<td>";
+            $html .= "<td>" . esc_html($row['remote_host']) . "</td>";
+            $html .= "<td>";
             if ($row['referrer'] != "") {
-                echo "<a href=\"" . esc_url($row['referrer']) . "\" title=\"" . __('Visit', '404-solution') . ": " . esc_attr($row['referrer']) . "\" target=\"_blank\">" . esc_html($row['referrer']) . "</a>";
+                $html .= "<a href=\"" . esc_url($row['referrer']) . "\" title=\"" . __('Visit', '404-solution') . ": " . esc_attr($row['referrer']) . "\" target=\"_blank\">" . esc_html($row['referrer']) . "</a>";
             } else {
-                echo "&nbsp;";
+                $html .= "&nbsp;";
             }
-            echo "</td>";
-            echo "<td>";
+            $html .= "</td>";
+            $html .= "<td>";
             if ($row['action'] == "404") {
-                echo __('Displayed 404 Page', '404-solution');
+                $html .= __('Displayed 404 Page', '404-solution');
             } else {
-                echo __('Redirected to', '404-solution') . " ";
-                echo "<a href=\"" . esc_url($row['action']) . "\" title=\"" . __('Visit', '404-solution') . ": " . esc_attr($row['action']) . "\" target=\"_blank\">" . esc_html($row['action']) . "</a>";
+                $html .= __('Redirected to', '404-solution') . " ";
+                $html .= "<a href=\"" . esc_url($row['action']) . "\" title=\"" . __('Visit', '404-solution') . ": " . esc_attr($row['action']) . "\" target=\"_blank\">" . esc_html($row['action']) . "</a>";
             }
-            echo "</td>";
+            $html .= "</td>";
             $timeToDisplay = abs(intval($row['timestamp']));
-            echo "<td>" . date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
+            $html .= "<td>" . date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
                     date('A', $timeToDisplay) . "</td>";
             
-            echo "<td>" . esc_html($row['username']) . "</td>";
+            $html .= "<td>" . esc_html($row['username']) . "</td>";
             
-            echo "<td></td>";
-            echo "</tr>";
+            $html .= "<td></td>";
+            $html .= "</tr>";
             $logRecordsDisplayed++;
         }
         $abj404logging->debugMessage($logRecordsDisplayed . " log records displayed on the page.");
         if ($logRecordsDisplayed == 0) {
-            echo "<tr>";
-            echo "<td></td>";
-            echo "<td colspan=\"5\" style=\"text-align: center; font-weight: bold;\">" . __('No Results To Display', '404-solution') . "</td>";
-            echo "<td></td>";
-            echo "</tr>";
+            $html .= "<tr>";
+            $html .= "<td></td>";
+            $html .= "<td colspan=\"5\" style=\"text-align: center; font-weight: bold;\">" . __('No Results To Display', '404-solution') . "</td>";
+            $html .= "<td></td>";
+            $html .= "</tr>";
         }
-        echo "</tbody>";
-        echo "</table>";
-
-        echo "<div class=\"tablenav\">";
-        echo $this->getPaginationLinks($sub);
-        echo "</div>";
+        $html .= "</tbody>";
+        $html .= "</table>";
+        
+        return $html;
     }
 
     /** 
@@ -2053,7 +2063,10 @@ class ABJ_404_Solution_View {
         $currentPageText = __('Page', '404-solution') . " " . $tableOptions['paged'] . " " . __('of', '404-solution') . " " . esc_html($total_pages);
         $showRowsText = __('Rows per page:', '404-solution');
         $showRowsLink = wp_nonce_url($url . '&action=changeItemsPerRow', "abj404_importRedirects");
-        
+
+        $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=" . $sub;
+        $ajaxPaginationLink = wp_nonce_url($ajaxPaginationLink, "abj404_updatePaginationLink");
+
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinks.html");
         // do special replacements
@@ -2068,6 +2081,7 @@ class ABJ_404_Solution_View {
         $html = str_replace('{TEXT_CURRENT_PAGE}', $currentPageText, $html);
         $html = str_replace('{LINK_NEXT_PAGE}', esc_url($nexturl), $html);
         $html = str_replace('{LINK_LAST_PAGE}', esc_url($lasturl), $html);
+        $html = str_replace('{data-pagination-ajax-url}', $ajaxPaginationLink, $html);
         // constants and translations.
         $html = $this->doNormalReplacements($html);
         
@@ -2116,12 +2130,9 @@ class ABJ_404_Solution_View {
             $class = " class=\"current\"";
         }
         
-        $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=" . $sub;
-        $ajaxPaginationLink = wp_nonce_url($ajaxPaginationLink, "abj404_updatePaginationLink");
-
         $html = '';
         $html .= "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" ></span>";
-        $html .= '<ul class="subsubsub" data-pagination-ajax-url="' . $ajaxPaginationLink . '" >';
+        $html .= '<ul class="subsubsub" >';
         
         if ($sub != 'abj404_captured') {
             $html .= "<li>";
