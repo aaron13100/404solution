@@ -25,7 +25,6 @@ class ABJ_404_Solution_ViewUpdater {
         $filterText = $abj404dao->getPostOrGetSanitize('filterText');
         $rowsPerPage = absint($abj404dao->getPostOrGetSanitize('rowsPerPage'));
         $subpage = $abj404dao->getPostOrGetSanitize('subpage');
-        $trashFilter = $abj404dao->getPostOrGetSanitize('trashFilter');
         $nonce = $abj404dao->getPostOrGetSanitize('nonce');
         
         wp_verify_nonce($nonce);

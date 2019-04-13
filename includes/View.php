@@ -1066,7 +1066,7 @@ class ABJ_404_Solution_View {
                 $rowActions[] = '<span class="delete"><a href="{deleteLink}" title="{Delete Redirect Permanently}">{Delete Permanently}</a></span>';
             } else {
                 $rowActions[] = '<span class="ignore"><a href="{ignoreLink}" title="{ignoreTitle}">{ignoreTitle}</a></span>';
-                $rowActions[] = '<span class="ignore"><a href="{laterLink}" title="{Organize Later}">{Organize Later}</a></span>';
+                $rowActions[] = '<span class="ignore"><a href="{laterLink}" title="{laterTitle}">{laterTitle}</a></span>';
             }
             $allRowActions = implode("\n | ", $rowActions);
             
@@ -1082,6 +1082,7 @@ class ABJ_404_Solution_View {
             $tempHtml = str_replace('{ignoreLink}', $ignorelink, $tempHtml);
             $tempHtml = str_replace('{ignoreTitle}', $ignoretitle, $tempHtml);
             $tempHtml = str_replace('{laterLink}', $laterlink, $tempHtml);
+            $tempHtml = str_replace('{laterTitle}', $latertitle, $tempHtml);
             $tempHtml = str_replace('{deleteLink}', $deletelink, $tempHtml);
             $tempHtml = str_replace('{url}', esc_html($row['url']), $tempHtml);
             $tempHtml = str_replace('{hits}', esc_html($hits), $tempHtml);
