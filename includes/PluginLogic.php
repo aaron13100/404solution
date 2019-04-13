@@ -649,12 +649,17 @@ class ABJ_404_Solution_PluginLogic {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         if ($abj404dao->getPostOrGetSanitize('action') == 'changeItemsPerRow') {
-            $showRows = max(absint($abj404dao->getPostOrGetSanitize('perpage')), ABJ404_OPTION_MIN_PERPAGE);
-
-            $options = $this->getOptions();
-            $options['perpage'] = $showRows;
-            update_option('abj404_settings', $options);
+            $this->updatePerPageOption(absint($abj404dao->getPostOrGetSanitize('perpage')));
         }
+    }
+    
+    function updatePerPageOption($rows) {
+        $showRows = max($rows, ABJ404_OPTION_MIN_PERPAGE);
+        $showRows = min($showRows, ABJ404_OPTION_MAX_PERPAGE);
+
+        $options = $this->getOptions();
+        $options['perpage'] = $showRows;
+        update_option('abj404_settings', $options);
     }
     
     /** 

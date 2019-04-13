@@ -25,17 +25,17 @@ class ABJ_404_Solution_ViewUpdater {
         // TODO verify nonce
         
         $filterText = $abj404dao->getPostOrGetSanitize('filterText');
-        $rowsPerPage = $abj404dao->getPostOrGetSanitize('rowsPerPage');
+        $rowsPerPage = absint($abj404dao->getPostOrGetSanitize('rowsPerPage'));
         $subpage = $abj404dao->getPostOrGetSanitize('subpage');
         
         // update the perpage option
-        $options = $abj404logic->getOptions();
-        $options['perpage'] = $rowsPerPage;
-        update_option('abj404_settings', $options);
+        $abj404logic->updatePerPageOption($rowsPerPage);
         
-        $html = $abj404view->getPaginationLinks($subpage);
+        $data = array();
+        $data['paginationLinks'] = $abj404view->getPaginationLinks($subpage);
+        $data['table'] = $abj404view->getAdminRedirectsTable($subpage);
         
-        echo json_encode($html, JSON_PRETTY_PRINT);
+        echo json_encode($data, JSON_PRETTY_PRINT);
         exit;
     }
     
