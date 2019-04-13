@@ -2065,8 +2065,8 @@ class ABJ_404_Solution_View {
         $showRowsText = __('Rows per page:', '404-solution');
         $showRowsLink = wp_nonce_url($url . '&action=changeItemsPerRow', "abj404_importRedirects");
 
-        $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=" . $sub;
-        $ajaxPaginationLink = wp_nonce_url($ajaxPaginationLink, "abj404_updatePaginationLink");
+        $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&nonce=" .
+                wp_create_nonce('abj404_updatePaginationLink');
 
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinks.html");
@@ -2095,16 +2095,31 @@ class ABJ_404_Solution_View {
      * @param type $tableOptions
      */
     function getTabFilters($sub, $tableOptions) {
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+
+        if (count($tableOptions) == 0) {
+            $tableOptions = $abj404logic->getTableOptions();
+        }
+        
+        $html = '';
+        $html .= "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" ></span>";
+        
+        $html .= $this->getSubSubSub($sub);
+        
+        $html .= "</span>";
+        
+        return $html;
+    }
+    
+    function getSubSubSub($sub) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         global $abj404_redirect_types;
         global $abj404_captured_types;
-
-        if (count($tableOptions) == 0) {
-            $tableOptions = $abj404logic->getTableOptions();
-        }
-
+        
+        $tableOptions = $abj404logic->getTableOptions();
+        
         $url = "?page=" . ABJ404_PP;
         if ($sub == 'abj404_captured') {
             $url .= "&subpage=abj404_captured";
@@ -2131,10 +2146,7 @@ class ABJ_404_Solution_View {
             $class = " class=\"current\"";
         }
         
-        $html = '';
-        $html .= "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" ></span>";
-        $html .= '<ul class="subsubsub" >';
-        
+        $html = '<ul class="subsubsub" >';
         if ($sub != 'abj404_captured') {
             $html .= "<li>";
             $html .= "<a href=\"" . esc_url($url) . "\"" . $class . ">" . __('All', '404-solution');
@@ -2142,7 +2154,6 @@ class ABJ_404_Solution_View {
             $html .= "</a>";
             $html .= "</li>";
         }
-
         foreach ($types as $type) {
             $thisurl = $url . "&filter=" . $type;
 
@@ -2195,9 +2206,7 @@ class ABJ_404_Solution_View {
         $html .= " <span class=\"count\">(" . esc_html($abj404dao->getRecordCount($types, 1)) . ")</span>";
         $html .= "</a>";
         $html .= "</li>";
-
         $html .= "</ul>";
-        $html .= "</span>";
         
         return $html;
     }
