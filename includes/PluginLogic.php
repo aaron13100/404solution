@@ -19,7 +19,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return type
      */
     function removeHomeDirectory($urlRequest) {
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
         if ($f->substr($urlRequest, 0, $f->strlen($urlHomeDirectory)) == $urlHomeDirectory) {
             $urlRequest = $f->substr($urlRequest, $f->strlen($urlHomeDirectory . "/"));
@@ -35,7 +35,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function tryNormalPostQuery($options) {
         global $wp_query;
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 
         // this is for requests like website.com/?p=123
         $query = $wp_query->query;
@@ -69,9 +69,9 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $urlSlugOnly only the slug. e.g. /aboutt
      */
     function initializeIgnoreValues($urlRequest, $urlSlugOnly) {
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $options = $abj404logic->getOptions();
         $ignoreReasonDoNotProcess = null;
@@ -135,9 +135,9 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $reason
      */
     function sendTo404Page($requestedURL, $reason = '') {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
 
         // this may be used later when displaying suggestions.
         $cookieName = ABJ404_PP . '_REQUEST_URI';
@@ -240,8 +240,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return type
      */
     function updateToNewVersion($options) {
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         if ($this->currentlyUpdatingDatabaseVersion) {
             $abj404logging->errorMessage("Avoiding infinite loop on database update.");
@@ -274,10 +274,10 @@ class ABJ_404_Solution_PluginLogic {
      */
     function updateToNewVersionAction($options) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         global $wpdb;
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
 
         $currentDBVersion = "(unknown)";
         if (array_key_exists('DB_VERSION', $options)) {
@@ -465,15 +465,15 @@ class ABJ_404_Solution_PluginLogic {
      */
     static function runOnPluginActivation() {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         add_option('abj404_settings', '', '', 'no');
         
         if (!isset($abj404logging)) {
-            $abj404logging = new ABJ_404_Solution_Logging();
+            $abj404logging = ABJ_404_Solution_Logging::getInstance();
         }
         if (!isset($abj404dao)) {
-            $abj404dao = new ABJ_404_Solution_DataAccess();
+            $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         }
         if (!isset($abj404logic)) {
             $abj404logic = new ABJ_404_Solution_PluginLogic();
@@ -508,9 +508,9 @@ class ABJ_404_Solution_PluginLogic {
      */
     function handlePluginAction($action, &$sub) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $message = "";
         
@@ -605,8 +605,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return type
      */
     function hanldeTrashAction() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $message = "";
         // Handle Trash Functionality
@@ -646,7 +646,7 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function handleActionChangeItemsPerRow() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         if ($abj404dao->getPostOrGetSanitize('action') == 'changeItemsPerRow') {
             $showRows = max(absint($abj404dao->getPostOrGetSanitize('perpage')), ABJ404_OPTION_MIN_PERPAGE);
@@ -664,8 +664,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return string
      */
     function handleActionImportRedirects() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $message = "";
         
         
@@ -700,8 +700,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return type
      */
     function handleDeleteAction() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $message = "";
         
         //Handle Delete Functionality
@@ -721,9 +721,9 @@ class ABJ_404_Solution_PluginLogic {
      * @return type
      */
     function handleIgnoreAction() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $message = "";
         
         //Handle Ignore Functionality
@@ -768,9 +768,9 @@ class ABJ_404_Solution_PluginLogic {
      * @return type
      */
     function handleLaterAction() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $message = "";
         
         //Handle Ignore Functionality
@@ -818,8 +818,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return type
      */
     function handleActionEdit(&$sub, &$action) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $message = "";
         
         //Handle edit posts
@@ -850,8 +850,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return string
      */
     function doBulkAction($action, $ids) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $message = "";
 
         // nonce already verified.
@@ -932,11 +932,11 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $sub
      */
     function doEmptyTrash($sub) {
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         global $wpdb;
         global $abj404_redirect_types;
         global $abj404_captured_types;
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $query = "";
@@ -965,9 +965,9 @@ class ABJ_404_Solution_PluginLogic {
      * @return string
      */
     function updateRedirectData() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $message = "";
         $fromURL = "";
         $ids_multiple = "";
@@ -1026,9 +1026,9 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function getRedirectTypeAndDest() {
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $response = array();
         $response['type'] = "";
@@ -1074,9 +1074,9 @@ class ABJ_404_Solution_PluginLogic {
      * @return string
      */
     function addAdminRedirect() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $message = "";
         
         if ($_POST['manual_redirect_url'] == "") {
@@ -1122,8 +1122,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return 
      */
     function getTableOptions($pageBeingViewed = null) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $tableOptions = array();
         $options = $this->getOptions(true);
 
@@ -1227,8 +1227,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return string
      */
     function updateOptionsFromPOST() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $message = "";
         $options = $this->getOptions();
@@ -1421,8 +1421,8 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $pages
      */    
     function orderPageResults($pages, $includeMissingParentPages = false) {
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         // sort by type then title.
         usort($pages, array($this, "sortByTypeThenTitle"));
@@ -1675,8 +1675,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return type
      */
     function emailCaptured404Notification() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $options = $this->getOptions(true);
         
@@ -1730,8 +1730,8 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $userSelectedDefault404Page
      */
     function getPageTitleFromIDAndType($idAndType, $externalLinkURL) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         if ($idAndType == '') {
             return '';

@@ -20,9 +20,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      */
     function createDatabaseTables() {
         global $wpdb;
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $logsTable = $wpdb->prefix . 'abj404_logsv2';
@@ -161,8 +161,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
     function correctCollations() {
         global $wpdb;
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         $collationNeedsUpdating = false;
         
@@ -219,7 +219,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
     
     function updatePluginCheck() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         $pluginInfo = $abj404dao->getLatestPluginVersion();
         
@@ -231,8 +231,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
     
     function doUpdatePlugin($pluginInfo) {
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         // do the update.
         if (!class_exists('WP_Upgrader')) {
@@ -275,7 +275,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     
     function shouldUpdate($pluginInfo) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $options = $abj404logic->getOptions(true);
         $latestVersion = $pluginInfo['version'];

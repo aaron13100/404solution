@@ -80,7 +80,7 @@ class ABJ_404_Solution_SynchronizationUtils {
         // it should have been released by now.
         if ($timePassed > $maxExecutionTime) {
             delete_option($internalSynchronizedKey);
-            $logger = new ABJ_404_Solution_Logging();
+            $logger = ABJ_404_Solution_Logging::getInstance();
             $logger->errorMessage("Forcibly removed synchronization after " . $timePassed . " seconds for the "
                     . "key " . $internalSynchronizedKey . " with value: " . $uniqueID);
         }
@@ -144,7 +144,7 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @throws Exception
      */
     function uniqidReal($lenght = 13) {
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         if (function_exists("random_bytes")) {
             $bytes = random_bytes((int)ceil($lenght / 2));
         } else if (function_exists("openssl_random_pseudo_bytes")) {

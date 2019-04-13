@@ -27,8 +27,8 @@ class ABJ_404_Solution_SpellChecker {
     }
     
     function save_postListener($post_id) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404dao->deleteSpellingCache();
         $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
                 ": Spelling cache deleted because a post was saved or updated.");
@@ -39,8 +39,8 @@ class ABJ_404_Solution_SpellChecker {
             return;
         }
         
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404dao->deleteSpellingCache();
         $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
                 ": Spelling cache deleted because the permalink structure changed.");
@@ -52,8 +52,8 @@ class ABJ_404_Solution_SpellChecker {
      * @return type
      */
     function getPermalinkUsingRegEx($requestedURL) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $regexURLsRows = $abj404dao->getRedirectsWithRegEx();
         
@@ -100,9 +100,9 @@ class ABJ_404_Solution_SpellChecker {
      * @return type
      */
     function getPermalinkUsingSlug($requestedURL) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $exploded = array_filter($f->regexSplit('/', $requestedURL));
         $postSlug = end($exploded);
@@ -139,7 +139,7 @@ class ABJ_404_Solution_SpellChecker {
     function getPermalinkUsingSpelling($requestedURL) {
         $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
 
         $options = $abj404logic->getOptions();
 
@@ -181,7 +181,7 @@ class ABJ_404_Solution_SpellChecker {
      * @param type $requestedURL
      */
     function requestIsForAnImage($requestedURL) {
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $imageExtensions = array(".jpg", ".jpeg", ".gif", ".png", ".tif", ".tiff", ".bmp", ".pdf", 
             ".jif", ".jif", ".jp2", ".jpx", ".j2k", ".j2c", ".pcd");
         
@@ -205,7 +205,7 @@ class ABJ_404_Solution_SpellChecker {
      * @return type
      */
     function findMatchingPosts($requestedURLRaw, $includeCats = '1', $includeTags = '1') {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         
         $options = $abj404logic->getOptions();
@@ -306,7 +306,7 @@ class ABJ_404_Solution_SpellChecker {
         }
         
         // check the database cache.
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $returnValue = $abj404dao->getSpellingPermalinksFromCache($requestedURL);
         if (!empty($returnValue)) {
             return $returnValue;
@@ -316,9 +316,9 @@ class ABJ_404_Solution_SpellChecker {
     }
     
     function matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
 
         unset($rows);
         $rows = $abj404dao->getPublishedCategories();
@@ -352,9 +352,9 @@ class ABJ_404_Solution_SpellChecker {
     }
     
     function matchOnTags($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         unset($rows);
         $rows = $abj404dao->getPublishedTags();
@@ -389,7 +389,7 @@ class ABJ_404_Solution_SpellChecker {
     
     function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         // pre-filter some pages based on the min and max possible levenshtein distances.
         $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
@@ -485,8 +485,8 @@ class ABJ_404_Solution_SpellChecker {
      */
     function getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $publishedPages, $rowType) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         // if there were no results then there are no likely matches.
         if (!is_array($publishedPages)) {
@@ -630,7 +630,7 @@ class ABJ_404_Solution_SpellChecker {
      * @return type
      */
     function getLastURLPart($url) {
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $newURL = $url;
         
         if (strrpos($url, "/")) {
@@ -645,7 +645,7 @@ class ABJ_404_Solution_SpellChecker {
      * @return type
      */
     private function multiByteStringToArray($str) {
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $length = $f->strlen($str);
         $array = array();
         for ($i = 0; $i < $length; $i++) {

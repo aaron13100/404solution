@@ -12,7 +12,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
     /** Setup. */
     static function init() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         add_filter("plugin_action_links_" . ABJ404_NAME, 'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
         add_action('template_redirect', 'ABJ_404_Solution_WordPress_Connector::process404', 9);
@@ -84,7 +84,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return type
      */
     static function addSettingsLinkToPluginPage($links) {
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         
         if (!is_array($links)) {
@@ -128,12 +128,12 @@ class ABJ_404_Solution_WordPress_Connector {
      * Process the 404s
      */
     static function process404() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404connector = new ABJ_404_Solution_WordPress_Connector();
         $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         global $wp;
 
         if (!is_404() || is_admin()) {
@@ -332,7 +332,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return string
      */
     function sortQueryParts($urlParts) {
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $urlQuery = $this->getUnsortedQueryParts($urlParts);
         
         if ($urlQuery == '') {
@@ -384,8 +384,8 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return type
      */
     function processRedirect($requestedURL, $redirect, $matchReason) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
 
         if (( $redirect['status'] != ABJ404_STATUS_MANUAL && $redirect['status'] != ABJ404_STATUS_AUTO ) || $redirect['disabled'] != 0) {
@@ -436,7 +436,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @global type $abj404view
      */
     static function echoDashboardNotification() {
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         if (!is_admin() || !current_user_can('administrator')) {
             $abj404logging->logUserCapabilities("echoDashboardNotification");
@@ -444,7 +444,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         global $pagenow;
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         global $abj404view;
 
@@ -471,10 +471,10 @@ class ABJ_404_Solution_WordPress_Connector {
      */
     static function addMainSettingsPageLink() {
         global $menu;
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = new ABJ_404_Solution_Logging();
-        $f = new ABJ_404_Solution_Functions();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         global $settingsPageName;
         
         if (!is_admin() || !current_user_can('administrator')) {

@@ -9,9 +9,19 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_Functions {
     
+    private static $instance = null;
+    
     /** Use this to find a delimiter. 
      * @var array */
     private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
+    
+    public static function getInstance() {
+        if (self::$instance == null) {
+            self::$instance = new ABJ_404_Solution_Functions();
+        }
+        
+        return self::$instance;
+    }
     
     /**  Used with array_filter()
      * @param type $value
@@ -170,7 +180,7 @@ class ABJ_404_Solution_Functions {
      * @return type an array with id, type, score, link, and title.
      */
     static function permalinkInfoToArray($idAndType, $linkScore, $rowType = null) {
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $permalink = array();
 
         if ($idAndType == NULL) {
@@ -298,7 +308,7 @@ class ABJ_404_Solution_Functions {
      * @return type
      */
     static function readURLtoFile($url, $filePath) {
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         ABJ_404_Solution_Functions::safeUnlink($filePath);
 
@@ -338,7 +348,7 @@ class ABJ_404_Solution_Functions {
      * @return type
      */
     function endsWithCaseInsensitive($haystack, $needle) {
-        $f = new ABJ_404_Solution_Functions();
+        $f = ABJ_404_Solution_Functions::getInstance();
         $length = $f->strlen($needle);
         if ($f->strlen($haystack) < $length) {
             return false;
