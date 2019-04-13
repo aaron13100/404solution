@@ -513,6 +513,8 @@ class ABJ_404_Solution_View {
         
         // Find the strings to replace in the content.
         $re = '/\{(.+?)\}/x';
+        $stringsToReplace = array();
+        // TODO does this need to be $f->regexMatch?
         preg_match_all($re, $text, $stringsToReplace, PREG_PATTERN_ORDER);
 
         // Iterate through each string to replace.
@@ -873,7 +875,7 @@ class ABJ_404_Solution_View {
         $this->echoTabFilters($sub, $tableOptions);
 
         echo "<div class=\"tablenav\">";
-        $this->echoPaginationLinks($sub, $tableOptions);
+        echo $this->getPaginationLinks($sub);
 
         // bulk operations dropdown -------------
         $url = "?page=" . ABJ404_PP . "&subpage=" . $sub;
@@ -924,6 +926,7 @@ class ABJ_404_Solution_View {
 
 
         // these are used for a GET request so they're not translated.
+        $columns = array();
         $columns['url']['title'] = __('URL', '404-solution');
         $columns['url']['orderby'] = "url";
         $columns['url']['width'] = "48%";
@@ -1082,7 +1085,7 @@ class ABJ_404_Solution_View {
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             echo "</form>";
         }
-        $this->echoPaginationLinks($sub, $tableOptions);
+        echo $this->getPaginationLinks($sub);
         echo "</div>";
         
         // make sure the "apply" button is only enabled if at least one checkbox is selected
@@ -1127,7 +1130,7 @@ class ABJ_404_Solution_View {
             echo $this->doNormalReplacements($htmlTop);
         }
         
-        $this->echoPaginationLinks($sub, $tableOptions);
+        echo $this->getPaginationLinks($sub);
 
         
         // bulk operations dropdown -------------
@@ -1179,6 +1182,7 @@ class ABJ_404_Solution_View {
         echo "</div>";
 
         // these are used for a GET request so they're not translated.
+        $columns = array();
         $columns['url']['title'] = __('URL', '404-solution');
         $columns['url']['orderby'] = "url";
         $columns['url']['width'] = "25%";
@@ -1383,7 +1387,7 @@ class ABJ_404_Solution_View {
         echo "</table>";
 
         echo "<div class=\"tablenav\">";
-        $this->echoPaginationLinks($sub, $tableOptions);
+        echo $this->getPaginationLinks($sub);
         echo "</div>";
 
         // don't show the "add manual redirect" form on the trash page.
@@ -1745,6 +1749,7 @@ class ABJ_404_Solution_View {
 
         echo "</form>";
 
+        $columns = array();
         $columns['url']['title'] = __('URL', '404-solution');
         $columns['url']['orderby'] = "url";
         $columns['url']['width'] = "25%";
@@ -1765,7 +1770,7 @@ class ABJ_404_Solution_View {
         $columns['username']['width'] = "10%";
 
         echo "<div class=\"tablenav\">";
-        $this->echoPaginationLinks($sub, $tableOptions);
+        echo $this->getPaginationLinks($sub);
         echo "</div>";
 
         echo "<table class=\"wp-list-table widefat fixed\">";
@@ -1845,7 +1850,7 @@ class ABJ_404_Solution_View {
         echo "</table>";
 
         echo "<div class=\"tablenav\">";
-        $this->echoPaginationLinks($sub, $tableOptions);
+        echo $this->getPaginationLinks($sub);
         echo "</div>";
     }
 
@@ -1925,11 +1930,14 @@ class ABJ_404_Solution_View {
      * @param type $sub
      * @param type $tableOptions
      */
-    function echoPaginationLinks($sub, $tableOptions) {
+    function getPaginationLinks($sub) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
         global $abj404_redirect_types;
         global $abj404_captured_types;
+        
+        $tableOptions = $abj404logic->getTableOptions($sub);
 
         $url = "?page=" . ABJ404_PP;
         if ($sub == 'abj404_captured') {
@@ -2041,7 +2049,7 @@ class ABJ_404_Solution_View {
         // constants and translations.
         $html = $this->doNormalReplacements($html);
         
-        echo $html;
+        return $html;
     }    
     
     /** Output the filters for a tab.
@@ -2085,9 +2093,12 @@ class ABJ_404_Solution_View {
         if ($tableOptions['filter'] == 0) {
             $class = " class=\"current\"";
         }
+        
+        $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=" . $sub;
+        $ajaxPaginationLink = wp_nonce_url($ajaxPaginationLink, "abj404_updatePaginationLink");
 
         echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" ></span>";
-        echo "<ul class=\"subsubsub\">";
+        echo '<ul class="subsubsub" data-pagination-ajax-url="' . $ajaxPaginationLink . '" >';
         
         if ($sub != 'abj404_captured') {
             echo "<li>";
