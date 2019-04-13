@@ -1134,15 +1134,15 @@ class ABJ_404_Solution_PluginLogic {
 
         $tableOptions['filter'] = $abj404dao->getPostOrGetSanitize("filter", "");
         if ($tableOptions['filter'] == "") {
-            if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == 'abj404_captured') {
+            if ($abj404dao->getPostOrGetSanitize('subpage') == 'abj404_captured') {
                 $tableOptions['filter'] = ABJ404_STATUS_CAPTURED;
             } else {
                 $tableOptions['filter'] = '0';
             }
         }
 
-        if (array_key_exists('orderby', $_GET) && isset($_GET['orderby'])) {
-            $tableOptions['orderby'] = esc_sql($_GET['orderby']);
+        if ($abj404dao->getPostOrGetSanitize('orderby', "") != "") {
+            $tableOptions['orderby'] = esc_sql($abj404dao->getPostOrGetSanitize('orderby'));
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order_by'] = $tableOptions['orderby'];
@@ -1153,7 +1153,7 @@ class ABJ_404_Solution_PluginLogic {
                 update_option('abj404_settings', $options);
             }
             
-        } else if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == "abj404_logs") {
+        } else if ($abj404dao->getPostOrGetSanitize('subpage') == "abj404_logs") {
             $tableOptions['orderby'] = "timestamp";
             
         } else {
@@ -1169,8 +1169,8 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
 
-        if (array_key_exists('order', $_GET) && isset($_GET['order'])) {
-            $tableOptions['order'] = esc_sql($_GET['order']);
+        if ($abj404dao->getPostOrGetSanitize('order', '') != '') {
+            $tableOptions['order'] = esc_sql($abj404dao->getPostOrGetSanitize('order'));
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order'] = $tableOptions['order'];
@@ -1205,7 +1205,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         $tableOptions['perpage'] = $abj404dao->getPostOrGetSanitize("perpage", $perPageOption);
 
-        if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == "abj404_logs") {
+        if ($abj404dao->getPostOrGetSanitize('subpage') == "abj404_logs") {
             if (array_key_exists('id', $_GET) && isset($_GET['id']) && $f->regexMatch('[0-9]+', $_GET['id'])) {                
                 $tableOptions['logsid'] = absint($_GET['id']);
                 
