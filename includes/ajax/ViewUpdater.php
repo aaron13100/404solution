@@ -22,11 +22,13 @@ class ABJ_404_Solution_ViewUpdater {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         global $abj404view;
         
-        // TODO verify nonce
-        
         $filterText = $abj404dao->getPostOrGetSanitize('filterText');
         $rowsPerPage = absint($abj404dao->getPostOrGetSanitize('rowsPerPage'));
         $subpage = $abj404dao->getPostOrGetSanitize('subpage');
+        $trashFilter = $abj404dao->getPostOrGetSanitize('trashFilter');
+        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
+        
+        wp_verify_nonce($nonce);
         
         // update the perpage option
         $abj404logic->updatePerPageOption($rowsPerPage);
@@ -46,7 +48,7 @@ class ABJ_404_Solution_ViewUpdater {
             'Error: Unexpected subpage requested.';
         }
         
-        echo json_encode($data, JSON_PRETTY_PRINT);
+        echo json_encode($data);
         exit;
     }
     

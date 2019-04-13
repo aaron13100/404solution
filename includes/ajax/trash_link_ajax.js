@@ -5,6 +5,9 @@ jQuery(document).ready(function($) {
         // preventDefault() means don't move to the top of the page. 
         e.preventDefault();
         
+        var subpage = getURLParameter('subpage');
+        var trashFilter = getURLParameter('filter');
+        
         var row = $(this).closest("tr");
         row.css("background-color", "grey");
 
@@ -12,13 +15,20 @@ jQuery(document).ready(function($) {
         jQuery.ajax({
             url: theURL, 
             type : 'GET',
-            success: function (result) {
-                if (result.startsWith("fail")) {
+            dataType: "json",
+            data: {
+                filter: trashFilter,
+                subpage: subpage
+            },
+            success: function (data) {
+                if (data.result.startsWith("fail")) {
                     row.css("background-color", "yellow");
-                    alert("Error: " + result);
+                    alert("Error: " + JSON.stringify(data, null, 2));
                     
                 } else {
                     row.hide(1000, function(){ row.remove(); });
+                    jQuery('.subsubsub').replaceWith(data.subsubsub);
+                    jQuery('.subsubsub').effect('highlight');
                 }
             },
             error: function (jqXHR, textStatus, errorThrown) {
