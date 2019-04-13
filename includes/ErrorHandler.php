@@ -49,9 +49,6 @@ class ABJ_404_Solution_ErrorHandler {
                 switch ($errno) {
                     case E_NOTICE:
                         if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
-//                            if (mb_stripos($errstr, 'Undefined property') !== false) {
-//                                break;
-//                            }
                             $e = new Exception;
                             $abj404logging->debugMessage($errmsg . ', Trace:' . $e->getTraceAsString());
                         }
