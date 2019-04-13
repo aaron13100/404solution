@@ -2,7 +2,9 @@
 
 <div class="tablenav-pages abj404-pagination-right" data-pagination-ajax-url="{data-pagination-ajax-url}">
     <form method="POST" action="{changeItemsPerPage}" style="display: inline">
+        {showSearchFilter}
         <input type="text" name="searchFilter" placeholder="{(Type to filter)}" />
+        <!-- -->
 
         {TEXT_SHOW_ROWS}
         <select name="perpage" onchange="paginationLinksChange(this);">

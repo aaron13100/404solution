@@ -11,7 +11,6 @@ function paginationLinksChange(triggerItem) {
     // find the search filter
     var filters = jQuery('input[name=searchFilter]');
     if (filters === undefined || filters === null || filters.length === 0) {
-        alert("No search filters found");
         return;
     }
 

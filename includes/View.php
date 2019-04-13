@@ -1013,6 +1013,7 @@ class ABJ_404_Solution_View {
                 $ignoretitle = __('Ignore 404 Error', '404-solution');
             } 
 
+            $latertitle = '?Organize Later?';
             if ($tableOptions['filter'] == ABJ404_STATUS_LATER) {
                 $laterlink .= "&later=0";
                 $latertitle = __('Remove Later Status', '404-solution');
@@ -2068,6 +2069,8 @@ class ABJ_404_Solution_View {
 
         $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&nonce=" .
                 wp_create_nonce('abj404_updatePaginationLink');
+        
+        $showSearchFilter = $sub == 'abj404_redirects' ? '' : '<!--';
 
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinks.html");
@@ -2076,6 +2079,7 @@ class ABJ_404_Solution_View {
                 ' value="' . $tableOptions['perpage'] . '" selected', 
                 $html);
         $html = str_replace('{changeItemsPerPage}', $showRowsLink, $html);
+        $html = str_replace('{showSearchFilter}', $showSearchFilter, $html);
         $html = str_replace('{TEXT_BEFORE_LINKS}', $currentlyShowingText, $html);
         $html = str_replace('{TEXT_SHOW_ROWS}', $showRowsText, $html);
         $html = str_replace('{LINK_FIRST_PAGE}', esc_url($firsturl), $html);
