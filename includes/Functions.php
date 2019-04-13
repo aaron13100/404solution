@@ -9,6 +9,32 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_Functions {
     
+    private static $instance = null;
+    
+    /** Use this to find a delimiter. 
+     * @var array */
+    private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
+    
+    public static function getInstance() {
+        if (self::$instance == null) {
+            self::$instance = new ABJ_404_Solution_Functions();
+        }
+        
+        return self::$instance;
+    }
+    
+    /**  Used with array_filter()
+     * @param type $value
+     * @return boolean
+     */
+    function trimAndRemoveEmpty($value) {
+        if ($value == null) {
+            return false;
+        }
+        $value = trim($value);
+        return $value !== '';
+    }
+    
     function getExecutionTime() {
         if (array_key_exists(ABJ404_PP, $_REQUEST) && 
                 array_key_exists('process_start_time', $_REQUEST[ABJ404_PP])) {
@@ -20,6 +46,132 @@ class ABJ_404_Solution_Functions {
         return '';
     }
     
+    function strtolower($string) {
+        if (function_exists('mb_strtolower')) {
+            return mb_strtolower($string);
+        }
+        
+        return strtolower($string);
+    }
+    
+    function strlen($string) {
+        if (function_exists('mb_strlen')) {
+            return mb_strlen($string);
+        }
+        
+        return strlen($string);
+    }
+    
+    function strpos($haystack, $needle, $offset = 0) {
+        if (function_exists('mb_strpos')) {
+            return mb_strpos($haystack, $needle, $offset);
+        }
+        
+        if ($offset == 0) {
+            return strpos($haystack, $needle);
+        }
+        return strpos($haystack, $needle, $offset);
+    }
+    
+    function substr($str, $start, $length = null) {
+        if (function_exists('mb_substr')) {
+            return mb_substr($str, $start, $length);
+        }
+        
+        if ($length == null) {
+            return substr($str, $start);
+        }
+        return substr($str, $start, $length);
+    }
+
+    function regexMatch($pattern, $string, &$regs = null) {
+        if (function_exists('mb_ereg')) {
+            return mb_ereg($pattern, $string, $regs);
+        }
+        
+        // find a character to use for quotes
+        $delimiterA = "{";
+        $delimiterB = "}";
+        if (strpos($pattern, "}") !== false) {
+            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
+        }
+        return preg_match($delimiterA . $pattern . $delimiterB, $string, $regs);
+    }
+    
+    function regexMatchi($pattern, $string, &$regs = null) {
+        if (function_exists('mb_ereg')) {
+            return mb_eregi($pattern, $string, $regs);
+        }
+        
+        // find a character to use for quotes
+        $delimiterA = "{";
+        $delimiterB = "}";
+        if (strpos($pattern, "}") !== false) {
+            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
+        }
+        return preg_match($delimiterA . $pattern . $delimiterB . 'i', $string, $regs);
+    }
+    
+    /**  Replace regular expression with multibyte support.
+     * Scans string for matches to pattern, then replaces the matched text with replacement.
+     * @param type $pattern The regular expression pattern.
+     * @param type $replacement The replacement text.
+     * @param type $string The string being checked.
+     * @return type The resultant string on success, or FALSE on error.
+     */
+    function regexReplace($pattern, $replacement, $string) {
+        if (function_exists('mb_ereg')) {
+            return mb_ereg_replace($pattern, $replacement, $string);
+        }
+        
+        // find a character to use for quotes
+        $delimiterA = "{";
+        $delimiterB = "}";
+        if (strpos($pattern, "}") !== false) {
+            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
+        }
+        $replacementDelimiter = $this->findADelimiter($replacement);
+        $replacement = preg_replace($replacementDelimiter . '\\\\' . $replacementDelimiter, '\$', $replacement);
+        return preg_replace($delimiterA . $pattern . $delimiterB, $replacement, $string);
+    }
+    
+    function regexSplit($pattern, $subject) {
+        if (function_exists('mb_split')) {
+            return mb_split($pattern, $subject);
+        }
+        
+        // find a character to use for quotes
+        $delimiterA = "{";
+        $delimiterB = "}";
+        if (strpos($pattern, "}") !== false) {
+            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
+        }
+        return preg_split($delimiterA . $pattern . $delimiterB, $subject);
+    }
+    
+    function findADelimiter($pattern) {
+        if ($pattern == '') {
+            return $this->delimiterChars[0];
+        }
+        
+        $charToUse = null;
+        foreach ($this->delimiterChars as $char) {
+            $anArray = explode($char, $pattern);
+            if (sizeof($anArray) == 1) {
+                $charToUse = $char;
+                break;
+            }
+        }
+        
+        if ($charToUse == null) {
+            throw new Exception("I can't find a valid delimiter character to use for the regular expression: "
+                    . $pattern);
+        }
+        
+        return $charToUse;
+    }
+    
+    
     /** Turns ID|TYPE, SCORE into an array with id, type, score, link, and title.
      *
      * @param type $idAndType e.g. 15|POST is a page ID of 15 and a type POST.
@@ -28,7 +180,7 @@ class ABJ_404_Solution_Functions {
      * @return type an array with id, type, score, link, and title.
      */
     static function permalinkInfoToArray($idAndType, $linkScore, $rowType = null) {
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $permalink = array();
 
         if ($idAndType == NULL) {
@@ -83,7 +235,7 @@ class ABJ_404_Solution_Functions {
         
         // decode anything that might be encoded to support utf8 characters
         $permalink['link'] = urldecode($permalink['link']);
-        $permalink['title'] = urldecode($permalink['title']);
+        $permalink['title'] = array_key_exists('title', $permalink) ? urldecode($permalink['title']) : '';
 
         return $permalink;
     }
@@ -156,7 +308,7 @@ class ABJ_404_Solution_Functions {
      * @return type
      */
     static function readURLtoFile($url, $filePath) {
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         ABJ_404_Solution_Functions::safeUnlink($filePath);
 
@@ -195,16 +347,17 @@ class ABJ_404_Solution_Functions {
      * @param type $needle
      * @return type
      */
-    static function endsWithCaseInsensitive($haystack, $needle) {
-        $length = mb_strlen($needle);
-        if (mb_strlen($haystack) < $length) {
+    function endsWithCaseInsensitive($haystack, $needle) {
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $length = $f->strlen($needle);
+        if ($f->strlen($haystack) < $length) {
             return false;
         }
         
-        $lowerNeedle = mb_strtolower($needle);
-        $lowerHay = mb_strtolower($haystack);
+        $lowerNeedle = $this->strtolower($needle);
+        $lowerHay = $this->strtolower($haystack);
         
-        return (mb_substr($lowerHay, -$length) == $lowerNeedle);
+        return ($f->substr($lowerHay, -$length) == $lowerNeedle);
     }
 }
 

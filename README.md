@@ -75,6 +75,10 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.17.0 (April 13, 2019) ##
+* Improvement: Allow the plugin to work without mbstring (for alex).
+* Improvement: The URL column on the Redirects page opens the URL in a new tab (for Carol).
+
 ## Version 2.16.2 (April 9, 2019) ##
 * FIX: Avoid a PHP warning message (thanks Marc).
 

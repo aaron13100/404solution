@@ -10,7 +10,11 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 
 class ABJ_404_Solution_PermalinkCache {
     
+    /** The name of the hook to use in WordPress. */
     const UPDATE_PERMALINK_CACHE_HOOK = 'updatePermalinkCache_hook';
+    
+    /** The maximum number of times in a row to run the hook. */
+    const MAX_EXECUTIONS = 15;
     
     static function init() {
         $me = new ABJ_404_Solution_PermalinkCache();
@@ -28,8 +32,8 @@ class ABJ_404_Solution_PermalinkCache {
      * @param type $post_id
      */
     function save_postListener($post_id) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
                 ": Delete from permalink cache: " . $post_id);
@@ -51,8 +55,8 @@ class ABJ_404_Solution_PermalinkCache {
         }
         
         // we need to truncate the permlink cache since the structure changed
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
                 ": Truncating and updating permalink cache because the permalink structure changed to " . 
@@ -66,13 +70,14 @@ class ABJ_404_Solution_PermalinkCache {
     }
     
     /** 
-     * @global type $abj404dao
      * @param type $maxExecutionTime
-     * @return int the number of rows inserted.
+     * @param type $executionCount
+     * @return int
+     * @throws Exception
      */
     function updatePermalinkCache($maxExecutionTime, $executionCount = 1) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
-        $abj404logging = new ABJ_404_Solution_Logging();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
 
         $syncUtils = new ABJ_404_Solution_SynchronizationUtils();
         $key = "updatePermalinkCache";
@@ -81,6 +86,7 @@ class ABJ_404_Solution_PermalinkCache {
         try {
             $uniqueID = $syncUtils->synchronizerAcquireLockTry($key);
             if ($uniqueID == '') {
+                $this->scheduleToRunAgain($executionCount);
                 // the lock wasn't acquired.
                 return;
             }
@@ -94,8 +100,8 @@ class ABJ_404_Solution_PermalinkCache {
             $rowsInserted = 0;
             $rows = $abj404dao->getIDsNeededForPermalinkCache();
             
-            while (count($rows) > 0) {
-                $row = array_shift ($rows);
+            $row = array_shift($rows);
+            while ($row != null) {
                 $id = $row['id'];
 
                 $permalink = get_the_permalink($id);
@@ -115,29 +121,33 @@ class ABJ_404_Solution_PermalinkCache {
                         break;
                     }
                 }
+                
+                $row = array_shift($rows);
             }
             
             // if there's more work to do then do it, up to a maximum of X times.
-            if ($rowsInserted > 0 && $executionCount < 10 && $shouldRunAgain) {
+            if ($executionCount < self::MAX_EXECUTIONS && $shouldRunAgain) {
                 // if the site has many pages then we might not be done yet, so we'll schedule ourselves to 
                 // run this again right away as a scheduled event.
-                wp_schedule_single_event(time() + 1, ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
-                        array(25, $executionCount + 1));
+                $this->scheduleToRunAgain($executionCount + 1);
                 $abj404logging->debugMessage($rowsInserted . " rows inserted into the permalink cache table in " .
                         round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount . 
                         ". shouldRunAgain: " . ($shouldRunAgain ? 'true' : 'false'));
 
             } else if (($executionCount > 1) || ($rowsInserted > 1)) {
-                $abj404logging->debugMessage(__FUNCTION__ . " done updating. " . $rowsInserted . " rows inserted. " .
-                        " in " . round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount . 
+                $abj404logging->debugMessage(__FUNCTION__ . " done updating. " . $rowsInserted . " rows inserted " .
+                        "in " . round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount . 
                         ". shouldRunAgain: " . ($shouldRunAgain ? 'true' : 'false'));
+                
+                if ($executionCount == self::MAX_EXECUTIONS) {
+                    $abj404logging->errorMessage(__FUNCTION__ . " max executions reached in " . __CLASS__);
+                }
             }
             
             $newPermalinkStructure = get_option('permalink_structure');
             if ($permalinkStructure != $newPermalinkStructure) {
                 $abj404dao->removeOldStructreFromPermalinkCache($newPermalinkStructure);
-                wp_schedule_single_event(1, ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
-                        array(25, $executionCount + 1));
+                $this->scheduleToRunAgain(1);
                 $abj404logging->debugMessage("Scheduled another permalink cache updated because the structure changed "
                         . "while the cache was updating.");
             }
@@ -152,16 +162,24 @@ class ABJ_404_Solution_PermalinkCache {
         return $rowsInserted;
     }
     
+    function scheduleToRunAgain($executionCount) {
+        $maxExecutionTime = (int)ini_get('max_execution_time') - 5;
+        $maxExecutionTime = max($maxExecutionTime, 25);
+        
+        wp_schedule_single_event(1, ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
+                array($maxExecutionTime, $executionCount));
+    }
+    
     function getPermalinkFromCache($id) {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         return $abj404dao->getPermalinkFromCache($id);
     }
     
     function getPermalinkCacheCopy() {
-        $abj404dao = new ABJ_404_Solution_DataAccess();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         $timer = new ABJ_404_Solution_Timer();
-        $helperFunctions = new ABJ_404_Solution_Functions();
+        $helperFunctions = ABJ_404_Solution_Functions::getInstance();
         
         $rows = $abj404dao->getPermalinkCache();
         $_REQUEST[ABJ404_PP]['debug_info'] = __FUNCTION__ .' got ' . count($rows) . ' rows after ' . 
