@@ -34,10 +34,13 @@ class ABJ_404_Solution_ViewUpdater {
         $data = array();
         $data['paginationLinks'] = $abj404view->getPaginationLinks($subpage);
         if ($subpage == 'abj404_redirects') {
-            $data['table'] = $abj404view->getAdminRedirectsTable($subpage);
+            $data['table'] = $abj404view->getAdminRedirectsPageTable($subpage);
             
         } else if ($subpage == 'abj404_captured') {
-            $data['table'] = $abj404view->echoCapturedURLSTable($subpage);
+            $data['table'] = $abj404view->getCapturedURLSPageTable($subpage);
+            
+        } else if ($subpage == 'abj404_logs') {
+            $data['table'] = $abj404view->getAdminLogsPageTable($subpage);
             
         } else {
             'Error: Unexpected subpage requested.';
