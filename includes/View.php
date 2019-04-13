@@ -1045,7 +1045,7 @@ class ABJ_404_Solution_View {
 
             $class = "";
             if ($y == 0) {
-                $class = " class=\"alternate\"";
+                $class = "alternate";
                 $y++;
             } else {
                 $y = 0;
@@ -1073,6 +1073,7 @@ class ABJ_404_Solution_View {
             $tempHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowCapturedURLs.html");
             $tempHtml = str_replace('{rowActions}', $allRowActions, $tempHtml);
             $tempHtml = str_replace('{rowid}', $row['id'], $tempHtml);
+            $tempHtml = str_replace('{rowClass}', $class, $tempHtml);
             $tempHtml = str_replace('{editLink}', $editlink, $tempHtml);
             $tempHtml = str_replace('{logsLink}', $logslink, $tempHtml);
             $tempHtml = str_replace('{trashLink}', $trashlink, $tempHtml);
@@ -1351,7 +1352,7 @@ class ABJ_404_Solution_View {
 
             $class = "";
             if ($y == 0) {
-                $class = " class=\"alternate\"";
+                $class = "alternate";
                 $y++;
             } else {
                 $y = 0;
@@ -1378,8 +1379,8 @@ class ABJ_404_Solution_View {
             }
             
             $htmlTemp = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
-            $htmlTemp = str_replace('{class}', $class, $htmlTemp);
             $htmlTemp = str_replace('{rowid}', $row['id'], $htmlTemp);
+            $htmlTemp = str_replace('{rowClass}', $class, $htmlTemp);
             $htmlTemp = str_replace('{editLink}', $row['url'], $htmlTemp);
             $htmlTemp = str_replace('{rowURL}', esc_html($row['url']), $htmlTemp);
             $htmlTemp = str_replace('{editlinkHTML}', $editlinkHTML, $htmlTemp);
