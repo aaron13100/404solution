@@ -859,7 +859,6 @@ class ABJ_404_Solution_View {
      * @global type $abj404dao
      */
     function echoAdminCapturedURLsPage() {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $sub = 'abj404_captured';
         $nonceValue = "abj404_bulkProcess";
@@ -872,7 +871,7 @@ class ABJ_404_Solution_View {
         }
         date_default_timezone_set($timezone);
         
-        $this->echoTabFilters($sub, $tableOptions);
+        echo $this->getTabFilters($sub, $tableOptions);
 
         echo "<div class=\"tablenav\">";
         echo $this->getPaginationLinks($sub);
@@ -925,6 +924,29 @@ class ABJ_404_Solution_View {
         echo "</div>";
 
 
+        $this->echoCapturedURLSTable($sub);
+
+        echo "<div class=\"tablenav\">";
+        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+            echo "</form>";
+        }
+        echo $this->getPaginationLinks($sub);
+        echo "</div>";
+        
+        // make sure the "apply" button is only enabled if at least one checkbox is selected
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/enableDisableApplyButton.js");
+        $html = str_replace('{altText}', __('Choose at least one URL', '404-solution'), $html);
+        $html = $this->doNormalReplacements($html);
+        echo $html;
+    }
+    
+    function echoCapturedURLSTable($sub) {
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        
+        $tableOptions = $abj404logic->getTableOptions($sub);
+
+        // ----------------------------------------------
         // these are used for a GET request so they're not translated.
         $columns = array();
         $columns['url']['title'] = __('URL', '404-solution');
@@ -942,10 +964,10 @@ class ABJ_404_Solution_View {
 
         echo "<table class=\"wp-list-table widefat fixed\">";
         echo "<thead>";
-        $this->echoTableColumns($sub, $tableOptions, $columns);
+        echo $this->getTableColumns($sub, $columns);
         echo "</thead>";
         echo "<tfoot>";
-        $this->echoTableColumns($sub, $tableOptions, $columns);
+        echo $this->getTableColumns($sub, $columns);
         echo "</tfoot>";
         echo "<tbody id=\"the-list\">";
         
@@ -1080,19 +1102,7 @@ class ABJ_404_Solution_View {
         
         echo "</tbody>";
         echo "</table>";
-
-        echo "<div class=\"tablenav\">";
-        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
-            echo "</form>";
-        }
-        echo $this->getPaginationLinks($sub);
-        echo "</div>";
-        
-        // make sure the "apply" button is only enabled if at least one checkbox is selected
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/enableDisableApplyButton.js");
-        $html = str_replace('{altText}', __('Choose at least one URL', '404-solution'), $html);
-        $html = $this->doNormalReplacements($html);
-        echo $html;
+        // ----------------------------------------------
     }
 
     /** 
@@ -1100,9 +1110,7 @@ class ABJ_404_Solution_View {
      * @global type $abj404logic
      */
     function echoAdminRedirectsPage() {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $sub = 'abj404_redirects';
         $nonceValue = "abj404_bulkProcess";
@@ -1115,7 +1123,7 @@ class ABJ_404_Solution_View {
             $tableOptions[$key] = wp_kses_post($value);
         }
 
-        $this->echoTabFilters($sub, $tableOptions);
+        echo $this->getTabFilters($sub, $tableOptions);
 
         $timezone = get_option('timezone_string');
         if ('' == $timezone) {
@@ -1181,6 +1189,31 @@ class ABJ_404_Solution_View {
         }
         echo "</div>";
 
+        echo $this->getAdminRedirectsTable($sub);
+
+        echo "<div class=\"tablenav\">";
+        echo $this->getPaginationLinks($sub);
+        echo "</div>";
+
+        // don't show the "add manual redirect" form on the trash page.
+        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+            $this->echoAddManualRedirect($tableOptions);
+        }
+        
+        // make sure the "apply" button is only enabled if at least one checkbox is selected
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/enableDisableApplyButton.js");
+        $html = str_replace('{altText}', __('Choose at least one URL', '404-solution'), $html);
+        $html = $this->doNormalReplacements($html);
+        echo $html;
+    }
+    
+    function getAdminRedirectsTable($sub) {
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        
+        $tableOptions = $abj404logic->getTableOptions($sub);
+        
         // these are used for a GET request so they're not translated.
         $columns = array();
         $columns['url']['title'] = __('URL', '404-solution');
@@ -1208,14 +1241,11 @@ class ABJ_404_Solution_View {
         $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "10%";
 
-        echo "<table class=\"wp-list-table widefat fixed\">";
-        echo "<thead>";
-        $this->echoTableColumns($sub, $tableOptions, $columns);
-        echo "</thead>";
-        echo "<tfoot>";
-        $this->echoTableColumns($sub, $tableOptions, $columns);
-        echo "</tfoot>";
-        echo "<tbody id=\"the-list\">";
+        $html = "<table class=\"wp-list-table widefat fixed\">  <thead>";
+        $html .= $this->getTableColumns($sub, $columns);
+        $html .= "</thead>  <tfoot>";
+        $html .= $this->getTableColumns($sub, $columns);
+        $html .= "</tfoot>  <tbody id=\"the-list\">";
         $rows = $abj404dao->getRedirectsForView($sub, $tableOptions);
         $displayed = 0;
         $y = 1;
@@ -1346,65 +1376,51 @@ class ABJ_404_Solution_View {
                 $deletePermanentlyHTML = '';
             }
             
-            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
-            $html = str_replace('{class}', $class, $html);
-            $html = str_replace('{rowid}', $row['id'], $html);
-            $html = str_replace('{editLink}', $row['url'], $html);
-            $html = str_replace('{rowURL}', esc_html($row['url']), $html);
-            $html = str_replace('{editlinkHTML}', $editlinkHTML, $html);
-            $html = str_replace('{logslinkHTML}', $logslinkHTML, $html);
-            $html = str_replace('{deletePermanentlyHTML}', $deletePermanentlyHTML, $html);
-            $html = str_replace('{link}', $link, $html);
-            $html = str_replace('{title}', $title, $html);
-            $html = str_replace('{dest}', $dest, $html);
-            $html = str_replace('{status}', $status, $html);
-            $html = str_replace('{statusTitle}', $statusTitle, $html);
-            $html = str_replace('{type}', $type, $html);
-            $html = str_replace('{dest}', $dest, $html);
-            $html = str_replace('{rowCode}', $row['code'], $html);
-            $html = str_replace('{hits}', $hits, $html);
-            $html = str_replace('{logsLink}', $logslink, $html);
-            $html = str_replace('{trashLink}', $trashlink, $html);
-            $html = str_replace('{ajaxTrashLink}', $ajaxTrashLink, $html);
-            $html = str_replace('{trashtitle}', $trashtitle, $html);
-            $html = str_replace('{deletelink}', $deletelink, $html);
-            $html = str_replace('{hits}', esc_html($hits), $html);
-            $html = str_replace('{created_date}', 
-                    esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $html);
-            $html = str_replace('{last_used_date}', esc_html($last), $html);
+            $htmlTemp = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
+            $htmlTemp = str_replace('{class}', $class, $htmlTemp);
+            $htmlTemp = str_replace('{rowid}', $row['id'], $htmlTemp);
+            $htmlTemp = str_replace('{editLink}', $row['url'], $htmlTemp);
+            $htmlTemp = str_replace('{rowURL}', esc_html($row['url']), $htmlTemp);
+            $htmlTemp = str_replace('{editlinkHTML}', $editlinkHTML, $htmlTemp);
+            $htmlTemp = str_replace('{logslinkHTML}', $logslinkHTML, $htmlTemp);
+            $htmlTemp = str_replace('{deletePermanentlyHTML}', $deletePermanentlyHTML, $htmlTemp);
+            $htmlTemp = str_replace('{link}', $link, $htmlTemp);
+            $htmlTemp = str_replace('{title}', $title, $htmlTemp);
+            $htmlTemp = str_replace('{dest}', $dest, $htmlTemp);
+            $htmlTemp = str_replace('{status}', $status, $htmlTemp);
+            $htmlTemp = str_replace('{statusTitle}', $statusTitle, $htmlTemp);
+            $htmlTemp = str_replace('{type}', $type, $htmlTemp);
+            $htmlTemp = str_replace('{dest}', $dest, $htmlTemp);
+            $htmlTemp = str_replace('{rowCode}', $row['code'], $htmlTemp);
+            $htmlTemp = str_replace('{hits}', $hits, $htmlTemp);
+            $htmlTemp = str_replace('{logsLink}', $logslink, $htmlTemp);
+            $htmlTemp = str_replace('{trashLink}', $trashlink, $htmlTemp);
+            $htmlTemp = str_replace('{ajaxTrashLink}', $ajaxTrashLink, $htmlTemp);
+            $htmlTemp = str_replace('{trashtitle}', $trashtitle, $htmlTemp);
+            $htmlTemp = str_replace('{deletelink}', $deletelink, $htmlTemp);
+            $htmlTemp = str_replace('{hits}', esc_html($hits), $htmlTemp);
+            $htmlTemp = str_replace('{created_date}', 
+                    esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $htmlTemp);
+            $htmlTemp = str_replace('{last_used_date}', esc_html($last), $htmlTemp);
             
-            $html = $this->doNormalReplacements($html);
-            echo $html;
+            $htmlTemp = $this->doNormalReplacements($htmlTemp);
+            $html .= $htmlTemp;
         }
         if ($displayed == 0) {
-            echo "<tr>";
-            echo "<td></td>";
-            echo "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . __('No Records To Display', '404-solution') . "</td>";
-            echo "<td></td>";
-            echo "</tr>";
+            $html .= "<tr>\n" .
+                "<td></td>" .
+                "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . 
+                __('No Records To Display', '404-solution') . "</td>" .
+                "<td></td>" .
+                "</tr>";
         }
-        echo "</tbody>";
-        echo "</table>";
-
-        echo "<div class=\"tablenav\">";
-        echo $this->getPaginationLinks($sub);
-        echo "</div>";
-
-        // don't show the "add manual redirect" form on the trash page.
-        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
-            $this->echoAddManualRedirect($tableOptions);
-        }
+        $html .= "</tbody>  </table>";
         
-        // make sure the "apply" button is only enabled if at least one checkbox is selected
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/enableDisableApplyButton.js");
-        $html = str_replace('{altText}', __('Choose at least one URL', '404-solution'), $html);
-        $html = $this->doNormalReplacements($html);
-        echo $html;
+        return $html;
     }
     
     function echoAddManualRedirect($tableOptions) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 
         $options = $abj404logic->getOptions();
         
@@ -1775,10 +1791,10 @@ class ABJ_404_Solution_View {
 
         echo "<table class=\"wp-list-table widefat fixed\">";
         echo "<thead>";
-        $this->echoTableColumns($sub, $tableOptions, $columns);
+        echo $this->getTableColumns($sub, $columns);
         echo "</thead>";
         echo "<tfoot>";
-        $this->echoTableColumns($sub, $tableOptions, $columns);
+        echo $this->getTableColumns($sub, $columns);
         echo "</tfoot>";
         echo "<tbody>";
 
@@ -1859,13 +1875,16 @@ class ABJ_404_Solution_View {
      * @param type $tableOptions
      * @param type $columns
      */
-    function echoTableColumns($sub, $tableOptions, $columns) {
-        echo "<tr>";
+    function getTableColumns($sub, $columns) {
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $tableOptions = $abj404logic->getTableOptions($sub);
+        
+        $html = "<tr>";
         
         $cbinfo = "class=\"manage-column column-cb check-column\" style=\"vertical-align: middle; padding-bottom: 6px;\"";
-        echo "<th " . $cbinfo . ">";
-        echo "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" >";
-        echo "</th>";
+        $html .= "<th " . $cbinfo . ">";
+        $html .= "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" >";
+        $html .= "</th>";
         
         foreach ($columns as $column) {
             $style = "";
@@ -1910,19 +1929,21 @@ class ABJ_404_Solution_View {
             }
             $url .= "&orderby=" . $column['orderby'] . "&order=" . $sortorder;
 
-            echo "<th" . $style . "class=\"manage-column column-title" . $class . "\">";
+            $html .= "<th" . $style . "class=\"manage-column column-title" . $class . "\">";
             if ($nolink == 1) {
-                echo $column['title'];
+                $html .= $column['title'];
             } else {
-                echo "<a href=\"" . esc_url($url) . "\">";
-                echo "<span>" . esc_html($column['title']) . "</span>";
-                echo "<span class=\"sorting-indicator\"></span>";
-                echo "</a>";
+                $html .= "<a href=\"" . esc_url($url) . "\">";
+                $html .= "<span>" . esc_html($column['title']) . "</span>";
+                $html .= "<span class=\"sorting-indicator\"></span>";
+                $html .= "</a>";
             }
-            echo "</th>";
+            $html .= "</th>";
         }
-        echo "<th style=\"width: 1px;\"></th>";
-        echo "</tr>";
+        $html .= "<th style=\"width: 1px;\"></th>";
+        $html .= "</tr>";
+        
+        return $html;
     }
 
     /** 
@@ -2057,7 +2078,7 @@ class ABJ_404_Solution_View {
      * @param type $sub
      * @param type $tableOptions
      */
-    function echoTabFilters($sub, $tableOptions) {
+    function getTabFilters($sub, $tableOptions) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -2097,15 +2118,16 @@ class ABJ_404_Solution_View {
         $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=" . $sub;
         $ajaxPaginationLink = wp_nonce_url($ajaxPaginationLink, "abj404_updatePaginationLink");
 
-        echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" ></span>";
-        echo '<ul class="subsubsub" data-pagination-ajax-url="' . $ajaxPaginationLink . '" >';
+        $html = '';
+        $html .= "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" ></span>";
+        $html .= '<ul class="subsubsub" data-pagination-ajax-url="' . $ajaxPaginationLink . '" >';
         
         if ($sub != 'abj404_captured') {
-            echo "<li>";
-            echo "<a href=\"" . esc_url($url) . "\"" . $class . ">" . __('All', '404-solution');
-            echo " <span class=\"count\">(" . esc_html($abj404dao->getRecordCount($types)) . ")</span>";
-            echo "</a>";
-            echo "</li>";
+            $html .= "<li>";
+            $html .= "<a href=\"" . esc_url($url) . "\"" . $class . ">" . __('All', '404-solution');
+            $html .= " <span class=\"count\">(" . esc_html($abj404dao->getRecordCount($types)) . ")</span>";
+            $html .= "</a>";
+            $html .= "</li>";
         }
 
         foreach ($types as $type) {
@@ -2139,14 +2161,14 @@ class ABJ_404_Solution_View {
                 $abj404logging->errorMessage("Unrecognized redirect type in View: " . esc_html($type));
             }
 
-            echo "<li>";
+            $html .= "<li>";
             if ($sub != 'abj404_captured' || $type != ABJ404_STATUS_CAPTURED) {
-                echo " | ";
+                $html .= " | ";
             }
-            echo "<a href=\"" . esc_url($thisurl) . "\"" . $class . ">" . ( $title );
-            echo " <span class=\"count\">(" . esc_html($recordCount) . ")</span>";
-            echo "</a>";
-            echo "</li>";
+            $html .= "<a href=\"" . esc_url($thisurl) . "\"" . $class . ">" . ( $title );
+            $html .= " <span class=\"count\">(" . esc_html($recordCount) . ")</span>";
+            $html .= "</a>";
+            $html .= "</li>";
         }
 
 
@@ -2155,13 +2177,15 @@ class ABJ_404_Solution_View {
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             $class = " class=\"current\"";
         }
-        echo "<li> | ";
-        echo "<a href=\"" . esc_url($trashurl) . "\"" . $class . ">" . __('Trash', '404-solution');
-        echo " <span class=\"count\">(" . esc_html($abj404dao->getRecordCount($types, 1)) . ")</span>";
-        echo "</a>";
-        echo "</li>";
+        $html .= "<li> | ";
+        $html .= "<a href=\"" . esc_url($trashurl) . "\"" . $class . ">" . __('Trash', '404-solution');
+        $html .= " <span class=\"count\">(" . esc_html($abj404dao->getRecordCount($types, 1)) . ")</span>";
+        $html .= "</a>";
+        $html .= "</li>";
 
-        echo "</ul>";
-        echo "</span>";
+        $html .= "</ul>";
+        $html .= "</span>";
+        
+        return $html;
     }
 }
