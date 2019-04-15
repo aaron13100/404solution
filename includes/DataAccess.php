@@ -124,7 +124,7 @@ class ABJ_404_Solution_DataAccess {
                     ", SQL: " . esc_html($query)) . ", Execution time: " . round($timer->getElapsedTime(), 2));
             
         } else {
-            if ($timer->getElapsedTime() > 10) {
+            if ($timer->getElapsedTime() > 5) {
                 $abj404logging->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " . 
                         $query);
             }
@@ -691,8 +691,6 @@ class ABJ_404_Solution_DataAccess {
         
         $query = $f->doNormalReplacements($query);
         
-        $abj404logging->infoMessage("Quer: " . $query);
-
         return $query;
     }
     

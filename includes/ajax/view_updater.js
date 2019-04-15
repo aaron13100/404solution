@@ -7,6 +7,62 @@ if (typeof(getURLParameter) !== "function") {
     }
 }
 
+// when the user presses enter on the filter text input then update the table
+jQuery(document).ready(function($) {
+    bindSearchFieldKeyListener();
+});
+
+function bindSearchFieldKeyListener() {
+    var filters = jQuery('input[name=searchFilter]');
+    if (filters === undefined || filters === null || filters.length === 0) {
+        return;
+    }
+    
+    filters.prop('disabled', false);
+    
+    field = jQuery(filters[0]);
+    var fieldLength = field.val().length;
+    // only set the focus if the input box is visible. otherwise screen scrolls for no reason.
+    if (isElementFullyVisible(filters[0])) {
+        field.focus();
+    }
+    filters[0].setSelectionRange(fieldLength, fieldLength);
+    
+    filters.on("search", function(event) {
+        field = jQuery(event.srcElement);
+        var previousValue = field.attr("data-previous-value");
+        var fieldLength = field.val().length;
+        if (fieldLength === 0 && field.val() !== previousValue) {
+            paginationLinksChange(event.srcElement);
+            event.preventDefault();
+        }
+        field.attr("data-previous-value", field.val());
+    });
+    filters.keypress(function(event) {
+        var keycode = (event.which ? event.which : event.keyCode);
+        if (keycode === 13) {
+            event.preventDefault();
+            paginationLinksChange(event.srcElement);
+        }
+        field.attr("data-previous-value", field.val());
+    });
+}
+
+/** Returns true if an element is within the viewport.
+ * From https://stackoverflow.com/a/22480938/222564
+ * @param {type} el
+ * @returns {Boolean}
+ */
+function isElementFullyVisible(el) {
+    var rect = el.getBoundingClientRect();
+    var elemTop = rect.top;
+    var elemBottom = rect.bottom;
+
+    // Only completely visible elements return true:
+    var isVisible = (elemTop >= 0) && (elemBottom <= window.innerHeight);
+    return isVisible;
+}
+
 function paginationLinksChange(triggerItem) {
     // find the search filter
     var filters = jQuery('input[name=searchFilter]');
@@ -41,9 +97,17 @@ function paginationLinksChange(triggerItem) {
             subpage: subpage
         },
         success: function (result) {
+            // get the current text value
+            var currentFieldValue = jQuery('input[name=searchFilter]').val();
+            
             // replace the tables
-            jQuery('.abj404-pagination-right').replaceWith(result.paginationLinks);
+            var pageLinks = jQuery('.abj404-pagination-right');
+            jQuery(pageLinks[0]).replaceWith(result.paginationLinksTop);
+            jQuery(pageLinks[1]).replaceWith(result.paginationLinksBottom);
             jQuery('.wp-list-table').replaceWith(result.table);
+            bindSearchFieldKeyListener();
+            jQuery('input[name=searchFilter]').val(currentFieldValue);
+            jQuery('input[name=searchFilter]').attr("data-previous-value", currentFieldValue);
             
             var originalAlternateRowColor = jQuery(originalColorGraySelector).css('background-color');
             var originalPaginationBGColor = jQuery(originalColorWhiteSelector).css('background-color');
