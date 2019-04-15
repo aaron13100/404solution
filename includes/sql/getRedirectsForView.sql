@@ -25,7 +25,7 @@ select
           when wp_abj404_redirects.type = {ABJ404_TYPE_POST} then wp_posts.post_title
           when wp_abj404_redirects.type = {ABJ404_TYPE_CAT} then terms.name
           when wp_abj404_redirects.type = {ABJ404_TYPE_TAG} then terms.name
-          when wp_abj404_redirects.type = {ABJ404_TYPE_POST} then wp_options.option_value
+          when wp_abj404_redirects.type = {ABJ404_TYPE_HOME} then wp_options.option_value
           else '? Dest Type'
         end) as dest_for_view,
 
@@ -75,7 +75,7 @@ and CONCAT(wp_abj404_redirects.url, '////',
           when wp_abj404_redirects.type = {ABJ404_TYPE_POST} then wp_posts.post_title
           when wp_abj404_redirects.type = {ABJ404_TYPE_CAT} then terms.name
           when wp_abj404_redirects.type = {ABJ404_TYPE_TAG} then terms.name
-          when wp_abj404_redirects.type = {ABJ404_TYPE_POST} then wp_options.option_value
+          when wp_abj404_redirects.type = {ABJ404_TYPE_HOME} then wp_options.option_value
           else '? Dest Type'
         end), '////',
         wp_abj404_redirects.code

@@ -1226,53 +1226,36 @@ class ABJ_404_Solution_View {
         $y = 1;
         foreach ($rows as $row) {
             $displayed++;
-            $status = "";
             $statusTitle = '';
             if ($row['status'] == ABJ404_STATUS_MANUAL) {
-                $status = __('Man', '404-solution');
                 $statusTitle = __('Manually created', '404-solution');
             } else if ($row['status'] == ABJ404_STATUS_AUTO) {
-                $status = __('Auto', '404-solution');
                 $statusTitle = __('Automatically created', '404-solution');
             } else if ($row['status'] == ABJ404_STATUS_REGEX) {
-                $status = __('RegEx', '404-solution');
                 $statusTitle = __('Regular Expression (Manually Created)', '404-solution');
             } else {
-                $status = __('Unknown', '404-solution');
                 $statusTitle = __('Unknown', '404-solution');
             }
 
-            $type = "";
-            $dest = "";
             $link = "";
             $title = __('Visit', '404-solution') . " ";
             if ($row['type'] == ABJ404_TYPE_EXTERNAL) {
-                $type = __('External', '404-solution');
-                $dest = $row['final_dest'];
                 $link = $row['final_dest'];
                 $title .= $row['final_dest'];
             } else if ($row['type'] == ABJ404_TYPE_CAT) {
-                $type = __('Category', '404-solution');
                 $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_CAT, 0);
-                $dest = $permalink['title'];
                 $link = $permalink['link'];
                 $title .= __('Category:', '404-solution') . " " . $permalink['title'];
             } else if ($row['type'] == ABJ404_TYPE_TAG) {
-                $type = __('Tag', '404-solution');
                 $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_TAG, 0);
-                $dest = $permalink['title'];
                 $link = $permalink['link'];
                 $title .= __('Tag:', '404-solution') . " " . $permalink['title'];
             } else if ($row['type'] == ABJ404_TYPE_HOME) {
-                $type = __('Home Page', '404-solution');
                 $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_HOME, 0);
-                $dest = $permalink['title'];
                 $link = $permalink['link'];
                 $title .= __('Home Page:', '404-solution') . " " . $permalink['title'];
             } else if ($row['type'] == ABJ404_TYPE_POST) {
-                $type = __(ucwords($row['wp_post_type']), '404-solution');
                 $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_POST, 0);
-                $dest = $permalink['title'];
                 $link = $permalink['link'];
                 $title .= $permalink['title'];
                 
@@ -1362,11 +1345,10 @@ class ABJ_404_Solution_View {
             $htmlTemp = str_replace('{deletePermanentlyHTML}', $deletePermanentlyHTML, $htmlTemp);
             $htmlTemp = str_replace('{link}', $link, $htmlTemp);
             $htmlTemp = str_replace('{title}', $title, $htmlTemp);
-            $htmlTemp = str_replace('{dest}', $dest, $htmlTemp);
-            $htmlTemp = str_replace('{status}', $status, $htmlTemp);
+            $htmlTemp = str_replace('{dest}', $row['dest_for_view'], $htmlTemp);
+            $htmlTemp = str_replace('{status}', $row['status_for_view'], $htmlTemp);
             $htmlTemp = str_replace('{statusTitle}', $statusTitle, $htmlTemp);
-            $htmlTemp = str_replace('{type}', $type, $htmlTemp);
-            $htmlTemp = str_replace('{dest}', $dest, $htmlTemp);
+            $htmlTemp = str_replace('{type}', $row['type_for_view'], $htmlTemp);
             $htmlTemp = str_replace('{rowCode}', $row['code'], $htmlTemp);
             $htmlTemp = str_replace('{hits}', $hits, $htmlTemp);
             $htmlTemp = str_replace('{logsLink}', $logslink, $htmlTemp);
