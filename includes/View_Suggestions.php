@@ -13,7 +13,7 @@ class ABJ_404_Solution_View_Suggestions {
      * @return string
      */
     function getAdminOptionsPage404Suggestions($options) {
-        global $abj404view;
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         // Suggested Alternatives Options
         $selectedSuggestCats = "";
@@ -39,7 +39,7 @@ class ABJ_404_Solution_View_Suggestions {
         $html = str_replace('{SUGGEST_USER_ENTRY_AFTER}', esc_attr($options['suggest_entryafter']), $html);
         $html = str_replace('{SUGGEST_USER_NO_RESULTS}', esc_attr($options['suggest_noresults']), $html);
         // constants and translations.
-        $html = $abj404view->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         
         return $html;
     }

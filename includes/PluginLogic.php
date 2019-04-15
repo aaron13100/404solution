@@ -1140,6 +1140,8 @@ class ABJ_404_Solution_PluginLogic {
                 $tableOptions['filter'] = '0';
             }
         }
+        
+        $tableOptions['filterText'] = trim($abj404dao->getPostOrGetSanitize("filterText", ""));
 
         if ($abj404dao->getPostOrGetSanitize('orderby', "") != "") {
             $tableOptions['orderby'] = esc_sql($abj404dao->getPostOrGetSanitize('orderby'));
@@ -1153,20 +1155,14 @@ class ABJ_404_Solution_PluginLogic {
                 update_option('abj404_settings', $options);
             }
             
-        } else if ($abj404dao->getPostOrGetSanitize('subpage') == "abj404_logs") {
+        } else if ($pageBeingViewed == "abj404_logs") {
             $tableOptions['orderby'] = "timestamp";
-            
+        } else if ($pageBeingViewed == 'abj404_redirects') {
+            $tableOptions['orderby'] = $options['page_redirects_order_by'];
+        } else if ($pageBeingViewed == 'abj404_captured') {
+            $tableOptions['orderby'] = $options['captured_order_by'];
         } else {
-            
-            if ($pageBeingViewed == 'abj404_redirects') {
-                $tableOptions['orderby'] = $options['page_redirects_order_by'];
-                
-            } else if ($pageBeingViewed == 'abj404_captured') {
-                $tableOptions['orderby'] = $options['captured_order_by'];
-                
-            } else {
-                $tableOptions['orderby'] = "url";
-            }
+            $tableOptions['orderby'] = "url";
         }
 
         if ($abj404dao->getPostOrGetSanitize('order', '') != '') {
@@ -1184,17 +1180,14 @@ class ABJ_404_Solution_PluginLogic {
         } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
             $tableOptions['order'] = "DESC";
             
+        } else if ($pageBeingViewed == 'abj404_redirects') {
+            $tableOptions['order'] = $options['page_redirects_order'];
+
+        } else if ($pageBeingViewed == 'abj404_captured') {
+            $tableOptions['order'] = $options['captured_order'];
+
         } else {
-            
-            if ($pageBeingViewed == 'abj404_redirects') {
-                $tableOptions['order'] = $options['page_redirects_order'];
-                
-            } else if ($pageBeingViewed == 'abj404_captured') {
-                $tableOptions['order'] = $options['captured_order'];
-                
-            } else {
-                $tableOptions['order'] = "ASC";
-            }
+            $tableOptions['order'] = "ASC";
         }
 
         $tableOptions['paged'] = $abj404dao->getPostOrGetSanitize("paged", 1);
@@ -1205,6 +1198,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         $tableOptions['perpage'] = $abj404dao->getPostOrGetSanitize("perpage", $perPageOption);
 
+        $tableOptions['logsid'] = 0;
         if ($abj404dao->getPostOrGetSanitize('subpage') == "abj404_logs") {
             if (array_key_exists('id', $_GET) && isset($_GET['id']) && $f->regexMatch('[0-9]+', $_GET['id'])) {                
                 $tableOptions['logsid'] = absint($_GET['id']);
@@ -1213,9 +1207,6 @@ class ABJ_404_Solution_PluginLogic {
                     isset($_GET['redirect_to_data_field_id']) && 
                     $f->regexMatch('[0-9]+', $_GET['redirect_to_data_field_id'])) {
                 $tableOptions['logsid'] = absint($_GET['redirect_to_data_field_id']);
-                
-            } else {
-                $tableOptions['logsid'] = 0;
             }
         }
 
