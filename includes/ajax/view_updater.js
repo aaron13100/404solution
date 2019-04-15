@@ -18,19 +18,16 @@ function paginationLinksChange(triggerItem) {
     var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
     var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();
     
-    var oldPaginationInputs = jQuery('.abj404-pagination-right input, .abj404-pagination-right select');
-    var oldPaginationTable = jQuery('.abj404-pagination-right');
-    var oldTable = jQuery('.wp-list-table, .wp-list-table input');
-    var oldTableAR = jQuery('.wp-list-table .alternate'); // alternate rows
-    var originalAlternateRowColor = jQuery(oldTableAR[0]).css('background-color');
-    var originalPaginationBGColor = jQuery('.abj404-pagination-right').css('background-color');
+    var originalColorGraySelector = '.wp-list-table .alternate, .abj404-pagination-right';
+    var originalColorWhiteSelector = '.abj404-pagination-right input' +
+            ', .abj404-pagination-right select, .wp-list-table .normal-non-alternate, .wp-list-table';
+    
     var fadeToColor = 'gray';
     
     // get the URL from the html page.
     var url = jQuery(".abj404-pagination-right").attr("data-pagination-ajax-url");
     var subpage = getURLParameter('subpage');
     var trashFilter = getURLParameter('filter');
-    
 
     // do an ajax call to update the data
     jQuery.ajax({
@@ -47,19 +44,17 @@ function paginationLinksChange(triggerItem) {
             // replace the tables
             jQuery('.abj404-pagination-right').replaceWith(result.paginationLinks);
             jQuery('.wp-list-table').replaceWith(result.table);
+            
+            var originalAlternateRowColor = jQuery(originalColorGraySelector).css('background-color');
+            var originalPaginationBGColor = jQuery(originalColorWhiteSelector).css('background-color');
 
             // make them gray immediately as if they were always gray.
-            jQuery('.abj404-pagination-right input, .abj404-pagination-right select').css("background-color", fadeToColor);
-            jQuery('.abj404-pagination-right').css("background-color", fadeToColor);
-            jQuery('.wp-list-table, .wp-list-table input').css("background-color", fadeToColor);
-            jQuery('.wp-list-table .alternate').css("background-color", fadeToColor);
+            jQuery(originalColorGraySelector).css("background-color", fadeToColor);
+            jQuery(originalColorWhiteSelector).css("background-color", fadeToColor);
             
             // fade them back to their normal colors.
-            jQuery('.abj404-pagination-right').animate({backgroundColor: originalPaginationBGColor});
-            jQuery('.abj404-pagination-right input, .abj404-pagination-right select')
-                    .animate({backgroundColor: "white"});
-            jQuery('.wp-list-table, .wp-list-table input').animate({backgroundColor: "white"});
-            jQuery('.wp-list-table .alternate').animate({backgroundColor: originalAlternateRowColor});
+            jQuery(originalColorGraySelector).animate({backgroundColor: originalAlternateRowColor});
+            jQuery(originalColorWhiteSelector).animate({backgroundColor: originalPaginationBGColor});
         },
         error: function (jqXHR, textStatus, errorThrown) {
             alert("Ajax error. Result: " + JSON.stringify(textStatus, null, 2) + 
@@ -68,9 +63,7 @@ function paginationLinksChange(triggerItem) {
     });
 
     // we do the animation after the ajax request so that it's happening while the server is thinking.
-    oldPaginationInputs.animate({backgroundColor: fadeToColor}, 3000);
-    oldPaginationTable.animate({backgroundColor: fadeToColor}, 3000);
-    oldTable.animate({backgroundColor: fadeToColor}, 3000);
-    oldTableAR.animate({backgroundColor: fadeToColor}, 3000);
+    jQuery(originalColorWhiteSelector).animate({backgroundColor: fadeToColor}, 3000);
+    jQuery(originalColorGraySelector).animate({backgroundColor: fadeToColor}, 3000);
 }
 

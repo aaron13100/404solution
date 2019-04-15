@@ -557,6 +557,40 @@ class ABJ_404_Solution_DataAccess {
      * @return type rows from the redirects table.
      */
     function getRedirectsForView($sub, $tableOptions) {
+        // for normal page views we limit the rows returned based on user preferences for paginaiton.
+        $limitStart = $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
+        $limitEnd = absint(sanitize_text_field($tableOptions['perpage']));
+        
+        $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits')
+                || ($tableOptions['orderby'] == 'last_used');
+        
+        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, $limitStart, $limitEnd);
+        
+        // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
+        // they can use a different ID - not the ID from the logs table.
+        $results = $this->queryAndGetResults($query);
+        $rows = $results['rows'];
+        
+        // populate the logs data if we need to
+        if (!$queryAllRowsAtOnce) {
+            $rows = $this->populateLogsData($rows);
+        }
+        
+        return $rows;
+    }
+    
+    function getRedirectsForViewCount($sub, $tableOptions) {
+        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false, 0, PHP_INT_MAX);
+
+        $query = 'select count(*) as count from (' . $query . "\n) bob";
+        
+        $results = $this->queryAndGetResults($query);
+        $rows = $results['rows'];
+        $row = $rows[0];
+        return $row['count'];
+    }
+    
+    function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, $limitStart, $limitEnd) {
         global $wpdb;
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         global $abj404_redirect_types;
@@ -573,16 +607,13 @@ class ABJ_404_Solution_DataAccess {
 
         // if we're showing all rows include all of the log data in the query already. this makes the query very slow. 
         // this should be replaced by the dynamic loading of log data using ajax queries as the page is viewed.
-        $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits')
-                || ($tableOptions['orderby'] == 'last_used');
         if ($queryAllRowsAtOnce) {
              $logsTableColumns = "logstable.logshits as logshits, \n" .
                     "logstable.logsid, \n" .
                     "logstable.last_used, \n";
         } else {
             $logsTableColumns = "null as logshits, \n null as logsid, \n null as last_used, \n";
-        }
-        
+        }        
 
         if ($queryAllRowsAtOnce) {
             $logsTableJoin = "  LEFT OUTER JOIN ( \n " .
@@ -633,9 +664,10 @@ class ABJ_404_Solution_DataAccess {
         
         $orderByString = "order by " . $orderBy . " " . sanitize_text_field($tableOptions['order']);
 
-        // for normal page views we limit the rows returned based on user preferences for paginaiton.
-        $limitStart = $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
-        $limitEnd = absint(sanitize_text_field($tableOptions['perpage']));
+        $searchFilterTextExists = "no fiter text found";
+        if ($tableOptions['filterText'] != '') {
+            $searchFilterTextExists = ' filtering on text: ' . esc_sql($tableOptions['filterText'] . ' */');
+        }
 
         // ---
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
@@ -648,19 +680,20 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace('{orderByString}', $orderByString, $query);
         $query = str_replace('{limitStart}', $limitStart, $query);
         $query = str_replace('{limitEnd}', $limitEnd, $query);
+        $query = str_replace('{searchFilterTextExists}', $searchFilterTextExists, $query);
+        $query = str_replace('{filterText}', $tableOptions['filterText'], $query);
         
-        // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
-        // they can use a different ID - not the ID from the logs table.
-        $results = $this->queryAndGetResults($query);
-        $rows = $results['rows'];
-        
-        
-        // populate the logs data if we need to
-        if (!$queryAllRowsAtOnce) {
-            $rows = $this->populateLogsData($rows);
+        if (array_key_exists('translations', $tableOptions)) {
+            $keys = array_keys($tableOptions['translations']);
+            $values = array_values($tableOptions['translations']);
+            $query = str_replace($keys, $values, $query);
         }
         
-        return $rows;
+        $query = $f->doNormalReplacements($query);
+        
+        $abj404logging->infoMessage("Quer: " . $query);
+
+        return $query;
     }
     
     /** 

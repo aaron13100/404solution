@@ -125,10 +125,11 @@ class ABJ_404_Solution_View {
     
     /** Echo the text that appears at the bottom of each admin page. */
     function echoAdminFooter() {
+        $f = ABJ_404_Solution_Functions::getInstance();
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminFooter.html");
         // constants and translations.
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         echo $html;
     }
 
@@ -415,6 +416,7 @@ class ABJ_404_Solution_View {
         global $abj404view;
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         global $wpdb;
+        $f = ABJ_404_Solution_Functions::getInstance();
 
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
         $link = wp_nonce_url($url, "abj404_purgeRedirects");
@@ -424,7 +426,7 @@ class ABJ_404_Solution_View {
         // do special replacements
         $html = str_replace('{toolsPurgeFormActionLink}', $link, $html);
         // constants and translations.
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
@@ -449,7 +451,7 @@ class ABJ_404_Solution_View {
             // do special replacements
             $html = str_replace('{toolsImportFormActionLink}', $link, $html);
             // constants and translations.
-            $html = $this->doNormalReplacements($html);
+            $html = $f->doNormalReplacements($html);
         }
 
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
@@ -468,7 +470,7 @@ class ABJ_404_Solution_View {
         // do special replacements
         $html = str_replace('{toolsMaintenanceFormActionLink}', $link, $html);
         // constants and translations.
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
@@ -477,55 +479,6 @@ class ABJ_404_Solution_View {
         echo "</div></div></div>";
     }
     
-    /** Replace constants and translations.
-     * @param type $text
-     * @return type
-     */
-    function doNormalReplacements($text) {
-        global $wpdb;
-        
-        // known strings that do not exist in the translation file.
-        $knownReplacements = array(
-            '{ABJ404_STATUS_AUTO}' => ABJ404_STATUS_AUTO,
-            '{ABJ404_STATUS_MANUAL}' => ABJ404_STATUS_MANUAL,
-            '{ABJ404_STATUS_CAPTURED}' => ABJ404_STATUS_CAPTURED,
-            '{ABJ404_STATUS_IGNORED}' => ABJ404_STATUS_IGNORED,
-            '{ABJ404_STATUS_LATER}' => ABJ404_STATUS_LATER,
-            '{ABJ404_TYPE_404_DISPLAYED}' => ABJ404_TYPE_404_DISPLAYED,
-            '{ABJ404_TYPE_POST}' => ABJ404_TYPE_POST,
-            '{ABJ404_TYPE_CAT}' => ABJ404_TYPE_CAT,
-            '{ABJ404_TYPE_TAG}' => ABJ404_TYPE_TAG,
-            '{ABJ404_TYPE_EXTERNAL}' => ABJ404_TYPE_EXTERNAL,
-            '{ABJ404_TYPE_HOME}' => ABJ404_TYPE_HOME,
-            '{ABJ404_HOME_URL}' => ABJ404_HOME_URL,
-            '{PLUGIN_NAME}' => PLUGIN_NAME,
-            '{ABJ404_VERSION}' => ABJ404_VERSION,
-            '{PHP_VERSION}' => phpversion(),
-            '{WP_VERSION}' => get_bloginfo('version'),
-            '{MYSQL_VERSION}' => $wpdb->db_version(),
-            '{ABJ404_MAX_AJAX_DROPDOWN_SIZE}' => ABJ404_MAX_AJAX_DROPDOWN_SIZE,
-            '{WP_MEMORY_LIMIT}' => WP_MEMORY_LIMIT,
-            '{MBSTRING}' => extension_loaded('mbstring') ? 'true' : 'false',
-            );
-
-        // replace known strings that do not exist in the translation file.
-        $text = str_replace(array_keys($knownReplacements), array_values($knownReplacements), $text);
-        
-        // Find the strings to replace in the content.
-        $re = '/\{(.+?)\}/x';
-        $stringsToReplace = array();
-        // TODO does this need to be $f->regexMatch?
-        preg_match_all($re, $text, $stringsToReplace, PREG_PATTERN_ORDER);
-
-        // Iterate through each string to replace.
-        foreach ($stringsToReplace[1] as $stringToReplace) {
-            $text = str_replace('{' . $stringToReplace . '}', 
-                    __($stringToReplace, '404-solution'), $text);
-        }
-        
-        return $text;
-    }
-
     function echoAdminOptionsPage() {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         global $abj404view;
@@ -656,7 +609,7 @@ class ABJ_404_Solution_View {
             $html .= '<a id="showInfoLink" onclick="showHideRegexExplanation()" ';
             
             $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/showHideRegexExplanation.html");
-            $html = $this->doNormalReplacements($html);
+            $html = $f->doNormalReplacements($html);
             echo $html;
 
         } else if ($recnums_multiple != null) {
@@ -721,7 +674,7 @@ class ABJ_404_Solution_View {
         $html = str_replace('{pageIDAndType}', $pageIDAndType, $html);
         $html = str_replace('{data-url}', 
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false", $html);
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         echo $html;
         
         $this->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'));
@@ -862,6 +815,7 @@ class ABJ_404_Solution_View {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $sub = 'abj404_captured';
         $nonceValue = "abj404_bulkProcess";
+        $f = ABJ_404_Solution_Functions::getInstance();
 
         $tableOptions = $abj404logic->getTableOptions($sub);
 
@@ -905,7 +859,7 @@ class ABJ_404_Solution_View {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown.html");
         $html = str_replace('{action_url}', $url, $html);
         $html = str_replace('{bulkOptions}', $allBulkOptions, $html);
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         echo $html;
 
         // empty trash button -------------
@@ -916,7 +870,7 @@ class ABJ_404_Solution_View {
 
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
             $html = str_replace('{action_url}', $eturl, $html);
-            $html = $this->doNormalReplacements($html);
+            $html = $f->doNormalReplacements($html);
             echo $html;
         }
         // ----------
@@ -936,13 +890,14 @@ class ABJ_404_Solution_View {
         // make sure the "apply" button is only enabled if at least one checkbox is selected
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/enableDisableApplyButton.js");
         $html = str_replace('{altText}', __('Choose at least one URL', '404-solution'), $html);
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         echo $html;
     }
     
     function getCapturedURLSPageTable($sub) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $tableOptions = $abj404logic->getTableOptions($sub);
 
@@ -1050,6 +1005,7 @@ class ABJ_404_Solution_View {
                 $y++;
             } else {
                 $y = 0;
+                $class = "normal-non-alternate";
             }
             
             // ------------------------
@@ -1091,7 +1047,7 @@ class ABJ_404_Solution_View {
                     esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $tempHtml);
             $tempHtml = str_replace('{last_used_date}', esc_html($last), $tempHtml);
             
-            $tempHtml = $this->doNormalReplacements($tempHtml);
+            $tempHtml = $f->doNormalReplacements($tempHtml);
             $html .= $tempHtml;
         }
         
@@ -1115,6 +1071,7 @@ class ABJ_404_Solution_View {
      */
     function echoAdminRedirectsPage() {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $sub = 'abj404_redirects';
         $nonceValue = "abj404_bulkProcess";
@@ -1139,7 +1096,7 @@ class ABJ_404_Solution_View {
         
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             $htmlTop = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinksTop.html");
-            echo $this->doNormalReplacements($htmlTop);
+            echo $f->doNormalReplacements($htmlTop);
         }
         
         echo $this->getPaginationLinks($sub);
@@ -1174,7 +1131,7 @@ class ABJ_404_Solution_View {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown.html");
         $html = str_replace('{action_url}', $url, $html);
         $html = str_replace('{bulkOptions}', $allBulkOptions, $html);
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         echo $html;
         
         // ------------------ empty trash button
@@ -1186,7 +1143,7 @@ class ABJ_404_Solution_View {
 
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
             $html = str_replace('{action_url}', $eturl, $html);
-            $html = $this->doNormalReplacements($html);
+            $html = $f->doNormalReplacements($html);
             echo $html;
             
             echo "</div>";
@@ -1207,7 +1164,7 @@ class ABJ_404_Solution_View {
         // make sure the "apply" button is only enabled if at least one checkbox is selected
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/enableDisableApplyButton.js");
         $html = str_replace('{altText}', __('Choose at least one URL', '404-solution'), $html);
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         echo $html;
     }
     
@@ -1215,6 +1172,7 @@ class ABJ_404_Solution_View {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $tableOptions = $abj404logic->getTableOptions($sub);
         
@@ -1250,6 +1208,19 @@ class ABJ_404_Solution_View {
         $html .= "</thead>  <tfoot>";
         $html .= $this->getTableColumns($sub, $columns);
         $html .= "</tfoot>  <tbody id=\"the-list\">";
+        
+        $translationArray = array(
+            '{ABJ404_STATUS_MANUAL_text}' => __('Man', '404-solution'),
+            '{ABJ404_STATUS_AUTO_text}' => __('Auto', '404-solution'),
+            '{ABJ404_STATUS_REGEX_text}' => __('RegEx', '404-solution'),
+            '{ABJ404_TYPE_EXTERNAL_text}' => __('External', '404-solution'),
+            '{ABJ404_TYPE_CAT_text}' => __('Category', '404-solution'),
+            '{ABJ404_TYPE_TAG_text}' => __('Tag', '404-solution'),
+            '{ABJ404_TYPE_HOME_text}' => __('Home Page', '404-solution'),
+            );
+        
+        $tableOptions['translations'] = $translationArray;
+        
         $rows = $abj404dao->getRedirectsForView($sub, $tableOptions);
         $displayed = 0;
         $y = 1;
@@ -1358,6 +1329,7 @@ class ABJ_404_Solution_View {
                 $y++;
             } else {
                 $y = 0;
+                $class = "normal-non-alternate";
             }
             
             // -------------------------------------------
@@ -1407,7 +1379,7 @@ class ABJ_404_Solution_View {
                     esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $htmlTemp);
             $htmlTemp = str_replace('{last_used_date}', esc_html($last), $htmlTemp);
             
-            $htmlTemp = $this->doNormalReplacements($htmlTemp);
+            $htmlTemp = $f->doNormalReplacements($htmlTemp);
             $html .= $htmlTemp;
         }
         if ($displayed == 0) {
@@ -1425,6 +1397,7 @@ class ABJ_404_Solution_View {
     
     function echoAddManualRedirect($tableOptions) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = ABJ_404_Solution_Functions::getInstance();
 
         $options = $abj404logic->getOptions();
         
@@ -1478,7 +1451,7 @@ class ABJ_404_Solution_View {
         $html = str_replace('{302selected}', $selected302, $html);
         
         // constants and translations.
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         
         echo $html;
     }
@@ -1538,6 +1511,7 @@ class ABJ_404_Solution_View {
      */
     function getAdminOptionsPageAutoRedirects($options) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         $content = "";
@@ -1561,7 +1535,7 @@ class ABJ_404_Solution_View {
         $html = str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = str_replace('{data-url}', 
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true", $html);
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         $content .= $html;
         
         // -----------------------------------------------
@@ -1595,6 +1569,7 @@ class ABJ_404_Solution_View {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $selectedDebugLogging = "";
         if (array_key_exists('debug_mode', $options) && $options['debug_mode'] == '1') {
@@ -1638,7 +1613,7 @@ class ABJ_404_Solution_View {
         $html = str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($options['auto_score']), $html);
         
         // constants and translations.
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         
         // ------------------
          
@@ -1650,9 +1625,8 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageGeneralSettings($options) {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        global $abj404ip2Location;
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $selectedDefaultRedirect301 = "";
         if ($options['default_redirect'] == '301') {
@@ -1716,7 +1690,7 @@ class ABJ_404_Solution_View {
         $html = str_replace('{PHP_VERSION}', PHP_VERSION, $html);
 
         // constants and translations.
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         
         return $html;
     }
@@ -1727,6 +1701,7 @@ class ABJ_404_Solution_View {
     function echoAdminLogsPage() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $sub = 'abj404_logs';
         $tableOptions = $abj404logic->getTableOptions($sub);
@@ -1760,7 +1735,7 @@ class ABJ_404_Solution_View {
         $html = str_replace('{pageIDAndType}', $pageIDAndType, $html);
         $html = str_replace('{redirectPageTitle}', $redirectPageTitle, $html);
         $html = str_replace('{data-url}', "admin-ajax.php?action=echoViewLogsFor", $html);
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         echo $html;
         // ----------------- dropdown search box. end.
 
@@ -1834,6 +1809,7 @@ class ABJ_404_Solution_View {
                 $y++;
             } else {
                 $y = 0;
+                $class = ' class="normal-non-alternate"';
             }
             $html .= "<tr" . $class . ">";
             $html .= "<td></td>";
@@ -1969,6 +1945,7 @@ class ABJ_404_Solution_View {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = ABJ_404_Solution_Functions::getInstance();
         global $abj404_redirect_types;
         global $abj404_captured_types;
         
@@ -2005,14 +1982,20 @@ class ABJ_404_Solution_View {
 
         if ($sub == 'abj404_logs') {
             $num_records = $abj404dao->getLogsCount($tableOptions['logsid']);
+            // TODO correct the number of records for when there's a filter
+            $abj404dao->getLogRecords($tableOptions);
         } else {
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $num_records = $abj404dao->getRecordCount($types, 1);
-
+                $num_records = $abj404dao->getRedirectsForViewCount($sub, $tableOptions);
             } else {
                 $num_records = $abj404dao->getRecordCount($types);
+                $num_records = $abj404dao->getRedirectsForViewCount($sub, $tableOptions);
             }
         }
+        // TODO correct the number of records for when there's a filter
+        $abj404dao->getLogRecords($tableOptions);
+        
 
         $total_pages = ceil($num_records / $tableOptions['perpage']);
         if ($total_pages == 0) {
@@ -2071,6 +2054,13 @@ class ABJ_404_Solution_View {
                 "&nonce=" . wp_create_nonce('abj404_updatePaginationLink');
         
         $showSearchFilter = $sub == 'abj404_redirects' ? '' : '<!--';
+        
+        if ($tableOptions['filterText'] != '') {
+            $nexturl .= '&filterText=' . $tableOptions['filterText'];
+            $prevurl .= '&filterText=' . $tableOptions['filterText'];
+            $firsturl .= '&filterText=' . $tableOptions['filterText'];
+            $lasturl .= '&filterText=' . $tableOptions['filterText'];
+        }
 
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinks.html");
@@ -2087,9 +2077,10 @@ class ABJ_404_Solution_View {
         $html = str_replace('{TEXT_CURRENT_PAGE}', $currentPageText, $html);
         $html = str_replace('{LINK_NEXT_PAGE}', esc_url($nexturl), $html);
         $html = str_replace('{LINK_LAST_PAGE}', esc_url($lasturl), $html);
+        $html = str_replace('{filterText}', $tableOptions['filterText'], $html);
         $html = str_replace('{data-pagination-ajax-url}', $ajaxPaginationLink, $html);
         // constants and translations.
-        $html = $this->doNormalReplacements($html);
+        $html = $f->doNormalReplacements($html);
         
         return $html;
     }    
