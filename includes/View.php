@@ -884,7 +884,7 @@ class ABJ_404_Solution_View {
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             echo "</form>";
         }
-        echo $this->getPaginationLinks($sub);
+        echo $this->getPaginationLinks($sub, false);
         echo "</div>";
         
         // make sure the "apply" button is only enabled if at least one checkbox is selected
@@ -1153,7 +1153,7 @@ class ABJ_404_Solution_View {
         echo $this->getAdminRedirectsPageTable($sub);
 
         echo "<div class=\"tablenav\">";
-        echo $this->getPaginationLinks($sub);
+        echo $this->getPaginationLinks($sub, false);
         echo "</div>";
 
         // don't show the "add manual redirect" form on the trash page.
@@ -1731,7 +1731,7 @@ class ABJ_404_Solution_View {
         echo $this->getAdminLogsPageTable($sub);
 
         echo "<div class=\"tablenav\">";
-        echo $this->getPaginationLinks($sub);
+        echo $this->getPaginationLinks($sub, false);
         echo "</div>";
     }
     
@@ -1923,7 +1923,7 @@ class ABJ_404_Solution_View {
      * @param type $sub
      * @param type $tableOptions
      */
-    function getPaginationLinks($sub) {
+    function getPaginationLinks($sub, $showSearchFilter = true) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
@@ -1964,20 +1964,13 @@ class ABJ_404_Solution_View {
 
         if ($sub == 'abj404_logs') {
             $num_records = $abj404dao->getLogsCount($tableOptions['logsid']);
-            // TODO correct the number of records for when there's a filter
-            $abj404dao->getLogRecords($tableOptions);
         } else {
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-                $num_records = $abj404dao->getRecordCount($types, 1);
                 $num_records = $abj404dao->getRedirectsForViewCount($sub, $tableOptions);
             } else {
-                $num_records = $abj404dao->getRecordCount($types);
                 $num_records = $abj404dao->getRedirectsForViewCount($sub, $tableOptions);
             }
         }
-        // TODO correct the number of records for when there's a filter
-        $abj404dao->getLogRecords($tableOptions);
-        
 
         $total_pages = ceil($num_records / $tableOptions['perpage']);
         if ($total_pages == 0) {
@@ -2035,7 +2028,10 @@ class ABJ_404_Solution_View {
         $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=" . $sub .
                 "&nonce=" . wp_create_nonce('abj404_updatePaginationLink');
         
-        $showSearchFilter = $sub == 'abj404_redirects' ? '' : '<!--';
+        $searchFilterControl = $sub == 'abj404_redirects' ? '' : '<!--';
+        if (!$showSearchFilter) {
+            $searchFilterControl = '<!--';
+        }
         
         if ($tableOptions['filterText'] != '') {
             $nexturl .= '&filterText=' . $tableOptions['filterText'];
@@ -2051,7 +2047,7 @@ class ABJ_404_Solution_View {
                 ' value="' . $tableOptions['perpage'] . '" selected', 
                 $html);
         $html = str_replace('{changeItemsPerPage}', $showRowsLink, $html);
-        $html = str_replace('{showSearchFilter}', $showSearchFilter, $html);
+        $html = str_replace('{showSearchFilter}', $searchFilterControl, $html);
         $html = str_replace('{TEXT_BEFORE_LINKS}', $currentlyShowingText, $html);
         $html = str_replace('{TEXT_SHOW_ROWS}', $showRowsText, $html);
         $html = str_replace('{LINK_FIRST_PAGE}', esc_url($firsturl), $html);

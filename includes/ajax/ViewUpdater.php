@@ -33,7 +33,8 @@ class ABJ_404_Solution_ViewUpdater {
         $abj404logic->updatePerPageOption($rowsPerPage);
         
         $data = array();
-        $data['paginationLinks'] = $abj404view->getPaginationLinks($subpage);
+        $data['paginationLinksTop'] = $abj404view->getPaginationLinks($subpage);
+        $data['paginationLinksBottom'] = $abj404view->getPaginationLinks($subpage, false);
         if ($subpage == 'abj404_redirects') {
             $data['table'] = $abj404view->getAdminRedirectsPageTable($subpage);
             

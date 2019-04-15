@@ -1,6 +1,6 @@
 
 
-jQuery(document).ready(function($) {	
+jQuery(document).ready(function($) {
     jQuery(".ajax-trash-link").click(function (e) {
         // preventDefault() means don't move to the top of the page. 
         e.preventDefault();
