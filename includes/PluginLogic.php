@@ -189,12 +189,10 @@ class ABJ_404_Solution_PluginLogic {
             }
             $abj404dao->logRedirectHit($requestedURL, '404', 'gave up. ' . $reason);
         } else {
-            if ($abj404logging->isDebug()) {
-                $abj404logging->debugMessage("No permalink found to redirect to. capture_404 is off. Requested URL: " . $requestedURL .
-                        " | Redirect: " . wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " .
-                        "is_page(): " . is_page() . " | is_feed(): " . is_feed() . " | is_trackback(): " .
-                        is_trackback() . " | is_preview(): " . is_preview() . " | options: " . wp_kses_post(json_encode($options)));
-            }
+            $abj404logging->debugMessage("No permalink found to redirect to. capture_404 is off. Requested URL: " . $requestedURL .
+                    " | Redirect: " . wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " .
+                    "is_page(): " . is_page() . " | is_feed(): " . is_feed() . " | is_trackback(): " .
+                    is_trackback() . " | is_preview(): " . is_preview() . " | options: " . wp_kses_post(json_encode($options)));
         }
     }
     
@@ -1468,13 +1466,11 @@ class ABJ_404_Solution_PluginLogic {
         // if there are child pages left over then there's an issue. it means there's a child page that was
         // returned but the parent for that child was not returned. so we don't have any place to display
         // the child page. this could be because the parent page is not "published"
-        if ($abj404logging->isDebug()) {
-            if (count($orderedPages) != count($pages)) {
-                $unusedPages = array_udiff($pages, $orderedPages, array($this, 'compareByID'));
-                $abj404logging->debugMessage("There was an issue finding the parent pages for some child pages. " .
-                        "These pages' parents may not have a 'published' status. Pages: " . 
-                        wp_kses_post(json_encode($unusedPages)));
-            }
+        if (count($orderedPages) != count($pages)) {
+            $unusedPages = array_udiff($pages, $orderedPages, array($this, 'compareByID'));
+            $abj404logging->debugMessage("There was an issue finding the parent pages for some child pages. " .
+                    "These pages' parents may not have a 'published' status. Pages: " . 
+                    wp_kses_post(json_encode($unusedPages)));
         }
         
         return $orderedPages;

@@ -183,23 +183,23 @@ class ABJ_404_Solution_WordPress_Connector {
 
         $options = $abj404logic->getOptions();
 
-        if ($abj404logging->isDebug()) {
-            $debugOptionsMsg = esc_html('auto_redirects: ' . $options['auto_redirects'] . ', auto_score: ' . 
-                    $options['auto_score'] . ', auto_cats: ' . $options['auto_cats'] . ', auto_tags: ' .
-                    $options['auto_tags'] . ', dest404page: ' . $options['dest404page']);
-            
-            $remoteAddress = esc_sql($_SERVER['REMOTE_ADDR']);
-            if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
-                $remoteAddress = md5($remoteAddress);
-            }
-            
-            $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $_SERVER['HTTP_USER_AGENT'] . ', REMOTE_ADDR: ' . 
-                    $remoteAddress . ', REQUEST_URI: ' . urldecode($_SERVER['REQUEST_URI']));
-            $abj404logging->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
-                    wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " . "is_page(): " . is_page() .
-                    " | is_feed(): " . is_feed() . " | is_trackback(): " . is_trackback() . " | is_preview(): " .
-                    is_preview() . " | options: " . $debugOptionsMsg . ', ' . $debugServerMsg);
+        // ------------ debug message begin
+        $debugOptionsMsg = esc_html('auto_redirects: ' . $options['auto_redirects'] . ', auto_score: ' . 
+                $options['auto_score'] . ', auto_cats: ' . $options['auto_cats'] . ', auto_tags: ' .
+                $options['auto_tags'] . ', dest404page: ' . $options['dest404page']);
+
+        $remoteAddress = esc_sql($_SERVER['REMOTE_ADDR']);
+        if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
+            $remoteAddress = md5($remoteAddress);
         }
+
+        $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $_SERVER['HTTP_USER_AGENT'] . ', REMOTE_ADDR: ' . 
+                $remoteAddress . ', REQUEST_URI: ' . urldecode($_SERVER['REQUEST_URI']));
+        $abj404logging->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
+                wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " . "is_page(): " . is_page() .
+                " | is_feed(): " . is_feed() . " | is_trackback(): " . is_trackback() . " | is_preview(): " .
+                is_preview() . " | options: " . $debugOptionsMsg . ', ' . $debugServerMsg);
+        // ------------ debug message end
 
         if ($requestedURL != "") {
             // if we already know where to go then go there.
