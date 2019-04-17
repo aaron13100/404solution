@@ -171,7 +171,56 @@ class ABJ_404_Solution_Functions {
         return $charToUse;
     }
     
-    
+    /** Replace constants and translations.
+     * @param type $text
+     * @return type
+     */
+    function doNormalReplacements($text) {
+        global $wpdb;
+        
+        // known strings that do not exist in the translation file.
+        $knownReplacements = array(
+            '{ABJ404_STATUS_AUTO}' => ABJ404_STATUS_AUTO,
+            '{ABJ404_STATUS_MANUAL}' => ABJ404_STATUS_MANUAL,
+            '{ABJ404_STATUS_CAPTURED}' => ABJ404_STATUS_CAPTURED,
+            '{ABJ404_STATUS_IGNORED}' => ABJ404_STATUS_IGNORED,
+            '{ABJ404_STATUS_LATER}' => ABJ404_STATUS_LATER,
+            '{ABJ404_STATUS_REGEX}' => ABJ404_STATUS_REGEX,
+            '{ABJ404_TYPE_404_DISPLAYED}' => ABJ404_TYPE_404_DISPLAYED,
+            '{ABJ404_TYPE_POST}' => ABJ404_TYPE_POST,
+            '{ABJ404_TYPE_CAT}' => ABJ404_TYPE_CAT,
+            '{ABJ404_TYPE_TAG}' => ABJ404_TYPE_TAG,
+            '{ABJ404_TYPE_EXTERNAL}' => ABJ404_TYPE_EXTERNAL,
+            '{ABJ404_TYPE_HOME}' => ABJ404_TYPE_HOME,
+            '{ABJ404_HOME_URL}' => ABJ404_HOME_URL,
+            '{PLUGIN_NAME}' => PLUGIN_NAME,
+            '{ABJ404_VERSION}' => ABJ404_VERSION,
+            '{PHP_VERSION}' => phpversion(),
+            '{WP_VERSION}' => get_bloginfo('version'),
+            '{MYSQL_VERSION}' => $wpdb->db_version(),
+            '{ABJ404_MAX_AJAX_DROPDOWN_SIZE}' => ABJ404_MAX_AJAX_DROPDOWN_SIZE,
+            '{WP_MEMORY_LIMIT}' => WP_MEMORY_LIMIT,
+            '{MBSTRING}' => extension_loaded('mbstring') ? 'true' : 'false',
+            );
+
+        // replace known strings that do not exist in the translation file.
+        $text = str_replace(array_keys($knownReplacements), array_values($knownReplacements), $text);
+        
+        // Find the strings to replace in the content.
+        $re = '/\{(.+?)\}/x';
+        $stringsToReplace = array();
+        // TODO does this need to be $f->regexMatch?
+        preg_match_all($re, $text, $stringsToReplace, PREG_PATTERN_ORDER);
+
+        // Iterate through each string to replace.
+        foreach ($stringsToReplace[1] as $stringToReplace) {
+            $text = str_replace('{' . $stringToReplace . '}', 
+                    __($stringToReplace, '404-solution'), $text);
+        }
+        
+        return $text;
+    }
+
     /** Turns ID|TYPE, SCORE into an array with id, type, score, link, and title.
      *
      * @param type $idAndType e.g. 15|POST is a page ID of 15 and a type POST.

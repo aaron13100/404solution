@@ -76,6 +76,8 @@ class ABJ_404_Solution_PluginLogic {
         $options = $abj404logic->getOptions();
         $ignoreReasonDoNotProcess = null;
         $ignoreReasonDoProcess = null;
+        $httpUserAgent = array_key_exists('HTTP_USER_AGENT', $_SERVER) ? 
+                $f->strtolower($_SERVER['HTTP_USER_AGENT']) : '';
         
         // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
         // ignore requests that are supposed to be for an admin.
@@ -90,7 +92,6 @@ class ABJ_404_Solution_PluginLogic {
         // by https://www.sovrn.com/. 
         $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_dontprocess'])),
                 array($f, 'trimAndRemoveEmpty'));
-        $httpUserAgent = $f->strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (do not redirect): " . 
@@ -120,7 +121,6 @@ class ABJ_404_Solution_PluginLogic {
         // ignore and process
         $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_doprocess'])),
                 array($f, 'trimAndRemoveEmpty'));
-        $httpUserAgent = $f->strtolower(@$_SERVER['HTTP_USER_AGENT']);
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (process ok): " . 
@@ -649,12 +649,17 @@ class ABJ_404_Solution_PluginLogic {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         if ($abj404dao->getPostOrGetSanitize('action') == 'changeItemsPerRow') {
-            $showRows = max(absint($abj404dao->getPostOrGetSanitize('perpage')), ABJ404_OPTION_MIN_PERPAGE);
-
-            $options = $this->getOptions();
-            $options['perpage'] = $showRows;
-            update_option('abj404_settings', $options);
+            $this->updatePerPageOption(absint($abj404dao->getPostOrGetSanitize('perpage')));
         }
+    }
+    
+    function updatePerPageOption($rows) {
+        $showRows = max($rows, ABJ404_OPTION_MIN_PERPAGE);
+        $showRows = min($showRows, ABJ404_OPTION_MAX_PERPAGE);
+
+        $options = $this->getOptions();
+        $options['perpage'] = $showRows;
+        update_option('abj404_settings', $options);
     }
     
     /** 
@@ -1129,15 +1134,17 @@ class ABJ_404_Solution_PluginLogic {
 
         $tableOptions['filter'] = $abj404dao->getPostOrGetSanitize("filter", "");
         if ($tableOptions['filter'] == "") {
-            if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == 'abj404_captured') {
+            if ($abj404dao->getPostOrGetSanitize('subpage') == 'abj404_captured') {
                 $tableOptions['filter'] = ABJ404_STATUS_CAPTURED;
             } else {
                 $tableOptions['filter'] = '0';
             }
         }
+        
+        $tableOptions['filterText'] = trim($abj404dao->getPostOrGetSanitize("filterText", ""));
 
-        if (array_key_exists('orderby', $_GET) && isset($_GET['orderby'])) {
-            $tableOptions['orderby'] = esc_sql($_GET['orderby']);
+        if ($abj404dao->getPostOrGetSanitize('orderby', "") != "") {
+            $tableOptions['orderby'] = esc_sql($abj404dao->getPostOrGetSanitize('orderby'));
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order_by'] = $tableOptions['orderby'];
@@ -1148,24 +1155,18 @@ class ABJ_404_Solution_PluginLogic {
                 update_option('abj404_settings', $options);
             }
             
-        } else if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == "abj404_logs") {
+        } else if ($pageBeingViewed == "abj404_logs") {
             $tableOptions['orderby'] = "timestamp";
-            
+        } else if ($pageBeingViewed == 'abj404_redirects') {
+            $tableOptions['orderby'] = $options['page_redirects_order_by'];
+        } else if ($pageBeingViewed == 'abj404_captured') {
+            $tableOptions['orderby'] = $options['captured_order_by'];
         } else {
-            
-            if ($pageBeingViewed == 'abj404_redirects') {
-                $tableOptions['orderby'] = $options['page_redirects_order_by'];
-                
-            } else if ($pageBeingViewed == 'abj404_captured') {
-                $tableOptions['orderby'] = $options['captured_order_by'];
-                
-            } else {
-                $tableOptions['orderby'] = "url";
-            }
+            $tableOptions['orderby'] = "url";
         }
 
-        if (array_key_exists('order', $_GET) && isset($_GET['order'])) {
-            $tableOptions['order'] = esc_sql($_GET['order']);
+        if ($abj404dao->getPostOrGetSanitize('order', '') != '') {
+            $tableOptions['order'] = esc_sql($abj404dao->getPostOrGetSanitize('order'));
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order'] = $tableOptions['order'];
@@ -1179,17 +1180,14 @@ class ABJ_404_Solution_PluginLogic {
         } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
             $tableOptions['order'] = "DESC";
             
+        } else if ($pageBeingViewed == 'abj404_redirects') {
+            $tableOptions['order'] = $options['page_redirects_order'];
+
+        } else if ($pageBeingViewed == 'abj404_captured') {
+            $tableOptions['order'] = $options['captured_order'];
+
         } else {
-            
-            if ($pageBeingViewed == 'abj404_redirects') {
-                $tableOptions['order'] = $options['page_redirects_order'];
-                
-            } else if ($pageBeingViewed == 'abj404_captured') {
-                $tableOptions['order'] = $options['captured_order'];
-                
-            } else {
-                $tableOptions['order'] = "ASC";
-            }
+            $tableOptions['order'] = "ASC";
         }
 
         $tableOptions['paged'] = $abj404dao->getPostOrGetSanitize("paged", 1);
@@ -1200,7 +1198,8 @@ class ABJ_404_Solution_PluginLogic {
         }
         $tableOptions['perpage'] = $abj404dao->getPostOrGetSanitize("perpage", $perPageOption);
 
-        if (array_key_exists('subpage', $_GET) && @$_GET['subpage'] == "abj404_logs") {
+        $tableOptions['logsid'] = 0;
+        if ($abj404dao->getPostOrGetSanitize('subpage') == "abj404_logs") {
             if (array_key_exists('id', $_GET) && isset($_GET['id']) && $f->regexMatch('[0-9]+', $_GET['id'])) {                
                 $tableOptions['logsid'] = absint($_GET['id']);
                 
@@ -1208,9 +1207,6 @@ class ABJ_404_Solution_PluginLogic {
                     isset($_GET['redirect_to_data_field_id']) && 
                     $f->regexMatch('[0-9]+', $_GET['redirect_to_data_field_id'])) {
                 $tableOptions['logsid'] = absint($_GET['redirect_to_data_field_id']);
-                
-            } else {
-                $tableOptions['logsid'] = 0;
             }
         }
 

@@ -28,15 +28,15 @@ class ABJ_404_Solution_WordPress_Connector {
         /** Include things necessary for ajax. */
         // a priority of 11 makes sure our style sheet is more important than jquery's. otherwise the indent
         // doesn't work for the ajax dropdown list.
-        add_action( 'admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts', 11 );
+        add_action('admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts', 11 );
         
-        add_action( 'wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor' );
-        // fyi wp_ajax_nopriv_echoViewLogsFor to load things for normal users
+        add_action('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
+        // wp_ajax_nopriv_ is for normal users
 
-        add_action( 'wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction' );
+        add_action('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
                 
-        add_action( 'wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages' );
-        // fyi use wp_ajax_nopriv_echoViewLogsFor to load things for normal users
+        add_action('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
+        // wp_ajax_nopriv_ is for normal users
         
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
     }
@@ -51,30 +51,30 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
 
-        // jquery is used for the searchable dropdown list of pages for adding a redirect.
-        wp_enqueue_script( 'jquery' );
-	wp_enqueue_script( 'jquery-ui-autocomplete' );
-
-        wp_register_script( 'redirect_to_ajax', plugin_dir_url(__FILE__) . 'ajax/redirect_to_ajax.js', 
-                array( 'jquery', 'jquery-ui-autocomplete' ));
+        // jquery is used for the searchable dropdown list of pages for adding a redirect and other things.
+        wp_enqueue_script('jquery');
+	wp_enqueue_script('jquery-ui-autocomplete');
+	wp_enqueue_script('jquery-effects-core');
+	wp_enqueue_script('jquery-effects-highlight');
         
-        wp_register_script( 'search_logs_ajax', plugin_dir_url(__FILE__) . 'ajax/search_logs_ajax.js', 
-                array( 'jquery', 'jquery-ui-autocomplete' ));
-        
-        wp_register_script( 'trash_link_ajax', plugin_dir_url(__FILE__) . 'ajax/trash_link_ajax.js', 
-                array( 'jquery'));
-        
+        wp_register_script('redirect_to_ajax', plugin_dir_url(__FILE__) . 'ajax/redirect_to_ajax.js', 
+                array('jquery', 'jquery-ui-autocomplete'));
         // Localize the script with new data
         $translation_array = array(
-            'type_a_page_name' => __( '(Type a page name or an external URL)', '404-solution' ),
-            'a_page_has_been_selected' => __( '(A page has been selected.)', '404-solution' ),
-            'an_external_url_will_be_used' => __( '(An external URL will be used.)', '404-solution' )
+            'type_a_page_name' => __('(Type a page name or an external URL)', '404-solution'),
+            'a_page_has_been_selected' => __('(A page has been selected.)', '404-solution'),
+            'an_external_url_will_be_used' => __('(An external URL will be used.)', '404-solution')
         );
-        wp_localize_script( 'redirect_to_ajax', 'abj404localization', $translation_array );        
-        wp_enqueue_script( 'redirect_to_ajax' );
+        wp_localize_script('redirect_to_ajax', 'abj404localization', $translation_array );        
+        wp_enqueue_script('redirect_to_ajax');
+
         
-        wp_enqueue_script( 'search_logs_ajax' );
-        wp_enqueue_script( 'trash_link_ajax' );
+        wp_enqueue_script('view-updater', plugin_dir_url(__FILE__) . 'ajax/view_updater.js', 
+                array('jquery', 'jquery-ui-autocomplete'));
+        wp_enqueue_script('search_logs_ajax', plugin_dir_url(__FILE__) . 'ajax/search_logs_ajax.js', 
+                array('jquery', 'jquery-ui-autocomplete'));
+        wp_enqueue_script('trash_link_ajax', plugin_dir_url(__FILE__) . 'ajax/trash_link_ajax.js', 
+                array('jquery'));
         
         wp_enqueue_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css');
     }
