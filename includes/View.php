@@ -2028,7 +2028,10 @@ class ABJ_404_Solution_View {
         $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=" . $sub .
                 "&nonce=" . wp_create_nonce('abj404_updatePaginationLink');
         
-        $searchFilterControl = $sub == 'abj404_redirects' ? '' : '<!--';
+        $searchFilterControl = '<!--';
+        if ($sub == 'abj404_redirects' || $sub == 'abj404_captured') {
+            $searchFilterControl = '';
+        }
         if (!$showSearchFilter) {
             $searchFilterControl = '<!--';
         }

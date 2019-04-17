@@ -664,9 +664,18 @@ class ABJ_404_Solution_DataAccess {
         
         $orderByString = "order by " . $orderBy . " " . sanitize_text_field($tableOptions['order']);
 
-        $searchFilterTextExists = "no fiter text found";
+        $searchFilterForRedirectsExists = "no redirects fiter text found";
+        $searchFilterForCapturedExists = "no captured 404s filter text found";
         if ($tableOptions['filterText'] != '') {
-            $searchFilterTextExists = ' filtering on text: ' . esc_sql($tableOptions['filterText'] . ' */');
+            if ($sub == 'abj404_redirects') {
+                $searchFilterForRedirectsExists = ' filtering on text: ' . esc_sql($tableOptions['filterText'] . ' */');
+                
+            } else if ($sub == 'abj404_captured') {
+                $searchFilterForCapturedExists = ' filtering on text: ' . esc_sql($tableOptions['filterText'] . ' */');
+                
+            } else {
+                throw new Exception("Unrecognized page for filter text request.");
+            }
         }
 
         // ---
@@ -680,7 +689,9 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace('{orderByString}', $orderByString, $query);
         $query = str_replace('{limitStart}', $limitStart, $query);
         $query = str_replace('{limitEnd}', $limitEnd, $query);
-        $query = str_replace('{searchFilterTextExists}', $searchFilterTextExists, $query);
+        $query = str_replace('{searchFilterForRedirectsExists}', $searchFilterForRedirectsExists, $query);
+        $query = str_replace('{searchFilterForCapturedExists}', $searchFilterForCapturedExists, $query);
+        
         $query = str_replace('{filterText}', $tableOptions['filterText'], $query);
         
         if (array_key_exists('translations', $tableOptions)) {
