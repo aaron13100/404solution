@@ -875,7 +875,6 @@ class ABJ_404_Solution_DataAccess {
             'requested_url_detail' => esc_sql($requestedURLDetail),
             'username' => esc_sql($usernameLookupID),
             'min_log_id' => $minLogID,
-            'non-existen colum' => null
         ));
         
        if ($wpdb->last_error != '') {
