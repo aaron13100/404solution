@@ -851,17 +851,17 @@ class ABJ_404_Solution_DataAccess {
             $minLogID = true;
         }
             
-        if ($abj404logging->isDebug()) {
-            $helperFunctions = ABJ_404_Solution_Functions::getInstance();
-            $reasonMessage = trim(implode(", ", 
-                        array_filter(
-                        array($_REQUEST[ABJ404_PP]['ignore_doprocess'], $_REQUEST[ABJ404_PP]['ignore_donotprocess']))));
-            $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
-                    " | Current user: " . $current_user_name . " | From: " . esc_html($requestedURL) . 
-                    esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . 
-                    $reasonMessage . ', Execution time: ' . round($helperFunctions->getExecutionTime(), 2) . 
-                    ' seconds');
-        }
+        // ------------ debug message begin
+        $helperFunctions = ABJ_404_Solution_Functions::getInstance();
+        $reasonMessage = trim(implode(", ", 
+                    array_filter(
+                    array($_REQUEST[ABJ404_PP]['ignore_doprocess'], $_REQUEST[ABJ404_PP]['ignore_donotprocess']))));
+        $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
+                " | Current user: " . $current_user_name . " | From: " . esc_html($requestedURL) . 
+                esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . 
+                $reasonMessage . ', Execution time: ' . round($helperFunctions->getExecutionTime(), 2) . 
+                ' seconds');
+        // ------------ debug message end
         
         // insert the username into the lookup table and get the ID from the lookup table.
         $usernameLookupID = $this->insertLookupValueAndGetID($current_user_name);
@@ -875,6 +875,7 @@ class ABJ_404_Solution_DataAccess {
             'requested_url_detail' => esc_sql($requestedURLDetail),
             'username' => esc_sql($usernameLookupID),
             'min_log_id' => $minLogID,
+            'non-existen colum' => null
         ));
         
        if ($wpdb->last_error != '') {

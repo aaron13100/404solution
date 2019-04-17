@@ -12,6 +12,9 @@ class ABJ_404_Solution_Logging {
 
     private static $instance = null;
     
+    /** If an error happens then we will also output these. */
+    private static $storedDebugMessages = array();
+    
     public static function getInstance() {
         if (self::$instance == null) {
             self::$instance = new ABJ_404_Solution_Logging();
@@ -63,9 +66,11 @@ class ABJ_404_Solution_Logging {
      * This goes to a file and is used by every other class so it goes here.
      * @param type $message  */
     function debugMessage($message) {
+        $timestamp = $this->getTimestamp() . ' (DEBUG): ';
         if ($this->isDebug()) {
-            $timestamp = $this->getTimestamp() . ' (DEBUG): ';
             $this->writeLineToDebugFile($timestamp . $message);
+        } else {
+            self::$storedDebugMessages[] = $timestamp . $message;
         }
     }
 
@@ -88,16 +93,18 @@ class ABJ_404_Solution_Logging {
         }
         $stacktrace = $e->getTraceAsString();
         
-        $prefix = "ABJ-404-SOLUTION (ERROR): ";
+        $savedDebugMessages = implode("\n", self::$storedDebugMessages);
+        self::$storedDebugMessages = array();
+        
         $timestamp = $this->getTimestamp() . ' (ERROR): ';
         $referrer = '';
         if (array_key_exists('HTTP_REFERER', $_SERVER) && !empty($_SERVER['HTTP_REFERER'])) {
             $referrer = $_SERVER['HTTP_REFERER'];
         }
-        error_log($prefix . $message);
         $this->writeLineToDebugFile($timestamp . $message . ", PHP version: " . PHP_VERSION . 
                 ", WP ver: " . get_bloginfo('version') . ", Plugin ver: " . ABJ404_VERSION . 
-                ", Referrer: " . esc_html($referrer) . ", \nTrace: " . $stacktrace);
+                ", Referrer: " . esc_html($referrer) . ", \nStored debug messages: " . $savedDebugMessages .
+                ", \nTrace: " . $stacktrace);
         
         // display a 404 page if the user is NOT an admin and is not on an admin page.
         if (!is_admin()) {
