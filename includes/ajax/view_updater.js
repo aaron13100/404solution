@@ -73,12 +73,6 @@ function isElementFullyVisible(el) {
 }
 
 function paginationLinksChange(triggerItem) {
-    // find the search filter
-    var filters = jQuery('input[name=searchFilter]');
-    if (filters === undefined || filters === null || filters.length === 0) {
-        return;
-    }
-
     var rowThatChanged = jQuery(triggerItem).parentsUntil('.tablenav').parent();
     var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
     var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();

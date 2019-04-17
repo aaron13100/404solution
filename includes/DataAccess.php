@@ -111,6 +111,7 @@ class ABJ_404_Solution_DataAccess {
             '{wp_abj404_spelling_cache}' => $wpdb->prefix . "abj404_spelling_cache",
             '{wp_abj404_redirects}' => $wpdb->prefix . "abj404_redirects",
             '{wp_abj404_logsv2}' => $wpdb->prefix . "abj404_logsv2",
+            '{wp_abj404_logs}' => $wpdb->prefix . "abj404_logs",
             '{wp_abj404_lookup}' => $wpdb->prefix . "abj404_lookup",
             );
 
@@ -423,7 +424,8 @@ class ABJ_404_Solution_DataAccess {
        $abj404logging = ABJ_404_Solution_Logging::getInstance();
        
        // we have to analyze the table first for the query to be valid.
-       $analyzeQuery = "OPTIMIZE TABLE " . $wpdb->prefix . 'abj404_logsv2';
+       $analyzeQuery = "OPTIMIZE TABLE {wp_abj404_logsv2}";
+       $analyzeQuery = $this->doTableNameReplacements($analyzeQuery);
        $result = $this->queryAndGetResults($analyzeQuery);
 
        if ($result['last_error'] != '') {
@@ -621,7 +623,7 @@ class ABJ_404_Solution_DataAccess {
                     "         on {wp_abj404_logsv2}.requested_url = {wp_abj404_redirects}.url " . " \n " .
                     "    group by requested_url \n " .
                     "  ) logstable \n " . 
-                    "  on {wp_abj404_redirects}.url = logstable.requested_url \n ";
+                    "  on wp_abj404_redirects.url = logstable.requested_url \n ";
         }
         
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
@@ -675,7 +677,6 @@ class ABJ_404_Solution_DataAccess {
 
         // ---
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
-        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{logsTableColumns}', $logsTableColumns, $query);
         $query = str_replace('{logsTableJoin}', $logsTableJoin, $query);
         $query = str_replace('{statusTypes}', $statusTypes, $query);
@@ -686,6 +687,7 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace('{searchFilterForRedirectsExists}', $searchFilterForRedirectsExists, $query);
         $query = str_replace('{searchFilterForCapturedExists}', $searchFilterForCapturedExists, $query);
         $query = str_replace('{filterText}', $tableOptions['filterText'], $query);
+        $query = $this->doTableNameReplacements($query);
         
         if (array_key_exists('translations', $tableOptions)) {
             $keys = array_keys($tableOptions['translations']);
@@ -824,10 +826,10 @@ class ABJ_404_Solution_DataAccess {
         
         // we have to know what to set for the $minLogID value
         $minLogID = false;
-        // cast here to avoid illegal collation issues as in 
-        // https://wordpress.org/support/topic/abj-404-solution-error-ugh-sql-error/
-        $results = $this->queryAndGetResults("select id from " . $wpdb->prefix . "abj404_logsv2" . 
-                " where requested_url = '" . esc_sql($requestedURL) . "' limit 1");
+        $query = "select id from {wp_abj404_logsv2}" . 
+                " where requested_url = '" . esc_sql($requestedURL) . "' limit 1";
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
         if (count($results['rows']) == 0) {
             $minLogID = true;
         }
