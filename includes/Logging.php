@@ -23,6 +23,9 @@ class ABJ_404_Solution_Logging {
         return self::$instance;
     }
     
+    private function __construct() {
+    }
+    
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
@@ -69,8 +72,9 @@ class ABJ_404_Solution_Logging {
         $timestamp = $this->getTimestamp() . ' (DEBUG): ';
         if ($this->isDebug()) {
             $this->writeLineToDebugFile($timestamp . $message);
+            
         } else {
-            self::$storedDebugMessages[] = $timestamp . $message;
+            array_push(self::$storedDebugMessages, $timestamp . $message);
         }
     }
 
@@ -103,7 +107,7 @@ class ABJ_404_Solution_Logging {
         }
         $this->writeLineToDebugFile($timestamp . $message . ", PHP version: " . PHP_VERSION . 
                 ", WP ver: " . get_bloginfo('version') . ", Plugin ver: " . ABJ404_VERSION . 
-                ", Referrer: " . esc_html($referrer) . ", \nStored debug messages: " . $savedDebugMessages .
+                ", Referrer: " . esc_html($referrer) . ", \nStored debug messages: \n" . $savedDebugMessages .
                 ", \nTrace: " . $stacktrace);
         
         // display a 404 page if the user is NOT an admin and is not on an admin page.
