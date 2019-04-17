@@ -390,10 +390,13 @@ class ABJ_404_Solution_SpellChecker {
     function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $f = ABJ_404_Solution_Functions::getInstance();
+        $abj404logger = ABJ_404_Solution_Logging::getInstance();
         
         // pre-filter some pages based on the min and max possible levenshtein distances.
         $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
     
+        $abj404logger->debugMessage("Found " . count($likelyMatchIDs) . " likely match IDs.");
+        
         // access the array directly instead of using a foreach loop so we can remove items
         // from the end of the array in the middle of the loop.
         $topLevScores = array();
