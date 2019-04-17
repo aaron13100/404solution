@@ -22,7 +22,6 @@ class ABJ_404_Solution_ViewUpdater {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         global $abj404view;
         
-        $filterText = $abj404dao->getPostOrGetSanitize('filterText');
         $rowsPerPage = absint($abj404dao->getPostOrGetSanitize('rowsPerPage'));
         $subpage = $abj404dao->getPostOrGetSanitize('subpage');
         $nonce = $abj404dao->getPostOrGetSanitize('nonce');

@@ -1209,18 +1209,6 @@ class ABJ_404_Solution_View {
         $html .= $this->getTableColumns($sub, $columns);
         $html .= "</tfoot>  <tbody id=\"the-list\">";
         
-        $translationArray = array(
-            '{ABJ404_STATUS_MANUAL_text}' => __('Man', '404-solution'),
-            '{ABJ404_STATUS_AUTO_text}' => __('Auto', '404-solution'),
-            '{ABJ404_STATUS_REGEX_text}' => __('RegEx', '404-solution'),
-            '{ABJ404_TYPE_EXTERNAL_text}' => __('External', '404-solution'),
-            '{ABJ404_TYPE_CAT_text}' => __('Category', '404-solution'),
-            '{ABJ404_TYPE_TAG_text}' => __('Tag', '404-solution'),
-            '{ABJ404_TYPE_HOME_text}' => __('Home Page', '404-solution'),
-            );
-        
-        $tableOptions['translations'] = $translationArray;
-        
         $rows = $abj404dao->getRedirectsForView($sub, $tableOptions);
         $displayed = 0;
         $y = 1;

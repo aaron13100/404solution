@@ -96,6 +96,28 @@ class ABJ_404_Solution_DataAccess {
         return $result;
     }
     
+    function doTableNameReplacements($query) {
+        global $wpdb;
+        
+        $knownReplacements = array(
+            '{wp_posts}' => $wpdb->posts,
+            '{wp_options}' => $wpdb->options,
+            '{wp_terms}' => $wpdb->terms,
+            '{wp_term_relationships}' => $wpdb->term_relationships,
+            '{wp_term_taxonomy}' => $wpdb->term_taxonomy,
+            '{wp_term_meta}' => $wpdb->termmeta,
+            '{wp_abj404_lookup}' => $wpdb->prefix . "abj404_lookup",
+            '{wp_abj404_permalink_cache}' => $wpdb->prefix . "abj404_permalink_cache",
+            '{wp_abj404_spelling_cache}' => $wpdb->prefix . "abj404_spelling_cache",
+            '{wp_abj404_redirects}' => $wpdb->prefix . "abj404_redirects",
+            '{wp_abj404_logsv2}' => $wpdb->prefix . "abj404_logsv2",
+            '{wp_abj404_lookup}' => $wpdb->prefix . "abj404_lookup",
+            );
+
+        // replace known strings that do not exist in the translation file.
+        return str_replace(array_keys($knownReplacements), array_values($knownReplacements), $query);
+    }
+    
     /** Return the results of the query in a variable.
      * @param type $query
      * @return type
@@ -120,8 +142,8 @@ class ABJ_404_Solution_DataAccess {
                 $this->repairTable($result['last_error']);
             }
             
-            $abj404logging->errorMessage("Ugh. SQL query error: " . esc_html($result['last_error'] . 
-                    ", SQL: " . esc_html($query)) . ", Execution time: " . round($timer->getElapsedTime(), 2));
+            $abj404logging->errorMessage("Ugh. SQL query error: " . $result['last_error'] . 
+                    ", SQL: " . $query . ", Execution time: " . round($timer->getElapsedTime(), 2));
             
         } else {
             if ($timer->getElapsedTime() > 5) {
@@ -216,12 +238,9 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getIDsNeededForPermalinkCache() {
-        global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $f = ABJ_404_Solution_Functions::getInstance();
         
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-
         // get the valid post types
         $options = $abj404logic->getOptions();
         $postTypes = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_post_types'])),
@@ -234,10 +253,7 @@ class ABJ_404_Solution_DataAccess {
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getIDsNeededForPermalinkCache.sql");
         $query = str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
-        $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
-        $query = str_replace('{wp_terms}', $wpdb->terms, $query);
-        $query = str_replace('{wp_posts}', $wpdb->prefix . 'posts', $query);
-        $query = str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
+        $query = $this->doTableNameReplacements($query);
         
         $results = $this->queryAndGetResults($query);
         
@@ -245,11 +261,8 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function insertPermalinkCache($id, $permalink, $permalinkStructure) {
-        global $wpdb;
-        
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertPermalinkCache.sql");
-        $query = str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{id}', esc_sql($id), $query);
         $query = str_replace('{url}', esc_sql($permalink), $query);
         $query = str_replace('{structure}', esc_sql($permalinkStructure), $query);
@@ -258,12 +271,8 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getPermalinkFromCache($id) {
-        global $wpdb;
-        
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-        
-
-        $query = "select url from " . $permalinkCacheTable . " where id = " . $id;
+        $query = "select url from {wp_abj_permalink_cache} where id = " . $id;
+        $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
         
         $rows = $results['rows'];
@@ -276,22 +285,16 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getPermalinkCache() {
-        global $wpdb;
-        
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-        
-
-        $query = "select id, url from " . $permalinkCacheTable;
+        $query = "select id, url from {wp_abj404_permalink_cache}";
+        $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
         
         return $results['rows'];
     }
     
     function storeSpellingPermalinksToCache($requestedURLRaw, $returnValue) {
-        global $wpdb;
-        
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertSpellingCache.sql");
-        $query = str_replace('{wp_abj404_spelling_cache}', $wpdb->prefix . 'abj404_spelling_cache', $query);
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{url}', esc_sql($requestedURLRaw), $query);
         $query = str_replace('{matchdata}', esc_sql(json_encode($returnValue)), $query);
 
@@ -299,20 +302,15 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function deleteSpellingCache() {
-        global $wpdb;
-        
         $query = "truncate table {wp_abj404_spelling_cache}";
-        $query = str_replace('{wp_abj404_spelling_cache}', $wpdb->prefix . 'abj404_spelling_cache', $query);
+        $query = $this->doTableNameReplacements($query);
 
         $this->queryAndGetResults($query);
     }
     
     function getSpellingPermalinksFromCache($requestedURLRaw) {
-        global $wpdb;
-        
-        $table = $wpdb->prefix . 'abj404_spelling_cache';
-        
-        $query = "select * from " . $table . " where url = '" . esc_sql($requestedURLRaw) . "'";
+        $query = "select * from {wp_abj404_spelling_cache} where url = '" . esc_sql($requestedURLRaw) . "'";
+        $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
         
         $rows = $results['rows'];
@@ -386,8 +384,10 @@ class ABJ_404_Solution_DataAccess {
     */
    function getCapturedCount() {
        global $wpdb;
-
-       $query = "select count(id) from " . $wpdb->prefix . "abj404_redirects where status = " . ABJ404_STATUS_CAPTURED;
+       
+       $query = "select count(id) from {wp_abj404_redirects} where status = " . ABJ404_STATUS_CAPTURED;
+       $query = $this->doTableNameReplacements($query);
+       
        $captured = $wpdb->get_col($query, 0);
        if (count($captured) == 0) {
            $captured[0] = 0;
@@ -400,9 +400,8 @@ class ABJ_404_Solution_DataAccess {
     * @return type
     */
    function getAllPostTypes() {
-       global $wpdb;
-       
-       $query = "SELECT DISTINCT post_type FROM " . $wpdb->posts . " order by post_type";
+       $query = "SELECT DISTINCT post_type FROM {wp_posts} order by post_type";
+       $query = $this->doTableNameReplacements($query);
        $results = $this->queryAndGetResults($query);
        $rows = $results['rows'];
        
@@ -433,7 +432,8 @@ class ABJ_404_Solution_DataAccess {
        }
        
        $query = 'SELECT (data_length+index_length) tablesize FROM information_schema.tables ' . 
-               'WHERE table_name=\'' . $wpdb->prefix . 'abj404_logsv2\'';
+               'WHERE table_name=\'{wp_abj404_logsv2}\'';
+       $query = $this->doTableNameReplacements($query);
 
        $size = $wpdb->get_col($query, 0);
        if (count($size) == 0) {
@@ -454,7 +454,8 @@ class ABJ_404_Solution_DataAccess {
 
         if (count($types) >= 1) {
 
-            $query = "select count(id) from " . $wpdb->prefix . "abj404_redirects where 1 and (";
+            $query = "select count(id) from {wp_abj404_redirects} where 1 and (";
+            $query = $this->doTableNameReplacements($query);
             $x = 0;
             foreach ($types as $type) {
                 if ($x >= 1) {
@@ -483,7 +484,7 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsCount.sql");
-        $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
+        $query = $this->doTableNameReplacements($query);
         
         if ($logID != 0) {
             $query = str_replace('/* {SPECIFIC_ID}', '', $query);
@@ -505,7 +506,9 @@ class ABJ_404_Solution_DataAccess {
      */
     function getRedirectsAll() {
         global $wpdb;
-        $query = "select id, url from " . $wpdb->prefix . "abj404_redirects order by url";
+        $query = "select id, url from {wp_abj404_redirects} order by url";
+        $query = $this->doTableNameReplacements($query);
+        
         $rows = $wpdb->get_results($query, ARRAY_A);
         return $rows;
     }
@@ -517,11 +520,9 @@ class ABJ_404_Solution_DataAccess {
      */
     function getRedirectsWithLogs() {
         global $wpdb;
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsWithLogs.sql");
-        $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
-        $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
+        $query = $this->doTableNameReplacements($query);
         
         $rows = $wpdb->get_results($query, ARRAY_A);
         return $rows;
@@ -532,18 +533,16 @@ class ABJ_404_Solution_DataAccess {
      * @return type
      */
     function getRedirectsWithRegEx() {
-        global $wpdb;
-        $redirects = $wpdb->prefix . "abj404_redirects";
-        
-        $query = "select \n  " . $redirects . ".id,\n  " . $redirects . ".url,\n  " . $redirects . ".status,\n  " . 
-                $redirects . ".type,\n  " . $redirects . ".final_dest,\n  " . $redirects . ".code,\n  " . 
-                $redirects . ".timestamp,\n " . $wpdb->posts . ".id as wp_post_id\n ";
-        $query .= "from " . $redirects . "\n " .
-                "  LEFT OUTER JOIN " . $wpdb->posts . " \n " .
-                "    on " . $redirects . ".final_dest = " . $wpdb->posts . ".id \n ";
+        $query = "select \n  {wp_abj404_redirects}.id,\n  {wp_abj404_redirects}.url,\n  {wp_abj404_redirects}.status,\n"
+                . "  {wp_abj404_redirects}.type,\n  {wp_abj404_redirects}.final_dest,\n  {wp_abj404_redirects}.code,\n"
+                . "  {wp_abj404_redirects}.timestamp,\n {wp_posts}.id as wp_post_id\n ";
+        $query .= "from {wp_abj404_redirects}\n " .
+                "  LEFT OUTER JOIN {wp_posts} \n " .
+                "    on {wp_abj404_redirects}.final_dest = {wp_posts}.id \n ";
         
         $query .= "where status in (" . ABJ404_STATUS_REGEX . ") \n " .
                 "     and disabled = 0";
+        $query = $this->doTableNameReplacements($query);
         
         $results = $this->queryAndGetResults($query);
         
@@ -591,15 +590,11 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, $limitStart, $limitEnd) {
-        global $wpdb;
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         global $abj404_redirect_types;
         global $abj404_captured_types;
         $f = ABJ_404_Solution_Functions::getInstance();
 
-        $redirects = $wpdb->prefix . "abj404_redirects";
-        $logs = $wpdb->prefix . "abj404_logsv2";
-        
         $logsTableColumns = '';
         $logsTableJoin = '';
         $statusTypes = '';
@@ -618,15 +613,15 @@ class ABJ_404_Solution_DataAccess {
         if ($queryAllRowsAtOnce) {
             $logsTableJoin = "  LEFT OUTER JOIN ( \n " .
                     "    SELECT requested_url, \n " .
-                    "           MIN(" . $logs . ".id) AS logsid, \n " .
-                    "           max(" . $logs . ".timestamp) as last_used, \n " .
+                    "           MIN({wp_abj404_logsv2}.id) AS logsid, \n " .
+                    "           max({wp_abj404_logsv2}.timestamp) as last_used, \n " .
                     "           count(requested_url) as logshits \n " .
-                    "    FROM " . $logs . " \n " .
-                    "         inner join " . $redirects . " \n " .
-                    "         on " . $logs . ".requested_url = " . $redirects . ".url " . " \n " .
+                    "    FROM {wp_abj404_logsv2} \n " .
+                    "         inner join {wp_abj404_redirects} \n " .
+                    "         on {wp_abj404_logsv2}.requested_url = {wp_abj404_redirects}.url " . " \n " .
                     "    group by requested_url \n " .
                     "  ) logstable \n " . 
-                    "  on " . $redirects . ".url = logstable.requested_url \n ";
+                    "  on {wp_abj404_redirects}.url = logstable.requested_url \n ";
         }
         
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
@@ -680,8 +675,7 @@ class ABJ_404_Solution_DataAccess {
 
         // ---
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
-        $query = str_replace('{wp_abj404_redirects}', $redirects, $query);
-        $query = str_replace('{wp_posts}', $wpdb->posts, $query);
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{logsTableColumns}', $logsTableColumns, $query);
         $query = str_replace('{logsTableJoin}', $logsTableJoin, $query);
         $query = str_replace('{statusTypes}', $statusTypes, $query);
@@ -691,7 +685,6 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace('{limitEnd}', $limitEnd, $query);
         $query = str_replace('{searchFilterForRedirectsExists}', $searchFilterForRedirectsExists, $query);
         $query = str_replace('{searchFilterForCapturedExists}', $searchFilterForCapturedExists, $query);
-        
         $query = str_replace('{filterText}', $tableOptions['filterText'], $query);
         
         if (array_key_exists('translations', $tableOptions)) {
@@ -731,16 +724,13 @@ class ABJ_404_Solution_DataAccess {
      * @return type
      */
     function getLogsIDandURL($specificURL = '') {
-        global $wpdb;
-        
         $whereClause = '';
         if ($specificURL != '') {
             $whereClause = "where requested_url = '" . $specificURL . "'";
         }
         
-        $logsTable = $wpdb->prefix . 'abj404_logsv2';
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsIDandURL.sql");
-        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{where_clause_here}', $whereClause, $query);
         
         $results = $this->queryAndGetResults($query);
@@ -755,17 +745,14 @@ class ABJ_404_Solution_DataAccess {
      * @return type
      */
     function getLogsIDandURLLike($specificURL = '', $limitResults) {
-        global $wpdb;
-        
         $whereClause = '';
         if ($specificURL != '') {
             $whereClause = "where lower(requested_url) like lower('" . $specificURL . "')\n";
             $whereClause .= "and min_log_id = true";
         }
         
-        $logsTable = $wpdb->prefix . 'abj404_logsv2';
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsIDandURLForAjax.sql");
-        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{where_clause_here}', $whereClause, $query);
         $query = str_replace('{limit-results}', 'limit ' . $limitResults, $query);
         
@@ -781,11 +768,6 @@ class ABJ_404_Solution_DataAccess {
      * @return type rows from querying the logs table.
      */
     function getLogRecords($tableOptions) {
-        global $wpdb;
-
-        $logsTable = $wpdb->prefix . "abj404_logsv2";
-        $lookupTable = $wpdb->prefix . 'abj404_lookup';
-
         $logsid_included = '';
         $logsid = '';
         if ($tableOptions['logsid'] != 0) {
@@ -798,10 +780,9 @@ class ABJ_404_Solution_DataAccess {
         $perpage = absint(sanitize_text_field($tableOptions['perpage']));
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogRecords.sql");
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{logsid_included}', $logsid_included, $query);
         $query = str_replace('{logsid}', $logsid, $query);
-        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-        $query = str_replace('{wp_abj404_lookup}', $lookupTable, $query);
         $query = str_replace('{orderby}', $orderby, $query);
         $query = str_replace('{order}', $order, $query);
         $query = str_replace('{start}', $start, $query);
@@ -866,7 +847,9 @@ class ABJ_404_Solution_DataAccess {
         // insert the username into the lookup table and get the ID from the lookup table.
         $usernameLookupID = $this->insertLookupValueAndGetID($current_user_name);
         
-        $this->insertAndGetResults($wpdb->prefix . "abj404_logsv2", array(
+        $logTableName = $this->doTableNameReplacements("{wp_abj404_logsv2}");
+
+        $this->insertAndGetResults($logTableName, array(
             'timestamp' => esc_sql($now),
             'user_ip' => $ipAddressToSave,
             'referrer' => esc_sql($referer),
@@ -886,10 +869,8 @@ class ABJ_404_Solution_DataAccess {
      * @param type $valueToInsert
      */
     function insertLookupValueAndGetID($valueToInsert) {
-        global $wpdb;
-        
-        $lookupTable = $wpdb->prefix . 'abj404_lookup';
-        $query = "select id from " . $lookupTable . " where lkup_value = '" . $valueToInsert . "'";
+        $query = "select id from {wp_abj404_lookup} where lkup_value = '" . $valueToInsert . "'";
+        $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
         
         if (sizeof($results['rows']) > 0) {
@@ -902,7 +883,7 @@ class ABJ_404_Solution_DataAccess {
 
         // insert the value since it's not there already.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertIntoLookupTable.sql");
-        $query = str_replace('{wp_abj404_lookup}', $lookupTable, $query);
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{lkup_value}', $valueToInsert, $query);
         $results = $this->queryAndGetResults($query);
         
@@ -937,8 +918,6 @@ class ABJ_404_Solution_DataAccess {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
-        $redirectsTable = $wpdb->prefix . "abj404_redirects";
-        $logsTable = $wpdb->prefix . "abj404_logsv2";
         $options = $abj404logic->getOptions();
         $now = time();
         $capturedURLsCount = 0;
@@ -963,10 +942,7 @@ class ABJ_404_Solution_DataAccess {
             $status_list = ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER;
 
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
-            $query = str_replace('{wp_abj404_redirects}', $redirectsTable, $query);
-            $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-            $query = str_replace('{wp_posts}', $wpdb->posts, $query);
-            $query = str_replace('{wp_options}', $wpdb->options, $query);
+            $query = $this->doTableNameReplacements($query);
             $query = str_replace('{status_list}', $status_list, $query);
             $query = str_replace('{timelimit}', $then, $query);
             
@@ -991,10 +967,7 @@ class ABJ_404_Solution_DataAccess {
             $status_list = ABJ404_STATUS_AUTO;
 
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
-            $query = str_replace('{wp_abj404_redirects}', $redirectsTable, $query);
-            $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-            $query = str_replace('{wp_posts}', $wpdb->posts, $query);
-            $query = str_replace('{wp_options}', $wpdb->options, $query);
+            $query = $this->doTableNameReplacements($query);
             $query = str_replace('{status_list}', $status_list, $query);
             $query = str_replace('{timelimit}', $then, $query);
             
@@ -1021,8 +994,7 @@ class ABJ_404_Solution_DataAccess {
 
             //Find unused urls
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
-            $query = str_replace('{wp_abj404_redirects}', $redirectsTable, $query);
-            $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+            $query = $this->doTableNameReplacements($query);
             $query = str_replace('{wp_posts}', $wpdb->posts, $query);
             $query = str_replace('{wp_options}', $wpdb->options, $query);
             $query = str_replace('{status_list}', $status_list, $query);
@@ -1051,7 +1023,7 @@ class ABJ_404_Solution_DataAccess {
         $logLinesToDelete = max($totalLogLines - $logLinesToKeep, 0);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
-        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{lines_to_delete}', $logLinesToDelete, $query);
         
         $results = $this->queryAndGetResults($query);
@@ -1104,6 +1076,8 @@ class ABJ_404_Solution_DataAccess {
         $upgradesEtc = new ABJ_404_Solution_DatabaseUpgradesEtc();
         $upgradesEtc->createDatabaseTables();
         
+        $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
+
         $this->queryAndGetResults("optimize table " . $redirectsTable);
         
         $upgradesEtc->updatePluginCheck();
@@ -1131,19 +1105,20 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         
         $rowsDeleted = 0;
-        $rtable = $wpdb->prefix . "abj404_redirects";
-
-        $query = "SELECT COUNT(id) as repetitions, url FROM " . $rtable . " GROUP BY url HAVING repetitions > 1 ";
+        $query = "SELECT COUNT(id) as repetitions, url FROM {wp_abj404_redirects} GROUP BY url HAVING repetitions > 1 ";
+        $query = $this->doTableNameReplacements($query);
         $rows = $wpdb->get_results($query, ARRAY_A);
         foreach ($rows as $row) {
             $url = $row['url'];
 
-            $queryr1 = "select id from " . $rtable . " where url = '" . esc_sql(esc_url($url)) . "' order by timestamp desc limit 0,1";
+            $queryr1 = "select id from {wp_abj404_redirects} where url = '" . esc_sql(esc_url($url)) . "' order by timestamp desc limit 0,1";
+            $query = $this->doTableNameReplacements($query);
             $orig = $wpdb->get_row($queryr1, ARRAY_A, 0);
             if ($orig['id'] != 0) {
                 $original = $orig['id'];
 
-                $queryl = "delete from " . $rtable . " where url='" . esc_sql(esc_url($url)) . "' and id != " . esc_sql($original);
+                $queryl = "delete from {wp_abj404_redirects} where url='" . esc_sql(esc_url($url)) . "' and id != " . esc_sql($original);
+                $query = $this->doTableNameReplacements($query);
                 $wpdb->query($queryl);
                 $rowsDeleted++;
             }
@@ -1184,14 +1159,16 @@ class ABJ_404_Solution_DataAccess {
         // if we should not capture a 404 then don't.
         if (!@$_REQUEST[ABJ404_PP]['ignore_doprocess']) {
             $now = time();
-            $wpdb->insert($wpdb->prefix . 'abj404_redirects', array(
+            $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
+
+            $wpdb->insert($redirectsTable, array(
                 'url' => esc_sql($fromURL),
-                'status' => esc_html($status),
-                'type' => esc_html($type),
-                'final_dest' => esc_html($final_dest),
-                'code' => esc_html($code),
-                'disabled' => esc_html($disabled),
-                'timestamp' => esc_html($now)
+                'status' => esc_sql($status),
+                'type' => esc_sql($type),
+                'final_dest' => esc_sql($final_dest),
+                'code' => esc_sql($code),
+                'disabled' => esc_sql($disabled),
+                'timestamp' => esc_sql($now)
                     ), array(
                 '%s',
                 '%d',
@@ -1217,9 +1194,10 @@ class ABJ_404_Solution_DataAccess {
         $redirect = array();
 
         // a disabled value of '1' means in the trash.
-        $query = "select * from " . $wpdb->prefix . "abj404_redirects where url = '" . esc_sql($url) . "'" .
+        $query = "select * from {wp_abj404_redirects where url = '" . esc_sql($url) . "'" .
                 " and disabled = 0 and status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ") " .
                 "and type not in (" . ABJ404_TYPE_404_DISPLAYED . ") ";
+        $query = $this->doTableNameReplacements($query);
 
         $row = $wpdb->get_row($query, ARRAY_A);
         if ($row == NULL) {
@@ -1242,8 +1220,9 @@ class ABJ_404_Solution_DataAccess {
         $redirect = array();
 
         // a disabled value of '1' means in the trash.
-        $query = "select * from " . $wpdb->prefix . "abj404_redirects where url = '" . esc_sql($url) . "'" .
+        $query = "select * from {wp_abj404_redirects where url = '" . esc_sql($url) . "'" .
                 " and disabled = 0 "; 
+            $query = $this->doTableNameReplacements($query);
 
         $row = $wpdb->get_row($query, ARRAY_A);
         if ($row == NULL) {
@@ -1302,9 +1281,7 @@ class ABJ_404_Solution_DataAccess {
         
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
-        $query = str_replace('{wp_posts}', $wpdb->posts, $query);
-        $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
-        $query = str_replace('{wp_terms}', $wpdb->terms, $query);
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
         $query = str_replace('{specifiedSlug}', $specifiedSlug, $query);
         $query = str_replace('{searchTerm}', $searchTerm, $query);
@@ -1348,10 +1325,7 @@ class ABJ_404_Solution_DataAccess {
         
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedImageIDs.sql");
-        $query = str_replace('{wp_posts}', $wpdb->posts, $query);
-        $query = str_replace('{wp_postmeta}', $wpdb->postmeta, $query);
-        $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
-        $query = str_replace('{wp_terms}', $wpdb->terms, $query);
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
         
         $rows = $wpdb->get_results($query);
@@ -1386,11 +1360,7 @@ class ABJ_404_Solution_DataAccess {
 
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedTags.sql");
-        $query = str_replace('{wp_posts}', $wpdb->posts, $query);
-        $query = str_replace('{wp_postmeta}', $wpdb->postmeta, $query);
-        $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
-        $query = str_replace('{wp_terms}', $wpdb->terms, $query);
-        $query = str_replace('{wp_term_taxonomy}', $wpdb->term_taxonomy, $query);
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{recognizedCategories}', $recognizedCategories, $query);
         
         $rows = $wpdb->get_results($query);
@@ -1430,16 +1400,12 @@ class ABJ_404_Solution_DataAccess {
         $recognizedCategories = rtrim($recognizedCategories, ", ");
         
         if ($term_id != null) {
-            $term_id = "*/ and wp_terms.term_id = " . $term_id;
+            $term_id = "*/ and {wp_terms}.term_id = " . $term_id;
         }
 
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedCategories.sql");
-        $query = str_replace('{wp_posts}', $wpdb->posts, $query);
-        $query = str_replace('{wp_postmeta}', $wpdb->postmeta, $query);
-        $query = str_replace('{wp_term_relationships}', $wpdb->term_relationships, $query);
-        $query = str_replace('{wp_terms}', $wpdb->terms, $query);
-        $query = str_replace('{wp_term_taxonomy}', $wpdb->term_taxonomy, $query);
+        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{recognizedCategories}', $recognizedCategories, $query);
         $query = str_replace('{term_id}', $term_id, $query);
         
@@ -1463,10 +1429,6 @@ class ABJ_404_Solution_DataAccess {
 
         // nonce already verified.
 
-        $redirects = $wpdb->prefix . "abj404_redirects";
-        $logs = $wpdb->prefix . "abj404_logsv2";
-
-        
         if (@$_POST['sanity_purge'] != "1") {
             $message = __('Error: You didn\'t check the I understand checkbox. No purging of records for you!', '404-solution');
             return $message;
@@ -1516,8 +1478,9 @@ class ABJ_404_Solution_DataAccess {
         $typesForSQL = implode(',', $redirectTypes);
         
         if ($purge == 'abj404_redirects') {
-            $queryStringReds = "update " . $redirects . " set disabled = 1 where status in (" . $typesForSQL . ")";
-            $redirectCount = $wpdb->query($queryStringReds);
+            $query = "update {wp_abj404_redirects} set disabled = 1 where status in (" . $typesForSQL . ")";
+            $query = $this->doTableNameReplacements($query);
+            $redirectCount = $wpdb->query($query);
             
             $message .= sprintf( _n( '%s redirect entry was moved to the trash.', 
                     '%s redirect entries were moved to the trash.', $redirectCount, '404-solution'), $redirectCount);
@@ -1557,7 +1520,8 @@ class ABJ_404_Solution_DataAccess {
     function getEarliestLogTimestamp() {
         global $wpdb;
 
-        $query = 'SELECT min(timestamp) as timestamp FROM ' . $wpdb->prefix . 'abj404_logsv2';
+        $query = 'SELECT min(timestamp) as timestamp FROM {wp_abj404_logsv2}';
+        $query = $this->doTableNameReplacements($query);
         $results = $wpdb->get_col($query);
 
         if (sizeof($results) == 0) {
@@ -1601,9 +1565,9 @@ class ABJ_404_Solution_DataAccess {
         $validids = array_map('absint', $ids);
         $multipleIds = implode(',', $validids);
     
-        $query = "select id, url, type, status, final_dest, code from " . 
-                $wpdb->prefix . "abj404_redirects " .
+        $query = "select id, url, type, status, final_dest, code from {wp_abj404_redirects} " .
                 "where id in (" . $multipleIds . ")";
+        $query = $this->doTableNameReplacements($query);
         $rows = $wpdb->get_results($query, ARRAY_A);
         
         return $rows;
@@ -1616,10 +1580,10 @@ class ABJ_404_Solution_DataAccess {
      * @return type
      */
     function updateRedirectTypeStatus($id, $newstatus) {
-        global $wpdb;
-
-        $result = $this->queryAndGetResults('update ' . $wpdb->prefix . "abj404_redirects set status = '" . 
-                esc_sql($newstatus) . "' where id = '" . esc_sql($id) . "'");
+        $query = "update {wp_abj404_redirects set status = '" . 
+                esc_sql($newstatus) . "' where id = '" . esc_sql($id) . "'";
+        $query = $this->doTableNameReplacements($query);
+        $result = $this->queryAndGetResults($query);
         
         return $result['last_error'];
     }
@@ -1638,7 +1602,8 @@ class ABJ_404_Solution_DataAccess {
         $result = false;
         if ($f->regexMatch('[0-9]+', '' . $id)) {
 
-            $result = $wpdb->update($wpdb->prefix . "abj404_redirects", 
+            $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
+            $result = $wpdb->update($redirectsTable, 
                     array('disabled' => esc_html($trash)), array('id' => absint($id)), array('%d'), array('%d')
             );
         }
@@ -1670,7 +1635,8 @@ class ABJ_404_Solution_DataAccess {
             return;
         }
         
-        $wpdb->update($wpdb->prefix . "abj404_redirects", array(
+        $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
+        $wpdb->update($redirectsTable, array(
             'url' => esc_sql($fromURL),
             'status' => $statusType,
             'type' => absint($type),
