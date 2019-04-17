@@ -16,7 +16,7 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 	Author:      Aaron J
 	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 2.17.0
+	Version: 2.18.0
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -46,7 +46,7 @@ define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );
 define('ABJ404_SOLUTION_BASENAME', function_exists('plugin_basename') ? plugin_basename(__FILE__) :
 	basename(dirname(__FILE__)) . '/' . basename(__FILE__));
 
-define( 'ABJ404_VERSION', '2.17.0' );
+define( 'ABJ404_VERSION', '2.18.0' );
 define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/'
         . '?utm_source=404SolutionPlugin&utm_medium=WordPress');
 define( 'ABJ404_PP', 'abj404_solution'); // plugin path
@@ -74,8 +74,9 @@ $abj404_captured_types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, AB
 
 // other
 define("ABJ404_OPTION_DEFAULT_PERPAGE", 25);
-define("ABJ404_OPTION_MIN_PERPAGE", 10);
-define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 150);
+define("ABJ404_OPTION_MIN_PERPAGE", 3);
+define("ABJ404_OPTION_MAX_PERPAGE", 500);
+define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 500);
 
 
 require_once ABJ404_PATH . "includes/Functions.php";
@@ -98,6 +99,9 @@ require_once ABJ404_PATH . 'includes/SynchronizationUtils.php';
 if (is_admin()) {
     require_once ABJ404_PATH . "includes/View.php";
     require_once ABJ404_PATH . "includes/View_Suggestions.php";
+    require_once ABJ404_PATH . "includes/ajax/ViewUpdater.php";
+    
+    // TODO make these not global
     $abj404view = new ABJ_404_Solution_View();
     $abj404viewSuggestions = new ABJ_404_Solution_View_Suggestions();
 }

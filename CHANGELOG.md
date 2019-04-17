@@ -1,7 +1,11 @@
 # Changelog #
 
+## Version 2.18.0 (April 21, 2019) ##
+* Improvement: Add a search filter on the Redirects page and the Captured 404s page 
+    (does not filter columns Hits, Created, or Last Used) (for Carol).
+
 ## Version 2.17.0 (April 13, 2019) ##
-* Improvement: Allow the plugin to work without mbstring (for alex).
+* Improvement: Allow the plugin to work without mbstring PHP extension (for alex).
 * Improvement: The URL column on the Redirects page opens the URL in a new tab (for Carol).
 
 ## Version 2.16.2 (April 9, 2019) ##

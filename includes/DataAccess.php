@@ -124,7 +124,7 @@ class ABJ_404_Solution_DataAccess {
                     ", SQL: " . esc_html($query)) . ", Execution time: " . round($timer->getElapsedTime(), 2));
             
         } else {
-            if ($timer->getElapsedTime() > 10) {
+            if ($timer->getElapsedTime() > 5) {
                 $abj404logging->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " . 
                         $query);
             }
@@ -557,91 +557,14 @@ class ABJ_404_Solution_DataAccess {
      * @return type rows from the redirects table.
      */
     function getRedirectsForView($sub, $tableOptions) {
-        global $wpdb;
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        global $abj404_redirect_types;
-        global $abj404_captured_types;
-        $f = ABJ_404_Solution_Functions::getInstance();
-
-        $redirects = $wpdb->prefix . "abj404_redirects";
-        $logs = $wpdb->prefix . "abj404_logsv2";
-
-        $query = "select \n  " . $redirects . ".id,\n  " . $redirects . ".url,\n  " . $redirects . ".status,\n  " . 
-                $redirects . ".type,\n  " . $redirects . ".final_dest,\n  " . $redirects . ".code,\n  " . 
-                $redirects . ".timestamp,\n " . $wpdb->posts . ".id as wp_post_id,\n ";
+        // for normal page views we limit the rows returned based on user preferences for paginaiton.
+        $limitStart = $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
+        $limitEnd = absint(sanitize_text_field($tableOptions['perpage']));
         
-        // if we're showing all rows include all of the log data in the query already. this makes the query very slow. 
-        // this should be replaced by the dynamic loading of log data using ajax queries as the page is viewed.
         $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits')
                 || ($tableOptions['orderby'] == 'last_used');
-        if ($queryAllRowsAtOnce) {
-            $query .= "logstable.logshits as logshits, \n" .
-                    "logstable.logsid, \n" .
-                    "logstable.last_used, \n";
-        } else {
-            $query .= "null as logshits, \n null as logsid, \n null as last_used, \n";
-        }
         
-        $query .= $wpdb->posts . ".post_type as wp_post_type\n  " .
-                "from " . $redirects . "\n " .
-                "  LEFT OUTER JOIN " . $wpdb->posts . " \n " .
-                "    on " . $redirects . ".final_dest = " . $wpdb->posts . ".id \n ";
-
-        if ($queryAllRowsAtOnce) {
-            $query .= "  LEFT OUTER JOIN ( \n " .
-                    "    SELECT requested_url, \n " .
-                    "           MIN(" . $logs . ".id) AS logsid, \n " .
-                    "           max(" . $logs . ".timestamp) as last_used, \n " .
-                    "           count(requested_url) as logshits \n " .
-                    "    FROM " . $logs . " \n " .
-                    "         inner join " . $redirects . " \n " .
-                    "         on " . $logs . ".requested_url = " . $redirects . ".url " . " \n " .
-                    "    group by requested_url \n " .
-                    "  ) logstable \n " . 
-                    "  on " . $redirects . ".url = logstable.requested_url \n ";
-        }
-        
-        $query .= " where 1 and (";
-        if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-            if ($sub == 'abj404_redirects') {
-                $query .= "status in (" . implode(", ", $abj404_redirect_types) . ")";
-
-            } else if ($sub == 'abj404_captured') {
-                $query .= "status in (" . implode(", ", $abj404_captured_types) . ") ";
-
-            } else {
-                $abj404logging->errorMessage("Unrecognized sub type: " . esc_html($sub));
-            }
-            
-        } else if ($tableOptions['filter'] == ABJ404_STATUS_MANUAL) {
-            $query .= "status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_REGEX . ")";
-            
-        } else {
-            $query .= "status = " . sanitize_text_field($tableOptions['filter']);
-        }
-        $query .= ") ";
-
-        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-            $query .= "and disabled = 1 ";
-        } else {
-            $query .= "and disabled = 0 ";
-        }
-
-        $orderBy = $f->strtolower(sanitize_text_field($tableOptions['orderby']));
-        if ($orderBy == "final_dest") {
-            // TODO change the final dest type to an integer and store external URLs somewhere else.
-            // TODO fix bug: pages that no longer exist appear for redirects. use an inner join on this query with the
-            // wp_posts table. delete redirects for pages that no longer exist? what if they're in the trash and 
-            // are then moved out of the trash?
-            $orderBy = "IF (post_title is null, 'zzzzzzzzz', post_title)";
-        }
-        
-        $query .= "\norder by " . $orderBy . " " . 
-                sanitize_text_field($tableOptions['order']) . " ";
-
-        // for normal page views we limit the rows returned based on user preferences for paginaiton.
-        $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
-        $query .= "limit " . $start . ", " . absint(sanitize_text_field($tableOptions['perpage']));
+        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, $limitStart, $limitEnd);
         
         // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
         // they can use a different ID - not the ID from the logs table.
@@ -654,6 +577,132 @@ class ABJ_404_Solution_DataAccess {
         }
         
         return $rows;
+    }
+    
+    function getRedirectsForViewCount($sub, $tableOptions) {
+        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false, 0, PHP_INT_MAX);
+
+        $query = 'select count(*) as count from (' . $query . "\n) bob";
+        
+        $results = $this->queryAndGetResults($query);
+        $rows = $results['rows'];
+        $row = $rows[0];
+        return $row['count'];
+    }
+    
+    function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, $limitStart, $limitEnd) {
+        global $wpdb;
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        global $abj404_redirect_types;
+        global $abj404_captured_types;
+        $f = ABJ_404_Solution_Functions::getInstance();
+
+        $redirects = $wpdb->prefix . "abj404_redirects";
+        $logs = $wpdb->prefix . "abj404_logsv2";
+        
+        $logsTableColumns = '';
+        $logsTableJoin = '';
+        $statusTypes = '';
+        $trashValue = '';
+
+        // if we're showing all rows include all of the log data in the query already. this makes the query very slow. 
+        // this should be replaced by the dynamic loading of log data using ajax queries as the page is viewed.
+        if ($queryAllRowsAtOnce) {
+             $logsTableColumns = "logstable.logshits as logshits, \n" .
+                    "logstable.logsid, \n" .
+                    "logstable.last_used, \n";
+        } else {
+            $logsTableColumns = "null as logshits, \n null as logsid, \n null as last_used, \n";
+        }        
+
+        if ($queryAllRowsAtOnce) {
+            $logsTableJoin = "  LEFT OUTER JOIN ( \n " .
+                    "    SELECT requested_url, \n " .
+                    "           MIN(" . $logs . ".id) AS logsid, \n " .
+                    "           max(" . $logs . ".timestamp) as last_used, \n " .
+                    "           count(requested_url) as logshits \n " .
+                    "    FROM " . $logs . " \n " .
+                    "         inner join " . $redirects . " \n " .
+                    "         on " . $logs . ".requested_url = " . $redirects . ".url " . " \n " .
+                    "    group by requested_url \n " .
+                    "  ) logstable \n " . 
+                    "  on " . $redirects . ".url = logstable.requested_url \n ";
+        }
+        
+        if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+            if ($sub == 'abj404_redirects') {
+                $statusTypes = implode(", ", $abj404_redirect_types);
+
+            } else if ($sub == 'abj404_captured') {
+                $statusTypes = implode(", ", $abj404_captured_types);
+
+            } else {
+                $abj404logging->errorMessage("Unrecognized sub type: " . esc_html($sub));
+            }
+            
+        } else if ($tableOptions['filter'] == ABJ404_STATUS_MANUAL) {
+            $statusTypes = implode(", ", array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_REGEX));
+            
+        } else {
+            $statusTypes = sanitize_text_field($tableOptions['filter']);
+        }
+
+        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+            $trashValue = 1;
+        } else {
+            $trashValue = 0;
+        }
+
+        $orderBy = $f->strtolower(sanitize_text_field($tableOptions['orderby']));
+        if ($orderBy == "final_dest") {
+            // TODO change the final dest type to an integer and store external URLs somewhere else.
+            // TODO fix bug: pages that no longer exist appear for redirects. use an inner join on this query with the
+            // wp_posts table. delete redirects for pages that no longer exist? what if they're in the trash and 
+            // are then moved out of the trash?
+            $orderBy = "IF (post_title is null, 'zzzzzzzzz', post_title)";
+        }
+        
+        $orderByString = "order by " . $orderBy . " " . sanitize_text_field($tableOptions['order']);
+
+        $searchFilterForRedirectsExists = "no redirects fiter text found";
+        $searchFilterForCapturedExists = "no captured 404s filter text found";
+        if ($tableOptions['filterText'] != '') {
+            if ($sub == 'abj404_redirects') {
+                $searchFilterForRedirectsExists = ' filtering on text: ' . esc_sql($tableOptions['filterText'] . ' */');
+                
+            } else if ($sub == 'abj404_captured') {
+                $searchFilterForCapturedExists = ' filtering on text: ' . esc_sql($tableOptions['filterText'] . ' */');
+                
+            } else {
+                throw new Exception("Unrecognized page for filter text request.");
+            }
+        }
+
+        // ---
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
+        $query = str_replace('{wp_abj404_redirects}', $redirects, $query);
+        $query = str_replace('{wp_posts}', $wpdb->posts, $query);
+        $query = str_replace('{logsTableColumns}', $logsTableColumns, $query);
+        $query = str_replace('{logsTableJoin}', $logsTableJoin, $query);
+        $query = str_replace('{statusTypes}', $statusTypes, $query);
+        $query = str_replace('{trashValue}', $trashValue, $query);
+        $query = str_replace('{orderByString}', $orderByString, $query);
+        $query = str_replace('{limitStart}', $limitStart, $query);
+        $query = str_replace('{limitEnd}', $limitEnd, $query);
+        $query = str_replace('{searchFilterForRedirectsExists}', $searchFilterForRedirectsExists, $query);
+        $query = str_replace('{searchFilterForCapturedExists}', $searchFilterForCapturedExists, $query);
+        
+        $query = str_replace('{filterText}', $tableOptions['filterText'], $query);
+        
+        if (array_key_exists('translations', $tableOptions)) {
+            $keys = array_keys($tableOptions['translations']);
+            $values = array_values($tableOptions['translations']);
+            $query = str_replace($keys, $values, $query);
+        }
+        
+        $query = $f->doNormalReplacements($query);
+        
+        return $query;
     }
     
     /** 
