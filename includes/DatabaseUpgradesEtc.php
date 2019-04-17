@@ -57,8 +57,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $row1 = array_values($rows[0]);
         $tableSQL = $row1[1];
         // if the column does not have btree then drop and recreate the index.
-        if (!$f->regexMatchi("url.+ USING BTREE", $tableSQL)) {
-            if ($f->regexMatchi("KEY.+url", $tableSQL)) {
+        if (!$f->regexMatchi("url[^\n]+ USING BTREE", $tableSQL)) {
+            if ($f->regexMatchi("KEY[^\n]+url", $tableSQL)) {
                 $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX url";
                 $abj404dao->queryAndGetResults($query);
             }
@@ -66,8 +66,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Updated redirects table URL column to use a btree index.");
         }
-        if (!$f->regexMatchi("final_dest.+ USING BTREE", $tableSQL)) {
-            if ($f->regexMatchi("KEY.+final_dest", $tableSQL)) {
+        if (!$f->regexMatchi("final_dest[^\n]+ USING BTREE", $tableSQL)) {
+            if ($f->regexMatchi("KEY[^\n]+final_dest", $tableSQL)) {
                 $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX final_dest";
                 $abj404dao->queryAndGetResults($query);
             }
@@ -75,7 +75,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Updated redirects table FINAL_DEST column to use a btree index.");
         }
-        if (!$f->regexMatchi("status.+TINYINT\(1\)", $tableSQL)) {
+        if (!$f->regexMatchi("status[^\n]+TINYINT\(1\)", $tableSQL)) {
             $query = "ALTER TABLE " . $redirectsTable . "   CHANGE `status` `status` TINYINT(1) NOT NULL, \n" .
                     "  CHANGE `type` `type` TINYINT(1) NOT NULL, \n" .
                     "  CHANGE `code` `code` SMALLINT(3) NOT NULL, \n" .
@@ -83,11 +83,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Updated redirects table STATUS column type to TINYINT.");
         }
-        if (!$f->regexMatchi("url.+2048", $tableSQL)) {
+        if (!$f->regexMatchi("url[^\n]+2048", $tableSQL)) {
             $query = "ALTER TABLE " . $redirectsTable . " CHANGE `url` `url` VARCHAR(2048)";
             $abj404dao->queryAndGetResults($query);
         }
-        if (!$f->regexMatchi("final_dest.+2048", $tableSQL)) {
+        if (!$f->regexMatchi("final_dest[^\n]+2048", $tableSQL)) {
             $query = "ALTER TABLE " . $redirectsTable . " CHANGE `final_dest` `final_dest` VARCHAR(2048)";
             $abj404dao->queryAndGetResults($query);
         }
@@ -98,15 +98,20 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $row1 = array_values($rows[0]);
         $tableSQL = $row1[1];
         // if the column does not have btree then drop and recreate the index. ""
-        if (!$f->regexMatchi("requested_url.+ USING BTREE", $tableSQL)) {
-            if ($f->regexMatchi("KEY.+requested_url", $tableSQL)) {
+        if (!$f->regexMatchi("requested_url[^\n]+ USING BTREE", $tableSQL)) {
+            if ($f->regexMatchi("KEY[^\n]+requested_url", $tableSQL)) {
                 $query = "ALTER TABLE " . $logsTable . " DROP INDEX requested_url";
                 $abj404dao->queryAndGetResults($query);
             }
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX requested_url (`requested_url`) USING BTREE";
             $abj404dao->queryAndGetResults($query);
         }
-        if (!$f->regexMatchi("referrer.+DEFAULT NULL", $tableSQL)) {
+        if ($f->regexMatchi("referrer2[^\n]+", $tableSQL)) {
+            $query = 'ALTER TABLE ' . $logsTable . ' drop column `referrer2`';
+            $abj404dao->queryAndGetResults($query);
+            $abj404logging->infoMessage("Dropped column referrer2 on " . $logsTable);
+        }
+        if (!$f->regexMatchi("referrer[^\n]+DEFAULT NULL", $tableSQL)) {
             $query = 'ALTER TABLE ' . $logsTable . ' CHANGE `referrer` `referrer` VARCHAR(512) NULL DEFAULT NULL';
             $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Changed referrer to allow null on " . $logsTable);
@@ -116,17 +121,17 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     . 'after `requested_url` ';
             $abj404dao->queryAndGetResults($query);
         }
-        if (!$f->regexMatchi("username.+bigint", $tableSQL)) {
+        if (!$f->regexMatchi("username[^\n]+bigint", $tableSQL)) {
             $query = 'ALTER TABLE ' . $logsTable . ' ADD `username` bigint(20) DEFAULT NULL '
                     . 'after `requested_url_detail` ';
             $abj404dao->queryAndGetResults($query);
         }
-        if (!$f->regexMatchi("username.+ USING BTREE", $tableSQL)) {
+        if (!$f->regexMatchi("username[^\n]+ USING BTREE", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX username (`username`) USING BTREE";
             $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Added index for username on " . $logsTable);
         }
-        if (!$f->regexMatchi("min_log_id.+ DEFAULT NULL", $tableSQL)) {
+        if (!$f->regexMatchi("min_log_id[^\n]+ DEFAULT NULL", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " ADD min_log_id BOOLEAN NULL DEFAULT NULL";
             $abj404dao->queryAndGetResults($query);
 
@@ -137,20 +142,20 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Setting the min_log_id for the logs table: Done.");
         }
-        if (!$f->regexMatchi("KEY .+min_log_id", $tableSQL)) {
+        if (!$f->regexMatchi("KEY [^\n]+min_log_id", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " ADD INDEX min_log_id (min_log_id)";
             $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Added index for min_log_id on " . $logsTable);
         }
-        if (!$f->regexMatchi("requested_url.+2048", $tableSQL)) {
+        if (!$f->regexMatchi("requested_url[^\n]+2048", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " CHANGE `requested_url` `requested_url` VARCHAR(2048) ";
             $abj404dao->queryAndGetResults($query);
         }
-        if (!$f->regexMatchi("requested_url_detail.+2048", $tableSQL)) {
+        if (!$f->regexMatchi("requested_url_detail[^\n]+2048", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " CHANGE `requested_url_detail` `requested_url_detail` VARCHAR(2048) ";
             $abj404dao->queryAndGetResults($query);
         }
-        if (!$f->regexMatchi("dest_url.+2048", $tableSQL)) {
+        if (!$f->regexMatchi("dest_url[^\n]+2048", $tableSQL)) {
             $query = "ALTER TABLE " . $logsTable . " CHANGE `dest_url` `dest_url` VARCHAR(2048) ";
             $abj404dao->queryAndGetResults($query);
         }
