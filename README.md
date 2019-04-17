@@ -76,7 +76,7 @@ This is nothing to be worried about. It means people tried to access pages on yo
 ## Changelog ##
 
 ## Version 2.17.1 (April 17, 2019) ##
-* Improvement: Fix the "Column ‘referrer’ cannot be null" issue with a nightly maintenance run.
+* FIX: Correct the ''Column ‘referrer’ cannot be null'' issue with a nightly maintenance run.
 
 ## Version 2.17.0 (April 13, 2019) ##
 * Improvement: Allow the plugin to work without mbstring (for alex).
