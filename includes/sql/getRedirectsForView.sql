@@ -53,7 +53,7 @@ from    {wp_abj404_redirects} wp_abj404_redirects
 
 where 1 and (status in ({statusTypes})) and disabled = {trashValue}
 
-/* {searchFilterTextExists} 
+/* {searchFilterForRedirectsExists}
 and replace(lower(CONCAT(wp_abj404_redirects.url, '////', 
         (CASE
           when wp_abj404_redirects.status = {ABJ404_STATUS_MANUAL} then '{ABJ404_STATUS_MANUAL_text}'
@@ -81,6 +81,10 @@ and replace(lower(CONCAT(wp_abj404_redirects.url, '////',
         wp_abj404_redirects.code)
 ), ' ', '')
 like replace(lower('%{filterText}%'), ' ', '')
+/* */
+
+/* {searchFilterForCapturedExists}
+and replace(lower(wp_abj404_redirects.url), ' ', '') like replace(lower('%{filterText}%'), ' ', '')
 /* */
 
 {orderByString}

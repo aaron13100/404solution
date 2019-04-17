@@ -1,5 +1,27 @@
 
+function validateAddManualRedirectForm(event) {
+    var field = jQuery('#redirect_to_user_field');
+    var val = field.val();
+    if (val === undefined || val === '') {
+        field.css("background-color", "#f79999");
+        field.focus();
+        return false;
+    }
+    return true;
+}
+
+
+
+
 jQuery(document).ready(function($) {	
+    var field = jQuery('#redirect_to_user_field');
+    field.keyup(function() {
+        jQuery('#redirect_to_user_field').css('background-color', '');
+    });
+    field.focusout(function() {
+        jQuery('#redirect_to_user_field').css('background-color', '');
+    });
+    
     // mostly copied from https://jqueryui.com/autocomplete/#categories	
     $.widget("custom.catcomplete", $.ui.autocomplete, {
       _create: function() {

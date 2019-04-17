@@ -9,10 +9,10 @@ if (typeof(getURLParameter) !== "function") {
 
 // when the user presses enter on the filter text input then update the table
 jQuery(document).ready(function($) {
-    bindSearchFieldKeyListener();
+    bindSearchFieldListeners();
 });
 
-function bindSearchFieldKeyListener() {
+function bindSearchFieldListeners() {
     var filters = jQuery('input[name=searchFilter]');
     if (filters === undefined || filters === null || filters.length === 0) {
         return;
@@ -26,6 +26,7 @@ function bindSearchFieldKeyListener() {
     if (isElementFullyVisible(filters[0])) {
         field.focus();
     }
+    // put the cursor at the end of the field
     filters[0].setSelectionRange(fieldLength, fieldLength);
     
     filters.on("search", function(event) {
@@ -38,6 +39,9 @@ function bindSearchFieldKeyListener() {
         }
         field.attr("data-previous-value", field.val());
     });
+    
+    // update the page when the user presses enter.
+    // store the typed value to restore once the page is reloaded.
     filters.keypress(function(event) {
         var keycode = (event.which ? event.which : event.keyCode);
         if (keycode === 13) {
@@ -45,6 +49,11 @@ function bindSearchFieldKeyListener() {
             paginationLinksChange(event.srcElement);
         }
         field.attr("data-previous-value", field.val());
+    });
+    
+    // select all text when clicked
+    filters.click(function() {
+        jQuery(this).select();
     });
 }
 
@@ -74,11 +83,13 @@ function paginationLinksChange(triggerItem) {
     var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
     var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();
     
-    var originalColorGraySelector = '.wp-list-table .alternate, .abj404-pagination-right';
-    var originalColorWhiteSelector = '.abj404-pagination-right input' +
-            ', .abj404-pagination-right select, .wp-list-table .normal-non-alternate, .wp-list-table';
+    // make this work for .abj404-pagination-right which has a transparent background.
+    var allSelectors = ('.abj404-pagination-right input, .abj404-pagination-right select' + 
+            ', .wp-list-table .normal-non-alternate, .wp-list-table' + 
+            ", .wp-list-table .alternate, .abj404-pagination-right");
     
     var fadeToColor = 'gray';
+    
     
     // get the URL from the html page.
     var url = jQuery(".abj404-pagination-right").attr("data-pagination-ajax-url");
@@ -105,20 +116,31 @@ function paginationLinksChange(triggerItem) {
             jQuery(pageLinks[0]).replaceWith(result.paginationLinksTop);
             jQuery(pageLinks[1]).replaceWith(result.paginationLinksBottom);
             jQuery('.wp-list-table').replaceWith(result.table);
-            bindSearchFieldKeyListener();
+            bindSearchFieldListeners();
             jQuery('input[name=searchFilter]').val(currentFieldValue);
             jQuery('input[name=searchFilter]').attr("data-previous-value", currentFieldValue);
             
-            var originalAlternateRowColor = jQuery(originalColorGraySelector).css('background-color');
-            var originalPaginationBGColor = jQuery(originalColorWhiteSelector).css('background-color');
-
+            // get the original colors
+            var allSelectorsArr = allSelectors.split(', ');
+            var originalColors = {};
+            for (var i = 0; i < allSelectorsArr.length; i++) {
+                var currentSelector = allSelectorsArr[i];
+                originalColors[currentSelector] = jQuery(currentSelector).css('background-color');
+            }
+            
             // make them gray immediately as if they were always gray.
-            jQuery(originalColorGraySelector).css("background-color", fadeToColor);
-            jQuery(originalColorWhiteSelector).css("background-color", fadeToColor);
+            for (var i = 0; i < allSelectorsArr.length; i++) {
+                var currentSelector = allSelectorsArr[i];
+                jQuery(currentSelector).css('background-color', fadeToColor);
+            }
             
             // fade them back to their normal colors.
-            jQuery(originalColorGraySelector).animate({backgroundColor: originalAlternateRowColor});
-            jQuery(originalColorWhiteSelector).animate({backgroundColor: originalPaginationBGColor});
+            for (var i = 0; i < allSelectorsArr.length; i++) {
+                var currentSelector = allSelectorsArr[i];
+                var originalColor = originalColors[currentSelector];
+                jQuery(currentSelector).animate({backgroundColor: originalColor});
+            }
+
         },
         error: function (jqXHR, textStatus, errorThrown) {
             alert("Ajax error. Result: " + JSON.stringify(textStatus, null, 2) + 
@@ -127,7 +149,7 @@ function paginationLinksChange(triggerItem) {
     });
 
     // we do the animation after the ajax request so that it's happening while the server is thinking.
-    jQuery(originalColorWhiteSelector).animate({backgroundColor: fadeToColor}, 3000);
-    jQuery(originalColorGraySelector).animate({backgroundColor: fadeToColor}, 3000);
+    jQuery(allSelectors).animate({backgroundColor: fadeToColor}, 3000);
+
 }
 
