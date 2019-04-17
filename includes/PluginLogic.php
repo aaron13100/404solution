@@ -338,9 +338,7 @@ class ABJ_404_Solution_PluginLogic {
             $filteredRows = array_filter($rows);
             if (!empty($filteredRows)) {
                 $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
-                $query = str_replace('{wp_abj404_logsv2}', $wpdb->prefix . 'abj404_logsv2', $query);
-                $query = str_replace('{wp_abj404_logs}', $wpdb->prefix . 'abj404_logs', $query);
-                $query = str_replace('{wp_abj404_redirects}', $wpdb->prefix . 'abj404_redirects', $query);
+                $query = $abj404dao->doTableNameReplacements($query);
                 $result = $abj404dao->queryAndGetResults($query);
 
                 // if anything was successfully imported then delete the old table.
@@ -408,7 +406,7 @@ class ABJ_404_Solution_PluginLogic {
             . "Exabot\nfacebot\nfacebookexternalhit\nia_archiver\nSeznamBot\nPinterestbot\nUptimeRobot\nMJ12bot",
             'recognized_post_types' => "page\npost\nproduct",
             'recognized_categories' => "",
-            'folders_files_ignore' => "",
+            'folders_files_ignore' => implode("\n", array("wp-content/plugins/*", "wp-content/themes/*")),
             'folders_files_ignore_usable' => "",
             'debug_mode' => 0,
             'days_wait_before_major_update' => 30,

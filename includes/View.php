@@ -400,7 +400,7 @@ class ABJ_404_Solution_View {
                 }
                 
             } else {
-                echo nl2br(__('(The file does not exist.)', '404-solution'));
+                echo nl2br(__('(The log file does not exist.)', '404-solution'));
             }
             
         } else {
