@@ -1121,8 +1121,8 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /** 
-     * @global type $abj404dao
-     * @return 
+     * @param type $pageBeingViewed
+     * @return type
      */
     function getTableOptions($pageBeingViewed = null) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -1130,6 +1130,18 @@ class ABJ_404_Solution_PluginLogic {
         $tableOptions = array();
         $options = $this->getOptions(true);
 
+        $translationArray = array(
+            '{ABJ404_STATUS_MANUAL_text}' => __('Man', '404-solution'),
+            '{ABJ404_STATUS_AUTO_text}' => __('Auto', '404-solution'),
+            '{ABJ404_STATUS_REGEX_text}' => __('RegEx', '404-solution'),
+            '{ABJ404_TYPE_EXTERNAL_text}' => __('External', '404-solution'),
+            '{ABJ404_TYPE_CAT_text}' => __('Category', '404-solution'),
+            '{ABJ404_TYPE_TAG_text}' => __('Tag', '404-solution'),
+            '{ABJ404_TYPE_HOME_text}' => __('Home Page', '404-solution'),
+            );
+        
+        $tableOptions['translations'] = $translationArray;
+        
         $tableOptions['filter'] = $abj404dao->getPostOrGetSanitize("filter", "");
         if ($tableOptions['filter'] == "") {
             if ($abj404dao->getPostOrGetSanitize('subpage') == 'abj404_captured') {
@@ -1209,11 +1221,16 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         // sanitize all values.
-        foreach ($tableOptions as &$value) {
-            $value = esc_sql(sanitize_text_field($value));
+        $sanitizedTableOptions = array();
+        foreach ($tableOptions as $key => $value) {
+            if (is_array($value)) {
+                $sanitizedTableOptions[$key] = array_map('sanitize_text_field', $value);
+            } else {
+                $sanitizedTableOptions[$key] = sanitize_text_field($value);
+            }
         }
 
-        return $tableOptions;
+        return $sanitizedTableOptions;
     }
     
     /** 
