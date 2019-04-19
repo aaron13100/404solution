@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.17.1
+Version: 2.17.2
 Tested up to: 5.1.1
-Stable tag: 2.17.1
+Stable tag: 2.17.2
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -67,6 +67,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.17.2 (April 19, 2019) =
+* FIX: Correct a rare issue during an automatic update (thanks to a debug file participant).
 
 = Version 2.17.1 (April 17, 2019) =
 * FIX: Correct the ''Column ‘referrer’ cannot be null'' issue with a nightly maintenance run.
