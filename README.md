@@ -79,6 +79,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 * Improvement: Add a search filter on the Redirects page and the Captured 404s page 
     (does not filter columns Hits, Created, or Last Used) (for Carol).
 
+## Version 2.17.2 (April 19, 2019) ##
+* FIX: Correct a rare issue during an automatic update (thanks to a debug file participant).
+
 ## Version 2.17.1 (April 17, 2019) ##
 * FIX: Correct the ''Column ‘referrer’ cannot be null'' issue with a nightly maintenance run.
 

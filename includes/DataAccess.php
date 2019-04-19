@@ -26,11 +26,12 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getLatestPluginVersion() {
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         if (!function_exists('plugins_api')) {
               require_once(ABSPATH . 'wp-admin/includes/plugin-install.php');
         }        
         if (!function_exists('plugins_api')) {
-            $this->infoMessage("I couldn't find the plugins_api function to check for the latest version.");
+            $abj404logging->infoMessage("I couldn't find the plugins_api function to check for the latest version.");
             return ABJ404_VERSION;
         }
         
@@ -51,8 +52,8 @@ class ABJ_404_Solution_DataAccess {
         /** Check for Errors & Display the results */
         if (is_wp_error($call_api)) {
             $api_error = $call_api->get_error_message();
-            $this->infoMessage("There was an API issue checking the latest plugin version ("
-                    . esc_html($api_error) . ")");
+            $abj404logging->errorMessage("There was an API issue checking the latest plugin version ("
+                    . $api_error . ")");
             
             return array('version' => ABJ404_VERSION, 'last_updated' => null);
         }
