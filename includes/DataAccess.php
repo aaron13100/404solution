@@ -100,24 +100,18 @@ class ABJ_404_Solution_DataAccess {
     function doTableNameReplacements($query) {
         global $wpdb;
         
-        $knownReplacements = array(
-            '{wp_posts}' => $wpdb->posts,
-            '{wp_options}' => $wpdb->options,
-            '{wp_terms}' => $wpdb->terms,
-            '{wp_term_relationships}' => $wpdb->term_relationships,
-            '{wp_term_taxonomy}' => $wpdb->term_taxonomy,
-            '{wp_term_meta}' => $wpdb->termmeta,
-            '{wp_abj404_lookup}' => $wpdb->prefix . "abj404_lookup",
-            '{wp_abj404_permalink_cache}' => $wpdb->prefix . "abj404_permalink_cache",
-            '{wp_abj404_spelling_cache}' => $wpdb->prefix . "abj404_spelling_cache",
-            '{wp_abj404_redirects}' => $wpdb->prefix . "abj404_redirects",
-            '{wp_abj404_logsv2}' => $wpdb->prefix . "abj404_logsv2",
-            '{wp_abj404_logs}' => $wpdb->prefix . "abj404_logs",
-            '{wp_abj404_lookup}' => $wpdb->prefix . "abj404_lookup",
-            );
-
-        // replace known strings that do not exist in the translation file.
-        return str_replace(array_keys($knownReplacements), array_values($knownReplacements), $query);
+        $repacements = array();
+        foreach ($wpdb->tables as $tableName) {
+            $repacements['{wp_' . $tableName . '}'] = $wpdb->prefix . $tableName;
+        }
+        
+        // wp database table replacements
+        $query = str_replace(array_keys($repacements), array_values($repacements), $query);
+        
+        // custom table replacements
+        $query = mb_eregi_replace('[{]wp_abj404_(.*?)[}]', $wpdb->prefix . "abj404_\\1", $query);
+        
+        return $query;
     }
     
     /** Return the results of the query in a variable.
@@ -1110,19 +1104,22 @@ class ABJ_404_Solution_DataAccess {
         $rowsDeleted = 0;
         $query = "SELECT COUNT(id) as repetitions, url FROM {wp_abj404_redirects} GROUP BY url HAVING repetitions > 1 ";
         $query = $this->doTableNameReplacements($query);
-        $rows = $wpdb->get_results($query, ARRAY_A);
-        foreach ($rows as $row) {
+        $result = $this->queryAndGetResults($query);
+        $outerRows = $result['rows'];
+        foreach ($outerRows as $row) {
             $url = $row['url'];
 
             $queryr1 = "select id from {wp_abj404_redirects} where url = '" . esc_sql(esc_url($url)) . "' order by timestamp desc limit 0,1";
-            $query = $this->doTableNameReplacements($query);
-            $orig = $wpdb->get_row($queryr1, ARRAY_A, 0);
-            if ($orig['id'] != 0) {
-                $original = $orig['id'];
+            $queryr1 = $this->doTableNameReplacements($queryr1);
+            $result = $this->queryAndGetResults($queryr1);            
+            $innerRows = $result['rows'];
+            if (count($innerRows) >= 1) {
+                $row = $innerRows[0];
+                $original = $row['id'];
 
                 $queryl = "delete from {wp_abj404_redirects} where url='" . esc_sql(esc_url($url)) . "' and id != " . esc_sql($original);
-                $query = $this->doTableNameReplacements($query);
-                $wpdb->query($queryl);
+                $queryl = $this->doTableNameReplacements($queryl);
+                $this->queryAndGetResults($queryl);
                 $rowsDeleted++;
             }
         }
