@@ -11,10 +11,6 @@ class ABJ_404_Solution_Functions {
     
     private static $instance = null;
     
-    /** Use this to find a delimiter. 
-     * @var array */
-    private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
-    
     public static function getInstance() {
         if (self::$instance == null) {
             if (extension_loaded('mbstring')) { 
