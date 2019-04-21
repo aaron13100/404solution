@@ -67,7 +67,12 @@ class ABJ_404_Solution_WordPress_Connector {
         );
         wp_localize_script('redirect_to_ajax', 'abj404localization', $translation_array );        
         wp_enqueue_script('redirect_to_ajax');
-
+        
+        // make sure the "apply" button is only enabled if at least one checkbox is selected
+        wp_register_script('enable_disable_apply_button_js', ABJ404_URL . 'includes/js/enableDisableApplyButton.js');
+        $translation_array = array('{altText}' => __('Choose at least one URL', '404-solution'));
+        wp_localize_script('enable_disable_apply_button_js', 'abj404localization', $translation_array);
+        wp_enqueue_script('enable_disable_apply_button_js');
         
         wp_enqueue_script('view-updater', plugin_dir_url(__FILE__) . 'ajax/view_updater.js', 
                 array('jquery', 'jquery-ui-autocomplete'));

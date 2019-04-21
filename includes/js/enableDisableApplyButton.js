@@ -1,13 +1,12 @@
 
-<script>
 /* Here we disable the "Apply" button if there are no checkboxes selected.
     We enable it if there is at least one selected. */
 function enableDisableApplyButton() {
     var shouldBeEnabled = false;
     var inputs = document.getElementsByTagName("input");
     for(var i = 0; i < inputs.length; i++) {
-        if(inputs[i].type == "checkbox") {
-            if (inputs[i].checked == true) {
+        if(inputs[i].type === "checkbox") {
+            if (inputs[i].checked === true) {
                 shouldBeEnabled = true;
                 break;
             }
@@ -18,7 +17,7 @@ function enableDisableApplyButton() {
     var selector = document.getElementById("bulkCaptured404select");
     
     // This can be null because we're on the trash page.
-    if (button == null) {
+    if (button === null) {
         return;
     }
     
@@ -37,4 +36,3 @@ function enableDisableApplyButton() {
     }
 }
 enableDisableApplyButton();
-</script>

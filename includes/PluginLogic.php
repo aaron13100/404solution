@@ -1150,6 +1150,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         
         $tableOptions['filterText'] = trim($abj404dao->getPostOrGetSanitize("filterText", ""));
+        $tableOptions['filterText'] = str_replace('*/', '', $tableOptions['filterText']);
 
         if ($abj404dao->getPostOrGetSanitize('orderby', "") != "") {
             $tableOptions['orderby'] = esc_sql($abj404dao->getPostOrGetSanitize('orderby'));

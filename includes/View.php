@@ -886,12 +886,6 @@ class ABJ_404_Solution_View {
         }
         echo $this->getPaginationLinks($sub, false);
         echo "</div>";
-        
-        // make sure the "apply" button is only enabled if at least one checkbox is selected
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/enableDisableApplyButton.js");
-        $html = str_replace('{altText}', __('Choose at least one URL', '404-solution'), $html);
-        $html = $f->doNormalReplacements($html);
-        echo $html;
     }
     
     function getCapturedURLSPageTable($sub) {
@@ -1160,12 +1154,6 @@ class ABJ_404_Solution_View {
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             $this->echoAddManualRedirect($tableOptions);
         }
-        
-        // make sure the "apply" button is only enabled if at least one checkbox is selected
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/enableDisableApplyButton.js");
-        $html = str_replace('{altText}', __('Choose at least one URL', '404-solution'), $html);
-        $html = $f->doNormalReplacements($html);
-        echo $html;
     }
     
     function getAdminRedirectsPageTable($sub) {

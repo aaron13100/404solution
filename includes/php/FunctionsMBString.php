@@ -1,0 +1,52 @@
+<?php
+
+// turn on debug for localhost etc
+if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
+
+/* Static functions that can be used from anywhere.  */
+class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
+    
+    function strtolower($string) {
+        return mb_strtolower($string);
+    }
+    
+    function strlen($string) {
+        return mb_strlen($string);
+    }
+    
+    function strpos($haystack, $needle, $offset = 0) {
+        return mb_strpos($haystack, $needle, $offset);
+    }
+    
+    function substr($str, $start, $length = null) {
+        return mb_substr($str, $start, $length);
+    }
+
+    function regexMatch($pattern, $string, &$regs = null) {
+        return mb_ereg($pattern, $string, $regs);
+    }
+    
+    function regexMatchi($pattern, $string, &$regs = null) {
+        return mb_eregi($pattern, $string, $regs);
+    }
+    
+    /**  Replace regular expression with multibyte support.
+     * Scans string for matches to pattern, then replaces the matched text with replacement.
+     * @param type $pattern The regular expression pattern.
+     * @param type $replacement The replacement text.
+     * @param type $string The string being checked.
+     * @return type The resultant string on success, or FALSE on error.
+     */
+    function regexReplace($pattern, $replacement, $string) {
+        return mb_ereg_replace($pattern, $replacement, $string);
+    }
+    
+    function regexSplit($pattern, $subject) {
+        return mb_split($pattern, $subject);
+    }
+    
+}
+
