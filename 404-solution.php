@@ -40,7 +40,10 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 
 // Constants
 define( 'ABJ404_AUTHOR_EMAIL', 'aaron@wealth-psychology.com' );
+/* plugin_dir_url( __FILE__ ) */
 define( 'ABJ404_URL', plugin_dir_url( __FILE__ ) );
+
+/** plugin_dir_path( __FILE__ ) */
 define( 'ABJ404_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ABJ404_NAME', plugin_basename( __FILE__ ) );
 define('ABJ404_SOLUTION_BASENAME', function_exists('plugin_basename') ? plugin_basename(__FILE__) :
@@ -80,6 +83,8 @@ define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 500);
 
 
 require_once ABJ404_PATH . "includes/Functions.php";
+require_once ABJ404_PATH . "includes/php/FunctionsPreg.php";
+require_once ABJ404_PATH . "includes/php/FunctionsMBString.php";
 require_once ABJ404_PATH . "includes/Logging.php";
 require_once ABJ404_PATH . "includes/objs/WPNotice.php";
 require_once ABJ404_PATH . "includes/wordpress/WPNotices.php";

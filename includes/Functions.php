@@ -17,7 +17,12 @@ class ABJ_404_Solution_Functions {
     
     public static function getInstance() {
         if (self::$instance == null) {
-            self::$instance = new ABJ_404_Solution_Functions();
+            if (extension_loaded('mbstring')) { 
+                self::$instance = new ABJ_404_Solution_FunctionsMBString();
+                
+            } else {
+                self::$instance = new ABJ_404_Solution_FunctionsPreg();
+            }
         }
         
         return self::$instance;
@@ -44,131 +49,6 @@ class ABJ_404_Solution_Functions {
         }
         
         return '';
-    }
-    
-    function strtolower($string) {
-        if (function_exists('mb_strtolower')) {
-            return mb_strtolower($string);
-        }
-        
-        return strtolower($string);
-    }
-    
-    function strlen($string) {
-        if (function_exists('mb_strlen')) {
-            return mb_strlen($string);
-        }
-        
-        return strlen($string);
-    }
-    
-    function strpos($haystack, $needle, $offset = 0) {
-        if (function_exists('mb_strpos')) {
-            return mb_strpos($haystack, $needle, $offset);
-        }
-        
-        if ($offset == 0) {
-            return strpos($haystack, $needle);
-        }
-        return strpos($haystack, $needle, $offset);
-    }
-    
-    function substr($str, $start, $length = null) {
-        if (function_exists('mb_substr')) {
-            return mb_substr($str, $start, $length);
-        }
-        
-        if ($length == null) {
-            return substr($str, $start);
-        }
-        return substr($str, $start, $length);
-    }
-
-    function regexMatch($pattern, $string, &$regs = null) {
-        if (function_exists('mb_ereg')) {
-            return mb_ereg($pattern, $string, $regs);
-        }
-        
-        // find a character to use for quotes
-        $delimiterA = "{";
-        $delimiterB = "}";
-        if (strpos($pattern, "}") !== false) {
-            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
-        }
-        return preg_match($delimiterA . $pattern . $delimiterB, $string, $regs);
-    }
-    
-    function regexMatchi($pattern, $string, &$regs = null) {
-        if (function_exists('mb_ereg')) {
-            return mb_eregi($pattern, $string, $regs);
-        }
-        
-        // find a character to use for quotes
-        $delimiterA = "{";
-        $delimiterB = "}";
-        if (strpos($pattern, "}") !== false) {
-            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
-        }
-        return preg_match($delimiterA . $pattern . $delimiterB . 'i', $string, $regs);
-    }
-    
-    /**  Replace regular expression with multibyte support.
-     * Scans string for matches to pattern, then replaces the matched text with replacement.
-     * @param type $pattern The regular expression pattern.
-     * @param type $replacement The replacement text.
-     * @param type $string The string being checked.
-     * @return type The resultant string on success, or FALSE on error.
-     */
-    function regexReplace($pattern, $replacement, $string) {
-        if (function_exists('mb_ereg')) {
-            return mb_ereg_replace($pattern, $replacement, $string);
-        }
-        
-        // find a character to use for quotes
-        $delimiterA = "{";
-        $delimiterB = "}";
-        if (strpos($pattern, "}") !== false) {
-            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
-        }
-        $replacementDelimiter = $this->findADelimiter($replacement);
-        $replacement = preg_replace($replacementDelimiter . '\\\\' . $replacementDelimiter, '\$', $replacement);
-        return preg_replace($delimiterA . $pattern . $delimiterB, $replacement, $string);
-    }
-    
-    function regexSplit($pattern, $subject) {
-        if (function_exists('mb_split')) {
-            return mb_split($pattern, $subject);
-        }
-        
-        // find a character to use for quotes
-        $delimiterA = "{";
-        $delimiterB = "}";
-        if (strpos($pattern, "}") !== false) {
-            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
-        }
-        return preg_split($delimiterA . $pattern . $delimiterB, $subject);
-    }
-    
-    function findADelimiter($pattern) {
-        if ($pattern == '') {
-            return $this->delimiterChars[0];
-        }
-        
-        $charToUse = null;
-        foreach ($this->delimiterChars as $char) {
-            $anArray = explode($char, $pattern);
-            if (sizeof($anArray) == 1) {
-                $charToUse = $char;
-                break;
-            }
-        }
-        
-        if ($charToUse == null) {
-            throw new Exception("I can't find a valid delimiter character to use for the regular expression: "
-                    . $pattern);
-        }
-        
-        return $charToUse;
     }
     
     /** Replace constants and translations.
@@ -317,19 +197,16 @@ class ABJ_404_Solution_Functions {
      * @throws Exception
      */
     static function readFileContents($path) {
+        // modify what's returned to make debugging easier.
+        $dataSupplement = self::getDataSupplement($path);
+        
         if (!file_exists($path)) {
             throw new Exception("Error: Can't find file: " . $path);
         }
         
-        $extraInfo = "";
-        $file_parts = pathinfo($path);
-        if ($file_parts['extension'] == "sql") {
-            $extraInfo = "\n/* Loaded file name: " . $path . "*/\n";
-        }
-        
         $fileContents = file_get_contents($path);
         if ($fileContents !== false) {
-            return $fileContents . $extraInfo;
+            return $dataSupplement['prefix'] . $fileContents . $dataSupplement['suffix'];
         }
         
         // if we can't read the file that way then try curl.
@@ -347,9 +224,31 @@ class ABJ_404_Solution_Functions {
             throw new Exception("Error: Can't read file, even with cURL: " . $path);
         }
         
-        return $output . $extraInfo;        
+        return $dataSupplement['prefix'] . $output . $dataSupplement['suffix'];
     }
 
+    static function getDataSupplement($filePath) {
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $path = strtolower($filePath);
+        $supplement = array();
+        if ($f->endsWithCaseInsensitive($path, '.sql')) {
+            $supplement['prefix'] = "/* ------------------ " . $filePath . " begin ----- */ \n";
+            $supplement['suffix'] = "\n/* ------------------ " . $filePath . " end ----- */ \n";
+            
+        } else if ($f->endsWithCaseInsensitive($path, '.html')) {
+            $supplement['prefix'] = "<!-- ------------------ " . $filePath . " begin ----- --> \n";
+            $supplement['suffix'] = "\n<!-- ------------------ " . $filePath . " end ----- --> \n";
+            
+        } else {
+            $supplement['prefix'] = "/* ------------------ " . $filePath . " begin unknown file type in "
+                    . __CLASS__ . '::' . __FUNCTION__ . "() ----- */ \n";
+            $supplement['suffix'] = "\n/* ------------------ " . $filePath . " end unknown file type in "
+                    . __CLASS__ . '::' . __FUNCTION__ . "() ----- */ \n";
+        }
+        
+        return $supplement;
+    }
+    
     /** Deletes the existing file at $filePath and puts the URL contents in it's place.
      * @global type $abj404logging
      * @param type $url

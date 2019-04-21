@@ -1099,8 +1099,6 @@ class ABJ_404_Solution_DataAccess {
      * @global type $wpdb
      */
     function removeDuplicatesCron() {
-        global $wpdb;
-        
         $rowsDeleted = 0;
         $query = "SELECT COUNT(id) as repetitions, url FROM {wp_abj404_redirects} GROUP BY url HAVING repetitions > 1 ";
         $query = $this->doTableNameReplacements($query);
@@ -1190,20 +1188,22 @@ class ABJ_404_Solution_DataAccess {
      * @return type
      */
     function getActiveRedirectForURL($url) {
-        global $wpdb;
         $redirect = array();
 
         // a disabled value of '1' means in the trash.
-        $query = "select * from {wp_abj404_redirects where url = '" . esc_sql($url) . "'" .
+        $query = "select * from {wp_abj404_redirects} where url = '" . esc_sql($url) . "'" .
                 " and disabled = 0 and status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ") " .
                 "and type not in (" . ABJ404_TYPE_404_DISPLAYED . ") ";
         $query = $this->doTableNameReplacements($query);
+        
+        $results = $this->queryAndGetResults($query);
+        $rows = $results['rows'];
 
-        $row = $wpdb->get_row($query, ARRAY_A);
-        if ($row == NULL) {
+        if (count($rows) == 0) {
             $redirect['id'] = 0;
+            
         } else {
-            foreach($row as $key => $value) {
+            foreach ($rows[0] as $key => $value) {
                 $redirect[$key] = $value;
             }
         }
@@ -1216,19 +1216,21 @@ class ABJ_404_Solution_DataAccess {
      * @return type
      */
     function getExistingRedirectForURL($url) {
-        global $wpdb;
         $redirect = array();
 
         // a disabled value of '1' means in the trash.
-        $query = "select * from {wp_abj404_redirects where url = '" . esc_sql($url) . "'" .
+        $query = "select * from {wp_abj404_redirects} where url = '" . esc_sql($url) . "'" .
                 " and disabled = 0 "; 
-            $query = $this->doTableNameReplacements($query);
+        $query = $this->doTableNameReplacements($query);
+        
+        $results = $this->queryAndGetResults($query);
+        $rows = $results['rows'];
 
-        $row = $wpdb->get_row($query, ARRAY_A);
-        if ($row == NULL) {
+        if (count($rows) == 0) {
             $redirect['id'] = 0;
+            
         } else {
-            foreach($row as $key => $value) {
+            foreach ($rows[0] as $key => $value) {
                 $redirect[$key] = $value;
             }
         }
@@ -1580,7 +1582,7 @@ class ABJ_404_Solution_DataAccess {
      * @return type
      */
     function updateRedirectTypeStatus($id, $newstatus) {
-        $query = "update {wp_abj404_redirects set status = '" . 
+        $query = "update {wp_abj404_redirects} set status = '" . 
                 esc_sql($newstatus) . "' where id = '" . esc_sql($id) . "'";
         $query = $this->doTableNameReplacements($query);
         $result = $this->queryAndGetResults($query);
