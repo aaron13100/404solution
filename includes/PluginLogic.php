@@ -255,8 +255,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         $this->currentlyUpdatingDatabaseVersion = false;
         
-        // reset the permalink cache because updating the plugin version may affect it.
-        $abj404dao->truncatePermalinkCacheTable();
+        // update the permalink cache because updating the plugin version may affect it.
         $permalinkCache = new ABJ_404_Solution_PermalinkCache();
         $permalinkCache->updatePermalinkCache(1);
         
@@ -1394,8 +1393,7 @@ class ABJ_404_Solution_PluginLogic {
 
         update_option('abj404_settings', $new_options);
         
-        // reset the permalink cache because the post types included may have changed.
-        $abj404dao->truncatePermalinkCacheTable();
+        // update the permalink cache because the post types included may have changed.
         $permalinkCache = new ABJ_404_Solution_PermalinkCache();
         $permalinkCache->updatePermalinkCache(2);
         

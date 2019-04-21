@@ -219,6 +219,8 @@ class ABJ_404_Solution_Logging {
         $bodyLines = array();
         $bodyLines[] = $subject . ". Sent " . date('Y/m/d h:i:s T');
         $bodyLines[] = " ";
+        $bodyLines[] = "Error: " . $errorLineMessage;
+        $bodyLines[] = " ";
         $bodyLines[] = "PHP version: " . PHP_VERSION;
         $bodyLines[] = "WordPress version: " . get_bloginfo('version');
         $bodyLines[] = "Plugin version: " . ABJ404_VERSION;
@@ -229,7 +231,6 @@ class ABJ_404_Solution_Logging {
         $bodyLines[] = "Published posts: " . $published_posts . ", published pages: " . $published_pages;
         
         $bodyLines[] = "Total error count: " . $totalErrorCount;
-        $bodyLines[] = "Error: " . $errorLineMessage;
         
         $body = implode("<BR/>\n", $bodyLines);
         
