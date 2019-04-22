@@ -534,7 +534,7 @@ class ABJ_404_Solution_PluginLogic {
                 }
             } else {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
-                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
+                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
         } else if ($action == "addRedirect") {
             if (check_admin_referer('abj404addRedirect') && is_admin()) {
@@ -546,7 +546,7 @@ class ABJ_404_Solution_PluginLogic {
                 }
             } else {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
-                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
+                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
         } else if ($action == "emptyRedirectTrash") {
             if (check_admin_referer('abj404_emptyRedirectTrash') && is_admin()) {
@@ -554,7 +554,7 @@ class ABJ_404_Solution_PluginLogic {
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             } else {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
-                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
+                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
         } else if ($action == "emptyCapturedTrash") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
@@ -562,34 +562,34 @@ class ABJ_404_Solution_PluginLogic {
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             } else {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
-                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
+                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
         } else if ($action == "purgeRedirects") {
             if (check_admin_referer('abj404_purgeRedirects') && is_admin()) {
                 $message = $abj404dao->deleteSpecifiedRedirects();
             } else {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
-                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
+                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
         } else if ($action == "runMaintenance") {
             if (check_admin_referer('abj404_runMaintenance') && is_admin()) {
                 $message = $abj404dao->deleteOldRedirectsCron();
             } else {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
-                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
+                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
         } else if ($f->substr($action . '', 0, 4) == "bulk") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 if (!array_key_exists('idnum', $_POST) || !isset($_POST['idnum'])) {
-                    $abj404logging->debugMessage("No ID(s) specified for bulk action: " . esc_html($action));
-                    echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'), esc_html($action),
+                    $abj404logging->debugMessage("No ID(s) specified for bulk action: " . $action);
+                    echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'), $action,
                             false);
                     return;
                 }
                 $message = $abj404logic->doBulkAction($action, array_map('absint', $_POST['idnum']));
             } else {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
-                        is_admin() . ", Action: " . esc_html($action) . ", Sub: " . esc_html($sub));
+                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
         }
                 
@@ -875,8 +875,8 @@ class ABJ_404_Solution_PluginLogic {
                 // don't change the status for this case.
                 
             } else {
-                $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
-                echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
+                $abj404logging->errorMessage("Unrecognized bulk action: " . $action);
+                echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), $action);
                 return;
             }
             $count = 0;
@@ -898,8 +898,8 @@ class ABJ_404_Solution_PluginLogic {
             } else if ($action == "bulk_trash_restore") {
                 $message = $count . " " . __('URL(s) restored.', '404-solution');
             } else {
-                $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
-                echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
+                $abj404logging->errorMessage("Unrecognized bulk action: " . $action);
+                echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), $action);
             }
             
         } else if ($action == "bulk_trash_delete_permanently") {
@@ -921,8 +921,8 @@ class ABJ_404_Solution_PluginLogic {
             $message = $count . " " . __('URL(s) moved to trash', '404-solution');
 
         } else {
-            $abj404logging->errorMessage("Unrecognized bulk action: " . esc_html($action));
-            echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
+            $abj404logging->errorMessage("Unrecognized bulk action: " . $action);
+            echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), $action);
         }
         return $message;
     }
