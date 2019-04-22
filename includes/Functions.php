@@ -28,12 +28,11 @@ class ABJ_404_Solution_Functions {
      * @param type $value
      * @return boolean
      */
-    function trimAndRemoveEmpty($value) {
+    function removeEmptyCustom($value) {
         if ($value == null) {
             return false;
         }
-        $value = trim($value);
-        return $value !== '';
+        return trim($value) !== '';
     }
     
     function getExecutionTime() {

@@ -240,7 +240,7 @@ class ABJ_404_Solution_DataAccess {
         // get the valid post types
         $options = $abj404logic->getOptions();
         $postTypes = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_post_types'])),
-                array($f, 'trimAndRemoveEmpty'));
+                array($f, 'removeEmptyCustom'));
         $recognizedPostTypes = '';
         foreach ($postTypes as $postType) {
             $recognizedPostTypes .= "'" . trim($f->strtolower($postType)) . "', ";
@@ -1255,7 +1255,7 @@ class ABJ_404_Solution_DataAccess {
         // get the valid post types
         $options = $abj404logic->getOptions();
         $postTypes = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_post_types'])),
-                array($f, 'trimAndRemoveEmpty'));
+                array($f, 'removeEmptyCustom'));
         $recognizedPostTypes = '';
         foreach ($postTypes as $postType) {
             $recognizedPostTypes .= "'" . trim($f->strtolower($postType)) . "', ";
@@ -1317,7 +1317,7 @@ class ABJ_404_Solution_DataAccess {
         // get the valid post types
         $options = $abj404logic->getOptions();
         $postTypes = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_post_types'])),
-                array($f, 'trimAndRemoveEmpty'));
+                array($f, 'removeEmptyCustom'));
         $recognizedPostTypes = '';
         foreach ($postTypes as $postType) {
             $recognizedPostTypes .= "'" . trim($f->strtolower($postType)) . "', ";
@@ -1353,7 +1353,7 @@ class ABJ_404_Solution_DataAccess {
         $options = $abj404logic->getOptions();
 
         $categories = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_categories'])),
-                array($f, 'trimAndRemoveEmpty'));
+                array($f, 'removeEmptyCustom'));
         $recognizedCategories = '';
         foreach ($categories as $category) {
             $recognizedCategories .= "'" . trim($f->strtolower($category)) . "', ";
@@ -1391,7 +1391,7 @@ class ABJ_404_Solution_DataAccess {
         $options = $abj404logic->getOptions();
 
         $categories = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_categories'])),
-                array($f, 'trimAndRemoveEmpty'));
+                array($f, 'removeEmptyCustom'));
         $recognizedCategories = '';
         if (count($categories) == 0) {
             $recognizedCategories = "''";

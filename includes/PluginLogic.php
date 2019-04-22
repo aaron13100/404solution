@@ -91,7 +91,7 @@ class ABJ_404_Solution_PluginLogic {
         // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
         // by https://www.sovrn.com/. 
         $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_dontprocess'])),
-                array($f, 'trimAndRemoveEmpty'));
+                array($f, 'removeEmptyCustom'));
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (do not redirect): " . 
@@ -120,7 +120,7 @@ class ABJ_404_Solution_PluginLogic {
         // -----
         // ignore and process
         $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_doprocess'])),
-                array($f, 'trimAndRemoveEmpty'));
+                array($f, 'removeEmptyCustom'));
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (process ok): " . 
@@ -239,7 +239,6 @@ class ABJ_404_Solution_PluginLogic {
      */
     function updateToNewVersion($options) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         if ($this->currentlyUpdatingDatabaseVersion) {
             $abj404logging->errorMessage("Avoiding infinite loop on database update.");
@@ -296,10 +295,10 @@ class ABJ_404_Solution_PluginLogic {
 
         // since 1.9.0. ignore_doprocess add SeznamBot, Pinterestbot, UptimeRobot and "Slurp" -> "Yahoo! Slurp"
         if (version_compare($currentDBVersion, '1.9.0') < 0) {
-            $userAgents = array_filter($f->regexSplit('\n', $options['ignore_doprocess']),
-                    array($f, 'trimAndRemoveEmpty'));
-            $uasForSearch = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_doprocess'])),
-                    array($f, 'trimAndRemoveEmpty'));
+            $userAgents = array_map('trim', array_filter($f->regexSplit('\n', $options['ignore_doprocess']),
+                    array($f, 'removeEmptyCustom')));
+            $uasForSearch = array_map('trim', array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_doprocess'])),
+                    array($f, 'removeEmptyCustom')));
 
             foreach ($userAgents as &$str) {
                 if ($f->strtolower(trim($str)) == "slurp") {
@@ -349,6 +348,23 @@ class ABJ_404_Solution_PluginLogic {
                 }
             }
         }
+        
+        if (version_compare($currentDBVersion, '2.18.0') < 0) {
+            // add .well-known/acme-challenge/*, wp-content/themes/*, wp-content/plugins/* to folders_files_ignore
+            $originalItems = array_map('trim', array_filter($f->regexSplit('\n', $options['folders_files_ignore']),
+                    array($f, 'removeEmptyCustom')));
+
+            $newItems = array("wp-content/plugins/*", "wp-content/themes/*", ".well-known/acme-challenge/*");
+            foreach ($newItems as $newItem) {
+                if (array_search($newItem, $originalItems) === false) {
+                    $originalItems[] = $newItem;
+                    $abj404logging->infoMessage('Added ' . $newItem . 'to the list of folders to ignore."');
+                }
+            }
+
+            $options['folders_files_ignore'] = implode("\n",$originalItems);
+            update_option('abj404_settings', $options);
+        }        
 
         // add the second part of the default destination page.
         $dest404page = $options['dest404page'];
@@ -405,7 +421,8 @@ class ABJ_404_Solution_PluginLogic {
             . "Exabot\nfacebot\nfacebookexternalhit\nia_archiver\nSeznamBot\nPinterestbot\nUptimeRobot\nMJ12bot",
             'recognized_post_types' => "page\npost\nproduct",
             'recognized_categories' => "",
-            'folders_files_ignore' => implode("\n", array("wp-content/plugins/*", "wp-content/themes/*")),
+            'folders_files_ignore' => implode("\n", array("wp-content/plugins/*", "wp-content/themes/*", 
+                ".well-known/acme-challenge/*")),
             'folders_files_ignore_usable' => "",
             'debug_mode' => 0,
             'days_wait_before_major_update' => 30,
@@ -1374,7 +1391,7 @@ class ABJ_404_Solution_PluginLogic {
             
             // make the regular expressions usable.
             $patternsToIgnore = array_filter($f->regexSplit('\n', $options['folders_files_ignore']),
-                    array($f, 'trimAndRemoveEmpty'));
+                    array($f, 'removeEmptyCustom'));
             $usableFilePatterns = array();
             foreach ($patternsToIgnore as $patternToIgnore) {
                 $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
