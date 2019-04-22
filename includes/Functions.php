@@ -228,17 +228,17 @@ class ABJ_404_Solution_Functions {
         $path = strtolower($filePath);
         $supplement = array();
         if ($f->endsWithCaseInsensitive($path, '.sql')) {
-            $supplement['prefix'] = "/* ------------------ " . $filePath . " begin ----- */ \n";
-            $supplement['suffix'] = "\n/* ------------------ " . $filePath . " end ----- */ \n";
+            $supplement['prefix'] = "/* ------------------ " . $filePath . " BEGIN ----- */ \n";
+            $supplement['suffix'] = "\n/* ------------------ " . $filePath . " END ----- */ \n";
             
         } else if ($f->endsWithCaseInsensitive($path, '.html')) {
-            $supplement['prefix'] = "<!-- ------------------ " . $filePath . " begin ----- --> \n";
-            $supplement['suffix'] = "\n<!-- ------------------ " . $filePath . " end ----- --> \n";
+            $supplement['prefix'] = "<!-- ------------------ " . $filePath . " BEGIN ----- --> \n";
+            $supplement['suffix'] = "\n<!-- ------------------ " . $filePath . " END ----- --> \n";
             
         } else {
-            $supplement['prefix'] = "/* ------------------ " . $filePath . " begin unknown file type in "
+            $supplement['prefix'] = "/* ------------------ " . $filePath . " BEGIN unknown file type in "
                     . __CLASS__ . '::' . __FUNCTION__ . "() ----- */ \n";
-            $supplement['suffix'] = "\n/* ------------------ " . $filePath . " end unknown file type in "
+            $supplement['suffix'] = "\n/* ------------------ " . $filePath . " END unknown file type in "
                     . __CLASS__ . '::' . __FUNCTION__ . "() ----- */ \n";
         }
         

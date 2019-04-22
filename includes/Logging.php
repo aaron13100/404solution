@@ -105,10 +105,14 @@ class ABJ_404_Solution_Logging {
         if (array_key_exists('HTTP_REFERER', $_SERVER) && !empty($_SERVER['HTTP_REFERER'])) {
             $referrer = $_SERVER['HTTP_REFERER'];
         }
+        $requestedURL = '';
+        if (array_key_exists('REQUEST_URI', $_SERVER) && !empty($_SERVER['REQUEST_URI'])) {
+            $requestedURL = $_SERVER['REQUEST_URI'];
+        }
         $this->writeLineToDebugFile($timestamp . $message . ", PHP version: " . PHP_VERSION . 
                 ", WP ver: " . get_bloginfo('version') . ", Plugin ver: " . ABJ404_VERSION . 
-                ", Referrer: " . esc_html($referrer) . ", \nStored debug messages: \n" . $savedDebugMessages .
-                ", \nTrace: " . $stacktrace);
+                ", Referrer: " . $referrer . ", Requested URL: " . $requestedURL . 
+                ", \nStored debug messages: \n" . $savedDebugMessages . ", \nTrace: " . $stacktrace);
         
         // display a 404 page if the user is NOT an admin and is not on an admin page.
         if (!is_admin()) {

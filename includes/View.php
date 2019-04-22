@@ -510,7 +510,7 @@ class ABJ_404_Solution_View {
         echo "<div class=\"metabox-holder\">";
         echo " <div class=\"meta-box-sortables\">";
 
-        echo "<form method=\"POST\" action=\"" . esc_attr($link) . "\">";
+        echo '<form method="POST" name="admin-options-page" action="' . esc_attr($link) . '">';
         echo "<input type=\"hidden\" name=\"action\" value=\"updateOptions\">";
 
         $contentAutomaticRedirects = $abj404view->getAdminOptionsPageAutoRedirects($options);
@@ -527,7 +527,7 @@ class ABJ_404_Solution_View {
 
         echo "<input type=\"submit\" name=\"abj404-optionssub\" id=\"abj404-optionssub\" " .
             "value=\"Save Settings\" class=\"button-primary\">";
-        echo "</form>";
+        echo "</form><!-- end in admin-options-page -->";
 
         echo "</div>";
         echo "</div>";
@@ -554,7 +554,7 @@ class ABJ_404_Solution_View {
 
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_edit", "abj404editRedirect");
 
-        echo "<form method=\"POST\" action=\"" . esc_attr($link) . "\">";
+        echo '<form method="POST" name="admin-edit-redirect" action="' . esc_attr($link) . '">';
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
 
         $recnum = null;
@@ -679,7 +679,7 @@ class ABJ_404_Solution_View {
         
         $this->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'));
         
-        echo "</form>";
+        echo "</form><!-- end admin-edit-redirect -->";
     }
     
     function echoRedirectDestinationOptionsOthers($dest, $rows) {
@@ -814,7 +814,6 @@ class ABJ_404_Solution_View {
     function echoAdminCapturedURLsPage() {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $sub = 'abj404_captured';
-        $nonceValue = "abj404_bulkProcess";
         $f = ABJ_404_Solution_Functions::getInstance();
 
         $tableOptions = $abj404logic->getTableOptions($sub);
@@ -827,19 +826,10 @@ class ABJ_404_Solution_View {
         
         echo $this->getTabFilters($sub, $tableOptions);
 
-        echo "<div class=\"tablenav\">";
+        echo "<div class=\"tablenav admin-captured-urls-page-top\">";
         echo $this->getPaginationLinks($sub);
 
         // bulk operations dropdown -------------
-        $url = "?page=" . ABJ404_PP . "&subpage=" . $sub;
-        if ($tableOptions['filter'] != 0) {
-            $url .= "&filter=" . $tableOptions['filter'];
-        }
-        if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-            $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-        }
-        $url = wp_nonce_url($url, $nonceValue);
-        
         $bulkOptions = array();
         if ($tableOptions['filter'] != ABJ404_STATUS_CAPTURED) {
             $bulkOptions[] = '<option value="bulkcaptured">{Mark as Captured}</option>';
@@ -856,6 +846,8 @@ class ABJ_404_Solution_View {
         $bulkOptions[] = '<option value="editRedirect">{Create a Redirect}</option>';
         $allBulkOptions = implode("\n", $bulkOptions);
         
+        $url = $this->getBulkOperationsFormURL($sub, $tableOptions);
+        
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown.html");
         $html = str_replace('{action_url}', $url, $html);
         $html = str_replace('{bulkOptions}', $allBulkOptions, $html);
@@ -866,7 +858,7 @@ class ABJ_404_Solution_View {
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             $eturl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ABJ404_TRASH_FILTER . 
                     "&subpage=abj404_captured";
-            $eturl = wp_nonce_url($eturl, $nonceValue);
+            $eturl = wp_nonce_url($eturl, 'abj404_bulkProcess');
 
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
             $html = str_replace('{action_url}', $eturl, $html);
@@ -880,12 +872,10 @@ class ABJ_404_Solution_View {
 
         echo $this->getCapturedURLSPageTable($sub);
 
-        echo "<div class=\"tablenav\">";
-        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
-            echo "</form>";
-        }
+        echo "<div class=\"tablenav admin-captured-urls-page-bottom\">";
         echo $this->getPaginationLinks($sub, false);
-        echo "</div>";
+        
+        echo "</div></form><!-- page-form big outer form could end here -->";
     }
     
     function getCapturedURLSPageTable($sub) {
@@ -1068,7 +1058,6 @@ class ABJ_404_Solution_View {
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $sub = 'abj404_redirects';
-        $nonceValue = "abj404_bulkProcess";
         
         $tableOptions = $abj404logic->getTableOptions($sub);
 
@@ -1086,7 +1075,7 @@ class ABJ_404_Solution_View {
         }
         date_default_timezone_set($timezone);
 
-        echo "<div class=\"tablenav\">";
+        echo "<div class=\"tablenav admin-redirects-page-top\">";
         
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             $htmlTop = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinksTop.html");
@@ -1110,17 +1099,7 @@ class ABJ_404_Solution_View {
         }
         $allBulkOptions = implode("\n", $bulkOptions);
 
-        $url = "?page=" . ABJ404_PP . "&subpage=" . $sub;
-        if ($tableOptions['filter'] != 0) {
-            $url .= "&filter=" . $tableOptions['filter'];
-        }
-        if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-            $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-        }
-        // is there a way to use the <select> below and use the selected action (bulkignore, bulkcaptured, bulktrash)
-        // when creating the nonce (instead of using one nonce for all actions)?
-        $url = wp_nonce_url($url, $nonceValue);
-        
+        $url = $this->getBulkOperationsFormURL($sub, $tableOptions);
         
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown.html");
         $html = str_replace('{action_url}', $url, $html);
@@ -1146,14 +1125,28 @@ class ABJ_404_Solution_View {
 
         echo $this->getAdminRedirectsPageTable($sub);
 
-        echo "<div class=\"tablenav\">";
+        echo "<div class=\"tablenav admin-redirects-page-bottom\">";
         echo $this->getPaginationLinks($sub, false);
-        echo "</div>";
+        
+        
+        echo "</div></form><!-- page-form big outer form could end here -->";
 
         // don't show the "add manual redirect" form on the trash page.
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             $this->echoAddManualRedirect($tableOptions);
         }
+    }
+    
+    function getBulkOperationsFormURL($sub, $tableOptions) {
+        $url = "?page=" . ABJ404_PP . "&subpage=" . $sub;
+        if ($tableOptions['filter'] != 0) {
+            $url .= "&filter=" . $tableOptions['filter'];
+        }
+        if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
+            $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+        }
+        $url = wp_nonce_url($url, 'abj404_bulkProcess');
+        return $url;
     }
     
     function getAdminRedirectsPageTable($sub) {
@@ -1671,8 +1664,8 @@ class ABJ_404_Solution_View {
         }
 
         echo "<BR/><BR/><BR/>";
-        echo "<form id=\"logs_search_form\" method=\"GET\" action=\"\" "
-        . "style=\"clear: both; display: block;\" class=\"clearbothdisplayblock\">";
+        echo '<form id="logs_search_form" name="admin-logs-page" method="GET" action="" '
+            . 'style="clear: both; display: block;" class="clearbothdisplayblock">';
         echo '<input type="hidden" name="page" value="' . ABJ404_PP . '">';
         echo "<input type=\"hidden\" name=\"subpage\" value=\"abj404_logs\">";
 
@@ -1697,16 +1690,16 @@ class ABJ_404_Solution_View {
         echo $html;
         // ----------------- dropdown search box. end.
 
-        echo "</form>";
+        echo "</form><!-- end admin-logs-page -->";
 
 
-        echo "<div class=\"tablenav\">";
+        echo "<div class=\"tablenav admin-logs-page-top\">";
         echo $this->getPaginationLinks($sub);
         echo "</div>";
 
         echo $this->getAdminLogsPageTable($sub);
 
-        echo "<div class=\"tablenav\">";
+        echo "<div class=\"tablenav admin-logs-page-bottom\">";
         echo $this->getPaginationLinks($sub, false);
         echo "</div>";
     }
@@ -1829,9 +1822,17 @@ class ABJ_404_Solution_View {
         
         $html = "<tr>";
         
-        $cbinfo = "class=\"manage-column column-cb check-column\" style=\"vertical-align: middle; padding-bottom: 6px;\"";
+        $cbinfo = 'class="manage-column column-cb check-column" style="{cb-info-style}"';
+        $cbinfoStyle = 'vertical-align: middle; padding-bottom: 6px;';
+        if ($sub == 'abj404_logs') {
+            $cbinfoStyle .= ' width: 0px;';
+        }
+        $cbinfo = str_replace('{cb-info-style}', $cbinfoStyle, $cbinfo);
+        
         $html .= "<th " . $cbinfo . ">";
-        $html .= "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" >";
+        if ($sub != 'abj404_logs') {
+            $html .= "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" >";
+        }
         $html .= "</th>";
         
         foreach ($columns as $column) {
@@ -2160,6 +2161,11 @@ class ABJ_404_Solution_View {
         $html .= "</a>";
         $html .= "</li>";
         $html .= "</ul>";
+        $html .= "\n\n<!-- page-form big outer form could go here -->\n\n";
+        
+        $oneBigFormActionURL = $this->getBulkOperationsFormURL($sub, $tableOptions);
+        $html .= '<form method="POST" name="bulk-operations-form" action="' . $oneBigFormActionURL . '">';
+
         
         return $html;
     }
