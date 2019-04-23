@@ -1188,14 +1188,14 @@ class ABJ_404_Solution_DataAccess {
      * @return type
      */
     function getActiveRedirectForURL($url) {
+        $f = ABJ_404_Solution_Functions::getInstance();
         $redirect = array();
 
-        // a disabled value of '1' means in the trash.
-        $query = "select * from {wp_abj404_redirects} where url = '" . esc_sql($url) . "'" .
-                " and disabled = 0 and status in (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ") " .
-                "and type not in (" . ABJ404_TYPE_404_DISPLAYED . ") ";
+        // join to the wp_posts table to make sure the post exists.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPermalinkFromURL.sql");
+        $query = str_replace('{url}', esc_sql($url), $query);
         $query = $this->doTableNameReplacements($query);
-        
+        $query = $f->doNormalReplacements($query);
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
 

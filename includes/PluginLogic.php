@@ -142,7 +142,7 @@ class ABJ_404_Solution_PluginLogic {
         // this may be used later when displaying suggestions.
         $cookieName = ABJ404_PP . '_REQUEST_URI';
         try {
-            setcookie($cookieName, urldecode(esc_url($_SERVER['REQUEST_URI'])), time() + (60 * 4), "/");
+            setcookie($cookieName, urldecode($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
             
         } catch (Exception $e) {
             $abj404logging->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
@@ -150,12 +150,12 @@ class ABJ_404_Solution_PluginLogic {
             // document.cookie = "username=John Doe; expires=Thu, 18 Dec 2013 12:00:00 UTC";
             $expireTime = date("D, d M Y H:i:s T", time() + (60 * 4));
             $c = "\n" . '<script>document.cookie = "' . $cookieName . '=' . 
-                    urldecode(esc_url($_SERVER['REQUEST_URI'])) . 
+                    urldecode($_SERVER['REQUEST_URI']) . 
                     '; expires=' . $expireTime . '";</script>' . "\n";
             echo $c;
         }
         
-        $_REQUEST[ABJ404_PP][$cookieName] = urldecode(esc_url($_SERVER['REQUEST_URI']));
+        $_REQUEST[ABJ404_PP][$cookieName] = urldecode($_SERVER['REQUEST_URI']);
         
         $options = $abj404logic->getOptions();
         
@@ -1423,9 +1423,14 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $status
      * @param type $queryParts The query part of a URL. e.g. "?s=queryPart"
      */
-    function forceRedirect($location, $status = 302, $queryParts = '') {
+    function forceRedirect($location, $status = 302) {
+        $userRequest = ABJ_404_Solution_UserRequest::getInstance();
+        $queryParts = $userRequest->getQueryParts();
+        $commentPart = $userRequest->getCommentPagePart();
+        $finalDestination = $location . $commentPart . $queryParts;
+        
         // try a normal redirect using a header.
-        wp_redirect($location . $queryParts, $status, ABJ404_NAME);
+        wp_redirect($finalDestination, $status, ABJ404_NAME);
         
         // TODO add an ajax request here that fires after 5 seconds. 
         // upon getting the request the server will log the error. the plugin could then notify an admin.

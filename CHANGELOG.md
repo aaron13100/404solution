@@ -5,6 +5,7 @@
     (does not filter columns Hits, Created, or Last Used) (for Carol).
 * Improvement: Add the following folders to the ignore list in the advanced options section. 
     "wp-content/plugins/*", "wp-content/themes/*", ".well-known/acme-challenge/*"
+* Improvement: Strip out any /comment-page-#/ part of the URL before looking for similar pages.
 
 ## Version 2.17.2 (April 19, 2019) ##
 * FIX: Correct a rare issue during an automatic update (thanks to a debug file participant).

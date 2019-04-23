@@ -488,7 +488,7 @@ class ABJ_404_Solution_View {
         $options = $abj404logic->getOptions();
 
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
-        $urlParts = parse_url(urldecode(esc_url($_SERVER['REQUEST_URI'])));
+        $urlParts = parse_url(urldecode($_SERVER['REQUEST_URI']));
         $currentURL = $urlParts['path'];
         if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
                 $options['menuLocation'] == 'settingsLevel') {

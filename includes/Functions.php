@@ -7,7 +7,7 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 }
 
 /* Static functions that can be used from anywhere.  */
-class ABJ_404_Solution_Functions {
+abstract class ABJ_404_Solution_Functions {
     
     private static $instance = null;
     
@@ -23,6 +23,23 @@ class ABJ_404_Solution_Functions {
         
         return self::$instance;
     }
+    
+    abstract function strtolower($string);
+    
+    abstract function strlen($string);
+    
+    abstract function strpos($haystack, $needle, $offset = 0);
+    
+    abstract function substr($str, $start, $length = null);
+
+    abstract function regexMatch($pattern, $string, &$regs = null);
+    
+    abstract function regexMatchi($pattern, $string, &$regs = null);
+    
+    abstract function regexReplace($pattern, $replacement, $string);
+    
+    abstract function regexSplit($pattern, $subject);
+    
     
     /**  Used with array_filter()
      * @param type $value
@@ -222,7 +239,7 @@ class ABJ_404_Solution_Functions {
         return $dataSupplement['prefix'] . $output . $dataSupplement['suffix'];
     }
 
-    static function getDataSupplement($filePath) {
+    private static function getDataSupplement($filePath) {
         $f = ABJ_404_Solution_Functions::getInstance();
         $path = strtolower($filePath);
         $supplement = array();
@@ -302,5 +319,57 @@ class ABJ_404_Solution_Functions {
         
         return ($f->substr($lowerHay, -$length) == $lowerNeedle);
     }
+    
+    /** Sort the QUERY parts of the requested URL. 
+     * This is in place because these are stored as part of the URL in the database and used for forwarding to another page.
+     * This is done because sometimes different query parts result in a completely different page. Therefore we have to 
+     * take into account the query part of the URL (?query=part) when looking for a page to redirect to. 
+     * 
+     * Here we sort the query parts so that the same request will always look the same.
+     * @param type $urlParts
+     * @return string
+     */
+    function sortQueryParts($urlParts) {
+        $queryString = array();
+        
+        if (!array_key_exists('query', $urlParts) || $urlParts['query'] == '') {
+            return '';
+        }
+        
+        $urlQuery = $urlParts['query'];
+        
+        $_REQUEST[ABJ404_PP]['debug_info'] = 'urlParts in sortQueryParts() function: ' . json_encode($urlParts);
+
+        $queryParts = $this->regexSplit('[;&]', $urlQuery);
+        foreach ($queryParts as $query) {
+            if ($this->strpos($query, "=") === false) {
+                $queryString[$query] = '';
+            } else {
+                $stringParts = $this->regexSplit('=', $query);
+                $queryString[$stringParts[0]] = $stringParts[1];
+            }
+        }
+        ksort($queryString);
+        $x = 0;
+        $newQS = "";
+        foreach ($queryString as $key => $value) {
+            if ($x != 0) {
+                $newQS .= "&";
+            }
+            $newQS .= $key;
+            if ($value != "") {
+                $newQS .= "=" . $value;
+            }
+            $x++;
+        }
+
+        if ($newQS != "") {
+            $newQS = "?" . $newQS;
+        }
+
+        $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared in sortQueryParts() function.';
+        return esc_url($newQS);
+    }
+
 }
 
