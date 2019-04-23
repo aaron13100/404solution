@@ -82,11 +82,12 @@ define("ABJ404_OPTION_MAX_PERPAGE", 500);
 define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 500);
 
 
+require_once ABJ404_PATH . "includes/objs/WPNotice.php";
+require_once ABJ404_PATH . "includes/objs/UserRequest.php";
 require_once ABJ404_PATH . "includes/Functions.php";
 require_once ABJ404_PATH . "includes/php/FunctionsPreg.php";
 require_once ABJ404_PATH . "includes/php/FunctionsMBString.php";
 require_once ABJ404_PATH . "includes/Logging.php";
-require_once ABJ404_PATH . "includes/objs/WPNotice.php";
 require_once ABJ404_PATH . "includes/wordpress/WPNotices.php";
 require_once ABJ404_PATH . "includes/DataAccess.php";
 require_once ABJ404_PATH . "includes/DatabaseUpgradesEtc.php";

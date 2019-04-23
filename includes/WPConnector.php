@@ -146,43 +146,25 @@ class ABJ_404_Solution_WordPress_Connector {
         }
         
         $_REQUEST[ABJ404_PP]['process_start_time'] = microtime(true);
+
+        // create a UserRequest object to store various information about the request for later use.
+        $userRequest = ABJ_404_Solution_UserRequest::getInstance();
         
-        $urlRequest = esc_url($f->regexReplace('\?.*', '', esc_url($_SERVER['REQUEST_URI'])));
-        $urlRequest = urldecode($urlRequest);
+        $pathOnly = $userRequest->getPath();
 
         // remove the home directory from the URL parts because it should not be considered for spell checking.
-        $urlSlugOnly = $abj404logic->removeHomeDirectory($urlRequest);
+        $urlSlugOnly = $userRequest->getOnlyTheSlug();
 
         // setup ignore variables on $_REQUEST['abj404solution']
-        $abj404logic->initializeIgnoreValues($urlRequest, $urlSlugOnly);
+        $abj404logic->initializeIgnoreValues($pathOnly, $urlSlugOnly);
         
         if ($_REQUEST[ABJ404_PP]['ignore_donotprocess']) {
-            $abj404dao->logRedirectHit($urlRequest, '404', 'ignore_donotprocess');
+            $abj404dao->logRedirectHit($pathOnly, '404', 'ignore_donotprocess');
             return;
         }
         
-        // hanlde the case where '///?gf_page=upload' is returned as the request URI.
-        $urlToParse = $_SERVER['REQUEST_URI'];
-        $urlToParse = urldecode($urlToParse);
-        if (!is_array(parse_url(esc_url($urlToParse)))) {
-            if ($f->substr($urlToParse, 0, 1) == "/") {
-                $urlToParse = home_url($wp->request) . $f->substr($urlToParse, 1);
-            }
-        }
-        $urlParts = parse_url(esc_url($urlToParse));
-        if (!is_array($urlParts)) {
-            $abj404logging->errorMessage('parse_url returned a non-array value. REQUEST_URI: "' . 
-                    urldecode($_SERVER['REQUEST_URI']) . '", parse_url result: "' . json_encode($urlParts) . '", ' .
-                    'urlToParse result: ' . $urlToParse);
-            return;
-        }
-        $requestedURL = $urlParts['path'];
-        $unsortedQueryParts = $abj404connector->getUnsortedQueryParts($urlParts);
-        $requestedURL .= $abj404connector->sortQueryParts($urlParts);
-        // allow us to use foreign characters (like for Japanese) and fix bug
-        // https://wordpress.org/support/topic/support-for-non-latin-letters-does-not-work/
-        $requestedURL = urldecode($requestedURL);
-
+        $requestedURL = $userRequest->getPathWithSortedQueryParts();
+        
         // Get URL data if it's already in our database
         $redirect = $abj404dao->getActiveRedirectForURL($requestedURL);
 
@@ -224,8 +206,7 @@ class ABJ_404_Solution_WordPress_Connector {
                 $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $slugPermalink['id'], $options['default_redirect'], 0);
 
                 $abj404dao->logRedirectHit($requestedURL, $slugPermalink['link'], 'exact slug');
-                $abj404logic->forceRedirect(esc_url($slugPermalink['link']), esc_html($options['default_redirect']), 
-                        $unsortedQueryParts);
+                $abj404logic->forceRedirect(esc_url($slugPermalink['link']), esc_html($options['default_redirect']));
                 exit;
             }
 
@@ -237,8 +218,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
                 $abj404dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match', 
                         $requestedURL);
-                $abj404logic->forceRedirect($regexPermalink['link'], esc_html($options['default_redirect']), 
-                        $unsortedQueryParts);
+                $abj404logic->forceRedirect($regexPermalink['link'], esc_html($options['default_redirect']));
                 exit;
             }
             
@@ -250,8 +230,7 @@ class ABJ_404_Solution_WordPress_Connector {
                 $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $permalink['id'], $options['default_redirect'], 0);
 
                 $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'spell check');
-                $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']), 
-                        $unsortedQueryParts);
+                $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
                 exit;
             }
 
@@ -280,7 +259,7 @@ class ABJ_404_Solution_WordPress_Connector {
                         }
                     }
 
-                    $perma_link .= $abj404connector->sortQueryParts($urlParts);
+                    $perma_link .= $f->sortQueryParts($urlParts);
 
                     // Check for forced permalinks.
                     if (@$options['auto_redirects'] == '1') {
@@ -291,7 +270,7 @@ class ABJ_404_Solution_WordPress_Connector {
                                 $abj404dao->setupRedirect(esc_url($requestedURL), ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, $permalink['id'], $options['default_redirect'], 0);
                                 $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'single page');
                                 $abj404logic->forceRedirect(esc_url($permalink['link']), 
-                                        esc_html($options['default_redirect']), $unsortedQueryParts);
+                                        esc_html($options['default_redirect']));
                                 exit;
                             }
                         }
@@ -315,70 +294,6 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logic->sendTo404Page($requestedURL, '');
     }
     
-    /** 
-     * @param type $urlParts
-     * @return string
-     */
-    function getUnsortedQueryParts($urlParts) {
-        if (!array_key_exists('query', $urlParts) || @$urlParts['query'] == "") {
-            return '';
-        }
-        
-        return '?' . $urlParts['query'];
-    }
-    
-    /** Sort the QUERY parts of the requested URL. 
-     * This is in place because these are stored as part of the URL in the database and used for forwarding to another page.
-     * This is done because sometimes different query parts result in a completely different page. Therefore we have to 
-     * take into account the query part of the URL (?query=part) when looking for a page to redirect to. 
-     * 
-     * Here we sort the query parts so that the same request will always look the same.
-     * @param type $urlParts
-     * @return string
-     */
-    function sortQueryParts($urlParts) {
-        $f = ABJ_404_Solution_Functions::getInstance();
-        $urlQuery = $this->getUnsortedQueryParts($urlParts);
-        
-        if ($urlQuery == '') {
-            return '';
-        }
-        
-        $_REQUEST[ABJ404_PP]['debug_info'] = 'urlParts in sortQueryParts() function: ' . json_encode($urlParts);
-
-        $queryString = array();
-        $urlQuery = $urlParts['query'];
-        $queryParts = $f->regexSplit('[;&]', $urlQuery);
-        foreach ($queryParts as $query) {
-            if ($f->strpos($query, "=") === false) {
-                $queryString[$query] = '';
-            } else {
-                $stringParts = $f->regexSplit('=', $query);
-                $queryString[$stringParts[0]] = $stringParts[1];
-            }
-        }
-        ksort($queryString);
-        $x = 0;
-        $newQS = "";
-        foreach ($queryString as $key => $value) {
-            if ($x != 0) {
-                $newQS .= "&";
-            }
-            $newQS .= $key;
-            if ($value != "") {
-                $newQS .= "=" . $value;
-            }
-            $x++;
-        }
-
-        if ($newQS != "") {
-            $newQS = "?" . $newQS;
-        }
-
-        $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared in sortQueryParts() function.';
-        return esc_url($newQS);
-    }
-
     /** Redirect to the page specified. 
      * @global type $abj404dao
      * @global type $abj404logging
