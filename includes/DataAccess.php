@@ -856,10 +856,6 @@ class ABJ_404_Solution_DataAccess {
             'username' => esc_sql($usernameLookupID),
             'min_log_id' => $minLogID,
         ));
-        
-       if ($wpdb->last_error != '') {
-           $abj404logging->errorMessage("Error inserting data: " . esc_html($wpdb->last_error));
-       }
     }
     
     /** Insert a value into the lookup table and return the ID of the value. 
