@@ -1424,8 +1424,9 @@ class ABJ_404_Solution_PluginLogic {
      * @param type $queryParts The query part of a URL. e.g. "?s=queryPart"
      */
     function forceRedirect($location, $status = 302) {
+        $f = ABJ_404_Solution_Functions::getInstance();
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
-        $queryParts = $userRequest->getQueryParts();
+        $queryParts = $f->removePageIDFromQueryString($userRequest->getQueryString());
         $commentPart = $userRequest->getCommentPagePart();
         $finalDestination = $location . $commentPart . $queryParts;
         

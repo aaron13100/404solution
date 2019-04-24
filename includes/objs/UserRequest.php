@@ -20,7 +20,7 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
     private $urlParts = null;
     
     /** @var string */
-    private $queryParts = null;
+    private $queryString = null;
     
     /** @var string */
     private $commentPagePart = null;
@@ -83,25 +83,25 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
             $commentPagePart = ($commentPagePart == '') ? '' : $commentPagePart . '/';
         }
         
-        $queryParts = '';
+        $queryString = '';
         if (!array_key_exists('query', $urlParts) || @$urlParts['query'] == "") {
-            $queryParts = '';
+            $queryString = '';
         } else {
-            $queryParts = '?' . $urlParts['query'];
+            $queryString = $urlParts['query'];
         }
         
         self::$instance = new ABJ_404_Solution_UserRequest($urlToParse, $urlParts, $urlWithoutCommentPage, 
-                $commentPagePart, $queryParts);
+                $commentPagePart, $queryString);
             
         return true;
     }
     
-    private function __construct($requestURI, $urlParts, $urlWithoutCommentPage, $commentPagePart, $queryParts) {
+    private function __construct($requestURI, $urlParts, $urlWithoutCommentPage, $commentPagePart, $queryString) {
         $this->requestURI = $requestURI;
         $this->urlParts = $urlParts;
         $this->requestURIWithoutCommentsPage = $urlWithoutCommentPage;
         $this->commentPagePart = $commentPagePart;
-        $this->queryParts = $queryParts;
+        $this->queryString = $queryString;
     }
     
     function getRequestURI() {
@@ -120,10 +120,10 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         return $this->urlParts['path'];
     }
     
-    function getPathWithSortedQueryParts() {
+    function getPathWithSortedQueryString() {
         $f = ABJ_404_Solution_Functions::getInstance();
         $requestedURL = $this->getPath();
-        $requestedURL .= $f->sortQueryParts($this->getUrlParts());
+        $requestedURL .= $f->sortQueryString($this->getUrlParts());
 
         return $requestedURL;
     }
@@ -142,8 +142,8 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         return $this->urlParts;
     }
 
-    function getQueryParts() {
-        return $this->queryParts;
+    function getQueryString() {
+        return $this->queryString;
     }
 
     function getCommentPagePart() {

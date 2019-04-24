@@ -329,46 +329,37 @@ abstract class ABJ_404_Solution_Functions {
      * @param type $urlParts
      * @return string
      */
-    function sortQueryParts($urlParts) {
-        $queryString = array();
-        
+    function sortQueryString($urlParts) {
         if (!array_key_exists('query', $urlParts) || $urlParts['query'] == '') {
             return '';
         }
         
-        $urlQuery = $urlParts['query'];
+        // parse it into an array
+        $queryParts = array();
+        parse_str($urlParts['query'], $queryParts);
         
-        $_REQUEST[ABJ404_PP]['debug_info'] = 'urlParts in sortQueryParts() function: ' . json_encode($urlParts);
-
-        $queryParts = $this->regexSplit('[;&]', $urlQuery);
-        foreach ($queryParts as $query) {
-            if ($this->strpos($query, "=") === false) {
-                $queryString[$query] = '';
-            } else {
-                $stringParts = $this->regexSplit('=', $query);
-                $queryString[$stringParts[0]] = $stringParts[1];
-            }
+        // sort the parts
+        ksort($queryParts);
+        
+        return urldecode(http_build_query($queryParts));
+    }
+    
+    /** We have to remove any 'p=##' because it will cause a 404 otherwise.
+     * @param type $queryString
+     * @return string
+     */
+    function removePageIDFromQueryString($queryString) {
+        // parse the string
+        $queryParts = array();
+        parse_str($queryString, $queryParts);
+        
+        // remove the page id
+        if (array_key_exists('p', $queryParts)) {
+            unset($queryParts['p']);
         }
-        ksort($queryString);
-        $x = 0;
-        $newQS = "";
-        foreach ($queryString as $key => $value) {
-            if ($x != 0) {
-                $newQS .= "&";
-            }
-            $newQS .= $key;
-            if ($value != "") {
-                $newQS .= "=" . $value;
-            }
-            $x++;
-        }
-
-        if ($newQS != "") {
-            $newQS = "?" . $newQS;
-        }
-
-        $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared in sortQueryParts() function.';
-        return esc_url($newQS);
+        
+        // rebuild the string.
+        return urldecode(http_build_query($queryParts));
     }
 
 }

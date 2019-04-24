@@ -139,7 +139,6 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
-        global $wp;
 
         if (!is_404() || is_admin()) {
             return;
@@ -163,7 +162,7 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
         
-        $requestedURL = $userRequest->getPathWithSortedQueryParts();
+        $requestedURL = $userRequest->getPathWithSortedQueryString();
         
         // Get URL data if it's already in our database
         $redirect = $abj404dao->getActiveRedirectForURL($requestedURL);
@@ -259,7 +258,7 @@ class ABJ_404_Solution_WordPress_Connector {
                         }
                     }
 
-                    $perma_link .= $f->sortQueryParts($urlParts);
+                    $perma_link .= $f->sortQueryString($urlParts);
 
                     // Check for forced permalinks.
                     if (@$options['auto_redirects'] == '1') {
