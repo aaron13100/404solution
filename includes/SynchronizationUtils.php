@@ -6,7 +6,6 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     ini_set('display_errors', '1');
 }
 
-/* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_SynchronizationUtils {
     
     /** A prefix for keys used for synchronization methods. 
@@ -79,6 +78,7 @@ class ABJ_404_Solution_SynchronizationUtils {
         
         // it should have been released by now.
         if ($timePassed > $maxExecutionTime) {
+            update_option($internalSynchronizedKey, null);
             delete_option($internalSynchronizedKey);
             $logger = ABJ_404_Solution_Logging::getInstance();
             $logger->errorMessage("Forcibly removed synchronization after " . $timePassed . " seconds for the "
