@@ -5,6 +5,7 @@ jQuery(document).ready(function($) {
         // preventDefault() means don't move to the top of the page. 
         e.preventDefault();
         
+        var subpage = getURLParameter('subpage');
         var trashFilter = getURLParameter('filter');
         
         var row = $(this).closest("tr");
@@ -16,7 +17,8 @@ jQuery(document).ready(function($) {
             type : 'GET',
             dataType: "json",
             data: {
-                filter: trashFilter
+                filter: trashFilter,
+                subpage: subpage
             },
             success: function (data) {
                 if (data.result.startsWith("fail")) {

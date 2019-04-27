@@ -367,8 +367,8 @@ class ABJ_404_Solution_DataAccess {
         $results['last_query'] = $wpdb->last_query;
 
         if ($wpdb->last_error != '') {
-            $abj404logging->errorMessage("Ugh. SQL insert error: " . esc_html($errorThisRun) . 
-                    ", Query: " . esc_html($queryThisRun));
+            $abj404logging->errorMessage("Ugh. SQL insert error: " . $errorThisRun . 
+                    ", Query: " . $queryThisRun);
         }
 
         return $results;
@@ -791,15 +791,12 @@ class ABJ_404_Solution_DataAccess {
     
     /** 
      * Log that a redirect was done. Insert into the logs table.
-     * @global type $wpdb
-     * @global type $abj404logging
      * @param type $requestedURL
      * @param type $action
      * @param type $matchReason
      * @param type $requestedURLDetail the exact URL that was requested, for cases when a regex URL was matched.
      */
     function logRedirectHit($requestedURL, $action, $matchReason, $requestedURLDetail = null) {
-        global $wpdb;
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         
