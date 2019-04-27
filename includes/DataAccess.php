@@ -608,16 +608,11 @@ class ABJ_404_Solution_DataAccess {
         }        
 
         if ($queryAllRowsAtOnce) {
-            $logsTableJoin = "  LEFT OUTER JOIN ( \n " .
-                    "    SELECT requested_url, \n " .
-                    "           MIN({wp_abj404_logsv2}.id) AS logsid, \n " .
-                    "           max({wp_abj404_logsv2}.timestamp) as last_used, \n " .
-                    "           count(requested_url) as logshits \n " .
-                    "    FROM {wp_abj404_logsv2} \n " .
-                    "         inner join {wp_abj404_redirects} \n " .
-                    "         on {wp_abj404_logsv2}.requested_url = {wp_abj404_redirects}.url " . " \n " .
-                    "    group by requested_url \n " .
-                    "  ) logstable \n " . 
+            // create a temp table and use that instead of a subselect to avoid the sql error
+            // "The SELECT would examine more than MAX_JOIN_SIZE rows"
+            $this->createRedirectsForViewHitsTable();
+            
+            $logsTableJoin = "  LEFT OUTER JOIN {wp_abj404_logs_hits} logstable \n " . 
                     "  on wp_abj404_redirects.url = logstable.requested_url \n ";
         }
         
@@ -693,6 +688,25 @@ class ABJ_404_Solution_DataAccess {
         $query = $f->doNormalReplacements($query);
         
         return $query;
+    }
+    
+    function createRedirectsForViewHitsTable() {
+        $finalDestTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}");
+        $tempDestTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}_temp");
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForViewTempTable.sql");
+        $query = $this->doTableNameReplacements($query);
+        
+        // create a temp table
+        $this->queryAndGetResults("drop table if exists " . $tempDestTable);
+        $ttQuery = "create table " . $tempDestTable . " \n " . $query;
+        $this->queryAndGetResults($ttQuery);
+        
+        // drop the old hits table and rename the temp table to the hits table as a transaction
+        $statements = array(
+            "drop table if exists " . $finalDestTable,
+            "rename table " . $tempDestTable . ' to ' . $finalDestTable
+        );
+        $this->executeAsTransaction($statements);
     }
     
     /** 
