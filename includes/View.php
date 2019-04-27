@@ -1854,7 +1854,9 @@ class ABJ_404_Solution_View {
             } else {
                 if ($column['orderby'] != "") {
                     $class = " sortable";
-                    if ($column['orderby'] == "timestamp" || $column['orderby'] == "last_used") {
+                    if ($column['orderby'] == "timestamp" || 
+                            $column['orderby'] == "last_used" ||
+                            $column['orderby'] == "logshits") {
                         $class .= " asc";
                         $sortorder = "DESC";
                     } else {
