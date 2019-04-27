@@ -46,12 +46,14 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         
         // hanlde the case where '///?gf_page=upload' is returned as the request URI.
         $urlToParse = urldecode($_SERVER['REQUEST_URI']);
+        $containsHost = $f->strpos($urlToParse, "://");
         
-        if (!is_array(parse_url(esc_url($urlToParse)))) {
-            if ($f->substr($urlToParse, 0, 1) == "/") {
-                $urlToParse = home_url($wp->request) . $f->substr($urlToParse, 1);
-            }
+        if (($containsHost === false) || ($containsHost >= 7) || (!is_array(parse_url(esc_url($urlToParse))))) {
+            // we have something like //login.php and it needs to be http://host.com/login.php
+            $urlToParse = str_replace('//', '/', $urlToParse);
+            $urlToParse = get_site_url() . $urlToParse;
         }
+        
         $urlParts = parse_url(esc_url($urlToParse));
         if (!is_array($urlParts)) {
             $abj404logging->errorMessage('parse_url returned a non-array value. REQUEST_URI: "' . 

@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.18.0 (April 27, 2019) ##
+* FIX: Correct the 'requested URL can't be null' logging issue.
+
 ## Version 2.18.0 (April 24, 2019) ##
 * Improvement: Add a search filter on the Redirects page and the Captured 404s page 
     (does not filter columns Hits, Created, or Last Used) (for Carol).
