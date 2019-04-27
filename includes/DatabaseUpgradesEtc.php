@@ -175,9 +175,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $logsTable = $wpdb->prefix . "abj404_logsv2";
         $lookupTable = $wpdb->prefix . "abj404_lookup";
         $permalinkCacheTable = $wpdb->prefix . "abj404_permalink_cache";
+        $spellingCacheTable = $wpdb->prefix . "abj404_spelling_cache";
         $postsTable = $wpdb->prefix . 'posts';
         
-        $abjTableNames = array($redirectsTable, $logsTable, $lookupTable, $permalinkCacheTable);
+        $abjTableNames = array($redirectsTable, $logsTable, $lookupTable, $permalinkCacheTable, $spellingCacheTable);
 
         // get the target collation
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
