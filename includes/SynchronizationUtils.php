@@ -80,9 +80,13 @@ class ABJ_404_Solution_SynchronizationUtils {
         if ($timePassed > $maxExecutionTime) {
             update_option($internalSynchronizedKey, null);
             delete_option($internalSynchronizedKey);
+            $valueAfterDelete = get_option($internalSynchronizedKey);
+            $uniqueIDForDebugging = $this->createUniqueID('DEBUG_KEY');
             $logger = ABJ_404_Solution_Logging::getInstance();
             $logger->errorMessage("Forcibly removed synchronization after " . $timePassed . " seconds for the "
-                    . "key " . $internalSynchronizedKey . " with value: " . $uniqueID);
+                    . "key " . $internalSynchronizedKey . " with value: " . $uniqueID . ', value after delete: ' .
+                    $valueAfterDelete . ", microtime: " . microtime(true) . ", unique ID for debugging: " . 
+                    $uniqueIDForDebugging);
         }
     }
     
@@ -119,8 +123,8 @@ class ABJ_404_Solution_SynchronizationUtils {
     }
     
     /** Release the lock for a synchronized block. Should be done in a finally block.
-     * @param string $uniqueID
-     * @param string $internalSynchronizedKey
+     * @param type $uniqueID
+     * @param type $synchronizedKeyFromUser
      * @throws Exception
      */
     function synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser) {
