@@ -15,11 +15,16 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 
 class ABJ_404_Solution_DataAccess {
     
+    const UPDATE_LOGS_HITS_TABLE_HOOK = 'abj404_updateLogsHitsTable_hook';
+    
     private static $instance = null;
     
     public static function getInstance() {
         if (self::$instance == null) {
             self::$instance = new ABJ_404_Solution_DataAccess();
+            
+            add_action(self::UPDATE_LOGS_HITS_TABLE_HOOK, 
+                    array(self::$instance, 'createRedirectsForViewHitsTable'));
         }
         
         return self::$instance;
@@ -115,24 +120,29 @@ class ABJ_404_Solution_DataAccess {
     }
     
     /** Return the results of the query in a variable.
+     * @global type $wpdb
      * @param type $query
+     * @param type $logErrors
      * @return type
      */
-    function queryAndGetResults($query, $logErrors = true) {
+    function queryAndGetResults($query, $options = array()) {
         global $wpdb;
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
+        $options = array_merge(array('log_errors' => true, 
+            'log_too_slow' => true), $options);
+        
         $timer = new ABJ_404_Solution_Timer();
         
         $result['rows'] = $wpdb->get_results($query, ARRAY_A);
-        $timer->stop();
+        $result['elapsed_time'] = $timer->stop();
         $result['last_error'] = $wpdb->last_error;
         $result['last_result'] = $wpdb->last_result;
         $result['rows_affected'] = $wpdb->rows_affected;
         $result['insert_id'] = $wpdb->insert_id;
         
-        if ($logErrors && $result['last_error'] != '') {
+        if ($options['log_errors'] && $result['last_error'] != '') {
             if ($f->strpos($result['last_error'], 
                     "is marked as crashed and last (automatic?) repair failed") !== false) {
                 $this->repairTable($result['last_error']);
@@ -142,7 +152,7 @@ class ABJ_404_Solution_DataAccess {
                     ", SQL: " . $query . ", Execution time: " . round($timer->getElapsedTime(), 2));
             
         } else {
-            if ($timer->getElapsedTime() > 5) {
+            if ($options['log_too_slow'] && $timer->getElapsedTime() > 5) {
                 $abj404logging->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " . 
                         $query);
             }
@@ -164,9 +174,11 @@ class ABJ_404_Solution_DataAccess {
             $tableToRepair = $matches[1];
             if ($f->strpos($tableToRepair, "abj404") !== false) {
                 $query = "repair table " . $tableToRepair;
-                $result = $this->queryAndGetResults($query, false);
+                $result = $this->queryAndGetResults($query, array('log_errors' => false));
                 $abj404logging->infoMessage("Attempted to repair table " . $tableToRepair . ". Result: " . 
                         json_encode($result));
+            } else {
+                // tell someone the table $tableToRepair is broken.
             }
         }
     }
@@ -610,7 +622,7 @@ class ABJ_404_Solution_DataAccess {
         if ($queryAllRowsAtOnce) {
             // create a temp table and use that instead of a subselect to avoid the sql error
             // "The SELECT would examine more than MAX_JOIN_SIZE rows"
-            $this->createRedirectsForViewHitsTable();
+            $this->maybeUpdateRedirectsForViewHitsTable();
             
             $logsTableJoin = "  LEFT OUTER JOIN {wp_abj404_logs_hits} logstable \n " . 
                     "  on wp_abj404_redirects.url = logstable.requested_url \n ";
@@ -690,7 +702,46 @@ class ABJ_404_Solution_DataAccess {
         return $query;
     }
     
+    function maybeUpdateRedirectsForViewHitsTable() {
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+                
+        $query = "select table_comment from information_schema.tables where table_name = '{wp_abj404_logs_hits}'";
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
+        
+        // if the table already exists then just schedule it to be updated later.
+        if ($results['rows'] != null && count($results['rows']) > 0) {
+            // the table exists. let's find out how long it took to create the table last time.
+            $rows = $results['rows'];
+            $row1 = $rows[0];
+            $timeToCreatePreviously = 999999;
+            if (floatval($row1['table_comment']) > 0) {
+                $timeToCreatePreviously = floatval($row1['table_comment']);
+            }
+            
+            if ($timeToCreatePreviously < 5) {
+                $abj404logging->debugMessage(__FUNCTION__ . " creating immediately because create time was " .
+                        $timeToCreatePreviously . " seconds.");
+                // it took less than 5 seconds less time so let's just do it again right now.
+                $this->createRedirectsForViewHitsTable();
+                
+            } else {
+                $abj404logging->debugMessage(__FUNCTION__ . " creating later because create time was " .
+                        $timeToCreatePreviously . " seconds.");
+                // it takes too long to make the user wait. we'll update it in the background.
+                wp_schedule_single_event(1, self::UPDATE_LOGS_HITS_TABLE_HOOK);
+            }
+            
+        } else {
+            $abj404logging->debugMessage(__FUNCTION__ . " creating now because the table doesn't exist.");
+            // if the table does not exist then create it right away.
+            $this->createRedirectsForViewHitsTable();
+        }
+    }
+    
     function createRedirectsForViewHitsTable() {
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        
         $finalDestTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}");
         $tempDestTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}_temp");
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForViewTempTable.sql");
@@ -699,7 +750,11 @@ class ABJ_404_Solution_DataAccess {
         // create a temp table
         $this->queryAndGetResults("drop table if exists " . $tempDestTable);
         $ttQuery = "create table " . $tempDestTable . " \n " . $query;
-        $this->queryAndGetResults($ttQuery);
+        $results = $this->queryAndGetResults($ttQuery, array('log_too_slow' => false));
+        
+        $elapsedTime = $results['elapsed_time'];
+        $addComment = "ALTER TABLE " . $tempDestTable . " COMMENT '" . $results['elapsed_time'] . "'";
+        $this->queryAndGetResults($addComment);
         
         // drop the old hits table and rename the temp table to the hits table as a transaction
         $statements = array(
@@ -707,6 +762,9 @@ class ABJ_404_Solution_DataAccess {
             "rename table " . $tempDestTable . ' to ' . $finalDestTable
         );
         $this->executeAsTransaction($statements);
+        
+        $abj404logging->debugMessage(__FUNCTION__ . " refreshed " . $finalDestTable . " in " . $elapsedTime . 
+                " seconds.");
     }
     
     /** 
