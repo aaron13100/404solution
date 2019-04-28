@@ -1,9 +1,9 @@
 # Changelog #
 
-## Version 2.18.0 (April 27, 2019) ##
+## Version 2.18.1 (April 28, 2019) ##
 * FIX: Correct the 'requested URL can't be null' logging issue.
 * FIX: Avoid an empty page when sorting by 'Hits' or 'Last Used' on the Redirects page when there
-    are hundreds of thousands of log entries (still incredibly slow for many entries).
+    are too many log entries. 
 
 ## Version 2.18.0 (April 24, 2019) ##
 * Improvement: Add a search filter on the Redirects page and the Captured 404s page 

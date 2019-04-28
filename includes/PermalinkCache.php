@@ -11,7 +11,7 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 class ABJ_404_Solution_PermalinkCache {
     
     /** The name of the hook to use in WordPress. */
-    const UPDATE_PERMALINK_CACHE_HOOK = 'updatePermalinkCache_hook';
+    const UPDATE_PERMALINK_CACHE_HOOK = 'abj404_updatePermalinkCache_hook';
     
     /** The maximum number of times in a row to run the hook. */
     const MAX_EXECUTIONS = 15;

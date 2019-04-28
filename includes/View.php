@@ -894,12 +894,14 @@ class ABJ_404_Solution_View {
         $columns['hits']['title'] = __('Hits', '404-solution');
         $columns['hits']['orderby'] = "logshits";
         $columns['hits']['width'] = "7%";
+        $columns['hits']['title_attr'] = __('Changes may not be updated immediately when ordering by this column', '404-solution');
         $columns['timestamp']['title'] = __('Created', '404-solution');
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "20%";
         $columns['last_used']['title'] = __('Last Used', '404-solution');
         $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "20%";
+        $columns['last_used']['title_attr'] = __('Changes may not be updated immediately when ordering by this column', '404-solution');
 
         $html = "<table class=\"wp-list-table widefat fixed\">";
         $html .= "<thead>";
@@ -1177,12 +1179,14 @@ class ABJ_404_Solution_View {
         $columns['hits']['title'] = __('Hits', '404-solution');
         $columns['hits']['orderby'] = "logshits";
         $columns['hits']['width'] = "7%";
+        $columns['hits']['title_attr'] = __('Changes may not be updated immediately when ordering by this column', '404-solution');
         $columns['timestamp']['title'] = __('Created', '404-solution');;
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "10%";
         $columns['last_used']['title'] = __('Last Used', '404-solution');;
         $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "10%";
+        $columns['last_used']['title_attr'] = __('Changes may not be updated immediately when ordering by this column', '404-solution');
 
         $html = "<table class=\"wp-list-table widefat fixed\">  <thead>";
         $html .= $this->getTableColumns($sub, $columns);
@@ -1843,28 +1847,28 @@ class ABJ_404_Solution_View {
             $nolink = 0;
             $sortorder = "";
             if ($tableOptions['orderby'] == $column['orderby']) {
-                $class = " sorted";
+                $thClass = " sorted";
                 if ($tableOptions['order'] == "ASC") {
-                    $class .= " asc";
+                    $thClass .= " asc";
                     $sortorder = "DESC";
                 } else {
-                    $class .= " desc";
+                    $thClass .= " desc";
                     $sortorder = "ASC";
                 }
             } else {
                 if ($column['orderby'] != "") {
-                    $class = " sortable";
+                    $thClass = " sortable";
                     if ($column['orderby'] == "timestamp" || 
                             $column['orderby'] == "last_used" ||
                             $column['orderby'] == "logshits") {
-                        $class .= " asc";
+                        $thClass .= " asc";
                         $sortorder = "DESC";
                     } else {
-                        $class .= " desc";
+                        $thClass .= " desc";
                         $sortorder = "ASC";
                     }
                 } else {
-                    $class = "";
+                    $thClass = "";
                     $nolink = 1;
                 }
             }
@@ -1880,12 +1884,23 @@ class ABJ_404_Solution_View {
             }
             $url .= "&orderby=" . $column['orderby'] . "&order=" . $sortorder;
 
-            $html .= "<th" . $style . "class=\"manage-column column-title" . $class . "\">";
+            $cssTooltip = '';
+            $title_attr = '';
+            if (array_key_exists('title_attr', $column)) {
+                $title_attr = $column['title_attr'];
+                $cssTooltip = '<span class="lefty-tooltiptext">' . $title_attr . '</span>' . "\n";
+                $thClass .= ' lefty-tooltip';
+            }
+            
+            $html .= "<th " . $style . " class=\"manage-column column-title" . $thClass . "\"> \n";
+            $html .= $cssTooltip;
+            
             if ($nolink == 1) {
                 $html .= $column['title'];
             } else {
                 $html .= "<a href=\"" . esc_url($url) . "\">";
-                $html .= "<span>" . esc_html($column['title']) . "</span>";
+                $html .= '<span class="table_header_' . $column['orderby'] . '" >' . 
+                        esc_html($column['title']) . $cssTooltip ."</span>";
                 $html .= "<span class=\"sorting-indicator\"></span>";
                 $html .= "</a>";
             }
