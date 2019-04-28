@@ -43,6 +43,7 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
         
         // hanlde the case where '///?gf_page=upload' is returned as the request URI.
         $urlToParse = urldecode($_SERVER['REQUEST_URI']);
@@ -51,7 +52,8 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         if (($containsHost === false) || ($containsHost >= 7) || (!is_array(parse_url(esc_url($urlToParse))))) {
             // we have something like //login.php and it needs to be http://host.com/login.php
             $urlToParse = str_replace('//', '/', $urlToParse);
-            $urlToParse = get_site_url() . $urlToParse;
+            $urlToParse = ltrim($abj404logic->removeHomeDirectory($urlToParse), '/');
+            $urlToParse = get_site_url() . '/' . $urlToParse;
         }
         
         $urlParts = parse_url(esc_url($urlToParse));
