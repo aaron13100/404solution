@@ -57,31 +57,33 @@ class ABJ_404_Solution_WordPress_Connector {
 	wp_enqueue_script('jquery-effects-core');
 	wp_enqueue_script('jquery-effects-highlight');
         
-        wp_register_script('redirect_to_ajax', plugin_dir_url(__FILE__) . 'ajax/redirect_to_ajax.js', 
-                array('jquery', 'jquery-ui-autocomplete'));
+        wp_register_script('abj404-redirect_to_ajax', plugin_dir_url(__FILE__) . 'ajax/redirect_to_ajax.js', 
+                array('jquery', 'jquery-ui-autocomplete'), ABJ404_VERSION);
         // Localize the script with new data
         $translation_array = array(
             'type_a_page_name' => __('(Type a page name or an external URL)', '404-solution'),
             'a_page_has_been_selected' => __('(A page has been selected.)', '404-solution'),
             'an_external_url_will_be_used' => __('(An external URL will be used.)', '404-solution')
         );
-        wp_localize_script('redirect_to_ajax', 'abj404localization', $translation_array );        
-        wp_enqueue_script('redirect_to_ajax');
+        wp_localize_script('abj404-redirect_to_ajax', 'abj404localization', $translation_array );        
+        wp_enqueue_script('abj404-redirect_to_ajax');
         
         // make sure the "apply" button is only enabled if at least one checkbox is selected
-        wp_register_script('enable_disable_apply_button_js', ABJ404_URL . 'includes/js/enableDisableApplyButton.js');
+        wp_register_script('abj404-enable_disable_apply_button_js', 
+                ABJ404_URL . 'includes/js/enableDisableApplyButton.js', null, ABJ404_VERSION);
         $translation_array = array('{altText}' => __('Choose at least one URL', '404-solution'));
-        wp_localize_script('enable_disable_apply_button_js', 'abj404localization', $translation_array);
-        wp_enqueue_script('enable_disable_apply_button_js');
+        wp_localize_script('abj404-enable_disable_apply_button_js', 'abj404localization', $translation_array);
+        wp_enqueue_script('abj404-enable_disable_apply_button_js');
         
-        wp_enqueue_script('view-updater', plugin_dir_url(__FILE__) . 'ajax/view_updater.js', 
-                array('jquery', 'jquery-ui-autocomplete'));
-        wp_enqueue_script('search_logs_ajax', plugin_dir_url(__FILE__) . 'ajax/search_logs_ajax.js', 
-                array('jquery', 'jquery-ui-autocomplete'));
-        wp_enqueue_script('trash_link_ajax', plugin_dir_url(__FILE__) . 'ajax/trash_link_ajax.js', 
-                array('jquery'));
+        wp_enqueue_script('abj404-view-updater', plugin_dir_url(__FILE__) . 'ajax/view_updater.js', 
+                array('jquery', 'jquery-ui-autocomplete'), ABJ404_VERSION);
+        wp_enqueue_script('abj404-search_logs_ajax', plugin_dir_url(__FILE__) . 'ajax/search_logs_ajax.js', 
+                array('jquery', 'jquery-ui-autocomplete'), ABJ404_VERSION);
+        wp_enqueue_script('abj404-trash_link_ajax', plugin_dir_url(__FILE__) . 'ajax/trash_link_ajax.js', 
+                array('jquery'), ABJ404_VERSION);
         
-        wp_enqueue_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css');
+        wp_enqueue_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
+                null, ABJ404_VERSION);
     }
 
     /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).
