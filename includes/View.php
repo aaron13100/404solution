@@ -1936,24 +1936,6 @@ class ABJ_404_Solution_View {
 
         $url .= "&orderby=" . $tableOptions['orderby'];
         $url .= "&order=" . $tableOptions['order'];
-
-        if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-            if ($sub == 'abj404_redirects') {
-                $types = $abj404_redirect_types;
-            } else if ($sub == 'abj404_captured') {
-                $types = $abj404_captured_types;
-            } else {
-                $abj404logging->debugMessage("Unexpected sub type for pagination links: " . $sub);
-                $types = $abj404_captured_types;
-            }
-        } else {
-            // if "manual redirects" are being shown then also include regex redirects.
-            if ($tableOptions['filter'] == ABJ404_STATUS_MANUAL) {
-                $types = array($tableOptions['filter'], ABJ404_STATUS_REGEX);
-            } else {
-                $types = array($tableOptions['filter']);
-            }
-        }
         $url .= "&filter=" . $tableOptions['filter'];
 
         if ($sub == 'abj404_logs') {
