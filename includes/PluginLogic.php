@@ -1249,11 +1249,11 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     /** 
-     * @global type $abj404logic
      * @return string
      */
     function updateOptionsFromPOST() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $message = "";
@@ -1317,6 +1317,14 @@ class ABJ_404_Solution_PluginLogic {
 
         if (array_key_exists('suggest_max', $_POST) && isset($_POST['suggest_max'])) {
             if (is_numeric($_POST['suggest_max']) && $_POST['suggest_max'] >= 1) {
+                if ($options['suggest_max'] != absint($_POST['suggest_max'])) {
+                    $abj404logging->infoMessage(__CLASS__ . "/" . __FUNCTION__ . 
+                            ": Truncating and spelling cache because the max suggestions # changed from " . 
+                            $options['suggest_max'] . ' to ' . absint($_POST['suggest_max']));
+                    
+                    $abj404dao->deleteSpellingCache();
+                }
+                
                 $options['suggest_max'] = absint($_POST['suggest_max']);
             } else {
                 $message .= __('Error: Maximum number of suggest value must be a number greater than or equal to 1', '404-solution') . ".<BR/>";

@@ -15,6 +15,10 @@ class ABJ_404_Solution_SpellChecker {
     
     /** Same as above except without the period (.) because of the extension in the file name. */
     private $separatingCharactersForImages = array("-", "_", "~", '%20');
+    
+    private $permalinkCacheObj = null;
+
+    private $permalinkCache = null;
 
     static function init() {
         // any time a page is saved or updated, or the permalink structure changes, then we have to clear
@@ -226,9 +230,8 @@ class ABJ_404_Solution_SpellChecker {
         
         // prepare to search using permalinks.
         // first cache all permalinks
-        $permalinkCache = new ABJ_404_Solution_PermalinkCache();
-        $permalinkCache->updatePermalinkCache(25);
-        $permalinkCache = null;
+        $this->initializePermalinkCache();
+        $this->permalinkCacheObj->updatePermalinkCache(25);
         
         $rowType = 'pages';
         $rowsAsObject = array();
@@ -440,6 +443,15 @@ class ABJ_404_Solution_SpellChecker {
         return $permalinks;
     }
     
+    function initializePermalinkCache() {
+        if ($this->permalinkCacheObj == null) {
+            $this->permalinkCacheObj = new ABJ_404_Solution_PermalinkCache();
+        }
+        if ($this->permalinkCache == null) {
+            $this->permalinkCache = $this->permalinkCacheObj->getPermalinkCacheCopy();
+        }
+    }
+    
     /** 
      * Get the permalink for the passed in type (pages, tags, categories, image, etc.
      * @param type $id
@@ -449,6 +461,11 @@ class ABJ_404_Solution_SpellChecker {
      */
     function getPermalink($id, $rowType) {
         if ($rowType == 'pages') {
+            $this->initializePermalinkCache();
+            
+            if (array_key_exists($id, $this->permalinkCache)) {
+                return urldecode($this->permalinkCache[$id]);
+            }
             return urldecode(get_permalink($id));
 
         } else if ($rowType == 'tags') {
@@ -514,9 +531,7 @@ class ABJ_404_Solution_SpellChecker {
         $fullURLspacesLength = $f->strlen($fullURLspaces);
         
         if ($rowType == 'pages') {
-            $permalinkCacheObj = new ABJ_404_Solution_PermalinkCache();
-            $permalinkCache = $permalinkCacheObj->getPermalinkCacheCopy();
-            $permalinkCacheObj = null;
+            $this->initializePermalinkCache();
         }
         
         $wasntReadyCount = 0;
@@ -542,9 +557,8 @@ class ABJ_404_Solution_SpellChecker {
             // use the permalink cache table if possible.
             $the_permalink = null;
             if ($rowType == 'pages') {
-                $the_permalink = array_key_exists($id, $permalinkCache) == true ? $permalinkCache[$id] : null;
-                $permalinkCache[$id] = null;
-                unset($permalinkCache[$id]);
+                $the_permalink = array_key_exists($id, $this->permalinkCache) == true ? 
+                        $this->permalinkCache[$id] : null;
                 
                 if ($the_permalink == null) {
                     $the_permalink = $this->getPermalink($id, $rowType);
@@ -566,7 +580,7 @@ class ABJ_404_Solution_SpellChecker {
             $existingPageURLSpaces = str_replace($this->separatingCharacters, " ", $existingPageURL);
             $existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
             $existingPageURLSpaces = null;
-
+            
             // the minimum distance is the minimum of the two possibilities. one is longer anyway, so 
             // it shouldn't matter.
             $minDist = abs($f->strlen($existingPageURLCleaned) - $requestedURLCleanedLength);
@@ -620,11 +634,9 @@ class ABJ_404_Solution_SpellChecker {
         $listOfIDsToReturn = array();
         for ($currentDistanceIndex = 0; $currentDistanceIndex <= $maxDistFound; $currentDistanceIndex++) {
             $listOfMinDistanceIDs = $minDistances[$currentDistanceIndex];
-            foreach ($listOfMinDistanceIDs as $oneID) {
-                $listOfIDsToReturn[] = $oneID;
-            }
+            $listOfIDsToReturn = array_merge($listOfIDsToReturn, $listOfMinDistanceIDs);
         }
-
+        
         return $listOfIDsToReturn;
     }
     
