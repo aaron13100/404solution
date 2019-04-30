@@ -183,7 +183,7 @@ class ABJ_404_Solution_Logging {
         }
         
         // only email the error file if the latest version of the plugin is installed.
-        if (!$abj404dao->latestVersionIsInstalled()) {
+        if (!$abj404dao->shouldEmailErrorFile()) {
             return false;
         }
         

@@ -70,10 +70,39 @@ class ABJ_404_Solution_DataAccess {
      * false otherwise.
      * @return boolean
      */
-    function latestVersionIsInstalled() {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    function shouldEmailErrorFile() {
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();        
         
-        $pluginInfo = $abj404dao->getLatestPluginVersion();
+        $pluginInfo = $this->getLatestPluginVersion();
+        
+        $latestVersion = $pluginInfo['version'];
+        $currentVersion = ABJ404_VERSION;
+        if ($latestVersion == $currentVersion) {
+            return true;
+        }
+        
+        if (version_compare(ABJ404_VERSION, $latestVersion) == 1) {
+            $abj404logging->infoMessage("Development version: A more recent version is installed than " . 
+                    "what is available on the WordPress site (" . ABJ404_VERSION . " / " . 
+                     $latestVersion . ").");
+            return true;
+        }
+        
+        $currentArray = explode(".", $currentVersion);
+        $latestArray = explode(".", $latestVersion);
+        
+        if (count($currentArray) != 3 || count($latestArray) != 3) {
+            $abj404logging->errorMessage("Issue parsing version numbers. " . 
+                    $currentVersion . ' / ' . $latestVersion);
+            
+        } else if ($currentArray[0] == $latestArray[0] && $currentArray[1] == $latestArray[1]) {
+            $difference = absint(absint($latestArray[2]) - absint($currentArray[2]));
+            
+            // if the major versions match then send the error file.
+            if ($difference == 1) {
+                return true;
+            }
+        }
 
         return (ABJ404_VERSION == $pluginInfo['version']);
     }
