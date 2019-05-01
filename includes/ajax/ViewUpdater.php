@@ -47,7 +47,9 @@ class ABJ_404_Solution_ViewUpdater {
             $data['table'] = 'Error: Unexpected subpage requested.';
         }
         
-        echo json_encode($data);
+        header('Content-type: application/json; charset=UTF-8');
+        header('Content-Encoding: gzip');
+        echo gzencode(json_encode($data));
         exit;
     }
     

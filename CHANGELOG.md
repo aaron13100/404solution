@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.18.2 (May 1, 2019) ##
+* Improvement: Use less memory for spellchecking. Load less on non-admin pages. Improved logging.
+
 ## Version 2.18.1 (April 28, 2019) ##
 * FIX: Correct the 'requested URL can't be null' logging issue.
 * FIX: Avoid an empty page when sorting by 'Hits' or 'Last Used' on the Redirects page when there
