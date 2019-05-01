@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.18.3 (May 1, 2019) ##
+* FIX: Fix a minor logging issue...
+
 ## Version 2.18.2 (May 1, 2019) ##
 * Improvement: Use less memory for spellchecking. Load less on non-admin pages. Improved logging.
 
