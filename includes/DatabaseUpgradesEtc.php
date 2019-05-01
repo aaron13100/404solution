@@ -313,7 +313,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         if ($myVersionArray[0] == $latestVersionArray[0] && $myVersionArray[1] == $latestVersionArray[1] 
                 && intval($myVersionArray[2]) < intval($latestVersionArray[2])) {
             $abj404logging->infoMessage("A new minor version is available (" . 
-                    $latestVersion . "), currently version " + ABJ404_VERSION . " is installed.");
+                    $latestVersion . "), currently version " . ABJ404_VERSION . " is installed.");
             return true;
         }
 
