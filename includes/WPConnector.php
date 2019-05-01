@@ -14,31 +14,30 @@ class ABJ_404_Solution_WordPress_Connector {
     static function init() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
-        add_filter("plugin_action_links_" . ABJ404_NAME, 'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
+        // always load
         add_action('template_redirect', 'ABJ_404_Solution_WordPress_Connector::process404', 9);
-
-        add_action('admin_notices', 'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
+        
+        // when to include?
         add_action('abj404_cleanupCronAction', array($abj404dao, 'deleteOldRedirectsCron'));
 
-        register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::doUnregisterCrons');
-        register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::runOnPluginActivation');
-
-        add_action('admin_menu', 'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
-
-        /** Include things necessary for ajax. */
-        // a priority of 11 makes sure our style sheet is more important than jquery's. otherwise the indent
-        // doesn't work for the ajax dropdown list.
-        add_action('admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts', 11 );
-        
-        add_action('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
-        // wp_ajax_nopriv_ is for normal users
-
-        add_action('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
-                
-        add_action('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
-        // wp_ajax_nopriv_ is for normal users
-        
-        ABJ_404_Solution_PluginLogic::doRegisterCrons();
+        if (is_admin()) {
+            register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::doUnregisterCrons');
+            register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::runOnPluginActivation');
+            
+            // include only if necessary
+            add_filter("plugin_action_links_" . ABJ404_NAME, 'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
+            add_action('admin_notices', 'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
+            add_action('admin_menu', 'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
+            // a priority of 11 makes sure our style sheet is more important than jquery's. otherwise the indent
+            // doesn't work for the ajax dropdown list.
+            add_action('admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts', 11);
+            // wp_ajax_nopriv_ is for normal users
+            add_action('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
+            add_action('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
+            add_action('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
+            
+            ABJ_404_Solution_PluginLogic::doRegisterCrons();
+        }
     }
     
     /** Include things necessary for ajax. */
@@ -135,6 +134,10 @@ class ABJ_404_Solution_WordPress_Connector {
      * Process the 404s
      */
     static function process404() {
+        if (!is_404() || is_admin()) {
+            return;
+        }
+        
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404connector = new ABJ_404_Solution_WordPress_Connector();
@@ -142,9 +145,6 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
 
-        if (!is_404() || is_admin()) {
-            return;
-        }
         
         $_REQUEST[ABJ404_PP]['process_start_time'] = microtime(true);
 

@@ -1318,8 +1318,8 @@ class ABJ_404_Solution_PluginLogic {
         if (array_key_exists('suggest_max', $_POST) && isset($_POST['suggest_max'])) {
             if (is_numeric($_POST['suggest_max']) && $_POST['suggest_max'] >= 1) {
                 if ($options['suggest_max'] != absint($_POST['suggest_max'])) {
-                    $abj404logging->infoMessage(__CLASS__ . "/" . __FUNCTION__ . 
-                            ": Truncating and spelling cache because the max suggestions # changed from " . 
+                    $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
+                            ": Truncating spelling cache because the max suggestions # changed from " . 
                             $options['suggest_max'] . ' to ' . absint($_POST['suggest_max']));
                     
                     $abj404dao->deleteSpellingCache();
