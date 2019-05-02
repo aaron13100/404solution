@@ -337,10 +337,14 @@ class ABJ_404_Solution_Logging {
      */
     function createDirectoryWithErrorMessages($directory) {
         if (!is_dir($directory)) {
-            if (file_exists(rtrim($directory, '/'))) {
-                error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " . 
-                        $directory . ". A file with that name alraedy exists.");
-                return false;
+            if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
+                unlink($directory);
+                
+                if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
+                    error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " . 
+                            $directory . ". A file with that name alraedy exists.");
+                    return false;
+                }
                 
             } else if (!mkdir($directory)) {
                 error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
