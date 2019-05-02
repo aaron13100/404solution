@@ -75,6 +75,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.18.4 (May 2, 2019) ##
+* Improvement: Only load classes when necessary (for Marc).
+
 ## Version 2.18.3 (May 1, 2019) ##
 * FIX: Fix a minor logging issue...
 
