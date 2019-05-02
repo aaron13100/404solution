@@ -99,7 +99,7 @@ class ABJ_404_Solution_DataAccess {
             $difference = absint(absint($latestArray[2]) - absint($currentArray[2]));
             
             // if the major versions match then send the error file.
-            if ($difference == 1) {
+            if ($difference <= 2) {
                 return true;
             }
         }
