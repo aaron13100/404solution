@@ -12,14 +12,9 @@ class ABJ_404_Solution_WordPress_Connector {
 
     /** Setup. */
     static function init() {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        
         // always load
-        add_action('template_redirect', 'ABJ_404_Solution_WordPress_Connector::process404', 9);
+        add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
         
-        // when to include?
-        add_action('abj404_cleanupCronAction', array($abj404dao, 'deleteOldRedirectsCron'));
-
         if (is_admin()) {
             register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::doUnregisterCrons');
             register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::runOnPluginActivation');

@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.18.5 (May 3, 2019) ##
+* FIX: Run maintenance again (broken in 2.18.4).
+
 ## Version 2.18.4 (May 2, 2019) ##
 * Improvement: Only load classes when necessary (for Marc).
 
