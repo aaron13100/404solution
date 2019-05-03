@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 2.18.4
+	Version: 2.18.5
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -53,3 +53,10 @@ function abj404_404listener() {
     require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     return ABJ_404_Solution_WordPress_Connector::process404();
 }
+
+function abj404_dailyMaintenanceCronJobListener() {
+    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+    $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    $abj404dao->deleteOldRedirectsCron();
+}
+add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
