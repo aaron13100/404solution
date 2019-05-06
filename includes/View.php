@@ -388,7 +388,7 @@ class ABJ_404_Solution_View {
                             }
                         }
                     } else {
-                        $this->errorMessage("Error reading debug file (3).", $e);
+                        $this->errorMessage("Error reading debug file (3).");
                     }
 
                 } catch (Exception $e) {
@@ -1611,13 +1611,10 @@ class ABJ_404_Solution_View {
         $logSizeBytes = $abj404dao->getLogDiskUsage();
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
         $totalLogLines = $abj404dao->getLogsCount(0);
-        $logSize = sprintf(__("Current approximate log disk usage: %s MB (%s rows).", '404-solution'), 
-                $logSizeMB, $totalLogLines);
 
         $timeToDisplay = $abj404dao->getEarliestLogTimestamp();
         $earliestLogDate = date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
                     date('A', $timeToDisplay);
-        $logSize .= ' ' . sprintf(__("Earliest log date: %s.", '404-solution'), $earliestLogDate) . ' ';
         
         $selectedRemoveMatches = "";
         if ($options['remove_matches'] == '1') {
@@ -1749,9 +1746,6 @@ class ABJ_404_Solution_View {
         }
         date_default_timezone_set($timezone);
 
-        $logslink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_logs&action=runMaintenance",
-                "abj404_runMaintenance");
-        $logslink .= '&manually_fired=true';
         $rows = $abj404dao->getLogRecords($tableOptions);
         $logRecordsDisplayed = 0;
         $y = 1;
@@ -1918,11 +1912,8 @@ class ABJ_404_Solution_View {
      */
     function getPaginationLinks($sub, $showSearchFilter = true) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $f = ABJ_404_Solution_Functions::getInstance();
-        global $abj404_redirect_types;
-        global $abj404_captured_types;
         
         $tableOptions = $abj404logic->getTableOptions($sub);
 
@@ -1952,24 +1943,16 @@ class ABJ_404_Solution_View {
             $total_pages = 1;
         }
 
-        $classFirstPage = "";
-        if ($tableOptions['paged'] == 1) {
-            $classFirstPage = " disabled";
-        }
         $firsturl = $url;
 
-        $classPreviousPage = "";
         if ($tableOptions['paged'] == 1) {
-            $classPreviousPage = " disabled";
             $prevurl = $url;
         } else {
             $prev = $tableOptions['paged'] - 1;
             $prevurl = $url . "&paged=" . $prev;
         }
 
-        $classNextPage = "";
         if ($tableOptions['paged'] + 1 > $total_pages) {
-            $classNextPage = " disabled";
             if ($tableOptions['paged'] == 1) {
                 $nexturl = $url;
             } else {
@@ -1980,9 +1963,7 @@ class ABJ_404_Solution_View {
             $nexturl = $url . "&paged=" . $next;
         }
 
-        $classLastPage = "";
         if ($tableOptions['paged'] + 1 > $total_pages) {
-            $classLastPage = " disabled";
             if ($tableOptions['paged'] == 1) {
                 $lasturl = $url;
             } else {

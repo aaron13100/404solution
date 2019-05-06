@@ -1410,6 +1410,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         /** Sanitize all data. */
+        $new_options = array();
         foreach ($options as $key => $option) {
             $new_key = wp_kses_post($key);
             $new_option = wp_kses_post($option);
