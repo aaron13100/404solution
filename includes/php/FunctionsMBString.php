@@ -35,10 +35,10 @@ class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
     
     /**  Replace regular expression with multibyte support.
      * Scans string for matches to pattern, then replaces the matched text with replacement.
-     * @param type $pattern The regular expression pattern.
-     * @param type $replacement The replacement text.
-     * @param type $string The string being checked.
-     * @return type The resultant string on success, or FALSE on error.
+     * @param string $pattern The regular expression pattern.
+     * @param string $replacement The replacement text.
+     * @param string $string The string being checked.
+     * @return string The resultant string on success, or FALSE on error.
      */
     function regexReplace($pattern, $replacement, $string) {
         return mb_ereg_replace($pattern, $replacement, $string);

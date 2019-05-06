@@ -149,10 +149,9 @@ class ABJ_404_Solution_DataAccess {
     }
     
     /** Return the results of the query in a variable.
-     * @global type $wpdb
-     * @param type $query
-     * @param type $logErrors
-     * @return type
+     * @param string $query
+     * @param array $options
+     * @return array
      */
     function queryAndGetResults($query, $options = array()) {
         global $wpdb;
@@ -164,6 +163,7 @@ class ABJ_404_Solution_DataAccess {
         
         $timer = new ABJ_404_Solution_Timer();
         
+        $result = array();
         $result['rows'] = $wpdb->get_results($query, ARRAY_A);
         $result['elapsed_time'] = $timer->stop();
         $result['last_error'] = $wpdb->last_error;
@@ -365,10 +365,9 @@ class ABJ_404_Solution_DataAccess {
     
     /** Insert data into the database.
      * @global type $wpdb
-     * @global type $abj404logging
-     * @param type $tableName
-     * @param type $dataToInsert
-     * @return type
+     * @param string $tableName
+     * @param array $dataToInsert
+     * @return array
      */
     function insertAndGetResults($tableName, $dataToInsert) {
         global $wpdb;
@@ -434,7 +433,7 @@ class ABJ_404_Solution_DataAccess {
    
    /** Get all of the post types from the wp_posts table.
     * @global type $wpdb
-    * @return type
+    * @return string
     */
    function getAllPostTypes() {
        $query = "SELECT DISTINCT post_type FROM {wp_posts} order by post_type";
@@ -453,7 +452,7 @@ class ABJ_404_Solution_DataAccess {
    
    /** Get the approximate number of bytes used by the logs table.
     * @global type $wpdb
-    * @return type
+    * @return int
     */
    function getLogDiskUsage() {
        global $wpdb;
@@ -482,7 +481,7 @@ class ABJ_404_Solution_DataAccess {
 
     /**
      * @global type $wpdb
-     * @param type $types specified types such as ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO, ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED.
+     * @param array $types specified types such as ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO, ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED.
      * @param int $trashed 1 to only include disabled redirects. 0 to only include enabled redirects.
      * @return int the number of records matching the specified types.
      */
@@ -540,7 +539,7 @@ class ABJ_404_Solution_DataAccess {
 
     /** 
      * @global type $wpdb
-     * @return type
+     * @return array
      */
     function getRedirectsAll() {
         global $wpdb;
@@ -554,7 +553,7 @@ class ABJ_404_Solution_DataAccess {
     /** Only return redirects that have a log entry.
      * @global type $wpdb
      * @global type $abj404dao
-     * @return type
+     * @return array
      */
     function getRedirectsWithLogs() {
         global $wpdb;
@@ -568,7 +567,7 @@ class ABJ_404_Solution_DataAccess {
 
     /** 
      * @global type $wpdb
-     * @return type
+     * @return array
      */
     function getRedirectsWithRegEx() {
         $query = "select \n  {wp_abj404_redirects}.id,\n  {wp_abj404_redirects}.url,\n  {wp_abj404_redirects}.status,\n"
@@ -589,13 +588,13 @@ class ABJ_404_Solution_DataAccess {
 
     /** Returns the redirects that are in place.
      * @global type $wpdb
-     * @param type $sub either "redirects" or "captured".
-     * @param type $tableOptions filter, order by, paged, perpage etc.
-     * @return type rows from the redirects table.
+     * @param string $sub either "redirects" or "captured".
+     * @param array $tableOptions filter, order by, paged, perpage etc.
+     * @return array rows from the redirects table.
      */
     function getRedirectsForView($sub, $tableOptions) {
         // for normal page views we limit the rows returned based on user preferences for paginaiton.
-        $limitStart = $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
+        $limitStart = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
         $limitEnd = absint(sanitize_text_field($tableOptions['perpage']));
         
         $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits')
@@ -797,7 +796,7 @@ class ABJ_404_Solution_DataAccess {
     }
     
     /** 
-     * @param type $rows
+     * @param array $rows
      */
     function populateLogsData($rows) {
         // note: according to https://stackoverflow.com/a/10121508 we should not used a pointer here to modify
@@ -818,8 +817,8 @@ class ABJ_404_Solution_DataAccess {
 
     /** 
      * @global type $wpdb
-     * @param type $specificURL
-     * @return type
+     * @param string $specificURL
+     * @return array
      */
     function getLogsIDandURL($specificURL = '') {
         $whereClause = '';
@@ -839,8 +838,8 @@ class ABJ_404_Solution_DataAccess {
     
     /** 
      * @global type $wpdb
-     * @param type $specificURL
-     * @return type
+     * @param string $specificURL
+     * @return array
      */
     function getLogsIDandURLLike($specificURL = '', $limitResults) {
         $whereClause = '';
@@ -862,8 +861,8 @@ class ABJ_404_Solution_DataAccess {
     
     /**
      * @global type $wpdb
-     * @param type $tableOptions orderby, paged, perpage, etc.
-     * @return type rows from querying the logs table.
+     * @param array $tableOptions orderby, paged, perpage, etc.
+     * @return array rows from querying the logs table.
      */
     function getLogRecords($tableOptions) {
         $logsid_included = '';
@@ -892,10 +891,10 @@ class ABJ_404_Solution_DataAccess {
     
     /** 
      * Log that a redirect was done. Insert into the logs table.
-     * @param type $requestedURL
-     * @param type $action
-     * @param type $matchReason
-     * @param type $requestedURLDetail the exact URL that was requested, for cases when a regex URL was matched.
+     * @param string $requestedURL
+     * @param string $action
+     * @param string $matchReason
+     * @param string $requestedURLDetail the exact URL that was requested, for cases when a regex URL was matched.
      */
     function logRedirectHit($requestedURL, $action, $matchReason, $requestedURLDetail = null) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -957,7 +956,7 @@ class ABJ_404_Solution_DataAccess {
     }
     
     /** Insert a value into the lookup table and return the ID of the value. 
-     * @param type $valueToInsert
+     * @param string $valueToInsert
      */
     function insertLookupValueAndGetID($valueToInsert) {
         $query = "select id from {wp_abj404_lookup} where lkup_value = '" . $valueToInsert . "'";
@@ -983,7 +982,7 @@ class ABJ_404_Solution_DataAccess {
 
     /** 
      * @global type $wpdb
-     * @param type $id
+     * @param int $id
      */
     function deleteRedirect($id) {
         global $wpdb;
@@ -1222,13 +1221,13 @@ class ABJ_404_Solution_DataAccess {
     /**
      * Store a redirect for future use.
      * @global type $wpdb
-     * @param type $fromURL
-     * @param type $status
-     * @param type $type
-     * @param type $final_dest
-     * @param type $code
-     * @param type $disabled
-     * @return type
+     * @param string $fromURL
+     * @param string $status
+     * @param string $type
+     * @param string $final_dest
+     * @param string $code
+     * @param int $disabled
+     * @return int
      */
     function setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled = 0) {
         global $wpdb;
@@ -1278,8 +1277,8 @@ class ABJ_404_Solution_DataAccess {
 
     /** Get the redirect for the URL. 
      * @global type $wpdb
-     * @param type $url
-     * @return type
+     * @param string $url
+     * @return array
      */
     function getActiveRedirectForURL($url) {
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -1305,9 +1304,8 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /** Get the redirect for the URL. 
-     * @global type $wpdb
-     * @param type $url
-     * @return type
+     * @param string $url
+     * @return array
      */
     function getExistingRedirectForURL($url) {
         $redirect = array();
@@ -1336,9 +1334,9 @@ class ABJ_404_Solution_DataAccess {
      * @global type $abj404logic
      * @global type $abj404dao
      * @global type $abj404logging
-     * @param type $slug only get results for this slug. (empty means all posts)
-     * @param type $searchTerm use this string in a LIKE on the sql.
-     * @return type
+     * @param string $slug only get results for this slug. (empty means all posts)
+     * @param string $searchTerm use this string in a LIKE on the sql.
+     * @return array
      */
     function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '', $limitResults = '') {
         global $wpdb;
@@ -1394,13 +1392,7 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /** Returns rows with the IDs of the published images.
-     * @global type $wpdb
-     * @global type $abj404logic
-     * @global type $abj404dao
-     * @global type $abj404logging
-     * @param type $slug only get results for this slug. (empty means all posts)
-     * @param type $orderTheResults use true for displaying data to users, otherwise use false.
-     * @return type
+     * @return array
      */
     function getPublishedImagesIDs() {
         global $wpdb;
@@ -1435,7 +1427,7 @@ class ABJ_404_Solution_DataAccess {
 
     /** Returns rows with the defined terms (tags).
      * @global type $wpdb
-     * @return type
+     * @return array
      */
     function getPublishedTags() {
         global $wpdb;
@@ -1470,10 +1462,8 @@ class ABJ_404_Solution_DataAccess {
     
     /** Returns rows with the defined categories.
      * @global type $wpdb
-     * @global type $abj404logic
-     * @global type $abj404logging
-     * @param type $id
-     * @return type
+     * @param int $term_id
+     * @return array
      */
     function getPublishedCategories($term_id = null) {
         global $wpdb;
@@ -1516,7 +1506,7 @@ class ABJ_404_Solution_DataAccess {
 
     /** Delete stored redirects based on passed in POST data.
      * @global type $wpdb
-     * @return type
+     * @return string
      */
     function deleteSpecifiedRedirects() {
         global $wpdb;
@@ -1588,7 +1578,7 @@ class ABJ_404_Solution_DataAccess {
     /**
      * This returns only the first column of the first row of the result.
      * @global type $wpdb
-     * @param type $query a query that starts with "select count(id) from ..."
+     * @param string $query a query that starts with "select count(id) from ..."
      * @param array $valueParams values to use to prepare the query.
      * @return int the count (result) of the query.
      */
@@ -1610,7 +1600,7 @@ class ABJ_404_Solution_DataAccess {
 
     /** 
      * @global type $wpdb
-     * @return type
+     * @return int
      * @throws Exception
      */
     function getEarliestLogTimestamp() {
@@ -1629,9 +1619,9 @@ class ABJ_404_Solution_DataAccess {
     
     /** 
      * Look at $_POST and $_GET for the specified option and return the default value if it's not set.
-     * @param type $name
-     * @param type $defaultValue
-     * @return type
+     * @param string $name
+     * @param string $defaultValue
+     * @return string
      */
     function getPostOrGetSanitize($name, $defaultValue = null) {
         if (array_key_exists($name, $_GET) && isset($_GET[$name])) {
@@ -1653,8 +1643,8 @@ class ABJ_404_Solution_DataAccess {
 
     /** 
      * @global type $wpdb
-     * @param type $ids
-     * @return type
+     * @param array $ids
+     * @return array
      */
     function getRedirectsByIDs($ids) {
         global $wpdb;
@@ -1671,9 +1661,9 @@ class ABJ_404_Solution_DataAccess {
     
     /** Change the status to "trash" or "ignored," for example.
      * @global type $wpdb
-     * @param type $id
-     * @param type $newstatus
-     * @return type
+     * @param int $id
+     * @param string $newstatus
+     * @return string
      */
     function updateRedirectTypeStatus($id, $newstatus) {
         $query = "update {wp_abj404_redirects} set status = '" . 
@@ -1686,9 +1676,9 @@ class ABJ_404_Solution_DataAccess {
 
     /** Move a redirect to the "trash" folder.
      * @global type $wpdb
-     * @param type $id
-     * @param type $trash
-     * @return type
+     * @param int $id
+     * @param int $trash
+     * @return string
      */
     function moveRedirectsToTrash($id, $trash) {
         global $wpdb;
@@ -1712,13 +1702,13 @@ class ABJ_404_Solution_DataAccess {
     /** 
      * @global type $wpdb
      * @global type $abj404logging
-     * @param type $type ABJ404_EXTERNAL, ABJ404_POST, ABJ404_CAT, or ABJ404_TAG.
-     * @param type $dest
-     * @param type $fromURL
-     * @param type $idForUpdate
-     * @param type $redirectCode
-     * @param type $statusType ABJ404_STATUS_MANUAL or ABJ404_STATUS_REGEX
-     * @return type
+     * @param int $type ABJ404_EXTERNAL, ABJ404_POST, ABJ404_CAT, or ABJ404_TAG.
+     * @param string $dest
+     * @param string $fromURL
+     * @param int $idForUpdate
+     * @param string $redirectCode
+     * @param string $statusType ABJ404_STATUS_MANUAL or ABJ404_STATUS_REGEX
+     * @return string
      */
     function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType) {
         global $wpdb;
@@ -1755,7 +1745,7 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /** 
-     * @return type
+     * @return int
      */
     function getCapturedCountForNotification() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();

@@ -42,7 +42,7 @@ abstract class ABJ_404_Solution_Functions {
     
     
     /**  Used with array_filter()
-     * @param type $value
+     * @param string $value
      * @return boolean
      */
     function removeEmptyCustom($value) {
@@ -64,8 +64,8 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     /** Replace constants and translations.
-     * @param type $text
-     * @return type
+     * @param string $text
+     * @return string
      */
     function doNormalReplacements($text) {
         global $wpdb;
@@ -115,10 +115,10 @@ abstract class ABJ_404_Solution_Functions {
 
     /** Turns ID|TYPE, SCORE into an array with id, type, score, link, and title.
      *
-     * @param type $idAndType e.g. 15|POST is a page ID of 15 and a type POST.
-     * @param type $linkScore
-     * @param type $rowType if this is "image" then wp_get_attachment_image_src() is used.
-     * @return type an array with id, type, score, link, and title.
+     * @param string $idAndType e.g. 15|POST is a page ID of 15 and a type POST.
+     * @param int $linkScore
+     * @param string $rowType if this is "image" then wp_get_attachment_image_src() is used.
+     * @return array an array with id, type, score, link, and title.
      */
     static function permalinkInfoToArray($idAndType, $linkScore, $rowType = null) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -182,7 +182,7 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     /** Returns true if the file does not exist after calling this method. 
-     * @param type $path
+     * @param string $path
      * @return boolean
      */
     static function safeUnlink($path) {
@@ -193,7 +193,7 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     /** Returns true if the file does not exist after calling this method. 
-     * @param type $path
+     * @param string $path
      * @return boolean
      */
     static function safeRmdir($path) {
@@ -204,8 +204,8 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     /** Reads an entire file at once into a string and return it.
-     * @param type $path
-     * @return type
+     * @param string $path
+     * @return string
      * @throws Exception
      */
     static function readFileContents($path) {
@@ -263,9 +263,8 @@ abstract class ABJ_404_Solution_Functions {
     
     /** Deletes the existing file at $filePath and puts the URL contents in it's place.
      * @global type $abj404logging
-     * @param type $url
-     * @param type $filePath
-     * @return type
+     * @param string $url
+     * @param string $filePath
      */
     static function readURLtoFile($url, $filePath) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -303,9 +302,9 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     /** 
-     * @param type $haystack
-     * @param type $needle
-     * @return type
+     * @param string $haystack
+     * @param string $needle
+     * @return string
      */
     function endsWithCaseInsensitive($haystack, $needle) {
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -326,7 +325,7 @@ abstract class ABJ_404_Solution_Functions {
      * take into account the query part of the URL (?query=part) when looking for a page to redirect to. 
      * 
      * Here we sort the query parts so that the same request will always look the same.
-     * @param type $urlParts
+     * @param array $urlParts
      * @return string
      */
     function sortQueryString($urlParts) {
@@ -345,7 +344,7 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     /** We have to remove any 'p=##' because it will cause a 404 otherwise.
-     * @param type $queryString
+     * @param string $queryString
      * @return string
      */
     function removePageIDFromQueryString($queryString) {

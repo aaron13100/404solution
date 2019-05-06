@@ -11,12 +11,12 @@ if (in_array($_SERVER['SERVER_NAME'], array($GLOBALS['abj404_whitelist']))) {
 class ABJ_404_Solution_PluginLogic {
     
     /** Track whether we're already in the method that updates the database that may be called recursively.
-     * @var type */
+     * @var bool */
     private $currentlyUpdatingDatabaseVersion = false;
 
     /** If a page's URL is /blogName/pageName then this returns /pageName.
-     * @param type $urlRequest
-     * @return type
+     * @param string $urlRequest
+     * @return string
      */
     function removeHomeDirectory($urlRequest) {
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -31,7 +31,7 @@ class ABJ_404_Solution_PluginLogic {
     }
     /** Forward to a real page for queries like ?p=10
      * @global type $wp_query
-     * @param type $options
+     * @param array $options
      */
     function tryNormalPostQuery($options) {
         global $wp_query;
@@ -65,8 +65,8 @@ class ABJ_404_Solution_PluginLogic {
     /** 
      * @global type $abj404logging
      * @global type $abj404logic
-     * @param type $urlRequest the requested URL. e.g. /404killer/aboutt
-     * @param type $urlSlugOnly only the slug. e.g. /aboutt
+     * @param string $urlRequest the requested URL. e.g. /404killer/aboutt
+     * @param string $urlSlugOnly only the slug. e.g. /aboutt
      */
     function initializeIgnoreValues($urlRequest, $urlSlugOnly) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -132,7 +132,7 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     /** The passed in reason will be appended to the automatically generated reason.
-     * @param type $reason
+     * @param string $reason
      */
     function sendTo404Page($requestedURL, $reason = '') {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -197,7 +197,7 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     /** 
-     * @param type $skip_db_check
+     * @param bool $skip_db_check
      * @return array
      */
     function getOptions($skip_db_check = false) {
@@ -234,8 +234,8 @@ class ABJ_404_Solution_PluginLogic {
 
     /** Do any maintenance when upgrading to a new version.
      * @global type $abj404logging
-     * @param type $options
-     * @return type
+     * @param array $options
+     * @return array
      */
     function updateToNewVersion($options) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -265,8 +265,8 @@ class ABJ_404_Solution_PluginLogic {
      * @global type $abj404logic
      * @global type $abj404logging
      * @global type $wpdb
-     * @param type $options
-     * @return type
+     * @param array $options
+     * @return array
      */
     function updateToNewVersionAction($options) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
@@ -514,9 +514,9 @@ class ABJ_404_Solution_PluginLogic {
 
     /** Do the passed in action and return the associated message. 
      * @global type $abj404logic
-     * @param type $action
+     * @param string $action
      * @param string $sub
-     * @return type
+     * @return string
      */
     function handlePluginAction($action, &$sub) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
@@ -614,7 +614,7 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /** Move redirects to trash. 
-     * @return type
+     * @return string
      */
     function hanldeTrashAction() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -714,7 +714,7 @@ class ABJ_404_Solution_PluginLogic {
     
     /** Delete redirects.
      * @global type $abj404dao
-     * @return type
+     * @return string
      */
     function handleDeleteAction() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -735,7 +735,7 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     /** Set a redirect as ignored.
-     * @return type
+     * @return string
      */
     function handleIgnoreAction() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -782,7 +782,7 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     /** Set a redirect as "organize later".
-     * @return type
+     * @return string
      */
     function handleLaterAction() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -831,8 +831,8 @@ class ABJ_404_Solution_PluginLogic {
     /** Edit redirect data.
      * @global type $abj404dao
      * @param string $sub
-     * @param type $action
-     * @return type
+     * @param string $action
+     * @return string
      */
     function handleActionEdit(&$sub, &$action) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -862,8 +862,8 @@ class ABJ_404_Solution_PluginLogic {
     
     /**
      * @global type $abj404dao
-     * @param type $action
-     * @param type $ids
+     * @param string $action
+     * @param array $ids
      * @return string
      */
     function doBulkAction($action, $ids) {
@@ -946,7 +946,7 @@ class ABJ_404_Solution_PluginLogic {
 
     /** 
      * This is for both empty trash buttons (page redirects and captured 404 URLs).
-     * @param type $sub
+     * @param string $sub
      */
     function doEmptyTrash($sub) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -1135,8 +1135,8 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /** 
-     * @param type $pageBeingViewed
-     * @return type
+     * @param string $pageBeingViewed
+     * @return array
      */
     function getTableOptions($pageBeingViewed = null) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -1427,9 +1427,8 @@ class ABJ_404_Solution_PluginLogic {
     
     /** First try a wp_redirect. Then try a redirect with JavaScript. The wp_redirect usually works, but doesn't 
      * if some other plugin has already output any kind of data. 
-     * @param type $location
-     * @param type $status
-     * @param type $queryParts The query part of a URL. e.g. "?s=queryPart"
+     * @param string $location
+     * @param number $status
      */
     function forceRedirect($location, $status = 302) {
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -1457,7 +1456,7 @@ class ABJ_404_Solution_PluginLogic {
 
     /** Order pages and set the page depth for child pages.
      * Move the children to be underneath the parents.
-     * @param type $pages
+     * @param array $pages
      */    
     function orderPageResults($pages, $includeMissingParentPages = false) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -1523,8 +1522,8 @@ class ABJ_404_Solution_PluginLogic {
     
     /** For custom categories we create a Map<String, List> where the key is the name 
      * of the taxonomy and the list holds the rows that have the category info.
-     * @param type $categoryRows
-     * @return type
+     * @param array $categoryRows
+     * @return array
      */
     function getMapOfCustomCategories($categoryRows) {
         $customTagsEtc = array();
@@ -1547,7 +1546,7 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     /** Returns a list of parent IDs that can't be found in the passed in pages.
-     * @param type $pages
+     * @param array $pages
      */
     function getMissingParentPageIDs($pages) {
         $listOfIDs = array();
@@ -1573,8 +1572,8 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /** Compare pages based on their ID.
-     * @param type $a
-     * @param type $b
+     * @param array $a
+     * @param array $b
      * @return int
      */
     function compareByID($a, $b) {
@@ -1590,8 +1589,8 @@ class ABJ_404_Solution_PluginLogic {
     /** Set the depth of each page and add pages under their parents by rebuilding the list
      * every time we iterate through it and adding the child pages at the right moment every time
      * the list is built.
-     * @param type $pages
-     * @return type
+     * @param array $pages
+     * @return array
      */
     function setDepthAndAddChildren($pages) {
         // find all child pages (pages that have parents).
@@ -1643,8 +1642,8 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     /** 
-     * @param type $pages
-     * @return type
+     * @param array $pages
+     * @return array
      */
     function findAllMainPages($pages) {
         $mainPages = array();
@@ -1659,9 +1658,9 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     /** 
-     * @param type $childPages
-     * @param type $removeThese
-     * @return type
+     * @param array $childPages
+     * @param array $removeThese
+     * @return array
      */
     function removeUsedChildPages($childPages, $removeThese) {
         // if any children were added then remove them from the list.
@@ -1677,8 +1676,8 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     /** Return pages that have a non-0 parent.
-     * @param type $pages
-     * @return type
+     * @param array $pages
+     * @return array
      */
     function findChildPages($pages) {
         $childPages = array();
@@ -1691,9 +1690,9 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /** 
-     * @param type $a
-     * @param type $b
-     * @return type
+     * @param array $a
+     * @param array $b
+     * @return int
      */
     function sortByTypeThenTitle($a, $b) {
         // first sort by type
@@ -1707,9 +1706,7 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /** Send an email if a notification should be displayed. Return true if an email is sent, or false otherwise.
-     * @global type $abj404dao
-     * @global type $abj404logging
-     * @return type
+     * @return string
      */
     function emailCaptured404Notification() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -1745,7 +1742,7 @@ class ABJ_404_Solution_PluginLogic {
     
     /** Return true if a notification should be displayed, or false otherwise.
      * @global type $abj404dao
-     * @param type $captured404Count the number of captured 404s
+     * @param number $captured404Count the number of captured 404s
      * @return boolean
      */
     function shouldNotifyAboutCaptured404s($captured404Count) {
@@ -1763,8 +1760,9 @@ class ABJ_404_Solution_PluginLogic {
     /** 0|0 => "(Default 404 Page)"
      * 5|5 => "(Home Page)"
      * 10|1 => "About"
-     * 
-     * @param type $userSelectedDefault404Page
+     * @param string $idAndType
+     * @param string $externalLinkURL
+     * @return string
      */
     function getPageTitleFromIDAndType($idAndType, $externalLinkURL) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();

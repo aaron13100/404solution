@@ -11,7 +11,7 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 class ABJ_404_Solution_ShortCode {
     
     /** 
-     * @param type $atts
+     * @param array $atts
      */
     static function shortcodePageSuggestions( $atts ) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();

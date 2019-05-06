@@ -52,8 +52,8 @@ class ABJ_404_Solution_SpellChecker {
     
     /** Find a match using the user-defined regex patterns.
      * @global type $abj404dao
-     * @param type $requestedURL
-     * @return type
+     * @param string $requestedURL
+     * @return array
      */
     function getPermalinkUsingRegEx($requestedURL) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -100,8 +100,8 @@ class ABJ_404_Solution_SpellChecker {
      * If there is a post that has a slug that matches the user requested slug exactly, 
      * then return the permalink for that post. Otherwise return null.
      * @global type $abj404dao
-     * @param type $requestedURL
-     * @return type
+     * @param string $requestedURL
+     * @return array|null
      */
     function getPermalinkUsingSlug($requestedURL) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -137,8 +137,8 @@ class ABJ_404_Solution_SpellChecker {
      * Use spell checking to find the correct link. Return the permalink (map) if there is one, otherwise return null.
      * @global type $abj404spellChecker
      * @global type $abj404logic
-     * @param type $requestedURL
-     * @return type
+     * @param string $requestedURL
+     * @return array|null
      */
     function getPermalinkUsingSpelling($requestedURL) {
         $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
@@ -182,7 +182,7 @@ class ABJ_404_Solution_SpellChecker {
     
     /** 
      * Return true if the last characters of the URL represent an image extension (like jpg, gif, etc).
-     * @param type $requestedURL
+     * @param string $requestedURL
      */
     function requestIsForAnImage($requestedURL) {
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -203,10 +203,10 @@ class ABJ_404_Solution_SpellChecker {
 
     /** Returns a list of 
      * @global type $wpdb
-     * @param type $requestedURLRaw
-     * @param type $includeCats
-     * @param type $includeTags
-     * @return type
+     * @param string $requestedURLRaw
+     * @param string $includeCats
+     * @param string $includeTags
+     * @return array
      */
     function findMatchingPosts($requestedURLRaw, $includeCats = '1', $includeTags = '1') {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -454,10 +454,10 @@ class ABJ_404_Solution_SpellChecker {
     
     /** 
      * Get the permalink for the passed in type (pages, tags, categories, image, etc.
-     * @param type $id
-     * @param type $rowType
-     * @return type
-     * @throws type
+     * @param int $id
+     * @param string $rowType
+     * @return string
+     * @throws Exception
      */
     function getPermalink($id, $rowType) {
         if ($rowType == 'pages') {
@@ -495,13 +495,11 @@ class ABJ_404_Solution_SpellChecker {
      * max distance taken from the previous step. The strings we remove here will always be further away than the 
      * strings we found in the previous step and can be removed without applying the levenshtein algorithm.
      * *
-     * @global type $abj404logic
-     * @param type $requestedURLCleaned
-     * @param type $fullURLspaces
-     * @param type $publishedPages 
-     * @param type $rowType
+     * @param string $requestedURLCleaned
+     * @param string $fullURLspaces
+     * @param array $publishedPages
+     * @param string $rowType
      * @return array
-     * @throws type
      */
     function getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $publishedPages, $rowType) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
@@ -641,8 +639,8 @@ class ABJ_404_Solution_SpellChecker {
     }
     
     /** Turns "/abc/defg" into "defg"
-     * @param type $url
-     * @return type
+     * @param string $url
+     * @return string
      */
     function getLastURLPart($url) {
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -656,8 +654,8 @@ class ABJ_404_Solution_SpellChecker {
     }
 
     /** 
-     * @param type $str
-     * @return type
+     * @param string $str
+     * @return array
      */
     private function multiByteStringToArray($str) {
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -671,9 +669,9 @@ class ABJ_404_Solution_SpellChecker {
     
     /** This custom levenshtein function has no 255 character limit.
      * From https://www.codeproject.com/Articles/13525/Fast-memory-efficient-Levenshtein-algorithm
-     * @param type $str1
-     * @param type $str2
-     * @return type
+     * @param string $str1
+     * @param string $str2
+     * @return int
      * @throws Exception
      */
     function customLevenshtein($str1, $str2) {

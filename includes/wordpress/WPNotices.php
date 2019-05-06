@@ -17,8 +17,8 @@ class ABJ_404_Solution_WPNotices {
     }
     
     /** Display a message with the specified importance level.
-     * @param type $noticeLevel
-     * @param type $message
+     * @param string $noticeLevel
+     * @param string $message
      */
     public static function registerAdminMessage($noticeLevel, $message) {
         $notice = new ABJ_404_Solution_WPNotice($noticeLevel, $message);
@@ -27,7 +27,7 @@ class ABJ_404_Solution_WPNotices {
     }
 
     /** Display a message with the specified importance level.
-     * @param type $adminNotice
+     * @param ABJ_404_Solution_WPNotice $adminNotice
      */
     public static function registerAdminNotice($adminNotice) {
         self::$adminNotices[] = $adminNotice;
@@ -36,7 +36,7 @@ class ABJ_404_Solution_WPNotices {
     }
 
     /** 
-     * @return type the messages to display.
+     * @return string the messages to display.
      */
     static function echoAdminNotices() {
         $allHTML = '';

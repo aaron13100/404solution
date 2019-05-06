@@ -18,10 +18,10 @@ class ABJ_404_Solution_ErrorHandler {
     }
 
     /** Try to capture PHP errors.
-     * @param type $errno
-     * @param type $errstr
-     * @param type $errfile
-     * @param type $errline
+     * @param int $errno
+     * @param string $errstr
+     * @param string $errfile
+     * @param int $errline
      * @return boolean
      */
     static function NormalErrorHandler($errno, $errstr, $errfile, $errline) {
