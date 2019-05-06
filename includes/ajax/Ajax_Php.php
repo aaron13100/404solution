@@ -23,6 +23,7 @@ class ABJ_404_Solution_Ajax_Php {
         $suggestion['label'] = __('(Show All Logs)', '404-solution');
         $suggestion['category'] = 'Special';
         $suggestion['value'] = 0;
+        $specialSuggestion = array();
         $specialSuggestion[] = $suggestion;
         
         $rows = $abj404dao->getLogsIDandURLLike('%' . $term . '%', ABJ404_MAX_AJAX_DROPDOWN_SIZE);

@@ -278,7 +278,7 @@ class ABJ_404_Solution_Logging {
                     }
                 }
             } else {
-                $this->errorMessage("Error reading log file (1).", $e);
+                $this->errorMessage("Error reading log file (1).");
             }
             
         } catch (Exception $e) {

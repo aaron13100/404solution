@@ -77,7 +77,8 @@ class ABJ_404_Solution_SynchronizationUtils {
         
         // it should have been released by now.
         if ($timePassed > $maxExecutionTime) {
-            update_option($internalSynchronizedKey, null);
+        	update_option($internalSynchronizedKey, '');
+        	update_option($internalSynchronizedKey, null);
             delete_option($internalSynchronizedKey);
             $valueAfterDelete = get_option($internalSynchronizedKey);
             $uniqueIDForDebugging = $this->createUniqueID('DEBUG_KEY');

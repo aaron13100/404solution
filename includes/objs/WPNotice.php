@@ -15,12 +15,14 @@ class ABJ_404_Solution_WPNotice {
     const INFO = 'notice-info';
     
     /** @var string */
-    private $type = self::INFO;
+    private $type = null;
     
     /** @var string */
     private $message = '';
     
     public function __construct($type, $message) {
+    	$this->type = self::INFO;
+    	
         $f = ABJ_404_Solution_Functions::getInstance();
         $VALID_TYPES = array(self::ERROR, self::WARNING, self::SUCCESS, self::INFO);
         if (!in_array($type, $VALID_TYPES)) {

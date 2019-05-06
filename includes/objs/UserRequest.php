@@ -38,7 +38,6 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
     }
     
     public static function initialize() {
-        global $wp;
         global $wp_rewrite;
         
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
