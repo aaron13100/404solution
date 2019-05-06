@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.19.0 (May 8, 2019) ##
+* Improvement: Better similar posts matching for sites with over 300 pages or posts.
+
 ## Version 2.18.5 (May 3, 2019) ##
 * FIX: Run maintenance again (broken in 2.18.4).
 
