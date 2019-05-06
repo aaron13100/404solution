@@ -47,9 +47,9 @@ class ABJ_404_Solution_WordPress_Connector {
 
         // jquery is used for the searchable dropdown list of pages for adding a redirect and other things.
         wp_enqueue_script('jquery');
-	wp_enqueue_script('jquery-ui-autocomplete');
-	wp_enqueue_script('jquery-effects-core');
-	wp_enqueue_script('jquery-effects-highlight');
+		wp_enqueue_script('jquery-ui-autocomplete');
+		wp_enqueue_script('jquery-effects-core');
+		wp_enqueue_script('jquery-effects-highlight');
         
         wp_register_script('abj404-redirect_to_ajax', plugin_dir_url(__FILE__) . 'ajax/redirect_to_ajax.js', 
                 array('jquery', 'jquery-ui-autocomplete'), ABJ404_VERSION);

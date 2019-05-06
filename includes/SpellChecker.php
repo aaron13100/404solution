@@ -113,6 +113,7 @@ class ABJ_404_Solution_SpellChecker {
         $postsBySlugRows = $abj404dao->getPublishedPagesAndPostsIDs($postSlug);
         if (count($postsBySlugRows) == 1) {
             $post = reset($postsBySlugRows);
+            $permalink = array();
             $permalink['id'] = $post->id;
             $permalink['type'] = ABJ404_TYPE_POST;
             // the score doesn't matter.
@@ -402,7 +403,6 @@ class ABJ_404_Solution_SpellChecker {
         
         // access the array directly instead of using a foreach loop so we can remove items
         // from the end of the array in the middle of the loop.
-        $topLevScores = array();
         while (count($likelyMatchIDs) > 0) {
             $id = array_shift($likelyMatchIDs);
             
@@ -437,7 +437,6 @@ class ABJ_404_Solution_SpellChecker {
             }
             $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
             $permalinks[$id . "|" . ABJ404_TYPE_POST] = number_format($score, 4, '.', '');
-            $topLevScores[] = $levscore;
         }
         
         return $permalinks;
@@ -532,6 +531,8 @@ class ABJ_404_Solution_SpellChecker {
             $this->initializePermalinkCache();
         }
         
+        $userRequestedURLWords = explode(" ", (empty($fullURLspaces) ? $requestedURLCleaned : $fullURLspaces));
+        $idsWithWordsInCommon = array();
         $wasntReadyCount = 0;
         $row = array_shift($publishedPages);
         while ($row != null) {
@@ -590,6 +591,20 @@ class ABJ_404_Solution_SpellChecker {
                 $maxDist = min($maxDist, $fullURLspacesLength);
             }
             
+            // -----------------
+            // split the links into words. 
+            $existingPageURLCleanedWords = explode(" ", $existingPageURLCleaned);
+            $wordsInCommon = array_intersect($userRequestedURLWords, $existingPageURLCleanedWords);
+            if (count($wordsInCommon) > 0) {
+	            // if any words match then save the link to the $idsWithWordsInCommon list.
+	            array_push($idsWithWordsInCommon, $id);
+    	        // also lower the $maxDist accordingly.
+	            $lengthOfTheLongestWordInCommon = max(array_map('strlen', $wordsInCommon));
+	            $maxDist = $maxDist - $lengthOfTheLongestWordInCommon;
+            }
+            // -----------------
+            
+            
             // add the ID to the list.
             if (is_array($minDistances[$minDist])) {
                 array_push($minDistances[$minDist], $id);
@@ -633,6 +648,16 @@ class ABJ_404_Solution_SpellChecker {
         for ($currentDistanceIndex = 0; $currentDistanceIndex <= $maxDistFound; $currentDistanceIndex++) {
             $listOfMinDistanceIDs = $minDistances[$currentDistanceIndex];
             $listOfIDsToReturn = array_merge($listOfIDsToReturn, $listOfMinDistanceIDs);
+        }
+        
+        // if there are more than X IDs to return, then only use the matches where words match.
+        if (count($listOfIDsToReturn) > 300 && count($idsWithWordsInCommon) >= $onlyNeedThisManyPages) {
+        	$maybeOKguesses = array_intersect($listOfIDsToReturn, $idsWithWordsInCommon);
+        	
+        	if (count($maybeOKguesses) >= $onlyNeedThisManyPages) {
+        		return $maybeOKguesses;
+        	}
+        	return $idsWithWordsInCommon;
         }
         
         return $listOfIDsToReturn;
