@@ -81,8 +81,8 @@ class ABJ_404_Solution_WordPress_Connector {
     }
 
     /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).
-     * @param type $links
-     * @return type
+     * @param array $links
+     * @return array
      */
     static function addSettingsLinkToPluginPage($links) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -295,9 +295,8 @@ class ABJ_404_Solution_WordPress_Connector {
      * @global type $abj404logging
      * @global type $abj404logic
      * #param type $requestedURL
-     * @param type $redirect
+     * @param array $redirect
      * #param type $matchReason
-     * @return type
      */
     function processRedirect($requestedURL, $redirect, $matchReason) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -383,7 +382,6 @@ class ABJ_404_Solution_WordPress_Connector {
      * @global type $abj404dao
      * @global type $abj404logic
      * @global type $abj404logging
-     * @return type
      */
     static function addMainSettingsPageLink() {
         global $menu;

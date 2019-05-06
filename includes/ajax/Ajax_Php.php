@@ -131,9 +131,9 @@ class ABJ_404_Solution_Ajax_Php {
     }
     
     /** Remove any results from the list that don't match the search term.
-     * @param type $pagesToFilter
-     * @param type $searchTerm
-     * @return type
+     * @param array $pagesToFilter
+     * @param string $searchTerm
+     * @return array
      */
     function filterPages($pagesToFilter, $searchTerm) {
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -184,7 +184,7 @@ class ABJ_404_Solution_Ajax_Php {
     }
     
     /** Prepare categories for json output.
-     * @param type $rows
+     * @param array $rows
      * @return string
      */
     function formatCategoryDestinations($rows) {
@@ -209,7 +209,7 @@ class ABJ_404_Solution_Ajax_Php {
     }
     
     /** Prepare tags for json output.
-     * @param type $rows
+     * @param array $rows
      * @return string
      */
     function formatTagDestinations($rows) {
@@ -230,7 +230,7 @@ class ABJ_404_Solution_Ajax_Php {
     }
     
     /** Prepare custom categories for json output. 
-     * @param type $customCategoriesMap
+     * @param array $customCategoriesMap
      * @return string
      */
     function formatCustomCategoryDestinations($customCategoriesMap) {
@@ -255,8 +255,8 @@ class ABJ_404_Solution_Ajax_Php {
     }
     
     /** Prepare pages and posts for json output. 
-     * @param type $rows
-     * @return type
+     * @param array $rows
+     * @return array
      */
     function formatRedirectDestinations($rows) {
         $suggestions = array();
@@ -276,8 +276,8 @@ class ABJ_404_Solution_Ajax_Php {
     }
 
     /** Prepare log results for json output. 
-     * @param type $rows
-     * @return type
+     * @param array $rows
+     * @return array
      */
     function formatLogResults($rows) {
         $suggestions = array();

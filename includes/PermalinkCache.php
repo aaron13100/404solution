@@ -29,7 +29,7 @@ class ABJ_404_Solution_PermalinkCache {
     
     /** We'll just make sure the permalink gets updated in case it's changed.
      * @global type $abj404dao
-     * @param type $post_id
+     * @param int $post_id
      */
     function save_postListener($post_id) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -45,9 +45,8 @@ class ABJ_404_Solution_PermalinkCache {
 
     /** If the permalink structure changes then truncate the cache table and update some values.
      * @global type $abj404logging
-     * @param type $var1
-     * @param type $newStructure
-     * @return type
+     * @param string $var1
+     * @param string $newStructure
      */
     function permalinkStructureChanged($var1, $newStructure) {
         if ($var1 != 'permalink_structure') {
@@ -70,8 +69,8 @@ class ABJ_404_Solution_PermalinkCache {
     }
     
     /** 
-     * @param type $maxExecutionTime
-     * @param type $executionCount
+     * @param int $maxExecutionTime
+     * @param int $executionCount
      * @return int
      * @throws Exception
      */

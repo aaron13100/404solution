@@ -51,8 +51,7 @@ class ABJ_404_Solution_SynchronizationUtils {
     }
     
     /** Remove the lock if it's been in place for too long.
-     * @param type $synchronizedKeyFromUser
-     * @return type
+     * @param string $synchronizedKeyFromUser
      */
     function fixAnUnforeseenIssue($synchronizedKeyFromUser) {
         $internalSynchronizedKey = $this->createInternalKey($synchronizedKeyFromUser);
@@ -123,8 +122,8 @@ class ABJ_404_Solution_SynchronizationUtils {
     }
     
     /** Release the lock for a synchronized block. Should be done in a finally block.
-     * @param type $uniqueID
-     * @param type $synchronizedKeyFromUser
+     * @param string $uniqueID
+     * @param string $synchronizedKeyFromUser
      * @throws Exception
      */
     function synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser) {

@@ -9,7 +9,7 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 class ABJ_404_Solution_View_Suggestions {
 
     /** 
-     * @param type $options
+     * @param array $options
      * @return string
      */
     function getAdminOptionsPage404Suggestions($options) {

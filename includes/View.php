@@ -13,7 +13,7 @@ class ABJ_404_Solution_View {
 
     /** Get the text to notify the user when some URLs have been captured and need attention. 
      * @param int $captured the number of captured URLs
-     * @return type html
+     * @return string html
      */
     function getDashboardNotificationCaptured($captured) {
         $capturedMessage = sprintf( _n( 'There is <a>%s captured 404 URL</a> that needs to be processed.', 
@@ -77,8 +77,8 @@ class ABJ_404_Solution_View {
     
     /** Display the chosen admin page.
      * @global type $abj404view
-     * @param type $sub
-     * @param type $message
+     * @param string $sub
+     * @param string $message
      */
     function echoChosenAdminTab($action, $sub, $message) {
         global $abj404view;
@@ -134,8 +134,8 @@ class ABJ_404_Solution_View {
     }
 
     /** Output the tabs at the top of the plugin page.
-     * @param type $sub
-     * @param type $message
+     * @param string $sub
+     * @param string $message
      */
     function outputAdminHeaderTabs($sub = 'list', $message = '') {
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -218,9 +218,9 @@ class ABJ_404_Solution_View {
     
     /** This outputs a box with a title and some content in it. 
      * It's used on the Stats, Options and Tools page (for example).
-     * @param type $id
-     * @param type $title
-     * @param type $content
+     * @param int $id
+     * @param string $title
+     * @param string $content
      */
     function echoPostBox($id, $title, $content) {
         echo "<div id=\"" . esc_attr($id) . "\" class=\"postbox\">";
@@ -537,7 +537,6 @@ class ABJ_404_Solution_View {
     /** 
      * @global type $abj404dao
      * @global type $abj404logic
-     * @return type
      */
     function echoAdminEditRedirectPage() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -1412,9 +1411,9 @@ class ABJ_404_Solution_View {
     }
     
     /** This is used both to add and to edit a redirect.
-     * @param type $destination
-     * @param type $codeselected
-     * @param type $label
+     * @param string $destination
+     * @param string $codeselected
+     * @param string $label
      */
     function echoEditRedirect($destination, $codeselected, $label) {
         echo "\r\n<BR/><strong><label for=\"code\">" . __('Redirect Type', '404-solution') . 
@@ -1461,7 +1460,7 @@ class ABJ_404_Solution_View {
     /** 
      * @global type $abj404dao
      * @global type $wpdb
-     * @param type $options
+     * @param array $options
      * @return string
      */
     function getAdminOptionsPageAutoRedirects($options) {
@@ -1576,7 +1575,7 @@ class ABJ_404_Solution_View {
     }
 
     /** 
-     * @param type $options
+     * @param array $options
      * @return string
      */
     function getAdminOptionsPageGeneralSettings($options) {
@@ -1816,9 +1815,9 @@ class ABJ_404_Solution_View {
     }
 
     /** 
-     * @param type $sub
-     * @param type $tableOptions
-     * @param type $columns
+     * @param string $sub
+     * @param array $tableOptions
+     * @param array $columns
      */
     function getTableColumns($sub, $columns) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
@@ -1914,8 +1913,8 @@ class ABJ_404_Solution_View {
 
     /** 
      * @global type $abj404dao
-     * @param type $sub
-     * @param type $tableOptions
+     * @param string $sub
+     * @param array $tableOptions
      */
     function getPaginationLinks($sub, $showSearchFilter = true) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -2044,8 +2043,8 @@ class ABJ_404_Solution_View {
     
     /** Output the filters for a tab.
      * @global type $abj404dao
-     * @param type $sub
-     * @param type $tableOptions
+     * @param string $sub
+     * @param array $tableOptions
      */
     function getTabFilters($sub, $tableOptions) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();

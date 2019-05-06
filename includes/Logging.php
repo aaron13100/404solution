@@ -67,7 +67,7 @@ class ABJ_404_Solution_Logging {
     
     /** Send a message to the log file if debug mode is on. 
      * This goes to a file and is used by every other class so it goes here.
-     * @param type $message  */
+     * @param string $message  */
     function debugMessage($message) {
         $timestamp = $this->getTimestamp() . ' (DEBUG): ';
         if ($this->isDebug()) {
@@ -80,7 +80,7 @@ class ABJ_404_Solution_Logging {
 
     /** Send a message to the log. 
      * This goes to a file and is used by every other class so it goes here.
-     * @param type $message  */
+     * @param string $message  */
     function infoMessage($message) {
         $timestamp = $this->getTimestamp() . ' (INFO): ';
         $this->writeLineToDebugFile($timestamp . $message);
@@ -88,7 +88,7 @@ class ABJ_404_Solution_Logging {
 
     /** Always send a message to the error_log.
      * This goes to a file and is used by every other class so it goes here.
-     * @param type $message
+     * @param string $message
      * @param Exception $e
      */
     function errorMessage($message, $e = null) {
@@ -127,7 +127,7 @@ class ABJ_404_Solution_Logging {
     }
     
     /** Log the user capabilities.
-     * @param type $msg 
+     * @param string $msg 
      */
     function logUserCapabilities($msg) {
         $user = wp_get_current_user();
@@ -141,7 +141,7 @@ class ABJ_404_Solution_Logging {
     }
 
     /** Write the line to the debug file. 
-     * @param type $line
+     * @param string $line
      */
     function writeLineToDebugFile($line) {
         file_put_contents($this->getDebugFilePath(), $line . "\n", FILE_APPEND);
@@ -293,7 +293,7 @@ class ABJ_404_Solution_Logging {
     }
     
     /** Return the path to the debug file.
-     * @return type
+     * @return string
      */
     function getDebugFilePath() {
         return $this->getFilePathAndMoveOldFile(ABJ404_PATH . 'temp/', 'abj404_debug.txt');
@@ -304,14 +304,14 @@ class ABJ_404_Solution_Logging {
     }
     
     /** Return the path to the file that stores the latest error line in the log file.
-     * @return type
+     * @return string
      */
     function getDebugFilePathSentFile() {
         return $this->getFilePathAndMoveOldFile(ABJ404_PATH . 'temp/', 'abj404_debug_sent_line.txt');
     }
     
     /** Return the path to the zip file for sending the debug file. 
-     * @return type
+     * @return string
      */
     function getZipFilePath() {
         return $this->getFilePathAndMoveOldFile(ABJ404_PATH . 'temp/', 'abj404_debug.zip');
@@ -332,20 +332,20 @@ class ABJ_404_Solution_Logging {
     }
     
     /** 
-     * @param type $directory
+     * @param string $directory
      * @return boolean
      */
     function createDirectoryWithErrorMessages($directory) {
         if (!is_dir($directory)) {
-            if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
-                unlink($directory);
-                
-                if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
-                    error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " . 
-                            $directory . ". A file with that name alraedy exists.");
-                    return false;
-                }
-                
+        	if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
+        		unlink($directory);
+        		
+        		if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
+        			error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
+        					$directory . ". A file with that name alraedy exists.");
+        			return false;
+        		}
+        		
             } else if (!mkdir($directory)) {
                 error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
                         $directory . ". Unknown issue.");
@@ -368,7 +368,7 @@ class ABJ_404_Solution_Logging {
     }
     
     /** 
-     * @return type true if the file was deleted.
+     * @return boolean true if the file was deleted.
      */
     function deleteDebugFile() {
         // since the debug file is being deleted we reset the last error line that was sent.
