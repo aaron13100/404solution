@@ -12,6 +12,8 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @var string */
     const SYNC_KEY_PREFIX = 'SYNC_';
     
+    static $currentKeyValue = null;
+    
     private function createInternalKey($keyFromUser) {
         return ABJ404_PP . "_" . self::SYNC_KEY_PREFIX . $keyFromUser;
     }
@@ -44,7 +46,8 @@ class ABJ_404_Solution_SynchronizationUtils {
         $currentOwner = get_option($internalSynchronizedKey);
 
         if ($currentOwner == $uniqueID) {
-            return $uniqueID;
+        	self::$currentKeyValue = $uniqueID;
+        	return $uniqueID;
         }
         
         return '';
@@ -80,13 +83,17 @@ class ABJ_404_Solution_SynchronizationUtils {
         	update_option($internalSynchronizedKey, '');
         	update_option($internalSynchronizedKey, null);
             delete_option($internalSynchronizedKey);
+            $internalFieldValueBeforeDelete = self::$currentKeyValue;
+            self::$currentKeyValue = null;
             $valueAfterDelete = get_option($internalSynchronizedKey);
             $uniqueIDForDebugging = $this->createUniqueID('DEBUG_KEY');
             $logger = ABJ_404_Solution_Logging::getInstance();
             $logger->errorMessage("Forcibly removed synchronization after " . $timePassed . " seconds for the "
                     . "key " . $internalSynchronizedKey . " with value: " . $uniqueID . ', value after delete: ' .
                     $valueAfterDelete . ", microtime: " . microtime(true) . ", unique ID for debugging: " . 
-                    $uniqueIDForDebugging);
+                    $uniqueIDForDebugging . ", Internal field value before delete: " . 
+            		$internalFieldValueBeforeDelete . ", Internal field value after delete: " .
+            		self::$currentKeyValue);
         }
     }
     
@@ -119,6 +126,7 @@ class ABJ_404_Solution_SynchronizationUtils {
             }
         }
         
+        self::$currentKeyValue = $uniqueID;
         return $uniqueID;
     }
     
@@ -134,6 +142,7 @@ class ABJ_404_Solution_SynchronizationUtils {
         
         if ($uniqueID == $currentLockHolder) {
             delete_option($internalSynchronizedKey);
+            self::$currentKeyValue = null;
             
         } else {
             throw new Exception("Tried to release lock when you're not the owner. synchronized key from user: " . $synchronizedKeyFromUser .

@@ -67,6 +67,11 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
             $urlParts[$key] = urldecode($value);
         }
         
+        // remove a pointless trailing /amp
+        if ($f->endsWithCaseInsensitive($urlParts['path'], '/amp')) {
+        	$urlParts['path'] = substr($urlParts['path'], 0, $f->strlen($urlParts['path']) - 4);
+        }
+        
         // remove any "/comment-page-???/" if there is one.
         /* tested with:
          * http://localhost:8888/404solution-site/2019/02/hello-world2/comment-page-2/#comment-26

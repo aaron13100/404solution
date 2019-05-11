@@ -37,11 +37,9 @@ class ABJ_404_Solution_WordPress_Connector {
     
     /** Include things necessary for ajax. */
     static function add_scripts($hook) {
-        global $settingsPageName;
-
         // only load this stuff for this plugin. 
         // thanks to https://pippinsplugins.com/loading-scripts-correctly-in-the-wordpress-admin/
-        if ($hook != $settingsPageName) {
+    	if ($hook != $GLOBALS['abj404_settingsPageName']) {
             return;
         }
 
@@ -128,7 +126,7 @@ class ABJ_404_Solution_WordPress_Connector {
     /**
      * Process the 404s
      */
-    static function process404() {
+    function process404() {
         if (!is_404() || is_admin()) {
             return;
         }
@@ -137,7 +135,6 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404connector = new ABJ_404_Solution_WordPress_Connector();
         $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
 
         
@@ -166,23 +163,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         $options = $abj404logic->getOptions();
 
-        // ------------ debug message begin
-        $debugOptionsMsg = esc_html('auto_redirects: ' . $options['auto_redirects'] . ', auto_score: ' . 
-                $options['auto_score'] . ', auto_cats: ' . $options['auto_cats'] . ', auto_tags: ' .
-                $options['auto_tags'] . ', dest404page: ' . $options['dest404page']);
-
-        $remoteAddress = esc_sql($_SERVER['REMOTE_ADDR']);
-        if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
-            $remoteAddress = md5($remoteAddress);
-        }
-
-        $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $_SERVER['HTTP_USER_AGENT'] . ', REMOTE_ADDR: ' . 
-                $remoteAddress . ', REQUEST_URI: ' . urldecode($_SERVER['REQUEST_URI']));
-        $abj404logging->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
-                wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " . "is_page(): " . is_page() .
-                " | is_feed(): " . is_feed() . " | is_trackback(): " . is_trackback() . " | is_preview(): " .
-                is_preview() . " | options: " . $debugOptionsMsg . ', ' . $debugServerMsg);
-        // ------------ debug message end
+        $this->logAReallyLongDebugMessage($options, $requestedURL, $redirect);
 
         if ($requestedURL != "") {
             // if we already know where to go then go there.
@@ -290,6 +271,29 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logic->sendTo404Page($requestedURL, '');
     }
     
+	/**
+	 * @param options
+	 */
+    function logAReallyLongDebugMessage($options, $requestedURL, $redirect) {
+	 	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+	 	
+        $debugOptionsMsg = esc_html('auto_redirects: ' . $options['auto_redirects'] . ', auto_score: ' . 
+                $options['auto_score'] . ', auto_cats: ' . $options['auto_cats'] . ', auto_tags: ' .
+                $options['auto_tags'] . ', dest404page: ' . $options['dest404page']);
+
+        $remoteAddress = esc_sql($_SERVER['REMOTE_ADDR']);
+        if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
+            $remoteAddress = md5($remoteAddress);
+        }
+
+        $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $_SERVER['HTTP_USER_AGENT'] . ', REMOTE_ADDR: ' . 
+                $remoteAddress . ', REQUEST_URI: ' . urldecode($_SERVER['REQUEST_URI']));
+        $abj404logging->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
+                wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " . "is_page(): " . is_page() .
+                " | is_feed(): " . is_feed() . " | is_trackback(): " . is_trackback() . " | is_preview(): " .
+                is_preview() . " | options: " . $debugOptionsMsg . ', ' . $debugServerMsg);
+	}
+    
     /** Redirect to the page specified. 
      * @global type $abj404dao
      * @global type $abj404logging
@@ -389,7 +393,6 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
-        global $settingsPageName;
         
         if (!is_admin() || !current_user_can('administrator')) {
             $abj404logging->logUserCapabilities("addMainSettingsPageLink");
@@ -414,12 +417,12 @@ class ABJ_404_Solution_WordPress_Connector {
         if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
                 $options['menuLocation'] == 'settingsLevel') {
             // this adds the settings link at the same level as the "Tools" and "Settings" menu items.
-            $settingsPageName = add_menu_page(PLUGIN_NAME, PLUGIN_NAME, 'manage_options', 'abj404_solution',
+			$GLOBALS['abj404_settingsPageName'] = add_menu_page(PLUGIN_NAME, PLUGIN_NAME, 'manage_options', 'abj404_solution',
                     'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
                 
         } else {
             // this adds the settings link at Settings->404 Solution.
-            $settingsPageName = add_submenu_page('options-general.php', PLUGIN_NAME, $pageName, 'manage_options', ABJ404_PP, 
+        	$GLOBALS['abj404_settingsPageName'] = add_submenu_page('options-general.php', PLUGIN_NAME, $pageName, 'manage_options', ABJ404_PP, 
                     'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
         }
     }

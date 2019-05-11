@@ -233,6 +233,8 @@ class ABJ_404_Solution_Logging {
         $bodyLines[] = "WP_MEMORY_LIMIT: " . WP_MEMORY_LIMIT;
         $bodyLines[] = "Extensions: " . implode(", ", get_loaded_extensions());
         $bodyLines[] = "Published posts: " . $published_posts . ", published pages: " . $published_pages;
+        $bodyLines[] = "Active plugins: <pre>" . 
+        	json_encode(get_option('active_plugins'), JSON_PRETTY_PRINT) . "</pre>";
         
         $bodyLines[] = "Total error count: " . $totalErrorCount;
         

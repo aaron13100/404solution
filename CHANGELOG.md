@@ -1,5 +1,10 @@
 # Changelog #
 
+## Version 2.19.0 (May 11, 2019) ##
+* Improvement: The optional developer debug email includes a list of active plugins.
+* Improvement: Various logging improvements.
+* Improvement: Ignore a trailing /amp on 404s.
+
 ## Version 2.18.6 (May 6, 2019) ##
 * Improvement: Better similar posts matching for sites with over 300 pages or posts.
 

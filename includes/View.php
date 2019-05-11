@@ -926,13 +926,19 @@ class ABJ_404_Solution_View {
                 $last = __('Never Used', '404-solution');
             }
 
-            $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $row['id'];
+            $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $row['id'] .
+            	"&subpage=" . $sub;
             $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $row['logsid'];
-            $trashlink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'];
-            $ajaxTrashLink = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']);
-            $ignorelink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'];
-            $laterlink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'];
-            $deletelink = "?page=" . ABJ404_PP . "&subpage=abj404_captured&remove=1&id=" . $row['id'];
+            $trashlink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'] .
+            	"&subpage=" . $sub;
+            $ajaxTrashLink = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']) . 
+            	"&subpage=" . $sub;
+            $ignorelink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'] .
+            	"&subpage=" . $sub;
+            $laterlink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'] .
+            	"&subpage=" . $sub;
+            $deletelink = "?page=" . ABJ404_PP . "&subpage=abj404_captured&remove=1&id=" . $row['id'] .
+            	"&subpage=" . $sub;
 
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $trashlink .= "&trash=0";
@@ -1244,11 +1250,15 @@ class ABJ_404_Solution_View {
                 $last = __('Never Used', '404-solution');
             }
 
-            $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . absint($row['id']);
+            $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . absint($row['id']) .
+            	"&subpage=" . $sub;
             $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . absint($row['logsid']);
-            $trashlink = "?page=" . ABJ404_PP . "&id=" . absint($row['id']);
-            $ajaxTrashLink = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']);
-            $deletelink = "?page=" . ABJ404_PP . "&remove=1&id=" . absint($row['id']);
+            $trashlink = "?page=" . ABJ404_PP . "&id=" . absint($row['id']) .
+            	"&subpage=" . $sub;
+            $ajaxTrashLink = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']) .
+            	"&subpage=" . $sub;
+            $deletelink = "?page=" . ABJ404_PP . "&remove=1&id=" . absint($row['id']) .
+            	"&subpage=" . $sub;
 
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
                 $trashlink .= "&trash=0";

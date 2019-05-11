@@ -171,6 +171,11 @@ class ABJ_404_Solution_DataAccess {
         $result['rows_affected'] = $wpdb->rows_affected;
         $result['insert_id'] = $wpdb->insert_id;
         
+        if (!is_array($result['rows'])) {
+        	$abj404logging->debugMessage("Query result is not an array. Query: " . $query . 
+        			", result: " . json_encode($result));
+        }
+        
         if ($options['log_errors'] && $result['last_error'] != '') {
             if ($f->strpos($result['last_error'], 
                     "is marked as crashed and last (automatic?) repair failed") !== false) {
@@ -932,7 +937,7 @@ class ABJ_404_Solution_DataAccess {
                     array_filter(
                     array($_REQUEST[ABJ404_PP]['ignore_doprocess'], $_REQUEST[ABJ404_PP]['ignore_donotprocess']))));
         $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
-                " | Current user: " . $current_user_name . " | From: " . esc_html($requestedURL) . 
+        		" | Current user: " . $current_user_name . " | From: " . urldecode($_SERVER['REQUEST_URI']) . 
                 esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . 
                 $reasonMessage . ', Execution time: ' . round($helperFunctions->getExecutionTime(), 2) . 
                 ' seconds');
