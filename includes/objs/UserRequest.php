@@ -68,7 +68,8 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         }
         
         // remove a pointless trailing /amp
-        if ($f->endsWithCaseInsensitive($urlParts['path'], '/amp')) {
+        if ($f->endsWithCaseInsensitive($urlParts['path'], '/amp') && 
+        		$f->strlen($urlParts['path']) >= 6) {
         	$urlParts['path'] = substr($urlParts['path'], 0, $f->strlen($urlParts['path']) - 4);
         }
         
