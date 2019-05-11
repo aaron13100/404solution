@@ -1,9 +1,8 @@
 <?php
 
 // turn on debug for localhost etc
-$abj404_whitelist = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com', 
-    'www.wealth-psychology.com', 'wealth-psychology');
-$GLOBALS['abj404_whitelist'] = $abj404_whitelist;
+$GLOBALS['abj404_whitelist'] = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com',
+		'www.wealth-psychology.com', 'wealth-psychology');
 if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');

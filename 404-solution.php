@@ -51,7 +51,8 @@ function abj404_404listener() {
     }
     
     require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-    return ABJ_404_Solution_WordPress_Connector::process404();
+    $connector = new ABJ_404_Solution_WordPress_Connector();
+    return $connector->process404();
 }
 
 function abj404_dailyMaintenanceCronJobListener() {
