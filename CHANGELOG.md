@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.19.1 (May 13, 2019) ##
+* FIX: Allow editing redirects (broken in 2.19.0).
+
 ## Version 2.19.0 (May 11, 2019) ##
 * Improvement: The optional developer debug email includes a list of active plugins.
 * Improvement: Various logging improvements.
