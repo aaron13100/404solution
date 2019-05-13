@@ -926,8 +926,7 @@ class ABJ_404_Solution_View {
                 $last = __('Never Used', '404-solution');
             }
 
-            $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $row['id'] .
-            	"&subpage=" . $sub;
+            $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $row['id'];
             $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $row['logsid'];
             $trashlink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'] .
             	"&subpage=" . $sub;
@@ -1250,8 +1249,7 @@ class ABJ_404_Solution_View {
                 $last = __('Never Used', '404-solution');
             }
 
-            $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . absint($row['id']) .
-            	"&subpage=" . $sub;
+            $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . absint($row['id']);
             $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . absint($row['logsid']);
             $trashlink = "?page=" . ABJ404_PP . "&id=" . absint($row['id']) .
             	"&subpage=" . $sub;
