@@ -927,8 +927,13 @@ class ABJ_404_Solution_DataAccess {
                 " where requested_url = '" . esc_sql($requestedURL) . "' limit 1";
         $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
-        if (count($results['rows']) == 0) {
-            $minLogID = true;
+        $rows = $results['rows'];
+        if (is_countable($rows)) {
+        	if (count($rows) == 0) {
+        		$minLogID = true;
+        	}
+        } else {
+        	$abj404logging->errorMessage("Query result is not countable: " . json_encode($results));
         }
             
         // ------------ debug message begin
