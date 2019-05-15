@@ -142,7 +142,6 @@ class ABJ_404_Solution_SynchronizationUtils {
         
         if ($uniqueID == $currentLockHolder) {
             delete_option($internalSynchronizedKey);
-            self::$currentKeyValue = null;
             
         } else {
             throw new Exception("Tried to release lock when you're not the owner. synchronized key from user: " . $synchronizedKeyFromUser .

@@ -109,6 +109,9 @@ class ABJ_404_Solution_SpellChecker {
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $exploded = array_filter($f->regexSplit('/', $requestedURL));
+        if ($exploded == null || count($exploded) == 0) {
+        	return null;
+        }
         $postSlug = end($exploded);
         $postsBySlugRows = $abj404dao->getPublishedPagesAndPostsIDs($postSlug);
         if (count($postsBySlugRows) == 1) {

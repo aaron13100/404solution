@@ -75,6 +75,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.19.2 (May 15, 2019) ##
+* Improvement: Minor debug logging improvements.
+
 ## Version 2.19.1 (May 13, 2019) ##
 * FIX: Allow editing redirects (broken in 2.19.0).
 
