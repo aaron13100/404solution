@@ -566,7 +566,7 @@ class ABJ_404_Solution_PluginLogic {
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
         } else if ($action == "emptyRedirectTrash") {
-            if (check_admin_referer('abj404_emptyRedirectTrash') && is_admin()) {
+            if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 $abj404logic->doEmptyTrash('abj404_redirects');
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             } else {

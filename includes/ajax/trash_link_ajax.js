@@ -1,13 +1,17 @@
 
 
 jQuery(document).ready(function($) {
+	bindTrashLinkListeners();
+});
+
+function bindTrashLinkListeners() {
     jQuery(".ajax-trash-link").click(function (e) {
         // preventDefault() means don't move to the top of the page. 
         e.preventDefault();
         
         var trashFilter = getURLParameter('filter');
         
-        var row = $(this).closest("tr");
+        var row = jQuery(this).closest("tr");
         row.css("background-color", "grey");
 
         var theURL = jQuery(this).attr("data-url");
@@ -35,6 +39,5 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    
-});
+}
 
