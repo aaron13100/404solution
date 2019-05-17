@@ -10,8 +10,6 @@ if (typeof(getURLParameter) !== "function") {
 // when the user presses enter on the filter text input then update the table
 jQuery(document).ready(function($) {
     bindSearchFieldListeners();
-    
-    bindTrashLinkListeners();
 });
 
 function bindSearchFieldListeners() {

@@ -25,7 +25,7 @@ function bindTrashLinkListeners() {
             success: function (data) {
                 if (data.result.startsWith("fail")) {
                     row.css("background-color", "yellow");
-                    alert("Error: " + JSON.stringify(data, null, 2));
+                    alert("Error 1: " + JSON.stringify(data, null, 2));
                     
                 } else {
                     row.hide(1000, function(){ row.remove(); });

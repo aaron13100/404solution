@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.19.4 (May 17, 2019) ##
+* FIX: Fix the Trash links on the Redirects and Captured 404s pages.
+
 ## Version 2.19.3 (May 17, 2019) ##
 * FIX: Fix the Empty Trash button on the Redirects and Captured 404s pages.
 
