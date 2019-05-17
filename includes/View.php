@@ -861,6 +861,7 @@ class ABJ_404_Solution_View {
 
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
             $html = str_replace('{action_url}', $eturl, $html);
+            $html = str_replace('{action_value}', 'emptyCapturedTrash', $html);
             $html = $f->doNormalReplacements($html);
             echo $html;
         }
@@ -1117,11 +1118,11 @@ class ABJ_404_Solution_View {
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             echo "<div class=\"alignleft actions\">";
             $eturl = "?page=" . ABJ404_PP . "&filter=" . ABJ404_TRASH_FILTER . "&subpage=" . $sub;
-            $trashaction = "abj404_emptyRedirectTrash";
-            $eturl = wp_nonce_url($eturl, $trashaction);
+            $eturl = wp_nonce_url($eturl, "abj404_bulkProcess");
 
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
             $html = str_replace('{action_url}', $eturl, $html);
+            $html = str_replace('{action_value}', 'emptyRedirectTrash', $html);
             $html = $f->doNormalReplacements($html);
             echo $html;
             

@@ -10,6 +10,8 @@ if (typeof(getURLParameter) !== "function") {
 // when the user presses enter on the filter text input then update the table
 jQuery(document).ready(function($) {
     bindSearchFieldListeners();
+    
+    bindTrashLinkListeners();
 });
 
 function bindSearchFieldListeners() {
@@ -135,6 +137,7 @@ function paginationLinksChange(triggerItem) {
                 jQuery(currentSelector).animate({backgroundColor: originalColor});
             }
 
+        	bindTrashLinkListeners();
         },
         error: function (jqXHR, textStatus, errorThrown) {
             alert("Ajax error. Result: " + JSON.stringify(textStatus, null, 2) + 
