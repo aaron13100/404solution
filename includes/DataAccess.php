@@ -133,6 +133,7 @@ class ABJ_404_Solution_DataAccess {
     
     function doTableNameReplacements($query) {
         global $wpdb;
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $repacements = array();
         foreach ($wpdb->tables as $tableName) {
@@ -143,7 +144,7 @@ class ABJ_404_Solution_DataAccess {
         $query = str_replace(array_keys($repacements), array_values($repacements), $query);
         
         // custom table replacements
-        $query = mb_eregi_replace('[{]wp_abj404_(.*?)[}]', $wpdb->prefix . "abj404_\\1", $query);
+        $query = $f->regexReplace('[{]wp_abj404_(.*?)[}]', $wpdb->prefix . "abj404_\\1", $query);
         
         return $query;
     }
@@ -172,8 +173,8 @@ class ABJ_404_Solution_DataAccess {
         $result['insert_id'] = $wpdb->insert_id;
         
         if (!is_array($result['rows'])) {
-        	$abj404logging->debugMessage("Query result is not an array. Query: " . $query . 
-        			", result: " . json_encode($result));
+        	$abj404logging->errorMessage("Query result is not an array. Query: " . $query, 
+        			new Exception("Query result is not an array."));
         }
         
         if ($options['log_errors'] && $result['last_error'] != '') {
@@ -932,8 +933,6 @@ class ABJ_404_Solution_DataAccess {
         	if (count($rows) == 0) {
         		$minLogID = true;
         	}
-        } else {
-        	$abj404logging->errorMessage("Query result is not countable: " . json_encode($results));
         }
             
         // ------------ debug message begin
@@ -1328,13 +1327,15 @@ class ABJ_404_Solution_DataAccess {
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
 
-        if (count($rows) == 0) {
-            $redirect['id'] = 0;
-            
-        } else {
-            foreach ($rows[0] as $key => $value) {
-                $redirect[$key] = $value;
-            }
+        if (is_countable($rows)) {
+	        if (count($rows) == 0) {
+	            $redirect['id'] = 0;
+	            
+	        } else {
+	            foreach ($rows[0] as $key => $value) {
+	                $redirect[$key] = $value;
+	            }
+	        }
         }
         return $redirect;
     }

@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.19.5 (May 23, 2019) ##
+* FIX: Redirecting to Tags and Categories works again.
+* FIX: Redirecting with ?query=parts works again.
+
 ## Version 2.19.4 (May 17, 2019) ##
 * FIX: Fix the Trash links on the Redirects and Captured 404s pages.
 

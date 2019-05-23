@@ -67,14 +67,20 @@ class ABJ_404_Solution_Logging {
     
     /** Send a message to the log file if debug mode is on. 
      * This goes to a file and is used by every other class so it goes here.
-     * @param string $message  */
-    function debugMessage($message) {
+     * @param string $message  
+     * @param \Exception $e If present then a stack trace is included. */
+    function debugMessage($message, $e = null) {
+    	$stacktrace = "";
+    	if ($e != null) {
+    		$stacktrace = ", Stacktrace: " . $e->getTraceAsString();
+    	}
+    	
         $timestamp = $this->getTimestamp() . ' (DEBUG): ';
         if ($this->isDebug()) {
-            $this->writeLineToDebugFile($timestamp . $message);
+        	$this->writeLineToDebugFile($timestamp . $message . $stacktrace);
             
         } else {
-            array_push(self::$storedDebugMessages, $timestamp . $message);
+        	array_push(self::$storedDebugMessages, $timestamp . $message . $stacktrace);
         }
     }
 
