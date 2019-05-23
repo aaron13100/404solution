@@ -1435,6 +1435,7 @@ class ABJ_404_Solution_PluginLogic {
         $f = ABJ_404_Solution_Functions::getInstance();
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
         $queryParts = $f->removePageIDFromQueryString($userRequest->getQueryString());
+        $queryParts = ($queryParts == '') ? '' : '?' . $queryParts;
         $commentPart = $userRequest->getCommentPagePart();
         $finalDestination = $location . $commentPart . $queryParts;
         
