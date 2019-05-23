@@ -1502,9 +1502,9 @@ class ABJ_404_Solution_DataAccess {
 
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedCategories.sql");
-        $query = $this->doTableNameReplacements($query);
         $query = str_replace('{recognizedCategories}', $recognizedCategories, $query);
         $query = str_replace('{term_id}', $term_id, $query);
+        $query = $this->doTableNameReplacements($query);
         
         $rows = $wpdb->get_results($query);
         // check for errors

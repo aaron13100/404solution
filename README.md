@@ -75,6 +75,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.19.6 (May 23, 2019) ##
+* FIX: Fix the term_id syntax error for Karel. 
+
 ## Version 2.19.5 (May 23, 2019) ##
 * FIX: Redirecting to Tags and Categories works again.
 * FIX: Redirecting with ?query=parts works again.
