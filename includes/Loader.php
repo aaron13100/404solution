@@ -98,6 +98,7 @@ require_once ABJ404_PATH . "includes/ErrorHandler.php";
 require_once ABJ404_PATH . 'includes/Timer.php';
 require_once ABJ404_PATH . 'includes/PermalinkCache.php';
 require_once ABJ404_PATH . 'includes/SynchronizationUtils.php';
+require_once ABJ404_PATH . 'includes/php/FileSync.php';
 
 if (is_admin()) {
     require_once ABJ404_PATH . "includes/objs/WPNotice.php";

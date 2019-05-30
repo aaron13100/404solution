@@ -24,6 +24,31 @@ abstract class ABJ_404_Solution_Functions {
         return self::$instance;
     }
     
+    function str_replace($needle, $replacement, $haystack) {
+    	if (!is_array($needle)) {
+    		return $this->single_str_replace($needle, $replacement, $haystack);
+    	}
+    	
+    	for ($i = 0; $i < count($needle); $i++) {
+    		$oneNeedle = $needle[$i];
+    		$oneReplacement = '';
+    		if (is_array($replacement)) {
+    			$oneReplacement = $replacement[$i];
+    		} else {
+    			$oneReplacement = $replacement; 
+    		}
+    		$haystack = $this->str_replace($oneNeedle, $oneReplacement, $haystack);
+    	}
+    	return $haystack;
+    }
+    
+    function single_str_replace($needle, $replacement, $haystack) {
+    	$splitResult = $this->split(preg_quote($needle), $haystack);
+    	return implode($replacement, $splitResult);
+    }
+    
+    abstract function split($needle, $haystack);
+    
     abstract function strtolower($string);
     
     abstract function strlen($string);
@@ -96,7 +121,7 @@ abstract class ABJ_404_Solution_Functions {
             );
 
         // replace known strings that do not exist in the translation file.
-        $text = str_replace(array_keys($knownReplacements), array_values($knownReplacements), $text);
+        $text = $this->str_replace(array_keys($knownReplacements), array_values($knownReplacements), $text);
         
         // Find the strings to replace in the content.
         $re = '/\{(.+?)\}/x';
@@ -106,7 +131,8 @@ abstract class ABJ_404_Solution_Functions {
 
         // Iterate through each string to replace.
         foreach ($stringsToReplace[1] as $stringToReplace) {
-            $text = str_replace('{' . $stringToReplace . '}', 
+        	$regexSearchString = '{' . $stringToReplace . '}';
+        	$text = $this->str_replace($regexSearchString, 
                     __($stringToReplace, '404-solution'), $text);
         }
         
@@ -205,12 +231,14 @@ abstract class ABJ_404_Solution_Functions {
     
     /** Reads an entire file at once into a string and return it.
      * @param string $path
-     * @return string
+     * @param boolean $appendExtraData
      * @throws Exception
+     * @return string
      */
-    static function readFileContents($path) {
-        // modify what's returned to make debugging easier.
-        $dataSupplement = self::getDataSupplement($path);
+    static function readFileContents($path, $appendExtraData = true) {
+    	$finalResult = '';
+    	// modify what's returned to make debugging easier.
+    	$dataSupplement = self::getDataSupplement($path, $appendExtraData);
         
         if (!file_exists($path)) {
             throw new Exception("Error: Can't find file: " . $path);
@@ -239,11 +267,16 @@ abstract class ABJ_404_Solution_Functions {
         return $dataSupplement['prefix'] . $output . $dataSupplement['suffix'];
     }
 
-    private static function getDataSupplement($filePath) {
+    private static function getDataSupplement($filePath, $appendExtraData = true) {
         $f = ABJ_404_Solution_Functions::getInstance();
         $path = strtolower($filePath);
         $supplement = array();
-        if ($f->endsWithCaseInsensitive($path, '.sql')) {
+        
+        if (!$appendExtraData) {
+        	$supplement['prefix'] = '';
+        	$supplement['suffix'] = '';
+        	
+        } else if ($f->endsWithCaseInsensitive($path, '.sql')) {
             $supplement['prefix'] = "/* ------------------ " . $filePath . " BEGIN ----- */ \n";
             $supplement['suffix'] = "\n/* ------------------ " . $filePath . " END ----- */ \n";
             
@@ -262,11 +295,10 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     /** Deletes the existing file at $filePath and puts the URL contents in it's place.
-     * @global type $abj404logging
      * @param string $url
      * @param string $filePath
      */
-    static function readURLtoFile($url, $filePath) {
+    function readURLtoFile($url, $filePath) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         ABJ_404_Solution_Functions::safeUnlink($filePath);
@@ -277,7 +309,7 @@ abstract class ABJ_404_Solution_Functions {
                 //This is the file where we save the information
                 $destinationFileWriteHandle = fopen($filePath, 'w+');
                 //Here is the file we are downloading, replace spaces with %20
-                $ch = curl_init(str_replace(" ", "%20", $url));
+                $ch = curl_init($this->str_replace(" ", "%20", $url));
                 curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 '
                 . '(KHTML, like Gecko) Chrome/27.0.1453.94 Safari/537.36 (404 Solution WordPress Plugin)');
                 curl_setopt($ch, CURLOPT_TIMEOUT, 10);

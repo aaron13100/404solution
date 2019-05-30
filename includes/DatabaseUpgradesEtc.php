@@ -31,23 +31,23 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
-        $query = str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
+        $query = $f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
         $abj404dao->queryAndGetResults($query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
-        $query = str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
+        $query = $f->str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
         $abj404dao->queryAndGetResults($query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
-        $query = str_replace('{redirectsTable}', $redirectsTable, $query);
+        $query = $f->str_replace('{redirectsTable}', $redirectsTable, $query);
         $abj404dao->queryAndGetResults($query);
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
-        $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+        $query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         $abj404dao->queryAndGetResults($query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
-        $query = str_replace('{wp_abj404_lookup}', $lookupTable, $query);
+        $query = $f->str_replace('{wp_abj404_lookup}', $lookupTable, $query);
         $abj404dao->queryAndGetResults($query);
         
         // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
@@ -138,7 +138,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             // set the min_log_id for all logs entries that were created before the column was created.
             $abj404logging->infoMessage("Setting the min_log_id for the logs table: Begin.");
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
-            $query = str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+            $query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
             $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Setting the min_log_id for the logs table: Done.");
         }
@@ -166,6 +166,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
     function correctCollations() {
         global $wpdb;
+        $f = ABJ_404_Solution_Functions::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
@@ -182,8 +183,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
         // get the target collation
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
-        $query = str_replace('{table_names}', "'" . $postsTable . "'", $query);
-        $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
+        $query = $f->str_replace('{table_names}', "'" . $postsTable . "'", $query);
+        $query = $f->str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
         $results = $abj404dao->queryAndGetResults($query);
         $rows = $results['rows'];
         $row = $rows[0];
@@ -194,8 +195,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         foreach ($abjTableNames as $tableName) {
             // get collations of our tables and a target table.
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
-            $query = str_replace('{table_names}', "'" . $tableName . "'", $query);
-            $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
+            $query = $f->str_replace('{table_names}', "'" . $tableName . "'", $query);
+            $query = $f->str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
             $results = $abj404dao->queryAndGetResults($query);
             $rows = $results['rows'];
             $row = $rows[0];
@@ -219,7 +220,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         foreach ($abjTableNames as $tableName) {
             $query = "alter table {table_name} convert to charset " . $postsTableCharset . 
                     " collate " . $postsTableCollation;
-            $query = str_replace('{table_name}', $tableName, $query);
+            $query = $f->str_replace('{table_name}', $tableName, $query);
             $abj404dao->queryAndGetResults($query);
         }
     }

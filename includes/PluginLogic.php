@@ -25,8 +25,6 @@ class ABJ_404_Solution_PluginLogic {
             $urlRequest = $f->substr($urlRequest, $f->strlen($urlHomeDirectory . "/"));
         }
         
-        $urlRequest = rtrim($urlRequest, "/");
-        
         return $urlRequest;
     }
     /** Forward to a real page for queries like ?p=10
@@ -358,7 +356,7 @@ class ABJ_404_Solution_PluginLogic {
             foreach ($newItems as $newItem) {
                 if (array_search($newItem, $originalItems) === false) {
                     $originalItems[] = $newItem;
-                    $abj404logging->infoMessage('Added ' . $newItem . 'to the list of folders to ignore."');
+                    $abj404logging->infoMessage('Added ' . $newItem . ' to the list of folders to ignore."');
                 }
             }
 
@@ -1166,7 +1164,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         
         $tableOptions['filterText'] = trim($abj404dao->getPostOrGetSanitize("filterText", ""));
-        $tableOptions['filterText'] = str_replace('*/', '', $tableOptions['filterText']);
+        $tableOptions['filterText'] = $f->str_replace('*/', '', $tableOptions['filterText']);
 
         if ($abj404dao->getPostOrGetSanitize('orderby', "") != "") {
             $tableOptions['orderby'] = esc_sql($abj404dao->getPostOrGetSanitize('orderby'));
@@ -1403,7 +1401,7 @@ class ABJ_404_Solution_PluginLogic {
             $usableFilePatterns = array();
             foreach ($patternsToIgnore as $patternToIgnore) {
                 $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
-                $newPattern = str_replace("\*",".*", $newPattern);
+                $newPattern = $f->str_replace("\*",".*", $newPattern);
                 $usableFilePatterns[] = $newPattern;
             }
             $options['folders_files_ignore_usable'] = $usableFilePatterns;

@@ -39,15 +39,17 @@ class ABJ_404_Solution_WPNotices {
      * @return string the messages to display.
      */
     static function echoAdminNotices() {
-        $allHTML = '';
+    	$f = ABJ_404_Solution_Functions::getInstance();
+    	
+    	$allHTML = '';
         if (!current_user_can('administrator')) {
             return;
         }
         
         foreach (self::$adminNotices as $oneNotice) {
             $html = ABJ_404_Solution_Functions::readFileContents(ABJ404_PATH . "/includes/html/notice.html");
-            $html = str_replace('{class}', 'notice is-dismissable is-dismissible ' . $oneNotice->getType(), $html);
-            $html = str_replace('{message}', esc_html($oneNotice->getMessage()), $html);
+            $html = $f->str_replace('{class}', 'notice is-dismissable is-dismissible ' . $oneNotice->getType(), $html);
+            $html = $f->str_replace('{message}', esc_html($oneNotice->getMessage()), $html);
             
             $allHTML .= $html;
         }
