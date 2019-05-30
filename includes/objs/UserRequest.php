@@ -50,7 +50,7 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         
         if (($containsHost === false) || ($containsHost >= 7) || (!is_array(parse_url(esc_url($urlToParse))))) {
             // we have something like //login.php and it needs to be http://host.com/login.php
-            $urlToParse = str_replace('//', '/', $urlToParse);
+            $urlToParse = $f->str_replace('//', '/', $urlToParse);
             $urlToParse = ltrim($abj404logic->removeHomeDirectory($urlToParse), '/');
             $urlToParse = get_site_url() . '/' . $urlToParse;
         }

@@ -13,6 +13,10 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
      * @var array */
     private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
     
+    function split($pattern, $string) {
+    	return split($pattern, $string);
+    }
+    
     function strtolower($string) {
         return strtolower($string);
     }

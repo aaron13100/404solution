@@ -28,16 +28,16 @@ class ABJ_404_Solution_View_Suggestions {
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/viewSuggestions.html");
         // do special replacements
-        $html = str_replace('{SELECTED_SUGGEST_CATS}', $selectedSuggestCats, $html);
-        $html = str_replace('{SELECTED_SUGGEST_TAGS}', $selectedSuggestTags, $html);
-        $html = str_replace('{SUGGEST_MIN_SCORE}', esc_attr($options['suggest_minscore']), $html);
-        $html = str_replace('{SUGGEST_MAX_SUGGESTIONS}', esc_attr($options['suggest_max']), $html);
-        $html = str_replace('{SUGGEST_USER_TITLE}', esc_attr($options['suggest_title']), $html);
-        $html = str_replace('{SUGGEST_USER_BEFORE}', esc_attr($options['suggest_before']), $html);
-        $html = str_replace('{SUGGEST_USER_AFTER}', esc_attr($options['suggest_after']), $html);
-        $html = str_replace('{SUGGEST_USER_ENTRY_BEFORE}', esc_attr($options['suggest_entrybefore']), $html);
-        $html = str_replace('{SUGGEST_USER_ENTRY_AFTER}', esc_attr($options['suggest_entryafter']), $html);
-        $html = str_replace('{SUGGEST_USER_NO_RESULTS}', esc_attr($options['suggest_noresults']), $html);
+        $html = $f->str_replace('{SELECTED_SUGGEST_CATS}', $selectedSuggestCats, $html);
+        $html = $f->str_replace('{SELECTED_SUGGEST_TAGS}', $selectedSuggestTags, $html);
+        $html = $f->str_replace('{SUGGEST_MIN_SCORE}', esc_attr($options['suggest_minscore']), $html);
+        $html = $f->str_replace('{SUGGEST_MAX_SUGGESTIONS}', esc_attr($options['suggest_max']), $html);
+        $html = $f->str_replace('{SUGGEST_USER_TITLE}', esc_attr($options['suggest_title']), $html);
+        $html = $f->str_replace('{SUGGEST_USER_BEFORE}', esc_attr($options['suggest_before']), $html);
+        $html = $f->str_replace('{SUGGEST_USER_AFTER}', esc_attr($options['suggest_after']), $html);
+        $html = $f->str_replace('{SUGGEST_USER_ENTRY_BEFORE}', esc_attr($options['suggest_entrybefore']), $html);
+        $html = $f->str_replace('{SUGGEST_USER_ENTRY_AFTER}', esc_attr($options['suggest_entryafter']), $html);
+        $html = $f->str_replace('{SUGGEST_USER_NO_RESULTS}', esc_attr($options['suggest_noresults']), $html);
         // constants and translations.
         $html = $f->doNormalReplacements($html);
         

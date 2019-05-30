@@ -66,7 +66,7 @@ class ABJ_404_Solution_SpellChecker {
             
             $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying custom regex "' . $regexURL . '" to URL: ' . 
                     $requestedURL;
-            $preparedURL = str_replace('/', '\/', $regexURL);
+            $preparedURL = $f->str_replace('/', '\/', $regexURL);
             if ($f->regexMatch($preparedURL, $requestedURL)) {
                 $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
                 $idAndType = $row['final_dest'] . '|' . $row['type'];
@@ -82,7 +82,7 @@ class ABJ_404_Solution_SpellChecker {
                     // do a repacement for all of the groups found.
                     $final = $permalink['link'];
                     for ($x = 1; $x < count($results); $x++) {
-                        $final = str_replace('$' . $x , $results[$x] , $final);
+                        $final = $f->str_replace('$' . $x , $results[$x] , $final);
                     }
                     
                     $permalink['link'] = $final;
@@ -213,7 +213,8 @@ class ABJ_404_Solution_SpellChecker {
      * @return array
      */
     function findMatchingPosts($requestedURLRaw, $includeCats = '1', $includeTags = '1') {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$f = ABJ_404_Solution_Functions::getInstance();
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         
         $options = $abj404logic->getOptions();
@@ -224,9 +225,9 @@ class ABJ_404_Solution_SpellChecker {
             return $permalinks;
         }
         
-        $requestedURLSpaces = str_replace($this->separatingCharacters, " ", $requestedURLRaw);
+        $requestedURLSpaces = $f->str_replace($this->separatingCharacters, " ", $requestedURLRaw);
         $requestedURLCleaned = $this->getLastURLPart($requestedURLSpaces);
-        $fullURLspacesCleaned = str_replace('/', " ", $requestedURLSpaces);
+        $fullURLspacesCleaned = $f->str_replace('/', " ", $requestedURLSpaces);
         // if there is no extra stuff in the path then we ignore this to save time.
         if ($fullURLspacesCleaned == $requestedURLCleaned) {
             $fullURLspacesCleaned = '';
@@ -348,7 +349,7 @@ class ABJ_404_Solution_SpellChecker {
 
             $levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
             if ($fullURLspacesCleaned != '') {
-                $pathOnlySpaces = str_replace('/', " ", $pathOnly);
+                $pathOnlySpaces = $f->str_replace('/', " ", $pathOnly);
                 $levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $pathOnlySpaces));
             }
             $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
@@ -384,7 +385,7 @@ class ABJ_404_Solution_SpellChecker {
 
             $levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
             if ($fullURLspacesCleaned != '') {
-                $pathOnlySpaces = str_replace('/', " ", $pathOnly);
+                $pathOnlySpaces = $f->str_replace('/', " ", $pathOnly);
                 $levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $pathOnlySpaces));
             }
             $score = 100 - ( ( $levscore / $scoreBasis ) * 100 );
@@ -413,7 +414,7 @@ class ABJ_404_Solution_SpellChecker {
             $the_permalink = $this->getPermalink($id, $rowType);
             $urlParts = parse_url($the_permalink);
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
-            $existingPageURLSpaces = str_replace($this->separatingCharacters, " ", $existingPageURL);
+            $existingPageURLSpaces = $f->str_replace($this->separatingCharacters, " ", $existingPageURL);
             $existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
             $scoreBasis = $f->strlen($existingPageURLCleaned) * 3;
             if ($scoreBasis == 0) {
@@ -431,7 +432,7 @@ class ABJ_404_Solution_SpellChecker {
                         '\\1\\3', $requestedURLRaw);
                 
                 if (($strippedImageName != null) && ($strippedImageName != $requestedURLRaw)) {
-                    $strippedImageName = str_replace($this->separatingCharactersForImages, " ", $strippedImageName);
+                    $strippedImageName = $f->str_replace($this->separatingCharactersForImages, " ", $strippedImageName);
                     $levscore = min($levscore, $this->customLevenshtein($strippedImageName, $existingPageURL));
                     
                     $strippedImageName = $this->getLastURLPart($strippedImageName);
@@ -579,7 +580,7 @@ class ABJ_404_Solution_SpellChecker {
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
             $urlParts = null;
             
-            $existingPageURLSpaces = str_replace($this->separatingCharacters, " ", $existingPageURL);
+            $existingPageURLSpaces = $f->str_replace($this->separatingCharacters, " ", $existingPageURL);
             $existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
             $existingPageURLSpaces = null;
             

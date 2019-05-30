@@ -136,8 +136,9 @@ class ABJ_404_Solution_Logging {
      * @param string $msg 
      */
     function logUserCapabilities($msg) {
-        $user = wp_get_current_user();
-        $usercaps = str_replace(',"', ', "', wp_kses_post(json_encode($user->get_role_caps())));
+    	$f = ABJ_404_Solution_Functions::getInstance();
+    	$user = wp_get_current_user();
+        $usercaps = $f->str_replace(',"', ', "', wp_kses_post(json_encode($user->get_role_caps())));
         
         $this->debugMessage("User caps msg: " . esc_html($msg == '' ? '(none)' : $msg) . ", is_admin(): " . is_admin() . 
                 ", current_user_can('administrator'): " . current_user_can('administrator') . 

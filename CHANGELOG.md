@@ -1,5 +1,10 @@
 # Changelog #
 
+## Version 2.20.0 (May 30, 2019) ##
+* FIX: Hopefully fix the 'count(): Parameter must be an array or an object that implements Countable' issue. 
+* FIX: Hopefully fix manual redirects not working because of a trailing slash issue. 
+* Improvement: Try to use a temporary file instead of the DB for a syncing issue some users are having.
+
 ## Version 2.19.6 (May 23, 2019) ##
 * FIX: Fix the term_id syntax error for Karel. 
 
