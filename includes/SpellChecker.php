@@ -556,7 +556,7 @@ class ABJ_404_Solution_SpellChecker {
             } else {
                 throw Exception("Unknown row type ... " . $rowType);
             }
-
+            
             // use the permalink cache table if possible.
             $the_permalink = null;
             if ($rowType == 'pages') {
@@ -673,13 +673,20 @@ class ABJ_404_Solution_SpellChecker {
      */
     function getLastURLPart($url) {
         $f = ABJ_404_Solution_Functions::getInstance();
-        $newURL = $url;
         
-        if (strrpos($url, "/")) {
-            $newURL = $f->substr($url, strrpos($url, "/") + 1);
+        $parts = $f->regexSplit("/", $url);
+        for ($i = count($parts) - 1; $i >= 0; $i--) {
+        	$lastPart = $parts[$i];
+        	if (trim($lastPart) != "") {
+        		break;
+        	}
         }
         
-        return $newURL;
+        if (trim($lastPart) == "") {
+        	return $url;
+        }
+        
+        return $lastPart;
     }
 
     /** 

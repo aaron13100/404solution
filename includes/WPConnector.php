@@ -157,6 +157,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
         
         $requestedURL = $userRequest->getPathWithSortedQueryString();
+        $requestedURLWithoutComments = $userRequest->getRequestURIWithoutCommentsPage();
         
         // Get URL data if it's already in our database
         $redirect = $abj404dao->getActiveRedirectForURL($requestedURL);
@@ -173,6 +174,17 @@ class ABJ_404_Solution_WordPress_Connector {
 
                 // we only reach this line if an error happens because the user should already be redirected.
                 exit;
+            }
+            
+            if ($requestedURLWithoutComments != $requestedURL) {
+            	$redirect = $abj404dao->getActiveRedirectForURL($requestedURLWithoutComments);
+            	if ($redirect['id'] != '0' && $redirect['final_dest'] != '0') {
+            		// A redirect record exists.
+            		$abj404connector->processRedirect($requestedURL, $redirect, 'existing');
+            		
+            		// we only reach this line if an error happens because the user should already be redirected.
+            		exit;
+            	}
             }
 
             // --------------------------------------------------------------
