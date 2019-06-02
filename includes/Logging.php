@@ -327,8 +327,9 @@ class ABJ_404_Solution_Logging {
     }
     
     function getFilePathAndMoveOldFile($directory, $filename) {
+    	$f = ABJ_404_Solution_Functions::getInstance();
         // create the directory and move the file
-        if (!$this->createDirectoryWithErrorMessages($directory)) {
+        if (!$f->createDirectoryWithErrorMessages($directory)) {
             return ABJ404_PATH . $filename;
         }
         
@@ -338,30 +339,6 @@ class ABJ_404_Solution_Logging {
         }
         
         return $directory . $filename;
-    }
-    
-    /** 
-     * @param string $directory
-     * @return boolean
-     */
-    function createDirectoryWithErrorMessages($directory) {
-        if (!is_dir($directory)) {
-        	if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
-        		unlink($directory);
-        		
-        		if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
-        			error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
-        					$directory . ". A file with that name alraedy exists.");
-        			return false;
-        		}
-        		
-            } else if (!mkdir($directory)) {
-                error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
-                        $directory . ". Unknown issue.");
-                return false;
-            }
-        }
-        return true;
     }
     
     function limitDebugFileSize() {
