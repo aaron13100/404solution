@@ -138,7 +138,31 @@ abstract class ABJ_404_Solution_Functions {
         
         return $text;
     }
-
+    
+    /**
+     * @param string $directory
+     * @return boolean
+     */
+    function createDirectoryWithErrorMessages($directory) {
+    	if (!is_dir($directory)) {
+    		if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
+    			unlink($directory);
+    			
+    			if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
+    				error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
+    						$directory . ". A file with that name alraedy exists.");
+    				return false;
+    			}
+    			
+    		} else if (!mkdir($directory)) {
+    			error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
+    					$directory . ". Unknown issue.");
+    			return false;
+    		}
+    	}
+    	return true;
+    }
+    
     /** Turns ID|TYPE, SCORE into an array with id, type, score, link, and title.
      *
      * @param string $idAndType e.g. 15|POST is a page ID of 15 and a type POST.
@@ -236,7 +260,6 @@ abstract class ABJ_404_Solution_Functions {
      * @return string
      */
     static function readFileContents($path, $appendExtraData = true) {
-    	$finalResult = '';
     	// modify what's returned to make debugging easier.
     	$dataSupplement = self::getDataSupplement($path, $appendExtraData);
         

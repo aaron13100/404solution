@@ -46,6 +46,8 @@ class ABJ_404_Solution_SynchronizationUtils {
 					$pass = false;
 				}
 				
+				$f = ABJ_404_Solution_Functions::getInstance();
+				$f->createDirectoryWithErrorMessages(dirname($optionsModePath));
 				if ($pass) {
 					$usingFileMode = false;
 					touch($optionsModePath);
@@ -106,7 +108,6 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @param string $synchronizedKeyFromUser
      */
     function fixAnUnforeseenIssue($synchronizedKeyFromUser) {
-    	$f = ABJ_404_Solution_Functions::getInstance();
         $internalSynchronizedKey = $this->createInternalKey($synchronizedKeyFromUser);
 
         $uniqueID = $this->readOwner($internalSynchronizedKey);
