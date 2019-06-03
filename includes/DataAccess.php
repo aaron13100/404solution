@@ -57,7 +57,7 @@ class ABJ_404_Solution_DataAccess {
         /** Check for Errors & Display the results */
         if (is_wp_error($call_api)) {
             $api_error = $call_api->get_error_message();
-            $abj404logging->errorMessage("There was an API issue checking the latest plugin version ("
+            $abj404logging->infoMessage("There was an API issue checking the latest plugin version ("
                     . $api_error . ")");
             
             return array('version' => ABJ404_VERSION, 'last_updated' => null);
@@ -759,7 +759,7 @@ class ABJ_404_Solution_DataAccess {
                 $timeToCreatePreviously = floatval($row1['table_comment']);
             }
             
-            if ($timeToCreatePreviously < 5) {
+            if ($timeToCreatePreviously < 1) {
                 $abj404logging->debugMessage(__FUNCTION__ . " creating immediately because create time was " .
                         $timeToCreatePreviously . " seconds.");
                 // it took less than 5 seconds less time so let's just do it again right now.
