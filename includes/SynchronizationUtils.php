@@ -10,10 +10,18 @@ class ABJ_404_Solution_SynchronizationUtils {
 	
 	static $usingFileMode = null;
 	
+	private function getFileModePath() {
+		return ABJ404_PATH . 'temp/' . 'sync_mode_file.txt';
+	}
+	
+	private function getOptionsModePath() {
+		return ABJ404_PATH . 'temp/' . 'sync_mode_options.txt';
+	}
+	
 	private function isFileMode() {
 		if (self::$usingFileMode == null) {
-			$fileModePath = ABJ404_PATH . 'temp/' . 'sync_mode_file.txt';
-			$optionsModePath = ABJ404_PATH . 'temp/' . 'sync_mode_options.txt';
+			$fileModePath = $this->getFileModePath();
+			$optionsModePath = $this->getOptionsModePath();
 			if (file_exists($fileModePath) && file_exists($optionsModePath)) {
 				$fileUtils = ABJ_404_Solution_Functions::getInstance();
 				$fileUtils->safeUnlink($fileModePath);
@@ -60,6 +68,19 @@ class ABJ_404_Solution_SynchronizationUtils {
 		}
 		
 		return self::$usingFileMode;
+	}
+	
+	function switchToFileSyncMode() {
+		$f = ABJ_404_Solution_Functions::getInstance();
+		$fileUtils = ABJ_404_Solution_Functions::getInstance();
+		
+		self::$usingFileMode = true;
+		$optionsModePath = $this->getOptionsModePath();
+		$fileUtils->safeUnlink($optionsModePath);
+			
+		$fileModePath = $this->getFileModePath();
+		$f->createDirectoryWithErrorMessages(dirname($fileModePath));
+		touch($fileModePath);
 	}
     
     /** A prefix for keys used for synchronization methods. 
@@ -133,6 +154,14 @@ class ABJ_404_Solution_SynchronizationUtils {
         if ($timePassed > $maxExecutionTime) {
         	$this->deleteOwner($uniqueID, $internalSynchronizedKey);
             $valueAfterDelete = $this->readOwner($internalSynchronizedKey);
+            
+            // if options mode failed for some reason then switch to file sync mode.
+            if ($valueAfterDelete != null && $valueAfterDelete != '' && 
+            		!$this->isFileMode()) {
+            	$this->switchToFileSyncMode();
+            	return;
+            }
+            
             $uniqueIDForDebugging = $this->createUniqueID('DEBUG_KEY');
             $logger = ABJ_404_Solution_Logging::getInstance();
             $logger->errorMessage("Forcibly removed synchronization after " . 

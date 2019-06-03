@@ -75,10 +75,13 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.20.1 (June 3, 2019) ##
+* Improvement: Backend improvements. Syncing the permalink cache, sorting by hits, logging.
+
 ## Version 2.20.0 (May 30, 2019) ##
-* FIX: Hopefully fix the 'count(): Parameter must be an array or an object that implements Countable' issue. 
-* FIX: Hopefully fix manual redirects not working because of a trailing slash issue. 
-* Improvement: Try to use a temporary file instead of the DB for a syncing issue some users are having.
+* FIX: Fix the 'count(): Parameter must be an array or an object that implements Countable' issue. 
+* FIX: Fix manual redirects not working because of a trailing slash issue. 
+* Improvement: Use a temporary file instead of the DB for a syncing issue some users are having.
 
 ## Version 2.19.6 (May 23, 2019) ##
 * FIX: Fix the term_id syntax error for Karel. 

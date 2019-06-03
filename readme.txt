@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.20.0
+Version: 2.20.1
 Tested up to: 5.2
-Stable tag: 2.20.0
+Stable tag: 2.20.1
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -68,10 +68,13 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 == Changelog ==
 
+= Version 2.20.1 (June 3, 2019) =
+* Improvement: Backend improvements. Syncing the permalink cache, sorting by hits, logging.
+
 = Version 2.20.0 (May 30, 2019) =
-* FIX: Hopefully fix the 'count(): Parameter must be an array or an object that implements Countable' issue. 
-* FIX: Hopefully fix manual redirects not working because of a trailing slash issue. 
-* Improvement: Try to use a temporary file instead of the DB for a syncing issue some users are having.
+* FIX: Fix the 'count(): Parameter must be an array or an object that implements Countable' issue. 
+* FIX: Fix manual redirects not working because of a trailing slash issue. 
+* Improvement: Use a temporary file instead of the DB for a syncing issue some users are having.
 
 = Version 2.19.6 (May 23, 2019) =
 * FIX: Fix the term_id syntax error for Karel. 
