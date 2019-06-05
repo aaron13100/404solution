@@ -166,15 +166,24 @@ class ABJ_404_Solution_PluginLogic {
                 ($dest404page != ABJ404_TYPE_404_DISPLAYED)) {
             $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0);
             
-            // get the existing redirect before adding a new one.
-            $redirect = $abj404dao->getExistingRedirectForURL($requestedURL);
-            if (!isset($redirect['id']) || $redirect['id'] == 0) {
-                $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_CAPTURED, $permalink['type'], $permalink['id'], $options['default_redirect'], 0);
+            // make sure the page exists
+            if ($permalink['status'] == 'trash') {
+            	$msg = __("The user specified 404 page is in the trash. " .
+            			"Please update the user-specified 404 page on the Options page.", 
+            			'404-solution');
+            	$abj404logging->infoMessage($msg);
+            	
+            } else {
+	            // get the existing redirect before adding a new one.
+	            $redirect = $abj404dao->getExistingRedirectForURL($requestedURL);
+	            if (!isset($redirect['id']) || $redirect['id'] == 0) {
+	                $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_CAPTURED, $permalink['type'], $permalink['id'], $options['default_redirect'], 0);
+	            }
+	            
+	            $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'user specified 404 page. ' . $reason);
+	            $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
+	            exit;
             }
-            
-            $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'user specified 404 page. ' . $reason);
-            $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
-            exit;
         }
 
         // ---------------------------------------
@@ -1796,7 +1805,7 @@ class ABJ_404_Solution_PluginLogic {
             
         } else if ($type == ABJ404_TYPE_TAG) {
             $tag = get_tag($id);
-            return $tag->name;
+            return $tag == '' ? '' : $tag->name;
         }
         
         $abj404logging->errorMessage("Couldn't get page title. No matching type found for type: " . $type);

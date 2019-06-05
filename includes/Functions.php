@@ -193,6 +193,7 @@ abstract class ABJ_404_Solution_Functions {
                 $permalink['link'] = get_permalink($permalink['id']);
             }
             $permalink['title'] = get_the_title($permalink['id']);
+            $permalink['status'] = get_post_status($permalink['id']);
             
         } else if ($permalink['type'] == ABJ404_TYPE_TAG) {
             $permalink['link'] = get_tag_link($permalink['id']);
@@ -201,6 +202,11 @@ abstract class ABJ_404_Solution_Functions {
                 $permalink['title'] = $tag->name;
             } else {
                 $permalink['title'] = $permalink['link'];
+            }
+            if ($permalink['title'] == null || $permalink['title'] == '') {
+            	$permalink['status'] = 'trash';
+            } else {
+            	$permalink['status'] = 'published';
             }
             
         } else if ($permalink['type'] == ABJ404_TYPE_CAT) {
@@ -211,13 +217,21 @@ abstract class ABJ_404_Solution_Functions {
             } else {
                 $permalink['title'] = $permalink['link'];
             }
+            if ($permalink['title'] == null || $permalink['title'] == '') {
+            	$permalink['status'] = 'trash';
+            } else {
+            	$permalink['status'] = 'published';
+            }
             
         } else if ($permalink['type'] == ABJ404_TYPE_HOME) {
             $permalink['link'] = get_home_url();
             $permalink['title'] = get_bloginfo('name');
+            $permalink['status'] = 'published';
             
         } else if ($permalink['type'] == ABJ404_TYPE_EXTERNAL) {
             $permalink['link'] = $permalink['id'];
+            $permalink['status'] = get_post_status($permalink['id']);
+            $permalink['status'] = 'published';
             
         } else {
             $abj404logging->errorMessage("Unrecognized permalink type: " . 
