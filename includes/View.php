@@ -670,6 +670,7 @@ class ABJ_404_Solution_View {
                 __('(A page has been selected.)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
                 __('(An external URL will be used.)', '404-solution'), $html);
+        $html = $f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
         $html = $f->str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = $f->str_replace('{pageIDAndType}', $pageIDAndType, $html);
         $html = $f->str_replace('{data-url}', 
@@ -1401,6 +1402,7 @@ class ABJ_404_Solution_View {
                 __('(A page has been selected.)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
                 __('(An external URL will be used.)', '404-solution'), $html);
+        $html = $f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
         $html = $f->str_replace('{redirectPageTitle}', '', $html);
         $html = $f->str_replace('{pageIDAndType}', '', $html);
         $html = $f->str_replace('{redirectPageTitle}', '', $html);
@@ -1483,6 +1485,16 @@ class ABJ_404_Solution_View {
                 isset($options['dest404page']) ? $options['dest404page'] : null);
         $urlDestination = (array_key_exists('dest404pageURL', $options) && 
                 isset($options['dest404pageURL']) ? $options['dest404pageURL'] : null);
+        
+        $pageMissingWarning = "";
+        if ($userSelectedDefault404Page != null) {
+        	$permalink = 
+        		ABJ_404_Solution_Functions::permalinkInfoToArray($userSelectedDefault404Page, 0);
+        	if ($permalink['status'] == 'trash') {
+        		$pageMissingWarning = __("(The specified page doesn't exist. " .
+        				"Please update this setting.)", '404-solution');
+        	}
+        }
 
         $pageTitle = $abj404logic->getPageTitleFromIDAndType($userSelectedDefault404Page, $urlDestination);
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
@@ -1492,8 +1504,10 @@ class ABJ_404_Solution_View {
                 __('(Type a page name or an external URL)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
                 __('(A page has been selected.)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
-                __('(An external URL will be used.)', '404-solution'), $html);
+        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
+        		__('(An external URL will be used.)', '404-solution'), $html);
+        $html = $f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', $pageMissingWarning, $html);
+        
         $html = $f->str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = $f->str_replace('{pageIDAndType}', $userSelectedDefault404Page, $html);
         $html = $f->str_replace('{redirectPageTitle}', $pageTitle, $html);

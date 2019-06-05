@@ -75,6 +75,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.20.2 (June 5, 2019) ##
+* FIX: When a missing default 404 page is specified, don't redirect to it. Also warn the user on the options page (for nsoutter).
+
 ## Version 2.20.1 (June 3, 2019) ##
 * Improvement: Backend improvements. Syncing the permalink cache, sorting by hits, logging.
 

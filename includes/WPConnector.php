@@ -323,7 +323,6 @@ class ABJ_404_Solution_WordPress_Connector {
             // It's a redirect that has been deleted, ignored, or captured.
             $abj404logging->errorMessage("processRedirect() was called with bad redirect data. Data: " .
                     wp_kses_post(json_encode($redirect)));
-            return;
         }
 
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
