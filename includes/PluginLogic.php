@@ -168,7 +168,7 @@ class ABJ_404_Solution_PluginLogic {
             
             // make sure the page exists
             if ($permalink['status'] == 'trash') {
-            	$msg = __("The user specified 404 page can't be found. " .
+            	$msg = __("The user specified 404 page wasn't found. " .
             			"Please update the user-specified 404 page on the Options page.", 
             			'404-solution');
             	$abj404logging->infoMessage($msg);
