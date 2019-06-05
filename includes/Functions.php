@@ -248,6 +248,10 @@ abstract class ABJ_404_Solution_Functions {
                     wp_kses_post(json_encode($permalink)));
         }
         
+        if ($permalink['status'] === false) {
+        	$permalink['status'] = 'trash';
+        }
+        
         // decode anything that might be encoded to support utf8 characters
         if (array_key_exists('link', $permalink)) {
         	$permalink['link'] = urldecode($permalink['link']);
