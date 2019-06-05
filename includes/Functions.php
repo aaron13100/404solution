@@ -236,10 +236,13 @@ abstract class ABJ_404_Solution_Functions {
             $permalink['status'] = 'published';
             
         } else if ($permalink['type'] == ABJ404_TYPE_EXTERNAL) {
-            $permalink['link'] = $permalink['id'];
-            $permalink['status'] = get_post_status($permalink['id']);
-            $permalink['status'] = 'published';
-            
+        	$permalink['link'] = $permalink['id'];
+        	$permalink['status'] = 'published';
+        	
+        } else if ($permalink['type'] == ABJ404_TYPE_404_DISPLAYED) {
+        	$permalink['link'] = '';
+        	$permalink['status'] = 'published';
+        	
         } else {
             $abj404logging->errorMessage("Unrecognized permalink type: " . 
                     wp_kses_post(json_encode($permalink)));
