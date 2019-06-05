@@ -190,6 +190,7 @@ abstract class ABJ_404_Solution_Functions {
         $permalink['id'] = $meta[0];
         $permalink['type'] = $meta[1];
         $permalink['score'] = $linkScore;
+        $permalink['status'] = 'unknown';
 
         if ($permalink['type'] == ABJ404_TYPE_POST) {
             if ($rowType == 'image') {
@@ -245,7 +246,9 @@ abstract class ABJ_404_Solution_Functions {
         }
         
         // decode anything that might be encoded to support utf8 characters
-        $permalink['link'] = urldecode($permalink['link']);
+        if (array_key_exists('link', $permalink)) {
+        	$permalink['link'] = urldecode($permalink['link']);
+        }
         $permalink['title'] = array_key_exists('title', $permalink) ? urldecode($permalink['title']) : '';
 
         return $permalink;
