@@ -45,10 +45,9 @@ abstract class ABJ_404_Solution_Functions {
     function single_str_replace($needle, $replacement, $haystack) {
     	$splitResult = $this->split(preg_quote($needle), $haystack);
     	
-    	$_REQUEST[ABJ404_PP]['debug_info'] = 'Before implode. Replacement: ' . $replacement . 
-    		", Split result: " . json_encode($splitResult);
+    	$_REQUEST[ABJ404_PP]['debug_info'] = 'Before implode. Replacement: ' . 
+    		json_encode($replacement) . ", Split result: " . json_encode($splitResult);
     	$implodeResult = implode($replacement, $splitResult);
-    	$_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after implode.';
     	
     	return $implodeResult;
     }

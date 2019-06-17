@@ -12,7 +12,7 @@ class ABJ_404_Solution_ViewUpdater {
 
     static function init() {
         $me = new ABJ_404_Solution_ViewUpdater();
-        add_action('wp_ajax_ajaxUpdatePaginationLinks', 
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxUpdatePaginationLinks', 
                 array($me, 'ABJ_404_Solution_ViewUpdater::getPaginationLinks'));
         // wp_ajax_nopriv_ is for normal users
     }

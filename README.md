@@ -75,6 +75,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.20.3 (June 17, 2019) ##
+* Improvement: Log more information about the implode() issue some people are experiencing and other issues.
+
 ## Version 2.20.2 (June 5, 2019) ##
 * FIX: When a missing default 404 page is specified, don't redirect to it. Also warn the user on the options page (for nsoutter).
 

@@ -12,9 +12,6 @@ class ABJ_404_Solution_WordPress_Connector {
 
     /** Setup. */
     static function init() {
-        // always load
-        add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
-        
         if (is_admin()) {
             register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::doUnregisterCrons');
             register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::runOnPluginActivation');
@@ -27,9 +24,9 @@ class ABJ_404_Solution_WordPress_Connector {
             // doesn't work for the ajax dropdown list.
             add_action('admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts', 11);
             // wp_ajax_nopriv_ is for normal users
-            add_action('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
-            add_action('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
-            add_action('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
+            ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
+            ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
+            ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
             
             ABJ_404_Solution_PluginLogic::doRegisterCrons();
         }
@@ -87,6 +84,8 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         
         if (!is_array($links)) {
+        	$abj404logging->infoMessage("The settings links variable was not an array. " . 
+				"Please verify the validity of other plugins. " . json_encode($links));
             $links = array();
         }
         

@@ -84,11 +84,12 @@ define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 500);
 require_once ABJ404_PATH . "includes/ShortCode.php";
 
 // include only if necessary
+require_once ABJ404_PATH . "includes/Logging.php";
 require_once ABJ404_PATH . "includes/objs/UserRequest.php";
+require_once ABJ404_PATH . 'includes/wordpress/WPUtils.php';
 require_once ABJ404_PATH . "includes/Functions.php";
 require_once ABJ404_PATH . "includes/php/FunctionsPreg.php";
 require_once ABJ404_PATH . "includes/php/FunctionsMBString.php";
-require_once ABJ404_PATH . "includes/Logging.php";
 require_once ABJ404_PATH . "includes/DataAccess.php";
 require_once ABJ404_PATH . "includes/DatabaseUpgradesEtc.php";
 require_once ABJ404_PATH . "includes/PluginLogic.php";
