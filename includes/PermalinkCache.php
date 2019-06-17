@@ -23,7 +23,7 @@ class ABJ_404_Solution_PermalinkCache {
         add_action('save_post', array($me, 'save_postListener'), 10, 1);
         add_action('delete_post', array($me, 'save_postListener'), 10, 1);
         
-        add_action(ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK, 
+        ABJ_404_Solution_WPUtils::safeAddAction(ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK, 
                 array($me, 'updatePermalinkCache'), 10, 2);
     }
     

@@ -23,7 +23,7 @@ class ABJ_404_Solution_DataAccess {
         if (self::$instance == null) {
             self::$instance = new ABJ_404_Solution_DataAccess();
             
-            add_action(self::UPDATE_LOGS_HITS_TABLE_HOOK, 
+            ABJ_404_Solution_WPUtils::safeAddAction(self::UPDATE_LOGS_HITS_TABLE_HOOK, 
                     array(self::$instance, 'createRedirectsForViewHitsTable'));
         }
         
