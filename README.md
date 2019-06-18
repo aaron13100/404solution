@@ -75,6 +75,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.20.5 (June 18, 2019) ##
+* Improvement: See all categories when searching page suggestions by typing Categ in the search box.
+
 ## Version 2.20.4 (June 18, 2019) ##
 * FIX: Remember which column to order by on the page redirects and captured URLs pages (for vijilamarshal).
 

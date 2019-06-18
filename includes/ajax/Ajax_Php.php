@@ -146,11 +146,14 @@ class ABJ_404_Solution_Ajax_Php {
         $newPagesList = array();
         
         foreach ($pagesToFilter as $page) {
-            $haystack = $f->strtolower($page['label']);
-            $needle = $f->strtolower($searchTerm);
-            if ($f->strpos($haystack, $needle) !== false) {
-                $newPagesList[] = $page;
-            }
+        	$haystack = $f->strtolower($page['label']);
+        	$haystack2 = $f->strtolower($page['category']);
+        	$needle = $f->strtolower($searchTerm);
+        	if ($f->strpos($haystack, $needle) !== false) {
+        		$newPagesList[] = $page;
+        	} else if ($f->strpos($haystack2, $needle) !== false) {
+        		$newPagesList[] = $page;
+        	}
         }
         
         return $newPagesList;
