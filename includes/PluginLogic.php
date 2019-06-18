@@ -1145,7 +1145,7 @@ class ABJ_404_Solution_PluginLogic {
      * @param string $pageBeingViewed
      * @return array
      */
-    function getTableOptions($pageBeingViewed = null) {
+    function getTableOptions($pageBeingViewed) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         $tableOptions = array();

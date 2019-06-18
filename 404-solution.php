@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 2.20.3
+	Version: 2.20.4
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
