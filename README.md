@@ -75,6 +75,9 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 ## Changelog ##
 
+## Version 2.20.4 (June 18, 2019) ##
+* FIX: Remember which column to order by on the page redirects and captured URLs pages (for vijilamarshal).
+
 ## Version 2.20.3 (June 17, 2019) ##
 * Improvement: Log more information about the implode() issue some people are experiencing and other issues.
 

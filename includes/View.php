@@ -2056,7 +2056,7 @@ class ABJ_404_Solution_View {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
 
         if (count($tableOptions) == 0) {
-            $tableOptions = $abj404logic->getTableOptions();
+        	$tableOptions = $abj404logic->getTableOptions($sub);
         }
         
         $html = '';
@@ -2076,7 +2076,7 @@ class ABJ_404_Solution_View {
         global $abj404_redirect_types;
         global $abj404_captured_types;
         
-        $tableOptions = $abj404logic->getTableOptions();
+        $tableOptions = $abj404logic->getTableOptions($sub);
         
         $url = "?page=" . ABJ404_PP;
         if ($sub == 'abj404_captured') {
