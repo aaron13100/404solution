@@ -91,14 +91,16 @@ class ABJ_404_Solution_DataAccess {
         $currentArray = explode(".", $currentVersion);
         $latestArray = explode(".", $latestVersion);
         
+        // verify that the version numbers were parsed correctly.
         if (count($currentArray) != 3 || count($latestArray) != 3) {
             $abj404logging->errorMessage("Issue parsing version numbers. " . 
                     $currentVersion . ' / ' . $latestVersion);
             
         } else if ($currentArray[0] == $latestArray[0] && $currentArray[1] == $latestArray[1]) {
+        	// get the difference in the version numbers.
             $difference = absint(absint($latestArray[2]) - absint($currentArray[2]));
             
-            // if the major versions match then send the error file.
+            // if the major versions mostly match then send the error file.
             if ($difference <= 1) {
                 return true;
             }
@@ -255,6 +257,28 @@ class ABJ_404_Solution_DataAccess {
         if ($exception != null) {
             throw new Exception($exception);
         }
+    }
+    
+    function getOldSlug($post_id) {
+    	$f = ABJ_404_Solution_Functions::getInstance();
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	
+    	// we order by meta_id desc so that the first row will have the most recent value.
+    	$query = "select meta_value from {wp_postmeta} \nwhere post_id = '{post_id}' " .
+    		" and meta_key = '_wp_old_slug' \n" .
+    		" order by meta_id desc";
+    	$query = $f->str_replace('{post_id}', $post_id, $query);
+    	$query = $this->doTableNameReplacements($query);
+    	
+    	$results = $this->queryAndGetResults($query);
+    	
+    	$rows = $results['rows'];
+    	if ($rows == null || count($rows) == 0) {
+    		return null;
+    	}
+    	
+    	$row = $rows[0];
+    	return $row['meta_value'];
     }
     
     function truncatePermalinkCacheTable() {
@@ -1243,7 +1267,7 @@ class ABJ_404_Solution_DataAccess {
      * @global type $wpdb
      * @param string $fromURL
      * @param string $status
-     * @param string $type
+     * @param string $type ABJ404_TYPE_POST, ABJ404_TYPE_CAT, ABJ404_TYPE_TAG, etc.
      * @param string $final_dest
      * @param string $code
      * @param int $disabled
