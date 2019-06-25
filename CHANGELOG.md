@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.21.0 (June 26, 2019) ##
+* Improvement: Automatically create a redirect when a post slug is changed (doesn't work for pages). 
+* Improvement: Various logging improvements to help me debug things.
+
 ## Version 2.20.5 (June 18, 2019) ##
 * Improvement: See all categories when searching page suggestions by typing Categ in the search box.
 

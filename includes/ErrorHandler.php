@@ -27,13 +27,21 @@ class ABJ_404_Solution_ErrorHandler {
     static function NormalErrorHandler($errno, $errstr, $errfile, $errline) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
+        $onlyAWarning = false;
         try {
             // if the error file does not contain the name of our plugin then we ignore it.
             $pluginFolder = $f->substr(ABJ404_NAME, 0, $f->strpos(ABJ404_NAME, '/'));
             if ($f->strpos($errfile, $pluginFolder) === false) {
                 return false;
             }
-
+            
+            if ($errno == 2 && 
+            	$f->strpos($errstr, 
+            			"Cannot modify header information - headers already sent by") !== false) {
+            	
+       			$onlyAWarning = true;
+            }
+            
             $extraInfo = "(none)";
             if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('debug_info', $_REQUEST[ABJ404_PP])) {
                 $extraInfo = stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
@@ -53,6 +61,10 @@ class ABJ_404_Solution_ErrorHandler {
                             $abj404logging->debugMessage($errmsg . ', Trace:' . $e->getTraceAsString());
                         }
                         break;
+                        
+                    case $onlyAWarning:
+                    	$abj404logging->debugMessage($errmsg);
+                    	break;
                     
                     default:
                         $abj404logging->errorMessage($errmsg);

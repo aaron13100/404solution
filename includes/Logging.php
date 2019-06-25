@@ -84,15 +84,23 @@ class ABJ_404_Solution_Logging {
         }
     }
 
-    /** Send a message to the log. 
+    /** Send a message to the log.
      * This goes to a file and is used by every other class so it goes here.
      * @param string $message  */
     function infoMessage($message) {
-        $timestamp = $this->getTimestamp() . ' (INFO): ';
+    	$timestamp = $this->getTimestamp() . ' (INFO): ';
+    	$this->writeLineToDebugFile($timestamp . $message);
+    }
+    
+    /** Send a message to the log. 
+     * This goes to a file and is used by every other class so it goes here.
+     * @param string $message  */
+    function warn($message) {
+        $timestamp = $this->getTimestamp() . ' (WARN): ';
         $this->writeLineToDebugFile($timestamp . $message);
     }
 
-    /** Always send a message to the error_log.
+/** Always send a message to the error_log.
      * This goes to a file and is used by every other class so it goes here.
      * @param string $message
      * @param Exception $e
@@ -194,12 +202,19 @@ class ABJ_404_Solution_Logging {
             return false;
         }
         
-        $this->emailLogFileToDeveloper($latestErrorLineFound['line'], $latestErrorLineFound['total_error_count']);
-
         // update the latest error line emailed to the developer.
         file_put_contents($sentDateFile, $latestErrorLineFound['num']);
+        $fileContents = file_get_contents($sentDateFile);
+        if ($fileContents != $latestErrorLineFound['num']) {
+        	$this->errorMessage("There was an issue writing to the file " . $sentDateFile);
+        	return false;
+        	
+        } else {
+        	$this->emailLogFileToDeveloper($latestErrorLineFound['line'], $latestErrorLineFound['total_error_count']);
+        	return true;
+        }
         
-        return true;
+        return false;
     }
     
     function emailLogFileToDeveloper($errorLineMessage, $totalErrorCount) {

@@ -19,6 +19,8 @@ class ABJ_404_Solution_SpellChecker {
     private $permalinkCacheObj = null;
 
     private $permalinkCache = null;
+    
+    const MAX_DIST = 2083;
 
     static function init() {
         // any time a page is saved or updated, or the permalink structure changes, then we have to clear
@@ -523,7 +525,7 @@ class ABJ_404_Solution_SpellChecker {
          * distance and one ordered by the max distance. */
         $minDistances = array();
         $maxDistances = array();
-        for ($currentDistanceIndex = 0; $currentDistanceIndex <= 2083; $currentDistanceIndex++) {
+        for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_DIST; $currentDistanceIndex++) {
             $maxDistances[$currentDistanceIndex] = array();
             $minDistances[$currentDistanceIndex] = array();
         }
@@ -613,6 +615,16 @@ class ABJ_404_Solution_SpellChecker {
             if (is_array($minDistances[$minDist])) {
                 array_push($minDistances[$minDist], $id);
             }
+            
+            if ($maxDist < 0) {
+            	$abj404logging->errorMessage("maxDist is less than 0 (" . $maxDist . 
+            			") for '" . $existingPageURLCleaned . "', wordsInCommon: " .
+            			json_encode($wordsInCommon) . ", ");
+            	
+            } else if ($maxDist > self::MAX_DIST) {
+            	$maxDist = self::MAX_DIST;
+            }
+            
             if (is_array($maxDistances[$maxDist])) {
                 array_push($maxDistances[$maxDist], $id);
             }

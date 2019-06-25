@@ -246,11 +246,18 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         }        
         if (!class_exists('Plugin_Upgrader')) {
-            require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
-        }        
+        	require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
+        }
+        if (!function_exists('show_message')) {
+        	require_once ABSPATH . 'wp-admin/includes/misc.php';
+        }
         if (!class_exists('Plugin_Upgrader')) {
-            $abj404logging->infoMessage("There was an issue including the Plugin_Upgrader class.");
-            return;
+        	$abj404logging->warn("There was an issue including the Plugin_Upgrader class.");
+        	return;
+        }
+        if (!function_exists('show_message')) {
+        	$abj404logging->warn("There was an issue including the misc.php class.");
+        	return;
         }
         
         ob_start();
