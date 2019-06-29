@@ -11,7 +11,7 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 class ABJ_404_Solution_PermalinkCache {
     
     /** The name of the hook to use in WordPress. */
-    const UPDATE_PERMALINK_CACHE_HOOK = 'abj404_updatePermalinkCache_hook';
+    const UPDATE_PERMALINK_CACHE_HOOK = 'abj404_updatePermalinkCacheAction';
     
     /** The maximum number of times in a row to run the hook. */
     const MAX_EXECUTIONS = 15;
@@ -22,9 +22,6 @@ class ABJ_404_Solution_PermalinkCache {
         add_action('updated_option', array($me, 'permalinkStructureChanged'), 10, 2);
         add_action('save_post', array($me, 'save_postListener'), 10, 1);
         add_action('delete_post', array($me, 'save_postListener'), 10, 1);
-        
-        ABJ_404_Solution_WPUtils::safeAddAction(ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK, 
-                array($me, 'updatePermalinkCache'), 10, 2);
     }
     
     /** We'll just make sure the permalink gets updated in case it's changed.

@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.21.1 (June 29, 2019) ##
+* FIX: Correctly update the Hits column on the Captured 404 URLs page. 
+* FIX: Correctly update the permalink cache table.
+
 ## Version 2.21.0 (June 26, 2019) ##
 * Improvement: Automatically create a redirect when a post slug is changed (doesn't work for pages). 
 * Improvement: Various logging improvements to help me debug things.

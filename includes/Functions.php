@@ -45,6 +45,28 @@ abstract class ABJ_404_Solution_Functions {
     function single_str_replace($needle, $replacement, $haystack) {
     	$splitResult = $this->split(preg_quote($needle), $haystack);
     	
+    	$errorReason = '';
+    	if (is_array($replacement)) {
+    		$errorReason .= "replacement is not a string.";
+    	}
+    	if (!is_array($splitResult)) {
+    		$errorReason .= ", splitResult is not an array.";
+    	}
+    	if ($errorReason != '') {
+    		$logger = ABJ_404_Solution_Logging::getInstance();
+    		$logger->errorMessage($errorReason . ". replacement: " .
+    				json_encode($replacement) . ", needle: " . json_encode($needle) .
+    				", splitResult: " . json_encode($splitResult) . ", haystack: " .
+    				json_encode($haystack));
+    	}
+    	
+    	if (!is_array($splitResult)) {
+    		$logger = ABJ_404_Solution_Logging::getInstance();
+    		$logger->errorMessage("splitResult is not an array. replacement: " . 
+    				json_encode($replacement) . ", needle: " . json_encode($needle) . 
+    				", splitResult: " . json_encode($splitResult));
+    	}
+    	
     	$_REQUEST[ABJ404_PP]['debug_info'] = 'Before implode. Replacement: ' . 
     		json_encode($replacement) . ", Split result: " . json_encode($splitResult);
     	$implodeResult = implode($replacement, $splitResult);

@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.21.0
+Version: 2.21.1
 Tested up to: 5.2
-Stable tag: 2.21.0
+Stable tag: 2.21.1
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -60,6 +60,10 @@ Deleting old log lines to limit disk space usage is done automatically. You can 
 
 This is nothing to be worried about. It means people tried to access pages on your website that don't exist. You can either change the settings on the options page so that you're no longer notified about it (Options -> General Settings -> Admin notification level), or you can go to the "Captured 404 URLs" page and do something with them (either ignore them or specify which existing page they should redirect to).
 
+= IP addresses are not displayed correctly. I can't see the IP addresses. =
+
+In the settings there is a setting named "Log raw IPs" that you need to select to show the IP addresses.
+
 == Screenshots ==
 
 1. Admin Options Screen
@@ -67,6 +71,10 @@ This is nothing to be worried about. It means people tried to access pages on yo
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.21.1 (June 29, 2019) =
+* FIX: Correctly update the Hits column on the Captured 404 URLs page. 
+* FIX: Correctly update the permalink cache table.
 
 = Version 2.21.0 (June 26, 2019) =
 * Improvement: Automatically create a redirect when a post slug is changed (doesn't work for pages). 
