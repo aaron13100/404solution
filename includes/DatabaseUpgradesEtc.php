@@ -66,6 +66,16 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $abj404dao->queryAndGetResults($query);
             $abj404logging->infoMessage("Updated redirects table URL column to use a btree index.");
         }
+        if (!$f->regexMatchi("KEY[^\n]+status", $tableSQL)) {
+        	$query = "ALTER TABLE " . $redirectsTable . " ADD INDEX status (`status`)";
+        	$abj404dao->queryAndGetResults($query);
+        	$abj404logging->infoMessage("Updated redirects table. Added index to the STATUS column.");
+        }
+        if (!$f->regexMatchi("KEY[^\n]+disabled", $tableSQL)) {
+        	$query = "ALTER TABLE " . $redirectsTable . " ADD INDEX disabled (`disabled`)";
+        	$abj404dao->queryAndGetResults($query);
+        	$abj404logging->infoMessage("Updated redirects table. Added index to the DISABLED column.");
+        }
         if (!$f->regexMatchi("final_dest[^\n]+ USING BTREE", $tableSQL)) {
             if ($f->regexMatchi("KEY[^\n]+final_dest", $tableSQL)) {
                 $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX final_dest";

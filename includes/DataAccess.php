@@ -15,16 +15,13 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 
 class ABJ_404_Solution_DataAccess {
     
-    const UPDATE_LOGS_HITS_TABLE_HOOK = 'abj404_updateLogsHitsTable_hook';
+    const UPDATE_LOGS_HITS_TABLE_HOOK = 'abj404_updateLogsHitsTableAction';
     
     private static $instance = null;
     
     public static function getInstance() {
         if (self::$instance == null) {
             self::$instance = new ABJ_404_Solution_DataAccess();
-            
-            ABJ_404_Solution_WPUtils::safeAddAction(self::UPDATE_LOGS_HITS_TABLE_HOOK, 
-                    array(self::$instance, 'createRedirectsForViewHitsTable'));
         }
         
         return self::$instance;
@@ -813,7 +810,9 @@ class ABJ_404_Solution_DataAccess {
         
         // create a temp table
         $this->queryAndGetResults("drop table if exists " . $tempDestTable);
-        $ttQuery = "create table " . $tempDestTable . " \n " . $query;
+        $ttQuery = "create table " . $tempDestTable . " \n " . 
+        	"(index (requested_url)) \n " . 
+        	$query;
         $results = $this->queryAndGetResults($ttQuery, array('log_too_slow' => false));
         
         $elapsedTime = $results['elapsed_time'];

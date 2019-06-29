@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  http://www.wealth-psychology.com/404-solution/
 
-	Version: 2.21.0
+	Version: 2.21.1
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -60,4 +60,17 @@ function abj404_dailyMaintenanceCronJobListener() {
     $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     $abj404dao->deleteOldRedirectsCron();
 }
+function abj404_updateLogsHitsTableListener() {
+	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+	$abj404dao->createRedirectsForViewHitsTable();
+}
+function abj404_updatePermalinkCacheListener($maxExecutionTime, $executionCount = 1) {
+	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+	$permalinkCache = new ABJ_404_Solution_PermalinkCache();
+	$permalinkCache->updatePermalinkCache($maxExecutionTime, $executionCount);
+}
 add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
+add_action('abj404_updateLogsHitsTableAction', 'abj404_updateLogsHitsTableListener');
+add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheListener', 10, 2);
+
