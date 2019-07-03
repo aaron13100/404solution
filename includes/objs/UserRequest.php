@@ -44,8 +44,26 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         $f = ABJ_404_Solution_Functions::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         
-        // hanlde the case where '///?gf_page=upload' is returned as the request URI.
         $urlToParse = urldecode($_SERVER['REQUEST_URI']);
+      	
+        // if the user somehow requested an invalid URL that's too long then fix it.
+        if ($f->strlen($urlToParse) > 4096) {
+        	$matches = null;
+        	$f->regexMatch("image (.+);base64,", $urlToParse, $matches);
+        	if ($matches != null && $f->strlen($matches[0]) > 0) {
+        		$instrPattern = $matches[0];
+        		$truncateHere = $f->strpos($urlToParse, $instrPattern);
+        		$truncatedRequest = $f->substr($urlToParse, 0, $truncateHere);
+        		$urlToParse = $truncatedRequest;
+        	}
+        	
+        	if ($f->strlen($urlToParse) > 4096) {
+        		// just truncate it to something reasonable.
+        		$urlToParse = $f->substr($urlToParse, 0, 4095);
+        	}
+        }
+        
+        // hanlde the case where '///?gf_page=upload' is returned as the request URI.
         $containsHost = $f->strpos($urlToParse, "://");
         
         if (($containsHost === false) || ($containsHost >= 7) || (!is_array(parse_url(esc_url($urlToParse))))) {
