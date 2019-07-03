@@ -601,11 +601,12 @@ class ABJ_404_Solution_SpellChecker {
             // split the links into words. 
             $existingPageURLCleanedWords = explode(" ", $existingPageURLCleaned);
             $wordsInCommon = array_intersect($userRequestedURLWords, $existingPageURLCleanedWords);
+            $wordsInCommon = array_unique($wordsInCommon);
             if (count($wordsInCommon) > 0) {
 	            // if any words match then save the link to the $idsWithWordsInCommon list.
 	            array_push($idsWithWordsInCommon, $id);
     	        // also lower the $maxDist accordingly.
-	            $lengthOfTheLongestWordInCommon = max(array_map('strlen', $wordsInCommon));
+	            $lengthOfTheLongestWordInCommon = max(array_map(array($f, 'strlen'), $wordsInCommon));
 	            $maxDist = $maxDist - $lengthOfTheLongestWordInCommon;
             }
             // -----------------
