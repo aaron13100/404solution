@@ -184,6 +184,11 @@ class ABJ_404_Solution_DataAccess {
                     "is marked as crashed and last (automatic?) repair failed") !== false) {
                 $this->repairTable($result['last_error']);
             }
+            if ($f->strpos($result['last_error'],
+            		"ALTER TABLE causes auto_increment resequencing") !== false && 
+            		$f->strpos($result['last_error'], "resulting in duplicate entry") !== false) {
+            		$this->repairDuplicateIDs($result['last_error'], $query);
+            }
             
             $abj404logging->errorMessage("Ugh. SQL query error: " . $result['last_error'] . 
                     ", SQL: " . $query . ", Execution time: " . round($timer->getElapsedTime(), 2));
@@ -203,10 +208,9 @@ class ABJ_404_Solution_DataAccess {
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $re = 'Table \'.*\/(.+)\' is marked as crashed and last \(automatic\?\) repair failed';
-        $str = $errorMessage;
         $matches = null;
 
-        $f->regexMatch($re, $str, $matches);
+        $f->regexMatch($re, $errorMessage, $matches);
         if ($matches != null && $f->strlen($matches[1]) > 0) {
             $tableToRepair = $matches[1];
             if ($f->strpos($tableToRepair, "abj404") !== false) {
@@ -216,8 +220,37 @@ class ABJ_404_Solution_DataAccess {
                         json_encode($result));
             } else {
                 // tell someone the table $tableToRepair is broken.
+            	$abj404logging->warnMessage("The table " . $tableToRepair . " needs to be " . 
+            		"repaired with something like: repair table " . $tableToRepair);
             }
         }
+    }
+    
+    function repairDuplicateIDs($errorMessage, $sqlThatWasRun) {
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	$f = ABJ_404_Solution_Functions::getInstance();
+    	
+    	$reForID = 'resulting in duplicate entry \'(.+)\' for key';
+    	$reForTableName = "ALTER TABLE (.+) ADD ";
+    	$matchesForID = null;
+    	$matchesForTableName = null;
+    	
+    	$f->regexMatch($reForID, $errorMessage, $matchesForID);
+    	$f->regexMatch($reForTableName, $sqlThatWasRun, $matchesForTableName);
+    	if ($matchesForID != null && $f->strlen($matchesForID[1]) > 0 && 
+    			$matchesForTableName != null && $f->strlen($matchesForTableName[1]) > 0) {
+    				
+    		$idWithDuplicate = $matchesForID[1];
+    		$tableName = $matchesForTableName[1];
+    		
+    		if ($idWithDuplicate == 1) {
+    			$idWithDuplicate = 0;
+    		}
+    		$result = $this->queryAndGetResults("delete from " . $tableName . " where id = " . 
+    			$idWithDuplicate, array('log_errors' => false));
+   			$abj404logging->infoMessage("Attempted to fix a duplicate entry issue. Table: " . 
+   				$tableName . ", Result: " . json_encode($result));
+    	}
     }
     
     function executeAsTransaction($statementArray) {
