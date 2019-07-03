@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.21.2 (July 3, 2019) ##
+* FIX: Handle the case where an existing page name has invalid html characters.
+* FIX: When a user requests a URL that's invalid because it's too long then truncate it so it doesn't break things. 
+
 ## Version 2.21.1 (June 29, 2019) ##
 * FIX: Correctly update the Hits column on the Captured 404 URLs page. 
 * FIX: Correctly update the permalink cache table.

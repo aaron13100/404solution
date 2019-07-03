@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.21.1
+Version: 2.21.2
 Tested up to: 5.2
-Stable tag: 2.21.1
+Stable tag: 2.21.2
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -64,6 +64,11 @@ This is nothing to be worried about. It means people tried to access pages on yo
 
 In the settings there is a setting named "Log raw IPs" that you need to select to show the IP addresses.
 
+= An existing page is being redirected. =
+
+No, it's not. Only 404s are redirected. Did the page exist at the time of the redirect? Past issues have been caused by conflicts with other plugins, or by other plugins redirecting to non-existing pages. Turn on debug logging on the Options page and try the existing URL. Then view the debug log (from the Options page) and see how the 404 was handled.   
+
+
 == Screenshots ==
 
 1. Admin Options Screen
@@ -71,6 +76,10 @@ In the settings there is a setting named "Log raw IPs" that you need to select t
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.21.2 (July 3, 2019) =
+* FIX: Handle the case where an existing page name has invalid html characters.
+* FIX: When a user requests a URL that's invalid because it's too long then truncate it so it doesn't break things. 
 
 = Version 2.21.1 (June 29, 2019) =
 * FIX: Correctly update the Hits column on the Captured 404 URLs page. 
