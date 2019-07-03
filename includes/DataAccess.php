@@ -291,7 +291,6 @@ class ABJ_404_Solution_DataAccess {
     
     function getOldSlug($post_id) {
     	$f = ABJ_404_Solution_Functions::getInstance();
-    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
     	
     	// we order by meta_id desc so that the first row will have the most recent value.
     	$query = "select meta_value from {wp_postmeta} \nwhere post_id = '{post_id}' " .

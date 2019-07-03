@@ -371,43 +371,61 @@ class ABJ_404_Solution_View {
     function echoAdminDebugFile() {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         if (current_user_can('administrator')) {
-            echo "<div style=\"clear: both;\">";
-            // read the file and replace new lines with <BR/>.
-            if (file_exists($abj404logging->getDebugFilePath())) {
-                $linesRead = 0;
-                $handle = null;
-                try {
-                    if ($handle = fopen($abj404logging->getDebugFilePath(), "r")) {
-                        // read the file one line at a time.
-                        while (($line = fgets($handle)) !== false) {
-                            $linesRead++;
-                            echo nl2br(esc_html($line));
-                            
-                            if ($linesRead > 1000000) {
-                                echo "<BR/><BR/>Read " . $linesRead . " lines. Download debug file to see more.";
-                                break;
-                            }
-                        }
-                    } else {
-                        $this->errorMessage("Error reading debug file (3).");
-                    }
-
-                } catch (Exception $e) {
-                    $this->errorMessage("Error reading debug file. (4)", $e);
-                }
-                
-                if ($handle != null) {
-                    fclose($handle);
-                }
-                
-            } else {
-                echo nl2br(__('(The log file does not exist.)', '404-solution'));
-            }
+        	$filesToEcho = array($abj404logging->getDebugFilePath(), 
+        			$abj404logging->getDebugFilePathOld());
+        	for ($i = 0; $i < count($filesToEcho); $i++) {
+        		$currentFile = $filesToEcho[$i];
+        		echo "<div style=\"clear: both;\">";
+        		echo "<BR/>File contents of: " . $currentFile . ": <BR/><BR/>";
+        		// read the file and replace new lines with <BR/>.
+        		$this->echoFileContents($currentFile);
+        		echo "</div>";
+        	}
             
         } else {
-            echo "Non-admin request to view debug file.";
-            $abj404logging->errorMessage("Non-admin request to view debug file.");
+        	echo "Non-admin request to view debug file.";
+        	$current_user = wp_get_current_user();
+        	$userInfo = "Login: " . $current_user->user_login . ", display name: " . 
+         		$current_user->display_name . ", Email: " . $current_user->user_email . 
+         		", UserID: " . $current_user->ID;
+            $abj404logging->infoMessage("Non-admin request to view debug file. User info: " .
+            	$userInfo);
         }
+    }
+    
+    function echoFileContents($fileName) {
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	
+    	if (file_exists($fileName)) {
+    		$linesRead = 0;
+    		$handle = null;
+    		try {
+    			if ($handle = fopen($abj404logging->getDebugFilePath(), "r")) {
+    				// read the file one line at a time.
+    				while (($line = fgets($handle)) !== false) {
+    					$linesRead++;
+    					echo nl2br(esc_html($line));
+    					
+    					if ($linesRead > 1000000) {
+    						echo "<BR/><BR/>Read " . $linesRead . " lines. Download debug file to see more.";
+    						break;
+    					}
+    				}
+    			} else {
+    				$this->errorMessage("Error opening debug file.");
+    			}
+    			
+    		} catch (Exception $e) {
+    			$this->errorMessage("Error while reading debug file.", $e);
+    		}
+    		
+    		if ($handle != null) {
+    			fclose($handle);
+    		}
+    		
+    	} else {
+    		echo nl2br(__('(The log file does not exist.)', '404-solution'));
+    	}
     }
 
     /** Display the tools page.
