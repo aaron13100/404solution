@@ -250,15 +250,20 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function doUpdatePlugin($pluginInfo) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
+
+        $abj404logging->debugMessage("Attempting update to " . $pluginInfo['version']);
         
         // do the update.
         if (!class_exists('WP_Upgrader')) {
-            require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        	$abj404logging->debugMessage("Including WP_Upgrader for update.");
+        	require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         }        
         if (!class_exists('Plugin_Upgrader')) {
+        	$abj404logging->debugMessage("Including Plugin_Upgrader for update.");
         	require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
         }
         if (!function_exists('show_message')) {
+        	$abj404logging->debugMessage("Including misc.php for update.");
         	require_once ABSPATH . 'wp-admin/includes/misc.php';
         }
         if (!class_exists('Plugin_Upgrader')) {
@@ -269,6 +274,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         	$abj404logging->warn("There was an issue including the misc.php class.");
         	return;
         }
+        
+        $abj404logging->debugMessage("Includes for update complete. Updating... ");
         
         ob_start();
         $upgrader = new Plugin_Upgrader();

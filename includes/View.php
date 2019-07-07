@@ -376,7 +376,7 @@ class ABJ_404_Solution_View {
         	for ($i = 0; $i < count($filesToEcho); $i++) {
         		$currentFile = $filesToEcho[$i];
         		echo "<div style=\"clear: both;\">";
-        		echo "<BR/>File contents of: " . $currentFile . ": <BR/><BR/>";
+        		echo "<BR/>Contents of: " . $currentFile . ": <BR/><BR/>";
         		// read the file and replace new lines with <BR/>.
         		$this->echoFileContents($currentFile);
         		echo "</div>";
