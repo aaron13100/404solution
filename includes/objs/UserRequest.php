@@ -47,7 +47,7 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         $urlToParse = urldecode($_SERVER['REQUEST_URI']);
       	
         // if the user somehow requested an invalid URL that's too long then fix it.
-        if ($f->strlen($urlToParse) > 4096) {
+        if ($f->strlen($urlToParse) > ABJ404_MAX_URL_LENGTH) {
         	$matches = null;
         	$f->regexMatch("image (.+);base64,", $urlToParse, $matches);
         	if ($matches != null && $f->strlen($matches[0]) > 0) {
@@ -57,9 +57,9 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         		$urlToParse = $truncatedRequest;
         	}
         	
-        	if ($f->strlen($urlToParse) > 4096) {
+        	if ($f->strlen($urlToParse) > ABJ404_MAX_URL_LENGTH) {
         		// just truncate it to something reasonable.
-        		$urlToParse = $f->substr($urlToParse, 0, 4095);
+        		$urlToParse = $f->substr($urlToParse, 0, ABJ404_MAX_URL_LENGTH);
         	}
         }
         
