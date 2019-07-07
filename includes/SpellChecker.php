@@ -733,8 +733,8 @@ class ABJ_404_Solution_SpellChecker {
         $cost = 0;
         
         /// Test string length. URLs should not be more than 2,083 characters
-        if (max($RowLen, $ColLen) > 4096) {
-            throw new Exception("Maximum string length in customLevenshtein is " . 4096 . ". Yours is " . 
+        if (max($RowLen, $ColLen) > ABJ404_MAX_URL_LENGTH) {
+            throw new Exception("Maximum string length in customLevenshtein is " . ABJ404_MAX_URL_LENGTH . ". Yours is " . 
                     max($RowLen, $ColLen) + ".");
         }
         

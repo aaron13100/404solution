@@ -79,6 +79,7 @@ define("ABJ404_OPTION_DEFAULT_PERPAGE", 25);
 define("ABJ404_OPTION_MIN_PERPAGE", 3);
 define("ABJ404_OPTION_MAX_PERPAGE", 500);
 define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 500);
+define("ABJ404_MAX_URL_LENGTH", 4096);
 
 // always include
 require_once ABJ404_PATH . "includes/ShortCode.php";
