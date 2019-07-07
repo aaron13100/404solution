@@ -43,7 +43,16 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     function single_str_replace($needle, $replacement, $haystack) {
+    	$logger = ABJ_404_Solution_Logging::getInstance();
+    	
     	$splitResult = $this->split(preg_quote($needle), $haystack);
+    	if (!is_array($splitResult)) {
+    		$logger->debugMessage("SplitResult was: " . json_encode($splitResult) . 
+    			", regex encoding was: " . mb_regex_encoding());
+    		
+    		mb_regex_encoding("UTF-8");
+    		$splitResult = $this->split(preg_quote($needle), $haystack);
+    	}
     	
     	$errorReason = '';
     	if (is_array($replacement)) {
@@ -53,7 +62,6 @@ abstract class ABJ_404_Solution_Functions {
     		$errorReason .= ", splitResult is not an array.";
     	}
     	if ($errorReason != '') {
-    		$logger = ABJ_404_Solution_Logging::getInstance();
     		$logger->errorMessage($errorReason . ". replacement: " .
     				json_encode($replacement) . ", needle: " . json_encode($needle) .
     				", splitResult: " . json_encode($splitResult) . ", haystack: " .
@@ -61,7 +69,6 @@ abstract class ABJ_404_Solution_Functions {
     	}
     	
     	if (!is_array($splitResult)) {
-    		$logger = ABJ_404_Solution_Logging::getInstance();
     		$logger->errorMessage("splitResult is not an array. replacement: " . 
     				json_encode($replacement) . ", needle: " . json_encode($needle) . 
     				", splitResult: " . json_encode($splitResult));
