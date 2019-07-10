@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.21.5
+Version: 2.21.6
 Tested up to: 5.2
-Stable tag: 2.21.5
+Stable tag: 2.21.6
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -77,9 +77,8 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 
 == Changelog ==
 
-= Version 2.21.5 (July 9, 2019) =
-* FIX: Avoid the ''implode(): Invalid arguments passed'' issue for some users.
-* FIX: New version number for issues with 2.21.4.
+= Version 2.21.6 (July 9, 2019) =
+* FIX: Revert to 2.21.3 after various issues with 2.21.4 and 2.21.5.
 
 = Version 2.21.3 (July 7, 2019) =
 * FIX: Avoid the ''implode(): Invalid arguments passed'' issue for some users.
