@@ -83,9 +83,8 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 
 ## Changelog ##
 
-## Version 2.21.5 (July 9, 2019) ##
-* FIX: Avoid the ''implode(): Invalid arguments passed'' issue for some users.
-* FIX: New version number for issues with 2.21.4.
+## Version 2.21.6 (July 9, 2019) ##
+* FIX: Revert to 2.21.3 after various issues with 2.21.4 and 2.21.5.
 
 ## Version 2.21.3 (July 7, 2019) ##
 * FIX: Avoid the ''implode(): Invalid arguments passed'' issue for some users.
