@@ -1576,7 +1576,8 @@ class ABJ_404_Solution_PluginLogic {
             $missingParentPageIDs[] = $page->post_parent;
         }
 
-        $missingParentPageIDs = array_unique($missingParentPageIDs);
+        $missingParentPageIDs = array_merge(
+        	array_unique($missingParentPageIDs, SORT_REGULAR), array());
         return $missingParentPageIDs;
     }
 

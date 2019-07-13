@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.21.7 (July 13, 2019) ##
+* FIX: Avoid the ''implode(): Invalid arguments passed'' issue for some users.
+
 ## Version 2.21.6 (July 9, 2019) ##
 * FIX: Revert to 2.21.3 after various issues with 2.21.4 and 2.21.5.
 
