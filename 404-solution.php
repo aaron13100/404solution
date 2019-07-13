@@ -39,7 +39,7 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 */
 
 // Constants
-define( 'ABJ404_AUTHOR_EMAIL', 'aaron@wealth-psychology.com' );
+define( 'ABJ404_AUTHOR_EMAIL', 'juancaser' );
 /* plugin_dir_url( __FILE__ ) */
 define( 'ABJ404_URL', plugin_dir_url( __FILE__ ) );
 
@@ -50,8 +50,7 @@ define('ABJ404_SOLUTION_BASENAME', function_exists('plugin_basename') ? plugin_b
 	basename(dirname(__FILE__)) . '/' . basename(__FILE__));
 
 define( 'ABJ404_VERSION', '2.18.0' );
-define( 'ABJ404_HOME_URL', 'http://www.wealth-psychology.com/404-solution/'
-        . '?utm_source=404SolutionPlugin&utm_medium=WordPress');
+define( 'ABJ404_HOME_URL', 'https://github.com/juancaser/404solution/');
 define( 'ABJ404_PP', 'abj404_solution'); // plugin path
 define( 'PLUGIN_NAME', '404 Solution');
 
