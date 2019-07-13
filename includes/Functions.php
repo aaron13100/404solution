@@ -43,8 +43,11 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     function single_str_replace($needle, $replacement, $haystack) {
-    	$logger = ABJ_404_Solution_Logging::getInstance();
+    	if ($haystack == "") {
+    		return "";
+    	}
     	
+    	$logger = ABJ_404_Solution_Logging::getInstance();
     	$splitResult = $this->split(preg_quote($needle), $haystack);
     	if (!is_array($splitResult)) {
     		$logger->debugMessage("SplitResult was: " . json_encode($splitResult) . 

@@ -601,7 +601,7 @@ class ABJ_404_Solution_SpellChecker {
             // split the links into words. 
             $existingPageURLCleanedWords = explode(" ", $existingPageURLCleaned);
             $wordsInCommon = array_intersect($userRequestedURLWords, $existingPageURLCleanedWords);
-            $wordsInCommon = array_unique($wordsInCommon);
+            $wordsInCommon = array_merge(array_unique($wordsInCommon, SORT_REGULAR), array());
             if (count($wordsInCommon) > 0) {
 	            // if any words match then save the link to the $idsWithWordsInCommon list.
 	            array_push($idsWithWordsInCommon, $id);
