@@ -14,6 +14,9 @@ class ABJ_404_Solution_Logging {
     
     /** If an error happens then we will also output these. */
     private static $storedDebugMessages = array();
+
+    /** Used to store the last line sent from the debug file. */
+    const LAST_SENT_LINE = 'last_sent_line';
     
     public static function getInstance() {
         if (self::$instance == null) {
@@ -165,6 +168,8 @@ class ABJ_404_Solution_Logging {
     /** Email the log file to the plugin developer. */
     function emailErrorLogIfNecessary() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $options = $abj404logic->getOptions(true);
         
         if (!file_exists($this->getDebugFilePath())) {
             $this->debugMessage("No log file found so no errors were found.");
@@ -184,10 +189,15 @@ class ABJ_404_Solution_Logging {
         // get/check the last line that was emailed to the admin.
         $sentDateFile = $this->getDebugFilePathSentFile();
         
+        $sentLine = -1;
         if (file_exists($sentDateFile)) {
-            $sentLine = absint(ABJ_404_Solution_Functions::readFileContents($sentDateFile));
-        } else {
-            $sentLine = -1;
+            $sentLine = absint(
+            	ABJ_404_Solution_Functions::readFileContents($sentDateFile, false));
+            $this->debugMessage("Last sent line from file: " . $sentLine);
+        }
+        if ($sentLine < 1 && array_key_exists(self::LAST_SENT_LINE, $options)) {
+        	$sentLine = $options[self::LAST_SENT_LINE];
+       		$this->debugMessage("Last sent line from options: " . $sentLine);
         }
         
         // if we already sent the error line then don't send the log file again.
@@ -203,6 +213,8 @@ class ABJ_404_Solution_Logging {
         }
         
         // update the latest error line emailed to the developer.
+        $options[self::LAST_SENT_LINE] = $latestErrorLineFound['num'];
+        update_option('abj404_settings', $options);
         file_put_contents($sentDateFile, $latestErrorLineFound['num']);
         $fileContents = file_get_contents($sentDateFile);
         if ($fileContents != $latestErrorLineFound['num']) {
@@ -210,18 +222,20 @@ class ABJ_404_Solution_Logging {
         	return false;
         	
         } else {
-        	$this->emailLogFileToDeveloper($latestErrorLineFound['line'], $latestErrorLineFound['total_error_count']);
+        	$this->emailLogFileToDeveloper($latestErrorLineFound['line'], 
+        		$latestErrorLineFound['total_error_count'], $sentLine);
         	return true;
         }
         
         return false;
     }
     
-    function emailLogFileToDeveloper($errorLineMessage, $totalErrorCount) {
+    function emailLogFileToDeveloper($errorLineMessage, $totalErrorCount, $previouslySentLine) {
         global $wpdb;
         
         // email the log file.
-        $this->debugMessage("Creating zip file of error log file.");
+        $this->debugMessage("Creating zip file of error log file. " . 
+        	"Previously sent error line: " . $previouslySentLine);
         $logFileZip = $this->getZipFilePath();
         if (file_exists($logFileZip)) {
             ABJ_404_Solution_Functions::safeUnlink($logFileZip);
