@@ -43,7 +43,7 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     function single_str_replace($needle, $replacement, $haystack) {
-    	if ($haystack == "") {
+    	if ($haystack == "" || $this->strlen($haystack) == 0) {
     		return "";
     	}
     	
@@ -68,13 +68,17 @@ abstract class ABJ_404_Solution_Functions {
     		$logger->errorMessage($errorReason . ". replacement: " .
     				json_encode($replacement) . ", needle: " . json_encode($needle) .
     				", splitResult: " . json_encode($splitResult) . ", haystack: " .
-    				json_encode($haystack));
+    				json_encode($haystack) . ", length of haystack: " . 
+    				$this->strlen($haystack) . ", unicode of haystack[0]: " . 
+    				ord($haystack[0]));
     	}
     	
     	if (!is_array($splitResult)) {
     		$logger->errorMessage("splitResult is not an array. replacement: " . 
     				json_encode($replacement) . ", needle: " . json_encode($needle) . 
-    				", splitResult: " . json_encode($splitResult));
+    				", splitResult: " . json_encode($splitResult) . ", length of haystack: " .
+    				$this->strlen($haystack) . ", unicode of haystack[0]: " .
+    				ord($haystack[0]));
     	}
     	
     	$_REQUEST[ABJ404_PP]['debug_info'] = 'Before implode. Replacement: ' . 
