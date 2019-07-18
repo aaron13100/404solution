@@ -287,8 +287,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $abj404logging->infoMessage("Plugin upgrade error " . 
                 json_encode($upret->get_error_codes()) . ": " . json_encode($upret->get_error_messages()));
         }
-        $output = @ob_get_contents();
-        @ob_end_clean();
+        $output = "";
+        if (@ob_get_contents()) {
+        	$output = @ob_get_contents();
+        	@ob_end_clean();
+        }
         if ($f->strlen(trim($output)) > 0) {
             $abj404logging->infoMessage("Upgrade output: " . $output);
         }

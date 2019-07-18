@@ -80,6 +80,7 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 = Version 2.21.8 (July 18, 2019) =
 * FIX: Avoid emailing the debug file multiple times (for participating users).
 * FIX: Avoid the ''implode(): Invalid arguments passed'' issue for some users and include more debugging information.
+* FIX: Correct an automatic update issue with ob_end_clean(): failed to delete buffer. No buffer to delete.
 
 = Version 2.21.7 (July 13, 2019) =
 * FIX: Avoid the ''implode(): Invalid arguments passed'' issue for some users.
