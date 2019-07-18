@@ -83,6 +83,9 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 
 ## Changelog ##
 
+## Version 2.21.8 (July 18, 2019) ##
+* FIX: Avoid emailing the debug file multiple times (for participating users).
+
 ## Version 2.21.7 (July 13, 2019) ##
 * FIX: Avoid the ''implode(): Invalid arguments passed'' issue for some users.
 
