@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: http://www.wealth-psychology.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.21.8
+Version: 2.21.9
 Tested up to: 5.2
-Stable tag: 2.21.8
+Stable tag: 2.21.9
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -76,6 +76,10 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.21.9 (July 22, 2019) =
+* FIX: Avoid an Undefined index warning for MrBrian.
+* Improvement: More logging during automatic updates for minor versions.
 
 = Version 2.21.8 (July 18, 2019) =
 * FIX: Avoid emailing the debug file multiple times (for participating users).
