@@ -251,19 +251,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
 
-        $abj404logging->debugMessage("Attempting update to " . $pluginInfo['version']);
+        $abj404logging->infoMessage("Attempting update to " . $pluginInfo['version']);
         
         // do the update.
         if (!class_exists('WP_Upgrader')) {
-        	$abj404logging->debugMessage("Including WP_Upgrader for update.");
+        	$abj404logging->infoMessage("Including WP_Upgrader for update.");
         	require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         }        
         if (!class_exists('Plugin_Upgrader')) {
-        	$abj404logging->debugMessage("Including Plugin_Upgrader for update.");
+        	$abj404logging->infoMessage("Including Plugin_Upgrader for update.");
         	require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
         }
         if (!function_exists('show_message')) {
-        	$abj404logging->debugMessage("Including misc.php for update.");
+        	$abj404logging->infoMessage("Including misc.php for update.");
         	require_once ABSPATH . 'wp-admin/includes/misc.php';
         }
         if (!class_exists('Plugin_Upgrader')) {
@@ -275,7 +275,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         	return;
         }
         
-        $abj404logging->debugMessage("Includes for update complete. Updating... ");
+        $abj404logging->infoMessage("Includes for update complete. Updating... ");
         
         ob_start();
         $upgrader = new Plugin_Upgrader();

@@ -296,8 +296,13 @@ class ABJ_404_Solution_WordPress_Connector {
         if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
             $remoteAddress = md5($remoteAddress);
         }
+        
+        $httpUserAgent = "";
+        if (array_key_exists("HTTP_USER_AGENT", $_SERVER)) {
+        	$httpUserAgent = $_SERVER['HTTP_USER_AGENT'];
+        }
 
-        $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $_SERVER['HTTP_USER_AGENT'] . ', REMOTE_ADDR: ' . 
+        $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $httpUserAgent . ', REMOTE_ADDR: ' . 
                 $remoteAddress . ', REQUEST_URI: ' . urldecode($_SERVER['REQUEST_URI']));
         $abj404logging->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
                 wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " . "is_page(): " . is_page() .
