@@ -9,14 +9,6 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
     
-	function split($pattern, $string) {
-		if (strcmp($string, '') == 0) {
-			return array("");
-		}
-		
-		return mb_split($pattern, $string);
-	}
-	
     function strtolower($string) {
         return mb_strtolower($string);
     }
@@ -50,10 +42,6 @@ class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
      */
     function regexReplace($pattern, $replacement, $string) {
         return mb_ereg_replace($pattern, $replacement, $string);
-    }
-    
-    function regexSplit($pattern, $subject) {
-        return mb_split($pattern, $subject);
     }
     
 }

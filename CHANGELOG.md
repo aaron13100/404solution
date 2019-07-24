@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.21.10 (July 24, 2019) ##
+* FIX: Avoid the implode issue by using explode() instead of split() and mb_split().
+
 ## Version 2.21.9 (July 22, 2019) ##
 * FIX: Avoid an Undefined index warning for MrBrian.
 * Improvement: More logging during automatic updates for minor versions.

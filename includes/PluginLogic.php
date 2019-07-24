@@ -88,7 +88,7 @@ class ABJ_404_Solution_PluginLogic {
         // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
         // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
         // by https://www.sovrn.com/. 
-        $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_dontprocess'])),
+        $userAgents = array_filter(explode("\n", $f->strtolower($options['ignore_dontprocess'])),
                 array($f, 'removeEmptyCustom'));
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
@@ -117,7 +117,7 @@ class ABJ_404_Solution_PluginLogic {
         
         // -----
         // ignore and process
-        $userAgents = array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_doprocess'])),
+        $userAgents = array_filter(explode("\n", $f->strtolower($options['ignore_doprocess'])),
                 array($f, 'removeEmptyCustom'));
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
@@ -302,9 +302,9 @@ class ABJ_404_Solution_PluginLogic {
 
         // since 1.9.0. ignore_doprocess add SeznamBot, Pinterestbot, UptimeRobot and "Slurp" -> "Yahoo! Slurp"
         if (version_compare($currentDBVersion, '1.9.0') < 0) {
-            $userAgents = array_map('trim', array_filter($f->regexSplit('\n', $options['ignore_doprocess']),
+            $userAgents = array_map('trim', array_filter(explode("\n", $options['ignore_doprocess']),
                     array($f, 'removeEmptyCustom')));
-            $uasForSearch = array_map('trim', array_filter($f->regexSplit('\n', $f->strtolower($options['ignore_doprocess'])),
+            $uasForSearch = array_map('trim', array_filter(explode("\n", $f->strtolower($options['ignore_doprocess'])),
                     array($f, 'removeEmptyCustom')));
 
             foreach ($userAgents as &$str) {
@@ -358,7 +358,7 @@ class ABJ_404_Solution_PluginLogic {
         
         if (version_compare($currentDBVersion, '2.18.0') < 0) {
             // add .well-known/acme-challenge/*, wp-content/themes/*, wp-content/plugins/* to folders_files_ignore
-            $originalItems = array_map('trim', array_filter($f->regexSplit('\n', $options['folders_files_ignore']),
+            $originalItems = array_map('trim', array_filter(explode("\n", $options['folders_files_ignore']),
                     array($f, 'removeEmptyCustom')));
 
             $newItems = array("wp-content/plugins/*", "wp-content/themes/*", ".well-known/acme-challenge/*");
@@ -1405,7 +1405,7 @@ class ABJ_404_Solution_PluginLogic {
             $options['folders_files_ignore'] = wp_unslash(wp_kses_post(@$_POST['folders_files_ignore']));
             
             // make the regular expressions usable.
-            $patternsToIgnore = array_filter($f->regexSplit('\n', $options['folders_files_ignore']),
+            $patternsToIgnore = array_filter(explode("\n", $options['folders_files_ignore']),
                     array($f, 'removeEmptyCustom'));
             $usableFilePatterns = array();
             foreach ($patternsToIgnore as $patternToIgnore) {
