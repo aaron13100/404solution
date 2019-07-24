@@ -342,7 +342,7 @@ class ABJ_404_Solution_DataAccess {
         
         // get the valid post types
         $options = $abj404logic->getOptions();
-        $postTypes = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_post_types'])),
+        $postTypes = array_filter(explode("\n", $f->strtolower($options['recognized_post_types'])),
                 array($f, 'removeEmptyCustom'));
         $recognizedPostTypes = '';
         foreach ($postTypes as $postType) {
@@ -1427,7 +1427,7 @@ class ABJ_404_Solution_DataAccess {
         
         // get the valid post types
         $options = $abj404logic->getOptions();
-        $postTypes = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_post_types'])),
+        $postTypes = array_filter(explode("\n", $f->strtolower($options['recognized_post_types'])),
                 array($f, 'removeEmptyCustom'));
         $recognizedPostTypes = '';
         foreach ($postTypes as $postType) {
@@ -1483,7 +1483,7 @@ class ABJ_404_Solution_DataAccess {
         
         // get the valid post types
         $options = $abj404logic->getOptions();
-        $postTypes = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_post_types'])),
+        $postTypes = array_filter(explode("\n", $f->strtolower($options['recognized_post_types'])),
                 array($f, 'removeEmptyCustom'));
         $recognizedPostTypes = '';
         foreach ($postTypes as $postType) {
@@ -1519,7 +1519,7 @@ class ABJ_404_Solution_DataAccess {
         // get the valid post types
         $options = $abj404logic->getOptions();
 
-        $categories = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_categories'])),
+        $categories = array_filter(explode("\n", $f->strtolower($options['recognized_categories'])),
                 array($f, 'removeEmptyCustom'));
         $recognizedCategories = '';
         foreach ($categories as $category) {
@@ -1555,7 +1555,7 @@ class ABJ_404_Solution_DataAccess {
         // get the valid post types
         $options = $abj404logic->getOptions();
 
-        $categories = array_filter($f->regexSplit('\n', $f->strtolower($options['recognized_categories'])),
+        $categories = array_filter(explode("\n", $f->strtolower($options['recognized_categories'])),
                 array($f, 'removeEmptyCustom'));
         $recognizedCategories = '';
         if (count($categories) == 0) {

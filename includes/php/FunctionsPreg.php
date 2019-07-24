@@ -13,10 +13,6 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
      * @var array */
     private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
     
-    function split($pattern, $string) {
-    	return split($pattern, $string);
-    }
-    
     function strtolower($string) {
         return strtolower($string);
     }
@@ -69,16 +65,6 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
         $replacementDelimiter = $this->findADelimiter($replacement);
         $replacement = preg_replace($replacementDelimiter . '\\\\' . $replacementDelimiter, '\$', $replacement);
         return preg_replace($delimiterA . $pattern . $delimiterB, $replacement, $string);
-    }
-    
-    function regexSplit($pattern, $subject) {
-        // find a character to use for quotes
-        $delimiterA = "{";
-        $delimiterB = "}";
-        if (strpos($pattern, "}") !== false) {
-            $delimiterA = $delimiterB = $this->findADelimiter($pattern);
-        }
-        return preg_split($delimiterA . $pattern . $delimiterB, $subject);
     }
     
     function findADelimiter($pattern) {

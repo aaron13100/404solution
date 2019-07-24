@@ -110,7 +110,7 @@ class ABJ_404_Solution_SpellChecker {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
-        $exploded = array_filter($f->regexSplit('/', $requestedURL));
+        $exploded = array_filter(explode('/', $requestedURL));
         if ($exploded == null || count($exploded) == 0) {
         	return null;
         }
@@ -687,7 +687,7 @@ class ABJ_404_Solution_SpellChecker {
     function getLastURLPart($url) {
         $f = ABJ_404_Solution_Functions::getInstance();
         
-        $parts = $f->regexSplit("/", $url);
+        $parts = explode("/", $url);
         for ($i = count($parts) - 1; $i >= 0; $i--) {
         	$lastPart = $parts[$i];
         	if (trim($lastPart) != "") {

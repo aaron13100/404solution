@@ -45,17 +45,13 @@ abstract class ABJ_404_Solution_Functions {
     function single_str_replace($needle, $replacement, $haystack) {
     	if ($haystack == "" || $this->strlen($haystack) == 0) {
     		return "";
+    		
+    	} else if ($this->strpos($haystack, $needle) === false) {
+    		return $haystack;
     	}
     	
     	$logger = ABJ_404_Solution_Logging::getInstance();
-    	$splitResult = $this->split(preg_quote($needle), $haystack);
-    	if (!is_array($splitResult)) {
-    		$logger->debugMessage("SplitResult was: " . json_encode($splitResult) . 
-    			", regex encoding was: " . mb_regex_encoding());
-    		
-    		mb_regex_encoding("UTF-8");
-    		$splitResult = $this->split(preg_quote($needle), $haystack);
-    	}
+    	$splitResult = explode($needle, $haystack);
     	
     	$errorReason = '';
     	if (is_array($replacement)) {
@@ -64,7 +60,7 @@ abstract class ABJ_404_Solution_Functions {
     	if (!is_array($splitResult)) {
     		$errorReason .= ", splitResult is not an array.";
     	}
-    	if ($errorReason != '') {
+     	if ($errorReason != '') {
     		$logger->errorMessage($errorReason . ". replacement: " .
     				json_encode($replacement) . ", needle: " . json_encode($needle) .
     				", splitResult: " . json_encode($splitResult) . ", haystack: " .
@@ -88,8 +84,6 @@ abstract class ABJ_404_Solution_Functions {
     	return $implodeResult;
     }
     
-    abstract function split($needle, $haystack);
-    
     abstract function strtolower($string);
     
     abstract function strlen($string);
@@ -103,9 +97,6 @@ abstract class ABJ_404_Solution_Functions {
     abstract function regexMatchi($pattern, $string, &$regs = null);
     
     abstract function regexReplace($pattern, $replacement, $string);
-    
-    abstract function regexSplit($pattern, $subject);
-    
     
     /**  Used with array_filter()
      * @param string $value
