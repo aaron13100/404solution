@@ -83,6 +83,9 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 
 ## Changelog ##
 
+## Version 2.21.11 (July 27, 2019) ##
+* FIX: Do not create redirects if the option is unchecked.
+
 ## Version 2.21.10 (July 24, 2019) ##
 * FIX: Avoid the implode issue by using explode() instead of split() and mb_split().
 
