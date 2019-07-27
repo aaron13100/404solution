@@ -185,6 +185,14 @@ class ABJ_404_Solution_WordPress_Connector {
             		exit;
             	}
             }
+            
+            if (array_key_exists('auto_redirects', $options) && 
+            	$options['auto_redirects'] == '0') {
+            		
+            	$abj404logic->sendTo404Page($requestedURL, 
+            		'Do not create redirects per the options.');
+            	return;
+            }
 
             // --------------------------------------------------------------
             // try a permalink change.
