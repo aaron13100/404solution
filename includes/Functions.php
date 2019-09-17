@@ -200,9 +200,10 @@ abstract class ABJ_404_Solution_Functions {
      * @param string $idAndType e.g. 15|POST is a page ID of 15 and a type POST.
      * @param int $linkScore
      * @param string $rowType if this is "image" then wp_get_attachment_image_src() is used.
+     * @param array $options in case an external URL is used.
      * @return array an array with id, type, score, link, and title.
      */
-    static function permalinkInfoToArray($idAndType, $linkScore, $rowType = null) {
+    static function permalinkInfoToArray($idAndType, $linkScore, $rowType = null, $options = null) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $permalink = array();
 
@@ -262,7 +263,14 @@ abstract class ABJ_404_Solution_Functions {
             $permalink['status'] = 'published';
             
         } else if ($permalink['type'] == ABJ404_TYPE_EXTERNAL) {
-        	$permalink['link'] = $permalink['id'];
+        	if ($options == null) {
+        		$abj404logging->errorMessage("You forgot to pass the options and an external " . 
+        			"destination is being used.");
+        	}
+        	$urlDestination = (array_key_exists('dest404pageURL', $options) &&
+        		isset($options['dest404pageURL']) ? $options['dest404pageURL'] : 
+        		'External URL not found in options ABJ404 Solution Error');
+        	$permalink['link'] = $urlDestination;
         	$permalink['status'] = 'published';
         	
         } else if ($permalink['type'] == ABJ404_TYPE_404_DISPLAYED) {

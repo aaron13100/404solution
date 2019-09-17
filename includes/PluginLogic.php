@@ -164,7 +164,8 @@ class ABJ_404_Solution_PluginLogic {
             ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
         if (($dest404page != ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) && 
                 ($dest404page != ABJ404_TYPE_404_DISPLAYED)) {
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0);
+                	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0, 
+                		null, $options);
             
             // make sure the page exists
             if ($permalink['status'] == 'trash') {

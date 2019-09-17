@@ -236,7 +236,8 @@ class ABJ_404_Solution_WordPress_Connector {
             if (is_single() || is_page()) {
                 if (!is_feed() && !is_trackback() && !is_preview()) {
                     $theID = get_the_ID();
-                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($theID . "|" . ABJ404_TYPE_POST, 0);
+                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray(
+                    	$theID . "|" . ABJ404_TYPE_POST, 0, null, $options);
 
                     $urlParts = parse_url($permalink['link']);
                     $perma_link = $urlParts['path'];
