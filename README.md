@@ -83,6 +83,9 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 
 ## Changelog ##
 
+## Version 2.21.12 (September 18, 2019) ##
+* FIX: Setting the "Redirect all unhandled 404s to" option to an external URL works agian.
+
 ## Version 2.21.11 (July 27, 2019) ##
 * FIX: Do not create redirects if the option is unchecked.
 

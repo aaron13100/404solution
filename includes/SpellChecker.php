@@ -167,7 +167,8 @@ class ABJ_404_Solution_SpellChecker {
             // we only use the first element of the array;
             $linkScore = reset($permalinks);
             $idAndType = key($permalinks);
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore, $rowType);
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore, 
+            	$rowType, $options);
 
             if ($permalink['score'] >= $minScore) {
                 // We found a permalink that will work!

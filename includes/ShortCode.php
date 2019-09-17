@@ -68,7 +68,8 @@ class ABJ_404_Solution_ShortCode {
         $displayed = 0;
 
         foreach ($permalinkSuggestions as $idAndType => $linkScore) {
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore, $rowType);
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore, 
+            	$rowType, $options);
 
             // only display the suggestion if the score is high enough 
             // and if we're not currently on the page we're about to suggest.
