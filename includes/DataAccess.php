@@ -970,6 +970,7 @@ class ABJ_404_Solution_DataAccess {
     function logRedirectHit($requestedURL, $action, $matchReason, $requestedURLDetail = null) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $f = ABJ_404_Solution_Functions::getInstance();
         
         $now = time();
 
@@ -984,7 +985,7 @@ class ABJ_404_Solution_DataAccess {
         }
         $ipAddressToSave = esc_sql($_SERVER['REMOTE_ADDR']);
         if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
-            $ipAddressToSave = md5($ipAddressToSave);
+        	$ipAddressToSave = $f->md5lastOctet($ipAddressToSave);
         }
         
         // we have to know what to set for the $minLogID value
