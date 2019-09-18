@@ -296,6 +296,7 @@ class ABJ_404_Solution_WordPress_Connector {
 	 */
     function logAReallyLongDebugMessage($options, $requestedURL, $redirect) {
 	 	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+	 	$f = ABJ_404_Solution_Functions::getInstance();
 	 	
         $debugOptionsMsg = esc_html('auto_redirects: ' . $options['auto_redirects'] . ', auto_score: ' . 
                 $options['auto_score'] . ', auto_cats: ' . $options['auto_cats'] . ', auto_tags: ' .
@@ -303,7 +304,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         $remoteAddress = esc_sql($_SERVER['REMOTE_ADDR']);
         if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
-            $remoteAddress = md5($remoteAddress);
+        	$remoteAddress = $f->md5lastOctet($remoteAddress);
         }
         
         $httpUserAgent = "";

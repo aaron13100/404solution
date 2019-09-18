@@ -84,6 +84,34 @@ abstract class ABJ_404_Solution_Functions {
     	return $implodeResult;
     }
     
+    /** Hash the last octet of an IP address. 
+     * @param string $ip
+     * @return string
+     */
+    function md5lastOctet($ip) {
+    	if (trim($ip) == "") {
+    		return $ip;
+    	}
+    	$partsToStrip = 1;
+    	$separatorChar = ".";
+    	
+    	// split into parts
+    	$parts = explode(".", $ip);
+    	if (count($parts) == 1) {
+    		$parts = explode(":", $ip);
+    		// if exploding on : worked then assume we have an IPv6.
+    		if (count($parts) > 1) {
+    			$partsToStrip = count($parts) - 3;
+    			$separatorChar = ":";
+    		}
+    	}
+    	$firstPart = implode($separatorChar, array_slice($parts, 0, count($parts) - $partsToStrip));
+    	$partToHash = $parts[count($parts) - $partsToStrip];
+    	$lastPart = $separatorChar . substr(base_convert(md5($partToHash), 16,32), 0, 12);
+    	
+    	return $firstPart . $lastPart;
+    }
+    
     abstract function strtolower($string);
     
     abstract function strlen($string);

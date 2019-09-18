@@ -85,6 +85,7 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 
 ## Version 2.21.12 (September 18, 2019) ##
 * FIX: Setting the "Redirect all unhandled 404s to" option to an external URL works agian.
+* Improvement: Only hash the last octet of IP addresses for GDPR compliance (last part for IPv4, last 5 parts for IPv6).
 
 ## Version 2.21.11 (July 27, 2019) ##
 * FIX: Do not create redirects if the option is unchecked.
