@@ -83,7 +83,10 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 
 ## Changelog ##
 
-## Version 2.21.12 (September 18, 2019) ##
+## Version 2.21.14 (September 27, 2019) ##
+* FIX: Ordering by the Hits column on the Captured 404 URLs page sometimes caused no URLs to be displayed.
+
+## Version 2.21.14 (September 18, 2019) ##
 * FIX: Setting the "Redirect all unhandled 404s to" option to an external URL works agian.
 * Improvement: Only hash the last octet of IP addresses for GDPR compliance (last part for IPv4, last 5 parts for IPv6).
 

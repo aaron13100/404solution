@@ -1065,7 +1065,7 @@ class ABJ_404_Solution_View {
         if ($displayed == 0) {
             $html .= "<tr>";
             $html .= "<td></td>";
-            $html .= "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . __('No Records To Display', '404-solution') . "</td>";
+            $html .= "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . __('No Captured 404 Records To Display', '404-solution') . "</td>";
             $html .= "<td></td>";
             $html .= "</tr>";
         }
@@ -1369,7 +1369,7 @@ class ABJ_404_Solution_View {
             $html .= "<tr>\n" .
                 "<td></td>" .
                 "<td colspan=\"8\" style=\"text-align: center; font-weight: bold;\">" . 
-                __('No Records To Display', '404-solution') . "</td>" .
+                __('No Redirect Records To Display', '404-solution') . "</td>" .
                 "<td></td>" .
                 "</tr>";
         }

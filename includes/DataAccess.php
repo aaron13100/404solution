@@ -550,27 +550,27 @@ class ABJ_404_Solution_DataAccess {
      * @return int the number of records matching the specified types.
      */
     function getRecordCount($types = array(), $trashed = 0) {
-        global $wpdb;
         $recordCount = 0;
 
         if (count($types) >= 1) {
-
-            $query = "select count(id) from {wp_abj404_redirects} where 1 and (";
+            $query = "select count(id) as count from {wp_abj404_redirects} where 1 and (status in (";
             $query = $this->doTableNameReplacements($query);
-            $x = 0;
+            
+            $filteredTypes = array();
             foreach ($types as $type) {
-                if ($x >= 1) {
-                    $query .= " or ";
-                }
-                $query .= "status = " . esc_sql($type);
-                $x++;
+            	array_push($filteredTypes, esc_sql($type));
             }
-            $query .= ")";
+            $typesForSQL = implode(", ", $filteredTypes);
+            $query .= $typesForSQL . "))";
 
             $query .= " and disabled = " . esc_sql($trashed);
 
-            $row = $wpdb->get_row($query, ARRAY_N);
-            $recordCount = $row[0];
+            $result = $this->queryAndGetResults($query);
+            $rows = $result['rows'];
+            if (count($rows) > 0) {
+	            $row = $rows[0];
+	            $recordCount = $row['count'];
+            }
         }
 
         return $recordCount;
@@ -658,7 +658,9 @@ class ABJ_404_Solution_DataAccess {
      * @return array rows from the redirects table.
      */
     function getRedirectsForView($sub, $tableOptions) {
-        // for normal page views we limit the rows returned based on user preferences for paginaiton.
+    	$logger = ABJ_404_Solution_Logging::getInstance();
+    	
+    	// for normal page views we limit the rows returned based on user preferences for paginaiton.
         $limitStart = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
         $limitEnd = absint(sanitize_text_field($tableOptions['perpage']));
         
@@ -671,11 +673,15 @@ class ABJ_404_Solution_DataAccess {
         // they can use a different ID - not the ID from the logs table.
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
+        $foundRowsBeforeLogsData = count($rows);
         
         // populate the logs data if we need to
         if (!$queryAllRowsAtOnce) {
             $rows = $this->populateLogsData($rows);
         }
+        $logger->debugMessage("Found " . $foundRowsBeforeLogsData . 
+        	" rows to display before log data and " . count($rows) . 
+        	" rows to display after log data for page: ". $sub);
         
         return $rows;
     }
@@ -843,7 +849,7 @@ class ABJ_404_Solution_DataAccess {
         // create a temp table
         $this->queryAndGetResults("drop table if exists " . $tempDestTable);
         $ttQuery = "create table " . $tempDestTable . " \n " . 
-        	"(index (requested_url)) \n " . 
+        	"(index (requested_url(512))) \n " . 
         	$query;
         $results = $this->queryAndGetResults($ttQuery, array('log_too_slow' => false));
         

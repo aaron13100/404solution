@@ -1,4 +1,4 @@
-# Copyright (C) 2017 404-solution
+# Copyright (C) 404-solution
 # This file is distributed under the same license as the 404-solution package.
 msgid ""
 msgstr ""
@@ -17,15 +17,9 @@ msgstr ""
 "X-Poedit-SearchPathExcluded-0: *.js\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n\n"
 
-#: includes/admin.php:37, includes/admin.php:786
 msgid "404 Solution"
 msgstr ""
 
-#: includes/admin.php:37
-msgid "There are .esc_html$captured. captured 404 URLs to be processed."
-msgstr ""
-
-#: includes/admin.php:70
 msgid "Error: Invalid value specified for default redirect type"
 msgstr ""
 
