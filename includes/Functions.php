@@ -101,7 +101,7 @@ abstract class ABJ_404_Solution_Functions {
     		$parts = explode(":", $ip);
     		// if exploding on : worked then assume we have an IPv6.
     		if (count($parts) > 1) {
-    			$partsToStrip = count($parts) - 3;
+    			$partsToStrip = max(count($parts) - 3, 1);
     			$separatorChar = ":";
     		}
     	}
@@ -294,6 +294,8 @@ abstract class ABJ_404_Solution_Functions {
         	if ($options == null) {
         		$abj404logging->errorMessage("You forgot to pass the options and an external " . 
         			"destination is being used.");
+        		$abj404logic = new ABJ_404_Solution_PluginLogic();
+        		$options = $abj404logic->getOptions();
         	}
         	$urlDestination = (array_key_exists('dest404pageURL', $options) &&
         		isset($options['dest404pageURL']) ? $options['dest404pageURL'] : 
