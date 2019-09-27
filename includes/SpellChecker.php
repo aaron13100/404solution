@@ -60,6 +60,8 @@ class ABJ_404_Solution_SpellChecker {
     function getPermalinkUsingRegEx($requestedURL) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
+        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $options = $abj404logic->getOptions();
         
         $regexURLsRows = $abj404dao->getRedirectsWithRegEx();
         
@@ -72,7 +74,8 @@ class ABJ_404_Solution_SpellChecker {
             if ($f->regexMatch($preparedURL, $requestedURL)) {
                 $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
                 $idAndType = $row['final_dest'] . '|' . $row['type'];
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, '0');
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, '0', 
+                	null, $options);
                 $permalink['matching_regex'] = $regexURL;
                 
                 // if the matching regex contains a group and the destination contains a replacement, 
