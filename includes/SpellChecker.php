@@ -80,7 +80,9 @@ class ABJ_404_Solution_SpellChecker {
                 
                 // if the matching regex contains a group and the destination contains a replacement, 
                 // then use them
-                if (($f->regexMatch("\.*\(.+\).*", $regexURL) != 0) && ($f->strpos($permalink['link'], '$') !== FALSE)) {
+                $regexMatchResult = $f->regexMatch("\.*\(.+\).*", $regexURL);
+                $replacementStrPosResult = $f->strpos($permalink['link'], '$');
+                if (($regexMatchResult != 0) && ($replacementStrPosResult !== FALSE)) {
                     $results = array();
                     $f->regexMatch($regexURL, $requestedURL, $results);
                     

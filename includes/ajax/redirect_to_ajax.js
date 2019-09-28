@@ -124,13 +124,13 @@ jQuery(document).ready(function($) {
  */
 function abj404_validateAndUpdateFeedback() {
     // 4 => ABJ404_TYPE_EXTERNAL
-    var ABJ404_TYPE_EXTERNAL = "4|4";
+    var ABJ404_TYPE_EXTERNAL = "4";
     
     var userTypedValue = jQuery("#redirect_to_user_field").val();
     
     if (abj404_isValidURL(userTypedValue)) {
         jQuery("#redirect_to_data_field_title").val(userTypedValue);
-        jQuery("#redirect_to_data_field_id").val(ABJ404_TYPE_EXTERNAL);
+        jQuery("#redirect_to_data_field_id").val(ABJ404_TYPE_EXTERNAL + '|' + ABJ404_TYPE_EXTERNAL);
     } else {
         // if no item was selected then we force the search box to change back to 
         // whatever the user previously selected.
@@ -145,7 +145,7 @@ function abj404_validateAndUpdateFeedback() {
     if ((selectedPageID === null) || (selectedPageID === "")) {
         jQuery(".redirect_to_user_field_explanation").text(tooltip_empty);
         
-    } else if (selectedPageID === ABJ404_TYPE_EXTERNAL) {
+    } else if (selectedPageID != undefined && selectedPageID.endsWith('|' + ABJ404_TYPE_EXTERNAL)) {
         jQuery("#redirect_to_user_field_explanation").text(tooltip_url);
     } else {
         jQuery("#redirect_to_user_field_explanation").text(tooltip_page);
