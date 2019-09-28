@@ -291,16 +291,19 @@ abstract class ABJ_404_Solution_Functions {
             $permalink['status'] = 'published';
             
         } else if ($permalink['type'] == ABJ404_TYPE_EXTERNAL) {
-        	if ($options == null) {
-        		$abj404logging->errorMessage("You forgot to pass the options and an external " . 
-        			"destination is being used.");
-        		$abj404logic = new ABJ_404_Solution_PluginLogic();
-        		$options = $abj404logic->getOptions();
+        	$permalink['link'] = $permalink['id'];
+        	if ($permalink['link'] == ABJ404_TYPE_EXTERNAL) {
+	        	if ($options == null) {
+	        		$abj404logging->errorMessage("You forgot to pass the options and an external " . 
+	        			"destination is being used.");
+	        		$abj404logic = new ABJ_404_Solution_PluginLogic();
+	        		$options = $abj404logic->getOptions();
+	        	}
+	        	$urlDestination = (array_key_exists('dest404pageURL', $options) &&
+	        		isset($options['dest404pageURL']) ? $options['dest404pageURL'] : 
+	        		'External URL not found in options ABJ404 Solution Error');
+	        	$permalink['link'] = $urlDestination;
         	}
-        	$urlDestination = (array_key_exists('dest404pageURL', $options) &&
-        		isset($options['dest404pageURL']) ? $options['dest404pageURL'] : 
-        		'External URL not found in options ABJ404 Solution Error');
-        	$permalink['link'] = $urlDestination;
         	$permalink['status'] = 'published';
         	
         } else if ($permalink['type'] == ABJ404_TYPE_404_DISPLAYED) {

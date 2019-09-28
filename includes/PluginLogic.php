@@ -162,10 +162,14 @@ class ABJ_404_Solution_PluginLogic {
         $dest404page = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ? 
                 $options['dest404page'] : 
             ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
-        if (($dest404page != ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) && 
-                ($dest404page != ABJ404_TYPE_404_DISPLAYED)) {
-                	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0, 
-                		null, $options);
+        
+        $check1 = ($dest404page !== (ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED));
+        $check2 = ($dest404page !== ABJ404_TYPE_404_DISPLAYED);
+        $check3 = $check1 && $check2;
+        if ($check3) {
+           	// $idAndType OK on regular 404
+           	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0, 
+           		null, $options);
             
             // make sure the page exists
             if ($permalink['status'] == 'trash') {
@@ -1382,6 +1386,9 @@ class ABJ_404_Solution_PluginLogic {
         }
         if (array_key_exists('redirect_to_data_field_title', $_POST) && isset($_POST['redirect_to_data_field_title'])) {
             $options['dest404pageURL'] = sanitize_text_field(@$_POST['redirect_to_data_field_title']);
+            if ($options['dest404page'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
+            	$options['dest404page'] = $options['dest404pageURL'] . '|' . ABJ404_TYPE_EXTERNAL;
+            }
         }
         if (array_key_exists('ignore_dontprocess', $_POST) && isset($_POST['ignore_dontprocess'])) {
             $options['ignore_dontprocess'] = wp_kses_post(@$_POST['ignore_dontprocess']);
@@ -1781,17 +1788,19 @@ class ABJ_404_Solution_PluginLogic {
         
         if ($idAndType == '') {
             return '';
-        } else if ($idAndType == ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) {
-            return __('(Default 404 Page)', '404-solution');
-        } else if ($idAndType == ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME) {
-            return __('(Home Page)', '404-solution');
-        } else if ($idAndType == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
-            return $externalLinkURL;
         }
-        
+
         $meta = explode("|", $idAndType);
         $id = $meta[0];
         $type = $meta[1];
+        
+        if ($idAndType == ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) {
+            return __('(Default 404 Page)', '404-solution');
+        } else if ($idAndType == ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME) {
+            return __('(Home Page)', '404-solution');
+        } else if ($type == ABJ404_TYPE_EXTERNAL) {
+            return $externalLinkURL;
+        }
         
         if ($type == ABJ404_TYPE_POST) {
             return get_the_title($id);

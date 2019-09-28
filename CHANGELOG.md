@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.21.15 (September 28, 2019) ##
+* FIX: Regular expressions with replacement values should work again (broken in 2.21.12).
+
 ## Version 2.21.14 (September 27, 2019) ##
 * FIX: Ordering by the Hits column on the Captured 404 URLs page sometimes caused no URLs to be displayed.
 
