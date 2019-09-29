@@ -83,6 +83,9 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 
 ## Changelog ##
 
+## Version 2.21.16 (September 29, 2019) ##
+* FIX: Process stored regex redirects even when creating automatic redirects is turned off.
+
 ## Version 2.21.15 (September 28, 2019) ##
 * FIX: Regular expressions with replacement values should work again (broken in 2.21.12).
 
