@@ -185,25 +185,22 @@ class ABJ_404_Solution_WordPress_Connector {
             		exit;
             	}
             }
-            
-            if (array_key_exists('auto_redirects', $options) && 
-            	$options['auto_redirects'] == '0') {
-            		
-            	$abj404logic->sendTo404Page($requestedURL, 
-            		'Do not create redirects per the options.');
-            	return;
-            }
 
+            $autoRedirectsAreOn = !array_key_exists('auto_redirects', $options) ||
+            	$options['auto_redirects'] == '1';
+            
             // --------------------------------------------------------------
             // try a permalink change.
-            $slugPermalink = $abj404spellChecker->getPermalinkUsingSlug($urlSlugOnly);
-            if (!empty($slugPermalink)) {
-                $redirectType = $slugPermalink['type'];
-                $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $slugPermalink['id'], $options['default_redirect'], 0);
-
-                $abj404dao->logRedirectHit($requestedURL, $slugPermalink['link'], 'exact slug');
-                $abj404logic->forceRedirect(esc_url($slugPermalink['link']), esc_html($options['default_redirect']));
-                exit;
+            if ($autoRedirectsAreOn) {
+	       		$slugPermalink = $abj404spellChecker->getPermalinkUsingSlug($urlSlugOnly);
+	            if (!empty($slugPermalink)) {
+	                $redirectType = $slugPermalink['type'];
+	                $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $slugPermalink['id'], $options['default_redirect'], 0);
+	
+	                $abj404dao->logRedirectHit($requestedURL, $slugPermalink['link'], 'exact slug');
+	                $abj404logic->forceRedirect(esc_url($slugPermalink['link']), esc_html($options['default_redirect']));
+	                exit;
+	            }
             }
 
             // --------------------------------------------------------------
@@ -216,6 +213,12 @@ class ABJ_404_Solution_WordPress_Connector {
                         $requestedURL);
                 $abj404logic->forceRedirect($regexPermalink['link'], esc_html($options['default_redirect']));
                 exit;
+            }
+
+            if (!$autoRedirectsAreOn) {
+            	$abj404logic->sendTo404Page($requestedURL,
+            		'Do not create redirects per the options.');
+            	return;
             }
             
             // --------------------------------------------------------------
