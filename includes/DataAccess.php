@@ -849,7 +849,7 @@ class ABJ_404_Solution_DataAccess {
         // create a temp table
         $this->queryAndGetResults("drop table if exists " . $tempDestTable);
         $ttQuery = "create table " . $tempDestTable . " \n " . 
-        	"(index (requested_url(512))) \n " . 
+        	"(index (requested_url(128))) \n " . 
         	$query;
         $results = $this->queryAndGetResults($ttQuery, array('log_too_slow' => false));
         

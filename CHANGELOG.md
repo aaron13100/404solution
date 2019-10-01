@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.21.17 (October 1, 2019) ##
+* FIX: Ordering by the Hits column on the Captured 404 URLs page sometimes caused no URLs to be displayed (attempt 2).
+
 ## Version 2.21.16 (September 29, 2019) ##
 * FIX: Process stored regex redirects even when creating automatic redirects is turned off.
 
