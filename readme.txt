@@ -77,6 +77,9 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 
 == Changelog ==
 
+= Version 2.21.18 (October 29, 2019) =
+* Improvement: Make the pagination links easier to click for steveraven.
+
 = Version 2.21.17 (October 1, 2019) =
 * FIX: Ordering by the Hits column on the Captured 404 URLs page sometimes caused no URLs to be displayed (attempt 2).
 
