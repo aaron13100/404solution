@@ -41,10 +41,10 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         // jquery is used for the searchable dropdown list of pages for adding a redirect and other things.
-        wp_enqueue_script('jquery');
-		wp_enqueue_script('jquery-ui-autocomplete');
-		wp_enqueue_script('jquery-effects-core');
-		wp_enqueue_script('jquery-effects-highlight');
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery');
+		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-ui-autocomplete');
+		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-effects-core');
+		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-effects-highlight');
         
         wp_register_script('abj404-redirect_to_ajax', plugin_dir_url(__FILE__) . 'ajax/redirect_to_ajax.js', 
                 array('jquery', 'jquery-ui-autocomplete'), ABJ404_VERSION);
@@ -55,23 +55,23 @@ class ABJ_404_Solution_WordPress_Connector {
             'an_external_url_will_be_used' => __('(An external URL will be used.)', '404-solution')
         );
         wp_localize_script('abj404-redirect_to_ajax', 'abj404localization', $translation_array );        
-        wp_enqueue_script('abj404-redirect_to_ajax');
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-redirect_to_ajax');
         
         // make sure the "apply" button is only enabled if at least one checkbox is selected
         wp_register_script('abj404-enable_disable_apply_button_js', 
                 ABJ404_URL . 'includes/js/enableDisableApplyButton.js', null, ABJ404_VERSION);
         $translation_array = array('{altText}' => __('Choose at least one URL', '404-solution'));
         wp_localize_script('abj404-enable_disable_apply_button_js', 'abj404localization', $translation_array);
-        wp_enqueue_script('abj404-enable_disable_apply_button_js');
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-enable_disable_apply_button_js');
         
-        wp_enqueue_script('abj404-view-updater', plugin_dir_url(__FILE__) . 'ajax/view_updater.js', 
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater', plugin_dir_url(__FILE__) . 'ajax/view_updater.js', 
                 array('jquery', 'jquery-ui-autocomplete'), ABJ404_VERSION);
-        wp_enqueue_script('abj404-search_logs_ajax', plugin_dir_url(__FILE__) . 'ajax/search_logs_ajax.js', 
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-search_logs_ajax', plugin_dir_url(__FILE__) . 'ajax/search_logs_ajax.js', 
                 array('jquery', 'jquery-ui-autocomplete'), ABJ404_VERSION);
-        wp_enqueue_script('abj404-trash_link_ajax', plugin_dir_url(__FILE__) . 'ajax/trash_link_ajax.js', 
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-trash_link_ajax', plugin_dir_url(__FILE__) . 'ajax/trash_link_ajax.js', 
                 array('jquery'), ABJ404_VERSION);
         
-        wp_enqueue_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
+        ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
                 null, ABJ404_VERSION);
     }
 

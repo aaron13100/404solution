@@ -34,6 +34,45 @@ class ABJ_404_Solution_WPUtils {
 		}
 		return add_action($tag, $function_to_add, $priority, $accepted_args);
 	}
+
+	/** Set the version to the file date/time.
+	 * @param $handle
+	 * @param string $src
+	 * @param array $deps
+	 * @param boolean $ver
+	 * @param boolean $in_footer
+	 */
+	static function my_wp_enq_scrpt($handle, $src = '', $deps = array(),
+		$ver = false, $in_footer = false) {
+			
+			$ver = ABJ_404_Solution_WPUtils::createUpdatedVersionNumber($src, $ver);
+			
+			wp_enqueue_script($handle, $src, $deps, $ver, $in_footer);
+	}
+	
+	/** Set the version to the file date/time.
+	 * @param $handle
+	 * @param string $src
+	 * @param array $deps
+	 * @param boolean $ver
+	 * @param string $media
+	 */
+	static function my_wp_enq_style($handle, $src = '', $deps = array(), $ver = false, $media = 'all') {
+		$ver = ABJ_404_Solution_WPUtils::createUpdatedVersionNumber($src, $ver);
+		
+		wp_enqueue_style($handle, $src, $deps, $ver, $media);
+	}
+	
+	static function createUpdatedVersionNumber($src = '', $ver = false) {
+		if (($ver === false || $ver == null) && ($src != null && $src != '' &&
+			strpos($src, ABJ_FC_URL) === 0)) {
+				
+				$correctedFilePath = str_replace(ABJ_FC_URL, ABJ_FC_PATH, $src);
+				$ver = date('Y-m-d_H:i:s', filemtime($correctedFilePath));
+			}
+			
+			return $ver;
+	}
 	
 }
 
