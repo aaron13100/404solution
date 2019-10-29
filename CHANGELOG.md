@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.21.19 (October 29, 2019) ##
+* Improvement: Make the pagination links easier to click for steveraven.
+
 ## Version 2.21.18 (October 29, 2019) ##
 * Improvement: Make the pagination links easier to click for steveraven.
 
