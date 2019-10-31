@@ -1367,10 +1367,22 @@ class ABJ_404_Solution_DataAccess {
     function getActiveRedirectForURL($url) {
         $f = ABJ_404_Solution_Functions::getInstance();
         $redirect = array();
+        
+        // we look for two URLs that might match. one with a trailing slash and one without.
+        // the one the user entered takes priority in case the admin added separate redirects for
+        // cases with and without the slash (and for backward compatibility).
+        $url1 = $url;
+        $url2 = $url;
+        if ($f->endsWithCaseInsensitive($url, '/')) {
+        	$url2 = $f->substr($url, 0, $f->strlen($url) - 1);
+        } else {
+        	$url2 = $url2 . '/';
+        }
 
         // join to the wp_posts table to make sure the post exists.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPermalinkFromURL.sql");
-        $query = $f->str_replace('{url}', esc_sql($url), $query);
+        $query = $f->str_replace('{url1}', esc_sql($url1), $query);
+        $query = $f->str_replace('{url2}', esc_sql($url2), $query);
         $query = $this->doTableNameReplacements($query);
         $query = $f->doNormalReplacements($query);
         $results = $this->queryAndGetResults($query);
