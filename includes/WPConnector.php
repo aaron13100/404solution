@@ -85,7 +85,7 @@ class ABJ_404_Solution_WordPress_Connector {
         
         if (!is_array($links)) {
         	$abj404logging->infoMessage("The settings links variable was not an array. " . 
-				"Please verify the validity of other plugins. " . json_encode($links));
+        		"Please verify the validity of other plugins. " . print_r($links, true));
             $links = array();
         }
         
@@ -101,8 +101,8 @@ class ABJ_404_Solution_WordPress_Connector {
         
         $debugExplanation = __('Debug Log', '404-solution');
         $debugLogLink = $abj404logic->getDebugLogFileLink();
-        $debugExplanation = '<a href="options-general.php' . $debugLogLink . '" target="_blank" >' . $debugExplanation .
-                '</a>';
+        $debugExplanation = '<a href="options-general.php' . $debugLogLink . '" target="_blank" >'
+        	. $debugExplanation . '</a>';
         array_push($links, $debugExplanation);
         
         return $links;
