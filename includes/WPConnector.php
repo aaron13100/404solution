@@ -343,7 +343,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
-            $abj404dao->logRedirectHit($requestedURL, $redirect['final_dest'], 'external');
+        	$abj404dao->logRedirectHit($redirect['url'], $redirect['final_dest'], 'external');
             $abj404logic->forceRedirect(esc_url($redirect['final_dest']), esc_html($redirect['code']));
             exit;
         }
@@ -369,7 +369,7 @@ class ABJ_404_Solution_WordPress_Connector {
             $urlParts = parse_url(esc_url($permalink['link']));
             $redirectedTo = $urlParts['path'];
             
-            $abj404dao->logRedirectHit($requestedURL, $redirectedTo, $matchReason);
+            $abj404dao->logRedirectHit($redirect['url'], $redirectedTo, $matchReason);
             $abj404logic->forceRedirect($permalink['link'], esc_html($redirect['code']));
             exit;
         }

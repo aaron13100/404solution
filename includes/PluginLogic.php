@@ -185,7 +185,7 @@ class ABJ_404_Solution_PluginLogic {
 	                $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_CAPTURED, $permalink['type'], $permalink['id'], $options['default_redirect'], 0);
 	            }
 	            
-	            $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'user specified 404 page. ' . $reason);
+	            $abj404dao->logRedirectHit($redirect['url'], $permalink['link'], 'user specified 404 page. ' . $reason);
 	            $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
 	            exit;
             }
@@ -199,7 +199,7 @@ class ABJ_404_Solution_PluginLogic {
             if (!isset($redirect['id']) || $redirect['id'] == 0) {
                 $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_CAPTURED, ABJ404_TYPE_404_DISPLAYED, ABJ404_TYPE_404_DISPLAYED, $options['default_redirect'], 0);
             }
-            $abj404dao->logRedirectHit($requestedURL, '404', 'gave up. ' . $reason);
+            $abj404dao->logRedirectHit($redirect['url'], '404', 'gave up. ' . $reason);
         } else {
             $abj404logging->debugMessage("No permalink found to redirect to. capture_404 is off. Requested URL: " . $requestedURL .
                     " | Redirect: " . wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " .
