@@ -1369,7 +1369,9 @@ class ABJ_404_Solution_PluginLogic {
 
         // these options all default to 0 if they're not specifically set to 1.
         $optionsList = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags', 
-            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips');
+            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips',
+        	'redirect_all_requests'
+        );
         foreach ($optionsList as $optionName) {
             $options[$optionName] = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;
         }
@@ -1389,21 +1391,6 @@ class ABJ_404_Solution_PluginLogic {
             if ($options['dest404page'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             	$options['dest404page'] = $options['dest404pageURL'] . '|' . ABJ404_TYPE_EXTERNAL;
             }
-        }
-        if (array_key_exists('ignore_dontprocess', $_POST) && isset($_POST['ignore_dontprocess'])) {
-            $options['ignore_dontprocess'] = wp_kses_post(@$_POST['ignore_dontprocess']);
-        }
-        if (array_key_exists('ignore_doprocess', $_POST) && isset($_POST['ignore_doprocess'])) {
-            $options['ignore_doprocess'] = wp_kses_post(@$_POST['ignore_doprocess']);
-        }
-        if (array_key_exists('recognized_post_types', $_POST) && isset($_POST['recognized_post_types'])) {
-            $options['recognized_post_types'] = wp_kses_post(@$_POST['recognized_post_types']);
-        }
-        if (array_key_exists('recognized_categories', $_POST) && isset($_POST['recognized_categories'])) {
-            $options['recognized_categories'] = wp_kses_post(@$_POST['recognized_categories']);
-        }
-        if (array_key_exists('menuLocation', $_POST) && isset($_POST['menuLocation'])) {
-            $options['menuLocation'] = wp_kses_post(@$_POST['menuLocation']);
         }
         if (array_key_exists('admin_notification_email', $_POST) && isset($_POST['admin_notification_email'])) {
             $options['admin_notification_email'] = trim(wp_kses_post(@$_POST['admin_notification_email']));

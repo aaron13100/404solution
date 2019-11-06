@@ -1566,10 +1566,23 @@ class ABJ_404_Solution_View {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
+
+        // Only allow redirecting all requests on trusted sites because someone will break
+        // their website and complain to me about it and I don't want to hear that because I have
+        // other things to do besides deal with people that don't listen to warnings about things 
+        // that will break their website.
+        $hideRedirectAllRequests = 'true';
+        if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
+        	$hideRedirectAllRequests = 'false';
+        }
         
         $selectedDebugLogging = "";
         if (array_key_exists('debug_mode', $options) && $options['debug_mode'] == '1') {
-            $selectedDebugLogging = " checked";
+        	$selectedDebugLogging = " checked";
+        }
+        $selectedRedirectAllRequests = "";
+        if (array_key_exists('redirect_all_requests', $options) && $options['redirect_all_requests'] == '1') {
+        	$selectedRedirectAllRequests = " checked";
         }
         $selectedLogRawIPs = '';
         if (array_key_exists('log_raw_ips', $options) && $options['log_raw_ips'] == '1') {
@@ -1595,6 +1608,7 @@ class ABJ_404_Solution_View {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvanced.html");
         $html = $f->str_replace('{DATABASE_VERSION}', esc_html($options['DB_VERSION']), $html);
         $html = $f->str_replace('checked="debug_mode"', $selectedDebugLogging, $html);
+        $html = $f->str_replace('checked="redirect_all_requests"', $selectedRedirectAllRequests, $html);
         $html = $f->str_replace('checked="log_raw_ips"', $selectedLogRawIPs, $html);
         $html = $f->str_replace('{<a>View</a> the debug file.}', $debugExplanation, $html);
         $html = $f->str_replace('{Debug file size: %s KB.}', $debugFileSize, $html);
@@ -1607,6 +1621,8 @@ class ABJ_404_Solution_View {
         $html = $f->str_replace('{recognized_categories}', wp_kses_post($options['recognized_categories']), $html);
         $html = $f->str_replace('{folders_files_ignore}', wp_kses_post($options['folders_files_ignore']), $html);
         $html = $f->str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($options['auto_score']), $html);
+        
+        $html = $f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
         
         // constants and translations.
         $html = $f->doNormalReplacements($html);
