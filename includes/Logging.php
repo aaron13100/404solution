@@ -34,7 +34,7 @@ class ABJ_404_Solution_Logging {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $options = $abj404logic->getOptions(true);
 
-        return (@$options['debug_mode'] == true);
+        return (array_key_exists('debug_mode', $options) && $options['debug_mode'] == true);
     }
     
     /** for the current timezone. 
@@ -130,17 +130,6 @@ class ABJ_404_Solution_Logging {
                 ", WP ver: " . get_bloginfo('version') . ", Plugin ver: " . ABJ404_VERSION . 
                 ", Referrer: " . $referrer . ", Requested URL: " . $requestedURL . 
                 ", \nStored debug messages: \n" . $savedDebugMessages . ", \nTrace: " . $stacktrace);
-        
-        // display a 404 page if the user is NOT an admin and is not on an admin page.
-        if (!is_admin()) {
-            // try to send the user to a 404 page. otherwise the user might just get a blank page.
-            status_header(404);
-            nocache_headers();
-            $queryTemplate = get_query_template('404');
-            if ($queryTemplate != null && $queryTemplate != '') {
-                include(get_query_template('404'));
-            }
-        }
     }
     
     /** Log the user capabilities.

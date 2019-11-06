@@ -1,4 +1,8 @@
 
+.hide-when-true {
+	display: none;
+}
+
 /* Make the pagination links easier to click for steveraven */
 .pagination-link {
 	border-radius: 0 3px 3px 0;

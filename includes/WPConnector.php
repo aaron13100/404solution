@@ -122,6 +122,31 @@ class ABJ_404_Solution_WordPress_Connector {
         }
     }
 
+    function processRedirectAllRequests() {
+    	$abj404logic = new ABJ_404_Solution_PluginLogic();
+    	$options = $abj404logic->getOptions();
+    	
+    	$userRequest = ABJ_404_Solution_UserRequest::getInstance();
+    	// setup ignore variables on $_REQUEST['abj404solution']
+    	$pathOnly = $userRequest->getPath();
+    	
+    	// remove the home directory from the URL parts because it should not be considered for spell checking.
+    	$urlSlugOnly = $userRequest->getOnlyTheSlug();
+    	
+    	$abj404logic->initializeIgnoreValues($pathOnly, $urlSlugOnly);
+    	
+    	// create a UserRequest object to store various information about the request for later use.
+    	$requestedURL = $userRequest->getPathWithSortedQueryString();
+    	
+    	$this->tryRegexRedirect($options, $requestedURL);
+    	
+    	// if we're supposed to redirect all requests then a regex redirect should be in place.
+    	if (is_admin() || !is_404()) {
+    		$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    		$abj404logging->warn("If REDIRECT_ALL_REQUESTS is turned on then a " .
+    			"regex redirect must be in place.");
+    	}
+    }
     /**
      * Process the 404s
      */
@@ -188,7 +213,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
             $autoRedirectsAreOn = !array_key_exists('auto_redirects', $options) ||
             	$options['auto_redirects'] == '1';
-            
+            	
             // --------------------------------------------------------------
             // try a permalink change.
             if ($autoRedirectsAreOn) {
@@ -205,15 +230,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
             // --------------------------------------------------------------
             // try the regex URLs.
-            $regexPermalink = $abj404spellChecker->getPermalinkUsingRegEx($requestedURL);
-            if (!empty($regexPermalink)) {
-                $redirectType = $regexPermalink['type'];
-
-                $abj404dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match', 
-                        $requestedURL);
-                $abj404logic->forceRedirect($regexPermalink['link'], esc_html($options['default_redirect']));
-                exit;
-            }
+            $this->tryRegexRedirect($options, $requestedURL);
 
             if (!$autoRedirectsAreOn) {
             	$abj404logic->sendTo404Page($requestedURL,
@@ -294,6 +311,20 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logic->sendTo404Page($requestedURL, '');
     }
     
+    function tryRegexRedirect($options, $requestedURL) {
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$abj404logic = new ABJ_404_Solution_PluginLogic();
+    	$abj404spellChecker = new ABJ_404_Solution_SpellChecker();
+    	
+    	$regexPermalink = $abj404spellChecker->getPermalinkUsingRegEx($requestedURL);
+    	if (!empty($regexPermalink)) {
+    		$abj404dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match',
+    			$requestedURL);
+    		$abj404logic->forceRedirect($regexPermalink['link'], esc_html($options['default_redirect']));
+    		exit;
+    	}
+    }
+    
 	/**
 	 * @param options
 	 */
@@ -348,31 +379,16 @@ class ABJ_404_Solution_WordPress_Connector {
             exit;
         }
 
-        $key = "";
-        if ($redirect['type'] == ABJ404_TYPE_POST) {
-            $key = $redirect['final_dest'] . "|" . ABJ404_TYPE_POST;
-        } else if ($redirect['type'] == ABJ404_TYPE_CAT) {
-            $key = $redirect['final_dest'] . "|" . ABJ404_TYPE_CAT;
-        } else if ($redirect['type'] == ABJ404_TYPE_TAG) {
-            $key = $redirect['final_dest'] . "|" . ABJ404_TYPE_TAG;
-        } else if ($redirect['type'] == ABJ404_TYPE_HOME) {
-            $key = $redirect['final_dest'] . "|" . ABJ404_TYPE_HOME;
-        } else {
-            $abj404logging->errorMessage("Unrecognized redirect type in Connector: " .
-            	wp_kses_post(print_r($redirect, true)));
-        }
+        $key = $redirect['final_dest'] . "|" . $redirect['type'];
+        $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($key, 0);
 
-        if ($key != "") {
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($key, 0);
-
-            // log only the path part of the URL
-            $urlParts = parse_url(esc_url($permalink['link']));
-            $redirectedTo = $urlParts['path'];
+        // log only the path part of the URL
+        $urlParts = parse_url(esc_url($permalink['link']));
+        $redirectedTo = $urlParts['path'];
             
-            $abj404dao->logRedirectHit($redirect['url'], $redirectedTo, $matchReason);
-            $abj404logic->forceRedirect($permalink['link'], esc_html($redirect['code']));
-            exit;
-        }
+        $abj404dao->logRedirectHit($redirect['url'], $redirectedTo, $matchReason);
+        $abj404logic->forceRedirect($permalink['link'], esc_html($redirect['code']));
+        exit;
     }
 
     /** Display an admin dashboard notification.

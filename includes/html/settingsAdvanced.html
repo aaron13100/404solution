@@ -149,6 +149,17 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
 </table> 
 
 <!-- .............................. -->
+<p class="hide-when-{disallow-redirect-all-requests}">
+   <label for="redirect_all_requests">{Redirect all requests}:</label>
+   <input type="checkbox" name="redirect_all_requests" id="redirect_all_requests" value="1" checked="redirect_all_requests" />
+   <br/>&nbsp;&nbsp;&nbsp;
+   {This will break your website.}
+   {When selected, ALL REQUESTS (even for pages that exist, even for non-404s) will be treated like a 404.} 
+   {This is for a domain name change.}
+   {All other redirects must be deleted and only one regex redirect for all URLs must be created for this to work.}
+</p>
+
+<!-- .............................. -->
 <p>
     <label for="days_wait_before_major_update">{Major version auto update delay}: </label>
     <input type="text" name="days_wait_before_major_update" id="days_wait_before_major_update" value="{days_wait_before_major_update}" style="width: 50px;">

@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.21.20 (November 6, 2019) ##
+* 
+
 ## Version 2.21.19 (November 1, 2019) ##
 * Improvement: Make the pagination links easier to click for steveraven.
 * Improvement: Redirects are recognized with or without a trailing slash (/) (for leehodson).
