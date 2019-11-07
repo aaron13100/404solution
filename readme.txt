@@ -1,6 +1,6 @@
 === 404 Solution ===
 Contributors: aaron13100
-Website: http://www.wealth-psychology.com/404-solution/
+Website: http://www.ajexperience.com/wealthpsychology/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
 Version: 2.21.20
