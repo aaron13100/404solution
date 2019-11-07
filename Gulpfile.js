@@ -199,9 +199,7 @@ gulp.task('wp-pot', ['clean:pot'], function() {
 		domain: '404-solution',
 		destFile:'404-solution.pot',
 		package: '404-solution',
-		bugReport: 'https://github.com/aaron13100/404solution/issues/',
-		lastTranslator: 'Remkus de Vries <mail@devries.frl>',
-		team: 'Team <developer@wealth-psychology.com>'
+		bugReport: 'https://github.com/aaron13100/404solution/issues/'
 	}))
 	.pipe(gulp.dest('languages/'));
 });
