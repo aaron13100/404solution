@@ -12,7 +12,7 @@ class ABJ_404_Solution_WPNotices {
     private static $adminNotices = array();
     
     /** Display a message with the specified importance level.
-     * @param string $noticeLevel
+     * @param string $noticeLevel see ABJ_404_Solution_WPNotice for notice levels.
      * @param string $message
      */
     public static function registerAdminMessage($noticeLevel, $message) {
