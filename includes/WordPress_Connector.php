@@ -422,8 +422,6 @@ class ABJ_404_Solution_WordPress_Connector {
                 }
             }
         }
-        
-        ABJ_404_Solution_WPNotices::echoAdminNotices();
     }
 
     /** Adds a link under the "Settings" link to the plugin page.
