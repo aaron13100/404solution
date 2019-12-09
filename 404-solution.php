@@ -2,10 +2,10 @@
 
 /*
 	Plugin Name: 404 Solution
-	Plugin URI:  http://www.ajexperience.com/wealthpsychology/404-solution/
+	Plugin URI:  https://ajexperience.com/flashcards/404-solution/
 	Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
 	Author:      Aaron J
-	Author URI:  http://www.ajexperience.com/wealthpsychology/404-solution/
+	Author URI:  https://ajexperience.com/flashcards/404-solution/
 
 	Version: 2.22.0
 

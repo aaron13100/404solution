@@ -8,10 +8,10 @@ if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
 
 /*
 	Plugin Name: 404 Solution
-	Plugin URI:  http://www.ajexperience.com/wealthpsychology/404-solution/
+	Plugin URI:  https://ajexperience.com/flashcards/404-solution/
 	Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
 	Author:      Aaron J
-	Author URI:  http://www.ajexperience.com/wealthpsychology/404-solution/
+	Author URI:  https://ajexperience.com/flashcards/404-solution/
 
 	Version: 2.22.0
 
@@ -46,7 +46,7 @@ define('ABJ404_SOLUTION_BASENAME', function_exists('plugin_basename') ? plugin_b
 	basename(dirname(ABJ404_FILE)) . '/' . basename(ABJ404_FILE));
 
 define( 'ABJ404_VERSION', '2.22.0' );
-define( 'ABJ404_HOME_URL', 'http://www.ajexperience.com/wealthpsychology/404-solution/'
+define( 'ABJ404_HOME_URL', 'https://ajexperience.com/flashcards/404-solution/'
         . '?utm_source=404SolutionPlugin&utm_medium=WordPress');
 define( 'ABJ404_PP', 'abj404_solution'); // plugin path
 define( 'PLUGIN_NAME', '404 Solution');
