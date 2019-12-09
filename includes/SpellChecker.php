@@ -801,6 +801,3 @@ class ABJ_404_Solution_SpellChecker {
     }
 
 }
-
-ABJ_404_Solution_SpellChecker::init();
-

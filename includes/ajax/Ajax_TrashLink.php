@@ -15,7 +15,7 @@ class ABJ_404_Solution_Ajax_TrashLink {
         global $abj404view;
 
         if (!check_admin_referer('abj404_ajaxTrash') || !is_admin()) {
-            return "fail: old referrer? try reloading the page. ";
+        	return json_encode("fail: old referrer? try reloading the page.");
         }
         
         $idToTrash = $abj404dao->getPostOrGetSanitize('id');

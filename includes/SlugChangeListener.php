@@ -72,5 +72,3 @@ class ABJ_404_Solution_SlugChangeListener {
         		$fromURL . ' to ' . $newURL);
     }
 }
-
-ABJ_404_Solution_SlugChangeListener::init();

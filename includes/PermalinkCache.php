@@ -200,5 +200,3 @@ class ABJ_404_Solution_PermalinkCache {
     }
 
 }
-
-ABJ_404_Solution_PermalinkCache::init();
