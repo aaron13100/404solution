@@ -1,7 +1,7 @@
 # Changelog #
 
 ## Version 2.21.20 (November 6, 2019) ##
-* 
+* FIX: A rare logging error that an error log participant sent.
 
 ## Version 2.21.19 (November 1, 2019) ##
 * Improvement: Make the pagination links easier to click for steveraven.
