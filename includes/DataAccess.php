@@ -440,7 +440,13 @@ class ABJ_404_Solution_DataAccess {
 
         // get the data types
         $dataTypes = array();
+        $newDataToInsert = array();
         foreach ($dataToInsert as $key => $dataItem) {
+        	// null is inserted by not including the column in the insert statement.
+        	if ($dataItem == null || $f->strlen($dataItem) == 0) {
+        		continue;
+        	}
+        	$newDataToInsert[$key] = $dataItem;
             $currentDataType = gettype($dataItem);
             if ($currentDataType == 'double' || $currentDataType == 'integer') {
                 $dataTypes[] = '%d';
@@ -450,15 +456,10 @@ class ABJ_404_Solution_DataAccess {
                 
             } else {
                 $dataTypes[] = '%s';
-                
-                // empty strings are stored as null in the database.
-                if ($f->strlen($dataItem) == 0) {
-                    $dataToInsert[$key] = null;
-                }
             }
         }
 
-        $wpdb->insert($tableName, $dataToInsert, $dataTypes);
+        $wpdb->insert($tableName, $newDataToInsert, $dataTypes);
 
         $results =  array();
         $errorThisRun = $wpdb->last_error;
