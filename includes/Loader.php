@@ -1,8 +1,6 @@
 <?php
 
 // turn on debug for localhost etc
-$GLOBALS['abj404_whitelist'] = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com',
-		'www.wealth-psychology.com', 'wealth-psychology', 'ajexperience.com', 'www.ajexperience.com');
 if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
@@ -43,7 +41,6 @@ define( 'ABJ404_AUTHOR_EMAIL', '404solution@ajexperience.com' );
 define( 'ABJ404_URL', plugin_dir_url(ABJ404_FILE));
 
 /** plugin_dir_path( __FILE__ ) */
-define( 'ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
 define( 'ABJ404_NAME', plugin_basename(ABJ404_FILE));
 define('ABJ404_SOLUTION_BASENAME', function_exists('plugin_basename') ? plugin_basename(ABJ404_FILE) : 
 	basename(dirname(ABJ404_FILE)) . '/' . basename(ABJ404_FILE));
@@ -82,36 +79,13 @@ define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 500);
 define("ABJ404_MAX_URL_LENGTH", 4096);
 
 // always include
-require_once ABJ404_PATH . "includes/ShortCode.php";
-
-// include only if necessary
-require_once ABJ404_PATH . "includes/Logging.php";
-require_once ABJ404_PATH . "includes/objs/UserRequest.php";
-require_once ABJ404_PATH . 'includes/wordpress/WPUtils.php';
-require_once ABJ404_PATH . "includes/Functions.php";
-require_once ABJ404_PATH . "includes/php/FunctionsPreg.php";
-require_once ABJ404_PATH . "includes/php/FunctionsMBString.php";
-require_once ABJ404_PATH . "includes/DataAccess.php";
-require_once ABJ404_PATH . "includes/DatabaseUpgradesEtc.php";
-require_once ABJ404_PATH . "includes/PluginLogic.php";
-require_once ABJ404_PATH . "includes/WPConnector.php";
-require_once ABJ404_PATH . "includes/SpellChecker.php";
-require_once ABJ404_PATH . "includes/ErrorHandler.php";
-require_once ABJ404_PATH . 'includes/Timer.php';
-require_once ABJ404_PATH . 'includes/PermalinkCache.php';
-require_once ABJ404_PATH . 'includes/SynchronizationUtils.php';
-require_once ABJ404_PATH . 'includes/php/FileSync.php';
+ABJ_404_Solution_ErrorHandler::init();
 
 if (is_admin()) {
-    require_once ABJ404_PATH . "includes/objs/WPNotice.php";
-    require_once ABJ404_PATH . "includes/wordpress/WPNotices.php";
-    require_once ABJ404_PATH . "includes/View.php";
-    require_once ABJ404_PATH . "includes/View_Suggestions.php";
-    require_once ABJ404_PATH . "includes/ajax/ViewUpdater.php";
-    require_once ABJ404_PATH . "includes/ajax/Ajax_Php.php";
-    require_once ABJ404_PATH . 'includes/ajax/Ajax_TrashAction.php';
-    require_once ABJ404_PATH . 'includes/SlugChangeListener.php';
-    
+	ABJ_404_Solution_PermalinkCache::init();
+	ABJ_404_Solution_SlugChangeListener::init();
+	ABJ_404_Solution_SpellChecker::init();
+	
     // TODO make these not global
     $abj404view = new ABJ_404_Solution_View();
     $abj404viewSuggestions = new ABJ_404_Solution_View_Suggestions();

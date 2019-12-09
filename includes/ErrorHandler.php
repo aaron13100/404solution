@@ -125,5 +125,3 @@ class ABJ_404_Solution_ErrorHandler {
         }
     }
 }
-
-ABJ_404_Solution_ErrorHandler::init();

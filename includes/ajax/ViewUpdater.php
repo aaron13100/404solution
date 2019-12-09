@@ -54,5 +54,3 @@ class ABJ_404_Solution_ViewUpdater {
     }
     
 }
-
-ABJ_404_Solution_ViewUpdater::init();

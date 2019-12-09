@@ -24,12 +24,13 @@ class ABJ_404_Solution_WordPress_Connector {
             // doesn't work for the ajax dropdown list.
             add_action('admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts', 11);
             // wp_ajax_nopriv_ is for normal users
+            
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
-            
-            ABJ_404_Solution_PluginLogic::doRegisterCrons();
         }
+        
+        ABJ_404_Solution_PluginLogic::doRegisterCrons();
     }
     
     /** Include things necessary for ajax. */
@@ -472,5 +473,3 @@ class ABJ_404_Solution_WordPress_Connector {
     }
 
 }
-
-ABJ_404_Solution_WordPress_Connector::init();

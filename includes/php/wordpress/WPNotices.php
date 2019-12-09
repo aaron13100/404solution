@@ -11,11 +11,6 @@ class ABJ_404_Solution_WPNotices {
     /** @var array<WPNotice> */
     private static $adminNotices = array();
     
-    /** Add a hook for displaying messages. */
-    static function init() {
-        //ABJ_404_Solution_WPUtils::safeAddAction('admin_notices', array(get_called_class(), 'getAdminNotices'));
-    }
-    
     /** Display a message with the specified importance level.
      * @param string $noticeLevel
      * @param string $message
@@ -60,5 +55,3 @@ class ABJ_404_Solution_WPNotices {
     }
 
 }
-
-ABJ_404_Solution_WPNotices::init();
