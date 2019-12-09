@@ -458,27 +458,24 @@ class ABJ_404_Solution_View {
         $results = $abj404dao->queryAndGetResults("SHOW TABLES LIKE '" .
                 $wpdb->prefix . 'wbz404_redirects' . "'");
         
-        $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
-        $link = wp_nonce_url($url, "abj404_importRedirects");
-
-        if (empty($results['rows'])) {
-            $html = __('(No Redirectioner table found.)', '404-solution');
-            
-        } else {
-            // read the html content.
+        if (!empty($results['rows'])) {
+        	$url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
+        	$link = wp_nonce_url($url, "abj404_importRedirects");
+        	
+        	// read the html content.
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsImportFormRed.html");
             // do special replacements
             $html = $f->str_replace('{toolsImportFormActionLink}', $link, $html);
             // constants and translations.
             $html = $f->doNormalReplacements($html);
+            
+            echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
+            echo "<div class=\"metabox-holder\">";
+            echo " <div class=\"meta-box-sortables\">";
+            $abj404view->echoPostBox("abj404-purgeRedirects", __('Import Options', '404-solution'), $html);
+            echo "</div></div></div>";
         }
 
-        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
-        echo "<div class=\"metabox-holder\">";
-        echo " <div class=\"meta-box-sortables\">";
-        $abj404view->echoPostBox("abj404-purgeRedirects", __('Import Options', '404-solution'), $html);
-        echo "</div></div></div>";
-        
         // ------------------------------------
         
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_runMaintenance");
