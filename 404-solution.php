@@ -31,6 +31,7 @@
 
 define('ABJ404_FILE', __FILE__);
 define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
+$GLOBALS['abj404_display_errors'] = false;
 $GLOBALS['abj404_whitelist'] = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com',
 		'www.wealth-psychology.com', 'wealth-psychology', 'ajexperience.com', 'www.ajexperience.com');
 
@@ -122,3 +123,13 @@ add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener')
 add_action('abj404_updateLogsHitsTableAction', 'abj404_updateLogsHitsTableListener');
 add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheListener', 10, 2);
 
+
+/** This only runs after WordPress is done enqueuing scripts. */
+function abj404_loadSomethingWhenWordPressIsReady() {
+	if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])
+		&& (!function_exists('wp_get_current_user') || current_user_can('administrator'))) {
+			
+		$GLOBALS['abj404_display_errors'] = true;
+	}
+}
+add_action('init', 'abj404_loadSomethingWhenWordPressIsReady');

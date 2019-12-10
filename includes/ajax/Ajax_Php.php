@@ -1,8 +1,8 @@
 <?php
 
 // turn on debug for localhost etc
-if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
-    error_reporting(E_ALL);
+if ($GLOBALS['abj404_display_errors']) {
+	error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
 
