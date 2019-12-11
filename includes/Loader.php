@@ -48,7 +48,7 @@ define('ABJ404_SOLUTION_BASENAME', function_exists('plugin_basename') ? plugin_b
 define( 'ABJ404_VERSION', '2.22.0' );
 define( 'URL_TRACKING_SUFFIX', '?utm_source=404SolutionPlugin&utm_medium=WordPress');
 define( 'ABJ404_HOME_URL', 'https://ajexperience.com/flashcards/404-solution/' . URL_TRACKING_SUFFIX);
-define( 'ABJ_FC_URL', 'https://ajexperience.com/flashcards/' . URL_TRACKING_SUFFIX);
+define( 'ABJ404_FC_URL', 'https://ajexperience.com/flashcards/' . URL_TRACKING_SUFFIX);
 define( 'ABJ404_PP', 'abj404_solution'); // plugin path
 define( 'PLUGIN_NAME', '404 Solution');
 
