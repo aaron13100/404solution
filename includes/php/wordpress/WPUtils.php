@@ -65,9 +65,9 @@ class ABJ_404_Solution_WPUtils {
 	
 	static function createUpdatedVersionNumber($src = '', $ver = false) {
 		if (($ver === false || $ver == null) && ($src != null && $src != '' &&
-			strpos($src, ABJ_FC_URL) === 0)) {
+			strpos($src, ABJ404_URL) === 0)) {
 				
-				$correctedFilePath = str_replace(ABJ_FC_URL, ABJ_FC_PATH, $src);
+				$correctedFilePath = str_replace(ABJ404_URL, ABJ404_PATH, $src);
 				$ver = date('Y-m-d_H:i:s', filemtime($correctedFilePath));
 			}
 			
