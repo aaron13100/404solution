@@ -68,18 +68,23 @@ In the settings there is a setting named "Log raw IPs" that you need to select t
 
 ### An existing page is being redirected. ###
 
-No, it's not. Only 404s are redirected. Did the page exist at the time of the redirect? Past issues have been caused by conflicts with other plugins, or by other plugins redirecting to non-existing pages. Turn on debug logging on the Options page and try the existing URL. Then view the debug log (from the Options page) and see how the 404 was handled.   
+No, it's not. Only 404s are redirected. Did the page exist at the time of the redirect? Past issues have been caused by conflicts with other plugins, or by other plugins redirecting to non-existing pages. Turn on debug logging on the Options page and try the existing URL. Then view the debug log (from the Options page) and see how the 404 was handled.
+
+### Have you written any other programs?  ###
+
+Please try this website for studying Japanese flashcards.    
+[https://ajexperience.com/flashcards/](https://ajexperience.com/flashcards/)
 
 ## Screenshots ##
 
 1. Admin Options Screen
-![1. Admin Options Screen](http://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-1.jpg)
+![1. Admin Options Screen](https://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-1.jpg)
 
 2. Logs
-![2. Logs](http://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-2.jpg)
+![2. Logs](https://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-2.jpg)
 
 3. Create New Redirect
-![3. Create New Redirect](http://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-3.jpg)
+![3. Create New Redirect](https://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-3.jpg)
 
 ## Changelog ##
 

@@ -68,6 +68,10 @@ In the settings there is a setting named "Log raw IPs" that you need to select t
 
 No, it's not. Only 404s are redirected. Did the page exist at the time of the redirect? Past issues have been caused by conflicts with other plugins, or by other plugins redirecting to non-existing pages. Turn on debug logging on the Options page and try the existing URL. Then view the debug log (from the Options page) and see how the 404 was handled.   
 
+= Have you written any other programs?  =
+
+Please try this website for studying Japanese flashcards.    
+[https://ajexperience.com/flashcards/](https://ajexperience.com/flashcards/)
 
 == Screenshots ==
 
