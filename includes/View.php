@@ -129,6 +129,8 @@ class ABJ_404_Solution_View {
         $f = ABJ_404_Solution_Functions::getInstance();
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminFooter.html");
+        $html = $f->str_replace('{JAPANESE_FLASHCARDS_URL}', ABJ_FC_URL, $html);
+        
         // constants and translations.
         $html = $f->doNormalReplacements($html);
         echo $html;
