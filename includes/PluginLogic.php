@@ -852,7 +852,7 @@ class ABJ_404_Solution_PluginLogic {
         $message = "";
         
         //Handle edit posts
-        if (array_key_exists('action', $_POST) && @$_POST['action'] == "editRedirect") {
+        if (array_key_exists('action', $_POST) && $_POST['action'] == "editRedirect") {
             $id = $abj404dao->getPostOrGetSanitize('id');
             $ids = $abj404dao->getPostOrGetSanitize('ids_multiple');
             if (!($id === null && $ids === null) && ($f->regexMatch('[0-9]+', '' . $id) || $f->regexMatch('[0-9]+', '' . $ids))) {
@@ -1001,10 +1001,13 @@ class ABJ_404_Solution_PluginLogic {
         $fromURL = "";
         $ids_multiple = "";
         
-        if (@$_POST['url'] == "" && @$_POST['ids_multiple'] != "") {
+        if (
+        	(!array_key_exists('url', $_POST) || $_POST['url'] == "") && 
+        	(array_key_exists('ids_multiple', $_POST) && $_POST['ids_multiple'] != "")) {
             $ids_multiple = array_map('absint', explode(',', $_POST['ids_multiple']));
-        } else if (array_key_exists('url', $_POST) && @$_POST['url'] != "" && 
-        	array_key_exists('ids_multiple', $_POST) && @$_POST['ids_multiple'] == "") {
+            
+        } else if (array_key_exists('url', $_POST) && $_POST['url'] != "" && 
+        	(!array_key_exists('ids_multiple', $_POST) || $_POST['ids_multiple'] == "")) {
         		
             $fromURL = $_POST['url'];
         } else {
@@ -1386,20 +1389,20 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('redirect_to_data_field_id', $_POST) && isset($_POST['redirect_to_data_field_id'])) {
-            $options['dest404page'] = sanitize_text_field(@$_POST['redirect_to_data_field_id']);
+            $options['dest404page'] = sanitize_text_field($_POST['redirect_to_data_field_id']);
         }
         if (array_key_exists('redirect_to_data_field_title', $_POST) && isset($_POST['redirect_to_data_field_title'])) {
-            $options['dest404pageURL'] = sanitize_text_field(@$_POST['redirect_to_data_field_title']);
+            $options['dest404pageURL'] = sanitize_text_field($_POST['redirect_to_data_field_title']);
             if ($options['dest404page'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             	$options['dest404page'] = $options['dest404pageURL'] . '|' . ABJ404_TYPE_EXTERNAL;
             }
         }
         if (array_key_exists('admin_notification_email', $_POST) && isset($_POST['admin_notification_email'])) {
-            $options['admin_notification_email'] = trim(wp_kses_post(@$_POST['admin_notification_email']));
+            $options['admin_notification_email'] = trim(wp_kses_post($_POST['admin_notification_email']));
         }
         
         if (array_key_exists('folders_files_ignore', $_POST) && isset($_POST['folders_files_ignore'])) {
-            $options['folders_files_ignore'] = wp_unslash(wp_kses_post(@$_POST['folders_files_ignore']));
+            $options['folders_files_ignore'] = wp_unslash(wp_kses_post($_POST['folders_files_ignore']));
             
             // make the regular expressions usable.
             $patternsToIgnore = array_filter(explode("\n", $options['folders_files_ignore']),

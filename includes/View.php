@@ -1090,7 +1090,11 @@ class ABJ_404_Solution_View {
         // Sanitizing unchecked table options
         foreach ($tableOptions as $key => $value) {
             $key = wp_kses_post($key);
-            $tableOptions[$key] = wp_kses_post($value);
+            if (is_array($value)) {
+            	$value = array_map('wp_kses_post', $value);
+            } else {
+            	$tableOptions[$key] = wp_kses_post($value);
+            }
         }
 
         echo $this->getTabFilters($sub, $tableOptions);
