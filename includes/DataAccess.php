@@ -1616,7 +1616,7 @@ class ABJ_404_Solution_DataAccess {
 
         // nonce already verified.
 
-        if (@$_POST['sanity_purge'] != "1") {
+        if (!array_key_exists('sanity_purge', $_POST) || $_POST['sanity_purge'] != "1") {
             $message = __('Error: You didn\'t check the I understand checkbox. No purging of records for you!', '404-solution');
             return $message;
         }
