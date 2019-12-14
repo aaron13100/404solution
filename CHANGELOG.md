@@ -1,6 +1,6 @@
 # Changelog #
 
-## Version 2.22.1 (December 25, 2019) ##
+## Version 2.22.1 (December 14, 2019) ##
 * FIX: Remove minor PHP warning messages in some cases.
 * FIX: Allow updating captured 404s again.
 
