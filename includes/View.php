@@ -619,7 +619,7 @@ class ABJ_404_Solution_View {
             echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
                     ":</label></strong> ";
             echo "<input id=\"url\" style=\"width: 45%;\" type=\"text\" name=\"url\" value=\"" . 
-                    esc_attr($redirect['url']) . "\"> (" . __('Required', '404-solution') . ")<BR/>\n\n";
+                    esc_attr($redirect['url']) . "\" required> (" . __('Required', '404-solution') . ")<BR/>\n\n";
             echo "\n\n" . '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" name="is_regex_url" ';
             echo 'id="is_regex_url" value="1" ' . $isRegexChecked . '>' . "\n";
             $html = '<label for="is_regex_url">{Treat this URL as a regular expression}</label> ' . "\n";
@@ -1088,14 +1088,7 @@ class ABJ_404_Solution_View {
         $tableOptions = $abj404logic->getTableOptions($sub);
 
         // Sanitizing unchecked table options
-        foreach ($tableOptions as $key => $value) {
-            $key = wp_kses_post($key);
-            if (is_array($value)) {
-            	$value = array_map('wp_kses_post', $value);
-            } else {
-            	$tableOptions[$key] = wp_kses_post($value);
-            }
-        }
+        $tableOptions = $abj404logic->sanitizePostData($tableOptions);
 
         echo $this->getTabFilters($sub, $tableOptions);
 
@@ -1706,7 +1699,7 @@ class ABJ_404_Solution_View {
         
         return $html;
     }
-
+    
     /** 
      * @global type $abj404dao
      */
@@ -1719,10 +1712,7 @@ class ABJ_404_Solution_View {
         $tableOptions = $abj404logic->getTableOptions($sub);
 
         // Sanitizing unchecked table options
-        foreach ($tableOptions as $key => $value) {
-            $key = wp_kses_post($key);
-            $tableOptions[$key] = wp_kses_post($value);
-        }
+        $tableOptions = $abj404logic->sanitizePostData($tableOptions);
 
         echo "<BR/><BR/><BR/>";
         echo '<form id="logs_search_form" name="admin-logs-page" method="GET" action="" '
