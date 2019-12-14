@@ -1047,7 +1047,8 @@ class ABJ_404_Solution_PluginLogic {
 
             } else {
                 $abj404logging->errorMessage("Issue determining which redirect(s) to update. " . 
-                    "fromURL: " . $fromURL . ", ids_multiple: " . implode(',', $ids_multiple));
+                    "fromURL: " . $fromURL . ", ids_multiple: " . 
+                	(is_array($ids_multiple) ? implode(',', $ids_multiple) : ''));
             }
 
         } else {
@@ -1253,16 +1254,22 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         // sanitize all values.
-        $sanitizedTableOptions = array();
-        foreach ($tableOptions as $key => $value) {
-            if (is_array($value)) {
-                $sanitizedTableOptions[$key] = array_map('sanitize_text_field', $value);
-            } else {
-                $sanitizedTableOptions[$key] = sanitize_text_field($value);
-            }
-        }
+        $sanitizedTableOptions = $this->sanitizePostData($tableOptions);
 
         return $sanitizedTableOptions;
+    }
+    
+    function sanitizePostData($postData) {
+    	$newData = array();
+    	foreach ($postData as $key => $value) {
+    		$key = wp_kses_post($key);
+    		if (is_array($value)) {
+    			$newData[$key] = array_map('wp_kses_post', $value);
+    		} else {
+    			$newData[$key] = wp_kses_post($value);
+    		}
+    	}
+    	return $newData;
     }
     
     /** 
@@ -1418,11 +1425,7 @@ class ABJ_404_Solution_PluginLogic {
 
         /** Sanitize all data. */
         $new_options = array();
-        foreach ($options as $key => $option) {
-            $new_key = wp_kses_post($key);
-            $new_option = wp_kses_post($option);
-            $new_options[$new_key] = $new_option;
-        }
+        $new_options = $this->sanitizePostData($options);
 
         update_option('abj404_settings', $new_options);
         
