@@ -8,6 +8,10 @@ if ($GLOBALS['abj404_display_errors']) {
 
 class ABJ_404_Solution_SynchronizationUtils {
 	
+	/** A prefix for keys used for synchronization methods.
+	 * @var string */
+	const SYNC_KEY_PREFIX = 'SYNC_';
+	
 	static $usingFileMode = null;
 	
 	private function getFileModePath() {
@@ -82,10 +86,6 @@ class ABJ_404_Solution_SynchronizationUtils {
 		$f->createDirectoryWithErrorMessages(dirname($fileModePath));
 		touch($fileModePath);
 	}
-    
-    /** A prefix for keys used for synchronization methods. 
-     * @var string */
-    const SYNC_KEY_PREFIX = 'SYNC_';
     
     private function createInternalKey($keyFromUser) {
         return ABJ404_PP . "_" . self::SYNC_KEY_PREFIX . $keyFromUser;

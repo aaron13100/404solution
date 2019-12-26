@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.22.2 (December 26, 2019) ##
+* FIX: Allow saving options in the 'advanced' section for user agents, post types, and custom taxonomies (thanks arnonalex).
+
 ## Version 2.22.1 (December 14, 2019) ##
 * FIX: Remove minor PHP warning messages in some cases.
 * FIX: Allow updating captured 404s again.
