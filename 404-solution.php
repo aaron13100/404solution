@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://ajexperience.com/flashcards/404-solution/
 
-	Version: 2.22.1
+	Version: 2.22.2
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html

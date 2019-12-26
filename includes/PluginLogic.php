@@ -1291,6 +1291,22 @@ class ABJ_404_Solution_PluginLogic {
                 $message .= __('Error: Invalid value specified for default redirect type', '404-solution') . ".<BR/>";
             }
         }
+        
+        if (array_key_exists('ignore_dontprocess', $_POST) && isset($_POST['ignore_dontprocess'])) {
+        	$options['ignore_dontprocess'] = wp_kses_post($_POST['ignore_dontprocess']);
+        }
+        if (array_key_exists('ignore_doprocess', $_POST) && isset($_POST['ignore_doprocess'])) {
+        	$options['ignore_doprocess'] = wp_kses_post($_POST['ignore_doprocess']);
+        }
+        if (array_key_exists('recognized_post_types', $_POST) && isset($_POST['recognized_post_types'])) {
+        	$options['recognized_post_types'] = wp_kses_post($_POST['recognized_post_types']);
+        }
+        if (array_key_exists('recognized_categories', $_POST) && isset($_POST['recognized_categories'])) {
+        	$options['recognized_categories'] = wp_kses_post($_POST['recognized_categories']);
+        }
+        if (array_key_exists('menuLocation', $_POST) && isset($_POST['menuLocation'])) {
+        	$options['menuLocation'] = wp_kses_post($_POST['menuLocation']);
+        }
 
         if (array_key_exists('admin_notification', $_POST) && isset($_POST['admin_notification'])) {
             if (is_numeric($_POST['admin_notification'])) {
