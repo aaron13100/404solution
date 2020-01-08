@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.22.3 (January 7, 2020) ##
+* FIX: Avoid a warning about upcoming PHP 8 (thanks to a debug file participant).
+
 ## Version 2.22.2 (December 26, 2019) ##
 * FIX: Allow saving options in the 'advanced' section for user agents, post types, and custom taxonomies (thanks arnonalex).
 
