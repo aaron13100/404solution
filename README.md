@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.22.4 (January 30, 2020) ##
+* FIX: Avoid a warning about upcoming PHP 8 (thanks to a debug file participant).
+
 ## Version 2.22.3 (January 7, 2020) ##
 * FIX: Avoid a warning about upcoming PHP 8 (thanks to a debug file participant).
 
