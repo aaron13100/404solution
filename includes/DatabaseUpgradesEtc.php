@@ -356,7 +356,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         if ($daysDifference >= $minDaysDifference) {
             $abj404logging->infoMessage("The latest major version is old enough for updating automatically (" . 
                     $minDaysDifference . "days minimum, version " . $latestVersion . " is " . $daysDifference . 
-                    " days old), currently version " + ABJ404_VERSION . " is installed.");
+                    " days old), currently version " . ABJ404_VERSION . " is installed.");
             return true;
         }
         
