@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.22.5 (March 19, 2020) ##
+* Improvement: Try to fix a damaged 404 Solution table (for rentptr).
+
 ## Version 2.22.4 (January 30, 2020) ##
 * FIX: Avoid a warning about upcoming PHP 8 (thanks to a debug file participant).
 

@@ -181,7 +181,7 @@ class ABJ_404_Solution_DataAccess {
         
         if ($options['log_errors'] && $result['last_error'] != '') {
             if ($f->strpos($result['last_error'], 
-                    "is marked as crashed and last (automatic?) repair failed") !== false) {
+                    " is marked as crashed ") !== false) {
                 $this->repairTable($result['last_error']);
             }
             if ($f->strpos($result['last_error'],
@@ -207,7 +207,7 @@ class ABJ_404_Solution_DataAccess {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
-        $re = 'Table \'.*\/(.+)\' is marked as crashed and last \(automatic\?\) repair failed';
+        $re = 'Table \'.*\/(.+)\' is marked as crashed and ';
         $matches = null;
 
         $f->regexMatch($re, $errorMessage, $matches);
