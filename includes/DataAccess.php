@@ -207,12 +207,12 @@ class ABJ_404_Solution_DataAccess {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
-        $re = 'Table \'.*\/(.+)\' is marked as crashed and ';
+        $re = "Table '(.*\/)?(.+)' is marked as crashed and ";
         $matches = null;
 
         $f->regexMatch($re, $errorMessage, $matches);
-        if ($matches != null && $f->strlen($matches[1]) > 0) {
-            $tableToRepair = $matches[1];
+        if ($matches != null && count($matches) > 2 && $f->strlen($matches[2]) > 0) {
+            $tableToRepair = $matches[2];
             if ($f->strpos($tableToRepair, "abj404") !== false) {
                 $query = "repair table " . $tableToRepair;
                 $result = $this->queryAndGetResults($query, array('log_errors' => false));

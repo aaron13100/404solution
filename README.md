@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.22.6 (April 1, 2020) ##
+* Improvement: Try to fix a damaged 404 Solution table (for rentptr).
+
 ## Version 2.22.5 (March 19, 2020) ##
 * Improvement: Try to fix a damaged 404 Solution table (for rentptr).
 
