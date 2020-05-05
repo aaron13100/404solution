@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.22.8 (May 5, 2020) ##
+* Improvement: Avoid a warning message in a php log file (for mborin).
+
 ## Version 2.22.7 (May 5, 2020) ##
 * Improvement: Avoid a warning message in a php log file (for mborin).
 
