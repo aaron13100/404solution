@@ -86,7 +86,7 @@ class ABJ_404_Solution_ErrorHandler {
         
         $lasterror = error_get_last();
         
-        if ($lasterror == null || !array_key_exists('type', $lasterror) || 
+        if ($lasterror == null || !is_array($lasterror) || !array_key_exists('type', $lasterror) || 
         	!array_key_exists('file', $lasterror)) {
         	
         	return false;
