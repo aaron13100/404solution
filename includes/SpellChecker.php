@@ -487,7 +487,10 @@ class ABJ_404_Solution_SpellChecker {
 
         } else if ($rowType == 'image') {
             $src = wp_get_attachment_image_src( $id, "attached-image");
-            return urldecode($src[0]);
+            if ($src == false || !is_array($src)) {
+            	return null;
+            }
+			return urldecode($src[0]);
 
         } else {
             throw Exception("Unknown row type ...");
