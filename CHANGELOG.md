@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.22.7 (May 5, 2020) ##
+* Improvement: Avoid a warning message in a php log file (for mborin).
+
 ## Version 2.22.6 (April 1, 2020) ##
 * Improvement: Try to fix a damaged 404 Solution table (for rentptr).
 

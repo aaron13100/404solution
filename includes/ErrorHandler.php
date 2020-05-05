@@ -85,6 +85,12 @@ class ABJ_404_Solution_ErrorHandler {
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $lasterror = error_get_last();
+        
+        if ($lasterror == null || !array_key_exists('type', $lasterror) || 
+        	!array_key_exists('file', $lasterror)) {
+        	
+        	return false;
+        }
 
         try {
             $errno = $lasterror['type'];
