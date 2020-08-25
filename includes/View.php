@@ -685,6 +685,8 @@ class ABJ_404_Solution_View {
                 __('(Type a page name or an external URL)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
                 __('(A page has been selected.)', '404-solution'), $html);
+        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+        	__('(A custom string has been entered.)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
                 __('(An external URL will be used.)', '404-solution'), $html);
         $html = $f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
@@ -1414,6 +1416,8 @@ class ABJ_404_Solution_View {
                 __('(Type a page name or an external URL)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
                 __('(A page has been selected.)', '404-solution'), $html);
+        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+        	__('(A custom string has been entered.)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
                 __('(An external URL will be used.)', '404-solution'), $html);
         $html = $f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
@@ -1518,6 +1522,8 @@ class ABJ_404_Solution_View {
                 __('(Type a page name or an external URL)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
                 __('(A page has been selected.)', '404-solution'), $html);
+        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+        	__('(A custom string has been entered.)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
         		__('(An external URL will be used.)', '404-solution'), $html);
         $html = $f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', $pageMissingWarning, $html);
@@ -1732,6 +1738,8 @@ class ABJ_404_Solution_View {
                 __('(Begin typing a URL)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
                 __('(A page has been selected.)', '404-solution'), $html);
+        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+        	__('(A custom string has been entered.)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
                 __('(Please choose from the dropdown list instead of typing your own URL.)', '404-solution'), $html);
         $html = $f->str_replace('{pageIDAndType}', $pageIDAndType, $html);

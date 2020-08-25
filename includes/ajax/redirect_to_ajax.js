@@ -127,10 +127,27 @@ function abj404_validateAndUpdateFeedback() {
     var ABJ404_TYPE_EXTERNAL = "4";
     
     var userTypedValue = jQuery("#redirect_to_user_field").val();
+    var selectedVal = jQuery('#redirect_to_data_field_title').val();
     
+    // if the user entered a valid URL and pressed enter then it's ok.
     if (abj404_isValidURL(userTypedValue)) {
         jQuery("#redirect_to_data_field_title").val(userTypedValue);
         jQuery("#redirect_to_data_field_id").val(ABJ404_TYPE_EXTERNAL + '|' + ABJ404_TYPE_EXTERNAL);
+
+    } else if (userTypedValue != '' && userTypedValue == selectedVal) {
+    	// the typed value equals the selected value when the user chooses a
+    	// an option from the dropdown.
+        var selectedVal = jQuery('#redirect_to_data_field_title').val();
+        jQuery("#redirect_to_user_field").val(selectedVal);
+    	
+    
+    // if we're using a regular expression and the user pressed enter then it's ok.
+    } else if (userTypedValue != '' &&
+    		document.getElementById('is_regex_url') != null &&
+    		document.getElementById('is_regex_url').checked) {
+        jQuery("#redirect_to_data_field_title").val(userTypedValue);
+        jQuery("#redirect_to_data_field_id").val(ABJ404_TYPE_EXTERNAL + '|' + ABJ404_TYPE_EXTERNAL);
+    	
     } else {
         // if no item was selected then we force the search box to change back to 
         // whatever the user previously selected.
@@ -141,10 +158,16 @@ function abj404_validateAndUpdateFeedback() {
     var selectedPageID = jQuery("#redirect_to_data_field_id").val();
     var tooltip_empty = jQuery("#redirect_to_user_field").attr("data-tooltip-explanation-empty");
     var tooltip_page = jQuery("#redirect_to_user_field").attr("data-tooltip-explanation-page");
+    var tooltip_custom_string = jQuery("#redirect_to_user_field").attr("data-tooltip-explanation-custom-string");
     var tooltip_url = jQuery("#redirect_to_user_field").attr("data-tooltip-explanation-url");
     if ((selectedPageID === null) || (selectedPageID === "")) {
         jQuery(".redirect_to_user_field_explanation").text(tooltip_empty);
         
+    } else if (document.getElementById('is_regex_url') != null &&
+    		document.getElementById('is_regex_url').checked && 
+    		selectedPageID != undefined && selectedPageID.endsWith('|' + ABJ404_TYPE_EXTERNAL)) {
+        jQuery("#redirect_to_user_field_explanation").text(tooltip_custom_string);
+    
     } else if (selectedPageID != undefined && selectedPageID.endsWith('|' + ABJ404_TYPE_EXTERNAL)) {
         jQuery("#redirect_to_user_field_explanation").text(tooltip_url);
     } else {
