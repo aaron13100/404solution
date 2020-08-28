@@ -537,6 +537,8 @@ class ABJ_404_Solution_PluginLogic {
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $message = "";
+        $message = array_key_exists('display-this-message', $_POST) ? 
+        	sanitize_text_field($_POST['display-this-message']) : '';
         
         if ($action == "updateOptions") {
             if (check_admin_referer('abj404UpdateOptions') && is_admin()) {
@@ -555,12 +557,6 @@ class ABJ_404_Solution_PluginLogic {
                 
                 // save all changes. saveOptions, saveSettings
                 $sub = "abj404_options";
-                $message = $this->updateOptionsFromPOST();
-                if ($message == "") {
-                    $message = __('Options Saved Successfully!', '404-solution');
-                } else {
-                    $message .= __('Some options were not saved successfully.', '404-solution');
-                }
             } else {
                 $abj404logging->debugMessage("Unexpected result. How did we get here? is_admin: " . 
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
@@ -1283,6 +1279,23 @@ class ABJ_404_Solution_PluginLogic {
         $message = "";
         $options = $this->getOptions();
         
+        // get the submitted settings
+        $encodedData = $_POST['encodedData'];
+        $postData = $f->decodeComplicatedData($encodedData);
+        
+        // to return after handling the ajax call.
+        $returnData = array();
+        $returnData['newURL'] = admin_url() . "options-general.php?page=" . ABJ404_PP . '&subpage=abj404_options';
+        
+        // verify nonce
+        if (!wp_verify_nonce($postData['nonce'], 'abj404UpdateOptions') || !is_admin()) {
+        	$returnData['message'] = 'Task failed successfully.';
+        	echo json_encode($returnData);
+        	exit(1);
+        }
+        
+        $_POST = $postData;
+        
         // options with custom messages.
         if (array_key_exists('default_redirect', $_POST) && isset($_POST['default_redirect'])) {
             if ($_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302") {
@@ -1449,7 +1462,15 @@ class ABJ_404_Solution_PluginLogic {
         $permalinkCache = new ABJ_404_Solution_PermalinkCache();
         $permalinkCache->updatePermalinkCache(2);
         
-        return $message;
+        $returnData['error'] = $message;
+        if ($message == "") {
+        	$returnData['message'] = __('Options Saved Successfully!', '404-solution');
+        } else {
+        	$returnData['message'] = __('Some options were not saved successfully.', '404-solution') . 
+        		'		' . $message;
+        }
+        echo json_encode($returnData);
+        exit();
     }
     
     /** First try a wp_redirect. Then try a redirect with JavaScript. The wp_redirect usually works, but doesn't 

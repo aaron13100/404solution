@@ -10,6 +10,13 @@ if ($GLOBALS['abj404_display_errors']) {
 
 class ABJ_404_Solution_Ajax_Php {
 
+	/** Find logs to display. */
+	static function updateOptions() {
+		$abj404logic = new ABJ_404_Solution_PluginLogic();
+		
+		$abj404logic->updateOptionsFromPOST();
+	}
+	
     /** Find logs to display. */
     static function echoViewLogsFor() {
         $abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
