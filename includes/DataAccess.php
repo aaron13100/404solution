@@ -998,7 +998,8 @@ class ABJ_404_Solution_DataAccess {
         // we have to know what to set for the $minLogID value
         $minLogID = false;
         $query = "select id from {wp_abj404_logsv2}" . 
-                " where requested_url = '" . esc_sql($requestedURL) . "' limit 1";
+                " where cast(requested_url as binary) = " . 
+                "cast('" . esc_sql($requestedURL) . "' as binary) limit 1";
         $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];

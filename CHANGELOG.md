@@ -2,6 +2,8 @@
 
 ## Version 2.22.10 (August 29, 2020) ##
 * Improvement: Avoid a modsecurity issue for cosmoweb.
+* FIX: Illegal mix of collations for a debug file participant.
+* Improvement: Don't annoy the plugin author with emails about database users not having the right to delete from the database.
 
 ## Version 2.22.9 (May 5, 2020) ##
 * Improvement: Avoid a warning message in a php log file (for mborin).

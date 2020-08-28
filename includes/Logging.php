@@ -293,8 +293,10 @@ class ABJ_404_Solution_Logging {
                 while (($line = fgets($handle)) !== false) {
                     $linesRead++;
                     // if the line has an error then save the line number.
-                    if (stripos($line, '(ERROR)') !== false) {
-                        $latestErrorLineFound['num'] = $linesRead;
+                    $hasError = stripos($line, '(ERROR)');
+                    $isDeleteError = stripos($line, 'SQL query error: DELETE command denied to user');
+                    if ($hasError !== false && $isDeleteError === false) {
+                    	$latestErrorLineFound['num'] = $linesRead;
                         $latestErrorLineFound['line'] = $line;
                         $latestErrorLineFound['total_error_count'] += 1;
                         
