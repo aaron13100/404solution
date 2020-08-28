@@ -522,14 +522,18 @@ class ABJ_404_Solution_View {
         }
 
         //General Options
-        $link = wp_nonce_url("?page=" . ABJ404_PP . '&subpage=abj404_options', "abj404UpdateOptions");
-
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
         echo " <div class=\"meta-box-sortables\">";
 
-        echo '<form method="POST" name="admin-options-page" action="' . esc_attr($link) . '">';
-        echo "<input type=\"hidden\" name=\"action\" value=\"updateOptions\">";
+        $formBeginning = '<form method="POST" id="admin-options-page" ' . 
+        	'name="admin-options-page" action="#" data-url="{data-url}">' . "\n";
+        $formBeginning .= '<input type="hidden" name="action" value="updateOptions">' . "\n";
+        $formBeginning .= '<input type="hidden" name="nonce" value="' . 
+        	wp_create_nonce('abj404UpdateOptions') . '">' . "\n";
+        $formBeginning = $f->str_replace('{data-url}', 
+        	"admin-ajax.php?action=updateOptions", $formBeginning);
+        echo $formBeginning;
 
         $contentAutomaticRedirects = $abj404view->getAdminOptionsPageAutoRedirects($options);
         $abj404view->echoPostBox("abj404-autooptions", __('Automatic Redirects', '404-solution'), $contentAutomaticRedirects);

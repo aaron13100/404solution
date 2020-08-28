@@ -88,8 +88,8 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
-## Version 2.22.10 (August 26, 2020) ##
-* Improvement: Avoid a warning modsecurity issue for cosmoweb.
+## Version 2.22.10 (August 29, 2020) ##
+* Improvement: Avoid a modsecurity issue for cosmoweb.
 
 ## Version 2.22.9 (May 5, 2020) ##
 * Improvement: Avoid a warning message in a php log file (for mborin).

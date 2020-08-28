@@ -24,6 +24,34 @@ abstract class ABJ_404_Solution_Functions {
         return self::$instance;
     }
     
+    /** First urldecode then json_decode the data, then return it.
+     * All of this encoding and decoding is so that [] characters are supported.
+     * @param string $data
+     * @return mixed
+     */
+    function decodeComplicatedData($data) {
+    	$dataDecoded = urldecode($data);
+    	
+    	// JSON.stringify escapes single quotes and json_decode does not want them to be escaped.
+    	$dataStripped = str_replace("\'", "'", $dataDecoded);
+    	$fixedData = json_decode($dataStripped, true);
+    	
+    	$jsonErrorNumber = json_last_error();
+    	if ($jsonErrorNumber != 0) {
+    		$errorMsg = json_last_error_msg();
+    		$lastMessagePart = ", Decoded: " . $dataDecoded;
+    		if ($dataStripped != null && mb_strlen($dataStripped) > 1) {
+    			$lastMessagePart = ", Stripped: " . $dataStripped;
+    		}
+    		
+    		$logger = ABJ_404_Solution_Logging::getInstance();
+    		$logger->errorMessage("Error " . $jsonErrorNumber . " parsing JSON in "
+    			. __CLASS__ . "->" . __FUNCTION__ . "(). Error message: " . $errorMsg . $lastMessagePart);
+    	}
+    	
+    	return $fixedData;
+    }
+    
     function str_replace($needle, $replacement, $haystack) {
     	if (!is_array($needle)) {
     		return $this->single_str_replace($needle, $replacement, $haystack);
