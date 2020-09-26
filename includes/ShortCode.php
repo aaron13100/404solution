@@ -66,6 +66,7 @@ class ABJ_404_Solution_ShortCode {
         $currentSlug = $abj404logic->removeHomeDirectory(
                 $f->regexReplace('\?.*', '', urldecode($_SERVER['REQUEST_URI'])));
         $displayed = 0;
+        $commentPartAndQueryPart = $abj404logic->getCommentPartAndQueryPartOfRequest();
 
         foreach ($permalinkSuggestions as $idAndType => $linkScore) {
             $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore, 
@@ -83,7 +84,9 @@ class ABJ_404_Solution_ShortCode {
                 // <li>
                 $content .= wp_kses_post($options['suggest_entrybefore']);
                 
-                $content .= "<a href=\"" . esc_url($permalink['link']) . "\" title=\"" . esc_attr($permalink['title']) . "\">" . esc_attr($permalink['title']) . "</a>";
+                $content .= "<a href=\"" . esc_url($permalink['link']) . $commentPartAndQueryPart .
+                	"\" title=\"" . esc_attr($permalink['title']) . "\">" . 
+                	esc_attr($permalink['title']) . "</a>";
                 
                 // display the score after the page link
                 if (is_user_logged_in() && current_user_can('manage_options')) {
