@@ -1473,18 +1473,25 @@ class ABJ_404_Solution_PluginLogic {
         exit();
     }
     
+    /** Get the "/commentpage" and the "?query=part" of the URL. 
+     * @return string */
+    function getCommentPartAndQueryPartOfRequest() {
+    	$f = ABJ_404_Solution_Functions::getInstance();
+    	$userRequest = ABJ_404_Solution_UserRequest::getInstance();
+    	$queryParts = $f->removePageIDFromQueryString($userRequest->getQueryString());
+    	$queryParts = ($queryParts == '') ? '' : '?' . $queryParts;
+    	$commentPart = $userRequest->getCommentPagePart();
+    	return $commentPart . $queryParts;
+    }
+    
     /** First try a wp_redirect. Then try a redirect with JavaScript. The wp_redirect usually works, but doesn't 
      * if some other plugin has already output any kind of data. 
      * @param string $location
      * @param number $status
      */
     function forceRedirect($location, $status = 302) {
-        $f = ABJ_404_Solution_Functions::getInstance();
-        $userRequest = ABJ_404_Solution_UserRequest::getInstance();
-        $queryParts = $f->removePageIDFromQueryString($userRequest->getQueryString());
-        $queryParts = ($queryParts == '') ? '' : '?' . $queryParts;
-        $commentPart = $userRequest->getCommentPagePart();
-        $finalDestination = $location . $commentPart . $queryParts;
+    	$commentPartAndQueryPart = $this->getCommentPartAndQueryPartOfRequest();
+    	$finalDestination = $location . $commentPartAndQueryPart;
         
         // try a normal redirect using a header.
         wp_redirect($finalDestination, $status, ABJ404_NAME);
@@ -1498,7 +1505,8 @@ class ABJ_404_Solution_PluginLogic {
                 '}' . "\n" .
                 'setTimeout(doRedirect, 1);' . "\n" .
                 '</script>' . "\n" .
-                'Page moved: <a href="' . $location . $queryParts . '">' . $location . '</a>';
+                'Page moved: <a href="' . $location . $commentPartAndQueryPart . '">' . 
+        			$location . '</a>';
         echo $c;
         exit;
     }
