@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.22.11 (September 26, 2020) ##
+* Improvement: Always include query parameters when linking to pages in the shortcode page suggestions (thanks lellolallo).
+
 ## Version 2.22.10 (August 28, 2020) ##
 * Improvement: Avoid a modsecurity issue for cosmoweb.
 * FIX: Illegal mix of collations for a debug file participant.
