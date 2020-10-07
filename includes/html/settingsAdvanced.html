@@ -97,7 +97,6 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
         <textarea rows="6" cols="60" name="recognized_categories" id="recognized_categories" >{recognized_categories}</textarea>
                     
     </td></tr>
-
     <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
     <tr><td valign="top">
             <label for="folders_files_ignore">{Files and Folders Ignore Strings - Do Not Process} 
@@ -146,6 +145,42 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
                     
     </td></tr>
     
+
+    <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
+    <tr><td valign="top">
+            <label for="exlclude_pages_list">{Exclude Specific Pages, Posts, Categories, Etc} 
+                <BR/><BR/>
+            {Pages listed here will not be redirected to }
+            {(unless a redirect to the page already exists). }
+            </label>
+            
+            <BR/><BR/>
+            <label  class="add_exlude_page_field_label" for="add_exlude_page_field"
+            >{Type a page name here and select it to add it to the exlusion list}:</label>
+<input id="add_exlude_page_field" placeholder="{TOOLTIP_POPUP_EXPLANATION_EMPTY}" 
+       style="width: 50%;" type="text" name="add_exlude_page_field" 
+       data-url="{add-exclude-page-data-url}"
+       data-lpignore="true"
+       data-tooltip-explanation-empty="{TOOLTIP_POPUP_EXPLANATION_EMTPY}"
+       data-tooltip-explanation-page="{TOOLTIP_POPUP_EXPLANATION_PAGE}"
+       data-tooltip-explanation-custom-string="{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}"
+       data-tooltip-explanation-url="{TOOLTIP_POPUP_EXPLANATION_URL}"
+       class="highlight-text-on-focus"
+       > 
+            
+    </td><td>
+		<ul class="closeable-ul exclude-pages-ul">
+		  <li>Agnes<input type="hidden" name="excludePages[]" value="Agnes"/><span class="close i-am-a-close-button">x</span></li>
+		
+		  <li>Billy<input type='hidden' name='excludePages[]' value='Billy'/><span class="close i-am-a-close-button">x</span></li>
+		  <li>Bob<input type='hidden' name='excludePages[]' value='Bob'/><span class="close i-am-a-close-button">x</span></li>
+		
+		  <li>Calvin<input type='hidden' name='excludePages[]' value='Calvin'/><span class="close i-am-a-close-button">x</span></li>
+		  <li>Christina<input type='hidden' name='excludePages[]' value='Christina'/><span class="close i-am-a-close-button">x</span></li>
+		</ul>    
+    </td>
+    </tr>
+
 </table> 
 
 <!-- .............................. -->

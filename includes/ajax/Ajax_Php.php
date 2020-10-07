@@ -55,10 +55,12 @@ class ABJ_404_Solution_Ajax_Php {
         
         $term = $f->strtolower(sanitize_text_field($_GET['term']));
         $includeDefault404Page = $_GET['includeDefault404Page'] == "true";
+        $includeSpecial = $_GET['includeSpecial'] == "true";
         $suggestions = array();
         
         // add the "Home Page" destination.
-        $specialPages = $abj404AjaxPhp->getDefaultRedirectDestinations($includeDefault404Page);
+        $specialPages = $abj404AjaxPhp->getDefaultRedirectDestinations($includeDefault404Page, 
+        	$includeSpecial);
         
         // query to get the posts and pages.
         $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', $term, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
@@ -169,12 +171,12 @@ class ABJ_404_Solution_Ajax_Php {
     /** Create a "Home Page" destination.
      * @return string
      */
-    function getDefaultRedirectDestinations($includeDefault404Page) {
+    function getDefaultRedirectDestinations($includeDefault404Page, $includeSpecial) {
         $arrayWrapper = array();
         $suggestion = array();
         
         // --- default 404 page
-        if ($includeDefault404Page) {
+        if ($includeSpecial && $includeDefault404Page) {
             $suggestion['category'] = __('Special', '404-solution');
             $suggestion['label'] = __('(Default 404 Page)', '404-solution');
             $suggestion['value'] = ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED;
@@ -183,13 +185,15 @@ class ABJ_404_Solution_Ajax_Php {
             $arrayWrapper[] = $suggestion;
         }
         
-        // --- home page
-        $suggestion['category'] = __('Special', '404-solution');
-        $suggestion['label'] = __('Home Page', '404-solution');
-        $suggestion['value'] = ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME;
-        // depth 0 means it's not a child page
-        $suggestion['depth'] = '0';
-        $arrayWrapper[] = $suggestion;
+        if ($includeSpecial) {
+	        // --- home page
+	        $suggestion['category'] = __('Special', '404-solution');
+	        $suggestion['label'] = __('Home Page', '404-solution');
+	        $suggestion['value'] = ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME;
+	        // depth 0 means it's not a child page
+	        $suggestion['depth'] = '0';
+	        $arrayWrapper[] = $suggestion;
+        }
         
         return $arrayWrapper;
     }

@@ -18,10 +18,18 @@ function submitOptions(e) {
 	// gather form data.
 	var form = document.getElementById("admin-options-page");
 	var formData = Object.values(form.elements).reduce((obj,field) => {
+			var currentValue = field.value;
 			if (field.type == 'checkbox') {
-				obj[field.name] = field.checked ? 1 : 0;
+				currentValue = field.checked ? 1 : 0;
+			}
+			
+			if (!(field.name in obj)) {
+				obj[field.name] = currentValue;
 			} else {
-				obj[field.name] = field.value;
+				if (!Array.isArray(obj[field.name])) {
+					obj[field.name] = new Array(obj[field.name]);
+				}
+				obj[field.name].push(currentValue);
 			}
 			return obj 
 		}, {});
