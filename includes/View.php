@@ -1630,6 +1630,17 @@ class ABJ_404_Solution_View {
         
         $html = $f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
         
+        $html = $f->str_replace('{add-exclude-page-data-url}',
+        	"admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false&includeSpecial=false", $html);
+        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
+        	__('(Type a page name)', '404-solution'), $html);
+        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
+        	__('(A page has been selected.)', '404-solution'), $html);
+        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+        	__('(A custom string has been entered.)', '404-solution'), $html);
+        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
+        	__('(An external URL will be used.)', '404-solution'), $html);
+        
         // constants and translations.
         $html = $f->doNormalReplacements($html);
         

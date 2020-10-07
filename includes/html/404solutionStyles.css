@@ -1,3 +1,44 @@
+.closeable-ul {
+	box-sizing: border-box;
+	max-height: 12em;
+	overflow: auto;
+}
+/* Style the list (remove margins and bullets, etc) */
+.closeable-ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Style the list items */
+.closeable-ul li {
+  border: 1px solid #ddd;
+  margin-top: -1px; /* Prevent double borders */
+  background-color: #f6f6f6;
+  text-decoration: none;
+  font-size: 1.2em;
+  color: black;
+  display: block;
+  position: relative;
+}
+
+/* Add a light grey background color on hover */
+.closeable-ul li:hover {
+  background-color: #eee;
+}
+
+/* Style the close button (span) */
+.closeable-ul .close {
+  cursor: pointer;
+  position: absolute;
+  top: 50%;
+  right: 0%;
+  padding: 0px 16px;
+  transform: translate(0%, -50%);
+}
+
+.closeable-ul .close:hover {background: #bbb;}
+
 
 .hide-when-true {
 	display: none;
