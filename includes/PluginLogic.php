@@ -408,7 +408,7 @@ class ABJ_404_Solution_PluginLogic {
             'capture_deletion' => 1095,
             'manual_deletion' => '0',
             'log_deletion' => '365',
-            'admin_notification' => '200',
+            'admin_notification' => '0',
             'remove_matches' => '1',
             'suggest_minscore' => '25',
             'suggest_max' => '5',
@@ -445,6 +445,7 @@ class ABJ_404_Solution_PluginLogic {
             'page_redirects_order' => 'ASC',
             'captured_order_by' => 'logshits',
             'captured_order' => 'DESC',
+        	'excludePages[]' => '',
         );
         
         return $options;
@@ -1452,6 +1453,12 @@ class ABJ_404_Solution_PluginLogic {
             $options['folders_files_ignore_usable'] = $usableFilePatterns;
         }
 
+        if (array_key_exists('excludePages[]', $_POST) && isset($_POST['excludePages[]'])) {
+        	$options['excludePages[]'] = json_encode($_POST['excludePages[]']);
+        } else {
+        	$options['excludePages[]'] = null;
+        }
+        
         /** Sanitize all data. */
         $new_options = array();
         $new_options = $this->sanitizePostData($options);
