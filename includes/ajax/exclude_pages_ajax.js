@@ -1,3 +1,4 @@
+const EXCL_SEPARATOR_CHAR = '|\\|';
 
 jQuery(document).ready(function($) {	
     var field = jQuery('#add_exlude_page_field');
@@ -32,19 +33,11 @@ jQuery(document).ready(function($) {
         select: function(event, ui) {
             event.preventDefault();
             // when an item is selected then update the hidden fields to store it.
-            jQuery("#add_exlude_page_field").val(ui.item.label);
             addPageToExcludeToList(ui.item);
-            // jQuery("#redirect_to_data_field_title").val(ui.item.label);
-            // todo jQuery("#redirect_to_data_field_id").val(ui.item.value);
-
-            abj404_validateAndUpdateFeedback();
         },
         focus: function(event, ui) {
             // don't change the contents of the textbox just by highlighting something.
             event.preventDefault();
-        },
-        change: function( event, ui ) {
-            abj404_validateAndUpdateFeedback();
         }
     });
     
@@ -57,19 +50,54 @@ jQuery(document).ready(function($) {
             
             // close the menu if it's open.
             jQuery('#add_exlude_page_field').catcomplete("close");
-            
-            abj404_validateAndUpdateFeedback();
         }
     });
     
-    // if nothing was entered then reset the already selected value.
-    jQuery('#add_exlude_page_field').focusout(function(event) {
-        abj404_validateAndUpdateFeedback();
-    });
-
-    // we run this here for when the user edits an existing redirect.
-    abj404_validateAndUpdateFeedback();
+    loadExcludePagesFromOptions();
+    
+    alphabetizeExcludeList()
 });
+
+function loadExcludePagesFromOptions() {
+	var ulToAddTo = document.getElementsByClassName('exclude-pages-ul')[0];
+	var urlEncodedOptions = ulToAddTo.getAttribute('data-loaded-values');
+	var jsonEncodedOptions = decodeURIComponent(urlEncodedOptions.replace(/\+/g, ' '));
+	
+	if (jsonEncodedOptions.trim() == '') {
+		return;
+	}
+	var optionsList = JSON.parse(jsonEncodedOptions);
+	
+	// items are in the format (ID|type ID|type name|title) (13721|1|Page|About Etc)
+	optionsList.forEach(function(page, i) {
+		var someItems = page.split(EXCL_SEPARATOR_CHAR);
+		var allItems = someItems[0].split('|');
+		allItems = allItems.concat(someItems.slice(1));
+		var label = allItems[3];
+		var category = allItems[2];
+		var value = page;
+		insertExcludePage(ulToAddTo, label, category, value);
+	});
+	
+	alphabetizeExcludeList();
+}
+
+function alphabetizeExcludeList() {
+	var ulToAddTo = document.getElementsByClassName('exclude-pages-ul')[0];
+	var allLIs = ulToAddTo.querySelectorAll('li');
+	allLIs = jQuery(allLIs).get().sort(function(a, b) {
+		var keyA = a.textContent;
+		var keyB = b.textContent;
+
+		if (keyA < keyB) { return -1; }
+		if (keyA > keyB) { return 1; }
+		
+		return 0;
+    });
+	allLIs.forEach(function(li, i) {
+    	ulToAddTo.append(li); /* This removes li from the old spot and moves it */
+	});
+}
 
 function handleClosedULItemAction(e) {
 	if (e.target.classList.contains("i-am-a-close-button")) {
@@ -87,81 +115,32 @@ function handleClosedULItemAction(e) {
 }
 
 function addPageToExcludeToList(item) {
-    jQuery("#add_exlude_page_field").val(item.label + '|' + item.value);
+	// clear the autocomplete box because we're done with it
+	document.getElementById('add_exlude_page_field').value = '';
+	
+	// get the existing values from the ul
     var ulToAddTo = document.getElementsByClassName('exclude-pages-ul')[0];
-    ulToAddTo.insertAdjacentHTML('afterbegin', '<li>' + item.label + 
-		'<input type="hidden" name="excludePages[]" value="' + item.value + 
-		'"/><span class="close i-am-a-close-button">x</span></li>');
+    var inputs = ulToAddTo.querySelectorAll('li>input');
+    var values = new Array();
+    for (var i = 0; i < inputs.length; i++) {
+    	values.push(inputs[i].value);
+    }
+    
+    // if the value doesn't already exists in the list then add it.
+    var pageValue = item.value + EXCL_SEPARATOR_CHAR + item.category + 
+    	EXCL_SEPARATOR_CHAR + item.label;
+    if (!values.includes(pageValue)) {
+    	insertExcludePage(ulToAddTo, item.label, item.category, pageValue);
+    }
+    
+    // alphabetize the pages
+    alphabetizeExcludeList();
 }
 
-/** Validate the selection and update the feedback label.
- * @returns {undefined}
- */
-function abj404_validateAndUpdateFeedback() {
-	return;
-	// todo
-    // 4 => ABJ404_TYPE_EXTERNAL
-    var ABJ404_TYPE_EXTERNAL = "4";
-    
-    var userTypedValue = jQuery("#add_exlude_page_field").val();
-    var selectedVal = jQuery('#redirect_to_data_field_title').val();
-    
-    // if the user entered a valid URL and pressed enter then it's ok.
-    if (abj404_isValidURL(userTypedValue)) {
-        jQuery("#redirect_to_data_field_title").val(userTypedValue);
-        jQuery("#redirect_to_data_field_id").val(ABJ404_TYPE_EXTERNAL + '|' + ABJ404_TYPE_EXTERNAL);
-
-    } else if (userTypedValue != '' && userTypedValue == selectedVal) {
-    	// the typed value equals the selected value when the user chooses a
-    	// an option from the dropdown.
-        var selectedVal = jQuery('#redirect_to_data_field_title').val();
-        jQuery("#add_exlude_page_field").val(selectedVal);
-    	
-    
-    // if we're using a regular expression and the user pressed enter then it's ok.
-    } else if (userTypedValue != '' &&
-    		document.getElementById('is_regex_url') != null &&
-    		document.getElementById('is_regex_url').checked) {
-        jQuery("#redirect_to_data_field_title").val(userTypedValue);
-        jQuery("#redirect_to_data_field_id").val(ABJ404_TYPE_EXTERNAL + '|' + ABJ404_TYPE_EXTERNAL);
-    	
-    } else {
-        // if no item was selected then we force the search box to change back to 
-        // whatever the user previously selected.
-        var selectedVal = jQuery('#redirect_to_data_field_title').val();
-        jQuery("#add_exlude_page_field").val(selectedVal);
-    }
-
-    var selectedPageID = jQuery("#redirect_to_data_field_id").val();
-    var tooltip_empty = jQuery("#add_exlude_page_field").attr("data-tooltip-explanation-empty");
-    var tooltip_page = jQuery("#add_exlude_page_field").attr("data-tooltip-explanation-page");
-    var tooltip_custom_string = jQuery("#add_exlude_page_field").attr("data-tooltip-explanation-custom-string");
-    var tooltip_url = jQuery("#add_exlude_page_field").attr("data-tooltip-explanation-url");
-    if ((selectedPageID === null) || (selectedPageID === "")) {
-        jQuery(".add_exlude_page_field_explanation").text(tooltip_empty);
-        
-    } else if (document.getElementById('is_regex_url') != null &&
-    		document.getElementById('is_regex_url').checked && 
-    		selectedPageID != undefined && selectedPageID.endsWith('|' + ABJ404_TYPE_EXTERNAL)) {
-        jQuery("#add_exlude_page_field_explanation").text(tooltip_custom_string);
-    
-    } else if (selectedPageID != undefined && selectedPageID.endsWith('|' + ABJ404_TYPE_EXTERNAL)) {
-        jQuery("#add_exlude_page_field_explanation").text(tooltip_url);
-    } else {
-        jQuery("#add_exlude_page_field_explanation").text(tooltip_page);
-    }
+function insertExcludePage(ulToAddTo, label, category, value) {
+    ulToAddTo.insertAdjacentHTML('afterbegin', '<li>' + label + 
+    		'<span class="exclude-pages-page-type"> (' + category + ')</span>' +
+    		'<input type="hidden" name="excludePages[]" value="' + value + 
+    		'"/><span class="close i-am-a-close-button">x</span></li>');
 }
 
-/** Validate a URL.
- * @param {type} url
- * @returns {Boolean} true if the URL is valid. false otherwise.
- */
-function abj404_isValidURL(url) {
-    if (url === undefined || url === null) {
-        return false;
-    }
-    if ((url.indexOf(' ') === -1) && (url.indexOf("://") > -1)) {
-    	return true;
-    }
-    return false;
-}

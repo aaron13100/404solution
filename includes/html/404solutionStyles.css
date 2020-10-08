@@ -1,3 +1,11 @@
+
+.exclude-pages-page-type {
+	font-style: italic;
+}
+.exclude-pages-cell {
+	vertical-align: top;
+}
+
 .closeable-ul {
 	box-sizing: border-box;
 	max-height: 12em;
@@ -29,6 +37,7 @@
 
 /* Style the close button (span) */
 .closeable-ul .close {
+	background: #eee;
   cursor: pointer;
   position: absolute;
   top: 50%;

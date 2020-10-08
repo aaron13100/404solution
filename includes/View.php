@@ -1640,6 +1640,9 @@ class ABJ_404_Solution_View {
         	__('(A custom string has been entered.)', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
         	__('(An external URL will be used.)', '404-solution'), $html);
+
+        $html = $f->str_replace('{loaded-excluded-pages}',
+        	urlencode($options['excludePages[]']), $html);
         
         // constants and translations.
         $html = $f->doNormalReplacements($html);
