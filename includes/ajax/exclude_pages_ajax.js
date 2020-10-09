@@ -9,7 +9,11 @@ jQuery(document).ready(function($) {
         jQuery('#add_exlude_page_field').css('background-color', '');
     });
     
-    document.getElementsByClassName('closeable-ul')[0].addEventListener("click", function(e) {
+    var closeableULs = document.getElementsByClassName('closeable-ul');
+    if (closeableULs.length == 0) {
+    	return;
+    }
+    closeableULs[0].addEventListener("click", function(e) {
     	  handleClosedULItemAction(e);
     });
     

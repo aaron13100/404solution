@@ -32,7 +32,7 @@ function bindSearchFieldListeners() {
     filters.on("search", function(event) {
         field = jQuery(event.srcElement);
         var previousValue = field.attr("data-previous-value");
-        var fieldLength = field.val().length;
+        var fieldLength = field.val() == null ? 0 : field.val().length;
         if (fieldLength === 0 && field.val() !== previousValue) {
             paginationLinksChange(event.srcElement);
             event.preventDefault();
