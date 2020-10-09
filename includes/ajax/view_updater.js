@@ -46,7 +46,15 @@ function bindSearchFieldListeners() {
         var keycode = (event.which ? event.which : event.keyCode);
         if (keycode === 13) {
             event.preventDefault();
-            paginationLinksChange(event.srcElement);
+            var srcElement = event.srcElement;
+            // prefer using the "perpage" element as the source element because when
+            // the input box itself is used as a source element there's some kind of bug
+            // and I don't care to figure out why at the moment, therefore this hack...
+            var perpageElements = document.querySelectorAll('.perpage');
+            if (perpageElements != null && perpageElements.length > 0) {
+            	srcElement = perpageElements[0];
+            }
+            paginationLinksChange(srcElement);
         }
         field.attr("data-previous-value", field.val());
     });
