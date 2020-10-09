@@ -226,11 +226,14 @@ class ABJ_404_Solution_SpellChecker {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         
         $options = $abj404logic->getOptions();
-        $onlyNeedThisManyPages = absint($options['suggest_max']);
+        // the number of pages to cache is (max suggestions) + (the number of exlude pages).
+        // (if either of these numbers increases then we need to clear the spelling cache.)
+        $maxCacheCount = absint($options['suggest_max']) +
+        	count(json_decode($options['excludePages[]']));
         
         $permalinks = $this->getFromPermalinkCache($requestedURLRaw);
         if (!empty($permalinks)) {
-            return $permalinks;
+        	return array_splice($permalinks, 0, $maxCacheCount);
         }
         
         $requestedURLSpaces = $f->str_replace($this->separatingCharacters, " ", $requestedURLRaw);
@@ -285,18 +288,41 @@ class ABJ_404_Solution_SpellChecker {
         if ($includeCats == "1") {
             $permalinks = $this->matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, 'categories');
         }
+        
+        // remove excluded pages
+        $permalinks = $this->removeExcludedPages($options, $permalinks);
 
         // This is sorted so that the link with the highest score will be first when iterating through.
         arsort($permalinks);
         
         // only keep what we need. store them for later if necessary.
-        $permalinks = array_splice($permalinks, 0, $onlyNeedThisManyPages);
+        $permalinks = array_splice($permalinks, 0, $maxCacheCount);
 
         $returnValue = array($permalinks, $rowType);
         $abj404dao->storeSpellingPermalinksToCache($requestedURLRaw, $returnValue);
         $_REQUEST[ABJ404_PP]['permalinks_found'] = json_encode($returnValue);
         
         return $returnValue;
+    }
+    
+    function removeExcludedPages($options, $permalinks) {
+    	$excludePagesJson = $options['excludePages[]'];
+    	if (trim($excludePagesJson) == '') {
+    		return $permalinks;
+    	}
+    	
+    	// look at every ID to exclude.
+    	$excludePages = json_decode($excludePagesJson);
+    	for ($i = 0; $i < count($excludePages); $i++) {
+    		$excludePage = $excludePages[$i];
+    		$items = explode("|\\|", $excludePage);
+    		$idAndTypeToExclude = $items[0];
+    		
+    		// remove it from the results list.
+    		unset($permalinks[$idAndTypeToExclude]);
+    	}
+    	
+    	return $permalinks;
     }
     
     function getOnlyIDandTermID($rowsAsObject) {

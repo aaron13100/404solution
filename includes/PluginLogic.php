@@ -1376,6 +1376,8 @@ class ABJ_404_Solution_PluginLogic {
                             ": Truncating spelling cache because the max suggestions # changed from " . 
                             $options['suggest_max'] . ' to ' . absint($_POST['suggest_max']));
                     
+                    // the spelling cache only stores up to X entries. X is based on suggest_max
+                    // so the spelling cache has to be reset when this number changes.
                     $abj404dao->deleteSpellingCache();
                 }
                 
@@ -1454,7 +1456,14 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if (array_key_exists('excludePages[]', $_POST) && isset($_POST['excludePages[]'])) {
+        	$oldExcludePages = json_decode($options['excludePages[]']);
         	$options['excludePages[]'] = json_encode($_POST['excludePages[]']);
+        	$newExcludePages = json_decode($options['excludePages[]']);
+        	if ($newExcludePages !== $oldExcludePages) {
+        		// if any excluded pages changed or if the number of excluded pages changed
+        		// then the spelling cache has to be reset.
+        		$abj404dao->deleteSpellingCache();
+        	}
         } else {
         	$options['excludePages[]'] = null;
         }
