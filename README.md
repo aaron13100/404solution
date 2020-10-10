@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.23.1 (October 10, 2020) ##
+* FIX: Fixed various issues with the new exclude pages feature.
+
 ## Version 2.23.0 (October 9, 2020) ##
 * Feature: Add a list of pages to exclude from results under advanced options (for AndreLung). (Also for other people who have requested it in the past, but really it's never been actually necessary until now, in my opinion. Which is why I avoided adding it. I like ice cream.)
 * Improvement: By default disable the "admin notification" of captured 404s (this only affects new installations).

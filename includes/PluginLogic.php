@@ -1457,6 +1457,9 @@ class ABJ_404_Solution_PluginLogic {
 
         if (array_key_exists('excludePages[]', $_POST) && isset($_POST['excludePages[]'])) {
         	$oldExcludePages = json_decode($options['excludePages[]']);
+        	if (!is_array($_POST['excludePages[]'])) {
+        		$_POST['excludePages[]'] = array($_POST['excludePages[]']);
+        	}
         	$options['excludePages[]'] = json_encode($_POST['excludePages[]']);
         	$newExcludePages = json_decode($options['excludePages[]']);
         	if ($newExcludePages !== $oldExcludePages) {
@@ -1465,6 +1468,12 @@ class ABJ_404_Solution_PluginLogic {
         		$abj404dao->deleteSpellingCache();
         	}
         } else {
+        	$oldExcludePages = json_decode($options['excludePages[]']);
+        	if (null !== $oldExcludePages) {
+        		// if any excluded pages changed or if the number of excluded pages changed
+        		// then the spelling cache has to be reset.
+        		$abj404dao->deleteSpellingCache();
+        	}
         	$options['excludePages[]'] = null;
         }
         

@@ -228,8 +228,15 @@ class ABJ_404_Solution_SpellChecker {
         $options = $abj404logic->getOptions();
         // the number of pages to cache is (max suggestions) + (the number of exlude pages).
         // (if either of these numbers increases then we need to clear the spelling cache.)
-        $maxCacheCount = absint($options['suggest_max']) +
-        	count(json_decode($options['excludePages[]']));
+        $excluePagesCount = 0;
+        if (!trim($options['excludePages[]']) == '') {
+        	$jsonResult = json_decode($options['excludePages[]']);
+        	if (!is_array($jsonResult)) {
+        		$jsonResult = array($jsonResult);
+        	}
+        	$excluePagesCount = count($jsonResult);
+        }
+        $maxCacheCount = absint($options['suggest_max']) + $excluePagesCount;
         
         $permalinks = $this->getFromPermalinkCache($requestedURLRaw);
         if (!empty($permalinks)) {
@@ -313,6 +320,9 @@ class ABJ_404_Solution_SpellChecker {
     	
     	// look at every ID to exclude.
     	$excludePages = json_decode($excludePagesJson);
+    	if (!is_array($excludePages)) {
+    		$excludePages = array($excludePages);
+    	}
     	for ($i = 0; $i < count($excludePages); $i++) {
     		$excludePage = $excludePages[$i];
     		$items = explode("|\\|", $excludePage);
