@@ -72,6 +72,10 @@ function loadExcludePagesFromOptions() {
 	}
 	var optionsList = JSON.parse(jsonEncodedOptions);
 	
+	if (!Array.isArray(optionsList)) {
+		optionsList = new Array(optionsList);
+	}
+	
 	// items are in the format (ID|type ID|type name|title) (13721|1|Page|About Etc)
 	optionsList.forEach(function(page, i) {
 		var someItems = page.split(EXCL_SEPARATOR_CHAR);
