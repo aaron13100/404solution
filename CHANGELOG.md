@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.23.2 (October 12, 2020) ##
+* FIX: Fixed various issues with the new exclude pages feature.
+
 ## Version 2.23.1 (October 10, 2020) ##
 * FIX: Fixed various issues with the new exclude pages feature.
 
