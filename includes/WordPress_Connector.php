@@ -38,7 +38,8 @@ class ABJ_404_Solution_WordPress_Connector {
     static function add_scripts($hook) {
         // only load this stuff for this plugin. 
         // thanks to https://pippinsplugins.com/loading-scripts-correctly-in-the-wordpress-admin/
-    	if ($hook != $GLOBALS['abj404_settingsPageName']) {
+    	if (!array_key_exists('abj404_settingsPageName', $GLOBALS) || 
+    		$hook != $GLOBALS['abj404_settingsPageName']) {
             return;
         }
 
