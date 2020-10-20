@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.23.4 (October 20, 2020) ##
+* FIX: allow saving settings.
+* FIX: allow updating the redirect all 404s to option. 
+
 ## Version 2.23.3 (October 19, 2020) ##
 * FIX: Avoid a missing index message for editors (for nicmare). 
 
