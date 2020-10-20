@@ -528,8 +528,8 @@ class ABJ_404_Solution_View {
 
         $formBeginning = '<form method="POST" id="admin-options-page" ' . 
         	'name="admin-options-page" action="#" data-url="{data-url}">' . "\n";
-        $formBeginning .= '<input type="hidden" name="action" value="updateOptions">' . "\n";
-        $formBeginning .= '<input type="hidden" name="nonce" value="' . 
+        $formBeginning .= '<input type="hidden" name="action" id="action" value="updateOptions">' . "\n";
+        $formBeginning .= '<input type="hidden" name="nonce" id="nonce" value="' . 
         	wp_create_nonce('abj404UpdateOptions') . '">' . "\n";
         $formBeginning = $f->str_replace('{data-url}', 
         	"admin-ajax.php?action=updateOptions", $formBeginning);

@@ -17,22 +17,25 @@ function submitOptions(e) {
 
 	// gather form data.
 	var form = document.getElementById("admin-options-page");
-	var formData = Object.values(form.elements).reduce((obj,field) => {
-			var currentValue = field.value;
-			if (field.type == 'checkbox') {
-				currentValue = field.checked ? 1 : 0;
+	var formElements = form.elements;
+	var formData = {};
+	for (var i = 0; i < formElements.length; i++) {
+		var field = formElements[i];
+		var currentValue = field.value;
+		if (field.type == 'checkbox') {
+			currentValue = field.checked ? 1 : 0;
+		}
+		
+		if (!(field.name in formData)) {
+			formData[field.name] = currentValue;
+		} else {
+			if (!Array.isArray(formData[field.name])) {
+				formData[field.name] = new Array(formData[field.name]);
 			}
-			
-			if (!(field.name in obj)) {
-				obj[field.name] = currentValue;
-			} else {
-				if (!Array.isArray(obj[field.name])) {
-					obj[field.name] = new Array(obj[field.name]);
-				}
-				obj[field.name].push(currentValue);
-			}
-			return obj 
-		}, {});
+			formData[field.name].push(currentValue);
+		}
+	}
+	
 	// fix checkboxes.
 	
     var formDataAsJson = JSON.stringify(formData);

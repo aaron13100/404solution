@@ -148,7 +148,7 @@ function addPageToExcludeToList(item) {
 function insertExcludePage(ulToAddTo, label, category, value) {
     ulToAddTo.insertAdjacentHTML('afterbegin', '<li>' + label + 
     		'<span class="exclude-pages-page-type"> (' + category + ')</span>' +
-    		'<input type="hidden" name="excludePages[]" value="' + value + 
+    		'<input type="hidden" name="excludePages[]" id="exlucdePages" value="' + value + 
     		'"/><span class="close i-am-a-close-button">x</span></li>');
 }
 
