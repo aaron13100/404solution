@@ -55,7 +55,8 @@ class ABJ_404_Solution_Ajax_Php {
         
         $term = $f->strtolower(sanitize_text_field($_GET['term']));
         $includeDefault404Page = $_GET['includeDefault404Page'] == "true";
-        $includeSpecial = $_GET['includeSpecial'] == "true";
+        $includeSpecial = array_key_exists('includeSpecial', $_GET) && 
+        	$_GET['includeSpecial'] == "true";
         $suggestions = array();
         
         // add the "Home Page" destination.
