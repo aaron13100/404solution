@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.23.5 (November 12, 2020) ##
+* FIX: avoid an Undefined index: SERVER_NAME for shark986.
+
 ## Version 2.23.4 (October 20, 2020) ##
 * FIX: allow saving settings.
 * FIX: allow updating the redirect all 404s to option. 

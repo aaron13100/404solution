@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://ajexperience.com/flashcards/404-solution/
 
-	Version: 2.23.4
+	Version: 2.23.5
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -126,7 +126,8 @@ add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheList
 
 /** This only runs after WordPress is done enqueuing scripts. */
 function abj404_loadSomethingWhenWordPressIsReady() {
-	if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])
+	if (array_key_exists('SERVER_NAME', $_SERVER) && isset($_SERVER['SERVER_NAME']) &&
+		in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])
 		&& (!function_exists('wp_get_current_user') || current_user_can('administrator'))) {
 			
 		$GLOBALS['abj404_display_errors'] = true;
