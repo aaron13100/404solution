@@ -844,15 +844,22 @@ class ABJ_404_Solution_DataAccess {
         
         $finalDestTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}");
         $tempDestTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}_temp");
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForViewTempTable.sql");
-        $query = $this->doTableNameReplacements($query);
+        $ttSelectQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
+        	"/sql/getRedirectsForViewTempTable.sql");
+        $ttSelectQuery = $this->doTableNameReplacements($ttSelectQuery);
         
         // create a temp table
         $this->queryAndGetResults("drop table if exists " . $tempDestTable);
-        $ttQuery = "create table " . $tempDestTable . " \n " . 
-        	"(index (requested_url(128))) \n " . 
-        	$query;
-        $results = $this->queryAndGetResults($ttQuery, array('log_too_slow' => false));
+        $createTempTableQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
+        	"/sql/createLogsHitsTempTable.sql");
+        $createTempTableQuery = $this->doTableNameReplacements($createTempTableQuery);
+        $this->queryAndGetResults($createTempTableQuery);
+        $this->queryAndGetResults("truncate table " . $tempDestTable);
+        
+        // insert the data into the temp table (this may take time).
+        $ttInsertQuery = "insert into " . $tempDestTable . " (requested_url, logsid, " .
+        	"last_used, logshits) \n " . $ttSelectQuery;
+        $results = $this->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false));
         
         $elapsedTime = $results['elapsed_time'];
         $addComment = "ALTER TABLE " . $tempDestTable . " COMMENT '" . $results['elapsed_time'] . "'";
