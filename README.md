@@ -88,12 +88,15 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.23.6 (November 22, 2020) ##
+* FIX: Fix the Captured URLs view when ordered by the Hits column and when ENFORCE_GTID_CONSISTENCY is turned on by not using CREATE TABLE AS SELECT (for Anton).
+
 ## Version 2.23.5 (November 12, 2020) ##
-* FIX: avoid an Undefined index: SERVER_NAME for shark986.
+* FIX: Avoid an Undefined index: SERVER_NAME for shark986.
 
 ## Version 2.23.4 (October 20, 2020) ##
-* FIX: allow saving settings.
-* FIX: allow updating the redirect all 404s to option. 
+* FIX: Allow saving settings.
+* FIX: Allow updating the redirect all 404s to option. 
 
 ## Version 2.23.3 (October 19, 2020) ##
 * FIX: Avoid a missing index message for editors (for nicmare). 
