@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.23.7 (February 19, 2021) ##
+* FIX: Handle parameters correctly (for adam198).
+
 ## Version 2.23.6 (November 22, 2020) ##
 * FIX: Fix the Captured URLs view when ordered by the Hits column and when ENFORCE_GTID_CONSISTENCY is turned on by not using CREATE TABLE AS SELECT (for Anton).
 
