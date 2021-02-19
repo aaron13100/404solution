@@ -1518,7 +1518,18 @@ class ABJ_404_Solution_PluginLogic {
     	$commentPartAndQueryPart = $this->getCommentPartAndQueryPartOfRequest();
     	$finalDestination = $location . $commentPartAndQueryPart;
         
-        // try a normal redirect using a header.
+    	// maybe avoid infinite redirects.
+    	if (array_key_exists('HTTP_REFERER', $_SERVER) && !empty($_SERVER['HTTP_REFERER'])) {
+    		$referrer = $_SERVER['HTTP_REFERER'];
+    		if ($referrer == $finalDestination) {
+    			$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    			$abj404logging->infoMessage("Avoided infite redirects to/from: " .
+    				$referrer);
+    			return;
+    		}
+    	}
+    	
+    	// try a normal redirect using a header.
         wp_redirect($finalDestination, $status, ABJ404_NAME);
         
         // TODO add an ajax request here that fires after 5 seconds. 

@@ -152,7 +152,10 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
     function getPathWithSortedQueryString() {
         $f = ABJ_404_Solution_Functions::getInstance();
         $requestedURL = $this->getPath();
-        $requestedURL .= $f->sortQueryString($this->getUrlParts());
+        $urlParts = $f->sortQueryString($this->getUrlParts());
+        if ($urlParts != null && trim($urlParts) != '') {
+        	$requestedURL .= '?' . $urlParts;
+        }
 
         return $requestedURL;
     }
