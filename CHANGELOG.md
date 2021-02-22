@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.23.8 (February 22, 2021) ##
+* FIX: Try to avoid infinite redirects (for adam198).
+* FIX: The "delete the debug file" button works again.
+
 ## Version 2.23.7 (February 19, 2021) ##
 * FIX: Handle parameters correctly (for adam198).
 

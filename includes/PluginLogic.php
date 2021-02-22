@@ -129,6 +129,40 @@ class ABJ_404_Solution_PluginLogic {
         $_REQUEST[ABJ404_PP]['ignore_doprocess'] = $ignoreReasonDoProcess;
     }
     
+    function readCookieWithPreviousRqeuestShort() {
+    	$cookieName = ABJ404_PP . '_REQUEST_URI';
+    	
+    	if (array_key_exists($cookieName . '_SHORT', $_COOKIE)) {
+    		return $_COOKIE[$cookieName];
+    	}
+    	
+    	return '';
+    }
+    
+    /** Set a cookie with the requested URL. */
+    function setCookieWithPreviousRequest() {
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	
+    	// this may be used later when displaying suggestions.
+    	$cookieName = ABJ404_PP . '_REQUEST_URI';
+    	try {
+    		setcookie($cookieName, urldecode($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
+    		setcookie($cookieName . '_SHORT', urldecode($_SERVER['REQUEST_URI']), time() + (5), "/");
+    		
+    	} catch (Exception $e) {
+    		$abj404logging->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
+    		// This javascript redirect will only appear if the header redirect did not work for some reason.
+    		// document.cookie = "username=John Doe; expires=Thu, 18 Dec 2013 12:00:00 UTC";
+    		$expireTime = date("D, d M Y H:i:s T", time() + (60 * 4));
+    		$c = "\n" . '<script>document.cookie = "' . $cookieName . '=' .
+     		urldecode($_SERVER['REQUEST_URI']) .
+     		'; expires=' . $expireTime . '";</script>' . "\n";
+     		echo $c;
+    	}
+    	
+    	$_REQUEST[ABJ404_PP][$cookieName] = urldecode($_SERVER['REQUEST_URI']);
+    }
+    
     /** The passed in reason will be appended to the automatically generated reason.
      * @param string $reason
      */
@@ -136,24 +170,6 @@ class ABJ_404_Solution_PluginLogic {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
-
-        // this may be used later when displaying suggestions.
-        $cookieName = ABJ404_PP . '_REQUEST_URI';
-        try {
-            setcookie($cookieName, urldecode($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
-            
-        } catch (Exception $e) {
-            $abj404logging->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
-            // This javascript redirect will only appear if the header redirect did not work for some reason.
-            // document.cookie = "username=John Doe; expires=Thu, 18 Dec 2013 12:00:00 UTC";
-            $expireTime = date("D, d M Y H:i:s T", time() + (60 * 4));
-            $c = "\n" . '<script>document.cookie = "' . $cookieName . '=' . 
-                    urldecode($_SERVER['REQUEST_URI']) . 
-                    '; expires=' . $expireTime . '";</script>' . "\n";
-            echo $c;
-        }
-        
-        $_REQUEST[ABJ404_PP][$cookieName] = urldecode($_SERVER['REQUEST_URI']);
         
         $options = $abj404logic->getOptions();
         
@@ -542,7 +558,7 @@ class ABJ_404_Solution_PluginLogic {
         	sanitize_text_field($_POST['display-this-message']) : '';
         
         if ($action == "updateOptions") {
-            if (check_admin_referer('abj404UpdateOptions') && is_admin()) {
+        	if (wp_verify_nonce($_POST['nonce'], 'abj404UpdateOptions') || !is_admin()) {
                 // delete the debug file and lose all changes, or
                 if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile']) {
                     $filepath = $abj404logging->getDebugFilePath();
@@ -1297,203 +1313,214 @@ class ABJ_404_Solution_PluginLogic {
         
         $_POST = $postData;
         
-        // options with custom messages.
-        if (array_key_exists('default_redirect', $_POST) && isset($_POST['default_redirect'])) {
-            if ($_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302") {
-                $options['default_redirect'] = intval($_POST['default_redirect']);
-            } else {
-                $message .= __('Error: Invalid value specified for default redirect type', '404-solution') . ".<BR/>";
-            }
-        }
-        
-        if (array_key_exists('ignore_dontprocess', $_POST) && isset($_POST['ignore_dontprocess'])) {
-        	$options['ignore_dontprocess'] = wp_kses_post($_POST['ignore_dontprocess']);
-        }
-        if (array_key_exists('ignore_doprocess', $_POST) && isset($_POST['ignore_doprocess'])) {
-        	$options['ignore_doprocess'] = wp_kses_post($_POST['ignore_doprocess']);
-        }
-        if (array_key_exists('recognized_post_types', $_POST) && isset($_POST['recognized_post_types'])) {
-        	$options['recognized_post_types'] = wp_kses_post($_POST['recognized_post_types']);
-        }
-        if (array_key_exists('recognized_categories', $_POST) && isset($_POST['recognized_categories'])) {
-        	$options['recognized_categories'] = wp_kses_post($_POST['recognized_categories']);
-        }
-        if (array_key_exists('menuLocation', $_POST) && isset($_POST['menuLocation'])) {
-        	$options['menuLocation'] = wp_kses_post($_POST['menuLocation']);
-        }
-
-        if (array_key_exists('admin_notification', $_POST) && isset($_POST['admin_notification'])) {
-            if (is_numeric($_POST['admin_notification'])) {
-                $options['admin_notification'] = absint($_POST['admin_notification']);
-            }
-        }
-        
-        if (array_key_exists('capture_deletion', $_POST) && isset($_POST['capture_deletion'])) {
-            if (is_numeric($_POST['capture_deletion']) && $_POST['capture_deletion'] >= 0) {
-                $options['capture_deletion'] = absint($_POST['capture_deletion']);
-            } else {
-                $message .= __('Error: Collected URL deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-            }
-        }
-
-        if (array_key_exists('manual_deletion', $_POST) && isset($_POST['manual_deletion'])) {
-            if (is_numeric($_POST['manual_deletion']) && $_POST['manual_deletion'] >= 0) {
-                $options['manual_deletion'] = absint($_POST['manual_deletion']);
-            } else {
-                $message .= __('Error: Manual redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-            }
-        }
-
-        if (array_key_exists('log_deletion', $_POST) && isset($_POST['log_deletion'])) {
-            if (is_numeric($_POST['log_deletion']) && $_POST['log_deletion'] >= 0) {
-                $options['log_deletion'] = absint($_POST['log_deletion']);
-            } else {
-                $message .= __('Error: Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-            }
-        }
-        
-        if (array_key_exists('days_wait_before_major_update', $_POST) && isset($_POST['days_wait_before_major_update'])) {
-            if (is_numeric($_POST['days_wait_before_major_update'])) {
-                $options['days_wait_before_major_update'] = absint($_POST['days_wait_before_major_update']);
-            } else {
-                $message .= __('Error: The time to wait before an automatic update must be a number '
-                        . 'between 0 and something around ' . PHP_INT_MAX . '.', '404-solution') . "<BR/>";
-            }
-        }
-        
-        if (array_key_exists('suggest_minscore', $_POST) && isset($_POST['suggest_minscore'])) {
-            if (is_numeric($_POST['suggest_minscore']) && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
-                $options['suggest_minscore'] = min(max(absint($_POST['suggest_minscore']), 10), 90);
-            } else {
-                $message .= __('Error: Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
-            }
-        }
-
-        if (array_key_exists('suggest_max', $_POST) && isset($_POST['suggest_max'])) {
-            if (is_numeric($_POST['suggest_max']) && $_POST['suggest_max'] >= 1) {
-                if ($options['suggest_max'] != absint($_POST['suggest_max'])) {
-                    $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
-                            ": Truncating spelling cache because the max suggestions # changed from " . 
-                            $options['suggest_max'] . ' to ' . absint($_POST['suggest_max']));
-                    
-                    // the spelling cache only stores up to X entries. X is based on suggest_max
-                    // so the spelling cache has to be reset when this number changes.
-                    $abj404dao->deleteSpellingCache();
-                }
-                
-                $options['suggest_max'] = absint($_POST['suggest_max']);
-            } else {
-                $message .= __('Error: Maximum number of suggest value must be a number greater than or equal to 1', '404-solution') . ".<BR/>";
-            }
-        }
-        
-        if (array_key_exists('auto_score', $_POST) && isset($_POST['auto_score'])) {
-            if (is_numeric($_POST['auto_score']) && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
-                $options['auto_score'] = absint($_POST['auto_score']);
-            } else {
-                $message .= __('Error: Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
-            }
-        }
-        
-        if (array_key_exists('auto_deletion', $_POST) && isset($_POST['auto_deletion'])) {
-            if (is_numeric($_POST['auto_deletion']) && $_POST['auto_deletion'] >= 0) {
-                $options['auto_deletion'] = absint($_POST['auto_deletion']);
-            } else {
-                $message .= __('Error: Auto redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-            }
-        }
-
-        if (array_key_exists('maximum_log_disk_usage', $_POST) && isset($_POST['maximum_log_disk_usage'])) {
-            if (is_numeric($_POST['maximum_log_disk_usage']) && $_POST['maximum_log_disk_usage'] > 0) {
-                $options['maximum_log_disk_usage'] = absint($_POST['maximum_log_disk_usage']);
-            } else {
-                $message .= __('Error: Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";
-            }
-        }
-
-        // these options all default to 0 if they're not specifically set to 1.
-        $optionsList = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags', 
-            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips',
-        	'redirect_all_requests'
-        );
-        foreach ($optionsList as $optionName) {
-            $options[$optionName] = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;
-        }
-
-        // the suggest_.* options have html in them.
-        $optionsListSuggest = array('suggest_title', 'suggest_before', 'suggest_after', 'suggest_entrybefore', 
-            'suggest_entryafter', 'suggest_noresults');
-        foreach ($optionsListSuggest as $optionName) {
-            $options[$optionName] = wp_kses_post($_POST[$optionName]);
-        }
-
-        if (array_key_exists('redirect_to_data_field_id', $_POST) && isset($_POST['redirect_to_data_field_id'])) {
-            $options['dest404page'] = sanitize_text_field($_POST['redirect_to_data_field_id']);
-        }
-        if (array_key_exists('redirect_to_data_field_title', $_POST) && isset($_POST['redirect_to_data_field_title'])) {
-            $options['dest404pageURL'] = sanitize_text_field($_POST['redirect_to_data_field_title']);
-            if ($options['dest404page'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
-            	$options['dest404page'] = $options['dest404pageURL'] . '|' . ABJ404_TYPE_EXTERNAL;
-            }
-        }
-        if (array_key_exists('admin_notification_email', $_POST) && isset($_POST['admin_notification_email'])) {
-            $options['admin_notification_email'] = trim(wp_kses_post($_POST['admin_notification_email']));
-        }
-        
-        if (array_key_exists('folders_files_ignore', $_POST) && isset($_POST['folders_files_ignore'])) {
-            $options['folders_files_ignore'] = wp_unslash(wp_kses_post($_POST['folders_files_ignore']));
-            
-            // make the regular expressions usable.
-            $patternsToIgnore = array_filter(explode("\n", $options['folders_files_ignore']),
-                    array($f, 'removeEmptyCustom'));
-            $usableFilePatterns = array();
-            foreach ($patternsToIgnore as $patternToIgnore) {
-                $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
-                $newPattern = $f->str_replace("\*",".*", $newPattern);
-                $usableFilePatterns[] = $newPattern;
-            }
-            $options['folders_files_ignore_usable'] = $usableFilePatterns;
-        }
-
-        if (array_key_exists('excludePages[]', $_POST) && isset($_POST['excludePages[]'])) {
-        	$oldExcludePages = json_decode($options['excludePages[]']);
-        	if (!is_array($_POST['excludePages[]'])) {
-        		$_POST['excludePages[]'] = array($_POST['excludePages[]']);
-        	}
-        	$options['excludePages[]'] = json_encode($_POST['excludePages[]']);
-        	$newExcludePages = json_decode($options['excludePages[]']);
-        	if ($newExcludePages !== $oldExcludePages) {
-        		// if any excluded pages changed or if the number of excluded pages changed
-        		// then the spelling cache has to be reset.
-        		$abj404dao->deleteSpellingCache();
-        	}
+        // delete the debug file if requested.
+        if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile'] == true) {
+        	$sub = '';
+        	$returnData['error'] = '';
+        	$returnData['message'] = $this->handlePluginAction('updateOptions', $sub);
+        	
         } else {
-        	$oldExcludePages = json_decode($options['excludePages[]']);
-        	if (null !== $oldExcludePages) {
-        		// if any excluded pages changed or if the number of excluded pages changed
-        		// then the spelling cache has to be reset.
-        		$abj404dao->deleteSpellingCache();
-        	}
-        	$options['excludePages[]'] = null;
+        	// save all options.
+        	
+	        // options with custom messages.
+	        if (array_key_exists('default_redirect', $_POST) && isset($_POST['default_redirect'])) {
+	            if ($_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302") {
+	                $options['default_redirect'] = intval($_POST['default_redirect']);
+	            } else {
+	                $message .= __('Error: Invalid value specified for default redirect type', '404-solution') . ".<BR/>";
+	            }
+	        }
+	        
+	        if (array_key_exists('ignore_dontprocess', $_POST) && isset($_POST['ignore_dontprocess'])) {
+	        	$options['ignore_dontprocess'] = wp_kses_post($_POST['ignore_dontprocess']);
+	        }
+	        if (array_key_exists('ignore_doprocess', $_POST) && isset($_POST['ignore_doprocess'])) {
+	        	$options['ignore_doprocess'] = wp_kses_post($_POST['ignore_doprocess']);
+	        }
+	        if (array_key_exists('recognized_post_types', $_POST) && isset($_POST['recognized_post_types'])) {
+	        	$options['recognized_post_types'] = wp_kses_post($_POST['recognized_post_types']);
+	        }
+	        if (array_key_exists('recognized_categories', $_POST) && isset($_POST['recognized_categories'])) {
+	        	$options['recognized_categories'] = wp_kses_post($_POST['recognized_categories']);
+	        }
+	        if (array_key_exists('menuLocation', $_POST) && isset($_POST['menuLocation'])) {
+	        	$options['menuLocation'] = wp_kses_post($_POST['menuLocation']);
+	        }
+	
+	        if (array_key_exists('admin_notification', $_POST) && isset($_POST['admin_notification'])) {
+	            if (is_numeric($_POST['admin_notification'])) {
+	                $options['admin_notification'] = absint($_POST['admin_notification']);
+	            }
+	        }
+	        
+	        if (array_key_exists('capture_deletion', $_POST) && isset($_POST['capture_deletion'])) {
+	            if (is_numeric($_POST['capture_deletion']) && $_POST['capture_deletion'] >= 0) {
+	                $options['capture_deletion'] = absint($_POST['capture_deletion']);
+	            } else {
+	                $message .= __('Error: Collected URL deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+	            }
+	        }
+	
+	        if (array_key_exists('manual_deletion', $_POST) && isset($_POST['manual_deletion'])) {
+	            if (is_numeric($_POST['manual_deletion']) && $_POST['manual_deletion'] >= 0) {
+	                $options['manual_deletion'] = absint($_POST['manual_deletion']);
+	            } else {
+	                $message .= __('Error: Manual redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+	            }
+	        }
+	
+	        if (array_key_exists('log_deletion', $_POST) && isset($_POST['log_deletion'])) {
+	            if (is_numeric($_POST['log_deletion']) && $_POST['log_deletion'] >= 0) {
+	                $options['log_deletion'] = absint($_POST['log_deletion']);
+	            } else {
+	                $message .= __('Error: Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+	            }
+	        }
+	        
+	        if (array_key_exists('days_wait_before_major_update', $_POST) && isset($_POST['days_wait_before_major_update'])) {
+	            if (is_numeric($_POST['days_wait_before_major_update'])) {
+	                $options['days_wait_before_major_update'] = absint($_POST['days_wait_before_major_update']);
+	            } else {
+	                $message .= __('Error: The time to wait before an automatic update must be a number '
+	                        . 'between 0 and something around ' . PHP_INT_MAX . '.', '404-solution') . "<BR/>";
+	            }
+	        }
+	        
+	        if (array_key_exists('suggest_minscore', $_POST) && isset($_POST['suggest_minscore'])) {
+	            if (is_numeric($_POST['suggest_minscore']) && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
+	                $options['suggest_minscore'] = min(max(absint($_POST['suggest_minscore']), 10), 90);
+	            } else {
+	                $message .= __('Error: Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
+	            }
+	        }
+	
+	        if (array_key_exists('suggest_max', $_POST) && isset($_POST['suggest_max'])) {
+	            if (is_numeric($_POST['suggest_max']) && $_POST['suggest_max'] >= 1) {
+	                if ($options['suggest_max'] != absint($_POST['suggest_max'])) {
+	                    $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
+	                            ": Truncating spelling cache because the max suggestions # changed from " . 
+	                            $options['suggest_max'] . ' to ' . absint($_POST['suggest_max']));
+	                    
+	                    // the spelling cache only stores up to X entries. X is based on suggest_max
+	                    // so the spelling cache has to be reset when this number changes.
+	                    $abj404dao->deleteSpellingCache();
+	                }
+	                
+	                $options['suggest_max'] = absint($_POST['suggest_max']);
+	            } else {
+	                $message .= __('Error: Maximum number of suggest value must be a number greater than or equal to 1', '404-solution') . ".<BR/>";
+	            }
+	        }
+	        
+	        if (array_key_exists('auto_score', $_POST) && isset($_POST['auto_score'])) {
+	            if (is_numeric($_POST['auto_score']) && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
+	                $options['auto_score'] = absint($_POST['auto_score']);
+	            } else {
+	                $message .= __('Error: Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
+	            }
+	        }
+	        
+	        if (array_key_exists('auto_deletion', $_POST) && isset($_POST['auto_deletion'])) {
+	            if (is_numeric($_POST['auto_deletion']) && $_POST['auto_deletion'] >= 0) {
+	                $options['auto_deletion'] = absint($_POST['auto_deletion']);
+	            } else {
+	                $message .= __('Error: Auto redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+	            }
+	        }
+	
+	        if (array_key_exists('maximum_log_disk_usage', $_POST) && isset($_POST['maximum_log_disk_usage'])) {
+	            if (is_numeric($_POST['maximum_log_disk_usage']) && $_POST['maximum_log_disk_usage'] > 0) {
+	                $options['maximum_log_disk_usage'] = absint($_POST['maximum_log_disk_usage']);
+	            } else {
+	                $message .= __('Error: Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";
+	            }
+	        }
+	
+	        // these options all default to 0 if they're not specifically set to 1.
+	        $optionsList = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags', 
+	            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips',
+	        	'redirect_all_requests'
+	        );
+	        foreach ($optionsList as $optionName) {
+	            $options[$optionName] = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;
+	        }
+	
+	        // the suggest_.* options have html in them.
+	        $optionsListSuggest = array('suggest_title', 'suggest_before', 'suggest_after', 'suggest_entrybefore', 
+	            'suggest_entryafter', 'suggest_noresults');
+	        foreach ($optionsListSuggest as $optionName) {
+	            $options[$optionName] = wp_kses_post($_POST[$optionName]);
+	        }
+	
+	        if (array_key_exists('redirect_to_data_field_id', $_POST) && isset($_POST['redirect_to_data_field_id'])) {
+	            $options['dest404page'] = sanitize_text_field($_POST['redirect_to_data_field_id']);
+	        }
+	        if (array_key_exists('redirect_to_data_field_title', $_POST) && isset($_POST['redirect_to_data_field_title'])) {
+	            $options['dest404pageURL'] = sanitize_text_field($_POST['redirect_to_data_field_title']);
+	            if ($options['dest404page'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
+	            	$options['dest404page'] = $options['dest404pageURL'] . '|' . ABJ404_TYPE_EXTERNAL;
+	            }
+	        }
+	        if (array_key_exists('admin_notification_email', $_POST) && isset($_POST['admin_notification_email'])) {
+	            $options['admin_notification_email'] = trim(wp_kses_post($_POST['admin_notification_email']));
+	        }
+	        
+	        if (array_key_exists('folders_files_ignore', $_POST) && isset($_POST['folders_files_ignore'])) {
+	            $options['folders_files_ignore'] = wp_unslash(wp_kses_post($_POST['folders_files_ignore']));
+	            
+	            // make the regular expressions usable.
+	            $patternsToIgnore = array_filter(explode("\n", $options['folders_files_ignore']),
+	                    array($f, 'removeEmptyCustom'));
+	            $usableFilePatterns = array();
+	            foreach ($patternsToIgnore as $patternToIgnore) {
+	                $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
+	                $newPattern = $f->str_replace("\*",".*", $newPattern);
+	                $usableFilePatterns[] = $newPattern;
+	            }
+	            $options['folders_files_ignore_usable'] = $usableFilePatterns;
+	        }
+	
+	        if (array_key_exists('excludePages[]', $_POST) && isset($_POST['excludePages[]'])) {
+	        	$oldExcludePages = json_decode($options['excludePages[]']);
+	        	if (!is_array($_POST['excludePages[]'])) {
+	        		$_POST['excludePages[]'] = array($_POST['excludePages[]']);
+	        	}
+	        	$options['excludePages[]'] = json_encode($_POST['excludePages[]']);
+	        	$newExcludePages = json_decode($options['excludePages[]']);
+	        	if ($newExcludePages !== $oldExcludePages) {
+	        		// if any excluded pages changed or if the number of excluded pages changed
+	        		// then the spelling cache has to be reset.
+	        		$abj404dao->deleteSpellingCache();
+	        	}
+	        } else {
+	        	$oldExcludePages = json_decode($options['excludePages[]']);
+	        	if (null !== $oldExcludePages) {
+	        		// if any excluded pages changed or if the number of excluded pages changed
+	        		// then the spelling cache has to be reset.
+	        		$abj404dao->deleteSpellingCache();
+	        	}
+	        	$options['excludePages[]'] = null;
+	        }
+	        
+	        /** Sanitize all data. */
+	        $new_options = array();
+	        $new_options = $this->sanitizePostData($options);
+	
+	        update_option('abj404_settings', $new_options);
+	        
+	        // update the permalink cache because the post types included may have changed.
+	        $permalinkCache = new ABJ_404_Solution_PermalinkCache();
+	        $permalinkCache->updatePermalinkCache(2);
+	        
+	        $returnData['error'] = $message;
+	        if ($message == "") {
+	        	$returnData['message'] = __('Options Saved Successfully!', '404-solution');
+	        } else {
+	        	$returnData['message'] = __('Some options were not saved successfully.', '404-solution') . 
+	        		'		' . $message;
+	        }
         }
         
-        /** Sanitize all data. */
-        $new_options = array();
-        $new_options = $this->sanitizePostData($options);
-
-        update_option('abj404_settings', $new_options);
-        
-        // update the permalink cache because the post types included may have changed.
-        $permalinkCache = new ABJ_404_Solution_PermalinkCache();
-        $permalinkCache->updatePermalinkCache(2);
-        
-        $returnData['error'] = $message;
-        if ($message == "") {
-        	$returnData['message'] = __('Options Saved Successfully!', '404-solution');
-        } else {
-        	$returnData['message'] = __('Some options were not saved successfully.', '404-solution') . 
-        		'		' . $message;
-        }
         echo json_encode($returnData);
         exit();
     }
@@ -1515,21 +1542,33 @@ class ABJ_404_Solution_PluginLogic {
      * @param number $status
      */
     function forceRedirect($location, $status = 302) {
+    	$f = ABJ_404_Solution_Functions::getInstance();
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	
     	$commentPartAndQueryPart = $this->getCommentPartAndQueryPartOfRequest();
     	$finalDestination = $location . $commentPartAndQueryPart;
         
+    	$previousRequest = $this->readCookieWithPreviousRqeuestShort();
+    	$finalDestNoHome = $f->substr($finalDestination, $f->strpos($finalDestination, '://') + 3);
+    	$finalDestNoHome = $f->substr($finalDestNoHome, $f->strpos($finalDestNoHome, '/'));
+    	$locationNoHome = $f->substr($location, $f->strpos($location, '://') + 3);
+    	$locationNoHome = $f->substr($locationNoHome, $f->strpos($locationNoHome, '/'));
     	// maybe avoid infinite redirects.
-    	if (array_key_exists('HTTP_REFERER', $_SERVER) && !empty($_SERVER['HTTP_REFERER'])) {
-    		$referrer = $_SERVER['HTTP_REFERER'];
-    		if ($referrer == $finalDestination) {
-    			$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	if (!empty($previousRequest)) {
+    		if ($previousRequest == $finalDestNoHome && $previousRequest != $locationNoHome) {
+    			$abj404logging->infoMessage("Maybe avoided infite redirects to/from: " .
+    				$previousRequest);
+    			$finalDestination = $location;
+    			
+    		} else if ($previousRequest == $finalDestination) {
     			$abj404logging->infoMessage("Avoided infite redirects to/from: " .
-    				$referrer);
+    				$previousRequest);
     			return;
     		}
     	}
     	
     	// try a normal redirect using a header.
+    	$this->setCookieWithPreviousRequest();
         wp_redirect($finalDestination, $status, ABJ404_NAME);
         
         // TODO add an ajax request here that fires after 5 seconds. 

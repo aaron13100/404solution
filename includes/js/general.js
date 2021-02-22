@@ -14,7 +14,7 @@ function striphtml(html) {
 
 function submitOptions(e) {
     e.preventDefault();
-
+    
 	// gather form data.
 	var form = document.getElementById("admin-options-page");
 	var formElements = form.elements;
@@ -35,9 +35,18 @@ function submitOptions(e) {
 			formData[field.name].push(currentValue);
 		}
 	}
-	
+
+    // if we should just delete the log file.
+    var submitter = e.submitter.name;
+    if (submitter == 'deleteDebugFile') {
+    	// set the action to 'updateOptions' and set deleteDebugFile to true
+    	formData['action'] = 'updateOptions';
+    	formData['deleteDebugFile'] = true;
+    } else {
+    	formData['deleteDebugFile'] = false;
+    }
+
 	// fix checkboxes.
-	
     var formDataAsJson = JSON.stringify(formData);
     var encodedData = encodeURI(formDataAsJson);
 
