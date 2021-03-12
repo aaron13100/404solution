@@ -13,7 +13,7 @@ if ($GLOBALS['abj404_display_errors']) {
 	Author:      Aaron J
 	Author URI:  https://ajexperience.com/flashcards/404-solution/
 
-	Version: 2.23.8
+	Version: 2.23.9
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -45,7 +45,7 @@ define( 'ABJ404_NAME', plugin_basename(ABJ404_FILE));
 define('ABJ404_SOLUTION_BASENAME', function_exists('plugin_basename') ? plugin_basename(ABJ404_FILE) : 
 	basename(dirname(ABJ404_FILE)) . '/' . basename(ABJ404_FILE));
 
-define( 'ABJ404_VERSION', '2.23.8' );
+define( 'ABJ404_VERSION', '2.23.9' );
 define( 'URL_TRACKING_SUFFIX', '?utm_source=404SolutionPlugin&utm_medium=WordPress');
 define( 'ABJ404_HOME_URL', 'https://ajexperience.com/flashcards/404-solution/' . URL_TRACKING_SUFFIX);
 define( 'ABJ404_FC_URL', 'https://ajexperience.com/flashcards/' . URL_TRACKING_SUFFIX);
@@ -84,7 +84,6 @@ ABJ_404_Solution_ErrorHandler::init();
 
 if (is_admin()) {
 	ABJ_404_Solution_PermalinkCache::init();
-	ABJ_404_Solution_SlugChangeListener::init();
 	ABJ_404_Solution_SpellChecker::init();
 	
     // TODO make these not global

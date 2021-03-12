@@ -293,7 +293,7 @@ class ABJ_404_Solution_DataAccess {
     	$f = ABJ_404_Solution_Functions::getInstance();
     	
     	// we order by meta_id desc so that the first row will have the most recent value.
-    	$query = "select meta_value from {wp_postmeta} \nwhere post_id = '{post_id}' " .
+    	$query = "select meta_value from {wp_postmeta} \nwhere post_id = {post_id} " .
     		" and meta_key = '_wp_old_slug' \n" .
     		" order by meta_id desc";
     	$query = $f->str_replace('{post_id}', $post_id, $query);
@@ -371,7 +371,7 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getPermalinkFromCache($id) {
-        $query = "select url from {wp_abj_permalink_cache} where id = " . $id;
+        $query = "select url from {wp_abj404_permalink_cache} where id = " . $id;
         $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
         
