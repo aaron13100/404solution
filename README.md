@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.23.9 (March 12, 2021) ##
+* FIX: Try to fix seemingly randomly created automatic redirects when a page is saved. (for WonderGeekWoman)
+
 ## Version 2.23.8 (February 22, 2021) ##
 * FIX: Try to avoid infinite redirects (for adam198).
 * FIX: The "delete the debug file" button works again.
