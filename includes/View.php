@@ -898,6 +898,13 @@ class ABJ_404_Solution_View {
         echo $this->getCapturedURLSPageTable($sub);
 
         echo "<div class=\"tablenav admin-captured-urls-page-bottom\">";
+        
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown2.html");
+        $html = $f->str_replace('{action_url}', $url, $html);
+        $html = $f->str_replace('{bulkOptions}', $allBulkOptions, $html);
+        $html = $f->doNormalReplacements($html);
+        echo $html;
+        
         echo $this->getPaginationLinks($sub, false);
         
         echo "</div></form><!-- page-form big outer form could end here -->";
@@ -1138,7 +1145,7 @@ class ABJ_404_Solution_View {
         
         // ------------------ empty trash button
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-            echo "<div class=\"alignleft actions\">";
+            echo "<div class=\"alignleft actions vw\">";
             $eturl = "?page=" . ABJ404_PP . "&filter=" . ABJ404_TRASH_FILTER . "&subpage=" . $sub;
             $eturl = wp_nonce_url($eturl, "abj404_bulkProcess");
 
@@ -1155,8 +1162,14 @@ class ABJ_404_Solution_View {
         echo $this->getAdminRedirectsPageTable($sub);
 
         echo "<div class=\"tablenav admin-redirects-page-bottom\">";
-        echo $this->getPaginationLinks($sub, false);
+
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown2.html");
+        $html = $f->str_replace('{action_url}', $url, $html);
+        $html = $f->str_replace('{bulkOptions}', $allBulkOptions, $html);
+        $html = $f->doNormalReplacements($html);
+        echo $html;
         
+        echo $this->getPaginationLinks($sub, false);
         
         echo "</div></form><!-- page-form big outer form could end here -->";
 
