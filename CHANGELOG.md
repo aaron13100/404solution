@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.23.10 (March 14, 2021) ##
+* Improvement: Add bulk actions to the bottom of the page redirects and captured 404s pages. (for deeveearr)
+
 ## Version 2.23.9 (March 12, 2021) ##
 * FIX: Try to fix seemingly randomly created automatic redirects when a page is saved. (for WonderGeekWoman)
 
