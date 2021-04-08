@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.23.11 (April 8, 2021) ##
+* FIX: Maybe fix a Too few arguments message for some users.
+
 ## Version 2.23.10 (March 14, 2021) ##
 * Improvement: Add bulk actions to the bottom of the page redirects and captured 404s pages. (for deeveearr)
 
