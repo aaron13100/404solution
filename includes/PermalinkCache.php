@@ -24,7 +24,7 @@ class ABJ_404_Solution_PermalinkCache {
         add_action('delete_post', array($me, 'delete_postListener'), 10, 2);
     }
 
-    function delete_postListener($post_id, $post) {
+    function delete_postListener($post_id, $post = null) {
     	$this->save_postListenerAction($post_id, 'deleted');
     }
     function save_postListener($post_id, $post, $update) {
