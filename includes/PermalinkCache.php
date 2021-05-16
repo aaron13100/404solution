@@ -84,7 +84,6 @@ class ABJ_404_Solution_PermalinkCache {
      */
     function updatePermalinkCache($maxExecutionTime, $executionCount = 1) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $results = $abj404dao->updatePermalinkCache();
         $rowsInserted = $results['rows_affected'];

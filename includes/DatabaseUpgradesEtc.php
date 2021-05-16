@@ -52,7 +52,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         
         // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
         $result = $abj404dao->queryAndGetResults("show create table " . $redirectsTable);
-        // this encode/decode turns the results into an array from a "stdClass"
         $rows = $result['rows'];
         $row1 = array_values($rows[0]);
         $tableSQL = $row1[1];

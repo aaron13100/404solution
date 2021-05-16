@@ -33,7 +33,8 @@ class ABJ_404_Solution_Timer {
 
     function stop() {
         $this->stop = microtime(true);
-        $this->elapsed += $this->getElapsedTime();
+        $elapsedThisTime = $this->stop - $this->start;
+        $this->elapsed += $elapsedThisTime;
         $this->isRunning = false;
         
         return $this->getElapsedTime();
@@ -52,6 +53,10 @@ class ABJ_404_Solution_Timer {
             return microtime(true) - $this->start + $this->elapsed;
         }
         return $this->elapsed;
+    }
+    
+    function getStartTime() {
+    	return $this->start;
     }
 
 }

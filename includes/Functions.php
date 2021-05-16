@@ -53,21 +53,22 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     function str_replace($needle, $replacement, $haystack) {
-    	if (!is_array($needle)) {
-    		return $this->single_str_replace($needle, $replacement, $haystack);
-    	}
+    	return str_replace($needle, $replacement, $haystack);
+//     	if (!is_array($needle)) {
+//     		return $this->single_str_replace($needle, $replacement, $haystack);
+//     	}
     	
-    	for ($i = 0; $i < count($needle); $i++) {
-    		$oneNeedle = $needle[$i];
-    		$oneReplacement = '';
-    		if (is_array($replacement)) {
-    			$oneReplacement = $replacement[$i];
-    		} else {
-    			$oneReplacement = $replacement; 
-    		}
-    		$haystack = $this->str_replace($oneNeedle, $oneReplacement, $haystack);
-    	}
-    	return $haystack;
+//     	for ($i = 0; $i < count($needle); $i++) {
+//     		$oneNeedle = $needle[$i];
+//     		$oneReplacement = '';
+//     		if (is_array($replacement)) {
+//     			$oneReplacement = $replacement[$i];
+//     		} else {
+//     			$oneReplacement = $replacement; 
+//     		}
+//     		$haystack = $this->str_replace($oneNeedle, $oneReplacement, $haystack);
+//     	}
+//     	return $haystack;
     }
     
     function single_str_replace($needle, $replacement, $haystack) {
@@ -78,35 +79,7 @@ abstract class ABJ_404_Solution_Functions {
     		return $haystack;
     	}
     	
-    	$logger = ABJ_404_Solution_Logging::getInstance();
     	$splitResult = explode($needle, $haystack);
-    	
-    	$errorReason = '';
-    	if (is_array($replacement)) {
-    		$errorReason .= "replacement is not a string.";
-    	}
-    	if (!is_array($splitResult)) {
-    		$errorReason .= ", splitResult is not an array.";
-    	}
-     	if ($errorReason != '') {
-    		$logger->errorMessage($errorReason . ". replacement: " .
-    				json_encode($replacement) . ", needle: " . json_encode($needle) .
-    				", splitResult: " . json_encode($splitResult) . ", haystack: " .
-    				json_encode($haystack) . ", length of haystack: " . 
-    				$this->strlen($haystack) . ", unicode of haystack[0]: " . 
-    				ord($haystack[0]));
-    	}
-    	
-    	if (!is_array($splitResult)) {
-    		$logger->errorMessage("splitResult is not an array. replacement: " . 
-    				json_encode($replacement) . ", needle: " . json_encode($needle) . 
-    				", splitResult: " . json_encode($splitResult) . ", length of haystack: " .
-    				$this->strlen($haystack) . ", unicode of haystack[0]: " .
-    				ord($haystack[0]));
-    	}
-    	
-    	$_REQUEST[ABJ404_PP]['debug_info'] = 'Before implode. Replacement: ' . 
-    		json_encode($replacement) . ", Split result: " . json_encode($splitResult);
     	$implodeResult = implode($replacement, $splitResult);
     	
     	return $implodeResult;

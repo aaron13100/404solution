@@ -9,21 +9,33 @@ if ($GLOBALS['abj404_display_errors']) {
 /* the glue that holds it together / everything else. */
 
 class ABJ_404_Solution_PluginLogic {
+	
+	private $f = null;
+	
+	private $urlHomeDirectory = null;
+	
+	private $urlHomeDirectoryLength = null;
     
-    /** Track whether we're already in the method that updates the database that may be called recursively.
-     * @var bool */
+	/** Track whether we're already in the method that updates the database that may be called recursively.
+	 * @var bool */
     private $currentlyUpdatingDatabaseVersion = false;
+    
+    function __construct() {
+    	$this->f = ABJ_404_Solution_Functions::getInstance();
+    	$this->urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
+    	$this->urlHomeDirectoryLength = $this->f->strlen($this->urlHomeDirectory);
+    }
 
     /** If a page's URL is /blogName/pageName then this returns /pageName.
      * @param string $urlRequest
      * @return string
      */
     function removeHomeDirectory($urlRequest) {
-        $f = ABJ_404_Solution_Functions::getInstance();
-        $urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
-        if ($f->substr($urlRequest, 0, $f->strlen($urlHomeDirectory)) == $urlHomeDirectory) {
-            $urlRequest = $f->substr($urlRequest, $f->strlen($urlHomeDirectory . "/"));
-        }
+    	$f = $this->f;
+    	$urlHomeDirectory = $this->urlHomeDirectory;
+    	if ($f->substr($urlRequest, 0, $this->urlHomeDirectoryLength) == $urlHomeDirectory) {
+    		$urlRequest = $f->substr($urlRequest, ($this->urlHomeDirectoryLength + 1));
+    	}
         
         return $urlRequest;
     }
@@ -1442,7 +1454,13 @@ class ABJ_404_Solution_PluginLogic {
 	        	'redirect_all_requests'
 	        );
 	        foreach ($optionsList as $optionName) {
-	            $options[$optionName] = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;
+	        	$newVal = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;
+	        	
+	        	// in case the suggest_cats or suggest_tags is changed.
+	        	if ($options[$optionName] != $newVal) {
+	        		$abj404dao->deleteSpellingCache();
+	        	}
+	            $options[$optionName] = $newVal;
 	        }
 	
 	        // the suggest_.* options have html in them.

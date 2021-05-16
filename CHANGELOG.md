@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.23.13 (May 16, 2021) ##
+* Improvement: Adjusted the algorithm for finding similar pages.
+
 ## Version 2.23.12 (May 16, 2021) ##
 * Improvement: Update the permalink cache with one query instead of many.
 
