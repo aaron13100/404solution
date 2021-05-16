@@ -113,7 +113,6 @@ class ABJ_404_Solution_SpellChecker {
     function getPermalinkUsingSlug($requestedURL) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
         
         $exploded = array_filter(explode('/', $requestedURL));
         if ($exploded == null || count($exploded) == 0) {
@@ -275,7 +274,7 @@ class ABJ_404_Solution_SpellChecker {
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on posts
         $permalinks = $this->matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, 
                 $fullURLspacesCleaned, $rows, $rowType);
-
+        
         // if we only need images then we're done.
         if ($rowType == 'image') {
             // This is sorted so that the link with the highest score will be first when iterating through.
@@ -446,7 +445,7 @@ class ABJ_404_Solution_SpellChecker {
         
         // pre-filter some pages based on the min and max possible levenshtein distances.
         $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
-    
+        
         $abj404logger->debugMessage("Found " . count($likelyMatchIDs) . " likely match IDs.");
         
         // access the array directly instead of using a foreach loop so we can remove items
@@ -459,6 +458,7 @@ class ABJ_404_Solution_SpellChecker {
             $urlParts = parse_url($the_permalink);
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
             $existingPageURLSpaces = $f->str_replace($this->separatingCharacters, " ", $existingPageURL);
+            
             $existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
             $scoreBasis = $f->strlen($existingPageURLCleaned) * 3;
             if ($scoreBasis == 0) {
@@ -561,9 +561,11 @@ class ABJ_404_Solution_SpellChecker {
             $abj404logging->errorMessage("Non-array value found in getLikelyMatchIDs: " . $publishedPages);
             return array();
         }
-        
+
         $options = $abj404logic->getOptions();
-        $onlyNeedThisManyPages = absint($options['suggest_max']);
+        // we get more than we need because the algorithm we actually use
+        // is not based solely on the Levenshtein distance.
+        $onlyNeedThisManyPages = min(5 * absint($options['suggest_max']), 100);
         
         // create a list sorted by min levenshstein distance and max levelshtein distance.
         /* 1) Get a list of minumum and maximum levenshtein distances - two lists, one ordered by the min 
@@ -627,7 +629,9 @@ class ABJ_404_Solution_SpellChecker {
             $existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
             $urlParts = null;
             
+            // this line used to take too long to execute.
             $existingPageURLSpaces = $f->str_replace($this->separatingCharacters, " ", $existingPageURL);
+            
             $existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
             $existingPageURLSpaces = null;
             
@@ -655,7 +659,6 @@ class ABJ_404_Solution_SpellChecker {
 	            $maxDist = $maxDist - $lengthOfTheLongestWordInCommon;
             }
             // -----------------
-            
             
             // add the ID to the list.
             if (is_array($minDistances[$minDist])) {
@@ -730,8 +733,6 @@ class ABJ_404_Solution_SpellChecker {
      * @return string
      */
     function getLastURLPart($url) {
-        $f = ABJ_404_Solution_Functions::getInstance();
-        
         $parts = explode("/", $url);
         for ($i = count($parts) - 1; $i >= 0; $i--) {
         	$lastPart = $parts[$i];
