@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.23.12 (May 16, 2021) ##
+* Improvement: Update the permalink cache with one query instead of many.
+
 ## Version 2.23.11 (April 8, 2021) ##
 * FIX: Maybe fix a Too few arguments message for some users.
 

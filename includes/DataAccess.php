@@ -139,6 +139,7 @@ class ABJ_404_Solution_DataAccess {
         foreach ($wpdb->tables as $tableName) {
             $repacements['{wp_' . $tableName . '}'] = $wpdb->prefix . $tableName;
         }
+        $repacements['{wp_users}'] = $wpdb->users;
         
         // wp database table replacements
         $query = $f->str_replace(array_keys($repacements), array_values($repacements), $query);
@@ -1806,6 +1807,15 @@ class ABJ_404_Solution_DataAccess {
             $message = __('Error: Unknown Database Error!', '404-solution');
         }
         return $message;
+    }
+    
+    function updatePermalinkCache() {
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/updatePermalinkCache.sql");
+    	$query = $this->doTableNameReplacements($query);
+    	
+    	$results = $this->queryAndGetResults($query);
+    	
+    	return $results;
     }
 
     /** 

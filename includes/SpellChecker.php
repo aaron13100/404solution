@@ -269,7 +269,7 @@ class ABJ_404_Solution_SpellChecker {
         
         // free memory in the published pages by removing all column data except id and term_id
         $rows = $this->getOnlyIDandTermID($rowsAsObject);
-        $rowsAsObject= null;
+        $rowsAsObject = null;
         unset($rowsAsObject);
         
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on posts

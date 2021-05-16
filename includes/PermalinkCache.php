@@ -85,87 +85,10 @@ class ABJ_404_Solution_PermalinkCache {
     function updatePermalinkCache($maxExecutionTime, $executionCount = 1) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
-
-        $syncUtils = new ABJ_404_Solution_SynchronizationUtils();
-        $key = "updatePermalinkCache";
-        $uniqueID = '';
         
-        try {
-            $uniqueID = $syncUtils->synchronizerAcquireLockTry($key);
-            if ($uniqueID == '') {
-                $this->scheduleToRunAgain($executionCount);
-                // the lock wasn't acquired.
-                return;
-            }
-            
-            $timer = new ABJ_404_Solution_Timer();
-            $shouldRunAgain = false;
-            $permalinkStructure = get_option('permalink_structure');
-            
-            $abj404dao->removeOldStructreFromPermalinkCache($permalinkStructure);
+        $results = $abj404dao->updatePermalinkCache();
+        $rowsInserted = $results['rows_affected'];
 
-            $rowsInserted = 0;
-            $rows = $abj404dao->getIDsNeededForPermalinkCache();
-            
-            $row = array_shift($rows);
-            while ($row != null) {
-                $id = $row['id'];
-
-                $permalink = get_the_permalink($id);
-
-                $abj404dao->insertPermalinkCache($id, $permalink, $permalinkStructure);
-                $rowsInserted++;
-
-                // if we've spent X seconds then we've spent enough time
-                if ($timer->getElapsedTime() > $maxExecutionTime) {
-                    $shouldRunAgain = true;
-                    break;
-                }
-                
-                if ($rowsInserted % 1000 == 0) {
-                    $newPermalinkStructure = get_option('permalink_structure');
-                    if ($permalinkStructure != $newPermalinkStructure) {
-                        break;
-                    }
-                }
-                
-                $row = array_shift($rows);
-            }
-            
-            // if there's more work to do then do it, up to a maximum of X times.
-            if ($executionCount < self::MAX_EXECUTIONS && $shouldRunAgain) {
-                // if the site has many pages then we might not be done yet, so we'll schedule ourselves to 
-                // run this again right away as a scheduled event.
-                $this->scheduleToRunAgain($executionCount + 1);
-                $abj404logging->debugMessage($rowsInserted . " rows inserted into the permalink cache table in " .
-                        round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount . 
-                        ". shouldRunAgain: " . ($shouldRunAgain ? 'true' : 'false'));
-
-            } else if (($executionCount > 1) || ($rowsInserted > 1)) {
-                $abj404logging->debugMessage(__FUNCTION__ . " done updating. " . $rowsInserted . " rows inserted " .
-                        "in " . round($timer->getElapsedTime(), 2) . " seconds on execution #" . $executionCount . 
-                        ". shouldRunAgain: " . ($shouldRunAgain ? 'true' : 'false'));
-                
-                if ($executionCount == self::MAX_EXECUTIONS) {
-                    $abj404logging->errorMessage(__FUNCTION__ . " max executions reached in " . __CLASS__);
-                }
-            }
-            
-            $newPermalinkStructure = get_option('permalink_structure');
-            if ($permalinkStructure != $newPermalinkStructure) {
-                $abj404dao->removeOldStructreFromPermalinkCache($newPermalinkStructure);
-                $this->scheduleToRunAgain(1);
-                $abj404logging->debugMessage("Scheduled another permalink cache updated because the structure changed "
-                        . "while the cache was updating.");
-            }
-
-        } catch (Exception $ex) {
-            $syncUtils->synchronizerReleaseLock($uniqueID, $key);
-            throw new Exception($ex);
-        }
-        
-        $syncUtils->synchronizerReleaseLock($uniqueID, $key);
-        
         return $rowsInserted;
     }
     
