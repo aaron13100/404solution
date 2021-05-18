@@ -232,7 +232,9 @@ class ABJ_404_Solution_Logging {
         $zip = new ZipArchive;
         if ($zip->open($logFileZip, ZipArchive::CREATE) === TRUE) {
             $zip->addFile($this->getDebugFilePath(), basename($this->getDebugFilePath()));
-            $zip->addFile($this->getDebugFilePathOld(), basename($this->getDebugFilePathOld()));
+            if (file_exists($this->getDebugFilePathOld())) {
+            	$zip->addFile($this->getDebugFilePathOld(), basename($this->getDebugFilePathOld()));
+            }
             $zip->close();
         }
         

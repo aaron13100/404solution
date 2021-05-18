@@ -1549,7 +1549,7 @@ class ABJ_404_Solution_View {
         $html = $f->str_replace('{pageIDAndType}', $userSelectedDefault404Page, $html);
         $html = $f->str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = $f->str_replace('{data-url}', 
-                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true", $html);
+                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true", $html);
         $html = $f->doNormalReplacements($html);
         $content .= $html;
         

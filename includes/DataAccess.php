@@ -385,14 +385,6 @@ class ABJ_404_Solution_DataAccess {
         return $row1['url'];
     }
     
-    function getPermalinkCache() {
-        $query = "select id, url from {wp_abj404_permalink_cache}";
-        $query = $this->doTableNameReplacements($query);
-        $results = $this->queryAndGetResults($query);
-        
-        return $results['rows'];
-    }
-    
     function storeSpellingPermalinksToCache($requestedURLRaw, $returnValue) {
     	$f = ABJ_404_Solution_Functions::getInstance();
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertSpellingCache.sql");
@@ -1446,9 +1438,11 @@ class ABJ_404_Solution_DataAccess {
      * @global type $abj404logging
      * @param string $slug only get results for this slug. (empty means all posts)
      * @param string $searchTerm use this string in a LIKE on the sql.
+     * @param string $extraWhereClause use this string in a where on the sql.
      * @return array
      */
-    function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '', $limitResults = '') {
+    function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '', 
+    	$limitResults = '', $orderResults = '', $extraWhereClause = '') {
         global $wpdb;
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -1466,21 +1460,28 @@ class ABJ_404_Solution_DataAccess {
         // ----------------
         
         if ($slug != "") {
-            $specifiedSlug = " */ and wp_posts.post_name = "
+            $specifiedSlug = " */\n and wp_posts.post_name = "
                     . "'" . esc_sql($slug) . "' \n ";
         } else {
             $specifiedSlug = '';
         }
         
         if ($searchTerm != "") {
-            $searchTerm = " */ and lower(wp_posts.post_title) like "
-                    . "'%" . esc_sql($f->strtolower($searchTerm)) . "%' \n ";
+        	$searchTerm = " */\n and lower(wp_posts.post_title) like "
+        		. "'%" . esc_sql($f->strtolower($searchTerm)) . "%' \n ";
         } else {
-            $searchTerm = '';
+        	$searchTerm = '';
+        }
+        
+        if ($extraWhereClause != "") {
+        	$extraWhereClause = " */\n " . $extraWhereClause;
         }
         
         if (!empty($limitResults)) {
-            $limitResults = " */  limit " . $limitResults;
+            $limitResults = " */\n  limit " . $limitResults;
+        }
+        if (!empty($orderResults)) {
+        	$orderResults = " */\n  order by " . $orderResults;
         }
         
         // load the query and do the replacements.
@@ -1489,7 +1490,9 @@ class ABJ_404_Solution_DataAccess {
         $query = $f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
         $query = $f->str_replace('{specifiedSlug}', $specifiedSlug, $query);
         $query = $f->str_replace('{searchTerm}', $searchTerm, $query);
+        $query = $f->str_replace('{extraWhereClause}', $extraWhereClause, $query);
         $query = $f->str_replace('{limit-results}', $limitResults, $query);
+        $query = $f->str_replace('{order-results}', $orderResults, $query);
         
         $rows = $wpdb->get_results($query);
 
@@ -1692,7 +1695,7 @@ class ABJ_404_Solution_DataAccess {
      * @param array $valueParams values to use to prepare the query.
      * @return int the count (result) of the query.
      */
-    function getStatsCount($query = '', array $valueParams) {
+    function getStatsCount($query, array $valueParams) {
         global $wpdb;
 
         if ($query == '') {
