@@ -16,9 +16,7 @@ class ABJ_404_Solution_SpellChecker {
     /** Same as above except without the period (.) because of the extension in the file name. */
     private $separatingCharactersForImages = array("-", "_", "~", '%20');
     
-    private $permalinkCacheObj = null;
-
-    private $permalinkCache = null;
+    private $publishedPostsProvider = null;
     
     const MAX_DIST = 2083;
 
@@ -237,11 +235,6 @@ class ABJ_404_Solution_SpellChecker {
         }
         $maxCacheCount = absint($options['suggest_max']) + $excluePagesCount;
         
-        $permalinks = $this->getFromPermalinkCache($requestedURLRaw);
-        if (!empty($permalinks)) {
-        	return array_splice($permalinks, 0, $maxCacheCount);
-        }
-        
         $requestedURLSpaces = $f->str_replace($this->separatingCharacters, " ", $requestedURLRaw);
         $requestedURLCleaned = $this->getLastURLPart($requestedURLSpaces);
         $fullURLspacesCleaned = $f->str_replace('/', " ", $requestedURLSpaces);
@@ -249,31 +242,15 @@ class ABJ_404_Solution_SpellChecker {
         if ($fullURLspacesCleaned == $requestedURLCleaned) {
             $fullURLspacesCleaned = '';
         }
-        
-        // prepare to search using permalinks.
-        // first cache all permalinks
-        $this->initializePermalinkCache();
-        $this->permalinkCacheObj->updatePermalinkCache(25);
+
+        // prepare to get some posts.
+        $this->initializePublishedPostsProvider();
         
         $rowType = 'pages';
-        $rowsAsObject = array();
-        if ($this->requestIsForAnImage($requestedURLRaw)) {
-            $rowsAsObject = $abj404dao->getPublishedImagesIDs();
-            $rowType = 'image';
-            
-        } else {
-            // match based on the slug.
-            $rowsAsObject = $abj404dao->getPublishedPagesAndPostsIDs('');
-        }
-        
-        // free memory in the published pages by removing all column data except id and term_id
-        $rows = $this->getOnlyIDandTermID($rowsAsObject);
-        $rowsAsObject = null;
-        unset($rowsAsObject);
-        
+        $permalinks = array();
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on posts
         $permalinks = $this->matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, 
-                $fullURLspacesCleaned, $rows, $rowType);
+                $fullURLspacesCleaned, $rowType);
         
         // if we only need images then we're done.
         if ($rowType == 'image') {
@@ -286,13 +263,13 @@ class ABJ_404_Solution_SpellChecker {
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on tags
         // search for a similar tag.
         if ($includeTags == "1") {
-            $permalinks = $this->matchOnTags($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, 'tags');
+            $permalinks = $this->matchOnTags($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, 'tags');
         }
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on categories
         // search for a similar category.
         if ($includeCats == "1") {
-            $permalinks = $this->matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, 'categories');
+            $permalinks = $this->matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, 'categories');
         }
         
         // remove excluded pages
@@ -366,17 +343,16 @@ class ABJ_404_Solution_SpellChecker {
         return array();
     }
     
-    function matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+    function matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rowType) {
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$abj404logic = new ABJ_404_Solution_PluginLogic();
         $f = ABJ_404_Solution_Functions::getInstance();
 
-        unset($rows);
         $rows = $abj404dao->getPublishedCategories();
         $rows = $this->getOnlyIDandTermID($rows);
-
+        
         // pre-filter some pages based on the min and max possible levenshtein distances.
-        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'categories');
+        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, 'categories', $rows);
 
         // access the array directly instead of using a foreach loop so we can remove items
         // from the end of the array in the middle of the loop.
@@ -402,17 +378,16 @@ class ABJ_404_Solution_SpellChecker {
         return $permalinks;
     }
     
-    function matchOnTags($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    function matchOnTags($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rowType) {
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $f = ABJ_404_Solution_Functions::getInstance();
         
-        unset($rows);
         $rows = $abj404dao->getPublishedTags();
         $rows = $this->getOnlyIDandTermID($rows);
-
+        
         // pre-filter some pages based on the min and max possible levenshtein distances.
-        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, 'tags');
+        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, 'tags', $rows);
 
         // access the array directly instead of using a foreach loop so we can remove items
         // from the end of the array in the middle of the loop.
@@ -438,13 +413,13 @@ class ABJ_404_Solution_SpellChecker {
         return $permalinks;
     }
     
-    function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType) {
+    function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rowType) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $f = ABJ_404_Solution_Functions::getInstance();
         $abj404logger = ABJ_404_Solution_Logging::getInstance();
         
         // pre-filter some pages based on the min and max possible levenshtein distances.
-        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rows, $rowType);
+        $likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rowType);
         
         $abj404logger->debugMessage("Found " . count($likelyMatchIDs) . " likely match IDs.");
         
@@ -490,13 +465,12 @@ class ABJ_404_Solution_SpellChecker {
         return $permalinks;
     }
     
-    function initializePermalinkCache() {
-        if ($this->permalinkCacheObj == null) {
-            $this->permalinkCacheObj = new ABJ_404_Solution_PermalinkCache();
+    function initializePublishedPostsProvider() {
+        if ($this->publishedPostsProvider == null) {
+        	$this->publishedPostsProvider = new ABJ_404_Solution_PublishedPostsProvider();
         }
-        if ($this->permalinkCache == null) {
-            $this->permalinkCache = $this->permalinkCacheObj->getPermalinkCacheCopy();
-        }
+        $plCache = new ABJ_404_Solution_PermalinkCache();
+        $plCache->updatePermalinkCache(1);
     }
     
     /** 
@@ -508,12 +482,13 @@ class ABJ_404_Solution_SpellChecker {
      */
     function getPermalink($id, $rowType) {
         if ($rowType == 'pages') {
-            $this->initializePermalinkCache();
-            
-            if (array_key_exists($id, $this->permalinkCache)) {
-                return urldecode($this->permalinkCache[$id]);
-            }
-            return urldecode(get_permalink($id));
+        	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        	$link = $abj404dao->getPermalinkFromCache($id);
+        	
+        	if ($link == null) {
+        		$link = get_the_permalink($id);
+        	}
+        	return urldecode($link);
 
         } else if ($rowType == 'tags') {
             return urldecode(get_tag_link($id));
@@ -551,17 +526,11 @@ class ABJ_404_Solution_SpellChecker {
      * @param string $rowType
      * @return array
      */
-    function getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $publishedPages, $rowType) {
+    function getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rowType, $rows = null) {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
-        // if there were no results then there are no likely matches.
-        if (!is_array($publishedPages)) {
-            $abj404logging->errorMessage("Non-array value found in getLikelyMatchIDs: " . $publishedPages);
-            return array();
-        }
-
         $options = $abj404logic->getOptions();
         // we get more than we need because the algorithm we actually use
         // is not based solely on the Levenshtein distance.
@@ -580,46 +549,50 @@ class ABJ_404_Solution_SpellChecker {
         $requestedURLCleanedLength = $f->strlen($requestedURLCleaned);
         $fullURLspacesLength = $f->strlen($fullURLspaces);
         
-        if ($rowType == 'pages') {
-            $this->initializePermalinkCache();
-        }
-        
         $userRequestedURLWords = explode(" ", (empty($fullURLspaces) ? $requestedURLCleaned : $fullURLspaces));
         $idsWithWordsInCommon = array();
         $wasntReadyCount = 0;
-        $row = array_shift($publishedPages);
-        while ($row != null) {
+         
+        // get the next X pages in batches until enough matches are found.
+        $this->publishedPostsProvider->resetBatch();
+        if ($rows != null) {
+        	$this->publishedPostsProvider->useThisData($rows);
+        }
+        $currentBatch = $this->publishedPostsProvider->getNextBatch($requestedURLCleanedLength);
+        
+        $row = array_shift($currentBatch);
+        while ($row != null) { 
+        	$row = (array)$row;
+        	
             $id = null;
-            if ($rowType == 'pages') {
-                $id = $row['id'];
-                
-            } else if ($rowType == 'tags') {
-                $id = $row['term_id'];
-                
-            } else if ($rowType == 'categories') {
-                $id = $row['term_id'];
-                
-            } else if ($rowType == 'image') {
-                $id = $row['id'];
-                
-            } else {
-                throw Exception("Unknown row type ... " . $rowType);
-            }
-            
-            // use the permalink cache table if possible.
             $the_permalink = null;
             if ($rowType == 'pages') {
-                $the_permalink = array_key_exists($id, $this->permalinkCache) == true ? 
-                        $this->permalinkCache[$id] : null;
-                
-                if ($the_permalink == null) {
-                    $the_permalink = $this->getPermalink($id, $rowType);
-                    $wasntReadyCount++;
-                }
-                
+            	$id = $row['id'];
+            	if (array_key_exists('url', $row)) {
+            		$the_permalink = array_key_exists('url', $row) ? $row['url'] : null;
+            	} else {
+            		$the_permalink = $this->getPermalink($id, $rowType);
+            	}
+            	
+            } else if ($rowType == 'tags') {
+            	$id = $row['term_id'];
+            	
+            } else if ($rowType == 'categories') {
+            	$id = $row['term_id'];
+            	
+            } else if ($rowType == 'image') {
+            	$id = $row['id'];
+            	
             } else {
-                // this line takes too long to execute when there are 10k+ pages.
-                $the_permalink = $this->getPermalink($id, $rowType);
+            	throw Exception("Unknown row type ... " . $rowType);
+            }
+
+            if ($rowType == 'pages' && $the_permalink == null) {
+            	// this line takes too long to execute when there are 10k+ pages.
+            	$wasntReadyCount++;
+            }
+            if ($the_permalink == null) {
+            	$the_permalink = $this->getPermalink($id, $rowType);
             }
             
             $the_permalink = urldecode($the_permalink);
@@ -678,7 +651,17 @@ class ABJ_404_Solution_SpellChecker {
                 array_push($maxDistances[$maxDist], $id);
             }
             
-            $row = array_shift($publishedPages);
+            // get the next row in the current batch.
+            $row = array_shift($currentBatch);
+            if ($row == null) {
+            	// get the best maxDistance pages and then trim the next batch using that info.
+            	$maxAcceptableDistance = $this->getMaxAcceptableDistance($maxDistances, $onlyNeedThisManyPages);
+            	
+            	// get the next batch if there are no more rows in the current batch.
+            	$currentBatch = $this->publishedPostsProvider->getNextBatch(
+            		$requestedURLCleanedLength, 1000, $maxAcceptableDistance);
+            	$row = array_shift($currentBatch);
+            }
         }
         
         if ($wasntReadyCount > 0) {
@@ -726,6 +709,31 @@ class ABJ_404_Solution_SpellChecker {
         }
         
         return $listOfIDsToReturn;
+    }
+    
+    /** 
+     * @param array $maxDistances
+     * @param int $onlyNeedThisManyPages
+     * @return int the maximum acceptable distance to use when searching for similar permalinks.
+     */
+    function getMaxAcceptableDistance(array $maxDistances, int $onlyNeedThisManyPages) : int {
+    	$pagesSeenSoFar = 0;
+    	$currentDistanceIndex = 0;
+    	$maxDistFound = 300;
+    	for ($currentDistanceIndex = 0; $currentDistanceIndex <= 300; $currentDistanceIndex++) {
+    		$pagesSeenSoFar += sizeof($maxDistances[$currentDistanceIndex]);
+    		
+    		// we only need the closest matching X pages. where X is the number of suggestions
+    		// to display on the 404 page.
+    		if ($pagesSeenSoFar >= $onlyNeedThisManyPages) {
+    			$maxDistFound = $currentDistanceIndex;
+    			break;
+    		}
+    	}
+    	
+    	// we multiply by X because the distance algorithm doesn't only use the levenshtein.
+    	$acceptableDistance = (int)($maxDistFound * 1.1);
+    	return $acceptableDistance;
     }
     
     /** Turns "/abc/defg" into "defg"

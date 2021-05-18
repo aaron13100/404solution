@@ -1,10 +1,14 @@
 
-insert ignore into {wp_abj404_permalink_cache} (id, url, structure)
+insert ignore into {wp_abj404_permalink_cache} (id, url, structure, url_length)
 
 /* This selects the permalink for a page ID. */
+select 	subTable.*,
+		length(subTable.url) 
+
+from (
 select  wpp.id as id, 
 
-        concat(wpo_su.option_value,
+        concat(/* wpo_su.option_value, */
           replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(
             wpo_pls.option_value, 
               '%year%', date_format(wpp.post_date, '%Y')), 
@@ -58,4 +62,4 @@ from
 where
   /* only published posts. */
   wpp.post_status = 'publish'
-
+) subTable

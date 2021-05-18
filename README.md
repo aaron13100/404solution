@@ -88,6 +88,11 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.24.0 (May 18, 2021) ##
+* FIX: Allow the user to select "default 404 page" and "home page" as the default redirect destination.
+* FIX: Avoid some warnings/errors created when used with PHP 8.
+* Improvement: Return suggested pages faster. Use less memory.
+
 ## Version 2.23.13 (May 16, 2021) ##
 * Improvement: Adjusted the algorithm for finding similar pages.
 

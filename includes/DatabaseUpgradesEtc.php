@@ -101,6 +101,18 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $abj404dao->queryAndGetResults($query);
         }
         
+        $result = $abj404dao->queryAndGetResults("show create table " . $permalinkCacheTable);
+        $rows = $result['rows'];
+        $row1 = array_values($rows[0]);
+        $tableSQL = $row1[1];
+        
+        if (!$f->regexMatchi("url_length", $tableSQL)) {
+        	$query = "ALTER TABLE " . $permalinkCacheTable . " ADD `url_length` INT NULL DEFAULT NULL AFTER `structure`, ADD INDEX (`url_length`);";
+        	$abj404dao->queryAndGetResults($query);
+        	$query = "update " . $permalinkCacheTable . " set url_length = length(url)";
+        	$abj404dao->queryAndGetResults($query);
+        }
+        
         $result = $abj404dao->queryAndGetResults("show create table " . $logsTable);
         // this encode/decode turns the results into an array from a "stdClass"
         $rows = $result['rows'];

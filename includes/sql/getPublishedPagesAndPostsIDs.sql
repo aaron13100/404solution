@@ -7,7 +7,9 @@ select wp_posts.id,
        /* the depth is only here to initialize the value to something. later it's used for sorting. */
        '0' as depth,
 
-       usefulterms.grouped_terms
+       usefulterms.grouped_terms,
+       
+       plc.url
 
 from {wp_posts} wp_posts
 
@@ -27,25 +29,37 @@ left outer join (
     	group by wptr.object_id
 
 	) usefulterms
-    on wp_posts.ID = usefulterms.object_id
+on wp_posts.ID = usefulterms.object_id
+
+left outer join {wp_abj404_permalink_cache} plc
+on wp_posts.ID = plc.id
 
 where wp_posts.post_status = 'publish'
       and lcase(wp_posts.post_type) in ({recognizedPostTypes}) /* 'page', 'post', 'product' */
         
 /* only include this line if a slug has been specified. e.g.
       and post_name = 'specifiedSlug'
-      {specifiedSlug}
+{specifiedSlug}
 /*  */
 
 /* only include this line if a search term has been specified. e.g.
       and lower(post_name) like 'searchTerm'
-      {searchTerm}
+{searchTerm}
+/*  */
+
+/* only include this line if it's been specified. e.g.
+      and abs(plc.url_length - 100) <= 6
+{extraWhereClause}
 /*  */
 
 and ( usefulterms.grouped_terms is null or 
 	  usefulterms.grouped_terms not like '%exclude-from-search%'
 	  or usefulterms.grouped_terms not like '%exclude-from-catalog%'
     )
+
+/* order results. e.g order by abs(plc.url_length - 100), wp_posts.ID
+{order-results}
+/*  */
 
 /* limit results. e.g limit 250
 {limit-results}
