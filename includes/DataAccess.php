@@ -912,11 +912,11 @@ class ABJ_404_Solution_DataAccess {
     }
     
     /** 
-     * @global type $wpdb
      * @param string $specificURL
+     * @param string $limitResults
      * @return array
      */
-    function getLogsIDandURLLike($specificURL = '', $limitResults) {
+    function getLogsIDandURLLike($specificURL, $limitResults) {
     	$f = ABJ_404_Solution_Functions::getInstance();
     	$whereClause = '';
         if ($specificURL != '') {
