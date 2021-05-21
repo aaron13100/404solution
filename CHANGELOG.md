@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.24.1 (May 21, 2021) ##
+* FIX: Avoid a warning/error when used with PHP 8.
+
 ## Version 2.24.0 (May 18, 2021) ##
 * FIX: Allow the user to select "default 404 page" and "home page" as the default redirect destination.
 * FIX: Avoid some warnings/errors created when used with PHP 8.
