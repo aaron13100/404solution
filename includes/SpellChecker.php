@@ -716,7 +716,7 @@ class ABJ_404_Solution_SpellChecker {
      * @param int $onlyNeedThisManyPages
      * @return int the maximum acceptable distance to use when searching for similar permalinks.
      */
-    function getMaxAcceptableDistance(array $maxDistances, int $onlyNeedThisManyPages) : int {
+    function getMaxAcceptableDistance($maxDistances, $onlyNeedThisManyPages) {
     	$pagesSeenSoFar = 0;
     	$currentDistanceIndex = 0;
     	$maxDistFound = 300;
