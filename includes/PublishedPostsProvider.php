@@ -37,7 +37,7 @@ class ABJ_404_Solution_PublishedPostsProvider {
 	 * @param int $maxAcceptableDistance
 	 * @return 
 	 */
-    function getNextBatch(int $permalinkLength, int $batchSize = 1000, int $maxAcceptableDistance = null) {
+    function getNextBatch($permalinkLength, $batchSize = 1000, $maxAcceptableDistance = null) {
     	if ($this->useDataMode) {
     		return $this->getNextBatchFromLocalData($permalinkLength, $batchSize, $maxAcceptableDistance);
     	}

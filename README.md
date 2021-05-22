@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.24.2 (May 22, 2021) ##
+* FIX: Maybe work with PHP 5.6 again (for Joseph).
+
 ## Version 2.24.1 (May 21, 2021) ##
 * FIX: Avoid a warning/error when used with PHP 8.
 
