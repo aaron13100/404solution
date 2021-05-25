@@ -284,6 +284,7 @@ class ABJ_404_Solution_SpellChecker {
         $returnValue = array($permalinks, $rowType);
         $abj404dao->storeSpellingPermalinksToCache($requestedURLRaw, $returnValue);
         $_REQUEST[ABJ404_PP]['permalinks_found'] = json_encode($returnValue);
+        $_REQUEST[ABJ404_PP]['permalinks_kept'] = json_encode($permalinks);
         
         return $returnValue;
     }

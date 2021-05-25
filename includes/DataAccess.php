@@ -1014,11 +1014,16 @@ class ABJ_404_Solution_DataAccess {
         $reasonMessage = trim(implode(", ", 
                     array_filter(
                     array($_REQUEST[ABJ404_PP]['ignore_doprocess'], $_REQUEST[ABJ404_PP]['ignore_donotprocess']))));
+        $permalinksKept = '(not set)';
+        if ($abj404logging->isDebug() && array_key_exists(ABJ404_PP, $_REQUEST) &&
+        		array_key_exists('permalinks_found', $_REQUEST[ABJ404_PP])) {
+       		$permalinksKept = $_REQUEST[ABJ404_PP]['permalinks_kept'];
+        }
         $abj404logging->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
         		" | Current user: " . $current_user_name . " | From: " . urldecode($_SERVER['REQUEST_URI']) . 
                 esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . 
                 $reasonMessage . ', Execution time: ' . round($helperFunctions->getExecutionTime(), 2) . 
-                ' seconds');
+        	' seconds, permalinks found: ' . $permalinksKept);
         // ------------ debug message end
         
         // insert the username into the lookup table and get the ID from the lookup table.

@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.24.3 (May 25, 2021) ##
+* Improvement: Include information about page matches in the debug log.
+
 ## Version 2.24.2 (May 22, 2021) ##
 * FIX: Maybe work with PHP 5.6 again (for Joseph).
 
