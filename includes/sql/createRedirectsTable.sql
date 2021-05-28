@@ -16,5 +16,5 @@ CREATE TABLE IF NOT EXISTS {redirectsTable} (
     KEY `disabled` (`disabled`),
     KEY `url` (`url`(333)) USING BTREE,
     KEY `final_dest` (`final_dest`(333)) USING BTREE
-) ENGINE=MyISAM COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1
+) ENGINE=InnoDB COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1
 

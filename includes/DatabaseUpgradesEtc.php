@@ -183,6 +183,29 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         
         $me = new ABJ_404_Solution_DatabaseUpgradesEtc();
         $me->correctCollations();
+        
+        $me->updateTableEngineToInnoDB();
+    }
+    
+    function updateTableEngineToInnoDB() {
+    	// get a list of all tables.
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$result = $abj404dao->getMyISAMTables();
+    	
+    	// if any rows are found then update the tables.
+    	if (array_key_exists('rows', $result) && !empty($result['rows'])) {
+    		$rows = $result['rows'];
+    		foreach ($rows as $row) {
+    			$schema = $row['table_schema'];
+    			$table = $row['table_name'];
+    			$query = 'alter table `' . $schema . '`.`' . $table . 
+    				'` engine = InnoDB;';
+    			$abj404logging->infoMessage("Updating " . $schema . '.' . 
+    				$table . "to InnoDB.");
+    			$abj404dao->queryAndGetResults($query);
+    		}
+    	}
     }
 
     function correctCollations() {

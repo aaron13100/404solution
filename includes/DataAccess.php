@@ -140,6 +140,8 @@ class ABJ_404_Solution_DataAccess {
             $repacements['{wp_' . $tableName . '}'] = $wpdb->prefix . $tableName;
         }
         $repacements['{wp_users}'] = $wpdb->users;
+        $repacements['{wp_prefix}'] = $wpdb->prefix;
+        
         
         // wp database table replacements
         $query = $f->str_replace(array_keys($repacements), array_values($repacements), $query);
@@ -418,6 +420,13 @@ class ABJ_404_Solution_DataAccess {
         $returnValue = json_decode($json);
         
         return $returnValue;
+    }
+    
+    function getMyISAMTables() {
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/selectMyISAMTables.sql");
+    	$query = $this->doTableNameReplacements($query);
+    	$results = $this->queryAndGetResults($query);
+    	return $results;
     }
     
     /** Insert data into the database.

@@ -1457,7 +1457,9 @@ class ABJ_404_Solution_PluginLogic {
 	        	$newVal = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;
 	        	
 	        	// in case the suggest_cats or suggest_tags is changed.
-	        	if ($options[$optionName] != $newVal) {
+	        	if (!array_key_exists($optionName, $options) || 
+	        		$options[$optionName] != $newVal) {
+	        			
 	        		$abj404dao->deleteSpellingCache();
 	        	}
 	            $options[$optionName] = $newVal;

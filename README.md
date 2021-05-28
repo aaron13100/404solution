@@ -88,6 +88,10 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.24.4 (May 28, 2021) ##
+* FIX: Convert plugin tables to use InnoDB instead of MyISAM to avoid table lock issues (for jmartin).
+* Improvement: Remove the first part of the path from log files in some cases because some people don't want to see it in the logs.
+
 ## Version 2.24.3 (May 25, 2021) ##
 * Improvement: Include information about page matches in the debug log.
 
