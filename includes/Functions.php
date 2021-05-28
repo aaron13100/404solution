@@ -391,6 +391,15 @@ abstract class ABJ_404_Solution_Functions {
     private static function getDataSupplement($filePath, $appendExtraData = true) {
         $f = ABJ_404_Solution_Functions::getInstance();
         $path = strtolower($filePath);
+        
+        // remove the first part of the path because some people don't want to see
+        // it in the log file.
+        $homepath = dirname(ABSPATH);
+        $beginningOfPath = substr($path, 0, strlen($homepath));
+        if (strtolower($beginningOfPath) == strtolower($homepath)) {
+        	$path = substr($path, strlen($homepath));
+        }
+        
         $supplement = array();
         
         if (!$appendExtraData) {

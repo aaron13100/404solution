@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS `{wp_abj404_spelling_cache}` (
  `matchdata` text COMMENT 'data that may match what the user is looking for. e.g. a list of wp_post.ids with post type and score',
 PRIMARY KEY (`id`),
  UNIQUE KEY `url` (`url`(250)) USING BTREE
-) ENGINE=MyISAM COMMENT='404 Solution Plugin Spelling Cache Table'
+) ENGINE=InnoDB COMMENT='404 Solution Plugin Spelling Cache Table'
