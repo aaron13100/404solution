@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.24.5 (May 29, 2021) ##
+* FIX: Fix an index length on a database table (spelling_cache.url) (thanks debug file participants).
+
 ## Version 2.24.4 (May 28, 2021) ##
 * FIX: Convert plugin tables to use InnoDB instead of MyISAM to avoid table lock issues (for jmartin).
 * Improvement: Remove the first part of the path from log files in some cases because some people don't want to see it in the logs.

@@ -182,9 +182,39 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         }
         
         $me = new ABJ_404_Solution_DatabaseUpgradesEtc();
+        $me->correctSpellingCacheTable();        
+        
         $me->correctCollations();
         
         $me->updateTableEngineToInnoDB();
+    }
+    
+    function correctSpellingCacheTable() {
+    	global $wpdb;
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
+    	$f = ABJ_404_Solution_Functions::getInstance();
+    	
+    	$result = $abj404dao->queryAndGetResults("show create table " . $spellingCacheTable);
+    	$rows = $result['rows'];
+    	$row1 = array_values($rows[0]);
+    	$tableSQL = $row1[1];
+    	
+    	// look for this line.
+    	// UNIQUE KEY `url` (`url`(250)) USING BTREE
+    	if (!$f->regexMatchi("UNIQUE KEY `url[^\n]+250[^\n]+ USING BTREE", $tableSQL)) {
+    		if ($f->regexMatchi("KEY[^\n]+url", $tableSQL)) {
+    			$query = "ALTER TABLE " . $spellingCacheTable . " DROP INDEX url";
+    			$abj404dao->queryAndGetResults($query);
+    		}
+    		// the column will be unique
+    		$query = "truncate TABLE " . $spellingCacheTable;
+    		$abj404dao->queryAndGetResults($query);
+    		$query = "ALTER TABLE " . $spellingCacheTable . " ADD UNIQUE url (`url`(250)) USING BTREE";
+    		$abj404dao->queryAndGetResults($query);
+    		$abj404logging->infoMessage("Updated spelling cache table URL column index length.");
+    	}
     }
     
     function updateTableEngineToInnoDB() {
