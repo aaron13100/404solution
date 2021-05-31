@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.24.6 (May 31, 2021) ##
+* FIX: Fix an index length on a database table (spelling_cache.url) (thanks debug file participants).
+
 ## Version 2.24.5 (May 29, 2021) ##
 * FIX: Fix an index length on a database table (spelling_cache.url) (thanks debug file participants).
 
