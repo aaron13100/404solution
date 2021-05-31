@@ -203,16 +203,40 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
     	// look for this line.
     	// UNIQUE KEY `url` (`url`(250)) USING BTREE
-    	if (!$f->regexMatchi("UNIQUE KEY `url[^\n]+250[^\n]+ USING BTREE", $tableSQL)) {
+    	if (!$f->regexMatchi("UNIQUE KEY `url[^\n]+[\d]+[^\n]+ USING BTREE", $tableSQL) ||
+            !$f->regexMatchi("ENGINE[^\n]*=[^\n]*InnoDB", $tableSQL)) {
+            
     		if ($f->regexMatchi("KEY[^\n]+url", $tableSQL)) {
     			$query = "ALTER TABLE " . $spellingCacheTable . " DROP INDEX url";
     			$abj404dao->queryAndGetResults($query);
     		}
-    		// the column will be unique
+
+            // make it use InnoDB if it doesn't already.
+            $query = 'alter table ' . $spellingCacheTable . ' engine = InnoDB;';
+            $abj404dao->queryAndGetResults($query);
+
+    		// the column will be unique so we remove any data that might not be unique.
     		$query = "truncate TABLE " . $spellingCacheTable;
     		$abj404dao->queryAndGetResults($query);
-    		$query = "ALTER TABLE " . $spellingCacheTable . " ADD UNIQUE url (`url`(250)) USING BTREE";
-    		$abj404dao->queryAndGetResults($query);
+    		
+    		// try to create an index of 250 and if it doesn't work then keep trying to
+    		// create a smaller and smaller index until it works.
+    		for ($i = 250; $i > 50; $i -= 10) {
+    			$query = "ALTER TABLE " . $spellingCacheTable . 
+    				" ADD UNIQUE url (`url`(" . $i . ")) USING BTREE";
+    			$results = $abj404dao->queryAndGetResults($query, 
+    				array('log_errors' => false));
+    			
+    			if (!empty($results['last_error'])) {
+    				$abj404logging->infoMessage("Tried creating an index (" . 
+    					$i . ") on " . $spellingCacheTable . " but it didn't work.");
+    				
+    			} else {
+    				$abj404logging->infoMessage("Successfully created an index (" .
+    					$i . ") on " . $spellingCacheTable . ".");
+    				break;
+    			}
+    		}
     		$abj404logging->infoMessage("Updated spelling cache table URL column index length.");
     	}
     }
