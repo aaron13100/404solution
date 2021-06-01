@@ -94,7 +94,6 @@ class ABJ_404_Solution_WordPress_Connector {
     static function excludePluginsFromAutoUpdate($update, $item) {
         $pluginSlug = dirname(ABJ404_NAME);
         $pluginSlugWithPHP = $pluginSlug . '/' . basename(ABJ404_FILE);
-        $found = false;
         $found = (isset($item->slug) && 
             in_array($item->slug, array($pluginSlug)));
         $found2 = in_array($item, array($pluginSlugWithPHP));
