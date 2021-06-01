@@ -1804,7 +1804,7 @@ class ABJ_404_Solution_DataAccess {
     /** Move a redirect to the "trash" folder.
      * @global type $wpdb
      * @param int $id
-     * @param int $trash
+     * @param int $trash 1 for trash, 0 for not trash.
      * @return string
      */
     function moveRedirectsToTrash($id, $trash) {
@@ -1859,10 +1859,10 @@ class ABJ_404_Solution_DataAccess {
         
         $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
         $wpdb->update($redirectsTable, array(
-            'url' => esc_sql($fromURL),
+        	'url' => $fromURL,
             'status' => $statusType,
             'type' => absint($type),
-            'final_dest' => esc_sql($dest),
+            'final_dest' => $dest,
             'code' => esc_attr($redirectCode)
                 ), array(
             'id' => absint($idForUpdate)
@@ -1877,6 +1877,7 @@ class ABJ_404_Solution_DataAccess {
                 )
         );
         
+        // move this redirect out of the trash.
         $this->moveRedirectsToTrash(absint($idForUpdate), 0);
     }
 

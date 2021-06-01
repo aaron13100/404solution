@@ -1034,7 +1034,7 @@ class ABJ_404_Solution_PluginLogic {
         } else if (array_key_exists('url', $_POST) && $_POST['url'] != "" && 
         	(!array_key_exists('ids_multiple', $_POST) || $_POST['ids_multiple'] == "")) {
         		
-            $fromURL = $_POST['url'];
+        	$fromURL = stripslashes($_POST['url']);
         } else {
             $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
         }
