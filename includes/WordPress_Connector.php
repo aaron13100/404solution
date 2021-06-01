@@ -12,7 +12,9 @@ class ABJ_404_Solution_WordPress_Connector {
 
     /** Setup. */
     static function init() {
-        if (is_admin()) {
+    	add_filter('auto_update_plugin', 'ABJ_404_Solution_WordPress_Connector::excludePluginsFromAutoUpdate', 10, 2);
+    	
+    	if (is_admin()) {
             register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::doUnregisterCrons');
             register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::runOnPluginActivation');
             
@@ -82,6 +84,25 @@ class ABJ_404_Solution_WordPress_Connector {
         
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
                 null);
+    }
+
+    /** Disable auto update by WordPress. We'll handle it ourselves.
+     * @param $update
+     * @param $item
+     * @return boolean
+     */
+    static function excludePluginsFromAutoUpdate($update, $item) {
+        $pluginSlug = dirname(ABJ404_NAME);
+        $pluginSlugWithPHP = $pluginSlug . '/' . basename(ABJ404_FILE);
+        $found = false;
+        $found = (isset($item->slug) && 
+            in_array($item->slug, array($pluginSlug)));
+        $found2 = in_array($item, array($pluginSlugWithPHP));
+
+        if ($found || $found2) {
+            return false;
+        }
+        return true;
     }
 
     /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).
