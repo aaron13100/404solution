@@ -89,7 +89,9 @@ Please try this website for studying Japanese flashcards.
 ## Changelog ##
 
 ## Version 2.24.7 (June 1, 2021) ##
+* FIX: Allow backslashes in regular expressions matches.
 * FIX: Disable automatic updates by WordPress.
+* Improvement: Wait 3 days before automatically updating to a minor version.
 
 ## Version 2.24.6 (May 31, 2021) ##
 * FIX: Fix an index length on a database table (spelling_cache.url) (thanks debug file participants).

@@ -424,14 +424,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         // 1.12.0 becomes array("1", "12", "0")
         $myVersionArray = explode(".", ABJ404_VERSION);
         $latestVersionArray = explode(".", $latestVersion);
-        
-        // if there's a new minor version then update.
-        if ($myVersionArray[0] == $latestVersionArray[0] && $myVersionArray[1] == $latestVersionArray[1] 
-                && intval($myVersionArray[2]) < intval($latestVersionArray[2])) {
-            $abj404logging->infoMessage("A new minor version is available (" . 
-                    $latestVersion . "), currently version " . ABJ404_VERSION . " is installed.");
-            return true;
-        }
 
         // check the latest date to see if it's been long enough to update.
         $lastUpdated = $pluginInfo['last_updated'];
@@ -440,6 +432,18 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $dateInterval = $lastReleaseDate->diff($todayDate);
         $daysDifference = $dateInterval->days;
         
+        // if there's a new minor version then update.
+        // only update if it was released at least 3 days ago.
+        if ($myVersionArray[0] == $latestVersionArray[0] && 
+        	$myVersionArray[1] == $latestVersionArray[1] && 
+        	intval($myVersionArray[2]) < intval($latestVersionArray[2]) &&
+        	$daysDifference >= 3) {
+        		
+            $abj404logging->infoMessage("A new minor version is available (" . 
+                    $latestVersion . "), currently version " . ABJ404_VERSION . " is installed.");
+            return true;
+        }
+
         $minDaysDifference = $options['days_wait_before_major_update'];
         if ($daysDifference >= $minDaysDifference) {
             $abj404logging->infoMessage("The latest major version is old enough for updating automatically (" . 
