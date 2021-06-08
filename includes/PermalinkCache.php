@@ -20,35 +20,6 @@ class ABJ_404_Solution_PermalinkCache {
         $me = new ABJ_404_Solution_PermalinkCache();
         
         add_action('updated_option', array($me, 'permalinkStructureChanged'), 10, 2);
-        add_action('save_post', array($me, 'save_postListener'), 10, 3);
-        add_action('delete_post', array($me, 'delete_postListener'), 10, 2);
-    }
-
-    function delete_postListener($post_id, $post = null) {
-    	$this->save_postListenerAction($post_id, 'deleted');
-    }
-    function save_postListener($post_id, $post, $update) {
-    	$savePostHandler = new ABJ_404_Solution_SlugChangeHandler();
-    	$savePostHandler->save_postHandler($post_id, $post, $update);
-    	
-    	$this->save_postListenerAction($post_id, 'saved');
-    }
-    
-    /** We'll just make sure the permalink gets updated in case it's changed.
-     * @global type $abj404dao
-     * @param int $post_id
-     * @param string $action
-     */
-    function save_postListenerAction($post_id, $action) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        
-        $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
-        	": Delete from permalink cache: " . $post_id . ", action: " . $action);
-        $abj404dao->removeFromPermalinkCache($post_id);
-
-        // let's update some links.
-        $this->updatePermalinkCache(0.1);
     }
 
     /** If the permalink structure changes then truncate the cache table and update some values.
@@ -72,7 +43,6 @@ class ABJ_404_Solution_PermalinkCache {
         $abj404dao->truncatePermalinkCacheTable();
 
         // let's take this opportunity to update some of the values in the cache table.
-        // One second of runtime should update 800+ pages.
         $this->updatePermalinkCache(1);
     }
     

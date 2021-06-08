@@ -328,16 +328,6 @@ class ABJ_404_Solution_DataAccess {
         $query = "delete from " . $permalinkCacheTable . " where id = '" . $post_id . "'";
         $this->queryAndGetResults($query);
     }
-    function removeOldStructreFromPermalinkCache($correctPermalinkStructure) {
-        global $wpdb;
-        
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-        
-        $query = "delete from " . $permalinkCacheTable . " where structure != '" . 
-                esc_sql($correctPermalinkStructure) . "'";
-        
-        $this->queryAndGetResults($query);
-    }
     
     function getIDsNeededForPermalinkCache() {
         $abj404logic = new ABJ_404_Solution_PluginLogic();
@@ -362,17 +352,6 @@ class ABJ_404_Solution_DataAccess {
         return $results['rows'];
     }
     
-    function insertPermalinkCache($id, $permalink, $permalinkStructure) {
-    	$f = ABJ_404_Solution_Functions::getInstance();
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertPermalinkCache.sql");
-        $query = $this->doTableNameReplacements($query);
-        $query = $f->str_replace('{id}', esc_sql($id), $query);
-        $query = $f->str_replace('{url}', esc_sql($permalink), $query);
-        $query = $f->str_replace('{structure}', esc_sql($permalinkStructure), $query);
-
-        $this->queryAndGetResults($query);
-    }
-    
     function getPermalinkFromCache($id) {
         $query = "select url from {wp_abj404_permalink_cache} where id = " . $id;
         $query = $this->doTableNameReplacements($query);
@@ -385,6 +364,19 @@ class ABJ_404_Solution_DataAccess {
         
         $row1 = $rows[0];
         return $row1['url'];
+    }
+    
+    function getPermalinkEtcFromCache($id) {
+        $query = "select * from {wp_abj404_permalink_cache} where id = " . $id;
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
+        
+        $rows = $results['rows'];
+        if (count($rows) == 0) {
+            return null;
+        }
+        
+        return $rows[0];
     }
     
     function storeSpellingPermalinksToCache($requestedURLRaw, $returnValue) {

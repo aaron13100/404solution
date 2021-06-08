@@ -1,5 +1,5 @@
 
-insert ignore into {wp_abj404_permalink_cache} (id, url, structure, url_length)
+insert ignore into {wp_abj404_permalink_cache} (id, url, meta, url_length)
 
 /* This selects the permalink for a page ID. */
 select 	subTable.*,
@@ -24,7 +24,8 @@ select  wpp.id as id,
               '%author%', wpusers.user_nicename)
         ) as url,
 
-        wpo_pls.option_value as structure
+        concat(concat(concat(concat('s:', wpp.post_status), ',t:'), wpp.post_type), ',') as meta
+
 from 
   {wp_posts} wpp 
 

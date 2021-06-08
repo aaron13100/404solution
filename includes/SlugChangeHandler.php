@@ -18,7 +18,8 @@ class ABJ_404_Solution_SlugChangeHandler {
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
     	
     	if (!$update) {
-    		$abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . ": Non-update skipped. ");
+    		$abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
+                ": Non-update skipped for post ID " . $post_id . ".");
     		return;
     	}
     	
@@ -27,14 +28,14 @@ class ABJ_404_Solution_SlugChangeHandler {
     	$options = $abj404logic->getOptions();
     	if ($options['auto_redirects'] != '1') {
     		$abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . ": Auto-redirects off " . 
-    			"(skipped).");
+    			"(skipped) (post ID " . $post_id . ").");
     		return;
     	}
     	
     	$postStatus = get_post_status($post_id);
     	if ('publish' != $postStatus) {
     		$abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . ": Post status: " . 
-    			$postStatus . " (skipped).");
+    			$postStatus . " (skipped) (post ID " . $post_id . ").");
     		return;
     	}
     	
@@ -47,7 +48,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         
         if ($oldURL == null || $oldURL == "") {
         	$abj404logging->debugMessage("Couldn't find old slug for updated page. ID " . 
-        		$post_id . ", old URL: " . $oldURL . ", new slug: " . $post->post_name . 
+        		$post_id . ", old URL: " . $oldURL . ", post name: " . $post->post_name . 
         		", update: " . $update);
         	return;
         }
@@ -64,14 +65,10 @@ class ABJ_404_Solution_SlugChangeHandler {
         		return;
         }
         
-        $abj404logging->debugMessage("Save post listener: Updated page. ID: " .
-        	$post_id . ", old URL: " . $oldURL . ", old slug: " . $oldSlug . 
-        	", new slug: " . $post->post_name . ", update: " . $update);
-        	
         // create a redirect from the old to the new.
         $abj404dao->setupRedirect($oldSlug, ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, 
         		$post_id, $options['default_redirect'], 0);
         $abj404logging->infoMessage("Added automatic redirect after slug change from " . 
-        	$oldURL . ' to ' . $newURL);
+        	$oldURL . ' to ' . $newURL . " for post ID " . $post_id);
     }
 }
