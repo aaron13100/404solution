@@ -19,100 +19,33 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @global type $wpdb
      */
     function createDatabaseTables() {
-        global $wpdb;
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $refreshPermalinkCache = false;
+        
+        $this->runInitialCreateTables();
+        $this->doRedirectsTableUpdates();
+        $refreshPermalinkCache = $this->doPermalinkCacheTableUpdates();
+        $this->doLogsTableUpdates();
+        
+        $me = new ABJ_404_Solution_DatabaseUpgradesEtc();
+        $me->correctSpellingCacheTable();        
+        
+        $me->correctCollations();
+        
+        $me->updateTableEngineToInnoDB();
+
+        if ($refreshPermalinkCache) {
+            $plCache = new ABJ_404_Solution_PermalinkCache();
+            $plCache->updatePermalinkCache(1);
+        }
+    }
+
+    function doLogsTableUpdates() {
+    	global $wpdb;
+    	$logsTable = $wpdb->prefix . 'abj404_logsv2';
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
-        
-        $redirectsTable = $wpdb->prefix . "abj404_redirects";
-        $logsTable = $wpdb->prefix . 'abj404_logsv2';
-        $lookupTable = $wpdb->prefix . 'abj404_lookup';
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-        $spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
-        $query = $f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
-        $abj404dao->queryAndGetResults($query);
-        
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
-        $query = $f->str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
-        $abj404dao->queryAndGetResults($query);
-        
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
-        $query = $f->str_replace('{redirectsTable}', $redirectsTable, $query);
-        $abj404dao->queryAndGetResults($query);
-
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
-        $query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-        $abj404dao->queryAndGetResults($query);
-        
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
-        $query = $f->str_replace('{wp_abj404_lookup}', $lookupTable, $query);
-        $abj404dao->queryAndGetResults($query);
-        
-        // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
-        $result = $abj404dao->queryAndGetResults("show create table " . $redirectsTable);
-        $rows = $result['rows'];
-        $row1 = array_values($rows[0]);
-        $tableSQL = $row1[1];
-        // if the column does not have btree then drop and recreate the index.
-        if (!$f->regexMatchi("url[^\n]+ USING BTREE", $tableSQL)) {
-            if ($f->regexMatchi("KEY[^\n]+url", $tableSQL)) {
-                $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX url";
-                $abj404dao->queryAndGetResults($query);
-            }
-            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX url (`url`) USING BTREE";
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Updated redirects table URL column to use a btree index.");
-        }
-        if (!$f->regexMatchi("KEY[^\n]+status", $tableSQL)) {
-        	$query = "ALTER TABLE " . $redirectsTable . " ADD INDEX status (`status`)";
-        	$abj404dao->queryAndGetResults($query);
-        	$abj404logging->infoMessage("Updated redirects table. Added index to the STATUS column.");
-        }
-        if (!$f->regexMatchi("KEY[^\n]+disabled", $tableSQL)) {
-        	$query = "ALTER TABLE " . $redirectsTable . " ADD INDEX disabled (`disabled`)";
-        	$abj404dao->queryAndGetResults($query);
-        	$abj404logging->infoMessage("Updated redirects table. Added index to the DISABLED column.");
-        }
-        if (!$f->regexMatchi("final_dest[^\n]+ USING BTREE", $tableSQL)) {
-            if ($f->regexMatchi("KEY[^\n]+final_dest", $tableSQL)) {
-                $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX final_dest";
-                $abj404dao->queryAndGetResults($query);
-            }
-            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX final_dest (`final_dest`) USING BTREE";
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Updated redirects table FINAL_DEST column to use a btree index.");
-        }
-        if (!$f->regexMatchi("status[^\n]+TINYINT\(1\)", $tableSQL)) {
-            $query = "ALTER TABLE " . $redirectsTable . "   CHANGE `status` `status` TINYINT(1) NOT NULL, \n" .
-                    "  CHANGE `type` `type` TINYINT(1) NOT NULL, \n" .
-                    "  CHANGE `code` `code` SMALLINT(3) NOT NULL, \n" .
-                    "  CHANGE `disabled` `disabled` TINYINT(1) NOT NULL DEFAULT '0' \n"; 
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Updated redirects table STATUS column type to TINYINT.");
-        }
-        if (!$f->regexMatchi("url[^\n]+2048", $tableSQL)) {
-            $query = "ALTER TABLE " . $redirectsTable . " CHANGE `url` `url` VARCHAR(2048)";
-            $abj404dao->queryAndGetResults($query);
-        }
-        if (!$f->regexMatchi("final_dest[^\n]+2048", $tableSQL)) {
-            $query = "ALTER TABLE " . $redirectsTable . " CHANGE `final_dest` `final_dest` VARCHAR(2048)";
-            $abj404dao->queryAndGetResults($query);
-        }
-        
-        $result = $abj404dao->queryAndGetResults("show create table " . $permalinkCacheTable);
-        $rows = $result['rows'];
-        $row1 = array_values($rows[0]);
-        $tableSQL = $row1[1];
-        
-        if (!$f->regexMatchi("url_length", $tableSQL)) {
-        	$query = "ALTER TABLE " . $permalinkCacheTable . " ADD `url_length` INT NULL DEFAULT NULL AFTER `structure`, ADD INDEX (`url_length`);";
-        	$abj404dao->queryAndGetResults($query);
-        	$query = "update " . $permalinkCacheTable . " set url_length = length(url)";
-        	$abj404dao->queryAndGetResults($query);
-        }
-        
         $result = $abj404dao->queryAndGetResults("show create table " . $logsTable);
         // this encode/decode turns the results into an array from a "stdClass"
         $rows = $result['rows'];
@@ -180,17 +113,138 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $query = "ALTER TABLE " . $logsTable . " CHANGE `dest_url` `dest_url` VARCHAR(2048) ";
             $abj404dao->queryAndGetResults($query);
         }
+    }
+
+    function doPermalinkCacheTableUpdates() {
+    	global $wpdb;
+    	$permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $refreshPermalinkCache = false;
+
+        $result = $abj404dao->queryAndGetResults("show create table " . $permalinkCacheTable);
+        $rows = $result['rows'];
+        $row1 = array_values($rows[0]);
+        $tableSQL = $row1[1];
+
+        if ($f->regexMatchi("structure", $tableSQL)) {
+            $query = "ALTER TABLE " . $permalinkCacheTable . " DROP `structure`;";
+            $abj404dao->queryAndGetResults($query);
+        }
         
-        $me = new ABJ_404_Solution_DatabaseUpgradesEtc();
-        $me->correctSpellingCacheTable();        
+        if (!$f->regexMatchi("meta", $tableSQL)) {
+            // clear the table because without the meta column it's useless.
+            $abj404dao->truncatePermalinkCacheTable();
+            // create the column.
+            $query = "ALTER TABLE " . $permalinkCacheTable . " ADD `meta` TINYTEXT NOT NULL;";
+            $abj404dao->queryAndGetResults($query);
+
+            $refreshPermalinkCache = true;
+        }        
         
-        $me->correctCollations();
+        if (!$f->regexMatchi("url_length", $tableSQL)) {
+            $query = "ALTER TABLE " . $permalinkCacheTable . " ADD `url_length` INT NULL DEFAULT NULL, ADD INDEX (`url_length`);";
+            $abj404dao->queryAndGetResults($query);
+            $query = "update " . $permalinkCacheTable . " set url_length = length(url)";
+            $abj404dao->queryAndGetResults($query);
+        }
+
+        return $refreshPermalinkCache;
+    }
+
+    function doRedirectsTableUpdates() {
+    	global $wpdb;
+    	$redirectsTable = $wpdb->prefix . "abj404_redirects";
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+
+        // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
+        $result = $abj404dao->queryAndGetResults("show create table " . $redirectsTable);
+        $rows = $result['rows'];
+        $row1 = array_values($rows[0]);
+        $tableSQL = $row1[1];
+        // if the column does not have btree then drop and recreate the index.
+        if (!$f->regexMatchi("url[^\n]+ USING BTREE", $tableSQL)) {
+            if ($f->regexMatchi("KEY[^\n]+url", $tableSQL)) {
+                $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX url";
+                $abj404dao->queryAndGetResults($query);
+            }
+            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX url (`url`) USING BTREE";
+            $abj404dao->queryAndGetResults($query);
+            $abj404logging->infoMessage("Updated redirects table URL column to use a btree index.");
+        }
+        if (!$f->regexMatchi("KEY[^\n]+status", $tableSQL)) {
+            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX status (`status`)";
+            $abj404dao->queryAndGetResults($query);
+            $abj404logging->infoMessage("Updated redirects table. Added index to the STATUS column.");
+        }
+        if (!$f->regexMatchi("KEY[^\n]+disabled", $tableSQL)) {
+            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX disabled (`disabled`)";
+            $abj404dao->queryAndGetResults($query);
+            $abj404logging->infoMessage("Updated redirects table. Added index to the DISABLED column.");
+        }
+        if (!$f->regexMatchi("final_dest[^\n]+ USING BTREE", $tableSQL)) {
+            if ($f->regexMatchi("KEY[^\n]+final_dest", $tableSQL)) {
+                $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX final_dest";
+                $abj404dao->queryAndGetResults($query);
+            }
+            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX final_dest (`final_dest`) USING BTREE";
+            $abj404dao->queryAndGetResults($query);
+            $abj404logging->infoMessage("Updated redirects table FINAL_DEST column to use a btree index.");
+        }
+        if (!$f->regexMatchi("status[^\n]+TINYINT\(1\)", $tableSQL)) {
+            $query = "ALTER TABLE " . $redirectsTable . "   CHANGE `status` `status` TINYINT(1) NOT NULL, \n" .
+                    "  CHANGE `type` `type` TINYINT(1) NOT NULL, \n" .
+                    "  CHANGE `code` `code` SMALLINT(3) NOT NULL, \n" .
+                    "  CHANGE `disabled` `disabled` TINYINT(1) NOT NULL DEFAULT '0' \n"; 
+            $abj404dao->queryAndGetResults($query);
+            $abj404logging->infoMessage("Updated redirects table STATUS column type to TINYINT.");
+        }
+        if (!$f->regexMatchi("url[^\n]+2048", $tableSQL)) {
+            $query = "ALTER TABLE " . $redirectsTable . " CHANGE `url` `url` VARCHAR(2048)";
+            $abj404dao->queryAndGetResults($query);
+        }
+        if (!$f->regexMatchi("final_dest[^\n]+2048", $tableSQL)) {
+            $query = "ALTER TABLE " . $redirectsTable . " CHANGE `final_dest` `final_dest` VARCHAR(2048)";
+            $abj404dao->queryAndGetResults($query);
+        }
+    }
+
+    function runInitialCreateTables() {
+    	global $wpdb;
+    	$redirectsTable = $wpdb->prefix . "abj404_redirects";
+    	$logsTable = $wpdb->prefix . 'abj404_logsv2';
+    	$lookupTable = $wpdb->prefix . 'abj404_lookup';
+    	$permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+    	$spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
+
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
+        $query = $f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
+        $abj404dao->queryAndGetResults($query);
         
-        $me->updateTableEngineToInnoDB();
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
+        $query = $f->str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
+        $abj404dao->queryAndGetResults($query);
+        
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
+        $query = $f->str_replace('{redirectsTable}', $redirectsTable, $query);
+        $abj404dao->queryAndGetResults($query);
+
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
+        $query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+        $abj404dao->queryAndGetResults($query);
+        
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
+        $query = $f->str_replace('{wp_abj404_lookup}', $lookupTable, $query);
+        $abj404dao->queryAndGetResults($query);
     }
     
     function correctSpellingCacheTable() {
     	global $wpdb;
+    	$spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	$spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';

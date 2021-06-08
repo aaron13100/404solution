@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.25.0 (June 8, 2021) ##
+* FIX: Ignore page types that are supposed to be ignored for page changes (for Vahan).
+
 ## Version 2.24.7 (June 1, 2021) ##
 * FIX: Allow backslashes in regular expressions matches.
 * FIX: Disable automatic updates by WordPress.
