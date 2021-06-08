@@ -38,30 +38,26 @@ $GLOBALS['abj404_whitelist'] = array('127.0.0.1', '::1', 'localhost', 'wealth-ps
 $abj404_autoLoaderClassMap = array();
 foreach (array('includes/php/objs', 'includes/php/wordpress', 'includes/php', 'includes/php',
 		'includes/ajax', 'includes') as $dir) {
-		global $abj404_autoLoaderClassMap;
-		
-		$globInput = ABJ404_PATH . $dir . DIRECTORY_SEPARATOR . '*.php';
-		$files = glob($globInput);
-		foreach ($files as $file) {
-			// /Users/user..../php/Study.php becomes ABJ_FC\Study
-			$pathParts = pathinfo($file);
-			$classNameWhenLoading = 'ABJ_404_Solution_' . $pathParts['filename'];
-			$abj404_autoLoaderClassMap[$classNameWhenLoading] = $file;
-		}
-}
-
-function abj404_autoloader($class) {
 	global $abj404_autoLoaderClassMap;
 	
-	if ($class == 'ABJ_404_Solution_Ajax_TrashLink') {
-		$class == 'ABJ_404_Solution_Ajax_TrashLink';
+	$globInput = ABJ404_PATH . $dir . DIRECTORY_SEPARATOR . '*.php';
+	$files = glob($globInput);
+	foreach ($files as $file) {
+		// /Users/user..../php/Study.php becomes ABJ_FC\Study
+		$pathParts = pathinfo($file);
+		$classNameWhenLoading = 'ABJ_404_Solution_' . $pathParts['filename'];
+		$abj404_autoLoaderClassMap[$classNameWhenLoading] = $file;
 	}
+}
+
+function abj404_autoloaderFunc($class) {
+	global $abj404_autoLoaderClassMap;
 	
 	if (array_key_exists($class, $abj404_autoLoaderClassMap)) {
 		require_once $abj404_autoLoaderClassMap[$class];
 	}
 }
-spl_autoload_register('abj404_autoloader');
+spl_autoload_register('abj404_autoloaderFunc');
 
 // shortcode
 add_shortcode('abj404_solution_page_suggestions', 'abj404_shortCodeListener');
