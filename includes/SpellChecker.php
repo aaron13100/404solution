@@ -42,7 +42,7 @@ class ABJ_404_Solution_SpellChecker {
 		$abj404logging = ABJ_404_Solution_Logging::getInstance();
 		$abj404logic = new ABJ_404_Solution_PluginLogic();
 		$f = ABJ_404_Solution_Functions::getInstance();
-		$options = $abj404logic->getOptions(true);
+		$options = $abj404logic->getOptions();
 		$postType = $post->post_type;
 
 		$acceptedPostTypes = array_filter(explode("\n", 
