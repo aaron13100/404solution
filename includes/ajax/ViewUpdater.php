@@ -10,8 +10,18 @@ if ($GLOBALS['abj404_display_errors']) {
 
 class ABJ_404_Solution_ViewUpdater {
 
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_ViewUpdater();
+		}
+		
+		return self::$instance;
+	}
+		
     static function init() {
-        $me = new ABJ_404_Solution_ViewUpdater();
+        $me = ABJ_404_Solution_ViewUpdater::getInstance();
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxUpdatePaginationLinks', 
                 array($me, 'ABJ_404_Solution_ViewUpdater::getPaginationLinks'));
         // wp_ajax_nopriv_ is for normal users
@@ -19,7 +29,7 @@ class ABJ_404_Solution_ViewUpdater {
     
     function getPaginationLinks() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         global $abj404view;
         
         $rowsPerPage = absint($abj404dao->getPostOrGetSanitize('rowsPerPage'));

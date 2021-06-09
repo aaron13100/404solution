@@ -10,13 +10,13 @@ if ($GLOBALS['abj404_display_errors']) {
 
 class ABJ_404_Solution_Logging {
 
-    private static $instance = null;
-    
     /** If an error happens then we will also output these. */
     private static $storedDebugMessages = array();
 
     /** Used to store the last line sent from the debug file. */
     const LAST_SENT_LINE = 'last_sent_line';
+    
+    private static $instance = null;
     
     public static function getInstance() {
         if (self::$instance == null) {
@@ -31,7 +31,7 @@ class ABJ_404_Solution_Logging {
     
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $options = $abj404logic->getOptions(true);
 
         return (array_key_exists('debug_mode', $options) && $options['debug_mode'] == true);
@@ -157,7 +157,7 @@ class ABJ_404_Solution_Logging {
     /** Email the log file to the plugin developer. */
     function emailErrorLogIfNecessary() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $options = $abj404logic->getOptions(true);
         
         if (!file_exists($this->getDebugFilePath())) {

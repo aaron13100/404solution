@@ -8,6 +8,16 @@ if ($GLOBALS['abj404_display_errors']) {
 
 class ABJ_404_Solution_FileSync {
 	
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_FileSync();
+		}
+		
+		return self::$instance;
+	}
+	
 	function getSyncFilePath($key) {
 		$filePath = ABJ404_PATH . 'temp/' . 'SYNC_FILE_' . $key . '.txt';
 		return $filePath;

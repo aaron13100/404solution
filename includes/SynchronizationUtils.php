@@ -14,6 +14,16 @@ class ABJ_404_Solution_SynchronizationUtils {
 	
 	static $usingFileMode = null;
 	
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_SynchronizationUtils();
+		}
+		
+		return self::$instance;
+	}
+	
 	private function getFileModePath() {
 		return ABJ404_PATH . 'temp/' . 'sync_mode_file.txt';
 	}
@@ -228,7 +238,7 @@ class ABJ_404_Solution_SynchronizationUtils {
     function readOwner($key) {
     	$owner = '';
     	if ($this->isFileMode()) {
-    		$fileSync = new ABJ_404_Solution_FileSync();
+    		$fileSync = ABJ_404_Solution_FileSync::getInstance();
     		$owner = $fileSync->getOwnerFromFile($key);
     		
     	} else {
@@ -239,7 +249,7 @@ class ABJ_404_Solution_SynchronizationUtils {
     }
     function writeOwner($key, $owner) {
     	if ($this->isFileMode()) {
-    		$fileSync = new ABJ_404_Solution_FileSync();
+    		$fileSync = ABJ_404_Solution_FileSync::getInstance();
     		$fileSync->writeOwnerToFile($key, $owner);
     	} else {
     		update_option($key, $owner);
@@ -247,7 +257,7 @@ class ABJ_404_Solution_SynchronizationUtils {
     }
     function deleteOwner($owner, $key) {
     	if ($this->isFileMode()) {
-    		$fileSync = new ABJ_404_Solution_FileSync();
+    		$fileSync = ABJ_404_Solution_FileSync::getInstance();
     		$fileSync->releaseLock($owner, $key);
     	} else {
     		delete_option($key);

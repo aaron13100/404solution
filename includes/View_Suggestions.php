@@ -8,7 +8,17 @@ if ($GLOBALS['abj404_display_errors']) {
 
 class ABJ_404_Solution_View_Suggestions {
 
-    /** 
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_View_Suggestions();
+		}
+		
+		return self::$instance;
+	}
+	
+	/** 
      * @param array $options
      * @return string
      */

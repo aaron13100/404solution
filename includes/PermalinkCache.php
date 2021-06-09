@@ -16,8 +16,18 @@ class ABJ_404_Solution_PermalinkCache {
     /** The maximum number of times in a row to run the hook. */
     const MAX_EXECUTIONS = 15;
     
+    private static $instance = null;
+    
+    public static function getInstance() {
+    	if (self::$instance == null) {
+    		self::$instance = new ABJ_404_Solution_PermalinkCache();
+    	}
+    	
+    	return self::$instance;
+    }
+    
     static function init() {
-        $me = new ABJ_404_Solution_PermalinkCache();
+        $me = ABJ_404_Solution_PermalinkCache::getInstance();
         
         add_action('updated_option', array($me, 'permalinkStructureChanged'), 10, 2);
     }
@@ -53,8 +63,12 @@ class ABJ_404_Solution_PermalinkCache {
      * @throws Exception
      */
     function updatePermalinkCache($maxExecutionTime, $executionCount = 1) {
+    	// check to see if we need to upgrade the database.
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic->getOptions();
+
+        // insert the new rows.
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        
         $results = $abj404dao->updatePermalinkCache();
         $rowsInserted = $results['rows_affected'];
 

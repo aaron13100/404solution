@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://ajexperience.com/flashcards/404-solution/
 
-	Version: 2.25.0
+	Version: 2.25.1
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -89,14 +89,14 @@ function abj404_404listener() {
     	$arrayKeyExists = is_array($options) && array_key_exists('redirect_all_requests', $options);
     	if ($arrayKeyExists && $options['redirect_all_requests'] == 1) {
     		require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-    		$connector = new ABJ_404_Solution_WordPress_Connector();
+    		$connector = ABJ_404_Solution_WordPress_Connector::getInstance();
     		$connector->processRedirectAllRequests();
     		return;
     	}
     }
     
     require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-    $connector = new ABJ_404_Solution_WordPress_Connector();
+    $connector = ABJ_404_Solution_WordPress_Connector::getInstance();
     return $connector->process404();
 }
 
@@ -112,7 +112,7 @@ function abj404_updateLogsHitsTableListener() {
 }
 function abj404_updatePermalinkCacheListener($maxExecutionTime, $executionCount = 1) {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-	$permalinkCache = new ABJ_404_Solution_PermalinkCache();
+	$permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
 	$permalinkCache->updatePermalinkCache($maxExecutionTime, $executionCount);
 }
 add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');

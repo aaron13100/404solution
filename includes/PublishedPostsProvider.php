@@ -22,6 +22,16 @@ class ABJ_404_Solution_PublishedPostsProvider {
 	 * @var bool 	 */
 	private $useDataMode = false;
 	
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_PublishedPostsProvider();
+		}
+		
+		return self::$instance;
+	}
+	
 	/** Use this data instead of querying the database.  
 	 * @param array $data
 	 */

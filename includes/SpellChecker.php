@@ -20,10 +20,20 @@ class ABJ_404_Solution_SpellChecker {
     
 	const MAX_DIST = 2083;
 
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_SpellChecker();
+		}
+		
+		return self::$instance;
+	}
+	
 	static function init() {
 		// any time a page is saved or updated, or the permalink structure changes, then we have to clear
 		// the spelling cache because the results may have changed.
-		$me = new ABJ_404_Solution_SpellChecker();
+		$me = ABJ_404_Solution_SpellChecker::getInstance();
 
 		add_action('updated_option', array($me,'permalinkStructureChanged'), 10, 2);
 		add_action('save_post', array($me,'save_postListener'), 10, 3);
@@ -40,7 +50,7 @@ class ABJ_404_Solution_SpellChecker {
 	function savePostHandler($post_id, $post, $update, $saveOrDelete) {
 		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 		$abj404logging = ABJ_404_Solution_Logging::getInstance();
-		$abj404logic = new ABJ_404_Solution_PluginLogic();
+		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
 		$options = $abj404logic->getOptions();
 		$postType = $post->post_type;
@@ -135,7 +145,7 @@ class ABJ_404_Solution_SpellChecker {
 				$saveOrDelete . ", reason: " . $reason);
 			$abj404dao->removeFromPermalinkCache($post_id);
 			// let's update some links.
-			$plCache = new ABJ_404_Solution_PermalinkCache();
+			$plCache = ABJ_404_Solution_PermalinkCache::getInstance();
 			$plCache->updatePermalinkCache(0.1);
 		}
 
@@ -179,7 +189,7 @@ class ABJ_404_Solution_SpellChecker {
 	function getPermalinkUsingRegEx($requestedURL) {
 		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
-		$abj404logic = new ABJ_404_Solution_PluginLogic();
+		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$options = $abj404logic->getOptions();
 
 		$regexURLsRows = $abj404dao->getRedirectsWithRegEx();
@@ -270,8 +280,8 @@ class ABJ_404_Solution_SpellChecker {
 	 * @return array|null
 	 */
 	function getPermalinkUsingSpelling($requestedURL) {
-		$abj404spellChecker = new ABJ_404_Solution_SpellChecker();
-		$abj404logic = new ABJ_404_Solution_PluginLogic();
+		$abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
+		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$abj404logging = ABJ_404_Solution_Logging::getInstance();
 
 		$options = $abj404logic->getOptions();
@@ -341,7 +351,7 @@ class ABJ_404_Solution_SpellChecker {
 	function findMatchingPosts($requestedURLRaw, $includeCats = '1', $includeTags = '1') {
 		$f = ABJ_404_Solution_Functions::getInstance();
 		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-		$abj404logic = new ABJ_404_Solution_PluginLogic();
+		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 
 		$options = $abj404logic->getOptions();
 		// the number of pages to cache is (max suggestions) + (the number of exlude pages).
@@ -467,7 +477,7 @@ class ABJ_404_Solution_SpellChecker {
 
 	function matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rowType) {
 		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-		$abj404logic = new ABJ_404_Solution_PluginLogic();
+		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
 
 		$rows = $abj404dao->getPublishedCategories();
@@ -502,7 +512,7 @@ class ABJ_404_Solution_SpellChecker {
 
 	function matchOnTags($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rowType) {
 		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-		$abj404logic = new ABJ_404_Solution_PluginLogic();
+		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
 
 		$rows = $abj404dao->getPublishedTags();
@@ -536,7 +546,7 @@ class ABJ_404_Solution_SpellChecker {
 	}
 
 	function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rowType) {
-		$abj404logic = new ABJ_404_Solution_PluginLogic();
+		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
 		$abj404logger = ABJ_404_Solution_Logging::getInstance();
 
@@ -589,9 +599,9 @@ class ABJ_404_Solution_SpellChecker {
 
 	function initializePublishedPostsProvider() {
 		if ($this->publishedPostsProvider == null) {
-			$this->publishedPostsProvider = new ABJ_404_Solution_PublishedPostsProvider();
+			$this->publishedPostsProvider = ABJ_404_Solution_PublishedPostsProvider::getInstance();
 		}
-		$plCache = new ABJ_404_Solution_PermalinkCache();
+		$plCache = ABJ_404_Solution_PermalinkCache::getInstance();
 		$plCache->updatePermalinkCache(1);
 	}
 
@@ -649,7 +659,7 @@ class ABJ_404_Solution_SpellChecker {
 	 * @return array
 	 */
 	function getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rowType, $rows = null) {
-		$abj404logic = new ABJ_404_Solution_PluginLogic();
+		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$abj404logging = ABJ_404_Solution_Logging::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
 
