@@ -10,12 +10,22 @@ if ($GLOBALS['abj404_display_errors']) {
 
 class ABJ_404_Solution_ShortCode {
     
-    /** 
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_ShortCode();
+		}
+		
+		return self::$instance;
+	}
+	
+	/** 
      * @param array $atts
      */
     static function shortcodePageSuggestions( $atts ) {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
         // Attributes

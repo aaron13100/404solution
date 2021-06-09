@@ -148,7 +148,7 @@ class ABJ_404_Solution_DataAccess {
         
         // custom table replacements.
         // for some strings (/404solution-site/%BA%D0%25/) the mb_ereg_replace doesn't work.
-        $fpreg = new ABJ_404_Solution_FunctionsPreg();
+        $fpreg = ABJ_404_Solution_FunctionsPreg::getInstance();
         $query = $fpreg->regexReplace('[{]wp_abj404_(.*?)[}]', $wpdb->prefix . "abj404_\\1", $query);
         
         return $query;
@@ -330,7 +330,7 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getIDsNeededForPermalinkCache() {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
         // get the valid post types
@@ -977,7 +977,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function logRedirectHit($requestedURL, $action, $matchReason, $requestedURLDetail = null) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $now = time();
@@ -1094,7 +1094,7 @@ class ABJ_404_Solution_DataAccess {
     function deleteOldRedirectsCron() {
         global $wpdb;
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
@@ -1243,7 +1243,7 @@ class ABJ_404_Solution_DataAccess {
         }
         
         // add some entries to the permalink cache if necessary
-        $abj404permalinkCache = new ABJ_404_Solution_PermalinkCache();
+        $abj404permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
         $rowsUpdated = $abj404permalinkCache->updatePermalinkCache(15);
         $message .= ", Permlink cache rows updated: " . $rowsUpdated;
         
@@ -1253,7 +1253,7 @@ class ABJ_404_Solution_DataAccess {
         $abj404logging->infoMessage($message);
         
         // fix any lingering errors
-        $upgradesEtc = new ABJ_404_Solution_DatabaseUpgradesEtc();
+        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $upgradesEtc->createDatabaseTables();
         
         $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
@@ -1450,7 +1450,7 @@ class ABJ_404_Solution_DataAccess {
     function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '', 
     	$limitResults = '', $orderResults = '', $extraWhereClause = '') {
         global $wpdb;
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
@@ -1515,7 +1515,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function getPublishedImagesIDs() {
         global $wpdb;
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
@@ -1550,7 +1550,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function getPublishedTags() {
         global $wpdb;
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
@@ -1586,7 +1586,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function getPublishedCategories($term_id = null) {
         global $wpdb;
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         

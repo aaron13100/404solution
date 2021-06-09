@@ -20,6 +20,16 @@ class ABJ_404_Solution_PluginLogic {
 	 * @var bool */
     private $currentlyUpdatingDatabaseVersion = false;
     
+    private static $instance = null;
+    
+    public static function getInstance() {
+    	if (self::$instance == null) {
+    		self::$instance = new ABJ_404_Solution_PluginLogic();
+    	}
+    	
+    	return self::$instance;
+    }
+    
     function __construct() {
     	$this->f = ABJ_404_Solution_Functions::getInstance();
     	$this->urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
@@ -80,7 +90,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function initializeIgnoreValues($urlRequest, $urlSlugOnly) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $options = $abj404logic->getOptions();
@@ -180,7 +190,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function sendTo404Page($requestedURL, $reason = '') {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $options = $abj404logic->getOptions();
@@ -295,7 +305,7 @@ class ABJ_404_Solution_PluginLogic {
         $this->currentlyUpdatingDatabaseVersion = false;
         
         // update the permalink cache because updating the plugin version may affect it.
-        $permalinkCache = new ABJ_404_Solution_PermalinkCache();
+        $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
         $permalinkCache->updatePermalinkCache(1);
         
         return $returnValue;
@@ -309,7 +319,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return array
      */
     function updateToNewVersionAction($options) {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         global $wpdb;
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -323,7 +333,7 @@ class ABJ_404_Solution_PluginLogic {
                 " to " . ABJ404_VERSION . " (begin).");
 
         // wp_abj404_logsv2 exists since 1.7.
-        $upgradesEtc = new ABJ_404_Solution_DatabaseUpgradesEtc();
+        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $upgradesEtc->createDatabaseTables();
 
         // abj404_duplicateCronAction is no longer needed as of 1.7.
@@ -480,7 +490,7 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     function doUpdateDBVersionOption() {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 
         $options = $abj404logic->getOptions(true);
 
@@ -517,7 +527,7 @@ class ABJ_404_Solution_PluginLogic {
      * @global type $abj404dao
      */
     static function runOnPluginActivation() {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         add_option('abj404_settings', '', '', 'no');
@@ -529,10 +539,10 @@ class ABJ_404_Solution_PluginLogic {
             $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         }
         if (!isset($abj404logic)) {
-            $abj404logic = new ABJ_404_Solution_PluginLogic();
+            $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         }
         
-        $upgradesEtc = new ABJ_404_Solution_DatabaseUpgradesEtc();
+        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $upgradesEtc->createDatabaseTables();
 
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
@@ -560,7 +570,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return string
      */
     function handlePluginAction($action, &$sub) {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -1529,7 +1539,7 @@ class ABJ_404_Solution_PluginLogic {
 	        update_option('abj404_settings', $new_options);
 	        
 	        // update the permalink cache because the post types included may have changed.
-	        $permalinkCache = new ABJ_404_Solution_PermalinkCache();
+	        $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
 	        $permalinkCache->updatePermalinkCache(2);
 	        
 	        $returnData['error'] = $message;

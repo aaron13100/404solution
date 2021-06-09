@@ -42,7 +42,7 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         
         $urlToParse = urldecode($_SERVER['REQUEST_URI']);
       	
@@ -165,7 +165,7 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
      * @return string
      */
     function getOnlyTheSlug() {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $path = $this->getRequestURIWithoutCommentsPage();
         return $abj404logic->removeHomeDirectory($path);
     }

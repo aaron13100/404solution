@@ -15,7 +15,17 @@ if ($GLOBALS['abj404_display_errors']) {
 
 class ABJ_404_Solution_DatabaseUpgradesEtc {
 
-    /** Create the tables when the plugin is first activated. 
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_DatabaseUpgradesEtc();
+		}
+		
+		return self::$instance;
+	}
+	
+	/** Create the tables when the plugin is first activated. 
      * @global type $wpdb
      */
     function createDatabaseTables() {
@@ -26,7 +36,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $refreshPermalinkCache = $this->doPermalinkCacheTableUpdates();
         $this->doLogsTableUpdates();
         
-        $me = new ABJ_404_Solution_DatabaseUpgradesEtc();
+        $me = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $me->correctSpellingCacheTable();        
         
         $me->correctCollations();
@@ -34,7 +44,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $me->updateTableEngineToInnoDB();
 
         if ($refreshPermalinkCache) {
-            $plCache = new ABJ_404_Solution_PermalinkCache();
+            $plCache = ABJ_404_Solution_PermalinkCache::getInstance();
             $plCache->updatePermalinkCache(1);
         }
     }
@@ -450,7 +460,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
     
     function shouldUpdate($pluginInfo) {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $options = $abj404logic->getOptions(true);

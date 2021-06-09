@@ -88,6 +88,10 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.25.1 (June 9, 2021) ##
+* FIX: Avoid an unimportant SQL error when upgrading to the latest version.
+* Improvement: Maybe use less memory.
+
 ## Version 2.25.0 (June 8, 2021) ##
 * FIX: Ignore page types that are supposed to be ignored for page changes (for Vahan).
 

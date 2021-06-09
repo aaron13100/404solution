@@ -10,16 +10,26 @@ if ($GLOBALS['abj404_display_errors']) {
 
 class ABJ_404_Solution_Ajax_Php {
 
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_Ajax_Php();
+		}
+		
+		return self::$instance;
+	}
+	
 	/** Find logs to display. */
 	static function updateOptions() {
-		$abj404logic = new ABJ_404_Solution_PluginLogic();
+		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		
 		$abj404logic->updateOptionsFromPOST();
 	}
 	
     /** Find logs to display. */
     static function echoViewLogsFor() {
-        $abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
+    	$abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();;
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
@@ -48,8 +58,8 @@ class ABJ_404_Solution_Ajax_Php {
     
     /** Find pages to redirect to that match a search term, then echo the results in a json format. */
     static function echoRedirectToPages() {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404AjaxPhp = new ABJ_404_Solution_Ajax_Php();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         

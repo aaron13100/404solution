@@ -10,7 +10,17 @@ if ($GLOBALS['abj404_display_errors']) {
 
 class ABJ_404_Solution_WordPress_Connector {
 
-    /** Setup. */
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_WordPress_Connector();
+		}
+		
+		return self::$instance;
+	}
+	
+	/** Setup. */
     static function init() {
     	add_filter('auto_update_plugin', 'ABJ_404_Solution_WordPress_Connector::excludePluginsFromAutoUpdate', 10, 2);
     	
@@ -110,7 +120,7 @@ class ABJ_404_Solution_WordPress_Connector {
      */
     static function addSettingsLinkToPluginPage($links) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         
         if (!is_array($links)) {
         	$abj404logging->infoMessage("The settings links variable was not an array. " . 
@@ -142,7 +152,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @global type $abj404shortCode
      */
     function suggestions() {
-        $abj404shortCode = new ABJ_404_Solution_ShortCode();
+        $abj404shortCode = ABJ_404_Solution_ShortCode::getInstance();
 
         if (is_404()) {
             $content = $abj404shortCode->shortcodePageSuggestions(array());
@@ -152,7 +162,7 @@ class ABJ_404_Solution_WordPress_Connector {
     }
 
     function processRedirectAllRequests() {
-    	$abj404logic = new ABJ_404_Solution_PluginLogic();
+    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
     	$options = $abj404logic->getOptions();
     	
     	$userRequest = ABJ_404_Solution_UserRequest::getInstance();
@@ -185,9 +195,9 @@ class ABJ_404_Solution_WordPress_Connector {
         }
         
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
-        $abj404connector = new ABJ_404_Solution_WordPress_Connector();
-        $abj404spellChecker = new ABJ_404_Solution_SpellChecker();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404connector = ABJ_404_Solution_WordPress_Connector::getInstance();
+        $abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
 
         
@@ -342,8 +352,8 @@ class ABJ_404_Solution_WordPress_Connector {
     
     function tryRegexRedirect($options, $requestedURL) {
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    	$abj404logic = new ABJ_404_Solution_PluginLogic();
-    	$abj404spellChecker = new ABJ_404_Solution_SpellChecker();
+    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+    	$abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
     	
     	$regexPermalink = $abj404spellChecker->getPermalinkUsingRegEx($requestedURL);
     	if (!empty($regexPermalink)) {
@@ -394,7 +404,7 @@ class ABJ_404_Solution_WordPress_Connector {
     function processRedirect($requestedURL, $redirect, $matchReason) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 
         if (( $redirect['status'] != ABJ404_STATUS_MANUAL && $redirect['status'] != ABJ404_STATUS_AUTO ) || $redirect['disabled'] != 0) {
             // It's a redirect that has been deleted, ignored, or captured.
@@ -437,7 +447,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         global $pagenow;
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         global $abj404view;
 
         if (current_user_can('manage_options')) {
@@ -461,7 +471,7 @@ class ABJ_404_Solution_WordPress_Connector {
     static function addMainSettingsPageLink() {
         global $menu;
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         

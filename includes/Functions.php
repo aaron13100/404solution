@@ -297,7 +297,7 @@ abstract class ABJ_404_Solution_Functions {
 	        	if ($options == null) {
 	        		$abj404logging->errorMessage("You forgot to pass the options and an external " . 
 	        			"destination is being used.");
-	        		$abj404logic = new ABJ_404_Solution_PluginLogic();
+	        		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 	        		$options = $abj404logic->getOptions();
 	        	}
 	        	$urlDestination = (array_key_exists('dest404pageURL', $options) &&

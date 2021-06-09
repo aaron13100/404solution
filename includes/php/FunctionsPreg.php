@@ -8,8 +8,18 @@ if ($GLOBALS['abj404_display_errors']) {
 
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
-    
-    /** Use this to find a delimiter. 
+
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_FunctionsPreg();
+		}
+		
+		return self::$instance;
+	}
+	
+	/** Use this to find a delimiter. 
      * @var array */
     private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
     

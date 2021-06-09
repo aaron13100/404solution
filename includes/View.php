@@ -11,7 +11,17 @@ if ($GLOBALS['abj404_display_errors']) {
 
 class ABJ_404_Solution_View {
 
-    /** Get the text to notify the user when some URLs have been captured and need attention. 
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ABJ_404_Solution_View();
+		}
+		
+		return self::$instance;
+	}
+	
+	/** Get the text to notify the user when some URLs have been captured and need attention. 
      * @param int $captured the number of captured URLs
      * @return string html
      */
@@ -35,7 +45,7 @@ class ABJ_404_Solution_View {
      */
     static function handleMainAdminPageActionAndDisplay() {
         global $abj404view;
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
@@ -498,7 +508,7 @@ class ABJ_404_Solution_View {
     }
     
     function echoAdminOptionsPage() {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         global $abj404view;
         global $abj404viewSuggestions;
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -562,7 +572,7 @@ class ABJ_404_Solution_View {
      */
     function echoAdminEditRedirectPage() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
@@ -767,7 +777,7 @@ class ABJ_404_Solution_View {
 
     function echoRedirectDestinationOptionsCatsTags($dest) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $content = "";
         $content .= "\n" . '<optgroup label="Categories">' . "\n";
         
@@ -836,7 +846,7 @@ class ABJ_404_Solution_View {
      * @global type $abj404dao
      */
     function echoAdminCapturedURLsPage() {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $sub = 'abj404_captured';
         $f = ABJ_404_Solution_Functions::getInstance();
 
@@ -912,7 +922,7 @@ class ABJ_404_Solution_View {
     
     function getCapturedURLSPageTable($sub) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $tableOptions = $abj404logic->getTableOptions($sub);
@@ -1093,7 +1103,7 @@ class ABJ_404_Solution_View {
      * @global type $abj404logic
      */
     function echoAdminRedirectsPage() {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $sub = 'abj404_redirects';
@@ -1193,7 +1203,7 @@ class ABJ_404_Solution_View {
     
     function getAdminRedirectsPageTable($sub) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
@@ -1394,7 +1404,7 @@ class ABJ_404_Solution_View {
     }
     
     function echoAddManualRedirect($tableOptions) {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
 
         $options = $abj404logic->getOptions();
@@ -1511,7 +1521,7 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageAutoRedirects($options) {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
@@ -1582,7 +1592,7 @@ class ABJ_404_Solution_View {
 
     function getAdminOptionsPageAdvancedSettings($options) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
 
@@ -1742,7 +1752,7 @@ class ABJ_404_Solution_View {
      */
     function echoAdminLogsPage() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $sub = 'abj404_logs';
@@ -1796,7 +1806,7 @@ class ABJ_404_Solution_View {
     
     function getAdminLogsPageTable($sub) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $tableOptions = $abj404logic->getTableOptions($sub);
@@ -1905,7 +1915,7 @@ class ABJ_404_Solution_View {
      */
     function getTableColumns($sub, $columns) {
     	$f = ABJ_404_Solution_Functions::getInstance();
-    	$abj404logic = new ABJ_404_Solution_PluginLogic();
+    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $tableOptions = $abj404logic->getTableOptions($sub);
         
         $html = "<tr>";
@@ -2003,7 +2013,7 @@ class ABJ_404_Solution_View {
      */
     function getPaginationLinks($sub, $showSearchFilter = true) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $tableOptions = $abj404logic->getTableOptions($sub);
@@ -2119,7 +2129,7 @@ class ABJ_404_Solution_View {
      * @param array $tableOptions
      */
     function getTabFilters($sub, $tableOptions) {
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 
         if (count($tableOptions) == 0) {
         	$tableOptions = $abj404logic->getTableOptions($sub);
@@ -2137,7 +2147,7 @@ class ABJ_404_Solution_View {
     
     function getSubSubSub($sub) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         global $abj404_redirect_types;
         global $abj404_captured_types;

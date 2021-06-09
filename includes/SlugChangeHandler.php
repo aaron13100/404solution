@@ -24,7 +24,7 @@ class ABJ_404_Solution_SlugChangeHandler {
     	}
     	
     	// only automatically create redirects if we're supposed to.
-    	$abj404logic = new ABJ_404_Solution_PluginLogic();
+    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
     	$options = $abj404logic->getOptions();
     	if ($options['auto_redirects'] != '1') {
     		$abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . ": Auto-redirects off " . 
@@ -41,7 +41,7 @@ class ABJ_404_Solution_SlugChangeHandler {
     	
     	// get the old slug
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = new ABJ_404_Solution_PluginLogic();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $options = $abj404logic->getOptions();
         
         $oldURL = $abj404dao->getPermalinkFromCache($post_id);
