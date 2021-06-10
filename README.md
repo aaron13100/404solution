@@ -88,8 +88,11 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.25.2 (June 10, 2021) ##
+* FIX: Definitely avoid an unimportant message when upgrading to the latest version.
+
 ## Version 2.25.1 (June 9, 2021) ##
-* FIX: Avoid an unimportant SQL error when upgrading to the latest version.
+* FIX: Maybe avoid an unimportant SQL error when upgrading to the latest version.
 * Improvement: Maybe use less memory.
 
 ## Version 2.25.0 (June 8, 2021) ##
