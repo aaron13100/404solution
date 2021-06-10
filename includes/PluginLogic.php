@@ -291,7 +291,7 @@ class ABJ_404_Solution_PluginLogic {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         if ($this->currentlyUpdatingDatabaseVersion) {
-            $abj404logging->errorMessage("Avoiding infinite loop on database update.");
+            $abj404logging->debugMessage("Avoiding infinite loop on database update.");
             return $options;
         }
 
