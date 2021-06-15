@@ -310,17 +310,27 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	$result = $abj404dao->getMyISAMTables();
+    	$tableNamesString = '{wp_abj404_lookup},{wp_abj404_permalink_cache},' .
+    		'{wp_abj404_redirects},{wp_abj404_spelling_cache}';
+    	$tableNamesString = $abj404dao->doTableNameReplacements($tableNamesString);
+    	$tableNames = explode(',', $tableNamesString);
     	
     	// if any rows are found then update the tables.
     	if (array_key_exists('rows', $result) && !empty($result['rows'])) {
     		$rows = $result['rows'];
     		foreach ($rows as $row) {
-    			$schema = $row['table_schema'];
-    			$table = $row['table_name'];
-    			$query = 'alter table `' . $schema . '`.`' . $table . 
-    				'` engine = InnoDB;';
-    			$abj404logging->infoMessage("Updating " . $schema . '.' . 
-    				$table . "to InnoDB.");
+    			array_push($tableNames, 
+    				array_key_exists('table_name', $row) ? $row['table_name'] :
+    				(array_key_exists('TABLE_NAME', $row) ? $row['TABLE_NAME'] : ''));
+    		}
+    		
+    		// remove duplicates and empties
+    		$tableNames = array_unique($tableNames);
+    		$tableNames = array_filter($tableNames);
+    		
+    		foreach ($tableNames as $table) {
+    			$query = 'alter table `' . $table . '` engine = InnoDB;';
+    			$abj404logging->infoMessage("Updating " . $table . "to InnoDB.");
     			$abj404dao->queryAndGetResults($query);
     		}
     	}

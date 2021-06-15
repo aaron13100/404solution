@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.25.3 (June 15, 2021) ##
+* Improvement: Avoid a warning message for a debug file participant.
+
 ## Version 2.25.2 (June 10, 2021) ##
 * FIX: Definitely avoid an unimportant message when upgrading to the latest version.
 
