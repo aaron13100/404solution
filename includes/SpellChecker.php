@@ -707,7 +707,7 @@ class ABJ_404_Solution_SpellChecker {
 				}
             	
 			} else if ($rowType == 'tags') {
-				$id = $row['term_id'];
+				$id = array_key_exists('term_id', $row) ? $row['term_id'] : null;
             	
 			} else if ($rowType == 'categories') {
 				$id = $row['term_id'];
