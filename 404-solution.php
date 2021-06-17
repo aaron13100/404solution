@@ -32,8 +32,8 @@
 define('ABJ404_FILE', __FILE__);
 define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
 $GLOBALS['abj404_display_errors'] = false;
-$GLOBALS['abj404_whitelist'] = array('127.0.0.1', '::1', 'localhost', 'wealth-psychology.com',
-		'www.wealth-psychology.com', 'wealth-psychology', 'ajexperience.com', 'www.ajexperience.com');
+$GLOBALS['abj404_whitelist'] = array('127.0.0.1', '::1', 'localhost', 
+		'ajexperience.com', 'www.ajexperience.com');
 
 $abj404_autoLoaderClassMap = array();
 foreach (array('includes/php/objs', 'includes/php/wordpress', 'includes/php', 'includes/php',
@@ -78,8 +78,8 @@ add_action('template_redirect', 'abj404_404listener', 9);
 function abj404_404listener() {
 	// always ignore admin screens and login requests.
 	$isLoginScreen = (false !== stripos(wp_login_url(), $_SERVER['SCRIPT_NAME']));
-	$isAdmin = is_admin();
-	if ($isAdmin || $isLoginScreen) {
+	$isCurrentlyViewingAnAdminPage = is_admin();
+	if ($isCurrentlyViewingAnAdminPage || $isLoginScreen) {
         return;
     }
     
@@ -122,10 +122,16 @@ add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheList
 
 /** This only runs after WordPress is done enqueuing scripts. */
 function abj404_loadSomethingWhenWordPressIsReady() {
-	if (array_key_exists('SERVER_NAME', $_SERVER) && isset($_SERVER['SERVER_NAME']) &&
-		in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])
-		&& (!function_exists('wp_get_current_user') || current_user_can('administrator'))) {
-			
+	$serverName = '(not found)';
+	if (array_key_exists('SERVER_NAME', $_SERVER) && isset($_SERVER['SERVER_NAME'])) {
+		$serverName = $_SERVER['SERVER_NAME'];
+	}
+	$whiteList = $GLOBALS['abj404_whitelist'];
+	$serverNameIsInTheWhiteList = in_array($serverName, $whiteList);
+	$userIsAnAdminUser = function_exists('wp_get_current_user') && 
+		current_user_can('administrator');
+	
+	if ($serverNameIsInTheWhiteList && $userIsAnAdminUser) {
 		$GLOBALS['abj404_display_errors'] = true;
 	}
 }
