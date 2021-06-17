@@ -1,17 +1,18 @@
 <?php
 
-// turn on debug for localhost etc
-if ($GLOBALS['abj404_display_errors']) {
-	error_reporting(E_ALL);
-    ini_set('display_errors', '1');
-}
-
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 
 class ABJ_404_Solution_ErrorHandler {
+	
+	/** Keep a reference to the original error handler so we can use it later. */
+	static $originalErrorHandler = null;
 
     /** Setup. */
     static function init() {
+    	// store the original error handler.
+    	self::$originalErrorHandler = set_error_handler(function(){});
+    	restore_error_handler();
+    	
         // set to the user defined error handler
         set_error_handler("ABJ_404_Solution_ErrorHandler::NormalErrorHandler");
         register_shutdown_function('ABJ_404_Solution_ErrorHandler::FatalErrorHandler');
@@ -32,7 +33,16 @@ class ABJ_404_Solution_ErrorHandler {
             // if the error file does not contain the name of our plugin then we ignore it.
             $pluginFolder = $f->substr(ABJ404_NAME, 0, $f->strpos(ABJ404_NAME, '/'));
             if ($f->strpos($errfile, $pluginFolder) === false) {
-                return false;
+            	if ($GLOBALS['abj404_display_errors']) {
+            		error_reporting(E_ALL);
+            		ini_set('display_errors', '1');
+            	}
+            	// try calling the original error handler.
+            	if (is_callable(self::$originalErrorHandler)) {
+            		return call_user_func_array(self::$originalErrorHandler,
+            			array($errno, $errstr, $errfile, $errline));
+            	}
+            	return false;
             }
             
             if ($errno == 2 && 
@@ -76,7 +86,17 @@ class ABJ_404_Solution_ErrorHandler {
         } catch (Exception $ex) { 
             // ignored
         }
-        /* Execute the PHP internal error handler anyway. */
+        
+        // show all warnings and errors.
+        if ($GLOBALS['abj404_display_errors']) {
+	        error_reporting(E_ALL);
+	        ini_set('display_errors', '1');
+        }
+        // try calling the original error handler.
+        if (is_callable(self::$originalErrorHandler)) {
+        	return call_user_func_array(self::$originalErrorHandler,
+        		array($errno, $errstr, $errfile, $errline));
+        }
         return false;
     }
 
