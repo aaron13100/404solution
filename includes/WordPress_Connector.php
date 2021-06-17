@@ -1,11 +1,5 @@
 <?php
 
-// turn on debug for localhost etc
-if ($GLOBALS['abj404_display_errors']) {
-	error_reporting(E_ALL);
-    ini_set('display_errors', '1');
-}
-
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 
 class ABJ_404_Solution_WordPress_Connector {

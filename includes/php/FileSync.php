@@ -1,11 +1,5 @@
 <?php
 
-// turn on debug for localhost etc
-if ($GLOBALS['abj404_display_errors']) {
-	error_reporting(E_ALL);
-    ini_set('display_errors', '1');
-}
-
 class ABJ_404_Solution_FileSync {
 	
 	private static $instance = null;
