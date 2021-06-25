@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: https://ajexperience.com/flashcards/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.25.3
+Version: 2.25.4
 Tested up to: 5.7
-Stable tag: 2.25.3
+Stable tag: 2.25.4
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -80,6 +80,10 @@ Please try this website for studying Japanese flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.25.4 (June 25, 2021) =
+* Improvement: Maybe avoid the "The plugin does not have a valid header" issue.
+* Improvement: Use less code for error display and testing.
 
 = Version 2.25.3 (June 15, 2021) =
 * Improvement: Avoid a warning message for a debug file participant.
