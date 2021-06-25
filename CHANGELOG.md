@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.25.4 (June 25, 2021) ##
+* Improvement: Maybe avoid the "The plugin does not have a valid header" issue.
+* Improvement: Use less code for error display and testing.
+
 ## Version 2.25.3 (June 15, 2021) ##
 * Improvement: Avoid a warning message for a debug file participant.
 
