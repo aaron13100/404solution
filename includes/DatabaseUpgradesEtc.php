@@ -325,7 +325,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		foreach ($tableNames as $table) {
     			$query = 'alter table `' . $table . '` engine = InnoDB;';
     			$abj404logging->infoMessage("Updating " . $table . "to InnoDB.");
-    			$abj404dao->queryAndGetResults($query);
+    			// This was causing an "Unknown storage engine 'InnoDB'" message for some people
+    			// so we'll ignore any errors.
+    			$abj404dao->queryAndGetResults($query, 
+    				array("log_errors" => false));
     		}
     	}
     }
