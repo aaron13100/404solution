@@ -30,21 +30,24 @@ class ABJ_404_Solution_ErrorHandler {
         $f = ABJ_404_Solution_Functions::getInstance();
         $onlyAWarning = false;
         try {
-            // if the error file does not contain the name of our plugin then we ignore it.
-            $pluginFolder = $f->substr(ABJ404_NAME, 0, $f->strpos(ABJ404_NAME, '/'));
-            if ($f->strpos($errfile, $pluginFolder) === false) {
-            	if ($GLOBALS['abj404_display_errors']) {
-            		error_reporting(E_ALL);
-            		ini_set('display_errors', '1');
-            	}
-            	// try calling the original error handler.
-            	if (is_callable(self::$originalErrorHandler)) {
-            		return call_user_func_array(self::$originalErrorHandler,
-            			array($errno, $errstr, $errfile, $errline));
-            	}
-            	return false;
-            }
-            
+        	// if the error file does not contain the name of our plugin then we ignore it.
+        	$pluginFolder = $f->substr(ABJ404_NAME, 0, $f->strpos(ABJ404_NAME, '/'));
+        	if ($f->strpos($errfile, $pluginFolder) === false) {
+        		// try calling the original error handler.
+        		if (is_callable(self::$originalErrorHandler)) {
+        			return call_user_func_array(self::$originalErrorHandler,
+        				array($errno, $errstr, $errfile, $errline));
+        		}
+        		return false;
+        		
+        	} else {
+        		// for our own plugin errors make sure we see them.
+        		if ($GLOBALS['abj404_display_errors']) {
+        			error_reporting(E_ALL);
+        			ini_set('display_errors', '1');
+        		}
+        	}
+        	
             if ($errno == 2 && 
             	$f->strpos($errstr, 
             			"Cannot modify header information - headers already sent by") !== false) {
