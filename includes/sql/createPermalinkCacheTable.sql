@@ -6,6 +6,6 @@ CREATE TABLE IF NOT EXISTS `{wp_abj404_permalink_cache}` (
     `url_length` INT NULL,
 PRIMARY KEY (`id`),
 INDEX (`url_length`)
-) ENGINE=InnoDB COMMENT='404 Solution Plugin Permalinks Cache Table'
+) COMMENT='404 Solution Plugin Permalinks Cache Table'
 
 

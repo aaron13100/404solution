@@ -22,7 +22,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	/** Create the tables when the plugin is first activated. 
      * @global type $wpdb
      */
-    function createDatabaseTables() {
+    function createDatabaseTables($updatingToNewVersion = false) {
         $refreshPermalinkCache = false;
         
         $this->runInitialCreateTables();
@@ -31,7 +31,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $this->doLogsTableUpdates();
         
         $me = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $me->correctSpellingCacheTable();        
+        $me->correctSpellingCacheTable($updatingToNewVersion);        
         
         $me->correctCollations();
         
@@ -246,7 +246,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $abj404dao->queryAndGetResults($query);
     }
     
-    function correctSpellingCacheTable() {
+    function correctSpellingCacheTable($updatingToNewVersion = false) {
     	global $wpdb;
     	$spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -262,7 +262,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	// look for this line.
     	// UNIQUE KEY `url` (`url`(250)) USING BTREE
     	if (!$f->regexMatchi("UNIQUE KEY `url[^\n]+[\d]+[^\n]+ USING BTREE", $tableSQL) ||
-            !$f->regexMatchi("ENGINE[^\n]*=[^\n]*InnoDB", $tableSQL)) {
+    		$updatingToNewVersion) {
             
     		if ($f->regexMatchi("KEY[^\n]+url", $tableSQL)) {
     			$query = "ALTER TABLE " . $spellingCacheTable . " DROP INDEX url";
@@ -271,7 +271,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
             // make it use InnoDB if it doesn't already.
             $query = 'alter table ' . $spellingCacheTable . ' engine = InnoDB;';
-            $abj404dao->queryAndGetResults($query);
+            $abj404dao->queryAndGetResults($query, array("log_errors" => false));
 
     		// the column will be unique so we remove any data that might not be unique.
     		$query = "truncate TABLE " . $spellingCacheTable;
