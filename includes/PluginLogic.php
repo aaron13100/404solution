@@ -328,7 +328,7 @@ class ABJ_404_Solution_PluginLogic {
 
         // wp_abj404_logsv2 exists since 1.7.
         $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $upgradesEtc->createDatabaseTables();
+        $upgradesEtc->createDatabaseTables(true);
 
         // abj404_duplicateCronAction is no longer needed as of 1.7.
         wp_clear_scheduled_hook('abj404_duplicateCronAction');

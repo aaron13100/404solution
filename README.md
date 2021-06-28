@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.25.5 (June 28, 2021) ##
+* Improvement: Ignore the "Unknown storage engine 'InnoDB'" message that some debug file participant is sending me every day. 
+
 ## Version 2.25.4 (June 25, 2021) ##
 * Improvement: Maybe avoid the "The plugin does not have a valid header" issue.
 * Improvement: Use less code for error display and testing.
