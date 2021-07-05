@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_logsv2} (
     `requested_url_detail` varchar(2048) DEFAULT NULL,
     `username` bigint(20) DEFAULT NULL,
     `dest_url` varchar(512) NOT NULL,
-    `min_log_id` boolean DEFAULT NULL,
+    `min_log_id` tinyint(1) DEFAULT NULL,
     PRIMARY KEY  (`id`),
     KEY `timestamp` (`timestamp`),
     KEY `requested_url` (`requested_url`(255)) USING BTREE,

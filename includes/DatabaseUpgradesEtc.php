@@ -23,198 +23,42 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @global type $wpdb
      */
     function createDatabaseTables($updatingToNewVersion = false) {
-        $refreshPermalinkCache = false;
+    	$this->runInitialCreateTables();
         
-        $this->runInitialCreateTables();
-        $this->doRedirectsTableUpdates();
-        $refreshPermalinkCache = $this->doPermalinkCacheTableUpdates();
-        $this->doLogsTableUpdates();
+        $this->correctCollations();
         
-        $me = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $me->correctSpellingCacheTable($updatingToNewVersion);        
+        $this->updateTableEngineToInnoDB();
         
-        $me->correctCollations();
+        $this->createIndexes();
         
-        $me->updateTableEngineToInnoDB();
-
-        if ($refreshPermalinkCache) {
-            $plCache = ABJ_404_Solution_PermalinkCache::getInstance();
-            $plCache->updatePermalinkCache(1);
-        }
+        // we could do this only when a table is created or when the "meta" column is created
+        // but it doesn't take long anyway so we do it every night.
+        $plCache = ABJ_404_Solution_PermalinkCache::getInstance();
+        $plCache->updatePermalinkCache(1);
     }
-
-    function doLogsTableUpdates() {
-    	global $wpdb;
-    	$logsTable = $wpdb->prefix . 'abj404_logsv2';
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-
-        $result = $abj404dao->queryAndGetResults("show create table " . $logsTable);
-        // this encode/decode turns the results into an array from a "stdClass"
-        $rows = $result['rows'];
-        $row1 = array_values($rows[0]);
-        $tableSQL = $row1[1];
-        // if the column does not have btree then drop and recreate the index. ""
-        if (!$f->regexMatchi("requested_url[^\n]+ USING BTREE", $tableSQL)) {
-            if ($f->regexMatchi("KEY[^\n]+requested_url", $tableSQL)) {
-                $query = "ALTER TABLE " . $logsTable . " DROP INDEX requested_url";
-                $abj404dao->queryAndGetResults($query);
-            }
-            $query = "ALTER TABLE " . $logsTable . " ADD INDEX requested_url (`requested_url`) USING BTREE";
-            $abj404dao->queryAndGetResults($query);
-        }
-        if ($f->regexMatchi("referrer2[^\n]+", $tableSQL)) {
-            $query = 'ALTER TABLE ' . $logsTable . ' drop column `referrer2`';
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Dropped column referrer2 on " . $logsTable);
-        }
-        if (!$f->regexMatchi("referrer[^\n]+DEFAULT NULL", $tableSQL)) {
-            $query = 'ALTER TABLE ' . $logsTable . ' CHANGE `referrer` `referrer` VARCHAR(512) NULL DEFAULT NULL';
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Changed referrer to allow null on " . $logsTable);
-        }
-        if (!$f->regexMatchi("requested_url_detail", $tableSQL)) {
-            $query = 'ALTER TABLE ' . $logsTable . ' ADD `requested_url_detail` varchar(512) DEFAULT NULL '
-                    . 'after `requested_url` ';
-            $abj404dao->queryAndGetResults($query);
-        }
-        if (!$f->regexMatchi("username[^\n]+bigint", $tableSQL)) {
-            $query = 'ALTER TABLE ' . $logsTable . ' ADD `username` bigint(20) DEFAULT NULL '
-                    . 'after `requested_url_detail` ';
-            $abj404dao->queryAndGetResults($query);
-        }
-        if (!$f->regexMatchi("username[^\n]+ USING BTREE", $tableSQL)) {
-            $query = "ALTER TABLE " . $logsTable . " ADD INDEX username (`username`) USING BTREE";
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Added index for username on " . $logsTable);
-        }
-        if (!$f->regexMatchi("min_log_id[^\n]+ DEFAULT NULL", $tableSQL)) {
-            $query = "ALTER TABLE " . $logsTable . " ADD min_log_id BOOLEAN NULL DEFAULT NULL";
-            $abj404dao->queryAndGetResults($query);
-
-            // set the min_log_id for all logs entries that were created before the column was created.
-            $abj404logging->infoMessage("Setting the min_log_id for the logs table: Begin.");
-            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
-            $query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Setting the min_log_id for the logs table: Done.");
-        }
-        if (!$f->regexMatchi("KEY [^\n]+min_log_id", $tableSQL)) {
-            $query = "ALTER TABLE " . $logsTable . " ADD INDEX min_log_id (min_log_id)";
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Added index for min_log_id on " . $logsTable);
-        }
-        if (!$f->regexMatchi("requested_url[^\n]+2048", $tableSQL)) {
-            $query = "ALTER TABLE " . $logsTable . " CHANGE `requested_url` `requested_url` VARCHAR(2048) ";
-            $abj404dao->queryAndGetResults($query);
-        }
-        if (!$f->regexMatchi("requested_url_detail[^\n]+2048", $tableSQL)) {
-            $query = "ALTER TABLE " . $logsTable . " CHANGE `requested_url_detail` `requested_url_detail` VARCHAR(2048) ";
-            $abj404dao->queryAndGetResults($query);
-        }
-        if (!$f->regexMatchi("dest_url[^\n]+2048", $tableSQL)) {
-            $query = "ALTER TABLE " . $logsTable . " CHANGE `dest_url` `dest_url` VARCHAR(2048) ";
-            $abj404dao->queryAndGetResults($query);
-        }
+    
+    /** When certain columns are created we have to populate data.
+     * @param string $tableName
+     * @param string $colName
+     */
+    function hanldeSpecificCases($tableName, $colName) {
+    	if (strpos($tableName, 'abj404_logsv2') !== false && $colName == 'min_log_id') {
+    		global $wpdb;
+    		$logsTable = $wpdb->prefix . 'abj404_logsv2';
+    		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    		$f = ABJ_404_Solution_Functions::getInstance();
+    		$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
+    		$query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+    		$abj404dao->queryAndGetResults($query);
+    	}
+    	if (strpos($tableName, 'abj404_permalink_cache') !== false && $colName == 'url_length') {
+    		// clear the permalink cache so that the url length column will be populated.
+    		// this could be more efficient but I'll assume that's not necessary.
+    		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    		$abj404dao->truncatePermalinkCacheTable();
+    	}
     }
-
-    function doPermalinkCacheTableUpdates() {
-    	global $wpdb;
-    	$permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
-        $refreshPermalinkCache = false;
-
-        $result = $abj404dao->queryAndGetResults("show create table " . $permalinkCacheTable);
-        $rows = $result['rows'];
-        $row1 = array_values($rows[0]);
-        $tableSQL = $row1[1];
-
-        if ($f->regexMatchi("structure", $tableSQL)) {
-            $query = "ALTER TABLE " . $permalinkCacheTable . " DROP `structure`;";
-            $abj404dao->queryAndGetResults($query);
-        }
-        
-        if (!$f->regexMatchi("meta", $tableSQL)) {
-            // clear the table because without the meta column it's useless.
-            $abj404dao->truncatePermalinkCacheTable();
-            // create the column.
-            $query = "ALTER TABLE " . $permalinkCacheTable . " ADD `meta` TINYTEXT NOT NULL;";
-            $abj404dao->queryAndGetResults($query);
-
-            $refreshPermalinkCache = true;
-        }        
-        
-        if (!$f->regexMatchi("url_length", $tableSQL)) {
-            $query = "ALTER TABLE " . $permalinkCacheTable . " ADD `url_length` INT NULL DEFAULT NULL, ADD INDEX (`url_length`);";
-            $abj404dao->queryAndGetResults($query);
-            $query = "update " . $permalinkCacheTable . " set url_length = length(url)";
-            $abj404dao->queryAndGetResults($query);
-        }
-
-        return $refreshPermalinkCache;
-    }
-
-    function doRedirectsTableUpdates() {
-    	global $wpdb;
-    	$redirectsTable = $wpdb->prefix . "abj404_redirects";
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-
-        // since 2.3.1. changed from fulltext to btree for Christos. https://github.com/aaron13100/404solution/issues/21
-        $result = $abj404dao->queryAndGetResults("show create table " . $redirectsTable);
-        $rows = $result['rows'];
-        $row1 = array_values($rows[0]);
-        $tableSQL = $row1[1];
-        // if the column does not have btree then drop and recreate the index.
-        if (!$f->regexMatchi("url[^\n]+ USING BTREE", $tableSQL)) {
-            if ($f->regexMatchi("KEY[^\n]+url", $tableSQL)) {
-                $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX url";
-                $abj404dao->queryAndGetResults($query);
-            }
-            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX url (`url`) USING BTREE";
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Updated redirects table URL column to use a btree index.");
-        }
-        if (!$f->regexMatchi("KEY[^\n]+status", $tableSQL)) {
-            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX status (`status`)";
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Updated redirects table. Added index to the STATUS column.");
-        }
-        if (!$f->regexMatchi("KEY[^\n]+disabled", $tableSQL)) {
-            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX disabled (`disabled`)";
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Updated redirects table. Added index to the DISABLED column.");
-        }
-        if (!$f->regexMatchi("final_dest[^\n]+ USING BTREE", $tableSQL)) {
-            if ($f->regexMatchi("KEY[^\n]+final_dest", $tableSQL)) {
-                $query = "ALTER TABLE " . $redirectsTable . " DROP INDEX final_dest";
-                $abj404dao->queryAndGetResults($query);
-            }
-            $query = "ALTER TABLE " . $redirectsTable . " ADD INDEX final_dest (`final_dest`) USING BTREE";
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Updated redirects table FINAL_DEST column to use a btree index.");
-        }
-        if (!$f->regexMatchi("status[^\n]+TINYINT\(1\)", $tableSQL)) {
-            $query = "ALTER TABLE " . $redirectsTable . "   CHANGE `status` `status` TINYINT(1) NOT NULL, \n" .
-                    "  CHANGE `type` `type` TINYINT(1) NOT NULL, \n" .
-                    "  CHANGE `code` `code` SMALLINT(3) NOT NULL, \n" .
-                    "  CHANGE `disabled` `disabled` TINYINT(1) NOT NULL DEFAULT '0' \n"; 
-            $abj404dao->queryAndGetResults($query);
-            $abj404logging->infoMessage("Updated redirects table STATUS column type to TINYINT.");
-        }
-        if (!$f->regexMatchi("url[^\n]+2048", $tableSQL)) {
-            $query = "ALTER TABLE " . $redirectsTable . " CHANGE `url` `url` VARCHAR(2048)";
-            $abj404dao->queryAndGetResults($query);
-        }
-        if (!$f->regexMatchi("final_dest[^\n]+2048", $tableSQL)) {
-            $query = "ALTER TABLE " . $redirectsTable . " CHANGE `final_dest` `final_dest` VARCHAR(2048)";
-            $abj404dao->queryAndGetResults($query);
-        }
-    }
-
+    
     function runInitialCreateTables() {
     	global $wpdb;
     	$redirectsTable = $wpdb->prefix . "abj404_redirects";
@@ -228,77 +72,199 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
         $query = $f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
         $abj404dao->queryAndGetResults($query);
+        $this->verifyColumns($permalinkCacheTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
         $query = $f->str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
         $abj404dao->queryAndGetResults($query);
+        $this->verifyColumns($spellingCacheTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
         $query = $f->str_replace('{redirectsTable}', $redirectsTable, $query);
         $abj404dao->queryAndGetResults($query);
-
+        $this->verifyColumns($redirectsTable, $query);
+        
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         $abj404dao->queryAndGetResults($query);
+        $this->verifyColumns($logsTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
         $query = $f->str_replace('{wp_abj404_lookup}', $lookupTable, $query);
         $abj404dao->queryAndGetResults($query);
+        $this->verifyColumns($lookupTable, $query);
     }
     
-    function correctSpellingCacheTable($updatingToNewVersion = false) {
+    function createIndexes() {
     	global $wpdb;
-    	$spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
-    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$redirectsTable = $wpdb->prefix . "abj404_redirects";
+    	$logsTable = $wpdb->prefix . 'abj404_logsv2';
+    	$lookupTable = $wpdb->prefix . 'abj404_lookup';
+    	$permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
     	$spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
     	$f = ABJ_404_Solution_Functions::getInstance();
     	
-    	$result = $abj404dao->queryAndGetResults("show create table " . $spellingCacheTable);
-    	$rows = $result['rows'];
-    	$row1 = array_values($rows[0]);
-    	$tableSQL = $row1[1];
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
+    	$query = $f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
+    	$this->verifyIndexes($permalinkCacheTable, $query);
     	
-    	// look for this line.
-    	// UNIQUE KEY `url` (`url`(250)) USING BTREE
-    	if (!$f->regexMatchi("UNIQUE KEY `url[^\n]+[\d]+[^\n]+ USING BTREE", $tableSQL) ||
-    		$updatingToNewVersion) {
-            
-    		if ($f->regexMatchi("KEY[^\n]+url", $tableSQL)) {
-    			$query = "ALTER TABLE " . $spellingCacheTable . " DROP INDEX url";
-    			$abj404dao->queryAndGetResults($query);
-    		}
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
+    	$query = $f->str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
+    	$this->verifyIndexes($spellingCacheTable, $query);
+    	
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
+    	$query = $f->str_replace('{redirectsTable}', $redirectsTable, $query);
+    	$this->verifyIndexes($redirectsTable, $query);
+    	
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
+    	$query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+    	$this->verifyIndexes($logsTable, $query);
+    	
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
+    	$query = $f->str_replace('{wp_abj404_lookup}', $lookupTable, $query);
+    	$this->verifyIndexes($lookupTable, $query);
+    }
 
-            // make it use InnoDB if it doesn't already.
-            $query = 'alter table ' . $spellingCacheTable . ' engine = InnoDB;';
-            $abj404dao->queryAndGetResults($query, array("log_errors" => false));
-
-    		// the column will be unique so we remove any data that might not be unique.
-    		$query = "truncate TABLE " . $spellingCacheTable;
-    		$abj404dao->queryAndGetResults($query);
+    function verifyIndexes($tableName, $createTableStatementGoal) {
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$f = ABJ_404_Solution_Functions::getInstance();
+    	
+    	// get the current create table statement
+    	$existingTableSQL = $abj404dao->getCreateTableDDL($tableName);
+    	
+    	$existingTableSQL = strtolower($this->removeCommentsFromColumns($existingTableSQL));
+    	$createTableStatementGoal = strtolower(
+    		$this->removeCommentsFromColumns($createTableStatementGoal));
+    	
+    	// get column names and types pattern;
+    	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+?) .+?),/";
+    	// remove the columns.
+    	$existingTableSQL = preg_replace($colNamesAndTypesPattern, "", $existingTableSQL);
+    	$createTableStatementGoal = preg_replace($colNamesAndTypesPattern, "", 
+    		$createTableStatementGoal);
+    	
+    	// remove the create table and primary key
+    	$existingTableSQL = substr($existingTableSQL, 
+    		strpos($existingTableSQL, 'primary'));
+    	$existingTableSQL = substr($existingTableSQL,
+    		strpos($existingTableSQL, "\n"));
+    	$createTableStatementGoal = substr($createTableStatementGoal,
+    		strpos($createTableStatementGoal, 'primary'));
+    	$createTableStatementGoal = substr($createTableStatementGoal,
+    		strpos($createTableStatementGoal, "\n"));
+    	
+    	// remove the engine= ...
+    	$engineLoc = $f->strpos($existingTableSQL, ") engine");
+    	if ($engineLoc !== false) {
+    		$existingTableSQL = substr($existingTableSQL, 0, $engineLoc);
+    	}
+    	$commentLoc = $f->strpos($existingTableSQL, ") comment");
+    	if ($commentLoc !== false) {
+    		$existingTableSQL = substr($existingTableSQL, 0, $commentLoc);
+    	}
+    	$engineLoc = $f->strpos($createTableStatementGoal, ") engine");
+    	if ($engineLoc !== false) {
+    		$createTableStatementGoal = substr($createTableStatementGoal, 0, $engineLoc);
+    	}
+    	$commentLoc = $f->strpos($createTableStatementGoal, ") comment");
+    	if ($commentLoc !== false) {
+    		$createTableStatementGoal = substr($createTableStatementGoal, 0, $commentLoc);
+    	}
+    	
+    	// get the indexes.
+    	$existingTableMatches = null;
+    	$goalTableMatches = null;
+    	preg_match_all('/\s*?(\w+[^,]*)(,?)[\r\n]/', $existingTableSQL, $existingTableMatches);
+    	preg_match_all('/\s*?(\w+[^,]*)(,?)[\r\n]/', $createTableStatementGoal, $goalTableMatches);
+    	
+    	// create missing columns
+    	$goalTableMatchesColumnDDL = $goalTableMatches[1];
+    	$existingTableMatchesColumnDDL = $existingTableMatches[1];
+    	$createTheseIndexes = array_diff($goalTableMatchesColumnDDL,
+    		$existingTableMatchesColumnDDL);
+    	foreach ($createTheseIndexes as $indexDDL) {
+    		// get the key name
+    		$matches = null;
+    		preg_match('/\w+?\s+?\(?`(\w+?)`/', $indexDDL, $matches);
+    		$colName = $matches[1];
+    		$query = "alter table " . $tableName . " drop index " . $colName;
+    		// drop the index in case it already exists.
+    		$abj404dao->queryAndGetResults($query, array('log_errors' => false));
     		
-    		// try to create an index of 250 and if it doesn't work then keep trying to
-    		// create a smaller and smaller index until it works.
-    		for ($i = 250; $i > 50; $i -= 10) {
-    			$query = "ALTER TABLE " . $spellingCacheTable . 
-    				" ADD UNIQUE url (`url`(" . $i . ")) USING BTREE";
-    			$results = $abj404dao->queryAndGetResults($query, 
-    				array('log_errors' => false));
-    			
-    			if (!empty($results['last_error'])) {
-    				$abj404logging->infoMessage("Tried creating an index (" . 
-    					$i . ") on " . $spellingCacheTable . " but it didn't work.");
-    				
-    			} else {
-    				$abj404logging->infoMessage("Successfully created an index (" .
-    					$i . ") on " . $spellingCacheTable . ".");
-    				break;
-    			}
-    		}
-    		$abj404logging->infoMessage("Updated spelling cache table URL column index length.");
+    		// create the index.
+    		$addStatement = "alter table " . $tableName . " add " . $indexDDL;
+    		$abj404dao->queryAndGetResults($addStatement);
+    		$abj404logging->infoMessage("I added an index: " . $addStatement);
     	}
     }
     
+    function verifyColumns($tableName, $createTableStatementGoal) {
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	
+    	// get the current create table statement
+    	$existingTableSQL = $abj404dao->getCreateTableDDL($tableName);
+    	
+    	$existingTableSQL = strtolower($this->removeCommentsFromColumns($existingTableSQL));
+    	$createTableStatementGoal = strtolower(
+    		$this->removeCommentsFromColumns($createTableStatementGoal));
+    	
+    	// get column names and types pattern;
+    	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+?) .+?),/";
+    	$existingTableMatches = null;
+    	$goalTableMatches = null;
+    	// match the existing table. use preg_match_all because I couldn't find an 
+    	// "_all" option when using mb_ereg.
+    	preg_match_all($colNamesAndTypesPattern, $existingTableSQL, $existingTableMatches);
+    	preg_match_all($colNamesAndTypesPattern, $createTableStatementGoal, $goalTableMatches);
+    	
+    	// see if some columns need to be created.
+    	$goalTableMatchesColumnNames = $goalTableMatches[2];
+    	$existingTableMatchesColumnNames = $existingTableMatches[2];
+    	$dropTheseColumns = array_diff($existingTableMatchesColumnNames,
+    		$goalTableMatchesColumnNames);
+    	
+    	// drop unnecessary columns. 
+    	foreach ($dropTheseColumns as $colName) {
+    		$query = "alter table " . $tableName . " drop " . $colName;
+    		$abj404dao->queryAndGetResults($query);
+    		$abj404logging->infoMessage("I dropped a column (1): " . $query);
+    	}
+    	
+    	$goalTableMatchesColumnDDL = $goalTableMatches[1];
+    	$existingTableMatchesColumnDDL = $existingTableMatches[1];
+    	$createTheseColumns = array_diff($goalTableMatchesColumnDDL, 
+    		$existingTableMatchesColumnDDL);
+    	
+    	// create missing columns
+    	foreach ($createTheseColumns as $colDDL) {
+    		// find the colum name.
+    		$matchIndex = array_search($colDDL, $goalTableMatches[1]);
+    		$colName = $goalTableMatchesColumnNames[$matchIndex];
+    		
+    		// drop the column in case it exists and just doesn't match for some other reason.
+    		// e.g. url_length int does not match url_length int(11).
+    		$dropStatement = "alter table " . $tableName . " drop column " . $colName;
+    		$abj404dao->queryAndGetResults($dropStatement, array('log_errors' => false));
+    		$abj404logging->infoMessage("I dropped a column (2): " . $dropStatement);
+    		
+    		// create the column.
+    		$createColStatement = "alter table " . $tableName . " add " . $colDDL;
+    		$abj404dao->queryAndGetResults($createColStatement);
+    		$abj404logging->infoMessage("I added a column: " . $createColStatement);
+    		
+    		$this->hanldeSpecificCases($tableName, $colName);
+    	}
+    }
+    
+    /** Create table DDL is returned without comments on any columns.
+     * @param string $existingTableSQL
+     */
+    function removeCommentsFromColumns($createTableDDL) {
+    	return preg_replace('/ (?:COMMENT.+?,[\r\n])/', ",\n", $createTableDDL);
+    }
+
     function updateTableEngineToInnoDB() {
     	// get a list of all tables.
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -327,12 +293,25 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     			$abj404logging->infoMessage("Updating " . $table . "to InnoDB.");
     			// This was causing an "Unknown storage engine 'InnoDB'" message for some people
     			// so we'll ignore any errors.
-    			$abj404dao->queryAndGetResults($query, 
+    			$result = $abj404dao->queryAndGetResults($query, 
     				array("log_errors" => false));
+    			$abj404logging->infoMessage("I changed an engine: " . $query);
+    			
+    			if ($result['last_error'] != null && $result['last_error'] != '' && 
+    				strpos($result['last_error'], 'Index column size too large') !== false) {
+    					
+    				// delete the indexes, try again, and create the indexes later.
+    				$this->deleteIndexes($table);
+    				
+    				$abj404dao->queryAndGetResults($query,
+    					array("ignore_errors" => array("Unknown storage engine")));
+    				$abj404logging->infoMessage("I tried to change an engine again: " . $query);
+   				}
     		}
     	}
     }
 
+    /** Make the collations of our tables match the WP_POSTS table collation. */
     function correctCollations() {
         global $wpdb;
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -387,11 +366,38 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 $postsTableCollation);
 
         foreach ($abjTableNames as $tableName) {
+        	// update the collation
             $query = "alter table {table_name} convert to charset " . $postsTableCharset . 
                     " collate " . $postsTableCollation;
             $query = $f->str_replace('{table_name}', $tableName, $query);
-            $abj404dao->queryAndGetResults($query);
+            $results = $abj404dao->queryAndGetResults($query, array('log_errors' => false));
+            $abj404logging->infoMessage("I changed a collation: " . $query);
+            
+            if ($results['last_error'] != null && $results['last_error'] != '' && 
+            	strpos($results['last_error'], "Index column size too large") !== false) {
+            	// delete indexes and try again.
+            	$this->deleteIndexes($tableName);
+            	
+            	$abj404dao->queryAndGetResults($query);
+            	$abj404logging->infoMessage("I tried to change a collation again: " . $query);
+            }
         }
+    }
+    
+    /** Delete all non-primary indexes from a table.
+     * @param string $tableName */
+    function deleteIndexes($tableName) {
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	
+    	// get the indexes list.
+    	$results = $abj404dao->queryAndGetResults("show index from " . $tableName . 
+    		" where key_name != 'PRIMARY'");
+    	$rows = $results['rows'];
+    	foreach ($rows as $row) {
+    		// delete them
+    		$query = "alter table " . $tableName . " drop index " . $row['key_name'];
+    		$abj404dao->queryAndGetResults($query);
+    	}
     }
     
     function updatePluginCheck() {

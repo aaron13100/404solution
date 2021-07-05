@@ -148,6 +148,18 @@ class ABJ_404_Solution_DataAccess {
         return $query;
     }
     
+    /** Returns the create table statement. 
+     * @param string $tableName */
+    function getCreateTableDDL($tableName) {
+    	$query = "show create table " . $tableName;
+    	$result = $this->queryAndGetResults($query);
+    	$rows = $result['rows'];
+    	$row1 = array_values($rows[0]);
+    	$existingTableSQL = $row1[1];
+    	
+    	return $existingTableSQL;
+    }
+    
     /** Return the results of the query in a variable.
      * @param string $query
      * @param array $options
@@ -157,9 +169,16 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
+        $ignoreErrorStrings = array();
         
         $options = array_merge(array('log_errors' => true, 
             'log_too_slow' => true), $options);
+        
+        if (array_key_exists('ignore_errors', $options)) {
+        	$ignoreErrorStrings = $options['ignore_errors'];
+        }
+        
+        $query = $this->doTableNameReplacements($query);
         
         $timer = new ABJ_404_Solution_Timer();
         
@@ -186,9 +205,20 @@ class ABJ_404_Solution_DataAccess {
             		$f->strpos($result['last_error'], "resulting in duplicate entry") !== false) {
             		$this->repairDuplicateIDs($result['last_error'], $query);
             }
+
+            // ignore any specific errors.
+            $reportError = true;
+            foreach ($ignoreErrorStrings as $ignoreThis) {
+            	if (strpos($result['last_error'], $ignoreThis) !== false) {
+            		$reportError = false;
+            		break;
+            	}
+            }
             
-            $abj404logging->errorMessage("Ugh. SQL query error: " . $result['last_error'] . 
-                    ", SQL: " . $query . ", Execution time: " . round($timer->getElapsedTime(), 2));
+            if ($reportError) {
+	            $abj404logging->errorMessage("Ugh. SQL query error: " . $result['last_error'] . 
+					", SQL: " . $query . ", Execution time: " . round($timer->getElapsedTime(), 2));
+            }
             
         } else {
             if ($options['log_too_slow'] && $timer->getElapsedTime() > 5) {
@@ -294,7 +324,6 @@ class ABJ_404_Solution_DataAccess {
     		" and meta_key = '_wp_old_slug' \n" .
     		" order by meta_id desc";
     	$query = $f->str_replace('{post_id}', $post_id, $query);
-    	$query = $this->doTableNameReplacements($query);
     	
     	$results = $this->queryAndGetResults($query);
     	
@@ -339,7 +368,6 @@ class ABJ_404_Solution_DataAccess {
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getIDsNeededForPermalinkCache.sql");
         $query = $f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
-        $query = $this->doTableNameReplacements($query);
         
         $results = $this->queryAndGetResults($query);
         
@@ -348,7 +376,6 @@ class ABJ_404_Solution_DataAccess {
     
     function getPermalinkFromCache($id) {
         $query = "select url from {wp_abj404_permalink_cache} where id = " . $id;
-        $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
         
         $rows = $results['rows'];
@@ -633,8 +660,6 @@ class ABJ_404_Solution_DataAccess {
         
         $query .= "where status in (" . ABJ404_STATUS_REGEX . ") \n " .
                 "     and disabled = 0";
-        $query = $this->doTableNameReplacements($query);
-        
         $results = $this->queryAndGetResults($query);
         
         return $results['rows'];
@@ -1413,8 +1438,6 @@ class ABJ_404_Solution_DataAccess {
         // a disabled value of '1' means in the trash.
         $query = "select * from {wp_abj404_redirects} where url = '" . esc_sql($url) . "'" .
                 " and disabled = 0 "; 
-        $query = $this->doTableNameReplacements($query);
-        
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
 
@@ -1814,8 +1837,6 @@ class ABJ_404_Solution_DataAccess {
     
     function updatePermalinkCache() {
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/updatePermalinkCache.sql");
-    	$query = $this->doTableNameReplacements($query);
-    	
     	$results = $this->queryAndGetResults($query);
     	
     	return $results;
