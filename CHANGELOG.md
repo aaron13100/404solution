@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.26.0 (July 7, 2021) ##
+* Improvement: Handle table and index creation more consistently to avoid various 'Index column size too large' messages (part 1). 
+
 ## Version 2.25.5 (June 28, 2021) ##
 * Improvement: Ignore the "Unknown storage engine 'InnoDB'" message that some debug file participant is sending me every day. 
 

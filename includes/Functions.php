@@ -289,8 +289,6 @@ abstract class ABJ_404_Solution_Functions {
         	$permalink['link'] = $permalink['id'];
         	if ($permalink['link'] == ABJ404_TYPE_EXTERNAL) {
 	        	if ($options == null) {
-	        		$abj404logging->errorMessage("You forgot to pass the options and an external " . 
-	        			"destination is being used.");
 	        		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 	        		$options = $abj404logic->getOptions();
 	        	}
