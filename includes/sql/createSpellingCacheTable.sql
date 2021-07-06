@@ -4,5 +4,5 @@ CREATE TABLE IF NOT EXISTS `{wp_abj404_spelling_cache}` (
  `url` varchar(2048) NOT NULL COMMENT 'the URL the user requested',
  `matchdata` text COMMENT 'data that may match what the user is looking for. e.g. a list of wp_post.ids with post type and score',
 PRIMARY KEY (`id`),
- UNIQUE KEY `url` (`url`(250)) USING BTREE
+ UNIQUE KEY `url` (`url`(190)) USING BTREE
 ) COMMENT='404 Solution Plugin Spelling Cache Table'
