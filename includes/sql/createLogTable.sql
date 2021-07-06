@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_logsv2} (
     `min_log_id` tinyint(1) DEFAULT NULL,
     PRIMARY KEY  (`id`),
     KEY `timestamp` (`timestamp`),
-    KEY `requested_url` (`requested_url`(255)) USING BTREE,
+    KEY `requested_url` (`requested_url`(190)) USING BTREE,
     KEY `username` (`username`) USING BTREE,
     KEY `min_log_id` (`min_log_id`)
 ) ENGINE=MyISAM COMMENT='404 Solution Plugin Logs Table. Use MyISAM because optimize table is slow otherwise.' AUTO_INCREMENT=1

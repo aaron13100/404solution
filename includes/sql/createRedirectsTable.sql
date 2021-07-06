@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS {redirectsTable} (
     KEY `code` (`code`),
     KEY `timestamp` (`timestamp`),
     KEY `disabled` (`disabled`),
-    KEY `url` (`url`(333)) USING BTREE,
-    KEY `final_dest` (`final_dest`(333)) USING BTREE
+    KEY `url` (`url`(190)) USING BTREE,
+    KEY `final_dest` (`final_dest`(190)) USING BTREE
 ) COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1
 

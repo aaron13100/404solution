@@ -460,27 +460,27 @@ class ABJ_404_Solution_View {
         echo "</div></div></div>";
         
         // ------------------------------------
+        // remove the option to import from the old "redirected" plugin.
+//         $results = $abj404dao->queryAndGetResults("SHOW TABLES LIKE '" .
+//                 $wpdb->prefix . 'wbz404_redirects' . "'");
         
-        $results = $abj404dao->queryAndGetResults("SHOW TABLES LIKE '" .
-                $wpdb->prefix . 'wbz404_redirects' . "'");
-        
-        if (!empty($results['rows'])) {
-        	$url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
-        	$link = wp_nonce_url($url, "abj404_importRedirects");
+//         if (!empty($results['rows'])) {
+//         	$url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
+//         	$link = wp_nonce_url($url, "abj404_importRedirects");
         	
-        	// read the html content.
-            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsImportFormRed.html");
-            // do special replacements
-            $html = $f->str_replace('{toolsImportFormActionLink}', $link, $html);
-            // constants and translations.
-            $html = $f->doNormalReplacements($html);
+//         	// read the html content.
+//             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsImportFormRed.html");
+//             // do special replacements
+//             $html = $f->str_replace('{toolsImportFormActionLink}', $link, $html);
+//             // constants and translations.
+//             $html = $f->doNormalReplacements($html);
             
-            echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
-            echo "<div class=\"metabox-holder\">";
-            echo " <div class=\"meta-box-sortables\">";
-            $abj404view->echoPostBox("abj404-purgeRedirects", __('Import Options', '404-solution'), $html);
-            echo "</div></div></div>";
-        }
+//             echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
+//             echo "<div class=\"metabox-holder\">";
+//             echo " <div class=\"meta-box-sortables\">";
+//             $abj404view->echoPostBox("abj404-purgeRedirects", __('Import Options', '404-solution'), $html);
+//             echo "</div></div></div>";
+//         }
 
         // ------------------------------------
         
