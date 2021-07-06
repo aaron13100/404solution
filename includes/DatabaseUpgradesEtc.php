@@ -193,6 +193,15 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$existingTableMatchesColumnDDL = $existingTableMatches[1];
     	$createTheseIndexes = array_diff($goalTableMatchesColumnDDL,
     		$existingTableMatchesColumnDDL);
+    	
+    	// say why we're doing what we're doing.
+    	if (count($createTheseIndexes) > 0) {
+    		$abj404logging->infoMessage("On " . $tableName . " I'm adding/updating various " . 
+    			"indexes because we want: \n`" .
+    			print_r($goalTableMatchesColumnDDL, true) . "\n but we have: \n" .
+    			print_r($existingTableMatchesColumnDDL, true));
+    	}
+    	
     	foreach ($createTheseIndexes as $indexDDL) {
     		// get the key name
     		$matches = null;
@@ -200,8 +209,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$colName = $matches[1];
     		$query = "alter table " . $tableName . " drop index " . $colName;
     		// drop the index in case it already exists.
-    		$abj404dao->queryAndGetResults($query, 
+    		$results = $abj404dao->queryAndGetResults($query, 
     			array('ignore_errors' => array("check that column/key exists")));
+    		if ($results['last_error'] == null || $results['last_error'] == '') {
+    			$abj404logging->infoMessage("Successfully dropped index: " . $query);
+    		} else {
+    			$abj404logging->infoMessage("Failed to drop index with query: " . $query . 
+    				";;; because: " . $results['last_error']);
+    		}
     		
     		// create the index.
     		$addStatement = "alter table " . $tableName . " add " . $indexDDL;
@@ -220,6 +235,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$existingTableSQL = strtolower($this->removeCommentsFromColumns($existingTableSQL));
     	$createTableStatementGoal = strtolower(
     		$this->removeCommentsFromColumns($createTableStatementGoal));
+    	
+    	// remove the "COLLATE xxx" from the columns.
+    	$existingTableSQL = preg_replace('/collate \w+? /', "", $existingTableSQL);
+    	$createTableStatementGoal = preg_replace('/COLLATE \w+? /', "", $createTableStatementGoal);
     	
     	// get column names and types pattern;
     	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+?) .+?),/";
@@ -249,6 +268,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$existingTableMatchesColumnDDL = $existingTableMatches[1];
     	$updateTheseColumns = array_diff($goalTableMatchesColumnDDL, 
     		$existingTableMatchesColumnDDL);
+    	
+    	// say why we're doing what we're doing.
+    	if (count($updateTheseColumns) > 0) {
+    		$abj404logging->infoMessage("On " . $tableName . " I'm updating various because we " .
+    			"want: \n`" . 
+    			print_r($goalTableMatchesColumnDDL, true) . "\n but we have: \n" . 
+    			print_r($existingTableMatchesColumnDDL, true));
+    	}
     	
     	// create missing columns
     	foreach ($updateTheseColumns as $colDDL) {

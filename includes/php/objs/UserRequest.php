@@ -141,12 +141,7 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
      */
     function getPath() {
     	if (!array_key_exists('path', $this->urlParts)) {
-    		$requestURI = array_key_exists('REQUEST_URI', $_SERVER) ? 
-    			$_SERVER['REQUEST_URI'] : '(none)';
-    		$abj404logging = ABJ_404_Solution_Logging::getInstance();
-    		$abj404logging->errorMessage("Can't find URL path. URL parts: " . 
-    			print_r($this->urlParts, true) . ", urlToParse: " . $this->getRequestURI() . 
-    			", request URI: " . $requestURI);
+    		// this happens for a request with no path. like http://example.com
     		return '';
     	}
     	
