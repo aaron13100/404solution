@@ -24,6 +24,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      */
     function createDatabaseTables($updatingToNewVersion = false) {
     	$this->runInitialCreateTables();
+    	
+    	if ($updatingToNewVersion) {
+    		$this->correctIssues();
+    	}
         
         $this->correctCollations();
         
@@ -35,6 +39,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         // but it doesn't take long anyway so we do it every night.
         $plCache = ABJ_404_Solution_PermalinkCache::getInstance();
         $plCache->updatePermalinkCache(1);
+    }
+    
+    /** Correct any possible outstanding issues. */
+    function correctIssues() {
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$abj404dao->correctDuplicateLookupValues();
     }
     
     /** When certain columns are created we have to populate data.
@@ -190,7 +200,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$colName = $matches[1];
     		$query = "alter table " . $tableName . " drop index " . $colName;
     		// drop the index in case it already exists.
-    		$abj404dao->queryAndGetResults($query, array('log_errors' => false));
+    		$abj404dao->queryAndGetResults($query, 
+    			array('ignore_errors' => array("check that column/key exists")));
     		
     		// create the index.
     		$addStatement = "alter table " . $tableName . " add " . $indexDDL;
@@ -224,6 +235,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$existingTableMatchesColumnNames = $existingTableMatches[2];
     	$dropTheseColumns = array_diff($existingTableMatchesColumnNames,
     		$goalTableMatchesColumnNames);
+    	$createTheseColumns = array_diff($goalTableMatchesColumnNames, 
+    		$existingTableMatchesColumnNames);
     	
     	// drop unnecessary columns. 
     	foreach ($dropTheseColumns as $colName) {
@@ -234,25 +247,30 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
     	$goalTableMatchesColumnDDL = $goalTableMatches[1];
     	$existingTableMatchesColumnDDL = $existingTableMatches[1];
-    	$createTheseColumns = array_diff($goalTableMatchesColumnDDL, 
+    	$updateTheseColumns = array_diff($goalTableMatchesColumnDDL, 
     		$existingTableMatchesColumnDDL);
     	
     	// create missing columns
-    	foreach ($createTheseColumns as $colDDL) {
+    	foreach ($updateTheseColumns as $colDDL) {
     		// find the colum name.
     		$matchIndex = array_search($colDDL, $goalTableMatches[1]);
     		$colName = $goalTableMatchesColumnNames[$matchIndex];
     		
-    		// drop the column in case it exists and just doesn't match for some other reason.
-    		// e.g. url_length int does not match url_length int(11).
-    		$dropStatement = "alter table " . $tableName . " drop column " . $colName;
-    		$abj404dao->queryAndGetResults($dropStatement, array('log_errors' => false));
-    		$abj404logging->infoMessage("I dropped a column (2): " . $dropStatement);
-    		
-    		// create the column.
-    		$createColStatement = "alter table " . $tableName . " add " . $colDDL;
-    		$abj404dao->queryAndGetResults($createColStatement);
-    		$abj404logging->infoMessage("I added a column: " . $createColStatement);
+    		// if the column exists then update it. otherwise create it.
+    		if (!in_array($colName, $createTheseColumns)) {
+    			// update the existing column.
+    			// ALTER TABLE `mywp_abj404_redirects` CHANGE `status` `status` BIGINT(19) NOT NULL;
+    			$updateColStatement = "alter table " . $tableName . " change " . $colName . 
+    				" " . $colDDL;
+    			$abj404dao->queryAndGetResults($updateColStatement);
+    			$abj404logging->infoMessage("I updated a column: " . $updateColStatement);
+    			
+    		} else {
+    			// create the column.
+    			$createColStatement = "alter table " . $tableName . " add " . $colDDL;
+    			$abj404dao->queryAndGetResults($createColStatement);
+    			$abj404logging->infoMessage("I added a column: " . $createColStatement);
+    		}
     		
     		$this->hanldeSpecificCases($tableName, $colName);
     	}
