@@ -1,5 +1,5 @@
 
-CREATE TABLE IF NOT EXISTS {redirectsTable} (
+CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     `id` bigint(30) NOT NULL auto_increment,
     `url` varchar(2048) NOT NULL,
     `status` bigint(20) NOT NULL,

@@ -26,7 +26,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$this->runInitialCreateTables();
     	
     	if ($updatingToNewVersion) {
-    		$this->correctIssues();
+    		$this->correctIssuesBefore();
     	}
         
         $this->correctCollations();
@@ -39,15 +39,26 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         // but it doesn't take long anyway so we do it every night.
         $plCache = ABJ_404_Solution_PermalinkCache::getInstance();
         $plCache->updatePermalinkCache(1);
+        
+        if ($updatingToNewVersion) {
+        	$this->correctIssuesAfter();
+        }
     }
     
     /** Correct any possible outstanding issues. */
-    function correctIssues() {
+    function correctIssuesBefore() {
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	$abj404dao->correctDuplicateLookupValues();
     }
     
-    /** When certain columns are created we have to populate data.
+    /** Correct any possible outstanding issues. */
+    function correctIssuesAfter() {
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$abj404dao->queryAndGetResults(
+    		"delete from {wp_abj404_spelling_cache} where matchdata is null");
+    }
+    
+/** When certain columns are created we have to populate data.
      * @param string $tableName
      * @param string $colName
      */
@@ -80,27 +91,22 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $f = ABJ_404_Solution_Functions::getInstance();
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
-        $query = $f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
         $abj404dao->queryAndGetResults($query);
         $this->verifyColumns($permalinkCacheTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
-        $query = $f->str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
         $abj404dao->queryAndGetResults($query);
         $this->verifyColumns($spellingCacheTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
-        $query = $f->str_replace('{redirectsTable}', $redirectsTable, $query);
         $abj404dao->queryAndGetResults($query);
         $this->verifyColumns($redirectsTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
-        $query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
         $abj404dao->queryAndGetResults($query);
         $this->verifyColumns($logsTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
-        $query = $f->str_replace('{wp_abj404_lookup}', $lookupTable, $query);
         $abj404dao->queryAndGetResults($query);
         $this->verifyColumns($lookupTable, $query);
     }
