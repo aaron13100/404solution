@@ -237,11 +237,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->removeCommentsFromColumns($createTableStatementGoal));
     	
     	// remove the "COLLATE xxx" from the columns.
-    	$existingTableSQL = preg_replace('/collate \w+? /', "", $existingTableSQL);
-    	$createTableStatementGoal = preg_replace('/COLLATE \w+? /', "", $createTableStatementGoal);
+    	$existingTableSQL = preg_replace('/collate \w+ ?/', "", $existingTableSQL);
+    	$createTableStatementGoal = preg_replace('/collate \w+ ?/', "", $createTableStatementGoal);
     	
     	// get column names and types pattern;
-    	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+?) .+?),/";
+    	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+?)\s?)/";
     	$existingTableMatches = null;
     	$goalTableMatches = null;
     	// match the existing table. use preg_match_all because I couldn't find an 
@@ -271,8 +271,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
     	// say why we're doing what we're doing.
     	if (count($updateTheseColumns) > 0) {
-    		$abj404logging->infoMessage("On " . $tableName . " I'm updating various because we " .
-    			"want: \n`" . 
+    		$abj404logging->infoMessage("On " . $tableName . " I'm updating various columns " . 
+    			" because we want: \n`" . 
     			print_r($goalTableMatchesColumnDDL, true) . "\n but we have: \n" . 
     			print_r($existingTableMatchesColumnDDL, true));
     	}
