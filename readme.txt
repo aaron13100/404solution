@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: https://ajexperience.com/flashcards/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.26.0
+Version: 2.26.2
 Tested up to: 5.7
-Stable tag: 2.26.0
+Stable tag: 2.26.2
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -81,8 +81,8 @@ Please try this website for studying Japanese flashcards.
 
 == Changelog ==
 
-= Version 2.26.0 (July 7, 2021) =
-* Improvement: Handle table and index creation more consistently to avoid various 'Index column size too large' messages (part 1). 
+= Version 2.26.2 (July 7, 2021) =
+* Improvement: Handle table and index creation more consistently to avoid various 'Index column size too large' messages. 
 
 = Version 2.25.5 (June 28, 2021) =
 * Improvement: Ignore the "Unknown storage engine 'InnoDB'" message that some debug file participant is sending me every day. 

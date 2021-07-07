@@ -243,11 +243,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->removeCommentsFromColumns($createTableStatementGoal));
     	
     	// remove the "COLLATE xxx" from the columns.
-    	$existingTableSQL = preg_replace('/collate \w+ ?/', "", $existingTableSQL);
-    	$createTableStatementGoal = preg_replace('/collate \w+ ?/', "", $createTableStatementGoal);
+    	$removeCollatePattern = '/collate \w+ ?/';
+    	$existingTableSQL = preg_replace($removeCollatePattern, "", $existingTableSQL);
+    	$createTableStatementGoal = preg_replace($removeCollatePattern, "", $createTableStatementGoal);
     	
     	// get column names and types pattern;
-    	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+?)\s?)/";
+    	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+)\s?),/";
     	$existingTableMatches = null;
     	$goalTableMatches = null;
     	// match the existing table. use preg_match_all because I couldn't find an 
@@ -255,9 +256,15 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	preg_match_all($colNamesAndTypesPattern, $existingTableSQL, $existingTableMatches);
     	preg_match_all($colNamesAndTypesPattern, $createTableStatementGoal, $goalTableMatches);
     	
-    	// see if some columns need to be created.
+    	// get the matches.
     	$goalTableMatchesColumnNames = $goalTableMatches[2];
     	$existingTableMatchesColumnNames = $existingTableMatches[2];
+    	
+    	// remove any spaces
+    	$goalTableMatchesColumnNames = array_map('trim', $goalTableMatchesColumnNames);
+    	$existingTableMatchesColumnNames = array_map('trim', $existingTableMatchesColumnNames);
+    	
+    	// see if some columns need to be created.
     	$dropTheseColumns = array_diff($existingTableMatchesColumnNames,
     		$goalTableMatchesColumnNames);
     	$createTheseColumns = array_diff($goalTableMatchesColumnNames, 
@@ -269,9 +276,16 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$abj404dao->queryAndGetResults($query);
     		$abj404logging->infoMessage("I dropped a column (1): " . $query);
     	}
-    	
+
+    	// get the ddl for each column
     	$goalTableMatchesColumnDDL = $goalTableMatches[1];
     	$existingTableMatchesColumnDDL = $existingTableMatches[1];
+    	
+    	// remove any spaces
+    	$goalTableMatchesColumnDDL = array_map('trim', $goalTableMatchesColumnDDL);
+    	$existingTableMatchesColumnDDL = array_map('trim', $existingTableMatchesColumnDDL);
+    	
+    	// see if anything needs to be updated or created.
     	$updateTheseColumns = array_diff($goalTableMatchesColumnDDL, 
     		$existingTableMatchesColumnDDL);
     	
