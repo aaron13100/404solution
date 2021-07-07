@@ -1391,6 +1391,7 @@ class ABJ_404_Solution_DataAccess {
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPermalinkFromURL.sql");
         $query = $f->str_replace('{url1}', esc_sql($url1), $query);
         $query = $f->str_replace('{url2}', esc_sql($url2), $query);
+        $query = $this->doTableNameReplacements($query);
         $query = $f->doNormalReplacements($query);
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
