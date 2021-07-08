@@ -12,13 +12,14 @@ class ABJ_404_Solution_PluginLogic {
     
 	/** Track whether we're already in the method that updates the database that may be called recursively.
 	 * @var bool */
-    private $currentlyUpdatingDatabaseVersion = false;
-    
     private static $instance = null;
+    
+    private static $uniqID = null;
     
     public static function getInstance() {
     	if (self::$instance == null) {
     		self::$instance = new ABJ_404_Solution_PluginLogic();
+    		self::$uniqID = uniqid("", true);
     	}
     	
     	return self::$instance;
@@ -283,20 +284,23 @@ class ABJ_404_Solution_PluginLogic {
      */
     function updateToNewVersion($options) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $syncUtils = ABJ_404_Solution_SynchronizationUtils::getInstance();
         
-        if ($this->currentlyUpdatingDatabaseVersion) {
-            $abj404logging->debugMessage("Avoiding infinite loop on database update.");
+        $synchronizedKeyFromUser = "update_db_version";
+        $uniqueID = $syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
+        
+        if ($uniqueID == '' || $uniqueID == null) {
+        	$abj404logging->debugMessage("Avoiding infinite loop on database update.");
             return $options;
         }
 
         try {
-            $this->currentlyUpdatingDatabaseVersion = true;
             $returnValue = $this->updateToNewVersionAction($options);
             
         } catch (Exception $e) {
             $abj404logging->errorMessage("Error updating to new version. ", $e);
         }
-        $this->currentlyUpdatingDatabaseVersion = false;
+        $syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
         
         // update the permalink cache because updating the plugin version may affect it.
         $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
@@ -323,8 +327,8 @@ class ABJ_404_Solution_PluginLogic {
         if (array_key_exists('DB_VERSION', $options)) {
             $currentDBVersion = $options['DB_VERSION'];
         }
-        $abj404logging->infoMessage("Updating database version from " . $currentDBVersion . 
-                " to " . ABJ404_VERSION . " (begin).");
+        $abj404logging->infoMessage(self::$uniqID . ": Updating database version from " . 
+        	$currentDBVersion . " to " . ABJ404_VERSION . " (begin).");
 
         // wp_abj404_logsv2 exists since 1.7.
         $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
@@ -423,8 +427,9 @@ class ABJ_404_Solution_PluginLogic {
             update_option('abj404_settings', $options);
         }
 
-        $options = $abj404logic->doUpdateDBVersionOption();
-        $abj404logging->infoMessage("Updating database version to " . ABJ404_VERSION . " (end).");
+        $options = $abj404logic->doUpdateDBVersionOption($options);
+        $abj404logging->infoMessage(self::$uniqID . ": Updating database version to " . 
+        	ABJ404_VERSION . " (end).");
         
         return $options;
     }
@@ -483,10 +488,12 @@ class ABJ_404_Solution_PluginLogic {
         return $options;
     }
 
-    function doUpdateDBVersionOption() {
+    function doUpdateDBVersionOption($options = null) {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 
-        $options = $abj404logic->getOptions(true);
+        if ($options == null) {
+        	$options = $abj404logic->getOptions(true);
+        }
 
         $options['DB_VERSION'] = ABJ404_VERSION;
 

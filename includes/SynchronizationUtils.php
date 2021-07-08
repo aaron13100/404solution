@@ -259,21 +259,11 @@ class ABJ_404_Solution_SynchronizationUtils {
     }
 
     /** 
-     * @param int $lenght
      * @return string a random string of characters.
      * @throws Exception
      */
-    function uniqidReal($lenght = 13) {
-        $f = ABJ_404_Solution_Functions::getInstance();
-        if (function_exists("random_bytes")) {
-            $bytes = random_bytes((int)ceil($lenght / 2));
-        } else if (function_exists("openssl_random_pseudo_bytes")) {
-            $bytes = openssl_random_pseudo_bytes((int)ceil($lenght / 2));
-        } else {
-            throw new Exception("A random_bytes method wasn't found. I don't know what to do.");
-        }
-        
-        return $f->substr(bin2hex($bytes), 0, $lenght);
+    function uniqidReal() {
+    	return uniqid("", true);
     }
 
 }
