@@ -11,9 +11,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
 	private static $instance = null;
 	
+	private static $uniqID = null;
+	
 	public static function getInstance() {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_DatabaseUpgradesEtc();
+			self::$uniqID = uniqid("", true);
 		}
 		
 		return self::$instance;
@@ -23,26 +26,47 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @global type $wpdb
      */
     function createDatabaseTables($updatingToNewVersion = false) {
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	$syncUtils = ABJ_404_Solution_SynchronizationUtils::getInstance();
+    	
+    	$synchronizedKeyFromUser = "create_db_tables";
+    	$uniqueID = $syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
+    	
+    	if ($uniqueID == '' || $uniqueID == null) {
+    		$abj404logging->debugMessage("Avoiding multiple calls for creating database tables.");
+    		return;
+    	}
+    	
+    	try {
+    		$this->reallyCreateDatabaseTables($updatingToNewVersion);
+    		
+    	} catch (Exception $e) {
+    		$abj404logging->errorMessage("Error creating database tables. ", $e);
+    	}
+    	$syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
+    }
+    
+    private function reallyCreateDatabaseTables($updatingToNewVersion = false) {
     	$this->runInitialCreateTables();
     	
     	if ($updatingToNewVersion) {
     		$this->correctIssuesBefore();
     	}
-        
-        $this->correctCollations();
-        
-        $this->updateTableEngineToInnoDB();
-        
-        $this->createIndexes();
-        
-        // we could do this only when a table is created or when the "meta" column is created
-        // but it doesn't take long anyway so we do it every night.
-        $plCache = ABJ_404_Solution_PermalinkCache::getInstance();
-        $plCache->updatePermalinkCache(1);
-        
-        if ($updatingToNewVersion) {
-        	$this->correctIssuesAfter();
-        }
+    	
+    	$this->correctCollations();
+    	
+    	$this->updateTableEngineToInnoDB();
+    	
+    	$this->createIndexes();
+    	
+    	// we could do this only when a table is created or when the "meta" column is created
+    	// but it doesn't take long anyway so we do it every night.
+    	$plCache = ABJ_404_Solution_PermalinkCache::getInstance();
+    	$plCache->updatePermalinkCache(1);
+    	
+    	if ($updatingToNewVersion) {
+    		$this->correctIssuesAfter();
+    	}
     }
     
     /** Correct any possible outstanding issues. */
@@ -88,7 +112,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
     	$spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
         $abj404dao->queryAndGetResults($query);
@@ -202,8 +225,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
     	// say why we're doing what we're doing.
     	if (count($createTheseIndexes) > 0) {
-    		$abj404logging->infoMessage("On " . $tableName . " I'm adding/updating various " . 
-    			"indexes because we want: \n`" .
+    		$abj404logging->infoMessage(self::$uniqID . ": On " . $tableName . 
+    			" I'm adding/updating various indexes because we want: \n`" .
     			print_r($goalTableMatchesColumnDDL, true) . "\n but we have: \n" .
     			print_r($existingTableMatchesColumnDDL, true));
     	}
@@ -291,8 +314,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
     	// say why we're doing what we're doing.
     	if (count($updateTheseColumns) > 0) {
-    		$abj404logging->infoMessage("On " . $tableName . " I'm updating various columns " . 
-    			" because we want: \n`" . 
+    		$abj404logging->infoMessage(self::$uniqID . ": On " . $tableName . 
+    			" I'm updating various columns because we want: \n`" . 
     			print_r($goalTableMatchesColumnDDL, true) . "\n but we have: \n" . 
     			print_r($existingTableMatchesColumnDDL, true));
     	}
@@ -379,7 +402,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     /** Make the collations of our tables match the WP_POSTS table collation. */
     function correctCollations() {
         global $wpdb;
-        $f = ABJ_404_Solution_Functions::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
@@ -396,8 +418,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
         // get the target collation
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
-        $query = $f->str_replace('{table_names}', "'" . $postsTable . "'", $query);
-        $query = $f->str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
+        $query = str_replace('{table_names}', "'" . $postsTable . "'", $query);
+        $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
         $results = $abj404dao->queryAndGetResults($query);
         $rows = $results['rows'];
         $row = $rows[0];
@@ -408,8 +430,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         foreach ($abjTableNames as $tableName) {
             // get collations of our tables and a target table.
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
-            $query = $f->str_replace('{table_names}', "'" . $tableName . "'", $query);
-            $query = $f->str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
+            $query = str_replace('{table_names}', "'" . $tableName . "'", $query);
+            $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
             $results = $abj404dao->queryAndGetResults($query);
             $rows = $results['rows'];
             $row = $rows[0];
@@ -434,7 +456,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         	// update the collation
             $query = "alter table {table_name} convert to charset " . $postsTableCharset . 
                     " collate " . $postsTableCollation;
-            $query = $f->str_replace('{table_name}', $tableName, $query);
+            $query = str_replace('{table_name}', $tableName, $query);
             $results = $abj404dao->queryAndGetResults($query, array('log_errors' => false));
             $abj404logging->infoMessage("I changed a collation: " . $query);
             

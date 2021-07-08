@@ -59,7 +59,8 @@ class ABJ_404_Solution_PermalinkCache {
     function updatePermalinkCache($maxExecutionTime, $executionCount = 1) {
     	// check to see if we need to upgrade the database.
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404logic->getOptions();
+        // we must pass "true" here to avoid an infinite loop when updating the database.
+        $abj404logic->getOptions(true);
 
         // insert the new rows.
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();

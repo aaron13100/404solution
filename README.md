@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.26.3 (July 8, 2021) ##
+* FIX: Avoid a possible infinite loop when updating the database version. 
+
 ## Version 2.26.2 (July 7, 2021) ##
 * Improvement: Handle table and index creation more consistently to avoid various 'Index column size too large' messages. 
 
