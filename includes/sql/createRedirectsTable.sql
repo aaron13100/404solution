@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     `type` bigint(20) NOT NULL,
     `final_dest` varchar(2048) NOT NULL,
     `code` bigint(20) NOT NULL,
-    `disabled` int(10) NOT NULL default '0',
+    `disabled` int(10) NOT NULL default 0,
     `timestamp` bigint(30) NOT NULL,
     PRIMARY KEY  (`id`),
     KEY `status` (`status`),
