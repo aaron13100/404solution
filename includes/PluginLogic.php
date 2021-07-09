@@ -317,9 +317,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return array
      */
     function updateToNewVersionAction($options) {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        global $wpdb;
+    	global $wpdb;
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
 
@@ -427,7 +426,7 @@ class ABJ_404_Solution_PluginLogic {
             update_option('abj404_settings', $options);
         }
 
-        $options = $abj404logic->doUpdateDBVersionOption($options);
+        $options = $this->doUpdateDBVersionOption($options);
         $abj404logging->infoMessage(self::$uniqID . ": Updating database version to " . 
         	ABJ404_VERSION . " (end).");
         
@@ -489,10 +488,8 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     function doUpdateDBVersionOption($options = null) {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-
         if ($options == null) {
-        	$options = $abj404logic->getOptions(true);
+        	$options = $this->getOptions(true);
         }
 
         $options['DB_VERSION'] = ABJ404_VERSION;

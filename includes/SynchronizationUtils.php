@@ -118,7 +118,7 @@ class ABJ_404_Solution_SynchronizationUtils {
         	$this->writeOwner($internalSynchronizedKey, $uniqueID);
         }
         // give a different thread that ran at the same time a chance to overwrite our value.
-        time_nanosleep(0, 10000000); // 10000000 is 1/100 of a second.
+        time_nanosleep(0, 10000000 * 30); // 10000000 is 1/100 of a second.
         // check and see if we're the owner yet.
         $currentOwner = $this->readOwner($internalSynchronizedKey);
 	
@@ -263,7 +263,15 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @throws Exception
      */
     function uniqidReal() {
-    	return uniqid("", true);
+    	if (function_exists("random_bytes")) {
+    		$bytes = random_bytes((int)ceil(13 / 2));
+    	} else if (function_exists("openssl_random_pseudo_bytes")) {
+    		$bytes = openssl_random_pseudo_bytes((int)ceil(13 / 2));
+    	} else {
+    		return uniqid("", true);
+    	}
+    	
+    	return bin2hex($bytes) . "||" . uniqid("", true);
     }
 
 }

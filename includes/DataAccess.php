@@ -172,11 +172,9 @@ class ABJ_404_Solution_DataAccess {
         $ignoreErrorStrings = array();
         
         $options = array_merge(array('log_errors' => true, 
-            'log_too_slow' => true), $options);
+            'log_too_slow' => true, 'ignore_errors' => array()), $options);
         
-        if (array_key_exists('ignore_errors', $options)) {
-        	$ignoreErrorStrings = $options['ignore_errors'];
-        }
+       	$ignoreErrorStrings = $options['ignore_errors'];
         
         $query = $this->doTableNameReplacements($query);
         
@@ -1060,23 +1058,34 @@ class ABJ_404_Solution_DataAccess {
      */
     function insertLookupValueAndGetID($valueToInsert) {
     	$f = ABJ_404_Solution_Functions::getInstance();
-    	$query = "select id from {wp_abj404_lookup} where lkup_value = '" . $valueToInsert . "'";
-        $results = $this->queryAndGetResults($query);
-        
-        if (sizeof($results['rows']) > 0) {
-            // the value already exists so we only need to return the ID.
-            $rows = $results['rows'];
-            $row1 = $rows[0];
-            $id = $row1['id'];
-            return $id;
-        }
-
+    	
+    	$lookupID = intval($this->getLookupIDForUser($valueToInsert));
+    	if ($lookupID >= 0) {
+    		return $lookupID;
+    	}
+    	
         // insert the value since it's not there already.
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertIntoLookupTable.sql");
+        $query = "INSERT INTO {wp_abj404_lookup} (lkup_value) values ('{lkup_value}')";
         $query = $f->str_replace('{lkup_value}', $valueToInsert, $query);
-        $results = $this->queryAndGetResults($query);
-        
-        return $results['insert_id'];
+        $this->queryAndGetResults($query, array('ignore_errors' => 
+        		array("Duplicate entry")));
+
+        $lookupID = $this->getLookupIDForUser($valueToInsert);
+        return $lookupID;
+    }
+    
+    function getLookupIDForUser($userName) {
+    	$query = "select id from {wp_abj404_lookup} where lkup_value = '" . $userName . "'";
+    	$results = $this->queryAndGetResults($query);
+    	
+    	if (sizeof($results['rows']) > 0) {
+    		// the value already exists so we only need to return the ID.
+    		$rows = $results['rows'];
+    		$row1 = $rows[0];
+    		$id = $row1['id'];
+    		return intval($id);
+    	}
+    	return -1;
     }
 
     /** 

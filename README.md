@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.26.4 (July 10, 2021) ##
+* Improvement: Minor changes for database table consistency. 
+
 ## Version 2.26.3 (July 8, 2021) ##
 * FIX: Avoid a possible infinite loop when updating the database version. 
 

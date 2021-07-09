@@ -47,11 +47,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
     
     private function reallyCreateDatabaseTables($updatingToNewVersion = false) {
-    	$this->runInitialCreateTables();
-    	
     	if ($updatingToNewVersion) {
     		$this->correctIssuesBefore();
     	}
+    	
+    	$this->runInitialCreateTables();
     	
     	$this->correctCollations();
     	
@@ -73,13 +73,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function correctIssuesBefore() {
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	$abj404dao->correctDuplicateLookupValues();
+    	
+    	$this->correctMatchData();
     }
     
     /** Correct any possible outstanding issues. */
     function correctIssuesAfter() {
+    	$this->correctMatchData();
+    }
+    
+    function correctMatchData() {
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    	$abj404dao->queryAndGetResults(
-    		"delete from {wp_abj404_spelling_cache} where matchdata is null");
+    	$abj404dao->queryAndGetResults("delete from {wp_abj404_spelling_cache} " .
+    		"where matchdata is null or matchdata = ''");
     }
     
 /** When certain columns are created we have to populate data.
@@ -256,6 +262,25 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     
     function verifyColumns($tableName, $createTableStatementGoal) {
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	
+    	// find the differences
+    	$tableDifferences = $this->getTableDifferences($tableName, $createTableStatementGoal);
+    	
+    	// make the changes
+    	$this->updateATableBasedOnDifferences($tableName, $tableDifferences);
+    	
+    	// verify that there are now no changes that need to be made.
+    	$tableDifferences = $this->getTableDifferences($tableName, $createTableStatementGoal);
+    	
+    	if (count($tableDifferences['updateTheseColumns']) > 0 || 
+    		count($tableDifferences['createTheseColumns']) > 0) {
+    	
+    		$abj404logging->errorMessage("There are still differences after updating the " . 
+    			"database. " . print_r($tableDifferences, true));
+    	}
+    }
+    
+    function getTableDifferences($tableName, $createTableStatementGoal) {
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	
     	// get the current create table statement
@@ -274,7 +299,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+)\s?),/";
     	$existingTableMatches = null;
     	$goalTableMatches = null;
-    	// match the existing table. use preg_match_all because I couldn't find an 
+    	// match the existing table. use preg_match_all because I couldn't find an
     	// "_all" option when using mb_ereg.
     	preg_match_all($colNamesAndTypesPattern, $existingTableSQL, $existingTableMatches);
     	preg_match_all($colNamesAndTypesPattern, $createTableStatementGoal, $goalTableMatches);
@@ -290,16 +315,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	// see if some columns need to be created.
     	$dropTheseColumns = array_diff($existingTableMatchesColumnNames,
     		$goalTableMatchesColumnNames);
-    	$createTheseColumns = array_diff($goalTableMatchesColumnNames, 
+    	$createTheseColumns = array_diff($goalTableMatchesColumnNames,
     		$existingTableMatchesColumnNames);
     	
-    	// drop unnecessary columns. 
-    	foreach ($dropTheseColumns as $colName) {
-    		$query = "alter table " . $tableName . " drop " . $colName;
-    		$abj404dao->queryAndGetResults($query);
-    		$abj404logging->infoMessage("I dropped a column (1): " . $query);
-    	}
-
     	// get the ddl for each column
     	$goalTableMatchesColumnDDL = $goalTableMatches[1];
     	$existingTableMatchesColumnDDL = $existingTableMatches[1];
@@ -308,15 +326,60 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$goalTableMatchesColumnDDL = array_map('trim', $goalTableMatchesColumnDDL);
     	$existingTableMatchesColumnDDL = array_map('trim', $existingTableMatchesColumnDDL);
     	
+    	// normalize minor differences between mysql versions
+    	$newGoalTableDDL = array();
+    	foreach ($goalTableMatchesColumnDDL as $oneDDLLine) {
+    		$newVal = str_replace("default '0'", "default 0", $oneDDLLine);
+    		array_push($newGoalTableDDL, $newVal);
+    	}
+    	$goalTableMatchesColumnDDL = $newGoalTableDDL;
+    	$newExistingTableDDL = array();
+    	foreach ($existingTableMatchesColumnDDL as $oneDDLLine) {
+    		$newVal = str_replace("default '0'", "default 0", $oneDDLLine);
+    		array_push($newExistingTableDDL, $newVal);
+    	}
+    	$existingTableMatchesColumnDDL = $newExistingTableDDL;
+    	
     	// see if anything needs to be updated or created.
-    	$updateTheseColumns = array_diff($goalTableMatchesColumnDDL, 
+    	$updateTheseColumns = array_diff($goalTableMatchesColumnDDL,
     		$existingTableMatchesColumnDDL);
+    	
+    	// wrap the results
+    	$results = array("updateTheseColumns" => $updateTheseColumns, 
+    			"dropTheseColumns" => $dropTheseColumns,
+    			"createTheseColumns" => $createTheseColumns,
+    			"goalTableMatchesColumnDDL" => $goalTableMatchesColumnDDL,
+    			"existingTableMatchesColumnDDL" => $existingTableMatchesColumnDDL,
+    			"goalTableMatches" => $goalTableMatches,
+    			"goalTableMatchesColumnNames" => $goalTableMatchesColumnNames
+    	);
+    	return $results;
+    }
+    
+    function updateATableBasedOnDifferences($tableName, $tableDifferences) {
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	
+    	$dropTheseColumns = $tableDifferences['dropTheseColumns'];
+    	$updateTheseColumns = $tableDifferences['updateTheseColumns'];
+    	$createTheseColumns = $tableDifferences['createTheseColumns'];
+    	$goalTableMatchesColumnDDL = $tableDifferences['goalTableMatchesColumnDDL'];
+    	$existingTableMatchesColumnDDL = $tableDifferences['existingTableMatchesColumnDDL'];
+    	$goalTableMatches = $tableDifferences['goalTableMatches'];
+    	$goalTableMatchesColumnNames = $tableDifferences['goalTableMatchesColumnNames'];
+    	
+    	// drop unnecessary columns.
+    	foreach ($dropTheseColumns as $colName) {
+    		$query = "alter table " . $tableName . " drop " . $colName;
+    		$abj404dao->queryAndGetResults($query);
+    		$abj404logging->infoMessage("I dropped a column (1): " . $query);
+    	}
     	
     	// say why we're doing what we're doing.
     	if (count($updateTheseColumns) > 0) {
-    		$abj404logging->infoMessage(self::$uniqID . ": On " . $tableName . 
-    			" I'm updating various columns because we want: \n`" . 
-    			print_r($goalTableMatchesColumnDDL, true) . "\n but we have: \n" . 
+    		$abj404logging->infoMessage(self::$uniqID . ": On " . $tableName .
+    			" I'm updating various columns because we want: \n`" .
+    			print_r($goalTableMatchesColumnDDL, true) . "\n but we have: \n" .
     			print_r($existingTableMatchesColumnDDL, true));
     	}
     	
@@ -330,8 +393,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		if (!in_array($colName, $createTheseColumns)) {
     			// update the existing column.
     			// ALTER TABLE `mywp_abj404_redirects` CHANGE `status` `status` BIGINT(19) NOT NULL;
-    			$updateColStatement = "alter table " . $tableName . " change " . $colName . 
-    				" " . $colDDL;
+    			$updateColStatement = "alter table " . $tableName . " change " . $colName .
+    			" " . $colDDL;
     			$abj404dao->queryAndGetResults($updateColStatement);
     			$abj404logging->infoMessage("I updated a column: " . $updateColStatement);
     			
