@@ -88,6 +88,10 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.26.5 (July 11, 2021) ##
+* Improvement: Minor changes for database table consistency.
+* Also the WordPress plugin directory doesn't recognize the previous release so this is also to increase the version number and see if that fixes the issue. 
+
 ## Version 2.26.4 (July 10, 2021) ##
 * Improvement: Minor changes for database table consistency. 
 

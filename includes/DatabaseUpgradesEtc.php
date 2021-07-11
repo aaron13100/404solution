@@ -262,10 +262,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     
     function verifyColumns($tableName, $createTableStatementGoal) {
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	$updatesWereNeeded = false;
     	
     	// find the differences
     	$tableDifferences = $this->getTableDifferences($tableName, $createTableStatementGoal);
-    	
+    	if (count($tableDifferences['updateTheseColumns']) > 0 ||
+    		count($tableDifferences['createTheseColumns']) > 0) {
+    		$updatesWereNeeded = true;
+    	}
     	// make the changes
     	$this->updateATableBasedOnDifferences($tableName, $tableDifferences);
     	
@@ -277,6 +281,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
     		$abj404logging->errorMessage("There are still differences after updating the " . 
     			"database. " . print_r($tableDifferences, true));
+    		
+    	} else if ($updatesWereNeeded) {
+    		$abj404logging->errorMessage("No more differences found after updating the " .
+    			$tableName . " table columns. All is well.");
     	}
     }
     
@@ -520,17 +528,26 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $query = "alter table {table_name} convert to charset " . $postsTableCharset . 
                     " collate " . $postsTableCollation;
             $query = str_replace('{table_name}', $tableName, $query);
-            $results = $abj404dao->queryAndGetResults($query, array('log_errors' => false));
-            $abj404logging->infoMessage("I changed a collation: " . $query);
+            $results = $abj404dao->queryAndGetResults($query, 
+            	array('ignore_errors' => array("Index column size too large")));
             
             if ($results['last_error'] != null && $results['last_error'] != '' && 
             	strpos($results['last_error'], "Index column size too large") !== false) {
+            		
+            	$abj404logging->infoMessage("Collation change for " . $tableName . " failed " . 
+            		"because of an Index column size too large. Deleting indexes and trying " .
+            		"again..");
+            		
             	// delete indexes and try again.
             	$this->deleteIndexes($tableName);
             	
             	$abj404dao->queryAndGetResults($query);
             	$abj404logging->infoMessage("I tried to change a collation again: " . $query);
-            }
+            	
+           	} else if ($results['last_error'] == null || $results['last_error'] == '') {
+           		$abj404logging->infoMessage("I succesfully changed the collation of " . 
+           			$tableName . " to " . $postsTableCollation);
+           	}
         }
     }
     
@@ -538,14 +555,30 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @param string $tableName */
     function deleteIndexes($tableName) {
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$f = ABJ_404_Solution_Functions::getInstance();
     	
     	// get the indexes list.
     	$results = $abj404dao->queryAndGetResults("show index from " . $tableName . 
     		" where key_name != 'PRIMARY'");
     	$rows = $results['rows'];
+    	
+    	if (count($rows) == 0) {
+    		return;
+    	}
+    	
+    	// find the key_name column because the case can be different on different systems.
+    	$keyNameColumn = 'key_name';
+    	$aRow = $rows[0];
+    	foreach (array_keys($aRow) as $someKey) {
+    		if ($f->strtolower($someKey) == 'key_name') {
+    			$keyNameColumn = $someKey;
+    			break;
+    		}
+    	}
+    	
     	foreach ($rows as $row) {
     		// delete them
-    		$query = "alter table " . $tableName . " drop index " . $row['key_name'];
+    		$query = "alter table " . $tableName . " drop index " . $row[$keyNameColumn];
     		$abj404dao->queryAndGetResults($query);
     	}
     }

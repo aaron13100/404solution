@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: https://ajexperience.com/flashcards/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.26.4
+Version: 2.26.5
 Tested up to: 5.8
-Stable tag: 2.26.4
+Stable tag: 2.26.5
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -80,6 +80,10 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.26.5 (July 11, 2021) =
+* Improvement: Minor changes for database table consistency.
+* Also the WordPress plugin directory doesn't recognize the previous release so this is also to increase the version number and see if that fixes the issue. 
 
 = Version 2.26.4 (July 10, 2021) =
 * Improvement: Minor changes for database table consistency. 
