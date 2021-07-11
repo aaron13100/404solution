@@ -283,7 +283,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     			"database. " . print_r($tableDifferences, true));
     		
     	} else if ($updatesWereNeeded) {
-    		$abj404logging->errorMessage("No more differences found after updating the " .
+    		$abj404logging->infoMessage("No more differences found after updating the " .
     			$tableName . " table columns. All is well.");
     	}
     }
