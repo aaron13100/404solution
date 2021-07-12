@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.26.7 (July 12, 2021) ##
+* Improvement: Minor changes to avoid unnecessary emails to the developer.
+
 ## Version 2.26.6 (July 11, 2021) ##
 * Improvement: Minor changes for database table consistency.
 
