@@ -280,7 +280,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		count($tableDifferences['createTheseColumns']) > 0) {
     	
     		$abj404logging->errorMessage("There are still differences after updating the " . 
-    			"database. " . print_r($tableDifferences, true));
+    			$tableName . " table. " . print_r($tableDifferences, true));
     		
     	} else if ($updatesWereNeeded) {
     		$abj404logging->infoMessage("No more differences found after updating the " .
@@ -302,6 +302,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$removeCollatePattern = '/collate \w+ ?/';
     	$existingTableSQL = preg_replace($removeCollatePattern, "", $existingTableSQL);
     	$createTableStatementGoal = preg_replace($removeCollatePattern, "", $createTableStatementGoal);
+    	
+    	// remove the int size format from columns because it doesn't matter.
+    	$removeIntSizePattern = '/( \w*?int)(\(\d+\))/m';
+    	$existingTableSQL = preg_replace($removeIntSizePattern, "$1", $existingTableSQL);
+    	$createTableStatementGoal = preg_replace($removeIntSizePattern, "$1", $createTableStatementGoal);
     	
     	// get column names and types pattern;
     	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+)\s?),/";
