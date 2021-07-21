@@ -2,6 +2,9 @@
 
 class ABJ_404_Solution_WPUtils {
 	
+	/** @var array */
+	static $actionsAlreadyAdded = array();
+	
 	/** Wrapper for the add_action function that throws an exception if the action already exists.
 	 *
 	 * @global type $wp_filter
@@ -18,17 +21,44 @@ class ABJ_404_Solution_WPUtils {
 	static function safeAddAction($tag, $function_to_add, $priority = 10, $accepted_args = 1) {
 		global $wp_filter;
 		
-		if (array_key_exists($tag, $wp_filter)) {
-			$abj404logging = ABJ_404_Solution_Logging::getInstance();
-			$msg = "A duplicate action was added (" . trim($tag) .
-				"). Someone has already registered that tag. " .
-				"Here's what the existing action looks like: " .
-				json_encode($wp_filter[$tag], JSON_PRETTY_PRINT);
-			$abj404logging->errorMessage($msg);
+		// If we've already added the action then make sure it's the SAME action that we've already
+		// added and that we're not overwriting something.
+		// This isn't strictly necessary but it's cleaner to have
+		// one function instead of two.
+		if (array_key_exists($tag, self::$actionsAlreadyAdded)) {
+			// we already saw the action. check if they're the same.
+			$shouldError = true;
+			if (array_key_exists($tag, self::$actionsAlreadyAdded)) {
+				$functionAlreadyAdded = self::$actionsAlreadyAdded[$tag];
+				$differences = array_udiff($functionAlreadyAdded, $function_to_add,
+					array(self::class, 'compareAjaxActionArrays'));
+				
+				// any differences mean we accidentally registered the same action to do
+				// two different things. If the differences are 0 then we've accidentally registered
+				// the same action multiple times.
+				if (count($differences) == 0) {
+					$shouldError = false;
+				}
+			}
+			
+			if ($shouldError) {
+				throw new \Exception("I can't add the action " . $tag .
+					" because someone has already registered that tag. Here's what the existing action looks like: " .
+					json_encode($wp_filter[$tag], JSON_PRETTY_PRINT));
+			}
 		}
+		
+		self::$actionsAlreadyAdded[$tag] = $function_to_add;
 		return add_action($tag, $function_to_add, $priority, $accepted_args);
 	}
 
+	private static function compareAjaxActionArrays($a, $b) {
+		$str1 = self::getValueOrObjectClass($a);
+		$str2 = self::getValueOrObjectClass($b);
+		
+		return strcmp($str1, $str2);
+	}
+	
 	/** Set the version to the file date/time.
 	 * @param $handle
 	 * @param string $src

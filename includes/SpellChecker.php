@@ -34,10 +34,21 @@ class ABJ_404_Solution_SpellChecker {
 		add_action('delete_post', array($me,'delete_postListener'), 10, 2);
 	}
 
-    function save_postListener($post_id, $post, $update) {
-        $this->savePostHandler($post_id, $post, $update, 'save');
+	function save_postListener($post_id, $post = null, $update = null) {
+		if ($post == null) {
+			$post = get_post($post_id);
+		}
+		if ($update == null) {
+			$update = true;
+		}
+		
+		$this->savePostHandler($post_id, $post, $update, 'save');
     }
-    function delete_postListener($post_id, $post) {
+    function delete_postListener($post_id, $post = null) {
+    	if ($post == null) {
+    		$post = get_post($post_id);
+    	}
+    	
         $this->savePostHandler($post_id, $post, true, 'delete');
     }
 
