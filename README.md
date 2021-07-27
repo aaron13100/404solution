@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.26.8 (July 12, 2021) ##
+* Improvement: Avoid a possible caching issue for kvoko.
+
 ## Version 2.26.7 (July 12, 2021) ##
 * Improvement: Minor changes to avoid unnecessary emails to the developer.
 
