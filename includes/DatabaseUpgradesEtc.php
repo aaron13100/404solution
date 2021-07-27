@@ -245,7 +245,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$query = "alter table " . $tableName . " drop index " . $colName;
     		// drop the index in case it already exists.
     		$results = $abj404dao->queryAndGetResults($query, 
-    			array('ignore_errors' => array("check that column/key exists")));
+    			array('ignore_errors' => array("check that column/key exists",
+    			"check that it exists")));
     		if ($results['last_error'] == null || $results['last_error'] == '') {
     			$abj404logging->infoMessage("Successfully dropped index: " . $query);
     		} else {
@@ -454,7 +455,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		
     		foreach ($tableNames as $table) {
     			$query = 'alter table `' . $table . '` engine = InnoDB;';
-    			$abj404logging->infoMessage("Updating " . $table . "to InnoDB.");
+    			$abj404logging->infoMessage("Updating " . $table . " to InnoDB.");
     			// This was causing an "Unknown storage engine 'InnoDB'" message for some people
     			// so we'll ignore any errors.
     			$result = $abj404dao->queryAndGetResults($query, 
