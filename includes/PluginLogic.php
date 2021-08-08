@@ -165,6 +165,7 @@ class ABJ_404_Solution_PluginLogic {
     	try {
     		setcookie($cookieName, urldecode($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
     		setcookie($cookieName . '_SHORT', urldecode($_SERVER['REQUEST_URI']), time() + (5), "/");
+    		setcookie($cookieName . '_UPDATE_URL', urldecode($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
     		
     	} catch (Exception $e) {
     		$abj404logging->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
@@ -456,6 +457,7 @@ class ABJ_404_Solution_PluginLogic {
             'suggest_noresults' => '<p>' . __('No suggestions. :/ ', '404-solution') . '</p>',
             'suggest_cats' => '1',
             'suggest_tags' => '1',
+            'update_suggest_url' => '1',
             'auto_redirects' => '1',
             'auto_score' => '90',
             'auto_deletion' => '1095',
@@ -1459,7 +1461,7 @@ class ABJ_404_Solution_PluginLogic {
 	        // these options all default to 0 if they're not specifically set to 1.
 	        $optionsList = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags', 
 	            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips',
-	        	'redirect_all_requests'
+	        	'redirect_all_requests', 'update_suggest_url'
 	        );
 	        foreach ($optionsList as $optionName) {
 	        	$newVal = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;

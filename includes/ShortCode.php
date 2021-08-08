@@ -14,6 +14,39 @@ class ABJ_404_Solution_ShortCode {
 		return self::$instance;
 	}
 	
+	/** If we're currently redirecting to a custom 404 page and we are about to show page
+	 * suggestions then update the URL displayed to the user. */
+	static function updateURLbarIfNecessary() {
+		$options = get_option('abj404_settings');
+		
+		if (array_key_exists('update_suggest_url', $options) &&
+				isset($options['update_suggest_url']) &&
+				$options['update_suggest_url'] == 1) {
+			$cookieName = ABJ404_PP . '_REQUEST_URI';
+			$cookieName .= '_UPDATE_URL';
+			if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
+				// replace the current URL with the user's actual requested URL.
+				$requestedURL = $_COOKIE[$cookieName];
+				$userFriendlyURL = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ?
+					"https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $requestedURL;
+				$content = '<script language="JavaScript">' . "\n" .
+					"window.history.replaceState({}, null, '" .
+					$userFriendlyURL . "');\n";
+				
+				// delete the cookie since we're done with it
+				$content .=	"   var d = new Date(); \n" .
+					"   d.setTime(d.getTime() - (60 * 5)); \n" .
+					'   var expires = "expires="+ d.toUTCString(); ' . "\n" .
+					'   document.cookie = "' . $cookieName . '=;" + expires + ";path=/"; ' . 
+					"\n";
+				
+				$content .= "</script>\n\n";
+				
+				echo $content;
+			}
+		}
+	}
+	
 	/** 
      * @param array $atts
      */
@@ -47,6 +80,7 @@ class ABJ_404_Solution_ShortCode {
                     '   document.cookie = "' . $cookieName . '=;" + expires + ";path=/"; ' . "\n" .
                     "</script> \n";
         }
+        
         if (array_key_exists(ABJ404_PP, $_REQUEST) && isset($_REQUEST[ABJ404_PP]) && 
                 array_key_exists($cookieName, $_REQUEST[ABJ404_PP]) && isset($_REQUEST[ABJ404_PP][$cookieName])) {
             $urlRequest = $_REQUEST[ABJ404_PP][$cookieName];

@@ -39,7 +39,7 @@ class ABJ_404_Solution_WordPress_Connector {
         
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
     }
-    
+
     /** Include things necessary for ajax. */
     static function add_scripts($hook) {
         // only load this stuff for this plugin. 

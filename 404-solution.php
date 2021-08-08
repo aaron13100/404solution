@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://ajexperience.com/flashcards/404-solution/
 
-	Version: 2.26.8
+	Version: 2.27.0
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -29,6 +29,7 @@
 	Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+define('ABJ404_PP', 'abj404_solution');
 define('ABJ404_FILE', __FILE__);
 define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
 $GLOBALS['abj404_display_errors'] = false;
@@ -92,6 +93,18 @@ function abj404_404listener() {
     		$connector = ABJ_404_Solution_WordPress_Connector::getInstance();
     		$connector->processRedirectAllRequests();
     		return;
+    	}
+    	
+    	/** If we're currently redirecting to a custom 404 page and we are about to show page
+    	 * suggestions then update the URL displayed to the user. */
+    	if (array_key_exists('update_suggest_url', $options) &&
+    			isset($options['update_suggest_url']) &&
+    			$options['update_suggest_url'] == 1) {
+    		$cookieName = ABJ404_PP . '_REQUEST_URI';
+    		$cookieName .= '_UPDATE_URL';
+    		if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
+    			add_action('wp_head', 'ABJ_404_Solution_ShortCode::updateURLbarIfNecessary');
+    		}
     	}
     }
     
