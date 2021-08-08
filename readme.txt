@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: https://ajexperience.com/flashcards/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.26.8
+Version: 2.27.0
 Tested up to: 5.8
-Stable tag: 2.26.8
+Stable tag: 2.27.0
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -81,8 +81,9 @@ Please try this website for studying flashcards.
 
 == Changelog ==
 
-= Version 2.26.8 (July 12, 2021) =
-* Improvement: Avoid a possible caching issue for kvoko.
+= Version 2.27.0 (August 8, 2021) =
+* FIX: Avoid the Missing argument error for the delete post listener (for kvoko and others).
+* Improvement: Update the URL bar to the requested URL when a custom 404 page is used.
 
 = Version 2.26.7 (July 12, 2021) =
 * Improvement: Minor changes to avoid unnecessary emails to the developer.

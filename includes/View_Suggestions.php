@@ -28,12 +28,18 @@ class ABJ_404_Solution_View_Suggestions {
         if ($options['suggest_tags'] == '1') {
             $selectedSuggestTags = " checked";
         }
+        $selectedSuggestURL = "";
+        if ($options['update_suggest_url'] == '1') {
+        	$selectedSuggestURL = " checked";
+        }
+        
         
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/viewSuggestions.html");
         // do special replacements
         $html = $f->str_replace('{SELECTED_SUGGEST_CATS}', $selectedSuggestCats, $html);
         $html = $f->str_replace('{SELECTED_SUGGEST_TAGS}', $selectedSuggestTags, $html);
+        $html = $f->str_replace('{SELECTED_SUGGEST_URL}', $selectedSuggestURL, $html);
         $html = $f->str_replace('{SUGGEST_MIN_SCORE}', esc_attr($options['suggest_minscore']), $html);
         $html = $f->str_replace('{SUGGEST_MAX_SUGGESTIONS}', esc_attr($options['suggest_max']), $html);
         $html = $f->str_replace('{SUGGEST_USER_TITLE}', esc_attr($options['suggest_title']), $html);

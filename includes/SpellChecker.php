@@ -450,13 +450,13 @@ class ABJ_404_Solution_SpellChecker {
 
 	function getOnlyIDandTermID($rowsAsObject) {
 		$rows = array();
-		$objectRow = array_shift($rowsAsObject);
+		$objectRow = array_pop($rowsAsObject);
 		while ($objectRow != null) {
             $rows[] = array(
                 'id' => property_exists($objectRow, 'id') == true ? $objectRow->id : null,
                 'term_id' => property_exists($objectRow, 'term_id') == true ? $objectRow->term_id : null
                 );
-			$objectRow = array_shift($rowsAsObject);
+            $objectRow = array_pop($rowsAsObject);
 		}
 
 		return $rows;
@@ -563,7 +563,7 @@ class ABJ_404_Solution_SpellChecker {
 		// access the array directly instead of using a foreach loop so we can remove items
 		// from the end of the array in the middle of the loop.
 		while (count($likelyMatchIDs) > 0) {
-			$id = array_shift($likelyMatchIDs);
+			$id = array_pop($likelyMatchIDs);
 
 			// use the levenshtein distance formula here.
 			$the_permalink = $this->getPermalink($id, $rowType);
@@ -697,7 +697,7 @@ class ABJ_404_Solution_SpellChecker {
 		}
 		$currentBatch = $this->publishedPostsProvider->getNextBatch($requestedURLCleanedLength);
 
-		$row = array_shift($currentBatch);
+		$row = array_pop($currentBatch);
 		while ($row != null) {
 			$row = (array)$row;
 
@@ -789,7 +789,7 @@ class ABJ_404_Solution_SpellChecker {
 			}
 
 			// get the next row in the current batch.
-			$row = array_shift($currentBatch);
+			$row = array_pop($currentBatch);
 			if ($row == null) {
 				// get the best maxDistance pages and then trim the next batch using that info.
 				$maxAcceptableDistance = $this->getMaxAcceptableDistance($maxDistances, $onlyNeedThisManyPages);
@@ -797,7 +797,7 @@ class ABJ_404_Solution_SpellChecker {
 				// get the next batch if there are no more rows in the current batch.
             	$currentBatch = $this->publishedPostsProvider->getNextBatch(
             		$requestedURLCleanedLength, 1000, $maxAcceptableDistance);
-				$row = array_shift($currentBatch);
+				$row = array_pop($currentBatch);
 			}
 		}
 
