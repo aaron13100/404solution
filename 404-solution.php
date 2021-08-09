@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://ajexperience.com/flashcards/404-solution/
 
-	Version: 2.27.0
+	Version: 2.27.1
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -29,7 +29,6 @@
 	Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-define('ABJ404_PP', 'abj404_solution');
 define('ABJ404_FILE', __FILE__);
 define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
 $GLOBALS['abj404_display_errors'] = false;
@@ -84,12 +83,13 @@ function abj404_404listener() {
         return;
     }
     
+    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+    
     if (!is_404()) {
     	// if we should redirect all requests then don't return.
     	$options = get_option('abj404_settings');
     	$arrayKeyExists = is_array($options) && array_key_exists('redirect_all_requests', $options);
     	if ($arrayKeyExists && $options['redirect_all_requests'] == 1) {
-    		require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     		$connector = ABJ_404_Solution_WordPress_Connector::getInstance();
     		$connector->processRedirectAllRequests();
     		return;
@@ -107,8 +107,10 @@ function abj404_404listener() {
     		}
     	}
     }
+    if (!is_404() || is_admin()) {
+    	return;
+    }
     
-    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     $connector = ABJ_404_Solution_WordPress_Connector::getInstance();
     return $connector->process404();
 }

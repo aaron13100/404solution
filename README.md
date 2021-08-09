@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.27.1 (August 9, 2021) ##
+* FIX: Avoid a Use of undefined constant warning for PHP 7 users (thanks debug file participants).
+
 ## Version 2.27.0 (August 8, 2021) ##
 * FIX: Avoid the Missing argument error for the delete post listener (for kvoko and others).
 * Improvement: Update the URL bar to the requested URL when a custom 404 page is used.

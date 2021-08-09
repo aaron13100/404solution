@@ -9,6 +9,8 @@ class ABJ_404_Solution_PluginLogic {
 	private $urlHomeDirectory = null;
 	
 	private $urlHomeDirectoryLength = null;
+	
+	private $options = null;
     
 	/** Track whether we're already in the method that updates the database that may be called recursively.
 	 * @var bool */
@@ -197,10 +199,7 @@ class ABJ_404_Solution_PluginLogic {
                 $options['dest404page'] : 
             ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
         
-        $check1 = ($dest404page !== (ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED));
-        $check2 = ($dest404page !== ABJ404_TYPE_404_DISPLAYED);
-        $check3 = $check1 && $check2;
-        if ($check3) {
+        if ($this->thereAUserSpecified404Page($dest404page)) {
            	// $idAndType OK on regular 404
            	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0, 
            		null, $options);
@@ -224,7 +223,7 @@ class ABJ_404_Solution_PluginLogic {
 	            exit;
             }
         }
-
+        
         // ---------------------------------------
         // give up. log the 404.
         if (@$options['capture_404'] == '1') {
@@ -242,12 +241,22 @@ class ABJ_404_Solution_PluginLogic {
         }
     }
     
+    /** Returns true if there is a custom 404 page. */
+    function thereAUserSpecified404Page($dest404page) {
+    	$check1 = ($dest404page !== (ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED));
+    	$check2 = ($dest404page !== ABJ404_TYPE_404_DISPLAYED);
+    	return $check1 && $check2;
+    }
+    
     /** 
      * @param bool $skip_db_check
      * @return array
      */
     function getOptions($skip_db_check = false) {
-        $options = get_option('abj404_settings');
+    	if ($this->options == null) {
+        	$this->options = get_option('abj404_settings');
+    	}
+    	$options = $this->options;
 
         if (!is_array($options)) {
             add_option('abj404_settings', '', '', 'no');
