@@ -197,7 +197,7 @@ class ABJ_404_Solution_Logging {
         
         // update the latest error line emailed to the developer.
         $options[self::LAST_SENT_LINE] = $latestErrorLineFound['num'];
-        update_option('abj404_settings', $options);
+        $abj404logic->updateOptions($options);
         file_put_contents($sentDateFile, $latestErrorLineFound['num']);
         $fileContents = file_get_contents($sentDateFile);
         if ($fileContents != $latestErrorLineFound['num']) {

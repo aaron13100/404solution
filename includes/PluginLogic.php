@@ -275,7 +275,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if ($missing) {
-            update_option('abj404_settings', $options);
+            $this->updateOptions($options);
         }
 
         if ($skip_db_check == false) {
@@ -285,6 +285,11 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         return $options;
+    }
+    
+    function updateOptions($options) {
+    	update_option('abj404_settings', $options);
+    	$this->options = $options;
     }
 
     /** Do any maintenance when upgrading to a new version.
@@ -378,7 +383,7 @@ class ABJ_404_Solution_PluginLogic {
             }
 
             $options['ignore_doprocess'] = implode("\n",$userAgents);
-            update_option('abj404_settings', $options);
+            $this->updateOptions($options);
         }
 
         // move to the new log table
@@ -420,7 +425,7 @@ class ABJ_404_Solution_PluginLogic {
             }
 
             $options['folders_files_ignore'] = implode("\n",$originalItems);
-            update_option('abj404_settings', $options);
+            $this->updateOptions($options);
         }        
 
         // add the second part of the default destination page.
@@ -433,7 +438,7 @@ class ABJ_404_Solution_PluginLogic {
                 $dest404page .= '|' . ABJ404_TYPE_POST;
             }
             $options['dest404page'] = $dest404page;
-            update_option('abj404_settings', $options);
+            $this->updateOptions($options);
         }
 
         $options = $this->doUpdateDBVersionOption($options);
@@ -505,7 +510,7 @@ class ABJ_404_Solution_PluginLogic {
 
         $options['DB_VERSION'] = ABJ404_VERSION;
 
-        update_option('abj404_settings', $options);
+        $this->updateOptions($options);
 
         return $options;
     }
@@ -727,7 +732,7 @@ class ABJ_404_Solution_PluginLogic {
 
         $options = $this->getOptions();
         $options['perpage'] = $showRows;
-        update_option('abj404_settings', $options);
+        $this->updateOptions($options);
     }
     
     /** 
@@ -1235,11 +1240,11 @@ class ABJ_404_Solution_PluginLogic {
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order_by'] = $tableOptions['orderby'];
-                update_option('abj404_settings', $options);
+                $this->updateOptions($options);
                 
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order_by'] = $tableOptions['orderby'];
-                update_option('abj404_settings', $options);
+                $this->updateOptions($options);
             }
             
         } else if ($pageBeingViewed == "abj404_logs") {
@@ -1257,11 +1262,11 @@ class ABJ_404_Solution_PluginLogic {
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order'] = $tableOptions['order'];
-                update_option('abj404_settings', $options);
+                $this->updateOptions($options);
                 
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order'] = $tableOptions['order'];
-                update_option('abj404_settings', $options);
+                $this->updateOptions($options);
             }
             
         } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
@@ -1545,7 +1550,7 @@ class ABJ_404_Solution_PluginLogic {
 	        $new_options = array();
 	        $new_options = $this->sanitizePostData($options);
 	
-	        update_option('abj404_settings', $new_options);
+	        $this->updateOptions($new_options);
 	        
 	        // update the permalink cache because the post types included may have changed.
 	        $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
