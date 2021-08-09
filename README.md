@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.27.2 (August 9, 2021) ##
+* FIX: Save/display options correctly (thanks Greg).
+
 ## Version 2.27.1 (August 9, 2021) ##
 * FIX: Avoid a Use of undefined constant warning for PHP 7 users (thanks debug file participants).
 
