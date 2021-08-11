@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.27.3 (August 11, 2021) ##
+* Improvement: Only load plugin files when absolutely necessary.
+
 ## Version 2.27.2 (August 9, 2021) ##
 * FIX: Save/display options correctly (thanks Greg).
 
