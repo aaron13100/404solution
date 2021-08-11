@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://ajexperience.com/flashcards/404-solution/
 
-	Version: 2.27.2
+	Version: 2.27.3
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -29,6 +29,7 @@
 	Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+define('ABJ404_PP', 'abj404_solution');
 define('ABJ404_FILE', __FILE__);
 define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
 $GLOBALS['abj404_display_errors'] = false;
@@ -36,25 +37,30 @@ $GLOBALS['abj404_whitelist'] = array('127.0.0.1', '::1', 'localhost',
 		'ajexperience.com', 'www.ajexperience.com');
 
 $abj404_autoLoaderClassMap = array();
-foreach (array('includes/php/objs', 'includes/php/wordpress', 'includes/php', 'includes/php',
-		'includes/ajax', 'includes') as $dir) {
-		global $abj404_autoLoaderClassMap;
-		
-		$globInput = ABJ404_PATH . $dir . DIRECTORY_SEPARATOR . '*.php';
-		$files = glob($globInput);
-		foreach ($files as $file) {
-			// /Users/user..../php/Study.php becomes ABJ_FC\Study
-			$pathParts = pathinfo($file);
-			$classNameWhenLoading = 'ABJ_404_Solution_' . $pathParts['filename'];
-			$abj404_autoLoaderClassMap[$classNameWhenLoading] = $file;
-		}
-}
-
 function abj404_autoloader($class) {
-	global $abj404_autoLoaderClassMap;
-	
-	if (array_key_exists($class, $abj404_autoLoaderClassMap)) {
-		require_once $abj404_autoLoaderClassMap[$class];
+
+	// only pay attention if it's for us. don't bother for other things.
+	if (substr($class, 0, 16) == 'ABJ_404_Solution') {
+		global $abj404_autoLoaderClassMap;
+		if (count($abj404_autoLoaderClassMap) == 0) {
+			foreach (array('includes/php/objs', 'includes/php/wordpress', 'includes/php', 'includes/php',
+					'includes/ajax', 'includes') as $dir) {
+					global $abj404_autoLoaderClassMap;
+					
+					$globInput = ABJ404_PATH . $dir . DIRECTORY_SEPARATOR . '*.php';
+					$files = glob($globInput);
+					foreach ($files as $file) {
+						// /Users/user..../php/Study.php becomes ABJ_FC\Study
+						$pathParts = pathinfo($file);
+						$classNameWhenLoading = 'ABJ_404_Solution_' . $pathParts['filename'];
+						$abj404_autoLoaderClassMap[$classNameWhenLoading] = $file;
+					}
+			}
+		}
+		
+		if (array_key_exists($class, $abj404_autoLoaderClassMap)) {
+			require_once $abj404_autoLoaderClassMap[$class];
+		}
 	}
 }
 spl_autoload_register('abj404_autoloader');
@@ -83,13 +89,12 @@ function abj404_404listener() {
         return;
     }
     
-    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-    
     if (!is_404()) {
     	// if we should redirect all requests then don't return.
     	$options = get_option('abj404_settings');
     	$arrayKeyExists = is_array($options) && array_key_exists('redirect_all_requests', $options);
     	if ($arrayKeyExists && $options['redirect_all_requests'] == 1) {
+    		require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     		$connector = ABJ_404_Solution_WordPress_Connector::getInstance();
     		$connector->processRedirectAllRequests();
     		return;
@@ -103,6 +108,7 @@ function abj404_404listener() {
     		$cookieName = ABJ404_PP . '_REQUEST_URI';
     		$cookieName .= '_UPDATE_URL';
     		if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
+    			require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     			add_action('wp_head', 'ABJ_404_Solution_ShortCode::updateURLbarIfNecessary');
     		}
     	}
@@ -111,6 +117,7 @@ function abj404_404listener() {
     	return;
     }
     
+    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     $connector = ABJ_404_Solution_WordPress_Connector::getInstance();
     return $connector->process404();
 }

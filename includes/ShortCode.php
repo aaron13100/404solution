@@ -21,18 +21,19 @@ class ABJ_404_Solution_ShortCode {
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
 		
+		$shouldUpdateURL = true;
 		// if we're not supposed to update the URL then don't.
 		if (!array_key_exists('update_suggest_url', $options) ||
 				!isset($options['update_suggest_url']) ||
 				$options['update_suggest_url'] != 1) {
-			return;
+			$shouldUpdateURL = false;
 		}
 
-		// if the cookie we need isn't set the give up.
+		// if the cookie we need isn't set then give up.
 		$cookieName = ABJ404_PP . '_REQUEST_URI';
 		$cookieName .= '_UPDATE_URL';
 		if (!isset($_COOKIE[$cookieName]) || empty($_COOKIE[$cookieName])) {
-			return;
+			$shouldUpdateURL = false;
 		}
 
 		$dest404page = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
@@ -48,29 +49,37 @@ class ABJ_404_Solution_ShortCode {
 			if (!$f->endsWithCaseInsensitive($permalink['link'], $_SERVER['REQUEST_URI']) &&
 					$permalink['status'] != 'trash') {
 						
-				return;
+				$shouldUpdateURL = false;
 			}
 		}
 		
 		$content = '';
-		// replace the current URL with the user's actual requested URL.
-		$requestedURL = $_COOKIE[$cookieName];
-		$userFriendlyURL = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ?
-			"https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $requestedURL;
-		$content .= '<script language="JavaScript">' . "\n" .
-			"window.history.replaceState({}, null, '" .
-			$userFriendlyURL . "');\n";
 		
-		// delete the cookie since we're done with it
-		$content .=	"   var d = new Date(); \n" .
-			"   d.setTime(d.getTime() - (60 * 5)); \n" .
-			'   var expires = "expires="+ d.toUTCString(); ' . "\n" .
-			'   document.cookie = "' . $cookieName . '=;" + expires + ";path=/"; ' . 
-			"\n";
+		if ($shouldUpdateURL) {
+			// replace the current URL with the user's actual requested URL.
+			$requestedURL = $_COOKIE[$cookieName];
+			$userFriendlyURL = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ?
+				"https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $requestedURL;
+			
+			$content .= "window.history.replaceState({}, null, '" .
+				$userFriendlyURL . "');\n";
+		}
 		
-		$content .= "</script>\n\n";
+		if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
+			// delete the cookie since we're done with it. it's a one-time use thing.
+			$content .=	"   var d = new Date(); /* delete the cookie */\n" .
+				"   d.setTime(d.getTime() - (60 * 5)); \n" .
+				'   var expires = "expires="+ d.toUTCString(); ' . "\n" .
+				'   document.cookie = "' . $cookieName . '=;" + expires + ";path=/"; ' . 
+				"\n";
+		}
 		
-		echo $content;
+		if ($content != '') {
+			$content = '<script language="JavaScript">' . "\n" . 
+				$content .
+				"\n</script>\n\n";
+			echo $content;
+		}
 	}
 	
 	/** 
