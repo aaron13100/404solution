@@ -243,6 +243,29 @@ class ABJ_404_Solution_DataAccess {
                 $result = $this->queryAndGetResults($query, array('log_errors' => false));
                 $abj404logging->infoMessage("Attempted to repair table " . $tableToRepair . ". Result: " . 
                         json_encode($result));
+
+                // track how many times we've tried to repair something.
+                // only for the certain tables. Exclude the redirects table because people
+                // may have spent time creating entries there. Other tables are generated 
+                // automatically.
+                if (strpos($tableToRepair, 'redirects') === false) {
+	                $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+	                $options = $abj404logic->getOptions();
+	                if (!array_key_exists('repaired_count', $options)) {
+	                	$options['repaired_count'] = 0;
+	                }
+	                $options['repaired_count'] = intval($options['repaired_count']) + 1;
+	                $abj404logic->updateOptions($options);
+	                
+	                if (intval($options['repaired_count']) > 3 && 
+	                		intval($options['repaired_count']) < 7) {
+	                		
+	                	$upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+	                	$this->queryAndGetResults('drop table ' . $tableToRepair);
+	                	$upgradesEtc->createDatabaseTables(false);
+	                }
+                }
+                
             } else {
                 // tell someone the table $tableToRepair is broken.
             	$abj404logging->warnMessage("The table " . $tableToRepair . " needs to be " . 
@@ -1128,6 +1151,10 @@ class ABJ_404_Solution_DataAccess {
         if ($f->strtolower($manually_fired) == 'true') {
             $manually_fired = true;
         }
+        
+        // reset the crashed table count
+        $options['repaired_count'] = 0;
+        $abj404logic->updateOptions($options);
 
         $duplicateRowsDeleted = $abj404dao->removeDuplicatesCron();
 

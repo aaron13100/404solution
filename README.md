@@ -88,6 +88,10 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.27.4 (August 13, 2021) ##
+* FIX: Fix a possible packaging issue for some users.
+* Improvement: Try harder to repair crashed tables.
+
 ## Version 2.27.3 (August 11, 2021) ##
 * Improvement: Only load plugin files when absolutely necessary.
 
