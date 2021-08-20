@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.27.5 (August 20, 2021) ##
+* FIX: Use empty() instead of count() so php 7.2 will stop complaining even though everything was working fine before PHP 7.2.
+
 ## Version 2.27.4 (August 13, 2021) ##
 * FIX: Fix a possible packaging issue for some users.
 * Improvement: Try harder to repair crashed tables.

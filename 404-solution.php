@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://ajexperience.com/flashcards/404-solution/
 
-	Version: 2.27.4
+	Version: 2.27.5
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -42,10 +42,9 @@ function abj404_autoloader($class) {
 	// only pay attention if it's for us. don't bother for other things.
 	if (substr($class, 0, 16) == 'ABJ_404_Solution') {
 		global $abj404_autoLoaderClassMap;
-		if (count($abj404_autoLoaderClassMap) == 0) {
+		if (empty($abj404_autoLoaderClassMap)) {
 			foreach (array('includes/php/objs', 'includes/php/wordpress', 'includes/php', 'includes/php',
 					'includes/ajax', 'includes') as $dir) {
-					global $abj404_autoLoaderClassMap;
 					
 					$globInput = ABJ404_PATH . $dir . DIRECTORY_SEPARATOR . '*.php';
 					$files = glob($globInput);

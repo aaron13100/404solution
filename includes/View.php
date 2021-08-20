@@ -611,7 +611,7 @@ class ABJ_404_Solution_View {
             $recnumAsArray[] = $recnum;
             $redirects_multiple = $abj404dao->getRedirectsByIDs($recnumAsArray);
             
-            if (count($redirects_multiple) == 0) {
+            if (empty($redirects_multiple)) {
                 echo "Error: Invalid ID Number! (id: " . esc_html($recnum) . ")";
                 $abj404logging->errorMessage("Error: Invalid ID Number! (id: " . esc_html($recnum) . ")");
                 return;
@@ -2125,7 +2125,7 @@ class ABJ_404_Solution_View {
     function getTabFilters($sub, $tableOptions) {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 
-        if (count($tableOptions) == 0) {
+        if (empty($tableOptions)) {
         	$tableOptions = $abj404logic->getTableOptions($sub);
         }
         

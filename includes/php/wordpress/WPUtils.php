@@ -36,7 +36,7 @@ class ABJ_404_Solution_WPUtils {
 				// any differences mean we accidentally registered the same action to do
 				// two different things. If the differences are 0 then we've accidentally registered
 				// the same action multiple times.
-				if (count($differences) == 0) {
+				if (empty($differences)) {
 					$shouldError = false;
 				}
 			}
