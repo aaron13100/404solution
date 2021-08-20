@@ -1966,7 +1966,7 @@ class ABJ_404_Solution_PluginLogic {
             
         } else if ($type == ABJ404_TYPE_CAT) {
             $rows = $abj404dao->getPublishedCategories($id);
-            if (count($rows) == 0) {
+            if (empty($rows)) {
                 $abj404logging->debugMessage('No TERM (category) found with ID: ' . $id);
                 return '';
             }

@@ -349,7 +349,7 @@ class ABJ_404_Solution_DataAccess {
     	$results = $this->queryAndGetResults($query);
     	
     	$rows = $results['rows'];
-    	if ($rows == null || count($rows) == 0) {
+    	if ($rows == null || empty($rows)) {
     		return null;
     	}
     	
@@ -400,7 +400,7 @@ class ABJ_404_Solution_DataAccess {
         $results = $this->queryAndGetResults($query);
         
         $rows = $results['rows'];
-        if (count($rows) == 0) {
+        if (empty($rows)) {
             return null;
         }
         
@@ -413,7 +413,7 @@ class ABJ_404_Solution_DataAccess {
         $results = $this->queryAndGetResults($query);
         
         $rows = $results['rows'];
-        if (count($rows) == 0) {
+        if (empty($rows)) {
             return null;
         }
         
@@ -446,7 +446,7 @@ class ABJ_404_Solution_DataAccess {
         
         $rows = $results['rows'];
         
-        if (count($rows) == 0) {
+        if (empty($rows)) {
             return array();
         }
         
@@ -526,7 +526,7 @@ class ABJ_404_Solution_DataAccess {
        $query = $this->doTableNameReplacements($query);
        
        $captured = $wpdb->get_col($query, 0);
-       if (count($captured) == 0) {
+       if (empty($captured)) {
            $captured[0] = 0;
        }
        return intval($captured[0]);
@@ -572,7 +572,7 @@ class ABJ_404_Solution_DataAccess {
        $query = $this->doTableNameReplacements($query);
 
        $size = $wpdb->get_col($query, 0);
-       if (count($size) == 0) {
+       if (empty($size)) {
            $size[0] = 0;
        }
        return intval($size[0]);
@@ -601,7 +601,7 @@ class ABJ_404_Solution_DataAccess {
 
             $result = $this->queryAndGetResults($query);
             $rows = $result['rows'];
-            if (count($rows) > 0) {
+            if (!empty($rows)) {
 	            $row = $rows[0];
 	            $recordCount = $row['count'];
             }
@@ -628,7 +628,7 @@ class ABJ_404_Solution_DataAccess {
         }
         
         $row = $wpdb->get_row($query, ARRAY_N);
-        if (count($row) == 0) {
+        if (empty($row)) {
             $row[0] = 0;
         }
         $records = $row[0];
@@ -840,7 +840,7 @@ class ABJ_404_Solution_DataAccess {
         $results = $this->queryAndGetResults($query);
         
         // if the table already exists then just schedule it to be updated later.
-        if ($results['rows'] != null && count($results['rows']) > 0) {
+        if ($results['rows'] != null && !empty($results['rows'])) {
             // the table exists. let's find out how long it took to create the table last time.
             $rows = $results['rows'];
             $row1 = $rows[0];
@@ -1037,7 +1037,7 @@ class ABJ_404_Solution_DataAccess {
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
         if (is_array($rows)) {
-        	if (count($rows) == 0) {
+        	if (empty($rows)) {
         		$minLogID = true;
         	}
         }
@@ -1433,7 +1433,7 @@ class ABJ_404_Solution_DataAccess {
         $rows = $results['rows'];
 
         if (is_array($rows)) {
-	        if (count($rows) == 0) {
+	        if (empty($rows)) {
 	            $redirect['id'] = 0;
 	            
 	        } else {
@@ -1459,7 +1459,7 @@ class ABJ_404_Solution_DataAccess {
         $rows = $results['rows'];
 
         if (is_array($rows)) {
-	        if (count($rows) == 0) {
+	        if (empty($rows)) {
 	            $redirect['id'] = 0;
 	            
 	        } else {
@@ -1630,7 +1630,7 @@ class ABJ_404_Solution_DataAccess {
         $categories = array_filter(explode("\n", $f->strtolower($options['recognized_categories'])),
                 array($f, 'removeEmptyCustom'));
         $recognizedCategories = '';
-        if (count($categories) == 0) {
+        if (empty($categories)) {
             $recognizedCategories = "''";
         }
         foreach ($categories as $category) {

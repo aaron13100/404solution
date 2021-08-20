@@ -110,7 +110,7 @@ class ABJ_404_Solution_Ajax_Php {
         $f = ABJ_404_Solution_Functions::getInstance();
         $category = '';
         
-        if (count($suggestions) == 0) {
+        if (empty($suggestions)) {
             // tell the user if there are no resluts.
             if (trim($f->strlen($term)) == 0) {
                 $category = sprintf(__("(No matching results found.)", '404-solution'));

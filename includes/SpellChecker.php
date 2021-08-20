@@ -249,7 +249,7 @@ class ABJ_404_Solution_SpellChecker {
 		$abj404logging = ABJ_404_Solution_Logging::getInstance();
 
 		$exploded = array_filter(explode('/', $requestedURL));
-		if ($exploded == null || count($exploded) == 0) {
+		if ($exploded == null || empty($exploded)) {
 			return null;
 		}
 		$postSlug = end($exploded);

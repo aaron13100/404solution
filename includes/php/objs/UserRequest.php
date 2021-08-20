@@ -100,7 +100,7 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
         $commentregex = '(.*)\/(' . $wp_rewrite->comments_pagination_base . '-[0-9]{1,})(\/|\z)?(.*)';
         $f->regexMatch($commentregex, $urlParts['path'], $results);
         
-        if (count($results) > 0) {
+        if (!empty($results)) {
             $urlWithoutCommentPage = $results[1];
             $commentPagePart = $results[2];
             $commentPagePart = ($commentPagePart == '') ? '' : $commentPagePart . '/';

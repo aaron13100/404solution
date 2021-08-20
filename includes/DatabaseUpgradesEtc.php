@@ -568,7 +568,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		" where key_name != 'PRIMARY'");
     	$rows = $results['rows'];
     	
-    	if (count($rows) == 0) {
+    	if (empty($rows)) {
     		return;
     	}
     	
