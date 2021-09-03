@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.27.6 (September 3, 2021) ##
+* FIX: Use the correct URL to update the URL bar after multiple redirects (only one redirect was supported before) (for Sinkadus (@niwin)).
+
 ## Version 2.27.5 (August 20, 2021) ##
 * FIX: Use empty() instead of count() so php 7.2 will stop complaining even though everything was working fine before PHP 7.2.
 
