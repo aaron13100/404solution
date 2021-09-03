@@ -30,9 +30,9 @@ class ABJ_404_Solution_ShortCode {
 		}
 
 		// if the cookie we need isn't set then give up.
-		$cookieName = ABJ404_PP . '_REQUEST_URI';
-		$cookieName .= '_UPDATE_URL';
-		if (!isset($_COOKIE[$cookieName]) || empty($_COOKIE[$cookieName])) {
+		$updateURLCookieName = ABJ404_PP . '_REQUEST_URI';
+		$updateURLCookieName .= '_UPDATE_URL';
+		if (!isset($_COOKIE[$updateURLCookieName]) || empty($_COOKIE[$updateURLCookieName])) {
 			$shouldUpdateURL = false;
 		}
 
@@ -41,11 +41,14 @@ class ABJ_404_Solution_ShortCode {
 			ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
 		
 		// if we're not currently loading the custom 404 page then don't change the URL.
-		if ($abj404logic->thereAUserSpecified404Page($dest404page)) {
+		if ($abj404logic->thereIsAUserSpecified404Page($dest404page)) {
 			
+			// get the user specified 404 page.
 			$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0,
 				null, $options);
 			
+			// if the last part of the URL does not match the custom 404 page then
+			// don't update the URL.
 			if (!$f->endsWithCaseInsensitive($permalink['link'], $_SERVER['REQUEST_URI']) &&
 					$permalink['status'] != 'trash') {
 						
@@ -57,21 +60,12 @@ class ABJ_404_Solution_ShortCode {
 		
 		if ($shouldUpdateURL) {
 			// replace the current URL with the user's actual requested URL.
-			$requestedURL = $_COOKIE[$cookieName];
+			$requestedURL = $_COOKIE[$updateURLCookieName];
 			$userFriendlyURL = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ?
 				"https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $requestedURL;
 			
 			$content .= "window.history.replaceState({}, null, '" .
 				$userFriendlyURL . "');\n";
-		}
-		
-		if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
-			// delete the cookie since we're done with it. it's a one-time use thing.
-			$content .=	"   var d = new Date(); /* delete the cookie */\n" .
-				"   d.setTime(d.getTime() - (60 * 5)); \n" .
-				'   var expires = "expires="+ d.toUTCString(); ' . "\n" .
-				'   document.cookie = "' . $cookieName . '=;" + expires + ";path=/"; ' . 
-				"\n";
 		}
 		
 		if ($content != '') {
@@ -114,6 +108,20 @@ class ABJ_404_Solution_ShortCode {
                     '   var expires = "expires="+ d.toUTCString(); ' . "\n" . 
                     '   document.cookie = "' . $cookieName . '=;" + expires + ";path=/"; ' . "\n" .
                     "</script> \n";
+        }
+        
+        // we delete the UPDATE_URL cookie here, where the shortcode is used so that it won't
+        // get deleted too early if multiple redirects happen.
+        $updateURLCookieName = ABJ404_PP . '_REQUEST_URI';
+        $updateURLCookieName .= '_UPDATE_URL';
+        if (isset($_COOKIE[$updateURLCookieName]) && !empty($_COOKIE[$updateURLCookieName])) {
+        	// delete the cookie since we're done with it. it's a one-time use thing.
+        	$content .= "<script> \n" .	
+         	"   var d = new Date(); /* delete the cookie */\n" .
+         	"   d.setTime(d.getTime() - (60 * 5)); \n" .
+         	'   var expires = "expires="+ d.toUTCString(); ' . "\n" .
+         	'   document.cookie = "' . $updateURLCookieName . '=;" + expires + ";path=/"; ' .
+         	"</script> \n";
         }
         
         if (array_key_exists(ABJ404_PP, $_REQUEST) && isset($_REQUEST[ABJ404_PP]) && 

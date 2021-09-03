@@ -167,7 +167,15 @@ class ABJ_404_Solution_PluginLogic {
     	try {
     		setcookie($cookieName, urldecode($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
     		setcookie($cookieName . '_SHORT', urldecode($_SERVER['REQUEST_URI']), time() + (5), "/");
-    		setcookie($cookieName . '_UPDATE_URL', urldecode($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
+    		
+    		// only set the update_URL if it's not already set.
+    		// this is because multiple redirects might happen and we want to store
+    		// only the user's original requested page.
+    		if (!isset($_COOKIE[$cookieName . '_UPDATE_URL']) || 
+    				empty($_COOKIE[$cookieName . '_UPDATE_URL'])) {
+    			setcookie($cookieName . '_UPDATE_URL', urldecode($_SERVER['REQUEST_URI']), 
+    				time() + (60 * 4), "/");
+    		}
     		
     	} catch (Exception $e) {
     		$abj404logging->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
@@ -199,7 +207,7 @@ class ABJ_404_Solution_PluginLogic {
                 $options['dest404page'] : 
             ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
         
-        if ($this->thereAUserSpecified404Page($dest404page)) {
+        if ($this->thereIsAUserSpecified404Page($dest404page)) {
            	// $idAndType OK on regular 404
            	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0, 
            		null, $options);
@@ -242,7 +250,7 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     /** Returns true if there is a custom 404 page. */
-    function thereAUserSpecified404Page($dest404page) {
+    function thereIsAUserSpecified404Page($dest404page) {
     	$check1 = ($dest404page !== (ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED));
     	$check2 = ($dest404page !== ABJ404_TYPE_404_DISPLAYED);
     	return $check1 && $check2;
