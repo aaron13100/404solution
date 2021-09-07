@@ -20,6 +20,8 @@ class ABJ_404_Solution_ShortCode {
 		$options = get_option('abj404_settings');
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
+		$abj404logging = ABJ_404_Solution_Logging::getInstance();
+		$debugMessage = '';
 		
 		$shouldUpdateURL = true;
 		// if we're not supposed to update the URL then don't.
@@ -27,6 +29,7 @@ class ABJ_404_Solution_ShortCode {
 				!isset($options['update_suggest_url']) ||
 				$options['update_suggest_url'] != 1) {
 			$shouldUpdateURL = false;
+			$debugMessage .= "do not update (update_suggest_url is off), ";
 		}
 
 		// if the cookie we need isn't set then give up.
@@ -34,6 +37,7 @@ class ABJ_404_Solution_ShortCode {
 		$updateURLCookieName .= '_UPDATE_URL';
 		if (!isset($_COOKIE[$updateURLCookieName]) || empty($_COOKIE[$updateURLCookieName])) {
 			$shouldUpdateURL = false;
+			$debugMessage .= "do not update (no cookie found), ";
 		}
 
 		$dest404page = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
@@ -49,11 +53,21 @@ class ABJ_404_Solution_ShortCode {
 			
 			// if the last part of the URL does not match the custom 404 page then
 			// don't update the URL.
-			if (!$f->endsWithCaseInsensitive($permalink['link'], $_SERVER['REQUEST_URI']) &&
+			if (!$f->endsWithCaseSensitive($permalink['link'], $_SERVER['REQUEST_URI']) &&
 					$permalink['status'] != 'trash') {
 						
 				$shouldUpdateURL = false;
+				$debugMessage .= "do not update (not on custom 404 page (" .
+					$permalink['link'] . ")), ";
+				
+			} else {
+				$debugMessage .= "ok to update (displaying custom 404 page (" . 
+					$permalink['link'] . ")), ";
 			}
+		} else {
+			// the 404 page is the default 404 page. so we shouldn't change the URL.
+			$shouldUpdateURL = false;
+			$debugMessage .= "do not update (no custom 404 page specified), ";
 		}
 		
 		$content = '';
@@ -66,6 +80,9 @@ class ABJ_404_Solution_ShortCode {
 			
 			$content .= "window.history.replaceState({}, null, '" .
 				$userFriendlyURL . "');\n";
+			
+				$debugMessage .= "Updating the URL from " . $_SERVER['REQUEST_URI'] .
+				" to " . $userFriendlyURL . ", ";
 		}
 		
 		if ($content != '') {
@@ -74,6 +91,17 @@ class ABJ_404_Solution_ShortCode {
 				"\n</script>\n\n";
 			echo $content;
 		}
+		
+		$debugMessage .= "is404: " . is_404() . ", " . 
+			esc_html('auto_redirects: ' . $options['auto_redirects'] . ', auto_score: ' .
+			$options['auto_score'] . ', auto_cats: ' . $options['auto_cats'] . ', auto_tags: ' .
+			$options['auto_tags'] . ', dest404page: ' . $options['dest404page']) . ", ";
+		
+		$debugMessage .= "is_single(): " . is_single() . " | " . "is_page(): " . is_page() .
+			" | is_feed(): " . is_feed() . " | is_trackback(): " . is_trackback() . " | is_preview(): " .
+			is_preview();
+		
+		$abj404logging->debugMessage("updateURLbarIfNecessary: " . $debugMessage);
 	}
 	
 	/** 

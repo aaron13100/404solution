@@ -473,6 +473,21 @@ abstract class ABJ_404_Solution_Functions {
         return ($f->substr($lowerHay, -$length) == $lowerNeedle);
     }
     
+    /**
+     * @param string $haystack
+     * @param string $needle
+     * @return string
+     */
+    function endsWithCaseSensitive($haystack, $needle) {
+    	$f = ABJ_404_Solution_Functions::getInstance();
+    	$length = $f->strlen($needle);
+    	if ($f->strlen($haystack) < $length) {
+    		return false;
+    	}
+    	
+    	return ($f->substr($haystack, -$length) == $needle);
+    }
+    
     /** Sort the QUERY parts of the requested URL. 
      * This is in place because these are stored as part of the URL in the database and used for forwarding to another page.
      * This is done because sometimes different query parts result in a completely different page. Therefore we have to 

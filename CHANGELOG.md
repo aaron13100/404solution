@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.27.7 (September 7, 2021) ##
+* FIX: Don't update the URL when the default 404 page is used (for Sinkadus (@niwin)).
+
 ## Version 2.27.6 (September 3, 2021) ##
 * FIX: Use the correct URL to update the URL bar after multiple redirects (only one redirect was supported before) (for Sinkadus (@niwin)).
 

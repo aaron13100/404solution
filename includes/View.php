@@ -231,7 +231,7 @@ class ABJ_404_Solution_View {
      */
     function echoPostBox($id, $title, $content) {
         echo "<div id=\"" . esc_attr($id) . "\" class=\"postbox\">";
-        echo "<h3 class=\"hndle\" style=\"cursor: default;\"><span>" . esc_html($title) . "</span></h3>";
+        echo "<h3 class=\"\" ><span>" . esc_html($title) . "</span></h3>";
         echo "<div class=\"inside\">" . $content /* Can't escape here, as contains forms */ . "</div>";
         echo "</div>";
     }
