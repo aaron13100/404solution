@@ -479,7 +479,7 @@ class ABJ_404_Solution_PluginLogic {
             'suggest_noresults' => '<p>' . __('No suggestions. :/ ', '404-solution') . '</p>',
             'suggest_cats' => '1',
             'suggest_tags' => '1',
-            'update_suggest_url' => '1',
+            'update_suggest_url' => '0',
             'auto_redirects' => '1',
             'auto_score' => '90',
             'auto_deletion' => '1095',
