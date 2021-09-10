@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.27.8 (September 10, 2021) ##
+* Improvement: Change the default of the 'update URL' option to off since it's causing issues for some people.
+
 ## Version 2.27.7 (September 7, 2021) ##
 * FIX: Don't update the URL when the default 404 page is used (for Sinkadus (@niwin)).
 
