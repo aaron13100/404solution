@@ -273,7 +273,7 @@ class ABJ_404_Solution_Logging {
     }
     
     /** 
-     * @return int
+     * @return array
      */
     function getLatestErrorLine() {
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -283,6 +283,7 @@ class ABJ_404_Solution_Logging {
         $latestErrorLineFound['total_error_count'] = 0;
         $linesRead = 0;
         $handle = null;
+        $collectingErrorLines = false;
         try {
             if ($handle = fopen($this->getDebugFilePath(), "r")) {
                 // read the file one line at a time.
@@ -295,11 +296,19 @@ class ABJ_404_Solution_Logging {
                     	$latestErrorLineFound['num'] = $linesRead;
                         $latestErrorLineFound['line'] = $line;
                         $latestErrorLineFound['total_error_count'] += 1;
+                        $collectingErrorLines = true;
                         
-                    } else if ($f->regexMatch("^#\d+ .+$", $line)) {
-                        // include the entire stack trace.
+                    } else if ($collectingErrorLines && 
+                    	!$f->regexMatch("^\d{4}[-]\d{2}[-]\d{2} .*\(\w+\):\s.*$", $line)) {
+                        // if we're collecting error lines and we haven't found the 
+                        // beginning of a new debug message then continue collecting lines.
                         $latestErrorLineFound['line'] .= "<BR/>\n" . $line;
-                    }
+                        
+                    } else {
+                    	// this must be the beginning of a new debug message so we'll stop
+                    	// collecting error lines.
+                    	$collectingErrorLines = false;
+                   	}
                 }
             } else {
                 $this->errorMessage("Error reading log file (1).");

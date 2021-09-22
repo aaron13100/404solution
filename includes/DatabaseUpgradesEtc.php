@@ -512,7 +512,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $results = $abj404dao->queryAndGetResults($query);
             $rows = $results['rows'];
             $row = $rows[0];
-            $abjTableCollation = $row['table_collation'];
+            $abjTableCollation = '';
+            if (array_key_exists('table_collation', $row)) {
+            	$abjTableCollation = $row['table_collation'];
+            } else {
+            	$abj404logging->errorMessage("table_collation does not exist on sql results. "
+            		. "Results: " . print_r($row, true));
+            }
             
             if ($abjTableCollation != $postsTableCollation) {
                 $collationNeedsUpdating = true;
