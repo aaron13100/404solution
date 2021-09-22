@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.27.9 (September 22, 2021) ##
+* Improvement: Improve logging for a warning message for a debug file participant.
+
 ## Version 2.27.8 (September 10, 2021) ##
 * Improvement: Change the default of the 'update URL' option to off since it's causing issues for some people.
 
