@@ -500,6 +500,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $results = $abj404dao->queryAndGetResults($query);
         $rows = $results['rows'];
         $row = $rows[0];
+        $row = array_change_key_case($row);
         $postsTableCollation = $row['table_collation'];
         $postsTableCharset = $row['character_set_name'];
         
