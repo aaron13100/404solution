@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.27.10 (October 1, 2021) ##
+* FIX: Correct collation issues even for people that have strange databases that always return column names in ALL CAPS.
+
 ## Version 2.27.9 (September 22, 2021) ##
 * Improvement: Improve logging for a warning message for a debug file participant.
 
