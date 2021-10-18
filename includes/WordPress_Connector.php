@@ -96,15 +96,23 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return boolean
      */
     static function excludePluginsFromAutoUpdate($update, $item) {
-        $pluginSlug = dirname(ABJ404_NAME);
-        $pluginSlugWithPHP = $pluginSlug . '/' . basename(ABJ404_FILE);
-        $found = (isset($item->slug) && 
-            in_array($item->slug, array($pluginSlug)));
-        $found2 = in_array($item, array($pluginSlugWithPHP));
-
-        if ($found || $found2) {
+        $pluginSlug404 = dirname(ABJ404_NAME);
+        $pluginSlugWithPHP404 = $pluginSlug404 . '/' . basename(ABJ404_FILE);
+        $itemSlug = property_exists($item, 'slug') ? $item->slug : '(default-value)';
+        $itemPlugin = property_exists($item, 'plugin') ? $item->plugin : '(default-value)';
+        $itemName = property_exists($item, 'Name') ? $item->Name : '(default-value)';
+        
+        // if it's 404 solution then return false - do not update automatically.
+        if ($pluginSlug404 == $itemSlug && 
+        	$pluginSlugWithPHP404 == $itemPlugin &&
+        	PLUGIN_NAME == $itemName) {
+        	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+        	$abj404logging->debugMessage("Disabled automatic update for a plugin" . 
+        		" because it looks like " . PLUGIN_NAME . " (" . 
+        		$itemSlug . "; " . $itemPlugin . "; " . $itemName . ")");
             return false;
         }
+        
         return true;
     }
 

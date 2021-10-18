@@ -10,10 +10,10 @@ define( 'ABJ404_NAME', plugin_basename(ABJ404_FILE));
 define('ABJ404_SOLUTION_BASENAME', function_exists('plugin_basename') ? plugin_basename(ABJ404_FILE) : 
 	basename(dirname(ABJ404_FILE)) . '/' . basename(ABJ404_FILE));
 
-define( 'ABJ404_VERSION', '2.27.10' );
+define( 'ABJ404_VERSION', '2.27.11' );
 define( 'URL_TRACKING_SUFFIX', '?utm_source=404SolutionPlugin&utm_medium=WordPress');
-define( 'ABJ404_HOME_URL', 'https://ajexperience.com/flashcards/404-solution/' . URL_TRACKING_SUFFIX);
-define( 'ABJ404_FC_URL', 'https://ajexperience.com/flashcards/' . URL_TRACKING_SUFFIX);
+define( 'ABJ404_HOME_URL', 'https://www.ajexperience.com/404-solution/' . URL_TRACKING_SUFFIX);
+define( 'ABJ404_FC_URL', 'https://www.ajexperience.com/' . URL_TRACKING_SUFFIX);
 define( 'PLUGIN_NAME', '404 Solution');
 
 // STATUS types
