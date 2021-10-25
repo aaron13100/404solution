@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.27.12 (October 25, 2021) ##
+* FIX: Don't force other plugins to auto update (thanks ravin001).
+
 ## Version 2.27.11 (October 18, 2021) ##
 * Improvement: Add a debug message and make turning off auto updates for 404 Solution more specific.
 

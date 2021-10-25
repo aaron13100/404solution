@@ -113,7 +113,9 @@ class ABJ_404_Solution_WordPress_Connector {
             return false;
         }
         
-        return true;
+        // this needs to return null and not true. true would force other plugins
+        // to auto-update ...
+        return null;
     }
 
     /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).
