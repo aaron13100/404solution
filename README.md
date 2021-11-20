@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.27.13 (November 20, 2021) ##
+* FIX: Avoid an Undefined array key PHP8 warning (thanks @toto).
+
 ## Version 2.27.12 (October 25, 2021) ##
 * FIX: Don't force other plugins to auto update (thanks ravin001).
 
