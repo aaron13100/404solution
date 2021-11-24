@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.27.14 (November 24, 2021) ##
+* FIX: Correct collations even databases that return column names in ALL CAPS (thanks to a debug file participant).
+
 ## Version 2.27.13 (November 20, 2021) ##
 * FIX: Avoid an Undefined array key PHP8 warning (thanks @toto).
 

@@ -513,6 +513,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $results = $abj404dao->queryAndGetResults($query);
             $rows = $results['rows'];
             $row = $rows[0];
+            $row = array_change_key_case($row);
             $abjTableCollation = '';
             if (array_key_exists('table_collation', $row)) {
             	$abjTableCollation = $row['table_collation'];
