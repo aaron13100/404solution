@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/flashcards/404-solution/
 
-	Version: 2.28.0
+	Version: 2.28.1
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -36,6 +36,14 @@ define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
 $GLOBALS['abj404_display_errors'] = false;
 $GLOBALS['abj404_whitelist'] = array('127.0.0.1', '::1', 'localhost', 
 		'ajexperience.com', 'www.ajexperience.com');
+
+// figure out the temp directory location.
+$abj404_uploadsDirArray = wp_upload_dir(null, false);
+$abj404_uploadsDir = $abj404_uploadsDirArray['basedir'];
+$abj404_uploadsDir .= DIRECTORY_SEPARATOR . 'temp_' . ABJ404_PP . DIRECTORY_SEPARATOR;
+define('ABJ404_TEMP_BASE', $abj404_uploadsDir);
+unset($abj404_uploadsDirArray);
+unset($abj404_uploadsDir);
 
 $abj404_autoLoaderClassMap = array();
 function abj404_autoloader($class) {
@@ -144,14 +152,6 @@ add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheList
 
 /** This only runs after WordPress is done enqueuing scripts. */
 function abj404_loadSomethingWhenWordPressIsReady() {
-	// figure out the temp directory location.
-	$uploadsDirArray = wp_upload_dir(null, false);
-	$uploadsDir = $uploadsDirArray['basedir'];
-	$uploadsDir .= DIRECTORY_SEPARATOR . 'temp_' . ABJ404_PP . DIRECTORY_SEPARATOR;
-	define('ABJ404_TEMP_BASE', $uploadsDir);
-	unset($uploadsDirArray);
-	unset($uploadsDir);
-	
 	// make debugging easier on localhost etc	
 	$serverName = '(not found)';
 	if (array_key_exists('SERVER_NAME', $_SERVER) && isset($_SERVER['SERVER_NAME'])) {
