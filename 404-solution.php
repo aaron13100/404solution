@@ -2,15 +2,16 @@
 
 /*
 	Plugin Name: 404 Solution
-	Plugin URI:  https://ajexperience.com/flashcards/404-solution/
+	Plugin URI:  https://www.ajexperience.com/flashcards/404-solution/
 	Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
 	Author:      Aaron J
-	Author URI:  https://ajexperience.com/flashcards/404-solution/
+	Author URI:  https://www.ajexperience.com/flashcards/404-solution/
 
-	Version: 2.27.14
+	Version: 2.28.0
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
+	Update URI:  https://www.ajexperience.com/flashcards/404-solution/
 	Domain Path: /languages
 	Text Domain: 404-solution
 
@@ -143,6 +144,15 @@ add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheList
 
 /** This only runs after WordPress is done enqueuing scripts. */
 function abj404_loadSomethingWhenWordPressIsReady() {
+	// figure out the temp directory location.
+	$uploadsDirArray = wp_upload_dir(null, false);
+	$uploadsDir = $uploadsDirArray['basedir'];
+	$uploadsDir .= DIRECTORY_SEPARATOR . 'temp_' . ABJ404_PP . DIRECTORY_SEPARATOR;
+	define('ABJ404_TEMP_BASE', $uploadsDir);
+	unset($uploadsDirArray);
+	unset($uploadsDir);
+	
+	// make debugging easier on localhost etc	
 	$serverName = '(not found)';
 	if (array_key_exists('SERVER_NAME', $_SERVER) && isset($_SERVER['SERVER_NAME'])) {
 		$serverName = $_SERVER['SERVER_NAME'];

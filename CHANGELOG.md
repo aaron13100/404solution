@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.28.0 (November 30, 2021) ##
+* Improvement: Use the /uploads directory for temp files instead of a directory within the plugins folder that was causing some write permission issues for some users (thanks gevoelvoorhumus).
+* FIX: Remove the last sent error line # from the database when deleting the debug file (for debug file participants).
+
 ## Version 2.27.14 (November 24, 2021) ##
 * FIX: Correct collations even databases that return column names in ALL CAPS (thanks to a debug file participant).
 

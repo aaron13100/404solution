@@ -88,7 +88,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		"where matchdata is null or matchdata = ''");
     }
     
-/** When certain columns are created we have to populate data.
+	/** When certain columns are created we have to populate data.
      * @param string $tableName
      * @param string $colName
      */
@@ -533,7 +533,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             return;
         }
         
-        // if they don't match then update our tables to match teh target tables.
+        // if they don't match then update our tables to match the target tables.
         $abj404logging->infoMessage("Updating collation from " . $abjTableCollation . " to " .
                 $postsTableCollation);
 
