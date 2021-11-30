@@ -209,7 +209,7 @@ abstract class ABJ_404_Solution_Functions {
     				return false;
     			}
     			
-    		} else if (!mkdir($directory)) {
+    		} else if (!mkdir($directory, 0755, true)) {
     			error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
     					$directory . ". Unknown issue.");
     			return false;
@@ -341,6 +341,45 @@ abstract class ABJ_404_Solution_Functions {
             return rmdir($path);
         }
         return true;
+    }
+    
+    /** Recursively delete a directory. 
+     * @param string $dir
+     * @throws Exception
+     * @return boolean
+     */
+    static function deleteDirectoryRecursively($dir) {
+    	// if the directory isn't a part of our plugin then don't do it.
+    	if (strpos($dir, ABJ404_PATH) === false) {
+    		throw new Exception("Can't delete " . $dir);
+    	}
+
+    	// if it's already gone then we're done.
+    	if (!file_exists($dir)) {
+    		return true;
+    	}
+    	
+    	// if it's not a directory then delete the file.
+    	if (!is_dir($dir)) {
+    		return unlink($dir);
+    	}
+    	
+    	// get a list of all files (and directories) in the directory.
+    	$items = scandir($dir);
+    	foreach ($items as $item) {
+    		if ($item == '.' || $item == '..') {
+    			continue;
+    		}
+    	
+    		// call self to delete the file/directory.
+    		if (!self::deleteDirectoryRecursively($dir . DIRECTORY_SEPARATOR . $item)) {
+    			return false;
+    		}
+    		
+    	}
+    	
+    	// remove the original directory.
+    	return rmdir($dir);
     }
     
     /** Reads an entire file at once into a string and return it.

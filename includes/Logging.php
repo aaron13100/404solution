@@ -329,7 +329,7 @@ class ABJ_404_Solution_Logging {
      * @return string
      */
     function getDebugFilePath() {
-        return $this->getFilePathAndMoveOldFile(ABJ404_PATH . 'temp/', 'abj404_debug.txt');
+    	return $this->getFilePathAndMoveOldFile(ABJ404_TEMP_BASE, 'abj404_debug.txt');
     }
     
     function getDebugFilePathOld() {
@@ -340,16 +340,23 @@ class ABJ_404_Solution_Logging {
      * @return string
      */
     function getDebugFilePathSentFile() {
-        return $this->getFilePathAndMoveOldFile(ABJ404_PATH . 'temp/', 'abj404_debug_sent_line.txt');
+    	return $this->getFilePathAndMoveOldFile(ABJ404_TEMP_BASE, 'abj404_debug_sent_line.txt');
     }
     
     /** Return the path to the zip file for sending the debug file. 
      * @return string
      */
     function getZipFilePath() {
-        return $this->getFilePathAndMoveOldFile(ABJ404_PATH . 'temp/', 'abj404_debug.zip');
+    	return $this->getFilePathAndMoveOldFile(ABJ404_TEMP_BASE, 'abj404_debug.zip');
     }
     
+    /** This is for legacy support. On new installations it creates a directory and returns
+     * a file path. On old installations it moved the old file to the new location. 
+     * If the directory can't be created then it falls back to the old location.
+     * @param string $directory
+     * @param string $filename
+     * @return string
+     */
     function getFilePathAndMoveOldFile($directory, $filename) {
     	$f = ABJ_404_Solution_Functions::getInstance();
         // create the directory and move the file
@@ -370,11 +377,22 @@ class ABJ_404_Solution_Logging {
         if (file_exists($this->getDebugFilePathSentFile())) {
             ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathSentFile());
         }
+
+        // update the last sent error line since the debug file will be deleted.
+        $this->removeLastSentErrorLineFromDatabase();
         
         // delete _old log file
         ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathOld());
         // rename current log file to _old
         rename($this->getDebugFilePath(), $this->getDebugFilePathOld());
+    }
+    
+    function removeLastSentErrorLineFromDatabase() {
+    	// update the last sent error line since the debug file will be deleted.
+    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+    	$options = $abj404logic->getOptions(true);
+    	$options[self::LAST_SENT_LINE] = 0;
+    	$abj404logic->updateOptions($options);
     }
     
     /** 
@@ -386,6 +404,10 @@ class ABJ_404_Solution_Logging {
             ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathSentFile());
         }
         
+        // update the last sent error line since the debug file will be deleted.
+        $this->removeLastSentErrorLineFromDatabase();
+        
+        // delete the debug file.
         ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathOld());
         return ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePath());
     }

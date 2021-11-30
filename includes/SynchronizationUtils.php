@@ -19,11 +19,11 @@ class ABJ_404_Solution_SynchronizationUtils {
 	}
 	
 	private function getFileModePath() {
-		return ABJ404_PATH . 'temp/' . 'sync_mode_file.txt';
+		return ABJ404_TEMP_BASE . 'sync_mode_file.txt';
 	}
 	
 	private function getOptionsModePath() {
-		return ABJ404_PATH . 'temp/' . 'sync_mode_options.txt';
+		return ABJ404_TEMP_BASE . 'sync_mode_options.txt';
 	}
 	
 	private function isFileMode() {

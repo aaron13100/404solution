@@ -87,15 +87,25 @@ class ABJ_404_Solution_WPUtils {
 		wp_enqueue_style($handle, $src, $deps, $ver, $media);
 	}
 	
+	/** This forces the version number of a file to be the modified date of that
+	 * file. It gets the local file location by changing the URL, gets the modified
+	 * date, then returns that date as a string for the version number.
+	 * @param string $src
+	 * @param boolean $ver
+	 * @return string
+	 */
 	static function createUpdatedVersionNumber($src = '', $ver = false) {
+		// if there's no version number and the file is for our plugin
 		if (($ver === false || $ver == null) && ($src != null && $src != '' &&
 			strpos($src, ABJ404_URL) === 0)) {
-				
-				$correctedFilePath = str_replace(ABJ404_URL, ABJ404_PATH, $src);
-				$ver = date('Y-m-d_H:i:s', filemtime($correctedFilePath));
-			}
 			
-			return $ver;
+			// get the local file path by changing the URL.
+			$correctedFilePath = str_replace(ABJ404_URL, ABJ404_PATH, $src);
+			// get the modified date. as the version.
+			$ver = date('Y-m-d_H:i:s', filemtime($correctedFilePath));
+		}
+			
+		return $ver;
 	}
 	
 }

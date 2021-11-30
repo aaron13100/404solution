@@ -351,6 +351,10 @@ class ABJ_404_Solution_PluginLogic {
         }
         $abj404logging->infoMessage(self::$uniqID . ": Updating database version from " . 
         	$currentDBVersion . " to " . ABJ404_VERSION . " (begin).");
+        
+        // remove old log files. added in 2.28.0
+        $fileUtils = ABJ_404_Solution_Functions::getInstance();
+        $fileUtils->deleteDirectoryRecursively(ABJ404_PATH . 'temp/');
 
         // wp_abj404_logsv2 exists since 1.7.
         $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
