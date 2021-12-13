@@ -738,6 +738,42 @@ class ABJ_404_Solution_PluginLogic {
         }
     }
     
+    function handleActionExport() {
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	
+    	if ($abj404dao->getPostOrGetSanitize('action') == 'exportRedirects') {
+    		$this->doExport();
+    	}
+    }
+    
+    function getExportFilename() {
+    	$tempFile = ABJ404_TEMP_BASE . DIRECTORY_SEPARATOR . 'export.csv';
+    	return $tempFile;
+    }
+    
+    function doExport() {
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	
+    	$tempFile = $this->getExportFilename();
+    	
+    	$abj404dao->doRedirectsExport($tempFile);
+    	
+    	if (file_exists($tempFile)) {
+	    	header('Content-Description: File Transfer');
+	    	header('Content-Disposition: attachment; filename=' . basename($tempFile));
+	    	header('Expires: 0');
+	    	header('Cache-Control: must-revalidate');
+	    	header('Pragma: public');
+	    	header('Content-Length: ' . filesize($tempFile));
+	    	header("Content-Type: text/plain");
+	    	readfile($tempFile);
+	    	
+    	} else {
+    		$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    		$abj404logging->infoMessage("I don't see any data to export.");
+    	}
+    }
+    
     function updatePerPageOption($rows) {
         $showRows = max($rows, ABJ404_OPTION_MIN_PERPAGE);
         $showRows = min($showRows, ABJ404_OPTION_MAX_PERPAGE);

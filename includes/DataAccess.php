@@ -649,6 +649,37 @@ class ABJ_404_Solution_DataAccess {
         return $rows;
     }
     
+    function doRedirectsExport($tempFile) {
+    	global $wpdb;
+    	
+    	if (file_exists($tempFile)) {
+    		ABJ_404_Solution_Functions::safeUnlink($tempFile);
+    	}
+    	
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
+    		"/sql/getRedirectsExport.sql");
+    	$query = $this->doTableNameReplacements($query);
+    	
+    	// we use mysqli here instead of the normal wordpress get_results in order
+    	// to get one row at a time, so we don't run out of memory by trying to store
+    	// everything in memory all at once.
+    	$result = mysqli_query($wpdb->dbh, $query);
+    	if ($result) {
+    		// write the header
+    		$line = 'from_url,status,type,to_url';
+    		file_put_contents($tempFile, $line . "\n", FILE_APPEND);
+    		
+    		while (($row = mysqli_fetch_array($result, MYSQLI_ASSOC))) {
+    			$line = $row['from_url'] . ',' .
+     			$row['status'] . ',' .
+     			$row['type'] . ',' .
+     			$row['to_url'];
+     			file_put_contents($tempFile, $line . "\n", FILE_APPEND);
+    		}
+    		mysqli_free_result($result);
+    	}
+    }
+    
     /** Only return redirects that have a log entry.
      * @global type $wpdb
      * @global type $abj404dao
@@ -1150,6 +1181,12 @@ class ABJ_404_Solution_DataAccess {
         $manually_fired = $abj404dao->getPostOrGetSanitize('manually_fired', false);
         if ($f->strtolower($manually_fired) == 'true') {
             $manually_fired = true;
+        }
+        
+        // delete the export file
+        $tempFile = $abj404logic->getExportFilename();
+        if (file_exists($tempFile)) {
+        	ABJ_404_Solution_Functions::safeUnlink($tempFile);
         }
         
         // reset the crashed table count
