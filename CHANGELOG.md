@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.29.0 (December 13, 2021) ##
+* Improvement: Add the ability to export redirects etc. (For adelinehorry and everyone else that's asked for it that I've ignored until now.)
+
 ## Version 2.28.1 (November 30, 2021) ##
 * FIX: Avoid the unexpected output warning message during activation (thanks gevoelvoorhumus).
 
