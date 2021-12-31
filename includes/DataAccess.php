@@ -787,7 +787,7 @@ class ABJ_404_Solution_DataAccess {
             $this->maybeUpdateRedirectsForViewHitsTable();
             
             $logsTableJoin = "  LEFT OUTER JOIN {wp_abj404_logs_hits} logstable \n " . 
-                    "  on wp_abj404_redirects.url = logstable.requested_url \n ";
+                    "  on binary wp_abj404_redirects.url = binary logstable.requested_url \n ";
         }
         
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
