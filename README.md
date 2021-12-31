@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.29.1 (December 31, 2021) ##
+* FIX: Maybe fix the Illegal mix of collations issue for todayer.
+
 ## Version 2.29.0 (December 13, 2021) ##
 * Improvement: Add the ability to export redirects etc. (For adelinehorry and everyone else that's asked for it that I've ignored until now.)
 
