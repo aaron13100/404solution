@@ -13,7 +13,7 @@ class ABJ_404_Solution_FileSync {
 	}
 	
 	function getSyncFilePath($key) {
-		$filePath = ABJ404_TEMP_BASE . 'SYNC_FILE_' . $key . '.txt';
+		$filePath = abj404_getUploadsDir() . 'SYNC_FILE_' . $key . '.txt';
 		return $filePath;
 	}
     

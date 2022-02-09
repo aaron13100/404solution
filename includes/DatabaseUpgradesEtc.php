@@ -254,6 +254,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     				";;; because: " . $results['last_error']);
     		}
     		
+    		// if we're adding a unique key then remove the duplicates.
+    		// this was causing issues for some people.
+    		$spellingCacheTableName = $abj404dao->doTableNameReplacements('{wp_abj404_spelling_cache}');
+    		if (strtolower($tableName) == $spellingCacheTableName) {
+    			$abj404dao->deleteSpellingCache();
+    		}
+    		
     		// create the index.
     		$addStatement = "alter table " . $tableName . " add " . $indexDDL;
     		$abj404dao->queryAndGetResults($addStatement);

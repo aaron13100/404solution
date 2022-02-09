@@ -747,7 +747,7 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function getExportFilename() {
-    	$tempFile = ABJ404_TEMP_BASE . DIRECTORY_SEPARATOR . 'export.csv';
+    	$tempFile = abj404_getUploadsDir() . 'export.csv';
     	return $tempFile;
     }
     
