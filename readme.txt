@@ -71,7 +71,7 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 = Have you written any other programs?  =
 
 Please try this website for studying flashcards.    
-[https://ajexperience.com/flashcards/](https://ajexperience.com/flashcards/)
+[https://www.ajexperience.com/](https://www.ajexperience.com/)
 
 == Screenshots ==
 
