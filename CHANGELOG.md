@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.29.2 (February 9, 2021) ##
+* FIX: Avoid a Duplicate entry issue for some users (alter table ..._spelling_cache add unique key url).
+* FIX: Avoid an activation issue for some users (ABJ404_TEMP_BASE not defined).
+
 ## Version 2.29.1 (December 31, 2021) ##
 * FIX: Maybe fix the Illegal mix of collations issue for todayer.
 

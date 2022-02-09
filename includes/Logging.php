@@ -329,7 +329,7 @@ class ABJ_404_Solution_Logging {
      * @return string
      */
     function getDebugFilePath() {
-    	return $this->getFilePathAndMoveOldFile(ABJ404_TEMP_BASE, 'abj404_debug.txt');
+    	return $this->getFilePathAndMoveOldFile(abj404_getUploadsDir(), 'abj404_debug.txt');
     }
     
     function getDebugFilePathOld() {
@@ -340,14 +340,14 @@ class ABJ_404_Solution_Logging {
      * @return string
      */
     function getDebugFilePathSentFile() {
-    	return $this->getFilePathAndMoveOldFile(ABJ404_TEMP_BASE, 'abj404_debug_sent_line.txt');
+    	return $this->getFilePathAndMoveOldFile(abj404_getUploadsDir(), 'abj404_debug_sent_line.txt');
     }
     
     /** Return the path to the zip file for sending the debug file. 
      * @return string
      */
     function getZipFilePath() {
-    	return $this->getFilePathAndMoveOldFile(ABJ404_TEMP_BASE, 'abj404_debug.zip');
+    	return $this->getFilePathAndMoveOldFile(abj404_getUploadsDir(), 'abj404_debug.zip');
     }
     
     /** This is for legacy support. On new installations it creates a directory and returns

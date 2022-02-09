@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: https://ajexperience.com/flashcards/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.29.1
+Version: 2.29.2
 Tested up to: 5.8
-Stable tag: 2.29.1
+Stable tag: 2.29.2
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -80,6 +80,10 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.29.2 (February 9, 2021) =
+* FIX: Avoid a Duplicate entry issue for some users (alter table ..._spelling_cache add unique key url).
+* FIX: Avoid an activation issue for some users (ABJ404_TEMP_BASE not defined).
 
 = Version 2.29.1 (December 31, 2021) =
 * FIX: Maybe fix the Illegal mix of collations issue for todayer.
