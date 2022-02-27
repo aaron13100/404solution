@@ -874,7 +874,10 @@ class ABJ_404_Solution_DataAccess {
         if ($results['rows'] != null && !empty($results['rows'])) {
             // the table exists. let's find out how long it took to create the table last time.
             $rows = $results['rows'];
-            $row1 = $rows[0];
+            $row1 = $rows[0]; 
+            // change all to lower
+            $row1 = array_change_key_case($row1);
+            
             $timeToCreatePreviously = 999999;
             if (floatval($row1['table_comment']) > 0) {
                 $timeToCreatePreviously = floatval($row1['table_comment']);

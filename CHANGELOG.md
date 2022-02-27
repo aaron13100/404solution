@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.29.4 (February 27, 2021) ##
+* FIX: Fix an undefined array key ('table_comment') issue for Michael.
+
 ## Version 2.29.3 (February 27, 2021) ##
 * FIX: Fix an undefined array key issue for Michael.
 
