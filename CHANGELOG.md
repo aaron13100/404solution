@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.29.3 (February 27, 2021) ##
+* FIX: Fix an undefined array key issue for Michael.
+
 ## Version 2.29.2 (February 9, 2021) ##
 * FIX: Avoid a Duplicate entry issue for some users (alter table ..._spelling_cache add unique key url).
 * FIX: Avoid an activation issue for some users (ABJ404_TEMP_BASE not defined).

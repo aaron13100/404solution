@@ -622,7 +622,7 @@ class ABJ_404_Solution_SpellChecker {
 			$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 			$link = $abj404dao->getPermalinkFromCache($id);
 
-			if ($link == null) {
+			if ($link == null || trim($link) == '') {
 				$link = get_the_permalink($id);
 			}
 			return urldecode($link);
@@ -733,9 +733,14 @@ class ABJ_404_Solution_SpellChecker {
 			}
 
 			$the_permalink = urldecode($the_permalink);
+			$_REQUEST[ABJ404_PP]['debug_info'] = 'Likely match IDs processing permalink: ' . 
+				$the_permalink;
 			$urlParts = parse_url($the_permalink);
 			$the_permalink = null;
 
+			if (!array_key_exists('path', $urlParts)) {
+				continue;
+			}
 			$existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
 			$urlParts = null;
 
@@ -800,7 +805,8 @@ class ABJ_404_Solution_SpellChecker {
 				$row = array_pop($currentBatch);
 			}
 		}
-
+		$_REQUEST[ABJ404_PP]['debug_info'] = '';
+			
 		if ($wasntReadyCount > 0) {
 			$abj404logging->infoMessage("The permalink cache wasn't ready for " . $wasntReadyCount . " IDs.");
 		}
