@@ -88,6 +88,11 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.30.0 (March 3, 2022) ##
+* Improvement: (Speed) Cache URLs for tags and categories instead of calling get_permalink for each one (filters are not applied).
+* FIX: (Error Handler) Don't log errors caused by other plugins.
+* FIX: Match categories slightly better than before (still unlikely to match).
+
 ## Version 2.29.4 (February 27, 2021) ##
 * FIX: Fix an undefined array key ('table_comment') issue for Michael.
 

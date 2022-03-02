@@ -454,7 +454,8 @@ class ABJ_404_Solution_SpellChecker {
 		while ($objectRow != null) {
             $rows[] = array(
                 'id' => property_exists($objectRow, 'id') == true ? $objectRow->id : null,
-                'term_id' => property_exists($objectRow, 'term_id') == true ? $objectRow->term_id : null
+                'term_id' => property_exists($objectRow, 'term_id') == true ? $objectRow->term_id : null,
+            	'url' => property_exists($objectRow, 'url') == true ? $objectRow->url : null
                 );
             $objectRow = array_pop($rowsAsObject);
 		}
@@ -505,7 +506,8 @@ class ABJ_404_Solution_SpellChecker {
 
 			$levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
 			if ($fullURLspacesCleaned != '') {
-				$pathOnlySpaces = $f->str_replace('/', " ", $pathOnly);
+				$pathOnlySpaces = $f->str_replace($this->separatingCharacters, " ", $pathOnly);
+				$pathOnlySpaces = trim($f->str_replace('/', " ", $pathOnlySpaces));
 				$levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $pathOnlySpaces));
 			}
 			$score = 100 - (($levscore / $scoreBasis) * 100);
@@ -540,7 +542,8 @@ class ABJ_404_Solution_SpellChecker {
 
 			$levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
 			if ($fullURLspacesCleaned != '') {
-				$pathOnlySpaces = $f->str_replace('/', " ", $pathOnly);
+				$pathOnlySpaces = $f->str_replace($this->separatingCharacters, " ", $pathOnly);
+				$pathOnlySpaces = trim($f->str_replace('/', " ", $pathOnlySpaces));
 				$levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $pathOnlySpaces));
 			}
 			$score = 100 - (($levscore / $scoreBasis) * 100);
@@ -705,11 +708,6 @@ class ABJ_404_Solution_SpellChecker {
 			$the_permalink = null;
 			if ($rowType == 'pages') {
 				$id = $row['id'];
-				if (array_key_exists('url', $row)) {
-					$the_permalink = array_key_exists('url', $row) ? $row['url'] : null;
-				} else {
-					$the_permalink = $this->getPermalink($id, $rowType);
-				}
             	
 			} else if ($rowType == 'tags') {
 				$id = array_key_exists('term_id', $row) ? $row['term_id'] : null;
@@ -724,14 +722,13 @@ class ABJ_404_Solution_SpellChecker {
 				throw Exception("Unknown row type ... " . $rowType);
 			}
 
-			if ($rowType == 'pages' && $the_permalink == null) {
-				// this line takes too long to execute when there are 10k+ pages.
+			if (array_key_exists('url', $row)) {
+				$the_permalink = array_key_exists('url', $row) ? $row['url'] : null;
+			} else {
 				$wasntReadyCount++;
-			}
-			if ($the_permalink == null) {
 				$the_permalink = $this->getPermalink($id, $rowType);
 			}
-
+			
 			$the_permalink = urldecode($the_permalink);
 			$_REQUEST[ABJ404_PP]['debug_info'] = 'Likely match IDs processing permalink: ' . 
 				$the_permalink;

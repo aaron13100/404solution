@@ -1638,7 +1638,7 @@ class ABJ_404_Solution_DataAccess {
             $recognizedCategories .= "'" . trim($f->strtolower($category)) . "', ";
         }
         $recognizedCategories = rtrim($recognizedCategories, ", ");
-
+        
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedTags.sql");
         $query = $this->doTableNameReplacements($query);
@@ -1650,7 +1650,39 @@ class ABJ_404_Solution_DataAccess {
             $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
         }
         
+        $rows = $this->addURLToTermsRows($rows);
+        
         return $rows;
+    }
+    
+    function addURLToTermsRows($rows) {
+    	// add url data
+    	global $wp_rewrite;
+    	$extraPermaStructureCache = array();
+    	foreach ($rows as $row) {
+    		$taxonomy = $row->taxonomy;
+    		if (!array_key_exists($taxonomy, $extraPermaStructureCache)) {
+    			$extraPermaStructureCache[$taxonomy] = $wp_rewrite->get_extra_permastruct($taxonomy);
+    		}
+    		$struct = $extraPermaStructureCache[$taxonomy];
+    		
+    		$url = str_replace('%' . $taxonomy . '%', $row->slug, $struct);
+    		
+    		// TODO verify one of the urls?
+    		/*
+    		if (!$verifiedOne) {
+    			$id = $row->term_id;
+    			$link = get_tag_link($id);
+    			$link = get_category_link($id);
+    			// $link should equal $url
+		    	$verifiedOne = true;
+    		}
+    		*/
+    		
+    		$row->url = $url;
+    	}
+    	
+    	return $rows;
     }
     
     /** Returns rows with the defined categories.
@@ -1693,6 +1725,8 @@ class ABJ_404_Solution_DataAccess {
         if ($wpdb->last_error) {
             $abj404logging->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
         }
+        
+        $rows = $this->addURLToTermsRows($rows);
         
         return $rows;
     }
