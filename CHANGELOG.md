@@ -1,17 +1,17 @@
 # Changelog #
 
-## Version 2.30.0 (March 3, 2022) ##
+## Version 2.30.0 (March 2, 2022) ##
 * Improvement: (Speed) Cache URLs for tags and categories instead of calling get_permalink for each one (filters are not applied).
 * FIX: (Error Handler) Don't log errors caused by other plugins.
 * FIX: Match categories slightly better than before (still unlikely to match).
 
-## Version 2.29.4 (February 27, 2021) ##
+## Version 2.29.4 (February 27, 2022) ##
 * FIX: Fix an undefined array key ('table_comment') issue for Michael.
 
-## Version 2.29.3 (February 27, 2021) ##
+## Version 2.29.3 (February 27, 2022) ##
 * FIX: Fix an undefined array key issue for Michael.
 
-## Version 2.29.2 (February 9, 2021) ##
+## Version 2.29.2 (February 9, 2022) ##
 * FIX: Avoid a Duplicate entry issue for some users (alter table ..._spelling_cache add unique key url).
 * FIX: Avoid an activation issue for some users (ABJ404_TEMP_BASE not defined).
 
