@@ -29,15 +29,20 @@ class ABJ_404_Solution_ErrorHandler {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         $onlyAWarning = false;
+        
         try {
         	// if the error file does not contain the name of our plugin then we ignore it.
         	$pluginFolder = $f->substr(ABJ404_NAME, 0, $f->strpos(ABJ404_NAME, '/'));
         	if ($f->strpos($errfile, $pluginFolder) === false) {
-        		// try calling the original error handler.
-        		if (is_callable(self::$originalErrorHandler)) {
-        			return call_user_func_array(self::$originalErrorHandler,
-        				array($errno, $errstr, $errfile, $errline));
-        		}
+        		// let the normal error handler handle it.
+        		
+        		// this would display the error for other plugins but show @author user
+        		// stacktrace from this plugin.
+//         		// try calling the original error handler.
+//         		if (is_callable(self::$originalErrorHandler)) {
+//         			return call_user_func_array(self::$originalErrorHandler,
+//         				array($errno, $errstr, $errfile, $errline));
+//         		}
         		return false;
         		
         	} else {
@@ -95,11 +100,7 @@ class ABJ_404_Solution_ErrorHandler {
 	        error_reporting(E_ALL);
 	        ini_set('display_errors', '1');
         }
-        // try calling the original error handler.
-        if (is_callable(self::$originalErrorHandler)) {
-        	return call_user_func_array(self::$originalErrorHandler,
-        		array($errno, $errstr, $errfile, $errline));
-        }
+        // let the original error handler handle it.
         return false;
     }
 
