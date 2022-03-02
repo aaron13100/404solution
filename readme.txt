@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: https://www.ajexperience.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.29.4
+Version: 2.30.0
 Tested up to: 5.8
-Stable tag: 2.29.4
+Stable tag: 2.30.0
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -81,7 +81,7 @@ Please try this website for studying flashcards.
 
 == Changelog ==
 
-= Version 2.30.0 (March 3, 2022) =
+= Version 2.30.0 (March 2, 2022) =
 * Improvement: (Speed) Cache URLs for tags and categories instead of calling get_permalink for each one (filters are not applied).
 * FIX: (Error Handler) Don't log errors caused by other plugins.
 * FIX: Match categories slightly better than before (still unlikely to match).
