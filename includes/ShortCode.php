@@ -35,7 +35,7 @@ class ABJ_404_Solution_ShortCode {
 		// if the cookie we need isn't set then give up.
 		$updateURLCookieName = ABJ404_PP . '_REQUEST_URI';
 		$updateURLCookieName .= '_UPDATE_URL';
-		if (!isset($_COOKIE[$updateURLCookieName]) || empty($_COOKIE[$updateURLCookieName])) {
+		if (!isset($_REQUEST[$updateURLCookieName]) || empty($_REQUEST[$updateURLCookieName])) {
 			$shouldUpdateURL = false;
 			$debugMessage .= "do not update (no cookie found), ";
 		}
@@ -74,14 +74,14 @@ class ABJ_404_Solution_ShortCode {
 		
 		if ($shouldUpdateURL) {
 			// replace the current URL with the user's actual requested URL.
-			$requestedURL = $_COOKIE[$updateURLCookieName];
+			$requestedURL = $_REQUEST[$updateURLCookieName];
 			$userFriendlyURL = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ?
 				"https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $requestedURL;
 			
 			$content .= "window.history.replaceState({}, null, '" .
 				$userFriendlyURL . "');\n";
 			
-				$debugMessage .= "Updating the URL from " . $_SERVER['REQUEST_URI'] .
+			$debugMessage .= "Updating the URL from " . $_SERVER['REQUEST_URI'] .
 				" to " . $userFriendlyURL . ", ";
 		}
 		
