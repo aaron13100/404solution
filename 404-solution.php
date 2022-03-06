@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 2.30.0
+	Version: 2.30.1
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -102,12 +102,29 @@ function abj404_404listener() {
     	
     	/** If we're currently redirecting to a custom 404 page and we are about to show page
     	 * suggestions then update the URL displayed to the user. */
-    	if (array_key_exists('update_suggest_url', $options) &&
+    	$cookieName = ABJ404_PP . '_REQUEST_URI';
+    	$cookieName .= '_UPDATE_URL';
+    	if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
+
+    		$cookieName404 = ABJ404_PP . '_STATUS_404';
+    		
+    		if (array_key_exists($cookieName404, $_COOKIE) && 
+    			$_COOKIE[$cookieName404] == 'true') {
+
+   				// clear the cookie
+    			setcookie($cookieName404, 'false', time() - 5, "/");
+    			// we're going to a custom 404 page so se the status to 404.
+	    		status_header(404);
+    		}
+    		
+	    	if (array_key_exists('update_suggest_url', $options) &&
     			isset($options['update_suggest_url']) &&
     			$options['update_suggest_url'] == 1) {
-    		$cookieName = ABJ404_PP . '_REQUEST_URI';
-    		$cookieName .= '_UPDATE_URL';
-    		if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
+    				
+    			// clear the cookie
+   				$_REQUEST[$cookieName] = $_COOKIE[$cookieName];
+    			setcookie($cookieName, null, time() - 5, "/");
+    				
     			require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     			add_action('wp_head', 'ABJ_404_Solution_ShortCode::updateURLbarIfNecessary');
     		}

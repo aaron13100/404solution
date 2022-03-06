@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.30.1 (March 6, 2022) ##
+* FIX: Change the page status to 404 (instead of 200) when a custom 404 page is specified (for jpglegalteam).
+
 ## Version 2.30.0 (March 2, 2022) ##
 * Improvement: (Speed) Cache URLs for tags and categories instead of calling get_permalink for each one (filters are not applied).
 * FIX: (Error Handler) Don't log errors caused by other plugins.

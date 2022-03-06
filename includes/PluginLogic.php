@@ -227,7 +227,14 @@ class ABJ_404_Solution_PluginLogic {
 	            }
 	            
 	            $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'user specified 404 page. ' . $reason);
-	            $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
+	            
+	            // set cookie here to remmeber to use a 404 status when displaying the 404 page
+	            setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
+	            
+	            // the 4040 page...
+	            $abj404logic->forceRedirect(esc_url($permalink['link']), 
+	            	esc_html($options['default_redirect']),
+	            	'404Solution-404-page');
 	            exit;
             }
         }
