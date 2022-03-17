@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.30.2 (March 17, 2022) ##
+* FIX: Try to fix a MAX_JOIN_SIZE issue for a debug file participant.
+* FIX: Never include the user specified custom 404 page in the suggested results (thanks @csine).
+
 ## Version 2.30.1 (March 6, 2022) ##
 * FIX: Change the page status to 404 (instead of 200) when a custom 404 page is specified (for jpglegalteam).
 

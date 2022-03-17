@@ -258,6 +258,9 @@ class ABJ_404_Solution_PluginLogic {
     
     /** Returns true if there is a custom 404 page. */
     function thereIsAUserSpecified404Page($dest404page) {
+    	if ($dest404page == null) {
+    		return false;
+    	}
     	$check1 = ($dest404page !== (ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED));
     	$check2 = ($dest404page !== ABJ404_TYPE_404_DISPLAYED);
     	return $check1 && $check2;
