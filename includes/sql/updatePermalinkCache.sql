@@ -21,7 +21,7 @@ select  wpp.id as id,
               '%pagename%', wpp.post_name), 
               '%post_id%', wpp.id),
               '%category%', coalesce(category_table.category, '')),
-              '%author%', wpusers.user_nicename)
+              '%author%', coalesce(author_table.user_nicename, ''))
         ) as url,
 
         concat(concat(concat(concat('s:', wpp.post_status), ',t:'), wpp.post_type), ',') as meta
@@ -35,8 +35,19 @@ from
   inner join {wp_options} wpo_su
   on wpo_su.option_name = 'siteurl' 
 
-  left outer join {wp_users} wpusers
-  on wpp.post_author = wpusers.id
+    /* select the author of a post. */
+  left outer join (
+    select wpusers.id,
+          wpusers.user_nicename
+      
+    from {wp_users} wpusers
+      
+    inner join {wp_options} wpo 
+    on wpo.option_name = 'permalink_structure' 
+
+    /* Only include this subselect if the author is necessary. */
+    where instr(wpo.option_value, '%author%') > 0
+  ) author_table on wpp.post_author = author_table.ID
 
     /* select the category of a post. */
   left outer join (

@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: https://www.ajexperience.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.30.1
+Version: 2.30.2
 Tested up to: 5.8
-Stable tag: 2.30.1
+Stable tag: 2.30.2
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -80,6 +80,10 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.30.2 (March 17, 2022) =
+* FIX: Try to fix a MAX_JOIN_SIZE issue for a debug file participant.
+* FIX: Never include the user specified custom 404 page in the suggested results (thanks @csine).
 
 = Version 2.30.1 (March 6, 2022) =
 * FIX: Change the page status to 404 (instead of 200) when a custom 404 page is specified (for jpglegalteam).

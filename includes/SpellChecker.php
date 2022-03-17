@@ -16,9 +16,22 @@ class ABJ_404_Solution_SpellChecker {
 
 	private static $instance = null;
 	
+	private $custom404PageID = null;
+	
 	public static function getInstance() {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_SpellChecker();
+
+			// set the custom 404 page id if there is one
+			$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+			$options = $abj404logic->getOptions();
+			$me = self::$instance;
+			$custom404PageID =
+				(array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
+				$options['dest404page'] : null);
+			if ($abj404logic->thereIsAUserSpecified404Page($custom404PageID)) {
+				$me->custom404PageID = $custom404PageID;
+			}
 		}
 		
 		return self::$instance;
@@ -427,7 +440,7 @@ class ABJ_404_Solution_SpellChecker {
 
 	function removeExcludedPages($options, $permalinks) {
 		$excludePagesJson = $options['excludePages[]'];
-		if (trim($excludePagesJson) == '') {
+		if (trim($excludePagesJson) == '' && $this->custom404PageID == null) {
 			return $permalinks;
 		}
 
@@ -436,6 +449,12 @@ class ABJ_404_Solution_SpellChecker {
 		if (!is_array($excludePages)) {
 			$excludePages = array($excludePages);
 		}
+		
+		// don't include the user specified 404 page in the spelling results..
+		if ($this->custom404PageID != null) {
+			array_push($excludePages, $this->custom404PageID);
+		}
+		
 		for ($i = 0; $i < count($excludePages); $i++) {
 			$excludePage = $excludePages[$i];
 			$items = explode("|\\|", $excludePage);
