@@ -88,6 +88,10 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.30.3 (March 18, 2022) ##
+* Improvement: Allow WordPress to handle updates.
+* Improvement: Add a "View details" link to the plugins page.
+
 ## Version 2.30.2 (March 17, 2022) ##
 * FIX: Try to fix a MAX_JOIN_SIZE issue for a debug file participant.
 * FIX: Never include the user specified custom 404 page in the suggested results (thanks @csine).
