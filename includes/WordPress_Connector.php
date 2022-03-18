@@ -16,19 +16,23 @@ class ABJ_404_Solution_WordPress_Connector {
 	
 	/** Setup. */
     static function init() {
-    	add_filter('auto_update_plugin', 'ABJ_404_Solution_WordPress_Connector::excludePluginsFromAutoUpdate', 10, 2);
-    	
     	if (is_admin()) {
             register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::doUnregisterCrons');
             register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::runOnPluginActivation');
             
             // include only if necessary
-            add_filter("plugin_action_links_" . ABJ404_NAME, 'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
-            add_action('admin_notices', 'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
-            add_action('admin_menu', 'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
+            add_filter("plugin_action_links_" . ABJ404_NAME, 
+            	'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
+            add_filter("plugin_row_meta", 
+            	'ABJ_404_Solution_WordPress_Connector::addRowMetaToPluginPage', 10, 4);
+            add_action('admin_notices', 
+            	'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
+            add_action('admin_menu', 
+            	'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
             // a priority of 11 makes sure our style sheet is more important than jquery's. otherwise the indent
             // doesn't work for the ajax dropdown list.
-            add_action('admin_enqueue_scripts', 'ABJ_404_Solution_WordPress_Connector::add_scripts', 11);
+            add_action('admin_enqueue_scripts', 
+            	'ABJ_404_Solution_WordPress_Connector::add_scripts', 11);
             // wp_ajax_nopriv_ is for normal users
             
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
@@ -93,34 +97,30 @@ class ABJ_404_Solution_WordPress_Connector {
                 null);
     }
 
-    /** Disable auto update by WordPress. We'll handle it ourselves.
-     * @param $update
-     * @param $item
-     * @return boolean
-     */
-    static function excludePluginsFromAutoUpdate($update, $item) {
-        $pluginSlug404 = dirname(ABJ404_NAME);
-        $pluginSlugWithPHP404 = $pluginSlug404 . '/' . basename(ABJ404_FILE);
-        $itemSlug = property_exists($item, 'slug') ? $item->slug : '(default-value)';
-        $itemPlugin = property_exists($item, 'plugin') ? $item->plugin : '(default-value)';
-        $itemName = property_exists($item, 'Name') ? $item->Name : '(default-value)';
-        
-        // if it's 404 solution then return false - do not update automatically.
-        if ($pluginSlug404 == $itemSlug && 
-        	$pluginSlugWithPHP404 == $itemPlugin &&
-        	PLUGIN_NAME == $itemName) {
-        	$abj404logging = ABJ_404_Solution_Logging::getInstance();
-        	$abj404logging->debugMessage("Disabled automatic update for a plugin" . 
-        		" because it looks like " . PLUGIN_NAME . " (" . 
-        		$itemSlug . "; " . $itemPlugin . "; " . $itemName . ")");
-            return false;
-        }
-        
-        // this needs to return null and not true. true would force other plugins
-        // to auto-update ...
-        return null;
-    }
 
+    /** Add the "View details" link which is missing for some reason.
+     * 
+     * @param $links_array
+     * @param $plugin_file_name
+     * @param $plugin_data
+     * @param $status
+     * @return string
+     */
+    static function addRowMetaToPluginPage($links_array, $plugin_file_name, $plugin_data, $status) {
+    	if (strpos($plugin_file_name, ABJ404_SOLUTION_BASENAME) !== false) {
+
+     		$slug = basename($plugin_data['PluginURI']);
+     		array_push($links_array, 
+     			sprintf('<a href="%s" class="thickbox">%s</a>',
+     			self_admin_url('plugin-install.php?tab=plugin-information&amp;plugin=' . $slug . '&amp;TB_iframe=true&amp;width=600&amp;height=550' ),
+     			__( 'View details' )
+     			)
+     		);
+     	}
+    	
+    	return $links_array;
+    }
+    
     /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).
      * @param array $links
      * @return array
