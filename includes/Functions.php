@@ -438,15 +438,15 @@ abstract class ABJ_404_Solution_Functions {
         	$supplement['suffix'] = '';
         	
         } else if ($f->endsWithCaseInsensitive($path, '.sql')) {
-            $supplement['prefix'] = "/* ------------------ " . $filePath . " BEGIN ----- */ \n";
+            $supplement['prefix'] = "\n/* ------------------ " . $filePath . " BEGIN ----- */ \n";
             $supplement['suffix'] = "\n/* ------------------ " . $filePath . " END ----- */ \n";
             
         } else if ($f->endsWithCaseInsensitive($path, '.html')) {
-            $supplement['prefix'] = "<!-- ------------------ " . $filePath . " BEGIN ----- --> \n";
+            $supplement['prefix'] = "\n<!-- ------------------ " . $filePath . " BEGIN ----- --> \n";
             $supplement['suffix'] = "\n<!-- ------------------ " . $filePath . " END ----- --> \n";
             
         } else {
-            $supplement['prefix'] = "/* ------------------ " . $filePath . " BEGIN unknown file type in "
+            $supplement['prefix'] = "\n/* ------------------ " . $filePath . " BEGIN unknown file type in "
                     . __CLASS__ . '::' . __FUNCTION__ . "() ----- */ \n";
             $supplement['suffix'] = "\n/* ------------------ " . $filePath . " END unknown file type in "
                     . __CLASS__ . '::' . __FUNCTION__ . "() ----- */ \n";

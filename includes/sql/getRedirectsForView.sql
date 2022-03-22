@@ -1,5 +1,9 @@
 
 select 
+
+-- this is replaced with either count(*) + start comment or with nothing.
+{selecting-for-count-true-false}
+
         wp_abj404_redirects.id,
         wp_abj404_redirects.url,
         wp_abj404_redirects.status,
@@ -37,6 +41,8 @@ select
 
         wp_posts.post_type as wp_post_type
 
+/* This ends a comment when only select for the count(*) */
+
 from    {wp_abj404_redirects} wp_abj404_redirects
 
         LEFT OUTER JOIN {wp_posts} wp_posts
@@ -47,7 +53,7 @@ from    {wp_abj404_redirects} wp_abj404_redirects
         left outer join {wp_terms} terms
         on binary wp_abj404_redirects.final_dest = binary terms.term_id
 
-        left outer join {wp_options} wp_options
+        inner join {wp_options} wp_options
         on binary wp_options.option_name = binary 'blogname'
 
 where 1 and (status in ({statusTypes})) and disabled = {trashValue}

@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: https://www.ajexperience.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Version: 2.30.3
+Version: 2.30.4
 Tested up to: 5.9
-Stable tag: 2.30.3
+Stable tag: 2.30.4
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -80,6 +80,9 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.30.4 (March 22, 2022) =
+* FIX: Try to fix a MAX_JOIN_SIZE issue for a debug file participant.
 
 = Version 2.30.3 (March 18, 2022) =
 * Improvement: Allow WordPress to handle updates.
