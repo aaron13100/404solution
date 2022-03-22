@@ -730,7 +730,8 @@ class ABJ_404_Solution_DataAccess {
         $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits')
                 || ($tableOptions['orderby'] == 'last_used');
         
-        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, $limitStart, $limitEnd);
+        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, 
+        	$limitStart, $limitEnd, false);
         
         // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
         // they can use a different ID - not the ID from the logs table.
@@ -750,17 +751,17 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getRedirectsForViewCount($sub, $tableOptions) {
-        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false, 0, PHP_INT_MAX);
+        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false, 0, PHP_INT_MAX,
+        	true);
 
-        $query = 'select count(*) as count from (' . $query . "\n) bob";
-        
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
         $row = $rows[0];
         return $row['count'];
     }
     
-    function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, $limitStart, $limitEnd) {
+    function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, 
+    	$limitStart, $limitEnd, $selectCountOnly) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         global $abj404_redirect_types;
         global $abj404_captured_types;
@@ -770,6 +771,12 @@ class ABJ_404_Solution_DataAccess {
         $logsTableJoin = '';
         $statusTypes = '';
         $trashValue = '';
+        $selectCountReplacement = '/* selecting data as usual */';
+        
+        /* if we only want the count(*) then comment out everything else. */
+        if ($selectCountOnly) {
+        	$selectCountReplacement = "count(*) as count\n /* only selecting for count";
+        }
 
         // if we're showing all rows include all of the log data in the query already. this makes the query very slow. 
         // this should be replaced by the dynamic loading of log data using ajax queries as the page is viewed.
@@ -822,8 +829,13 @@ class ABJ_404_Solution_DataAccess {
             // are then moved out of the trash?
             $orderBy = "IF (post_title is null, 'zzzzzzzzz', post_title)";
         }
-        
-        $orderByString = "order by " . $orderBy . " " . sanitize_text_field($tableOptions['order']);
+
+        /* only try to order by if we're actually selecting data and not only
+         * counting the number of rows. */
+        $orderByString = '';
+        if (!$selectCountOnly) {
+        	$orderByString = "order by " . $orderBy . " " . sanitize_text_field($tableOptions['order']);
+        }
 
         $searchFilterForRedirectsExists = "no redirects fiter text found";
         $searchFilterForCapturedExists = "no captured 404s filter text found";
@@ -851,6 +863,7 @@ class ABJ_404_Solution_DataAccess {
         $query = $f->str_replace('{searchFilterForRedirectsExists}', $searchFilterForRedirectsExists, $query);
         $query = $f->str_replace('{searchFilterForCapturedExists}', $searchFilterForCapturedExists, $query);
         $query = $f->str_replace('{filterText}', $tableOptions['filterText'], $query);
+        $query = $f->str_replace('{selecting-for-count-true-false}', $selectCountReplacement, $query);
         $query = $this->doTableNameReplacements($query);
         
         if (array_key_exists('translations', $tableOptions)) {
