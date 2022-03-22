@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.30.5 (March 22, 2022) ##
+* FIX: Fix a tagging/release issue with the readme.txt file.
+
 ## Version 2.30.4 (March 22, 2022) ##
 * FIX: Try to fix a MAX_JOIN_SIZE issue for a debug file participant.
 
