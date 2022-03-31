@@ -7,11 +7,10 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 2.30.5
+	Version: 2.30.6
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
-	Update URI:  https://www.ajexperience.com/404-solution/
 	Domain Path: /languages
 	Text Domain: 404-solution
 

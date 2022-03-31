@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.30.6 (March 31, 2022) ##
+* FIX: Remove the Update URI so people can get updates from wordpress.org again.
+
 ## Version 2.30.5 (March 22, 2022) ##
 * FIX: Fix a tagging/release issue with the readme.txt file.
 
