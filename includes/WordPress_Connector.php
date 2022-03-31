@@ -23,8 +23,6 @@ class ABJ_404_Solution_WordPress_Connector {
             // include only if necessary
             add_filter("plugin_action_links_" . ABJ404_NAME, 
             	'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
-            add_filter("plugin_row_meta", 
-            	'ABJ_404_Solution_WordPress_Connector::addRowMetaToPluginPage', 10, 4);
             add_action('admin_notices', 
             	'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
             add_action('admin_menu', 
@@ -97,30 +95,6 @@ class ABJ_404_Solution_WordPress_Connector {
                 null);
     }
 
-
-    /** Add the "View details" link which is missing for some reason.
-     * 
-     * @param $links_array
-     * @param $plugin_file_name
-     * @param $plugin_data
-     * @param $status
-     * @return string
-     */
-    static function addRowMetaToPluginPage($links_array, $plugin_file_name, $plugin_data, $status) {
-    	if (strpos($plugin_file_name, ABJ404_SOLUTION_BASENAME) !== false) {
-
-     		$slug = basename($plugin_data['PluginURI']);
-     		array_push($links_array, 
-     			sprintf('<a href="%s" class="thickbox">%s</a>',
-     			self_admin_url('plugin-install.php?tab=plugin-information&amp;plugin=' . $slug . '&amp;TB_iframe=true&amp;width=600&amp;height=550' ),
-     			__( 'View details' )
-     			)
-     		);
-     	}
-    	
-    	return $links_array;
-    }
-    
     /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).
      * @param array $links
      * @return array

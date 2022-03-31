@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.30.7 (March 31, 2022) ##
+* FIX: Remove the extra "view details" link from the plugins page.
+
 ## Version 2.30.6 (March 31, 2022) ##
 * FIX: Remove the Update URI so people can get updates from wordpress.org again.
 
