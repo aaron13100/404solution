@@ -28,8 +28,12 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function __construct() {
+    	$urlPath = parse_url(get_home_url(), PHP_URL_PATH);
+    	if ($urlPath == null) {
+    		$urlPath = '';
+    	}
     	$this->f = ABJ_404_Solution_Functions::getInstance();
-    	$this->urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
+    	$this->urlHomeDirectory = rtrim($urlPath, '/');
     	$this->urlHomeDirectoryLength = $this->f->strlen($this->urlHomeDirectory);
     }
 
