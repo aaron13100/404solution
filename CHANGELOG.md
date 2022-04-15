@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.30.9 (April 15, 2022) ##
+* FIX: Avoid a deprecated warning with php 8 (jsonSerialize). Thanks to debug file participants. 
+
 ## Version 2.30.8 (April 10, 2022) ##
 * FIX: Avoid a deprecated warning with php 8. rtrim(): Passing null to parameter #1. Thanks to debug file participants. 
 
