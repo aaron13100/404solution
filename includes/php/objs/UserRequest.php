@@ -1,7 +1,7 @@
 <?php
 
 /** Stores a message and its importance. */
-class ABJ_404_Solution_UserRequest implements JsonSerializable {
+class ABJ_404_Solution_UserRequest {
     
     private static $instance = null;
     
@@ -179,10 +179,6 @@ class ABJ_404_Solution_UserRequest implements JsonSerializable {
 
     function getCommentPagePart() {
         return $this->commentPagePart;
-    }
-
-    public function jsonSerialize() {
-        return get_object_vars($this);
     }
 
 }
