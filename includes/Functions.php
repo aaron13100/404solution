@@ -47,6 +47,9 @@ abstract class ABJ_404_Solution_Functions {
     }
     
     function str_replace($needle, $replacement, $haystack) {
+    	if ($replacement == null) {
+    		$replacement = '';
+    	}
     	return str_replace($needle, $replacement, $haystack);
 //     	if (!is_array($needle)) {
 //     		return $this->single_str_replace($needle, $replacement, $haystack);

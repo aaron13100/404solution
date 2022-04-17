@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.30.10 (April 17, 2022) ##
+* FIX: Avoid a deprecated warning with php 8 (explode and str_replace). Thanks to debug file participants. 
+
 ## Version 2.30.9 (April 15, 2022) ##
 * FIX: Avoid a deprecated warning with php 8 (jsonSerialize). Thanks to debug file participants. 
 

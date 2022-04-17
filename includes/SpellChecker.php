@@ -457,6 +457,9 @@ class ABJ_404_Solution_SpellChecker {
 		
 		for ($i = 0; $i < count($excludePages); $i++) {
 			$excludePage = $excludePages[$i];
+			if ($excludePage == null || trim($excludePage) == '') {
+				continue;
+			}
 			$items = explode("|\\|", $excludePage);
 			$idAndTypeToExclude = $items[0];
 
