@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.30.11 (April 18, 2022) ##
+* FIX: Avoid a SQL error during daily maintenance of deleting old logs. Thanks to debug file participants. 
+
 ## Version 2.30.10 (April 17, 2022) ##
 * FIX: Avoid a deprecated warning with php 8 (explode and str_replace). Thanks to debug file participants. 
 

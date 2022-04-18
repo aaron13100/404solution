@@ -1296,6 +1296,9 @@ class ABJ_404_Solution_DataAccess {
         $averageSizePerLine = max($logsSizeBytes, 1) / max($totalLogLines, 1);
         $logLinesToKeep = ceil($maxLogSizeBytes / $averageSizePerLine);
         $logLinesToDelete = max($totalLogLines - $logLinesToKeep, 0);
+        if ($logLinesToDelete == null || trim($logLinesToDelete) == '') {
+        	$logLinesToDelete = 0;
+        }
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
         $query = $f->str_replace('{lines_to_delete}', $logLinesToDelete, $query);
