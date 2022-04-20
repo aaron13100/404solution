@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.30.12 (April 20, 2022) ##
+* FIX: Avoid a PHP 8 issue. (setcookie Passing null to parameter #2). Thanks to debug file participants. 
+
 ## Version 2.30.11 (April 18, 2022) ##
 * FIX: Avoid a SQL error during daily maintenance of deleting old logs. Thanks to debug file participants. 
 
