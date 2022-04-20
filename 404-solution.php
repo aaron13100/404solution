@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 2.30.11
+	Version: 2.30.12
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -122,7 +122,7 @@ function abj404_404listener() {
     				
     			// clear the cookie
    				$_REQUEST[$cookieName] = $_COOKIE[$cookieName];
-    			setcookie($cookieName, null, time() - 5, "/");
+    			setcookie($cookieName, '', time() - 5, "/");
     				
     			require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     			add_action('wp_head', 'ABJ_404_Solution_ShortCode::updateURLbarIfNecessary');

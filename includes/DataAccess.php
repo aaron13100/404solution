@@ -1299,12 +1299,13 @@ class ABJ_404_Solution_DataAccess {
         if ($logLinesToDelete == null || trim($logLinesToDelete) == '') {
         	$logLinesToDelete = 0;
         }
+        if ($logLinesToDelete > 0) {
+	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
+	        $query = $f->str_replace('{lines_to_delete}', $logLinesToDelete, $query);
+	        $results = $this->queryAndGetResults($query);
+	        $oldLogRowsDeleted = $results['rows_affected'];
+        }
         
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
-        $query = $f->str_replace('{lines_to_delete}', $logLinesToDelete, $query);
-        
-        $results = $this->queryAndGetResults($query);
-        $oldLogRowsDeleted = $results['rows_affected'];
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
         $logSizeMB = round($logsSizeBytes / (1024 * 1000), 2);
         
