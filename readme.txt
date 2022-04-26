@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
 Tested up to: 5.9
-Stable tag: 2.30.12
+Stable tag: 2.30.13
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -79,6 +79,10 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.30.13 (April 26, 2022) =
+* FIX: Ignore the trailing /amp/ at the end of URLs (for @amendezc) (/amp was already ignored).
+* FIX: Some kind of random issue when viewing redirects (thanks to a debug file participant).
 
 = Version 2.30.12 (April 20, 2022) =
 * FIX: Avoid a PHP 8 issue. (setcookie Passing null to parameter #2). Thanks to debug file participants. 

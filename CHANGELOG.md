@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.30.13 (April 26, 2022) ##
+* FIX: Ignore the trailing /amp/ at the end of URLs (for @amendezc) (/amp was already ignored).
+* FIX: Some kind of random issue when viewing redirects (thanks to a debug file participant).
+
 ## Version 2.30.12 (April 20, 2022) ##
 * FIX: Avoid a PHP 8 issue. (setcookie Passing null to parameter #2). Thanks to debug file participants. 
 
