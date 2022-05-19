@@ -504,7 +504,7 @@ class ABJ_404_Solution_PluginLogic {
             'auto_cats' => '1',
             'auto_tags' => '1',
             'dest404page' => '0|' . ABJ404_TYPE_404_DISPLAYED,
-            'maximum_log_disk_usage' => '100',
+            'maximum_log_disk_usage' => '10',
             'ignore_dontprocess' => 'zemanta aggregator',
             'ignore_doprocess' => "Googlebot\nMediapartners-Google\nAdsBot-Google\ndevelopers.google.com\n"
             . "Bingbot\nYahoo! Slurp\nDuckDuckBot\nBaiduspider\nYandexBot\nwww.sogou.com\nSogou-Test-Spider\n"
@@ -1527,7 +1527,7 @@ class ABJ_404_Solution_PluginLogic {
 	        }
 	
 	        if (array_key_exists('maximum_log_disk_usage', $_POST) && isset($_POST['maximum_log_disk_usage'])) {
-	            if (is_numeric($_POST['maximum_log_disk_usage']) && $_POST['maximum_log_disk_usage'] > 0) {
+	        	if (is_numeric($_POST['maximum_log_disk_usage']) && absint($_POST['maximum_log_disk_usage']) > 0) {
 	                $options['maximum_log_disk_usage'] = absint($_POST['maximum_log_disk_usage']);
 	            } else {
 	                $message .= __('Error: Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";
