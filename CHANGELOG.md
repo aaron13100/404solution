@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.30.15 (May 24, 2022) ##
+* FIX: Try to fix a max_join_size issue for Shelly. 
+* FIX: Make saving options work with Safari for Anja. 
+
 ## Version 2.30.14 (May 19, 2022) ##
 * Improvement: Change the default maximum log usage size from 100M to 10M because lots of logs cause problems for some databases.
 * FIX: Force the maximum log usage size to be more than 0 even when the user enters a decimal. 

@@ -177,7 +177,7 @@ abstract class ABJ_404_Solution_Functions {
             '{WP_MEMORY_LIMIT}' => WP_MEMORY_LIMIT,
             '{MBSTRING}' => extension_loaded('mbstring') ? 'true' : 'false',
             );
-
+        
         // replace known strings that do not exist in the translation file.
         $text = $this->str_replace(array_keys($knownReplacements), array_values($knownReplacements), $text);
         

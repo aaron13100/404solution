@@ -11,6 +11,8 @@ class ABJ_404_Solution_DataAccess {
     
     const UPDATE_LOGS_HITS_TABLE_HOOK = 'abj404_updateLogsHitsTableAction';
     
+    const KEY_REDIRECTS_FOR_VIEW_COUNT = 'abj404_redirects-for-view-count';
+    
     private static $instance = null;
     
     public static function getInstance() {
@@ -214,8 +216,15 @@ class ABJ_404_Solution_DataAccess {
             }
             
             if ($reportError) {
-	            $abj404logging->errorMessage("Ugh. SQL query error: " . $result['last_error'] . 
-					", SQL: " . $query . ", Execution time: " . round($timer->getElapsedTime(), 2));
+            	$extraDataQuery = "select @@max_join_size as max_join_size, " . 
+            		"@@sql_big_selects as sql_big_selects";
+            	$someMySQLVariables = $wpdb->get_results($extraDataQuery, ARRAY_A);
+            	$variables = print_r($someMySQLVariables, true);
+            	$abj404logging->errorMessage("Ugh. SQL query error: " . $result['last_error'] . 
+					", SQL: " . $query . 
+	            	", Execution time: " . round($timer->getElapsedTime(), 2) . 
+	            	", DB ver: " . $wpdb->db_version() . 
+            		", Variables: " . $variables);
             }
             
         } else {
@@ -735,6 +744,10 @@ class ABJ_404_Solution_DataAccess {
         
         // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
         // they can use a different ID - not the ID from the logs table.
+        $ignoreErrorsOoptions = array('log_errors' => false);
+        $this->queryAndGetResults("set session max_join_size = 18446744073709551615", 
+        	$ignoreErrorsOoptions);
+        $this->queryAndGetResults("set session sql_big_selects = 1", $ignoreErrorsOoptions);
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
         $foundRowsBeforeLogsData = count($rows);
@@ -751,12 +764,31 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getRedirectsForViewCount($sub, $tableOptions) {
+    	if (array_key_exists(self::KEY_REDIRECTS_FOR_VIEW_COUNT, $_REQUEST) && 
+    		isset($_REQUEST[self::KEY_REDIRECTS_FOR_VIEW_COUNT])) {
+    			
+   			return $_REQUEST[self::KEY_REDIRECTS_FOR_VIEW_COUNT];
+   		}
+    	
         $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false, 0, PHP_INT_MAX,
         	true);
 
+        $ignoreErrorsOoptions = array('log_errors' => false);
+        $this->queryAndGetResults("set session max_join_size = 18446744073709551615", 
+        	$ignoreErrorsOoptions);
+        $this->queryAndGetResults("set session sql_big_selects = 1", $ignoreErrorsOoptions);
         $results = $this->queryAndGetResults($query);
+        
+        if ($results['last_error'] != null && trim($results['last_error']) != '') {
+        	throw new \Exception("Error getting redirect count: " . $results['last_error']);
+        }
         $rows = $results['rows'];
+        if (empty($rows)) {
+        	return -1;
+        }
         $row = $rows[0];
+        
+        $_REQUEST[self::KEY_REDIRECTS_FOR_VIEW_COUNT] = $row['count'];
         return $row['count'];
     }
     
@@ -775,7 +807,8 @@ class ABJ_404_Solution_DataAccess {
         
         /* if we only want the count(*) then comment out everything else. */
         if ($selectCountOnly) {
-        	$selectCountReplacement = "count(*) as count\n /* only selecting for count";
+        	$selectCountReplacement = "\n /*+ SET_VAR(max_join_size=18446744073709551615) */\n" . 
+        		"count(*) as count\n /* only selecting for count";
         }
 
         // if we're showing all rows include all of the log data in the query already. this makes the query very slow. 

@@ -1,8 +1,17 @@
+var abj404_whichButtonClicked = null;
 
 jQuery(document).ready(function($) {
 	var adminOptionsPage = document.getElementById("admin-options-page");
 	if (adminOptionsPage) {
 		adminOptionsPage.addEventListener('submit', submitOptions);
+	}
+	
+	var deleteDebugFileButton = document.querySelector('#deleteDebugFile');
+	if (deleteDebugFileButton) {
+		deleteDebugFileButton.addEventListener('click', function(e) {
+			abj404_whichButtonClicked = 'deleteDebugFile';
+			submitOptions(e);
+		});
 	}
 })
 
@@ -37,8 +46,7 @@ function submitOptions(e) {
 	}
 
     // if we should just delete the log file.
-    var submitter = e.submitter.name;
-    if (submitter == 'deleteDebugFile') {
+    if (abj404_whichButtonClicked == 'deleteDebugFile') {
     	// set the action to 'updateOptions' and set deleteDebugFile to true
     	formData['action'] = 'updateOptions';
     	formData['deleteDebugFile'] = true;
