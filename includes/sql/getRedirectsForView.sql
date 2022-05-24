@@ -1,7 +1,7 @@
 
 select 
 
--- this is replaced with either count(*) + start comment or with nothing.
+/* this is replaced with either count(*) + start comment or with nothing. */
 {selecting-for-count-true-false}
 
         wp_abj404_redirects.id,

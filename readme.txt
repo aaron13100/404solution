@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
 Tested up to: 6.0
-Stable tag: 2.30.14
+Stable tag: 2.30.15
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -79,6 +79,10 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.30.15 (May 24, 2022) =
+* FIX: Try to fix a max_join_size issue for Shelly. 
+* FIX: Make saving options work with Safari for Anja. 
 
 = Version 2.30.14 (May 19, 2022) =
 * Improvement: Change the default maximum log usage size from 100M to 10M because lots of logs cause problems for some databases.
