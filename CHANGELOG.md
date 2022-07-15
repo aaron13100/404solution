@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.30.16 (July 15, 2022) ##
+* FIX: Don't try to forward to a page that's in draft status (only 'publish' status is ok). (thanks Andrea) 
+
 ## Version 2.30.15 (May 24, 2022) ##
 * FIX: Try to fix a max_join_size issue for Shelly. 
 * FIX: Make saving options work with Safari for Anja. 

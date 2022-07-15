@@ -217,7 +217,7 @@ class ABJ_404_Solution_PluginLogic {
            		null, $options);
             
             // make sure the page exists
-            if ($permalink['status'] == 'trash') {
+            if ($permalink['status'] != 'publish') {
             	$msg = __("The user specified 404 page wasn't found. " .
             			"Please update the user-specified 404 page on the Options page.", 
             			'404-solution');

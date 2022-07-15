@@ -127,7 +127,58 @@ class ABJ_404_Solution_UserRequest {
         $this->urlParts = $urlParts;
         $this->requestURIWithoutCommentsPage = $urlWithoutCommentPage;
         $this->commentPagePart = $commentPagePart;
-        $this->queryString = $queryString;
+        
+        
+        // I didn't use makeQueryStringUnique because I guess it's not necessary and 
+        // I'm not sure how it will affect empty query strings like "&noValue=&=noKey"
+        $this->queryString = $queryString; //$this->makeQueryStringUnique($queryString);
+    }
+    
+    /** 
+     * Turn "page_id=13689?page_id=13689" into "page_id=13689"
+     * @param $queryString
+     * @return string
+     */
+    private function makeQueryStringUnique($queryString) {
+    	//$paramsArray = array_reverse(explode('?', "page_id=13689?page_id=13689?page_id=13689?page_id=13689?page_id=13689?page_id=1?page_id=13689?page_id=1"));
+    	
+    	if ($queryString == null || $queryString == '') {
+    		return $queryString;
+    	}
+    	
+    	// split on '?'
+    	$paramsArray = array_reverse(explode('?', $queryString));
+    	
+    	if (count($paramsArray) == 0) {
+    		return $queryString;
+    	}
+    	
+    	// store the unique values based on the key.
+    	$uniqueArray = array();
+    	foreach ($paramsArray as $argPair) {
+    		$keyValue = explode('=', $argPair);
+    		if (count($keyValue) != 2) {
+    			continue;
+    		}
+    		$key = $keyValue[0];
+    		$value = $keyValue[1];
+    		if (!array_key_exists($key, $uniqueArray)) {
+    			$uniqueArray[$key] = $value;
+    		}
+    	}
+    	// correct the order. necessary?
+    	$correctedOrder = array_reverse($uniqueArray);
+    	
+    	// recreate the string with only unique values.
+    	$rejoined = '';
+    	foreach ($correctedOrder as $key => $value) {
+    		if (strlen($rejoined) > 0) {
+    			$rejoined .= '?';
+    		}
+    		$rejoined .= $key . '=' . $value;
+    	}
+    	
+    	return $rejoined;
     }
     
     function getRequestURI() {
