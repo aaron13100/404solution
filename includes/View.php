@@ -1519,7 +1519,7 @@ class ABJ_404_Solution_View {
         if ($userSelectedDefault404Page != null) {
         	$permalink = 
         		ABJ_404_Solution_Functions::permalinkInfoToArray($userSelectedDefault404Page, 0);
-        	if ($permalink['status'] == 'trash') {
+        	if ($permalink['status'] != 'publish') {
         		$pageMissingWarning = __("(The specified page doesn't exist. " .
         				"Please update this setting.)", '404-solution');
         	}

@@ -753,7 +753,7 @@ class ABJ_404_Solution_SpellChecker {
 			
 			$the_permalink = urldecode($the_permalink);
 			$_REQUEST[ABJ404_PP]['debug_info'] = 'Likely match IDs processing permalink: ' . 
-				$the_permalink;
+				$the_permalink . ', $wasntReadyCount: ' . $wasntReadyCount;
 			$urlParts = parse_url($the_permalink);
 			$the_permalink = null;
 
