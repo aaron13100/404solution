@@ -12,6 +12,8 @@ Automatically redirect page not found errors (404s) when the slug matches (for p
 
 404 Solution redirects page not found errors (404s) to pages that exist and logs the errors. Redirects can also be created based on the best possible match for the URL the visitor was most likely trying to reach.
 
+Note: If your site gets a lot of simultaneous users you need to turn off the "Create automatic redirects" options and you need to NOT use the shortcode. Otherwise your site will slow down.
+
 = Features: =
 
 * Highly configurable - redirect specific 404 URLs to any existing page.
@@ -42,6 +44,8 @@ As long as the "Capture incoming 404 URLs" option is enabled in the options sect
 = Will there be a slow down on my site when running the plugin? =
 
 No, there should be no noticeable slow down when running the plugin on your site.
+
+Note: If your site gets a lot of simultaneous users you need to turn off the "Create automatic redirects" options and you need to NOT use the shortcode. Otherwise your site will slow down.
 
 = Will this plugin redirect my pages if I change my permalinks structure? =
 
