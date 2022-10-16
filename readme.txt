@@ -86,6 +86,7 @@ Please try this website for studying flashcards.
 
 = Version 2.31.0 (October 16, 2022) =
 * FIX: Correct the page URLs in the permalink cache table and in the export data (pages previously used the permalink structure for posts). (thanks mmmartin)
+* FIX: Log redirects even when the referrer is more than 512 characters long.
 
 = Version 2.30.16 (July 15, 2022) =
 * FIX: Don't try to forward to a page that's in draft status (only 'publish' status is ok). (thanks Andrea) 
