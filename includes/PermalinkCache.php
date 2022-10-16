@@ -66,6 +66,12 @@ class ABJ_404_Solution_PermalinkCache {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $results = $abj404dao->updatePermalinkCache();
         $rowsInserted = $results['rows_affected'];
+        
+        // now we have to update the the pages that have parents to include the parent
+        // part of the URL.
+        // wherever the post_parent != 0, prepend the parent ID URL onto the current URL
+        // and update the post_parent to be the parent ID of the parent.
+        $abj404dao->updatePermalinkCacheParentPages();
 
         return $rowsInserted;
     }

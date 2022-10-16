@@ -22,7 +22,9 @@ SELECT r.url as from_url,
        		when pc.url is not null then pc.url
             when r.final_dest = '0' then null
             else r.final_dest
-       end as to_url
+       end as to_url,
+       wpp.post_type as type_wp
+       
        /* ,
        r.final_dest,
        pc.url,
@@ -33,6 +35,10 @@ from {wp_abj404_redirects} r
 
 left outer join {wp_abj404_permalink_cache} pc
 on r.final_dest = pc.id
+
+left outer join {wp_posts} wpp
+on r.final_dest = wpp.ID
+
 
 where r.url is not null and r.url != ''
 

@@ -183,11 +183,25 @@ class ABJ_404_Solution_DataAccess {
         $timer = new ABJ_404_Solution_Timer();
         
         $result = array();
-        $result['rows'] = $wpdb->get_results($query, ARRAY_A);
+       	$result['rows'] = $wpdb->get_results($query, ARRAY_A);
+        
         $result['elapsed_time'] = $timer->stop();
         $result['last_error'] = $wpdb->last_error;
         $result['last_result'] = $wpdb->last_result;
         $result['rows_affected'] = $wpdb->rows_affected;
+        
+        try {
+        	// I copied this from class-wpdb.php because it wasn't working even when 
+        	// I used $wpdb->query() instead of $wpdb->getResults().
+        	if ($wpdb->use_mysqli) {
+        		$result['rows_affected'] = mysqli_affected_rows( $wpdb->dbh );
+        	} else {
+        		$result['rows_affected'] = mysql_affected_rows( $wpdb->dbh );
+        	}
+        } catch (Exception $ex) {
+    		// don't care. we did our best.
+    	}
+        
         $result['insert_id'] = $wpdb->insert_id;
         
         if (!is_array($result['rows'])) {
@@ -675,14 +689,15 @@ class ABJ_404_Solution_DataAccess {
     	$result = mysqli_query($wpdb->dbh, $query);
     	if ($result) {
     		// write the header
-    		$line = 'from_url,status,type,to_url';
+    		$line = 'from_url,status,type,to_url,wp_type';
     		file_put_contents($tempFile, $line . "\n", FILE_APPEND);
     		
     		while (($row = mysqli_fetch_array($result, MYSQLI_ASSOC))) {
     			$line = $row['from_url'] . ',' .
      			$row['status'] . ',' .
      			$row['type'] . ',' .
-     			$row['to_url'];
+     			$row['to_url'] . ', ' .
+    			$row['type_wp'];
      			file_put_contents($tempFile, $line . "\n", FILE_APPEND);
     		}
     		mysqli_free_result($result);
@@ -1976,8 +1991,24 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function updatePermalinkCache() {
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/updatePermalinkCache.sql");
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
+    		"/sql/updatePermalinkCache.sql");
     	$results = $this->queryAndGetResults($query);
+    	
+    	return $results;
+    }
+    
+    function updatePermalinkCacheParentPages() {
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
+    		"/sql/updatePermalinkCacheParentPages.sql");
+    	
+    	// depthSoFar makes sure we don't have an infinite loop somehow.
+    	$depthSoFar = 0;
+    	$results = array();
+    	do {
+    		$results = $this->queryAndGetResults($query);
+    		$depthSoFar++;
+    	} while ($results['rows_affected'] != 0 && $depthSoFar < 15);
     	
     	return $results;
     }
