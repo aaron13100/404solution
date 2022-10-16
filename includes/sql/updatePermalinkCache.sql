@@ -1,5 +1,5 @@
 
-insert ignore into {wp_abj404_permalink_cache} (id, url, meta, url_length)
+insert ignore into {wp_abj404_permalink_cache} (id, url, meta, post_parent, url_length)
 
 /* This selects the permalink for a page ID. */
 select 	subTable.*,
@@ -8,23 +8,33 @@ select 	subTable.*,
 from (
 select  wpp.id as id, 
 
-        concat(/* wpo_su.option_value, */
-          replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(
-            wpo_pls.option_value, 
-              '%year%', date_format(wpp.post_date, '%Y')), 
-              '%monthnum%', date_format(wpp.post_date, '%m')), 
-              '%day%', date_format(wpp.post_date, '%d')), 
-              '%hour%', date_format(wpp.post_date, '%HH')),
-              '%minute%', date_format(wpp.post_date, '%i')),
-              '%second%', date_format(wpp.post_date, '%ss')),
-              '%postname%', wpp.post_name), 
-              '%pagename%', wpp.post_name), 
-              '%post_id%', wpp.id),
-              '%category%', coalesce(category_table.category, '')),
-              '%author%', coalesce(author_table.user_nicename, ''))
-        ) as url,
+        case
+          when wpp.post_type = 'post' then
 
-        concat(concat(concat(concat('s:', wpp.post_status), ',t:'), wpp.post_type), ',') as meta
+          concat(/* wpo_su.option_value, */
+            replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(
+              wpo_pls.option_value, 
+                '%year%', date_format(wpp.post_date, '%Y')), 
+                '%monthnum%', date_format(wpp.post_date, '%m')), 
+                '%day%', date_format(wpp.post_date, '%d')), 
+                '%hour%', date_format(wpp.post_date, '%HH')),
+                '%minute%', date_format(wpp.post_date, '%i')),
+                '%second%', date_format(wpp.post_date, '%ss')),
+                '%postname%', wpp.post_name), 
+                '%pagename%', wpp.post_name), 
+                '%post_id%', wpp.id),
+                '%category%', coalesce(category_table.category, '')),
+                '%author%', coalesce(author_table.user_nicename, ''))
+          )
+
+          /* pages don't use the permalink structure. */
+          else concat(concat('/', wpp.post_name), '/')
+        
+        end as url,
+
+        concat(concat(concat(concat('s:', wpp.post_status), ',t:'), wpp.post_type), ',') as meta,
+
+        wpp.post_parent as post_parent
 
 from 
   {wp_posts} wpp 
