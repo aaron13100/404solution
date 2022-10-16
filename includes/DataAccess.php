@@ -532,7 +532,9 @@ class ABJ_404_Solution_DataAccess {
 
         if ($wpdb->last_error != '') {
             $abj404logging->errorMessage("Ugh. SQL insert error: " . $errorThisRun . 
-                    ", Query: " . $queryThisRun);
+				", Table: " . $tableName . ", Data: " .
+            	http_build_query($newDataToInsert, '', ', ') . 
+            	"Query: " . $queryThisRun);
         }
 
         return $results;
@@ -1114,6 +1116,10 @@ class ABJ_404_Solution_DataAccess {
 
         $options = $abj404logic->getOptions(true);
         $referer = wp_get_referer();
+        if ($referer != null) {
+        	// this length matches the maximum length of the data field on the logs table.
+        	$referer = substr($referer, 0, 512);
+        }
         $current_user = wp_get_current_user();
         $current_user_name = null;
         if (isset($current_user)) {
