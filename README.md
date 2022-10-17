@@ -88,6 +88,12 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.31.2 (October 17, 2022) ##
+* FIX: Update the version number to try to signal to some installations to redownload the plugin because the missing file is still missing for some people for some reason.
+
+## Version 2.31.1 (October 17, 2022) ##
+* FIX: Add a missing file.
+
 ## Version 2.31.0 (October 16, 2022) ##
 * FIX: Correct the page URLs in the permalink cache table and in the export data (pages previously used the permalink structure for posts). (thanks mmmartin)
 * FIX: Log redirects even when the referrer is more than 512 characters long.
