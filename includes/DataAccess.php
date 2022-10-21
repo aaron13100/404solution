@@ -1116,6 +1116,7 @@ class ABJ_404_Solution_DataAccess {
 
         $options = $abj404logic->getOptions(true);
         $referer = wp_get_referer();
+        $referer = urldecode($referer);
         if ($referer != null) {
         	// this length matches the maximum length of the data field on the logs table.
         	$referer = substr($referer, 0, 512);

@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
 Tested up to: 6.0
-Stable tag: 2.31.2
+Stable tag: 2.31.3
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -83,6 +83,10 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.31.3 (October 21, 2022) =
+* FIX: Fix the Undefined array key warning for GevoelVoorHumus.
+* FIX: Try to urldecode the referer before saving it to the log table.
 
 = Version 2.31.2 (October 17, 2022) =
 * FIX: Update the version number to try to signal to some installations to redownload the plugin because the missing file is still missing for some people for some reason.

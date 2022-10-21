@@ -88,6 +88,10 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.31.3 (October 21, 2022) ##
+* FIX: Fix the Undefined array key warning for GevoelVoorHumus.
+* FIX: Try to urldecode the referer before saving it to the log table.
+
 ## Version 2.31.2 (October 17, 2022) ##
 * FIX: Update the version number to try to signal to some installations to redownload the plugin because the missing file is still missing for some people for some reason.
 

@@ -244,6 +244,7 @@ abstract class ABJ_404_Solution_Functions {
         $permalink['type'] = $meta[1];
         $permalink['score'] = $linkScore;
         $permalink['status'] = 'unknown';
+        $permalink['link'] = 'dunno';
 
         if ($permalink['type'] == ABJ404_TYPE_POST) {
             if ($rowType == 'image') {
