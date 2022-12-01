@@ -4,6 +4,9 @@
 class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
     
     function strtolower($string) {
+    	if ($string == null) {
+    		return '';
+    	}
         return mb_strtolower($string);
     }
     
