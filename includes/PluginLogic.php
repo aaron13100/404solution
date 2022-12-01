@@ -69,7 +69,11 @@ class ABJ_404_Solution_PluginLogic {
             $permalink = urldecode(get_permalink($pageid));
             $status = get_post_status($pageid);
             if (($permalink != false) && ($status == 'publish')) {
-                $urlHomeDirectory = rtrim(parse_url(get_home_url(), PHP_URL_PATH), '/');
+            	$homeURL = get_home_url();
+            	if ($homeURL == null) {
+            		$homeURL = '';
+            	}
+            	$urlHomeDirectory = rtrim(parse_url($homeURL, PHP_URL_PATH), '/');
                 $fromURL = $urlHomeDirectory . '/?p=' . $pageid;
                 $redirect = $abj404dao->getExistingRedirectForURL($fromURL);
                 if (!isset($redirect['id']) || $redirect['id'] == 0) {
@@ -254,7 +258,7 @@ class ABJ_404_Solution_PluginLogic {
             $abj404dao->logRedirectHit($requestedURL, '404', 'gave up. ' . $reason);
         } else {
             $abj404logging->debugMessage("No permalink found to redirect to. capture_404 is off. Requested URL: " . $requestedURL .
-                    " | Redirect: " . wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " .
+                    " | Redirect: (none)" . " | is_single(): " . is_single() . " | " .
                     "is_page(): " . is_page() . " | is_feed(): " . is_feed() . " | is_trackback(): " .
                     is_trackback() . " | is_preview(): " . is_preview() . " | options: " . wp_kses_post(json_encode($options)));
         }

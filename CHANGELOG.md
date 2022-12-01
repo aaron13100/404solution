@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.31.4 (December 1, 2022) ##
+* FIX: Various apparently minor issues from debug file participants. 
+* Improvement: Avoid casting things in SQL to make @shortcutsolutions happy.
+
 ## Version 2.31.3 (October 21, 2022) ##
 * FIX: Fix the Undefined array key warning for GevoelVoorHumus.
 * FIX: Try to urldecode the referer before saving it to the log table.
