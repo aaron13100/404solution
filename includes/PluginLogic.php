@@ -1653,8 +1653,10 @@ class ABJ_404_Solution_PluginLogic {
      * if some other plugin has already output any kind of data. 
      * @param string $location
      * @param number $status
+     * @param number $type only 0 for sending to a 404 page
+     * @param string $requestedURL
      */
-    function forceRedirect($location, $status = 302, $type = null, $requestedURL = '') {
+    function forceRedirect($location, $status = 302, $type = -1, $requestedURL = '') {
     	$f = ABJ_404_Solution_Functions::getInstance();
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
     	
@@ -1681,7 +1683,7 @@ class ABJ_404_Solution_PluginLogic {
     	}
     	
     	// if the destination is the default 404 page then send the user there.
-    	if ($type === ABJ404_TYPE_404_DISPLAYED) {
+    	if ($type == ABJ404_TYPE_404_DISPLAYED) {
     		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
     		$abj404logic->sendTo404Page($requestedURL, '', false);
     		exit;
