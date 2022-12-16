@@ -25,7 +25,7 @@ left outer join (
     left outer join {wp_abj404_permalink_cache} pc
     on wp_posts.ID = pc.id
 
-where wp_posts.post_status = 'publish'
+where wp_posts.post_status in ('publish', 'published')
       and lcase(wp_posts.post_type) in ({recognizedPostTypes}) /* 'page', 'post', 'product' */
         
 

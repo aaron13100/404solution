@@ -126,7 +126,7 @@ class ABJ_404_Solution_SpellChecker {
 		}
 		
 		// if the status is uninteresting then ignore it.
-		$interestingStatuses = array('publish');
+		$interestingStatuses = array('publish', 'published');
 		if (!in_array($oldStatus, $interestingStatuses) &&
 			!in_array($post->post_status, $interestingStatuses)) {
 				
