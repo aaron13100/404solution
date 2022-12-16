@@ -667,6 +667,9 @@ class ABJ_404_Solution_View {
         } else if ($redirect['final_dest'] != 0) {
             // if a destination has been specified then let's fill it in.
             $pageIDAndType = $redirect['final_dest'] . "|" . $redirect['type'];
+            
+        } else if ($redirect['type'] == ABJ404_TYPE_404_DISPLAYED) {
+        	$pageIDAndType = ABJ404_TYPE_404_DISPLAYED . "|" . ABJ404_TYPE_404_DISPLAYED;
         }
         
         if ($redirect['code'] == "") {
@@ -1266,6 +1269,11 @@ class ABJ_404_Solution_View {
                 $link = $permalink['link'];
                 $title .= $permalink['title'];
                 
+            } else if ($row['type'] == ABJ404_TYPE_404_DISPLAYED) {
+            	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_404_DISPLAYED, 0);
+            	$link = $permalink['link'];
+            	$title .= $permalink['title'];
+            	
             } else {
                 $abj404logging->errorMessage("Unexpected row type while displaying table: " . $row['type']);
             }

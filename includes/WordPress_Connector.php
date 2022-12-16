@@ -340,7 +340,9 @@ class ABJ_404_Solution_WordPress_Connector {
     	if (!empty($regexPermalink)) {
     		$abj404dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match',
     			$requestedURL);
-    		$abj404logic->forceRedirect($regexPermalink['link'], esc_html($options['default_redirect']));
+    		$abj404logic->forceRedirect($regexPermalink['link'], 
+    			esc_html($options['default_redirect']), $regexPermalink['type'],
+    			$requestedURL);
     		exit;
     	}
     }

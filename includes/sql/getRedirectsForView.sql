@@ -21,6 +21,7 @@ select
           when wp_abj404_redirects.type = {ABJ404_TYPE_HOME} then '{ABJ404_TYPE_HOME_text}'
           when wp_abj404_redirects.type = {ABJ404_TYPE_POST} then 
                 CONCAT(UCASE(LEFT(wp_posts.post_type, 1)), LCASE(SUBSTRING(wp_posts.post_type, 2)))
+          when wp_abj404_redirects.type = {ABJ404_TYPE_404_DISPLAYED} then '{ABJ404_TYPE_SPECIAL_text}'
           else 'Unknown'
          end) as type_for_view,
         wp_abj404_redirects.final_dest,
@@ -30,6 +31,7 @@ select
           when wp_abj404_redirects.type = {ABJ404_TYPE_CAT} then terms.name
           when wp_abj404_redirects.type = {ABJ404_TYPE_TAG} then terms.name
           when wp_abj404_redirects.type = {ABJ404_TYPE_HOME} then wp_options.option_value
+          when wp_abj404_redirects.type = {ABJ404_TYPE_404_DISPLAYED} then '{ABJ404_TYPE_404_DISPLAYED_text}'
           else '? Dest Type'
         end) as dest_for_view,
 
@@ -81,6 +83,7 @@ and replace(lower(CONCAT(wp_abj404_redirects.url, '////',
           when wp_abj404_redirects.type = {ABJ404_TYPE_CAT} then terms.name
           when wp_abj404_redirects.type = {ABJ404_TYPE_TAG} then terms.name
           when wp_abj404_redirects.type = {ABJ404_TYPE_HOME} then wp_options.option_value
+          when wp_abj404_redirects.type = {ABJ404_TYPE_404_DISPLAYED} then '(404 page)'
           else '? Dest Type'
         end), '////',
         wp_abj404_redirects.code)

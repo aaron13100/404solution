@@ -203,7 +203,7 @@ class ABJ_404_Solution_PluginLogic {
     /** The passed in reason will be appended to the automatically generated reason.
      * @param string $reason
      */
-    function sendTo404Page($requestedURL, $reason = '') {
+    function sendTo404Page($requestedURL, $reason = '', $useUserSpecified404 = true) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -216,7 +216,7 @@ class ABJ_404_Solution_PluginLogic {
                 $options['dest404page'] : 
             ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
         
-        if ($this->thereIsAUserSpecified404Page($dest404page)) {
+        if ($useUserSpecified404 && $this->thereIsAUserSpecified404Page($dest404page)) {
            	// $idAndType OK on regular 404
            	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0, 
            		null, $options);
@@ -1285,8 +1285,10 @@ class ABJ_404_Solution_PluginLogic {
             '{ABJ404_TYPE_EXTERNAL_text}' => __('External', '404-solution'),
             '{ABJ404_TYPE_CAT_text}' => __('Category', '404-solution'),
             '{ABJ404_TYPE_TAG_text}' => __('Tag', '404-solution'),
-            '{ABJ404_TYPE_HOME_text}' => __('Home Page', '404-solution'),
-            );
+       		'{ABJ404_TYPE_HOME_text}' => __('Home Page', '404-solution'),
+       		'{ABJ404_TYPE_404_DISPLAYED_text}' => __('(Default 404 Page)', '404-solution'),
+       		'{ABJ404_TYPE_SPECIAL_text}' => __('(Special)', '404-solution'),
+        );
         
         $tableOptions['translations'] = $translationArray;
         
@@ -1652,7 +1654,7 @@ class ABJ_404_Solution_PluginLogic {
      * @param string $location
      * @param number $status
      */
-    function forceRedirect($location, $status = 302) {
+    function forceRedirect($location, $status = 302, $type = null, $requestedURL = '') {
     	$f = ABJ_404_Solution_Functions::getInstance();
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
     	
@@ -1676,6 +1678,13 @@ class ABJ_404_Solution_PluginLogic {
     				$previousRequest);
     			return;
     		}
+    	}
+    	
+    	// if the destination is the default 404 page then send the user there.
+    	if ($type === ABJ404_TYPE_404_DISPLAYED) {
+    		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+    		$abj404logic->sendTo404Page($requestedURL, '', false);
+    		exit;
     	}
     	
     	// try a normal redirect using a header.
