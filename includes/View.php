@@ -691,7 +691,7 @@ class ABJ_404_Solution_View {
         $html = $f->str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = $f->str_replace('{pageIDAndType}', $pageIDAndType, $html);
         $html = $f->str_replace('{data-url}', 
-                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false", $html);
+                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true", $html);
         $html = $f->doNormalReplacements($html);
         echo $html;
         
@@ -1436,7 +1436,7 @@ class ABJ_404_Solution_View {
         $html = $f->str_replace('{pageIDAndType}', '', $html);
         $html = $f->str_replace('{redirectPageTitle}', '', $html);
         $html = $f->str_replace('{data-url}', 
-                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false", $html);
+                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true", $html);
 
         $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectBottom.html");
         $html = $f->str_replace('{addManualRedirectAction}', $link, $html);
