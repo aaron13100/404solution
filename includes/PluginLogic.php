@@ -68,7 +68,8 @@ class ABJ_404_Solution_PluginLogic {
         if (!empty($pageid)) {
             $permalink = urldecode(get_permalink($pageid));
             $status = get_post_status($pageid);
-            if (($permalink != false) && ($status == 'publish')) {
+            if (($permalink != false) && 
+            	(in_array($status, array('publish', 'published')))) {
             	$homeURL = get_home_url();
             	if ($homeURL == null) {
             		$homeURL = '';
@@ -221,7 +222,7 @@ class ABJ_404_Solution_PluginLogic {
            		null, $options);
             
             // make sure the page exists
-            if ($permalink['status'] != 'publish') {
+            if (!in_array($permalink['status'], array('publish', 'published'))) {
             	$msg = __("The user specified 404 page wasn't found. " .
             			"Please update the user-specified 404 page on the Options page.", 
             			'404-solution');

@@ -34,7 +34,7 @@ on wp_posts.ID = usefulterms.object_id
 left outer join {wp_abj404_permalink_cache} plc
 on wp_posts.ID = plc.id
 
-where wp_posts.post_status = 'publish'
+where wp_posts.post_status in ('publish', 'published')
       and lcase(wp_posts.post_type) in ({recognizedPostTypes}) /* 'page', 'post', 'product' */
         
 /* only include this line if a slug has been specified. e.g.

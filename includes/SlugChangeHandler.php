@@ -27,7 +27,7 @@ class ABJ_404_Solution_SlugChangeHandler {
     	}
     	
     	$postStatus = get_post_status($post_id);
-    	if ('publish' != $postStatus) {
+    	if (!in_array($postStatus, array('publish', 'published'))) {
     		$abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . ": Post status: " . 
     			$postStatus . " (skipped) (post ID " . $post_id . ").");
     		return;

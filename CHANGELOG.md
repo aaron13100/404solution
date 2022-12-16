@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.31.5 (December 16, 2022) ##
+* FIX: Fix the specified page doesnt exist message and probably other issues as a result of the publish status also being published now for some reason. Thanks to rik0399.
+
 ## Version 2.31.4 (December 1, 2022) ##
 * FIX: Various apparently minor issues from debug file participants. 
 * Improvement: Avoid casting things in SQL to make @shortcutsolutions happy.

@@ -38,7 +38,7 @@ left outer join (
 	) usefulterms
     on wp_posts.ID = usefulterms.object_id
 
-where wp_posts_parents.post_status = 'publish'
+where wp_posts_parents.post_status in ('publish', 'published')
         
 and ( usefulterms.grouped_terms is null or 
 	  usefulterms.grouped_terms not like '%exclude-from-search%'

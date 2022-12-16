@@ -83,5 +83,5 @@ from
 
 where
   /* only published posts. */
-  wpp.post_status = 'publish'
+  wpp.post_status in ('publish', 'published')
 ) subTable
