@@ -2035,7 +2035,7 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
-        if (($type <= 0) || ($idForUpdate <= 0)) {
+        if (($type < 0) || ($idForUpdate <= 0)) {
             $abj404logging->errorMessage("Bad data passed for update redirect request. Type: " .
                 esc_html($type) . ", Dest: " . esc_html($dest) . ", ID(s): " . esc_html($idForUpdate));
             echo __('Error: Bad data passed for update redirect request.', '404-solution');

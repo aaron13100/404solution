@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.31.7 (December 16, 2022) ##
+* Improvement: Allow manually created redirects to redirect to the default 404 page or to the home page (for Janio).
+
 ## Version 2.31.6 (December 16, 2022) ##
 * Improvement: Allow manually created redirects to redirect to the default 404 page or to the home page (for Janio).
 
