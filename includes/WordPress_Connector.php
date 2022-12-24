@@ -250,7 +250,10 @@ class ABJ_404_Solution_WordPress_Connector {
 
             // --------------------------------------------------------------
             // try the regex URLs.
-            $this->tryRegexRedirect($options, $requestedURL);
+            $sentTo404Page = $this->tryRegexRedirect($options, $requestedURL);
+            if ($sentTo404Page) {
+            	return;
+            }
 
             if (!$autoRedirectsAreOn) {
             	$abj404logic->sendTo404Page($requestedURL,
@@ -331,6 +334,12 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logic->sendTo404Page($requestedURL, '');
     }
     
+    /** 
+     * 
+     * @param $options
+     * @param $requestedURL
+     * @return boolean true if the user is sent to the default 404 page.
+     */
     function tryRegexRedirect($options, $requestedURL) {
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
@@ -340,11 +349,15 @@ class ABJ_404_Solution_WordPress_Connector {
     	if (!empty($regexPermalink)) {
     		$abj404dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match',
     			$requestedURL);
-    		$abj404logic->forceRedirect($regexPermalink['link'], 
+    		$sentTo404Page = $abj404logic->forceRedirect($regexPermalink['link'], 
     			esc_html($options['default_redirect']), $regexPermalink['type'],
     			$requestedURL);
+    		if ($sentTo404Page) {
+    			return true;
+    		}
     		exit;
     	}
+    	return false;
     }
     
 	/**
@@ -383,6 +396,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * #param type $requestedURL
      * @param array $redirect
      * #param type $matchReason
+     * @return boolean true if the user is sent to the default 404 page.
      */
     function processRedirect($requestedURL, $redirect, $matchReason) {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -409,7 +423,11 @@ class ABJ_404_Solution_WordPress_Connector {
         $redirectedTo = $urlParts['path'];
             
         $abj404dao->logRedirectHit($redirect['url'], $redirectedTo, $matchReason);
-        $abj404logic->forceRedirect($permalink['link'], esc_html($redirect['code']));
+        $sendTo404Page = $abj404logic->forceRedirect($permalink['link'], esc_html($redirect['code']));
+        
+        if ($sendTo404Page) {
+        	return;
+        }
         exit;
     }
 

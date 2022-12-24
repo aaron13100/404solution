@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.31.9 (December 24, 2022) ##
+* FIX: Manual redirects to 404 use the theme's 404 page (for Janio).
+
 ## Version 2.31.8 (December 16, 2022) ##
 * FIX: Allow manually created redirects to redirect to the default 404 page or to the home page (for Janio).
 
