@@ -229,6 +229,8 @@ class ABJ_404_Solution_PluginLogic {
             	$abj404logging->infoMessage($msg);
             	
             } else {
+            	// dipslay the user specified 404 page.
+            	
 	            // get the existing redirect before adding a new one.
 	            $redirect = $abj404dao->getExistingRedirectForURL($requestedURL);
 	            if (!isset($redirect['id']) || $redirect['id'] == 0) {
@@ -240,7 +242,7 @@ class ABJ_404_Solution_PluginLogic {
 	            // set cookie here to remmeber to use a 404 status when displaying the 404 page
 	            setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
 	            
-	            // the 4040 page...
+	            // the 404 page...
 	            $abj404logic->forceRedirect(esc_url($permalink['link']), 
 	            	esc_html($options['default_redirect']),
 	            	'404Solution-404-page');
@@ -1655,6 +1657,7 @@ class ABJ_404_Solution_PluginLogic {
      * @param number $status
      * @param number $type only 0 for sending to a 404 page
      * @param string $requestedURL
+     * @return boolean true if the user is sent to the default 404 page.
      */
     function forceRedirect($location, $status = 302, $type = -1, $requestedURL = '') {
     	$f = ABJ_404_Solution_Functions::getInstance();
@@ -1678,7 +1681,7 @@ class ABJ_404_Solution_PluginLogic {
     		} else if ($previousRequest == $finalDestination) {
     			$abj404logging->infoMessage("Avoided infite redirects to/from: " .
     				$previousRequest);
-    			return;
+    			return false;
     		}
     	}
     	
@@ -1686,7 +1689,8 @@ class ABJ_404_Solution_PluginLogic {
     	if ($type == ABJ404_TYPE_404_DISPLAYED) {
     		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
     		$abj404logic->sendTo404Page($requestedURL, '', false);
-    		exit;
+    		
+    		return true;
     	}
     	
     	// try a normal redirect using a header.
