@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.31.10 (January 25, 2023) ##
+* FIX: Fix some errors that probably didn't affect the functionality at all, but were that were sending me emails from the debug participants.
+
 ## Version 2.31.9 (December 24, 2022) ##
 * FIX: Manual redirects to 404 use the theme's 404 page (for Janio).
 

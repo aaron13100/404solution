@@ -74,7 +74,11 @@ class ABJ_404_Solution_PluginLogic {
             	if ($homeURL == null) {
             		$homeURL = '';
             	}
-            	$urlHomeDirectory = rtrim(parse_url($homeURL, PHP_URL_PATH), '/');
+            	$urlHomeDirectory = parse_url($homeURL, PHP_URL_PATH);
+            	if ($urlHomeDirectory == null) {
+            		$urlHomeDirectory = '';
+            	}
+            	$urlHomeDirectory = rtrim($urlHomeDirectory, '/');
                 $fromURL = $urlHomeDirectory . '/?p=' . $pageid;
                 $redirect = $abj404dao->getExistingRedirectForURL($fromURL);
                 if (!isset($redirect['id']) || $redirect['id'] == 0) {

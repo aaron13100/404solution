@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
 Tested up to: 6.1
-Stable tag: 2.31.9
+Stable tag: 2.31.10
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -83,6 +83,9 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.31.10 (January 25, 2023) =
+* FIX: Fix some errors that probably didn't affect the functionality at all, but were that were sending me emails from the debug participants.
 
 = Version 2.31.9 (December 24, 2022) =
 * FIX: Manual redirects to 404 use the theme's 404 page (for Janio).
