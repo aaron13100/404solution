@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.31.11 (January 31, 2023) ##
+* FIX: Try to fix a php warning for Justin (array_key_exists() expects parameter 2 to be array) in the SpellChecker.
+
 ## Version 2.31.10 (January 25, 2023) ##
 * FIX: Fix some errors that probably didn't affect the functionality at all, but were that were sending me emails from the debug participants.
 

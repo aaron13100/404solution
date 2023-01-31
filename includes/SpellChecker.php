@@ -692,7 +692,7 @@ class ABJ_404_Solution_SpellChecker {
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$abj404logging = ABJ_404_Solution_Logging::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
-
+		
 		$options = $abj404logic->getOptions();
 		// we get more than we need because the algorithm we actually use
 		// is not based solely on the Levenshtein distance.
@@ -728,6 +728,7 @@ class ABJ_404_Solution_SpellChecker {
 
 			$id = null;
 			$the_permalink = null;
+			$urlParts = null;
 			if ($rowType == 'pages') {
 				$id = $row['id'];
             	
@@ -746,15 +747,23 @@ class ABJ_404_Solution_SpellChecker {
 
 			if (array_key_exists('url', $row)) {
 				$the_permalink = array_key_exists('url', $row) ? $row['url'] : null;
-			} else {
+				$the_permalink = urldecode($the_permalink);
+				$urlParts = parse_url($the_permalink);
+				
+				if (is_bool($urlParts)) {
+					$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+					$abj404dao->removeFromPermalinkCache($id);
+				}
+			}
+			if (!array_key_exists('url', $row) || is_bool($urlParts)) {
 				$wasntReadyCount++;
 				$the_permalink = $this->getPermalink($id, $rowType);
+				$the_permalink = urldecode($the_permalink);
+				$urlParts = parse_url($the_permalink);
 			}
 			
-			$the_permalink = urldecode($the_permalink);
 			$_REQUEST[ABJ404_PP]['debug_info'] = 'Likely match IDs processing permalink: ' . 
 				$the_permalink . ', $wasntReadyCount: ' . $wasntReadyCount;
-			$urlParts = parse_url($the_permalink);
 			$the_permalink = null;
 
 			if (!array_key_exists('path', $urlParts)) {
