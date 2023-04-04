@@ -1855,7 +1855,7 @@ class ABJ_404_Solution_View {
             $html .= "<td></td>";
             
             $html .= "<td>" . esc_html($row['url']);
-            if (trim($row['url_detail']) != '') {
+            if ($row['url_detail'] != null && trim($row['url_detail']) != '') {
                 $html .= ' (' . esc_html(trim($row['url_detail'])) . ')';
             }
             $html .= "</td>";

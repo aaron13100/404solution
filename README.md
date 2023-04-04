@@ -88,6 +88,10 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.31.12 (April 4, 2023) ##
+* FIX: Fix a deprecated trim(null) warning for laubeauscb.
+* Improvement: Try to allow the plugin to work for databaes that don't support myISAM (for debug file participants).
+
 ## Version 2.31.11 (January 31, 2023) ##
 * FIX: Try to fix a php warning for Justin (array_key_exists() expects parameter 2 to be array) in the SpellChecker.
 

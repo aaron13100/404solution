@@ -133,6 +133,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $abj404dao->queryAndGetResults($query);
+        // Use MyISAM because optimize table is slow otherwise.
+        $abj404dao->queryAndGetResults("alter table {wp_abj404_logsv2} engine = MyISAM;",
+        	array('log_errors' => false, 'ignore_errors' => array("Unknown storage engine")));
         $this->verifyColumns($logsTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
@@ -148,6 +151,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
     	$spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
     	$f = ABJ_404_Solution_Functions::getInstance();
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
     	$query = $f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
@@ -163,6 +167,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
     	$query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+    	// Use MyISAM because optimize table is slow otherwise.
+    	$abj404dao->queryAndGetResults("alter table {wp_abj404_logsv2} engine = MyISAM;",
+    		array('log_errors' => false, 'ignore_errors' => array("Unknown storage engine")));
     	$this->verifyIndexes($logsTable, $query);
     	
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
