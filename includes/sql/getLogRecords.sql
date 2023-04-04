@@ -4,7 +4,7 @@ select {wp_abj404_logsv2}.timestamp,
        {wp_abj404_logsv2}.referrer,
        {wp_abj404_logsv2}.dest_url as action,
        {wp_abj404_logsv2}.requested_url as url,
-       {wp_abj404_logsv2}.requested_url_detail as url_detail,
+       COALESCE({wp_abj404_logsv2}.requested_url_detail, '') AS url_detail,
        usernameLookup.lkup_value as username
 
 from {wp_abj404_logsv2}
