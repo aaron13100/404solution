@@ -161,7 +161,7 @@ class ABJ_404_Solution_View {
         } else {
             $header = "";
         }
-        echo "<div class=\"wrap\">";
+        echo "<div class=\"wrap\" style='z-index: 1;position: relative;'>";
         if ($sub == "abj404_options") {
             echo "\n<div id=\"icon-options-general\" class=\"icon32\"></div>";
         } else {
