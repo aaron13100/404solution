@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.31.13 (April 12, 2023) ##
+* Improvement: Fix a compatibility issue with the "Copy & Delete Posts" plugin (copy-delete-posts) that caused the "Empty Trash" button to not be clickable for Anja.
+
 ## Version 2.31.12 (April 4, 2023) ##
 * FIX: Fix a deprecated trim(null) warning for laubeauscb.
 * Improvement: Try to allow the plugin to work for databaes that don't support myISAM (for debug file participants).
