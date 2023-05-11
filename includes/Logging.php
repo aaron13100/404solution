@@ -131,11 +131,18 @@ class ABJ_404_Solution_Logging {
      */
     function logUserCapabilities($msg) {
     	$f = ABJ_404_Solution_Functions::getInstance();
+    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
     	$user = wp_get_current_user();
         $usercaps = $f->str_replace(',"', ', "', wp_kses_post(json_encode($user->get_role_caps())));
         
+        $userIsPluginAdminStr = "false";
+        if ($abj404logic->userIsPluginAdmin()) {
+        	$userIsPluginAdminStr = "true";
+        }
+        
         $this->debugMessage("User caps msg: " . esc_html($msg == '' ? '(none)' : $msg) . ", is_admin(): " . is_admin() . 
-                ", current_user_can('administrator'): " . current_user_can('administrator') . 
+        		", current_user_can('administrator'): " . current_user_can('administrator') . 
+        		", userIsPluginAdmin(): " . $userIsPluginAdminStr . 
                 ", user caps: " . wp_kses_post(json_encode($user->caps)) . ", get_role_caps: " . 
                 $usercaps . ", WP ver: " . get_bloginfo('version') . ", mbstring: " . 
                 (extension_loaded('mbstring') ? 'true' : 'false'));

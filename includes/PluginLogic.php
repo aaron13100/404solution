@@ -36,7 +36,26 @@ class ABJ_404_Solution_PluginLogic {
     	$this->urlHomeDirectory = rtrim($urlPath, '/');
     	$this->urlHomeDirectoryLength = $this->f->strlen($this->urlHomeDirectory);
     }
-
+    
+    /** This replaces the current_user_can('administrator') function.
+     * 
+     * Use the following to add a filter.
+     * // -------
+     * add_filter( 'abj404_userIsPluginAdmin', 'my_custom_function' );
+     * function my_custom_function( $value ) { 
+     * 	  // validate user can access the plugin here.
+     * 	  return $value;
+     * }
+     * // -------
+     * 
+     * @return bool true if $abj404logic->userIsPluginAdmin()
+     */
+    function userIsPluginAdmin() {
+    	$isPluginAdmin = current_user_can('administrator');
+    	$isPluginAdmin = apply_filters('abj404_userIsPluginAdmin', $isPluginAdmin);
+    	return $isPluginAdmin;
+    }
+    
     /** If a page's URL is /blogName/pageName then this returns /pageName.
      * @param string $urlRequest
      * @return string

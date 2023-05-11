@@ -198,7 +198,8 @@ class ABJ_404_Solution_ShortCode {
                 	esc_attr($permalink['title']) . "</a>";
                 
                 // display the score after the page link
-                if (is_user_logged_in() && current_user_can('manage_options')) {
+                	
+                if (is_user_logged_in() && $abj404logic->userIsPluginAdmin()) {
                     $content .= " (" . esc_html($permalink['score']) . ")";
                 }
                 
