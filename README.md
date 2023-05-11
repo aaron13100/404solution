@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.31.14 (May 11, 2023) ##
+* Improvement: Combine the current_user_can function calls into one function that has a filter so it can be easily overridden.
+
 ## Version 2.31.13 (April 12, 2023) ##
 * Improvement: Fix a compatibility issue with the "Copy & Delete Posts" plugin (copy-delete-posts) that caused the "Empty Trash" button to not be clickable for Anja.
 

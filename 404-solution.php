@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 2.31.13
+	Version: 2.31.14
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -174,11 +174,12 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 	}
 	$whiteList = $GLOBALS['abj404_whitelist'];
 	$serverNameIsInTheWhiteList = in_array($serverName, $whiteList);
-	$userIsAnAdminUser = function_exists('wp_get_current_user') && 
-		current_user_can('administrator');
 	
-	if ($serverNameIsInTheWhiteList && $userIsAnAdminUser) {
-		$GLOBALS['abj404_display_errors'] = true;
+	if ($serverNameIsInTheWhiteList && function_exists('wp_get_current_user')) {
+		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+		if ($abj404logic->userIsPluginAdmin()) {
+			$GLOBALS['abj404_display_errors'] = true;
+		}
 	}
 }
 add_action('init', 'abj404_loadSomethingWhenWordPressIsReady');

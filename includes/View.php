@@ -46,7 +46,7 @@ class ABJ_404_Solution_View {
         try {
             $action = $abj404dao->getPostOrGetSanitize('action');
             
-            if (!is_admin() || !current_user_can('administrator')) { 
+            if (!is_admin() || !$abj404logic->userIsPluginAdmin()) { 
                 $abj404logging->logUserCapabilities("handleMainAdminPageActionAndDisplay (" . 
                         esc_html($action == '' ? '(none)' : $action) . ")");
                 return; 
@@ -376,7 +376,8 @@ class ABJ_404_Solution_View {
     
     function echoAdminDebugFile() {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        if (current_user_can('administrator')) {
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        if ($abj404logic->userIsPluginAdmin()) {
         	$filesToEcho = array($abj404logging->getDebugFilePath(), 
         			$abj404logging->getDebugFilePathOld());
         	for ($i = 0; $i < count($filesToEcho); $i++) {

@@ -109,7 +109,7 @@ class ABJ_404_Solution_WordPress_Connector {
             $links = array();
         }
         
-        if (!is_admin() || !current_user_can('administrator')) {
+        if (!is_admin() || !$abj404logic->userIsPluginAdmin()) {
             $abj404logging->logUserCapabilities("addSettingsLinkToPluginPage");
 
             return $links;
@@ -440,8 +440,9 @@ class ABJ_404_Solution_WordPress_Connector {
      */
     static function echoDashboardNotification() {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         
-        if (!is_admin() || !current_user_can('administrator')) {
+        if (!is_admin() || !$abj404logic->userIsPluginAdmin()) {
             $abj404logging->logUserCapabilities("echoDashboardNotification");
             return;
         }
@@ -451,7 +452,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         global $abj404view;
 
-        if (current_user_can('manage_options')) {
+        if ($abj404logic->userIsPluginAdmin()) {
             if ( (array_key_exists('page', $_GET) && $_GET['page'] == ABJ404_PP) ||
                  ($pagenow == 'index.php' && !isset($_GET['page'])) ) {
                 $captured404Count = $abj404dao->getCapturedCountForNotification();
@@ -476,7 +477,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         
-        if (!is_admin() || !current_user_can('administrator')) {
+        if (!is_admin() || !$abj404logic->userIsPluginAdmin()) {
             $abj404logging->logUserCapabilities("addMainSettingsPageLink");
             return;
         }

@@ -29,9 +29,10 @@ class ABJ_404_Solution_WPNotices {
      */
     static function echoAdminNotices() {
     	$f = ABJ_404_Solution_Functions::getInstance();
+    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
     	
     	$allHTML = '';
-        if (!current_user_can('administrator')) {
+    	if (!$abj404logic->userIsPluginAdmin()) {
             return;
         }
         
