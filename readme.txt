@@ -86,6 +86,7 @@ Please try this website for studying flashcards.
 
 = Version 2.32.0 (May 13, 2023) =
 * Improvement: Combine the current_user_can function calls into one userIsPluginAdmin function that has a filter so it can be easily overridden.
+* Improvement: Add a 'plugin admins' section to the advanced options so non-admin users can be admins of the plugin.
 
 = Version 2.31.13 (April 12, 2023) =
 * Improvement: Fix a compatibility issue with the "Copy & Delete Posts" plugin (copy-delete-posts) that caused the "Empty Trash" button to not be clickable for Anja.
