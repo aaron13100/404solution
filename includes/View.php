@@ -1642,6 +1642,13 @@ class ABJ_404_Solution_View {
         
         $html = $f->str_replace('{recognized_categories}', wp_kses_post($options['recognized_categories']), $html);
         $html = $f->str_replace('{folders_files_ignore}', wp_kses_post($options['folders_files_ignore']), $html);
+        
+        $pluginAdminUsers = $options['plugin_admin_users'];
+        if (is_array($pluginAdminUsers)) {
+        	$pluginAdminUsers = implode("\n", $pluginAdminUsers);
+        }
+        $html = $f->str_replace('{plugin_admin_users}', wp_kses_post($pluginAdminUsers), $html);
+        
         $html = $f->str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($options['auto_score']), $html);
         
         $html = $f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
