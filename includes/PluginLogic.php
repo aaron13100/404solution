@@ -18,10 +18,17 @@ class ABJ_404_Solution_PluginLogic {
     
     private static $uniqID = null;
     
+    /** Use this to avoid an infinite loop when checking if a user has admin access or not. */
+    private static $checkingIsAdmin = false;
+    
     public static function getInstance() {
     	if (self::$instance == null) {
     		self::$instance = new ABJ_404_Solution_PluginLogic();
     		self::$uniqID = uniqid("", true);
+    		
+    		// these filters allow non-admins to have admin access to the plugin.
+    		add_filter( 'user_has_cap',
+    			'ABJ_404_Solution_PluginLogic::override_user_can_access_admin_page', 10, 4 );
     	}
     	
     	return self::$instance;
@@ -51,9 +58,94 @@ class ABJ_404_Solution_PluginLogic {
      * @return bool true if $abj404logic->userIsPluginAdmin()
      */
     function userIsPluginAdmin() {
+    	// avoid an infinite loop.
+    	if (ABJ_404_Solution_PluginLogic::$checkingIsAdmin) {
+    		return false;
+    	}
+    	// if it's not an admin page then we don't care.
+    	if (!is_admin()) {
+    		return false;
+    	}
+    	
+    	// begin function.
+    	ABJ_404_Solution_PluginLogic::$checkingIsAdmin = true;
+    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+    	$options = $abj404logic->getOptions();
+    	$f = $abj404logic->f;
+    	global $current_user;
+    	
+    	// admins have access
     	$isPluginAdmin = current_user_can('administrator');
+    	
+    	// check extra admins.
+    	$extraAdmins = $options['plugin_admin_users'];
+    	$current_user_name = null;
+    	if (isset($current_user)) {
+    		$current_user_name = $current_user->user_login;
+    	}
+    	if ($current_user_name != null) {
+	    	$check = false;
+	    	if (is_array($extraAdmins)) {
+	    		$extraAdmins = array_filter($extraAdmins,
+	    			array($f, 'removeEmptyCustom'));
+	    		$check = true;
+	    	} else if (is_string($extraAdmins)) {
+	    		$extraAdmins = array_filter(explode("\n", $extraAdmins),
+	    			array($f, 'removeEmptyCustom'));
+	    		$check = true;
+	    	}
+	    	if ($check && in_array($current_user_name, $extraAdmins)) {
+	    		$isPluginAdmin = true;
+	    	}
+    	}
+    	
+    	// do the filter in case someone wants to add one
     	$isPluginAdmin = apply_filters('abj404_userIsPluginAdmin', $isPluginAdmin);
+    	
+    	// allow calling the function again.
+    	ABJ_404_Solution_PluginLogic::$checkingIsAdmin = false;
+    	
     	return $isPluginAdmin;
+    }
+    
+    /** Allow the user to be an admin for the plugin. 
+     * @param $allcaps
+     * @param $caps
+     * @param $args
+     * @param $user
+     * @return an array of the capabilities
+     */
+    static function override_user_can_access_admin_page( $allcaps, $caps, $args, $user ) {
+    	// if it's not an admin page then we don't change anything.
+    	if (!is_admin()) {
+    		return $allcaps;
+    	}
+    	
+    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+    	
+    	$isPluginAdmin = false;
+    	$isViewing404AdminPage = false;
+    	
+    	// is the user supposed to have access?
+    	if ($abj404logic->userIsPluginAdmin()) {
+    		$isPluginAdmin = true;
+    	}
+    	
+    	if ($isPluginAdmin) {
+    		$userRequest = ABJ_404_Solution_UserRequest::getInstance();
+    		$queryParts = $userRequest->getQueryString();
+    		
+    		// are we viewing a 404 plugin page?
+    		if (strpos($queryParts, ABJ404_PP) !== false) {
+    			$isViewing404AdminPage = true;
+    		}
+    	}
+    	
+    	if ($isPluginAdmin && $isViewing404AdminPage) {
+    		$allcaps['manage_options'] = true;
+    	}
+    	
+    	return $allcaps;
     }
     
     /** If a page's URL is /blogName/pageName then this returns /pageName.
@@ -544,7 +636,8 @@ class ABJ_404_Solution_PluginLogic {
             'folders_files_ignore' => implode("\n", array("wp-content/plugins/*", "wp-content/themes/*", 
                 ".well-known/acme-challenge/*")),
             'folders_files_ignore_usable' => "",
-            'debug_mode' => 0,
+        	'plugin_admin_users' => "",
+        	'debug_mode' => 0,
             'days_wait_before_major_update' => 30,
             'DB_VERSION' => '0.0.0',
             'menuLocation' => 'underSettings',
@@ -1617,7 +1710,16 @@ class ABJ_404_Solution_PluginLogic {
 	            }
 	            $options['folders_files_ignore_usable'] = $usableFilePatterns;
 	        }
-	
+	        if (array_key_exists('plugin_admin_users', $_POST) && isset($_POST['plugin_admin_users'])) {
+	        	$pluginAdminUsers = $_POST['plugin_admin_users'];
+	        	if (is_array($pluginAdminUsers)) {
+	        		$pluginAdminUsers = array_filter($pluginAdminUsers,
+	        			array($f, 'removeEmptyCustom'));
+	        	}
+	        	
+	        	$options['plugin_admin_users'] = $pluginAdminUsers;
+	        }
+	        
 	        if (array_key_exists('excludePages[]', $_POST) && isset($_POST['excludePages[]'])) {
 	        	$oldExcludePages = json_decode($options['excludePages[]']);
 	        	if (!is_array($_POST['excludePages[]'])) {
