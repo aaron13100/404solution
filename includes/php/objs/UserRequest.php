@@ -100,13 +100,15 @@ class ABJ_404_Solution_UserRequest {
         $urlWithoutCommentPage = $urlParts['path'];
         $commentPagePart = '';
         $results = array();
-        $commentregex = '(.*)\/(' . $wp_rewrite->comments_pagination_base . '-[0-9]{1,})(\/|\z)?(.*)';
-        $f->regexMatch($commentregex, $urlParts['path'], $results);
-        
-        if (!empty($results)) {
-            $urlWithoutCommentPage = $results[1];
-            $commentPagePart = $results[2];
-            $commentPagePart = ($commentPagePart == '') ? '' : $commentPagePart . '/';
+        if (isset($wp_rewrite) && isset($wp_rewrite->comments_pagination_base)) {
+        	$commentregex = '(.*)\/(' . $wp_rewrite->comments_pagination_base . '-[0-9]{1,})(\/|\z)?(.*)';
+        	$f->regexMatch($commentregex, $urlParts['path'], $results);
+        	
+        	if (!empty($results)) {
+        		$urlWithoutCommentPage = $results[1];
+        		$commentPagePart = $results[2];
+        		$commentPagePart = ($commentPagePart == '') ? '' : $commentPagePart . '/';
+        	}
         }
         
         $queryString = '';

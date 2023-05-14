@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.32.1 (May 14, 2023) ##
+* FIX: Attempt to read property 'comments_pagination_base' on null in UserRequest.php on line 103.
+
 ## Version 2.32.0 (May 13, 2023) ##
 * Improvement: Combine the current_user_can function calls into one userIsPluginAdmin function that has a filter so it can be easily overridden.
 * Improvement: Add a 'plugin admins' section to the advanced options so non-admin users can be admins of the plugin.
