@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.32.2 (May 29, 2023) ##
+* FIX: Fix the Undefined array key "path" in WordPress_Connector.
+
 ## Version 2.32.1 (May 14, 2023) ##
 * FIX: Attempt to read property 'comments_pagination_base' on null in UserRequest.php on line 103.
 
