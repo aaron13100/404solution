@@ -419,8 +419,11 @@ class ABJ_404_Solution_WordPress_Connector {
         $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($key, 0);
 
         // log only the path part of the URL
+        $redirectedTo = '';
         $urlParts = parse_url(esc_url($permalink['link']));
-        $redirectedTo = $urlParts['path'];
+        if (array_key_exists('path', $urlParts)) {
+        	$redirectedTo = $urlParts['path'];
+        }
             
         $abj404dao->logRedirectHit($redirect['url'], $redirectedTo, $matchReason);
         $sendTo404Page = $abj404logic->forceRedirect($permalink['link'], esc_html($redirect['code']));
