@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
 Tested up to: 6.2
-Stable tag: 2.32.2
+Stable tag: 2.33.0
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -84,7 +84,11 @@ Please try this website for studying flashcards.
 
 == Changelog ==
 
-= Version 2.32.2 (May 29, 2023) =
+= Version 2.33.0 (September 28, 2023) =
+* Improvement: Add a file import function to the Tools page so redirects can be imported (for NoAdO).
+* FIX: Remove the 'Thank you for creating with...' message because it was messing up the layout on the Tools page and removing the message is easier than figuring out what the issue is with the layout.
+
+= Version 2.32.3 (May 29, 2023) =
 * FIX: Fix the Undefined array key "path" in WordPress_Connector.
 
 = Version 2.32.1 (May 14, 2023) =

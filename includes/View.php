@@ -69,7 +69,8 @@ class ABJ_404_Solution_View {
             $message .= $abj404logic->handleActionEdit($sub, $action);
             $message .= $abj404logic->handleActionImportRedirects();
             $message .= $abj404logic->handleActionChangeItemsPerRow();
-
+            $message .= $abj404logic->handleActionImportFile();
+            
             // --------------------------------------------------------------------
             // Output the correct page.
             $abj404view->echoChosenAdminTab($action, $sub, $message);
@@ -456,6 +457,23 @@ class ABJ_404_Solution_View {
         echo "<div class=\"metabox-holder\">";
         echo " <div class=\"meta-box-sortables\">";
         $abj404view->echoPostBox("abj404-exportRedirects", __('Export', '404-solution'), $html);
+        // ------------------------------------
+        
+        // ------------------------------------
+        $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", 
+            "abj404_importRedirectsFile");
+        
+        // read the html content.
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsImportForm.html");
+        // do special replacements
+        $html = $f->str_replace('{toolsImportRedirectsLink}', $link, $html);
+        // constants and translations.
+        $html = $f->doNormalReplacements($html);
+        
+        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
+        echo "<div class=\"metabox-holder\">";
+        echo " <div class=\"meta-box-sortables\">";
+        $abj404view->echoPostBox("abj404-importRedirects", __('Import', '404-solution'), $html);
         // ------------------------------------
         
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";

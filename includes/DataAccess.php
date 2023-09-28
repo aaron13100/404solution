@@ -1462,7 +1462,7 @@ class ABJ_404_Solution_DataAccess {
      * Store a redirect for future use.
      * @global type $wpdb
      * @param string $fromURL
-     * @param string $status
+     * @param string $status ABJ404_STATUS_MANUAL etc
      * @param string $type ABJ404_TYPE_POST, ABJ404_TYPE_CAT, ABJ404_TYPE_TAG, etc.
      * @param string $final_dest
      * @param string $code
@@ -1531,12 +1531,12 @@ class ABJ_404_Solution_DataAccess {
         // cases with and without the slash (and for backward compatibility).
         $url1 = $url;
         $url2 = $url;
-        if ($f->endsWithCaseInsensitive($url, '/')) {
-        	$url2 = $f->substr($url, 0, $f->strlen($url) - 1);
+        if (substr($url, -1) === '/') {
+            $url2 = rtrim($url, '/');
         } else {
-        	$url2 = $url2 . '/';
+            $url2 = $url2 . '/';
         }
-
+        
         // join to the wp_posts table to make sure the post exists.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPermalinkFromURL.sql");
         $query = $f->str_replace('{url1}', esc_sql($url1), $query);
@@ -1696,7 +1696,7 @@ class ABJ_404_Solution_DataAccess {
      * @global type $wpdb
      * @return array
      */
-    function getPublishedTags() {
+    function getPublishedTags($slug = null) {
         global $wpdb;
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -1713,8 +1713,13 @@ class ABJ_404_Solution_DataAccess {
         }
         $recognizedCategories = rtrim($recognizedCategories, ", ");
         
+        if ($slug != null) {
+            $slug = "*/ and wp_terms.slug = '" . esc_sql($slug) . "'\n";
+        }
+        
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedTags.sql");
+        $query = $f->str_replace('{slug}', $slug, $query);
         $query = $this->doTableNameReplacements($query);
         $query = $f->str_replace('{recognizedCategories}', $recognizedCategories, $query);
         
@@ -1764,7 +1769,7 @@ class ABJ_404_Solution_DataAccess {
      * @param int $term_id
      * @return array
      */
-    function getPublishedCategories($term_id = null) {
+    function getPublishedCategories($term_id = null, $slug = null) {
         global $wpdb;
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -1785,13 +1790,18 @@ class ABJ_404_Solution_DataAccess {
         $recognizedCategories = rtrim($recognizedCategories, ", ");
         
         if ($term_id != null) {
-            $term_id = "*/ and {wp_terms}.term_id = " . $term_id;
+            $term_id = "*/ and {wp_terms}.term_id = " . $term_id . "\n";
         }
-
+        
+        if ($slug != null) {
+            $slug = "*/ and {wp_terms}.slug = '" . esc_sql($slug) . "'\n";
+        }
+        
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedCategories.sql");
         $query = $f->str_replace('{recognizedCategories}', $recognizedCategories, $query);
         $query = $f->str_replace('{term_id}', $term_id, $query);
+        $query = $f->str_replace('{slug}', $slug, $query);
         $query = $this->doTableNameReplacements($query);
         
         $rows = $wpdb->get_results($query);

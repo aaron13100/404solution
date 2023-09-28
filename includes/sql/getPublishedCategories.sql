@@ -21,4 +21,9 @@ where ( wp_term_taxonomy.taxonomy = 'category' or lower({wp_terms}.name) in ({re
       {term_id}
 /*  */
 
+/* only include this line if a slug has been specified. e.g.
+      and wp_terms.slug = 'about'
+      {slug}
+/*  */
+
 order by {wp_terms}.name
