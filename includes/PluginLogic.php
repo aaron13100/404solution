@@ -113,7 +113,7 @@ class ABJ_404_Solution_PluginLogic {
      * @param $caps
      * @param $args
      * @param $user
-     * @return an array of the capabilities
+     * @return array an array of the capabilities
      */
     static function override_user_can_access_admin_page( $allcaps, $caps, $args, $user ) {
     	// if it's not an admin page then we don't change anything.
@@ -876,11 +876,20 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function handleActionExport() {
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    	
-    	if ($abj404dao->getPostOrGetSanitize('action') == 'exportRedirects') {
-    		$this->doExport();
-    	}
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        
+        if ($abj404dao->getPostOrGetSanitize('action') == 'exportRedirects') {
+            $this->doExport();
+        }
+    }
+    
+    function handleActionImportFile() {
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        
+        if ($abj404dao->getPostOrGetSanitize('action') == 'importRedirectsFile') {
+            $result = $this->doImportFile();
+            return $result;
+        }
     }
     
     function getExportFilename() {
@@ -909,6 +918,164 @@ class ABJ_404_Solution_PluginLogic {
     		$abj404logging = ABJ_404_Solution_Logging::getInstance();
     		$abj404logging->infoMessage("I don't see any data to export.");
     	}
+    }
+    
+    /** Expected formats are 
+     * from_url,status,type,to_url,wp_type
+     * from_url,to_url 
+     */
+    function doImportFile() {
+        $anyIssuesToNote = array();
+        if (isset($_FILES['import_file']) && $_FILES['import_file']['error'] == UPLOAD_ERR_OK) {
+            // Open the uploaded file for reading
+            $file_handle = fopen($_FILES['import_file']['tmp_name'], 'r');
+            if (!$file_handle) {
+                return "Error opening the file.";
+            }
+            
+            while (($line = fgets($file_handle)) !== false) {
+                $dataArray = $this->splitCsvLine($line);
+                if (isset($dataArray['error'])) {
+                    return $dataArray['error'];
+                }
+                
+                $anyIssuesToNote = array_merge($anyIssuesToNote, 
+                    $this->loadDataArrayFromFile($dataArray));
+            }
+            fclose($file_handle);
+            
+        } else {
+            return "File upload error.";
+        }
+        
+        if (count($anyIssuesToNote) > 0) {
+            return 'Error: ' . implode(", <BR/>\n", $anyIssuesToNote);
+        }
+
+        $msg = __("The file seems to have loaded okay. Please check the redirects page.", 
+            '404-solution');
+        return $msg;
+    }
+
+    function loadDataArrayFromFile($dataArray) {
+        if ($dataArray['from_url'] == 'from_url' || $dataArray['from_url'] == 'request') {
+            return array();
+        }
+        
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $fromURL = $dataArray['from_url'];
+        $status = ABJ404_STATUS_MANUAL;
+        $final_dest = $dataArray['to_url'];
+        $anyIssuesToNote = array();
+        
+        // avoid duplicates - verify that the from URL doesn't already exist as a redirect.
+        $maybeExisting2 = $abj404dao->getExistingRedirectForURL($fromURL);
+        
+        if ((count($maybeExisting2) > 0 && $maybeExisting2['id'] != 0)) {
+            $msg = "Ignored importing redirect because a redirect with the same " .
+                "from URL already exists. URL: " . $fromURL;
+            $abj404logging->warn($msg);
+            array_push($anyIssuesToNote, $msg);
+            return $anyIssuesToNote;
+        }
+        
+        // Determine $type based on $final_dest
+        if (empty($final_dest)) {
+            $type = ABJ404_TYPE_404_DISPLAYED; // "404"
+        } else if ($final_dest == '5') {
+            $type = ABJ404_TYPE_HOME; // "homepage"
+        } else if (strpos($final_dest, 'http') !== false) {
+            $type = ABJ404_TYPE_EXTERNAL; // "external"
+            
+            // if there's any kind of regular expression character that is NOT a valid
+            // URL character then we'll assume it's a regular expression.
+            $urlPattern = '/[!#$&\'()*+,;=]/';
+            if (preg_match($urlPattern, $fromURL)) {
+                $status = ABJ404_STATUS_REGEX;
+            }
+            
+            
+        } else if (strpos($final_dest, '/') === 0) {
+            $type = ABJ404_TYPE_POST; // Initially set to "page/post"
+        } else {
+            // Some default or error handling in case $final_dest does not match any expected format
+            $msg = "Unrecognized destination type while importing file. " .
+                "Destination: " . $final_dest;
+            $abj404logging->warn($msg);
+            array_push($anyIssuesToNote, $msg);
+            return $anyIssuesToNote;
+        }
+        
+        // If the type is set to ABJ404_TYPE_404_DISPLAYED
+        if ($type == ABJ404_TYPE_404_DISPLAYED) {
+            $final_dest = ABJ404_TYPE_404_DISPLAYED;
+        } else if (strpos($final_dest, 'http') !== false) {
+            // Check if $final_dest contains "http"
+            $type = ABJ404_TYPE_EXTERNAL;
+            // $final_dest remains unchanged
+        } else if ($type == ABJ404_TYPE_HOME) {
+            // If the type is set to ABJ404_TYPE_HOME
+            $final_dest = ABJ404_TYPE_HOME;
+        } else {
+            // If the type is post, further refine the type and set the ID
+            // Trim slashes for slug compatibility
+            $slug = trim($final_dest, '/');
+            
+            // Check if slug corresponds to a post
+            $postsFromSlugRows = $abj404dao->getPublishedPagesAndPostsIDs($slug);
+            $postsFromCategoryRows = $abj404dao->getPublishedCategories(null, $slug);
+            $postsFromTagRows = $abj404dao->getPublishedTags($slug);
+            
+            $postFromSlug = isset($postsFromSlugRows[0]) ? $postsFromSlugRows[0] : null;
+            $postFromCategory = isset($postsFromCategoryRows[0]) ? $postsFromCategoryRows[0] : null;
+            $postFromTag = isset($postsFromTagRows[0]) ? $postsFromTagRows[0] : null;
+            
+            if ($postFromSlug) {
+                $type = ABJ404_TYPE_POST;
+                $final_dest = $postFromSlug->id; // Set to post ID
+            } else if ($postFromCategory) {
+                // Check if slug corresponds to a category
+                $type = ABJ404_TYPE_CAT;
+                $final_dest = $postFromCategory->term_id; // Set to category ID
+            } else if ($postFromTag) {
+                // Check if slug corresponds to a tag
+                $type = ABJ404_TYPE_TAG;
+                $final_dest = $postFromTag->term_id; // Set to tag ID
+            } else {
+                $abj404logging->warn("Couldn't find post from slug. slug: " .
+                    $slug);
+            }
+        }
+        $abj404dao->setupRedirect($fromURL, $status, $type, $final_dest, 301);
+        
+        return $anyIssuesToNote;
+    }
+    
+    function splitCsvLine($line) {
+        // Split the CSV line into an array
+        $data = array_map('trim', str_getcsv($line));  // Trim each value in the array
+        
+        // Check the format based on the number of columns
+        if (count($data) === 5) {
+            // Format: from_url,status,type,to_url,wp_type
+            return [
+                'from_url' => $data[0],
+                'status'   => $data[1],
+                'type'     => $data[2],
+                'to_url'   => $data[3],
+                'wp_type'  => $data[4]
+            ];
+        } else if (count($data) === 2) {
+            // Format: from_url,to_url
+            return [
+                'from_url' => $data[0],
+                'to_url'   => $data[1]
+            ];
+        } else {
+            // Invalid format or unexpected number of columns
+            return ["error" => "Invalid CSV format. " . count($data) . " found but 2 or 5 expected."];
+        }
     }
     
     function updatePerPageOption($rows) {

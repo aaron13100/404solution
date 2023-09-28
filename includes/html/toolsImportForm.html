@@ -1,0 +1,14 @@
+
+<form method="POST" name="import-redirects" action="{toolsImportRedirectsLink}" 
+	enctype="multipart/form-data">
+    <input type="hidden" name="action" value="importRedirectsFile">
+    <p>{Import a CSV file with the redirects and captured 404s.}
+	</p>
+    <p>{Supported formats are: <B>from_url,status,type,to_url,wp_type</B> }
+    {and <B>from_url,to_url</B>}
+	</p>
+
+    <input type="file" name="import_file" class="button-secondary" onchange="form.submit()">
+    <p></p>
+</form>
+

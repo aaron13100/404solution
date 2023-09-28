@@ -14,4 +14,9 @@ on wp_terms.term_id = wp_term_taxonomy.term_id
 where ( wp_term_taxonomy.taxonomy = 'post_tag' )
       and wp_term_taxonomy.count >= 1
 
+/* only include this line if a slug has been specified. e.g.
+      and wp_terms.slug = 'about'
+      {slug}
+/*  */
+
 order by wp_terms.name

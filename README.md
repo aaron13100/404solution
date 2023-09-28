@@ -88,6 +88,10 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.33.0 (September 28, 2023) ##
+* Improvement: Add a file import function to the Tools page so redirects can be imported (for NoAdO).
+* FIX: Remove the 'Thank you for creating with...' message because it was messing up the layout on the Tools page and removing the message is easier than figuring out what the issue is with the layout.
+
 ## Version 2.32.2 (May 29, 2023) ##
 * FIX: Fix the Undefined array key "path" in WordPress_Connector.
 

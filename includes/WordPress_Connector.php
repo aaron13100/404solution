@@ -54,6 +54,13 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
 
+        // remove the "thank you for creating with wordpress" message
+        add_filter('admin_footer_text',
+            'ABJ_404_Solution_WordPress_Connector::remove_admin_footer_text');
+        // remove the version number message
+        add_filter('update_footer',
+            'ABJ_404_Solution_WordPress_Connector::remove_admin_footer_text', 11);
+        
         // jquery is used for the searchable dropdown list of pages for adding a redirect and other things.
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery');
 		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-ui-autocomplete');
@@ -93,6 +100,10 @@ class ABJ_404_Solution_WordPress_Connector {
         
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
                 null);
+    }
+    
+    static function remove_admin_footer_text($content) {
+        return '';
     }
 
     /** Add the "Settings" link to the WordPress plugins page (next to activate/deactivate and edit).
