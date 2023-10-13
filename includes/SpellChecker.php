@@ -746,20 +746,20 @@ class ABJ_404_Solution_SpellChecker {
 			}
 
 			if (array_key_exists('url', $row)) {
-				$the_permalink = array_key_exists('url', $row) ? $row['url'] : null;
-				$the_permalink = urldecode($the_permalink);
-				$urlParts = parse_url($the_permalink);
-				
-				if (is_bool($urlParts)) {
-					$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-					$abj404dao->removeFromPermalinkCache($id);
-				}
+			    $the_permalink = isset($row['url']) ? $row['url'] : '';
+			    $the_permalink = urldecode($the_permalink);
+			    $urlParts = parse_url($the_permalink);
+			    
+			    if (is_bool($urlParts)) {
+			        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+			        $abj404dao->removeFromPermalinkCache($id);
+			    }
 			}
-			if (!array_key_exists('url', $row) || is_bool($urlParts)) {
-				$wasntReadyCount++;
-				$the_permalink = $this->getPermalink($id, $rowType);
-				$the_permalink = urldecode($the_permalink);
-				$urlParts = parse_url($the_permalink);
+			if (!array_key_exists('url', $row) || (isset($urlParts) && is_bool($urlParts))) {
+			    $wasntReadyCount++;
+			    $the_permalink = $this->getPermalink($id, $rowType);
+			    $the_permalink = urldecode($the_permalink);
+			    $urlParts = parse_url($the_permalink);
 			}
 			
 			$_REQUEST[ABJ404_PP]['debug_info'] = 'Likely match IDs processing permalink: ' . 

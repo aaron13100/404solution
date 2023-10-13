@@ -88,6 +88,11 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.33.1 (October 13, 2023) ##
+* Improvement: Fix a 'Sensitive Data Exposure vulnerability' for Joshua Chan that I didn't really think was a big deal, but it must matter to someone, so I added a random ID to the debug log filename.
+* Improvement: Only try to update database tables to the correct engines if they're not already correct.
+* FIX: Minor issues from some debug file participants like the referrer being too long sometimes and a missing cookie. 
+
 ## Version 2.33.0 (September 28, 2023) ##
 * Improvement: Add a file import function to the Tools page so redirects can be imported (for NoAdO).
 * FIX: Remove the 'Thank you for creating with...' message because it was messing up the layout on the Tools page and removing the message is easier than figuring out what the issue is with the layout.

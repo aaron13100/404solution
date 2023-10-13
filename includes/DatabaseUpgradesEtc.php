@@ -133,9 +133,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $abj404dao->queryAndGetResults($query);
-        // Use MyISAM because optimize table is slow otherwise.
-        $abj404dao->queryAndGetResults("alter table {wp_abj404_logsv2} engine = MyISAM;",
-        	array('log_errors' => false, 'ignore_errors' => array("Unknown storage engine")));
         $this->verifyColumns($logsTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
@@ -167,9 +164,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
     	$query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-    	// Use MyISAM because optimize table is slow otherwise.
-    	$abj404dao->queryAndGetResults("alter table {wp_abj404_logsv2} engine = MyISAM;",
-    		array('log_errors' => false, 'ignore_errors' => array("Unknown storage engine")));
     	$this->verifyIndexes($logsTable, $query);
     	
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
@@ -446,46 +440,52 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
     function updateTableEngineToInnoDB() {
     	// get a list of all tables.
-    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+        global $wpdb;
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    	$result = $abj404dao->getMyISAMTables();
-    	$tableNamesString = '{wp_abj404_lookup},{wp_abj404_permalink_cache},' .
-    		'{wp_abj404_redirects},{wp_abj404_spelling_cache}';
-    	$tableNamesString = $abj404dao->doTableNameReplacements($tableNamesString);
-    	$tableNames = explode(',', $tableNamesString);
+    	$result = $abj404dao->getTableEngines();
+    	$logsTable = $wpdb->prefix . "abj404_logsv2";
     	
     	// if any rows are found then update the tables.
     	if (array_key_exists('rows', $result) && !empty($result['rows'])) {
     		$rows = $result['rows'];
     		foreach ($rows as $row) {
-    			array_push($tableNames, 
-    				array_key_exists('table_name', $row) ? $row['table_name'] :
-    				(array_key_exists('TABLE_NAME', $row) ? $row['TABLE_NAME'] : ''));
-    		}
-    		
-    		// remove duplicates and empties
-    		$tableNames = array_unique($tableNames);
-    		$tableNames = array_filter($tableNames);
-    		
-    		foreach ($tableNames as $table) {
-    			$query = 'alter table `' . $table . '` engine = InnoDB;';
-    			$abj404logging->infoMessage("Updating " . $table . " to InnoDB.");
-    			// This was causing an "Unknown storage engine 'InnoDB'" message for some people
-    			// so we'll ignore any errors.
-    			$result = $abj404dao->queryAndGetResults($query, 
-    				array("log_errors" => false));
-    			$abj404logging->infoMessage("I changed an engine: " . $query);
-    			
-    			if ($result['last_error'] != null && $result['last_error'] != '' && 
-    				strpos($result['last_error'], 'Index column size too large') !== false) {
-    					
-    				// delete the indexes, try again, and create the indexes later.
-    				$this->deleteIndexes($table);
-    				
-    				$abj404dao->queryAndGetResults($query,
-    					array("ignore_errors" => array("Unknown storage engine")));
-    				$abj404logging->infoMessage("I tried to change an engine again: " . $query);
-   				}
+    		    $tableName = array_key_exists('table_name', $row) ? $row['table_name'] :
+    		      (array_key_exists('TABLE_NAME', $row) ? $row['TABLE_NAME'] : '');
+    		    $engine = array_key_exists('engine', $row) ? $row['engine'] :
+    		      (array_key_exists('ENGINE', $row) ? $row['ENGINE'] : '');
+    		    
+		        $query = null;
+    		    // Use MyISAM because optimize table is slow otherwise.
+                if ($tableName == $logsTable && $abj404dao->isMyISAMSupported()) {
+                    if (strtolower($engine) != 'myisam') {
+                        $abj404logging->infoMessage("Updating " . $tableName . " to MyISAM.");
+                        $query = 'alter table `' . $tableName . '` engine = MyISAM;';
+                    }
+                  
+                } else if (strtolower($engine) != 'innodb') {
+                    $abj404logging->infoMessage("Updating " . $tableName . " to InnoDB.");
+                    $query = 'alter table `' . $tableName . '` engine = InnoDB;';
+                }
+                
+                if ($query == null) {
+                    // no updates are necessary for this table.
+                    continue;  
+                }
+                
+                $result = $abj404dao->queryAndGetResults($query, array("log_errors" => false));
+                $abj404logging->infoMessage("I changed an engine: " . $query);
+                
+                if ($result['last_error'] != null && $result['last_error'] != '' &&
+                  strpos($result['last_error'], 'Index column size too large') !== false) {
+                    
+                    // delete the indexes, try again, and create the indexes later.
+                    $this->deleteIndexes($tableName);
+                  
+                    $abj404dao->queryAndGetResults($query,
+                      array("ignore_errors" => array("Unknown storage engine")));
+                    $abj404logging->infoMessage("I tried to change an engine again: " . $query);
+                }
     		}
     	}
     }

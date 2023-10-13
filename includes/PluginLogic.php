@@ -273,9 +273,11 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function readCookieWithPreviousRqeuestShort() {
-    	$cookieName = ABJ404_PP . '_REQUEST_URI';
-    	
-    	if (array_key_exists($cookieName . '_SHORT', $_COOKIE)) {
+        $cookieName = ABJ404_PP . '_REQUEST_URI';
+        $cookieNameShort = $cookieName . '_SHORT';
+        
+        if (array_key_exists($cookieNameShort, $_COOKIE) && 
+            array_key_exists($cookieName, $_COOKIE)) {
     		return $_COOKIE[$cookieName];
     	}
     	
@@ -288,9 +290,10 @@ class ABJ_404_Solution_PluginLogic {
     	
     	// this may be used later when displaying suggestions.
     	$cookieName = ABJ404_PP . '_REQUEST_URI';
+    	$cookieNameShort = $cookieName . '_SHORT';
     	try {
     		setcookie($cookieName, urldecode($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
-    		setcookie($cookieName . '_SHORT', urldecode($_SERVER['REQUEST_URI']), time() + (5), "/");
+    		setcookie($cookieNameShort, urldecode($_SERVER['REQUEST_URI']), time() + (5), "/");
     		
     		// only set the update_URL if it's not already set.
     		// this is because multiple redirects might happen and we want to store
