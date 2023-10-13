@@ -10,6 +10,9 @@ class ABJ_404_Solution_Logging {
     /** Used to store the last line sent from the debug file. */
     const LAST_SENT_LINE = 'last_sent_line';
     
+    /** Used to store the the debug filename. */
+    const DEBUG_FILE_KEY = 'debug_file_key';
+    
     private static $instance = null;
     
     public static function getInstance() {
@@ -262,6 +265,7 @@ class ABJ_404_Solution_Logging {
         $bodyLines[] = "Extensions: " . implode(", ", get_loaded_extensions());
         $bodyLines[] = "Published posts: " . $published_posts . ", published pages: " . $published_pages;
         $bodyLines[] = "Total error count: " . $totalErrorCount;
+        $bodyLines[] = "Debug file name: " . $this->getDebugFilename();
         $bodyLines[] = "Active plugins: <pre>" .
           json_encode(get_option('active_plugins'), JSON_PRETTY_PRINT) . "</pre>";
           
@@ -336,7 +340,33 @@ class ABJ_404_Solution_Logging {
      * @return string
      */
     function getDebugFilePath() {
-    	return $this->getFilePathAndMoveOldFile(abj404_getUploadsDir(), 'abj404_debug.txt');
+        $debugFileName = $this->getDebugFilename();
+        return $this->getFilePathAndMoveOldFile(abj404_getUploadsDir(), $debugFileName);
+    }
+    
+    function getDebugFilename() {
+        // get the UUID here.
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $options = $abj404logic->getOptions(true);
+        $debugFileKey = null;
+        if (array_key_exists(self::DEBUG_FILE_KEY, $options)) {
+            $debugFileKey = $options[self::DEBUG_FILE_KEY];
+        }
+        // if the key doesn't exist then create it.
+        if ($debugFileKey == null || trim($debugFileKey) == '') {
+            // delete any lingering debug files.
+            $this->deleteDebugFile();
+
+            // create a probably unique UUID and store it to the database.
+            $syncUtils = ABJ_404_Solution_SynchronizationUtils::getInstance();
+            $debugFileKey = $syncUtils->uniqidReal();
+            $options[self::DEBUG_FILE_KEY] = $debugFileKey;
+            $abj404logic->updateOptions($options);
+        }
+        
+        $debugFileName = 'abj404_debug_' . $debugFileKey . '.txt';
+        
+        return $debugFileName;
     }
     
     function getDebugFilePathOld() {
@@ -402,21 +432,43 @@ class ABJ_404_Solution_Logging {
     	$abj404logic->updateOptions($options);
     }
     
-    /** 
+    /** Deletes all files named abj404_debug_*.txt
      * @return boolean true if the file was deleted.
      */
     function deleteDebugFile() {
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $allIsWell = true;
+        
         // since the debug file is being deleted we reset the last error line that was sent.
         if (file_exists($this->getDebugFilePathSentFile())) {
             ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathSentFile());
         }
-        
         // update the last sent error line since the debug file will be deleted.
         $this->removeLastSentErrorLineFromDatabase();
         
-        // delete the debug file.
-        ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathOld());
-        return ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePath());
+        // delete the debug file(s).
+        // list any files in the directory and delete any files named debug_*.txt
+        $uploadDir = abj404_getUploadsDir();
+        // Check if the directory exists
+        if (is_dir($uploadDir)) {
+            // Get all files matching the pattern abj404_debug_*.txt
+            $files = glob($uploadDir . '/abj404_debug_*.txt');
+            foreach ($files as $file) { // Loop through the files and delete them
+                if (is_file($file)) {
+                    // Delete the file
+                    if (!ABJ_404_Solution_Functions::safeUnlink($file)) {
+                        $allIsWell = false;
+                    }
+                }
+            }
+        }
+        
+        // reset the UUID since we deleted the log file.
+        $options = $abj404logic->getOptions(true);
+        $options[self::DEBUG_FILE_KEY] = null;
+        $abj404logic->updateOptions($options);
+        
+        return $allIsWell;
     }
     
     /** 

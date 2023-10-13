@@ -263,15 +263,30 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @throws Exception
      */
     function uniqidReal() {
+        $bytes = null;
     	if (function_exists("random_bytes")) {
-    		$bytes = random_bytes((int)ceil(13 / 2));
-    	} else if (function_exists("openssl_random_pseudo_bytes")) {
-    		$bytes = openssl_random_pseudo_bytes((int)ceil(13 / 2));
-    	} else {
-    		return uniqid("", true);
+    	    try {
+    		  $bytes = random_bytes((int)ceil(13 / 2));
+    	    } catch (Exception $e) {
+    	        $bytes = null; // don't care.
+    	    }
     	}
     	
-    	return bin2hex($bytes) . "||" . uniqid("", true);
+    	if ($bytes == null && function_exists("openssl_random_pseudo_bytes")) {
+    	    try {
+    		  $bytes = openssl_random_pseudo_bytes((int)ceil(13 / 2));
+    	    } catch (Exception $e) {
+    	      $bytes = null;
+    	    }
+    	    if ($bytes === false) {
+    	        $bytes = null;
+    	    }
+    	}
+    	
+    	if ($bytes != null) {
+    	    return bin2hex($bytes);
+    	}
+    	return uniqid("", true);
     }
 
 }

@@ -482,10 +482,29 @@ class ABJ_404_Solution_DataAccess {
         return $returnValue;
     }
     
-    function getMyISAMTables() {
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/selectMyISAMTables.sql");
+    function getTableEngines() {
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/selectTableEngines.sql");
     	$results = $this->queryAndGetResults($query);
     	return $results;
+    }
+    
+    function isMyISAMSupported() {
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $supportResults = $abj404dao->queryAndGetResults("SELECT ENGINE, SUPPORT " .
+            "FROM information_schema.ENGINES WHERE lower(ENGINE) = 'myisam'",
+            array('log_errors' => false));
+        
+        if (!empty($supportResults) && !empty($supportResults['rows'])) {
+            $rows = $supportResults['rows'];
+            if (!empty($rows)) {
+                $row = $rows[0];
+                $supportValue = array_key_exists('support', $row) ? $row['support'] :
+                (array_key_exists('SUPPORT', $row) ? $row['SUPPORT'] : "nope");
+                
+                return strtolower($supportValue) == 'yes';
+            }
+        }
+        return false;
     }
     
     /** Insert data into the database.
@@ -1118,9 +1137,9 @@ class ABJ_404_Solution_DataAccess {
 
         $options = $abj404logic->getOptions(true);
         $referer = wp_get_referer();
-        $referer = urldecode($referer);
         if ($referer != null) {
-        	// this length matches the maximum length of the data field on the logs table.
+            $referer = esc_url_raw($referer);
+            // this length matches the maximum length of the data field on the logs table.
         	$referer = substr($referer, 0, 512);
         }
         $current_user = wp_get_current_user();
