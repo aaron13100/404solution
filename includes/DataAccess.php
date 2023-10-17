@@ -514,51 +514,46 @@ class ABJ_404_Solution_DataAccess {
      * @return array
      */
     function insertAndGetResults($tableName, $dataToInsert) {
-        global $wpdb;
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
-
+        $tableName = $this->doTableNameReplacements($tableName);
+        
+        // create my own insert statement because wordpress messes it up when the field
+        // length is too long. this also returns the correct value for the last_query.
+        $statement = '';
+        $colNames = '';
+        $values = '';
+        
+        $statement .= 'insert into `' . $tableName . "` \n(";
+        
         // get the data types
-        $dataTypes = array();
-        $newDataToInsert = array();
         foreach ($dataToInsert as $key => $dataItem) {
-        	// null is inserted by not including the column in the insert statement.
-        	if ($dataItem == null || $f->strlen($dataItem) == 0) {
-        		continue;
-        	}
-        	$newDataToInsert[$key] = $dataItem;
+            if ($values != '') {
+                $values .= ', ';
+            }
+            if ($colNames != '') {
+                $colNames .= ', ';
+            }
+            $colNames .= '`' . $key . '`';
+            
             $currentDataType = gettype($dataItem);
             if ($currentDataType == 'double' || $currentDataType == 'integer') {
-                $dataTypes[] = '%d';
+                $values .= $dataItem;
                 
             } else if ($currentDataType == 'boolean') {
-                $dataTypes[] = '%s';
+                $values .= $dataItem ? 'true' : 'false';
                 
             } else {
-                $dataTypes[] = '%s';
+                // empty strings are stored as null in the database.
+                if ($dataItem == null || mb_strlen($dataItem) == 0) {
+                    $values .= 'null';
+                    
+                } else {
+                    $values .= "'" . esc_sql($dataItem) . "'";
+                }
             }
         }
-
-        $wpdb->insert($tableName, $newDataToInsert, $dataTypes);
-
-        $results =  array();
-        $errorThisRun = $wpdb->last_error;
-        $queryThisRun = $wpdb->last_query;
+        $statement .= $colNames . ") \nvalues \n(" . $values . ")\n";
         
-        $results['last_error'] = $wpdb->last_error;
-        $results['last_result'] = $wpdb->last_result;
-        $results['rows_affected'] = $wpdb->rows_affected;
-        $results['insert_id'] = $wpdb->insert_id;
-        $results['last_query'] = $wpdb->last_query;
-
-        if ($wpdb->last_error != '') {
-            $abj404logging->errorMessage("Ugh. SQL insert error: " . $errorThisRun . 
-				", Table: " . $tableName . ", Data: " .
-            	http_build_query($newDataToInsert, '', ', ') . 
-            	"Query: " . $queryThisRun);
-        }
-
-        return $results;
+        return $this->queryAndGetResults($statement);
     }    
     
    /**
@@ -1150,6 +1145,9 @@ class ABJ_404_Solution_DataAccess {
         $ipAddressToSave = esc_sql($_SERVER['REMOTE_ADDR']);
         if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
         	$ipAddressToSave = $f->md5lastOctet($ipAddressToSave);
+        }
+        if (!empty($ipAddressToSave)) {
+            $ipAddressToSave = substr($ipAddressToSave, 0, 512);
         }
         
         // we have to know what to set for the $minLogID value

@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.33.2 (October 17, 2023) ##
+* Improvement: Try to fix a logging issue.
+
 ## Version 2.33.1 (October 13, 2023) ##
 * Improvement: Fix a 'Sensitive Data Exposure vulnerability' for Joshua Chan that I didn't really think was a big deal, but it must matter to someone, so I added a random ID to the debug log filename.
 * Improvement: Only try to update database tables to the correct engines if they're not already correct.
