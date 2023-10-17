@@ -96,7 +96,7 @@ class ABJ_404_Solution_SynchronizationUtils {
     }
 
     private function createUniqueID($keyFromUser) {
-        return microtime(true) . "_" . $keyFromUser . '_' . $this->uniqidReal();
+        return microtime(true) . "_" . $keyFromUser . '_' . $this->uniqidReal() . uniqid('', true);
     }
 
     /** Returns an empty string if the lock is not acquired.
