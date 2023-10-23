@@ -73,9 +73,7 @@ class ABJ_404_Solution_SpellChecker {
 		$options = $abj404logic->getOptions();
 		$postType = $post->post_type;
 
-		$acceptedPostTypes = array_filter(explode("\n", 
-			$f->strtolower($options['recognized_post_types'])), 
-			array($f,'removeEmptyCustom'));
+		$acceptedPostTypes = $f->explodeNewline($options['recognized_post_types']);
 
 		// 3 options: save a new page, save an existing page (update), delete a page.
 		$deleteSpellingCache = false;

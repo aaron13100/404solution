@@ -25,7 +25,15 @@
     <td title="{statusTitle}">{status}</td>
     <td>{type}</td>
     <td>
-        <a href="{link}" target="_blank" title="{title}">{dest}</a>
+		<span style="{destination-exists}">
+			<a href="{link}" target="_blank" title="{title}" class="{dest_class}">{dest}</a>			
+		</span>
+		<span style="{destination-does-not-exist}">
+			<a href="{link}" target="_blank" 
+				title="{Was this deleted?}"
+				style="color: red; font-weight: bolder;" >{dest}</a>			
+		</span>
+        
     </td>
     <td>{rowCode}</td>
     <td>{hits}</td>

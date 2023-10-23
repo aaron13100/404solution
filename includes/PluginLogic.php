@@ -90,8 +90,7 @@ class ABJ_404_Solution_PluginLogic {
 	    			array($f, 'removeEmptyCustom'));
 	    		$check = true;
 	    	} else if (is_string($extraAdmins)) {
-	    		$extraAdmins = array_filter(explode("\n", $extraAdmins),
-	    			array($f, 'removeEmptyCustom'));
+	    	    $extraAdmins = $f->explodeNewline($extraAdmins);
 	    		$check = true;
 	    	}
 	    	if ($check && in_array($current_user_name, $extraAdmins)) {
@@ -231,8 +230,8 @@ class ABJ_404_Solution_PluginLogic {
         // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
         // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
         // by https://www.sovrn.com/. 
-        $userAgents = array_filter(explode("\n", $f->strtolower($options['ignore_dontprocess'])),
-                array($f, 'removeEmptyCustom'));
+        $userAgents = $f->explodeNewline($options['ignore_dontprocess']);
+        
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (do not redirect): " . 
@@ -260,8 +259,8 @@ class ABJ_404_Solution_PluginLogic {
         
         // -----
         // ignore and process
-        $userAgents = array_filter(explode("\n", $f->strtolower($options['ignore_doprocess'])),
-                array($f, 'removeEmptyCustom'));
+        $userAgents = $f->explodeNewline($options['ignore_doprocess']);
+        
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
                 $abj404logging->debugMessage("Ignoring user agent (process ok): " . 
@@ -508,11 +507,10 @@ class ABJ_404_Solution_PluginLogic {
 
         // since 1.9.0. ignore_doprocess add SeznamBot, Pinterestbot, UptimeRobot and "Slurp" -> "Yahoo! Slurp"
         if (version_compare($currentDBVersion, '1.9.0') < 0) {
-            $userAgents = array_map('trim', array_filter(explode("\n", $options['ignore_doprocess']),
-                    array($f, 'removeEmptyCustom')));
-            $uasForSearch = array_map('trim', array_filter(explode("\n", $f->strtolower($options['ignore_doprocess'])),
-                    array($f, 'removeEmptyCustom')));
-
+            $userAgents = $f->explodeNewline($options['ignore_doprocess']);
+            
+            $uasForSearch = $f->explodeNewline($options['ignore_doprocess']);
+            
             foreach ($userAgents as &$str) {
                 if ($f->strtolower(trim($str)) == "slurp") {
                     $str = "Yahoo! Slurp";
@@ -564,8 +562,7 @@ class ABJ_404_Solution_PluginLogic {
         
         if (version_compare($currentDBVersion, '2.18.0') < 0) {
             // add .well-known/acme-challenge/*, wp-content/themes/*, wp-content/plugins/* to folders_files_ignore
-            $originalItems = array_map('trim', array_filter(explode("\n", $options['folders_files_ignore']),
-                    array($f, 'removeEmptyCustom')));
+            $originalItems = $f->explodeNewline($options['folders_files_ignore']);
 
             $newItems = array("wp-content/plugins/*", "wp-content/themes/*", ".well-known/acme-challenge/*");
             foreach ($newItems as $newItem) {
@@ -1593,7 +1590,7 @@ class ABJ_404_Solution_PluginLogic {
         $tableOptions['filterText'] = $f->str_replace('*/', '', $tableOptions['filterText']);
 
         if ($abj404dao->getPostOrGetSanitize('orderby', "") != "") {
-            $tableOptions['orderby'] = esc_sql($abj404dao->getPostOrGetSanitize('orderby'));
+            $tableOptions['orderby'] = $abj404dao->getPostOrGetSanitize('orderby');
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order_by'] = $tableOptions['orderby'];
@@ -1615,7 +1612,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if ($abj404dao->getPostOrGetSanitize('order', '') != '') {
-            $tableOptions['order'] = esc_sql($abj404dao->getPostOrGetSanitize('order'));
+            $tableOptions['order'] = $abj404dao->getPostOrGetSanitize('order');
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order'] = $tableOptions['order'];
@@ -1665,17 +1662,26 @@ class ABJ_404_Solution_PluginLogic {
         return $sanitizedTableOptions;
     }
     
-    function sanitizePostData($postData) {
-    	$newData = array();
-    	foreach ($postData as $key => $value) {
-    		$key = wp_kses_post($key);
-    		if (is_array($value)) {
-    			$newData[$key] = array_map('wp_kses_post', $value);
-    		} else {
-    			$newData[$key] = wp_kses_post($value);
-    		}
-    	}
-    	return $newData;
+    /** 
+     * @param array $postData
+     * @param boolean $restoreNewlines
+     * @return array
+     */
+    function sanitizePostData($postData, $restoreNewlines = false) {
+        $newData = array();
+        foreach ($postData as $key => $value) {
+            $key = wp_kses_post($key);
+            if (is_array($value)) {
+                $newData[$key] = $this->sanitizePostData($value, $restoreNewlines);
+            } else {
+                $newData[$key] = wp_kses_post($value);
+                $newData[$key] = esc_sql($newData[$key]);
+                if ($restoreNewlines) {
+                    $newData[$key] = str_replace('\n', "\n", $newData[$key]);
+                }
+            }
+        }
+        return $newData;
     }
     
     /** 
@@ -1870,8 +1876,7 @@ class ABJ_404_Solution_PluginLogic {
 	            $options['folders_files_ignore'] = wp_unslash(wp_kses_post($_POST['folders_files_ignore']));
 	            
 	            // make the regular expressions usable.
-	            $patternsToIgnore = array_filter(explode("\n", $options['folders_files_ignore']),
-	                    array($f, 'removeEmptyCustom'));
+	            $patternsToIgnore = $f->explodeNewline($options['folders_files_ignore']);
 	            $usableFilePatterns = array();
 	            foreach ($patternsToIgnore as $patternToIgnore) {
 	                $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
@@ -1914,7 +1919,10 @@ class ABJ_404_Solution_PluginLogic {
 	        
 	        /** Sanitize all data. */
 	        $new_options = array();
-	        $new_options = $this->sanitizePostData($options);
+	        // when sanitizing data we keep the newlines (\n) because some data
+	        // is entered that way and it shouldn't allow any kind of sql 
+	        // injection or any other security issues that I foresee at this point.
+	        $new_options = $this->sanitizePostData($options, true);
 	
 	        $this->updateOptions($new_options);
 	        

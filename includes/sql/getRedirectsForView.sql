@@ -34,6 +34,21 @@ select
           when wp_abj404_redirects.type = {ABJ404_TYPE_404_DISPLAYED} then '{ABJ404_TYPE_404_DISPLAYED_text}'
           else '? Dest Type'
         end) as dest_for_view,
+        
+        (case
+          when wp_abj404_redirects.type = {ABJ404_TYPE_EXTERNAL} then 1
+          when wp_abj404_redirects.type = {ABJ404_TYPE_POST} and 
+          	lower(wp_posts.post_status) = 'publish' then 1
+          when wp_abj404_redirects.type = {ABJ404_TYPE_POST} and 
+          	lower(wp_posts.post_status) != 'publish' then 0
+          when wp_abj404_redirects.type in ({ABJ404_TYPE_CAT}, {ABJ404_TYPE_TAG}) and
+          	terms.term_id is not null then 1
+          when wp_abj404_redirects.type in ({ABJ404_TYPE_CAT}, {ABJ404_TYPE_TAG}) and
+          	terms.term_id is null then 0
+          when wp_abj404_redirects.type = {ABJ404_TYPE_HOME} then 1
+          when wp_abj404_redirects.type = {ABJ404_TYPE_404_DISPLAYED} then 1
+          else '? Dest Type'
+        end) as published_status,
 
         wp_abj404_redirects.code,
         wp_abj404_redirects.timestamp,
