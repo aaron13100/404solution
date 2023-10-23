@@ -1372,6 +1372,15 @@ class ABJ_404_Solution_View {
                 $deletePermanentlyHTML = '';
             }
             
+            $destinationExists = '';
+            $destinationDoesNotExist = 'display: none;';
+            if (array_key_exists('published_status', $row)) {
+                if ($row['published_status'] == '0') {
+                    $destinationExists = 'display: none;';
+                    $destinationDoesNotExist = '';
+                }
+            }
+            
             $htmlTemp = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
             $htmlTemp = $f->str_replace('{rowid}', $row['id'], $htmlTemp);
             $htmlTemp = $f->str_replace('{rowClass}', $class, $htmlTemp);
@@ -1383,6 +1392,8 @@ class ABJ_404_Solution_View {
             $htmlTemp = $f->str_replace('{link}', $link, $htmlTemp);
             $htmlTemp = $f->str_replace('{title}', $title, $htmlTemp);
             $htmlTemp = $f->str_replace('{dest}', $row['dest_for_view'], $htmlTemp);
+            $htmlTemp = $f->str_replace('{destination-exists}', $destinationExists, $htmlTemp);
+            $htmlTemp = $f->str_replace('{destination-does-not-exist}', $destinationDoesNotExist, $htmlTemp);
             $htmlTemp = $f->str_replace('{status}', $row['status_for_view'], $htmlTemp);
             $htmlTemp = $f->str_replace('{statusTitle}', $statusTitle, $htmlTemp);
             $htmlTemp = $f->str_replace('{type}', $row['type_for_view'], $htmlTemp);
@@ -1652,16 +1663,22 @@ class ABJ_404_Solution_View {
         $html = $f->str_replace('checked="log_raw_ips"', $selectedLogRawIPs, $html);
         $html = $f->str_replace('{<a>View</a> the debug file.}', $debugExplanation, $html);
         $html = $f->str_replace('{Debug file size: %s KB.}', $debugFileSize, $html);
-        $html = $f->str_replace('{ignore_dontprocess}', wp_kses_post($options['ignore_dontprocess']), $html);
-        $html = $f->str_replace('{ignore_doprocess}', wp_kses_post($options['ignore_doprocess']), $html);
-        $html = $f->str_replace('{recognized_post_types}', wp_kses_post($options['recognized_post_types']), $html);
+        
+        $html = $f->str_replace('{ignore_dontprocess}', 
+            str_replace('\\n', "\n", wp_kses_post($options['ignore_dontprocess'])), $html);
+        $html = $f->str_replace('{ignore_doprocess}', 
+            str_replace('\\n', "\n", wp_kses_post($options['ignore_doprocess'])), $html);
+        $html = $f->str_replace('{recognized_post_types}', 
+            str_replace('\\n', "\n", wp_kses_post($options['recognized_post_types'])), $html);
         $html = $f->str_replace('{all_post_types}', $allPostTypes, $html);
         $html = $f->str_replace('{days_wait_before_major_update}', $options['days_wait_before_major_update'], $html);
         
-        $html = $f->str_replace('{recognized_categories}', wp_kses_post($options['recognized_categories']), $html);
-        $html = $f->str_replace('{folders_files_ignore}', wp_kses_post($options['folders_files_ignore']), $html);
+        $html = $f->str_replace('{recognized_categories}', 
+            str_replace('\\n', "\n", wp_kses_post($options['recognized_categories'])), $html);
+        $html = $f->str_replace('{folders_files_ignore}', 
+            str_replace('\\n', "\n", wp_kses_post($options['folders_files_ignore'])), $html);
         
-        $pluginAdminUsers = $options['plugin_admin_users'];
+        $pluginAdminUsers = str_replace('\\n', "\n", wp_kses_post($options['plugin_admin_users']));
         if (is_array($pluginAdminUsers)) {
         	$pluginAdminUsers = implode("\n", $pluginAdminUsers);
         }

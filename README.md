@@ -88,6 +88,10 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.34.0 (October 23, 2023) ##
+* Improvement: Redirects to pages that have been deleted now appear red in UI so they're easy to see.
+* FIX: Fixed a supposed SQL injection issue that I was unable to reproduce and would definitely only be possible if you were an admin user anyway, so I'm not really sure why it was reported, but thanks anyway I guess.
+
 ## Version 2.33.2 (October 17, 2023) ##
 * Improvement: Try to fix a logging issue.
 

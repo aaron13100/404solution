@@ -18,6 +18,18 @@ abstract class ABJ_404_Solution_Functions {
         return self::$instance;
     }
     
+    /** Uses explode() to return an array.
+     * @param string $string
+     */
+    function explodeNewline($string) {
+        $normalized = str_replace("\r\n", "\n", $string);
+        $normalized = str_replace('\n', "\n", $normalized);
+        $result = array_filter(explode("\n", $this->strtolower($normalized)),
+            array($this, 'removeEmptyCustom'));
+        
+        return $result;
+    }
+    
     /** First urldecode then json_decode the data, then return it.
      * All of this encoding and decoding is so that [] characters are supported.
      * @param string $data
