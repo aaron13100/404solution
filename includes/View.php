@@ -1002,7 +1002,7 @@ class ABJ_404_Solution_View {
             if ($tableOptions['filter'] == ABJ404_STATUS_IGNORED) {
                 $ignorelink .= "&ignore=0";
                 $ignoretitle = __('Remove Ignore Status', '404-solution');
-            } else if ($tableOptions['filter'] == ABJ404_STATUS_CAPTURED || $tableOptions['filter'] == ABJ404_STATUS_LATER) {
+            } else {
                 $ignorelink .= "&ignore=1";
                 $ignoretitle = __('Ignore 404 Error', '404-solution');
             } 
@@ -1011,7 +1011,7 @@ class ABJ_404_Solution_View {
             if ($tableOptions['filter'] == ABJ404_STATUS_LATER) {
                 $laterlink .= "&later=0";
                 $latertitle = __('Remove Later Status', '404-solution');
-            } else if ($tableOptions['filter'] == ABJ404_STATUS_CAPTURED || $tableOptions['filter'] == ABJ404_STATUS_IGNORED) {
+            } else {
                 $laterlink .= "&later=1";
                 $latertitle = __('Organize Later', '404-solution');
             } 

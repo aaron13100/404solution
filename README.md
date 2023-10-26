@@ -88,6 +88,12 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.0 (October 26, 2023) ##
+* FIX: Compatible with WordPress 6.4.
+* FIX: Fix the labels for "Ignore" and "Organize later" on the captured 404 page.
+* FIX: Correctly store the "exclude specific pages" setting again (broken in 2.34.0 I think).
+* FIX: Try again to fix the supposed issue that allows admins to run code on their own system.
+
 ## Version 2.34.0 (October 23, 2023) ##
 * Improvement: Redirects to pages that have been deleted now appear red in UI so they're easy to see.
 * FIX: Fixed a supposed SQL injection issue that I was unable to reproduce and would definitely only be possible if you were an admin user anyway, so I'm not really sure why it was reported, but thanks anyway I guess.
