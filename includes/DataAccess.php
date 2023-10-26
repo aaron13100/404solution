@@ -192,13 +192,7 @@ class ABJ_404_Solution_DataAccess {
         
         if ($wpdb->dbh != null) {
 	        try {
-	        	// I copied this from class-wpdb.php because it wasn't working even when 
-	        	// I used $wpdb->query() instead of $wpdb->getResults().
-	        	if ($wpdb->use_mysqli) {
-	        		$result['rows_affected'] = mysqli_affected_rows( $wpdb->dbh );
-	        	} else {
-	        		$result['rows_affected'] = mysql_affected_rows( $wpdb->dbh );
-	        	}
+	            $result['rows_affected'] = $wpdb->rows_affected;
 	        } catch (Exception $ex) {
 	    		// don't care. we did our best.
 	    	}

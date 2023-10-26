@@ -3,8 +3,8 @@ Contributors: aaron13100
 Website: https://www.ajexperience.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
-Tested up to: 6.3
-Stable tag: 2.34.0
+Tested up to: 6.4
+Stable tag: 2.35.0
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -83,6 +83,12 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.35.0 (October 26, 2023) =
+* FIX: Compatible with WordPress 6.4.
+* FIX: Fix the labels for "Ignore" and "Organize later" on the captured 404 page.
+* FIX: Correctly store the "exclude specific pages" setting again (broken in 2.34.0 I think).
+* FIX: Try again to fix the supposed issue that allows admins to run code on their own system.
 
 = Version 2.34.0 (October 23, 2023) =
 * Improvement: Redirects to pages that have been deleted now appear red in UI so they're easy to see.

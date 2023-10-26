@@ -1895,6 +1895,10 @@ class ABJ_404_Solution_PluginLogic {
 	        	$options['plugin_admin_users'] = $pluginAdminUsers;
 	        }
 	        
+	        if (is_array($options['excludePages[]'])) {
+	            $abj404logging->warn("Exclude pages settings lost.");
+	            $options['excludePages[]'] = '';
+	        }
 	        if (array_key_exists('excludePages[]', $_POST) && isset($_POST['excludePages[]'])) {
 	        	$oldExcludePages = json_decode($options['excludePages[]']);
 	        	if (!is_array($_POST['excludePages[]'])) {
@@ -1917,6 +1921,9 @@ class ABJ_404_Solution_PluginLogic {
 	        	$options['excludePages[]'] = null;
 	        }
 	        
+	        // save this for later to sanitize it ourselves.
+	        $excludedPages = $options['excludePages[]'];
+	        
 	        /** Sanitize all data. */
 	        $new_options = array();
 	        // when sanitizing data we keep the newlines (\n) because some data
@@ -1924,6 +1931,10 @@ class ABJ_404_Solution_PluginLogic {
 	        // injection or any other security issues that I foresee at this point.
 	        $new_options = $this->sanitizePostData($options, true);
 	
+	        // only some characters in the string.
+	        $excludedPages = preg_replace('/[^\[\",\]a-zA-Z\d\|\\\\ ]/', '', $excludedPages);
+            $new_options['excludePages[]'] = $excludedPages;
+	        
 	        $this->updateOptions($new_options);
 	        
 	        // update the permalink cache because the post types included may have changed.
