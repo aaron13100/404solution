@@ -1577,7 +1577,7 @@ class ABJ_404_Solution_PluginLogic {
         
         $tableOptions['translations'] = $translationArray;
         
-        $tableOptions['filter'] = $abj404dao->getPostOrGetSanitize("filter", "");
+        $tableOptions['filter'] = intval($abj404dao->getPostOrGetSanitize("filter", ""));
         if ($tableOptions['filter'] == "") {
             if ($abj404dao->getPostOrGetSanitize('subpage') == 'abj404_captured') {
                 $tableOptions['filter'] = ABJ404_STATUS_CAPTURED;

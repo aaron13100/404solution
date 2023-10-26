@@ -877,8 +877,9 @@ class ABJ_404_Solution_DataAccess {
             $statusTypes = implode(", ", array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_REGEX));
             
         } else {
-            $statusTypes = sanitize_text_field($tableOptions['filter']);
+            $statusTypes = $tableOptions['filter'];
         }
+        $statusTypes = preg_replace('/[^\d, ]/', '', $statusTypes);
 
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             $trashValue = 1;
@@ -886,7 +887,7 @@ class ABJ_404_Solution_DataAccess {
             $trashValue = 0;
         }
 
-        $orderBy = $f->strtolower(sanitize_text_field($tableOptions['orderby']));
+        $orderBy = $f->strtolower($tableOptions['orderby']);
         if ($orderBy == "final_dest") {
             // TODO change the final dest type to an integer and store external URLs somewhere else.
             // TODO fix bug: pages that no longer exist appear for redirects. use an inner join on this query with the
@@ -899,11 +900,15 @@ class ABJ_404_Solution_DataAccess {
          * counting the number of rows. */
         $orderByString = '';
         if (!$selectCountOnly) {
-        	$orderByString = "order by " . $orderBy . " " . sanitize_text_field($tableOptions['order']);
+            // only allow letters and the underscore in the orderby string.
+            $orderBy = preg_replace('/[^a-zA-Z_]/', '', $orderBy);
+            $order = preg_replace('/[^a-zA-Z_]/', '', $tableOptions['order']);
+            $orderByString = "order by " . $orderBy . " " . $order;
         }
 
         $searchFilterForRedirectsExists = "no redirects fiter text found";
         $searchFilterForCapturedExists = "no captured 404s filter text found";
+        $filterText = '';
         if ($tableOptions['filterText'] != '') {
             if ($sub == 'abj404_redirects') {
                 $searchFilterForRedirectsExists = ' filtering on text: ' . esc_sql($tableOptions['filterText'] . ' */');
@@ -915,20 +920,23 @@ class ABJ_404_Solution_DataAccess {
                 throw new Exception("Unrecognized page for filter text request.");
             }
         }
-
+        $filterText = preg_replace('/[^a-zA-Z\d_=\/\-\(\)\*\.]/', '', $tableOptions['filterText']);
+        
         // ---
+        $dataArray = [];
+        $dataArray['trashValue'] = $trashValue;
+        
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
-        $query = $f->str_replace('{logsTableColumns}', $logsTableColumns, $query);
-        $query = $f->str_replace('{logsTableJoin}', $logsTableJoin, $query);
+        $query = $f->str_replace('{selecting-for-count-true-false}', $selectCountReplacement, $query);
         $query = $f->str_replace('{statusTypes}', $statusTypes, $query);
-        $query = $f->str_replace('{trashValue}', $trashValue, $query);
         $query = $f->str_replace('{orderByString}', $orderByString, $query);
         $query = $f->str_replace('{limitStart}', $limitStart, $query);
         $query = $f->str_replace('{limitEnd}', $limitEnd, $query);
         $query = $f->str_replace('{searchFilterForRedirectsExists}', $searchFilterForRedirectsExists, $query);
         $query = $f->str_replace('{searchFilterForCapturedExists}', $searchFilterForCapturedExists, $query);
-        $query = $f->str_replace('{filterText}', $tableOptions['filterText'], $query);
-        $query = $f->str_replace('{selecting-for-count-true-false}', $selectCountReplacement, $query);
+        $query = $f->str_replace('{filterText}', $filterText, $query);
+        $query = $f->str_replace('{logsTableColumns}', $logsTableColumns, $query);
+        $query = $f->str_replace('{logsTableJoin}', $logsTableJoin, $query);
         $query = $this->doTableNameReplacements($query);
         
         if (array_key_exists('translations', $tableOptions)) {
@@ -937,9 +945,53 @@ class ABJ_404_Solution_DataAccess {
             $query = $f->str_replace($keys, $values, $query);
         }
         
+        $query = $this->prepare_query_wp($query, $dataArray);
+        
         $query = $f->doNormalReplacements($query);
         
         return $query;
+    }
+
+    /**
+     * Prepare a WordPress SQL query with placeholders and an associative data array.
+     *
+     * @param string $query The SQL query string with {placeholder} style placeholders.
+     * @param array $data An associative array with keys matching the placeholders in the query.
+     * @return string The fully prepared SQL query.
+     */
+    function prepare_query_wp($query, $data) {
+        global $wpdb;
+        list($prepared_query, $ordered_values) = $this->prepare_query($query, $data);
+        return $wpdb->prepare($prepared_query, $ordered_values);
+    }
+    
+    /**
+     * Prepare a SQL query with placeholders and an associative data array.
+     *
+     * @param string $query The SQL query string with {placeholder} style placeholders.
+     * @param array $data An associative array with keys matching the placeholders in the query.
+     * @return array Returns an array containing two elements: the prepared query string with %s or %d placeholders, and an ordered array of values for those placeholders.
+     */
+    function prepare_query($query, $data) {
+        $ordered_values = [];
+        $prepared_query = preg_replace_callback('/\{(\w+)\}/', function($matches) use ($data, &$ordered_values) {
+            $key = $matches[1];
+            if (!isset($data[$key])) {
+                // Placeholder key not found in data array, ignore and continue
+                return $matches[0];
+            }
+            $value = $data[$key];
+            
+            // Append the value to the ordered values array
+            $ordered_values[] = $value;
+            
+            // Determine the placeholder type
+            $placeholder_type = is_int($value) ? '%d' : '%s';
+            
+            return $placeholder_type;
+        }, $query);
+            
+        return [$prepared_query, $ordered_values];
     }
     
     function maybeUpdateRedirectsForViewHitsTable() {
