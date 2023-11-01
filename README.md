@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.1 (November 1, 2023) ##
+* FIX: Fix a logging issue when redirected to a URL with no path and no trailing slash. (Thank you debug log file participants!)
+
 ## Version 2.35.0 (October 26, 2023) ##
 * FIX: Compatible with WordPress 6.4.
 * FIX: Fix the labels for "Ignore" and "Organize later" on the captured 404 page.
