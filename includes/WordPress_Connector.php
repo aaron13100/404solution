@@ -430,8 +430,8 @@ class ABJ_404_Solution_WordPress_Connector {
         $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($key, 0);
 
         // log only the path part of the URL
-        $redirectedTo = '';
-        $urlParts = parse_url(esc_url($permalink['link']));
+        $redirectedTo = esc_url($permalink['link']);
+        $urlParts = parse_url($redirectedTo);
         if (array_key_exists('path', $urlParts)) {
         	$redirectedTo = $urlParts['path'];
         }
