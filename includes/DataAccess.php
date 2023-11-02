@@ -226,15 +226,23 @@ class ABJ_404_Solution_DataAccess {
             }
             
             if ($reportError) {
-            	$extraDataQuery = "select @@max_join_size as max_join_size, " . 
-            		"@@sql_big_selects as sql_big_selects";
+                $stripped_query = 'n/a';
+                if ($f->strpos($result['last_error'],
+                    "WordPress database error: Could not perform query because it contains invalid data") !== false) {
+                    $stripped_query = $this->get_stripped_query_result($query);
+                }
+                
+                $extraDataQuery = "select @@max_join_size as max_join_size, " . 
+            		"@@sql_big_selects as sql_big_selects, " .
+                    "@@character_set_database as character_set_database";
             	$someMySQLVariables = $wpdb->get_results($extraDataQuery, ARRAY_A);
             	$variables = print_r($someMySQLVariables, true);
             	$abj404logging->errorMessage("Ugh. SQL query error: " . $result['last_error'] . 
 					", SQL: " . $query . 
 	            	", Execution time: " . round($timer->getElapsedTime(), 2) . 
 	            	", DB ver: " . $wpdb->db_version() . 
-            		", Variables: " . $variables);
+            		", Variables: " . $variables . 
+            	    ", stripped_query: " . $stripped_query);
             }
             
         } else {
@@ -245,6 +253,44 @@ class ABJ_404_Solution_DataAccess {
         }
         
         return $result;
+    }
+    
+    /** Try to call strip_invalid_text_from_query and return the result. 
+     * @param string $query
+     * @return NULL|string|WP_Error
+     */
+    function get_stripped_query_result($query) {
+        try {
+            if (!class_exists('wpdb')) {
+                return null;
+            }
+            if (!method_exists('wpdb', 'strip_invalid_text_from_query')) {
+                return null;
+            }
+            
+            $filename = ABJ404_PATH . 'includes/php/wordpress/WPDBExtension.php';
+            if (!file_exists($filename)) {
+                return null;
+            }
+            require_once $filename;
+
+            $my_custom_db = null;
+            if (class_exists('ABJ_404_Solution_WPDBExtension_PHP7')) {
+                $my_custom_db = new ABJ_404_Solution_WPDBExtension_PHP7(DB_USER, DB_PASSWORD, DB_NAME, DB_HOST);
+                
+            } else if (class_exists('ABJ_404_Solution_WPDBExtension_PHP5')) {
+                $my_custom_db = new ABJ_404_Solution_WPDBExtension_PHP5(DB_USER, DB_PASSWORD, DB_NAME, DB_HOST);
+            }
+            if ($my_custom_db == null) {
+                return null;
+            }
+                        
+            return $my_custom_db->public_strip_invalid_text_from_query($query);
+        } catch (Exception $e) {
+            // oh well.
+            return null;
+        }
+        return null;
     }
     
     function repairTable($errorMessage) {
