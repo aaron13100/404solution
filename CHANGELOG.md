@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.35.2 (November 2, 2023) ##
+* Improvement: Add more log messages to help diagnose issues.
+
 ## Version 2.35.1 (November 1, 2023) ##
 * FIX: Fix a logging issue when redirected to a URL with no path and no trailing slash. (Thank you debug log file participants!)
 
