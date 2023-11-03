@@ -1932,7 +1932,7 @@ class ABJ_404_Solution_PluginLogic {
 	        $new_options = $this->sanitizePostData($options, true);
 	
 	        // only some characters in the string.
-	        $excludedPages = preg_replace('/[^\[\",\]a-zA-Z\d\|\\\\ ]/', '', $excludedPages);
+	        $excludedPages = preg_replace('/[^\[\",\]a-zA-Z\d\|\\\\ ]/', '', trim($excludedPages));
             $new_options['excludePages[]'] = $excludedPages;
 	        
 	        $this->updateOptions($new_options);

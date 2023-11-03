@@ -333,6 +333,10 @@ abstract class ABJ_404_Solution_Functions {
         	$permalink['link'] = urldecode($permalink['link']);
         }
         $permalink['title'] = array_key_exists('title', $permalink) ? urldecode($permalink['title']) : '';
+        
+        if ($permalink['type'] != ABJ404_TYPE_404_DISPLAYED && trim($permalink['link']) == '') {
+            $abj404logging->debugMessage("Couldn't find a link for an ID: " . json_encode($idAndType));
+        }
 
         return $permalink;
     }

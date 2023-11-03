@@ -16,6 +16,7 @@ where   r.url in ('{url1}', '{url2}')
 
         /* only include the redirect if the page exists or the destination is external. */
         and (p.id is not null or t.term_id is not null or r.type = {ABJ404_TYPE_EXTERNAL})
+        and p.post_status in ('publish', 'published')
 
 -- make sure the first url appears first.
 order by (CASE
