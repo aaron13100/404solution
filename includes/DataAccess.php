@@ -919,7 +919,7 @@ class ABJ_404_Solution_DataAccess {
         } else {
             $statusTypes = $tableOptions['filter'];
         }
-        $statusTypes = preg_replace('/[^\d, ]/', '', $statusTypes);
+        $statusTypes = preg_replace('/[^\d, ]/', '', trim($statusTypes));
 
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             $trashValue = 1;
@@ -927,23 +927,20 @@ class ABJ_404_Solution_DataAccess {
             $trashValue = 0;
         }
 
-        $orderBy = $f->strtolower($tableOptions['orderby']);
-        if ($orderBy == "final_dest") {
-            // TODO change the final dest type to an integer and store external URLs somewhere else.
-            // TODO fix bug: pages that no longer exist appear for redirects. use an inner join on this query with the
-            // wp_posts table. delete redirects for pages that no longer exist? what if they're in the trash and 
-            // are then moved out of the trash?
-            $orderBy = "IF (post_title is null, 'zzzzzzzzz', post_title)";
-        }
-
         /* only try to order by if we're actually selecting data and not only
          * counting the number of rows. */
         $orderByString = '';
         if (!$selectCountOnly) {
-            // only allow letters and the underscore in the orderby string.
-            $orderBy = preg_replace('/[^a-zA-Z_]/', '', $orderBy);
-            $order = preg_replace('/[^a-zA-Z_]/', '', $tableOptions['order']);
-            $orderByString = "order by " . $orderBy . " " . $order;
+            $orderBy = $f->strtolower($tableOptions['orderby']);
+            if ($orderBy == "final_dest") {
+                // TODO change the final dest type to an integer and store external URLs somewhere else.
+                $orderBy = "case when post_title is null then 1 else 0 end asc, post_title";
+            } else {
+                // only allow letters and the underscore in the orderby string.
+                $orderBy = preg_replace('/[^a-zA-Z_]/', '', trim($orderBy));
+            }
+            $order = preg_replace('/[^a-zA-Z_]/', '', trim($tableOptions['order']));
+            $orderByString = "order by published_status asc, " . $orderBy . " " . $order;
         }
 
         $searchFilterForRedirectsExists = "no redirects fiter text found";

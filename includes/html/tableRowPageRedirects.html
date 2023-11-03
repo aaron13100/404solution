@@ -28,10 +28,11 @@
 		<span style="{destination-exists}">
 			<a href="{link}" target="_blank" title="{title}" class="{dest_class}">{dest}</a>			
 		</span>
-		<span style="{destination-does-not-exist}">
+		<span class="lefty-tooltip" style="{destination-does-not-exist}">
+		    <span class="lefty-tooltiptext">This page doesn't exist or is not published so the redirect won't work.</span>
+
 			<a href="{link}" target="_blank" 
-				title="{Was this deleted?}"
-				style="color: red; font-weight: bolder;" >{dest}</a>			
+				style="color: black; font-weight: bolder;" >{dest}</a>			
 		</span>
         
     </td>
@@ -41,3 +42,4 @@
     <td>{last_used_date}</td>
     <td/>
 </tr>
+

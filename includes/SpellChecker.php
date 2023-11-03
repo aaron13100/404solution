@@ -222,6 +222,7 @@ class ABJ_404_Solution_SpellChecker {
                 $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, '0', 
                 	null, $options);
 				$permalink['matching_regex'] = $regexURL;
+				$originalPermalink = $permalink;
 
 				// if the matching regex contains a group and the destination contains a replacement,
 				// then use them
@@ -239,6 +240,11 @@ class ABJ_404_Solution_SpellChecker {
 
 					$permalink['link'] = $final;
 				}
+				
+				$abj404logging = ABJ_404_Solution_Logging::getInstance();
+				$abj404logging->debugMessage("Found matching regex. Original permalink" . 
+				    json_encode($originalPermalink) . ", final: " . 
+				    json_encode($permalink));
 
 				return $permalink;
 			}

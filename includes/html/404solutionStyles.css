@@ -1,4 +1,8 @@
 
+.destination-does-not-exist {
+	background-color: #ff000045;
+}
+
 .exclude-pages-page-type {
 	font-style: italic;
 }
@@ -177,7 +181,7 @@ ul .ui-autocomplete-category.data-overflow-category {
     color: #fff;
     text-align: center;
     border-radius: 6px;
-    padding: 5px 0;
+    padding: 15px;
 
     /* Position the tooltip */
     position: absolute;

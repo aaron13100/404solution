@@ -1351,6 +1351,14 @@ class ABJ_404_Solution_View {
                 $y = 0;
                 $class = "normal-non-alternate";
             }
+            // make the entire row red if the destination doesn't exist or is unpublished.
+            $destinationDoesNotExistClass = '';
+            if (array_key_exists('published_status', $row)) {
+                if ($row['published_status'] == '0') {
+                    $destinationDoesNotExistClass = ' destination-does-not-exist';
+                }
+            }
+            $class = $class . $destinationDoesNotExistClass;
             
             // -------------------------------------------
             if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {

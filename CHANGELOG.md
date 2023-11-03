@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.35.3 (November 3, 2023) ##
+* FIX: Avoid a PHP warning preg_replace(): Passing null to parameter #3. It looks like this was preventing someone from saving their settings.
+* FIX: Better handle the case When a redirect is created and then the destination page is deleted. Redirects with deleted destinations always appear at the top of the list of redirects.
+
 ## Version 2.35.2 (November 2, 2023) ##
 * Improvement: Add more log messages to help diagnose issues.
 
