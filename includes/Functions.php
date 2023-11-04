@@ -316,7 +316,7 @@ abstract class ABJ_404_Solution_Functions {
         	$permalink['status'] = 'published';
         	
         } else if ($permalink['type'] == ABJ404_TYPE_404_DISPLAYED) {
-        	$permalink['link'] = '';
+        	$permalink['link'] = '404';
         	$permalink['status'] = 'published';
         	
         } else {
@@ -334,10 +334,6 @@ abstract class ABJ_404_Solution_Functions {
         }
         $permalink['title'] = array_key_exists('title', $permalink) ? urldecode($permalink['title']) : '';
         
-        if ($permalink['type'] != ABJ404_TYPE_404_DISPLAYED && trim($permalink['link']) == '') {
-            $abj404logging->debugMessage("Couldn't find a link for an ID: " . json_encode($idAndType));
-        }
-
         return $permalink;
     }
     
