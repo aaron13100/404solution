@@ -342,6 +342,7 @@ class ABJ_404_Solution_WordPress_Connector {
         // this is for requests like website.com/?p=123            
         $abj404logic->tryNormalPostQuery($options);
         
+        $abj404dao->logRedirectHit($requestedURL, '404', 'gave up.');
         $abj404logic->sendTo404Page($requestedURL, '');
     }
     
