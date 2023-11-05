@@ -88,6 +88,11 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.5 (November 5, 2023) ##
+* FIX: Avoid a PHP warning trim(): Passing null to parameter #1.
+* FIX: Allow the fast text filter on the redirects and captured 404s tabs to work again (probably broken in 2.34.0).
+* Improvement: Handle emojis in URLs without causing a collation SQL error.
+
 ## Version 2.35.4 (November 4, 2023) ##
 * FIX: Correctly log redirects to the default 404 page. 
 * FIX: Allow redirecting to the homepage again (broken in 2.35.3).
