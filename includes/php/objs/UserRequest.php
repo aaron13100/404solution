@@ -211,6 +211,9 @@ class ABJ_404_Solution_UserRequest {
         if ($urlParts != null && trim($urlParts) != '') {
         	$requestedURL .= '?' . $urlParts;
         }
+        
+        // otherwise various queries break.
+        $requestedURL = $f->urlencodeEmojis($requestedURL);
 
         return $requestedURL;
     }

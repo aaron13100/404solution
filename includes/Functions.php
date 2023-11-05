@@ -18,6 +18,26 @@ abstract class ABJ_404_Solution_Functions {
         return self::$instance;
     }
     
+    /** Only URL encode emojis from a string.  
+     * @param string $url
+     * @return string
+     */
+    function urlencodeEmojis($url) {
+        // Get all emojis in the string.
+        $matches = [];
+        $emojis = preg_match_all('/[\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}]/u', $url, $matches);
+        
+        // If there are any emojis in the string, urlencode them.
+        if ($emojis > 0) {
+            foreach ($matches[0] as $emoji) {
+                $url = str_replace($emoji, urlencode($emoji), $url);
+            }
+        }
+        
+        // Return the urlencoded string.
+        return $url;
+    }
+    
     /** Uses explode() to return an array.
      * @param string $string
      */
@@ -63,21 +83,6 @@ abstract class ABJ_404_Solution_Functions {
     		$replacement = '';
     	}
     	return str_replace($needle, $replacement, $haystack);
-//     	if (!is_array($needle)) {
-//     		return $this->single_str_replace($needle, $replacement, $haystack);
-//     	}
-    	
-//     	for ($i = 0; $i < count($needle); $i++) {
-//     		$oneNeedle = $needle[$i];
-//     		$oneReplacement = '';
-//     		if (is_array($replacement)) {
-//     			$oneReplacement = $replacement[$i];
-//     		} else {
-//     			$oneReplacement = $replacement; 
-//     		}
-//     		$haystack = $this->str_replace($oneNeedle, $oneReplacement, $haystack);
-//     	}
-//     	return $haystack;
     }
     
     function single_str_replace($needle, $replacement, $haystack) {
