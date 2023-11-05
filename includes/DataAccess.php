@@ -959,10 +959,6 @@ class ABJ_404_Solution_DataAccess {
         }
         $filterText = preg_replace('/[^a-zA-Z\d_=\/\-\(\)\*\.]/', '', $tableOptions['filterText']);
         
-        // ---
-        $dataArray = [];
-        $dataArray['trashValue'] = $trashValue;
-        
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
         $query = $f->str_replace('{selecting-for-count-true-false}', $selectCountReplacement, $query);
         $query = $f->str_replace('{statusTypes}', $statusTypes, $query);
@@ -974,6 +970,7 @@ class ABJ_404_Solution_DataAccess {
         $query = $f->str_replace('{filterText}', $filterText, $query);
         $query = $f->str_replace('{logsTableColumns}', $logsTableColumns, $query);
         $query = $f->str_replace('{logsTableJoin}', $logsTableJoin, $query);
+        $query = $f->str_replace('{trashValue}', $trashValue, $query);
         $query = $this->doTableNameReplacements($query);
         
         if (array_key_exists('translations', $tableOptions)) {
@@ -981,8 +978,6 @@ class ABJ_404_Solution_DataAccess {
             $values = array_values($tableOptions['translations']);
             $query = $f->str_replace($keys, $values, $query);
         }
-        
-        $query = $this->prepare_query_wp($query, $dataArray);
         
         $query = $f->doNormalReplacements($query);
         
@@ -1241,7 +1236,7 @@ class ABJ_404_Solution_DataAccess {
         // we have to know what to set for the $minLogID value
         $minLogID = false;
         $query = "select id from {wp_abj404_logsv2}" . 
-                " where requested_url = " . 
+                " where CAST(requested_url AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = " . 
                 "'" . esc_sql($requestedURL) . "' limit 1";
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
@@ -1672,8 +1667,8 @@ class ABJ_404_Solution_DataAccess {
         $redirect = array();
 
         // a disabled value of '1' means in the trash.
-        $query = "select * from {wp_abj404_redirects} where url = '" . esc_sql($url) . "'" .
-                " and disabled = 0 "; 
+        $query = $this->prepare_query_wp('select * from {wp_abj404_redirects} where url = {url} ' . 
+            " and disabled = 0 ", array("url" => $url));
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
 
@@ -1718,7 +1713,7 @@ class ABJ_404_Solution_DataAccess {
         // ----------------
         
         if ($slug != "") {
-            $specifiedSlug = " */\n and wp_posts.post_name = "
+            $specifiedSlug = " */\n and CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = "
                     . "'" . esc_sql($slug) . "' \n ";
         } else {
             $specifiedSlug = '';

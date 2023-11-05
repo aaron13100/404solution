@@ -1290,11 +1290,21 @@ class ABJ_404_Solution_View {
                 
             } else if ($row['type'] == ABJ404_TYPE_404_DISPLAYED) {
             	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_404_DISPLAYED, 0);
+            	// for custom 404 page use the link
             	$link = $permalink['link'];
             	$title .= $permalink['title'];
             	
+            	// for the normal 404 page just use #
+            	if ($row['final_dest'] == '0') {
+            	    $link = '';
+            	}
+            	
             } else {
                 $abj404logging->errorMessage("Unexpected row type while displaying table: " . $row['type']);
+            }
+            
+            if ($link != '') {
+                $link = "href='$link'";
             }
 
             $hits = $row['logshits'];
