@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.6 (November 9, 2023) ##
+* Improvement: Handle even more emojis.
+
 ## Version 2.35.5 (November 5, 2023) ##
 * FIX: Avoid a PHP warning trim(): Passing null to parameter #1.
 * FIX: Allow the fast text filter on the redirects and captured 404s tabs to work again (probably broken in 2.34.0).
