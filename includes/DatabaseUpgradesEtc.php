@@ -704,7 +704,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             return false;
         }
         
-        if (in_array($_SERVER['SERVER_NAME'], array('127.0.0.1', '::1', 'localhost'))) {
+        $serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
+        if (in_array($serverName, array('127.0.0.1', '::1', 'localhost'))) {
             $abj404logging->infoMessage("Update narrowly avoided on localhost.");
             return false;
         }        
