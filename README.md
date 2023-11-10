@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.7 (November 10, 2023) ##
+* FIX: Avoid an Undefined array key for SERVER_NAME for some people.
+
 ## Version 2.35.6 (November 9, 2023) ##
 * Improvement: Handle even more emojis.
 

@@ -1641,7 +1641,8 @@ class ABJ_404_Solution_View {
         // other things to do besides deal with people that don't listen to warnings about things 
         // that will break their website.
         $hideRedirectAllRequests = 'true';
-        if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
+        $serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
+        if (in_array($serverName, $GLOBALS['abj404_whitelist'])) {
         	$hideRedirectAllRequests = 'false';
         }
         

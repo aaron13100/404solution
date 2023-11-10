@@ -69,7 +69,11 @@ In the settings there is a setting named "Log raw IPs" that you need to select t
 
 = An existing page is being redirected. =
 
-No, it's not. Only 404s are redirected. Did the page exist at the time of the redirect? Past issues have been caused by conflicts with other plugins, or by other plugins redirecting to non-existing pages. Turn on debug logging on the Options page and try the existing URL. Then view the debug log (from the Options page) and see how the 404 was handled.   
+No, it's not. Only 404s are redirected. Did the page exist at the time of the redirect? Past issues have been caused by conflicts with other plugins, or by other plugins redirecting to non-existing pages. Turn on debug logging on the Options page and try the existing URL. Then view the debug log (from the Options page) and see how the 404 was handled.
+
+= I want to exclude certain pages or URLs. How? =
+
+There’s a section in the options named “Files and Folders Ignore Strings – Do Not Process” under “Advanced Settings (Etc)”. You can add the path part of the URL to ignore there.
 
 = Have you written any other programs?  =
 
@@ -83,6 +87,9 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.35.7 (November 10, 2023) =
+* FIX: Avoid an Undefined array key for SERVER_NAME for some people.
 
 = Version 2.35.6 (November 9, 2023) =
 * Improvement: Handle even more emojis.

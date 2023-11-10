@@ -168,12 +168,8 @@ function abj404_getUploadsDir() {
 /** This only runs after WordPress is done enqueuing scripts. */
 function abj404_loadSomethingWhenWordPressIsReady() {	
 	// make debugging easier on localhost etc	
-	$serverName = '(not found)';
-	if (array_key_exists('SERVER_NAME', $_SERVER) && isset($_SERVER['SERVER_NAME'])) {
-		$serverName = $_SERVER['SERVER_NAME'];
-	}
-	$whiteList = $GLOBALS['abj404_whitelist'];
-	$serverNameIsInTheWhiteList = in_array($serverName, $whiteList);
+	$serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
+	$serverNameIsInTheWhiteList = in_array($serverName, $GLOBALS['abj404_whitelist']);
 	
 	if ($serverNameIsInTheWhiteList && function_exists('wp_get_current_user')) {
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();

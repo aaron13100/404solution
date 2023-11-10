@@ -74,7 +74,8 @@ class ABJ_404_Solution_ErrorHandler {
             if ($abj404logging != null) {
                 switch ($errno) {
                     case E_NOTICE:
-                        if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
+                        $serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
+                        if (in_array($serverName, $GLOBALS['abj404_whitelist'])) {
                             $e = new Exception;
                             $abj404logging->debugMessage($errmsg . ', Trace:' . $e->getTraceAsString());
                         }
@@ -138,7 +139,8 @@ class ABJ_404_Solution_ErrorHandler {
             if ($abj404logging != null) {
                 switch ($errno) {
                     case E_NOTICE:
-                        if (in_array($_SERVER['SERVER_NAME'], $GLOBALS['abj404_whitelist'])) {
+                        $serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
+                        if (in_array($serverName, $GLOBALS['abj404_whitelist'])) {
                             $abj404logging->debugMessage($errmsg);
                         }
                         break;
