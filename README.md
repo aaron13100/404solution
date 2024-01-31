@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.8 (January 31, 2024) ##
+* Update: Fixed a supposed issue on the logs page that 1. I was unable to reproduce and 2. would definitely only be possible if you were an admin user anyway, so I'm not really sure why it was reported.
+
 ## Version 2.35.7 (November 10, 2023) ##
 * FIX: Avoid an Undefined array key for SERVER_NAME for some people.
 
