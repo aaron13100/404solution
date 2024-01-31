@@ -1173,15 +1173,18 @@ class ABJ_404_Solution_DataAccess {
      */
     function getLogRecords($tableOptions) {
     	$f = ABJ_404_Solution_Functions::getInstance();
+    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
     	
     	$logsid_included = '';
         $logsid = '';
         if ($tableOptions['logsid'] != 0) {
             $logsid_included = 'specific logs id included. */';
-            $logsid = esc_sql($tableOptions['logsid']);
+            $logsid = esc_sql($abj404logic->sanitizeForSQL($tableOptions['logsid']));
         }
-        $orderby = esc_sql(sanitize_text_field($tableOptions['orderby']));
-        $order = esc_sql(sanitize_text_field($tableOptions['order']));
+        $orderby = esc_sql(sanitize_text_field(
+            $abj404logic->sanitizeForSQL($tableOptions['orderby'])));
+        $order = esc_sql(sanitize_text_field(
+            $abj404logic->sanitizeForSQL($tableOptions['order'])));
         $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
         $perpage = absint(sanitize_text_field($tableOptions['perpage']));
         

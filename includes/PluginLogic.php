@@ -1683,6 +1683,20 @@ class ABJ_404_Solution_PluginLogic {
         return $newData;
     }
     
+    /** Remove non a-zA-Z0-9 or _ characters. 
+     * @param string $str
+     * @return string
+     */
+    function sanitizeForSQL($str) {
+        if ($str == null || $str == '') {
+            return $str;
+        }
+        $re = '/[^\w_]/';
+        
+        $result = preg_replace($re, '', $str);
+        return $result;
+    }
+    
     /** 
      * @return string
      */
