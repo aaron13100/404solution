@@ -62,10 +62,6 @@ class ABJ_404_Solution_PluginLogic {
     	if (ABJ_404_Solution_PluginLogic::$checkingIsAdmin) {
     		return false;
     	}
-    	// if it's not an admin page then we don't care.
-    	if (!is_admin()) {
-    		return false;
-    	}
     	
     	// begin function.
     	ABJ_404_Solution_PluginLogic::$checkingIsAdmin = true;

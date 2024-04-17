@@ -88,6 +88,11 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.9 (April 17, 2024) ##
+* FIX: Fix an undefined constant warning for PHP 7 (and probably 8).
+* FIX: Don't esc_url() before redirecting, because it escapes things like & when it shouldn't (thanks @wordknowledge).
+* Update: Apparently made the levenshtein distance algorithm slightly more efficient, but I made the change a while ago and honestly don't remember it. But I think probably it won't break anything so I guess it's okay.
+
 ## Version 2.35.8 (January 31, 2024) ##
 * Update: Fixed a supposed issue on the logs page that 1. I was unable to reproduce and 2. would definitely only be possible if you were an admin user anyway, so I'm not really sure why it was reported.
 

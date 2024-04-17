@@ -66,9 +66,9 @@ class ABJ_404_Solution_ErrorHandler {
             }
             $errmsg = "ABJ404-SOLUTION Normal error handler error: errno: " .
                         wp_kses_post(json_encode($errno)) . ", errstr: " . wp_kses_post(json_encode($errstr)) .
-                        ", errfile: " . stripcslashes(wp_kses_post(json_encode($errfile))) .
-                        ", errline: " . wp_kses_post(json_encode($errline)) .
-                        ', Additional info: ' . $extraInfo . ", mbstring: " . 
+                        ", \nerrfile: " . stripcslashes(wp_kses_post(json_encode($errfile))) .
+                        ", \nerrline: " . wp_kses_post(json_encode($errline)) .
+                        ', \nAdditional info: ' . $extraInfo . ", mbstring: " . 
                     (extension_loaded('mbstring') ? 'true' : 'false');
             
             if ($abj404logging != null) {
@@ -133,7 +133,7 @@ class ABJ_404_Solution_ErrorHandler {
             }
             $errmsg = "ABJ404-SOLUTION Fatal error handler: " . 
                 stripcslashes(wp_kses_post(json_encode($lasterror))) .
-                ', Additional info: ' . $extraInfo . ", mbstring: " . 
+                ", \nAdditional info: " . $extraInfo . ", mbstring: " . 
                     (extension_loaded('mbstring') ? 'true' : 'false');
 
             if ($abj404logging != null) {

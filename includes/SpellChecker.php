@@ -953,12 +953,11 @@ class ABJ_404_Solution_SpellChecker {
 	 * @throws Exception
 	 */
 	function customLevenshtein($str1, $str2) {
-		$_REQUEST[ABJ404_PP]['debug_info'] = 'customLevenshtein. str1: ' . esc_html($str1) . ', str2: ' . esc_html($str2);
+	    $f = ABJ_404_Solution_Functions::getInstance();
+	    $_REQUEST[ABJ404_PP]['debug_info'] = 'customLevenshtein. str1: ' . esc_html($str1) . ', str2: ' . esc_html($str2);
 
-		$sRow = $this->multiByteStringToArray($str1);
-		$sCol = $this->multiByteStringToArray($str2);
-		$RowLen = count($sRow);
-		$ColLen = count($sCol);
+	    $RowLen = $f->strlen($str1);
+	    $ColLen = $f->strlen($str2);
 		$cost = 0;
 
 		// / Test string length. URLs should not be more than 2,083 characters
@@ -990,27 +989,11 @@ class ABJ_404_Solution_SpellChecker {
 			// / Set the 0'th element to the column number
 			$v1[0] = $ColIdx;
 
-			$Col_j = $sCol[$ColIdx - 1];
-
 			// Step 4
 			// / For each row
 			for ($RowIdx = 1; $RowIdx <= $RowLen; $RowIdx++) {
-				$Row_i = $sRow[$RowIdx - 1];
-
-				// Step 5
-				if ($Row_i == $Col_j) {
-					$cost = 0;
-				} else {
-					$cost = 1;
-				}
-
-				// Step 6
-				// / Find minimum
-				// cost to delete/insert: = $m_min = $v0[$RowIdx] + 1;
-				// cost to delete/isnert: = $v1[$RowIdx - 1] + 1;
-				// cost to replace: = $v0[$RowIdx - 1] + $cost;
-
-				$v1[$RowIdx] = min($v0[$RowIdx] + 1, $v1[$RowIdx - 1] + 1, $v0[$RowIdx - 1] + $cost);
+			    $cost = ($str1[$RowIdx - 1] == $str2[$ColIdx - 1]) ? 0 : 1;
+			    $v1[$RowIdx] = min($v0[$RowIdx] + 1, $v1[$RowIdx - 1] + 1, $v0[$RowIdx - 1] + $cost);
 			}
 
 			// / Swap the vectors

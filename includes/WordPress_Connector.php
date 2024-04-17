@@ -423,7 +423,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
         	$abj404dao->logRedirectHit($redirect['url'], $redirect['final_dest'], 'external');
-            $abj404logic->forceRedirect(esc_url($redirect['final_dest']), esc_html($redirect['code']));
+            $abj404logic->forceRedirect($redirect['final_dest'], esc_html($redirect['code']));
             exit;
         }
 
