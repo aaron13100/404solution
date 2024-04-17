@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 2.35.8
+	Version: 2.35.9
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -89,7 +89,8 @@ function abj404_404listener() {
     }
     
     if (!is_404()) {
-    	// if we should redirect all requests then don't return.
+        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+        // if we should redirect all requests then don't return.
     	$options = get_option('abj404_settings');
     	$arrayKeyExists = is_array($options) && array_key_exists('redirect_all_requests', $options);
     	if ($arrayKeyExists && $options['redirect_all_requests'] == 1) {
@@ -172,7 +173,8 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 	$serverNameIsInTheWhiteList = in_array($serverName, $GLOBALS['abj404_whitelist']);
 	
 	if ($serverNameIsInTheWhiteList && function_exists('wp_get_current_user')) {
-		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+	    $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		if ($abj404logic->userIsPluginAdmin()) {
 			$GLOBALS['abj404_display_errors'] = true;
 		}

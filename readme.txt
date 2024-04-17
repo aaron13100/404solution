@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error, permalink redirect, permalink
 Requires at least: 3.9
 Tested up to: 6.4
-Stable tag: 2.35.8
+Stable tag: 2.35.9
 
 Automatically redirect page not found errors (404s) when the slug matches (for permalink changes), when a very similar name match is found, or always to a default page.
 
@@ -87,6 +87,11 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.35.9 (April 17, 2024) =
+* FIX: Fix an undefined constant warning for PHP 7 (and probably 8).
+* FIX: Don't esc_url() before redirecting, because it escapes things like & when it shouldn't (thanks @wordknowledge).
+* Update: Apparently made the levenshtein distance algorithm slightly more efficient, but I made the change a while ago and honestly don't remember it. But I think probably it won't break anything so I guess it's okay.
 
 = Version 2.35.8 (January 31, 2024) =
 * Update: Fixed a supposed issue on the logs page that 1. I was unable to reproduce and 2. would definitely only be possible if you were an admin user anyway, so I'm not really sure why it was reported.
