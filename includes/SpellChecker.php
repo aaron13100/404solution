@@ -808,10 +808,12 @@ class ABJ_404_Solution_SpellChecker {
 			// -----------------
 
 			// add the ID to the list.
-			if (is_array($minDistances[$minDist])) {
-				array_push($minDistances[$minDist], $id);
+			if (isset($minDistances[$minDist]) && is_array($minDistances[$minDist])) {
+			    array_push($minDistances[$minDist], $id);
+			} else {
+			    $minDistances[$minDist] = [$id];
 			}
-
+			
 			if ($maxDist < 0) {
             	$abj404logging->errorMessage("maxDist is less than 0 (" . $maxDist . 
             			") for '" . $existingPageURLCleaned . "', wordsInCommon: " .
