@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.10 (July 11, 2024) ##
+* FIX: Avoid an Undefined array key warning in PHP 8. Thanks @peterbp.
+
 ## Version 2.35.9 (April 17, 2024) ##
 * FIX: Fix an undefined constant warning for PHP 7 (and probably 8).
 * FIX: Don't esc_url() before redirecting, because it escapes things like & when it shouldn't (thanks @wordknowledge).
