@@ -1214,6 +1214,8 @@ class ABJ_404_Solution_DataAccess {
         
         $now = time();
 
+        $cleanedRequestedURL = $this->custom_sql_escape($requestedURL);
+
         // no nonce here because redirects are not user generated.
 
         $options = $abj404logic->getOptions(true);
@@ -1240,7 +1242,7 @@ class ABJ_404_Solution_DataAccess {
         $minLogID = false;
         $query = "select id from {wp_abj404_logsv2}" . 
                 " where CAST(requested_url AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = " . 
-                "'" . esc_sql($requestedURL) . "' limit 1";
+                "'" . esc_sql($cleanedRequestedURL) . "' limit 1";
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
         if (is_array($rows)) {
@@ -1276,12 +1278,33 @@ class ABJ_404_Solution_DataAccess {
             'user_ip' => $ipAddressToSave,
             'referrer' => esc_sql($referer),
             'dest_url' => esc_sql($action),
-            'requested_url' => esc_sql($requestedURL),
+            'requested_url' => esc_sql($cleanedRequestedURL),
             'requested_url_detail' => esc_sql($requestedURLDetail),
             'username' => esc_sql($usernameLookupID),
             'min_log_id' => $minLogID,
         ));
     }
+
+    /** The wordpress esc_sql doesn't seem to work sometimes so I added this. */
+    function custom_sql_escape($string) {
+        if (!is_string($string)) {
+            return $string;
+        }
+    
+        // Convert string to hexadecimal representation
+        $hex_string = bin2hex($string);
+    
+        // Process the hexadecimal string to escape problematic characters
+        $escaped_string = preg_replace_callback('/(..)/', function($matches) {
+            $char = chr(hexdec($matches[1]));
+            if (ord($char) <= 31 || ord($char) == 127 || (ord($char) >= 128 && ord($char) <= 159)) {
+                return '\\x' . strtoupper(dechex(ord($char)));
+            }
+            return $char;
+        }, $hex_string);
+    
+        return $escaped_string;
+    }    
     
     /** Insert a value into the lookup table and return the ID of the value. 
      * @param string $valueToInsert

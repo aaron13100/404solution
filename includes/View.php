@@ -1704,6 +1704,7 @@ class ABJ_404_Solution_View {
         $html = $f->str_replace('{plugin_admin_users}', wp_kses_post($pluginAdminUsers), $html);
         
         $html = $f->str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($options['auto_score']), $html);
+        $html = $f->str_replace('{OPTION_TEMPLATE_REDIRECT_PRIORITY}', esc_attr($options['template_redirect_priority']), $html);
         
         $html = $f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
         

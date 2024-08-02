@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.35.11 (August 2, 2024) ##
+* FIX: Allow users to set the template_redirect priority which allows other plugins or other "things" to handle 404s before this plugin handles it. Hopefully this will fix an issue where some payment systems purposefully direct to non-existent pages and then handle them.
+* Improvement: Try to fix some sql "contains invalid data" issues when logging redirects.
+
 ## Version 2.35.10 (July 11, 2024) ##
 * FIX: Avoid an Undefined array key warning in PHP 8. Thanks @peterbp.
 

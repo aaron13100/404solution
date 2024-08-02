@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 2.35.10
+	Version: 2.35.11
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -78,8 +78,18 @@ if (is_admin()) {
 	ABJ_404_Solution_ViewUpdater::init();
 }
 
+// ----
+// get the plugin priority to use before adding the template_redirect action.
+$__abj404_options = get_option('abj404_settings');
+$__abj404_template_redirect_priority = absint($__abj404_options['template_redirect_priority'] ?? 9);
+
+add_action('template_redirect', 'abj404_404listener', $__abj404_template_redirect_priority);
+
+unset($__abj404_options);
+unset($__abj404_template_redirect_priority);
+// ---
+
 // 404
-add_action('template_redirect', 'abj404_404listener', 9);
 function abj404_404listener() {
 	// always ignore admin screens and login requests.
 	$isLoginScreen = (false !== stripos(wp_login_url(), $_SERVER['SCRIPT_NAME']));
