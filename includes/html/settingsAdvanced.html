@@ -15,6 +15,11 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
 </p>
 <!-- .............................. -->
 
+<p><label for="template_redirect_priority">{Template Redirect Priority}:</label> <input type="text" name="template_redirect_priority" id="template_redirect_priority" value="{OPTION_TEMPLATE_REDIRECT_PRIORITY}" style="width: 50px;"><BR/>
+&nbsp;&nbsp;&nbsp;{This sets how early in the process a 404 is handled by this plugin. If there are multiple plugins that should handle a 404, then set this higher (999) so that this plugin gets the 404 last. (default 9)}
+</p>
+<!-- .............................. -->
+    
 <style>
     .closeLI {
         margin-bottom: initial;

@@ -617,6 +617,7 @@ class ABJ_404_Solution_PluginLogic {
             'update_suggest_url' => '0',
             'auto_redirects' => '1',
             'auto_score' => '90',
+            'template_redirect_priority' => '9',
             'auto_deletion' => '1095',
             'auto_cats' => '1',
             'auto_tags' => '1',
@@ -1825,6 +1826,14 @@ class ABJ_404_Solution_PluginLogic {
 	                $options['auto_score'] = absint($_POST['auto_score']);
 	            } else {
 	                $message .= __('Error: Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
+	            }
+	        }
+	        
+	        if (array_key_exists('template_redirect_priority', $_POST) && isset($_POST['template_redirect_priority'])) {
+	            if (is_numeric($_POST['template_redirect_priority']) && $_POST['template_redirect_priority'] >= 0 && $_POST['template_redirect_priority'] <= 999) {
+	                $options['template_redirect_priority'] = absint($_POST['template_redirect_priority']);
+	            } else {
+	                $message .= __('Error: Template redirect priority value must be a number between 0 and 999', '404-solution') . ".<BR/>";
 	            }
 	        }
 	        

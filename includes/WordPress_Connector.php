@@ -380,7 +380,8 @@ class ABJ_404_Solution_WordPress_Connector {
 	 	$f = ABJ_404_Solution_Functions::getInstance();
 	 	
         $debugOptionsMsg = esc_html('auto_redirects: ' . $options['auto_redirects'] . ', auto_score: ' . 
-                $options['auto_score'] . ', auto_cats: ' . $options['auto_cats'] . ', auto_tags: ' .
+                $options['auto_score'] . ', template_redirect_priority: ' . $options['template_redirect_priority'] .
+                ', auto_cats: ' . $options['auto_cats'] . ', auto_tags: ' .
                 $options['auto_tags'] . ', dest404page: ' . $options['dest404page']);
 
         $remoteAddress = esc_sql($_SERVER['REMOTE_ADDR']);
