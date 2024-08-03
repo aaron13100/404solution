@@ -17,11 +17,11 @@ class ABJ_404_Solution_ShortCode {
 	/** If we're currently redirecting to a custom 404 page and we are about to show page
 	 * suggestions then update the URL displayed to the user. */
 	static function updateURLbarIfNecessary() {
-		$options = get_option('abj404_settings');
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
 		$abj404logging = ABJ_404_Solution_Logging::getInstance();
 		$debugMessage = '';
+        $options = $abj404logic->getOptions();
 		
 		$shouldUpdateURL = true;
 		// if we're not supposed to update the URL then don't.
