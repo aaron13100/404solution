@@ -3,8 +3,8 @@ Contributors: aaron13100
 Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
-Tested up to: 6.5
-Stable tag: 2.35.11
+Tested up to: 6.6
+Stable tag: 2.35.12
 
 Smart 404 handling: redirect to matching slug, similar name, or default page.
 
@@ -87,6 +87,9 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.35.12 (August 3, 2024) =
+* FIX: Fix an undefined array key due to the new template redirect priority option.
 
 = Version 2.35.11 (August 2, 2024) =
 * FIX: Allow users to set the template_redirect priority which allows other plugins or other "things" to handle 404s before this plugin handles it. Hopefully this will fix an issue where some payment systems purposefully direct to non-existent pages and then handle them.

@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.12 (August 3, 2024) ##
+* FIX: Fix an undefined array key due to the new template redirect priority option.
+
 ## Version 2.35.11 (August 2, 2024) ##
 * FIX: Allow users to set the template_redirect priority which allows other plugins or other "things" to handle 404s before this plugin handles it. Hopefully this will fix an issue where some payment systems purposefully direct to non-existent pages and then handle them.
 * Improvement: Try to fix some sql "contains invalid data" issues when logging redirects.
