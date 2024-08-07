@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.6
-Stable tag: 2.35.12
+Stable tag: 2.35.13
 
 Smart 404 handling: redirect to matching slug, similar name, or default page.
 
@@ -87,6 +87,9 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.35.13 (August 7, 2024) =
+* FIX: Fix the 'Files and Folders Ignore Strings - Do Not Process' functionality.
 
 = Version 2.35.12 (August 3, 2024) =
 * FIX: Fix an undefined array key due to the new template redirect priority option.

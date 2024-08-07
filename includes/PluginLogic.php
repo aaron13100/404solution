@@ -240,13 +240,15 @@ class ABJ_404_Solution_PluginLogic {
         $patternsToIgnore = $options['folders_files_ignore_usable'];
         if (!empty($patternsToIgnore)) {
             foreach ($patternsToIgnore as $patternToIgnore) {
+                $patternToIgnoreNoSlashes = stripslashes($patternToIgnore);
                 $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex pattern to ignore\"' . 
-                        $patternToIgnore . '" to URL slug: ' . $urlSlugOnly;
+                    $patternToIgnoreNoSlashes . '" to URL slug: ' . $urlSlugOnly;
                 $matches = array();
-                if ($f->regexMatch($patternToIgnore, $urlSlugOnly, $matches)) {
+                if ($f->regexMatch($patternToIgnoreNoSlashes, $urlSlugOnly, $matches)) {
                     $abj404logging->debugMessage("Ignoring file/folder (do not redirect) for URL: " . 
-                            esc_html($urlSlugOnly) . ", pattern used: " . $patternToIgnore);
-                    $ignoreReasonDoNotProcess = 'Files and folders (do not redirect) pattern: ' . esc_html($patternToIgnore);
+                            esc_html($urlSlugOnly) . ", pattern used: " . $patternToIgnoreNoSlashes);
+                    $ignoreReasonDoNotProcess = 'Files and folders (do not redirect) pattern: ' . 
+                        esc_html($patternToIgnoreNoSlashes);
                 }
                 $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex pattern to ignore.';
             }
