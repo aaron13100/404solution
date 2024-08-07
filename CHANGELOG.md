@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.35.13 (August 7, 2024) ##
+* FIX: Fix the 'Files and Folders Ignore Strings - Do Not Process' functionality.
+
 ## Version 2.35.12 (August 3, 2024) ##
 * FIX: Fix an undefined array key due to the new template redirect priority option.
 
