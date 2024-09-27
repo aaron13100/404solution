@@ -5,6 +5,8 @@ Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.6
 Stable tag: 2.35.14
+License: GPLv3
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 Smart 404 handling: redirect to matching slug, similar name, or default page.
 
