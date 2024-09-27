@@ -516,7 +516,8 @@ class ABJ_404_Solution_SpellChecker {
 		$rows = $this->getOnlyIDandTermID($rows);
 
 		// pre-filter some pages based on the min and max possible levenshtein distances.
-		$likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, 'categories', $rows);
+		$likelyMatchIDsAndPermalinks = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, 'categories', $rows);
+		$likelyMatchIDs = array_keys($likelyMatchIDsAndPermalinks);
 
 		// access the array directly instead of using a foreach loop so we can remove items
 		// from the end of the array in the middle of the loop.
@@ -536,6 +537,12 @@ class ABJ_404_Solution_SpellChecker {
 				$pathOnlySpaces = trim($f->str_replace('/', " ", $pathOnlySpaces));
 				$levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $pathOnlySpaces));
 			}
+
+			$onlyLastPart = $this->getLastURLPart($pathOnly);
+			if ($onlyLastPart != '' && $onlyLastPart != $pathOnly) {
+				$levscore = min($levscore, $this->customLevenshtein($requestedURLCleaned, $onlyLastPart));
+			}
+
 			$score = 100 - (($levscore / $scoreBasis) * 100);
 			$permalinks[$id . "|" . ABJ404_TYPE_CAT] = number_format($score, 4, '.', '');
 		}
@@ -552,7 +559,8 @@ class ABJ_404_Solution_SpellChecker {
 		$rows = $this->getOnlyIDandTermID($rows);
 
 		// pre-filter some pages based on the min and max possible levenshtein distances.
-		$likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, 'tags', $rows);
+		$likelyMatchIDsAndPermalinks = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, 'tags', $rows);
+		$likelyMatchIDs = array_keys($likelyMatchIDsAndPermalinks);
 
 		// access the array directly instead of using a foreach loop so we can remove items
 		// from the end of the array in the middle of the loop.
@@ -583,29 +591,30 @@ class ABJ_404_Solution_SpellChecker {
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
 		$abj404logger = ABJ_404_Solution_Logging::getInstance();
-
+	
 		// pre-filter some pages based on the min and max possible levenshtein distances.
-		$likelyMatchIDs = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rowType);
-
+		$likelyMatchIDsAndPermalinks = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rowType);
+		$likelyMatchIDs = array_keys($likelyMatchIDsAndPermalinks);
+	
 		$abj404logger->debugMessage("Found " . count($likelyMatchIDs) . " likely match IDs.");
-
+	
 		// access the array directly instead of using a foreach loop so we can remove items
 		// from the end of the array in the middle of the loop.
 		while (count($likelyMatchIDs) > 0) {
 			$id = array_pop($likelyMatchIDs);
-
+	
 			// use the levenshtein distance formula here.
-			$the_permalink = $this->getPermalink($id, $rowType);
+			$the_permalink = $likelyMatchIDsAndPermalinks[$id];
 			$urlParts = parse_url($the_permalink);
 			$existingPageURL = $abj404logic->removeHomeDirectory($urlParts['path']);
 			$existingPageURLSpaces = $f->str_replace($this->separatingCharacters, " ", $existingPageURL);
-
+	
 			$existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
 			$scoreBasis = $f->strlen($existingPageURLCleaned) * 3;
 			if ($scoreBasis == 0) {
 				continue;
 			}
-
+	
 			$levscore = $this->customLevenshtein($requestedURLCleaned, $existingPageURLCleaned);
 			if ($fullURLspacesCleaned != '') {
 				$levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $existingPageURLCleaned));
@@ -613,13 +622,13 @@ class ABJ_404_Solution_SpellChecker {
 			if ($rowType == 'image') {
 				// strip the image size from the file name and try again.
 				// the image size is at the end of the file in the format of -640x480
-                $strippedImageName = $f->regexReplace('(.+)([-]\d{1,5}[x]\d{1,5})([.].+)', 
-                        '\\1\\3', $requestedURLRaw);
-
+				$strippedImageName = $f->regexReplace('(.+)([-]\d{1,5}[x]\d{1,5})([.].+)', 
+						'\\1\\3', $requestedURLRaw);
+	
 				if (($strippedImageName != null) && ($strippedImageName != $requestedURLRaw)) {
 					$strippedImageName = $f->str_replace($this->separatingCharactersForImages, " ", $strippedImageName);
 					$levscore = min($levscore, $this->customLevenshtein($strippedImageName, $existingPageURL));
-
+	
 					$strippedImageName = $this->getLastURLPart($strippedImageName);
 					$levscore = min($levscore, $this->customLevenshtein($strippedImageName, $existingPageURLCleaned));
 				}
@@ -627,7 +636,7 @@ class ABJ_404_Solution_SpellChecker {
 			$score = 100 - (($levscore / $scoreBasis) * 100);
 			$permalinks[$id . "|" . ABJ404_TYPE_POST] = number_format($score, 4, '.', '');
 		}
-
+	
 		return $permalinks;
 	}
 
@@ -718,6 +727,7 @@ class ABJ_404_Solution_SpellChecker {
 		$userRequestedURLWords = explode(" ", (empty($fullURLspaces) ? $requestedURLCleaned : $fullURLspaces));
 		$idsWithWordsInCommon = array();
 		$wasntReadyCount = 0;
+		$idToPermalink = array();
 
 		// get the next X pages in batches until enough matches are found.
 		$this->publishedPostsProvider->resetBatch();
@@ -768,7 +778,7 @@ class ABJ_404_Solution_SpellChecker {
 			
 			$_REQUEST[ABJ404_PP]['debug_info'] = 'Likely match IDs processing permalink: ' . 
 				$the_permalink . ', $wasntReadyCount: ' . $wasntReadyCount;
-			$the_permalink = null;
+			$idToPermalink[$id] = $the_permalink;
 
 			if (!array_key_exists('path', $urlParts)) {
 				continue;
@@ -885,7 +895,13 @@ class ABJ_404_Solution_SpellChecker {
 			return $idsWithWordsInCommon;
 		}
 
-		return $listOfIDsToReturn;
+		$result = array();
+		foreach ($listOfIDsToReturn as $id) {
+			if (isset($idToPermalink[$id])) {
+				$result[$id] = $idToPermalink[$id];
+			}
+		}
+		return $result;
 	}
 
 	/**

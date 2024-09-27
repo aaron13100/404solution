@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.6
-Stable tag: 2.35.13
+Stable tag: 2.35.14
 
 Smart 404 handling: redirect to matching slug, similar name, or default page.
 
@@ -87,6 +87,10 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.35.14 (September 27, 2024) =
+* Improvement: Include WooCommerce categories also.
+* FIX: Avoid an out of memory issue during spellcheck when there were too many posts or pages (> 10,000) (caused by debug_backtrace() apparently).
 
 = Version 2.35.13 (August 7, 2024) =
 * FIX: Fix the 'Files and Folders Ignore Strings - Do Not Process' functionality.

@@ -88,6 +88,10 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.14 (September 27, 2024) ##
+* Improvement: Include WooCommerce categories also.
+* FIX: Avoid an out of memory issue during spellcheck when there were too many posts or pages (> 10,000) (caused by debug_backtrace() apparently).
+
 ## Version 2.35.13 (August 7, 2024) ##
 * FIX: Fix the 'Files and Folders Ignore Strings - Do Not Process' functionality.
 
