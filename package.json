@@ -1,6 +1,6 @@
 {
   "name": "404-solution",
-  "version": "2.35.13",
+  "version": "2.35.14",
   "description": "The 404 Solution Plugin.",
   "main": "Gulpfile.js",
   "dependencies": {

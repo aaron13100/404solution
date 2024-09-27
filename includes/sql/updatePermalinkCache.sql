@@ -70,7 +70,7 @@ from
 
     inner join {wp_term_taxonomy} wtt
     on wtt.term_taxonomy_id = wtr.term_taxonomy_id
-    and wtt.taxonomy = 'category' 
+    and wtt.taxonomy in ('category', 'product_cat')
 
     inner join {wp_terms} wpt 
     on wpt.term_id = wtt.term_id
