@@ -509,7 +509,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
         // get the target collation
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
-        $query = str_replace('{table_names}', "'" . $postsTable . "'", $query);
+        $query = str_replace('{table_name}', $postsTable, $query);
         $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
         $results = $abj404dao->queryAndGetResults($query);
         $rows = $results['rows'];
@@ -522,7 +522,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         foreach ($abjTableNames as $tableName) {
             // get collations of our tables and a target table.
             $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
-            $query = str_replace('{table_names}', "'" . $tableName . "'", $query);
+            $query = str_replace('{table_name}', $tableName, $query);
             $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
             $results = $abj404dao->queryAndGetResults($query);
             $rows = $results['rows'];

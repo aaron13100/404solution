@@ -9,6 +9,6 @@ inner join information_schema.collation_character_set_applicability ccsa
 on t.table_collation = ccsa.collation_name
 
 /* where table_name in ('wp_abj404_redirects', 'wp_posts') */
-where t.table_name in ({table_names})
+where lower(t.table_name) = lower('{table_name}')
 /* and TABLE_SCHEMA = '404-solution' */
-and table_schema = '{TABLE_SCHEMA}'
+and lower(table_schema) = lower('{TABLE_SCHEMA}')
