@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.15 (September 30, 2024) ##
+* FIX: Try to fix a table collation issue for atlet.
+
 ## Version 2.35.14 (September 27, 2024) ##
 * Improvement: Include WooCommerce categories also.
 * FIX: Avoid an out of memory issue during spellcheck when there were too many posts or pages (> 10,000) (caused by debug_backtrace() apparently).

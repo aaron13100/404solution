@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 2.35.14
+	Version: 2.35.15
 
 	License:     GPL2
 	License URI: https://www.gnu.org/licenses/gpl-2.0.html
