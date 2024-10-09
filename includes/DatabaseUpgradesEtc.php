@@ -47,6 +47,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
     
     private function reallyCreateDatabaseTables($updatingToNewVersion = false) {
+		$this->renameAbj404TablesToLowerCase();
+		
     	if ($updatingToNewVersion) {
     		$this->correctIssuesBefore();
     	}
@@ -81,6 +83,33 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function correctIssuesAfter() {
     	$this->correctMatchData();
     }
+
+    /** Makes all plugin table names lowercase, in case someone thought it was funny to use
+	 * the lower_case_table_names=0 setting. */
+	function renameAbj404TablesToLowerCase() {
+		global $wpdb;
+    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
+    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+		// Fetch all tables starting with "abj404", case-insensitive
+		$query = "SELECT table_name 
+			FROM information_schema.tables 
+			WHERE table_schema = '{$wpdb->dbname}' 
+			AND LOWER(table_name) LIKE '%abj404%'";	
+		$results = $abj404dao->queryAndGetResults($query);
+		
+		foreach ($results['rows'] as $row) {
+			$tableName = $row['table_name'];
+			$lowercaseName = strtolower($tableName);
+	
+			// Check if the table name is already lowercase, skip if it is
+			if ($tableName !== $lowercaseName) {
+				// Rename the table to lowercase
+				$renameQuery = "RENAME TABLE `{$tableName}` TO `{$lowercaseName}`";
+				$abj404dao->queryAndGetResults($renameQuery);
+				$abj404logging->infoMessage("Renamed table {$tableName} to {$lowercaseName}\n");
+			}
+		}
+	}
     
     function correctMatchData() {
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();

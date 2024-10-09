@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.35.16 (October 9, 2024) ##
+* FIX: Try to fix a case issue with MySQL and the lower_case_table_names setting.
+
 ## Version 2.35.15 (September 30, 2024) ##
 * FIX: Try to fix a table collation issue for atlet.
 
