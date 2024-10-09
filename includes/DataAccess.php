@@ -1381,6 +1381,9 @@ class ABJ_404_Solution_DataAccess {
         if ($f->strtolower($manually_fired) == 'true') {
             $manually_fired = true;
         }
+
+        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+        $upgradesEtc->createDatabaseTables(false);
         
         // delete the export file
         $tempFile = $abj404logic->getExportFilename();
