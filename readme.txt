@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.6
-Stable tag: 2.35.16
+Stable tag: 2.35.17
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -89,6 +89,9 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.35.17 (October 15, 2024) =
+* FIX: Don't throw an exception on the Options page when there are no log entries (for crzyhrse).
 
 = Version 2.35.16 (October 9, 2024) =
 * FIX: Try to fix a case issue with MySQL and the lower_case_table_names setting.
