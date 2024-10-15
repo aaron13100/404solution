@@ -2047,7 +2047,7 @@ class ABJ_404_Solution_DataAccess {
         $results = $wpdb->get_col($query);
 
         if (sizeof($results) == 0) {
-            throw new Exception("No results for query: " . esc_html($query));
+            return -1;
         }
         
         return intval($results[0]);

@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.35.17 (October 15, 2024) ##
+* FIX: Don't throw an exception on the Options page when there are no log entries (for crzyhrse).
+
 ## Version 2.35.16 (October 9, 2024) ##
 * FIX: Try to fix a case issue with MySQL and the lower_case_table_names setting.
 

@@ -1769,8 +1769,11 @@ class ABJ_404_Solution_View {
         $totalLogLines = $abj404dao->getLogsCount(0);
 
         $timeToDisplay = $abj404dao->getEarliestLogTimestamp();
-        $earliestLogDate = date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
-                    date('A', $timeToDisplay);
+        $earliestLogDate = 'N/A';
+        if ($timeToDisplay >= 0) {
+            $earliestLogDate = date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
+            date('A', $timeToDisplay);
+        }
         
         $selectedRemoveMatches = "";
         if ($options['remove_matches'] == '1') {
