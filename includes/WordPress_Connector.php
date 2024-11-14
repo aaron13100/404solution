@@ -40,9 +40,6 @@ class ABJ_404_Solution_WordPress_Connector {
         }
         
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
-        
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404logic->handleActionExport();
     }
 
     /** Include things necessary for ajax. */

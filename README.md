@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.18 (November 14, 2024) ##
+* FIX: Make sure only admin users can export redirects using the Tools page export function.
+
 ## Version 2.35.17 (October 15, 2024) ##
 * FIX: Don't throw an exception on the Options page when there are no log entries (for crzyhrse).
 
