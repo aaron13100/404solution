@@ -374,7 +374,7 @@ abstract class ABJ_404_Solution_Functions {
     static function deleteDirectoryRecursively($dir) {
     	// if the directory isn't a part of our plugin then don't do it.
     	if (strpos($dir, ABJ404_PATH) === false) {
-    		throw new Exception("Can't delete " . $dir);
+    		throw new Exception("Can't delete " . esc_html($dir));
     	}
 
     	// if it's already gone then we're done.
@@ -416,7 +416,7 @@ abstract class ABJ_404_Solution_Functions {
     	$dataSupplement = self::getDataSupplement($path, $appendExtraData);
         
         if (!file_exists($path)) {
-            throw new Exception("Error: Can't find file: " . $path);
+            throw new Exception("Error: Can't find file: " . esc_html($path));
         }
         
         $fileContents = file_get_contents($path);
@@ -426,7 +426,7 @@ abstract class ABJ_404_Solution_Functions {
         
         // if we can't read the file that way then try curl.
         if (!function_exists('curl_init')) {
-            throw new Exception("Error: Can't read file: " . $path .
+            throw new Exception("Error: Can't read file: " . esc_html($path) .
                     "\n   file_get_contents didn't work and curl is not installed.");
         }
         $ch = curl_init();
@@ -436,7 +436,7 @@ abstract class ABJ_404_Solution_Functions {
         curl_close($ch);
         
         if ($output == null) {
-            throw new Exception("Error: Can't read file, even with cURL: " . $path);
+            throw new Exception("Error: Can't read file, even with cURL: " . esc_html($path));
         }
         
         return $dataSupplement['prefix'] . $output . $dataSupplement['suffix'];

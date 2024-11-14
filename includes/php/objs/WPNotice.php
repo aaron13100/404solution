@@ -29,7 +29,7 @@ class ABJ_404_Solution_WPNotice {
             } else if ($f->strtolower($type) == 'error') {
                 $type = self::ERROR;
             } else {
-                throw new Exception("Invalid type passed to constructor (" . $type . "). Expected: " . 
+                throw new Exception("Invalid type passed to constructor (" . esc_html($type) . "). Expected: " . 
                     json_encode($VALID_TYPES));
             }
         }

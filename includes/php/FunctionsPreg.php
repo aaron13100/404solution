@@ -87,7 +87,7 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
         
         if ($charToUse == null) {
             throw new Exception("I can't find a valid delimiter character to use for the regular expression: "
-                    . $pattern);
+                    . esc_html($pattern));
         }
         
         return $charToUse;
