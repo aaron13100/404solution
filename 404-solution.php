@@ -9,8 +9,8 @@
 
 	Version: 2.35.18
 
-	License:     GPL2
-	License URI: https://www.gnu.org/licenses/gpl-2.0.html
+	License: GPL-3.0-or-later
+	License URI: https://www.gnu.org/licenses/gpl-3.0.html
 	Domain Path: /languages
 	Text Domain: 404-solution
 

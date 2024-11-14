@@ -398,7 +398,7 @@ class ABJ_404_Solution_DataAccess {
         }
         
         if ($exception != null) {
-            throw new Exception($exception);
+            throw $exception;
         }
     }
     
@@ -852,7 +852,7 @@ class ABJ_404_Solution_DataAccess {
         $results = $this->queryAndGetResults($query);
         
         if ($results['last_error'] != null && trim($results['last_error']) != '') {
-        	throw new \Exception("Error getting redirect count: " . $results['last_error']);
+        	throw new \Exception("Error getting redirect count: " . esc_html($results['last_error']));
         }
         $rows = $results['rows'];
         if (empty($rows)) {

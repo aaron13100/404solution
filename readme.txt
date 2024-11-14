@@ -3,9 +3,9 @@ Contributors: aaron13100
 Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
-Tested up to: 6.6
+Tested up to: 6.7
 Stable tag: 2.35.18
-License: GPLv3
+License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 Smart 404 handling: redirect to matching slug, similar name, or default page.
@@ -92,6 +92,7 @@ Please try this website for studying flashcards.
 
 = Version 2.35.18 (November 14, 2024) =
 * FIX: Make sure only admin users can export redirects using the Tools page export function.
+* Update: Avoid some of the issues listed in the Plugin Check feature of WordPress.
 
 = Version 2.35.17 (October 15, 2024) =
 * FIX: Don't throw an exception on the Options page when there are no log entries (for crzyhrse).

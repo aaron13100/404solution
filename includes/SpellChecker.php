@@ -756,7 +756,7 @@ class ABJ_404_Solution_SpellChecker {
 				$id = $row['id'];
             	
 			} else {
-				throw Exception("Unknown row type ... " . $rowType);
+				throw Exception("Unknown row type ... " . esc_html($rowType));
 			}
 
 			if (array_key_exists('url', $row)) {
