@@ -79,7 +79,7 @@ class ABJ_404_Solution_PluginLogic {
     	if (isset($current_user)) {
     		$current_user_name = $current_user->user_login;
     	}
-    	if ($current_user_name != null) {
+    	if ($current_user_name != null && $current_user_name != false) {
 	    	$check = false;
 	    	if (is_array($extraAdmins)) {
 	    		$extraAdmins = array_filter($extraAdmins,
@@ -876,7 +876,8 @@ class ABJ_404_Solution_PluginLogic {
     function handleActionExport() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
-        if ($abj404dao->getPostOrGetSanitize('action') == 'exportRedirects') {
+        if (($abj404dao->getPostOrGetSanitize('action') == 'exportRedirects') && $this->userIsPluginAdmin()) {
+            check_admin_referer('abj404_exportRedirects'); // this verifies the nonce
             $this->doExport();
         }
     }
@@ -911,6 +912,7 @@ class ABJ_404_Solution_PluginLogic {
 	    	header('Content-Length: ' . filesize($tempFile));
 	    	header("Content-Type: text/plain");
 	    	readfile($tempFile);
+            exit(); // avoid headers already sent error. avoid other things executing afterwards.
 	    	
     	} else {
     		$abj404logging = ABJ_404_Solution_Logging::getInstance();
