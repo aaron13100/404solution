@@ -91,22 +91,30 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 		// Fetch all tables starting with "abj404", case-insensitive
+		$dbName = esc_sql($wpdb->dbname);
 		$query = "SELECT table_name 
 			FROM information_schema.tables 
-			WHERE table_schema = '{$wpdb->dbname}' 
-			AND LOWER(table_name) LIKE '%abj404%'";	
+			WHERE table_schema = '{$dbName}' 
+			AND LOWER(table_name) LIKE '%abj404%'";
 		$results = $abj404dao->queryAndGetResults($query);
 		
 		foreach ($results['rows'] as $row) {
-			$tableName = $row['table_name'];
-			$lowercaseName = strtolower($tableName);
-	
-			// Check if the table name is already lowercase, skip if it is
-			if ($tableName !== $lowercaseName) {
-				// Rename the table to lowercase
-				$renameQuery = "RENAME TABLE `{$tableName}` TO `{$lowercaseName}`";
-				$abj404dao->queryAndGetResults($renameQuery);
-				$abj404logging->infoMessage("Renamed table {$tableName} to {$lowercaseName}\n");
+			$tableName = $row['table_name'] ?? $row['TABLE_NAME'];
+
+			if (!empty($tableName)) {
+				$lowercaseName = strtolower($tableName);
+		
+				// Check if the table name is already lowercase, skip if it is
+				if ($tableName !== $lowercaseName) {
+					// Rename the table to lowercase
+					$renameQuery = "RENAME TABLE `{$tableName}` TO `{$lowercaseName}`";
+					$abj404dao->queryAndGetResults($renameQuery, 
+						['ignore_errors' => ["already exists"]]);
+					$abj404logging->infoMessage("Renamed table {$tableName} to {$lowercaseName}\n");
+				}
+			} else {
+				$abj404logging->warn("I didn't find a table name in the results of this row: " . 
+					print_r($row, true));
 			}
 		}
 	}

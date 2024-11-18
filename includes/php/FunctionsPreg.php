@@ -16,6 +16,10 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
 	/** Use this to find a delimiter. 
      * @var array */
     private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
+
+    function ord($char) {
+        return ord($char);
+    }
     
     function strtolower($string) {
         return strtolower($string);

@@ -128,6 +128,8 @@ abstract class ABJ_404_Solution_Functions {
     	
     	return $firstPart . $lastPart;
     }
+
+    abstract function ord($char);
     
     abstract function strtolower($string);
     
