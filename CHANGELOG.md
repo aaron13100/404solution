@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.35.20 (November 18, 2024) ##
+* FIX: Resolved a security issue by no longer decoding query parameters when redirecting to a 404 page.
+
 ## Version 2.35.19 (November 18, 2024) ##
 * FIX: Try to fix logging issues caused by people that use latin1 as their database encoding (urlencode utf8mb4 characters when storing to the logs table and warn about it). (thanks to debug log file participants)
 * FIX: Avoid error messages when trying to assure that table names are lower case (probably introduced in 2.35.16).

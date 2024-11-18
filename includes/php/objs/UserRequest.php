@@ -76,9 +76,18 @@ class ABJ_404_Solution_UserRequest {
                     'urlToParse result: ' . $urlToParse);
             return false;
         }
-        // make things work with foreign languages.
+        // make things work with foreign languages while avoiding XSS issues.
         foreach ($urlParts as $key => $value) {
-            $urlParts[$key] = urldecode($value);
+            // Decode only if necessary, then sanitize and encode output
+            if ($key === 'query') {
+                // For query strings, sanitize each key-value pair
+                parse_str($value, $queryArray);
+                $safeQueryArray = array_map('sanitize_text_field', $queryArray);
+                $urlParts[$key] = http_build_query($safeQueryArray);
+            } else {
+                // Sanitize text parts like paths
+                $urlParts[$key] = sanitize_text_field($value);
+            }
         }
         
         // remove a pointless trailing /amp

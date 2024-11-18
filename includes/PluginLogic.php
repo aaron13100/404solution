@@ -2000,8 +2000,11 @@ class ABJ_404_Solution_PluginLogic {
     	$f = ABJ_404_Solution_Functions::getInstance();
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
     	
-    	$commentPartAndQueryPart = $this->getCommentPartAndQueryPartOfRequest();
-    	$finalDestination = $location . $commentPartAndQueryPart;
+        $commentPartAndQueryPart = $this->getCommentPartAndQueryPartOfRequest();
+        // Sanitize and encode the base location and query parts
+        $sanitizedLocation = esc_url_raw($location); // Ensure the base URL is safe
+        $sanitizedQueryPart = esc_html($commentPartAndQueryPart); // Encode the query part for safe output
+        $finalDestination = $sanitizedLocation . $sanitizedQueryPart;
         
     	$previousRequest = $this->readCookieWithPreviousRqeuestShort();
     	$finalDestNoHome = $f->substr($finalDestination, $f->strpos($finalDestination, '://') + 3);
