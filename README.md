@@ -88,6 +88,10 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.19 (November 18, 2024) ##
+* FIX: Try to fix logging issues caused by people that use latin1 as their database encoding (urlencode utf8mb4 characters when storing to the logs table and warn about it). (thanks to debug log file participants)
+* FIX: Avoid error messages when trying to assure that table names are lower case (probably introduced in 2.35.16).
+
 ## Version 2.35.18 (November 14, 2024) ##
 * FIX: Make sure only admin users can export redirects using the Tools page export function.
 * Update: Avoid some of the issues listed in the Plugin Check feature of WordPress.

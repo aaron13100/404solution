@@ -1207,14 +1207,39 @@ class ABJ_404_Solution_DataAccess {
      * @param string $matchReason
      * @param string $requestedURLDetail the exact URL that was requested, for cases when a regex URL was matched.
      */
-    function logRedirectHit($requestedURL, $action, $matchReason, $requestedURLDetail = null) {
+    function logRedirectHit($requested_url, $action, $matchReason, $requestedURLDetail = null) {
+        global $wpdb;
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
-        
+        $logTableName = $this->doTableNameReplacements("{wp_abj404_logsv2}");
+
         $now = time();
 
-        $cleanedRequestedURL = $this->custom_sql_escape($requestedURL);
+        // if the database can't handle utf8 characters then convert them to latin1.
+        try {
+            $getCharsetQuery = $wpdb->prepare("SELECT character_set_name as charset_name \n " .
+                "FROM information_schema.columns \n " .
+                "WHERE lower(table_name) = lower(%s) \n " .
+                "AND lower(column_name) = lower(%s) ",
+                $logTableName, 'requested_url');
+
+            $resultArray = $wpdb->get_results($getCharsetQuery, ARRAY_A);
+            if (!empty($resultArray)) {
+                $charsetFromDB = $resultArray[0]['charset_name'] ?? $resultArray[0]['CHARSET_NAME'];
+
+                if (strtolower($charsetFromDB) != 'utf8mb4') {
+                    // $requested_url = urlencode($requested_url);
+                    $requested_url = $this->selectivelyURLEncode($requested_url);
+                    $abj404logging->warn("The logs table is inconsistent because your character encoding doesn't support utf8mb4 characters.");
+                }
+            }
+        } catch (Exception $e) {
+            // not so important.
+            $abj404logging->debugMessage(__FUNCTION__ . 
+                " error. Issue getting character set for table: " . $logTableName . 
+                ", column: requested_url. Error message: " . $e->getMessage());                
+        }
 
         // no nonce here because redirects are not user generated.
 
@@ -1240,15 +1265,13 @@ class ABJ_404_Solution_DataAccess {
         
         // we have to know what to set for the $minLogID value
         $minLogID = false;
-        $query = "select id from {wp_abj404_logsv2}" . 
-                " where CAST(requested_url AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = " . 
-                "'" . esc_sql($cleanedRequestedURL) . "' limit 1";
-        $results = $this->queryAndGetResults($query);
-        $rows = $results['rows'];
-        if (is_array($rows)) {
-        	if (empty($rows)) {
-        		$minLogID = true;
-        	}
+        $checkMinIDQuery = $wpdb->prepare("SELECT id FROM `" . $logTableName . "` \n " .
+            "WHERE CAST(requested_url AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = %s \n " .
+            "LIMIT 1", $requested_url);
+        $checkMinIDQueryResults = $wpdb->get_results($checkMinIDQuery, ARRAY_A);
+    
+        if (empty($checkMinIDQueryResults)) {
+            $minLogID = true;
         }
             
         // ------------ debug message begin
@@ -1271,39 +1294,44 @@ class ABJ_404_Solution_DataAccess {
         // insert the username into the lookup table and get the ID from the lookup table.
         $usernameLookupID = $this->insertLookupValueAndGetID($current_user_name);
         
-        $logTableName = $this->doTableNameReplacements("{wp_abj404_logsv2}");
-
         $this->insertAndGetResults($logTableName, array(
             'timestamp' => esc_sql($now),
             'user_ip' => $ipAddressToSave,
             'referrer' => esc_sql($referer),
             'dest_url' => esc_sql($action),
-            'requested_url' => esc_sql($cleanedRequestedURL),
+            'requested_url' => esc_sql($requested_url),
             'requested_url_detail' => esc_sql($requestedURLDetail),
             'username' => esc_sql($usernameLookupID),
             'min_log_id' => $minLogID,
         ));
     }
 
-    /** The wordpress esc_sql doesn't seem to work sometimes so I added this. */
-    function custom_sql_escape($string) {
-        if (!is_string($string)) {
-            return $string;
-        }
-    
-        // Convert string to hexadecimal representation
-        $hex_string = bin2hex($string);
-    
-        // Process the hexadecimal string to escape problematic characters
-        $escaped_string = preg_replace_callback('/(..)/', function($matches) {
-            $char = chr(hexdec($matches[1]));
-            if (ord($char) <= 31 || ord($char) == 127 || (ord($char) >= 128 && ord($char) <= 159)) {
-                return '\\x' . strtoupper(dechex(ord($char)));
+    /**
+     * This function selectively urlencodes a string. Characters outside of the latin1
+     * range (0-255) are urlencoded, while characters inside the range are kept as is.
+     * @param string $string The string to be selectively urlencoded.
+     * @return string The urlencoded string.
+     */
+    function selectivelyURLEncode($string) {
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $encodedString = '';
+        
+        // Iterate through each character in the string
+        for ($i = 0; $i < strlen($string); $i++) {
+            $char = $string[$i];
+            $ord = $f->ord($char);
+            
+            // If the character is outside of latin1 range or is not representable
+            if ($ord > 255) {
+                // Convert to hexadecimal representation
+                $encodedString .= urlencode($char);
+            } else {
+                // Keep the original character if it's in the latin1 range
+                $encodedString .= $char;
             }
-            return $char;
-        }, $hex_string);
-    
-        return $escaped_string;
+        }
+        
+        return $encodedString;
     }    
     
     /** Insert a value into the lookup table and return the ID of the value. 

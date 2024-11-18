@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.7
-Stable tag: 2.35.18
+Stable tag: 2.35.19
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -89,6 +89,10 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.35.19 (November 18, 2024) =
+* FIX: Try to fix logging issues caused by people that use latin1 as their database encoding (urlencode utf8mb4 characters when storing to the logs table and warn about it). (thanks to debug log file participants)
+* FIX: Avoid error messages when trying to assure that table names are lower case (probably introduced in 2.35.16).
 
 = Version 2.35.18 (November 14, 2024) =
 * FIX: Make sure only admin users can export redirects using the Tools page export function.

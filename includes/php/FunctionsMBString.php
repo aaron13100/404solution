@@ -2,6 +2,10 @@
 
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
+
+    function ord($char) {
+        return mb_ord($char);
+    }
     
     function strtolower($string) {
     	if ($string == null) {
