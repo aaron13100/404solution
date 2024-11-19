@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.21 (November 19, 2024) ##
+* FIX: Make sure initializing files are included when necessary in PluginLogic.php since JetPack seems to be including that file early, by itself, without loading the plugin correctly for some reason.
+
 ## Version 2.35.20 (November 18, 2024) ##
 * FIX: Resolved a security issue by no longer decoding query parameters when redirecting to a 404 page.
 

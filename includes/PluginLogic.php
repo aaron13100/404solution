@@ -2,7 +2,13 @@
 
 /* the glue that holds it together / everything else. */
 
-class ABJ_404_Solution_PluginLogic {
+/* these should already be included but I'm including them anyway because JetPack sometimes references
+this file without loading the plugin correctly. This hopefully avoids the error some people are getting. 
+ * https://wordpress.org/support/topic/404-solution-plugin-uncaught-error/#post-18145903. */
+ require_once(plugin_dir_path(__FILE__) . "../404-solution.php");
+ require_once(plugin_dir_path(__FILE__) . "Loader.php");
+ 
+ class ABJ_404_Solution_PluginLogic {
 	
 	private $f = null;
 	
@@ -2005,7 +2011,7 @@ class ABJ_404_Solution_PluginLogic {
         $sanitizedLocation = esc_url_raw($location); // Ensure the base URL is safe
         $sanitizedQueryPart = esc_html($commentPartAndQueryPart); // Encode the query part for safe output
         $finalDestination = $sanitizedLocation . $sanitizedQueryPart;
-        
+
     	$previousRequest = $this->readCookieWithPreviousRqeuestShort();
     	$finalDestNoHome = $f->substr($finalDestination, $f->strpos($finalDestination, '://') + 3);
     	$finalDestNoHome = $f->substr($finalDestNoHome, $f->strpos($finalDestNoHome, '/'));
