@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.35.23 (November 20, 2024) ##
+* FIX: Hopefully avoid a requested_url cannot be null for query error.
+
 ## Version 2.35.22 (November 20, 2024) ##
 * FIX: Don't load classes unless they're necessary to save memory and execution time on all pages.
 

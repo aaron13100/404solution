@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.7
-Stable tag: 2.35.22
+Stable tag: 2.35.23
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -89,6 +89,9 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.35.23 (November 20, 2024) =
+* FIX: Hopefully avoid a requested_url cannot be null for query error.
 
 = Version 2.35.22 (November 20, 2024) =
 * FIX: Don't load classes unless they're necessary to save memory and execution time on all pages.

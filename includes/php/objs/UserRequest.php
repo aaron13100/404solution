@@ -82,11 +82,15 @@ class ABJ_404_Solution_UserRequest {
             if ($key === 'query') {
                 // For query strings, sanitize each key-value pair
                 parse_str($value, $queryArray);
-                $safeQueryArray = array_map('sanitize_text_field', $queryArray);
+                $safeQueryArray = array_map([$f, 'escapeForXSS'], $queryArray);
+                $safeQueryArray = array_map([$f, 'selectivelyURLEncode'], $safeQueryArray);
+                $safeQueryArray = array_map('sanitize_text_field', $safeQueryArray);
+
                 $urlParts[$key] = http_build_query($safeQueryArray);
             } else {
                 // Sanitize text parts like paths
-                $urlParts[$key] = sanitize_text_field($value);
+                $urlParts[$key] = $f->escapeForXSS($value);
+                $urlParts[$key] = $f->selectivelyURLEncode($value);
             }
         }
         
@@ -210,7 +214,7 @@ class ABJ_404_Solution_UserRequest {
     		return '';
     	}
     	
-        return $this->urlParts['path'];
+        return $this->urlParts['path'] ?? '';
     }
     
     function getPathWithSortedQueryString() {
@@ -224,7 +228,7 @@ class ABJ_404_Solution_UserRequest {
         // otherwise various queries break.
         $requestedURL = $f->urlencodeEmojis($requestedURL);
 
-        return $requestedURL;
+        return $requestedURL ?? '';
     }
     
     /**  http://s.com/404solution-site/hello-world/comment-page-2/#comment-26?query_info=true becomes
