@@ -1220,17 +1220,17 @@ class ABJ_404_Solution_DataAccess {
         try {
             $getCharsetQuery = $wpdb->prepare("SELECT character_set_name as charset_name \n " .
                 "FROM information_schema.columns \n " .
-                "WHERE lower(table_name) = lower(%s) \n " .
+                "WHERE lower(table_schema) = lower(%s) \n " .
+                "AND lower(table_name) = lower(%s) \n " .
                 "AND lower(column_name) = lower(%s) ",
-                $logTableName, 'requested_url');
+                DB_NAME, $logTableName, 'requested_url');
 
             $resultArray = $wpdb->get_results($getCharsetQuery, ARRAY_A);
             if (!empty($resultArray)) {
                 $charsetFromDB = $resultArray[0]['charset_name'] ?? $resultArray[0]['CHARSET_NAME'];
 
-                if (strtolower($charsetFromDB) != 'utf8mb4') {
-                    // $requested_url = urlencode($requested_url);
-                    $requested_url = $this->selectivelyURLEncode($requested_url);
+                if (strpos(strtolower($charsetFromDB), 'utf8') === false) {
+                    $requested_url = $f->selectivelyURLEncode($requested_url);
                     $abj404logging->warn("The logs table is inconsistent because your character encoding doesn't support utf8mb4 characters.");
                 }
             }
@@ -1306,34 +1306,6 @@ class ABJ_404_Solution_DataAccess {
         ));
     }
 
-    /**
-     * This function selectively urlencodes a string. Characters outside of the latin1
-     * range (0-255) are urlencoded, while characters inside the range are kept as is.
-     * @param string $string The string to be selectively urlencoded.
-     * @return string The urlencoded string.
-     */
-    function selectivelyURLEncode($string) {
-        $f = ABJ_404_Solution_Functions::getInstance();
-        $encodedString = '';
-        
-        // Iterate through each character in the string
-        for ($i = 0; $i < strlen($string); $i++) {
-            $char = $string[$i];
-            $ord = $f->ord($char);
-            
-            // If the character is outside of latin1 range or is not representable
-            if ($ord > 255) {
-                // Convert to hexadecimal representation
-                $encodedString .= urlencode($char);
-            } else {
-                // Keep the original character if it's in the latin1 range
-                $encodedString .= $char;
-            }
-        }
-        
-        return $encodedString;
-    }    
-    
     /** Insert a value into the lookup table and return the ID of the value. 
      * @param string $valueToInsert
      */

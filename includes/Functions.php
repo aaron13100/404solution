@@ -17,6 +17,70 @@ abstract class ABJ_404_Solution_Functions {
         
         return self::$instance;
     }
+
+    /**
+     * This function selectively urlencodes a string. Characters outside of the latin1
+     * range (0-255) are urlencoded, while characters inside the range are kept as is.
+     * @param string $string The string to be selectively urlencoded.
+     * @return string The urlencoded string.
+     */
+    function selectivelyURLEncode($string) {
+        $f = ABJ_404_Solution_Functions::getInstance();
+
+        if (!is_string($string)) {
+            $string = strval($string);
+        }
+
+        // Define replacements for unsafe characters
+        $replacements = [
+            '<' => '%3C', // URL-encode <
+            '>' => '%3E', // URL-encode >
+            '"' => '%22', // URL-encode "
+            "'" => '%27', // URL-encode '
+            '`' => '%60', // URL-encode `
+            '{' => '%7B', // URL-encode {
+            '}' => '%7D', // URL-encode }
+            '(' => '%28', // URL-encode (
+            ')' => '%29', // URL-encode )
+        ];
+        // Perform replacements
+        $string = strtr($string, $replacements);
+        
+        $encodedString = '';
+        // Iterate through each character in the string
+        for ($i = 0; $i < strlen($string); $i++) {
+            $char = $string[$i];
+            $ord = $f->ord($char);
+            
+            // If the character is outside of latin1 range or is not representable
+            if ($ord > 255) {
+                // Convert to hexadecimal representation
+                $encodedString .= urlencode($char);
+            } else {
+                // Keep the original character if it's in the latin1 range
+                $encodedString .= $char;
+            }
+        }
+        
+        return $encodedString;
+    }
+
+    /** Escape a string to avoid Cross Site Scripting (XSS) attacks by encoding unsafe HTML characters.
+     * @param string $string The string to be escaped.
+     * @return string The escaped string.
+     */
+        function escapeForXSS($value) {
+            if (!is_string($value)) {
+                $value = strval($value);
+            }
+        
+            // Remove control characters and other unsafe characters
+            $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value ?? '');
+            // Optionally, remove any other characters you consider unsafe
+            $value = preg_replace('/[<>"\'`{}()]/u', '', $value ?? '');
+            
+            return $value;
+        }
     
     /** Only URL encode emojis from a string.  
      * @param string $url
