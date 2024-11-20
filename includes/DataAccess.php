@@ -2088,21 +2088,15 @@ class ABJ_404_Solution_DataAccess {
      * @return string
      */
     function getPostOrGetSanitize($name, $defaultValue = null) {
-        if (array_key_exists($name, $_GET) && isset($_GET[$name])) {
-            if (is_array($_GET[$name])) {
-                return array_map('sanitize_text_field', $_GET[$name]);
+        $returnValue = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);
+        if ($returnValue !== null) {
+            if (is_array($returnValue)) {
+                $returnValue = array_map('sanitize_text_field', $returnValue);
+            } else {
+                $returnValue = sanitize_text_field($returnValue);
             }
-            return sanitize_text_field($_GET[$name]);
-
-        } else if (array_key_exists($name, $_POST) && isset($_POST[$name])) {
-            if (is_array($_POST[$name])) {
-                return array_map('sanitize_text_field', $_POST[$name]);
-            }
-            return sanitize_text_field($_POST[$name]);
-
-        } else {
-            return $defaultValue;
         }
+        return $returnValue ?? $defaultValue;
     }
 
     /** 
