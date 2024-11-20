@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.22 (November 20, 2024) ##
+* FIX: Don't load classes unless they're necessary to save memory and execution time on all pages.
+
 ## Version 2.35.21 (November 19, 2024) ##
 * FIX: Make sure initializing files are included when necessary in PluginLogic.php since JetPack seems to be including that file early, by itself, without loading the plugin correctly for some reason.
 
