@@ -14,7 +14,7 @@ class ABJ_404_Solution_DataAccess {
     const KEY_REDIRECTS_FOR_VIEW_COUNT = 'abj404_redirects-for-view-count';
     
     private static $instance = null;
-    
+
     public static function getInstance() {
         if (self::$instance == null) {
             self::$instance = new ABJ_404_Solution_DataAccess();
@@ -175,11 +175,18 @@ class ABJ_404_Solution_DataAccess {
         $ignoreErrorStrings = array();
         
         $options = array_merge(array('log_errors' => true, 
-            'log_too_slow' => true, 'ignore_errors' => array()), $options);
+            'log_too_slow' => true, 'ignore_errors' => array(),
+            'query_params' => array()), 
+            $options);
         
        	$ignoreErrorStrings = $options['ignore_errors'];
+        $queryParameters = $options['query_params'];
         
         $query = $this->doTableNameReplacements($query);
+
+        if (!empty($queryParameters)) {
+            $query = $wpdb->prepare($query, $queryParameters);
+        }        
         
         $timer = new ABJ_404_Solution_Timer();
         
@@ -548,6 +555,8 @@ class ABJ_404_Solution_DataAccess {
     }
     
     /** Insert data into the database.
+     * Create my own insert statement because wordpress messes it up when the field
+     * length is too long. this also returns the correct value for the last_query.
      * @global type $wpdb
      * @param string $tableName
      * @param array $dataToInsert
@@ -555,46 +564,36 @@ class ABJ_404_Solution_DataAccess {
      */
     function insertAndGetResults($tableName, $dataToInsert) {
         $tableName = $this->doTableNameReplacements($tableName);
-        
-        // create my own insert statement because wordpress messes it up when the field
-        // length is too long. this also returns the correct value for the last_query.
-        $statement = '';
-        $colNames = '';
-        $values = '';
-        
-        $statement .= 'insert into `' . $tableName . "` \n(";
-        
-        // get the data types
-        foreach ($dataToInsert as $key => $dataItem) {
-            if ($values != '') {
-                $values .= ', ';
-            }
-            if ($colNames != '') {
-                $colNames .= ', ';
-            }
-            $colNames .= '`' . $key . '`';
-            
-            $currentDataType = gettype($dataItem);
-            if ($currentDataType == 'double' || $currentDataType == 'integer') {
-                $values .= $dataItem;
-                
-            } else if ($currentDataType == 'boolean') {
-                $values .= $dataItem ? 'true' : 'false';
-                
+    
+        $columns = array();
+        $placeholders = array();
+        $values = array();
+    
+        foreach ($dataToInsert as $column => $value) {
+            $columns[] = '`' . $column . '`';
+    
+            if ($value === null) {
+                $placeholders[] = 'NULL';
+                // Do not add null values to $values array
             } else {
-                // empty strings are stored as null in the database.
-                if ($dataItem == null || mb_strlen($dataItem) == 0) {
-                    $values .= 'null';
-                    
+                $currentDataType = gettype($value);
+                if ($currentDataType == 'integer' || $currentDataType == 'double') {
+                    $placeholders[] = '%d';
+                    $values[] = $value;
+                } elseif ($currentDataType == 'boolean') {
+                    $placeholders[] = '%d';
+                    $values[] = $value ? 1 : 0;
                 } else {
-                    $values .= "'" . esc_sql($dataItem) . "'";
+                    $placeholders[] = '%s';
+                    $values[] = (string)$value;
                 }
             }
         }
-        $statement .= $colNames . ") \nvalues \n(" . $values . ")\n";
-        
-        return $this->queryAndGetResults($statement);
-    }    
+    
+        $sql = 'INSERT INTO `' . $tableName . '` (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
+    
+        return $this->queryAndGetResults($sql, ['query_params' => $values]);
+    }
     
    /**
     * @global type $wpdb
@@ -1246,22 +1245,28 @@ class ABJ_404_Solution_DataAccess {
 
         $options = $abj404logic->getOptions(true);
         $referer = wp_get_referer();
-        if ($referer != null) {
+        if ($referer !== null && $referer !== false) {
             $referer = esc_url_raw($referer);
             // this length matches the maximum length of the data field on the logs table.
         	$referer = substr($referer, 0, 512);
+        } else {
+            $referer = '';
         }
         $current_user = wp_get_current_user();
         $current_user_name = null;
         if (isset($current_user)) {
             $current_user_name = $current_user->user_login;
         }
-        $ipAddressToSave = esc_sql($_SERVER['REMOTE_ADDR']);
+        $ipAddressToSave = $_SERVER['REMOTE_ADDR'];
+        $ipAddressToSave = filter_var($ipAddressToSave, FILTER_VALIDATE_IP) ? 
+            esc_sql($ipAddressToSave) : '';
         if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
         	$ipAddressToSave = $f->md5lastOctet($ipAddressToSave);
         }
         if (!empty($ipAddressToSave)) {
             $ipAddressToSave = substr($ipAddressToSave, 0, 512);
+        } else {
+            $ipAddressToSave = '(Unknown)';
         }
         
         // we have to know what to set for the $minLogID value
@@ -1274,6 +1279,9 @@ class ABJ_404_Solution_DataAccess {
         if (empty($checkMinIDQueryResults)) {
             $minLogID = true;
         }
+
+        // extra escaping suggestions from chatgpt
+        $action = esc_url_raw($action);
             
         // ------------ debug message begin
         $helperFunctions = ABJ_404_Solution_Functions::getInstance();
@@ -1296,13 +1304,13 @@ class ABJ_404_Solution_DataAccess {
         $usernameLookupID = $this->insertLookupValueAndGetID($current_user_name);
         
         $this->insertAndGetResults($logTableName, array(
-            'timestamp' => esc_sql($now),
+            'timestamp' => $now,
             'user_ip' => $ipAddressToSave,
-            'referrer' => esc_sql($referer),
-            'dest_url' => esc_sql($action),
-            'requested_url' => esc_sql($requested_url),
-            'requested_url_detail' => esc_sql($requestedURLDetail),
-            'username' => esc_sql($usernameLookupID),
+            'referrer' => $referer,
+            'dest_url' => $action,
+            'requested_url' => esc_url_raw($requested_url),
+            'requested_url_detail' => $requestedURLDetail,
+            'username' => $usernameLookupID,
             'min_log_id' => $minLogID,
         ));
     }

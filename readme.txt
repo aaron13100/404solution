@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.7
-Stable tag: 2.35.24
+Stable tag: 2.35.25
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -89,6 +89,10 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.35.25 (November 22, 2024) =
+* FIX: Hopefully fix the "Could not perform query because it contains invalid data" issue.
+* FIX: Account for arrays when escaping parts of a URL.
 
 = Version 2.35.24 (November 22, 2024) =
 * FIX: Hopefully fix a case issue with MySQL and the lower_case_table_names setting. (thanks lonesync)

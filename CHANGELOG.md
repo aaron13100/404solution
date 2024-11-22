@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.35.25 (November 22, 2024) ##
+* FIX: Hopefully fix the "Could not perform query because it contains invalid data" issue.
+* FIX: Account for arrays when escaping parts of a URL.
+
 ## Version 2.35.24 (November 22, 2024) ##
 * FIX: Hopefully fix a case issue with MySQL and the lower_case_table_names setting. (thanks lonesync)
 
