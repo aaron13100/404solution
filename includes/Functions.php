@@ -69,19 +69,23 @@ abstract class ABJ_404_Solution_Functions {
      * @param string $string The string to be escaped.
      * @return string The escaped string.
      */
-        function escapeForXSS($value) {
-            if (!is_string($value)) {
-                $value = strval($value);
-            }
-        
-            // Remove control characters and other unsafe characters
-            $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value ?? '');
-            // Optionally, remove any other characters you consider unsafe
-            $value = preg_replace('/[<>"\'`{}()]/u', '', $value ?? '');
-            
-            return $value;
+    function escapeForXSS($value) {
+        if (is_array($value)) {
+            // Recursively sanitize each element in the array
+            return array_map([$this, 'escapeForXSS'], $value);
+        } elseif (!is_string($value)) {
+            // Convert non-string values to strings
+            $value = strval($value);
         }
     
+        // Remove control characters and other unsafe characters
+        $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value ?? '');
+        // Remove any other characters you consider unsafe
+        $value = preg_replace('/[<>"\'`{}()]/u', '', $value ?? '');
+        
+        return $value;
+    }
+        
     /** Only URL encode emojis from a string.  
      * @param string $url
      * @return string
