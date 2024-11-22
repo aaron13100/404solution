@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.35.24 (November 22, 2024) ##
+* FIX: Hopefully fix a case issue with MySQL and the lower_case_table_names setting. (thanks lonesync)
+
 ## Version 2.35.23 (November 20, 2024) ##
 * FIX: Hopefully avoid a requested_url cannot be null for query error.
 

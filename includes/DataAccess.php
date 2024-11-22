@@ -145,7 +145,8 @@ class ABJ_404_Solution_DataAccess {
         // custom table replacements.
         // for some strings (/404solution-site/%BA%D0%25/) the mb_ereg_replace doesn't work.
         $fpreg = ABJ_404_Solution_FunctionsPreg::getInstance();
-        $query = $fpreg->regexReplace('[{]wp_abj404_(.*?)[}]', $wpdb->prefix . "abj404_\\1", $query);
+        $query = $fpreg->regexReplace('[{]wp_abj404_(.*?)[}]', 
+            strtolower($wpdb->prefix) . "abj404_\\1", $query);
         
         return $query;
     }
