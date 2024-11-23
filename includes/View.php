@@ -246,8 +246,8 @@ class ABJ_404_Solution_View {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         global $abj404view;
 
-        $redirects = $wpdb->prefix . "abj404_redirects";
-        $logs = $wpdb->prefix . "abj404_logsv2";
+        $redirects = $abj404dao->doTableNameReplacements("{wp_abj404_redirects}");
+        $logs = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
         $hr = "style=\"border: 0px; margin-bottom: 0px; padding-bottom: 4px; border-bottom: 1px dotted #DEDEDE;\"";
 
         $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d"; // . ABJ404_STATUS_AUTO;

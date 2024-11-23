@@ -129,14 +129,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @param string $tableName
      * @param string $colName
      */
-    function hanldeSpecificCases($tableName, $colName) {
+    function handleSpecificCases($tableName, $colName) {
     	if (strpos($tableName, 'abj404_logsv2') !== false && $colName == 'min_log_id') {
     		global $wpdb;
-    		$logsTable = $wpdb->prefix . 'abj404_logsv2';
     		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     		$f = ABJ_404_Solution_Functions::getInstance();
     		$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
-    		$query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
     		$abj404dao->queryAndGetResults($query);
     	}
     	if (strpos($tableName, 'abj404_permalink_cache') !== false && $colName == 'url_length') {
@@ -148,13 +146,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
     
     function runInitialCreateTables() {
+    	$f = ABJ_404_Solution_Functions::getInstance();
+		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	global $wpdb;
-    	$redirectsTable = $wpdb->prefix . "abj404_redirects";
-    	$logsTable = $wpdb->prefix . 'abj404_logsv2';
-    	$lookupTable = $wpdb->prefix . 'abj404_lookup';
-    	$permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-    	$spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$redirectsTable = $abj404dao->doTableNameReplacements("{wp_abj404_redirects}");
+    	$logsTable = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
+    	$lookupTable = $abj404dao->doTableNameReplacements("{wp_abj404_lookup}");
+    	$permalinkCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
+    	$spellingCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
         $abj404dao->queryAndGetResults($query);
@@ -179,13 +178,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     
     function createIndexes() {
     	global $wpdb;
-    	$redirectsTable = $wpdb->prefix . "abj404_redirects";
-    	$logsTable = $wpdb->prefix . 'abj404_logsv2';
-    	$lookupTable = $wpdb->prefix . 'abj404_lookup';
-    	$permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-    	$spellingCacheTable = $wpdb->prefix . 'abj404_spelling_cache';
     	$f = ABJ_404_Solution_Functions::getInstance();
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$redirectsTable = $abj404dao->doTableNameReplacements("{wp_abj404_redirects}");
+    	$logsTable = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
+    	$lookupTable = $abj404dao->doTableNameReplacements("{wp_abj404_lookup}");
+    	$permalinkCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
+    	$spellingCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
     	
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
     	$query = $f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
@@ -464,7 +463,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     			$abj404logging->infoMessage("I added a column: " . $createColStatement);
     		}
     		
-    		$this->hanldeSpecificCases($tableName, $colName);
+    		$this->handleSpecificCases($tableName, $colName);
     	}
     }
     
@@ -481,7 +480,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	$result = $abj404dao->getTableEngines();
-    	$logsTable = $wpdb->prefix . "abj404_logsv2";
+    	$logsTable = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
     	
     	// if any rows are found then update the tables.
     	if (array_key_exists('rows', $result) && !empty($result['rows'])) {
@@ -535,11 +534,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         
         $collationNeedsUpdating = false;
         
-        $redirectsTable = $wpdb->prefix . "abj404_redirects";
-        $logsTable = $wpdb->prefix . "abj404_logsv2";
-        $lookupTable = $wpdb->prefix . "abj404_lookup";
-        $permalinkCacheTable = $wpdb->prefix . "abj404_permalink_cache";
-        $spellingCacheTable = $wpdb->prefix . "abj404_spelling_cache";
+        $redirectsTable = $abj404dao->doTableNameReplacements("{wp_abj404_redirects}");
+        $logsTable = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
+        $lookupTable = $abj404dao->doTableNameReplacements("{wp_abj404_lookup}");
+        $permalinkCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
+        $spellingCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
         $postsTable = $wpdb->prefix . 'posts';
         
         $abjTableNames = array($redirectsTable, $logsTable, $lookupTable, $permalinkCacheTable, $spellingCacheTable);

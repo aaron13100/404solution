@@ -5,4 +5,4 @@ select  distinct
 
 from    information_schema.tables AS tb
 
-where   lower(table_name) like '{wp_prefix}abj404%'
+where   lower(table_name) like lower('{wp_prefix_lower}abj404%')

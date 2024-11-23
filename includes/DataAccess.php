@@ -111,7 +111,7 @@ class ABJ_404_Solution_DataAccess {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         $oldTable = $wpdb->prefix . 'wbz404_redirects';
-        $newTable = $wpdb->prefix . 'abj404_redirects';
+        $newTable = $this->doTableNameReplacements('{wp_abj404_redirects}');
         // wp_wbz404_redirects -- old table
         // wp_abj404_redirects -- new table
         
@@ -131,16 +131,16 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         $f = ABJ_404_Solution_Functions::getInstance();
         
-        $repacements = array();
+        $replacements = array();
         foreach ($wpdb->tables as $tableName) {
-            $repacements['{wp_' . $tableName . '}'] = $wpdb->prefix . $tableName;
+            $replacements['{wp_' . $tableName . '}'] = $wpdb->prefix . $tableName;
         }
-        $repacements['{wp_users}'] = $wpdb->users;
-        $repacements['{wp_prefix}'] = $wpdb->prefix;
-        
+        $replacements['{wp_users}'] = $wpdb->users;
+        $replacements['{wp_prefix}'] = $wpdb->prefix;
+        $replacements['{wp_prefix_lower}'] = $f->strtolower($wpdb->prefix);
         
         // wp database table replacements
-        $query = $f->str_replace(array_keys($repacements), array_values($repacements), $query);
+        $query = $f->str_replace(array_keys($replacements), array_values($replacements), $query);
         
         // custom table replacements.
         // for some strings (/404solution-site/%BA%D0%25/) the mb_ereg_replace doesn't work.
@@ -186,7 +186,7 @@ class ABJ_404_Solution_DataAccess {
 
         if (!empty($queryParameters)) {
             $query = $wpdb->prepare($query, $queryParameters);
-        }        
+        }
         
         $timer = new ABJ_404_Solution_Timer();
         
@@ -433,17 +433,15 @@ class ABJ_404_Solution_DataAccess {
     function truncatePermalinkCacheTable() {
         global $wpdb;
        
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-        $query = "truncate table " . $permalinkCacheTable;
+        $query = "truncate table {wp_abj404_permalink_cache}";
         $this->queryAndGetResults($query);
     }
     
     function removeFromPermalinkCache($post_id) {
         global $wpdb;
        
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-        $query = "delete from " . $permalinkCacheTable . " where id = '" . $post_id . "'";
-        $this->queryAndGetResults($query);
+        $query = "delete from {wp_abj404_permalink_cache} where id = %d";
+        $this->queryAndGetResults($query, array('query_params' => array($post_id)));
     }
     
     function getIDsNeededForPermalinkCache() {
@@ -639,8 +637,7 @@ class ABJ_404_Solution_DataAccess {
        $abj404logging = ABJ_404_Solution_Logging::getInstance();
        
        // we have to analyze the table first for the query to be valid.
-       $analyzeQuery = "OPTIMIZE TABLE {wp_abj404_logsv2}";
-       $result = $this->queryAndGetResults($analyzeQuery);
+       $result = $this->queryAndGetResults("OPTIMIZE TABLE {wp_abj404_logsv2}");
 
        if ($result['last_error'] != '') {
            $abj404logging->errorMessage("Error: " . esc_html($result['last_error']));
@@ -1361,8 +1358,8 @@ class ABJ_404_Solution_DataAccess {
         // no nonce here because this action is not always user generated.
 
         if ($cleanedID >= 0 && is_numeric($id)) {
-            $queryRedirects = $wpdb->prepare("delete from " . $wpdb->prefix . "abj404_redirects where id = %d", $cleanedID);
-            $wpdb->query($queryRedirects);
+            $query = "delete from {wp_abj404_redirects} where id = %d";
+            $this->queryAndGetResults($query, array('query_params' => array($cleanedID)));
         }
     }
 
