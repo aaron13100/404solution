@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.7
-Stable tag: 2.35.25
+Stable tag: 2.36.1
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -89,6 +89,9 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.36.1 (November 23, 2024) =
+* FIX: Finalize fixes for case sensitive lower_case_table_names settings.
 
 = Version 2.35.25 (November 22, 2024) =
 * FIX: Hopefully fix the "Could not perform query because it contains invalid data" issue.

@@ -534,7 +534,7 @@ class ABJ_404_Solution_PluginLogic {
 
         // move to the new log table
         if (version_compare($currentDBVersion, '1.8.0') < 0) {
-            $query = "SHOW TABLES LIKE '" . $wpdb->prefix . 'abj404_logs' . "'";
+            $query = "SHOW TABLES LIKE '{wp_abj404_logs}'";
             $result = $abj404dao->queryAndGetResults($query);
             $rows = $result['rows'];
             
@@ -552,7 +552,7 @@ class ABJ_404_Solution_PluginLogic {
                     $abj404logging->infoMessage($result['rows_affected'] . 
                             ' log rows were migrated to the new table structre.');
                     // log the rows inserted/migrated.
-                    $wpdb->query('drop table ' . $wpdb->prefix . 'abj404_logs');
+                    $wpdb->query('drop table ' . $f->strtolower($wpdb->prefix) . 'abj404_logs');
                 }
             }
         }
@@ -1368,15 +1368,14 @@ class ABJ_404_Solution_PluginLogic {
         global $abj404_captured_types;
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
-        $redirectsTable = $wpdb->prefix . "abj404_redirects";
         $query = "";
         if ($sub == "abj404_captured") {
-            $query = "delete FROM " . $redirectsTable . " \n" .
+            $query = "delete FROM {wp_abj404_redirects} \n" .
                     "where disabled = 1 \n" .
                     "      and status in (" . implode(", ", $abj404_captured_types) . ")";
             
         } else if ($sub == "abj404_redirects") {
-            $query = "delete FROM " . $redirectsTable . " \n" .
+            $query = "delete FROM {wp_abj404_redirects} \n" .
                     "where disabled = 1 \n" .
                     "      and status in (" . implode(", ", $abj404_redirect_types) . ")";
             
@@ -1387,7 +1386,7 @@ class ABJ_404_Solution_PluginLogic {
         $result = $abj404dao->queryAndGetResults($query);
         $abj404logging->debugMessage("doEmptyTrash deleted " . $result['rows_affected'] . " rows total. (" . $sub . ")");
         
-        $abj404dao->queryAndGetResults("optimize table " . $redirectsTable);
+        $abj404dao->queryAndGetResults("optimize table {wp_abj404_redirects}");
     }
     
     /** 
