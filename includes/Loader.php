@@ -10,7 +10,7 @@ define( 'ABJ404_NAME', plugin_basename(ABJ404_FILE));
 define('ABJ404_SOLUTION_BASENAME', function_exists('plugin_basename') ? plugin_basename(ABJ404_FILE) : 
 	basename(dirname(ABJ404_FILE)) . '/' . basename(ABJ404_FILE));
 
-define( 'ABJ404_VERSION', '2.36.1' );
+define( 'ABJ404_VERSION', '2.36.2' );
 define( 'URL_TRACKING_SUFFIX', '?utm_source=404SolutionPlugin&utm_medium=WordPress');
 define( 'ABJ404_HOME_URL', 'https://www.ajexperience.com/404-solution/' . URL_TRACKING_SUFFIX);
 define( 'ABJ404_FC_URL', 'https://www.ajexperience.com/' . URL_TRACKING_SUFFIX);
@@ -54,10 +54,3 @@ if (is_admin()) {
     $abj404view = ABJ_404_Solution_View::getInstance();
     $abj404viewSuggestions = ABJ_404_Solution_View_Suggestions::getInstance();
 }
-
-/**
- * Load the text domain for translation of the plugin.
- *
- * @since 1.4.2
- */
-load_plugin_textdomain('404-solution', false, dirname(plugin_basename(ABJ404_FILE)) . '/languages' );
