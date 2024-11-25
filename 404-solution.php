@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 2.36.1
+	Version: 2.36.2
 
 	License: GPL-3.0-or-later
 	License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -178,6 +178,9 @@ function abj404_getUploadsDir() {
 
 /** This only runs after WordPress is done enqueuing scripts. */
 function abj404_loadSomethingWhenWordPressIsReady() {
+	/** Load the text domain for translation of the plugin. */
+	load_plugin_textdomain('404-solution', false, dirname(plugin_basename(ABJ404_FILE)) . '/languages' );
+
 	// make debugging easier on localhost etc	
 	$serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
 	$serverNameIsInTheWhiteList = in_array($serverName, $GLOBALS['abj404_whitelist']);

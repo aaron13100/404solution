@@ -90,6 +90,7 @@ Please try this website for studying Japanese flashcards.
 
 ## Version 2.36.2 (November 25, 2024) ##
 * FIX: Avoid various SQL errors when unprintable characters are included in a URL.
+* FIX: Move the load_plugin_textdomain function to the init() hook. (for @reallydeej)
 
 ## Version 2.36.1 (November 23, 2024) ##
 * FIX: Finalize fixes for case sensitive lower_case_table_names settings.
