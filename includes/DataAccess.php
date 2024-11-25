@@ -1213,6 +1213,9 @@ class ABJ_404_Solution_DataAccess {
 
         $now = time();
 
+        // remove ridiculous non-printable characters
+        $requested_url = preg_replace('/[^\x20-\x7E]/', '', $requested_url); // Remove non-printable ASCII characters
+    
         // if the database can't handle utf8 characters then convert them to latin1.
         try {
             $getCharsetQuery = $wpdb->prepare("SELECT character_set_name as charset_name \n " .
@@ -1661,6 +1664,9 @@ class ABJ_404_Solution_DataAccess {
         $f = ABJ_404_Solution_Functions::getInstance();
         $redirect = array();
         
+        // remove ridiculous non-printable characters
+        $url = preg_replace('/[^\x20-\x7E]/', '', $url); // Remove non-printable ASCII characters
+        
         // we look for two URLs that might match. one with a trailing slash and one without.
         // the one the user entered takes priority in case the admin added separate redirects for
         // cases with and without the slash (and for backward compatibility).
@@ -1701,8 +1707,11 @@ class ABJ_404_Solution_DataAccess {
     function getExistingRedirectForURL($url) {
         $redirect = array();
 
+        // remove ridiculous non-printable characters
+        $url = preg_replace('/[^\x20-\x7E]/', '', $url); // Remove non-printable ASCII characters
+
         // a disabled value of '1' means in the trash.
-        $query = $this->prepare_query_wp('select * from {wp_abj404_redirects} where url = {url} ' . 
+        $query = $this->prepare_query_wp('select * from {wp_abj404_redirects} where BINARY url = BINARY {url} ' . 
             " and disabled = 0 ", array("url" => $url));
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];

@@ -285,12 +285,16 @@ class ABJ_404_Solution_PluginLogic {
     function setCookieWithPreviousRequest() {
     	$abj404logging = ABJ_404_Solution_Logging::getInstance();
     	
+        $requested_url = urldecode($_SERVER['REQUEST_URI']);
+        // remove ridiculous non-printable characters
+        $requested_url = preg_replace('/[^\x20-\x7E]/', '', $requested_url); // Remove non-printable ASCII characters
+
     	// this may be used later when displaying suggestions.
     	$cookieName = ABJ404_PP . '_REQUEST_URI';
     	$cookieNameShort = $cookieName . '_SHORT';
     	try {
-    		setcookie($cookieName, urldecode($_SERVER['REQUEST_URI']), time() + (60 * 4), "/");
-    		setcookie($cookieNameShort, urldecode($_SERVER['REQUEST_URI']), time() + (5), "/");
+    		setcookie($cookieName, $requested_url, time() + (60 * 4), "/");
+    		setcookie($cookieNameShort, $requested_url, time() + (5), "/");
     		
     		// only set the update_URL if it's not already set.
     		// this is because multiple redirects might happen and we want to store
@@ -312,7 +316,7 @@ class ABJ_404_Solution_PluginLogic {
      		echo $c;
     	}
     	
-    	$_REQUEST[ABJ404_PP][$cookieName] = urldecode($_SERVER['REQUEST_URI']);
+    	$_REQUEST[ABJ404_PP][$cookieName] = $requested_url;
     }
     
     /** The passed in reason will be appended to the automatically generated reason.
