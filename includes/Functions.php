@@ -24,32 +24,38 @@ abstract class ABJ_404_Solution_Functions {
      * @param string $string The string to be selectively urlencoded.
      * @return string The urlencoded string.
      */
-    function selectivelyURLEncode($string) {
+    function selectivelyURLEncode($input) {
         $f = ABJ_404_Solution_Functions::getInstance();
-
-        if (!is_string($string)) {
-            $string = strval($string);
+    
+        // Handle array input
+        if (is_array($input)) {
+            return array_map([$f, 'selectivelyURLEncode'], $input);
         }
-
+    
+        if (!is_string($input)) {
+            $input = strval($input);
+        }
+    
         // Define replacements for unsafe characters
         $replacements = [
-            '<' => '%3C', // URL-encode <
-            '>' => '%3E', // URL-encode >
-            '"' => '%22', // URL-encode "
-            "'" => '%27', // URL-encode '
-            '`' => '%60', // URL-encode `
-            '{' => '%7B', // URL-encode {
-            '}' => '%7D', // URL-encode }
-            '(' => '%28', // URL-encode (
-            ')' => '%29', // URL-encode )
+            '<' => '%3C', 
+            '>' => '%3E', 
+            '"' => '%22', 
+            "'" => '%27', 
+            '`' => '%60', 
+            '{' => '%7B', 
+            '}' => '%7D', 
+            '(' => '%28', 
+            ')' => '%29',
         ];
+    
         // Perform replacements
-        $string = strtr($string, $replacements);
-        
+        $input = strtr($input, $replacements);
+    
         $encodedString = '';
         // Iterate through each character in the string
-        for ($i = 0; $i < strlen($string); $i++) {
-            $char = $string[$i];
+        for ($i = 0; $i < strlen($input); $i++) {
+            $char = $input[$i];
             $ord = $f->ord($char);
             
             // If the character is outside of latin1 range or is not representable
@@ -61,8 +67,21 @@ abstract class ABJ_404_Solution_Functions {
                 $encodedString .= $char;
             }
         }
-        
+    
         return $encodedString;
+    }
+
+    /**Recursively applies `sanitize_text_field` to strings in an array or other data structure.
+     * @param mixed $data The data to sanitize. If an array, will recursively 
+     * apply this function to all elements.
+     * @return mixed The sanitized data. */
+    function sanitize_text_field_recursive($data) {
+        if (is_array($data)) {
+            // Recursively apply to each element
+            return array_map([$this, 'sanitize_text_field_recursive'], $data);
+        }
+
+        return sanitize_text_field($data);
     }
 
     /** Escape a string to avoid Cross Site Scripting (XSS) attacks by encoding unsafe HTML characters.

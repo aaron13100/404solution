@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.36.3 (November 28, 2024) ##
+* FIX: Handle arrays in query parameters without logging an error.
+
 ## Version 2.36.2 (November 25, 2024) ##
 * FIX: Avoid various SQL errors when unprintable characters are included in a URL.
 * FIX: Move the load_plugin_textdomain function to the init() hook. (for @reallydeej)

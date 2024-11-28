@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.7
-Stable tag: 2.36.2
+Stable tag: 2.36.3
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -89,6 +89,9 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.36.3 (November 28, 2024) =
+* FIX: Handle arrays in query parameters without logging an error.
 
 = Version 2.36.2 (November 25, 2024) =
 * FIX: Avoid various SQL errors when unprintable characters are included in a URL.
