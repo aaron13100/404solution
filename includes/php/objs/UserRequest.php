@@ -69,7 +69,7 @@ class ABJ_404_Solution_UserRequest {
             $urlToParse = get_site_url() . '/' . $urlToParse;
         }
         
-        $urlParts = parse_url(esc_url($urlToParse));
+        $urlParts = parse_url($urlToParse);
         if (!is_array($urlParts)) {
             $abj404logging->errorMessage('parse_url returned a non-array value. REQUEST_URI: "' . 
                     urldecode($_SERVER['REQUEST_URI']) . '", parse_url result: "' . json_encode($urlParts) . '", ' .
@@ -84,7 +84,7 @@ class ABJ_404_Solution_UserRequest {
                 parse_str($value, $queryArray);
                 $safeQueryArray = array_map([$f, 'escapeForXSS'], $queryArray);
                 $safeQueryArray = array_map([$f, 'selectivelyURLEncode'], $safeQueryArray);
-                $safeQueryArray = array_map('sanitize_text_field', $safeQueryArray);
+                $safeQueryArray = $f->sanitize_text_field_recursive($safeQueryArray);
 
                 $urlParts[$key] = http_build_query($safeQueryArray);
             } else {
@@ -143,59 +143,9 @@ class ABJ_404_Solution_UserRequest {
         $this->requestURIWithoutCommentsPage = $urlWithoutCommentPage;
         $this->commentPagePart = $commentPagePart;
         
-        
-        // I didn't use makeQueryStringUnique because I guess it's not necessary and 
-        // I'm not sure how it will affect empty query strings like "&noValue=&=noKey"
-        $this->queryString = $queryString; //$this->makeQueryStringUnique($queryString);
+        $this->queryString = $queryString;
     }
-    
-    /** 
-     * Turn "page_id=13689?page_id=13689" into "page_id=13689"
-     * @param $queryString
-     * @return string
-     */
-    private function makeQueryStringUnique($queryString) {
-    	//$paramsArray = array_reverse(explode('?', "page_id=13689?page_id=13689?page_id=13689?page_id=13689?page_id=13689?page_id=1?page_id=13689?page_id=1"));
-    	
-    	if ($queryString == null || $queryString == '') {
-    		return $queryString;
-    	}
-    	
-    	// split on '?'
-    	$paramsArray = array_reverse(explode('?', $queryString));
-    	
-    	if (count($paramsArray) == 0) {
-    		return $queryString;
-    	}
-    	
-    	// store the unique values based on the key.
-    	$uniqueArray = array();
-    	foreach ($paramsArray as $argPair) {
-    		$keyValue = explode('=', $argPair);
-    		if (count($keyValue) != 2) {
-    			continue;
-    		}
-    		$key = $keyValue[0];
-    		$value = $keyValue[1];
-    		if (!array_key_exists($key, $uniqueArray)) {
-    			$uniqueArray[$key] = $value;
-    		}
-    	}
-    	// correct the order. necessary?
-    	$correctedOrder = array_reverse($uniqueArray);
-    	
-    	// recreate the string with only unique values.
-    	$rejoined = '';
-    	foreach ($correctedOrder as $key => $value) {
-    		if (strlen($rejoined) > 0) {
-    			$rejoined .= '?';
-    		}
-    		$rejoined .= $key . '=' . $value;
-    	}
-    	
-    	return $rejoined;
-    }
-    
+ 
     function getRequestURI() {
         return $this->requestURI;
     }
