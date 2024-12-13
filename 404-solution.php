@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 2.36.3
+	Version: 2.36.4
 
 	License: GPL-3.0-or-later
 	License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -38,6 +38,11 @@ $GLOBALS['abj404_whitelist'] = array('127.0.0.1', '::1', 'localhost',
 
 $abj404_autoLoaderClassMap = array();
 function abj404_autoloader($class) {
+	// some people were having issues with possibly parent classes not being loaded before their children.
+	$childParentMap = [
+		'ABJ_404_Solution_FunctionsMBString' => 'ABJ_404_Solution_Functions',
+		'ABJ_404_Solution_FunctionsPreg' => 'ABJ_404_Solution_Functions',
+	];
 
 	// only pay attention if it's for us. don't bother for other things.
 	if (substr($class, 0, 16) == 'ABJ_404_Solution') {
@@ -56,8 +61,16 @@ function abj404_autoloader($class) {
 					}
 			}
 		}
-		
+
 		if (array_key_exists($class, $abj404_autoLoaderClassMap)) {
+			// Ensure the parent class is loaded first
+			if (array_key_exists($class, $childParentMap)) {
+				$parentClass = $childParentMap[$class];
+				if (!class_exists($parentClass)) {
+					require_once $abj404_autoLoaderClassMap[$parentClass];
+				}
+			}
+
 			require_once $abj404_autoLoaderClassMap[$class];
 		}
 	}
