@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.36.4 (December 13, 2024) ##
+* FIX: Ensure parent classes are loaded before their children to possibly resolve inheritance issues with autoloading. (thanks debug file participants)
+
 ## Version 2.36.3 (November 28, 2024) ##
 * FIX: Handle arrays in query parameters without logging an error.
 
