@@ -21,6 +21,7 @@ class ABJ_404_Solution_View {
      */
     function getDashboardNotificationCaptured($captured) {
     	$f = ABJ_404_Solution_Functions::getInstance();
+        /* Translators: %s is the number of captured 404 URLs. */
     	$capturedMessage = sprintf( _n( 'There is <a>%s captured 404 URL</a> that needs to be processed.', 
                 'There are <a>%s captured 404 URLs</a> to be processed.', 
                 $captured, '404-solution'), $captured);
@@ -368,7 +369,7 @@ class ABJ_404_Solution_View {
             $content .= "<strong>" . __('Unique Redirected Visitors', '404-solution') . ":</strong> " . esc_html($distinctvisitors) . "<BR/>";
             $content .= "<strong>" . __('Unique Redirected Referrers', '404-solution') . ":</strong> " . esc_html($distinctrefer) . "<BR/>";
             $content .= "</p>";
-            $abj404view->echoPostBox("abj404-stats" . $x, __($title), $content);
+            $abj404view->echoPostBox("abj404-stats" . $x, __($title, '404-solution'), $content);
         }
         echo "</div>";
         echo "</div>";
@@ -1667,8 +1668,9 @@ class ABJ_404_Solution_View {
         $kbFileSizePretty = number_format($kbFileSize, 2, ".", ",");
         $mbFileSize = $abj404logging->getDebugFileSize() / 1024 / 1000;
         $mbFileSizePretty = number_format($mbFileSize, 2, ".", ",");
-        $debugFileSize = sprintf(__("Debug file size: %s KB (%s MB).", '404-solution'), 
-                $kbFileSizePretty, $mbFileSizePretty);
+        /* Translators: 1: The file size in KB. 2: The file size in MB. */
+        $debugFileSize = sprintf(__('Debug file size: %1$s KB (%2$s MB).', '404-solution'), 
+                $kbFileSize, $mbFileSize);                
         
         $allPostTypesTemp = $abj404dao->getAllPostTypes();
         $allPostTypes = esc_html(implode(', ', $allPostTypesTemp));
@@ -2135,7 +2137,8 @@ class ABJ_404_Solution_View {
         // ------------
         $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage'])) + 1;
         $end = min($start + absint(sanitize_text_field($tableOptions['perpage'])) - 1, $num_records);
-        $currentlyShowingText = sprintf(__('%s - %s of %s', '404-solution'), $start, $end, $num_records);
+        /* Translators: 1: Starting number, 2: Ending number, 3: Total count. */
+        $currentlyShowingText = sprintf(__('%1$s - %2$s of %3$s', '404-solution'), $start, $end, $num_records);
         $currentPageText = __('Page', '404-solution') . " " . $tableOptions['paged'] . " " . __('of', '404-solution') . " " . esc_html($total_pages);
         $showRowsText = __('Rows per page:', '404-solution');
         $showRowsLink = wp_nonce_url($url . '&action=changeItemsPerRow', "abj404_importRedirects");

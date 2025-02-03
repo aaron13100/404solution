@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.7
-Stable tag: 2.36.4
+Stable tag: 2.36.5
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -89,6 +89,9 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.36.5 (February 3, 2025) =
+* FIX: Use SHOW CREATE TABLE instead of select from information_schema to get collation data.
 
 = Version 2.36.4 (December 13, 2024) =
 * FIX: Ensure parent classes are loaded before their children to possibly resolve inheritance issues with autoloading. (thanks debug file participants)

@@ -526,94 +526,112 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	}
     }
 
-    /** Make the collations of our tables match the WP_POSTS table collation. */
-    function correctCollations() {
-        global $wpdb;
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        
-        $collationNeedsUpdating = false;
-        
-        $redirectsTable = $abj404dao->doTableNameReplacements("{wp_abj404_redirects}");
-        $logsTable = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
-        $lookupTable = $abj404dao->doTableNameReplacements("{wp_abj404_lookup}");
-        $permalinkCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
-        $spellingCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
-        $postsTable = $wpdb->prefix . 'posts';
-        
-        $abjTableNames = array($redirectsTable, $logsTable, $lookupTable, $permalinkCacheTable, $spellingCacheTable);
+    /** Retrieve the collation for a given table name.
+     * @param string $tableName
+     * @param ABJ_404_Solution_DataAccess $abj404dao
+     * @param ABJ_404_Solution_Logging $abj404logging
+     * @return string|null The collation for the table, or null if the query failed.
+     */
+	function getTableCollation($tableName) {
+		$abj404logging = ABJ_404_Solution_Logging::getInstance();
+		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 
-        // get the target collation
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
-        $query = str_replace('{table_name}', $postsTable, $query);
-        $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
-        $results = $abj404dao->queryAndGetResults($query);
-        $rows = $results['rows'];
-        $row = $rows[0];
-        $row = array_change_key_case($row);
-        $postsTableCollation = $row['table_collation'];
-        $postsTableCharset = $row['character_set_name'];
-        
-        // check our own tables to see if they match.
-        foreach ($abjTableNames as $tableName) {
-            // get collations of our tables and a target table.
-            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getCollations.sql");
-            $query = str_replace('{table_name}', $tableName, $query);
-            $query = str_replace('{TABLE_SCHEMA}', $wpdb->dbname, $query);
-            $results = $abj404dao->queryAndGetResults($query);
-            $rows = $results['rows'];
-            $row = $rows[0];
-            $row = array_change_key_case($row);
-            $abjTableCollation = '';
-            if (array_key_exists('table_collation', $row)) {
-            	$abjTableCollation = $row['table_collation'];
-            } else {
-            	$abj404logging->errorMessage("table_collation does not exist on sql results. "
-            		. "Results: " . print_r($row, true));
-            }
-            
-            if ($abjTableCollation != $postsTableCollation) {
-                $collationNeedsUpdating = true;
-                break;
-            }
-        }
-        
+		$query = "SHOW CREATE TABLE `$tableName`";
+		$results = $abj404dao->queryAndGetResults($query);
+	
+		if (!empty($results['rows'][0]['Create Table'])) {
+			$createTableSQL = $results['rows'][0]['Create Table'];
+	
+			preg_match('/COLLATE=([\w\d_]+)/', $createTableSQL, $collationMatch);
+			preg_match('/CHARSET=([\w\d]+)/', $createTableSQL, $charsetMatch);
+	
+			$collation = $collationMatch[1] ?? null;
+			$charset = $charsetMatch[1] ?? null;
+
+			return ($collation && $charset) ? [$collation, $charset] : null;
+		} else {
+			$abj404logging->warn("SHOW CREATE TABLE returned no data for $tableName.");
+			return null;
+		}
+	}
+	
+	/** Make the collations of our tables match the WP_POSTS table collation. */
+	function correctCollations() {
+		global $wpdb;
+		$abj404logging = ABJ_404_Solution_Logging::getInstance();
+		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+		
+		$collationNeedsUpdating = false;
+		
+		$redirectsTable = $abj404dao->doTableNameReplacements("{wp_abj404_redirects}");
+		$logsTable = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
+		$lookupTable = $abj404dao->doTableNameReplacements("{wp_abj404_lookup}");
+		$permalinkCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
+		$spellingCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
+		$postsTable = $wpdb->prefix . 'posts';
+		
+		$abjTableNames = array($redirectsTable, $logsTable, $lookupTable, $permalinkCacheTable, $spellingCacheTable);
+	
+		// Get collation and charset for wp_posts
+		$postsTableData = $this->getTableCollation($postsTable);
+	
+		if ($postsTableData === null) {
+			$abj404logging->warn("Failed to retrieve collation/charset for $postsTable. Aborting collation checks.");
+			return;
+		}
+	
+		[$postsTableCollation, $postsTableCharset] = $postsTableData;
+		
+		// Check our own tables to see if they match.
+		foreach ($abjTableNames as $tableName) {
+			$abjTableData = $this->getTableCollation($tableName);
+	
+			if ($abjTableData === null) {
+				$abj404logging->warn("Failed to retrieve collation for $tableName.");
+				continue;  // Skip this table if collation can't be determined
+			}
+	
+			[$abjTableCollation, $abjTableCharset] = $abjTableData;
+	
+			// Compare collations
+			if ($abjTableCollation != $postsTableCollation) {
+				$collationNeedsUpdating = true;
+				break;  // Exit early if update is needed
+			}
+		}
+		
         // if they match then we're done.
-        if (!$collationNeedsUpdating) {
-            return;
-        }
-        
-        // if they don't match then update our tables to match the target tables.
-        $abj404logging->infoMessage("Updating collation from " . $abjTableCollation . " to " .
-                $postsTableCollation);
-
-        foreach ($abjTableNames as $tableName) {
-        	// update the collation
-            $query = "alter table {table_name} convert to charset " . $postsTableCharset . 
-                    " collate " . $postsTableCollation;
-            $query = str_replace('{table_name}', $tableName, $query);
-            $results = $abj404dao->queryAndGetResults($query, 
-            	array('ignore_errors' => array("Index column size too large")));
-            
-            if ($results['last_error'] != null && $results['last_error'] != '' && 
-            	strpos($results['last_error'], "Index column size too large") !== false) {
-            		
-            	$abj404logging->infoMessage("Collation change for " . $tableName . " failed " . 
-            		"because of an Index column size too large. Deleting indexes and trying " .
-            		"again..");
-            		
-            	// delete indexes and try again.
-            	$this->deleteIndexes($tableName);
-            	
-            	$abj404dao->queryAndGetResults($query);
+		if (!$collationNeedsUpdating) {
+			return;
+		}
+		
+		// if they don't match then update our tables to match the target tables.
+		$abj404logging->infoMessage("Updating collation from $abjTableCollation to $postsTableCollation");
+	
+		foreach ($abjTableNames as $tableName) {
+			// Update the collation
+			$query = "ALTER TABLE {table_name} CONVERT TO CHARSET " . $postsTableCharset . 
+					 " COLLATE " . $postsTableCollation;
+			$query = str_replace('{table_name}', $tableName, $query);
+			$results = $abj404dao->queryAndGetResults($query, 
+				array('ignore_errors' => array("Index column size too large")));
+	
+			if ($results['last_error'] != null && $results['last_error'] != '' && 
+				strpos($results['last_error'], "Index column size too large") !== false) {
+				
+				$abj404logging->infoMessage("Collation change for $tableName failed due to 'Index column size too large'. Deleting indexes and retrying...");
+	
+				// delete indexes and try again.
+				$this->deleteIndexes($tableName);
+				
+				$abj404dao->queryAndGetResults($query);
             	$abj404logging->infoMessage("I tried to change a collation again: " . $query);
-            	
-           	} else if ($results['last_error'] == null || $results['last_error'] == '') {
-           		$abj404logging->infoMessage("I succesfully changed the collation of " . 
-           			$tableName . " to " . $postsTableCollation);
-           	}
-        }
-    }
+	
+			} else if ($results['last_error'] == null || $results['last_error'] == '') {
+				$abj404logging->infoMessage("Successfully changed collation of $tableName to $postsTableCollation");
+			}
+		}
+	}
     
     /** Delete all non-primary indexes from a table.
      * @param string $tableName */
