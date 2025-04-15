@@ -21,6 +21,7 @@ class ABJ_404_Solution_PluginLogic {
     /** Use this to avoid an infinite loop when checking if a user has admin access or not. */
     private static $checkingIsAdmin = false;
     
+    /** @return ABJ_404_Solution_PluginLogic The singleton instance of the class. */
     public static function getInstance() {
     	if (self::$instance == null) {
     		self::$instance = new ABJ_404_Solution_PluginLogic();
@@ -2197,11 +2198,7 @@ class ABJ_404_Solution_PluginLogic {
         return $missingParentPageIDs;
     }
 
-    /** Compare pages based on their ID.
-     * @param array $a
-     * @param array $b
-     * @return int
-     */
+    /** Compare pages based on their ID. */
     function compareByID($a, $b) {
         if ($a->id < $b->id) {
             return -1;

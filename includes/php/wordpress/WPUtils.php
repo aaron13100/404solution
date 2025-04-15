@@ -58,6 +58,40 @@ class ABJ_404_Solution_WPUtils {
 		
 		return strcmp($str1, $str2);
 	}
+
+	/**
+     * Gets a string representation of a callable for comparison.
+     *
+     * @param mixed $callable The callable (string function name, array [object/class, method], Closure).
+     * @return string A string representation.
+     */
+    private static function getValueOrObjectClass($callable) {
+        if (is_string($callable)) {
+            // Simple function name
+            return trim($callable);
+        } elseif (is_array($callable) && count($callable) === 2) {
+            // Array callable: [object/class, method]
+            $classOrObject = $callable[0];
+            $method = $callable[1];
+            if (is_object($classOrObject)) {
+                // Instance method: [new ClassName(), 'methodName']
+                return get_class($classOrObject) . '::' . trim($method);
+            } elseif (is_string($classOrObject)) {
+                // Static method: ['ClassName', 'methodName']
+                return trim($classOrObject) . '::' . trim($method);
+            }
+        } elseif ($callable instanceof \Closure) {
+            // It's a Closure (anonymous function). Comparing these reliably is tricky.
+            // Returning a generic placeholder might be sufficient if you don't expect
+            // multiple different closures on the same hook tag.
+            // Alternatively, use spl_object_hash for a unique ID per instance,
+            // but note this hash can change between requests.
+            return 'Closure#' . spl_object_hash($callable);
+        }
+
+        // Fallback for unexpected types - you might want to log or throw an error here
+        return serialize($callable);
+    }
 	
 	/** Set the version to the file date/time.
 	 * @param $handle

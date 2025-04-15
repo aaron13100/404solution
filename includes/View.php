@@ -421,11 +421,11 @@ class ABJ_404_Solution_View {
     					}
     				}
     			} else {
-    				$this->errorMessage("Error opening debug file.");
+    				$abj404logging->errorMessage("Error opening debug file.");
     			}
     			
     		} catch (Exception $e) {
-    			$this->errorMessage("Error while reading debug file.", $e);
+    			$abj404logging->errorMessage("Error while reading debug file.", $e);
     		}
     		
     		if ($handle != null) {
@@ -604,7 +604,7 @@ class ABJ_404_Solution_View {
             $recnum = absint($_POST['id']);
             
         } else if ($abj404dao->getPostOrGetSanitize('idnum') !== null) {
-            $recnums_multiple = array_map('absint', $abj404dao->getPostOrGetSanitize('idnum'));
+            $recnums_multiple = array_map('absint', (array)$abj404dao->getPostOrGetSanitize('idnum'));
             $abj404logging->debugMessage("Edit redirect page. ids_multiple: " . 
                     wp_kses_post(json_encode($recnums_multiple)));
 
