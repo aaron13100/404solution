@@ -153,6 +153,54 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
 
     <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
     <tr><td valign="top">
+        <label for="suggest_regex_exclusions">{Exclude Suggestion URLs (Regex)} 
+            <BR/><BR/>
+
+        {Exclude potential suggestions if their final URL matches one of these patterns.}
+        {This only affects the list of potential matches shown to the user on a custom 404 page.}
+        
+        <ul>
+            <li class="closeLI">{* One pattern per line.}</li>
+            <li class="closeLI">{* Use an asterisk (*) to match "any pattern." }</li>
+            <li class="closeLI">{* These patterns match the path of a URL, not a title." }</li>
+        </ul>
+        {Examples: }
+        <ul>
+            <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;*.pdf </li>
+            <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(don't suggest .pdf files)}</div>
+            <BR/>
+            
+            <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;*.jpg </li>
+            <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(don't suggest .jpg files)}</div>
+            <BR/>
+            
+            <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;/members/* </li>
+            <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{ (don't suggest pages within the /members/ directory)}</div>
+
+            <BR/>
+            
+            <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;*/private/* </li>
+            <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(don't suggest pages within any directory named /private/)}</div>
+            <BR/>
+            
+            <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;/old-contact-page </li>
+            <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(don't suggest the specific page with slug 'old-contact-page')}</div>                             
+        </ul>
+            
+        {Note: Do not include the parenthesis or explanations shown in the examples above. }
+        <BR/><BR/>
+        <div style="font-weight: bold; color: red;">{WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing. }</div>
+        
+        </label>
+        
+        </td><td>
+            <textarea rows="6" cols="60" name="suggest_regex_exclusions" id="suggest_regex_exclusions" >{suggest_regex_exclusions}</textarea>
+                        
+        </td>
+    </tr>
+
+    <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
+    <tr><td valign="top">
             <label for="exlclude_pages_list">{Exclude Specific Pages, Posts, Categories, Etc} 
                 <BR/><BR/>
             {Pages listed here will not be redirected to }

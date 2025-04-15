@@ -3,8 +3,8 @@ Contributors: aaron13100
 Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
-Tested up to: 6.7
-Stable tag: 2.36.5
+Tested up to: 6.8
+Stable tag: 2.36.6
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -90,8 +90,9 @@ Please try this website for studying flashcards.
 
 == Changelog ==
 
-= Version 2.36.6 (April 17, 2025) =
+= Version 2.36.6 (April 15, 2025) =
 * Improvement: Page suggestions: when an admin user clicks the score after a suggestion link it gives them some more information about the link like author, post date, etc.
+* Improvement: Page suggestions: add an option to exclude certain URLs from the list of suggested pages on a custom 404 page based on user defined regex patterns.
 
 = Version 2.36.5 (February 3, 2025) =
 * FIX: Use SHOW CREATE TABLE instead of select from information_schema to get collation data.
