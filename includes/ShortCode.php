@@ -112,6 +112,7 @@ class ABJ_404_Solution_ShortCode {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         // Attributes
         $atts = shortcode_atts(
@@ -169,6 +170,30 @@ class ABJ_404_Solution_ShortCode {
         $permalinkSuggestions = $permalinkSuggestionsPacket[0];
         $rowType = $permalinkSuggestionsPacket[1];
 
+        $showExtraAdminData = (is_user_logged_in() && $abj404logic->userIsPluginAdmin());
+        $extraData = null;
+        $extraDataById = []; // <--- New: Array to hold extra data indexed by ID
+        $adminDebugData = []; // <--- New: Array to collect data for JS
+        
+        if ($showExtraAdminData) {
+            // add extra information to the permalinkSuggestionsPacket. for each permalink,
+            // retrieve the post_type, taxonomy, post_author (this is an id not a name), 
+            // post_date, post_name (this is the slug), 
+            $postIDs = array_keys($permalinkSuggestions);
+            if (!empty($postIDs)) {
+                // for each id remove the part after '|' using substring
+                foreach ($postIDs as $index => $id) {
+                    $postIDs[$index] = $f->substr($id, 0, $f->strpos($id, '|'));
+                }
+                
+                $rawExtraData = $abj404dao->getExtraDataToPermalinkSuggestions($postIDs); 
+                foreach ($rawExtraData as $dataItem) {
+                    $extraDataById['post_id_' . $dataItem['post_id']] = $dataItem;
+                    $extraDataById['term_id_' . $dataItem['term_id']] = $dataItem;
+                }
+            }
+        }
+
         // allow some HTML.
         $content .= '<div class="suggest-404s">' . "\n";
         $content .= wp_kses_post($options['suggest_title']) . "\n";
@@ -200,8 +225,36 @@ class ABJ_404_Solution_ShortCode {
                 
                 // display the score after the page link
                 	
-                if (is_user_logged_in() && $abj404logic->userIsPluginAdmin()) {
-                    $content .= " (" . esc_html($permalink['score']) . ")";
+                if ($showExtraAdminData) {
+                    $idParts = explode('|', $idAndType);
+                    $currentId = isset($idParts[0]) ? (int)$idParts[0] : null;
+                    $typeCode  = isset($idParts[1]) ? $idParts[1] : null;
+
+                    $currentSuggestionData = [
+                        'Title' => $permalink['title'],
+                        'Link' => $permalink['link'],
+                        'Score' => number_format($permalink['score'], 2),
+                        'ID_Type_Code' => $idAndType, // e.g., "123|1" or "94|2"
+                    ];
+
+                    // Extract ID for lookup
+                    $idParts = explode('|', $idAndType);
+                    $currentId = isset($idParts[0]) ? $idParts[0] : null;
+
+                    if ($typeCode == '1') { // It's a Post
+                        $currentSuggestionData = $currentSuggestionData + $extraDataById['post_id_' . $currentId]; 
+                    } else { // It's a Term
+                        $currentSuggestionData = $currentSuggestionData + $extraDataById['term_id_' . $currentId]; 
+                    }
+
+                    // Add this suggestion's data to the array for JS
+                    $adminDebugData[] = $currentSuggestionData;
+                    
+                    // Make the score clickable
+                    $content .= ' (<a href="#" onclick="show404AdminDebugData(); return false;" title="' . 
+                                esc_attr__('Click to view debug data for all suggestions', '404-solution') . 
+                                '">' . number_format($permalink['score'], 2) . // Format score
+                                '</a>)'; 
                 }
                 
                 // </li>
@@ -223,6 +276,93 @@ class ABJ_404_Solution_ShortCode {
         }
 
         $content .= "\n</div>";
+
+        if ($showExtraAdminData && !empty($adminDebugData)) {
+            // Ensure the JSON is properly encoded and escaped for JavaScript
+            $allSuggestionsJson = wp_json_encode($adminDebugData);
+            if ($allSuggestionsJson === false) {
+                // Handle encoding error
+                $allSuggestionsJson = '[]';
+            }
+
+            $content .= "<script type=\"text/javascript\">\n";
+            $content .= "var abj404_suggestionData = " . $allSuggestionsJson . ";\n";
+            $content .= "function show404AdminDebugData() {\n";
+            $content .= "    var debugText = 'Suggestion Debug Data:\\n====================\\n\\n';\n";
+            $content .= "    if (typeof abj404_suggestionData !== 'undefined' && abj404_suggestionData.length > 0) {\n";
+            $content .= "        for (var i = 0; i < abj404_suggestionData.length; i++) {\n";
+            $content .= "            var item = abj404_suggestionData[i];\n";
+            $content .= "            debugText += 'Suggestion #' + (i + 1) + ':\\n';\n";
+            $content .= "            for (var key in item) {\n";
+            $content .= "                if (item.hasOwnProperty(key) && item[key]) {\n";
+            $content .= "                    // Only include properties that have values\n";
+            $content .= "                    // Format the key for display (capitalize first letter)\n";
+            $content .= "                    var displayKey = key;\n";
+            $content .= "                    // Escape any potentially harmful content using text nodes\n";
+            $content .= "                    debugText += '  ' + displayKey + ': ' + String(item[key]).replace(/</g, '&lt;').replace(/>/g, '&gt;') + '\\n';\n";
+            $content .= "                }\n";
+            $content .= "            }\n";
+            $content .= "            debugText += '--------------------\\n';\n";
+            $content .= "        }\n";
+            $content .= "    } else {\n";
+            $content .= "        debugText += 'No suggestion data collected.';\n";
+            $content .= "    }\n";
+            $content .= "    \n";
+            $content .= "    // Create a modal dialog with copyable text\n";
+            $content .= "    var modalOverlay = document.createElement('div');\n";
+            $content .= "    modalOverlay.style.position = 'fixed';\n";
+            $content .= "    modalOverlay.style.top = '0';\n";
+            $content .= "    modalOverlay.style.left = '0';\n";
+            $content .= "    modalOverlay.style.width = '100%';\n";
+            $content .= "    modalOverlay.style.height = '100%';\n";
+            $content .= "    modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.5)';\n";
+            $content .= "    modalOverlay.style.zIndex = '9999';\n";
+            $content .= "    \n";
+            $content .= "    var modalContent = document.createElement('div');\n";
+            $content .= "    modalContent.style.position = 'absolute';\n";
+            $content .= "    modalContent.style.top = '50%';\n";
+            $content .= "    modalContent.style.left = '50%';\n";
+            $content .= "    modalContent.style.transform = 'translate(-50%, -50%)';\n";
+            $content .= "    modalContent.style.backgroundColor = 'white';\n";
+            $content .= "    modalContent.style.padding = '20px';\n";
+            $content .= "    modalContent.style.borderRadius = '5px';\n";
+            $content .= "    modalContent.style.maxWidth = '80%';\n";
+            $content .= "    modalContent.style.maxHeight = '80%';\n";
+            $content .= "    modalContent.style.overflow = 'auto';\n";
+            $content .= "    \n";
+            $content .= "    var textArea = document.createElement('textarea');\n";
+            $content .= "    textArea.style.width = '100%';\n";
+            $content .= "    textArea.style.height = '300px';\n";
+            $content .= "    textArea.style.marginBottom = '10px';\n";
+            $content .= "    // Set value safely using textContent\n"; 
+            $content .= "    textArea.value = debugText;\n";
+            $content .= "    textArea.readOnly = true;\n";
+            $content .= "    \n";
+            $content .= "    var copyButton = document.createElement('button');\n";
+            $content .= "    // Using textContent instead of innerHTML\n";
+            $content .= "    copyButton.textContent = 'Copy to Clipboard';\n";
+            $content .= "    copyButton.style.marginRight = '10px';\n";
+            $content .= "    copyButton.onclick = function() {\n";
+            $content .= "        textArea.select();\n";
+            $content .= "        document.execCommand('copy');\n";
+            $content .= "    };\n";
+            $content .= "    \n";
+            $content .= "    var closeButton = document.createElement('button');\n";
+            $content .= "    // Using textContent instead of innerHTML\n";
+            $content .= "    closeButton.textContent = 'Close';\n";
+            $content .= "    closeButton.onclick = function() {\n";
+            $content .= "        document.body.removeChild(modalOverlay);\n";
+            $content .= "    };\n";
+            $content .= "    \n";
+            $content .= "    modalContent.appendChild(textArea);\n";
+            $content .= "    modalContent.appendChild(copyButton);\n";
+            $content .= "    modalContent.appendChild(closeButton);\n";
+            $content .= "    modalOverlay.appendChild(modalContent);\n";
+            $content .= "    document.body.appendChild(modalOverlay);\n";
+            $content .= "}\n";
+            $content .= "</script>\n";
+        }        
+
         $content .= "\n<!-- " . ABJ404_PP . " - End 404 suggestions for slug " . esc_html($urlSlugOnly) . " -->\n";
 
         return $content;

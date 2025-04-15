@@ -88,6 +88,9 @@ Please try this website for studying Japanese flashcards.
 
 ## Changelog ##
 
+## Version 2.36.6 (April 17, 2025) ##
+* Improvement: Page suggestions: when an admin user clicks the score after a suggestion link it gives them some more information about the link like author, post date, etc.
+
 ## Version 2.36.5 (February 3, 2025) ##
 * FIX: Use SHOW CREATE TABLE instead of select from information_schema to get collation data.
 
