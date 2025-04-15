@@ -981,6 +981,21 @@ class ABJ_404_Solution_DataAccess {
         return $query;
     }
 
+    function getExtraDataToPermalinkSuggestions($postIDs) {
+        $f = ABJ_404_Solution_Functions::getInstance();
+
+        $postIDJoined = implode(", ", $postIDs);
+
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getAdditionalPostData.sql");
+        $query = $f->str_replace('{IDS_TO_INCLUDE}', $postIDJoined, $query);
+        $query = $this->doTableNameReplacements($query);
+        $query = $f->doNormalReplacements($query);
+        
+        $results = $this->queryAndGetResults($query);
+
+        return $results['rows'];
+    }
+
     /**
      * Prepare a WordPress SQL query with placeholders and an associative data array.
      *
