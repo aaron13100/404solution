@@ -431,6 +431,8 @@ class ABJ_404_Solution_SpellChecker {
 		// This is sorted so that the link with the highest score will be first when iterating through.
 		arsort($permalinks);
 
+		$permalinks = $this->removeExcludedPagesWithRegex($options, $permalinks, $maxCacheCount);
+
 		// only keep what we need. store them for later if necessary.
 		$permalinks = array_splice($permalinks, 0, $maxCacheCount);
 
@@ -473,6 +475,149 @@ class ABJ_404_Solution_SpellChecker {
 
 		return $permalinks;
 	}
+
+	/**
+     * Removes permalink suggestions if their URL path matches exclusion regex patterns.
+     *
+     * @param array $options    Plugin options containing 'suggest_regex_exclusions_usable'.
+     * @param array $permalinks An array where keys are "ID|TYPE_CONSTANT" and values are scores.
+     * Example: [ '1204|1' => '70.0000', '2194|1' => '68.3333' ]
+     * @return array The filtered $permalinks array.
+     */
+    function removeExcludedPagesWithRegex($options, $permalinks, $maxCacheCount) {
+        // Ensure dependencies are available
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logging = ABJ_404_Solution_Logging::getInstance(); // Optional: for logging errors
+
+        // Ensure permalinks is an array
+        if (!is_array($permalinks)) {
+            return $permalinks;
+        }
+
+        // Check if usable regex patterns exist and are in an array format
+        if (!isset($options['suggest_regex_exclusions_usable']) ||
+            !is_array($options['suggest_regex_exclusions_usable']) ||
+            empty($options['suggest_regex_exclusions_usable'])) {
+            // No patterns to apply, return original list
+            return $permalinks;
+        }
+
+		$suggestionsKeptSoFar = 0;
+        $regexExclusions = $options['suggest_regex_exclusions_usable'];
+
+        // Iterate through each permalink entry using keys directly
+        // Modifying array while iterating requires careful handling, using keys is safer.
+        $keys_to_check = array_keys($permalinks);
+
+        foreach ($keys_to_check as $key) {
+            // Skip if the key somehow got removed in a previous iteration (shouldn't happen here)
+            if (!array_key_exists($key, $permalinks)) {
+                continue;
+            }
+
+            // Split the key into ID and Type Constant
+            $keyParts = explode('|', $key);
+            if (count($keyParts) !== 2 || !is_numeric($keyParts[0])) {
+                $abj404logging->debugMessage("Skipping invalid key format in removeExcludedPagesWithRegex: " . $key);
+                continue; // Skip invalid keys
+            }
+
+            $id = (int)$keyParts[0];
+            $typeConstant = $keyParts[1]; // Keep as string/int as needed by mapTypeConstantToString
+
+            // Map the type constant (e.g., '1') to the string type ('pages', 'tags', etc.)
+            $rowTypeString = $this->mapTypeConstantToString($typeConstant);
+            if ($rowTypeString === null) {
+                $abj404logging->debugMessage("Skipping unknown type constant in removeExcludedPagesWithRegex: " . $typeConstant . " for key: " . $key);
+                continue; // Skip unknown types
+            }
+
+            // Get the full URL using the class's method (handles cache)
+            $urlOfPage = $this->getPermalink($id, $rowTypeString);
+            if ($urlOfPage === null || trim($urlOfPage) === '') {
+                $abj404logging->debugMessage("Skipping null/empty URL for key in removeExcludedPagesWithRegex: " . $key);
+                continue; // Skip if URL couldn't be retrieved
+            }
+
+            // Parse the URL and get the path, remove home directory if needed (consistency)
+            $urlParts = parse_url($urlOfPage);
+            if (!is_array($urlParts) || !isset($urlParts['path'])) {
+                 $abj404logging->debugMessage("Skipping URL that failed parse_url for key in removeExcludedPagesWithRegex: " . $key . ", URL: " . esc_url($urlOfPage));
+                 continue; // Skip invalid URLs
+            }
+            $pathOnly = $abj404logic->removeHomeDirectory($urlParts['path']);
+            // Ensure path starts with / for consistency if it's not empty
+             if ( $pathOnly !== '' && substr($pathOnly, 0, 1) !== '/' ) {
+                $pathOnly = '/' . $pathOnly;
+             }
+             // Handle case where path might be empty (e.g., homepage) which results in '/'
+             if ( $pathOnly === '' ) {
+                 $pathOnly = '/';
+             }
+
+            $stringToMatch = $pathOnly; // The string we will match the regex against
+
+			$kept = true;
+            // Check against each exclusion pattern
+            foreach ($regexExclusions as $pattern) {
+                // Remove slashes like in the example provided for folders_files_ignore
+                $patternToExcludeNoSlashes = stripslashes($pattern);
+                $matches = array(); // Variable for the match results
+
+                // Use the class's regexMatch function
+                if ($f->regexMatch($patternToExcludeNoSlashes, $stringToMatch, $matches)) {
+                    // Pattern matched, remove this permalink from the list
+                    unset($permalinks[$key]);
+                    $abj404logging->debugMessage("Regex excluded suggestion. Key: " . $key .
+                        ", Path: '" . esc_html($stringToMatch) . "', Pattern: '" . esc_html($patternToExcludeNoSlashes) . "'");
+					$kept = false;
+                    // Break the inner loop (patterns), move to the next permalink key
+                    break;
+                }
+            }
+
+			// track how many suggestions we actually need and stop filtering after we reach that count
+			if ($kept) {
+				$suggestionsKeptSoFar++;
+			}
+			if ($suggestionsKeptSoFar >= $maxCacheCount) {
+				break;
+			}
+        }
+
+        return $permalinks;
+    }
+
+    /**
+     * Maps internal type constants to string identifiers used by getPermalink.
+     * NOTE: Requires ABJ404_TYPE_* constants to be defined correctly.
+     *
+     * @param mixed $typeConstant The type constant (e.g., ABJ404_TYPE_POST).
+     * @return string|null The string identifier ('pages', 'tags', 'categories') or null if not found.
+     */
+    private function mapTypeConstantToString($typeConstant) {
+        // Define these constants if they are not globally available or use their actual values
+        if (!defined('ABJ404_TYPE_POST')) define('ABJ404_TYPE_POST', '1'); // Example value
+        if (!defined('ABJ404_TYPE_TAG')) define('ABJ404_TYPE_TAG', '2');   // Example value
+        if (!defined('ABJ404_TYPE_CAT')) define('ABJ404_TYPE_CAT', '3');   // Example value
+        // Add other types like ABJ404_TYPE_IMAGE if needed
+
+        switch ((string)$typeConstant) { // Cast to string for reliable comparison if needed
+            case ABJ404_TYPE_POST:
+                return 'pages'; // Based on getPermalink implementation which uses 'pages' for posts
+            case ABJ404_TYPE_TAG:
+                return 'tags';
+            case ABJ404_TYPE_CAT:
+                return 'categories';
+            // Add 'image' case if ABJ404_TYPE_IMAGE exists and is used in $permalinks keys
+            // case ABJ404_TYPE_IMAGE:
+            //     return 'image';
+            default:
+                 // Log or handle unknown type
+                return null;
+        }
+    }
 
 	function getOnlyIDandTermID($rowsAsObject) {
 		$rows = array();

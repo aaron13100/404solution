@@ -1698,6 +1698,8 @@ class ABJ_404_Solution_View {
             str_replace('\\n', "\n", wp_kses_post($options['recognized_categories'])), $html);
         $html = $f->str_replace('{folders_files_ignore}', 
             str_replace('\\n', "\n", wp_kses_post($options['folders_files_ignore'])), $html);
+        $html = $f->str_replace('{suggest_regex_exclusions}', 
+            str_replace('\\n', "\n", esc_textarea($options['suggest_regex_exclusions'])), $html); // Use esc_textarea for textareas
         
         $pluginAdminUsers = str_replace('\\n', "\n", wp_kses_post($options['plugin_admin_users']));
         if (is_array($pluginAdminUsers)) {

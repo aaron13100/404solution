@@ -638,6 +638,8 @@ class ABJ_404_Solution_PluginLogic {
             'folders_files_ignore' => implode("\n", array("wp-content/plugins/*", "wp-content/themes/*", 
                 ".well-known/acme-challenge/*")),
             'folders_files_ignore_usable' => "",
+            'suggest_regex_exclusions' => "",
+            'suggest_regex_exclusions_usable' => "",
         	'plugin_admin_users' => "",
         	'debug_mode' => 0,
             'days_wait_before_major_update' => 30,
@@ -1910,6 +1912,19 @@ class ABJ_404_Solution_PluginLogic {
 	            }
 	            $options['folders_files_ignore_usable'] = $usableFilePatterns;
 	        }
+            if (array_key_exists('suggest_regex_exclusions', $_POST) && isset($_POST['suggest_regex_exclusions'])) {
+                $options['suggest_regex_exclusions'] = wp_unslash(wp_kses_post($_POST['suggest_regex_exclusions']));
+
+                // make the regular expressions usable.
+                $patternsToIgnore = $f->explodeNewline($options['suggest_regex_exclusions']);
+                $usableFilePatterns = array();
+                foreach ($patternsToIgnore as $patternToIgnore) {
+                    $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
+                    $newPattern = $f->str_replace("\*",".*", $newPattern);
+                    $usableFilePatterns[] = $newPattern;
+                }
+                $options['suggest_regex_exclusions_usable'] = $usableFilePatterns;
+            }
 	        if (array_key_exists('plugin_admin_users', $_POST) && isset($_POST['plugin_admin_users'])) {
 	        	$pluginAdminUsers = $_POST['plugin_admin_users'];
 	        	if (is_array($pluginAdminUsers)) {
@@ -1919,7 +1934,16 @@ class ABJ_404_Solution_PluginLogic {
 	        	
 	        	$options['plugin_admin_users'] = $pluginAdminUsers;
 	        }
-	        
+
+            if (array_key_exists('suggest_regex_exclusions', $_POST)) {
+                // Use sanitize_textarea_field for multi-line text that might contain regex characters
+                $options['suggest_regex_exclusions'] = sanitize_textarea_field(wp_unslash($_POST['suggest_regex_exclusions']));
+            } else {
+                $options['suggest_regex_exclusions'] = ''; // Ensure it's set even if not submitted
+            }
+            $suggest_regex_exclusions = $options['suggest_regex_exclusions']; 
+            $new_options['suggest_regex_exclusions'] = $suggest_regex_exclusions;
+            
 	        if (is_array($options['excludePages[]'])) {
 	            $abj404logging->warn("Exclude pages settings lost.");
 	            $options['excludePages[]'] = '';
