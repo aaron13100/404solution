@@ -341,7 +341,7 @@ class ABJ_404_Solution_DataAccess {
                 
             } else {
                 // tell someone the table $tableToRepair is broken.
-            	$abj404logging->warnMessage("The table " . $tableToRepair . " needs to be " . 
+            	$abj404logging->warn("The table " . $tableToRepair . " needs to be " . 
             		"repaired with something like: repair table " . $tableToRepair);
             }
         }
@@ -609,11 +609,9 @@ class ABJ_404_Solution_DataAccess {
        }
        return intval($captured[0]);
    }
-   
+    
    /** Get all of the post types from the wp_posts table.
-    * @global type $wpdb
-    * @return string
-    */
+    * @return array An array of post type names. */
    function getAllPostTypes() {
        $query = "SELECT DISTINCT post_type FROM {wp_posts} order by post_type";
        $results = $this->queryAndGetResults($query);
@@ -2083,11 +2081,10 @@ class ABJ_404_Solution_DataAccess {
         return intval($results[0]);
     }
     
-    /** 
-     * Look at $_POST and $_GET for the specified option and return the default value if it's not set.
-     * @param string $name
-     * @param string $defaultValue
-     * @return string
+    /** Look at $_POST and $_GET for the specified option and return the default value if it's not set.
+     * @param string $name The key to retrieve the value for.
+     * @param string $defaultValue The value to return if the value is not set.
+     * @return string The sanitized value.
      */
     function getPostOrGetSanitize($name, $defaultValue = null) {
         $returnValue = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);

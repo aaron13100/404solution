@@ -824,7 +824,7 @@ class ABJ_404_Solution_SpellChecker {
 			return urldecode($src[0]);
 
 		} else {
-			throw Exception("Unknown row type ...");
+			throw new \Exception("Unknown row type ...");
 		}
 	}
 
@@ -901,7 +901,7 @@ class ABJ_404_Solution_SpellChecker {
 				$id = $row['id'];
             	
 			} else {
-				throw Exception("Unknown row type ... " . esc_html($rowType));
+				throw new \Exception("Unknown row type ... " . esc_html($rowType));
 			}
 
 			if (array_key_exists('url', $row)) {

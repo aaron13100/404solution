@@ -296,7 +296,7 @@ class ABJ_404_Solution_WordPress_Connector {
                     $paged = get_query_var('page') ? esc_html(get_query_var('page')) : FALSE;
 
                     if (!$paged === FALSE) {
-                        if ($urlParts[query] == "") {
+                        if ($urlParts['query'] == "") {
                             if ($f->substr($perma_link, -1) == "/") {
                                 $perma_link .= $paged . "/";
                             } else {
