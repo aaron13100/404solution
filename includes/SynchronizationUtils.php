@@ -218,15 +218,16 @@ class ABJ_404_Solution_SynchronizationUtils {
         
         $currentLockHolder = $this->readOwner($internalSynchronizedKey);
         
-        if ($uniqueID == $currentLockHolder) {
-        	$this->deleteOwner($uniqueID, $internalSynchronizedKey);
-            
-        } else {
-            throw new Exception("Tried to release lock when you're not the owner. " . 
-            		"Synchronized key from user: " . $synchronizedKeyFromUser .
-                    ', current lock holder: ' . $currentLockHolder . 
-            		', requested release for lock holder: ' . $uniqueID);
-        }
+		if ($uniqueID == $currentLockHolder) {
+			$this->deleteOwner($uniqueID, $internalSynchronizedKey);
+
+		} else {
+			// Fail silently instead of throwing fatal exception.			
+			$logger = ABJ_404_Solution_Logging::getInstance();
+			$logger->debugMessage("Synchronization lock release mismatch. " .
+				"Synchronized key: $synchronizedKeyFromUser, current holder: $currentLockHolder, " .
+				"attempted release by: $uniqueID");
+		}
     }
     
     function readOwner($key) {
