@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.8
-Stable tag: 2.36.6
+Stable tag: 2.36.7
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -89,6 +89,10 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.36.7 (April 25, 2025) =
+* Improvement: Avoid a logging issue while logging a DB error for leehodson.
+* Improvement: Fix some warnings and code issues brought up by intelephense.
 
 = Version 2.36.6 (April 15, 2025) =
 * Improvement: Page suggestions: when an admin user clicks the score after a suggestion link it gives them some more information about the link like author, post date, etc.

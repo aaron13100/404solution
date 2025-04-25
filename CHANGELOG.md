@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 2.36.7 (April 25, 2025) ##
+* Improvement: Avoid a logging issue while logging a DB error for leehodson.
+* Improvement: Fix some warnings and code issues brought up by intelephense.
+
 ## Version 2.36.6 (April 15, 2025) ##
 * Improvement: Page suggestions: when an admin user clicks the score after a suggestion link it gives them some more information about the link like author, post date, etc.
 * Improvement: Page suggestions: add an option to exclude certain URLs from the list of suggested pages on a custom 404 page based on user defined regex patterns.
