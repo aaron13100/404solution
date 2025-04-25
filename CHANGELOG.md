@@ -1,7 +1,10 @@
 # Changelog #
 
+## Version 2.36.8 (April 25, 2025) ##
+* FIX: Avoid a logging issue while logging a DB error for leehodson.
+
 ## Version 2.36.7 (April 25, 2025) ##
-* Improvement: Avoid a logging issue while logging a DB error for leehodson.
+* FIX: Avoid a logging issue while logging a DB error for leehodson.
 * Improvement: Fix some warnings and code issues brought up by intelephense.
 
 ## Version 2.36.6 (April 15, 2025) ##

@@ -307,7 +307,15 @@ class ABJ_404_Solution_DataAccess {
                 return null;
             }
                         
-            return $my_custom_db->public_strip_invalid_text_from_query($query);
+            $result = $my_custom_db->public_strip_invalid_text_from_query($query);
+
+            // Convert WP_Error to string
+            if (is_wp_error($result)) {
+                return 'WP_Error: ' . $result->get_error_message();
+            }
+    
+            return $result;
+    
         } catch (Exception $e) {
             // oh well.
             return null;

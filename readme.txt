@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.8
-Stable tag: 2.36.7
+Stable tag: 2.36.8
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -90,8 +90,11 @@ Please try this website for studying flashcards.
 
 == Changelog ==
 
+= Version 2.36.8 (April 25, 2025) =
+* FIX: Avoid a logging issue while logging a DB error for leehodson.
+
 = Version 2.36.7 (April 25, 2025) =
-* Improvement: Avoid a logging issue while logging a DB error for leehodson.
+* FIX: Avoid a logging issue while logging a DB error for leehodson.
 * Improvement: Fix some warnings and code issues brought up by intelephense.
 
 = Version 2.36.6 (April 15, 2025) =
