@@ -245,6 +245,20 @@ class ABJ_404_Solution_DataAccess {
                     "@@character_set_database as character_set_database";
             	$someMySQLVariables = $wpdb->get_results($extraDataQuery, ARRAY_A);
             	$variables = print_r($someMySQLVariables, true);
+
+                if (is_wp_error($query) && $query instanceof WP_Error) {
+                    /** @var WP_Error $query */
+                    $query = "((" . ABJ_404_Solution_WPUtils::stringify_wp_error($query) . "))";
+                }
+                if (is_wp_error($variables) && $variables instanceof WP_Error) {
+                    /** @var WP_Error $variables */
+                    $variables = "((" . ABJ_404_Solution_WPUtils::stringify_wp_error($variables) . "))";
+                }
+                if (is_wp_error($stripped_query) && $stripped_query instanceof WP_Error) {
+                    /** @var WP_Error $stripped_query */
+                    $stripped_query = "((" . ABJ_404_Solution_WPUtils::stringify_wp_error($stripped_query) . "))";
+                }
+
             	$abj404logging->errorMessage("Ugh. SQL query error: " . $result['last_error'] . 
 					", SQL: " . $query . 
 	            	", Execution time: " . round($timer->getElapsedTime(), 2) . 
@@ -306,10 +320,10 @@ class ABJ_404_Solution_DataAccess {
         $f = ABJ_404_Solution_Functions::getInstance();
         
         $re = "Table '(.*\/)?(.+)' is marked as crashed and ";
-        $matches = null;
+        $matches = array();
 
         $f->regexMatch($re, $errorMessage, $matches);
-        if ($matches != null && count($matches) > 2 && $f->strlen($matches[2]) > 0) {
+        if (!empty($matches) && count($matches) > 2 && $f->strlen($matches[2]) > 0) {
             $tableToRepair = $matches[2];
             if ($f->strpos($tableToRepair, "abj404") !== false) {
                 $query = "repair table " . $tableToRepair;

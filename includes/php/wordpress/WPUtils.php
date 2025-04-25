@@ -60,6 +60,79 @@ class ABJ_404_Solution_WPUtils {
 	}
 
 	/**
+	 * Return a string representation of the given WP_Error object.
+	 *
+	 * If the argument is not a WP_Error object, return a string indicating that.
+	 *
+	 * Otherwise, return a string that includes the following information:
+	 *
+	 * - code: the error code
+	 * - message: the error message
+	 * - data: the error data (using var_export)
+	 * - all error codes: each code and its associated messages
+	 * - backtrace: the backtrace at the time of calling (using print_r on debug_backtrace)
+	 *
+	 * If any of the above information cannot be retrieved, include an error message
+	 * indicating that.
+	 *
+	 * @param WP_Error $error The object to stringify.
+	 * @return string A string representation of the object.
+	 */
+	static function stringify_wp_error($error) {
+		if (!is_wp_error($error)) {
+			return 'Not a WP_Error object.';
+		}
+	
+		$output = "WP_Error object:\n";
+	
+		try {
+			$output .= "Code: " . $error->get_error_code() . "\n";
+		} catch (Throwable $e) {
+			$output .= "Code: [error getting code: " . $e->getMessage() . "]\n";
+		}
+	
+		try {
+			$output .= "Message: " . $error->get_error_message() . "\n";
+		} catch (Throwable $e) {
+			$output .= "Message: [error getting message: " . $e->getMessage() . "]\n";
+		}
+	
+		try {
+			$data = $error->get_error_data();
+			if (is_array($data) || is_object($data)) {
+				$output .= "Data: " . print_r($data, true) . "\n";
+			} else {
+				$output .= "Data: " . var_export($data, true) . "\n";
+			}
+		} catch (Throwable $e) {
+			$output .= "Data: [error getting data: " . $e->getMessage() . "]\n";
+		}
+	
+		try {
+			$codes = $error->get_error_codes();
+			$output .= "All error codes:\n";
+			foreach ($codes as $code) {
+				try {
+					$messages = $error->get_error_messages($code);
+					$output .= "- $code: " . implode("; ", $messages) . "\n";
+				} catch (Throwable $e) {
+					$output .= "- $code: [error getting messages: " . $e->getMessage() . "]\n";
+				}
+			}
+		} catch (Throwable $e) {
+			$output .= "All error codes: [error fetching codes: " . $e->getMessage() . "]\n";
+		}
+	
+		try {
+			$output .= "Backtrace:\n" . print_r(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true) . "\n";
+		} catch (Throwable $e) {
+			$output .= "Backtrace: [error generating backtrace: " . $e->getMessage() . "]\n";
+		}
+	
+		return $output;
+	}
+	
+	/**
      * Gets a string representation of a callable for comparison.
      *
      * @param mixed $callable The callable (string function name, array [object/class, method], Closure).
