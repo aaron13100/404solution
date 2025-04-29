@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 2.36.9
+	Version: 2.36.10
 
 	License: GPL-3.0-or-later
 	License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -76,6 +76,49 @@ function abj404_autoloader($class) {
 	}
 }
 spl_autoload_register('abj404_autoloader');
+
+add_action('doing_it_wrong_run', function($function_name, $message, $version) {
+	if (strpos($message, '404-solution') !== false &&
+		$function_name == '_load_textdomain_just_in_time') {
+		
+        try {
+            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+
+            // Prepare the plugin path from ABJ404_FILE
+            $pluginPath = trailingslashit(plugin_dir_path(ABJ404_FILE)); // e.g., /var/www/html/wp-content/plugins/404-solution/
+
+			$logMessage = '';
+            $isOurPlugin = false;
+
+            foreach ($backtrace as $index => $frame) {
+                $file = isset($frame['file']) ? $frame['file'] : '[internal function]';
+                $line = isset($frame['line']) ? $frame['line'] : '';
+                $func = isset($frame['function']) ? $frame['function'] : '[unknown function]';
+
+                if (!$isOurPlugin && is_string($file) && strpos($file, $pluginPath) !== false) {
+                    $isOurPlugin = true;
+                }
+
+                $logMessage .= "#$index $func at [$file:$line]\n";
+            }
+
+            if ($isOurPlugin) {
+				$header = "=== Detected Early Translation ===\n" .
+					"Function: $function_name\n" .
+					"Message: $message\n" .
+					"Version: $version\n";
+  
+				if (!isset($GLOBALS['abj404_pending_errors'])) {
+					$GLOBALS['abj404_pending_errors'] = [];
+				}
+				$GLOBALS['abj404_pending_errors'][] = $header . $logMessage;
+			}
+
+        } catch (Throwable $e) {
+            // error_log('Failed to log early translation stack trace: ' . $e->getMessage());
+        }
+    }
+}, 10, 3);
 
 // shortcode
 add_shortcode('abj404_solution_page_suggestions', 'abj404_shortCodeListener');
