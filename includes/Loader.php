@@ -3,14 +3,14 @@
 // Constants
 define( 'ABJ404_AUTHOR_EMAIL', '404solution@ajexperience.com' );
 /* plugin_dir_url( __FILE__ ) */
-define( 'ABJ404_URL', plugin_dir_url(ABJ404_FILE));
+define( 'ABJ404_URL', plugin_dir_url(ABJ404_FILE)); // https://site-url/wp-content/plugins/404-solution/
 
 /** plugin_dir_path( __FILE__ ) */
-define( 'ABJ404_NAME', plugin_basename(ABJ404_FILE));
+define( 'ABJ404_NAME', plugin_basename(ABJ404_FILE)); // wp-content/plugins/404-solution/404-solution.php
 define('ABJ404_SOLUTION_BASENAME', function_exists('plugin_basename') ? plugin_basename(ABJ404_FILE) : 
 	basename(dirname(ABJ404_FILE)) . '/' . basename(ABJ404_FILE));
 
-define( 'ABJ404_VERSION', '2.36.9' );
+define( 'ABJ404_VERSION', '2.36.10' );
 define( 'URL_TRACKING_SUFFIX', '?utm_source=404SolutionPlugin&utm_medium=WordPress');
 define( 'ABJ404_HOME_URL', 'https://www.ajexperience.com/404-solution/' . URL_TRACKING_SUFFIX);
 define( 'ABJ404_FC_URL', 'https://www.ajexperience.com/' . URL_TRACKING_SUFFIX);

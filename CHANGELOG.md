@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 2.36.10 (April 29, 2025) ##
+* FIX: Fix the '_load_textdomain_just_in_time was called incorrectly' issue again, this time for @apos37.
+
 ## Version 2.36.9 (April 25, 2025) ##
 * FIX: Avoid throwing an error when releasing a synchronization lock not owned by the current process, for leehodson.
 

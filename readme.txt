@@ -4,7 +4,7 @@ Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 301, 302
 Requires at least: 3.9
 Tested up to: 6.8
-Stable tag: 2.36.9
+Stable tag: 2.36.10
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -89,6 +89,9 @@ Please try this website for studying flashcards.
 3. Create New Redirect
 
 == Changelog ==
+
+= Version 2.36.10 (April 29, 2025) =
+* FIX: Fix the '_load_textdomain_just_in_time was called incorrectly' issue again, this time for @apos37.
 
 = Version 2.36.9 (April 25, 2025) =
 * FIX: Avoid throwing an error when releasing a synchronization lock not owned by the current process, for leehodson.

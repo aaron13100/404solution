@@ -196,7 +196,9 @@ class ABJ_404_Solution_ShortCode {
 
         // allow some HTML.
         $content .= '<div class="suggest-404s">' . "\n";
-        $content .= wp_kses_post($options['suggest_title']) . "\n";
+        $content .= wp_kses_post(
+            str_replace('{suggest_title_text}', __('Here are some other great pages', '404-solution'),
+                $options['suggest_title'] )) . "\n";
         
         $currentSlug = $abj404logic->removeHomeDirectory(
                 $f->regexReplace('\?.*', '', urldecode($_SERVER['REQUEST_URI'])));
@@ -272,7 +274,9 @@ class ABJ_404_Solution_ShortCode {
             $content .= wp_kses_post($options['suggest_after']) . "\n";
             
         } else {
-            $content .= wp_kses_post($options['suggest_noresults']);
+            $content .= wp_kses_post(
+                str_replace('{suggest_noresults_text}', __('No suggestions. :/ ', '404-solution'),
+                    $options['suggest_noresults'] ));            
         }
 
         $content .= "\n</div>";

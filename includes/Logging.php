@@ -18,8 +18,16 @@ class ABJ_404_Solution_Logging {
     public static function getInstance() {
         if (self::$instance == null) {
             self::$instance = new ABJ_404_Solution_Logging();
+
+            // log any errors that were stored before the logger existed.
+            if (isset($GLOBALS['abj404_pending_errors']) && is_array($GLOBALS['abj404_pending_errors'])) {
+                foreach ($GLOBALS['abj404_pending_errors'] as $message) {
+                    self::$instance->errorMessage($message);
+                }
+                unset($GLOBALS['abj404_pending_errors']); // Clear after flushing
+            }
         }
-        
+
         return self::$instance;
     }
     
