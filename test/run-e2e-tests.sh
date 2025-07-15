@@ -41,44 +41,8 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Function to backup current wp-config.php
-backup_config() {
-    print_status "Backing up current wp-config.php..."
-    if [ -f "$WORDPRESS_ROOT/wp-config.php" ]; then
-        cp "$WORDPRESS_ROOT/wp-config.php" "$WORDPRESS_ROOT/wp-config.backup.php"
-        print_success "Configuration backed up"
-    else
-        print_error "wp-config.php not found!"
-        exit 1
-    fi
-}
-
-# Function to switch to test configuration
-switch_to_test_config() {
-    print_status "Switching to test configuration..."
-    if [ -f "$WORDPRESS_ROOT/wp-config-test.php" ]; then
-        cp "$WORDPRESS_ROOT/wp-config-test.php" "$WORDPRESS_ROOT/wp-config.php"
-        print_success "Switched to test configuration"
-    else
-        print_error "wp-config-test.php not found!"
-        exit 1
-    fi
-}
-
-# Function to restore development configuration
-restore_dev_config() {
-    print_status "Restoring development configuration..."
-    if [ -f "$WORDPRESS_ROOT/wp-config-dev.php" ]; then
-        cp "$WORDPRESS_ROOT/wp-config-dev.php" "$WORDPRESS_ROOT/wp-config.php"
-        print_success "Restored development configuration"
-    elif [ -f "$WORDPRESS_ROOT/wp-config.backup.php" ]; then
-        cp "$WORDPRESS_ROOT/wp-config.backup.php" "$WORDPRESS_ROOT/wp-config.php"
-        print_success "Restored configuration from backup"
-    else
-        print_error "No development configuration found to restore!"
-        exit 1
-    fi
-}
+# Note: This script creates a completely separate WordPress installation
+# No backup/restore of development wp-config.php is needed
 
 # Function to setup fresh test WordPress
 setup_test_wordpress() {
@@ -205,14 +169,8 @@ run_tests() {
 # Function to clean up on exit
 cleanup() {
     print_status "Cleaning up..."
-    restore_dev_config
-    
-    # Remove backup file
-    if [ -f "$WORDPRESS_ROOT/wp-config.backup.php" ]; then
-        rm "$WORDPRESS_ROOT/wp-config.backup.php"
-    fi
-    
-    print_success "Cleanup completed"
+    # Note: Test environment is separate, no development config restoration needed
+    print_success "Test environment cleanup completed"
 }
 
 # Set trap to ensure cleanup runs on exit
@@ -260,17 +218,16 @@ case "${1:-}" in
         echo "  --test-only         Only run tests (skip WordPress setup)"
         echo ""
         echo "This script will:"
-        echo "1. Backup current wp-config.php"
-        echo "2. Switch to test configuration"
-        echo "3. Reset database and install fresh WordPress"
-        echo "4. Activate 404 Solution plugin"
-        echo "5. Run Playwright tests"
-        echo "6. Restore original configuration"
+        echo "1. Create fresh WordPress installation in /404solution-test/"
+        echo "2. Create and configure wordpress_test database"
+        echo "3. Install WordPress core and activate 404 Solution plugin"
+        echo "4. Run Playwright tests sequentially"
+        echo "5. Clean up test artifacts (preserves development environment)"
         echo ""
         echo "Prerequisites:"
         echo "- WP-CLI installed and available"
-        echo "- Test WordPress in ./test-wp directory"
-        echo "- wp-config-test.php configured"
+        echo "- MAMP running with MySQL on port 8889"
+        echo "- Apache serving from document root"
         exit 0
         ;;
     --setup-wordpress)

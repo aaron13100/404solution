@@ -38,25 +38,32 @@ The testing infrastructure uses Playwright for E2E testing with WP-CLI for fast 
 
 ### Directory Structure
 ```
-404-solution/
-├── test-wp/                    # WordPress test installation
-│   ├── wp-config.php          # Points to wordpress_test DB
-│   └── wp-content/
-│       └── plugins/
-│           └── 404-solution/  # Symlink to main plugin
+404-solution/test/
 ├── run-e2e-tests.sh          # Test runner script
 ├── tests/                     # Playwright tests
 │   ├── example.spec.js        # Basic connectivity tests
 │   ├── wordpress-login.spec.js # WordPress admin login
 │   └── 404-solution-plugin.spec.js # Plugin functionality
-└── playwright.config.js      # Playwright configuration
+├── playwright.config.js      # Playwright configuration
+├── package.json              # Test dependencies
+└── README.md                 # This documentation
+
+Separate Test Environment:
+/404solution-test/            # Fresh WordPress installation (Apache document root)
+├── wp-config.php             # Auto-generated, points to wordpress_test DB
+└── wp-content/
+    └── plugins/
+        └── 404-solution/     # Symlink to main plugin directory
 ```
 
-### Configuration Files
+### Architecture Overview
 
-- `wp-config-dev.php` - Development configuration pointing to '404-solution' database
-- `wp-config-test.php` - Test configuration pointing to 'wordpress_test' database
-- `test-wp/wp-config.php` - Test WordPress configuration (auto-generated)
+The testing system uses a **completely separate WordPress installation** to avoid any interference with the development environment:
+
+- **Isolated Environment**: Fresh WordPress in `/404solution-test/` 
+- **Database Separation**: Dedicated `wordpress_test` database
+- **Plugin Sync**: Symlink keeps plugin code synchronized between environments
+- **No Config Swapping**: No changes to development wp-config.php needed
 
 ## Running Tests
 
@@ -69,13 +76,13 @@ npm test
 ```
 
 This will:
-1. Backup your current wp-config.php
-2. Switch to test configuration
-3. Reset the test database
-4. Install fresh WordPress tables via WP-CLI
-5. Activate the 404 Solution plugin
-6. Run all Playwright tests
-7. Restore your original configuration
+1. Create fresh WordPress installation in `/404solution-test/`
+2. Create and configure the wordpress_test database
+3. Download WordPress core and configure with test credentials
+4. Create symlink to sync 404 Solution plugin code
+5. Activate the plugin in test environment
+6. Run all Playwright tests sequentially
+7. Clean up test artifacts (preserves development environment)
 
 ### Test Options
 ```bash
@@ -101,15 +108,17 @@ npm run test:only
 
 ### Fast WordPress Setup
 The test runner uses WP-CLI for lightning-fast WordPress environment setup:
-- **Database reset**: Drops and recreates test database (seconds)
-- **WordPress install**: Creates fresh tables only (no file downloads)
-- **Plugin activation**: Automatically activates 404 Solution plugin
-- **Known credentials**: admin/password for consistent testing
+- **Separate Installation**: Creates completely isolated WordPress in `/404solution-test/`
+- **Database Management**: Drops and recreates test database (seconds)
+- **WordPress Install**: Downloads core and creates fresh installation
+- **Plugin Sync**: Uses symlink to keep plugin code synchronized
+- **Known Credentials**: admin/password for consistent testing
 
-### Safe Configuration Management
-- Automatic backup and restore of wp-config.php
-- Cleanup runs even if tests fail or are interrupted (Ctrl+C)
-- Uses separate test database for complete isolation
+### Complete Environment Isolation
+- No changes to development WordPress installation
+- Dedicated wordpress_test database prevents data conflicts
+- Cleanup preserves development environment
+- Tests run against fresh WordPress every time
 
 ### Error Handling
 - Comprehensive error checking and reporting
@@ -135,14 +144,15 @@ The current test suite covers:
 ## Configuration
 
 ### Playwright Configuration (playwright.config.js)
-- **Base URL**: `http://localhost:8888/404solution-site/`
-- **Browsers**: Chrome, Firefox, Safari
+- **Base URL**: `http://localhost:8888/404solution-test/`
+- **Execution**: Sequential (fullyParallel: false, workers: 1)
+- **Browser**: Chromium only (Firefox/Safari disabled for reliability)
 - **Screenshots/videos**: Captured on failure
 - **Retries**: Configured for CI environments
 
 ### Database Configuration
-- **Development DB**: `404-solution`
-- **Test DB**: `wordpress_test`
+- **Development DB**: `404-solution` (unchanged)
+- **Test DB**: `wordpress_test` (completely separate)
 - **Credentials**: root/root
 - **Host**: localhost:8889 (MAMP default)
 
@@ -189,7 +199,7 @@ The current test suite covers:
 npx playwright test tests/404-solution-plugin.spec.js --headed --debug
 
 # Generate test code interactively
-npx playwright codegen localhost:8888/404solution-site/
+npx playwright codegen localhost:8888/404solution-test/
 
 # View detailed test report
 npm run test:report
