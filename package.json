@@ -25,9 +25,17 @@
     "gulp-util": "^3.0.7",
     "gulp-wp-pot": "^1.1.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@playwright/test": "^1.54.1",
+    "playwright": "^1.54.1"
+  },
   "scripts": {
-    "test": "echo \"No test specified\""
+    "test": "./test/run-e2e-tests.sh",
+    "test:e2e": "npx playwright test --config test/playwright.config.js",
+    "test:headed": "npx playwright test --config test/playwright.config.js --headed",
+    "test:ui": "npx playwright test --config test/playwright.config.js --ui",
+    "test:seed": "./test/run-e2e-tests.sh --seed-only",
+    "test:report": "npx playwright show-report test/playwright-report"
   },
   "repository": {
     "type": "git",

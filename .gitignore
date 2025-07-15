@@ -1,0 +1,13 @@
+.project
+.buildpath
+.settings/org.eclipse.php.core.prefs
+.history
+CLAUDE.md
+.claude
+node_modules
+
+# Test output files (generated, should not be committed)
+test/playwright-report/
+test/test-results/
+test/test-wp/
+test/wordpress-structure.sql

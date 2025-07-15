@@ -1,0 +1,11 @@
+1	Create two config files: wp-config-dev.php and wp-config-test.php, each pointing to the appropriate database (wordpress and wordpress_test)
+2	Update wp-config.php to be a symlink or copied from one of the above before starting WordPress
+3	Create the wordpress_test database and optionally seed it with known data using mysql and a .sql dump
+4	Install Playwright (npm install -D playwright) and run npx playwright install && npx playwright test --init to generate a starter config
+5	Write a script (run-e2e-tests.sh) that:
+- Switches to wp-config-test.php (via cp or ln -sf)
+- Seeds the test DB
+- Runs Playwright tests
+- Switches wp-config.php back to the dev config
+6	Write basic regression tests in Playwright (e.g. login, plugin admin screen loads, basic interaction)
+
