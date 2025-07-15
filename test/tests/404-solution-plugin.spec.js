@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { fillAjaxFieldByIndex } = require('../utils/ajaxFieldHelper');
 
 test.describe.serial('404 Solution Plugin Tests', () => {
   // Setup: Login before each test
@@ -79,37 +80,18 @@ test.describe.serial('404 Solution Plugin Tests', () => {
     // Fill in the URL field
     await page.fill('input[placeholder*="404solution"]', '/test-404-page');
     
-    // Fill in the redirect destination field - it uses AJAX dropdown after 3+ characters
-    // Wait for and fill the "Redirect to:" field
-    await page.waitForSelector('form[name="add-manual-redirect-top"] input[type="text"]', { timeout: 5000 });
-    const redirectFields = await page.locator('form[name="add-manual-redirect-top"] input[type="text"]').all();
-    if (redirectFields.length >= 2) {
-      // Type at least 3 characters to trigger AJAX dropdown
-      await redirectFields[1].fill('hom');
-      
-      // Wait for AJAX dropdown to appear
-      await page.waitForTimeout(2000);
-      
-      // Check if dropdown appeared and select from it
-      const dropdown = page.locator('.ui-autocomplete, .ui-menu');
-      const isDropdownVisible = await dropdown.isVisible().catch(() => false);
-      
-      if (isDropdownVisible) {
-        // Look for clickable menu items (not category headers)
-        const clickableItems = dropdown.locator('li.ui-menu-item .ui-menu-item-wrapper');
-        const clickableCount = await clickableItems.count();
-        
-        if (clickableCount > 0) {
-          await clickableItems.first().click();
-        } else {
-          await redirectFields[1].fill('home');
-        }
-      } else {
-        await redirectFields[1].fill('home');
-        await page.waitForTimeout(1000);
-      }
-    } else {
-      // Fallback: try to find the field by its context
+    // Fill in the redirect destination field using AJAX helper utility
+    const ajaxSuccess = await fillAjaxFieldByIndex(page, {
+      containerSelector: 'form[name="add-manual-redirect-top"]',
+      fieldIndex: 1,
+      triggerText: 'hom',
+      fallbackText: 'home',
+      selectOption: 'first',
+      debug: false
+    });
+    
+    // If AJAX helper failed, try fallback approach
+    if (!ajaxSuccess) {
       const destField = page.locator('text=Redirect to:').locator('..').locator('input[type="text"]');
       await destField.fill('home');
       await page.waitForTimeout(1000);
