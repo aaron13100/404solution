@@ -4,10 +4,12 @@
 .history
 CLAUDE.md
 .claude
-node_modules
 
-# Test output files (generated, should not be committed)
+# Test dependencies and output files (generated, should not be committed)
+test/node_modules/
 test/playwright-report/
 test/test-results/
 test/test-wp/
 test/wordpress-structure.sql
+test/page-check.log
+test/setup.log

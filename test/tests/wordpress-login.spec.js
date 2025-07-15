@@ -21,7 +21,7 @@ test.describe('WordPress Admin Login', () => {
 
     // Verify we're in the admin area
     await expect(page.locator('#wpadminbar')).toBeVisible();
-    await expect(page.locator('#adminmenumain')).toBeVisible();
+    await expect(page.locator('#adminmenu')).toBeVisible();
   });
 
   test('should show error for invalid credentials', async ({ page }) => {
@@ -33,6 +33,6 @@ test.describe('WordPress Admin Login', () => {
 
     // Should see error message
     await expect(page.locator('#login_error')).toBeVisible();
-    await expect(page.locator('#login_error')).toContainText('ERROR');
+    await expect(page.locator('#login_error')).toContainText('Error');
   });
 });

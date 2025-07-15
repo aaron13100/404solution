@@ -16,13 +16,13 @@ NC='\033[0m' # No Color
 WORDPRESS_ROOT="/Users/user/Documents/htdocs/404solution-site"
 PLUGIN_ROOT="$WORDPRESS_ROOT/wp-content/plugins/404-solution"
 TEST_ROOT="$PLUGIN_ROOT/test"
-TEST_WP_ROOT="$TEST_ROOT/test-wp"
+TEST_DOCROOT="/Users/user/Documents/htdocs/404solution-test"
 MYSQL_SOCKET="/Applications/MAMP/tmp/mysql/mysql.sock"
 DB_USER="root"
 DB_PASS="root"
 DB_HOST="localhost:8889"
 TEST_DB="wordpress_test"
-TEST_URL="http://localhost:8888/404solution-site/"
+TEST_URL="http://localhost:8888/404solution-test/"
 
 # Function to print colored output
 print_status() {
@@ -82,49 +82,110 @@ restore_dev_config() {
 
 # Function to setup fresh test WordPress
 setup_test_wordpress() {
-    print_status "Setting up fresh WordPress test environment..."
+    print_status "Setting up fresh WordPress test environment in Apache document root..."
     
-    # Drop and recreate test database
+    # Step 1: Put fresh install inside Apache's doc-root
+    print_status "Creating fresh WordPress installation in $TEST_DOCROOT..."
+    rm -rf "$TEST_DOCROOT"
+    
+    # Download WordPress core
+    php -d memory_limit=256M /usr/local/bin/wp core download --path="$TEST_DOCROOT" --allow-root || {
+        print_error "Failed to download WordPress core!"
+        exit 1
+    }
+    
+    # Create database
     print_status "Resetting test database..."
     mysql -u "$DB_USER" -p"$DB_PASS" -S "$MYSQL_SOCKET" -e "DROP DATABASE IF EXISTS $TEST_DB; CREATE DATABASE $TEST_DB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
     print_success "Test database reset"
     
-    # Install WordPress core tables using the main WordPress installation
-    print_status "Installing WordPress core tables..."
+    # Create wp-config.php with proper database credentials
+    print_status "Creating WordPress configuration..."
+    php -d memory_limit=256M /usr/local/bin/wp config create \
+        --path="$TEST_DOCROOT" \
+        --dbname="$TEST_DB" \
+        --dbuser="$DB_USER" \
+        --dbpass="$DB_PASS" \
+        --dbhost="$DB_HOST" \
+        --extra-php="
+// Override socket path for MAMP
+ini_set('mysqli.default_socket', '/Applications/MAMP/tmp/mysql/mysql.sock');
+ini_set('pdo_mysql.default_socket', '/Applications/MAMP/tmp/mysql/mysql.sock');
+
+// WordPress Language
+define('WPLANG', 'en_US');" \
+        --allow-root || {
+            print_error "Failed to create wp-config.php!"
+            exit 1
+        }
     
-    # Temporarily switch main site to test database
-    cp "$WORDPRESS_ROOT/wp-config-test.php" "$WORDPRESS_ROOT/wp-config.php"
-    
-    # Use main WordPress installation to set up the test database
-    cd "$WORDPRESS_ROOT"
+    # Install WordPress core
+    print_status "Installing WordPress core..."
     php -d memory_limit=256M /usr/local/bin/wp core install \
+        --path="$TEST_DOCROOT" \
         --url="$TEST_URL" \
         --title="Test Site" \
         --admin_user="admin" \
         --admin_password="password" \
         --admin_email="test@example.com" \
-        --locale="en_US" \
         --skip-email \
-        --allow-root 2>/dev/null || true
+        --allow-root || {
+            print_error "WordPress installation failed!"
+            exit 1
+        }
+        
+    # Set language explicitly to avoid setup screen
+    print_status "Setting language to English..."
+    php -d memory_limit=256M /usr/local/bin/wp option update WPLANG "en_US" --path="$TEST_DOCROOT" --allow-root
     
-    # Update site URLs to ensure they're correct
-    php -d memory_limit=256M /usr/local/bin/wp option update home "$TEST_URL" --allow-root 2>/dev/null || true
-    php -d memory_limit=256M /usr/local/bin/wp option update siteurl "$TEST_URL" --allow-root 2>/dev/null || true
+    # Ensure languages directory exists and download .mo file if needed
+    mkdir -p "$TEST_DOCROOT/wp-content/languages"
+    if [ ! -f "$TEST_DOCROOT/wp-content/languages/en_US.mo" ]; then
+        print_status "Downloading English language files..."
+        wget -q -O "$TEST_DOCROOT/wp-content/languages/en_US.mo" \
+            "https://downloads.wordpress.org/translation/core/6.8/en_US.mo" 2>/dev/null || \
+            print_warning "Could not download language file, continuing anyway"
+    fi
     
-    print_success "WordPress core tables installed"
+    # Create symlink to 404 Solution plugin (keep code in sync)
+    print_status "Creating symlink to 404 Solution plugin..."
+    ln -sf "$PLUGIN_ROOT" "$TEST_DOCROOT/wp-content/plugins/404-solution"
     
     # Activate 404 Solution plugin
-    print_status "Activating 404 Solution plugin..."
-    php -d memory_limit=256M /usr/local/bin/wp plugin activate 404-solution --allow-root 2>/dev/null || true
-    print_success "404 Solution plugin activated"
+    php -d memory_limit=256M /usr/local/bin/wp plugin activate 404-solution --path="$TEST_DOCROOT" --allow-root || {
+        print_warning "Failed to activate 404 Solution plugin"
+    }
+    
+    # Set proper file permissions
+    print_status "Setting file permissions..."
+    chmod -R 755 "$TEST_DOCROOT"
+    find "$TEST_DOCROOT" -type f -exec chmod 644 {} \;
+    
+    # Verify installation
+    print_status "Verifying WordPress installation..."
+    if php -d memory_limit=256M /usr/local/bin/wp core is-installed --path="$TEST_DOCROOT" --allow-root 2>/dev/null; then
+        print_success "WordPress core installed and verified"
+    else
+        print_error "WordPress installation verification failed!"
+        exit 1
+    fi
+    
+    # Verify web accessibility with curl
+    print_status "Testing web accessibility..."
+    if curl -I "$TEST_URL/wp-login.php" 2>/dev/null | grep -q "200 OK"; then
+        print_success "WordPress is web-accessible"
+    else
+        print_warning "WordPress may not be web-accessible (check Apache configuration)"
+    fi
+    
+    print_success "Fresh WordPress test environment ready at $TEST_URL"
 }
-
 # Function to run Playwright tests
 run_tests() {
     print_status "Running Playwright tests..."
     cd "$TEST_ROOT"
     
-    if npm list @playwright/test --prefix="$PLUGIN_ROOT" > /dev/null 2>&1; then
+    if npm list @playwright/test > /dev/null 2>&1; then
         npx playwright test
         TEST_EXIT_CODE=$?
         
@@ -167,19 +228,6 @@ main() {
         print_error "Plugin not found at $PLUGIN_ROOT"
         exit 1
     fi
-    
-    # Check if test WordPress exists
-    if [ ! -d "$TEST_WP_ROOT" ]; then
-        print_error "Test WordPress not found at $TEST_WP_ROOT"
-        print_error "Run the one-time setup first"
-        exit 1
-    fi
-    
-    # Backup current config
-    backup_config
-    
-    # Switch to test configuration
-    switch_to_test_config
     
     # Setup fresh WordPress test environment
     setup_test_wordpress

@@ -15,9 +15,10 @@ The testing infrastructure uses Playwright for E2E testing with WP-CLI for fast 
 
 ### One-Time Installation
 
-1. **Install Playwright:**
+1. **Install dependencies from the test directory:**
    ```bash
-   npm install -D @playwright/test
+   cd test/
+   npm install
    npx playwright install
    ```
 
@@ -61,6 +62,7 @@ The testing infrastructure uses Playwright for E2E testing with WP-CLI for fast 
 
 ### Full Test Suite (Recommended)
 ```bash
+cd test/
 npm test
 # OR
 ./run-e2e-tests.sh
@@ -77,6 +79,8 @@ This will:
 
 ### Test Options
 ```bash
+cd test/
+
 # Run tests with browser visible (debugging)
 npm run test:headed
 
@@ -87,7 +91,7 @@ npm run test:ui
 npm run test:report
 
 # Only run tests (skip WordPress setup)
-./run-e2e-tests.sh --test-only
+npm run test:only
 
 # Show help
 ./run-e2e-tests.sh --help
