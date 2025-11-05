@@ -13,3 +13,4 @@ test/test-wp/
 test/wordpress-structure.sql
 test/page-check.log
 test/setup.log
+.phpunit.result.cache
