@@ -26,8 +26,8 @@
     "gulp-wp-pot": "^1.1.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.1",
-    "playwright": "^1.54.1"
+    "@playwright/test": "^1.56.1",
+    "playwright": "^1.56.1"
   },
   "scripts": {
     "test": "./run-e2e-tests.sh",
