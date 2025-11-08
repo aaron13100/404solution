@@ -16,6 +16,11 @@ class ABJ_404_Solution_SpellChecker {
 
 	private static $instance = null;
 
+	// Performance counters (for testing efficiency - disabled by default)
+	private $enablePerformanceCounters = false;
+	private $levenshteinCallCount = 0;
+	private $totalPagesConsidered = 0;
+
 	private $custom404PageID = null;
 
 	/** @var ABJ_404_Solution_Functions */
@@ -67,6 +72,41 @@ class ABJ_404_Solution_SpellChecker {
 		}
 
 		return self::$instance;
+	}
+
+	/**
+	 * Enable performance counters for testing efficiency (disabled by default for production)
+	 */
+	public function enablePerformanceCounters($enable = true) {
+		$this->enablePerformanceCounters = $enable;
+		if ($enable) {
+			$this->resetPerformanceCounters();
+		}
+	}
+
+	/**
+	 * Reset performance counters to zero
+	 */
+	public function resetPerformanceCounters() {
+		$this->levenshteinCallCount = 0;
+		$this->totalPagesConsidered = 0;
+	}
+
+	/**
+	 * Get current performance counter values
+	 * @return array ['levenshtein_calls' => int, 'pages_considered' => int, 'efficiency_percent' => float]
+	 */
+	public function getPerformanceCounters() {
+		$efficiency = 0;
+		if ($this->totalPagesConsidered > 0) {
+			$efficiency = ($this->levenshteinCallCount / $this->totalPagesConsidered) * 100;
+		}
+
+		return [
+			'levenshtein_calls' => $this->levenshteinCallCount,
+			'pages_considered' => $this->totalPagesConsidered,
+			'efficiency_percent' => round($efficiency, 2)
+		];
 	}
 	
 	static function init() {
@@ -877,6 +917,11 @@ class ABJ_404_Solution_SpellChecker {
 		while ($row != null) {
 			$row = (array)$row;
 
+			// Count pages considered for performance metrics
+			if ($this->enablePerformanceCounters) {
+				$this->totalPagesConsidered++;
+			}
+
 			$id = null;
 			$the_permalink = null;
 			$urlParts = null;
@@ -1106,6 +1151,10 @@ class ABJ_404_Solution_SpellChecker {
 	 * @throws Exception
 	 */
 	function customLevenshtein($str1, $str2) {
+		// Increment performance counter if enabled
+		if ($this->enablePerformanceCounters) {
+			$this->levenshteinCallCount++;
+		}
 	    $_REQUEST[ABJ404_PP]['debug_info'] = 'customLevenshtein. str1: ' . esc_html($str1) . ', str2: ' . esc_html($str2);
 
 	    $RowLen = $this->f->strlen($str1);
