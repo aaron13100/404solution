@@ -707,6 +707,12 @@ class ABJ_404_Solution_SpellChecker {
 		$likelyMatchIDsAndPermalinks = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, 'categories', $rows);
 		$likelyMatchIDs = array_keys($likelyMatchIDsAndPermalinks);
 
+		// Early termination optimization
+		$options = $this->logic->getOptions();
+		$suggestMax = absint($options['suggest_max']);
+		$topKScores = new SplMinHeap();
+		$requestedURLCleanedLength = $this->f->strlen($requestedURLCleaned);
+
 		// access the array directly instead of using a foreach loop so we can remove items
 		// from the end of the array in the middle of the loop.
 		foreach ($likelyMatchIDs as $id) {
@@ -717,6 +723,17 @@ class ABJ_404_Solution_SpellChecker {
 			$scoreBasis = $this->f->strlen($pathOnly);
 			if ($scoreBasis == 0) {
 				continue;
+			}
+
+			// EARLY TERMINATION: Check if this candidate can possibly beat our worst current match
+			if ($topKScores->count() >= $suggestMax) {
+				$pathOnlyLength = $this->f->strlen($pathOnly);
+				$minPossibleDistance = abs($requestedURLCleanedLength - $pathOnlyLength);
+				$bestPossibleScore = 100 - (($minPossibleDistance / $scoreBasis) * 100);
+
+				if ($bestPossibleScore < $topKScores->top()) {
+					continue; // Skip expensive Levenshtein calculation
+				}
 			}
 
 			$levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
@@ -733,6 +750,12 @@ class ABJ_404_Solution_SpellChecker {
 
 			$score = 100 - (($levscore / $scoreBasis) * 100);
 			$permalinks[$id . "|" . ABJ404_TYPE_CAT] = number_format($score, 4, '.', '');
+
+			// Update top-K heap
+			$topKScores->insert($score);
+			if ($topKScores->count() > $suggestMax) {
+				$topKScores->extract();
+			}
 		}
 
 		return $permalinks;
@@ -747,6 +770,12 @@ class ABJ_404_Solution_SpellChecker {
 		$likelyMatchIDsAndPermalinks = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, 'tags', $rows);
 		$likelyMatchIDs = array_keys($likelyMatchIDsAndPermalinks);
 
+		// Early termination optimization
+		$options = $this->logic->getOptions();
+		$suggestMax = absint($options['suggest_max']);
+		$topKScores = new SplMinHeap();
+		$requestedURLCleanedLength = $this->f->strlen($requestedURLCleaned);
+
 		// access the array directly instead of using a foreach loop so we can remove items
 		// from the end of the array in the middle of the loop.
 		foreach ($likelyMatchIDs as $id) {
@@ -759,6 +788,17 @@ class ABJ_404_Solution_SpellChecker {
 				continue;
 			}
 
+			// EARLY TERMINATION: Check if this candidate can possibly beat our worst current match
+			if ($topKScores->count() >= $suggestMax) {
+				$pathOnlyLength = $this->f->strlen($pathOnly);
+				$minPossibleDistance = abs($requestedURLCleanedLength - $pathOnlyLength);
+				$bestPossibleScore = 100 - (($minPossibleDistance / $scoreBasis) * 100);
+
+				if ($bestPossibleScore < $topKScores->top()) {
+					continue; // Skip expensive Levenshtein calculation
+				}
+			}
+
 			$levscore = $this->customLevenshtein($requestedURLCleaned, $pathOnly);
 			if ($fullURLspacesCleaned != '') {
 				$pathOnlySpaces = $this->f->str_replace($this->separatingCharacters, " ", $pathOnly);
@@ -767,36 +807,64 @@ class ABJ_404_Solution_SpellChecker {
 			}
 			$score = 100 - (($levscore / $scoreBasis) * 100);
 			$permalinks[$id . "|" . ABJ404_TYPE_TAG] = number_format($score, 4, '.', '');
+
+			// Update top-K heap
+			$topKScores->insert($score);
+			if ($topKScores->count() > $suggestMax) {
+				$topKScores->extract();
+			}
 		}
 
 		return $permalinks;
 	}
 
 	function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rowType) {
-	
+
 		// pre-filter some pages based on the min and max possible levenshtein distances.
 		$likelyMatchIDsAndPermalinks = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rowType);
 		$likelyMatchIDs = array_keys($likelyMatchIDsAndPermalinks);
-	
+
 		$this->logger->debugMessage("Found " . count($likelyMatchIDs) . " likely match IDs.");
-	
-		// access the array directly instead of using a foreach loop so we can remove items
-		// from the end of the array in the middle of the loop.
+
+		// Early termination optimization: maintain a min-heap of top-K scores
+		// Once we have K matches, we can skip candidates that can't beat the worst in heap
+		$options = $this->logic->getOptions();
+		$suggestMax = absint($options['suggest_max']);
+		$topKScores = new SplMinHeap(); // Min-heap: smallest score at top
+		$requestedURLCleanedLength = $this->f->strlen($requestedURLCleaned);
+
+		// Process candidates in order of best match first (smallest minDist first)
+		// This is critical for early termination: filling the heap with good scores early
+		// allows us to skip more candidates later
 		while (count($likelyMatchIDs) > 0) {
-			$id = array_pop($likelyMatchIDs);
-	
+			$id = array_shift($likelyMatchIDs); // Take from beginning (best matches first)
+
 			// use the levenshtein distance formula here.
 			$the_permalink = $likelyMatchIDsAndPermalinks[$id];
 			$urlParts = parse_url($the_permalink);
 			$existingPageURL = $this->logic->removeHomeDirectory($urlParts['path']);
 			$existingPageURLSpaces = $this->f->str_replace($this->separatingCharacters, " ", $existingPageURL);
-	
+
 			$existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
 			$scoreBasis = $this->f->strlen($existingPageURLCleaned) * 3;
 			if ($scoreBasis == 0) {
 				continue;
 			}
-	
+
+			// EARLY TERMINATION: Check if this candidate can possibly beat our worst current match
+			if ($topKScores->count() >= $suggestMax) {
+				// Calculate best possible score based on length difference alone (no Levenshtein yet!)
+				$existingURLCleanedLength = $this->f->strlen($existingPageURLCleaned);
+				$minPossibleDistance = abs($requestedURLCleanedLength - $existingURLCleanedLength);
+				$bestPossibleScore = 100 - (($minPossibleDistance / $scoreBasis) * 100);
+
+				// If best possible score can't beat the worst in our top-K, skip this candidate
+				if ($bestPossibleScore < $topKScores->top()) {
+					// Skip expensive Levenshtein calculation - this candidate can't make top-K
+					continue;
+				}
+			}
+
 			$levscore = $this->customLevenshtein($requestedURLCleaned, $existingPageURLCleaned);
 			if ($fullURLspacesCleaned != '') {
 				$levscore = min($levscore, $this->customLevenshtein($fullURLspacesCleaned, $existingPageURLCleaned));
@@ -804,21 +872,28 @@ class ABJ_404_Solution_SpellChecker {
 			if ($rowType == 'image') {
 				// strip the image size from the file name and try again.
 				// the image size is at the end of the file in the format of -640x480
-				$strippedImageName = $this->f->regexReplace('(.+)([-]\d{1,5}[x]\d{1,5})([.].+)', 
+				$strippedImageName = $this->f->regexReplace('(.+)([-]\d{1,5}[x]\d{1,5})([.].+)',
 						'\\1\\3', $requestedURLRaw);
-	
+
 				if (($strippedImageName != null) && ($strippedImageName != $requestedURLRaw)) {
 					$strippedImageName = $this->f->str_replace($this->separatingCharactersForImages, " ", $strippedImageName);
 					$levscore = min($levscore, $this->customLevenshtein($strippedImageName, $existingPageURL));
-	
+
 					$strippedImageName = $this->getLastURLPart($strippedImageName);
 					$levscore = min($levscore, $this->customLevenshtein($strippedImageName, $existingPageURLCleaned));
 				}
 			}
 			$score = 100 - (($levscore / $scoreBasis) * 100);
 			$permalinks[$id . "|" . ABJ404_TYPE_POST] = number_format($score, 4, '.', '');
+
+			// Update top-K heap with this score
+			$topKScores->insert($score);
+			// Keep heap size at most suggestMax (remove worst if exceeded)
+			if ($topKScores->count() > $suggestMax) {
+				$topKScores->extract(); // Remove the smallest (worst) score
+			}
 		}
-	
+
 		return $permalinks;
 	}
 
