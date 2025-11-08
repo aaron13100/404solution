@@ -1593,30 +1593,21 @@ class ABJ_404_Solution_View {
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true", $html);
         $html = $this->f->doNormalReplacements($html);
         $content .= $html;
-        
+
         // -----------------------------------------------
-        
-        $selectedAutoRedirects = "";
-        if ($options['auto_redirects'] == '1') {
-            $selectedAutoRedirects = " checked";
-        }
-        $content .= "<p><label for=\"auto_redirects\">" . __('Create automatic redirects', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_redirects\" id=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><BR/>";
-        $content .= $spaces . __('Automatically creates redirects based on best possible suggested page.', '404-solution') . "</p>";
+        // Load auto redirects options template
+        $selectedAutoRedirects = ($options['auto_redirects'] == '1') ? " checked" : "";
+        $selectedAutoCats = ($options['auto_cats'] == '1') ? " checked" : "";
+        $selectedAutoTags = ($options['auto_tags'] == '1') ? " checked" : "";
 
-        $selectedAutoCats = "";
-        if ($options['auto_cats'] == '1') {
-            $selectedAutoCats = " checked";
-        }
-        $content .= "<p><label for=\"auto_cats\">" . __('Create automatic redirects for categories', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_cats\" id=\"auto_cats\" value=\"1\"" . $selectedAutoCats . "></p>";
-
-        $selectedAutoTags = "";
-        if ($options['auto_tags'] == '1') {
-            $selectedAutoTags = " checked";
-        }
-        $content .= "<p><label for=\"auto_tags\">" . __('Create automatic redirects for tags', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_tags\" id=\"auto_tags\" value=\"1\"" . $selectedAutoTags . "></p>";
-
-        $content .= "<p><label for=\"auto_deletion\">" . __('Auto redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"auto_deletion\" id=\"auto_deletion\" value=\"" . esc_attr($options['auto_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
-        $content .= $spaces . __('Removes auto created redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsAutoRedirects.html");
+        $html = $this->f->str_replace('{selectedAutoRedirects}', $selectedAutoRedirects, $html);
+        $html = $this->f->str_replace('{selectedAutoCats}', $selectedAutoCats, $html);
+        $html = $this->f->str_replace('{selectedAutoTags}', $selectedAutoTags, $html);
+        $html = $this->f->str_replace('{auto_deletion}', esc_attr($options['auto_deletion']), $html);
+        $html = $this->f->str_replace('{spaces}', $spaces, $html);
+        $html = $this->f->doNormalReplacements($html);
+        $content .= $html;
 
         return $content;
     }
