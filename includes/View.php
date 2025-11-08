@@ -291,16 +291,15 @@ class ABJ_404_Solution_View {
         echo "<div class=\"metabox-holder\">";
         echo " <div class=\"meta-box-sortables\">";
 
-        $content = "";
-        $content .= "<p $hr>";
-        $content .= "<strong>" . __('Automatic 301 Redirects', '404-solution') . ":</strong> " . esc_html($auto301) . "<BR/>";
-        $content .= "<strong>" . __('Automatic 302 Redirects', '404-solution') . ":</strong> " . esc_html($auto302) . "<BR/>";
-        $content .= "<strong>" . __('Manual 301 Redirects', '404-solution') . ":</strong> " . esc_html($manual301) . "<BR/>";
-        $content .= "<strong>" . __('Manual 302 Redirects', '404-solution') . ":</strong> " . esc_html($manual302) . "<BR/>";
-        $content .= "<strong>" . __('Trashed Redirects', '404-solution') . ":</strong> " . esc_html($trashed) . "</p>";
-        $content .= "<p style=\"margin-top: 4px;\">";
-        $content .= "<strong>" . __('Total Redirects', '404-solution') . ":</strong> " . esc_html($total);
-        $content .= "</p>";
+        // Load redirects stats template
+        $content = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/statsRedirectsBox.html");
+        $content = $this->f->str_replace('{auto301}', esc_html($auto301), $content);
+        $content = $this->f->str_replace('{auto302}', esc_html($auto302), $content);
+        $content = $this->f->str_replace('{manual301}', esc_html($manual301), $content);
+        $content = $this->f->str_replace('{manual302}', esc_html($manual302), $content);
+        $content = $this->f->str_replace('{trashed}', esc_html($trashed), $content);
+        $content = $this->f->str_replace('{total}', esc_html($total), $content);
+        $content = $this->f->doNormalReplacements($content);
         $abj404view->echoPostBox("abj404-redirectStats", __('Redirects', '404-solution'), $content);
 
         // -------------------------------------------
@@ -315,14 +314,13 @@ class ABJ_404_Solution_View {
 
         $total = $captured + $ignored + $trashed;
 
-        $content = "";
-        $content .= "<p $hr>";
-        $content .= "<strong>" . __('Captured URLs', '404-solution') . ":</strong> " . esc_html($captured) . "<BR/>";
-        $content .= "<strong>" . __('Ignored 404 URLs', '404-solution') . ":</strong> " . esc_html($ignored) . "<BR/>";
-        $content .= "<strong>" . __('Trashed URLs', '404-solution') . ":</strong> " . esc_html($trashed) . "</p>";
-        $content .= "<p style=\"margin-top: 4px;\">";
-        $content .= "<strong>" . __('Total URLs', '404-solution') . ":</strong> " . esc_html($total);
-        $content .= "</p>";
+        // Load captured URLs stats template
+        $content = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/statsCapturedURLsBox.html");
+        $content = $this->f->str_replace('{captured}', esc_html($captured), $content);
+        $content = $this->f->str_replace('{ignored}', esc_html($ignored), $content);
+        $content = $this->f->str_replace('{trashed}', esc_html($trashed), $content);
+        $content = $this->f->str_replace('{total}', esc_html($total), $content);
+        $content = $this->f->doNormalReplacements($content);
         $abj404view->echoPostBox("abj404-capturedStats", __('Captured URLs', '404-solution'), $content);
         echo "</div>";
         echo "</div>";
@@ -377,17 +375,17 @@ class ABJ_404_Solution_View {
             $query = "select count(distinct referrer) from $logs where timestamp >= $ts and dest_url != %s";
             $distinctrefer = $this->dao->getStatsCount($query, array("404"));
 
-            $content = "";
-            $content .= "<p>";
-            $content .= "<strong>" . __('Page Not Found Displayed', '404-solution') . ":</strong> " . esc_html($disp404) . "<BR/>";
-            $content .= "<strong>" . __('Unique Page Not Found URLs', '404-solution') . ":</strong> " . esc_html($distinct404) . "<BR/>";
-            $content .= "<strong>" . __('Unique Page Not Found Visitors', '404-solution') . ":</strong> " . esc_html($visitors404) . "<BR/>";
-            $content .= "<strong>" . __('Unique Page Not Found Referrers', '404-solution') . ":</strong> " . esc_html($refer404) . "<BR/>";
-            $content .= "<strong>" . __('Hits Redirected', '404-solution') . ":</strong> " . esc_html($redirected) . "<BR/>";
-            $content .= "<strong>" . __('Unique URLs Redirected', '404-solution') . ":</strong> " . esc_html($distinctredirected) . "<BR/>";
-            $content .= "<strong>" . __('Unique Redirected Visitors', '404-solution') . ":</strong> " . esc_html($distinctvisitors) . "<BR/>";
-            $content .= "<strong>" . __('Unique Redirected Referrers', '404-solution') . ":</strong> " . esc_html($distinctrefer) . "<BR/>";
-            $content .= "</p>";
+            // Load periodic stats template
+            $content = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/statsPeriodicBox.html");
+            $content = $this->f->str_replace('{disp404}', esc_html($disp404), $content);
+            $content = $this->f->str_replace('{distinct404}', esc_html($distinct404), $content);
+            $content = $this->f->str_replace('{visitors404}', esc_html($visitors404), $content);
+            $content = $this->f->str_replace('{refer404}', esc_html($refer404), $content);
+            $content = $this->f->str_replace('{redirected}', esc_html($redirected), $content);
+            $content = $this->f->str_replace('{distinctredirected}', esc_html($distinctredirected), $content);
+            $content = $this->f->str_replace('{distinctvisitors}', esc_html($distinctvisitors), $content);
+            $content = $this->f->str_replace('{distinctrefer}', esc_html($distinctrefer), $content);
+            $content = $this->f->doNormalReplacements($content);
             $abj404view->echoPostBox("abj404-stats" . $x, __($title, '404-solution'), $content);
         }
         echo "</div>";
