@@ -50,15 +50,15 @@ class ABJ_404_Solution_View {
      */
     function getDashboardNotificationCaptured($captured) {
         /* Translators: %s is the number of captured 404 URLs. */
-    	$capturedMessage = sprintf( _n( 'There is <a>%s captured 404 URL</a> that needs to be processed.', 
-                'There are <a>%s captured 404 URLs</a> to be processed.', 
+    	$capturedMessage = sprintf( _n( 'There is <a>%s captured 404 URL</a> that needs to be processed.',
+                'There are <a>%s captured 404 URLs</a> to be processed.',
                 $captured, '404-solution'), $captured);
-        $capturedMessage = $f->str_replace("<a>", 
-                "<a href=\"options-general.php?page=" . ABJ404_PP . "&subpage=abj404_captured\" >", 
+        $capturedMessage = $this->f->str_replace("<a>",
+                "<a href=\"options-general.php?page=" . ABJ404_PP . "&subpage=abj404_captured\" >",
                 $capturedMessage);
-        $capturedMessage = $f->str_replace("</a>", "</a>", $capturedMessage);
+        $capturedMessage = $this->f->str_replace("</a>", "</a>", $capturedMessage);
 
-        return '<div class="notice notice-info"><p><strong>' . PLUGIN_NAME . 
+        return '<div class="notice notice-info"><p><strong>' . PLUGIN_NAME .
                 ":</strong> " . $capturedMessage . "</p></div>";
     }
 
@@ -117,7 +117,7 @@ class ABJ_404_Solution_View {
 
         // Deal With Page Tabs
         if ($sub == "") {
-            $sub = $f->strtolower($this->dao->getPostOrGetSanitize('subpage'));
+            $sub = $this->f->strtolower($this->dao->getPostOrGetSanitize('subpage'));
         }
         if ($sub == "") {
             $sub = 'abj404_redirects';
@@ -156,10 +156,10 @@ class ABJ_404_Solution_View {
     function echoAdminFooter() {
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminFooter.html");
-        $html = $f->str_replace('{JAPANESE_FLASHCARDS_URL}', ABJ404_FC_URL, $html);
+        $html = $this->f->str_replace('{JAPANESE_FLASHCARDS_URL}', ABJ404_FC_URL, $html);
         
         // constants and translations.
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->doNormalReplacements($html);
         echo $html;
     }
 
@@ -197,7 +197,7 @@ class ABJ_404_Solution_View {
                 'strong' => array(),
             );
             
-            if (($f->strlen($message) >= 6) && ($f->substr($f->strtolower($message), 0, 6) == 'error:')) {
+            if (($this->f->strlen($message) >= 6) && ($this->f->substr($this->f->strtolower($message), 0, 6) == 'error:')) {
                 $cssClasses = 'notice notice-error';
             } else {
                 $cssClasses = 'notice notice-success';
@@ -465,9 +465,9 @@ class ABJ_404_Solution_View {
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsExportForm.html");
         // do special replacements
-        $html = $f->str_replace('{toolsExportRedirectsLink}', $link, $html);
+        $html = $this->f->str_replace('{toolsExportRedirectsLink}', $link, $html);
         // constants and translations.
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->doNormalReplacements($html);
         
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
@@ -482,9 +482,9 @@ class ABJ_404_Solution_View {
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsImportForm.html");
         // do special replacements
-        $html = $f->str_replace('{toolsImportRedirectsLink}', $link, $html);
+        $html = $this->f->str_replace('{toolsImportRedirectsLink}', $link, $html);
         // constants and translations.
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->doNormalReplacements($html);
         
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
@@ -498,9 +498,9 @@ class ABJ_404_Solution_View {
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsPurgeForm.html");
         // do special replacements
-        $html = $f->str_replace('{toolsPurgeFormActionLink}', $link, $html);
+        $html = $this->f->str_replace('{toolsPurgeFormActionLink}', $link, $html);
         // constants and translations.
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->doNormalReplacements($html);
         
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
@@ -515,9 +515,9 @@ class ABJ_404_Solution_View {
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsEtcForm.html");
         // do special replacements
-        $html = $f->str_replace('{toolsMaintenanceFormActionLink}', $link, $html);
+        $html = $this->f->str_replace('{toolsMaintenanceFormActionLink}', $link, $html);
         // constants and translations.
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->doNormalReplacements($html);
         
         echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
         echo "<div class=\"metabox-holder\">";
@@ -537,12 +537,12 @@ class ABJ_404_Solution_View {
         $currentURL = $urlParts['path'];
         if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
                 $options['menuLocation'] == 'settingsLevel') {
-            if ($f->strpos($currentURL, 'options-general.php') != false) {
+            if ($this->f->strpos($currentURL, 'options-general.php') != false) {
                 // the option changed and we're at the wrong URL now, so we redirect to the correct one.
                 $this->logic->forceRedirect(admin_url() . "admin.php?page=" . 
                         ABJ404_PP . '&subpage=abj404_options');
             }
-        } else if ($f->strpos($currentURL, 'admin.php') != false) {
+        } else if ($this->f->strpos($currentURL, 'admin.php') != false) {
             // if the current URL has admin.php then the URLs don't match and we need to reload.
             $this->logic->forceRedirect(admin_url() . "options-general.php?page=" . 
                     ABJ404_PP . '&subpage=abj404_options');
@@ -558,7 +558,7 @@ class ABJ_404_Solution_View {
         $formBeginning .= '<input type="hidden" name="action" id="action" value="updateOptions">' . "\n";
         $formBeginning .= '<input type="hidden" name="nonce" id="nonce" value="' . 
         	wp_create_nonce('abj404UpdateOptions') . '">' . "\n";
-        $formBeginning = $f->str_replace('{data-url}', 
+        $formBeginning = $this->f->str_replace('{data-url}', 
         	"admin-ajax.php?action=updateOptions", $formBeginning);
         echo $formBeginning;
 
@@ -602,12 +602,12 @@ class ABJ_404_Solution_View {
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
 
         $recnum = null;
-        if (array_key_exists('id', $_GET) && isset($_GET['id']) && $f->regexMatch('[0-9]+', $_GET['id'])) {
+        if (array_key_exists('id', $_GET) && isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {
             $this->logger->debugMessage("Edit redirect page. GET ID: " . 
                     wp_kses_post(json_encode($_GET['id'])));
             $recnum = absint($_GET['id']);
             
-        } else if (array_key_exists('id', $_POST) && isset($_POST['id']) && $f->regexMatch('[0-9]+', $_POST['id'])) {
+        } else if (array_key_exists('id', $_POST) && isset($_POST['id']) && $this->f->regexMatch('[0-9]+', $_POST['id'])) {
             $this->logger->debugMessage("Edit redirect page. POST ID: " . 
                     wp_kses_post(json_encode($_POST['id'])));
             $recnum = absint($_POST['id']);
@@ -653,7 +653,7 @@ class ABJ_404_Solution_View {
             $html .= '<a id="showInfoLink" onclick="showHideRegexExplanation()" ';
             
             $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/showHideRegexExplanation.html");
-            $html = $f->doNormalReplacements($html);
+            $html = $this->f->doNormalReplacements($html);
             echo $html;
 
         } else if ($recnums_multiple != null) {
@@ -710,21 +710,21 @@ class ABJ_404_Solution_View {
         $pageTitle = $this->logic->getPageTitleFromIDAndType($pageIDAndType, $redirect['final_dest']);        
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/addManualRedirectPageSearchDropdown.html");
-        $html = $f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
+        $html = $this->f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
                 __('(Type a page name or an external URL)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
                 __('(A page has been selected.)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
         	__('(A custom string has been entered.)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
                 __('(An external URL will be used.)', '404-solution'), $html);
-        $html = $f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
-        $html = $f->str_replace('{redirectPageTitle}', $pageTitle, $html);
-        $html = $f->str_replace('{pageIDAndType}', $pageIDAndType, $html);
-        $html = $f->str_replace('{data-url}', 
+        $html = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
+        $html = $this->f->str_replace('{redirectPageTitle}', $pageTitle, $html);
+        $html = $this->f->str_replace('{pageIDAndType}', $pageIDAndType, $html);
+        $html = $this->f->str_replace('{data-url}', 
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true", $html);
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->doNormalReplacements($html);
         echo $html;
         
         $this->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'));
@@ -895,9 +895,9 @@ class ABJ_404_Solution_View {
         $url = $this->getBulkOperationsFormURL($sub, $tableOptions);
         
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown.html");
-        $html = $f->str_replace('{action_url}', $url, $html);
-        $html = $f->str_replace('{bulkOptions}', $allBulkOptions, $html);
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->str_replace('{action_url}', $url, $html);
+        $html = $this->f->str_replace('{bulkOptions}', $allBulkOptions, $html);
+        $html = $this->f->doNormalReplacements($html);
         echo $html;
 
         // empty trash button -------------
@@ -907,9 +907,9 @@ class ABJ_404_Solution_View {
             $eturl = wp_nonce_url($eturl, 'abj404_bulkProcess');
 
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
-            $html = $f->str_replace('{action_url}', $eturl, $html);
-            $html = $f->str_replace('{action_value}', 'emptyCapturedTrash', $html);
-            $html = $f->doNormalReplacements($html);
+            $html = $this->f->str_replace('{action_url}', $eturl, $html);
+            $html = $this->f->str_replace('{action_value}', 'emptyCapturedTrash', $html);
+            $html = $this->f->doNormalReplacements($html);
             echo $html;
         }
         // ----------
@@ -922,9 +922,9 @@ class ABJ_404_Solution_View {
         echo "<div class=\"tablenav admin-captured-urls-page-bottom\">";
         
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown2.html");
-        $html = $f->str_replace('{action_url}', $url, $html);
-        $html = $f->str_replace('{bulkOptions}', $allBulkOptions, $html);
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->str_replace('{action_url}', $url, $html);
+        $html = $this->f->str_replace('{bulkOptions}', $allBulkOptions, $html);
+        $html = $this->f->doNormalReplacements($html);
         echo $html;
         
         echo $this->getPaginationLinks($sub, false);
@@ -1070,26 +1070,26 @@ class ABJ_404_Solution_View {
             $allRowActions = implode("\n | ", $rowActions);
             
             $tempHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowCapturedURLs.html");
-            $tempHtml = $f->str_replace('{rowActions}', $allRowActions, $tempHtml);
-            $tempHtml = $f->str_replace('{rowid}', $row['id'], $tempHtml);
-            $tempHtml = $f->str_replace('{rowClass}', $class, $tempHtml);
-            $tempHtml = $f->str_replace('{editLink}', $editlink, $tempHtml);
-            $tempHtml = $f->str_replace('{logsLink}', $logslink, $tempHtml);
-            $tempHtml = $f->str_replace('{trashLink}', $trashlink, $tempHtml);
-            $tempHtml = $f->str_replace('{ajaxTrashLink}', $ajaxTrashLink, $tempHtml);
-            $tempHtml = $f->str_replace('{trashtitle}', $trashtitle, $tempHtml);
-            $tempHtml = $f->str_replace('{ignoreLink}', $ignorelink, $tempHtml);
-            $tempHtml = $f->str_replace('{ignoreTitle}', $ignoretitle, $tempHtml);
-            $tempHtml = $f->str_replace('{laterLink}', $laterlink, $tempHtml);
-            $tempHtml = $f->str_replace('{laterTitle}', $latertitle, $tempHtml);
-            $tempHtml = $f->str_replace('{deleteLink}', $deletelink, $tempHtml);
-            $tempHtml = $f->str_replace('{url}', esc_html($row['url']), $tempHtml);
-            $tempHtml = $f->str_replace('{hits}', esc_html($hits), $tempHtml);
-            $tempHtml = $f->str_replace('{created_date}', 
+            $tempHtml = $this->f->str_replace('{rowActions}', $allRowActions, $tempHtml);
+            $tempHtml = $this->f->str_replace('{rowid}', $row['id'], $tempHtml);
+            $tempHtml = $this->f->str_replace('{rowClass}', $class, $tempHtml);
+            $tempHtml = $this->f->str_replace('{editLink}', $editlink, $tempHtml);
+            $tempHtml = $this->f->str_replace('{logsLink}', $logslink, $tempHtml);
+            $tempHtml = $this->f->str_replace('{trashLink}', $trashlink, $tempHtml);
+            $tempHtml = $this->f->str_replace('{ajaxTrashLink}', $ajaxTrashLink, $tempHtml);
+            $tempHtml = $this->f->str_replace('{trashtitle}', $trashtitle, $tempHtml);
+            $tempHtml = $this->f->str_replace('{ignoreLink}', $ignorelink, $tempHtml);
+            $tempHtml = $this->f->str_replace('{ignoreTitle}', $ignoretitle, $tempHtml);
+            $tempHtml = $this->f->str_replace('{laterLink}', $laterlink, $tempHtml);
+            $tempHtml = $this->f->str_replace('{laterTitle}', $latertitle, $tempHtml);
+            $tempHtml = $this->f->str_replace('{deleteLink}', $deletelink, $tempHtml);
+            $tempHtml = $this->f->str_replace('{url}', esc_html($row['url']), $tempHtml);
+            $tempHtml = $this->f->str_replace('{hits}', esc_html($hits), $tempHtml);
+            $tempHtml = $this->f->str_replace('{created_date}', 
                     esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $tempHtml);
-            $tempHtml = $f->str_replace('{last_used_date}', esc_html($last), $tempHtml);
+            $tempHtml = $this->f->str_replace('{last_used_date}', esc_html($last), $tempHtml);
             
-            $tempHtml = $f->doNormalReplacements($tempHtml);
+            $tempHtml = $this->f->doNormalReplacements($tempHtml);
             $html .= $tempHtml;
         }
         
@@ -1132,7 +1132,7 @@ class ABJ_404_Solution_View {
         
         if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
             $htmlTop = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinksTop.html");
-            echo $f->doNormalReplacements($htmlTop);
+            echo $this->f->doNormalReplacements($htmlTop);
         }
         
         echo $this->getPaginationLinks($sub);
@@ -1155,9 +1155,9 @@ class ABJ_404_Solution_View {
         $url = $this->getBulkOperationsFormURL($sub, $tableOptions);
         
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown.html");
-        $html = $f->str_replace('{action_url}', $url, $html);
-        $html = $f->str_replace('{bulkOptions}', $allBulkOptions, $html);
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->str_replace('{action_url}', $url, $html);
+        $html = $this->f->str_replace('{bulkOptions}', $allBulkOptions, $html);
+        $html = $this->f->doNormalReplacements($html);
         echo $html;
         
         // ------------------ empty trash button
@@ -1167,9 +1167,9 @@ class ABJ_404_Solution_View {
             $eturl = wp_nonce_url($eturl, "abj404_bulkProcess");
 
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/emptyTrashButton.html");
-            $html = $f->str_replace('{action_url}', $eturl, $html);
-            $html = $f->str_replace('{action_value}', 'emptyRedirectTrash', $html);
-            $html = $f->doNormalReplacements($html);
+            $html = $this->f->str_replace('{action_url}', $eturl, $html);
+            $html = $this->f->str_replace('{action_value}', 'emptyRedirectTrash', $html);
+            $html = $this->f->doNormalReplacements($html);
             echo $html;
             
             echo "</div>";
@@ -1181,9 +1181,9 @@ class ABJ_404_Solution_View {
         echo "<div class=\"tablenav admin-redirects-page-bottom\">";
 
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/bulkOperationsDropdown2.html");
-        $html = $f->str_replace('{action_url}', $url, $html);
-        $html = $f->str_replace('{bulkOptions}', $allBulkOptions, $html);
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->str_replace('{action_url}', $url, $html);
+        $html = $this->f->str_replace('{bulkOptions}', $allBulkOptions, $html);
+        $html = $this->f->doNormalReplacements($html);
         echo $html;
         
         echo $this->getPaginationLinks($sub, false);
@@ -1397,34 +1397,34 @@ class ABJ_404_Solution_View {
             }
             
             $htmlTemp = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
-            $htmlTemp = $f->str_replace('{rowid}', $row['id'], $htmlTemp);
-            $htmlTemp = $f->str_replace('{rowClass}', $class, $htmlTemp);
-            $htmlTemp = $f->str_replace('{editLink}', $row['url'], $htmlTemp);
-            $htmlTemp = $f->str_replace('{rowURL}', esc_html($row['url']), $htmlTemp);
-            $htmlTemp = $f->str_replace('{editlinkHTML}', $editlinkHTML, $htmlTemp);
-            $htmlTemp = $f->str_replace('{logslinkHTML}', $logslinkHTML, $htmlTemp);
-            $htmlTemp = $f->str_replace('{deletePermanentlyHTML}', $deletePermanentlyHTML, $htmlTemp);
-            $htmlTemp = $f->str_replace('{link}', $link, $htmlTemp);
-            $htmlTemp = $f->str_replace('{title}', $title, $htmlTemp);
-            $htmlTemp = $f->str_replace('{dest}', $row['dest_for_view'], $htmlTemp);
-            $htmlTemp = $f->str_replace('{destination-exists}', $destinationExists, $htmlTemp);
-            $htmlTemp = $f->str_replace('{destination-does-not-exist}', $destinationDoesNotExist, $htmlTemp);
-            $htmlTemp = $f->str_replace('{status}', $row['status_for_view'], $htmlTemp);
-            $htmlTemp = $f->str_replace('{statusTitle}', $statusTitle, $htmlTemp);
-            $htmlTemp = $f->str_replace('{type}', $row['type_for_view'], $htmlTemp);
-            $htmlTemp = $f->str_replace('{rowCode}', $row['code'], $htmlTemp);
-            $htmlTemp = $f->str_replace('{hits}', $hits, $htmlTemp);
-            $htmlTemp = $f->str_replace('{logsLink}', $logslink, $htmlTemp);
-            $htmlTemp = $f->str_replace('{trashLink}', $trashlink, $htmlTemp);
-            $htmlTemp = $f->str_replace('{ajaxTrashLink}', $ajaxTrashLink, $htmlTemp);
-            $htmlTemp = $f->str_replace('{trashtitle}', $trashtitle, $htmlTemp);
-            $htmlTemp = $f->str_replace('{deletelink}', $deletelink, $htmlTemp);
-            $htmlTemp = $f->str_replace('{hits}', esc_html($hits), $htmlTemp);
-            $htmlTemp = $f->str_replace('{created_date}', 
+            $htmlTemp = $this->f->str_replace('{rowid}', $row['id'], $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{rowClass}', $class, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{editLink}', $row['url'], $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{rowURL}', esc_html($row['url']), $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{editlinkHTML}', $editlinkHTML, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{logslinkHTML}', $logslinkHTML, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{deletePermanentlyHTML}', $deletePermanentlyHTML, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{link}', $link, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{title}', $title, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{dest}', $row['dest_for_view'], $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{destination-exists}', $destinationExists, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{destination-does-not-exist}', $destinationDoesNotExist, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{status}', $row['status_for_view'], $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{statusTitle}', $statusTitle, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{type}', $row['type_for_view'], $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{rowCode}', $row['code'], $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{hits}', $hits, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{logsLink}', $logslink, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{trashLink}', $trashlink, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{ajaxTrashLink}', $ajaxTrashLink, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{trashtitle}', $trashtitle, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{deletelink}', $deletelink, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{hits}', esc_html($hits), $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{created_date}', 
                     esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $htmlTemp);
-            $htmlTemp = $f->str_replace('{last_used_date}', esc_html($last), $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{last_used_date}', esc_html($last), $htmlTemp);
             
-            $htmlTemp = $f->doNormalReplacements($htmlTemp);
+            $htmlTemp = $this->f->doNormalReplacements($htmlTemp);
             $html .= $htmlTemp;
         }
         if ($displayed == 0) {
@@ -1473,31 +1473,31 @@ class ABJ_404_Solution_View {
         $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/addManualRedirectPageSearchDropdown.html");
 
-        $html = $f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
+        $html = $this->f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
                 __('(Type a page name or an external URL)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
                 __('(A page has been selected.)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
         	__('(A custom string has been entered.)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
                 __('(An external URL will be used.)', '404-solution'), $html);
-        $html = $f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
-        $html = $f->str_replace('{redirectPageTitle}', '', $html);
-        $html = $f->str_replace('{pageIDAndType}', '', $html);
-        $html = $f->str_replace('{redirectPageTitle}', '', $html);
-        $html = $f->str_replace('{data-url}', 
+        $html = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
+        $html = $this->f->str_replace('{redirectPageTitle}', '', $html);
+        $html = $this->f->str_replace('{pageIDAndType}', '', $html);
+        $html = $this->f->str_replace('{redirectPageTitle}', '', $html);
+        $html = $this->f->str_replace('{data-url}', 
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true", $html);
 
         $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectBottom.html");
-        $html = $f->str_replace('{addManualRedirectAction}', $link, $html);
-        $html = $f->str_replace('{urlPlaceholder}', $urlPlaceholder, $html);
-        $html = $f->str_replace('{postedURL}', $postedURL, $html);
-        $html = $f->str_replace('{301selected}', $selected301, $html);
-        $html = $f->str_replace('{302selected}', $selected302, $html);
+        $html = $this->f->str_replace('{addManualRedirectAction}', $link, $html);
+        $html = $this->f->str_replace('{urlPlaceholder}', $urlPlaceholder, $html);
+        $html = $this->f->str_replace('{postedURL}', $postedURL, $html);
+        $html = $this->f->str_replace('{301selected}', $selected301, $html);
+        $html = $this->f->str_replace('{302selected}', $selected302, $html);
         
         // constants and translations.
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->doNormalReplacements($html);
         
         echo $html;
     }
@@ -1577,23 +1577,23 @@ class ABJ_404_Solution_View {
         $pageTitle = $this->logic->getPageTitleFromIDAndType($userSelectedDefault404Page, $urlDestination);
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/addManualRedirectPageSearchDropdown.html");
-        $html = $f->str_replace('{redirect_to_label}', __('Redirect all unhandled 404s to', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
+        $html = $this->f->str_replace('{redirect_to_label}', __('Redirect all unhandled 404s to', '404-solution'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
                 __('(Type a page name or an external URL)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
                 __('(A page has been selected.)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
         	__('(A custom string has been entered.)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
         		__('(An external URL will be used.)', '404-solution'), $html);
-        $html = $f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', $pageMissingWarning, $html);
+        $html = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', $pageMissingWarning, $html);
         
-        $html = $f->str_replace('{redirectPageTitle}', $pageTitle, $html);
-        $html = $f->str_replace('{pageIDAndType}', $userSelectedDefault404Page, $html);
-        $html = $f->str_replace('{redirectPageTitle}', $pageTitle, $html);
-        $html = $f->str_replace('{data-url}', 
+        $html = $this->f->str_replace('{redirectPageTitle}', $pageTitle, $html);
+        $html = $this->f->str_replace('{pageIDAndType}', $userSelectedDefault404Page, $html);
+        $html = $this->f->str_replace('{redirectPageTitle}', $pageTitle, $html);
+        $html = $this->f->str_replace('{data-url}', 
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true", $html);
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->doNormalReplacements($html);
         $content .= $html;
         
         // -----------------------------------------------
@@ -1650,7 +1650,7 @@ class ABJ_404_Solution_View {
         
         $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
         $debugLogLink = $this->logic->getDebugLogFileLink();
-        $debugExplanation = $f->str_replace('<a>', '<a href="' . $debugLogLink . '" target="_blank" >', $debugExplanation);
+        $debugExplanation = $this->f->str_replace('<a>', '<a href="' . $debugLogLink . '" target="_blank" >', $debugExplanation);
 
         $kbFileSize = $this->logger->getDebugFileSize() / 1024;
         $kbFileSizePretty = number_format($kbFileSize, 2, ".", ",");
@@ -1666,56 +1666,56 @@ class ABJ_404_Solution_View {
         // ----
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvanced.html");
-        $html = $f->str_replace('{DATABASE_VERSION}', esc_html($options['DB_VERSION']), $html);
-        $html = $f->str_replace('checked="debug_mode"', $selectedDebugLogging, $html);
-        $html = $f->str_replace('checked="redirect_all_requests"', $selectedRedirectAllRequests, $html);
-        $html = $f->str_replace('checked="log_raw_ips"', $selectedLogRawIPs, $html);
-        $html = $f->str_replace('{<a>View</a> the debug file.}', $debugExplanation, $html);
-        $html = $f->str_replace('{Debug file size: %s KB.}', $debugFileSize, $html);
+        $html = $this->f->str_replace('{DATABASE_VERSION}', esc_html($options['DB_VERSION']), $html);
+        $html = $this->f->str_replace('checked="debug_mode"', $selectedDebugLogging, $html);
+        $html = $this->f->str_replace('checked="redirect_all_requests"', $selectedRedirectAllRequests, $html);
+        $html = $this->f->str_replace('checked="log_raw_ips"', $selectedLogRawIPs, $html);
+        $html = $this->f->str_replace('{<a>View</a> the debug file.}', $debugExplanation, $html);
+        $html = $this->f->str_replace('{Debug file size: %s KB.}', $debugFileSize, $html);
         
-        $html = $f->str_replace('{ignore_dontprocess}', 
+        $html = $this->f->str_replace('{ignore_dontprocess}', 
             str_replace('\\n', "\n", wp_kses_post($options['ignore_dontprocess'])), $html);
-        $html = $f->str_replace('{ignore_doprocess}', 
+        $html = $this->f->str_replace('{ignore_doprocess}', 
             str_replace('\\n', "\n", wp_kses_post($options['ignore_doprocess'])), $html);
-        $html = $f->str_replace('{recognized_post_types}', 
+        $html = $this->f->str_replace('{recognized_post_types}', 
             str_replace('\\n', "\n", wp_kses_post($options['recognized_post_types'])), $html);
-        $html = $f->str_replace('{all_post_types}', $allPostTypes, $html);
-        $html = $f->str_replace('{days_wait_before_major_update}', $options['days_wait_before_major_update'], $html);
+        $html = $this->f->str_replace('{all_post_types}', $allPostTypes, $html);
+        $html = $this->f->str_replace('{days_wait_before_major_update}', $options['days_wait_before_major_update'], $html);
         
-        $html = $f->str_replace('{recognized_categories}', 
+        $html = $this->f->str_replace('{recognized_categories}', 
             str_replace('\\n', "\n", wp_kses_post($options['recognized_categories'])), $html);
-        $html = $f->str_replace('{folders_files_ignore}', 
+        $html = $this->f->str_replace('{folders_files_ignore}', 
             str_replace('\\n', "\n", wp_kses_post($options['folders_files_ignore'])), $html);
-        $html = $f->str_replace('{suggest_regex_exclusions}', 
+        $html = $this->f->str_replace('{suggest_regex_exclusions}', 
             str_replace('\\n', "\n", esc_textarea($options['suggest_regex_exclusions'])), $html); // Use esc_textarea for textareas
         
         $pluginAdminUsers = str_replace('\\n', "\n", wp_kses_post($options['plugin_admin_users']));
         if (is_array($pluginAdminUsers)) {
         	$pluginAdminUsers = implode("\n", $pluginAdminUsers);
         }
-        $html = $f->str_replace('{plugin_admin_users}', wp_kses_post($pluginAdminUsers), $html);
+        $html = $this->f->str_replace('{plugin_admin_users}', wp_kses_post($pluginAdminUsers), $html);
         
-        $html = $f->str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($options['auto_score']), $html);
-        $html = $f->str_replace('{OPTION_TEMPLATE_REDIRECT_PRIORITY}', esc_attr($options['template_redirect_priority']), $html);
+        $html = $this->f->str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($options['auto_score']), $html);
+        $html = $this->f->str_replace('{OPTION_TEMPLATE_REDIRECT_PRIORITY}', esc_attr($options['template_redirect_priority']), $html);
         
-        $html = $f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
+        $html = $this->f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
         
-        $html = $f->str_replace('{add-exclude-page-data-url}',
+        $html = $this->f->str_replace('{add-exclude-page-data-url}',
         	"admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false&includeSpecial=false", $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
         	__('(Type a page name)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
         	__('(A page has been selected.)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
         	__('(A custom string has been entered.)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
         	__('(An external URL will be used.)', '404-solution'), $html);
 
-        $html = $f->str_replace('{loaded-excluded-pages}',
+        $html = $this->f->str_replace('{loaded-excluded-pages}',
         	urlencode($options['excludePages[]']), $html);
         
         // constants and translations.
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->doNormalReplacements($html);
         
         // ------------------
          
@@ -1771,26 +1771,26 @@ class ABJ_404_Solution_View {
         }
         
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
-        $html = $f->str_replace('{selectedSendErrorLogs}', $selectedSendErrorLogs, $html);
-        $html = $f->str_replace('{selectedDefaultRedirect301}', $selectedDefaultRedirect301, $html);
-        $html = $f->str_replace('{selectedDefaultRedirect302}', $selectedDefaultRedirect302, $html);
-        $html = $f->str_replace('{selectedCapture404}', $selectedCapture404, $html);
-        $html = $f->str_replace('{admin_notification}', $options['admin_notification'], $html);
-        $html = $f->str_replace('{capture_deletion}', $options['capture_deletion'], $html);
-        $html = $f->str_replace('{manual_deletion}', $options['manual_deletion'], $html);
-        $html = $f->str_replace('{maximum_log_disk_usage}', $options['maximum_log_disk_usage'], $html);
-        $html = $f->str_replace('{logCurrentSizeDiskUsage}', $logSizeMB, $html);
-        $html = $f->str_replace('{logCurrentRowCount}', $totalLogLines, $html);
-        $html = $f->str_replace('{earliestLogDate}', $earliestLogDate, $html);
-        $html = $f->str_replace('{selectedRemoveMatches}', $selectedRemoveMatches, $html);
-        $html = $f->str_replace('{selectedUnderSettings}', $selectedUnderSettings, $html);
-        $html = $f->str_replace('{selecteSsettingsLevel}', $selecteSsettingsLevel, $html);
-        $html = $f->str_replace('{admin_notification_email}', $options['admin_notification_email'], $html);
-        $html = $f->str_replace('{default_wordpress_admin_email}', get_option('admin_email'), $html);
-        $html = $f->str_replace('{PHP_VERSION}', PHP_VERSION, $html);
+        $html = $this->f->str_replace('{selectedSendErrorLogs}', $selectedSendErrorLogs, $html);
+        $html = $this->f->str_replace('{selectedDefaultRedirect301}', $selectedDefaultRedirect301, $html);
+        $html = $this->f->str_replace('{selectedDefaultRedirect302}', $selectedDefaultRedirect302, $html);
+        $html = $this->f->str_replace('{selectedCapture404}', $selectedCapture404, $html);
+        $html = $this->f->str_replace('{admin_notification}', $options['admin_notification'], $html);
+        $html = $this->f->str_replace('{capture_deletion}', $options['capture_deletion'], $html);
+        $html = $this->f->str_replace('{manual_deletion}', $options['manual_deletion'], $html);
+        $html = $this->f->str_replace('{maximum_log_disk_usage}', $options['maximum_log_disk_usage'], $html);
+        $html = $this->f->str_replace('{logCurrentSizeDiskUsage}', $logSizeMB, $html);
+        $html = $this->f->str_replace('{logCurrentRowCount}', $totalLogLines, $html);
+        $html = $this->f->str_replace('{earliestLogDate}', $earliestLogDate, $html);
+        $html = $this->f->str_replace('{selectedRemoveMatches}', $selectedRemoveMatches, $html);
+        $html = $this->f->str_replace('{selectedUnderSettings}', $selectedUnderSettings, $html);
+        $html = $this->f->str_replace('{selecteSsettingsLevel}', $selecteSsettingsLevel, $html);
+        $html = $this->f->str_replace('{admin_notification_email}', $options['admin_notification_email'], $html);
+        $html = $this->f->str_replace('{default_wordpress_admin_email}', get_option('admin_email'), $html);
+        $html = $this->f->str_replace('{PHP_VERSION}', PHP_VERSION, $html);
 
         // constants and translations.
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->doNormalReplacements($html);
         
         return $html;
     }
@@ -1819,19 +1819,19 @@ class ABJ_404_Solution_View {
         $redirectPageTitle = $this->dao->getPostOrGetSanitize('redirect_to_data_field_title');
         $pageIDAndType = $this->dao->getPostOrGetSanitize('redirect_to_data_field_id');
         
-        $html = $f->str_replace('{redirect_to_label}', __('View logs for', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
+        $html = $this->f->str_replace('{redirect_to_label}', __('View logs for', '404-solution'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
                 __('(Begin typing a URL)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
                 __('(A page has been selected.)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
         	__('(A custom string has been entered.)', '404-solution'), $html);
-        $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
                 __('(Please choose from the dropdown list instead of typing your own URL.)', '404-solution'), $html);
-        $html = $f->str_replace('{pageIDAndType}', $pageIDAndType, $html);
-        $html = $f->str_replace('{redirectPageTitle}', $redirectPageTitle, $html);
-        $html = $f->str_replace('{data-url}', "admin-ajax.php?action=echoViewLogsFor", $html);
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->str_replace('{pageIDAndType}', $pageIDAndType, $html);
+        $html = $this->f->str_replace('{redirectPageTitle}', $redirectPageTitle, $html);
+        $html = $this->f->str_replace('{data-url}', "admin-ajax.php?action=echoViewLogsFor", $html);
+        $html = $this->f->doNormalReplacements($html);
         echo $html;
         // ----------------- dropdown search box. end.
 
@@ -1965,7 +1965,7 @@ class ABJ_404_Solution_View {
         if ($sub == 'abj404_logs') {
             $cbinfoStyle .= ' width: 0px;';
         }
-        $cbinfo = $f->str_replace('{cb-info-style}', $cbinfoStyle, $cbinfo);
+        $cbinfo = $this->f->str_replace('{cb-info-style}', $cbinfoStyle, $cbinfo);
         
         $html .= "<th " . $cbinfo . ">";
         if ($sub != 'abj404_logs') {
@@ -2141,22 +2141,22 @@ class ABJ_404_Solution_View {
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinks.html");
         // do special replacements
-        $html = $f->str_replace(' value="' . $tableOptions['perpage'] . '"', 
+        $html = $this->f->str_replace(' value="' . $tableOptions['perpage'] . '"', 
                 ' value="' . $tableOptions['perpage'] . '" selected', 
                 $html);
-        $html = $f->str_replace('{changeItemsPerPage}', $showRowsLink, $html);
-        $html = $f->str_replace('{showSearchFilter}', $searchFilterControl, $html);
-        $html = $f->str_replace('{TEXT_BEFORE_LINKS}', $currentlyShowingText, $html);
-        $html = $f->str_replace('{TEXT_SHOW_ROWS}', $showRowsText, $html);
-        $html = $f->str_replace('{LINK_FIRST_PAGE}', esc_url($firsturl), $html);
-        $html = $f->str_replace('{LINK_PREVIOUS_PAGE}', esc_url($prevurl), $html);
-        $html = $f->str_replace('{TEXT_CURRENT_PAGE}', $currentPageText, $html);
-        $html = $f->str_replace('{LINK_NEXT_PAGE}', esc_url($nexturl), $html);
-        $html = $f->str_replace('{LINK_LAST_PAGE}', esc_url($lasturl), $html);
-        $html = $f->str_replace('{filterText}', $tableOptions['filterText'], $html);
-        $html = $f->str_replace('{data-pagination-ajax-url}', $ajaxPaginationLink, $html);
+        $html = $this->f->str_replace('{changeItemsPerPage}', $showRowsLink, $html);
+        $html = $this->f->str_replace('{showSearchFilter}', $searchFilterControl, $html);
+        $html = $this->f->str_replace('{TEXT_BEFORE_LINKS}', $currentlyShowingText, $html);
+        $html = $this->f->str_replace('{TEXT_SHOW_ROWS}', $showRowsText, $html);
+        $html = $this->f->str_replace('{LINK_FIRST_PAGE}', esc_url($firsturl), $html);
+        $html = $this->f->str_replace('{LINK_PREVIOUS_PAGE}', esc_url($prevurl), $html);
+        $html = $this->f->str_replace('{TEXT_CURRENT_PAGE}', $currentPageText, $html);
+        $html = $this->f->str_replace('{LINK_NEXT_PAGE}', esc_url($nexturl), $html);
+        $html = $this->f->str_replace('{LINK_LAST_PAGE}', esc_url($lasturl), $html);
+        $html = $this->f->str_replace('{filterText}', $tableOptions['filterText'], $html);
+        $html = $this->f->str_replace('{data-pagination-ajax-url}', $ajaxPaginationLink, $html);
         // constants and translations.
-        $html = $f->doNormalReplacements($html);
+        $html = $this->f->doNormalReplacements($html);
         
         return $html;
     }    

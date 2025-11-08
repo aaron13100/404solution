@@ -105,7 +105,7 @@ class ABJ_404_Solution_PluginLogic {
 	    			array($f, 'removeEmptyCustom'));
 	    		$check = true;
 	    	} else if (is_string($extraAdmins)) {
-	    	    $extraAdmins = $f->explodeNewline($extraAdmins);
+	    	    $extraAdmins = $this->f->explodeNewline($extraAdmins);
 	    		$check = true;
 	    	}
 	    	if ($check && in_array($current_user_name, $extraAdmins)) {
@@ -169,8 +169,8 @@ class ABJ_404_Solution_PluginLogic {
     function removeHomeDirectory($urlRequest) {
     	$f = $this->f;
     	$urlHomeDirectory = $this->urlHomeDirectory;
-    	if ($f->substr($urlRequest, 0, $this->urlHomeDirectoryLength) == $urlHomeDirectory) {
-    		$urlRequest = $f->substr($urlRequest, ($this->urlHomeDirectoryLength + 1));
+    	if ($this->f->substr($urlRequest, 0, $this->urlHomeDirectoryLength) == $urlHomeDirectory) {
+    		$urlRequest = $this->f->substr($urlRequest, ($this->urlHomeDirectoryLength + 1));
     	}
         
         return $urlRequest;
@@ -229,12 +229,12 @@ class ABJ_404_Solution_PluginLogic {
         $ignoreReasonDoNotProcess = null;
         $ignoreReasonDoProcess = null;
         $httpUserAgent = array_key_exists('HTTP_USER_AGENT', $_SERVER) ? 
-                $f->strtolower($_SERVER['HTTP_USER_AGENT']) : '';
+                $this->f->strtolower($_SERVER['HTTP_USER_AGENT']) : '';
         
         // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
         // ignore requests that are supposed to be for an admin.
         $adminURL = parse_url(admin_url(), PHP_URL_PATH);
-        if (is_admin() || $f->substr($urlRequest, 0, $f->strlen($adminURL)) == $adminURL) {
+        if (is_admin() || $this->f->substr($urlRequest, 0, $this->f->strlen($adminURL)) == $adminURL) {
             $this->logger->debugMessage("Ignoring admin URL: " . $urlRequest);
             $ignoreReasonDoNotProcess = 'Admin URL';
         }
@@ -242,7 +242,7 @@ class ABJ_404_Solution_PluginLogic {
         // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on 
         // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
         // by https://www.sovrn.com/. 
-        $userAgents = $f->explodeNewline($options['ignore_dontprocess']);
+        $userAgents = $this->f->explodeNewline($options['ignore_dontprocess']);
         
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
@@ -260,7 +260,7 @@ class ABJ_404_Solution_PluginLogic {
                 $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex pattern to ignore\"' . 
                     $patternToIgnoreNoSlashes . '" to URL slug: ' . $urlSlugOnly;
                 $matches = array();
-                if ($f->regexMatch($patternToIgnoreNoSlashes, $urlSlugOnly, $matches)) {
+                if ($this->f->regexMatch($patternToIgnoreNoSlashes, $urlSlugOnly, $matches)) {
                     $this->logger->debugMessage("Ignoring file/folder (do not redirect) for URL: " . 
                             esc_html($urlSlugOnly) . ", pattern used: " . $patternToIgnoreNoSlashes);
                     $ignoreReasonDoNotProcess = 'Files and folders (do not redirect) pattern: ' . 
@@ -273,7 +273,7 @@ class ABJ_404_Solution_PluginLogic {
         
         // -----
         // ignore and process
-        $userAgents = $f->explodeNewline($options['ignore_doprocess']);
+        $userAgents = $this->f->explodeNewline($options['ignore_doprocess']);
         
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
@@ -517,12 +517,12 @@ class ABJ_404_Solution_PluginLogic {
 
         // since 1.9.0. ignore_doprocess add SeznamBot, Pinterestbot, UptimeRobot and "Slurp" -> "Yahoo! Slurp"
         if (version_compare($currentDBVersion, '1.9.0') < 0) {
-            $userAgents = $f->explodeNewline($options['ignore_doprocess']);
+            $userAgents = $this->f->explodeNewline($options['ignore_doprocess']);
             
-            $uasForSearch = $f->explodeNewline($options['ignore_doprocess']);
+            $uasForSearch = $this->f->explodeNewline($options['ignore_doprocess']);
             
             foreach ($userAgents as &$str) {
-                if ($f->strtolower(trim($str)) == "slurp") {
+                if ($this->f->strtolower(trim($str)) == "slurp") {
                     $str = "Yahoo! Slurp";
                     $this->logger->infoMessage('Changed user agent "Slurp" to "Yahoo! Slurp" in the do not log list.');
                 }
@@ -565,14 +565,14 @@ class ABJ_404_Solution_PluginLogic {
                     $this->logger->infoMessage($result['rows_affected'] . 
                             ' log rows were migrated to the new table structre.');
                     // log the rows inserted/migrated.
-                    $wpdb->query('drop table ' . $f->strtolower($wpdb->prefix) . 'abj404_logs');
+                    $wpdb->query('drop table ' . $this->f->strtolower($wpdb->prefix) . 'abj404_logs');
                 }
             }
         }
         
         if (version_compare($currentDBVersion, '2.18.0') < 0) {
             // add .well-known/acme-challenge/*, wp-content/themes/*, wp-content/plugins/* to folders_files_ignore
-            $originalItems = $f->explodeNewline($options['folders_files_ignore']);
+            $originalItems = $this->f->explodeNewline($options['folders_files_ignore']);
 
             $newItems = array("wp-content/plugins/*", "wp-content/themes/*", ".well-known/acme-challenge/*");
             foreach ($newItems as $newItem) {
@@ -588,7 +588,7 @@ class ABJ_404_Solution_PluginLogic {
 
         // add the second part of the default destination page.
         $dest404page = $options['dest404page'];
-        if ($f->strpos($dest404page, '|') === false) {
+        if ($this->f->strpos($dest404page, '|') === false) {
             // not found
             if ($dest404page == '0') {
                 $dest404page .= "|" . ABJ404_TYPE_404_DISPLAYED;
@@ -811,7 +811,7 @@ class ABJ_404_Solution_PluginLogic {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " . 
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
-        } else if ($f->substr($action . '', 0, 4) == "bulk") {
+        } else if ($this->f->substr($action . '', 0, 4) == "bulk") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 if (!array_key_exists('idnum', $_POST) || !isset($_POST['idnum'])) {
                     $this->logger->debugMessage("No ID(s) specified for bulk action: " . esc_html($action));
@@ -1132,7 +1132,7 @@ class ABJ_404_Solution_PluginLogic {
         //Handle Delete Functionality
         if (array_key_exists('remove', $_GET) && @$_GET['remove'] == 1) {
             if (check_admin_referer('abj404_removeRedirect') && is_admin()) {
-                if ($f->regexMatch('[0-9]+', $_GET['id'])) {
+                if ($this->f->regexMatch('[0-9]+', $_GET['id'])) {
                     $this->dao->deleteRedirect(absint($_GET['id']));
                     $message = __('Redirect Removed Successfully!', '404-solution');
                 }
@@ -1158,7 +1158,7 @@ class ABJ_404_Solution_PluginLogic {
                     return $message;                    
                 }
                 
-                if ($f->regexMatch('[0-9]+', $_GET['id'])) {
+                if ($this->f->regexMatch('[0-9]+', $_GET['id'])) {
                     if ($_GET['ignore'] == 1) {
                         $newstatus = ABJ404_STATUS_IGNORED;
                     } else {
@@ -1202,7 +1202,7 @@ class ABJ_404_Solution_PluginLogic {
                     return $message;                    
                 }
                 
-                if ($f->regexMatch('[0-9]+', $_GET['id'])) {
+                if ($this->f->regexMatch('[0-9]+', $_GET['id'])) {
                     if ($_GET['later'] == 1) {
                         $newstatus = ABJ404_STATUS_LATER;
                     } else {
@@ -1243,7 +1243,7 @@ class ABJ_404_Solution_PluginLogic {
         if (array_key_exists('action', $_POST) && $_POST['action'] == "editRedirect") {
             $id = $this->dao->getPostOrGetSanitize('id');
             $ids = $this->dao->getPostOrGetSanitize('ids_multiple');
-            if (!($id === null && $ids === null) && ($f->regexMatch('[0-9]+', '' . $id) || $f->regexMatch('[0-9]+', '' . $ids))) {
+            if (!($id === null && $ids === null) && ($this->f->regexMatch('[0-9]+', '' . $id) || $this->f->regexMatch('[0-9]+', '' . $ids))) {
                 if (check_admin_referer('abj404editRedirect') && is_admin()) {
                     $message = $this->updateRedirectData();
                     if ($message == "") {
@@ -1394,7 +1394,7 @@ class ABJ_404_Solution_PluginLogic {
             $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
         }
 
-        if ($fromURL != "" && $f->substr($_POST['url'], 0, 1) != "/") {
+        if ($fromURL != "" && $this->f->substr($_POST['url'], 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
         }
 
@@ -1452,10 +1452,10 @@ class ABJ_404_Solution_PluginLogic {
             if ($userEnteredURL == "") {
                 $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<BR/>";
                 
-            } else if ($f->strlen($userEnteredURL) < 8) {
+            } else if ($this->f->strlen($userEnteredURL) < 8) {
                 $response['message'] = __('Error: External URL is too short.', '404-solution') . "<BR/>";
                 
-            } else if ($f->strpos($userEnteredURL, "://") === false) {
+            } else if ($this->f->strpos($userEnteredURL, "://") === false) {
                 $response['message'] = __("Error: External URL doesn't contain ://", '404-solution') . "<BR/>";
             }
         }
@@ -1493,7 +1493,7 @@ class ABJ_404_Solution_PluginLogic {
             return $message;
         }
             
-        if ($f->substr($_POST['manual_redirect_url'], 0, 1) != "/") {
+        if ($this->f->substr($_POST['manual_redirect_url'], 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
             return $message;
         }
@@ -1558,7 +1558,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         
         $tableOptions['filterText'] = trim($this->dao->getPostOrGetSanitize("filterText", ""));
-        $tableOptions['filterText'] = $f->str_replace('*/', '', $tableOptions['filterText']);
+        $tableOptions['filterText'] = $this->f->str_replace('*/', '', $tableOptions['filterText']);
 
         if ($this->dao->getPostOrGetSanitize('orderby', "") != "") {
             $tableOptions['orderby'] = $this->dao->getPostOrGetSanitize('orderby');
@@ -1617,12 +1617,12 @@ class ABJ_404_Solution_PluginLogic {
 
         $tableOptions['logsid'] = 0;
         if ($this->dao->getPostOrGetSanitize('subpage') == "abj404_logs") {
-            if (array_key_exists('id', $_GET) && isset($_GET['id']) && $f->regexMatch('[0-9]+', $_GET['id'])) {                
+            if (array_key_exists('id', $_GET) && isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {                
                 $tableOptions['logsid'] = absint($_GET['id']);
                 
             } else if (array_key_exists('redirect_to_data_field_id', $_GET) && 
                     isset($_GET['redirect_to_data_field_id']) && 
-                    $f->regexMatch('[0-9]+', $_GET['redirect_to_data_field_id'])) {
+                    $this->f->regexMatch('[0-9]+', $_GET['redirect_to_data_field_id'])) {
                 $tableOptions['logsid'] = absint($_GET['redirect_to_data_field_id']);
             }
         }
@@ -1679,7 +1679,7 @@ class ABJ_404_Solution_PluginLogic {
         
         // get the submitted settings
         $encodedData = $_POST['encodedData'];
-        $postData = $f->decodeComplicatedData($encodedData);
+        $postData = $this->f->decodeComplicatedData($encodedData);
         
         // to return after handling the ajax call.
         $returnData = array();
@@ -1866,11 +1866,11 @@ class ABJ_404_Solution_PluginLogic {
 	            $options['folders_files_ignore'] = wp_unslash(wp_kses_post($_POST['folders_files_ignore']));
 	            
 	            // make the regular expressions usable.
-	            $patternsToIgnore = $f->explodeNewline($options['folders_files_ignore']);
+	            $patternsToIgnore = $this->f->explodeNewline($options['folders_files_ignore']);
 	            $usableFilePatterns = array();
 	            foreach ($patternsToIgnore as $patternToIgnore) {
 	                $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
-	                $newPattern = $f->str_replace("\*",".*", $newPattern);
+	                $newPattern = $this->f->str_replace("\*",".*", $newPattern);
 	                $usableFilePatterns[] = $newPattern;
 	            }
 	            $options['folders_files_ignore_usable'] = $usableFilePatterns;
@@ -1881,7 +1881,7 @@ class ABJ_404_Solution_PluginLogic {
                 $options['suggest_regex_exclusions'] = $sanitized_exclusions;
 
                 // 2. Generate the usable regex patterns *from the sanitized input*.
-                $patternsToIgnore = $f->explodeNewline( $sanitized_exclusions );
+                $patternsToIgnore = $this->f->explodeNewline( $sanitized_exclusions );
                 $usableFilePatterns = array();
                 foreach ( $patternsToIgnore as $patternToIgnore ) {
                     $trimmedPattern = trim( $patternToIgnore );
@@ -1889,7 +1889,7 @@ class ABJ_404_Solution_PluginLogic {
                     if ( ! empty( $trimmedPattern ) ) {
                         // Escape regex special characters, then convert literal '*' into '.*' for wildcard matching.
                         $newPattern = '^' . preg_quote( $trimmedPattern, '/' ) . '$';
-                        // Use standard str_replace; $f->str_replace is likely unnecessary here unless it provides specific multibyte handling not needed for '\*'.
+                        // Use standard str_replace; $this->f->str_replace is likely unnecessary here unless it provides specific multibyte handling not needed for '\*'.
                         $newPattern = str_replace( '\*', '.*', $newPattern );
                         $usableFilePatterns[] = $newPattern;
                     }
@@ -1971,7 +1971,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return string */
     function getCommentPartAndQueryPartOfRequest() {
     	$userRequest = ABJ_404_Solution_UserRequest::getInstance();
-    	$queryParts = $f->removePageIDFromQueryString($userRequest->getQueryString());
+    	$queryParts = $this->f->removePageIDFromQueryString($userRequest->getQueryString());
     	$queryParts = ($queryParts == '') ? '' : '?' . $queryParts;
     	$commentPart = $userRequest->getCommentPagePart();
     	return $commentPart . $queryParts;
@@ -1994,10 +1994,10 @@ class ABJ_404_Solution_PluginLogic {
         $finalDestination = $sanitizedLocation . $sanitizedQueryPart;
 
     	$previousRequest = $this->readCookieWithPreviousRqeuestShort();
-    	$finalDestNoHome = $f->substr($finalDestination, $f->strpos($finalDestination, '://') + 3);
-    	$finalDestNoHome = $f->substr($finalDestNoHome, $f->strpos($finalDestNoHome, '/'));
-    	$locationNoHome = $f->substr($location, $f->strpos($location, '://') + 3);
-    	$locationNoHome = $f->substr($locationNoHome, $f->strpos($locationNoHome, '/'));
+    	$finalDestNoHome = $this->f->substr($finalDestination, $this->f->strpos($finalDestination, '://') + 3);
+    	$finalDestNoHome = $this->f->substr($finalDestNoHome, $this->f->strpos($finalDestNoHome, '/'));
+    	$locationNoHome = $this->f->substr($location, $this->f->strpos($location, '://') + 3);
+    	$locationNoHome = $this->f->substr($locationNoHome, $this->f->strpos($locationNoHome, '/'));
     	// maybe avoid infinite redirects.
     	if (!empty($previousRequest)) {
     		if ($previousRequest == $finalDestNoHome && $previousRequest != $locationNoHome) {
