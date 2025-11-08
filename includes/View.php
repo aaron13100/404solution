@@ -43,7 +43,16 @@ class ABJ_404_Solution_View {
 
 		return self::$instance;
 	}
-	
+
+	/** Get the 'checked' attribute for a checkbox based on option value.
+	 * @param array $options The options array
+	 * @param string $key The option key to check
+	 * @return string Returns ' checked' if option is '1', empty string otherwise
+	 */
+	private function getCheckedAttr($options, $key) {
+		return (array_key_exists($key, $options) && $options[$key] == '1') ? " checked" : "";
+	}
+
 	/** Get the text to notify the user when some URLs have been captured and need attention. 
      * @param int $captured the number of captured URLs
      * @return string html
@@ -1596,9 +1605,9 @@ class ABJ_404_Solution_View {
 
         // -----------------------------------------------
         // Load auto redirects options template
-        $selectedAutoRedirects = ($options['auto_redirects'] == '1') ? " checked" : "";
-        $selectedAutoCats = ($options['auto_cats'] == '1') ? " checked" : "";
-        $selectedAutoTags = ($options['auto_tags'] == '1') ? " checked" : "";
+        $selectedAutoRedirects = $this->getCheckedAttr($options, 'auto_redirects');
+        $selectedAutoCats = $this->getCheckedAttr($options, 'auto_cats');
+        $selectedAutoTags = $this->getCheckedAttr($options, 'auto_tags');
 
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsAutoRedirects.html");
         $html = $this->f->str_replace('{selectedAutoRedirects}', $selectedAutoRedirects, $html);
@@ -1623,19 +1632,10 @@ class ABJ_404_Solution_View {
         if (in_array($serverName, $GLOBALS['abj404_whitelist'])) {
         	$hideRedirectAllRequests = 'false';
         }
-        
-        $selectedDebugLogging = "";
-        if (array_key_exists('debug_mode', $options) && $options['debug_mode'] == '1') {
-        	$selectedDebugLogging = " checked";
-        }
-        $selectedRedirectAllRequests = "";
-        if (array_key_exists('redirect_all_requests', $options) && $options['redirect_all_requests'] == '1') {
-        	$selectedRedirectAllRequests = " checked";
-        }
-        $selectedLogRawIPs = '';
-        if (array_key_exists('log_raw_ips', $options) && $options['log_raw_ips'] == '1') {
-            $selectedLogRawIPs = " checked";
-        }
+
+        $selectedDebugLogging = $this->getCheckedAttr($options, 'debug_mode');
+        $selectedRedirectAllRequests = $this->getCheckedAttr($options, 'redirect_all_requests');
+        $selectedLogRawIPs = $this->getCheckedAttr($options, 'log_raw_ips');
         
         $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
         $debugLogLink = $this->logic->getDebugLogFileLink();
@@ -1726,14 +1726,8 @@ class ABJ_404_Solution_View {
             $selectedDefaultRedirect302 = " selected";
         }
 
-        $selectedCapture404 = "";
-        if ($options['capture_404'] == '1') {
-            $selectedCapture404 = " checked";
-        }
-        $selectedSendErrorLogs = "";
-        if ($options['send_error_logs'] == '1') {
-            $selectedSendErrorLogs = " checked";
-        }
+        $selectedCapture404 = $this->getCheckedAttr($options, 'capture_404');
+        $selectedSendErrorLogs = $this->getCheckedAttr($options, 'send_error_logs');
 
         $selectedUnderSettings = "";
         $selecteSsettingsLevel = "";
@@ -1753,11 +1747,9 @@ class ABJ_404_Solution_View {
             $earliestLogDate = date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
             date('A', $timeToDisplay);
         }
-        
-        $selectedRemoveMatches = "";
-        if ($options['remove_matches'] == '1') {
-            $selectedRemoveMatches = " checked";
-        }
+
+
+        $selectedRemoveMatches = $this->getCheckedAttr($options, 'remove_matches');
         
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
         $html = $this->f->str_replace('{selectedSendErrorLogs}', $selectedSendErrorLogs, $html);
