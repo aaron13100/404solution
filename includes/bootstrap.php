@@ -64,9 +64,17 @@ function abj_404_solution_init_services() {
 
     /**
      * Database upgrades - handles schema migrations and upgrades.
+     * Dependencies: data_access, logging, functions, permalink_cache, sync_utils, plugin_logic
      */
     $container->set('database_upgrades', function($c) {
-        return ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+        return new ABJ_404_Solution_DatabaseUpgradesEtc(
+            $c->get('data_access'),
+            $c->get('logging'),
+            $c->get('functions'),
+            $c->get('permalink_cache'),
+            $c->get('sync_utils'),
+            $c->get('plugin_logic')
+        );
     });
 
     /**

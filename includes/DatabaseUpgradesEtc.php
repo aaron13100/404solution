@@ -10,15 +10,53 @@
 class ABJ_404_Solution_DatabaseUpgradesEtc {
 
 	private static $instance = null;
-	
+
 	private static $uniqID = null;
-	
+
+	/** @var ABJ_404_Solution_DataAccess */
+	private $dao;
+
+	/** @var ABJ_404_Solution_Logging */
+	private $logger;
+
+	/** @var ABJ_404_Solution_Functions */
+	private $f;
+
+	/** @var ABJ_404_Solution_PermalinkCache */
+	private $permalinkCache;
+
+	/** @var ABJ_404_Solution_SynchronizationUtils */
+	private $syncUtils;
+
+	/** @var ABJ_404_Solution_PluginLogic */
+	private $logic;
+
+	/**
+	 * Constructor with dependency injection.
+	 *
+	 * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer
+	 * @param ABJ_404_Solution_Logging|null $logging Logging service
+	 * @param ABJ_404_Solution_Functions|null $functions String utilities
+	 * @param ABJ_404_Solution_PermalinkCache|null $permalinkCache Permalink cache service
+	 * @param ABJ_404_Solution_SynchronizationUtils|null $syncUtils Sync utilities
+	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
+	 */
+	public function __construct($dataAccess = null, $logging = null, $functions = null, $permalinkCache = null, $syncUtils = null, $pluginLogic = null) {
+		// Use injected dependencies or fall back to getInstance() for backward compatibility
+		$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
+		$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
+		$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
+		$this->permalinkCache = $permalinkCache !== null ? $permalinkCache : ABJ_404_Solution_PermalinkCache::getInstance();
+		$this->syncUtils = $syncUtils !== null ? $syncUtils : ABJ_404_Solution_SynchronizationUtils::getInstance();
+		$this->logic = $pluginLogic !== null ? $pluginLogic : ABJ_404_Solution_PluginLogic::getInstance();
+	}
+
 	public static function getInstance() {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_DatabaseUpgradesEtc();
 			self::$uniqID = uniqid("", true);
 		}
-		
+
 		return self::$instance;
 	}
 	
@@ -26,14 +64,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @global type $wpdb
      */
     function createDatabaseTables($updatingToNewVersion = false) {
-    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
-    	$syncUtils = ABJ_404_Solution_SynchronizationUtils::getInstance();
     	
     	$synchronizedKeyFromUser = "create_db_tables";
-    	$uniqueID = $syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
+    	$uniqueID = $this->syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
     	
     	if ($uniqueID == '' || $uniqueID == null) {
-    		$abj404logging->debugMessage("Avoiding multiple calls for creating database tables.");
+    		$this->logger->debugMessage("Avoiding multiple calls for creating database tables.");
     		return;
     	}
     	
@@ -41,9 +77,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->reallyCreateDatabaseTables($updatingToNewVersion);
     		
     	} catch (Exception $e) {
-    		$abj404logging->errorMessage("Error creating database tables. ", $e);
+    		$this->logger->errorMessage("Error creating database tables. ", $e);
     	}
-    	$syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
+    	$this->syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
     }
     
     private function reallyCreateDatabaseTables($updatingToNewVersion = false) {
@@ -63,8 +99,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
     	// we could do this only when a table is created or when the "meta" column is created
     	// but it doesn't take long anyway so we do it every night.
-    	$plCache = ABJ_404_Solution_PermalinkCache::getInstance();
-    	$plCache->updatePermalinkCache(1);
+    	$this->permalinkCache->updatePermalinkCache(1);
     	
     	if ($updatingToNewVersion) {
     		$this->correctIssuesAfter();
@@ -73,8 +108,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     
     /** Correct any possible outstanding issues. */
     function correctIssuesBefore() {
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    	$abj404dao->correctDuplicateLookupValues();
+    	$this->dao->correctDuplicateLookupValues();
     	
     	$this->correctMatchData();
     }
@@ -88,15 +122,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 * the lower_case_table_names=0 setting. */
 	function renameAbj404TablesToLowerCase() {
 		global $wpdb;
-    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 		// Fetch all tables starting with "abj404", case-insensitive
 		$dbName = esc_sql($wpdb->dbname);
 		$query = "SELECT table_name 
 			FROM information_schema.tables 
 			WHERE table_schema = '{$dbName}' 
 			AND LOWER(table_name) LIKE '%abj404%'";
-		$results = $abj404dao->queryAndGetResults($query);
+		$results = $this->dao->queryAndGetResults($query);
 		
 		foreach ($results['rows'] as $row) {
 			$tableName = $row['table_name'] ?? $row['TABLE_NAME'];
@@ -108,20 +140,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 				if ($tableName !== $lowercaseName) {
 					// Rename the table to lowercase
 					$renameQuery = "RENAME TABLE `{$tableName}` TO `{$lowercaseName}`";
-					$abj404dao->queryAndGetResults($renameQuery, 
+					$this->dao->queryAndGetResults($renameQuery, 
 						['ignore_errors' => ["already exists"]]);
-					$abj404logging->infoMessage("Renamed table {$tableName} to {$lowercaseName}\n");
+					$this->logger->infoMessage("Renamed table {$tableName} to {$lowercaseName}\n");
 				}
 			} else {
-				$abj404logging->warn("I didn't find a table name in the results of this row: " . 
+				$this->logger->warn("I didn't find a table name in the results of this row: " . 
 					print_r($row, true));
 			}
 		}
 	}
     
     function correctMatchData() {
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    	$abj404dao->queryAndGetResults("delete from {wp_abj404_spelling_cache} " .
+    	$this->dao->queryAndGetResults("delete from {wp_abj404_spelling_cache} " .
     		"where matchdata is null or matchdata = ''");
     }
     
@@ -132,88 +163,78 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function handleSpecificCases($tableName, $colName) {
     	if (strpos($tableName, 'abj404_logsv2') !== false && $colName == 'min_log_id') {
     		global $wpdb;
-    		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    		$f = ABJ_404_Solution_Functions::getInstance();
     		$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
-    		$abj404dao->queryAndGetResults($query);
+    		$this->dao->queryAndGetResults($query);
     	}
     	if (strpos($tableName, 'abj404_permalink_cache') !== false && $colName == 'url_length') {
     		// clear the permalink cache so that the url length column will be populated.
     		// this could be more efficient but I'll assume that's not necessary.
-    		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    		$abj404dao->truncatePermalinkCacheTable();
+    		$this->dao->truncatePermalinkCacheTable();
     	}
     }
     
     function runInitialCreateTables() {
-    	$f = ABJ_404_Solution_Functions::getInstance();
-		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	global $wpdb;
-    	$redirectsTable = $abj404dao->doTableNameReplacements("{wp_abj404_redirects}");
-    	$logsTable = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
-    	$lookupTable = $abj404dao->doTableNameReplacements("{wp_abj404_lookup}");
-    	$permalinkCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
-    	$spellingCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
+    	$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
+    	$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
+    	$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
+    	$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
+    	$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
-        $abj404dao->queryAndGetResults($query);
+        $this->dao->queryAndGetResults($query);
         $this->verifyColumns($permalinkCacheTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
-        $abj404dao->queryAndGetResults($query);
+        $this->dao->queryAndGetResults($query);
         $this->verifyColumns($spellingCacheTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
-        $abj404dao->queryAndGetResults($query);
+        $this->dao->queryAndGetResults($query);
         $this->verifyColumns($redirectsTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
-        $abj404dao->queryAndGetResults($query);
+        $this->dao->queryAndGetResults($query);
         $this->verifyColumns($logsTable, $query);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
-        $abj404dao->queryAndGetResults($query);
+        $this->dao->queryAndGetResults($query);
         $this->verifyColumns($lookupTable, $query);
     }
     
     function createIndexes() {
     	global $wpdb;
-    	$f = ABJ_404_Solution_Functions::getInstance();
-		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    	$redirectsTable = $abj404dao->doTableNameReplacements("{wp_abj404_redirects}");
-    	$logsTable = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
-    	$lookupTable = $abj404dao->doTableNameReplacements("{wp_abj404_lookup}");
-    	$permalinkCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
-    	$spellingCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
+    	$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
+    	$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
+    	$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
+    	$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
+    	$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
     	
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
-    	$query = $f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
+    	$query = $this->f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
     	$this->verifyIndexes($permalinkCacheTable, $query);
     	
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
-    	$query = $f->str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
+    	$query = $this->f->str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
     	$this->verifyIndexes($spellingCacheTable, $query);
     	
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
-    	$query = $f->str_replace('{redirectsTable}', $redirectsTable, $query);
+    	$query = $this->f->str_replace('{redirectsTable}', $redirectsTable, $query);
     	$this->verifyIndexes($redirectsTable, $query);
     	
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
-    	$query = $f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
+    	$query = $this->f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
     	$this->verifyIndexes($logsTable, $query);
     	
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
-    	$query = $f->str_replace('{wp_abj404_lookup}', $lookupTable, $query);
+    	$query = $this->f->str_replace('{wp_abj404_lookup}', $lookupTable, $query);
     	$this->verifyIndexes($lookupTable, $query);
     }
 
     function verifyIndexes($tableName, $createTableStatementGoal) {
-    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    	$f = ABJ_404_Solution_Functions::getInstance();
     	
     	// get the current create table statement
-    	$existingTableSQL = $abj404dao->getCreateTableDDL($tableName);
+    	$existingTableSQL = $this->dao->getCreateTableDDL($tableName);
     	
     	$existingTableSQL = strtolower($this->removeCommentsFromColumns($existingTableSQL));
     	$createTableStatementGoal = strtolower(
@@ -237,19 +258,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		strpos($createTableStatementGoal, "\n"));
     	
     	// remove the engine= ...
-    	$engineLoc = $f->strpos($existingTableSQL, ") engine");
+    	$engineLoc = $this->f->strpos($existingTableSQL, ") engine");
     	if ($engineLoc !== false) {
     		$existingTableSQL = substr($existingTableSQL, 0, $engineLoc);
     	}
-    	$commentLoc = $f->strpos($existingTableSQL, ") comment");
+    	$commentLoc = $this->f->strpos($existingTableSQL, ") comment");
     	if ($commentLoc !== false) {
     		$existingTableSQL = substr($existingTableSQL, 0, $commentLoc);
     	}
-    	$engineLoc = $f->strpos($createTableStatementGoal, ") engine");
+    	$engineLoc = $this->f->strpos($createTableStatementGoal, ") engine");
     	if ($engineLoc !== false) {
     		$createTableStatementGoal = substr($createTableStatementGoal, 0, $engineLoc);
     	}
-    	$commentLoc = $f->strpos($createTableStatementGoal, ") comment");
+    	$commentLoc = $this->f->strpos($createTableStatementGoal, ") comment");
     	if ($commentLoc !== false) {
     		$createTableStatementGoal = substr($createTableStatementGoal, 0, $commentLoc);
     	}
@@ -268,7 +289,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
     	// say why we're doing what we're doing.
     	if (count($createTheseIndexes) > 0) {
-    		$abj404logging->infoMessage(self::$uniqID . ": On " . $tableName . 
+    		$this->logger->infoMessage(self::$uniqID . ": On " . $tableName . 
     			" I'm adding/updating various indexes because we want: \n`" .
     			print_r($goalTableMatchesColumnDDL, true) . "\n but we have: \n" .
     			print_r($existingTableMatchesColumnDDL, true));
@@ -281,32 +302,31 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$colName = $matches[1];
     		$query = "alter table " . $tableName . " drop index " . $colName;
     		// drop the index in case it already exists.
-    		$results = $abj404dao->queryAndGetResults($query, 
+    		$results = $this->dao->queryAndGetResults($query, 
     			array('ignore_errors' => array("check that column/key exists",
     			"check that it exists")));
     		if ($results['last_error'] == null || $results['last_error'] == '') {
-    			$abj404logging->infoMessage("Successfully dropped index: " . $query);
+    			$this->logger->infoMessage("Successfully dropped index: " . $query);
     		} else {
-    			$abj404logging->infoMessage("Failed to drop index with query: " . $query . 
+    			$this->logger->infoMessage("Failed to drop index with query: " . $query . 
     				";;; because: " . $results['last_error']);
     		}
     		
     		// if we're adding a unique key then remove the duplicates.
     		// this was causing issues for some people.
-    		$spellingCacheTableName = $abj404dao->doTableNameReplacements('{wp_abj404_spelling_cache}');
+    		$spellingCacheTableName = $this->dao->doTableNameReplacements('{wp_abj404_spelling_cache}');
     		if (strtolower($tableName) == $spellingCacheTableName) {
-    			$abj404dao->deleteSpellingCache();
+    			$this->dao->deleteSpellingCache();
     		}
     		
     		// create the index.
     		$addStatement = "alter table " . $tableName . " add " . $indexDDL;
-    		$abj404dao->queryAndGetResults($addStatement);
-    		$abj404logging->infoMessage("I added an index: " . $addStatement);
+    		$this->dao->queryAndGetResults($addStatement);
+    		$this->logger->infoMessage("I added an index: " . $addStatement);
     	}
     }
     
     function verifyColumns($tableName, $createTableStatementGoal) {
-    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
     	$updatesWereNeeded = false;
     	
     	// find the differences
@@ -324,20 +344,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	if (count($tableDifferences['updateTheseColumns']) > 0 || 
     		count($tableDifferences['createTheseColumns']) > 0) {
     	
-    		$abj404logging->errorMessage("There are still differences after updating the " . 
+    		$this->logger->errorMessage("There are still differences after updating the " . 
     			$tableName . " table. " . print_r($tableDifferences, true));
     		
     	} else if ($updatesWereNeeded) {
-    		$abj404logging->infoMessage("No more differences found after updating the " .
+    		$this->logger->infoMessage("No more differences found after updating the " .
     			$tableName . " table columns. All is well.");
     	}
     }
     
     function getTableDifferences($tableName, $createTableStatementGoal) {
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	
     	// get the current create table statement
-    	$existingTableSQL = $abj404dao->getCreateTableDDL($tableName);
+    	$existingTableSQL = $this->dao->getCreateTableDDL($tableName);
     	
     	$existingTableSQL = strtolower($this->removeCommentsFromColumns($existingTableSQL));
     	$createTableStatementGoal = strtolower(
@@ -415,8 +434,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
     
     function updateATableBasedOnDifferences($tableName, $tableDifferences) {
-    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     	
     	$dropTheseColumns = $tableDifferences['dropTheseColumns'];
     	$updateTheseColumns = $tableDifferences['updateTheseColumns'];
@@ -429,13 +446,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	// drop unnecessary columns.
     	foreach ($dropTheseColumns as $colName) {
     		$query = "alter table " . $tableName . " drop " . $colName;
-    		$abj404dao->queryAndGetResults($query);
-    		$abj404logging->infoMessage("I dropped a column (1): " . $query);
+    		$this->dao->queryAndGetResults($query);
+    		$this->logger->infoMessage("I dropped a column (1): " . $query);
     	}
     	
     	// say why we're doing what we're doing.
     	if (count($updateTheseColumns) > 0) {
-    		$abj404logging->infoMessage(self::$uniqID . ": On " . $tableName .
+    		$this->logger->infoMessage(self::$uniqID . ": On " . $tableName .
     			" I'm updating various columns because we want: \n`" .
     			print_r($goalTableMatchesColumnDDL, true) . "\n but we have: \n" .
     			print_r($existingTableMatchesColumnDDL, true));
@@ -453,14 +470,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     			// ALTER TABLE `mywp_abj404_redirects` CHANGE `status` `status` BIGINT(19) NOT NULL;
     			$updateColStatement = "alter table " . $tableName . " change " . $colName .
     			" " . $colDDL;
-    			$abj404dao->queryAndGetResults($updateColStatement);
-    			$abj404logging->infoMessage("I updated a column: " . $updateColStatement);
+    			$this->dao->queryAndGetResults($updateColStatement);
+    			$this->logger->infoMessage("I updated a column: " . $updateColStatement);
     			
     		} else {
     			// create the column.
     			$createColStatement = "alter table " . $tableName . " add " . $colDDL;
-    			$abj404dao->queryAndGetResults($createColStatement);
-    			$abj404logging->infoMessage("I added a column: " . $createColStatement);
+    			$this->dao->queryAndGetResults($createColStatement);
+    			$this->logger->infoMessage("I added a column: " . $createColStatement);
     		}
     		
     		$this->handleSpecificCases($tableName, $colName);
@@ -477,10 +494,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function updateTableEngineToInnoDB() {
     	// get a list of all tables.
         global $wpdb;
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    	$result = $abj404dao->getTableEngines();
-    	$logsTable = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
+    	$result = $this->dao->getTableEngines();
+    	$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
     	
     	// if any rows are found then update the tables.
     	if (array_key_exists('rows', $result) && !empty($result['rows'])) {
@@ -493,14 +508,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		    
 		        $query = null;
     		    // Use MyISAM because optimize table is slow otherwise.
-                if ($tableName == $logsTable && $abj404dao->isMyISAMSupported()) {
+                if ($tableName == $logsTable && $this->dao->isMyISAMSupported()) {
                     if (strtolower($engine) != 'myisam') {
-                        $abj404logging->infoMessage("Updating " . $tableName . " to MyISAM.");
+                        $this->logger->infoMessage("Updating " . $tableName . " to MyISAM.");
                         $query = 'alter table `' . $tableName . '` engine = MyISAM;';
                     }
                   
                 } else if (strtolower($engine) != 'innodb') {
-                    $abj404logging->infoMessage("Updating " . $tableName . " to InnoDB.");
+                    $this->logger->infoMessage("Updating " . $tableName . " to InnoDB.");
                     $query = 'alter table `' . $tableName . '` engine = InnoDB;';
                 }
                 
@@ -509,8 +524,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     continue;  
                 }
                 
-                $result = $abj404dao->queryAndGetResults($query, array("log_errors" => false));
-                $abj404logging->infoMessage("I changed an engine: " . $query);
+                $result = $this->dao->queryAndGetResults($query, array("log_errors" => false));
+                $this->logger->infoMessage("I changed an engine: " . $query);
                 
                 if ($result['last_error'] != null && $result['last_error'] != '' &&
                   strpos($result['last_error'], 'Index column size too large') !== false) {
@@ -518,9 +533,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     // delete the indexes, try again, and create the indexes later.
                     $this->deleteIndexes($tableName);
                   
-                    $abj404dao->queryAndGetResults($query,
+                    $this->dao->queryAndGetResults($query,
                       array("ignore_errors" => array("Unknown storage engine")));
-                    $abj404logging->infoMessage("I tried to change an engine again: " . $query);
+                    $this->logger->infoMessage("I tried to change an engine again: " . $query);
                 }
     		}
     	}
@@ -533,11 +548,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @return string|null The collation for the table, or null if the query failed.
      */
 	function getTableCollation($tableName) {
-		$abj404logging = ABJ_404_Solution_Logging::getInstance();
-		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 
 		$query = "SHOW CREATE TABLE `$tableName`";
-		$results = $abj404dao->queryAndGetResults($query);
+		$results = $this->dao->queryAndGetResults($query);
 	
 		if (!empty($results['rows'][0]['Create Table'])) {
 			$createTableSQL = $results['rows'][0]['Create Table'];
@@ -550,7 +563,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
 			return ($collation && $charset) ? [$collation, $charset] : null;
 		} else {
-			$abj404logging->warn("SHOW CREATE TABLE returned no data for $tableName.");
+			$this->logger->warn("SHOW CREATE TABLE returned no data for $tableName.");
 			return null;
 		}
 	}
@@ -558,16 +571,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	/** Make the collations of our tables match the WP_POSTS table collation. */
 	function correctCollations() {
 		global $wpdb;
-		$abj404logging = ABJ_404_Solution_Logging::getInstance();
-		$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 		
 		$collationNeedsUpdating = false;
 		
-		$redirectsTable = $abj404dao->doTableNameReplacements("{wp_abj404_redirects}");
-		$logsTable = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
-		$lookupTable = $abj404dao->doTableNameReplacements("{wp_abj404_lookup}");
-		$permalinkCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
-		$spellingCacheTable = $abj404dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
+		$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
+		$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
+		$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
+		$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
+		$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
 		$postsTable = $wpdb->prefix . 'posts';
 		
 		$abjTableNames = array($redirectsTable, $logsTable, $lookupTable, $permalinkCacheTable, $spellingCacheTable);
@@ -576,7 +587,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		$postsTableData = $this->getTableCollation($postsTable);
 	
 		if ($postsTableData === null) {
-			$abj404logging->warn("Failed to retrieve collation/charset for $postsTable. Aborting collation checks.");
+			$this->logger->warn("Failed to retrieve collation/charset for $postsTable. Aborting collation checks.");
 			return;
 		}
 	
@@ -587,7 +598,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			$abjTableData = $this->getTableCollation($tableName);
 	
 			if ($abjTableData === null) {
-				$abj404logging->warn("Failed to retrieve collation for $tableName.");
+				$this->logger->warn("Failed to retrieve collation for $tableName.");
 				continue;  // Skip this table if collation can't be determined
 			}
 	
@@ -606,29 +617,29 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		}
 		
 		// if they don't match then update our tables to match the target tables.
-		$abj404logging->infoMessage("Updating collation from $abjTableCollation to $postsTableCollation");
+		$this->logger->infoMessage("Updating collation from $abjTableCollation to $postsTableCollation");
 	
 		foreach ($abjTableNames as $tableName) {
 			// Update the collation
 			$query = "ALTER TABLE {table_name} CONVERT TO CHARSET " . $postsTableCharset . 
 					 " COLLATE " . $postsTableCollation;
 			$query = str_replace('{table_name}', $tableName, $query);
-			$results = $abj404dao->queryAndGetResults($query, 
+			$results = $this->dao->queryAndGetResults($query, 
 				array('ignore_errors' => array("Index column size too large")));
 	
 			if ($results['last_error'] != null && $results['last_error'] != '' && 
 				strpos($results['last_error'], "Index column size too large") !== false) {
 				
-				$abj404logging->infoMessage("Collation change for $tableName failed due to 'Index column size too large'. Deleting indexes and retrying...");
+				$this->logger->infoMessage("Collation change for $tableName failed due to 'Index column size too large'. Deleting indexes and retrying...");
 	
 				// delete indexes and try again.
 				$this->deleteIndexes($tableName);
 				
-				$abj404dao->queryAndGetResults($query);
-            	$abj404logging->infoMessage("I tried to change a collation again: " . $query);
+				$this->dao->queryAndGetResults($query);
+            	$this->logger->infoMessage("I tried to change a collation again: " . $query);
 	
 			} else if ($results['last_error'] == null || $results['last_error'] == '') {
-				$abj404logging->infoMessage("Successfully changed collation of $tableName to $postsTableCollation");
+				$this->logger->infoMessage("Successfully changed collation of $tableName to $postsTableCollation");
 			}
 		}
 	}
@@ -636,11 +647,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     /** Delete all non-primary indexes from a table.
      * @param string $tableName */
     function deleteIndexes($tableName) {
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    	$f = ABJ_404_Solution_Functions::getInstance();
     	
     	// get the indexes list.
-    	$results = $abj404dao->queryAndGetResults("show index from " . $tableName . 
+    	$results = $this->dao->queryAndGetResults("show index from " . $tableName . 
     		" where key_name != 'PRIMARY'");
     	$rows = $results['rows'];
     	
@@ -652,7 +661,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$keyNameColumn = 'key_name';
     	$aRow = $rows[0];
     	foreach (array_keys($aRow) as $someKey) {
-    		if ($f->strtolower($someKey) == 'key_name') {
+    		if ($this->f->strtolower($someKey) == 'key_name') {
     			$keyNameColumn = $someKey;
     			break;
     		}
@@ -661,14 +670,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	foreach ($rows as $row) {
     		// delete them
     		$query = "alter table " . $tableName . " drop index " . $row[$keyNameColumn];
-    		$abj404dao->queryAndGetResults($query);
+    		$this->dao->queryAndGetResults($query);
     	}
     }
     
     function updatePluginCheck() {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
-        $pluginInfo = $abj404dao->getLatestPluginVersion();
+        $pluginInfo = $this->dao->getLatestPluginVersion();
         
         $shouldUpdate = $this->shouldUpdate($pluginInfo);
         
@@ -678,43 +686,41 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
     
     function doUpdatePlugin($pluginInfo) {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
 
-        $abj404logging->infoMessage("Attempting update to " . $pluginInfo['version']);
+        $this->logger->infoMessage("Attempting update to " . $pluginInfo['version']);
         
         // do the update.
         if (!class_exists('WP_Upgrader')) {
-        	$abj404logging->infoMessage("Including WP_Upgrader for update.");
+        	$this->logger->infoMessage("Including WP_Upgrader for update.");
         	require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         }        
         if (!class_exists('Plugin_Upgrader')) {
-        	$abj404logging->infoMessage("Including Plugin_Upgrader for update.");
+        	$this->logger->infoMessage("Including Plugin_Upgrader for update.");
         	require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
         }
         if (!function_exists('show_message')) {
-        	$abj404logging->infoMessage("Including misc.php for update.");
+        	$this->logger->infoMessage("Including misc.php for update.");
         	require_once ABSPATH . 'wp-admin/includes/misc.php';
         }
         if (!class_exists('Plugin_Upgrader')) {
-        	$abj404logging->warn("There was an issue including the Plugin_Upgrader class.");
+        	$this->logger->warn("There was an issue including the Plugin_Upgrader class.");
         	return;
         }
         if (!function_exists('show_message')) {
-        	$abj404logging->warn("There was an issue including the misc.php class.");
+        	$this->logger->warn("There was an issue including the misc.php class.");
         	return;
         }
         
-        $abj404logging->infoMessage("Includes for update complete. Updating... ");
+        $this->logger->infoMessage("Includes for update complete. Updating... ");
         
         ob_start();
         $upgrader = new Plugin_Upgrader();
         $upret = $upgrader->upgrade(ABJ404_SOLUTION_BASENAME);
         if ($upret) {
-            $abj404logging->infoMessage("Plugin successfully upgraded to " . $pluginInfo['version']);
+            $this->logger->infoMessage("Plugin successfully upgraded to " . $pluginInfo['version']);
             
         } else if ($upret instanceof WP_Error) {
-            $abj404logging->infoMessage("Plugin upgrade error " . 
+            $this->logger->infoMessage("Plugin upgrade error " . 
                 json_encode($upret->get_error_codes()) . ": " . json_encode($upret->get_error_messages()));
         }
         $output = "";
@@ -722,37 +728,36 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         	$output = @ob_get_contents();
         	@ob_end_clean();
         }
-        if ($f->strlen(trim($output)) > 0) {
-            $abj404logging->infoMessage("Upgrade output: " . $output);
+        if ($this->f->strlen(trim($output)) > 0) {
+            $this->logger->infoMessage("Upgrade output: " . $output);
         }
         
         $activateResult = activate_plugin(ABJ404_NAME);
         if ($activateResult instanceof WP_Error) {
-            $abj404logging->errorMessage("Plugin activation error " . 
+            $this->logger->errorMessage("Plugin activation error " . 
                 json_encode($upret->get_error_codes()) . ": " . json_encode($upret->get_error_messages()));
             
         } else if ($activateResult == null) {
-            $abj404logging->infoMessage("Successfully reactivated plugin after upgrade to version " . 
+            $this->logger->infoMessage("Successfully reactivated plugin after upgrade to version " . 
                 $pluginInfo['version']);
         }        
     }
     
     function shouldUpdate($pluginInfo) {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
-        $options = $abj404logic->getOptions(true);
+        
+        $options = $this->logic->getOptions(true);
         $latestVersion = $pluginInfo['version'];
         
         if (ABJ404_VERSION == $latestVersion) {
-            $abj404logging->debugMessage("The latest plugin version is already installed (" . 
+            $this->logger->debugMessage("The latest plugin version is already installed (" . 
                     ABJ404_VERSION . ").");
             return false;
         }
         
         // don't overwrite development versions.
         if (version_compare(ABJ404_VERSION, $latestVersion) == 1) {
-            $abj404logging->infoMessage("Development version: A more recent version is installed than " . 
+            $this->logger->infoMessage("Development version: A more recent version is installed than " . 
                     "what is available on the WordPress site (" . ABJ404_VERSION . " / " . 
                      $latestVersion . ").");
             return false;
@@ -760,7 +765,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         
         $serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
         if (in_array($serverName, array('127.0.0.1', '::1', 'localhost'))) {
-            $abj404logging->infoMessage("Update narrowly avoided on localhost.");
+            $this->logger->infoMessage("Update narrowly avoided on localhost.");
             return false;
         }        
         
@@ -782,14 +787,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         	intval($myVersionArray[2]) < intval($latestVersionArray[2]) &&
         	$daysDifference >= 3) {
         		
-            $abj404logging->infoMessage("A new minor version is available (" . 
+            $this->logger->infoMessage("A new minor version is available (" . 
                     $latestVersion . "), currently version " . ABJ404_VERSION . " is installed.");
             return true;
         }
 
         $minDaysDifference = $options['days_wait_before_major_update'];
         if ($daysDifference >= $minDaysDifference) {
-            $abj404logging->infoMessage("The latest major version is old enough for updating automatically (" . 
+            $this->logger->infoMessage("The latest major version is old enough for updating automatically (" . 
                     $minDaysDifference . "days minimum, version " . $latestVersion . " is " . $daysDifference . 
                     " days old), currently version " . ABJ404_VERSION . " is installed.");
             return true;
