@@ -71,9 +71,14 @@ function abj_404_solution_init_services() {
 
     /**
      * Permalink cache - caches permalink lookups for performance.
+     * Dependencies: data_access, logging, plugin_logic
      */
     $container->set('permalink_cache', function($c) {
-        return ABJ_404_Solution_PermalinkCache::getInstance();
+        return new ABJ_404_Solution_PermalinkCache(
+            $c->get('data_access'),
+            $c->get('logging'),
+            $c->get('plugin_logic')
+        );
     });
 
     // =========================================================================
@@ -94,9 +99,16 @@ function abj_404_solution_init_services() {
 
     /**
      * Spell checker service - handles URL matching and suggestions.
+     * Dependencies: functions, plugin_logic, data_access, logging, permalink_cache
      */
     $container->set('spell_checker', function($c) {
-        return ABJ_404_Solution_SpellChecker::getInstance();
+        return new ABJ_404_Solution_SpellChecker(
+            $c->get('functions'),
+            $c->get('plugin_logic'),
+            $c->get('data_access'),
+            $c->get('logging'),
+            $c->get('permalink_cache')
+        );
     });
 
     /**
