@@ -5,12 +5,45 @@
 class ABJ_404_Solution_WordPress_Connector {
 
 	private static $instance = null;
-	
+
+	/** @var ABJ_404_Solution_PluginLogic */
+	private $logic;
+
+	/** @var ABJ_404_Solution_DataAccess */
+	private $dao;
+
+	/** @var ABJ_404_Solution_Logging */
+	private $logger;
+
+	/** @var ABJ_404_Solution_Functions */
+	private $f;
+
+	/** @var ABJ_404_Solution_SpellChecker */
+	private $spellChecker;
+
+	/**
+	 * Constructor with dependency injection.
+	 *
+	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
+	 * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer
+	 * @param ABJ_404_Solution_Logging|null $logging Logging service
+	 * @param ABJ_404_Solution_Functions|null $functions String utilities
+	 * @param ABJ_404_Solution_SpellChecker|null $spellChecker Spell checker service
+	 */
+	public function __construct($pluginLogic = null, $dataAccess = null, $logging = null, $functions = null, $spellChecker = null) {
+		// Use injected dependencies or fall back to getInstance() for backward compatibility
+		$this->logic = $pluginLogic !== null ? $pluginLogic : ABJ_404_Solution_PluginLogic::getInstance();
+		$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
+		$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
+		$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
+		$this->spellChecker = $spellChecker !== null ? $spellChecker : ABJ_404_Solution_SpellChecker::getInstance();
+	}
+
 	public static function getInstance() {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_WordPress_Connector();
 		}
-		
+
 		return self::$instance;
 	}
 	
@@ -108,17 +141,15 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return array
      */
     static function addSettingsLinkToPluginPage($links) {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         
         if (!is_array($links)) {
-        	$abj404logging->infoMessage("The settings links variable was not an array. " . 
+        	$this->logger->infoMessage("The settings links variable was not an array. " . 
         		"Please verify the validity of other plugins. " . print_r($links, true));
             $links = array();
         }
         
-        if (!is_admin() || !$abj404logic->userIsPluginAdmin()) {
-            $abj404logging->logUserCapabilities("addSettingsLinkToPluginPage");
+        if (!is_admin() || !$this->logic->userIsPluginAdmin()) {
+            $this->logger->logUserCapabilities("addSettingsLinkToPluginPage");
 
             return $links;
         }
@@ -128,7 +159,7 @@ class ABJ_404_Solution_WordPress_Connector {
         array_unshift($links, $settings_link);
         
         $debugExplanation = __('Debug Log', '404-solution');
-        $debugLogLink = $abj404logic->getDebugLogFileLink();
+        $debugLogLink = $this->logic->getDebugLogFileLink();
         $debugExplanation = '<a href="options-general.php' . $debugLogLink . '" target="_blank" >'
         	. $debugExplanation . '</a>';
         array_push($links, $debugExplanation);
@@ -151,8 +182,7 @@ class ABJ_404_Solution_WordPress_Connector {
     }
 
     function processRedirectAllRequests() {
-    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-    	$options = $abj404logic->getOptions();
+    	$options = $this->logic->getOptions();
     	
     	$userRequest = ABJ_404_Solution_UserRequest::getInstance();
     	// setup ignore variables on $_REQUEST['abj404solution']
@@ -161,7 +191,7 @@ class ABJ_404_Solution_WordPress_Connector {
     	// remove the home directory from the URL parts because it should not be considered for spell checking.
     	$urlSlugOnly = $userRequest->getOnlyTheSlug();
     	
-    	$abj404logic->initializeIgnoreValues($pathOnly, $urlSlugOnly);
+    	$this->logic->initializeIgnoreValues($pathOnly, $urlSlugOnly);
     	
     	// create a UserRequest object to store various information about the request for later use.
     	$requestedURL = $userRequest->getPathWithSortedQueryString();
@@ -170,8 +200,7 @@ class ABJ_404_Solution_WordPress_Connector {
     	
     	// if we're supposed to redirect all requests then a regex redirect should be in place.
     	if (is_admin() || !is_404()) {
-    		$abj404logging = ABJ_404_Solution_Logging::getInstance();
-    		$abj404logging->warn("If REDIRECT_ALL_REQUESTS is turned on then a " .
+    		$this->logger->warn("If REDIRECT_ALL_REQUESTS is turned on then a " .
     			"regex redirect must be in place.");
     	}
     }
@@ -183,11 +212,7 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
         
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404connector = ABJ_404_Solution_WordPress_Connector::getInstance();
-        $abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
 
         
         $_REQUEST[ABJ404_PP]['process_start_time'] = microtime(true);
@@ -201,10 +226,10 @@ class ABJ_404_Solution_WordPress_Connector {
         $urlSlugOnly = $userRequest->getOnlyTheSlug();
 
         // setup ignore variables on $_REQUEST['abj404solution']
-        $abj404logic->initializeIgnoreValues($pathOnly, $urlSlugOnly);
+        $this->logic->initializeIgnoreValues($pathOnly, $urlSlugOnly);
         
         if ($_REQUEST[ABJ404_PP]['ignore_donotprocess']) {
-            $abj404dao->logRedirectHit($pathOnly, '404', 'ignore_donotprocess');
+            $this->dao->logRedirectHit($pathOnly, '404', 'ignore_donotprocess');
             return;
         }
         
@@ -212,9 +237,9 @@ class ABJ_404_Solution_WordPress_Connector {
         $requestedURLWithoutComments = $userRequest->getRequestURIWithoutCommentsPage();
         
         // Get URL data if it's already in our database
-        $redirect = $abj404dao->getActiveRedirectForURL($requestedURL);
+        $redirect = $this->dao->getActiveRedirectForURL($requestedURL);
 
-        $options = $abj404logic->getOptions();
+        $options = $this->logic->getOptions();
 
         $this->logAReallyLongDebugMessage($options, $requestedURL, $redirect);
 
@@ -229,7 +254,7 @@ class ABJ_404_Solution_WordPress_Connector {
             }
             
             if ($requestedURLWithoutComments != $requestedURL) {
-            	$redirect = $abj404dao->getActiveRedirectForURL($requestedURLWithoutComments);
+            	$redirect = $this->dao->getActiveRedirectForURL($requestedURLWithoutComments);
             	if ($redirect['id'] != '0' && $redirect['final_dest'] != '0') {
             		// A redirect record exists.
             		$abj404connector->processRedirect($requestedURL, $redirect, 'existing');
@@ -245,13 +270,13 @@ class ABJ_404_Solution_WordPress_Connector {
             // --------------------------------------------------------------
             // try a permalink change.
             if ($autoRedirectsAreOn) {
-	       		$slugPermalink = $abj404spellChecker->getPermalinkUsingSlug($urlSlugOnly);
+	       		$slugPermalink = $this->spellChecker->getPermalinkUsingSlug($urlSlugOnly);
 	            if (!empty($slugPermalink)) {
 	                $redirectType = $slugPermalink['type'];
-	                $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $slugPermalink['id'], $options['default_redirect'], 0);
+	                $this->dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $slugPermalink['id'], $options['default_redirect'], 0);
 	
-	                $abj404dao->logRedirectHit($requestedURL, $slugPermalink['link'], 'exact slug');
-	                $abj404logic->forceRedirect(esc_url($slugPermalink['link']), esc_html($options['default_redirect']));
+	                $this->dao->logRedirectHit($requestedURL, $slugPermalink['link'], 'exact slug');
+	                $this->logic->forceRedirect(esc_url($slugPermalink['link']), esc_html($options['default_redirect']));
 	                exit;
 	            }
             }
@@ -264,20 +289,20 @@ class ABJ_404_Solution_WordPress_Connector {
             }
 
             if (!$autoRedirectsAreOn) {
-            	$abj404logic->sendTo404Page($requestedURL,
+            	$this->logic->sendTo404Page($requestedURL,
             		'Do not create redirects per the options.');
             	return;
             }
             
             // --------------------------------------------------------------
             // try spell checking.
-            $permalink = $abj404spellChecker->getPermalinkUsingSpelling($urlSlugOnly);
+            $permalink = $this->spellChecker->getPermalinkUsingSpelling($urlSlugOnly);
             if (!empty($permalink)) {
                 $redirectType = $permalink['type'];
-                $abj404dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $permalink['id'], $options['default_redirect'], 0);
+                $this->dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $permalink['id'], $options['default_redirect'], 0);
 
-                $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'spell check');
-                $abj404logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
+                $this->dao->logRedirectHit($requestedURL, $permalink['link'], 'spell check');
+                $this->logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
                 exit;
             }
 
@@ -297,7 +322,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
                     if (!$paged === FALSE) {
                         if ($urlParts['query'] == "") {
-                            if ($f->substr($perma_link, -1) == "/") {
+                            if ($this->f->substr($perma_link, -1) == "/") {
                                 $perma_link .= $paged . "/";
                             } else {
                                 $perma_link .= "/" . $paged;
@@ -307,7 +332,7 @@ class ABJ_404_Solution_WordPress_Connector {
                         }
                     }
 
-                    $perma_link .= $f->sortQueryString($urlParts);
+                    $perma_link .= $this->f->sortQueryString($urlParts);
 
                     // Check for forced permalinks.
                     if (@$options['auto_redirects'] == '1') {
@@ -315,9 +340,9 @@ class ABJ_404_Solution_WordPress_Connector {
                             if ($redirect['id'] != '0') {
                                 $abj404connector->processRedirect($requestedURL, $redirect, 'single page 3');
                             } else {
-                                $abj404dao->setupRedirect(esc_url($requestedURL), ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, $permalink['id'], $options['default_redirect'], 0);
-                                $abj404dao->logRedirectHit($requestedURL, $permalink['link'], 'single page');
-                                $abj404logic->forceRedirect(esc_url($permalink['link']), 
+                                $this->dao->setupRedirect(esc_url($requestedURL), ABJ404_STATUS_AUTO, ABJ404_TYPE_POST, $permalink['id'], $options['default_redirect'], 0);
+                                $this->dao->logRedirectHit($requestedURL, $permalink['link'], 'single page');
+                                $this->logic->forceRedirect(esc_url($permalink['link']), 
                                         esc_html($options['default_redirect']));
                                 exit;
                             }
@@ -328,7 +353,7 @@ class ABJ_404_Solution_WordPress_Connector {
                         // Not a 404 Link. Check for matches.
                         if ($options['remove_matches'] == '1') {
                             if ($redirect['id'] != '0') {
-                                $abj404dao->deleteRedirect($redirect['id']);
+                                $this->dao->deleteRedirect($redirect['id']);
                             }
                         }
                     }
@@ -337,10 +362,10 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         // this is for requests like website.com/?p=123            
-        $abj404logic->tryNormalPostQuery($options);
+        $this->logic->tryNormalPostQuery($options);
         
-        $abj404dao->logRedirectHit($requestedURL, '404', 'gave up.');
-        $abj404logic->sendTo404Page($requestedURL, '');
+        $this->dao->logRedirectHit($requestedURL, '404', 'gave up.');
+        $this->logic->sendTo404Page($requestedURL, '');
     }
     
     /** 
@@ -350,15 +375,12 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return boolean true if the user is sent to the default 404 page.
      */
     function tryRegexRedirect($options, $requestedURL) {
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-    	$abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
     	
-    	$regexPermalink = $abj404spellChecker->getPermalinkUsingRegEx($requestedURL);
+    	$regexPermalink = $this->spellChecker->getPermalinkUsingRegEx($requestedURL);
     	if (!empty($regexPermalink)) {
-    		$abj404dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match',
+    		$this->dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match',
     			$requestedURL);
-    		$sentTo404Page = $abj404logic->forceRedirect($regexPermalink['link'], 
+    		$sentTo404Page = $this->logic->forceRedirect($regexPermalink['link'], 
     			esc_html($options['default_redirect']), $regexPermalink['type'],
     			$requestedURL);
     		if ($sentTo404Page) {
@@ -373,8 +395,6 @@ class ABJ_404_Solution_WordPress_Connector {
 	 * @param options
 	 */
     function logAReallyLongDebugMessage($options, $requestedURL, $redirect) {
-	 	$abj404logging = ABJ_404_Solution_Logging::getInstance();
-	 	$f = ABJ_404_Solution_Functions::getInstance();
 	 	
         $debugOptionsMsg = esc_html('auto_redirects: ' . $options['auto_redirects'] . ', auto_score: ' . 
                 $options['auto_score'] . ', template_redirect_priority: ' . $options['template_redirect_priority'] .
@@ -383,7 +403,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         $remoteAddress = esc_sql($_SERVER['REMOTE_ADDR']);
         if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
-        	$remoteAddress = $f->md5lastOctet($remoteAddress);
+        	$remoteAddress = $this->f->md5lastOctet($remoteAddress);
         }
         
         $httpUserAgent = "";
@@ -393,7 +413,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $httpUserAgent . ', REMOTE_ADDR: ' . 
                 $remoteAddress . ', REQUEST_URI: ' . urldecode($_SERVER['REQUEST_URI']));
-        $abj404logging->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
+        $this->logger->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
                 wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " . "is_page(): " . is_page() .
                 " | is_feed(): " . is_feed() . " | is_trackback(): " . is_trackback() . " | is_preview(): " .
                 is_preview() . " | options: " . $debugOptionsMsg . ', ' . $debugServerMsg);
@@ -409,19 +429,16 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return boolean true if the user is sent to the default 404 page.
      */
     function processRedirect($requestedURL, $redirect, $matchReason) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 
         if (( $redirect['status'] != ABJ404_STATUS_MANUAL && $redirect['status'] != ABJ404_STATUS_AUTO ) || $redirect['disabled'] != 0) {
             // It's a redirect that has been deleted, ignored, or captured.
-            $abj404logging->errorMessage("processRedirect() was called with bad redirect data. Data: " .
+            $this->logger->errorMessage("processRedirect() was called with bad redirect data. Data: " .
                     wp_kses_post(print_r($redirect, true)));
         }
 
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
-        	$abj404dao->logRedirectHit($redirect['url'], $redirect['final_dest'], 'external');
-            $abj404logic->forceRedirect($redirect['final_dest'], esc_html($redirect['code']));
+        	$this->dao->logRedirectHit($redirect['url'], $redirect['final_dest'], 'external');
+            $this->logic->forceRedirect($redirect['final_dest'], esc_html($redirect['code']));
             exit;
         }
 
@@ -435,8 +452,8 @@ class ABJ_404_Solution_WordPress_Connector {
         	$redirectedTo = $urlParts['path'];
         }
             
-        $abj404dao->logRedirectHit($redirect['url'], $redirectedTo, $matchReason);
-        $sendTo404Page = $abj404logic->forceRedirect($permalink['link'], esc_html($redirect['code']));
+        $this->dao->logRedirectHit($redirect['url'], $redirectedTo, $matchReason);
+        $sendTo404Page = $this->logic->forceRedirect($permalink['link'], esc_html($redirect['code']));
         
         if ($sendTo404Page) {
         	return;
@@ -452,24 +469,20 @@ class ABJ_404_Solution_WordPress_Connector {
      * @global type $abj404view
      */
     static function echoDashboardNotification() {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         
-        if (!is_admin() || !$abj404logic->userIsPluginAdmin()) {
-            $abj404logging->logUserCapabilities("echoDashboardNotification");
+        if (!is_admin() || !$this->logic->userIsPluginAdmin()) {
+            $this->logger->logUserCapabilities("echoDashboardNotification");
             return;
         }
 
         global $pagenow;
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         global $abj404view;
 
-        if ($abj404logic->userIsPluginAdmin()) {
+        if ($this->logic->userIsPluginAdmin()) {
             if ( (array_key_exists('page', $_GET) && $_GET['page'] == ABJ404_PP) ||
                  ($pagenow == 'index.php' && !isset($_GET['page'])) ) {
-                $captured404Count = $abj404dao->getCapturedCountForNotification();
-                if ($abj404logic->shouldNotifyAboutCaptured404s($captured404Count)) {
+                $captured404Count = $this->dao->getCapturedCountForNotification();
+                if ($this->logic->shouldNotifyAboutCaptured404s($captured404Count)) {
                     $msg = $abj404view->getDashboardNotificationCaptured($captured404Count);
                     echo $msg;
                 }
@@ -485,25 +498,21 @@ class ABJ_404_Solution_WordPress_Connector {
      */
     static function addMainSettingsPageLink() {
         global $menu;
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
         
-        if (!is_admin() || !$abj404logic->userIsPluginAdmin()) {
-            $abj404logging->logUserCapabilities("addMainSettingsPageLink");
+        if (!is_admin() || !$this->logic->userIsPluginAdmin()) {
+            $this->logger->logUserCapabilities("addMainSettingsPageLink");
             return;
         }
 
-        $options = $abj404logic->getOptions();
+        $options = $this->logic->getOptions();
         $pageName = "404 Solution";
 
         // Admin notice
         if (array_key_exists('admin_notification', $options) && isset($options['admin_notification']) && $options['admin_notification'] != '0') {
-            $captured = $abj404dao->getCapturedCountForNotification();
+            $captured = $this->dao->getCapturedCountForNotification();
             if (isset($options['admin_notification']) && $captured >= $options['admin_notification']) {
                 $pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . esc_html($captured) . "</span></span>";
-                $pos = $f->strpos($menu[80][0], 'update-plugins');
+                $pos = $this->f->strpos($menu[80][0], 'update-plugins');
                 if ($pos === false) {
                     $menu[80][0] = $menu[80][0] . " <span class='update-plugins count-1'><span class='update-count'>1</span></span>";
                 }

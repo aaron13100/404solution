@@ -60,5 +60,5 @@ if (is_admin()) {
     // Get services from the container instead of using getInstance()
     // Keeping the global variables for backward compatibility during migration
     $abj404view = abj_service('view');
-    $abj404viewSuggestions = ABJ_404_Solution_View_Suggestions::getInstance();
+    $abj404viewSuggestions = abj_service('view_suggestions');
 }

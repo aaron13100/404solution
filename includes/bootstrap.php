@@ -121,9 +121,16 @@ function abj_404_solution_init_services() {
 
     /**
      * WordPress connector - interfaces with WordPress core APIs.
+     * Dependencies: plugin_logic, data_access, logging, functions, spell_checker
      */
     $container->set('wordpress_connector', function($c) {
-        return ABJ_404_Solution_WordPress_Connector::getInstance();
+        return new ABJ_404_Solution_WordPress_Connector(
+            $c->get('plugin_logic'),
+            $c->get('data_access'),
+            $c->get('logging'),
+            $c->get('functions'),
+            $c->get('spell_checker')
+        );
     });
 
     /**
@@ -166,9 +173,12 @@ function abj_404_solution_init_services() {
 
     /**
      * View suggestions - renders suggestion UI components.
+     * Dependencies: functions
      */
     $container->set('view_suggestions', function($c) {
-        return ABJ_404_Solution_View_Suggestions::getInstance();
+        return new ABJ_404_Solution_View_Suggestions(
+            $c->get('functions')
+        );
     });
 
     /**
