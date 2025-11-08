@@ -43,14 +43,22 @@ define("ABJ404_OPTION_MAX_PERPAGE", 500);
 define("ABJ404_MAX_AJAX_DROPDOWN_SIZE", 500);
 define("ABJ404_MAX_URL_LENGTH", 4096);
 
+// Load the bootstrap file which contains the service initialization function
+require_once(__DIR__ . '/bootstrap.php');
+
+// Initialize the service container
+// This sets up dependency injection for all core services
+abj_404_solution_init_services();
+
 // always include
 ABJ_404_Solution_ErrorHandler::init();
 
 if (is_admin()) {
 	ABJ_404_Solution_PermalinkCache::init();
 	ABJ_404_Solution_SpellChecker::init();
-	
-    // TODO make these not global
-    $abj404view = ABJ_404_Solution_View::getInstance();
+
+    // Get services from the container instead of using getInstance()
+    // Keeping the global variables for backward compatibility during migration
+    $abj404view = abj_service('view');
     $abj404viewSuggestions = ABJ_404_Solution_View_Suggestions::getInstance();
 }

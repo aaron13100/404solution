@@ -6,12 +6,41 @@
 class ABJ_404_Solution_View {
 
 	private static $instance = null;
-	
+
+	/** @var ABJ_404_Solution_Functions */
+	private $f;
+
+	/** @var ABJ_404_Solution_PluginLogic */
+	private $logic;
+
+	/** @var ABJ_404_Solution_DataAccess */
+	private $dao;
+
+	/** @var ABJ_404_Solution_Logging */
+	private $logger;
+
+	/**
+	 * Constructor with dependency injection.
+	 * Dependencies are now explicit and visible.
+	 *
+	 * @param ABJ_404_Solution_Functions|null $functions String manipulation utilities
+	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
+	 * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer
+	 * @param ABJ_404_Solution_Logging|null $logging Logging service
+	 */
+	public function __construct($functions = null, $pluginLogic = null, $dataAccess = null, $logging = null) {
+		// Use injected dependencies or fall back to getInstance() for backward compatibility
+		$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
+		$this->logic = $pluginLogic !== null ? $pluginLogic : ABJ_404_Solution_PluginLogic::getInstance();
+		$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
+		$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
+	}
+
 	public static function getInstance() {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_View();
 		}
-		
+
 		return self::$instance;
 	}
 	
@@ -20,7 +49,6 @@ class ABJ_404_Solution_View {
      * @return string html
      */
     function getDashboardNotificationCaptured($captured) {
-    	$f = ABJ_404_Solution_Functions::getInstance();
         /* Translators: %s is the number of captured 404 URLs. */
     	$capturedMessage = sprintf( _n( 'There is <a>%s captured 404 URL</a> that needs to be processed.', 
                 'There are <a>%s captured 404 URLs</a> to be processed.', 
@@ -40,15 +68,12 @@ class ABJ_404_Solution_View {
      */
     static function handleMainAdminPageActionAndDisplay() {
         global $abj404view;
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         
         try {
-            $action = $abj404dao->getPostOrGetSanitize('action');
+            $action = $this->dao->getPostOrGetSanitize('action');
             
-            if (!is_admin() || !$abj404logic->userIsPluginAdmin()) { 
-                $abj404logging->logUserCapabilities("handleMainAdminPageActionAndDisplay (" . 
+            if (!is_admin() || !$this->logic->userIsPluginAdmin()) { 
+                $this->logger->logUserCapabilities("handleMainAdminPageActionAndDisplay (" . 
                         esc_html($action == '' ? '(none)' : $action) . ")");
                 return; 
             }
@@ -57,27 +82,27 @@ class ABJ_404_Solution_View {
 
             // --------------------------------------------------------------------
             // Handle Post Actions
-            $abj404logging->debugMessage("Processing request for action: " . 
+            $this->logger->debugMessage("Processing request for action: " . 
                     esc_html($action == '' ? '(none)' : $action));
 
             // this should really not pass things by reference so it can be more object oriented (encapsulation etc).
             $message = "";
-            $message .= $abj404logic->handlePluginAction($action, $sub);
-            $message .= $abj404logic->hanldeTrashAction();
-            $message .= $abj404logic->handleDeleteAction();
-            $message .= $abj404logic->handleIgnoreAction();
-            $message .= $abj404logic->handleLaterAction();
-            $message .= $abj404logic->handleActionEdit($sub, $action);
-            $message .= $abj404logic->handleActionImportRedirects();
-            $message .= $abj404logic->handleActionChangeItemsPerRow();
-            $message .= $abj404logic->handleActionImportFile();
+            $message .= $this->logic->handlePluginAction($action, $sub);
+            $message .= $this->logic->hanldeTrashAction();
+            $message .= $this->logic->handleDeleteAction();
+            $message .= $this->logic->handleIgnoreAction();
+            $message .= $this->logic->handleLaterAction();
+            $message .= $this->logic->handleActionEdit($sub, $action);
+            $message .= $this->logic->handleActionImportRedirects();
+            $message .= $this->logic->handleActionChangeItemsPerRow();
+            $message .= $this->logic->handleActionImportFile();
             
             // --------------------------------------------------------------------
             // Output the correct page.
             $abj404view->echoChosenAdminTab($action, $sub, $message);
             
         } catch (Exception $e) {
-            $abj404logging->errorMessage("Caught exception: " . stripcslashes(wp_kses_post(json_encode($e))));
+            $this->logger->errorMessage("Caught exception: " . stripcslashes(wp_kses_post(json_encode($e))));
             throw $e;
         }
     }
@@ -89,20 +114,17 @@ class ABJ_404_Solution_View {
      */
     function echoChosenAdminTab($action, $sub, $message) {
         global $abj404view;
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
 
         // Deal With Page Tabs
         if ($sub == "") {
-            $sub = $f->strtolower($abj404dao->getPostOrGetSanitize('subpage'));
+            $sub = $f->strtolower($this->dao->getPostOrGetSanitize('subpage'));
         }
         if ($sub == "") {
             $sub = 'abj404_redirects';
-            $abj404logging->debugMessage('No tab selected. Displaying the "redirects" tab.');
+            $this->logger->debugMessage('No tab selected. Displaying the "redirects" tab.');
         }
         
-        $abj404logging->debugMessage("Displaying sub page: " . esc_html($sub == '' ? '(none)' : $sub));
+        $this->logger->debugMessage("Displaying sub page: " . esc_html($sub == '' ? '(none)' : $sub));
         
         $abj404view->outputAdminHeaderTabs($sub, $message);
         
@@ -123,7 +145,7 @@ class ABJ_404_Solution_View {
         } else if ($sub == 'abj404_debugfile') {
             $abj404view->echoAdminDebugFile();
         } else {
-            $abj404logging->debugMessage('No tab selected. Displaying the "redirects" tab.');
+            $this->logger->debugMessage('No tab selected. Displaying the "redirects" tab.');
             $abj404view->echoAdminRedirectsPage();
         }
         
@@ -132,7 +154,6 @@ class ABJ_404_Solution_View {
     
     /** Echo the text that appears at the bottom of each admin page. */
     function echoAdminFooter() {
-        $f = ABJ_404_Solution_Functions::getInstance();
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminFooter.html");
         $html = $f->str_replace('{JAPANESE_FLASHCARDS_URL}', ABJ404_FC_URL, $html);
@@ -147,7 +168,6 @@ class ABJ_404_Solution_View {
      * @param string $message
      */
     function outputAdminHeaderTabs($sub = 'list', $message = '') {
-        $f = ABJ_404_Solution_Functions::getInstance();
         ABJ_404_Solution_WPNotices::echoAdminNotices();
         
         if ($sub == "abj404_options") {
@@ -244,27 +264,26 @@ class ABJ_404_Solution_View {
      */
     function outputAdminStatsPage() {
         global $wpdb;
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         global $abj404view;
 
-        $redirects = $abj404dao->doTableNameReplacements("{wp_abj404_redirects}");
-        $logs = $abj404dao->doTableNameReplacements("{wp_abj404_logsv2}");
+        $redirects = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
+        $logs = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
         $hr = "style=\"border: 0px; margin-bottom: 0px; padding-bottom: 4px; border-bottom: 1px dotted #DEDEDE;\"";
 
         $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d"; // . ABJ404_STATUS_AUTO;
-        $auto301 = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_AUTO));
+        $auto301 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_AUTO));
 
         $query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d"; // . ABJ404_STATUS_AUTO;
-        $auto302 = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_AUTO));
+        $auto302 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_AUTO));
 
         $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d"; // . ABJ404_STATUS_MANUAL;
-        $manual301 = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_MANUAL));
+        $manual301 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_MANUAL));
 
         $query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d"; // . ABJ404_STATUS_MANUAL;
-        $manual302 = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_MANUAL));
+        $manual302 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_MANUAL));
 
         $query = "select count(id) from $redirects where disabled = 1 and (status = %d or status = %d)";
-        $trashed = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_AUTO, ABJ404_STATUS_MANUAL));
+        $trashed = $this->dao->getStatsCount($query, array(ABJ404_STATUS_AUTO, ABJ404_STATUS_MANUAL));
 
         $total = $auto301 + $auto302 + $manual301 + $manual302 + $trashed;
 
@@ -286,13 +305,13 @@ class ABJ_404_Solution_View {
 
         // -------------------------------------------
         $query = "select count(id) from $redirects where disabled = 0 and status = %d"; // . ABJ404_STATUS_CAPTURED;
-        $captured = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED));
+        $captured = $this->dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED));
 
         $query = "select count(id) from $redirects where disabled = 0 and status in (%d, %d)"; // . ABJ404_STATUS_IGNORED;
-        $ignored = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
+        $ignored = $this->dao->getStatsCount($query, array(ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
 
         $query = "select count(id) from $redirects where disabled = 1 and (status in (%d, %d, %d) )";
-        $trashed = $abj404dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
+        $trashed = $this->dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
 
         $total = $captured + $ignored + $trashed;
 
@@ -335,28 +354,28 @@ class ABJ_404_Solution_View {
             }
 
             $query = "select count(id) from $logs where timestamp >= $ts and dest_url = %s";
-            $disp404 = $abj404dao->getStatsCount($query, array("404"));
+            $disp404 = $this->dao->getStatsCount($query, array("404"));
 
             $query = "select count(distinct requested_url) from $logs where timestamp >= $ts and dest_url = %s";
-            $distinct404 = $abj404dao->getStatsCount($query, array("404"));
+            $distinct404 = $this->dao->getStatsCount($query, array("404"));
 
             $query = "select count(distinct user_ip) from $logs where timestamp >= $ts and dest_url = %s";
-            $visitors404 = $abj404dao->getStatsCount($query, array("404"));
+            $visitors404 = $this->dao->getStatsCount($query, array("404"));
 
             $query = "select count(distinct referrer) from $logs where timestamp >= $ts and dest_url = %s";
-            $refer404 = $abj404dao->getStatsCount($query, array("404"));
+            $refer404 = $this->dao->getStatsCount($query, array("404"));
 
             $query = "select count(id) from $logs where timestamp >= $ts and dest_url != %s";
-            $redirected = $abj404dao->getStatsCount($query, array("404"));
+            $redirected = $this->dao->getStatsCount($query, array("404"));
 
             $query = "select count(distinct requested_url) from $logs where timestamp >= $ts and dest_url != %s";
-            $distinctredirected = $abj404dao->getStatsCount($query, array("404"));
+            $distinctredirected = $this->dao->getStatsCount($query, array("404"));
 
             $query = "select count(distinct user_ip) from $logs where timestamp >= $ts and dest_url != %s";
-            $distinctvisitors = $abj404dao->getStatsCount($query, array("404"));
+            $distinctvisitors = $this->dao->getStatsCount($query, array("404"));
 
             $query = "select count(distinct referrer) from $logs where timestamp >= $ts and dest_url != %s";
-            $distinctrefer = $abj404dao->getStatsCount($query, array("404"));
+            $distinctrefer = $this->dao->getStatsCount($query, array("404"));
 
             $content = "";
             $content .= "<p>";
@@ -377,11 +396,9 @@ class ABJ_404_Solution_View {
     }
     
     function echoAdminDebugFile() {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        if ($abj404logic->userIsPluginAdmin()) {
-        	$filesToEcho = array($abj404logging->getDebugFilePath(), 
-        			$abj404logging->getDebugFilePathOld());
+        if ($this->logic->userIsPluginAdmin()) {
+        	$filesToEcho = array($this->logger->getDebugFilePath(), 
+        			$this->logger->getDebugFilePathOld());
         	for ($i = 0; $i < count($filesToEcho); $i++) {
         		$currentFile = $filesToEcho[$i];
         		echo "<div style=\"clear: both;\">";
@@ -397,19 +414,18 @@ class ABJ_404_Solution_View {
         	$userInfo = "Login: " . $current_user->user_login . ", display name: " . 
          		$current_user->display_name . ", Email: " . $current_user->user_email . 
          		", UserID: " . $current_user->ID;
-            $abj404logging->infoMessage("Non-admin request to view debug file. User info: " .
+            $this->logger->infoMessage("Non-admin request to view debug file. User info: " .
             	$userInfo);
         }
     }
     
     function echoFileContents($fileName) {
-    	$abj404logging = ABJ_404_Solution_Logging::getInstance();
     	
     	if (file_exists($fileName)) {
     		$linesRead = 0;
     		$handle = null;
     		try {
-    			if ($handle = fopen($abj404logging->getDebugFilePath(), "r")) {
+    			if ($handle = fopen($this->logger->getDebugFilePath(), "r")) {
     				// read the file one line at a time.
     				while (($line = fgets($handle)) !== false) {
     					$linesRead++;
@@ -421,11 +437,11 @@ class ABJ_404_Solution_View {
     					}
     				}
     			} else {
-    				$abj404logging->errorMessage("Error opening debug file.");
+    				$this->logger->errorMessage("Error opening debug file.");
     			}
     			
     		} catch (Exception $e) {
-    			$abj404logging->errorMessage("Error while reading debug file.", $e);
+    			$this->logger->errorMessage("Error while reading debug file.", $e);
     		}
     		
     		if ($handle != null) {
@@ -442,7 +458,6 @@ class ABJ_404_Solution_View {
      */
     function echoAdminToolsPage() {
         global $abj404view;
-        $f = ABJ_404_Solution_Functions::getInstance();
 
         // ------------------------------------
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_exportRedirects");
@@ -512,12 +527,10 @@ class ABJ_404_Solution_View {
     }
     
     function echoAdminOptionsPage() {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         global $abj404view;
         global $abj404viewSuggestions;
-        $f = ABJ_404_Solution_Functions::getInstance();
         
-        $options = $abj404logic->getOptions();
+        $options = $this->logic->getOptions();
 
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
         $urlParts = parse_url(urldecode($_SERVER['REQUEST_URI']));
@@ -526,12 +539,12 @@ class ABJ_404_Solution_View {
                 $options['menuLocation'] == 'settingsLevel') {
             if ($f->strpos($currentURL, 'options-general.php') != false) {
                 // the option changed and we're at the wrong URL now, so we redirect to the correct one.
-                $abj404logic->forceRedirect(admin_url() . "admin.php?page=" . 
+                $this->logic->forceRedirect(admin_url() . "admin.php?page=" . 
                         ABJ404_PP . '&subpage=abj404_options');
             }
         } else if ($f->strpos($currentURL, 'admin.php') != false) {
             // if the current URL has admin.php then the URLs don't match and we need to reload.
-            $abj404logic->forceRedirect(admin_url() . "options-general.php?page=" . 
+            $this->logic->forceRedirect(admin_url() . "options-general.php?page=" . 
                     ABJ404_PP . '&subpage=abj404_options');
         }
 
@@ -575,12 +588,8 @@ class ABJ_404_Solution_View {
      * @global type $abj404logic
      */
     function echoAdminEditRedirectPage() {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
         
-        $options = $abj404logic->getOptions();
+        $options = $this->logic->getOptions();
         
         // this line assures that text will appear below the page tabs at the top.
         echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" ></span> <BR/>";
@@ -594,23 +603,23 @@ class ABJ_404_Solution_View {
 
         $recnum = null;
         if (array_key_exists('id', $_GET) && isset($_GET['id']) && $f->regexMatch('[0-9]+', $_GET['id'])) {
-            $abj404logging->debugMessage("Edit redirect page. GET ID: " . 
+            $this->logger->debugMessage("Edit redirect page. GET ID: " . 
                     wp_kses_post(json_encode($_GET['id'])));
             $recnum = absint($_GET['id']);
             
         } else if (array_key_exists('id', $_POST) && isset($_POST['id']) && $f->regexMatch('[0-9]+', $_POST['id'])) {
-            $abj404logging->debugMessage("Edit redirect page. POST ID: " . 
+            $this->logger->debugMessage("Edit redirect page. POST ID: " . 
                     wp_kses_post(json_encode($_POST['id'])));
             $recnum = absint($_POST['id']);
             
-        } else if ($abj404dao->getPostOrGetSanitize('idnum') !== null) {
-            $recnums_multiple = array_map('absint', (array)$abj404dao->getPostOrGetSanitize('idnum'));
-            $abj404logging->debugMessage("Edit redirect page. ids_multiple: " . 
+        } else if ($this->dao->getPostOrGetSanitize('idnum') !== null) {
+            $recnums_multiple = array_map('absint', (array)$this->dao->getPostOrGetSanitize('idnum'));
+            $this->logger->debugMessage("Edit redirect page. ids_multiple: " . 
                     wp_kses_post(json_encode($recnums_multiple)));
 
         } else {
             echo __('Error: No ID(s) found for edit request.', '404-solution');
-            $abj404logging->debugMessage("No ID(s) found in GET or POST data for edit request.");
+            $this->logger->debugMessage("No ID(s) found in GET or POST data for edit request.");
             return;
         }
         
@@ -619,11 +628,11 @@ class ABJ_404_Solution_View {
         if ($recnum != null) {
             $recnumAsArray = array();
             $recnumAsArray[] = $recnum;
-            $redirects_multiple = $abj404dao->getRedirectsByIDs($recnumAsArray);
+            $redirects_multiple = $this->dao->getRedirectsByIDs($recnumAsArray);
             
             if (empty($redirects_multiple)) {
                 echo "Error: Invalid ID Number! (id: " . esc_html($recnum) . ")";
-                $abj404logging->errorMessage("Error: Invalid ID Number! (id: " . esc_html($recnum) . ")");
+                $this->logger->errorMessage("Error: Invalid ID Number! (id: " . esc_html($recnum) . ")");
                 return;
             }
             
@@ -648,10 +657,10 @@ class ABJ_404_Solution_View {
             echo $html;
 
         } else if ($recnums_multiple != null) {
-            $redirects_multiple = $abj404dao->getRedirectsByIDs($recnums_multiple);
+            $redirects_multiple = $this->dao->getRedirectsByIDs($recnums_multiple);
             if ($redirects_multiple == null) {
                 echo "Error: Invalid ID Numbers! (ids: " . esc_html(implode(',', $recnums_multiple)) . ")";
-                $abj404logging->debugMessage("Error: Invalid ID Numbers! (ids: " . 
+                $this->logger->debugMessage("Error: Invalid ID Numbers! (ids: " . 
                         esc_html(implode(',', $recnums_multiple)) . ")");
                 return;
             }
@@ -673,7 +682,7 @@ class ABJ_404_Solution_View {
             
         } else {
             echo "Error: Invalid ID Number(s) specified! (id: " . $recnum . ", ids: " . $recnums_multiple . ")";
-            $abj404logging->debugMessage("Error: Invalid ID Number(s) specified! (id: " . $recnum . 
+            $this->logger->debugMessage("Error: Invalid ID Number(s) specified! (id: " . $recnum . 
                     ", ids: " . $recnums_multiple . ")");
             return;
         }
@@ -698,7 +707,7 @@ class ABJ_404_Solution_View {
             $codeSelected = $redirect['code'];
         }
         
-        $pageTitle = $abj404logic->getPageTitleFromIDAndType($pageIDAndType, $redirect['final_dest']);        
+        $pageTitle = $this->logic->getPageTitleFromIDAndType($pageIDAndType, $redirect['final_dest']);        
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/addManualRedirectPageSearchDropdown.html");
         $html = $f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
@@ -783,15 +792,13 @@ class ABJ_404_Solution_View {
     }
 
     function echoRedirectDestinationOptionsCatsTags($dest) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $content = "";
         $content .= "\n" . '<optgroup label="Categories">' . "\n";
         
         $customTagsEtc = array();
 
         // categories ---------------------------------------------
-        $cats = $abj404dao->getPublishedCategories();
+        $cats = $this->dao->getPublishedCategories();
         foreach ($cats as $cat) {
             $taxonomy = $cat->taxonomy;
             if ($taxonomy != 'category') {
@@ -809,11 +816,11 @@ class ABJ_404_Solution_View {
             $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Category', '404-solution') . ": " . $theTitle . "</option>";
         }
         $content .= "\n" . '</optgroup>' . "\n";
-        $customTagsEtc = $abj404logic->getMapOfCustomCategories($cats);
+        $customTagsEtc = $this->logic->getMapOfCustomCategories($cats);
 
         // tags ---------------------------------------------
         $content .= "\n" . '<optgroup label="Tags">' . "\n";
-        $tags = $abj404dao->getPublishedTags();
+        $tags = $this->dao->getPublishedTags();
         foreach ($tags as $tag) {
             $id = $tag->term_id;
             $theTitle = $tag->name;
@@ -853,11 +860,9 @@ class ABJ_404_Solution_View {
      * @global type $abj404dao
      */
     function echoAdminCapturedURLsPage() {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $sub = 'abj404_captured';
-        $f = ABJ_404_Solution_Functions::getInstance();
 
-        $tableOptions = $abj404logic->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
 
         $timezone = get_option('timezone_string');
         if ('' == $timezone) {
@@ -928,11 +933,8 @@ class ABJ_404_Solution_View {
     }
     
     function getCapturedURLSPageTable($sub) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
         
-        $tableOptions = $abj404logic->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
 
         // ----------------------------------------------
         // these are used for a GET request so they're not translated.
@@ -961,7 +963,7 @@ class ABJ_404_Solution_View {
         $html .= "</tfoot>";
         $html .= "<tbody id=\"the-list\">";
         
-        $rows = $abj404dao->getRedirectsForView($sub, $tableOptions);
+        $rows = $this->dao->getRedirectsForView($sub, $tableOptions);
         $displayed = 0;
         $y = 1;
         foreach ($rows as $row) {
@@ -1110,15 +1112,13 @@ class ABJ_404_Solution_View {
      * @global type $abj404logic
      */
     function echoAdminRedirectsPage() {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
         
         $sub = 'abj404_redirects';
         
-        $tableOptions = $abj404logic->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
 
         // Sanitizing unchecked table options
-        $tableOptions = $abj404logic->sanitizePostData($tableOptions);
+        $tableOptions = $this->logic->sanitizePostData($tableOptions);
 
         echo $this->getTabFilters($sub, $tableOptions);
 
@@ -1209,12 +1209,8 @@ class ABJ_404_Solution_View {
     }
     
     function getAdminRedirectsPageTable($sub) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
         
-        $tableOptions = $abj404logic->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
         
         // these are used for a GET request so they're not translated.
         $columns = array();
@@ -1251,7 +1247,7 @@ class ABJ_404_Solution_View {
         $html .= $this->getTableColumns($sub, $columns);
         $html .= "</tfoot>  <tbody id=\"the-list\">";
         
-        $rows = $abj404dao->getRedirectsForView($sub, $tableOptions);
+        $rows = $this->dao->getRedirectsForView($sub, $tableOptions);
         $displayed = 0;
         $y = 1;
         foreach ($rows as $row) {
@@ -1301,7 +1297,7 @@ class ABJ_404_Solution_View {
             	}
             	
             } else {
-                $abj404logging->errorMessage("Unexpected row type while displaying table: " . $row['type']);
+                $this->logger->errorMessage("Unexpected row type while displaying table: " . $row['type']);
             }
             
             if ($link != '') {
@@ -1445,10 +1441,8 @@ class ABJ_404_Solution_View {
     }
     
     function echoAddManualRedirect($tableOptions) {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
 
-        $options = $abj404logic->getOptions();
+        $options = $this->logic->getOptions();
         
         $url = "?page=" . ABJ404_PP;
         if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
@@ -1562,8 +1556,6 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageAutoRedirects($options) {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
         
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         $content = "";
@@ -1582,7 +1574,7 @@ class ABJ_404_Solution_View {
         	}
         }
 
-        $pageTitle = $abj404logic->getPageTitleFromIDAndType($userSelectedDefault404Page, $urlDestination);
+        $pageTitle = $this->logic->getPageTitleFromIDAndType($userSelectedDefault404Page, $urlDestination);
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/addManualRedirectPageSearchDropdown.html");
         $html = $f->str_replace('{redirect_to_label}', __('Redirect all unhandled 404s to', '404-solution'), $html);
@@ -1632,10 +1624,6 @@ class ABJ_404_Solution_View {
     }
 
     function getAdminOptionsPageAdvancedSettings($options) {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
 
         // Only allow redirecting all requests on trusted sites because someone will break
         // their website and complain to me about it and I don't want to hear that because I have
@@ -1661,18 +1649,18 @@ class ABJ_404_Solution_View {
         }
         
         $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
-        $debugLogLink = $abj404logic->getDebugLogFileLink();
+        $debugLogLink = $this->logic->getDebugLogFileLink();
         $debugExplanation = $f->str_replace('<a>', '<a href="' . $debugLogLink . '" target="_blank" >', $debugExplanation);
 
-        $kbFileSize = $abj404logging->getDebugFileSize() / 1024;
+        $kbFileSize = $this->logger->getDebugFileSize() / 1024;
         $kbFileSizePretty = number_format($kbFileSize, 2, ".", ",");
-        $mbFileSize = $abj404logging->getDebugFileSize() / 1024 / 1000;
+        $mbFileSize = $this->logger->getDebugFileSize() / 1024 / 1000;
         $mbFileSizePretty = number_format($mbFileSize, 2, ".", ",");
         /* Translators: 1: The file size in KB. 2: The file size in MB. */
         $debugFileSize = sprintf(__('Debug file size: %1$s KB (%2$s MB).', '404-solution'), 
                 $kbFileSize, $mbFileSize);                
         
-        $allPostTypesTemp = $abj404dao->getAllPostTypes();
+        $allPostTypesTemp = $this->dao->getAllPostTypes();
         $allPostTypes = esc_html(implode(', ', $allPostTypesTemp));
         
         // ----
@@ -1739,8 +1727,6 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageGeneralSettings($options) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
         
         $selectedDefaultRedirect301 = "";
         if ($options['default_redirect'] == '301') {
@@ -1768,11 +1754,11 @@ class ABJ_404_Solution_View {
             $selectedUnderSettings = " selected";
         }
         
-        $logSizeBytes = $abj404dao->getLogDiskUsage();
+        $logSizeBytes = $this->dao->getLogDiskUsage();
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
-        $totalLogLines = $abj404dao->getLogsCount(0);
+        $totalLogLines = $this->dao->getLogsCount(0);
 
-        $timeToDisplay = $abj404dao->getEarliestLogTimestamp();
+        $timeToDisplay = $this->dao->getEarliestLogTimestamp();
         $earliestLogDate = 'N/A';
         if ($timeToDisplay >= 0) {
             $earliestLogDate = date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
@@ -1813,15 +1799,12 @@ class ABJ_404_Solution_View {
      * @global type $abj404dao
      */
     function echoAdminLogsPage() {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
         
         $sub = 'abj404_logs';
-        $tableOptions = $abj404logic->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
 
         // Sanitizing unchecked table options
-        $tableOptions = $abj404logic->sanitizePostData($tableOptions);
+        $tableOptions = $this->logic->sanitizePostData($tableOptions);
 
         echo "<BR/><BR/><BR/>";
         echo '<form id="logs_search_form" name="admin-logs-page" method="GET" action="" '
@@ -1833,8 +1816,8 @@ class ABJ_404_Solution_View {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
                 "/html/viewLogsForSearchBox.html");
         
-        $redirectPageTitle = $abj404dao->getPostOrGetSanitize('redirect_to_data_field_title');
-        $pageIDAndType = $abj404dao->getPostOrGetSanitize('redirect_to_data_field_id');
+        $redirectPageTitle = $this->dao->getPostOrGetSanitize('redirect_to_data_field_title');
+        $pageIDAndType = $this->dao->getPostOrGetSanitize('redirect_to_data_field_id');
         
         $html = $f->str_replace('{redirect_to_label}', __('View logs for', '404-solution'), $html);
         $html = $f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
@@ -1867,11 +1850,8 @@ class ABJ_404_Solution_View {
     }
     
     function getAdminLogsPageTable($sub) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
-        $tableOptions = $abj404logic->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
         
         $columns = array();
         $columns['url']['title'] = __('URL', '404-solution');
@@ -1908,7 +1888,7 @@ class ABJ_404_Solution_View {
         }
         date_default_timezone_set($timezone);
 
-        $rows = $abj404dao->getLogRecords($tableOptions);
+        $rows = $this->dao->getLogRecords($tableOptions);
         $logRecordsDisplayed = 0;
         $y = 1;
 
@@ -1956,7 +1936,7 @@ class ABJ_404_Solution_View {
             $html .= "</tr>";
             $logRecordsDisplayed++;
         }
-        $abj404logging->debugMessage($logRecordsDisplayed . " log records displayed on the page.");
+        $this->logger->debugMessage($logRecordsDisplayed . " log records displayed on the page.");
         if ($logRecordsDisplayed == 0) {
             $html .= "<tr>";
             $html .= "<td></td>";
@@ -1976,9 +1956,7 @@ class ABJ_404_Solution_View {
      * @param array $columns
      */
     function getTableColumns($sub, $columns) {
-    	$f = ABJ_404_Solution_Functions::getInstance();
-    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $tableOptions = $abj404logic->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
         
         $html = "<tr>";
         
@@ -2074,11 +2052,8 @@ class ABJ_404_Solution_View {
      * @param array $tableOptions
      */
     function getPaginationLinks($sub, $showSearchFilter = true) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
         
-        $tableOptions = $abj404logic->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
 
         $url = "?page=" . ABJ404_PP;
         if ($sub == 'abj404_captured') {
@@ -2092,12 +2067,12 @@ class ABJ_404_Solution_View {
         $url .= "&filter=" . $tableOptions['filter'];
 
         if ($sub == 'abj404_logs') {
-            $num_records = $abj404dao->getLogsCount($tableOptions['logsid']);
+            $num_records = $this->dao->getLogsCount($tableOptions['logsid']);
         } else {
             if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-                $num_records = $abj404dao->getRedirectsForViewCount($sub, $tableOptions);
+                $num_records = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
             } else {
-                $num_records = $abj404dao->getRedirectsForViewCount($sub, $tableOptions);
+                $num_records = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
             }
         }
 
@@ -2192,10 +2167,9 @@ class ABJ_404_Solution_View {
      * @param array $tableOptions
      */
     function getTabFilters($sub, $tableOptions) {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 
         if (empty($tableOptions)) {
-        	$tableOptions = $abj404logic->getTableOptions($sub);
+        	$tableOptions = $this->logic->getTableOptions($sub);
         }
         
         $html = '';
@@ -2209,13 +2183,10 @@ class ABJ_404_Solution_View {
     }
     
     function getSubSubSub($sub) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
         global $abj404_redirect_types;
         global $abj404_captured_types;
         
-        $tableOptions = $abj404logic->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
         
         $url = "?page=" . ABJ404_PP;
         if ($sub == 'abj404_captured') {
@@ -2223,7 +2194,7 @@ class ABJ_404_Solution_View {
         } else if ($sub == 'abj404_redirects') {
             $url .= "&subpage=abj404_redirects";
         } else {
-            $abj404logging->errorMessage("Unexpected sub page: " . $sub);
+            $this->logger->errorMessage("Unexpected sub page: " . $sub);
         }
 
         $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']);
@@ -2234,7 +2205,7 @@ class ABJ_404_Solution_View {
         } else if ($sub == 'abj404_captured') {
             $types = $abj404_captured_types;
         } else {
-            $abj404logging->debugMessage("Unexpected sub type for tab filter: " . $sub);
+            $this->logger->debugMessage("Unexpected sub type for tab filter: " . $sub);
             $types = $abj404_captured_types;
         }
 
@@ -2247,7 +2218,7 @@ class ABJ_404_Solution_View {
         if ($sub != 'abj404_captured') {
             $html .= "<li>";
             $html .= "<a href=\"" . esc_url($url) . "\"" . $class . ">" . __('All', '404-solution');
-            $html .= " <span class=\"count\">(" . esc_html($abj404dao->getRecordCount($types)) . ")</span>";
+            $html .= " <span class=\"count\">(" . esc_html($this->dao->getRecordCount($types)) . ")</span>";
             $html .= "</a>";
             $html .= "</li>";
         }
@@ -2262,24 +2233,24 @@ class ABJ_404_Solution_View {
             $recordCount = 0;
             if ($type == ABJ404_STATUS_MANUAL) {
                 $title = "Manual Redirects";
-                $recordCount = $abj404dao->getRecordCount(array($type, ABJ404_STATUS_REGEX));
+                $recordCount = $this->dao->getRecordCount(array($type, ABJ404_STATUS_REGEX));
             } else if ($type == ABJ404_STATUS_AUTO) {
                 $title = "Automatic Redirects";
-                $recordCount = $abj404dao->getRecordCount(array($type));
+                $recordCount = $this->dao->getRecordCount(array($type));
             } else if ($type == ABJ404_STATUS_CAPTURED) {
                 $title = "Captured URLs";
-                $recordCount = $abj404dao->getRecordCount(array($type));
+                $recordCount = $this->dao->getRecordCount(array($type));
             } else if ($type == ABJ404_STATUS_IGNORED) {
                 $title = "Ignored 404s";
-                $recordCount = $abj404dao->getRecordCount(array($type));
+                $recordCount = $this->dao->getRecordCount(array($type));
             } else if ($type == ABJ404_STATUS_LATER) {
                 $title = "Organize Later";
-                $recordCount = $abj404dao->getRecordCount(array($type));
+                $recordCount = $this->dao->getRecordCount(array($type));
             } else if ($type == ABJ404_STATUS_REGEX) {
                 // don't include a tab here because these are included in the manual redirects.
                 continue;
             } else {
-                $abj404logging->errorMessage("Unrecognized redirect type in View: " . esc_html($type));
+                $this->logger->errorMessage("Unrecognized redirect type in View: " . esc_html($type));
             }
 
             $html .= "<li>";
@@ -2300,7 +2271,7 @@ class ABJ_404_Solution_View {
         }
         $html .= "<li> | ";
         $html .= "<a href=\"" . esc_url($trashurl) . "\"" . $class . ">" . __('Trash', '404-solution');
-        $html .= " <span class=\"count\">(" . esc_html($abj404dao->getRecordCount($types, 1)) . ")</span>";
+        $html .= " <span class=\"count\">(" . esc_html($this->dao->getRecordCount($types, 1)) . ")</span>";
         $html .= "</a>";
         $html .= "</li>";
         $html .= "</ul>";
