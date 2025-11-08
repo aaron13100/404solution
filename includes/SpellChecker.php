@@ -1180,6 +1180,13 @@ class ABJ_404_Solution_SpellChecker {
 			return $idsWithWordsInCommon;
 		}
 
+		// OPTIMIZATION 4: Better candidate ordering
+		// Prioritize candidates with word overlap to fill early termination heap faster
+		// This makes subsequent filtering more effective
+		$idsWithWords = array_intersect($listOfIDsToReturn, $idsWithWordsInCommon);
+		$idsWithoutWords = array_diff($listOfIDsToReturn, $idsWithWordsInCommon);
+		$listOfIDsToReturn = array_merge($idsWithWords, $idsWithoutWords);
+
 		$result = array();
 		foreach ($listOfIDsToReturn as $id) {
 			if (isset($idToPermalink[$id])) {
