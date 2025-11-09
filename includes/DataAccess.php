@@ -1462,6 +1462,8 @@ class ABJ_404_Solution_DataAccess {
         $manually_fired = $abj404dao->getPostOrGetSanitize('manually_fired', false);
         if ($this->f->strtolower($manually_fired) == 'true') {
             $manually_fired = true;
+        } else {
+            $manually_fired = false;
         }
 
         $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
