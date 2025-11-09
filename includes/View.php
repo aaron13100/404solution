@@ -680,7 +680,12 @@ class ABJ_404_Solution_View {
     function echoAdminOptionsPage() {
         global $abj404view;
         global $abj404viewSuggestions;
-        
+
+        // If globals are not set, use sensible defaults
+        if ($abj404view === null) {
+            $abj404view = $this;
+        }
+
         $options = $this->logic->getOptions();
 
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
@@ -722,8 +727,11 @@ class ABJ_404_Solution_View {
         $contentAdvancedSettings = $abj404view->getAdminOptionsPageAdvancedSettings($options);
         $abj404view->echoPostBox("abj404-advancedoptions", __('Advanced Settings (Etc)', '404-solution'), $contentAdvancedSettings);
 
-        $content404PageSuggestions = $abj404viewSuggestions->getAdminOptionsPage404Suggestions($options);
-        $abj404view->echoPostBox("abj404-suggestoptions", __('404 Page Suggestions', '404-solution'), $content404PageSuggestions);
+        // Only render suggestions section if the suggestions view is available
+        if ($abj404viewSuggestions !== null && method_exists($abj404viewSuggestions, 'getAdminOptionsPage404Suggestions')) {
+            $content404PageSuggestions = $abj404viewSuggestions->getAdminOptionsPage404Suggestions($options);
+            $abj404view->echoPostBox("abj404-suggestoptions", __('404 Page Suggestions', '404-solution'), $content404PageSuggestions);
+        }
 
         echo "<input type=\"submit\" name=\"abj404-optionssub\" id=\"abj404-optionssub\" " .
             "value=\"Save Settings\" class=\"button-primary\">";
@@ -1731,7 +1739,8 @@ class ABJ_404_Solution_View {
                 $kbFileSize, $mbFileSize);                
         
         $allPostTypesTemp = $this->dao->getAllPostTypes();
-        $allPostTypes = esc_html(implode(', ', $allPostTypesTemp));
+        // Ensure we have an array before imploding
+        $allPostTypes = is_array($allPostTypesTemp) ? esc_html(implode(', ', $allPostTypesTemp)) : '';
         
         // ----
         // read the html content.

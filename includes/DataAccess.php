@@ -645,13 +645,16 @@ class ABJ_404_Solution_DataAccess {
        $query = "SELECT DISTINCT post_type FROM {wp_posts} order by post_type";
        $results = $this->queryAndGetResults($query);
        $rows = $results['rows'];
-       
+
        $postType = array();
-       
-       foreach ($rows as $row) {
-           array_push($postType, $row['post_type']);
+
+       // Ensure rows is an array before iterating
+       if (is_array($rows)) {
+           foreach ($rows as $row) {
+               array_push($postType, $row['post_type']);
+           }
        }
-       
+
        return $postType;
    }
    
