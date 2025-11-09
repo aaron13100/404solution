@@ -99,7 +99,7 @@ class ABJ_404_Solution_View {
 		}
 
 		// Trash/Restore title and action
-		if (array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+		if (is_array($tableOptions) && array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
 			$result['trashlink'] .= "&trash=0";
 			$result['ajaxTrashLink'] .= "&trash=0";
 			$result['trashtitle'] = __('Restore', '404-solution');
@@ -118,7 +118,7 @@ class ABJ_404_Solution_View {
 
 			// Ignore title and action
 			$result['ignoretitle'] = "";
-			if (array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_STATUS_IGNORED) {
+			if (is_array($tableOptions) && array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_STATUS_IGNORED) {
 				$result['ignorelink'] .= "&ignore=0";
 				$result['ignoretitle'] = __('Remove Ignore Status', '404-solution');
 			} else {
@@ -128,7 +128,7 @@ class ABJ_404_Solution_View {
 
 			// Later title and action
 			$result['latertitle'] = '?Organize Later?';
-			if (array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_STATUS_LATER) {
+			if (is_array($tableOptions) && array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_STATUS_LATER) {
 				$result['laterlink'] .= "&later=0";
 				$result['latertitle'] = __('Remove Later Status', '404-solution');
 			} else {
@@ -138,7 +138,7 @@ class ABJ_404_Solution_View {
 		}
 
 		// Add orderby/order parameters if not default
-		if (array_key_exists('orderby', $tableOptions) && array_key_exists('order', $tableOptions)) {
+		if (is_array($tableOptions) && array_key_exists('orderby', $tableOptions) && array_key_exists('order', $tableOptions)) {
 			if (!($tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC")) {
 				$result['trashlink'] .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
 				$result['deletelink'] .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
@@ -151,7 +151,7 @@ class ABJ_404_Solution_View {
 		}
 
 		// Add filter parameter if not zero
-		if (array_key_exists('filter', $tableOptions) && $tableOptions['filter'] != 0) {
+		if (is_array($tableOptions) && array_key_exists('filter', $tableOptions) && $tableOptions['filter'] != 0) {
 			$result['trashlink'] .= "&filter=" . $tableOptions['filter'];
 			$result['deletelink'] .= "&filter=" . $tableOptions['filter'];
 			$result['editlink'] .= "&filter=" . $tableOptions['filter'];
@@ -163,14 +163,14 @@ class ABJ_404_Solution_View {
 		}
 
 		// Add orderby/order parameters to edit link
-		if (array_key_exists('orderby', $tableOptions) && array_key_exists('order', $tableOptions)) {
+		if (is_array($tableOptions) && array_key_exists('orderby', $tableOptions) && array_key_exists('order', $tableOptions)) {
 			if (!($tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC")) {
 				$result['editlink'] .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
 			}
 		}
 
 		// Add paged parameter to edit link if present
-		if (array_key_exists('paged', $tableOptions) && $tableOptions['paged'] > 1) {
+		if (is_array($tableOptions) && array_key_exists('paged', $tableOptions) && $tableOptions['paged'] > 1) {
 			$result['editlink'] .= "&paged=" . $tableOptions['paged'];
 		}
 
@@ -178,7 +178,7 @@ class ABJ_404_Solution_View {
 		$result['trashlink'] = wp_nonce_url($result['trashlink'], "abj404_trashRedirect");
 		$result['ajaxTrashLink'] = wp_nonce_url($result['ajaxTrashLink'], "abj404_ajaxTrash");
 
-		if (array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+		if (is_array($tableOptions) && array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
 			$result['deletelink'] = wp_nonce_url($result['deletelink'], "abj404_removeRedirect");
 		}
 
