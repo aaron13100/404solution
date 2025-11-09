@@ -1142,41 +1142,48 @@ class ABJ_404_Solution_PluginLogic {
         return $message;
     }
     
-    /** Set a redirect as ignored.
-     * @return string
+    /**
+     * Generic handler for updating redirect status based on URL parameters.
+     * Eliminates duplication between handleIgnoreAction and handleLaterAction.
+     *
+     * @param string $paramName The $_GET parameter name ('ignore' or 'later')
+     * @param string $nonceAction The nonce action name for security verification
+     * @param int $activeStatus The status constant to use when action=1
+     * @param string $errorActionName Action name for error messages ('ignore' or 'organize later')
+     * @param string $successActionName Action name for success messages ('ignored' or 'organize later')
+     * @return string Success/error message or empty string
      */
-    function handleIgnoreAction() {
+    private function handleStatusUpdate($paramName, $nonceAction, $activeStatus, $errorActionName, $successActionName) {
         $message = "";
-        
-        //Handle Ignore Functionality
-        if (array_key_exists('ignore', $_GET) && isset($_GET['ignore'])) {
-            if (check_admin_referer('abj404_ignore404') && is_admin()) {
-                if ($_GET['ignore'] != 0 && $_GET['ignore'] != 1) {
-                    $this->logger->debugMessage("Unexpected ignore operation: " . 
-                            esc_html($_GET['ignore']));
-                    $message = __('Error: Bad ignore operation specified.', '404-solution');
-                    return $message;                    
+
+        if (array_key_exists($paramName, $_GET) && isset($_GET[$paramName])) {
+            if (check_admin_referer($nonceAction) && is_admin()) {
+                if ($_GET[$paramName] != 0 && $_GET[$paramName] != 1) {
+                    $this->logger->debugMessage("Unexpected {$errorActionName} operation: " .
+                            esc_html($_GET[$paramName]));
+                    $message = sprintf(__('Error: Bad %s operation specified.', '404-solution'), $errorActionName);
+                    return $message;
                 }
-                
+
                 if ($this->f->regexMatch('[0-9]+', $_GET['id'])) {
-                    if ($_GET['ignore'] == 1) {
-                        $newstatus = ABJ404_STATUS_IGNORED;
+                    if ($_GET[$paramName] == 1) {
+                        $newstatus = $activeStatus;
                     } else {
                         $newstatus = ABJ404_STATUS_CAPTURED;
                     }
-                    
+
                     $message = $this->dao->updateRedirectTypeStatus(absint($_GET['id']), $newstatus);
                     if ($message == "") {
                         if ($newstatus == ABJ404_STATUS_CAPTURED) {
-                            $message = __('Removed 404 URL from ignored list successfully!', '404-solution');
+                            $message = sprintf(__('Removed 404 URL from %s list successfully!', '404-solution'), $successActionName);
                         } else {
-                            $message = __('404 URL marked as ignored successfully!', '404-solution');
+                            $message = sprintf(__('404 URL marked as %s successfully!', '404-solution'), $successActionName);
                         }
                     } else {
                         if ($newstatus == ABJ404_STATUS_CAPTURED) {
-                            $message = __('Error: unable to remove URL from ignored list', '404-solution');
+                            $message = sprintf(__('Error: unable to remove URL from %s list', '404-solution'), $successActionName);
                         } else {
-                            $message = __('Error: unable to mark URL as ignored', '404-solution');
+                            $message = sprintf(__('Error: unable to mark URL as %s', '404-solution'), $successActionName);
                         }
                     }
                 }
@@ -1185,49 +1192,19 @@ class ABJ_404_Solution_PluginLogic {
 
         return $message;
     }
-    
+
+    /** Set a redirect as ignored.
+     * @return string
+     */
+    function handleIgnoreAction() {
+        return $this->handleStatusUpdate('ignore', 'abj404_ignore404', ABJ404_STATUS_IGNORED, 'ignore', 'ignored');
+    }
+
     /** Set a redirect as "organize later".
      * @return string
      */
     function handleLaterAction() {
-        $message = "";
-        
-        //Handle Ignore Functionality
-        if (array_key_exists('later', $_GET) && isset($_GET['later'])) {
-            if (check_admin_referer('abj404_organizeLater') && is_admin()) {
-                if ($_GET['later'] != 0 && $_GET['later'] != 1) {
-                    $this->logger->debugMessage("Unexpected organize later operation: " . 
-                            esc_html($_GET['later']));
-                    $message = __('Error: Bad organize later operation specified.', '404-solution');
-                    return $message;                    
-                }
-                
-                if ($this->f->regexMatch('[0-9]+', $_GET['id'])) {
-                    if ($_GET['later'] == 1) {
-                        $newstatus = ABJ404_STATUS_LATER;
-                    } else {
-                        $newstatus = ABJ404_STATUS_CAPTURED;
-                    }
-                    
-                    $message = $this->dao->updateRedirectTypeStatus(absint($_GET['id']), $newstatus);
-                    if ($message == "") {
-                        if ($newstatus == ABJ404_STATUS_CAPTURED) {
-                            $message = __('Removed 404 URL from organize later list successfully!', '404-solution');
-                        } else {
-                            $message = __('404 URL marked as organize later successfully!', '404-solution');
-                        }
-                    } else {
-                        if ($newstatus == ABJ404_STATUS_CAPTURED) {
-                            $message = __('Error: unable to remove URL from organize later list', '404-solution');
-                        } else {
-                            $message = __('Error: unable to mark URL as organize later', '404-solution');
-                        }
-                    }
-                }
-            }
-        }
-
-        return $message;
+        return $this->handleStatusUpdate('later', 'abj404_organizeLater', ABJ404_STATUS_LATER, 'organize later', 'organize later');
     }
 
     /** Edit redirect data.
