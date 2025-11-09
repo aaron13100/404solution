@@ -571,12 +571,12 @@ class ABJ_404_Solution_View {
     }
     
     function echoFileContents($fileName) {
-    	
+
     	if (file_exists($fileName)) {
     		$linesRead = 0;
     		$handle = null;
     		try {
-    			if ($handle = fopen($this->logger->getDebugFilePath(), "r")) {
+    			if ($handle = fopen($fileName, "r")) {
     				// read the file one line at a time.
     				while (($line = fgets($handle)) !== false) {
     					$linesRead++;
