@@ -2140,47 +2140,59 @@ class ABJ_404_Solution_View {
             }
         }
 
-        $total_pages = ceil($num_records / $tableOptions['perpage']);
+        // Ensure perpage is never 0 to prevent division by zero
+        $perpage = isset($tableOptions['perpage']) ? absint($tableOptions['perpage']) : ABJ404_OPTION_MIN_PERPAGE;
+        if ($perpage == 0) {
+            $perpage = ABJ404_OPTION_MIN_PERPAGE;
+        }
+
+        // Ensure paged is a valid integer
+        $paged = isset($tableOptions['paged']) ? absint($tableOptions['paged']) : 1;
+        if ($paged == 0) {
+            $paged = 1;
+        }
+
+        $total_pages = ceil($num_records / $perpage);
         if ($total_pages == 0) {
             $total_pages = 1;
         }
 
         $firsturl = $url;
 
-        if ($tableOptions['paged'] == 1) {
+        if ($paged == 1) {
             $prevurl = $url;
         } else {
-            $prev = $tableOptions['paged'] - 1;
+            $prev = $paged - 1;
             $prevurl = $url . "&paged=" . $prev;
         }
 
-        if ($tableOptions['paged'] + 1 > $total_pages) {
-            if ($tableOptions['paged'] == 1) {
+        if ($paged + 1 > $total_pages) {
+            if ($paged == 1) {
                 $nexturl = $url;
             } else {
-                $nexturl = $url . "&paged=" . $tableOptions['paged'];
+                $nexturl = $url . "&paged=" . $paged;
             }
         } else {
-            $next = $tableOptions['paged'] + 1;
+            $next = $paged + 1;
             $nexturl = $url . "&paged=" . $next;
         }
 
-        if ($tableOptions['paged'] + 1 > $total_pages) {
-            if ($tableOptions['paged'] == 1) {
+        if ($paged + 1 > $total_pages) {
+            if ($paged == 1) {
                 $lasturl = $url;
             } else {
-                $lasturl = $url . "&paged=" . $tableOptions['paged'];
+                $lasturl = $url . "&paged=" . $paged;
             }
         } else {
             $lasturl = $url . "&paged=" . $total_pages;
         }
-        
+
         // ------------
-        $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage'])) + 1;
-        $end = min($start + absint(sanitize_text_field($tableOptions['perpage'])) - 1, $num_records);
+        $start = (($paged - 1) * $perpage) + 1;
+        $end = min($start + $perpage - 1, $num_records);
         /* Translators: 1: Starting number, 2: Ending number, 3: Total count. */
         $currentlyShowingText = sprintf(__('%1$s - %2$s of %3$s', '404-solution'), $start, $end, $num_records);
-        $currentPageText = __('Page', '404-solution') . " " . $tableOptions['paged'] . " " . __('of', '404-solution') . " " . esc_html($total_pages);
+        $currentPageText = __('Page', '404-solution') . " " . $paged . " " . __('of', '404-solution') . " " . esc_html($total_pages);
         $showRowsText = __('Rows per page:', '404-solution');
         $showRowsLink = wp_nonce_url($url . '&action=changeItemsPerRow', "abj404_importRedirects");
 
