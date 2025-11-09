@@ -1818,6 +1818,41 @@ class ABJ_404_Solution_PluginLogic {
         return $message;
     }
 
+    /**
+     * Validate and set a numeric field value from POST data.
+     * Eliminates duplication in settings update methods.
+     *
+     * @param array $options Reference to options array to update
+     * @param array $postData POST data containing field value
+     * @param string $fieldName Name of the field to validate
+     * @param string $errorMessage Error message to display on validation failure
+     * @param int $minValue Minimum allowed value (default: 0)
+     * @param bool $useAbsintForCheck Whether to use absint() before comparison (default: false)
+     * @return string Error message if validation fails, empty string otherwise
+     */
+    private function validateAndSetNumericField(&$options, $postData, $fieldName, $errorMessage, $minValue = 0, $useAbsintForCheck = false) {
+        if (array_key_exists($fieldName, $postData) && isset($postData[$fieldName])) {
+            $value = $postData[$fieldName];
+            $passesValidation = false;
+
+            if ($useAbsintForCheck) {
+                // For maximum_log_disk_usage: check absint(value) > minValue
+                $passesValidation = is_numeric($value) && absint($value) > $minValue;
+            } else {
+                // For other fields: check value >= minValue
+                $passesValidation = is_numeric($value) && $value >= $minValue;
+            }
+
+            if ($passesValidation) {
+                $options[$fieldName] = absint($value);
+                return "";
+            } else {
+                return __($errorMessage, '404-solution') . ".<BR/>";
+            }
+        }
+        return "";
+    }
+
     /** Update deletion-related settings.
      * @param array $options The options array to update
      * @param array $postData The POST data
@@ -1826,45 +1861,20 @@ class ABJ_404_Solution_PluginLogic {
     private function updateDeletionSettings(&$options, $postData) {
         $message = "";
 
-        if (array_key_exists('capture_deletion', $postData) && isset($postData['capture_deletion'])) {
-            if (is_numeric($postData['capture_deletion']) && $postData['capture_deletion'] >= 0) {
-                $options['capture_deletion'] = absint($postData['capture_deletion']);
-            } else {
-                $message .= __('Error: Collected URL deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-            }
-        }
+        $message .= $this->validateAndSetNumericField($options, $postData, 'capture_deletion',
+            'Error: Collected URL deletion value must be a number greater than or equal to zero');
 
-        if (array_key_exists('manual_deletion', $postData) && isset($postData['manual_deletion'])) {
-            if (is_numeric($postData['manual_deletion']) && $postData['manual_deletion'] >= 0) {
-                $options['manual_deletion'] = absint($postData['manual_deletion']);
-            } else {
-                $message .= __('Error: Manual redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-            }
-        }
+        $message .= $this->validateAndSetNumericField($options, $postData, 'manual_deletion',
+            'Error: Manual redirect deletion value must be a number greater than or equal to zero');
 
-        if (array_key_exists('log_deletion', $postData) && isset($postData['log_deletion'])) {
-            if (is_numeric($postData['log_deletion']) && $postData['log_deletion'] >= 0) {
-                $options['log_deletion'] = absint($postData['log_deletion']);
-            } else {
-                $message .= __('Error: Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-            }
-        }
+        $message .= $this->validateAndSetNumericField($options, $postData, 'log_deletion',
+            'Error: Log deletion value must be a number greater than or equal to zero');
 
-        if (array_key_exists('auto_deletion', $postData) && isset($postData['auto_deletion'])) {
-            if (is_numeric($postData['auto_deletion']) && $postData['auto_deletion'] >= 0) {
-                $options['auto_deletion'] = absint($postData['auto_deletion']);
-            } else {
-                $message .= __('Error: Auto redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-            }
-        }
+        $message .= $this->validateAndSetNumericField($options, $postData, 'auto_deletion',
+            'Error: Auto redirect deletion value must be a number greater than or equal to zero');
 
-        if (array_key_exists('maximum_log_disk_usage', $postData) && isset($postData['maximum_log_disk_usage'])) {
-        	if (is_numeric($postData['maximum_log_disk_usage']) && absint($postData['maximum_log_disk_usage']) > 0) {
-                $options['maximum_log_disk_usage'] = absint($postData['maximum_log_disk_usage']);
-            } else {
-                $message .= __('Error: Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";
-            }
-        }
+        $message .= $this->validateAndSetNumericField($options, $postData, 'maximum_log_disk_usage',
+            'Error: Maximum log disk usage must be a number greater than zero', 0, true);
 
         return $message;
     }
