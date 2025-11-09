@@ -1394,6 +1394,53 @@ class ABJ_404_Solution_DataAccess {
         }
     }
 
+    /** Helper method to delete old redirects of a specific type.
+     * Extracted common logic from deleteOldRedirectsCron() to eliminate duplication.
+     *
+     * @param array $options Plugin options
+     * @param int $now Current timestamp
+     * @param string $optionKey Option key for deletion threshold ('capture_deletion', 'auto_deletion', 'manual_deletion')
+     * @param string $statusList Comma-separated list of status codes to delete
+     * @param string $debugMessageType Type description for debug logging ('Captured 404', 'Automatic redirect', 'Manual redirect')
+     * @return int Count of deleted redirects
+     */
+    private function deleteOldRedirectsByType($options, $now, $optionKey, $statusList, $debugMessageType) {
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $deletedCount = 0;
+
+        // Calculate time threshold
+        $deletionDays = $options[$optionKey];
+        $deletionTime = $deletionDays * 86400;
+        $then = $now - $deletionTime;
+
+        // Load and prepare SQL query
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
+        $query = $this->f->str_replace('{status_list}', $statusList, $query);
+        $query = $this->f->str_replace('{timelimit}', $then, $query);
+
+        // Execute query and get results
+        $results = $this->queryAndGetResults($query);
+        $rows = $results['rows'];
+
+        // Delete each redirect and log
+        foreach ($rows as $row) {
+            // Build debug message based on redirect type
+            if ($debugMessageType === 'Captured 404') {
+                $this->logger->debugMessage("Captured 404 for \"" . $row['from_url'] .
+                    '" deleted (unused since ' . $row['last_used_formatted'] . ').');
+            } else {
+                // Auto and Manual redirects show from/to URLs
+                $this->logger->debugMessage($debugMessageType . " from: " . $row['from_url'] . ' to: ' .
+                    $row['best_guess_dest'] . ' deleted (unused since ' . $row['last_used_formatted'] . ').');
+            }
+
+            $abj404dao->deleteRedirect($row['id']);
+            $deletedCount++;
+        }
+
+        return $deletedCount;
+    }
+
     /** Delete old redirects based on how old they are. This runs daily.
      * @global type $wpdb
      * @global type $abj404dao
@@ -1432,86 +1479,28 @@ class ABJ_404_Solution_DataAccess {
 
         $duplicateRowsDeleted = $abj404dao->removeDuplicatesCron();
 
-        //Remove Captured URLs
-        if ($options['capture_deletion'] != '0') {
-            $capture_time = $options['capture_deletion'] * 86400;
-            $then = $now - $capture_time;
-
-            //Find unused urls
+        // Remove Captured URLs
+        if (array_key_exists('capture_deletion', $options) && $options['capture_deletion'] != '0') {
             $status_list = ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER;
-
-            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
-            $query = $this->f->str_replace('{status_list}', $status_list, $query);
-            $query = $this->f->str_replace('{timelimit}', $then, $query);
-            
-            // Find unused redirects
-            $results = $this->queryAndGetResults($query);
-            $rows = $results['rows'];
-            
-            foreach ($rows as $row) {
-                // Remove Them
-                $this->logger->debugMessage("Captured 404 for \"" . $row['from_url'] . 
-                        '" deleted (unused since ' . $row['last_used_formatted'] . ').');
-                $abj404dao->deleteRedirect($row['id']);
-                $capturedURLsCount++;
-            }
+            $capturedURLsCount = $this->deleteOldRedirectsByType($options, $now, 'capture_deletion', $status_list, 'Captured 404');
         }
 
         // Remove Automatic Redirects
         if (array_key_exists('auto_deletion', $options) && isset($options['auto_deletion']) && $options['auto_deletion'] != '0') {
-            $auto_time = $options['auto_deletion'] * 86400;
-            $then = $now - $auto_time;
-
             $status_list = ABJ404_STATUS_AUTO;
-
-            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
-            $query = $this->f->str_replace('{status_list}', $status_list, $query);
-            $query = $this->f->str_replace('{timelimit}', $then, $query);
-            
-            // Find unused redirects
-            $results = $this->queryAndGetResults($query);
-            $rows = $results['rows'];
-            
-            $rows = $results['rows'];
-            foreach ($rows as $row) {
-                // Remove Them
-                $this->logger->debugMessage("Automatic redirect from: " . $row['from_url'] . ' to: ' . 
-                        $row['best_guess_dest'] . ' deleted (unused since ' . $row['last_used_formatted'] . ').');
-                $abj404dao->deleteRedirect($row['id']);
-                $autoRedirectsCount++;
-            }
+            $autoRedirectsCount = $this->deleteOldRedirectsByType($options, $now, 'auto_deletion', $status_list, 'Automatic redirect');
         }
 
-        //Remove Manual Redirects
+        // Remove Manual Redirects
         if (array_key_exists('manual_deletion', $options) && isset($options['manual_deletion']) && $options['manual_deletion'] != '0') {
-            $manual_time = $options['manual_deletion'] * 86400;
-            $then = $now - $manual_time;
-            
             $status_list = ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_REGEX;
-
-            //Find unused urls
-            $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
-            $query = $this->f->str_replace('{wp_posts}', $wpdb->posts, $query);
-            $query = $this->f->str_replace('{wp_options}', $wpdb->options, $query);
-            $query = $this->f->str_replace('{status_list}', $status_list, $query);
-            $query = $this->f->str_replace('{timelimit}', $then, $query);
-            
-            $results = $this->queryAndGetResults($query);
-            $rows = $results['rows'];
-            
-            foreach ($rows as $row) {
-                // Remove Them
-                $this->logger->debugMessage("Manual redirect from: " . $row['from_url'] . ' to: ' . 
-                        $row['best_guess_dest'] . ' deleted (unused since ' . $row['last_used_formatted'] . ').');
-                $abj404dao->deleteRedirect($row['id']);
-                $manualRedirectsCount++;
-            }
+            $manualRedirectsCount = $this->deleteOldRedirectsByType($options, $now, 'manual_deletion', $status_list, 'Manual redirect');
         }
         
         //Clean up old logs. prepare the query. get the disk usage in bytes. compare to the max requested
         // disk usage (MB to bytes). delete 1k rows at a time until the size is acceptable.
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
-        $maxLogSizeBytes = $options['maximum_log_disk_usage'] * 1024 * 1000;
+        $maxLogSizeBytes = (array_key_exists('maximum_log_disk_usage', $options) ? $options['maximum_log_disk_usage'] : 100) * 1024 * 1000;
         
         $totalLogLines = $abj404dao->getLogsCount(0);
         $averageSizePerLine = max($logsSizeBytes, 1) / max($totalLogLines, 1);

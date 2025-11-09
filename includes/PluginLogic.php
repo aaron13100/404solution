@@ -1673,298 +1673,419 @@ class ABJ_404_Solution_PluginLogic {
      * @return string
      */
     function updateOptionsFromPOST() {
-        
+
         $message = "";
         $options = $this->getOptions();
-        
+
         // get the submitted settings
         $encodedData = $_POST['encodedData'];
         $postData = $this->f->decodeComplicatedData($encodedData);
-        
+
         // to return after handling the ajax call.
         $returnData = array();
         $returnData['newURL'] = admin_url() . "options-general.php?page=" . ABJ404_PP . '&subpage=abj404_options';
-        
+
         // verify nonce
         if (!wp_verify_nonce($postData['nonce'], 'abj404UpdateOptions') || !is_admin()) {
         	$returnData['message'] = 'Task failed successfully.';
         	echo json_encode($returnData);
         	exit(1);
         }
-        
+
         $_POST = $postData;
-        
+
         // delete the debug file if requested.
         if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile'] == true) {
         	$sub = '';
         	$returnData['error'] = '';
         	$returnData['message'] = $this->handlePluginAction('updateOptions', $sub);
-        	
+
         } else {
-        	// save all options.
-        	
-	        // options with custom messages.
-	        if (array_key_exists('default_redirect', $_POST) && isset($_POST['default_redirect'])) {
-	            if ($_POST['default_redirect'] == "301" || $_POST['default_redirect'] == "302") {
-	                $options['default_redirect'] = intval($_POST['default_redirect']);
-	            } else {
-	                $message .= __('Error: Invalid value specified for default redirect type', '404-solution') . ".<BR/>";
-	            }
-	        }
-	        
-	        if (array_key_exists('ignore_dontprocess', $_POST) && isset($_POST['ignore_dontprocess'])) {
-	        	$options['ignore_dontprocess'] = wp_kses_post($_POST['ignore_dontprocess']);
-	        }
-	        if (array_key_exists('ignore_doprocess', $_POST) && isset($_POST['ignore_doprocess'])) {
-	        	$options['ignore_doprocess'] = wp_kses_post($_POST['ignore_doprocess']);
-	        }
-	        if (array_key_exists('recognized_post_types', $_POST) && isset($_POST['recognized_post_types'])) {
-	        	$options['recognized_post_types'] = wp_kses_post($_POST['recognized_post_types']);
-	        }
-	        if (array_key_exists('recognized_categories', $_POST) && isset($_POST['recognized_categories'])) {
-	        	$options['recognized_categories'] = wp_kses_post($_POST['recognized_categories']);
-	        }
-	        if (array_key_exists('menuLocation', $_POST) && isset($_POST['menuLocation'])) {
-	        	$options['menuLocation'] = wp_kses_post($_POST['menuLocation']);
-	        }
-	
-	        if (array_key_exists('admin_notification', $_POST) && isset($_POST['admin_notification'])) {
-	            if (is_numeric($_POST['admin_notification'])) {
-	                $options['admin_notification'] = absint($_POST['admin_notification']);
-	            }
-	        }
-	        
-	        if (array_key_exists('capture_deletion', $_POST) && isset($_POST['capture_deletion'])) {
-	            if (is_numeric($_POST['capture_deletion']) && $_POST['capture_deletion'] >= 0) {
-	                $options['capture_deletion'] = absint($_POST['capture_deletion']);
-	            } else {
-	                $message .= __('Error: Collected URL deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-	            }
-	        }
-	
-	        if (array_key_exists('manual_deletion', $_POST) && isset($_POST['manual_deletion'])) {
-	            if (is_numeric($_POST['manual_deletion']) && $_POST['manual_deletion'] >= 0) {
-	                $options['manual_deletion'] = absint($_POST['manual_deletion']);
-	            } else {
-	                $message .= __('Error: Manual redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-	            }
-	        }
-	
-	        if (array_key_exists('log_deletion', $_POST) && isset($_POST['log_deletion'])) {
-	            if (is_numeric($_POST['log_deletion']) && $_POST['log_deletion'] >= 0) {
-	                $options['log_deletion'] = absint($_POST['log_deletion']);
-	            } else {
-	                $message .= __('Error: Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-	            }
-	        }
-	        
-	        if (array_key_exists('days_wait_before_major_update', $_POST) && isset($_POST['days_wait_before_major_update'])) {
-	            if (is_numeric($_POST['days_wait_before_major_update'])) {
-	                $options['days_wait_before_major_update'] = absint($_POST['days_wait_before_major_update']);
-	            } else {
-	                $message .= __('Error: The time to wait before an automatic update must be a number '
-	                        . 'between 0 and something around ' . PHP_INT_MAX . '.', '404-solution') . "<BR/>";
-	            }
-	        }
-	        
-	        if (array_key_exists('suggest_minscore', $_POST) && isset($_POST['suggest_minscore'])) {
-	            if (is_numeric($_POST['suggest_minscore']) && $_POST['suggest_minscore'] >= 0 && $_POST['suggest_minscore'] <= 99) {
-	                $options['suggest_minscore'] = min(max(absint($_POST['suggest_minscore']), 10), 90);
-	            } else {
-	                $message .= __('Error: Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
-	            }
-	        }
-	
-	        if (array_key_exists('suggest_max', $_POST) && isset($_POST['suggest_max'])) {
-	            if (is_numeric($_POST['suggest_max']) && $_POST['suggest_max'] >= 1) {
-	                if ($options['suggest_max'] != absint($_POST['suggest_max'])) {
-	                    $this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
-	                            ": Truncating spelling cache because the max suggestions # changed from " . 
-	                            $options['suggest_max'] . ' to ' . absint($_POST['suggest_max']));
-	                    
-	                    // the spelling cache only stores up to X entries. X is based on suggest_max
-	                    // so the spelling cache has to be reset when this number changes.
-	                    $this->dao->deleteSpellingCache();
-	                }
-	                
-	                $options['suggest_max'] = absint($_POST['suggest_max']);
-	            } else {
-	                $message .= __('Error: Maximum number of suggest value must be a number greater than or equal to 1', '404-solution') . ".<BR/>";
-	            }
-	        }
-	        
-	        if (array_key_exists('auto_score', $_POST) && isset($_POST['auto_score'])) {
-	            if (is_numeric($_POST['auto_score']) && $_POST['auto_score'] >= 0 && $_POST['auto_score'] <= 99) {
-	                $options['auto_score'] = absint($_POST['auto_score']);
-	            } else {
-	                $message .= __('Error: Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
-	            }
-	        }
-	        
-	        if (array_key_exists('template_redirect_priority', $_POST) && isset($_POST['template_redirect_priority'])) {
-	            if (is_numeric($_POST['template_redirect_priority']) && $_POST['template_redirect_priority'] >= 0 && $_POST['template_redirect_priority'] <= 999) {
-	                $options['template_redirect_priority'] = absint($_POST['template_redirect_priority']);
-	            } else {
-	                $message .= __('Error: Template redirect priority value must be a number between 0 and 999', '404-solution') . ".<BR/>";
-	            }
-	        }
-	        
-	        if (array_key_exists('auto_deletion', $_POST) && isset($_POST['auto_deletion'])) {
-	            if (is_numeric($_POST['auto_deletion']) && $_POST['auto_deletion'] >= 0) {
-	                $options['auto_deletion'] = absint($_POST['auto_deletion']);
-	            } else {
-	                $message .= __('Error: Auto redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
-	            }
-	        }
-	
-	        if (array_key_exists('maximum_log_disk_usage', $_POST) && isset($_POST['maximum_log_disk_usage'])) {
-	        	if (is_numeric($_POST['maximum_log_disk_usage']) && absint($_POST['maximum_log_disk_usage']) > 0) {
-	                $options['maximum_log_disk_usage'] = absint($_POST['maximum_log_disk_usage']);
-	            } else {
-	                $message .= __('Error: Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";
-	            }
-	        }
-	
-	        // these options all default to 0 if they're not specifically set to 1.
-	        $optionsList = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags', 
-	            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips',
-	        	'redirect_all_requests', 'update_suggest_url'
-	        );
-	        foreach ($optionsList as $optionName) {
-	        	$newVal = (array_key_exists($optionName, $_POST) && $_POST[$optionName] == "1") ? 1 : 0;
-	        	
-	        	// in case the suggest_cats or suggest_tags is changed.
-	        	if (!array_key_exists($optionName, $options) || 
-	        		$options[$optionName] != $newVal) {
-	        			
-	        		$this->dao->deleteSpellingCache();
-	        	}
-	            $options[$optionName] = $newVal;
-	        }
-	
-	        // the suggest_.* options have html in them.
-	        $optionsListSuggest = array('suggest_title', 'suggest_before', 'suggest_after', 'suggest_entrybefore', 
-	            'suggest_entryafter', 'suggest_noresults');
-	        foreach ($optionsListSuggest as $optionName) {
-	            $options[$optionName] = wp_kses_post($_POST[$optionName]);
-	        }
-	
-	        if (array_key_exists('redirect_to_data_field_id', $_POST) && isset($_POST['redirect_to_data_field_id'])) {
-	            $options['dest404page'] = sanitize_text_field($_POST['redirect_to_data_field_id']);
-	        }
-	        if (array_key_exists('redirect_to_data_field_title', $_POST) && isset($_POST['redirect_to_data_field_title'])) {
-	            $options['dest404pageURL'] = sanitize_text_field($_POST['redirect_to_data_field_title']);
-	            if ($options['dest404page'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
-	            	$options['dest404page'] = $options['dest404pageURL'] . '|' . ABJ404_TYPE_EXTERNAL;
-	            }
-	        }
-	        if (array_key_exists('admin_notification_email', $_POST) && isset($_POST['admin_notification_email'])) {
-	            $options['admin_notification_email'] = trim(wp_kses_post($_POST['admin_notification_email']));
-	        }
-	        
-	        if (array_key_exists('folders_files_ignore', $_POST) && isset($_POST['folders_files_ignore'])) {
-	            $options['folders_files_ignore'] = wp_unslash(wp_kses_post($_POST['folders_files_ignore']));
-	            
-	            // make the regular expressions usable.
-	            $patternsToIgnore = $this->f->explodeNewline($options['folders_files_ignore']);
-	            $usableFilePatterns = array();
-	            foreach ($patternsToIgnore as $patternToIgnore) {
-	                $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
-	                $newPattern = $this->f->str_replace("\*",".*", $newPattern);
-	                $usableFilePatterns[] = $newPattern;
-	            }
-	            $options['folders_files_ignore_usable'] = $usableFilePatterns;
-	        }
-            if ( isset( $_POST['suggest_regex_exclusions'] ) ) {
-                // 1. Sanitize the raw input using the appropriate function for multi-line text without HTML.
-                $sanitized_exclusions = sanitize_textarea_field( wp_unslash( $_POST['suggest_regex_exclusions'] ) );
-                $options['suggest_regex_exclusions'] = $sanitized_exclusions;
+        	// save all options - grouped by related functionality
+	        $message .= $this->updateRedirectSettings($options, $_POST);
+	        $message .= $this->updateWordPressSettings($options, $_POST);
+	        $message .= $this->updateNotificationSettings($options, $_POST);
+	        $message .= $this->updateDeletionSettings($options, $_POST);
+	        $message .= $this->updateSuggestionSettings($options, $_POST);
+	        $message .= $this->updateBooleanToggles($options, $_POST);
+	        $message .= $this->updateSuggestionHTMLOptions($options, $_POST);
+	        $message .= $this->updateRegexPatternSettings($options, $_POST);
+	        $message .= $this->updateAdminUsers($options, $_POST);
+	        $message .= $this->updateExcludedPages($options, $_POST);
 
-                // 2. Generate the usable regex patterns *from the sanitized input*.
-                $patternsToIgnore = $this->f->explodeNewline( $sanitized_exclusions );
-                $usableFilePatterns = array();
-                foreach ( $patternsToIgnore as $patternToIgnore ) {
-                    $trimmedPattern = trim( $patternToIgnore );
-                    // Only process non-empty lines
-                    if ( ! empty( $trimmedPattern ) ) {
-                        // Escape regex special characters, then convert literal '*' into '.*' for wildcard matching.
-                        $newPattern = '^' . preg_quote( $trimmedPattern, '/' ) . '$';
-                        // Use standard str_replace; $this->f->str_replace is likely unnecessary here unless it provides specific multibyte handling not needed for '\*'.
-                        $newPattern = str_replace( '\*', '.*', $newPattern );
-                        $usableFilePatterns[] = $newPattern;
-                    }
-                }
-                $options['suggest_regex_exclusions_usable'] = $usableFilePatterns;
-            }
-
-	        if (array_key_exists('plugin_admin_users', $_POST) && isset($_POST['plugin_admin_users'])) {
-	        	$pluginAdminUsers = $_POST['plugin_admin_users'];
-	        	if (is_array($pluginAdminUsers)) {
-	        		$pluginAdminUsers = array_filter($pluginAdminUsers,
-	        			array($f, 'removeEmptyCustom'));
-	        	}
-	        	
-	        	$options['plugin_admin_users'] = $pluginAdminUsers;
-	        }
-            
-	        if (is_array($options['excludePages[]'])) {
-	            $this->logger->warn("Exclude pages settings lost.");
-	            $options['excludePages[]'] = '';
-	        }
-	        if (array_key_exists('excludePages[]', $_POST) && isset($_POST['excludePages[]'])) {
-	        	$oldExcludePages = json_decode($options['excludePages[]']);
-	        	if (!is_array($_POST['excludePages[]'])) {
-	        		$_POST['excludePages[]'] = array($_POST['excludePages[]']);
-	        	}
-	        	$options['excludePages[]'] = json_encode($_POST['excludePages[]']);
-	        	$newExcludePages = json_decode($options['excludePages[]']);
-	        	if ($newExcludePages !== $oldExcludePages) {
-	        		// if any excluded pages changed or if the number of excluded pages changed
-	        		// then the spelling cache has to be reset.
-	        		$this->dao->deleteSpellingCache();
-	        	}
-	        } else {
-	        	$oldExcludePages = json_decode($options['excludePages[]']);
-	        	if (null !== $oldExcludePages) {
-	        		// if any excluded pages changed or if the number of excluded pages changed
-	        		// then the spelling cache has to be reset.
-	        		$this->dao->deleteSpellingCache();
-	        	}
-	        	$options['excludePages[]'] = null;
-	        }
-	        
 	        // save this for later to sanitize it ourselves.
 	        $excludedPages = $options['excludePages[]'];
-	        
+
 	        /** Sanitize all data. */
 	        $new_options = array();
 	        // when sanitizing data we keep the newlines (\n) because some data
-	        // is entered that way and it shouldn't allow any kind of sql 
+	        // is entered that way and it shouldn't allow any kind of sql
 	        // injection or any other security issues that I foresee at this point.
 	        $new_options = $this->sanitizePostData($options, true);
-	
+
 	        // only some characters in the string.
 	        $excludedPages = $excludedPages == null ? '' : trim($excludedPages);
 	        $excludedPages = preg_replace('/[^\[\",\]a-zA-Z\d\|\\\\ ]/', '', $excludedPages);
             $new_options['excludePages[]'] = $excludedPages;
-	        
+
 	        $this->updateOptions($new_options);
-	        
+
 	        // update the permalink cache because the post types included may have changed.
 	        $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
 	        $permalinkCache->updatePermalinkCache(2);
-	        
+
 	        $returnData['error'] = $message;
 	        if ($message == "") {
 	        	$returnData['message'] = __('Options Saved Successfully!', '404-solution');
 	        } else {
-	        	$returnData['message'] = __('Some options were not saved successfully.', '404-solution') . 
+	        	$returnData['message'] = __('Some options were not saved successfully.', '404-solution') .
 	        		'		' . $message;
 	        }
         }
-        
+
         echo json_encode($returnData);
         exit();
+    }
+
+    /** Update redirect-related settings.
+     * @param array $options The options array to update
+     * @param array $postData The POST data
+     * @return string Any error messages
+     */
+    private function updateRedirectSettings(&$options, $postData) {
+        $message = "";
+
+        if (array_key_exists('default_redirect', $postData) && isset($postData['default_redirect'])) {
+            if ($postData['default_redirect'] == "301" || $postData['default_redirect'] == "302") {
+                $options['default_redirect'] = intval($postData['default_redirect']);
+            } else {
+                $message .= __('Error: Invalid value specified for default redirect type', '404-solution') . ".<BR/>";
+            }
+        }
+
+        if (array_key_exists('redirect_to_data_field_id', $postData) && isset($postData['redirect_to_data_field_id'])) {
+            $options['dest404page'] = sanitize_text_field($postData['redirect_to_data_field_id']);
+        }
+        if (array_key_exists('redirect_to_data_field_title', $postData) && isset($postData['redirect_to_data_field_title'])) {
+            $options['dest404pageURL'] = sanitize_text_field($postData['redirect_to_data_field_title']);
+            if ($options['dest404page'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
+            	$options['dest404page'] = $options['dest404pageURL'] . '|' . ABJ404_TYPE_EXTERNAL;
+            }
+        }
+
+        if (array_key_exists('template_redirect_priority', $postData) && isset($postData['template_redirect_priority'])) {
+            if (is_numeric($postData['template_redirect_priority']) && $postData['template_redirect_priority'] >= 0 && $postData['template_redirect_priority'] <= 999) {
+                $options['template_redirect_priority'] = absint($postData['template_redirect_priority']);
+            } else {
+                $message .= __('Error: Template redirect priority value must be a number between 0 and 999', '404-solution') . ".<BR/>";
+            }
+        }
+
+        return $message;
+    }
+
+    /** Update WordPress-specific settings.
+     * @param array $options The options array to update
+     * @param array $postData The POST data
+     * @return string Any error messages
+     */
+    private function updateWordPressSettings(&$options, $postData) {
+        $message = "";
+
+        if (array_key_exists('ignore_dontprocess', $postData) && isset($postData['ignore_dontprocess'])) {
+        	$options['ignore_dontprocess'] = wp_kses_post($postData['ignore_dontprocess']);
+        }
+        if (array_key_exists('ignore_doprocess', $postData) && isset($postData['ignore_doprocess'])) {
+        	$options['ignore_doprocess'] = wp_kses_post($postData['ignore_doprocess']);
+        }
+        if (array_key_exists('recognized_post_types', $postData) && isset($postData['recognized_post_types'])) {
+        	$options['recognized_post_types'] = wp_kses_post($postData['recognized_post_types']);
+        }
+        if (array_key_exists('recognized_categories', $postData) && isset($postData['recognized_categories'])) {
+        	$options['recognized_categories'] = wp_kses_post($postData['recognized_categories']);
+        }
+        if (array_key_exists('menuLocation', $postData) && isset($postData['menuLocation'])) {
+        	$options['menuLocation'] = wp_kses_post($postData['menuLocation']);
+        }
+
+        if (array_key_exists('days_wait_before_major_update', $postData) && isset($postData['days_wait_before_major_update'])) {
+            if (is_numeric($postData['days_wait_before_major_update'])) {
+                $options['days_wait_before_major_update'] = absint($postData['days_wait_before_major_update']);
+            } else {
+                $message .= __('Error: The time to wait before an automatic update must be a number '
+                        . 'between 0 and something around ' . PHP_INT_MAX . '.', '404-solution') . "<BR/>";
+            }
+        }
+
+        return $message;
+    }
+
+    /** Update notification settings.
+     * @param array $options The options array to update
+     * @param array $postData The POST data
+     * @return string Any error messages
+     */
+    private function updateNotificationSettings(&$options, $postData) {
+        $message = "";
+
+        if (array_key_exists('admin_notification', $postData) && isset($postData['admin_notification'])) {
+            if (is_numeric($postData['admin_notification'])) {
+                $options['admin_notification'] = absint($postData['admin_notification']);
+            }
+        }
+
+        if (array_key_exists('admin_notification_email', $postData) && isset($postData['admin_notification_email'])) {
+            $options['admin_notification_email'] = trim(wp_kses_post($postData['admin_notification_email']));
+        }
+
+        return $message;
+    }
+
+    /** Update deletion-related settings.
+     * @param array $options The options array to update
+     * @param array $postData The POST data
+     * @return string Any error messages
+     */
+    private function updateDeletionSettings(&$options, $postData) {
+        $message = "";
+
+        if (array_key_exists('capture_deletion', $postData) && isset($postData['capture_deletion'])) {
+            if (is_numeric($postData['capture_deletion']) && $postData['capture_deletion'] >= 0) {
+                $options['capture_deletion'] = absint($postData['capture_deletion']);
+            } else {
+                $message .= __('Error: Collected URL deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+            }
+        }
+
+        if (array_key_exists('manual_deletion', $postData) && isset($postData['manual_deletion'])) {
+            if (is_numeric($postData['manual_deletion']) && $postData['manual_deletion'] >= 0) {
+                $options['manual_deletion'] = absint($postData['manual_deletion']);
+            } else {
+                $message .= __('Error: Manual redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+            }
+        }
+
+        if (array_key_exists('log_deletion', $postData) && isset($postData['log_deletion'])) {
+            if (is_numeric($postData['log_deletion']) && $postData['log_deletion'] >= 0) {
+                $options['log_deletion'] = absint($postData['log_deletion']);
+            } else {
+                $message .= __('Error: Log deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+            }
+        }
+
+        if (array_key_exists('auto_deletion', $postData) && isset($postData['auto_deletion'])) {
+            if (is_numeric($postData['auto_deletion']) && $postData['auto_deletion'] >= 0) {
+                $options['auto_deletion'] = absint($postData['auto_deletion']);
+            } else {
+                $message .= __('Error: Auto redirect deletion value must be a number greater than or equal to zero', '404-solution') . ".<BR/>";
+            }
+        }
+
+        if (array_key_exists('maximum_log_disk_usage', $postData) && isset($postData['maximum_log_disk_usage'])) {
+        	if (is_numeric($postData['maximum_log_disk_usage']) && absint($postData['maximum_log_disk_usage']) > 0) {
+                $options['maximum_log_disk_usage'] = absint($postData['maximum_log_disk_usage']);
+            } else {
+                $message .= __('Error: Maximum log disk usage must be a number greater than zero', '404-solution') . ".<BR/>";
+            }
+        }
+
+        return $message;
+    }
+
+    /** Update suggestion/spelling settings.
+     * @param array $options The options array to update
+     * @param array $postData The POST data
+     * @return string Any error messages
+     */
+    private function updateSuggestionSettings(&$options, $postData) {
+        $message = "";
+
+        if (array_key_exists('suggest_minscore', $postData) && isset($postData['suggest_minscore'])) {
+            if (is_numeric($postData['suggest_minscore']) && $postData['suggest_minscore'] >= 0 && $postData['suggest_minscore'] <= 99) {
+                $options['suggest_minscore'] = min(max(absint($postData['suggest_minscore']), 10), 90);
+            } else {
+                $message .= __('Error: Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
+            }
+        }
+
+        if (array_key_exists('suggest_max', $postData) && isset($postData['suggest_max'])) {
+            if (is_numeric($postData['suggest_max']) && $postData['suggest_max'] >= 1) {
+                if ($options['suggest_max'] != absint($postData['suggest_max'])) {
+                    $this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
+                            ": Truncating spelling cache because the max suggestions # changed from " .
+                            $options['suggest_max'] . ' to ' . absint($postData['suggest_max']));
+
+                    // the spelling cache only stores up to X entries. X is based on suggest_max
+                    // so the spelling cache has to be reset when this number changes.
+                    $this->dao->deleteSpellingCache();
+                }
+
+                $options['suggest_max'] = absint($postData['suggest_max']);
+            } else {
+                $message .= __('Error: Maximum number of suggest value must be a number greater than or equal to 1', '404-solution') . ".<BR/>";
+            }
+        }
+
+        if (array_key_exists('auto_score', $postData) && isset($postData['auto_score'])) {
+            if (is_numeric($postData['auto_score']) && $postData['auto_score'] >= 0 && $postData['auto_score'] <= 99) {
+                $options['auto_score'] = absint($postData['auto_score']);
+            } else {
+                $message .= __('Error: Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
+            }
+        }
+
+        return $message;
+    }
+
+    /** Update boolean toggle options (checkboxes).
+     * @param array $options The options array to update
+     * @param array $postData The POST data
+     * @return string Any error messages
+     */
+    private function updateBooleanToggles(&$options, $postData) {
+        $message = "";
+
+        // these options all default to 0 if they're not specifically set to 1.
+        $optionsList = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags',
+            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips',
+        	'redirect_all_requests', 'update_suggest_url'
+        );
+        foreach ($optionsList as $optionName) {
+        	$newVal = (array_key_exists($optionName, $postData) && $postData[$optionName] == "1") ? 1 : 0;
+
+        	// in case the suggest_cats or suggest_tags is changed.
+        	if (!array_key_exists($optionName, $options) ||
+        		$options[$optionName] != $newVal) {
+
+        		$this->dao->deleteSpellingCache();
+        	}
+            $options[$optionName] = $newVal;
+        }
+
+        return $message;
+    }
+
+    /** Update suggestion HTML display options.
+     * @param array $options The options array to update
+     * @param array $postData The POST data
+     * @return string Any error messages
+     */
+    private function updateSuggestionHTMLOptions(&$options, $postData) {
+        $message = "";
+
+        // the suggest_.* options have html in them.
+        $optionsListSuggest = array('suggest_title', 'suggest_before', 'suggest_after', 'suggest_entrybefore',
+            'suggest_entryafter', 'suggest_noresults');
+        foreach ($optionsListSuggest as $optionName) {
+            $options[$optionName] = wp_kses_post($postData[$optionName]);
+        }
+
+        return $message;
+    }
+
+    /** Update regex pattern settings for ignoring files/folders and suggestion exclusions.
+     * @param array $options The options array to update
+     * @param array $postData The POST data
+     * @return string Any error messages
+     */
+    private function updateRegexPatternSettings(&$options, $postData) {
+        $message = "";
+
+        if (array_key_exists('folders_files_ignore', $postData) && isset($postData['folders_files_ignore'])) {
+            $options['folders_files_ignore'] = wp_unslash(wp_kses_post($postData['folders_files_ignore']));
+
+            // make the regular expressions usable.
+            $patternsToIgnore = $this->f->explodeNewline($options['folders_files_ignore']);
+            $usableFilePatterns = array();
+            foreach ($patternsToIgnore as $patternToIgnore) {
+                $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
+                $newPattern = $this->f->str_replace("\*",".*", $newPattern);
+                $usableFilePatterns[] = $newPattern;
+            }
+            $options['folders_files_ignore_usable'] = $usableFilePatterns;
+        }
+
+        if ( isset( $postData['suggest_regex_exclusions'] ) ) {
+            // 1. Sanitize the raw input using the appropriate function for multi-line text without HTML.
+            $sanitized_exclusions = sanitize_textarea_field( wp_unslash( $postData['suggest_regex_exclusions'] ) );
+            $options['suggest_regex_exclusions'] = $sanitized_exclusions;
+
+            // 2. Generate the usable regex patterns *from the sanitized input*.
+            $patternsToIgnore = $this->f->explodeNewline( $sanitized_exclusions );
+            $usableFilePatterns = array();
+            foreach ( $patternsToIgnore as $patternToIgnore ) {
+                $trimmedPattern = trim( $patternToIgnore );
+                // Only process non-empty lines
+                if ( ! empty( $trimmedPattern ) ) {
+                    // Escape regex special characters, then convert literal '*' into '.*' for wildcard matching.
+                    $newPattern = '^' . preg_quote( $trimmedPattern, '/' ) . '$';
+                    // Use standard str_replace; $this->f->str_replace is likely unnecessary here unless it provides specific multibyte handling not needed for '\*'.
+                    $newPattern = str_replace( '\*', '.*', $newPattern );
+                    $usableFilePatterns[] = $newPattern;
+                }
+            }
+            $options['suggest_regex_exclusions_usable'] = $usableFilePatterns;
+        }
+
+        return $message;
+    }
+
+    /** Update plugin admin users list.
+     * @param array $options The options array to update
+     * @param array $postData The POST data
+     * @return string Any error messages
+     */
+    private function updateAdminUsers(&$options, $postData) {
+        $message = "";
+
+        if (array_key_exists('plugin_admin_users', $postData) && isset($postData['plugin_admin_users'])) {
+        	$pluginAdminUsers = $postData['plugin_admin_users'];
+        	if (is_array($pluginAdminUsers)) {
+        		$pluginAdminUsers = array_filter($pluginAdminUsers,
+        			array($this->f, 'removeEmptyCustom'));
+        	}
+
+        	$options['plugin_admin_users'] = $pluginAdminUsers;
+        }
+
+        return $message;
+    }
+
+    /** Update excluded pages list.
+     * @param array $options The options array to update
+     * @param array $postData The POST data
+     * @return string Any error messages
+     */
+    private function updateExcludedPages(&$options, $postData) {
+        $message = "";
+
+        if (is_array($options['excludePages[]'])) {
+            $this->logger->warn("Exclude pages settings lost.");
+            $options['excludePages[]'] = '';
+        }
+        if (array_key_exists('excludePages[]', $postData) && isset($postData['excludePages[]'])) {
+        	$oldExcludePages = json_decode($options['excludePages[]']);
+        	if (!is_array($postData['excludePages[]'])) {
+        		$postData['excludePages[]'] = array($postData['excludePages[]']);
+        	}
+        	$options['excludePages[]'] = json_encode($postData['excludePages[]']);
+        	$newExcludePages = json_decode($options['excludePages[]']);
+        	if ($newExcludePages !== $oldExcludePages) {
+        		// if any excluded pages changed or if the number of excluded pages changed
+        		// then the spelling cache has to be reset.
+        		$this->dao->deleteSpellingCache();
+        	}
+        } else {
+        	$oldExcludePages = json_decode($options['excludePages[]']);
+        	if (null !== $oldExcludePages) {
+        		// if any excluded pages changed or if the number of excluded pages changed
+        		// then the spelling cache has to be reset.
+        		$this->dao->deleteSpellingCache();
+        	}
+        	$options['excludePages[]'] = null;
+        }
+
+        return $message;
     }
     
     /** Get the "/commentpage" and the "?query=part" of the URL. 

@@ -43,7 +43,16 @@ class ABJ_404_Solution_View {
 
 		return self::$instance;
 	}
-	
+
+	/** Get the 'checked' attribute for a checkbox based on option value.
+	 * @param array $options The options array
+	 * @param string $key The option key to check
+	 * @return string Returns ' checked' if option is '1', empty string otherwise
+	 */
+	private function getCheckedAttr($options, $key) {
+		return (array_key_exists($key, $options) && $options[$key] == '1') ? " checked" : "";
+	}
+
 	/** Get the text to notify the user when some URLs have been captured and need attention. 
      * @param int $captured the number of captured URLs
      * @return string html
@@ -291,16 +300,15 @@ class ABJ_404_Solution_View {
         echo "<div class=\"metabox-holder\">";
         echo " <div class=\"meta-box-sortables\">";
 
-        $content = "";
-        $content .= "<p $hr>";
-        $content .= "<strong>" . __('Automatic 301 Redirects', '404-solution') . ":</strong> " . esc_html($auto301) . "<BR/>";
-        $content .= "<strong>" . __('Automatic 302 Redirects', '404-solution') . ":</strong> " . esc_html($auto302) . "<BR/>";
-        $content .= "<strong>" . __('Manual 301 Redirects', '404-solution') . ":</strong> " . esc_html($manual301) . "<BR/>";
-        $content .= "<strong>" . __('Manual 302 Redirects', '404-solution') . ":</strong> " . esc_html($manual302) . "<BR/>";
-        $content .= "<strong>" . __('Trashed Redirects', '404-solution') . ":</strong> " . esc_html($trashed) . "</p>";
-        $content .= "<p style=\"margin-top: 4px;\">";
-        $content .= "<strong>" . __('Total Redirects', '404-solution') . ":</strong> " . esc_html($total);
-        $content .= "</p>";
+        // Load redirects stats template
+        $content = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/statsRedirectsBox.html");
+        $content = $this->f->str_replace('{auto301}', esc_html($auto301), $content);
+        $content = $this->f->str_replace('{auto302}', esc_html($auto302), $content);
+        $content = $this->f->str_replace('{manual301}', esc_html($manual301), $content);
+        $content = $this->f->str_replace('{manual302}', esc_html($manual302), $content);
+        $content = $this->f->str_replace('{trashed}', esc_html($trashed), $content);
+        $content = $this->f->str_replace('{total}', esc_html($total), $content);
+        $content = $this->f->doNormalReplacements($content);
         $abj404view->echoPostBox("abj404-redirectStats", __('Redirects', '404-solution'), $content);
 
         // -------------------------------------------
@@ -315,14 +323,13 @@ class ABJ_404_Solution_View {
 
         $total = $captured + $ignored + $trashed;
 
-        $content = "";
-        $content .= "<p $hr>";
-        $content .= "<strong>" . __('Captured URLs', '404-solution') . ":</strong> " . esc_html($captured) . "<BR/>";
-        $content .= "<strong>" . __('Ignored 404 URLs', '404-solution') . ":</strong> " . esc_html($ignored) . "<BR/>";
-        $content .= "<strong>" . __('Trashed URLs', '404-solution') . ":</strong> " . esc_html($trashed) . "</p>";
-        $content .= "<p style=\"margin-top: 4px;\">";
-        $content .= "<strong>" . __('Total URLs', '404-solution') . ":</strong> " . esc_html($total);
-        $content .= "</p>";
+        // Load captured URLs stats template
+        $content = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/statsCapturedURLsBox.html");
+        $content = $this->f->str_replace('{captured}', esc_html($captured), $content);
+        $content = $this->f->str_replace('{ignored}', esc_html($ignored), $content);
+        $content = $this->f->str_replace('{trashed}', esc_html($trashed), $content);
+        $content = $this->f->str_replace('{total}', esc_html($total), $content);
+        $content = $this->f->doNormalReplacements($content);
         $abj404view->echoPostBox("abj404-capturedStats", __('Captured URLs', '404-solution'), $content);
         echo "</div>";
         echo "</div>";
@@ -377,17 +384,17 @@ class ABJ_404_Solution_View {
             $query = "select count(distinct referrer) from $logs where timestamp >= $ts and dest_url != %s";
             $distinctrefer = $this->dao->getStatsCount($query, array("404"));
 
-            $content = "";
-            $content .= "<p>";
-            $content .= "<strong>" . __('Page Not Found Displayed', '404-solution') . ":</strong> " . esc_html($disp404) . "<BR/>";
-            $content .= "<strong>" . __('Unique Page Not Found URLs', '404-solution') . ":</strong> " . esc_html($distinct404) . "<BR/>";
-            $content .= "<strong>" . __('Unique Page Not Found Visitors', '404-solution') . ":</strong> " . esc_html($visitors404) . "<BR/>";
-            $content .= "<strong>" . __('Unique Page Not Found Referrers', '404-solution') . ":</strong> " . esc_html($refer404) . "<BR/>";
-            $content .= "<strong>" . __('Hits Redirected', '404-solution') . ":</strong> " . esc_html($redirected) . "<BR/>";
-            $content .= "<strong>" . __('Unique URLs Redirected', '404-solution') . ":</strong> " . esc_html($distinctredirected) . "<BR/>";
-            $content .= "<strong>" . __('Unique Redirected Visitors', '404-solution') . ":</strong> " . esc_html($distinctvisitors) . "<BR/>";
-            $content .= "<strong>" . __('Unique Redirected Referrers', '404-solution') . ":</strong> " . esc_html($distinctrefer) . "<BR/>";
-            $content .= "</p>";
+            // Load periodic stats template
+            $content = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/statsPeriodicBox.html");
+            $content = $this->f->str_replace('{disp404}', esc_html($disp404), $content);
+            $content = $this->f->str_replace('{distinct404}', esc_html($distinct404), $content);
+            $content = $this->f->str_replace('{visitors404}', esc_html($visitors404), $content);
+            $content = $this->f->str_replace('{refer404}', esc_html($refer404), $content);
+            $content = $this->f->str_replace('{redirected}', esc_html($redirected), $content);
+            $content = $this->f->str_replace('{distinctredirected}', esc_html($distinctredirected), $content);
+            $content = $this->f->str_replace('{distinctvisitors}', esc_html($distinctvisitors), $content);
+            $content = $this->f->str_replace('{distinctrefer}', esc_html($distinctrefer), $content);
+            $content = $this->f->doNormalReplacements($content);
             $abj404view->echoPostBox("abj404-stats" . $x, __($title, '404-solution'), $content);
         }
         echo "</div>";
@@ -1595,30 +1602,21 @@ class ABJ_404_Solution_View {
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true", $html);
         $html = $this->f->doNormalReplacements($html);
         $content .= $html;
-        
+
         // -----------------------------------------------
-        
-        $selectedAutoRedirects = "";
-        if ($options['auto_redirects'] == '1') {
-            $selectedAutoRedirects = " checked";
-        }
-        $content .= "<p><label for=\"auto_redirects\">" . __('Create automatic redirects', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_redirects\" id=\"auto_redirects\" value=\"1\"" . $selectedAutoRedirects . "><BR/>";
-        $content .= $spaces . __('Automatically creates redirects based on best possible suggested page.', '404-solution') . "</p>";
+        // Load auto redirects options template
+        $selectedAutoRedirects = $this->getCheckedAttr($options, 'auto_redirects');
+        $selectedAutoCats = $this->getCheckedAttr($options, 'auto_cats');
+        $selectedAutoTags = $this->getCheckedAttr($options, 'auto_tags');
 
-        $selectedAutoCats = "";
-        if ($options['auto_cats'] == '1') {
-            $selectedAutoCats = " checked";
-        }
-        $content .= "<p><label for=\"auto_cats\">" . __('Create automatic redirects for categories', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_cats\" id=\"auto_cats\" value=\"1\"" . $selectedAutoCats . "></p>";
-
-        $selectedAutoTags = "";
-        if ($options['auto_tags'] == '1') {
-            $selectedAutoTags = " checked";
-        }
-        $content .= "<p><label for=\"auto_tags\">" . __('Create automatic redirects for tags', '404-solution') . ":</label> <input type=\"checkbox\" name=\"auto_tags\" id=\"auto_tags\" value=\"1\"" . $selectedAutoTags . "></p>";
-
-        $content .= "<p><label for=\"auto_deletion\">" . __('Auto redirect deletion', '404-solution') . ":</label> <input type=\"text\" name=\"auto_deletion\" id=\"auto_deletion\" value=\"" . esc_attr($options['auto_deletion']) . "\" style=\"width: 50px;\"> " . __('Days (0 Disables Auto Delete)', '404-solution') . "<BR/>";
-        $content .= $spaces . __('Removes auto created redirects if they haven\'t been used for the specified amount of time.', '404-solution') . "</p>";
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsAutoRedirects.html");
+        $html = $this->f->str_replace('{selectedAutoRedirects}', $selectedAutoRedirects, $html);
+        $html = $this->f->str_replace('{selectedAutoCats}', $selectedAutoCats, $html);
+        $html = $this->f->str_replace('{selectedAutoTags}', $selectedAutoTags, $html);
+        $html = $this->f->str_replace('{auto_deletion}', esc_attr($options['auto_deletion']), $html);
+        $html = $this->f->str_replace('{spaces}', $spaces, $html);
+        $html = $this->f->doNormalReplacements($html);
+        $content .= $html;
 
         return $content;
     }
@@ -1634,19 +1632,10 @@ class ABJ_404_Solution_View {
         if (in_array($serverName, $GLOBALS['abj404_whitelist'])) {
         	$hideRedirectAllRequests = 'false';
         }
-        
-        $selectedDebugLogging = "";
-        if (array_key_exists('debug_mode', $options) && $options['debug_mode'] == '1') {
-        	$selectedDebugLogging = " checked";
-        }
-        $selectedRedirectAllRequests = "";
-        if (array_key_exists('redirect_all_requests', $options) && $options['redirect_all_requests'] == '1') {
-        	$selectedRedirectAllRequests = " checked";
-        }
-        $selectedLogRawIPs = '';
-        if (array_key_exists('log_raw_ips', $options) && $options['log_raw_ips'] == '1') {
-            $selectedLogRawIPs = " checked";
-        }
+
+        $selectedDebugLogging = $this->getCheckedAttr($options, 'debug_mode');
+        $selectedRedirectAllRequests = $this->getCheckedAttr($options, 'redirect_all_requests');
+        $selectedLogRawIPs = $this->getCheckedAttr($options, 'log_raw_ips');
         
         $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
         $debugLogLink = $this->logic->getDebugLogFileLink();
@@ -1737,14 +1726,8 @@ class ABJ_404_Solution_View {
             $selectedDefaultRedirect302 = " selected";
         }
 
-        $selectedCapture404 = "";
-        if ($options['capture_404'] == '1') {
-            $selectedCapture404 = " checked";
-        }
-        $selectedSendErrorLogs = "";
-        if ($options['send_error_logs'] == '1') {
-            $selectedSendErrorLogs = " checked";
-        }
+        $selectedCapture404 = $this->getCheckedAttr($options, 'capture_404');
+        $selectedSendErrorLogs = $this->getCheckedAttr($options, 'send_error_logs');
 
         $selectedUnderSettings = "";
         $selecteSsettingsLevel = "";
@@ -1764,11 +1747,9 @@ class ABJ_404_Solution_View {
             $earliestLogDate = date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
             date('A', $timeToDisplay);
         }
-        
-        $selectedRemoveMatches = "";
-        if ($options['remove_matches'] == '1') {
-            $selectedRemoveMatches = " checked";
-        }
+
+
+        $selectedRemoveMatches = $this->getCheckedAttr($options, 'remove_matches');
         
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
         $html = $this->f->str_replace('{selectedSendErrorLogs}', $selectedSendErrorLogs, $html);
