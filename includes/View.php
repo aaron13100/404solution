@@ -53,6 +53,130 @@ class ABJ_404_Solution_View {
 		return (array_key_exists($key, $options) && $options[$key] == '1') ? " checked" : "";
 	}
 
+	/**
+	 * Build action links for table rows (edit, logs, trash, delete, etc.)
+	 *
+	 * @param array $row The data row from the database
+	 * @param string $sub The subpage parameter value
+	 * @param array $tableOptions Table options including filter, orderby, order
+	 * @param bool $isCapturedPage True for captured URLs page, false for redirects page
+	 * @return array Array of links and titles
+	 */
+	protected function buildTableActionLinks($row, $sub, $tableOptions, $isCapturedPage = false) {
+		$result = [];
+
+		// ID handling differs between pages
+		if ($isCapturedPage) {
+			// Captured page uses raw ID for most links
+			$id = $row['id'];
+			$logsId = $row['logsid'];
+		} else {
+			// Redirects page uses absint for all IDs
+			$id = absint($row['id']);
+			$logsId = absint($row['logsid']);
+		}
+
+		// Build base links
+		$result['editlink'] = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $id;
+		$result['logslink'] = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $logsId;
+
+		if ($isCapturedPage) {
+			// Captured page has hardcoded subpage (with double ampersand bug)
+			$result['trashlink'] = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $id .
+				"&subpage=" . $sub;
+			$result['ajaxTrashLink'] = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']) .
+				"&subpage=" . $sub;
+			$result['deletelink'] = "?page=" . ABJ404_PP . "&subpage=abj404_captured&remove=1&id=" . $id .
+				"&subpage=" . $sub;
+		} else {
+			// Redirects page does not have hardcoded subpage
+			$result['trashlink'] = "?page=" . ABJ404_PP . "&id=" . $id .
+				"&subpage=" . $sub;
+			$result['ajaxTrashLink'] = "admin-ajax.php?action=trashLink" . "&id=" . $id .
+				"&subpage=" . $sub;
+			$result['deletelink'] = "?page=" . ABJ404_PP . "&remove=1&id=" . $id .
+				"&subpage=" . $sub;
+		}
+
+		// Trash/Restore title and action
+		if (array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+			$result['trashlink'] .= "&trash=0";
+			$result['ajaxTrashLink'] .= "&trash=0";
+			$result['trashtitle'] = __('Restore', '404-solution');
+		} else {
+			$result['trashlink'] .= "&trash=1";
+			$result['ajaxTrashLink'] .= "&trash=1";
+			$result['trashtitle'] = __('Trash', '404-solution');
+		}
+
+		// Captured page has ignore and later links
+		if ($isCapturedPage) {
+			$result['ignorelink'] = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $id .
+				"&subpage=" . $sub;
+			$result['laterlink'] = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $id .
+				"&subpage=" . $sub;
+
+			// Ignore title and action
+			$result['ignoretitle'] = "";
+			if (array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_STATUS_IGNORED) {
+				$result['ignorelink'] .= "&ignore=0";
+				$result['ignoretitle'] = __('Remove Ignore Status', '404-solution');
+			} else {
+				$result['ignorelink'] .= "&ignore=1";
+				$result['ignoretitle'] = __('Ignore 404 Error', '404-solution');
+			}
+
+			// Later title and action
+			$result['latertitle'] = '?Organize Later?';
+			if (array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_STATUS_LATER) {
+				$result['laterlink'] .= "&later=0";
+				$result['latertitle'] = __('Remove Later Status', '404-solution');
+			} else {
+				$result['laterlink'] .= "&later=1";
+				$result['latertitle'] = __('Organize Later', '404-solution');
+			}
+		}
+
+		// Add orderby/order parameters if not default
+		if (array_key_exists('orderby', $tableOptions) && array_key_exists('order', $tableOptions)) {
+			if (!($tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC")) {
+				$result['trashlink'] .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+				$result['deletelink'] .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+
+				if ($isCapturedPage) {
+					$result['ignorelink'] .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+					// Note: laterlink intentionally does NOT get orderby/order (this is the bug/quirk)
+				}
+			}
+		}
+
+		// Add filter parameter if not zero
+		if (array_key_exists('filter', $tableOptions) && $tableOptions['filter'] != 0) {
+			$result['trashlink'] .= "&filter=" . $tableOptions['filter'];
+			$result['deletelink'] .= "&filter=" . $tableOptions['filter'];
+
+			if ($isCapturedPage) {
+				$result['ignorelink'] .= "&filter=" . $tableOptions['filter'];
+				$result['laterlink'] .= "&filter=" . $tableOptions['filter'];
+			}
+		}
+
+		// Apply nonces
+		$result['trashlink'] = wp_nonce_url($result['trashlink'], "abj404_trashRedirect");
+		$result['ajaxTrashLink'] = wp_nonce_url($result['ajaxTrashLink'], "abj404_ajaxTrash");
+
+		if (array_key_exists('filter', $tableOptions) && $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+			$result['deletelink'] = wp_nonce_url($result['deletelink'], "abj404_removeRedirect");
+		}
+
+		if ($isCapturedPage) {
+			$result['ignorelink'] = wp_nonce_url($result['ignorelink'], "abj404_ignore404");
+			$result['laterlink'] = wp_nonce_url($result['laterlink'], "abj404_organizeLater");
+		}
+
+		return $result;
+	}
+
 	/** Get the text to notify the user when some URLs have been captured and need attention. 
      * @param int $captured the number of captured URLs
      * @return string html
@@ -985,68 +1109,9 @@ class ABJ_404_Solution_View {
                 $last = __('Never Used', '404-solution');
             }
 
-            $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $row['id'];
-            $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $row['logsid'];
-            $trashlink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'] .
-            	"&subpage=" . $sub;
-            $ajaxTrashLink = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']) . 
-            	"&subpage=" . $sub;
-            $ignorelink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'] .
-            	"&subpage=" . $sub;
-            $laterlink = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $row['id'] .
-            	"&subpage=" . $sub;
-            $deletelink = "?page=" . ABJ404_PP . "&subpage=abj404_captured&remove=1&id=" . $row['id'] .
-            	"&subpage=" . $sub;
-
-            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-                $trashlink .= "&trash=0";
-                $ajaxTrashLink .= "&trash=0";
-                $trashtitle = __('Restore', '404-solution');
-            } else {
-                $trashlink .= "&trash=1";
-                $ajaxTrashLink .= "&trash=1";
-                $trashtitle = __('Trash', '404-solution');
-            }
-
-            $ignoretitle = "";
-            if ($tableOptions['filter'] == ABJ404_STATUS_IGNORED) {
-                $ignorelink .= "&ignore=0";
-                $ignoretitle = __('Remove Ignore Status', '404-solution');
-            } else {
-                $ignorelink .= "&ignore=1";
-                $ignoretitle = __('Ignore 404 Error', '404-solution');
-            } 
-
-            $latertitle = '?Organize Later?';
-            if ($tableOptions['filter'] == ABJ404_STATUS_LATER) {
-                $laterlink .= "&later=0";
-                $latertitle = __('Remove Later Status', '404-solution');
-            } else {
-                $laterlink .= "&later=1";
-                $latertitle = __('Organize Later', '404-solution');
-            } 
-
-            if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-                $trashlink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-                $ignorelink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-                $deletelink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-            }
-            if ($tableOptions['filter'] != 0) {
-                $trashlink .= "&filter=" . $tableOptions['filter'];
-                $ignorelink .= "&filter=" . $tableOptions['filter'];
-                $deletelink .= "&filter=" . $tableOptions['filter'];
-                $laterlink .= "&filter=" . $tableOptions['filter'];
-            }
-
-            $trashlink = wp_nonce_url($trashlink, "abj404_trashRedirect");
-            $ajaxTrashLink = wp_nonce_url($ajaxTrashLink, "abj404_ajaxTrash");
-
-            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-                $deletelink = wp_nonce_url($deletelink, "abj404_removeRedirect");
-            }
-
-            $ignorelink = wp_nonce_url($ignorelink, "abj404_ignore404");
-            $laterlink = wp_nonce_url($laterlink, "abj404_organizeLater");
+            // Build action links using helper method
+            $links = $this->buildTableActionLinks($row, $sub, $tableOptions, true);
+            extract($links);
 
             $class = "";
             if ($y == 0) {
@@ -1320,42 +1385,9 @@ class ABJ_404_Solution_View {
                 $last = __('Never Used', '404-solution');
             }
 
-            $editlink = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . absint($row['id']);
-            $logslink = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . absint($row['logsid']);
-            $trashlink = "?page=" . ABJ404_PP . "&id=" . absint($row['id']) .
-            	"&subpage=" . $sub;
-            $ajaxTrashLink = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']) .
-            	"&subpage=" . $sub;
-            $deletelink = "?page=" . ABJ404_PP . "&remove=1&id=" . absint($row['id']) .
-            	"&subpage=" . $sub;
-
-            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-                $trashlink .= "&trash=0";
-                $ajaxTrashLink .= "&trash=0";
-                $trashtitle = __('Restore', '404-solution');
-            } else {
-                $trashlink .= "&trash=1";
-                $ajaxTrashLink .= "&trash=1";
-                $trashtitle = __('Trash', '404-solution');
-            }
-
-            if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-                $trashlink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-                $deletelink .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-            }
-            if ($tableOptions['filter'] != 0) {
-                $trashlink .= "&filter=" . $tableOptions['filter'];
-                $deletelink .= "&filter=" . $tableOptions['filter'];
-            }
-
-            $trashaction = "abj404_trashRedirect";
-            $trashlink = wp_nonce_url($trashlink, $trashaction);
-            $ajaxTrashLink = wp_nonce_url($ajaxTrashLink, "abj404_ajaxTrash");
-
-            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-                $deleteaction = "abj404_removeRedirect";
-                $deletelink = wp_nonce_url($deletelink, $deleteaction);
-            }
+            // Build action links using helper method
+            $links = $this->buildTableActionLinks($row, $sub, $tableOptions, false);
+            extract($links);
 
             $class = "";
             if ($y == 0) {
