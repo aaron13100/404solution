@@ -1756,13 +1756,15 @@ class ABJ_404_Solution_View {
             str_replace('\\n', "\n", wp_kses_post($options['recognized_categories'])), $html);
         $html = $this->f->str_replace('{folders_files_ignore}', 
             str_replace('\\n', "\n", wp_kses_post($options['folders_files_ignore'])), $html);
-        $html = $this->f->str_replace('{suggest_regex_exclusions}', 
+        $html = $this->f->str_replace('{suggest_regex_exclusions}',
             str_replace('\\n', "\n", esc_textarea($options['suggest_regex_exclusions'])), $html); // Use esc_textarea for textareas
-        
-        $pluginAdminUsers = str_replace('\\n', "\n", wp_kses_post($options['plugin_admin_users']));
+
+        // Handle plugin_admin_users - convert array to string first before sanitization
+        $pluginAdminUsers = $options['plugin_admin_users'];
         if (is_array($pluginAdminUsers)) {
         	$pluginAdminUsers = implode("\n", $pluginAdminUsers);
         }
+        $pluginAdminUsers = str_replace('\\n', "\n", wp_kses_post($pluginAdminUsers));
         $html = $this->f->str_replace('{plugin_admin_users}', wp_kses_post($pluginAdminUsers), $html);
         
         $html = $this->f->str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($options['auto_score']), $html);
