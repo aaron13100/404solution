@@ -262,6 +262,11 @@ class ABJ_404_Solution_View {
     function echoChosenAdminTab($action, $sub, $message) {
         global $abj404view;
 
+        // If globals are not set, use sensible defaults
+        if ($abj404view === null) {
+            $abj404view = $this;
+        }
+
         // Deal With Page Tabs
         if ($sub == "") {
             $sub = $this->f->strtolower($this->dao->getPostOrGetSanitize('subpage'));
@@ -687,11 +692,14 @@ class ABJ_404_Solution_View {
         }
 
         $options = $this->logic->getOptions();
+        if (!is_array($options)) {
+            $options = [];
+        }
 
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
         $urlParts = parse_url(urldecode($_SERVER['REQUEST_URI']));
         $currentURL = $urlParts['path'];
-        if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
+        if (is_array($options) && array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
                 $options['menuLocation'] == 'settingsLevel') {
             if ($this->f->strpos($currentURL, 'options-general.php') != false) {
                 // the option changed and we're at the wrong URL now, so we redirect to the correct one.
