@@ -77,7 +77,7 @@ class ABJ_404_Solution_View {
 		}
 
 		// Build base links
-		$result['editlink'] = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $id;
+		$result['editlink'] = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $id . "&source_page=" . $sub;
 		$result['logslink'] = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $logsId;
 
 		if ($isCapturedPage) {
@@ -154,11 +154,24 @@ class ABJ_404_Solution_View {
 		if (array_key_exists('filter', $tableOptions) && $tableOptions['filter'] != 0) {
 			$result['trashlink'] .= "&filter=" . $tableOptions['filter'];
 			$result['deletelink'] .= "&filter=" . $tableOptions['filter'];
+			$result['editlink'] .= "&filter=" . $tableOptions['filter'];
 
 			if ($isCapturedPage) {
 				$result['ignorelink'] .= "&filter=" . $tableOptions['filter'];
 				$result['laterlink'] .= "&filter=" . $tableOptions['filter'];
 			}
+		}
+
+		// Add orderby/order parameters to edit link
+		if (array_key_exists('orderby', $tableOptions) && array_key_exists('order', $tableOptions)) {
+			if (!($tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC")) {
+				$result['editlink'] .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+			}
+		}
+
+		// Add paged parameter to edit link if present
+		if (array_key_exists('paged', $tableOptions) && $tableOptions['paged'] > 1) {
+			$result['editlink'] .= "&paged=" . $tableOptions['paged'];
 		}
 
 		// Apply nonces
@@ -256,9 +269,15 @@ class ABJ_404_Solution_View {
             $sub = 'abj404_redirects';
             $this->logger->debugMessage('No tab selected. Displaying the "redirects" tab.');
         }
-        
+
+        // Check if we're returning from a successful redirect update
+        $updated = $this->dao->getPostOrGetSanitize('updated');
+        if ($updated == '1') {
+            $message .= __('Redirect Information Updated Successfully!', '404-solution');
+        }
+
         $this->logger->debugMessage("Displaying sub page: " . esc_html($sub == '' ? '(none)' : $sub));
-        
+
         $abj404view->outputAdminHeaderTabs($sub, $message);
         
         if (($action == 'editRedirect') || ($sub == 'abj404_edit')) {
@@ -731,6 +750,35 @@ class ABJ_404_Solution_View {
 
         echo '<form method="POST" name="admin-edit-redirect" action="' . esc_attr($link) . '">';
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
+
+        // Capture source page and table options to return user to the same place after saving
+        $source_page = $this->dao->getPostOrGetSanitize('source_page');
+        if ($source_page === null) {
+            $source_page = $this->dao->getPostOrGetSanitize('subpage');
+        }
+        // Default to redirects page if no source specified
+        if ($source_page === null || $source_page == 'abj404_edit') {
+            $source_page = 'abj404_redirects';
+        }
+        echo "<input type=\"hidden\" name=\"source_page\" value=\"" . esc_attr($source_page) . "\">";
+
+        // Preserve table options so we can return to the exact same view
+        $filter = $this->dao->getPostOrGetSanitize('filter');
+        if ($filter !== null) {
+            echo "<input type=\"hidden\" name=\"source_filter\" value=\"" . esc_attr($filter) . "\">";
+        }
+        $orderby = $this->dao->getPostOrGetSanitize('orderby');
+        if ($orderby !== null) {
+            echo "<input type=\"hidden\" name=\"source_orderby\" value=\"" . esc_attr($orderby) . "\">";
+        }
+        $order = $this->dao->getPostOrGetSanitize('order');
+        if ($order !== null) {
+            echo "<input type=\"hidden\" name=\"source_order\" value=\"" . esc_attr($order) . "\">";
+        }
+        $paged = $this->dao->getPostOrGetSanitize('paged');
+        if ($paged !== null) {
+            echo "<input type=\"hidden\" name=\"source_paged\" value=\"" . esc_attr($paged) . "\">";
+        }
 
         $recnum = null;
         if (array_key_exists('id', $_GET) && isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {

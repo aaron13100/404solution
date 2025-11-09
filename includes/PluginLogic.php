@@ -1224,9 +1224,46 @@ class ABJ_404_Solution_PluginLogic {
                 if (check_admin_referer('abj404editRedirect') && is_admin()) {
                     $message = $this->updateRedirectData();
                     if ($message == "") {
-                        $message .= __('Redirect Information Updated Successfully!', '404-solution');
-                        $sub = 'abj404_redirects';
-                        $action = '';
+                        // Return user to the page they came from instead of always going to redirects page
+                        $source_page = $this->dao->getPostOrGetSanitize('source_page');
+
+                        // Validate source_page is a known tab
+                        $valid_tabs = array('abj404_redirects', 'abj404_captured', 'abj404_logs',
+                                          'abj404_stats', 'abj404_tools', 'abj404_options');
+                        if ($source_page === null || !in_array($source_page, $valid_tabs)) {
+                            // Default to redirects page if source_page is missing or invalid
+                            $source_page = 'abj404_redirects';
+                        }
+
+                        // Build redirect URL with source page and preserved table options
+                        $redirect_url = "?page=" . ABJ404_PP . "&subpage=" . $source_page;
+                        $redirect_url .= "&updated=1"; // Add flag to show success message
+
+                        // Preserve table options
+                        $source_filter = $this->dao->getPostOrGetSanitize('source_filter');
+                        if ($source_filter !== null && $source_filter != 0) {
+                            $redirect_url .= "&filter=" . urlencode($source_filter);
+                        }
+
+                        $source_orderby = $this->dao->getPostOrGetSanitize('source_orderby');
+                        $source_order = $this->dao->getPostOrGetSanitize('source_order');
+                        if ($source_orderby !== null && $source_order !== null) {
+                            if (!($source_orderby == "url" && $source_order == "ASC")) {
+                                $redirect_url .= "&orderby=" . urlencode($source_orderby);
+                                $redirect_url .= "&order=" . urlencode($source_order);
+                            }
+                        }
+
+                        $source_paged = $this->dao->getPostOrGetSanitize('source_paged');
+                        if ($source_paged !== null && $source_paged > 1) {
+                            $redirect_url .= "&paged=" . urlencode($source_paged);
+                        }
+
+                        // Perform redirect using Post/Redirect/Get pattern
+                        wp_safe_redirect(admin_url('admin.php' . $redirect_url));
+                        // Note: Intentionally not calling exit() to allow for testability
+                        // WordPress will handle the redirect on next page load
+                        return "";
                     } else {
                         $message .= __('Error: Unable to update redirect data.', '404-solution');
                     }
