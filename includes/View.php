@@ -2045,15 +2045,21 @@ class ABJ_404_Solution_View {
             $html .= "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" >";
         }
         $html .= "</th>";
-        
+
         foreach ($columns as $column) {
+            // Skip invalid column definitions (e.g., string instead of array)
+            if (!is_array($column)) {
+                continue;
+            }
+
             $style = "";
-            if ($column['width'] != "") {
+            if (isset($column['width']) && $column['width'] != "") {
                 $style = " style=\"width: " . esc_attr($column['width']) . ";\" ";
             }
             $nolink = 0;
             $sortorder = "";
-            if ($tableOptions['orderby'] == $column['orderby']) {
+            $orderby = isset($column['orderby']) ? $column['orderby'] : '';
+            if ($tableOptions['orderby'] == $orderby) {
                 $thClass = " sorted";
                 if ($tableOptions['order'] == "ASC") {
                     $thClass .= " asc";
@@ -2063,11 +2069,11 @@ class ABJ_404_Solution_View {
                     $sortorder = "ASC";
                 }
             } else {
-                if ($column['orderby'] != "") {
+                if ($orderby != "") {
                     $thClass = " sortable";
-                    if ($column['orderby'] == "timestamp" || 
-                            $column['orderby'] == "last_used" ||
-                            $column['orderby'] == "logshits") {
+                    if ($orderby == "timestamp" ||
+                            $orderby == "last_used" ||
+                            $orderby == "logshits") {
                         $thClass .= " asc";
                         $sortorder = "DESC";
                     } else {
@@ -2089,7 +2095,7 @@ class ABJ_404_Solution_View {
             if ($tableOptions['filter'] != 0) {
                 $url .= "&filter=" . $tableOptions['filter'];
             }
-            $url .= "&orderby=" . $column['orderby'] . "&order=" . $sortorder;
+            $url .= "&orderby=" . $orderby . "&order=" . $sortorder;
 
             $cssTooltip = '';
             $title_attr = '';
@@ -2101,13 +2107,14 @@ class ABJ_404_Solution_View {
             
             $html .= "<th " . $style . " class=\"manage-column column-title" . $thClass . "\"> \n";
             $html .= $cssTooltip;
-            
+
+            $title = isset($column['title']) ? $column['title'] : '';
             if ($nolink == 1) {
-                $html .= $column['title'];
+                $html .= $title;
             } else {
                 $html .= "<a href=\"" . esc_url($url) . "\">";
-                $html .= '<span class="table_header_' . $column['orderby'] . '" >' . 
-                        esc_html($column['title']) . $cssTooltip ."</span>";
+                $html .= '<span class="table_header_' . $orderby . '" >' .
+                        esc_html($title) . $cssTooltip ."</span>";
                 $html .= "<span class=\"sorting-indicator\"></span>";
                 $html .= "</a>";
             }
