@@ -214,41 +214,42 @@ class ABJ_404_Solution_View {
      */
     static function handleMainAdminPageActionAndDisplay() {
         global $abj404view;
-        
+        $instance = self::getInstance();
+
         try {
-            $action = $this->dao->getPostOrGetSanitize('action');
-            
-            if (!is_admin() || !$this->logic->userIsPluginAdmin()) { 
-                $this->logger->logUserCapabilities("handleMainAdminPageActionAndDisplay (" . 
+            $action = $instance->dao->getPostOrGetSanitize('action');
+
+            if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
+                $instance->logger->logUserCapabilities("handleMainAdminPageActionAndDisplay (" .
                         esc_html($action == '' ? '(none)' : $action) . ")");
-                return; 
+                return;
             }
 
             $sub = "";
 
             // --------------------------------------------------------------------
             // Handle Post Actions
-            $this->logger->debugMessage("Processing request for action: " . 
+            $instance->logger->debugMessage("Processing request for action: " .
                     esc_html($action == '' ? '(none)' : $action));
 
             // this should really not pass things by reference so it can be more object oriented (encapsulation etc).
             $message = "";
-            $message .= $this->logic->handlePluginAction($action, $sub);
-            $message .= $this->logic->hanldeTrashAction();
-            $message .= $this->logic->handleDeleteAction();
-            $message .= $this->logic->handleIgnoreAction();
-            $message .= $this->logic->handleLaterAction();
-            $message .= $this->logic->handleActionEdit($sub, $action);
-            $message .= $this->logic->handleActionImportRedirects();
-            $message .= $this->logic->handleActionChangeItemsPerRow();
-            $message .= $this->logic->handleActionImportFile();
-            
+            $message .= $instance->logic->handlePluginAction($action, $sub);
+            $message .= $instance->logic->hanldeTrashAction();
+            $message .= $instance->logic->handleDeleteAction();
+            $message .= $instance->logic->handleIgnoreAction();
+            $message .= $instance->logic->handleLaterAction();
+            $message .= $instance->logic->handleActionEdit($sub, $action);
+            $message .= $instance->logic->handleActionImportRedirects();
+            $message .= $instance->logic->handleActionChangeItemsPerRow();
+            $message .= $instance->logic->handleActionImportFile();
+
             // --------------------------------------------------------------------
             // Output the correct page.
             $abj404view->echoChosenAdminTab($action, $sub, $message);
-            
+
         } catch (Exception $e) {
-            $this->logger->errorMessage("Caught exception: " . stripcslashes(wp_kses_post(json_encode($e))));
+            $instance->logger->errorMessage("Caught exception: " . stripcslashes(wp_kses_post(json_encode($e))));
             throw $e;
         }
     }

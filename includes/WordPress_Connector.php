@@ -141,29 +141,30 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return array
      */
     static function addSettingsLinkToPluginPage($links) {
-        
+        $instance = self::getInstance();
+
         if (!is_array($links)) {
-        	$this->logger->infoMessage("The settings links variable was not an array. " . 
+        	$instance->logger->infoMessage("The settings links variable was not an array. " .
         		"Please verify the validity of other plugins. " . print_r($links, true));
             $links = array();
         }
-        
-        if (!is_admin() || !$this->logic->userIsPluginAdmin()) {
-            $this->logger->logUserCapabilities("addSettingsLinkToPluginPage");
+
+        if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
+            $instance->logger->logUserCapabilities("addSettingsLinkToPluginPage");
 
             return $links;
         }
 
-        $settings_link = '<a href="options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options">' . 
+        $settings_link = '<a href="options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options">' .
                 __('Settings') . '</a>';
         array_unshift($links, $settings_link);
-        
+
         $debugExplanation = __('Debug Log', '404-solution');
-        $debugLogLink = $this->logic->getDebugLogFileLink();
+        $debugLogLink = $instance->logic->getDebugLogFileLink();
         $debugExplanation = '<a href="options-general.php' . $debugLogLink . '" target="_blank" >'
         	. $debugExplanation . '</a>';
         array_push($links, $debugExplanation);
-        
+
         return $links;
     }
 
@@ -469,20 +470,21 @@ class ABJ_404_Solution_WordPress_Connector {
      * @global type $abj404view
      */
     static function echoDashboardNotification() {
-        
-        if (!is_admin() || !$this->logic->userIsPluginAdmin()) {
-            $this->logger->logUserCapabilities("echoDashboardNotification");
+        $instance = self::getInstance();
+
+        if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
+            $instance->logger->logUserCapabilities("echoDashboardNotification");
             return;
         }
 
         global $pagenow;
         global $abj404view;
 
-        if ($this->logic->userIsPluginAdmin()) {
+        if ($instance->logic->userIsPluginAdmin()) {
             if ( (array_key_exists('page', $_GET) && $_GET['page'] == ABJ404_PP) ||
                  ($pagenow == 'index.php' && !isset($_GET['page'])) ) {
-                $captured404Count = $this->dao->getCapturedCountForNotification();
-                if ($this->logic->shouldNotifyAboutCaptured404s($captured404Count)) {
+                $captured404Count = $instance->dao->getCapturedCountForNotification();
+                if ($instance->logic->shouldNotifyAboutCaptured404s($captured404Count)) {
                     $msg = $abj404view->getDashboardNotificationCaptured($captured404Count);
                     echo $msg;
                 }
@@ -498,36 +500,37 @@ class ABJ_404_Solution_WordPress_Connector {
      */
     static function addMainSettingsPageLink() {
         global $menu;
-        
-        if (!is_admin() || !$this->logic->userIsPluginAdmin()) {
-            $this->logger->logUserCapabilities("addMainSettingsPageLink");
+        $instance = self::getInstance();
+
+        if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
+            $instance->logger->logUserCapabilities("addMainSettingsPageLink");
             return;
         }
 
-        $options = $this->logic->getOptions();
+        $options = $instance->logic->getOptions();
         $pageName = "404 Solution";
 
         // Admin notice
         if (array_key_exists('admin_notification', $options) && isset($options['admin_notification']) && $options['admin_notification'] != '0') {
-            $captured = $this->dao->getCapturedCountForNotification();
+            $captured = $instance->dao->getCapturedCountForNotification();
             if (isset($options['admin_notification']) && $captured >= $options['admin_notification']) {
                 $pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . esc_html($captured) . "</span></span>";
-                $pos = $this->f->strpos($menu[80][0], 'update-plugins');
+                $pos = $instance->f->strpos($menu[80][0], 'update-plugins');
                 if ($pos === false) {
                     $menu[80][0] = $menu[80][0] . " <span class='update-plugins count-1'><span class='update-count'>1</span></span>";
                 }
             }
         }
 
-        if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
+        if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) &&
                 $options['menuLocation'] == 'settingsLevel') {
             // this adds the settings link at the same level as the "Tools" and "Settings" menu items.
 			$GLOBALS['abj404_settingsPageName'] = add_menu_page(PLUGIN_NAME, PLUGIN_NAME, 'manage_options', 'abj404_solution',
                     'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
-                
+
         } else {
             // this adds the settings link at Settings->404 Solution.
-        	$GLOBALS['abj404_settingsPageName'] = add_submenu_page('options-general.php', PLUGIN_NAME, $pageName, 'manage_options', ABJ404_PP, 
+        	$GLOBALS['abj404_settingsPageName'] = add_submenu_page('options-general.php', PLUGIN_NAME, $pageName, 'manage_options', ABJ404_PP,
                     'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
         }
     }
