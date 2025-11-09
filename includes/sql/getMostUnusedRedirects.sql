@@ -35,6 +35,7 @@ from (
          ON wpo.option_name = 'permalink_structure'
 
     where r.status in ({status_list})
+      and r.disabled = 0
     group by r.url
 ) inner_table
 
