@@ -110,172 +110,175 @@ body[data-theme="obsidian"] {
 }
 
 /* ===== Apply theme colors to WordPress admin elements ===== */
+/* Using high specificity selectors to avoid !important */
 
 /* Background colors */
-.wrap {
-  background-color: var(--abj404-bg) !important;
-  color: var(--abj404-text) !important;
+body[data-theme] .wrap,
+body[data-theme].wp-admin #wpwrap .wrap {
+  background-color: var(--abj404-bg);
+  color: var(--abj404-text);
 }
 
 /* Post boxes (the main content containers) */
-.postbox,
-.postbox-container .metabox-holder .postbox {
-  background-color: var(--abj404-surface) !important;
-  border-color: var(--abj404-border) !important;
-  color: var(--abj404-text) !important;
+body[data-theme] .postbox,
+body[data-theme] .postbox-container .metabox-holder .postbox {
+  background-color: var(--abj404-surface);
+  border-color: var(--abj404-border);
+  color: var(--abj404-text);
 }
 
-.postbox .inside {
-  background-color: var(--abj404-surface) !important;
-  color: var(--abj404-text) !important;
+body[data-theme] .postbox .inside {
+  background-color: var(--abj404-surface);
+  color: var(--abj404-text);
 }
 
 /* Postbox headers */
-.postbox h2,
-.postbox h3,
-.hndle {
-  background-color: var(--abj404-surface-muted) !important;
-  border-bottom-color: var(--abj404-border) !important;
-  color: var(--abj404-text) !important;
+body[data-theme] .postbox h2,
+body[data-theme] .postbox h3,
+body[data-theme] .postbox .hndle,
+body[data-theme] .hndle {
+  background-color: var(--abj404-surface-muted);
+  border-bottom-color: var(--abj404-border);
+  color: var(--abj404-text);
 }
 
 /* Tables */
-table.wp-list-table,
-.widefat {
-  background-color: var(--abj404-surface) !important;
-  border-color: var(--abj404-border) !important;
-  color: var(--abj404-text) !important;
+body[data-theme] table.wp-list-table,
+body[data-theme] .widefat {
+  background-color: var(--abj404-surface);
+  border-color: var(--abj404-border);
+  color: var(--abj404-text);
 }
 
-table.wp-list-table thead th,
-.widefat thead th,
-table.wp-list-table tfoot th,
-.widefat tfoot th {
-  background-color: var(--abj404-table-header) !important;
-  border-color: var(--abj404-border) !important;
-  color: var(--abj404-text) !important;
+body[data-theme] table.wp-list-table thead th,
+body[data-theme] .widefat thead th,
+body[data-theme] table.wp-list-table tfoot th,
+body[data-theme] .widefat tfoot th {
+  background-color: var(--abj404-table-header);
+  border-color: var(--abj404-border);
+  color: var(--abj404-text);
 }
 
-table.wp-list-table tbody tr,
-.widefat tbody tr {
-  background-color: var(--abj404-surface) !important;
-  border-color: var(--abj404-border) !important;
+body[data-theme] table.wp-list-table tbody tr,
+body[data-theme] .widefat tbody tr {
+  background-color: var(--abj404-surface);
+  border-color: var(--abj404-border);
 }
 
-table.wp-list-table tbody tr:hover,
-.widefat tbody tr:hover {
-  background-color: var(--abj404-row-hover) !important;
+body[data-theme] table.wp-list-table tbody tr:hover,
+body[data-theme] .widefat tbody tr:hover {
+  background-color: var(--abj404-row-hover);
 }
 
-table.wp-list-table tbody tr.selected,
-.widefat tbody tr.selected {
-  background-color: var(--abj404-row-selected) !important;
+body[data-theme] table.wp-list-table tbody tr.selected,
+body[data-theme] .widefat tbody tr.selected {
+  background-color: var(--abj404-row-selected);
 }
 
-table.wp-list-table tbody td,
-.widefat tbody td {
-  border-color: var(--abj404-border) !important;
-  color: var(--abj404-text) !important;
+body[data-theme] table.wp-list-table tbody td,
+body[data-theme] .widefat tbody td {
+  border-color: var(--abj404-border);
+  color: var(--abj404-text);
 }
 
 /* Form elements */
-input[type="text"],
-input[type="number"],
-input[type="email"],
-input[type="password"],
-input[type="search"],
-textarea,
-select {
-  background-color: var(--abj404-surface) !important;
-  border-color: var(--abj404-border) !important;
-  color: var(--abj404-text) !important;
+body[data-theme] input[type="text"],
+body[data-theme] input[type="number"],
+body[data-theme] input[type="email"],
+body[data-theme] input[type="password"],
+body[data-theme] input[type="search"],
+body[data-theme] textarea,
+body[data-theme] select {
+  background-color: var(--abj404-surface);
+  border-color: var(--abj404-border);
+  color: var(--abj404-text);
 }
 
-input[type="text"]:focus,
-input[type="number"]:focus,
-input[type="email"]:focus,
-input[type="password"]:focus,
-input[type="search"]:focus,
-textarea:focus,
-select:focus {
-  border-color: var(--abj404-focus) !important;
-  outline-color: var(--abj404-focus) !important;
+body[data-theme] input[type="text"]:focus,
+body[data-theme] input[type="number"]:focus,
+body[data-theme] input[type="email"]:focus,
+body[data-theme] input[type="password"]:focus,
+body[data-theme] input[type="search"]:focus,
+body[data-theme] textarea:focus,
+body[data-theme] select:focus {
+  border-color: var(--abj404-focus);
+  outline-color: var(--abj404-focus);
 }
 
 /* Buttons */
-.button,
-.button-secondary {
-  background-color: var(--abj404-surface) !important;
-  border-color: var(--abj404-border) !important;
-  color: var(--abj404-text) !important;
+body[data-theme] .button,
+body[data-theme] .button-secondary {
+  background-color: var(--abj404-surface);
+  border-color: var(--abj404-border);
+  color: var(--abj404-text);
 }
 
-.button:hover,
-.button-secondary:hover {
-  background-color: var(--abj404-surface-muted) !important;
-  border-color: var(--abj404-primary) !important;
+body[data-theme] .button:hover,
+body[data-theme] .button-secondary:hover {
+  background-color: var(--abj404-surface-muted);
+  border-color: var(--abj404-primary);
 }
 
-.button-primary {
-  background-color: var(--abj404-primary) !important;
-  border-color: var(--abj404-primary) !important;
-  color: #ffffff !important;
+body[data-theme] .button-primary {
+  background-color: var(--abj404-primary);
+  border-color: var(--abj404-primary);
+  color: #ffffff;
 }
 
-.button-primary:hover {
+body[data-theme] .button-primary:hover {
   opacity: 0.9;
 }
 
 /* Links */
-a {
-  color: var(--abj404-link) !important;
+body[data-theme] a {
+  color: var(--abj404-link);
 }
 
-a:hover {
-  color: var(--abj404-accent) !important;
+body[data-theme] a:hover {
+  color: var(--abj404-accent);
 }
 
 /* Notices and messages */
-.notice,
-.updated,
-.error {
-  background-color: var(--abj404-surface) !important;
-  border-left-color: var(--abj404-info) !important;
-  color: var(--abj404-text) !important;
+body[data-theme] .notice,
+body[data-theme] .updated,
+body[data-theme] .error {
+  background-color: var(--abj404-surface);
+  border-left-color: var(--abj404-info);
+  color: var(--abj404-text);
 }
 
-.notice.notice-success,
-.updated {
-  border-left-color: var(--abj404-success) !important;
+body[data-theme] .notice.notice-success,
+body[data-theme] .updated {
+  border-left-color: var(--abj404-success);
 }
 
-.notice.notice-warning {
-  border-left-color: var(--abj404-warning) !important;
+body[data-theme] .notice.notice-warning {
+  border-left-color: var(--abj404-warning);
 }
 
-.notice.notice-error,
-.error {
-  border-left-color: var(--abj404-danger) !important;
+body[data-theme] .notice.notice-error,
+body[data-theme] .error {
+  border-left-color: var(--abj404-danger);
 }
 
 /* Pagination */
-.tablenav,
-.tablenav-pages {
-  background-color: var(--abj404-surface) !important;
-  color: var(--abj404-text) !important;
+body[data-theme] .tablenav,
+body[data-theme] .tablenav-pages {
+  background-color: var(--abj404-surface);
+  color: var(--abj404-text);
 }
 
-.tablenav .tablenav-pages a {
-  background-color: var(--abj404-surface) !important;
-  border-color: var(--abj404-border) !important;
-  color: var(--abj404-link) !important;
+body[data-theme] .tablenav .tablenav-pages a {
+  background-color: var(--abj404-surface);
+  border-color: var(--abj404-border);
+  color: var(--abj404-link);
 }
 
 /* Muted text */
-.description,
-.form-text,
-p.description {
-  color: var(--abj404-text-muted) !important;
+body[data-theme] .description,
+body[data-theme] .form-text,
+body[data-theme] p.description {
+  color: var(--abj404-text-muted);
 }
 
 /* Special styling for dark themes */
