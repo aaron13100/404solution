@@ -62,8 +62,10 @@ class ABJ_404_Solution_WordPress_Connector {
             	'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
             // a priority of 11 makes sure our style sheet is more important than jquery's. otherwise the indent
             // doesn't work for the ajax dropdown list.
-            add_action('admin_enqueue_scripts', 
+            add_action('admin_enqueue_scripts',
             	'ABJ_404_Solution_WordPress_Connector::add_scripts', 11);
+            add_action('admin_head',
+            	'ABJ_404_Solution_WordPress_Connector::add_theme_script');
             // wp_ajax_nopriv_ is for normal users
             
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
@@ -127,11 +129,46 @@ class ABJ_404_Solution_WordPress_Connector {
                 array('jquery'));
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-general-js', plugin_dir_url(__FILE__) . 'js/general.js',
         	array('jquery'));
-        
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-theme-preview', plugin_dir_url(__FILE__) . 'js/themePreview.js',
+        	array('jquery'));
+
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
                 null);
+        ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-themes', ABJ404_URL . 'includes/html/adminThemes.css',
+                null);
     }
-    
+
+    /** Add inline script to apply the selected theme to the body element */
+    static function add_theme_script() {
+        // Only run on our plugin pages
+        if (!array_key_exists('abj404_settingsPageName', $GLOBALS) ||
+            !array_key_exists('page', $_GET) ||
+            $_GET['page'] != ABJ404_PP) {
+            return;
+        }
+
+        $logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $options = $logic->getOptions();
+        $theme = isset($options['admin_theme']) ? $options['admin_theme'] : 'calm';
+
+        // Sanitize theme value - only allow specific values
+        $allowed_themes = array('calm', 'mono', 'neon', 'obsidian');
+        if (!in_array($theme, $allowed_themes)) {
+            $theme = 'calm';
+        }
+
+        echo '<script type="text/javascript">';
+        echo '(function() {';
+        echo '  document.addEventListener("DOMContentLoaded", function() {';
+        echo '    document.body.setAttribute("data-theme", "' . esc_js($theme) . '");';
+        echo '  });';
+        echo '  if (document.body) {';
+        echo '    document.body.setAttribute("data-theme", "' . esc_js($theme) . '");';
+        echo '  }';
+        echo '})();';
+        echo '</script>';
+    }
+
     static function remove_admin_footer_text($content) {
         return '';
     }

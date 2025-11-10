@@ -1836,7 +1836,14 @@ class ABJ_404_Solution_View {
         } else {
             $selectedUnderSettings = " selected";
         }
-        
+
+        // Theme selection
+        $adminTheme = isset($options['admin_theme']) ? $options['admin_theme'] : 'calm';
+        $selectedThemeCalm = ($adminTheme == 'calm') ? " selected" : "";
+        $selectedThemeMono = ($adminTheme == 'mono') ? " selected" : "";
+        $selectedThemeNeon = ($adminTheme == 'neon') ? " selected" : "";
+        $selectedThemeObsidian = ($adminTheme == 'obsidian') ? " selected" : "";
+
         $logSizeBytes = $this->dao->getLogDiskUsage();
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
         $totalLogLines = $this->dao->getLogsCount(0);
@@ -1866,6 +1873,10 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{selectedRemoveMatches}', $selectedRemoveMatches, $html);
         $html = $this->f->str_replace('{selectedUnderSettings}', $selectedUnderSettings, $html);
         $html = $this->f->str_replace('{selecteSsettingsLevel}', $selecteSsettingsLevel, $html);
+        $html = $this->f->str_replace('{selectedThemeCalm}', $selectedThemeCalm, $html);
+        $html = $this->f->str_replace('{selectedThemeMono}', $selectedThemeMono, $html);
+        $html = $this->f->str_replace('{selectedThemeNeon}', $selectedThemeNeon, $html);
+        $html = $this->f->str_replace('{selectedThemeObsidian}', $selectedThemeObsidian, $html);
         $html = $this->f->str_replace('{admin_notification_email}', $options['admin_notification_email'], $html);
         $html = $this->f->str_replace('{default_wordpress_admin_email}', get_option('admin_email'), $html);
         $html = $this->f->str_replace('{PHP_VERSION}', PHP_VERSION, $html);

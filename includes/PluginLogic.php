@@ -1823,6 +1823,17 @@ class ABJ_404_Solution_PluginLogic {
         	$options['menuLocation'] = wp_kses_post($postData['menuLocation']);
         }
 
+        if (array_key_exists('admin_theme', $postData) && isset($postData['admin_theme'])) {
+            // Only allow specific theme values
+            $allowed_themes = array('calm', 'mono', 'neon', 'obsidian');
+            $theme = sanitize_text_field($postData['admin_theme']);
+            if (in_array($theme, $allowed_themes)) {
+                $options['admin_theme'] = $theme;
+            } else {
+                $message .= __('Error: Invalid theme selected', '404-solution') . ".<BR/>";
+            }
+        }
+
         if (array_key_exists('days_wait_before_major_update', $postData) && isset($postData['days_wait_before_major_update'])) {
             if (is_numeric($postData['days_wait_before_major_update'])) {
                 $options['days_wait_before_major_update'] = absint($postData['days_wait_before_major_update']);

@@ -1,0 +1,292 @@
+/**
+ * 404 Solution Admin Theme Styles
+ *
+ * This file defines the theme system for the admin pages.
+ * Themes are applied via the data-theme attribute on the body element.
+ *
+ * Available themes:
+ * - calm (default): Calm Ops (Light) - Balanced blues and greens
+ * - mono: Monochrome Minimal (Light) - Grayscale with blue accents
+ * - neon: Neon Slate (Dark) - Dark with violet and cyan accents
+ * - obsidian: Obsidian Blue (Dark) - Deep blue dark theme
+ */
+
+/* ===== Default Theme: Calm Ops (Light) ===== */
+:root,
+body:not([data-theme]),
+body[data-theme="calm"] {
+  --abj404-bg: #F7FAFD;
+  --abj404-bg-muted: #F1F6FE;
+  --abj404-surface: #ffffff;
+  --abj404-surface-muted: #E9F0FB;
+  --abj404-text: #17223B;
+  --abj404-text-muted: #5A6B86;
+  --abj404-border: #E1E8F5;
+  --abj404-primary: #1E6BD6;
+  --abj404-accent: #00A27A;
+  --abj404-info: #2B8AE2;
+  --abj404-success: #20B67A;
+  --abj404-warning: #F6A700;
+  --abj404-danger: #D53F3F;
+  --abj404-focus: #5AA2FF;
+  --abj404-table-header: #E9F0FB;
+  --abj404-row-hover: #F1F6FE;
+  --abj404-row-selected: #D7E8FF;
+  --abj404-badge-bg: #EEF2F8;
+  --abj404-badge-text: #3E546E;
+  --abj404-link: var(--abj404-accent);
+}
+
+/* === Monochrome Minimal (Light) === */
+body[data-theme="mono"] {
+  --abj404-bg: #F8FAFC;
+  --abj404-bg-muted: #F5F7FA;
+  --abj404-surface: #ffffff;
+  --abj404-surface-muted: #F1F5F9;
+  --abj404-text: #111827;
+  --abj404-text-muted: #6B7280;
+  --abj404-border: #E5E7EB;
+  --abj404-primary: #374151;
+  --abj404-accent: #2563EB;
+  --abj404-info: #3B82F6;
+  --abj404-success: #10B981;
+  --abj404-warning: #F59E0B;
+  --abj404-danger: #EF4444;
+  --abj404-focus: #93C5FD;
+  --abj404-table-header: #F1F5F9;
+  --abj404-row-hover: #F5F7FA;
+  --abj404-row-selected: #DBEAFE;
+  --abj404-badge-bg: #EFF1F5;
+  --abj404-badge-text: #374151;
+  --abj404-link: var(--abj404-accent);
+}
+
+/* === Neon Slate (Dark) === */
+body[data-theme="neon"] {
+  --abj404-bg: #0C0F13;
+  --abj404-bg-muted: #11151A;
+  --abj404-surface: #151A21;
+  --abj404-surface-muted: #1B222B;
+  --abj404-text: #E5EAF2;
+  --abj404-text-muted: #A6B0C3;
+  --abj404-border: #273141;
+  --abj404-primary: #7C3AED;
+  --abj404-accent: #22D3EE;
+  --abj404-info: #60A5FA;
+  --abj404-success: #34D399;
+  --abj404-warning: #F59E0B;
+  --abj404-danger: #F87171;
+  --abj404-focus: #38BDF8;
+  --abj404-table-header: #1F2732;
+  --abj404-row-hover: #192028;
+  --abj404-row-selected: #0E2936;
+  --abj404-badge-bg: #202734;
+  --abj404-badge-text: #CFD8E6;
+  --abj404-link: var(--abj404-accent);
+}
+
+/* === Obsidian Blue (Dark) === */
+body[data-theme="obsidian"] {
+  --abj404-bg: #0A0F1A;
+  --abj404-bg-muted: #0E1522;
+  --abj404-surface: #121826;
+  --abj404-surface-muted: #172032;
+  --abj404-text: #E6ECF7;
+  --abj404-text-muted: #A9B7CC;
+  --abj404-border: #223149;
+  --abj404-primary: #1D4ED8;
+  --abj404-accent: #A78BFA;
+  --abj404-info: #60A5FA;
+  --abj404-success: #22C55E;
+  --abj404-warning: #F59E0B;
+  --abj404-danger: #EF4444;
+  --abj404-focus: #93C5FD;
+  --abj404-table-header: #1B253A;
+  --abj404-row-hover: #141C2C;
+  --abj404-row-selected: #1A2A46;
+  --abj404-badge-bg: #1A2438;
+  --abj404-badge-text: #DCE6F7;
+  --abj404-link: #93C5FD;
+}
+
+/* ===== Apply theme colors to WordPress admin elements ===== */
+
+/* Background colors */
+.wrap {
+  background-color: var(--abj404-bg) !important;
+  color: var(--abj404-text) !important;
+}
+
+/* Post boxes (the main content containers) */
+.postbox,
+.postbox-container .metabox-holder .postbox {
+  background-color: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+  color: var(--abj404-text) !important;
+}
+
+.postbox .inside {
+  background-color: var(--abj404-surface) !important;
+  color: var(--abj404-text) !important;
+}
+
+/* Postbox headers */
+.postbox h2,
+.postbox h3,
+.hndle {
+  background-color: var(--abj404-surface-muted) !important;
+  border-bottom-color: var(--abj404-border) !important;
+  color: var(--abj404-text) !important;
+}
+
+/* Tables */
+table.wp-list-table,
+.widefat {
+  background-color: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+  color: var(--abj404-text) !important;
+}
+
+table.wp-list-table thead th,
+.widefat thead th,
+table.wp-list-table tfoot th,
+.widefat tfoot th {
+  background-color: var(--abj404-table-header) !important;
+  border-color: var(--abj404-border) !important;
+  color: var(--abj404-text) !important;
+}
+
+table.wp-list-table tbody tr,
+.widefat tbody tr {
+  background-color: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+}
+
+table.wp-list-table tbody tr:hover,
+.widefat tbody tr:hover {
+  background-color: var(--abj404-row-hover) !important;
+}
+
+table.wp-list-table tbody tr.selected,
+.widefat tbody tr.selected {
+  background-color: var(--abj404-row-selected) !important;
+}
+
+table.wp-list-table tbody td,
+.widefat tbody td {
+  border-color: var(--abj404-border) !important;
+  color: var(--abj404-text) !important;
+}
+
+/* Form elements */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+textarea,
+select {
+  background-color: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+  color: var(--abj404-text) !important;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--abj404-focus) !important;
+  outline-color: var(--abj404-focus) !important;
+}
+
+/* Buttons */
+.button,
+.button-secondary {
+  background-color: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+  color: var(--abj404-text) !important;
+}
+
+.button:hover,
+.button-secondary:hover {
+  background-color: var(--abj404-surface-muted) !important;
+  border-color: var(--abj404-primary) !important;
+}
+
+.button-primary {
+  background-color: var(--abj404-primary) !important;
+  border-color: var(--abj404-primary) !important;
+  color: #ffffff !important;
+}
+
+.button-primary:hover {
+  opacity: 0.9;
+}
+
+/* Links */
+a {
+  color: var(--abj404-link) !important;
+}
+
+a:hover {
+  color: var(--abj404-accent) !important;
+}
+
+/* Notices and messages */
+.notice,
+.updated,
+.error {
+  background-color: var(--abj404-surface) !important;
+  border-left-color: var(--abj404-info) !important;
+  color: var(--abj404-text) !important;
+}
+
+.notice.notice-success,
+.updated {
+  border-left-color: var(--abj404-success) !important;
+}
+
+.notice.notice-warning {
+  border-left-color: var(--abj404-warning) !important;
+}
+
+.notice.notice-error,
+.error {
+  border-left-color: var(--abj404-danger) !important;
+}
+
+/* Pagination */
+.tablenav,
+.tablenav-pages {
+  background-color: var(--abj404-surface) !important;
+  color: var(--abj404-text) !important;
+}
+
+.tablenav .tablenav-pages a {
+  background-color: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+  color: var(--abj404-link) !important;
+}
+
+/* Muted text */
+.description,
+.form-text,
+p.description {
+  color: var(--abj404-text-muted) !important;
+}
+
+/* Special styling for dark themes */
+body[data-theme="neon"] .postbox,
+body[data-theme="obsidian"] .postbox {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+body[data-theme="neon"] input[type="checkbox"],
+body[data-theme="neon"] input[type="radio"],
+body[data-theme="obsidian"] input[type="checkbox"],
+body[data-theme="obsidian"] input[type="radio"] {
+  filter: invert(1) hue-rotate(180deg);
+}
