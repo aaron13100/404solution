@@ -468,9 +468,10 @@ class ABJ_404_Solution_PluginLogic {
             return $options;
         }
 
+        $returnValue = $options;
         try {
             $returnValue = $this->updateToNewVersionAction($options);
-            
+
         } catch (Exception $e) {
             $this->logger->errorMessage("Error updating to new version. ", $e);
         }

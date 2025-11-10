@@ -59,7 +59,7 @@ class ABJ_404_Solution_SpellChecker {
 		// Set the custom 404 page id if there is one
 		$options = $this->logic->getOptions();
 		$custom404PageID =
-			(array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
+			(is_array($options) && array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
 			$options['dest404page'] : null);
 		if ($this->logic->thereIsAUserSpecified404Page($custom404PageID)) {
 			$this->custom404PageID = $custom404PageID;
