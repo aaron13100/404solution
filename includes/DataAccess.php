@@ -168,15 +168,21 @@ class ABJ_404_Solution_DataAccess {
         return $query;
     }
     
-    /** Returns the create table statement. 
+    /** Returns the create table statement.
      * @param string $tableName */
     function getCreateTableDDL($tableName) {
     	$query = "show create table " . $tableName;
     	$result = $this->queryAndGetResults($query);
     	$rows = $result['rows'];
+
+    	// Handle case where query returns no results (e.g., in test environment)
+    	if (empty($rows) || !isset($rows[0]) || !is_array($rows[0])) {
+    	    return '';
+    	}
+
     	$row1 = array_values($rows[0]);
     	$existingTableSQL = $row1[1];
-    	
+
     	return $existingTableSQL;
     }
     
