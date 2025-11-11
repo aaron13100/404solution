@@ -1,0 +1,486 @@
+# Translation file for 404 Solution WordPress Plugin
+# Copyright (C) 2025 404 Solution
+# This file is distributed under the same license as the 404 Solution plugin.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 404 Solution\n"
+"Report-Msgid-Bugs-To: https://github.com/aaron13100/404solution/issues\n"
+"POT-Creation-Date: 2025-11-11 07:11+0000\n"
+"PO-Revision-Date: 2025-11-11 07:11+0000\n"
+"Last-Translator: Auto-Generated\n"
+"Language-Team: English\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: 404 Solution Translation Generator\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-SearchPath-0: .\n"
+
+msgid "%1$s - %2$s of %3$s"
+msgstr "%1$s - %2$s of %3$s"
+
+msgid "404 Page Suggestions"
+msgstr "404 Page Suggestions"
+
+msgid "404 URL marked as %s successfully!"
+msgstr "404 URL marked as %s successfully!"
+
+msgid "Action Taken"
+msgstr "Action Taken"
+
+msgid "Add Redirect"
+msgstr "Add Redirect"
+
+msgid "Add a Manual Redirect"
+msgstr "Add a Manual Redirect"
+
+msgid "Add a Redirect"
+msgstr "Add a Redirect"
+
+msgid "Admin notification level"
+msgstr "Admin notification level"
+
+msgid "Admin theme"
+msgstr "Admin theme"
+
+msgid "Advanced Settings (Etc)"
+msgstr "Advanced Settings (Etc)"
+
+msgid "All trashed URLs have been deleted!"
+msgstr "All trashed URLs have been deleted!"
+
+msgid "Allow category suggestions"
+msgstr "Allow category suggestions"
+
+msgid "Allow tag suggestions"
+msgstr "Allow tag suggestions"
+
+msgid "An unknown error has occurred."
+msgstr "An unknown error has occurred."
+
+msgid "Apply"
+msgstr "Apply"
+
+msgid "Auto redirect deletion"
+msgstr "Auto redirect deletion"
+
+msgid "Automatic 301 Redirects"
+msgstr "Automatic 301 Redirects"
+
+msgid "Automatic 302 Redirects"
+msgstr "Automatic 302 Redirects"
+
+msgid "Automatic Redirects"
+msgstr "Automatic Redirects"
+
+msgid "Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time."
+msgstr "Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time."
+
+msgid "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
+msgstr "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
+
+msgid "Captured 404 URLs"
+msgstr "Captured 404 URLs"
+
+msgid "Captured URLs"
+msgstr "Captured URLs"
+
+msgid "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
+msgstr "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
+
+msgid "Collect incoming 404 URLs"
+msgstr "Collect incoming 404 URLs"
+
+msgid "Collected 404 URL deletion"
+msgstr "Collected 404 URL deletion"
+
+msgid "Create and Download"
+msgstr "Create and Download"
+
+msgid "Create automatic redirects"
+msgstr "Create automatic redirects"
+
+msgid "Create automatic redirects for categories"
+msgstr "Create automatic redirects for categories"
+
+msgid "Create automatic redirects for tags"
+msgstr "Create automatic redirects for tags"
+
+msgid "Credits"
+msgstr "Credits"
+
+msgid "Current approximate log disk usage"
+msgstr "Current approximate log disk usage"
+
+msgid "Custom Taxonomies"
+msgstr "Custom Taxonomies"
+
+msgid "DB version"
+msgstr "DB version"
+
+msgid "Debug Log"
+msgstr "Debug Log"
+
+msgid "Debug file not found. (%s)"
+msgstr "Debug file not found. (%s)"
+
+msgid "Debug file size: %1$s KB (%2$s MB)."
+msgstr "Debug file size: %1$s KB (%2$s MB)."
+
+msgid "Debug file(s) deleted. (%s)"
+msgstr "Debug file(s) deleted. (%s)"
+
+msgid "Debug logging"
+msgstr "Debug logging"
+
+msgid "Default redirect type"
+msgstr "Default redirect type"
+
+msgid "Delete the Debug File"
+msgstr "Delete the Debug File"
+
+msgid "Earliest log date"
+msgstr "Earliest log date"
+
+msgid "Edit Redirect Details"
+msgstr "Edit Redirect Details"
+
+msgid "Empty Trash"
+msgstr "Empty Trash"
+
+msgid "Error: An invalid purge type was selected. Exiting."
+msgstr "Error: An invalid purge type was selected. Exiting."
+
+msgid "Error: Auto match score value must be a number between 0 and 99"
+msgstr "Error: Auto match score value must be a number between 0 and 99"
+
+msgid "Error: Bad %s operation specified."
+msgstr "Error: Bad %s operation specified."
+
+msgid "Error: Bad data passed for update redirect request."
+msgstr "Error: Bad data passed for update redirect request."
+
+msgid "Error: Bad trash operation specified."
+msgstr "Error: Bad trash operation specified."
+
+msgid "Error: Data not formatted properly."
+msgstr "Error: Data not formatted properly."
+
+msgid "Error: External URL doesn't contain ://"
+msgstr "Error: External URL doesn't contain ://"
+
+msgid "Error: External URL is too short."
+msgstr "Error: External URL is too short."
+
+msgid "Error: Invalid theme selected"
+msgstr "Error: Invalid theme selected"
+
+msgid "Error: Invalid value specified for default redirect type"
+msgstr "Error: Invalid value specified for default redirect type"
+
+msgid "Error: Maximum number of suggest value must be a number greater than or equal to 1"
+msgstr "Error: Maximum number of suggest value must be a number greater than or equal to 1"
+
+msgid "Error: No ID(s) found for edit request."
+msgstr "Error: No ID(s) found for edit request."
+
+msgid "Error: No ID(s) specified for bulk action. (%s)"
+msgstr "Error: No ID(s) specified for bulk action. (%s)"
+
+msgid "Error: No records were imported. SQL result: %s"
+msgstr "Error: No records were imported. SQL result: %s"
+
+msgid "Error: No redirect types were selected. No purges will be done."
+msgstr "Error: No redirect types were selected. No purges will be done."
+
+msgid "Error: No valid redirect types were selected. Exiting."
+msgstr "Error: No valid redirect types were selected. Exiting."
+
+msgid "Error: Suggestion minimum score value must be a number between 1 and 99"
+msgstr "Error: Suggestion minimum score value must be a number between 1 and 99"
+
+msgid "Error: Template redirect priority value must be a number between 0 and 999"
+msgstr "Error: Template redirect priority value must be a number between 0 and 999"
+
+msgid "Error: URL is a required field."
+msgstr "Error: URL is a required field."
+
+msgid "Error: URL must start with /"
+msgstr "Error: URL must start with /"
+
+msgid "Error: Unable to move redirect from trash."
+msgstr "Error: Unable to move redirect from trash."
+
+msgid "Error: Unable to move redirect to trash."
+msgstr "Error: Unable to move redirect to trash."
+
+msgid "Error: Unable to update redirect data."
+msgstr "Error: Unable to update redirect data."
+
+msgid "Error: Unknown Database Error!"
+msgstr "Error: Unknown Database Error!"
+
+msgid "Error: Unrecognized bulk action. (%s)"
+msgstr "Error: Unrecognized bulk action. (%s)"
+
+msgid "Error: You didn't check the I understand checkbox. No importing for you!"
+msgstr "Error: You didn't check the I understand checkbox. No importing for you!"
+
+msgid "Error: You selected external URL but did not enter a URL."
+msgstr "Error: You selected external URL but did not enter a URL."
+
+msgid "Error: unable to add new redirect."
+msgstr "Error: unable to add new redirect."
+
+msgid "Error: unable to mark URL as %s"
+msgstr "Error: unable to mark URL as %s"
+
+msgid "Error: unable to remove URL from %s list"
+msgstr "Error: unable to remove URL from %s list"
+
+msgid "Example"
+msgstr "Example"
+
+msgid "General Settings"
+msgstr "General Settings"
+
+msgid "Go to first page"
+msgstr "Go to first page"
+
+msgid "Go to last page"
+msgstr "Go to last page"
+
+msgid "Go to next page"
+msgstr "Go to next page"
+
+msgid "Go to previous page"
+msgstr "Go to previous page"
+
+msgid "Help the developer by sending error logs"
+msgstr "Help the developer by sending error logs"
+
+msgid "Hits Redirected"
+msgstr "Hits Redirected"
+
+msgid "Ignore 404 Error"
+msgstr "Ignore 404 Error"
+
+msgid "Ignored 404 URLs"
+msgstr "Ignored 404 URLs"
+
+msgid "Ignored URLs"
+msgstr "Ignored URLs"
+
+msgid "Import 404 Redirected Data"
+msgstr "Import 404 Redirected Data"
+
+msgid "Issue deleting debug file. (%s)"
+msgstr "Issue deleting debug file. (%s)"
+
+msgid "Log raw IPs"
+msgstr "Log raw IPs"
+
+msgid "Logs"
+msgstr "Logs"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "MBSTRING"
+msgstr "MBSTRING"
+
+msgid "Maintenance"
+msgstr "Maintenance"
+
+msgid "Major version auto update delay"
+msgstr "Major version auto update delay"
+
+msgid "Manual 301 Redirects"
+msgstr "Manual 301 Redirects"
+
+msgid "Manual 302 Redirects"
+msgstr "Manual 302 Redirects"
+
+msgid "Manual Redirects"
+msgstr "Manual Redirects"
+
+msgid "Manual redirect deletion"
+msgstr "Manual redirect deletion"
+
+msgid "Maximum number of suggestions to display"
+msgstr "Maximum number of suggestions to display"
+
+msgid "Minimum match score"
+msgstr "Minimum match score"
+
+msgid "Minimum score of suggestions to display"
+msgstr "Minimum score of suggestions to display"
+
+msgid "New Redirect Added Successfully!"
+msgstr "New Redirect Added Successfully!"
+
+msgid "Options"
+msgstr "Options"
+
+msgid "Options Saved Successfully!"
+msgstr "Options Saved Successfully!"
+
+msgid "Page Not Found Displayed"
+msgstr "Page Not Found Displayed"
+
+msgid "Page Redirects"
+msgstr "Page Redirects"
+
+msgid "Page suggestions title"
+msgstr "Page suggestions title"
+
+msgid "Permanent 301"
+msgstr "Permanent 301"
+
+msgid "Plugin Admin Users"
+msgstr "Plugin Admin Users"
+
+msgid "Plugin version"
+msgstr "Plugin version"
+
+msgid "Purge Options"
+msgstr "Purge Options"
+
+msgid "Purge Type"
+msgstr "Purge Type"
+
+msgid "Recognized Post Types"
+msgstr "Recognized Post Types"
+
+msgid "Records imported: %s"
+msgstr "Records imported: %s"
+
+msgid "Redirect & Capture Logs"
+msgstr "Redirect & Capture Logs"
+
+msgid "Redirect Details"
+msgstr "Redirect Details"
+
+msgid "Redirect Information Updated Successfully!"
+msgstr "Redirect Information Updated Successfully!"
+
+msgid "Redirect Removed Successfully!"
+msgstr "Redirect Removed Successfully!"
+
+msgid "Redirect Type"
+msgstr "Redirect Type"
+
+msgid "Redirect Types"
+msgstr "Redirect Types"
+
+msgid "Redirect all requests"
+msgstr "Redirect all requests"
+
+msgid "Redirect moved to trash successfully!"
+msgstr "Redirect moved to trash successfully!"
+
+msgid "Redirect restored from trash successfully!"
+msgstr "Redirect restored from trash successfully!"
+
+msgid "Redirects"
+msgstr "Redirects"
+
+msgid "Remove redirect upon matching permalink"
+msgstr "Remove redirect upon matching permalink"
+
+msgid "Removed 404 URL from %s list successfully!"
+msgstr "Removed 404 URL from %s list successfully!"
+
+msgid "Run Maintenance"
+msgstr "Run Maintenance"
+
+msgid "Sanity Check"
+msgstr "Sanity Check"
+
+msgid "Some options were not saved successfully."
+msgstr "Some options were not saved successfully."
+
+msgid "Stats"
+msgstr "Stats"
+
+msgid "Template Redirect Priority"
+msgstr "Template Redirect Priority"
+
+msgid "Temporary 302"
+msgstr "Temporary 302"
+
+msgid "The 404 Solution menu should appear"
+msgstr "The 404 Solution menu should appear"
+
+msgid "This shortcode can be used on the 404 page and will display a list of suggested pages."
+msgstr "This shortcode can be used on the 404 page and will display a list of suggested pages."
+
+msgid "Tools"
+msgstr "Tools"
+
+msgid "Total Redirects"
+msgstr "Total Redirects"
+
+msgid "Total URLs"
+msgstr "Total URLs"
+
+msgid "Trash Redirected URL"
+msgstr "Trash Redirected URL"
+
+msgid "Trashed Redirects"
+msgstr "Trashed Redirects"
+
+msgid "Trashed URLs"
+msgstr "Trashed URLs"
+
+msgid "Treat this URL as a regular expression"
+msgstr "Treat this URL as a regular expression"
+
+msgid "URL"
+msgstr "URL"
+
+msgid "Under the Settings menu"
+msgstr "Under the Settings menu"
+
+msgid "Unique Page Not Found Referrers"
+msgstr "Unique Page Not Found Referrers"
+
+msgid "Unique Page Not Found URLs"
+msgstr "Unique Page Not Found URLs"
+
+msgid "Unique Page Not Found Visitors"
+msgstr "Unique Page Not Found Visitors"
+
+msgid "Unique Redirected Referrers"
+msgstr "Unique Redirected Referrers"
+
+msgid "Unique Redirected Visitors"
+msgstr "Unique Redirected Visitors"
+
+msgid "Unique URLs Redirected"
+msgstr "Unique URLs Redirected"
+
+msgid "Update the URL bar"
+msgstr "Update the URL bar"
+
+msgid "When an error is detected by the plugin, email the entire log file to the developer."
+msgstr "When an error is detected by the plugin, email the entire log file to the developer."
+
+#. Contains HTML tags
+#: /home/user/404solution/includes/View.php
+msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
+msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
+msgstr[0] "There is <a>%s captured 404 URL</a> that needs to be processed."
+msgstr[1] "There are <a>%s captured 404 URLs</a> to be processed."
+
+#. Database operation message
+#: /home/user/404solution/includes/DataAccess.php
+msgid "%s redirect entry was moved to the trash."
+msgid_plural "%s redirect entries were moved to the trash."
+msgstr[0] "%s redirect entry was moved to the trash."
+msgstr[1] "%s redirect entries were moved to the trash."
+
