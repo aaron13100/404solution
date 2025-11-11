@@ -23,7 +23,10 @@ function striphtml(html) {
 
 function submitOptions(e) {
     e.preventDefault();
-    
+
+    // Show loading overlay
+    showSaveOverlay();
+
 	// gather form data.
 	var form = document.getElementById("admin-options-page");
 	var formElements = form.elements;
@@ -34,7 +37,7 @@ function submitOptions(e) {
 		if (field.type == 'checkbox') {
 			currentValue = field.checked ? 1 : 0;
 		}
-		
+
 		if (!(field.name in formData)) {
 			formData[field.name] = currentValue;
 		} else {
@@ -60,7 +63,12 @@ function submitOptions(e) {
 
     // save / send the data via an ajax request.
     var saveOptionsURL = form.getAttribute('data-url')
-    
+
+    // Set timeout to handle hung requests
+    var timeoutId = setTimeout(function() {
+        showSaveError('Request timed out. Please check your connection and try again.');
+    }, 30000); // 30 second timeout
+
     jQuery.ajax({
         url: saveOptionsURL,
         type: 'POST',
@@ -69,23 +77,69 @@ function submitOptions(e) {
         },
         dataType :'json',
         success: function (data) {
+            clearTimeout(timeoutId);
             var message = striphtml(JSON.stringify(data, null, 2));
             console.log("saved options: " + message);
-            
-            // redirect and post a message
+
+            // redirect and post a message (overlay will disappear on page reload)
             var form = jQuery('<form action="' + data['newURL'] + '" method="post">' +
             		  '<input type="text" name="display-this-message" value="' + data['message'] + '" />' +
             		  '</form>');
             jQuery('body').append(form);
-            form.submit();            
+            form.submit();
         },
         error: function (request, error) {
-            var errMsg = "Error saving options. Request: " + 
-            	JSON.stringify(request, null, 2) + "  /// Error: " + JSON.stringify(error, null, 2);
-        	alert(errMsg);
+            clearTimeout(timeoutId);
+            var errMsg = "Error saving settings. Please try again.";
+
+            // Try to get a more specific error message
+            if (request.responseJSON && request.responseJSON.message) {
+                errMsg = request.responseJSON.message;
+            } else if (request.statusText && request.statusText !== 'error') {
+                errMsg = "Error: " + request.statusText;
+            }
+
+            showSaveError(errMsg);
+
+            // Log full error to console for debugging
+            console.error("Save error details:", {
+                request: request,
+                error: error
+            });
         }
-    });    
+    });
 
     // don't submit the form.
     return false;
+}
+
+function showSaveOverlay() {
+    var overlay = document.getElementById('abj404-save-overlay');
+    if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.classList.remove('error');
+
+        // Update message to default
+        var message = overlay.querySelector('.abj404-save-message');
+        if (message) {
+            message.textContent = 'Saving settings...';
+        }
+    }
+}
+
+function showSaveError(errorMessage) {
+    var overlay = document.getElementById('abj404-save-overlay');
+    if (overlay) {
+        overlay.classList.add('error');
+
+        var message = overlay.querySelector('.abj404-save-message');
+        if (message) {
+            message.textContent = errorMessage;
+        }
+
+        // Hide overlay after 5 seconds
+        setTimeout(function() {
+            overlay.style.display = 'none';
+        }, 5000);
+    }
 }

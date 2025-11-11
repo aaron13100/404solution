@@ -928,6 +928,9 @@ msgstr "健全性检查"
 msgid "Save Settings"
 msgstr "保存设置"
 
+msgid "Saving settings..."
+msgstr "正在保存设置..."
+
 msgid "Section filters"
 msgstr "部分过滤器"
 

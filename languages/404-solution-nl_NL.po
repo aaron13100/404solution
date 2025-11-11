@@ -928,6 +928,9 @@ msgstr "Gezondheidscontrole"
 msgid "Save Settings"
 msgstr "Instellingen opslaan"
 
+msgid "Saving settings..."
+msgstr "Instellingen opslaan..."
+
 msgid "Section filters"
 msgstr "Sectiefilters"
 

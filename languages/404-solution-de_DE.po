@@ -928,6 +928,9 @@ msgstr "Plausibilitätsprüfung"
 msgid "Save Settings"
 msgstr "Einstellungen speichern"
 
+msgid "Saving settings..."
+msgstr "Einstellungen werden gespeichert..."
+
 msgid "Section filters"
 msgstr "Abschnittsfilter"
 

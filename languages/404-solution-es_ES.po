@@ -928,6 +928,9 @@ msgstr "Verificación de cordura"
 msgid "Save Settings"
 msgstr "Guardar configuración"
 
+msgid "Saving settings..."
+msgstr "Guardando configuración..."
+
 msgid "Section filters"
 msgstr "Filtros de sección"
 

@@ -928,6 +928,9 @@ msgstr "Проверка работоспособности"
 msgid "Save Settings"
 msgstr "Сохранить настройки"
 
+msgid "Saving settings..."
+msgstr "Сохранение настроек..."
+
 msgid "Section filters"
 msgstr "Фильтры разделов"
 

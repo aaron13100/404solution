@@ -790,6 +790,14 @@ class ABJ_404_Solution_View {
         	"admin-ajax.php?action=updateOptions", $formBeginning);
         echo $formBeginning;
 
+        // Add loading overlay for save operations
+        echo '<div id="abj404-save-overlay" class="abj404-save-overlay" style="display: none;">';
+        echo '<div class="abj404-save-overlay-content">';
+        echo '<div class="abj404-spinner"></div>';
+        echo '<p class="abj404-save-message">' . esc_html__('Saving settings...', '404-solution') . '</p>';
+        echo '</div>';
+        echo '</div>';
+
         // Check if suggestions section is available
         $showSuggestions = ($abj404viewSuggestions !== null &&
                            method_exists($abj404viewSuggestions, 'getAdminOptionsPage404Suggestions'));

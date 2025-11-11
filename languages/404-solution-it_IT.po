@@ -928,6 +928,9 @@ msgstr "Controllo di integrità"
 msgid "Save Settings"
 msgstr "Salva impostazioni"
 
+msgid "Saving settings..."
+msgstr "Salvataggio impostazioni..."
+
 msgid "Section filters"
 msgstr "Filtri sezione"
 

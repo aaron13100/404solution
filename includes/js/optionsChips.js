@@ -59,7 +59,28 @@
             // Hide the section
             section.removeClass('visible').hide();
             chip.attr('aria-pressed', 'false');
+
+            // Check if all sections are now hidden
+            ensureAtLeastOneVisible();
         });
+    }
+
+    function ensureAtLeastOneVisible() {
+        const sections = $('.abj404-options-section');
+        const visibleSections = sections.filter('.visible');
+
+        if (visibleSections.length === 0) {
+            // No sections visible - auto-reveal the first section (auto redirects)
+            const firstSection = sections.first();
+            const firstSectionId = firstSection.data('section');
+            const firstChip = $('.abj404-chip[data-target="' + firstSectionId + '"]');
+
+            firstSection.addClass('visible').show();
+            firstChip.attr('aria-pressed', 'true');
+
+            // Scroll to the revealed section
+            scrollToSection(firstSectionId);
+        }
     }
 
     function scrollToSection(sectionId) {

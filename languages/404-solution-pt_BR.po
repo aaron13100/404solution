@@ -928,6 +928,9 @@ msgstr "Verificação de Sanidade"
 msgid "Save Settings"
 msgstr "Salvar configurações"
 
+msgid "Saving settings..."
+msgstr "Salvando configurações..."
+
 msgid "Section filters"
 msgstr "Filtros de seção"
 

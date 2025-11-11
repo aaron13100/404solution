@@ -926,6 +926,9 @@ msgstr "Sanity Check"
 msgid "Save Settings"
 msgstr "Save Settings"
 
+msgid "Saving settings..."
+msgstr "Saving settings..."
+
 msgid "Section filters"
 msgstr "Section filters"
 

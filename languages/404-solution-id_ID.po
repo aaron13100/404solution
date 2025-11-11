@@ -928,6 +928,9 @@ msgstr "Pemeriksaan Validitas"
 msgid "Save Settings"
 msgstr "Simpan Pengaturan"
 
+msgid "Saving settings..."
+msgstr "Menyimpan pengaturan..."
+
 msgid "Section filters"
 msgstr "Filter bagian"
 

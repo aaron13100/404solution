@@ -926,6 +926,9 @@ msgstr "Vérification de cohérence"
 msgid "Save Settings"
 msgstr "Enregistrer les paramètres"
 
+msgid "Saving settings..."
+msgstr "Enregistrement des paramètres..."
+
 msgid "Section filters"
 msgstr "Filtres de section"
 
