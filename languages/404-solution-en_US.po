@@ -698,6 +698,9 @@ msgstr "No Results To Display"
 msgid "No suggestions. :/"
 msgstr "No suggestions. :/"
 
+msgid "No suggestions. :/ "
+msgstr "No suggestions. :/ "
+
 msgid "Note that including a bad regular expression or one that takes too long will break your website."
 msgstr "Note that including a bad regular expression or one that takes too long will break your website."
 
