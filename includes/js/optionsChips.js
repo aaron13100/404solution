@@ -8,6 +8,7 @@
 
     $(document).ready(function() {
         initializeChips();
+        initializeScrollSpy();
     });
 
     function initializeChips() {
@@ -107,6 +108,77 @@
         $('html, body').animate({
             scrollTop: targetPosition
         }, 400);
+    }
+
+    function initializeScrollSpy() {
+        const sections = $('.abj404-options-section');
+        const chips = $('.abj404-chip');
+
+        if (sections.length === 0 || chips.length === 0) {
+            return;
+        }
+
+        // Track all intersecting sections and their ratios
+        let intersectingSections = new Map();
+        let updateTimeout = null;
+
+        // Use Intersection Observer to detect which section is in viewport
+        const observerOptions = {
+            root: null, // viewport
+            rootMargin: '-100px 0px -20% 0px', // Account for sticky header, less sensitive
+            threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] // Track intersection at multiple points
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                const sectionId = $(entry.target).data('section');
+
+                if (entry.isIntersecting && $(entry.target).hasClass('visible')) {
+                    // Store the intersection ratio for this section
+                    intersectingSections.set(sectionId, entry.intersectionRatio);
+                } else {
+                    // Section is no longer intersecting, remove it
+                    intersectingSections.delete(sectionId);
+                }
+            });
+
+            // Debounce the update to avoid rapid changes during fast scrolling
+            clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(function() {
+                updateActiveChip();
+            }, 100); // 100ms debounce
+        }, observerOptions);
+
+        function updateActiveChip() {
+            if (intersectingSections.size === 0) {
+                return;
+            }
+
+            // Find the section with the largest intersection ratio
+            let maxRatio = 0;
+            let activeSectionId = null;
+
+            intersectingSections.forEach(function(ratio, sectionId) {
+                if (ratio > maxRatio) {
+                    maxRatio = ratio;
+                    activeSectionId = sectionId;
+                }
+            });
+
+            if (activeSectionId) {
+                // Remove active class from all chips
+                chips.removeClass('active');
+
+                // Add active class to the chip with the largest intersection
+                const activeChip = $('.abj404-chip[data-target="' + activeSectionId + '"]');
+                activeChip.addClass('active');
+            }
+        }
+
+        // Observe all sections
+        sections.each(function() {
+            observer.observe(this);
+        });
     }
 
 })(jQuery);

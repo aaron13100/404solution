@@ -296,6 +296,28 @@ ul .ui-autocomplete-category.data-overflow-category {
     opacity: 0.7;
 }
 
+/* Active chip state (section currently in viewport) - Scroll Spy */
+.abj404-chip.active {
+    background: var(--abj404-accent, #2271b1);
+    border-color: var(--abj404-accent, #2271b1);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(34, 113, 177, 0.3);
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.abj404-chip.active:hover {
+    background: var(--abj404-accent, #135e96);
+    box-shadow: 0 3px 12px rgba(34, 113, 177, 0.4);
+}
+
+/* Active chip - make dot brighter/white */
+.abj404-chip.active .abj404-chip-dot {
+    background: #fff !important;
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+}
+
 /* Chip color dots */
 .abj404-chip-dot {
     width: 8px;
