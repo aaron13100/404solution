@@ -1255,15 +1255,14 @@ class ABJ_404_Solution_DataAccess {
         $requested_url = preg_replace('/[^\x20-\x7E]/', '', $requested_url); // Remove non-printable ASCII characters
 
         // Normalize to relative path before storing (Issue #24)
-        // Fix CRITICAL #1 (4th review): Graceful degradation instead of throwing exceptions
+        // Fix HIGH #1 (5th review): Abort operation if normalization fails
+        // Storing un-normalized URLs causes permanent lookup failures
         if ($abj404logic === null) {
             $abj404logging = ABJ_404_Solution_Logging::getInstance();
-            $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in logRedirectHit()! URL not normalized: " . $requested_url);
-            // Don't throw - gracefully degrade. One non-normalized URL is better than crashing the site.
-            // The URL will be stored as-is, which may cause lookup issues but won't break the site.
-        } else {
-            $requested_url = $abj404logic->normalizeToRelativePath($requested_url);
+            $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in logRedirectHit()! Cannot normalize URL, aborting: " . $requested_url);
+            return;  // Abort - don't log un-normalized URL
         }
+        $requested_url = $abj404logic->normalizeToRelativePath($requested_url);
 
         // if the database can't handle utf8 characters then convert them to latin1.
         try {
@@ -1616,14 +1615,22 @@ class ABJ_404_Solution_DataAccess {
         foreach ($outerRows as $row) {
             $url = $row['url'];
 
-            $queryr1 = "select id from {wp_abj404_redirects} where url = '" . esc_sql(esc_url($url)) . "' order by timestamp desc limit 0,1";
-            $result = $this->queryAndGetResults($queryr1);            
+            // Fix HIGH #2 (5th review): Use prepared statements instead of manual escaping
+            $queryr1 = $this->prepare_query_wp(
+                "select id from {wp_abj404_redirects} where url = {url} order by timestamp desc limit 0,1",
+                array("url" => $url)
+            );
+            $result = $this->queryAndGetResults($queryr1);
             $innerRows = $result['rows'];
             if (count($innerRows) >= 1) {
                 $row = $innerRows[0];
                 $original = $row['id'];
 
-                $queryl = "delete from {wp_abj404_redirects} where url='" . esc_sql(esc_url($url)) . "' and id != " . esc_sql($original);
+                // Fix HIGH #2 (5th review): Use prepared statements instead of manual escaping
+                $queryl = $this->prepare_query_wp(
+                    "delete from {wp_abj404_redirects} where url = {url} and id != {original}",
+                    array("url" => $url, "original" => $original)
+                );
                 $this->queryAndGetResults($queryl);
                 $rowsDeleted++;
             }
@@ -1668,15 +1675,15 @@ class ABJ_404_Solution_DataAccess {
             $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
 
             // Normalize to relative path before storing (Issue #24)
-            // Fix CRITICAL #1 (4th review): Graceful degradation instead of throwing exceptions
+            // Fix HIGH #1 (5th review): Abort operation if normalization fails
+            // Storing un-normalized URLs causes permanent lookup failures
             $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
             if ($abj404logic === null) {
                 $abj404logging = ABJ_404_Solution_Logging::getInstance();
-                $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in saveRedirectURL()! URL not normalized: " . $fromURL);
-                // Don't throw - gracefully degrade
-            } else {
-                $fromURL = $abj404logic->normalizeToRelativePath($fromURL);
+                $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in setupRedirect()! Cannot normalize URL, aborting: " . $fromURL);
+                return 0;  // Abort - don't store un-normalized URL
             }
+            $fromURL = $abj404logic->normalizeToRelativePath($fromURL);
 
             // Fix HIGH #1 (3rd review): Remove esc_sql() - wpdb->insert handles escaping
             $wpdb->insert($redirectsTable, array(
@@ -1714,15 +1721,15 @@ class ABJ_404_Solution_DataAccess {
         $url = preg_replace('/[^\x20-\x7E]/', '', $url); // Remove non-printable ASCII characters
 
         // Normalize to relative path before querying (Issue #24)
-        // Fix CRITICAL #1 (4th review): Graceful degradation instead of throwing exceptions
+        // Fix HIGH #1 (5th review): Abort operation if normalization fails
+        // Querying with un-normalized URLs causes lookup failures
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         if ($abj404logic === null) {
             $abj404logging = ABJ_404_Solution_Logging::getInstance();
-            $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in getActiveRedirectForURL()! URL not normalized: " . $url);
-            // Don't throw - gracefully degrade
-        } else {
-            $url = $abj404logic->normalizeToRelativePath($url);
+            $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in getActiveRedirectForURL()! Cannot normalize URL, aborting: " . $url);
+            return array('id' => 0);  // Return empty result - no redirect found
         }
+        $url = $abj404logic->normalizeToRelativePath($url);
 
         // we look for two URLs that might match. one with a trailing slash and one without.
         // the one the user entered takes priority in case the admin added separate redirects for
@@ -1737,8 +1744,8 @@ class ABJ_404_Solution_DataAccess {
         
         // join to the wp_posts table to make sure the post exists.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPermalinkFromURL.sql");
-        $query = $this->f->str_replace('{url1}', esc_sql($url1), $query);
-        $query = $this->f->str_replace('{url2}', esc_sql($url2), $query);
+        // Fix HIGH #2 (5th review): Use prepared statements instead of manual escaping
+        $query = $this->prepare_query_wp($query, array("url1" => $url1, "url2" => $url2));
         $query = $this->doTableNameReplacements($query);
         $query = $this->f->doNormalReplacements($query);
         $results = $this->queryAndGetResults($query);
@@ -1768,15 +1775,15 @@ class ABJ_404_Solution_DataAccess {
         $url = preg_replace('/[^\x20-\x7E]/', '', $url); // Remove non-printable ASCII characters
 
         // Normalize to relative path before querying (Issue #24)
-        // Fix CRITICAL #1 (4th review): Graceful degradation instead of throwing exceptions
+        // Fix HIGH #1 (5th review): Abort operation if normalization fails
+        // Querying with un-normalized URLs causes lookup failures
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         if ($abj404logic === null) {
             $abj404logging = ABJ_404_Solution_Logging::getInstance();
-            $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in getExistingRedirectForURL()! URL not normalized: " . $url);
-            // Don't throw - gracefully degrade
-        } else {
-            $url = $abj404logic->normalizeToRelativePath($url);
+            $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in getExistingRedirectForURL()! Cannot normalize URL, aborting: " . $url);
+            return array('id' => 0);  // Return empty result - no redirect found
         }
+        $url = $abj404logic->normalizeToRelativePath($url);
 
         // a disabled value of '1' means in the trash.
         $query = $this->prepare_query_wp('select * from {wp_abj404_redirects} where BINARY url = BINARY {url} ' . 
