@@ -51,14 +51,20 @@ class ABJ_404_Solution_PluginLogic {
      * @param ABJ_404_Solution_Logging|null $logging Logging service
      */
     function __construct($functions = null, $dataAccess = null, $logging = null) {
-    	$urlPath = parse_url(get_home_url(), PHP_URL_PATH);
-    	if ($urlPath == null) {
-    		$urlPath = '';
-    	}
     	// Use injected dependencies or fall back to getInstance() for backward compatibility
     	$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
     	$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
     	$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
+
+    	$urlPath = parse_url(get_home_url(), PHP_URL_PATH);
+    	// Fix MEDIUM #1 (5th review): Distinguish between parse failure (false) and no path (null)
+    	if ($urlPath === false) {
+    		$this->logger->warn("Malformed home URL detected: " . get_home_url());
+    		$urlPath = '';
+    	} else if ($urlPath === null) {
+    		$urlPath = '';
+    	}
+
     	// Fix HIGH #2 (4th review): Decode subdirectory for consistency with runtime processing
     	$decodedPath = rawurldecode(rtrim($urlPath, '/'));
     	// Fix HIGH #3 (4th review): Remove null bytes and control characters for security
@@ -173,7 +179,14 @@ class ABJ_404_Solution_PluginLogic {
     	$f = $this->f;
     	$urlHomeDirectory = $this->urlHomeDirectory;
 
-    	// Fix CRITICAL #1: Check path boundary to prevent false positives
+    	// Fix CRITICAL #1 (5th review): Skip processing for root installations
+    	// When WordPress is at domain root, urlHomeDirectoryLength is 0
+    	// Without this check, substr($url, 0, 0) == '' is always TRUE, incorrectly stripping leading slash
+    	if ($this->urlHomeDirectoryLength === 0) {
+    		return $urlRequest;
+    	}
+
+    	// Fix CRITICAL #1 (2nd review): Check path boundary to prevent false positives
     	// e.g., /blog should match /blog/page but NOT /blogpost or /blog-archive
     	if ($this->f->substr($urlRequest, 0, $this->urlHomeDirectoryLength) == $urlHomeDirectory) {
     		// Verify path boundary: next character must be '/', '?', '#', or end of string

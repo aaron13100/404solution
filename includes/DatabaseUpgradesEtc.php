@@ -703,13 +703,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         // Fix CRITICAL #1 (3rd review): Use Functions class for consistent character encoding
         $f = ABJ_404_Solution_Functions::getInstance();
 
-        // Fix CRITICAL #2: Add migration lock to prevent race conditions
-        // Fix HIGH #2 (3rd review): Extend lock timeout to 1 hour for large datasets
+        // Fix CRITICAL #2 (2nd review): Add migration lock to prevent race conditions
+        // Fix MEDIUM #2 (5th review): Extend lock timeout to 24 hours for very large datasets
+        // Sites with 100K+ redirects may need several hours for migration
         if (get_transient('abj404_migration_in_progress')) {
             $abj404logging->infoMessage("Migration already in progress, skipping.");
             return array('errors' => array('Migration already in progress'));
         }
-        set_transient('abj404_migration_in_progress', '1', 3600); // 1 hour lock (was 10 min)
+        set_transient('abj404_migration_in_progress', '1', 86400); // 24 hour lock
 
         // Get current WordPress subdirectory
         $homeURL = get_home_url();
@@ -863,21 +864,20 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
             $abj404logging->infoMessage("Migrated {$results['logs_updated']} log entries.");
 
-            // Fix CRITICAL #3 (4th review): Set options BEFORE commit for atomicity
-            // If update_option fails, we can still rollback the database changes
-            if (empty($results['errors'])) {
-                update_option('abj404_migrated_to_relative_paths', '1');
-                update_option('abj404_migration_results', $results);
-            }
-
-            // Fix HIGH #1: Commit transaction (after options are set)
+            // Fix HIGH #1 (2nd review): Commit transaction
             $wpdb->query('COMMIT');
 
-            // Log success after commit succeeds
-            if (empty($results['errors'])) {
+            // Fix CRITICAL #2 (5th review): Set options AFTER commit for atomicity
+            // update_option() is NOT transactional - it commits immediately to wp_options
+            // Setting the flag before COMMIT could mark migration complete even if COMMIT fails
+            // This would cause permanent data corruption (flag says done, but data not migrated)
+            if (empty($results['errors']) && $wpdb->last_error === '') {
+                update_option('abj404_migrated_to_relative_paths', '1');
+                update_option('abj404_migration_results', $results);
                 $abj404logging->infoMessage("Migration to relative paths completed successfully.");
             } else {
-                $abj404logging->errorMessage("Migration completed with errors. Will retry on next run. Errors: " . implode('; ', $results['errors']));
+                $commitError = $wpdb->last_error !== '' ? " Commit error: " . $wpdb->last_error : '';
+                $abj404logging->errorMessage("Migration completed with errors. Will retry on next run. Errors: " . implode('; ', $results['errors']) . $commitError);
             }
 
         } catch (Exception $e) {
