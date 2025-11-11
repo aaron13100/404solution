@@ -802,13 +802,40 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /** Create database tables. Register crons. etc.
+     * Handles both single-site and multisite activations.
+     *
+     * @param bool $network_wide Whether this is a network-wide activation
      * @global type $abj404logic
      * @global type $abj404dao
      */
-    static function runOnPluginActivation() {
+    static function runOnPluginActivation($network_wide = false) {
+        if (is_multisite() && $network_wide) {
+            // Network activation: activate for all sites in the network
+            $sites = get_sites(array('fields' => 'ids', 'number' => 0));
+
+            foreach ($sites as $blog_id) {
+                switch_to_blog($blog_id);
+                self::activateSingleSite();
+                restore_current_blog();
+            }
+        } else {
+            // Single site activation (or individual subsite activation)
+            self::activateSingleSite();
+        }
+    }
+
+    /**
+     * Activate plugin for a single site.
+     * This contains the actual activation logic that was previously in runOnPluginActivation.
+     *
+     * @global type $abj404logic
+     * @global type $abj404dao
+     * @global type $abj404logging
+     */
+    private static function activateSingleSite() {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         add_option('abj404_settings', '', '', 'no');
-        
+
         if (!isset($abj404logging)) {
         }
         if (!isset($abj404dao)) {
@@ -816,13 +843,104 @@ class ABJ_404_Solution_PluginLogic {
         if (!isset($abj404logic)) {
             $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         }
-        
+
         $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $upgradesEtc->createDatabaseTables();
 
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
         $abj404logic->doUpdateDBVersionOption();
+    }
+
+    /**
+     * Handle new blog creation in multisite (WordPress < 5.1).
+     * This is triggered by the wpmu_new_blog action.
+     *
+     * @param int $blog_id Blog ID of the new blog
+     * @param int $user_id User ID of the user creating the blog
+     * @param string $domain Domain of the new blog
+     * @param string $path Path of the new blog
+     * @param int $site_id Site ID (network ID)
+     * @param array $meta Additional meta information
+     */
+    static function activateNewSite($blog_id, $user_id, $domain, $path, $site_id, $meta) {
+        // Only activate if the plugin is network-activated
+        if (is_plugin_active_for_network(plugin_basename(ABJ404_FILE))) {
+            switch_to_blog($blog_id);
+            self::activateSingleSite();
+            restore_current_blog();
+        }
+    }
+
+    /**
+     * Handle new blog creation in multisite (WordPress >= 5.1).
+     * This is triggered by the wp_initialize_site action.
+     *
+     * @param WP_Site $site The site object for the new site
+     * @param array $args Additional arguments passed to the hook
+     */
+    static function activateNewSiteModern($site, $args) {
+        // Only activate if the plugin is network-activated
+        if (is_plugin_active_for_network(plugin_basename(ABJ404_FILE))) {
+            switch_to_blog($site->blog_id);
+            self::activateSingleSite();
+            restore_current_blog();
+        }
+    }
+
+    /**
+     * Handle plugin deactivation for both single-site and multisite.
+     *
+     * @param bool $network_wide Whether this is a network-wide deactivation
+     */
+    static function runOnPluginDeactivation($network_wide = false) {
+        if (is_multisite() && $network_wide) {
+            // Network deactivation: deactivate for all sites
+            $sites = get_sites(array('fields' => 'ids', 'number' => 0));
+
+            foreach ($sites as $blog_id) {
+                switch_to_blog($blog_id);
+                self::deactivateSingleSite();
+                restore_current_blog();
+            }
+        } else {
+            // Single site deactivation
+            self::deactivateSingleSite();
+        }
+    }
+
+    /**
+     * Deactivate plugin for a single site.
+     * Unregisters cron jobs.
+     */
+    private static function deactivateSingleSite() {
+        self::doUnregisterCrons();
+    }
+
+    /**
+     * Clean up when a blog is deleted in multisite.
+     * This is triggered by the delete_blog action.
+     *
+     * @global wpdb $wpdb WordPress database object
+     * @param int $blog_id Blog ID being deleted
+     * @param bool $drop Whether to drop the tables (true) or just deactivate (false)
+     */
+    static function deleteBlogData($blog_id, $drop = false) {
+        if ($drop) {
+            switch_to_blog($blog_id);
+
+            global $wpdb;
+            // Remove custom database tables
+            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_redirects");
+            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_logsv2");
+            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_permalink_cache");
+
+            // Remove options
+            delete_option('abj404_settings');
+            delete_option('abj404_db_version');
+
+            restore_current_blog();
+        }
     }
 
     static function doRegisterCrons() {
