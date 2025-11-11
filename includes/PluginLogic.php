@@ -172,8 +172,26 @@ class ABJ_404_Solution_PluginLogic {
     	if ($this->f->substr($urlRequest, 0, $this->urlHomeDirectoryLength) == $urlHomeDirectory) {
     		$urlRequest = $this->f->substr($urlRequest, ($this->urlHomeDirectoryLength + 1));
     	}
-        
+
         return $urlRequest;
+    }
+
+    /**
+     * Normalize URL to relative path by removing WordPress subdirectory.
+     * This ensures URLs are stored/matched independently of subdirectory changes.
+     * Fixes Issue #24: Redirects now survive WordPress subdirectory changes.
+     *
+     * @param string $url Full URL or path
+     * @return string Relative path without subdirectory
+     */
+    function normalizeToRelativePath($url) {
+        // Remove home directory if present
+        $relativePath = $this->removeHomeDirectory($url);
+
+        // Ensure consistent leading slash
+        $relativePath = '/' . ltrim($relativePath, '/');
+
+        return $relativePath;
     }
     /** Forward to a real page for queries like ?p=10
      * @global type $wp_query
