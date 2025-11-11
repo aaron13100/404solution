@@ -492,6 +492,10 @@ ul .ui-autocomplete-category.data-overflow-category {
 
 /* WordPress plugin tabs - smooth transition */
 .nav-tab-wrapper {
+    position: sticky;
+    top: 32px; /* WordPress admin bar height */
+    z-index: 99;
+    background: #f0f0f1;
     transition: transform 0.3s ease-in-out;
     will-change: transform;
 }
@@ -499,4 +503,11 @@ ul .ui-autocomplete-category.data-overflow-category {
 /* Hide tabs when scrolling down */
 .nav-tab-wrapper.tabs-hidden {
     transform: translateY(-100%);
+}
+
+/* Mobile admin bar */
+@media screen and (max-width: 782px) {
+    .nav-tab-wrapper {
+        top: 46px;
+    }
 }

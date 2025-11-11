@@ -364,6 +364,8 @@ class ABJ_404_Solution_View {
             echo '<div class="' . $cssClasses . '"><p>' . wp_kses($message, $allowed_tags) . "</p></div>\n";
         }
 
+        echo '<h2 class="nav-tab-wrapper">';
+
         $class = "";
         if ($sub == 'abj404_redirects') {
             $class = "nav-tab-active";
@@ -399,6 +401,8 @@ class ABJ_404_Solution_View {
             $class = "nav-tab-active";
         }
         echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . __('Options', '404-solution') . "</a>";
+
+        echo "</h2>";
 
         echo "<hr style=\"border: 0px; border-bottom: 1px solid #DFDFDF; margin-top: 0px; margin-bottom: 0px; \">";
     }
