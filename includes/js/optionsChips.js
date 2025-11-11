@@ -84,8 +84,14 @@
         }
 
         // Calculate scroll position accounting for sticky elements
-        const headerHeight = $('#wpadminbar').outerHeight() || 0;
-        const chipsHeight = $('.abj404-chips-nav').outerHeight() || 0;
+        // WordPress admin bar height (handle cases where it might not exist)
+        const adminBar = $('#wpadminbar');
+        const headerHeight = (adminBar.length > 0 && adminBar.is(':visible')) ? adminBar.outerHeight() : 0;
+
+        // Chips navigation height
+        const chipsNav = $('.abj404-chips-nav');
+        const chipsHeight = (chipsNav.length > 0) ? chipsNav.outerHeight() : 0;
+
         const offset = headerHeight + chipsHeight + 20; // Add some padding
 
         const targetPosition = section.offset().top - offset;

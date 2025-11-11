@@ -431,8 +431,9 @@ class ABJ_404_Solution_View {
 
     /**
      * Echo the chips navigation for the options page
+     * @param bool $showSuggestions Whether to show the suggestions chip
      */
-    function echoChipsNavigation() {
+    function echoChipsNavigation($showSuggestions = true) {
         ?>
         <nav class="abj404-chips-nav" aria-label="<?php echo esc_attr__('Section filters', '404-solution'); ?>">
             <button class="abj404-chip chip-autooptions" data-target="abj404-autooptions" type="button" aria-pressed="true">
@@ -447,10 +448,12 @@ class ABJ_404_Solution_View {
                 <span class="abj404-chip-dot" aria-hidden="true"></span>
                 <?php echo esc_html__('Advanced', '404-solution'); ?>
             </button>
+            <?php if ($showSuggestions): ?>
             <button class="abj404-chip chip-suggestoptions" data-target="abj404-suggestoptions" type="button" aria-pressed="false">
                 <span class="abj404-chip-dot" aria-hidden="true"></span>
                 <?php echo esc_html__('Suggestions', '404-solution'); ?>
             </button>
+            <?php endif; ?>
         </nav>
         <?php
     }
@@ -765,8 +768,12 @@ class ABJ_404_Solution_View {
         	"admin-ajax.php?action=updateOptions", $formBeginning);
         echo $formBeginning;
 
+        // Check if suggestions section is available
+        $showSuggestions = ($abj404viewSuggestions !== null &&
+                           method_exists($abj404viewSuggestions, 'getAdminOptionsPage404Suggestions'));
+
         // Add chips navigation
-        $abj404view->echoChipsNavigation();
+        $abj404view->echoChipsNavigation($showSuggestions);
 
         // Render each section with chips-compatible wrapper
         $contentAutomaticRedirects = $abj404view->getAdminOptionsPageAutoRedirects($options);
