@@ -9,6 +9,7 @@
     $(document).ready(function() {
         initializeChips();
         initializeScrollSpy();
+        initializeHidingHeader();
     });
 
     function initializeChips() {
@@ -178,6 +179,51 @@
         // Observe all sections
         sections.each(function() {
             observer.observe(this);
+        });
+    }
+
+    function initializeHidingHeader() {
+        const navTabWrapper = $('.nav-tab-wrapper');
+
+        if (navTabWrapper.length === 0) {
+            return; // No tabs found
+        }
+
+        let lastScrollY = window.scrollY;
+        let ticking = false;
+        const scrollThreshold = 50; // Only trigger after scrolling 50px
+        const topThreshold = 100; // Don't hide when near top of page
+
+        function updateHeader() {
+            const currentScrollY = window.scrollY;
+
+            // Don't hide tabs when near the top
+            if (currentScrollY < topThreshold) {
+                navTabWrapper.removeClass('tabs-hidden');
+                lastScrollY = currentScrollY;
+                return;
+            }
+
+            // Check scroll direction
+            if (currentScrollY > lastScrollY && currentScrollY > scrollThreshold) {
+                // Scrolling down - hide tabs
+                navTabWrapper.addClass('tabs-hidden');
+            } else if (currentScrollY < lastScrollY) {
+                // Scrolling up - show tabs
+                navTabWrapper.removeClass('tabs-hidden');
+            }
+
+            lastScrollY = currentScrollY;
+        }
+
+        window.addEventListener('scroll', function() {
+            if (!ticking) {
+                window.requestAnimationFrame(function() {
+                    updateHeader();
+                    ticking = false;
+                });
+                ticking = true;
+            }
         });
     }
 

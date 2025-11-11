@@ -485,3 +485,18 @@ ul .ui-autocomplete-category.data-overflow-category {
 .abj404-save-overlay.error .abj404-save-message {
     color: #d63638;
 }
+
+/* ============================================
+   Hiding Header (Scroll Direction)
+   ============================================ */
+
+/* WordPress plugin tabs - smooth transition */
+.nav-tab-wrapper {
+    transition: transform 0.3s ease-in-out;
+    will-change: transform;
+}
+
+/* Hide tabs when scrolling down */
+.nav-tab-wrapper.tabs-hidden {
+    transform: translateY(-100%);
+}
