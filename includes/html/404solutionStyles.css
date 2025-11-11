@@ -492,10 +492,14 @@ ul .ui-autocomplete-category.data-overflow-category {
 
 /* WordPress plugin tabs - smooth transition */
 .nav-tab-wrapper {
-    position: sticky;
+    position: fixed;
     top: 32px; /* WordPress admin bar height */
+    left: 160px; /* WordPress admin menu width */
+    right: 0;
     z-index: 99;
     background: #f0f0f1;
+    margin: 0;
+    padding: 0;
     transition: transform 0.3s ease-in-out;
     will-change: transform;
 }
@@ -505,9 +509,16 @@ ul .ui-autocomplete-category.data-overflow-category {
     transform: translateY(-100%);
 }
 
-/* Mobile admin bar */
+/* Mobile admin bar and folded menu */
+@media screen and (max-width: 960px) {
+    .nav-tab-wrapper {
+        left: 36px; /* Folded menu width */
+    }
+}
+
 @media screen and (max-width: 782px) {
     .nav-tab-wrapper {
         top: 46px;
+        left: 0;
     }
 }
