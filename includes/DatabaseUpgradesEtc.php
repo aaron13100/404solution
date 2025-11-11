@@ -867,17 +867,22 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             // Fix HIGH #1 (2nd review): Commit transaction
             $wpdb->query('COMMIT');
 
+            // Fix HIGH #1 (6th review): Capture commit error immediately to avoid race condition
+            // $wpdb->last_error is a shared global that can be overwritten by any query
+            // If WordPress hook fires between COMMIT and check, error could be lost
+            $commitError = $wpdb->last_error;
+
             // Fix CRITICAL #2 (5th review): Set options AFTER commit for atomicity
             // update_option() is NOT transactional - it commits immediately to wp_options
             // Setting the flag before COMMIT could mark migration complete even if COMMIT fails
             // This would cause permanent data corruption (flag says done, but data not migrated)
-            if (empty($results['errors']) && $wpdb->last_error === '') {
+            if (empty($results['errors']) && $commitError === '') {
                 update_option('abj404_migrated_to_relative_paths', '1');
                 update_option('abj404_migration_results', $results);
                 $abj404logging->infoMessage("Migration to relative paths completed successfully.");
             } else {
-                $commitError = $wpdb->last_error !== '' ? " Commit error: " . $wpdb->last_error : '';
-                $abj404logging->errorMessage("Migration completed with errors. Will retry on next run. Errors: " . implode('; ', $results['errors']) . $commitError);
+                $errorMsg = $commitError !== '' ? " Commit error: " . $commitError : '';
+                $abj404logging->errorMessage("Migration completed with errors. Will retry on next run. Errors: " . implode('; ', $results['errors']) . $errorMsg);
             }
 
         } catch (Exception $e) {
