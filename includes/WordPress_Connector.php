@@ -149,12 +149,12 @@ class ABJ_404_Solution_WordPress_Connector {
 
         $logic = ABJ_404_Solution_PluginLogic::getInstance();
         $options = $logic->getOptions();
-        $theme = isset($options['admin_theme']) ? $options['admin_theme'] : 'calm';
+        $theme = isset($options['admin_theme']) ? $options['admin_theme'] : 'mono';
 
         // Sanitize theme value - only allow specific values
         $allowed_themes = array('calm', 'mono', 'neon', 'obsidian');
         if (!in_array($theme, $allowed_themes)) {
-            $theme = 'calm';
+            $theme = 'mono';
         }
 
         echo '<script type="text/javascript">';

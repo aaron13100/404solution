@@ -1838,7 +1838,7 @@ class ABJ_404_Solution_View {
         }
 
         // Theme selection
-        $adminTheme = isset($options['admin_theme']) ? $options['admin_theme'] : 'calm';
+        $adminTheme = isset($options['admin_theme']) ? $options['admin_theme'] : 'mono';
         $selectedThemeCalm = ($adminTheme == 'calm') ? " selected" : "";
         $selectedThemeMono = ($adminTheme == 'mono') ? " selected" : "";
         $selectedThemeNeon = ($adminTheme == 'neon') ? " selected" : "";

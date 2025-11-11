@@ -5,39 +5,15 @@
  * Themes are applied via the data-theme attribute on the body element.
  *
  * Available themes:
- * - calm (default): Calm Ops (Light) - Balanced blues and greens
- * - mono: Monochrome Minimal (Light) - Grayscale with blue accents
+ * - mono (default): Monochrome Minimal (Light) - Grayscale with blue accents
+ * - calm: Calm Ops (Light) - Balanced blues and greens
  * - neon: Neon Slate (Dark) - Dark with violet and cyan accents
  * - obsidian: Obsidian Blue (Dark) - Deep blue dark theme
  */
 
-/* ===== Default Theme: Calm Ops (Light) ===== */
+/* ===== Default Theme: Monochrome Minimal (Light) ===== */
 :root,
 body:not([data-theme]),
-body[data-theme="calm"] {
-  --abj404-bg: #F7FAFD;
-  --abj404-bg-muted: #F1F6FE;
-  --abj404-surface: #ffffff;
-  --abj404-surface-muted: #E9F0FB;
-  --abj404-text: #17223B;
-  --abj404-text-muted: #5A6B86;
-  --abj404-border: #E1E8F5;
-  --abj404-primary: #1E6BD6;
-  --abj404-accent: #00A27A;
-  --abj404-info: #2B8AE2;
-  --abj404-success: #20B67A;
-  --abj404-warning: #F6A700;
-  --abj404-danger: #D53F3F;
-  --abj404-focus: #5AA2FF;
-  --abj404-table-header: #E9F0FB;
-  --abj404-row-hover: #F1F6FE;
-  --abj404-row-selected: #D7E8FF;
-  --abj404-badge-bg: #EEF2F8;
-  --abj404-badge-text: #3E546E;
-  --abj404-link: var(--abj404-accent);
-}
-
-/* === Monochrome Minimal (Light) === */
 body[data-theme="mono"] {
   --abj404-bg: #F8FAFC;
   --abj404-bg-muted: #F5F7FA;
@@ -58,6 +34,30 @@ body[data-theme="mono"] {
   --abj404-row-selected: #DBEAFE;
   --abj404-badge-bg: #EFF1F5;
   --abj404-badge-text: #374151;
+  --abj404-link: var(--abj404-accent);
+}
+
+/* === Calm Ops (Light) === */
+body[data-theme="calm"] {
+  --abj404-bg: #F7FAFD;
+  --abj404-bg-muted: #F1F6FE;
+  --abj404-surface: #ffffff;
+  --abj404-surface-muted: #E9F0FB;
+  --abj404-text: #17223B;
+  --abj404-text-muted: #5A6B86;
+  --abj404-border: #E1E8F5;
+  --abj404-primary: #1E6BD6;
+  --abj404-accent: #00A27A;
+  --abj404-info: #2B8AE2;
+  --abj404-success: #20B67A;
+  --abj404-warning: #F6A700;
+  --abj404-danger: #D53F3F;
+  --abj404-focus: #5AA2FF;
+  --abj404-table-header: #E9F0FB;
+  --abj404-row-hover: #F1F6FE;
+  --abj404-row-selected: #D7E8FF;
+  --abj404-badge-bg: #EEF2F8;
+  --abj404-badge-text: #3E546E;
   --abj404-link: var(--abj404-accent);
 }
 
@@ -116,6 +116,14 @@ body[data-theme="obsidian"] {
 body[data-theme] .wrap,
 body[data-theme].wp-admin #wpwrap .wrap {
   background-color: var(--abj404-bg);
+  color: var(--abj404-text);
+}
+
+/* Page headings (like "404 Solution Options") */
+body[data-theme] .wrap h1,
+body[data-theme] .wrap h2,
+body[data-theme] .wrap > h1,
+body[data-theme] .wrap > h2 {
   color: var(--abj404-text);
 }
 

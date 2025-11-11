@@ -28,7 +28,7 @@
             var allowedThemes = ['calm', 'mono', 'neon', 'obsidian'];
             if (allowedThemes.indexOf(theme) === -1) {
                 console.warn('Invalid theme selected:', theme);
-                theme = 'calm'; // Default fallback
+                theme = 'mono'; // Default fallback
             }
 
             // Apply the theme to the body
@@ -50,7 +50,7 @@
 
         // Initialize: ensure the body has the correct theme on page load
         // This is redundant with the PHP script but provides a fallback
-        var initialTheme = themeSelect.val() || 'calm';
+        var initialTheme = themeSelect.val() || 'mono';
         if (!$('body').attr('data-theme')) {
             applyTheme(initialTheme);
         }
