@@ -59,7 +59,10 @@ class ABJ_404_Solution_PluginLogic {
     	$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
     	$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
     	$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
-    	$this->urlHomeDirectory = rtrim($urlPath, '/');
+    	// Fix HIGH #2 (4th review): Decode subdirectory for consistency with runtime processing
+    	$decodedPath = rawurldecode(rtrim($urlPath, '/'));
+    	// Fix HIGH #3 (4th review): Remove null bytes and control characters for security
+    	$this->urlHomeDirectory = preg_replace('/[\x00-\x1F\x7F]/', '', $decodedPath);
     	$this->urlHomeDirectoryLength = $this->f->strlen($this->urlHomeDirectory);
     }
     
@@ -169,8 +172,24 @@ class ABJ_404_Solution_PluginLogic {
     function removeHomeDirectory($urlRequest) {
     	$f = $this->f;
     	$urlHomeDirectory = $this->urlHomeDirectory;
+
+    	// Fix CRITICAL #1: Check path boundary to prevent false positives
+    	// e.g., /blog should match /blog/page but NOT /blogpost or /blog-archive
     	if ($this->f->substr($urlRequest, 0, $this->urlHomeDirectoryLength) == $urlHomeDirectory) {
-    		$urlRequest = $this->f->substr($urlRequest, ($this->urlHomeDirectoryLength + 1));
+    		// Verify path boundary: next character must be '/', '?', '#', or end of string
+    		$nextChar = $this->f->substr($urlRequest, $this->urlHomeDirectoryLength, 1);
+    		if ($nextChar === '/' || $nextChar === '?' || $nextChar === '#' || $nextChar === '') {
+    			// Fix CRITICAL #2 (3rd review): Don't strip query/fragment markers
+    			if ($nextChar === '/' || $nextChar === '') {
+    				// Strip subdirectory + slash for paths: /blog/page → /page
+    				$urlRequest = $this->f->substr($urlRequest, ($this->urlHomeDirectoryLength + 1));
+    			} else {
+    				// Fix HIGH #1 (4th review): Add leading slash for query/fragment
+    				// Strip subdirectory, add leading slash: /blog?q=1 → /?q=1
+    				$urlRequest = '/' . $this->f->substr($urlRequest, $this->urlHomeDirectoryLength);
+    			}
+    		}
+    		// else: false positive (e.g., /blogpost when subdirectory is /blog) - don't strip
     	}
 
         return $urlRequest;
@@ -185,10 +204,62 @@ class ABJ_404_Solution_PluginLogic {
      * @return string Relative path without subdirectory
      */
     function normalizeToRelativePath($url) {
+        // Fix Issue #5: Handle empty or null URLs explicitly
+        if ($url === null || $url === '') {
+            return '/';
+        }
+
+        // Fix HIGH #2: Trim whitespace
+        $url = trim($url);
+
+        // Fix CRITICAL #2 (4th review): REMOVED rawurldecode() - URLs already decoded by UserRequest
+        // Subdirectory decoding is now handled in constructor for consistency
+
+        // Fix HIGH #2: If full URL, extract path only
+        if (preg_match('#^https?://#i', $url)) {
+            $parsed = parse_url($url);
+            if ($parsed === false || !isset($parsed['path'])) {
+                return '/';
+            }
+            $url = $parsed['path'];
+            // Preserve query and fragment
+            if (!empty($parsed['query'])) {
+                $url .= '?' . $parsed['query'];
+            }
+            if (!empty($parsed['fragment'])) {
+                $url .= '#' . $parsed['fragment'];
+            }
+        }
+
+        // Fix HIGH #2: Handle protocol-relative URLs (//example.com/path)
+        if (strpos($url, '//') === 0) {
+            $parsed = parse_url('http:' . $url);
+            if ($parsed !== false && isset($parsed['path'])) {
+                $url = $parsed['path'];
+                if (!empty($parsed['query'])) {
+                    $url .= '?' . $parsed['query'];
+                }
+                if (!empty($parsed['fragment'])) {
+                    $url .= '#' . $parsed['fragment'];
+                }
+            } else {
+                return '/';
+            }
+        }
+
         // Remove home directory if present
         $relativePath = $this->removeHomeDirectory($url);
 
-        // Ensure consistent leading slash
+        // Fix Issue #5: Check if removeHomeDirectory() returned empty unexpectedly
+        if ($relativePath === null || $relativePath === '') {
+            // Return root path for empty results
+            return '/';
+        }
+
+        // Fix HIGH #2: Normalize multiple slashes to single slash
+        $relativePath = preg_replace('#/+#', '/', $relativePath);
+
+        // Ensure consistent leading slash (but not multiple)
         $relativePath = '/' . ltrim($relativePath, '/');
 
         return $relativePath;

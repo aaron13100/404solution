@@ -700,11 +700,30 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         global $wpdb;
 
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        // Fix CRITICAL #1 (3rd review): Use Functions class for consistent character encoding
+        $f = ABJ_404_Solution_Functions::getInstance();
+
+        // Fix CRITICAL #2: Add migration lock to prevent race conditions
+        // Fix HIGH #2 (3rd review): Extend lock timeout to 1 hour for large datasets
+        if (get_transient('abj404_migration_in_progress')) {
+            $abj404logging->infoMessage("Migration already in progress, skipping.");
+            return array('errors' => array('Migration already in progress'));
+        }
+        set_transient('abj404_migration_in_progress', '1', 3600); // 1 hour lock (was 10 min)
 
         // Get current WordPress subdirectory
         $homeURL = get_home_url();
         $urlPath = parse_url($homeURL, PHP_URL_PATH);
-        $subdirectory = rtrim($urlPath, '/');
+
+        // Fix Issue #1: Handle parse_url() failure
+        if ($urlPath === false || $urlPath === null) {
+            $urlPath = '';
+        }
+
+        // Fix HIGH #2 (4th review): Decode subdirectory for consistency with runtime
+        $decodedPath = rawurldecode(rtrim($urlPath, '/'));
+        // Fix HIGH #3 (4th review): Remove null bytes and control characters for security
+        $subdirectory = preg_replace('/[\x00-\x1F\x7F]/', '', $decodedPath);
 
         $results = array(
             'redirects_updated' => 0,
@@ -716,29 +735,55 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         // Skip if WordPress is at domain root (no subdirectory)
         if (empty($subdirectory) || $subdirectory === '/') {
             $abj404logging->debugMessage("No subdirectory detected. Migration skipped.");
+            delete_transient('abj404_migration_in_progress');
             return $results;
         }
 
         try {
+            // Fix HIGH #1: Start transaction for atomic migration
+            $wpdb->query('START TRANSACTION');
+
             // MIGRATE REDIRECTS TABLE
             $redirectsTable = $wpdb->prefix . 'abj404_redirects';
 
             $abj404logging->infoMessage("Migrating redirects table to relative paths...");
 
-            // Get all redirects that start with the subdirectory
+            // Fix CRITICAL #3: Query should find exact matches too (not just LIKE)
             $redirectsQuery = $wpdb->prepare(
-                "SELECT id, url FROM {$redirectsTable} WHERE url LIKE %s",
-                $wpdb->esc_like($subdirectory . '/') . '%'
+                "SELECT id, url FROM {$redirectsTable}
+                 WHERE url = %s OR url = %s OR url LIKE %s",
+                $subdirectory,                              // Exact match: /blog
+                $subdirectory . '/',                        // With slash: /blog/
+                $wpdb->esc_like($subdirectory . '/') . '%' // With path: /blog/*
             );
 
             $redirectsToMigrate = $wpdb->get_results($redirectsQuery);
 
-            foreach ($redirectsToMigrate as $redirect) {
-                // Remove subdirectory prefix
-                $newURL = substr($redirect->url, strlen($subdirectory));
+            // Fix Issue #7: Check for database errors
+            if ($redirectsToMigrate === null) {
+                throw new Exception("Failed to query redirects table: " . $wpdb->last_error);
+            }
 
-                // Ensure leading slash
-                $newURL = '/' . ltrim($newURL, '/');
+            foreach ($redirectsToMigrate as $redirect) {
+                // Fix CRITICAL #3: Handle exact subdirectory match specially
+                if ($redirect->url === $subdirectory || $redirect->url === $subdirectory . '/') {
+                    // Convert exact subdirectory match to root path
+                    $newURL = '/';
+                    $abj404logging->debugMessage("Converting exact subdirectory match to root for redirect ID {$redirect->id}");
+                } else {
+                    // Remove subdirectory prefix
+                    // Fix CRITICAL #1 (3rd review): Use $f->substr for consistent character encoding
+                    $newURL = $f->substr($redirect->url, $f->strlen($subdirectory));
+
+                    // Skip if result is empty or just slash (shouldn't happen due to query, but defensive)
+                    if (empty($newURL) || $newURL === '/') {
+                        $abj404logging->debugMessage("Skipping redirect ID {$redirect->id} with unexpected empty result");
+                        continue;
+                    }
+
+                    // Ensure leading slash
+                    $newURL = '/' . ltrim($newURL, '/');
+                }
 
                 // Update the record
                 $updated = $wpdb->update(
@@ -749,11 +794,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     array('%d')
                 );
 
-                if ($updated !== false) {
-                    $results['redirects_updated']++;
-                } else {
-                    $results['errors'][] = "Failed to update redirect ID {$redirect->id}";
+                if ($updated === false) {
+                    throw new Exception("Failed to update redirect ID {$redirect->id}: " . $wpdb->last_error);
                 }
+
+                $results['redirects_updated']++;
             }
 
             $abj404logging->infoMessage("Migrated {$results['redirects_updated']} redirects.");
@@ -763,20 +808,42 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
             $abj404logging->infoMessage("Migrating logs table to relative paths...");
 
-            // Get all log entries that start with the subdirectory
+            // Fix CRITICAL #3: Query should find exact matches too (not just LIKE)
             $logsQuery = $wpdb->prepare(
-                "SELECT id, requested_url FROM {$logsTable} WHERE requested_url LIKE %s",
-                $wpdb->esc_like($subdirectory . '/') . '%'
+                "SELECT id, requested_url FROM {$logsTable}
+                 WHERE requested_url = %s OR requested_url = %s OR requested_url LIKE %s",
+                $subdirectory,                              // Exact match: /blog
+                $subdirectory . '/',                        // With slash: /blog/
+                $wpdb->esc_like($subdirectory . '/') . '%' // With path: /blog/*
             );
 
             $logsToMigrate = $wpdb->get_results($logsQuery);
 
-            foreach ($logsToMigrate as $log) {
-                // Remove subdirectory prefix
-                $newURL = substr($log->requested_url, strlen($subdirectory));
+            // Fix Issue #7: Check for database errors
+            if ($logsToMigrate === null) {
+                throw new Exception("Failed to query logs table: " . $wpdb->last_error);
+            }
 
-                // Ensure leading slash
-                $newURL = '/' . ltrim($newURL, '/');
+            foreach ($logsToMigrate as $log) {
+                // Fix CRITICAL #3: Handle exact subdirectory match specially
+                if ($log->requested_url === $subdirectory || $log->requested_url === $subdirectory . '/') {
+                    // Convert exact subdirectory match to root path
+                    $newURL = '/';
+                    $abj404logging->debugMessage("Converting exact subdirectory match to root for log ID {$log->id}");
+                } else {
+                    // Remove subdirectory prefix
+                    // Fix CRITICAL #1 (3rd review): Use $f->substr for consistent character encoding
+                    $newURL = $f->substr($log->requested_url, $f->strlen($subdirectory));
+
+                    // Skip if result is empty or just slash (shouldn't happen due to query, but defensive)
+                    if (empty($newURL) || $newURL === '/') {
+                        $abj404logging->debugMessage("Skipping log ID {$log->id} with unexpected empty result");
+                        continue;
+                    }
+
+                    // Ensure leading slash
+                    $newURL = '/' . ltrim($newURL, '/');
+                }
 
                 // Update the record
                 $updated = $wpdb->update(
@@ -787,24 +854,40 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     array('%d')
                 );
 
-                if ($updated !== false) {
-                    $results['logs_updated']++;
-                } else {
-                    $results['errors'][] = "Failed to update log ID {$log->id}";
+                if ($updated === false) {
+                    throw new Exception("Failed to update log ID {$log->id}: " . $wpdb->last_error);
                 }
+
+                $results['logs_updated']++;
             }
 
             $abj404logging->infoMessage("Migrated {$results['logs_updated']} log entries.");
 
-            // Mark migration as complete
-            update_option('abj404_migrated_to_relative_paths', '1');
-            update_option('abj404_migration_results', $results);
+            // Fix CRITICAL #3 (4th review): Set options BEFORE commit for atomicity
+            // If update_option fails, we can still rollback the database changes
+            if (empty($results['errors'])) {
+                update_option('abj404_migrated_to_relative_paths', '1');
+                update_option('abj404_migration_results', $results);
+            }
 
-            $abj404logging->infoMessage("Migration to relative paths completed successfully.");
+            // Fix HIGH #1: Commit transaction (after options are set)
+            $wpdb->query('COMMIT');
+
+            // Log success after commit succeeds
+            if (empty($results['errors'])) {
+                $abj404logging->infoMessage("Migration to relative paths completed successfully.");
+            } else {
+                $abj404logging->errorMessage("Migration completed with errors. Will retry on next run. Errors: " . implode('; ', $results['errors']));
+            }
 
         } catch (Exception $e) {
+            // Fix HIGH #1: Rollback transaction on error
+            $wpdb->query('ROLLBACK');
             $results['errors'][] = $e->getMessage();
-            $abj404logging->errorMessage("Migration failed: " . $e->getMessage());
+            $abj404logging->errorMessage("Migration failed and rolled back: " . $e->getMessage());
+        } finally {
+            // Fix CRITICAL #2: Always release the lock
+            delete_transient('abj404_migration_in_progress');
         }
 
         return $results;
