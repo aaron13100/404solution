@@ -1255,8 +1255,11 @@ class ABJ_404_Solution_DataAccess {
         $requested_url = preg_replace('/[^\x20-\x7E]/', '', $requested_url); // Remove non-printable ASCII characters
 
         // Normalize to relative path before storing (Issue #24)
-        // Fix Issue #3: Add NULL check on getInstance()
-        if ($abj404logic !== null) {
+        // Fix Issue #3 & HIGH #3: Add NULL check on getInstance() with proper error handling
+        if ($abj404logic === null) {
+            $abj404logging = ABJ_404_Solution_Logging::getInstance();
+            $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in logRedirectHit()! URL normalization skipped for: " . $requested_url);
+        } else {
             $requested_url = $abj404logic->normalizeToRelativePath($requested_url);
         }
 
@@ -1663,9 +1666,12 @@ class ABJ_404_Solution_DataAccess {
             $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
 
             // Normalize to relative path before storing (Issue #24)
-            // Fix Issue #3: Add NULL check on getInstance()
+            // Fix Issue #3 & HIGH #3: Add NULL check on getInstance() with proper error handling
             $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-            if ($abj404logic !== null) {
+            if ($abj404logic === null) {
+                $abj404logging = ABJ_404_Solution_Logging::getInstance();
+                $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in saveRedirectURL()! URL normalization skipped for: " . $fromURL);
+            } else {
                 $fromURL = $abj404logic->normalizeToRelativePath($fromURL);
             }
 
@@ -1704,9 +1710,12 @@ class ABJ_404_Solution_DataAccess {
         $url = preg_replace('/[^\x20-\x7E]/', '', $url); // Remove non-printable ASCII characters
 
         // Normalize to relative path before querying (Issue #24)
-        // Fix Issue #3: Add NULL check on getInstance()
+        // Fix Issue #3 & HIGH #3: Add NULL check on getInstance() with proper error handling
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        if ($abj404logic !== null) {
+        if ($abj404logic === null) {
+            $abj404logging = ABJ_404_Solution_Logging::getInstance();
+            $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in getActiveRedirectForURL()! URL normalization skipped for: " . $url);
+        } else {
             $url = $abj404logic->normalizeToRelativePath($url);
         }
 
@@ -1754,9 +1763,12 @@ class ABJ_404_Solution_DataAccess {
         $url = preg_replace('/[^\x20-\x7E]/', '', $url); // Remove non-printable ASCII characters
 
         // Normalize to relative path before querying (Issue #24)
-        // Fix Issue #3: Add NULL check on getInstance()
+        // Fix Issue #3 & HIGH #3: Add NULL check on getInstance() with proper error handling
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        if ($abj404logic !== null) {
+        if ($abj404logic === null) {
+            $abj404logging = ABJ_404_Solution_Logging::getInstance();
+            $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in getExistingRedirectForURL()! URL normalization skipped for: " . $url);
+        } else {
             $url = $abj404logic->normalizeToRelativePath($url);
         }
 
