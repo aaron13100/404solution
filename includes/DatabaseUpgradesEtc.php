@@ -100,7 +100,22 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	// we could do this only when a table is created or when the "meta" column is created
     	// but it doesn't take long anyway so we do it every night.
     	$this->permalinkCache->updatePermalinkCache(1);
-    	
+
+    	// Run one-time migration to relative paths (Issue #24)
+    	if (get_option('abj404_migrated_to_relative_paths') !== '1') {
+    		$migrationResults = $this->migrateURLsToRelativePaths();
+
+    		// Show admin notice if migration occurred
+    		if ($updatingToNewVersion && !empty($migrationResults['redirects_updated'])) {
+    			$message = sprintf(
+    				__('404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format.', '404solution'),
+    				$migrationResults['redirects_updated'],
+    				$migrationResults['logs_updated']
+    			);
+    			add_settings_error('abj404_settings', 'migration_success', $message, 'updated');
+    		}
+    	}
+
     	if ($updatingToNewVersion) {
     		$this->correctIssuesAfter();
     	}
@@ -673,7 +688,128 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->dao->queryAndGetResults($query);
     	}
     }
-    
+
+    /**
+     * Migrate existing redirects and logs from absolute paths to relative paths.
+     * This is a one-time migration for upgrading from versions prior to 2.37.0.
+     * Fixes Issue #24: Redirects now survive WordPress subdirectory changes.
+     *
+     * @return array Migration results with counts
+     */
+    function migrateURLsToRelativePaths() {
+        global $wpdb;
+
+        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+
+        // Get current WordPress subdirectory
+        $homeURL = get_home_url();
+        $urlPath = parse_url($homeURL, PHP_URL_PATH);
+        $subdirectory = rtrim($urlPath, '/');
+
+        $results = array(
+            'redirects_updated' => 0,
+            'logs_updated' => 0,
+            'subdirectory' => $subdirectory,
+            'errors' => array()
+        );
+
+        // Skip if WordPress is at domain root (no subdirectory)
+        if (empty($subdirectory) || $subdirectory === '/') {
+            $abj404logging->debugMessage("No subdirectory detected. Migration skipped.");
+            return $results;
+        }
+
+        try {
+            // MIGRATE REDIRECTS TABLE
+            $redirectsTable = $wpdb->prefix . 'abj404_redirects';
+
+            $abj404logging->infoMessage("Migrating redirects table to relative paths...");
+
+            // Get all redirects that start with the subdirectory
+            $redirectsQuery = $wpdb->prepare(
+                "SELECT id, url FROM {$redirectsTable} WHERE url LIKE %s",
+                $wpdb->esc_like($subdirectory . '/') . '%'
+            );
+
+            $redirectsToMigrate = $wpdb->get_results($redirectsQuery);
+
+            foreach ($redirectsToMigrate as $redirect) {
+                // Remove subdirectory prefix
+                $newURL = substr($redirect->url, strlen($subdirectory));
+
+                // Ensure leading slash
+                $newURL = '/' . ltrim($newURL, '/');
+
+                // Update the record
+                $updated = $wpdb->update(
+                    $redirectsTable,
+                    array('url' => $newURL),
+                    array('id' => $redirect->id),
+                    array('%s'),
+                    array('%d')
+                );
+
+                if ($updated !== false) {
+                    $results['redirects_updated']++;
+                } else {
+                    $results['errors'][] = "Failed to update redirect ID {$redirect->id}";
+                }
+            }
+
+            $abj404logging->infoMessage("Migrated {$results['redirects_updated']} redirects.");
+
+            // MIGRATE LOGS TABLE
+            $logsTable = $wpdb->prefix . 'abj404_logsv2';
+
+            $abj404logging->infoMessage("Migrating logs table to relative paths...");
+
+            // Get all log entries that start with the subdirectory
+            $logsQuery = $wpdb->prepare(
+                "SELECT id, requested_url FROM {$logsTable} WHERE requested_url LIKE %s",
+                $wpdb->esc_like($subdirectory . '/') . '%'
+            );
+
+            $logsToMigrate = $wpdb->get_results($logsQuery);
+
+            foreach ($logsToMigrate as $log) {
+                // Remove subdirectory prefix
+                $newURL = substr($log->requested_url, strlen($subdirectory));
+
+                // Ensure leading slash
+                $newURL = '/' . ltrim($newURL, '/');
+
+                // Update the record
+                $updated = $wpdb->update(
+                    $logsTable,
+                    array('requested_url' => $newURL),
+                    array('id' => $log->id),
+                    array('%s'),
+                    array('%d')
+                );
+
+                if ($updated !== false) {
+                    $results['logs_updated']++;
+                } else {
+                    $results['errors'][] = "Failed to update log ID {$log->id}";
+                }
+            }
+
+            $abj404logging->infoMessage("Migrated {$results['logs_updated']} log entries.");
+
+            // Mark migration as complete
+            update_option('abj404_migrated_to_relative_paths', '1');
+            update_option('abj404_migration_results', $results);
+
+            $abj404logging->infoMessage("Migration to relative paths completed successfully.");
+
+        } catch (Exception $e) {
+            $results['errors'][] = $e->getMessage();
+            $abj404logging->errorMessage("Migration failed: " . $e->getMessage());
+        }
+
+        return $results;
+    }
+
     function updatePluginCheck() {
         
         $pluginInfo = $this->dao->getLatestPluginVersion();

@@ -1253,7 +1253,10 @@ class ABJ_404_Solution_DataAccess {
 
         // remove ridiculous non-printable characters
         $requested_url = preg_replace('/[^\x20-\x7E]/', '', $requested_url); // Remove non-printable ASCII characters
-    
+
+        // Normalize to relative path before storing (Issue #24)
+        $requested_url = $abj404logic->normalizeToRelativePath($requested_url);
+
         // if the database can't handle utf8 characters then convert them to latin1.
         try {
             $getCharsetQuery = $wpdb->prepare("SELECT character_set_name as charset_name \n " .
@@ -1650,11 +1653,15 @@ class ABJ_404_Solution_DataAccess {
         }
 
         // if we should not capture a 404 then don't.
-        if (!array_key_exists(ABJ404_PP, $_REQUEST) || 
+        if (!array_key_exists(ABJ404_PP, $_REQUEST) ||
         		!array_key_exists('ignore_doprocess', $_REQUEST[ABJ404_PP]) ||
         		!@$_REQUEST[ABJ404_PP]['ignore_doprocess']) {
             $now = time();
             $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
+
+            // Normalize to relative path before storing (Issue #24)
+            $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+            $fromURL = $abj404logic->normalizeToRelativePath($fromURL);
 
             $wpdb->insert($redirectsTable, array(
                 'url' => esc_sql($fromURL),
@@ -1686,10 +1693,14 @@ class ABJ_404_Solution_DataAccess {
      */
     function getActiveRedirectForURL($url) {
         $redirect = array();
-        
+
         // remove ridiculous non-printable characters
         $url = preg_replace('/[^\x20-\x7E]/', '', $url); // Remove non-printable ASCII characters
-        
+
+        // Normalize to relative path before querying (Issue #24)
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $url = $abj404logic->normalizeToRelativePath($url);
+
         // we look for two URLs that might match. one with a trailing slash and one without.
         // the one the user entered takes priority in case the admin added separate redirects for
         // cases with and without the slash (and for backward compatibility).
@@ -1732,6 +1743,10 @@ class ABJ_404_Solution_DataAccess {
 
         // remove ridiculous non-printable characters
         $url = preg_replace('/[^\x20-\x7E]/', '', $url); // Remove non-printable ASCII characters
+
+        // Normalize to relative path before querying (Issue #24)
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $url = $abj404logic->normalizeToRelativePath($url);
 
         // a disabled value of '1' means in the trash.
         $query = $this->prepare_query_wp('select * from {wp_abj404_redirects} where BINARY url = BINARY {url} ' . 
