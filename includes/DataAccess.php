@@ -397,18 +397,26 @@ class ABJ_404_Solution_DataAccess {
     	
     	$this->f->regexMatch($reForID, $errorMessage, $matchesForID);
     	$this->f->regexMatch($reForTableName, $sqlThatWasRun, $matchesForTableName);
-    	if ($matchesForID != null && $this->f->strlen($matchesForID[1]) > 0 && 
+    	if ($matchesForID != null && $this->f->strlen($matchesForID[1]) > 0 &&
     			$matchesForTableName != null && $this->f->strlen($matchesForTableName[1]) > 0) {
-    				
+
     		$idWithDuplicate = $matchesForID[1];
     		$tableName = $matchesForTableName[1];
-    		
+
+    		// Validate that ID is numeric to prevent SQL injection
+    		if (!is_numeric($idWithDuplicate)) {
+    			$this->logger->errorMessage("Invalid ID extracted from error message: " . $idWithDuplicate);
+    			return;
+    		}
+
     		if ($idWithDuplicate == 1) {
     			$idWithDuplicate = 0;
     		}
-    		$result = $this->queryAndGetResults("delete from " . $tableName . " where id = " . 
-    			$idWithDuplicate, array('log_errors' => false));
-   			$this->logger->infoMessage("Attempted to fix a duplicate entry issue. Table: " . 
+
+    		// Use prepared statement to prevent SQL injection
+    		$result = $this->queryAndGetResults("delete from " . $tableName . " where id = %d",
+    			array('log_errors' => false, 'query_params' => array(absint($idWithDuplicate))));
+   			$this->logger->infoMessage("Attempted to fix a duplicate entry issue. Table: " .
    				$tableName . ", Result: " . json_encode($result));
     	}
     }
@@ -1363,30 +1371,35 @@ class ABJ_404_Solution_DataAccess {
         ));
     }
 
-    /** Insert a value into the lookup table and return the ID of the value. 
+    /** Insert a value into the lookup table and return the ID of the value.
      * @param string $valueToInsert
      */
     function insertLookupValueAndGetID($valueToInsert) {
-    	
+
     	$lookupID = intval($this->getLookupIDForUser($valueToInsert));
     	if ($lookupID >= 0) {
     		return $lookupID;
     	}
-    	
+
         // insert the value since it's not there already.
-        $query = "INSERT INTO {wp_abj404_lookup} (lkup_value) values ('{lkup_value}')";
-        $query = $this->f->str_replace('{lkup_value}', $valueToInsert, $query);
-        $this->queryAndGetResults($query, array('ignore_errors' => 
-        		array("Duplicate entry")));
+        // Use prepared statement to prevent SQL injection
+        $query = "INSERT INTO {wp_abj404_lookup} (lkup_value) values (%s)";
+        $this->queryAndGetResults($query, array(
+            'ignore_errors' => array("Duplicate entry"),
+            'query_params' => array($valueToInsert)
+        ));
 
         $lookupID = $this->getLookupIDForUser($valueToInsert);
         return $lookupID;
     }
-    
+
     function getLookupIDForUser($userName) {
-    	$query = "select id from {wp_abj404_lookup} where lkup_value = '" . $userName . "'";
-    	$results = $this->queryAndGetResults($query);
-    	
+    	// Use prepared statement to prevent SQL injection
+    	$query = "select id from {wp_abj404_lookup} where lkup_value = %s";
+    	$results = $this->queryAndGetResults($query, array(
+    	    'query_params' => array($userName)
+    	));
+
     	if (sizeof($results['rows']) > 0) {
     		// the value already exists so we only need to return the ID.
     		$rows = $results['rows'];
@@ -2075,11 +2088,14 @@ class ABJ_404_Solution_DataAccess {
             return $message;
         }
         
-        // always add the type "0" because it's an invalid type that may exist in the databse. 
+        // always add the type "0" because it's an invalid type that may exist in the databse.
         // Adding it here does some cleanup if any is necessary.
         array_push($redirectTypes, 0);
+
+        // Ensure all values are integers to prevent SQL injection
+        $redirectTypes = array_map('absint', $redirectTypes);
         $typesForSQL = implode(',', $redirectTypes);
-        
+
         if ($purge == 'abj404_redirects') {
             $query = "update {wp_abj404_redirects} set disabled = 1 where status in (" . $typesForSQL . ")";
             $query = $this->doTableNameReplacements($query);
@@ -2176,10 +2192,12 @@ class ABJ_404_Solution_DataAccess {
      * @return string
      */
     function updateRedirectTypeStatus($id, $newstatus) {
-        $query = "update {wp_abj404_redirects} set status = '" . 
-                esc_sql($newstatus) . "' where id = '" . esc_sql($id) . "'";
-        $result = $this->queryAndGetResults($query);
-        
+        // Use prepared statement to prevent SQL injection
+        $query = "update {wp_abj404_redirects} set status = %s where id = %d";
+        $result = $this->queryAndGetResults($query, array(
+            'query_params' => array($newstatus, absint($id))
+        ));
+
         return $result['last_error'];
     }
 

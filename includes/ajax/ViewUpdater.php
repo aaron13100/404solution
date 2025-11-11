@@ -29,9 +29,21 @@ class ABJ_404_Solution_ViewUpdater {
         $rowsPerPage = absint($abj404dao->getPostOrGetSanitize('rowsPerPage'));
         $subpage = $abj404dao->getPostOrGetSanitize('subpage');
         $nonce = $abj404dao->getPostOrGetSanitize('nonce');
-        
-        wp_verify_nonce($nonce);
-        
+
+        // Verify nonce for CSRF protection
+        if (!wp_verify_nonce($nonce, 'abj404_pagination')) {
+            header('Content-type: application/json; charset=UTF-8');
+            echo json_encode(array('error' => 'Invalid security token'));
+            exit;
+        }
+
+        // Verify user has appropriate capabilities
+        if (!current_user_can('manage_options')) {
+            header('Content-type: application/json; charset=UTF-8');
+            echo json_encode(array('error' => 'Unauthorized'));
+            exit;
+        }
+
         // update the perpage option
         $abj404logic->updatePerPageOption($rowsPerPage);
         

@@ -26,8 +26,22 @@ class ABJ_404_Solution_Ajax_Php {
     	$abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();;
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
-        
+
+        // Verify nonce for CSRF protection
+        if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'abj404_ajax')) {
+            echo json_encode(array('error' => 'Invalid security token'));
+            exit();
+        }
+
+        // Verify user has appropriate capabilities
+        if (!current_user_can('manage_options')) {
+            echo json_encode(array('error' => 'Unauthorized'));
+            exit();
+        }
+
+        // Limit search term length to prevent DoS
         $term = $f->strtolower(sanitize_text_field($_GET['term']));
+        $term = substr($term, 0, 100);
         $suggestions = array();
 
         $suggestion = array();
@@ -56,8 +70,22 @@ class ABJ_404_Solution_Ajax_Php {
         $abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
-        
+
+        // Verify nonce for CSRF protection
+        if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'abj404_ajax')) {
+            echo json_encode(array('error' => 'Invalid security token'));
+            exit();
+        }
+
+        // Verify user has appropriate capabilities
+        if (!current_user_can('manage_options')) {
+            echo json_encode(array('error' => 'Unauthorized'));
+            exit();
+        }
+
+        // Limit search term length to prevent DoS
         $term = $f->strtolower(sanitize_text_field($_GET['term']));
+        $term = substr($term, 0, 100);
         $includeDefault404Page = $_GET['includeDefault404Page'] == "true";
         $includeSpecial = array_key_exists('includeSpecial', $_GET) && 
         	$_GET['includeSpecial'] == "true";

@@ -1031,6 +1031,28 @@ class ABJ_404_Solution_PluginLogic {
     function doImportFile() {
         $anyIssuesToNote = array();
         if (isset($_FILES['import_file']) && $_FILES['import_file']['error'] == UPLOAD_ERR_OK) {
+            // Validate file extension to prevent malicious file uploads
+            $allowed_extensions = array('csv', 'txt');
+            $file_ext = strtolower(pathinfo($_FILES['import_file']['name'], PATHINFO_EXTENSION));
+            if (!in_array($file_ext, $allowed_extensions)) {
+                return "Error: Invalid file type. Only CSV/TXT files are allowed.";
+            }
+
+            // Validate file size (max 5MB to prevent DoS)
+            $max_file_size = 5 * 1024 * 1024; // 5MB in bytes
+            if ($_FILES['import_file']['size'] > $max_file_size) {
+                return "Error: File too large. Maximum size is 5MB.";
+            }
+
+            // Validate MIME type
+            $allowed_mime_types = array('text/csv', 'text/plain', 'application/csv', 'text/comma-separated-values', 'application/vnd.ms-excel');
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime_type = finfo_file($finfo, $_FILES['import_file']['tmp_name']);
+            finfo_close($finfo);
+            if (!in_array($mime_type, $allowed_mime_types)) {
+                return "Error: Invalid file type. Only CSV files are allowed.";
+            }
+
             // Open the uploaded file for reading
             $file_handle = fopen($_FILES['import_file']['tmp_name'], 'r');
             if (!$file_handle) {
