@@ -33,8 +33,17 @@ define('ABJ404_PP', 'abj404_solution');
 define('ABJ404_FILE', __FILE__);
 define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
 $GLOBALS['abj404_display_errors'] = false;
-$GLOBALS['abj404_whitelist'] = array('127.0.0.1', '::1', 'localhost', 
-		'ajexperience.com', 'www.ajexperience.com');
+
+// Debug whitelist - only includes localhost/development environments by default
+// WARNING: Only add trusted domains to this list. External domains could be a security risk.
+// This list is used to enable detailed error logging for debugging purposes.
+$GLOBALS['abj404_whitelist'] = array('127.0.0.1', '::1', 'localhost');
+
+// Allow filtering the whitelist for advanced users who need to add custom domains
+// Usage: add_filter('abj404_debug_whitelist', function($whitelist) { $whitelist[] = 'yourdomain.com'; return $whitelist; });
+if (has_filter('abj404_debug_whitelist')) {
+    $GLOBALS['abj404_whitelist'] = apply_filters('abj404_debug_whitelist', $GLOBALS['abj404_whitelist']);
+}
 
 $abj404_autoLoaderClassMap = array();
 function abj404_autoloader($class) {

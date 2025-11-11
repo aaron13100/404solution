@@ -44,6 +44,13 @@ class ABJ_404_Solution_ViewUpdater {
             exit;
         }
 
+        // Rate limiting to prevent abuse (100 requests per minute)
+        if (ABJ_404_Solution_Ajax_Php::checkRateLimit('update_pagination', 100, 60)) {
+            header('Content-type: application/json; charset=UTF-8');
+            echo json_encode(array('error' => 'Rate limit exceeded. Please try again later.'));
+            exit;
+        }
+
         // update the perpage option
         $abj404logic->updatePerPageOption($rowsPerPage);
         
