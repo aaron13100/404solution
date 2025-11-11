@@ -246,6 +246,34 @@ body[data-theme] a:hover {
   color: var(--abj404-accent);
 }
 
+/* Navigation tabs */
+body[data-theme] .nav-tab-wrapper,
+body[data-theme] .wrap .nav-tab-wrapper {
+  border-bottom-color: var(--abj404-border);
+}
+
+body[data-theme] .nav-tab,
+body[data-theme] a.nav-tab {
+  background-color: var(--abj404-surface);
+  border-color: var(--abj404-border);
+  color: var(--abj404-text);
+}
+
+body[data-theme] .nav-tab:hover,
+body[data-theme] a.nav-tab:hover {
+  background-color: var(--abj404-surface-muted);
+  color: var(--abj404-text);
+}
+
+body[data-theme] .nav-tab-active,
+body[data-theme] .nav-tab-active:hover,
+body[data-theme] a.nav-tab-active,
+body[data-theme] a.nav-tab-active:hover {
+  background-color: var(--abj404-bg);
+  border-bottom-color: var(--abj404-bg);
+  color: var(--abj404-text);
+}
+
 /* Notices and messages */
 body[data-theme] .notice,
 body[data-theme] .updated,
