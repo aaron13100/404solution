@@ -191,6 +191,10 @@ msgstr "Nível de notificação do administrador"
 msgid "Admin theme"
 msgstr "Tema do administrador"
 
+msgid "Advanced"
+msgstr "Avançado"
+
+
 msgid "Advanced Settings (Etc)"
 msgstr "Configurações Avançadas (Etc)"
 
@@ -223,6 +227,10 @@ msgstr "Auto"
 
 msgid "Auto redirect deletion"
 msgstr "Exclusão automática de redirecionamento"
+
+msgid "Auto Redirects"
+msgstr "Redirecionamentos automáticos"
+
 
 msgid "Automatic 301 Redirects"
 msgstr "Redirecionamentos 301 Automáticos"
@@ -529,6 +537,9 @@ msgstr "Arquivos e pastas listados aqui serão ignorados."
 
 msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
 msgstr "Primeiro, todas as URLs de \"correspondência exata\" normais são verificadas, depois todas as URLs de expressão regular são verificadas."
+
+msgid "General"
+msgstr "Geral"
 
 msgid "General Settings"
 msgstr "Configurações Gerais"
@@ -911,6 +922,10 @@ msgstr "SUGGEST_USER_TITLE"
 msgid "Sanity Check"
 msgstr "Verificação de Sanidade"
 
+msgid "Section filters"
+msgstr "Filtros de seção"
+
+
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
 msgstr "User agents de mecanismos de busca não devem ir aqui para que sejam redirecionados quando a estrutura do slug mudar."
 
@@ -931,6 +946,10 @@ msgstr "Estatísticas"
 
 msgid "Status"
 msgstr "Status"
+
+msgid "Suggestions"
+msgstr "Sugestões"
+
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "Os formatos suportados são: <B>from_url,status,type,to_url,wp_type</B>"

@@ -191,6 +191,10 @@ msgstr "Beheerdersmeldingsniveau"
 msgid "Admin theme"
 msgstr "Beheerdersthema"
 
+msgid "Advanced"
+msgstr "Geavanceerd"
+
+
 msgid "Advanced Settings (Etc)"
 msgstr "Geavanceerde instellingen (etc.)"
 
@@ -223,6 +227,10 @@ msgstr "Automatisch"
 
 msgid "Auto redirect deletion"
 msgstr "Automatische omleidingsverwijdering"
+
+msgid "Auto Redirects"
+msgstr "Automatische omleidingen"
+
 
 msgid "Automatic 301 Redirects"
 msgstr "Automatische 301-omleidingen"
@@ -529,6 +537,9 @@ msgstr "Bestanden en mappen die hier worden vermeld, worden genegeerd."
 
 msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
 msgstr "Eerst worden alle normale \"exacte overeenkomst\" URL's gecontroleerd, daarna worden alle reguliere expressie URL's gecontroleerd."
+
+msgid "General"
+msgstr "Algemeen"
 
 msgid "General Settings"
 msgstr "Algemene instellingen"
@@ -911,6 +922,10 @@ msgstr "SUGGEST_USER_TITLE"
 msgid "Sanity Check"
 msgstr "Gezondheidscontrole"
 
+msgid "Section filters"
+msgstr "Sectiefilters"
+
+
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
 msgstr "Zoekmachine-user agents horen hier niet thuis, zodat ze worden omgeleid wanneer de slug-structuur verandert."
 
@@ -931,6 +946,10 @@ msgstr "Statistieken"
 
 msgid "Status"
 msgstr "Status"
+
+msgid "Suggestions"
+msgstr "Suggesties"
+
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "Ondersteunde formaten zijn: <B>from_url,status,type,to_url,wp_type</B>"

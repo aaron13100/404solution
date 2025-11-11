@@ -191,6 +191,10 @@ msgstr "管理员通知级别"
 msgid "Admin theme"
 msgstr "管理主题"
 
+msgid "Advanced"
+msgstr "高级"
+
+
 msgid "Advanced Settings (Etc)"
 msgstr "高级设置（等）"
 
@@ -223,6 +227,10 @@ msgstr "自动"
 
 msgid "Auto redirect deletion"
 msgstr "自动重定向删除"
+
+msgid "Auto Redirects"
+msgstr "自动重定向"
+
 
 msgid "Automatic 301 Redirects"
 msgstr "自动 301 重定向"
@@ -529,6 +537,9 @@ msgstr "此处列出的文件和文件夹将被忽略。"
 
 msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
 msgstr "首先检查所有常规的 \"精确匹配\" URL，然后检查所有正则表达式 URL。"
+
+msgid "General"
+msgstr "常规"
 
 msgid "General Settings"
 msgstr "常规设置"
@@ -911,6 +922,10 @@ msgstr "SUGGEST_USER_TITLE"
 msgid "Sanity Check"
 msgstr "健全性检查"
 
+msgid "Section filters"
+msgstr "部分过滤器"
+
+
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
 msgstr "搜索引擎用户代理不应放在此处，以便在别名结构更改时将它们重定向。"
 
@@ -931,6 +946,10 @@ msgstr "统计"
 
 msgid "Status"
 msgstr "状态"
+
+msgid "Suggestions"
+msgstr "建议"
+
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "支持的格式为：<B>from_url,status,type,to_url,wp_type</B>"

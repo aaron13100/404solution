@@ -191,6 +191,10 @@ msgstr "Level notifikasi admin"
 msgid "Admin theme"
 msgstr "Tema admin"
 
+msgid "Advanced"
+msgstr "Lanjutan"
+
+
 msgid "Advanced Settings (Etc)"
 msgstr "Pengaturan Lanjutan (Dll)"
 
@@ -223,6 +227,10 @@ msgstr "Otomatis"
 
 msgid "Auto redirect deletion"
 msgstr "Penghapusan redirect otomatis"
+
+msgid "Auto Redirects"
+msgstr "Pengalihan Otomatis"
+
 
 msgid "Automatic 301 Redirects"
 msgstr "Redirect 301 Otomatis"
@@ -529,6 +537,9 @@ msgstr "File dan folder yang tercantum di sini akan diabaikan."
 
 msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
 msgstr "Pertama, semua URL \"pencocokan tepat\" normal diperiksa, kemudian semua URL regular expression diperiksa."
+
+msgid "General"
+msgstr "Umum"
 
 msgid "General Settings"
 msgstr "Pengaturan Umum"
@@ -911,6 +922,10 @@ msgstr "SUGGEST_USER_TITLE"
 msgid "Sanity Check"
 msgstr "Pemeriksaan Validitas"
 
+msgid "Section filters"
+msgstr "Filter bagian"
+
+
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
 msgstr "User agent mesin pencari tidak boleh masuk ke sini sehingga mereka akan di-redirect saat struktur slug berubah."
 
@@ -931,6 +946,10 @@ msgstr "Statistik"
 
 msgid "Status"
 msgstr "Status"
+
+msgid "Suggestions"
+msgstr "Saran"
+
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "Format yang didukung adalah: <B>from_url,status,type,to_url,wp_type</B>"

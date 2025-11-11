@@ -191,6 +191,10 @@ msgstr "管理者通知レベル"
 msgid "Admin theme"
 msgstr "管理画面テーマ"
 
+msgid "Advanced"
+msgstr "高度な設定"
+
+
 msgid "Advanced Settings (Etc)"
 msgstr "詳細設定（その他）"
 
@@ -223,6 +227,10 @@ msgstr "自動"
 
 msgid "Auto redirect deletion"
 msgstr "自動リダイレクトの削除"
+
+msgid "Auto Redirects"
+msgstr "自動リダイレクト"
+
 
 msgid "Automatic 301 Redirects"
 msgstr "自動301リダイレクト"
@@ -529,6 +537,9 @@ msgstr "ここにリストされているファイルとフォルダーは無視
 
 msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
 msgstr "まず、すべての通常の「完全一致」URLがチェックされ、次にすべての正規表現URLがチェックされます。"
+
+msgid "General"
+msgstr "一般"
 
 msgid "General Settings"
 msgstr "一般設定"
@@ -911,6 +922,10 @@ msgstr "SUGGEST_USER_TITLE"
 msgid "Sanity Check"
 msgstr "健全性チェック"
 
+msgid "Section filters"
+msgstr "セクションフィルター"
+
+
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
 msgstr "検索エンジンのユーザーエージェントは、スラッグ構造が変更されたときにリダイレクトされるように、ここには含めないでください。"
 
@@ -931,6 +946,10 @@ msgstr "統計"
 
 msgid "Status"
 msgstr "ステータス"
+
+msgid "Suggestions"
+msgstr "提案"
+
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "サポートされている形式：<B>from_url,status,type,to_url,wp_type</B>"
