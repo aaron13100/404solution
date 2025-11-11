@@ -7,10 +7,25 @@
     'use strict';
 
     $(document).ready(function() {
+        calculateDynamicHeights();
         initializeChips();
         initializeScrollSpy();
         initializeHidingHeader();
     });
+
+    function calculateDynamicHeights() {
+        // Calculate actual heights for sticky positioning
+        const adminBar = $('#wpadminbar');
+        const navTabs = $('.nav-tab-wrapper');
+
+        const adminBarHeight = (adminBar.length > 0 && adminBar.is(':visible')) ? adminBar.outerHeight() : 32;
+        const tabsHeight = (navTabs.length > 0) ? navTabs.outerHeight() : 46;
+        const chipsTopWithTabs = adminBarHeight + tabsHeight;
+
+        // Set CSS custom properties for dynamic positioning
+        document.documentElement.style.setProperty('--admin-bar-height', adminBarHeight + 'px');
+        document.documentElement.style.setProperty('--chips-top-with-tabs', chipsTopWithTabs + 'px');
+    }
 
     function initializeChips() {
         const chips = $('.abj404-chip');
