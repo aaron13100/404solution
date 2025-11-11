@@ -720,7 +720,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $urlPath = '';
         }
 
-        $subdirectory = rtrim($urlPath, '/');
+        // Fix HIGH #2 (4th review): Decode subdirectory for consistency with runtime
+        $decodedPath = rawurldecode(rtrim($urlPath, '/'));
+        // Fix HIGH #3 (4th review): Remove null bytes and control characters for security
+        $subdirectory = preg_replace('/[\x00-\x1F\x7F]/', '', $decodedPath);
 
         $results = array(
             'redirects_updated' => 0,
@@ -860,13 +863,18 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
             $abj404logging->infoMessage("Migrated {$results['logs_updated']} log entries.");
 
-            // Fix HIGH #1: Commit transaction
-            $wpdb->query('COMMIT');
-
-            // Fix Issue #2: Only mark migration as complete if there are no errors
+            // Fix CRITICAL #3 (4th review): Set options BEFORE commit for atomicity
+            // If update_option fails, we can still rollback the database changes
             if (empty($results['errors'])) {
                 update_option('abj404_migrated_to_relative_paths', '1');
                 update_option('abj404_migration_results', $results);
+            }
+
+            // Fix HIGH #1: Commit transaction (after options are set)
+            $wpdb->query('COMMIT');
+
+            // Log success after commit succeeds
+            if (empty($results['errors'])) {
                 $abj404logging->infoMessage("Migration to relative paths completed successfully.");
             } else {
                 $abj404logging->errorMessage("Migration completed with errors. Will retry on next run. Errors: " . implode('; ', $results['errors']));

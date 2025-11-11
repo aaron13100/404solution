@@ -59,7 +59,10 @@ class ABJ_404_Solution_PluginLogic {
     	$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
     	$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
     	$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
-    	$this->urlHomeDirectory = rtrim($urlPath, '/');
+    	// Fix HIGH #2 (4th review): Decode subdirectory for consistency with runtime processing
+    	$decodedPath = rawurldecode(rtrim($urlPath, '/'));
+    	// Fix HIGH #3 (4th review): Remove null bytes and control characters for security
+    	$this->urlHomeDirectory = preg_replace('/[\x00-\x1F\x7F]/', '', $decodedPath);
     	$this->urlHomeDirectoryLength = $this->f->strlen($this->urlHomeDirectory);
     }
     
@@ -181,8 +184,9 @@ class ABJ_404_Solution_PluginLogic {
     				// Strip subdirectory + slash for paths: /blog/page → /page
     				$urlRequest = $this->f->substr($urlRequest, ($this->urlHomeDirectoryLength + 1));
     			} else {
-    				// Strip only subdirectory for query/fragment: /blog?q=1 → ?q=1
-    				$urlRequest = $this->f->substr($urlRequest, $this->urlHomeDirectoryLength);
+    				// Fix HIGH #1 (4th review): Add leading slash for query/fragment
+    				// Strip subdirectory, add leading slash: /blog?q=1 → /?q=1
+    				$urlRequest = '/' . $this->f->substr($urlRequest, $this->urlHomeDirectoryLength);
     			}
     		}
     		// else: false positive (e.g., /blogpost when subdirectory is /blog) - don't strip
@@ -208,8 +212,8 @@ class ABJ_404_Solution_PluginLogic {
         // Fix HIGH #2: Trim whitespace
         $url = trim($url);
 
-        // Fix HIGH #3 (3rd review): Decode URL to handle encoded subdirectories
-        $url = rawurldecode($url);
+        // Fix CRITICAL #2 (4th review): REMOVED rawurldecode() - URLs already decoded by UserRequest
+        // Subdirectory decoding is now handled in constructor for consistency
 
         // Fix HIGH #2: If full URL, extract path only
         if (preg_match('#^https?://#i', $url)) {
