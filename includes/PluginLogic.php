@@ -176,8 +176,14 @@ class ABJ_404_Solution_PluginLogic {
     		// Verify path boundary: next character must be '/', '?', '#', or end of string
     		$nextChar = $this->f->substr($urlRequest, $this->urlHomeDirectoryLength, 1);
     		if ($nextChar === '/' || $nextChar === '?' || $nextChar === '#' || $nextChar === '') {
-    			// Valid path boundary found - strip subdirectory
-    			$urlRequest = $this->f->substr($urlRequest, ($this->urlHomeDirectoryLength + 1));
+    			// Fix CRITICAL #2 (3rd review): Don't strip query/fragment markers
+    			if ($nextChar === '/' || $nextChar === '') {
+    				// Strip subdirectory + slash for paths: /blog/page → /page
+    				$urlRequest = $this->f->substr($urlRequest, ($this->urlHomeDirectoryLength + 1));
+    			} else {
+    				// Strip only subdirectory for query/fragment: /blog?q=1 → ?q=1
+    				$urlRequest = $this->f->substr($urlRequest, $this->urlHomeDirectoryLength);
+    			}
     		}
     		// else: false positive (e.g., /blogpost when subdirectory is /blog) - don't strip
     	}
@@ -201,6 +207,9 @@ class ABJ_404_Solution_PluginLogic {
 
         // Fix HIGH #2: Trim whitespace
         $url = trim($url);
+
+        // Fix HIGH #3 (3rd review): Decode URL to handle encoded subdirectories
+        $url = rawurldecode($url);
 
         // Fix HIGH #2: If full URL, extract path only
         if (preg_match('#^https?://#i', $url)) {
