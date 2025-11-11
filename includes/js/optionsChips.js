@@ -184,6 +184,7 @@
 
     function initializeHidingHeader() {
         const navTabWrapper = $('.nav-tab-wrapper');
+        const chipsContainer = $('.abj404-chips-container');
 
         if (navTabWrapper.length === 0) {
             return; // No tabs found
@@ -200,17 +201,20 @@
             // Don't hide tabs when near the top
             if (currentScrollY < topThreshold) {
                 navTabWrapper.removeClass('tabs-hidden');
+                chipsContainer.removeClass('tabs-are-hidden');
                 lastScrollY = currentScrollY;
                 return;
             }
 
             // Check scroll direction
             if (currentScrollY > lastScrollY && currentScrollY > scrollThreshold) {
-                // Scrolling down - hide tabs
+                // Scrolling down - hide tabs, move chips up
                 navTabWrapper.addClass('tabs-hidden');
+                chipsContainer.addClass('tabs-are-hidden');
             } else if (currentScrollY < lastScrollY) {
-                // Scrolling up - show tabs
+                // Scrolling up - show tabs, move chips down
                 navTabWrapper.removeClass('tabs-hidden');
+                chipsContainer.removeClass('tabs-are-hidden');
             }
 
             lastScrollY = currentScrollY;

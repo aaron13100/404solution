@@ -244,10 +244,16 @@ ul .ui-autocomplete-category.data-overflow-category {
 @media (min-width: 783px) {
     .abj404-chips-container {
         position: sticky;
-        top: 32px; /* WordPress admin bar height */
+        top: 86px; /* Admin bar (32px) + tabs (~52px) + gap (2px) */
         z-index: 100;
         padding: 12px 16px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: top 0.3s ease-in-out;
+    }
+
+    /* When tabs are hidden, chips move up to just below admin bar */
+    .abj404-chips-container.tabs-are-hidden {
+        top: 32px;
     }
 }
 
