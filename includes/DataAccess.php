@@ -1111,11 +1111,11 @@ class ABJ_404_Solution_DataAccess {
             if (floatval($row1['table_comment']) > 0) {
                 $timeToCreatePreviously = floatval($row1['table_comment']);
             }
-            
-            if ($timeToCreatePreviously < 1) {
+
+            if ($timeToCreatePreviously < 0.3) {
                 $this->logger->debugMessage(__FUNCTION__ . " creating immediately because create time was " .
                         $timeToCreatePreviously . " seconds.");
-                // it took less than 5 seconds less time so let's just do it again right now.
+                // it took less than 0.3 seconds so let's just do it again right now.
                 $this->createRedirectsForViewHitsTable();
                 
             } else {
@@ -1126,8 +1126,9 @@ class ABJ_404_Solution_DataAccess {
             }
             
         } else {
-            $this->logger->debugMessage(__FUNCTION__ . " creating now because the table doesn't exist.");
-            // if the table does not exist then create it right away.
+            $this->logger->debugMessage(__FUNCTION__ . " creating now because the table doesn't exist (first time).");
+            // if the table does not exist, we need to create it now so the query doesn't fail.
+            // This will only happen on the very first load. Subsequent loads will use the threshold check above.
             $this->createRedirectsForViewHitsTable();
         }
     }
