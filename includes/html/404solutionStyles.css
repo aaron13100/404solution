@@ -490,13 +490,18 @@ ul .ui-autocomplete-category.data-overflow-category {
    Hiding Header (Scroll Direction)
    ============================================ */
 
+/* Add spacing for fixed tabs so they don't cover page header */
+.wrap {
+    padding-top: 50px; /* Space for fixed nav-tab-wrapper */
+}
+
 /* WordPress plugin tabs - smooth transition */
 .nav-tab-wrapper {
     position: fixed;
     top: 32px; /* WordPress admin bar height */
     left: 160px; /* WordPress admin menu width */
     right: 0;
-    z-index: 99;
+    z-index: 101; /* Above chips (100) and content */
     background: #f0f0f1;
     margin: 0;
     padding: 0;
