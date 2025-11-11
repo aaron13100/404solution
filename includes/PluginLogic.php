@@ -185,8 +185,19 @@ class ABJ_404_Solution_PluginLogic {
      * @return string Relative path without subdirectory
      */
     function normalizeToRelativePath($url) {
+        // Fix Issue #5: Handle empty or null URLs explicitly
+        if ($url === null || $url === '') {
+            return '/';
+        }
+
         // Remove home directory if present
         $relativePath = $this->removeHomeDirectory($url);
+
+        // Fix Issue #5: Check if removeHomeDirectory() returned empty unexpectedly
+        if ($relativePath === null || $relativePath === '') {
+            // Return root path for empty results
+            return '/';
+        }
 
         // Ensure consistent leading slash
         $relativePath = '/' . ltrim($relativePath, '/');

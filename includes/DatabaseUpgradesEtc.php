@@ -704,6 +704,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         // Get current WordPress subdirectory
         $homeURL = get_home_url();
         $urlPath = parse_url($homeURL, PHP_URL_PATH);
+
+        // Fix Issue #1: Handle parse_url() failure
+        if ($urlPath === false || $urlPath === null) {
+            $urlPath = '';
+        }
+
         $subdirectory = rtrim($urlPath, '/');
 
         $results = array(
@@ -733,9 +739,20 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
             $redirectsToMigrate = $wpdb->get_results($redirectsQuery);
 
+            // Fix Issue #7: Check for database errors
+            if ($redirectsToMigrate === null) {
+                throw new Exception("Failed to query redirects table: " . $wpdb->last_error);
+            }
+
             foreach ($redirectsToMigrate as $redirect) {
                 // Remove subdirectory prefix
                 $newURL = substr($redirect->url, strlen($subdirectory));
+
+                // Fix Issue #4: Skip exact subdirectory match to avoid converting to root
+                if (empty($newURL) || $newURL === '/' || $redirect->url === $subdirectory) {
+                    $abj404logging->debugMessage("Skipping exact subdirectory match for redirect ID {$redirect->id}");
+                    continue;
+                }
 
                 // Ensure leading slash
                 $newURL = '/' . ltrim($newURL, '/');
@@ -752,7 +769,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 if ($updated !== false) {
                     $results['redirects_updated']++;
                 } else {
-                    $results['errors'][] = "Failed to update redirect ID {$redirect->id}";
+                    $error_msg = "Failed to update redirect ID {$redirect->id}: " . $wpdb->last_error;
+                    $results['errors'][] = $error_msg;
+                    $abj404logging->errorMessage($error_msg);
                 }
             }
 
@@ -771,9 +790,20 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
             $logsToMigrate = $wpdb->get_results($logsQuery);
 
+            // Fix Issue #7: Check for database errors
+            if ($logsToMigrate === null) {
+                throw new Exception("Failed to query logs table: " . $wpdb->last_error);
+            }
+
             foreach ($logsToMigrate as $log) {
                 // Remove subdirectory prefix
                 $newURL = substr($log->requested_url, strlen($subdirectory));
+
+                // Fix Issue #4: Skip exact subdirectory match to avoid converting to root
+                if (empty($newURL) || $newURL === '/' || $log->requested_url === $subdirectory) {
+                    $abj404logging->debugMessage("Skipping exact subdirectory match for log ID {$log->id}");
+                    continue;
+                }
 
                 // Ensure leading slash
                 $newURL = '/' . ltrim($newURL, '/');
@@ -790,17 +820,22 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 if ($updated !== false) {
                     $results['logs_updated']++;
                 } else {
-                    $results['errors'][] = "Failed to update log ID {$log->id}";
+                    $error_msg = "Failed to update log ID {$log->id}: " . $wpdb->last_error;
+                    $results['errors'][] = $error_msg;
+                    $abj404logging->errorMessage($error_msg);
                 }
             }
 
             $abj404logging->infoMessage("Migrated {$results['logs_updated']} log entries.");
 
-            // Mark migration as complete
-            update_option('abj404_migrated_to_relative_paths', '1');
-            update_option('abj404_migration_results', $results);
-
-            $abj404logging->infoMessage("Migration to relative paths completed successfully.");
+            // Fix Issue #2: Only mark migration as complete if there are no errors
+            if (empty($results['errors'])) {
+                update_option('abj404_migrated_to_relative_paths', '1');
+                update_option('abj404_migration_results', $results);
+                $abj404logging->infoMessage("Migration to relative paths completed successfully.");
+            } else {
+                $abj404logging->errorMessage("Migration completed with errors. Will retry on next run. Errors: " . implode('; ', $results['errors']));
+            }
 
         } catch (Exception $e) {
             $results['errors'][] = $e->getMessage();
