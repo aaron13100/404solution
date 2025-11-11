@@ -416,6 +416,45 @@ class ABJ_404_Solution_View {
         echo "</div>";
     }
 
+    /**
+     * Echo a section-wrapped postbox for the options page with chips navigation
+     * @param string $sectionId The section identifier for the chip navigation
+     * @param string $postboxId The ID for the postbox
+     * @param string $title The title of the section
+     * @param string $content The content to display
+     */
+    function echoOptionsSection($sectionId, $postboxId, $title, $content) {
+        echo "<div class=\"abj404-options-section\" data-section=\"" . esc_attr($sectionId) . "\">";
+        $this->echoPostBox($postboxId, $title, $content);
+        echo "</div>";
+    }
+
+    /**
+     * Echo the chips navigation for the options page
+     */
+    function echoChipsNavigation() {
+        ?>
+        <nav class="abj404-chips-nav" aria-label="<?php echo esc_attr__('Section filters', '404-solution'); ?>">
+            <button class="abj404-chip chip-autooptions" data-target="abj404-autooptions" type="button" aria-pressed="true">
+                <span class="abj404-chip-dot" aria-hidden="true"></span>
+                <?php echo esc_html__('Auto Redirects', '404-solution'); ?>
+            </button>
+            <button class="abj404-chip chip-generaloptions" data-target="abj404-generaloptions" type="button" aria-pressed="false">
+                <span class="abj404-chip-dot" aria-hidden="true"></span>
+                <?php echo esc_html__('General', '404-solution'); ?>
+            </button>
+            <button class="abj404-chip chip-advancedoptions" data-target="abj404-advancedoptions" type="button" aria-pressed="false">
+                <span class="abj404-chip-dot" aria-hidden="true"></span>
+                <?php echo esc_html__('Advanced', '404-solution'); ?>
+            </button>
+            <button class="abj404-chip chip-suggestoptions" data-target="abj404-suggestoptions" type="button" aria-pressed="false">
+                <span class="abj404-chip-dot" aria-hidden="true"></span>
+                <?php echo esc_html__('Suggestions', '404-solution'); ?>
+            </button>
+        </nav>
+        <?php
+    }
+
     /** Output the stats page.
      * @global type $wpdb
      * @global type $abj404dao
@@ -717,28 +756,32 @@ class ABJ_404_Solution_View {
         echo "<div class=\"metabox-holder\">";
         echo " <div class=\"meta-box-sortables\">";
 
-        $formBeginning = '<form method="POST" id="admin-options-page" ' . 
+        $formBeginning = '<form method="POST" id="admin-options-page" ' .
         	'name="admin-options-page" action="#" data-url="{data-url}">' . "\n";
         $formBeginning .= '<input type="hidden" name="action" id="action" value="updateOptions">' . "\n";
-        $formBeginning .= '<input type="hidden" name="nonce" id="nonce" value="' . 
+        $formBeginning .= '<input type="hidden" name="nonce" id="nonce" value="' .
         	wp_create_nonce('abj404UpdateOptions') . '">' . "\n";
-        $formBeginning = $this->f->str_replace('{data-url}', 
+        $formBeginning = $this->f->str_replace('{data-url}',
         	"admin-ajax.php?action=updateOptions", $formBeginning);
         echo $formBeginning;
 
+        // Add chips navigation
+        $abj404view->echoChipsNavigation();
+
+        // Render each section with chips-compatible wrapper
         $contentAutomaticRedirects = $abj404view->getAdminOptionsPageAutoRedirects($options);
-        $abj404view->echoPostBox("abj404-autooptions", __('Automatic Redirects', '404-solution'), $contentAutomaticRedirects);
+        $abj404view->echoOptionsSection("abj404-autooptions", "abj404-autooptions", __('Automatic Redirects', '404-solution'), $contentAutomaticRedirects);
 
         $contentGeneralSettings = $abj404view->getAdminOptionsPageGeneralSettings($options);
-        $abj404view->echoPostBox("abj404-generaloptions", __('General Settings', '404-solution'), $contentGeneralSettings);
+        $abj404view->echoOptionsSection("abj404-generaloptions", "abj404-generaloptions", __('General Settings', '404-solution'), $contentGeneralSettings);
 
         $contentAdvancedSettings = $abj404view->getAdminOptionsPageAdvancedSettings($options);
-        $abj404view->echoPostBox("abj404-advancedoptions", __('Advanced Settings (Etc)', '404-solution'), $contentAdvancedSettings);
+        $abj404view->echoOptionsSection("abj404-advancedoptions", "abj404-advancedoptions", __('Advanced Settings (Etc)', '404-solution'), $contentAdvancedSettings);
 
         // Only render suggestions section if the suggestions view is available
         if ($abj404viewSuggestions !== null && method_exists($abj404viewSuggestions, 'getAdminOptionsPage404Suggestions')) {
             $content404PageSuggestions = $abj404viewSuggestions->getAdminOptionsPage404Suggestions($options);
-            $abj404view->echoPostBox("abj404-suggestoptions", __('404 Page Suggestions', '404-solution'), $content404PageSuggestions);
+            $abj404view->echoOptionsSection("abj404-suggestoptions", "abj404-suggestoptions", __('404 Page Suggestions', '404-solution'), $content404PageSuggestions);
         }
 
         echo "<input type=\"submit\" name=\"abj404-optionssub\" id=\"abj404-optionssub\" " .

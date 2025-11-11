@@ -209,4 +209,122 @@ ul .ui-autocomplete-category.data-overflow-category {
     /* prevent horizontal scrollbar */
     overflow-x: hidden;
   }
-  
+
+/* ============================================
+   Options Page Chips Navigation
+   ============================================ */
+
+/* Chips navigation container */
+.abj404-chips-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 20px 0;
+    padding: 12px 0;
+    background: #fff;
+    border-bottom: 1px solid #ccd0d4;
+}
+
+/* Make chips sticky on desktop */
+@media (min-width: 783px) {
+    .abj404-chips-nav {
+        position: sticky;
+        top: 32px; /* WordPress admin bar height */
+        z-index: 100;
+        padding: 12px 16px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+}
+
+/* Individual chip button */
+.abj404-chip {
+    appearance: none;
+    border: 1px solid #8c8f94;
+    background: #fff;
+    color: #2c3338;
+    padding: 6px 12px;
+    border-radius: 16px;
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 13px;
+    line-height: 1.4;
+    transition: all 0.15s ease-in-out;
+}
+
+.abj404-chip:hover {
+    background: #f6f7f7;
+    border-color: #50575e;
+}
+
+.abj404-chip:focus {
+    outline: 2px solid #2271b1;
+    outline-offset: 1px;
+}
+
+/* Active/pressed chip state */
+.abj404-chip[aria-pressed="true"] {
+    background: #f0f6fc;
+    border-color: #2271b1;
+    box-shadow: inset 0 0 0 1px rgba(34, 113, 177, 0.15);
+}
+
+/* Chip color dots */
+.abj404-chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* Color scheme for different chips - using theme-neutral colors */
+.abj404-chip.chip-autooptions .abj404-chip-dot {
+    background: #00a32a; /* WordPress green for automatic/good */
+}
+
+.abj404-chip.chip-generaloptions .abj404-chip-dot {
+    background: #0073aa; /* WordPress blue for general settings */
+}
+
+.abj404-chip.chip-advancedoptions .abj404-chip-dot {
+    background: #826eb4; /* Purple for advanced */
+}
+
+.abj404-chip.chip-suggestoptions .abj404-chip-dot {
+    background: #d63638; /* WordPress alert color for suggestions/attention */
+}
+
+/* Options sections */
+.abj404-options-section {
+    display: none;
+}
+
+.abj404-options-section.visible {
+    display: block;
+}
+
+/* Scroll margin to account for sticky elements */
+.abj404-options-section {
+    scroll-margin-top: 48px; /* Admin bar (32px) + chips (~16px) */
+}
+
+@media (min-width: 783px) {
+    .abj404-options-section {
+        scroll-margin-top: 80px; /* Admin bar + chips + padding */
+    }
+}
+
+/* Mobile adjustments */
+@media (max-width: 782px) {
+    .abj404-chips-nav {
+        top: 46px; /* Mobile admin bar height */
+        padding: 8px 12px;
+    }
+
+    .abj404-chip {
+        font-size: 12px;
+        padding: 5px 10px;
+    }
+}

@@ -131,6 +131,8 @@ class ABJ_404_Solution_WordPress_Connector {
         	array('jquery'));
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-theme-preview', plugin_dir_url(__FILE__) . 'js/themePreview.js',
         	array('jquery'));
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-options-chips', plugin_dir_url(__FILE__) . 'js/optionsChips.js',
+        	array('jquery'));
 
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
                 null);
