@@ -562,6 +562,9 @@ msgstr "通过发送错误日志帮助开发者"
 msgid "Here are some other great pages"
 msgstr "这里有一些其他优质页面"
 
+msgid "Hide %s"
+msgstr "隐藏 %s"
+
 msgid "Hits"
 msgstr "命中次数"
 
@@ -921,6 +924,9 @@ msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
 msgstr "健全性检查"
+
+msgid "Save Settings"
+msgstr "保存设置"
 
 msgid "Section filters"
 msgstr "部分过滤器"

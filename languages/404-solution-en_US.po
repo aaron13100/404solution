@@ -560,6 +560,9 @@ msgstr "Help the developer by sending error logs"
 msgid "Here are some other great pages"
 msgstr "Here are some other great pages"
 
+msgid "Hide %s"
+msgstr "Hide %s"
+
 msgid "Hits"
 msgstr "Hits"
 
@@ -919,6 +922,9 @@ msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
 msgstr "Sanity Check"
+
+msgid "Save Settings"
+msgstr "Save Settings"
 
 msgid "Section filters"
 msgstr "Section filters"

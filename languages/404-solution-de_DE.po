@@ -562,6 +562,9 @@ msgstr "Helfen Sie dem Entwickler durch Senden von Fehlerprotokollen"
 msgid "Here are some other great pages"
 msgstr "Hier sind einige andere großartige Seiten"
 
+msgid "Hide %s"
+msgstr "Ausblenden %s"
+
 msgid "Hits"
 msgstr "Treffer"
 
@@ -921,6 +924,9 @@ msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
 msgstr "Plausibilitätsprüfung"
+
+msgid "Save Settings"
+msgstr "Einstellungen speichern"
 
 msgid "Section filters"
 msgstr "Abschnittsfilter"

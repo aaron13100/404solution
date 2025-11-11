@@ -214,20 +214,35 @@ ul .ui-autocomplete-category.data-overflow-category {
    Options Page Chips Navigation
    ============================================ */
 
-/* Chips navigation container */
-.abj404-chips-nav {
+/* Chips container with save button */
+.abj404-chips-container {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin: 0 0 20px 0;
     padding: 12px 0;
     background: var(--abj404-surface, #fff);
     border-bottom: 1px solid var(--abj404-border, #ccd0d4);
 }
 
-/* Make chips sticky on desktop */
+/* Chips navigation */
+.abj404-chips-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1;
+}
+
+/* Save button in chips container */
+.abj404-save-button {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Make chips container sticky on desktop */
 @media (min-width: 783px) {
-    .abj404-chips-nav {
+    .abj404-chips-container {
         position: sticky;
         top: 32px; /* WordPress admin bar height */
         z-index: 100;
@@ -264,12 +279,21 @@ ul .ui-autocomplete-category.data-overflow-category {
     outline-offset: 1px;
 }
 
-/* Active/pressed chip state */
+/* Active/pressed chip state (section visible) */
 .abj404-chip[aria-pressed="true"] {
     background: var(--abj404-bg-muted, #f0f6fc);
     border-color: var(--abj404-accent, #2271b1);
     box-shadow: inset 0 0 0 1px currentColor;
     opacity: 0.9;
+}
+
+/* Dimmed chip state (section hidden) */
+.abj404-chip[aria-pressed="false"] {
+    opacity: 0.5;
+}
+
+.abj404-chip[aria-pressed="false"]:hover {
+    opacity: 0.7;
 }
 
 /* Chip color dots */
@@ -317,15 +341,61 @@ ul .ui-autocomplete-category.data-overflow-category {
     }
 }
 
+/* Section header with hide button */
+.abj404-section-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.abj404-section-header span {
+    flex: 1;
+}
+
+/* Hide button (X) in section header */
+.abj404-section-hide {
+    appearance: none;
+    background: none;
+    border: none;
+    color: var(--abj404-text-muted, #646970);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+    margin: 0 0 0 12px;
+    border-radius: 4px;
+    transition: all 0.15s ease-in-out;
+}
+
+.abj404-section-hide:hover {
+    background: var(--abj404-surface-muted, #f0f0f1);
+    color: var(--abj404-text, #2c3338);
+}
+
+.abj404-section-hide:focus {
+    outline: 2px solid var(--abj404-focus, #2271b1);
+    outline-offset: 1px;
+}
+
+.abj404-section-hide:active {
+    transform: scale(0.95);
+}
+
 /* Mobile adjustments */
 @media (max-width: 782px) {
-    .abj404-chips-nav {
+    .abj404-chips-container {
         top: 46px; /* Mobile admin bar height */
         padding: 8px 12px;
+        flex-wrap: wrap;
     }
 
     .abj404-chip {
         font-size: 12px;
         padding: 5px 10px;
+    }
+
+    .abj404-save-button {
+        width: 100%;
     }
 }

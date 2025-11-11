@@ -562,6 +562,9 @@ msgstr "Помочь разработчику, отправляя журналы
 msgid "Here are some other great pages"
 msgstr "Вот несколько других отличных страниц"
 
+msgid "Hide %s"
+msgstr "Скрыть %s"
+
 msgid "Hits"
 msgstr "Обращения"
 
@@ -921,6 +924,9 @@ msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
 msgstr "Проверка работоспособности"
+
+msgid "Save Settings"
+msgstr "Сохранить настройки"
 
 msgid "Section filters"
 msgstr "Фильтры разделов"

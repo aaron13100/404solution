@@ -562,6 +562,9 @@ msgstr "Help de ontwikkelaar door foutlogs te verzenden"
 msgid "Here are some other great pages"
 msgstr "Hier zijn enkele andere geweldige pagina's"
 
+msgid "Hide %s"
+msgstr "Verberg %s"
+
 msgid "Hits"
 msgstr "Hits"
 
@@ -921,6 +924,9 @@ msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
 msgstr "Gezondheidscontrole"
+
+msgid "Save Settings"
+msgstr "Instellingen opslaan"
 
 msgid "Section filters"
 msgstr "Sectiefilters"

@@ -560,6 +560,9 @@ msgstr "Aider le développeur en envoyant les journaux d'erreurs"
 msgid "Here are some other great pages"
 msgstr "Voici d'autres pages intéressantes"
 
+msgid "Hide %s"
+msgstr "Masquer %s"
+
 msgid "Hits"
 msgstr "Visites"
 
@@ -919,6 +922,9 @@ msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
 msgstr "Vérification de cohérence"
+
+msgid "Save Settings"
+msgstr "Enregistrer les paramètres"
 
 msgid "Section filters"
 msgstr "Filtres de section"

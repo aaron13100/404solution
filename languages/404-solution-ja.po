@@ -562,6 +562,9 @@ msgstr "エラーログを送信して開発者を支援"
 msgid "Here are some other great pages"
 msgstr "他の優良なページはこちら"
 
+msgid "Hide %s"
+msgstr "非表示 %s"
+
 msgid "Hits"
 msgstr "ヒット数"
 
@@ -921,6 +924,9 @@ msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
 msgstr "健全性チェック"
+
+msgid "Save Settings"
+msgstr "設定を保存"
 
 msgid "Section filters"
 msgstr "セクションフィルター"

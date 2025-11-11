@@ -562,6 +562,9 @@ msgstr "Bantu pengembang dengan mengirim log kesalahan"
 msgid "Here are some other great pages"
 msgstr "Berikut adalah beberapa halaman hebat lainnya"
 
+msgid "Hide %s"
+msgstr "Sembunyikan %s"
+
 msgid "Hits"
 msgstr "Kunjungan"
 
@@ -921,6 +924,9 @@ msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
 msgstr "Pemeriksaan Validitas"
+
+msgid "Save Settings"
+msgstr "Simpan Pengaturan"
 
 msgid "Section filters"
 msgstr "Filter bagian"

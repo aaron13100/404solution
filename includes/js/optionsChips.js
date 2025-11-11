@@ -1,78 +1,64 @@
 /**
  * Options Page Chips Navigation
- * Provides chip-based navigation for showing/hiding option sections with auto-scroll
+ * Chips show hidden sections and scroll to them. X buttons hide sections.
+ * All sections are visible by default.
  */
 (function($) {
     'use strict';
 
     $(document).ready(function() {
-        // Initialize chips functionality
         initializeChips();
     });
 
     function initializeChips() {
         const chips = $('.abj404-chip');
         const sections = $('.abj404-options-section');
+        const hideButtons = $('.abj404-section-hide');
 
         if (chips.length === 0 || sections.length === 0) {
             return; // No chips or sections found
         }
 
-        // Apply initial visibility based on chip state
-        applyChipVisibility();
+        // All sections visible by default - update chips to reflect this
+        chips.attr('aria-pressed', 'true');
+        sections.addClass('visible').show();
 
-        // Chip click handler
+        // Chip click handler - shows hidden sections and scrolls to them
         chips.on('click', function() {
             const chip = $(this);
-            const wasPressed = chip.attr('aria-pressed') === 'true';
+            const target = chip.data('target');
+            const section = $('.abj404-options-section[data-section="' + target + '"]');
 
-            // Toggle chip state
-            chip.attr('aria-pressed', String(!wasPressed));
-
-            // Ensure at least one section is visible (default to basics)
-            ensureAtLeastOneVisible();
-
-            // Apply visibility changes
-            applyChipVisibility();
-
-            // On activation, scroll to the corresponding section
-            if (!wasPressed) {
-                const target = chip.data('target');
-                scrollToSection(target);
+            if (section.length === 0) {
+                return;
             }
-        });
-    }
 
-    function ensureAtLeastOneVisible() {
-        const chips = $('.abj404-chip');
-        const anyOn = chips.filter('[aria-pressed="true"]').length > 0;
+            const isHidden = !section.hasClass('visible');
 
-        if (!anyOn) {
-            // Default to showing the first section (basics/auto redirects)
-            chips.first().attr('aria-pressed', 'true');
-        }
-    }
-
-    function applyChipVisibility() {
-        const chips = $('.abj404-chip');
-        const sections = $('.abj404-options-section');
-
-        // Get list of active chip targets
-        const activeTargets = [];
-        chips.filter('[aria-pressed="true"]').each(function() {
-            activeTargets.push($(this).data('target'));
-        });
-
-        // Show/hide sections based on chip state
-        sections.each(function() {
-            const section = $(this);
-            const sectionId = section.data('section');
-
-            if (activeTargets.indexOf(sectionId) !== -1) {
+            if (isHidden) {
+                // Show the section
                 section.addClass('visible').show();
-            } else {
-                section.removeClass('visible').hide();
+                chip.attr('aria-pressed', 'true');
             }
+
+            // Always scroll to the section when chip is clicked
+            scrollToSection(target);
+        });
+
+        // X button click handler - hides sections
+        hideButtons.on('click', function() {
+            const button = $(this);
+            const sectionId = button.data('section');
+            const section = $('.abj404-options-section[data-section="' + sectionId + '"]');
+            const chip = $('.abj404-chip[data-target="' + sectionId + '"]');
+
+            if (section.length === 0) {
+                return;
+            }
+
+            // Hide the section
+            section.removeClass('visible').hide();
+            chip.attr('aria-pressed', 'false');
         });
     }
 
@@ -89,8 +75,8 @@
         const headerHeight = (adminBar.length > 0 && adminBar.is(':visible')) ? adminBar.outerHeight() : 0;
 
         // Chips navigation height
-        const chipsNav = $('.abj404-chips-nav');
-        const chipsHeight = (chipsNav.length > 0) ? chipsNav.outerHeight() : 0;
+        const chipsContainer = $('.abj404-chips-container');
+        const chipsHeight = (chipsContainer.length > 0) ? chipsContainer.outerHeight() : 0;
 
         const offset = headerHeight + chipsHeight + 20; // Add some padding
 
