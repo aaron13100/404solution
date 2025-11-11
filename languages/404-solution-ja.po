@@ -1,0 +1,1338 @@
+# Translation file for 404 Solution WordPress Plugin
+# Copyright (C) 2025 404 Solution
+# This file is distributed under the same license as the 404 Solution plugin.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 404 Solution\n"
+"Report-Msgid-Bugs-To: https://github.com/aaron13100/404solution/issues\n"
+"POT-Creation-Date: 2025-11-11 07:26+0000\n"
+"PO-Revision-Date: 2025-11-11 07:26+0000\n"
+"Last-Translator: Auto-Generated\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: 404 Solution Translation Generator v2\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-SearchPath-0: .\n"
+
+msgid "%1$s - %2$s of %3$s"
+msgstr "%1$s - %3$s中%2$s"
+
+msgid "(A custom string has been entered.)"
+msgstr "（カスタム文字列が入力されています。）"
+
+msgid "(A page has been selected.)"
+msgstr "（ページが選択されています。）"
+
+msgid "(All results displayed for \"%s.\")"
+msgstr "（「%s」のすべての結果を表示しています。）"
+
+msgid "(All results displayed.)"
+msgstr "（すべての結果を表示しています。）"
+
+msgid "(An external URL will be used.)"
+msgstr "（外部URLが使用されます。）"
+
+msgid "(Begin typing a URL)"
+msgstr "（URLの入力を開始してください）"
+
+msgid "(Data truncated. Too many results for \"%s!\".)"
+msgstr "（データが切り捨てられました。「%s」の結果が多すぎます！）"
+
+msgid "(Data truncated. Too many results!)"
+msgstr "（データが切り捨てられました。結果が多すぎます！）"
+
+msgid "(Default 404 Page)"
+msgstr "（デフォルト404ページ）"
+
+msgid "(Explain)"
+msgstr "（説明）"
+
+msgid "(Hide Info)"
+msgstr "（情報を非表示）"
+
+msgid "(Home Page)"
+msgstr "（ホームページ）"
+
+msgid "(No matching results found for \"%s.\")"
+msgstr "（「%s」に一致する結果が見つかりませんでした。）"
+
+msgid "(No matching results found.)"
+msgstr "（一致する結果が見つかりませんでした。）"
+
+msgid "(Please choose from the dropdown list instead of typing your own URL.)"
+msgstr "（独自のURLを入力するのではなく、ドロップダウンリストから選択してください。）"
+
+msgid "(Required)"
+msgstr "（必須）"
+
+msgid "(Show All Logs)"
+msgstr "（すべてのログを表示）"
+
+msgid "(Special)"
+msgstr "（特殊）"
+
+msgid "(The log file does not exist.)"
+msgstr "（ログファイルが存在しません。）"
+
+msgid "(The specified page doesn't exist. Please update this setting.)"
+msgstr "（指定されたページは存在しません。この設定を更新してください。）"
+
+msgid "(Type a page name or an external URL)"
+msgstr "（ページ名または外部URLを入力してください）"
+
+msgid "(Type a page name)"
+msgstr "（ページ名を入力してください）"
+
+msgid "(Type to filter)"
+msgstr "（フィルタリングするには入力してください）"
+
+msgid "(don't suggest .jpg files)"
+msgstr "（.jpgファイルを提案しない）"
+
+msgid "(don't suggest .pdf files)"
+msgstr "（.pdfファイルを提案しない）"
+
+msgid "(don't suggest pages within any directory named /private/)"
+msgstr "（/private/という名前のディレクトリ内のページを提案しない）"
+
+msgid "(don't suggest pages within the /members/ directory)"
+msgstr "（/members/ディレクトリ内のページを提案しない）"
+
+msgid "(don't suggest the specific page with slug 'old-contact-page')"
+msgstr "（スラッグが「old-contact-page」の特定のページを提案しない）"
+
+msgid "(ignore all .jpg files)"
+msgstr "（すべての.jpgファイルを無視する）"
+
+msgid "(ignore all .js files)"
+msgstr "（すべての.jsファイルを無視する）"
+
+msgid "(ignore all .php files)"
+msgstr "（すべての.phpファイルを無視する）"
+
+msgid "(ignore everything in the cache directory)"
+msgstr "（cacheディレクトリ内のすべてを無視する）"
+
+msgid "(ignore everything in this directory)"
+msgstr "（このディレクトリ内のすべてを無視する）"
+
+msgid "(unless a redirect to the page already exists)."
+msgstr "（ページへのリダイレクトがすでに存在する場合を除く）。"
+
+msgid "* 404s are still redirected when possible."
+msgstr "* 404は可能な場合は引き続きリダイレクトされます。"
+
+msgid "* Do not capture 404 URLs."
+msgstr "* 404 URLを記録しません。"
+
+msgid "* Do not redirect 404s for the patterns listed here."
+msgstr "* ここにリストされているパターンの404はリダイレクトしません。"
+
+msgid "* Do not redirect 404s from the user agents listed here."
+msgstr "* ここにリストされているユーザーエージェントからの404はリダイレクトしません。"
+
+msgid "* If the string appears anywhere within the user agent string then it's a match."
+msgstr "* 文字列がユーザーエージェント文字列内のどこかに含まれている場合、一致とみなされます。"
+
+msgid "* One pattern per line."
+msgstr "* 1行に1つのパターンを入力してください。"
+
+msgid "* One string per line."
+msgstr "* 1行に1つの文字列を入力してください。"
+
+msgid "* One type per line."
+msgstr "* 1行に1つのタイプを入力してください。"
+
+msgid "* Strings are case insensitive."
+msgstr "* 文字列は大文字小文字を区別しません。"
+
+msgid "* Strings are case sensitive."
+msgstr "* 文字列は大文字小文字を区別します。"
+
+msgid "* These patterns match the path of a URL, not a title.\""
+msgstr "* これらのパターンはタイトルではなく、URLのパスと一致します。\""
+
+msgid "* Use an asterisk (*) to match \"any pattern.\""
+msgstr "* アスタリスク（*）を使用して「任意のパターン」と一致させます。"
+
+msgid "404 Page Suggestions"
+msgstr "404ページの提案"
+
+msgid "404 URL marked as %s successfully!"
+msgstr "404 URLを%sとして正常にマークしました！"
+
+msgid "<a>View</a> the debug file."
+msgstr "デバッグファイルを<a>表示</a>します。"
+
+msgid "Action Taken"
+msgstr "実行されたアクション"
+
+msgid "Add Redirect"
+msgstr "リダイレクトを追加"
+
+msgid "Add a Manual Redirect"
+msgstr "手動リダイレクトを追加"
+
+msgid "Add a Redirect"
+msgstr "リダイレクトを追加"
+
+msgid "Admin notification email(s)"
+msgstr "管理者通知メールアドレス"
+
+msgid "Admin notification level"
+msgstr "管理者通知レベル"
+
+msgid "Admin theme"
+msgstr "管理画面テーマ"
+
+msgid "Advanced Settings (Etc)"
+msgstr "詳細設定（その他）"
+
+msgid "All"
+msgstr "すべて"
+
+msgid "All other redirects must be deleted and only one regex redirect for all URLs must be created for this to work."
+msgstr "これを機能させるには、他のすべてのリダイレクトを削除し、すべてのURLに対して1つの正規表現リダイレクトのみを作成する必要があります。"
+
+msgid "All trashed URLs have been deleted!"
+msgstr "ゴミ箱内のすべてのURLが削除されました！"
+
+msgid "Allow category suggestions"
+msgstr "カテゴリーの提案を許可"
+
+msgid "Allow tag suggestions"
+msgstr "タグの提案を許可"
+
+msgid "An unknown error has occurred."
+msgstr "不明なエラーが発生しました。"
+
+msgid "Apply"
+msgstr "適用"
+
+msgid "At the same level as the Settings and Tools menu"
+msgstr "設定メニューとツールメニューと同じレベルに表示"
+
+msgid "Auto"
+msgstr "自動"
+
+msgid "Auto redirect deletion"
+msgstr "自動リダイレクトの削除"
+
+msgid "Automatic 301 Redirects"
+msgstr "自動301リダイレクト"
+
+msgid "Automatic 302 Redirects"
+msgstr "自動302リダイレクト"
+
+msgid "Automatic Redirects"
+msgstr "自動リダイレクト"
+
+msgid "Automatically created"
+msgstr "自動的に作成されました"
+
+msgid "Automatically creates redirects based on best possible suggested page."
+msgstr "最適な提案ページに基づいて自動的にリダイレクトを作成します。"
+
+msgid "Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time."
+msgstr "指定された期間使用されなかった記録済み404 URLを自動的に削除します。"
+
+msgid "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
+msgstr "指定された期間使用されなかった手動作成されたページリダイレクトを自動的に削除します。"
+
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops（ライト）"
+
+msgid "Captured 404 URLs"
+msgstr "記録済み404 URL"
+
+msgid "Captured URLs"
+msgstr "記録済みURL"
+
+msgid "Captured URLs (0 Disables Notification)"
+msgstr "記録済みURL数（0で通知を無効化）"
+
+msgid "Categories"
+msgstr "カテゴリー"
+
+msgid "Category"
+msgstr "カテゴリー"
+
+msgid "Category:"
+msgstr "カテゴリー："
+
+msgid "Changes may not be updated immediately when ordering by this column"
+msgstr "この列で並べ替えた場合、変更がすぐに更新されない場合があります"
+
+msgid "Checks each redirect for a new matching permalink before the user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted."
+msgstr "ユーザーがリダイレクトされる前に、各リダイレクトが新しく一致するパーマリンクがないかチェックします。リダイレクトされたURLと一致する新しいページパーマリンクが見つかった場合、リダイレクトは削除されます。"
+
+msgid "Choose at least one URL"
+msgstr "少なくとも1つのURLを選択してください"
+
+msgid "Choose whether the 404 Settings link appears under the \"Settings\" menu or elsewhere."
+msgstr "404設定リンクを「設定」メニューの下に表示するか、別の場所に表示するかを選択します。"
+
+msgid "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
+msgstr "管理画面のカラーテーマを選択します。テーマはプレビュー用にすぐに変更され、「設定を保存」をクリックすると保存されます。"
+
+msgid "Cleanup is done daily."
+msgstr "クリーンアップは毎日実行されます。"
+
+msgid "Click to view debug data for all suggestions"
+msgstr "クリックするとすべての提案のデバッグデータを表示します"
+
+msgid "Collect incoming 404 URLs"
+msgstr "受信した404 URLを記録"
+
+msgid "Collected 404 URL deletion"
+msgstr "記録済み404 URLの削除"
+
+msgid "Create a CSV file with the redirects and captured 404s."
+msgstr "リダイレクトと記録済み404のCSVファイルを作成します。"
+
+msgid "Create and Download"
+msgstr "作成してダウンロード"
+
+msgid "Create automatic redirects"
+msgstr "自動リダイレクトを作成"
+
+msgid "Create automatic redirects for categories"
+msgstr "カテゴリーの自動リダイレクトを作成"
+
+msgid "Create automatic redirects for tags"
+msgstr "タグの自動リダイレクトを作成"
+
+msgid "Created"
+msgstr "作成日時"
+
+msgid "Credits"
+msgstr "クレジット"
+
+msgid "Current approximate log disk usage"
+msgstr "現在の概算ログディスク使用量"
+
+msgid "Custom"
+msgstr "カスタム"
+
+msgid "Custom Taxonomies"
+msgstr "カスタムタクソノミー"
+
+msgid "DATABASE_VERSION"
+msgstr "DATABASE_VERSION"
+
+msgid "DB version"
+msgstr "DBバージョン"
+
+msgid "Date"
+msgstr "日付"
+
+msgid "Days (0 Disables Auto Delete)"
+msgstr "日数（0で自動削除を無効化）"
+
+msgid "Debug Log"
+msgstr "デバッグログ"
+
+msgid "Debug file not found. (%s)"
+msgstr "デバッグファイルが見つかりません。（%s）"
+
+msgid "Debug file size: %1$s KB (%2$s MB)."
+msgstr "デバッグファイルサイズ：%1$s KB（%2$s MB）。"
+
+msgid "Debug file size: %s KB."
+msgstr "デバッグファイルサイズ：%s KB。"
+
+msgid "Debug file(s) deleted. (%s)"
+msgstr "デバッグファイルが削除されました。（%s）"
+
+msgid "Debug logging"
+msgstr "デバッグログの記録"
+
+msgid "Default WordPress post types are \"post\" and \"page.\""
+msgstr "デフォルトのWordPress投稿タイプは「post」と「page」です。"
+
+msgid "Default redirect type"
+msgstr "デフォルトのリダイレクトタイプ"
+
+msgid "Delete the Debug File"
+msgstr "デバッグファイルを削除"
+
+msgid "Destination"
+msgstr "リダイレクト先"
+
+msgid "Display Before/After each suggested page"
+msgstr "各提案ページの前後に表示"
+
+msgid "Display Before/After page suggestions"
+msgstr "ページ提案の前後に表示"
+
+msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
+msgstr "記録済みURL数がこの数値を超えた場合にWordPress管理者通知を表示します"
+
+msgid "Display if no suggestion results"
+msgstr "提案結果がない場合に表示"
+
+msgid "Display the closest matching pages by using the shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
+msgstr "ショートコード<span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>を使用して、最も近い一致ページを表示します。"
+
+msgid "Displayed 404 Page"
+msgstr "表示される404ページ"
+
+msgid "Earliest log date"
+msgstr "最も古いログの日付"
+
+msgid "Edit Redirect"
+msgstr "リダイレクトを編集"
+
+msgid "Edit Redirect Details"
+msgstr "リダイレクトの詳細を編集"
+
+msgid "Empty Trash"
+msgstr "ゴミ箱を空にする"
+
+msgid "Error: An invalid purge type was selected. Exiting."
+msgstr "エラー：無効なパージタイプが選択されました。終了します。"
+
+msgid "Error: Auto match score value must be a number between 0 and 99"
+msgstr "エラー：自動一致スコア値は0から99の間の数値でなければなりません"
+
+msgid "Error: Bad %s operation specified."
+msgstr "エラー：不正な%s操作が指定されました。"
+
+msgid "Error: Bad data passed for update redirect request."
+msgstr "エラー：リダイレクト更新リクエストに不正なデータが渡されました。"
+
+msgid "Error: Bad trash operation specified."
+msgstr "エラー：不正なゴミ箱操作が指定されました。"
+
+msgid "Error: Data not formatted properly."
+msgstr "エラー：データが正しくフォーマットされていません。"
+
+msgid "Error: External URL doesn't contain ://"
+msgstr "エラー：外部URLに://が含まれていません"
+
+msgid "Error: External URL is too short."
+msgstr "エラー：外部URLが短すぎます。"
+
+msgid "Error: Invalid theme selected"
+msgstr "エラー：無効なテーマが選択されました"
+
+msgid "Error: Invalid value specified for default redirect type"
+msgstr "エラー：デフォルトのリダイレクトタイプに無効な値が指定されました"
+
+msgid "Error: Maximum number of suggest value must be a number greater than or equal to 1"
+msgstr "エラー：提案の最大数は1以上の数値でなければなりません"
+
+msgid "Error: No ID(s) found for edit request."
+msgstr "エラー：編集リクエストのIDが見つかりません。"
+
+msgid "Error: No ID(s) specified for bulk action. (%s)"
+msgstr "エラー：一括アクションのIDが指定されていません。（%s）"
+
+msgid "Error: No records were imported. SQL result: %s"
+msgstr "エラー：レコードがインポートされませんでした。SQL結果：%s"
+
+msgid "Error: No redirect types were selected. No purges will be done."
+msgstr "エラー：リダイレクトタイプが選択されていません。パージは実行されません。"
+
+msgid "Error: No valid redirect types were selected. Exiting."
+msgstr "エラー：有効なリダイレクトタイプが選択されていません。終了します。"
+
+msgid "Error: Suggestion minimum score value must be a number between 1 and 99"
+msgstr "エラー：提案の最小スコア値は1から99の間の数値でなければなりません"
+
+msgid "Error: Template redirect priority value must be a number between 0 and 999"
+msgstr "エラー：テンプレートリダイレクト優先度の値は0から999の間の数値でなければなりません"
+
+msgid "Error: URL is a required field."
+msgstr "エラー：URLは必須フィールドです。"
+
+msgid "Error: URL must start with /"
+msgstr "エラー：URLは/で始まる必要があります"
+
+msgid "Error: Unable to move redirect from trash."
+msgstr "エラー：ゴミ箱からリダイレクトを移動できません。"
+
+msgid "Error: Unable to move redirect to trash."
+msgstr "エラー：リダイレクトをゴミ箱に移動できません。"
+
+msgid "Error: Unable to update redirect data."
+msgstr "エラー：リダイレクトデータを更新できません。"
+
+msgid "Error: Unknown Database Error!"
+msgstr "エラー：不明なデータベースエラーです！"
+
+msgid "Error: Unrecognized bulk action. (%s)"
+msgstr "エラー：認識されない一括アクションです。（%s）"
+
+msgid "Error: You didn't check the I understand checkbox. No importing for you!"
+msgstr "エラー：「理解しました」チェックボックスがチェックされていません。インポートできません！"
+
+msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
+msgstr "エラー：「理解しました」チェックボックスがチェックされていません。レコードのパージはできません！"
+
+msgid "Error: You selected external URL but did not enter a URL."
+msgstr "エラー：外部URLを選択しましたが、URLが入力されていません。"
+
+msgid "Error: unable to add new redirect."
+msgstr "エラー：新しいリダイレクトを追加できません。"
+
+msgid "Error: unable to mark URL as %s"
+msgstr "エラー：URLを%sとしてマークできません"
+
+msgid "Error: unable to remove URL from %s list"
+msgstr "エラー：%sリストからURLを削除できません"
+
+msgid "Etcetera"
+msgstr "その他"
+
+msgid "Even if more pages could be suggested, show at most this many (default: 5)"
+msgstr "より多くのページが提案できる場合でも、最大でこの数まで表示します（デフォルト：5）"
+
+msgid "Example"
+msgstr "例"
+
+msgid "Examples:"
+msgstr "例："
+
+msgid "Exclude Specific Pages, Posts, Categories, Etc"
+msgstr "特定のページ、投稿、カテゴリーなどを除外"
+
+msgid "Exclude Suggestion URLs (Regex)"
+msgstr "提案URLを除外（正規表現）"
+
+msgid "Exclude potential suggestions if their final URL matches one of these patterns."
+msgstr "最終的なURLがこれらのパターンのいずれかに一致する場合、潜在的な提案を除外します。"
+
+msgid "Export"
+msgstr "エクスポート"
+
+msgid "External"
+msgstr "外部"
+
+msgid "External Page"
+msgstr "外部ページ"
+
+msgid "External User Agents - Do Not Log"
+msgstr "外部ユーザーエージェント - ログに記録しない"
+
+msgid "Files and Folders Ignore Strings - Do Not Process"
+msgstr "ファイルとフォルダーの無視文字列 - 処理しない"
+
+msgid "Files and folders listed here will be ignored."
+msgstr "ここにリストされているファイルとフォルダーは無視されます。"
+
+msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
+msgstr "まず、すべての通常の「完全一致」URLがチェックされ、次にすべての正規表現URLがチェックされます。"
+
+msgid "General Settings"
+msgstr "一般設定"
+
+msgid "Go to first page"
+msgstr "最初のページへ"
+
+msgid "Go to last page"
+msgstr "最後のページへ"
+
+msgid "Go to next page"
+msgstr "次のページへ"
+
+msgid "Go to previous page"
+msgstr "前のページへ"
+
+msgid "Help the developer by sending error logs"
+msgstr "エラーログを送信して開発者を支援"
+
+msgid "Here are some other great pages"
+msgstr "他の優良なページはこちら"
+
+msgid "Hits"
+msgstr "ヒット数"
+
+msgid "Hits Redirected"
+msgstr "リダイレクトされたヒット数"
+
+msgid "Home Page"
+msgstr "ホームページ"
+
+msgid "Home Page:"
+msgstr "ホームページ："
+
+msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
+msgstr "上記の記述を理解し、自分が何をしているのか分かっています...とにかくレコードを削除してください！"
+
+msgid "I understand the above statement."
+msgstr "上記の記述を理解しました。"
+
+msgid "IP Address"
+msgstr "IPアドレス"
+
+msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
+msgstr "最小一致スコアを満たすページがない場合、このテキストが表示されます。（デフォルト：&lt;p&gt;No suggestions. :/ &lt;/p&gt;）"
+
+msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
+msgstr "カスタム投稿タイプを作成し、ユーザーをリダイレクトしたい場合は、ここに入力する必要があります。"
+
+msgid "If you've created custom taxonomies and would like to redirect users to them, you'll have to enter them here."
+msgstr "カスタムタクソノミーを作成し、ユーザーをリダイレクトしたい場合は、ここに入力する必要があります。"
+
+msgid "Ignore 404 Error"
+msgstr "404エラーを無視"
+
+msgid "Ignored 404 URLs"
+msgstr "無視された404 URL"
+
+msgid "Ignored URLs"
+msgstr "無視されたURL"
+
+msgid "Import"
+msgstr "インポート"
+
+msgid "Import 404 Redirected Data"
+msgstr "404リダイレクトデータをインポート"
+
+msgid "Import a CSV file with the redirects and captured 404s."
+msgstr "リダイレクトと記録済み404のCSVファイルをインポートします。"
+
+msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
+msgstr "不正なリダイレクトの作成、不正な正規表現の入力、既存のリダイレクトの削除、他のユーザーへのプラグイン管理者アクセスの付与など、サイトを破壊する可能性があります。"
+
+msgid "Internal Process User Agents - Do Not Log"
+msgstr "内部プロセスユーザーエージェント - ログに記録しない"
+
+msgid "Issue deleting debug file. (%s)"
+msgstr "デバッグファイルの削除に問題があります。（%s）"
+
+msgid "JAPANESE_FLASHCARDS_URL"
+msgstr "JAPANESE_FLASHCARDS_URL"
+
+msgid "Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit."
+msgstr "ディスク使用量がこの制限に達すると、最新のログレコードを保持し（最も古いものを削除し）ます。"
+
+msgid "LINK_FIRST_PAGE"
+msgstr "LINK_FIRST_PAGE"
+
+msgid "LINK_LAST_PAGE"
+msgstr "LINK_LAST_PAGE"
+
+msgid "LINK_NEXT_PAGE"
+msgstr "LINK_NEXT_PAGE"
+
+msgid "LINK_PREVIOUS_PAGE"
+msgstr "LINK_PREVIOUS_PAGE"
+
+msgid "Last Used"
+msgstr "最終使用日"
+
+msgid "List one user name per line."
+msgstr "1行に1つのユーザー名を入力してください。"
+
+msgid "Log files are checked daily when maintenance is run."
+msgstr "ログファイルはメンテナンス実行時に毎日チェックされます。"
+
+msgid "Log raw IPs"
+msgstr "生のIPをログに記録"
+
+msgid "Logging raw IP addresses may not meet the EU General Data Protection Regulation (GDPR) guidelines."
+msgstr "生のIPアドレスをログに記録することは、EU一般データ保護規則（GDPR）のガイドラインに準拠していない可能性があります。"
+
+msgid "Logs"
+msgstr "ログ"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "Maintenance"
+msgstr "メンテナンス"
+
+msgid "Monochrome Minimal (Light)"
+msgstr "Monochrome Minimal（ライト）"
+
+msgid "Major version auto update delay"
+msgstr "メジャーバージョンの自動更新遅延"
+
+msgid "Man"
+msgstr "手動"
+
+msgid "Manual 301 Redirects"
+msgstr "手動301リダイレクト"
+
+msgid "Manual 302 Redirects"
+msgstr "手動302リダイレクト"
+
+msgid "Manual Redirects"
+msgstr "手動リダイレクト"
+
+msgid "Manual redirect deletion"
+msgstr "手動リダイレクトの削除"
+
+msgid "Manually created"
+msgstr "手動で作成されました"
+
+msgid "Maximum log disk usage (MB)"
+msgstr "最大ログディスク使用量（MB）"
+
+msgid "Maximum number of suggestions to display"
+msgstr "表示する提案の最大数"
+
+msgid "Minimum match score"
+msgstr "最小一致スコア"
+
+msgid "Minimum score of suggestions to display"
+msgstr "表示する提案の最小スコア"
+
+msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
+msgstr "複数のメールアドレスはカンマ（,）で区切ることができます。「送信元」メールアドレスは常にデフォルトのWordPress管理者メールです："
+
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate（ダーク）"
+
+msgid "Never Used"
+msgstr "未使用"
+
+msgid "New Redirect Added Successfully!"
+msgstr "新しいリダイレクトが正常に追加されました！"
+
+msgid "New major version => wait this many days. New minor version => automatically update about 3 days after the release date."
+msgstr "新しいメジャーバージョン => この日数だけ待ちます。新しいマイナーバージョン => リリース日から約3日後に自動更新します。"
+
+msgid "No Captured 404 Records To Display"
+msgstr "表示する記録済み404レコードがありません"
+
+msgid "No Redirect Records To Display"
+msgstr "表示するリダイレクトレコードがありません"
+
+msgid "No Results To Display"
+msgstr "表示する結果がありません"
+
+msgid "No suggestions. :/"
+msgstr "提案がありません。:/"
+
+msgid "No suggestions. :/ "
+msgstr "提案がありません。:/ "
+
+msgid "Note that including a bad regular expression or one that takes too long will break your website."
+msgstr "不正な正規表現や処理に時間がかかりすぎる正規表現を含めると、ウェブサイトが壊れることに注意してください。"
+
+msgid "Note: Do not include the parenthesis or explanations shown in the examples above."
+msgstr "注：上記の例に示されている括弧や説明は含めないでください。"
+
+msgid "Note: Here is a list of all post types in the database:"
+msgstr "注：データベース内のすべての投稿タイプのリストは次のとおりです："
+
+msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
+msgstr "注：ページリンクの後に「(75.7576)」の形式で表示される「スコア」は、管理者ユーザーにのみ表示されます。"
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue（ダーク）"
+
+msgid "OPTION_MIN_AUTO_SCORE"
+msgstr "OPTION_MIN_AUTO_SCORE"
+
+msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
+msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
+
+msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
+msgstr "記録済み404の数がアラート設定で指定された数を下回るまで、1日に1通のメールが送信されます（メンテナンス実行時）。"
+
+msgid "Only create an automatic redirect if the suggested page has a score above the specified number (default 90)"
+msgstr "提案されたページが指定された数値を超えるスコアを持つ場合にのみ自動リダイレクトを作成します（デフォルト90）"
+
+msgid "Options"
+msgstr "オプション"
+
+msgid "Options Saved Successfully!"
+msgstr "オプションが正常に保存されました！"
+
+msgid "Organize Later"
+msgstr "後で整理"
+
+msgid "Page"
+msgstr "ページ"
+
+msgid "Page Not Found Displayed"
+msgstr "ページが見つからない場合に表示"
+
+msgid "Page Redirects"
+msgstr "ページリダイレクト"
+
+msgid "Page suggestions title"
+msgstr "ページ提案のタイトル"
+
+msgid "Pages listed here will not be redirected to"
+msgstr "ここにリストされているページへはリダイレクトされません"
+
+msgid "Permanent 301"
+msgstr "恒久的301"
+
+msgid "Plugin Admin Users"
+msgstr "プラグイン管理者ユーザー"
+
+msgid "Plugin version"
+msgstr "プラグインバージョン"
+
+msgid "Purge Entries!"
+msgstr "エントリーをパージ！"
+
+msgid "Purge Options"
+msgstr "パージオプション"
+
+msgid "Purge Type"
+msgstr "パージタイプ"
+
+msgid "REDIRECT_TO_USER_FIELD_WARNING"
+msgstr "REDIRECT_TO_USER_FIELD_WARNING"
+
+msgid "Recognized Post Types"
+msgstr "認識された投稿タイプ"
+
+msgid "Records imported: %s"
+msgstr "インポートされたレコード：%s"
+
+msgid "Redirect"
+msgstr "リダイレクト"
+
+msgid "Redirect & Capture Logs"
+msgstr "リダイレクトと記録ログ"
+
+msgid "Redirect Details"
+msgstr "リダイレクトの詳細"
+
+msgid "Redirect Information Updated Successfully!"
+msgstr "リダイレクト情報が正常に更新されました！"
+
+msgid "Redirect Removed Successfully!"
+msgstr "リダイレクトが正常に削除されました！"
+
+msgid "Redirect Type"
+msgstr "リダイレクトタイプ"
+
+msgid "Redirect Types"
+msgstr "リダイレクトタイプ"
+
+msgid "Redirect all requests"
+msgstr "すべてのリクエストをリダイレクト"
+
+msgid "Redirect all unhandled 404s to"
+msgstr "すべての未処理404をリダイレクト先"
+
+msgid "Redirect moved to trash successfully!"
+msgstr "リダイレクトがゴミ箱に正常に移動されました！"
+
+msgid "Redirect restored from trash successfully!"
+msgstr "リダイレクトがゴミ箱から正常に復元されました！"
+
+msgid "Redirect to"
+msgstr "リダイレクト先"
+
+msgid "Redirected to"
+msgstr "リダイレクト先"
+
+msgid "Redirects"
+msgstr "リダイレクト"
+
+msgid "Referrer"
+msgstr "リファラー"
+
+msgid "RegEx"
+msgstr "正規表現"
+
+msgid "Regular Expression (Manually Created)"
+msgstr "正規表現（手動作成）"
+
+msgid "Remove Ignore Status"
+msgstr "無視ステータスを削除"
+
+msgid "Remove Later Status"
+msgstr "後でステータスを削除"
+
+msgid "Remove redirect upon matching permalink"
+msgstr "一致するパーマリンクが見つかった場合リダイレクトを削除"
+
+msgid "Removed 404 URL from %s list successfully!"
+msgstr "%sリストから404 URLを正常に削除しました！"
+
+msgid "Removes auto created redirects if they haven't been used for the specified amount of time."
+msgstr "指定された期間使用されなかった自動作成されたリダイレクトを削除します。"
+
+msgid "Required"
+msgstr "必須"
+
+msgid "Restore"
+msgstr "復元"
+
+msgid "Rows per page:"
+msgstr "ページあたりの行数："
+
+msgid "Run Maintenance"
+msgstr "メンテナンスを実行"
+
+msgid "Run maintenance to delete old data (etc).&nbsp;&nbsp;It is not necessary to run this manually, as it's done automatically on a daily basis."
+msgstr "古いデータなどを削除するためにメンテナンスを実行します。&nbsp;&nbsp;これは毎日自動的に実行されるため、手動で実行する必要はありません。"
+
+msgid "SELECTED_SUGGEST_CATS"
+msgstr "SELECTED_SUGGEST_CATS"
+
+msgid "SELECTED_SUGGEST_TAGS"
+msgstr "SELECTED_SUGGEST_TAGS"
+
+msgid "SELECTED_SUGGEST_URL"
+msgstr "SELECTED_SUGGEST_URL"
+
+msgid "SUGGEST_MAX_SUGGESTIONS"
+msgstr "SUGGEST_MAX_SUGGESTIONS"
+
+msgid "SUGGEST_MIN_SCORE"
+msgstr "SUGGEST_MIN_SCORE"
+
+msgid "SUGGEST_USER_AFTER"
+msgstr "SUGGEST_USER_AFTER"
+
+msgid "SUGGEST_USER_BEFORE"
+msgstr "SUGGEST_USER_BEFORE"
+
+msgid "SUGGEST_USER_ENTRY_AFTER"
+msgstr "SUGGEST_USER_ENTRY_AFTER"
+
+msgid "SUGGEST_USER_ENTRY_BEFORE"
+msgstr "SUGGEST_USER_ENTRY_BEFORE"
+
+msgid "SUGGEST_USER_NO_RESULTS"
+msgstr "SUGGEST_USER_NO_RESULTS"
+
+msgid "SUGGEST_USER_TITLE"
+msgstr "SUGGEST_USER_TITLE"
+
+msgid "Sanity Check"
+msgstr "健全性チェック"
+
+msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
+msgstr "検索エンジンのユーザーエージェントは、スラッグ構造が変更されたときにリダイレクトされるように、ここには含めないでください。"
+
+msgid "Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "キャプチャグループが使用されているため、外部URLの宛先文字列で$1置換を使用できます。"
+
+msgid "So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
+msgstr "そのため、ここで試す前に注意して別の場所でテストしてください。自分が何をしているのか分からない場合は、このオプションを使用しないでください（プラグインの機能には必要ありません）。"
+
+msgid "Some options were not saved successfully."
+msgstr "一部のオプションが正常に保存されませんでした。"
+
+msgid "Special"
+msgstr "特殊"
+
+msgid "Stats"
+msgstr "統計"
+
+msgid "Status"
+msgstr "ステータス"
+
+msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
+msgstr "サポートされている形式：<B>from_url,status,type,to_url,wp_type</B>"
+
+msgid "TEXT_BEFORE_LINKS"
+msgstr "TEXT_BEFORE_LINKS"
+
+msgid "TEXT_CURRENT_PAGE"
+msgstr "TEXT_CURRENT_PAGE"
+
+msgid "TEXT_SHOW_ROWS"
+msgstr "TEXT_SHOW_ROWS"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
+msgstr "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_EMPTY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMPTY"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_EMTPY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMTPY"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_PAGE"
+msgstr "TOOLTIP_POPUP_EXPLANATION_PAGE"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_URL"
+msgstr "TOOLTIP_POPUP_EXPLANATION_URL"
+
+msgid "Tag"
+msgstr "タグ"
+
+msgid "Tag:"
+msgstr "タグ："
+
+msgid "Tags"
+msgstr "タグ"
+
+msgid "Template Redirect Priority"
+msgstr "テンプレートリダイレクト優先度"
+
+msgid "Temporary 302"
+msgstr "一時的302"
+
+msgid "The \"product\" type is for WooCommerce users."
+msgstr "「product」タイプはWooCommerceユーザー向けです。"
+
+msgid "The 404 Solution menu should appear"
+msgstr "404 Solutionメニューの表示場所"
+
+msgid "The file seems to have loaded okay. Please check the redirects page."
+msgstr "ファイルは正常に読み込まれたようです。リダイレクトページを確認してください。"
+
+msgid "The plugin will only redirect the post types specified here."
+msgstr "プラグインはここで指定された投稿タイプのみをリダイレクトします。"
+
+msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
+msgstr "プラグインは通常のタクソノミー（カテゴリーとタグ）とここにリストされているものにリダイレクトします。"
+
+msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
+msgstr "提案ページとして表示されるには、少なくともこれだけの「スコア」が必要です（最小：10、最大：90、デフォルト：25）"
+
+msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
+msgstr "ユーザー指定の404ページが見つかりませんでした。オプションページでユーザー指定の404ページを更新してください。"
+
+msgid "This cannot be undone. All redirects for URLs that do not already exist will be imported."
+msgstr "これは元に戻せません。まだ存在しないURLのすべてのリダイレクトがインポートされます。"
+
+msgid "This creates the list. For example, use &lt;ol style=\"list-style-type: none;\"&gt; to hide the numbers in the list. (defaults: &lt;ol&gt; / &lt;/ol&gt;)"
+msgstr "これはリストを作成します。たとえば、&lt;ol style=\"list-style-type: none;\"&gt;を使用してリスト内の番号を非表示にします。（デフォルト：&lt;ol&gt; / &lt;/ol&gt;）"
+
+msgid "This is best for internal processes that don't need to be redirected when the slug structure changes."
+msgstr "これは、スラッグ構造が変更されたときにリダイレクトする必要のない内部プロセスに最適です。"
+
+msgid "This is best for search engine bots that do need to be redirected when the slug structure changes."
+msgstr "これは、スラッグ構造が変更されたときにリダイレクトする必要がある検索エンジンボットに最適です。"
+
+msgid "This is for a domain name change."
+msgstr "これはドメイン名変更用です。"
+
+msgid "This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
+msgstr "これは、ユーザーが存在しないページをリクエストし、一致するページに自動的にリダイレクトされない場合のためのものです。"
+
+msgid "This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin."
+msgstr "これはプラグインの機能に必須ではありませんが、開発者および将来のプラグインバージョンに役立ちます。"
+
+msgid "This only affects the list of potential matches shown to the user on a custom 404 page."
+msgstr "これは、カスタム404ページでユーザーに表示される潜在的な一致のリストにのみ影響します。"
+
+msgid "This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported)."
+msgstr "これにより、デバッグログ内のすべて、管理者メールアドレス、インストールされたPHP拡張機能、アクティブなプラグイン、PHPバージョン、WordPressバージョン、MySQLバージョン、公開されたページと投稿の総数など（問題が報告されたときに要求されるすべて）が公開されます。"
+
+msgid "This sets how early in the process a 404 is handled by this plugin. If there are multiple plugins that should handle a 404, then set this higher (999) so that this plugin gets the 404 last. (default 9)"
+msgstr "これは、このプラグインが404を処理するプロセスの早さを設定します。404を処理する必要がある複数のプラグインがある場合は、このプラグインが最後に404を取得するように、これを高く（999）設定します。（デフォルト9）"
+
+msgid "This shortcode can be used on the 404 page and will display a list of suggested pages."
+msgstr "このショートコードは404ページで使用でき、提案ページのリストを表示します。"
+
+msgid "This surrounds each item in the list. (defaults: &lt;li&gt; / &lt;/li&gt;)"
+msgstr "これはリスト内の各アイテムを囲みます。（デフォルト：&lt;li&gt; / &lt;/li&gt;）"
+
+msgid "This text will appear before the list of suggestions (default: &lt;h3&gt;Here are some other great pages&lt;/h3&gt;)"
+msgstr "このテキストは提案のリストの前に表示されます（デフォルト：&lt;h3&gt;Here are some other great pages&lt;/h3&gt;）"
+
+msgid "This will break your website."
+msgstr "これによりウェブサイトが壊れます。"
+
+msgid "This will not change the URL if the destination 404 page is set to (Default 404 Page) or Home Page."
+msgstr "宛先404ページが（デフォルト404ページ）またはホームページに設定されている場合、URLは変更されません。"
+
+msgid "Tools"
+msgstr "ツール"
+
+msgid "Total Redirects"
+msgstr "総リダイレクト数"
+
+msgid "Total URLs"
+msgstr "総URL数"
+
+msgid "Trash"
+msgstr "ゴミ箱"
+
+msgid "Trash Redirected URL"
+msgstr "リダイレクトURLをゴミ箱へ"
+
+msgid "Trashed Redirects"
+msgstr "ゴミ箱内のリダイレクト"
+
+msgid "Trashed URLs"
+msgstr "ゴミ箱内のURL"
+
+msgid "Treat this URL as a regular expression"
+msgstr "このURLを正規表現として扱う"
+
+msgid "Type"
+msgstr "タイプ"
+
+msgid "Type a page name here and select it to add it to the exlusion list"
+msgstr "ここにページ名を入力して選択すると、除外リストに追加されます"
+
+msgid "URL"
+msgstr "URL"
+
+msgid "URL(s) deleted"
+msgstr "URLが削除されました"
+
+msgid "URL(s) marked as Captured."
+msgstr "URLが記録済みとしてマークされました。"
+
+msgid "URL(s) marked as Ignored."
+msgstr "URLが無視としてマークされました。"
+
+msgid "URL(s) marked as Later."
+msgstr "URLが後でとしてマークされました。"
+
+msgid "URL(s) moved to trash"
+msgstr "URLがゴミ箱に移動されました"
+
+msgid "URL(s) restored."
+msgstr "URLが復元されました。"
+
+msgid "URLs"
+msgstr "URL"
+
+msgid "Under the Settings menu"
+msgstr "設定メニューの下"
+
+msgid "Unique Page Not Found Referrers"
+msgstr "ユニークなページ未検出リファラー数"
+
+msgid "Unique Page Not Found URLs"
+msgstr "ユニークなページ未検出URL数"
+
+msgid "Unique Page Not Found Visitors"
+msgstr "ユニークなページ未検出訪問者数"
+
+msgid "Unique Redirected Referrers"
+msgstr "ユニークなリダイレクトされたリファラー数"
+
+msgid "Unique Redirected Visitors"
+msgstr "ユニークなリダイレクトされた訪問者数"
+
+msgid "Unique URLs Redirected"
+msgstr "リダイレクトされたユニークURL数"
+
+msgid "Unknown"
+msgstr "不明"
+
+msgid "Update Redirect"
+msgstr "リダイレクトを更新"
+
+msgid "Update the URL bar"
+msgstr "URLバーを更新"
+
+msgid "Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
+msgstr "ユーザーエージェントごとに1行使用してください。テキストがユーザーエージェント文字列のどこかに見つかった場合、それが適用されます。"
+
+msgid "User"
+msgstr "ユーザー"
+
+msgid "User names listed here will be able to do everything an admin can do with the plugin."
+msgstr "ここにリストされているユーザー名は、管理者がプラグインで実行できるすべてのことを実行できます。"
+
+msgid "Using the purge options will move all selected redirects to the trash. You must then empty the trash to delete them."
+msgstr "パージオプションを使用すると、選択されたすべてのリダイレクトがゴミ箱に移動されます。その後、ゴミ箱を空にして削除する必要があります。"
+
+msgid "View logs for"
+msgstr "ログを表示"
+
+msgid "Visit"
+msgstr "訪問"
+
+msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
+msgstr "警告：これを誤って使用すると、ウェブサイトが壊れます。自己責任で使用してください。自分が何をしているのか分からない場合は、これを空のままにしてください。"
+
+msgid "When an error is detected by the plugin, email the entire log file to the developer."
+msgstr "プラグインがエラーを検出したときに、ログファイル全体を開発者にメールで送信します。"
+
+msgid "When checked the URL will be changed from the custom 404 page URL to the URL originally requested (after the page headers load)."
+msgstr "チェックすると、URLはカスタム404ページのURLから元々リクエストされたURLに変更されます（ページヘッダーの読み込み後）。"
+
+msgid "When checked, the text is treated as a regular expression."
+msgstr "チェックすると、テキストは正規表現として扱われます。"
+
+msgid "When selected, ALL REQUESTS (even for pages that exist, even for non-404s) will be treated like a 404."
+msgstr "選択すると、すべてのリクエスト（存在するページに対しても、404以外に対しても）が404として扱われます。"
+
+msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here."
+msgstr "記録済み404の数が管理者通知を引き起こす場合、ここで指定されたアドレスにメールが送信されます。"
+
+msgid "You can see which are recognized by looking at the default 404 destination option."
+msgstr "デフォルトの404リダイレクト先オプションを見ることで、どれが認識されているかを確認できます。"
+
+msgid "You can see which post types are recognized by looking at the default 404 destination option, which has a list of pages, posts, products, etc."
+msgstr "ページ、投稿、商品などのリストがあるデフォルトの404リダイレクト先オプションを見ることで、どの投稿タイプが認識されているかを確認できます。"
+
+msgid "add-exclude-page-data-url"
+msgstr "add-exclude-page-data-url"
+
+msgid "addManualRedirectAction"
+msgstr "addManualRedirectAction"
+
+msgid "ajaxTrashLink"
+msgstr "ajaxTrashLink"
+
+msgid "and <B>from_url,to_url</B>"
+msgstr "および<B>from_url,to_url</B>"
+
+msgid "and redirect to the specified page."
+msgstr "指定されたページにリダイレクトします。"
+
+msgid "bulkOptions"
+msgstr "bulkOptions"
+
+msgid "data-pagination-ajax-url"
+msgstr "data-pagination-ajax-url"
+
+msgid "data-url"
+msgstr "data-url"
+
+msgid "days (0 means immediately, default 30)"
+msgstr "日（0はすぐに、デフォルトは30）"
+
+msgid "deletePermanentlyHTML"
+msgstr "deletePermanentlyHTML"
+
+msgid "destination-does-not-exist"
+msgstr "destination-does-not-exist"
+
+msgid "destination-exists"
+msgstr "destination-exists"
+
+msgid "disallow-redirect-all-requests"
+msgstr "disallow-redirect-all-requests"
+
+msgid "earliestLogDate"
+msgstr "earliestLogDate"
+
+msgid "editLink"
+msgstr "editLink"
+
+msgid "editlinkHTML"
+msgstr "editlinkHTML"
+
+msgid "filterText"
+msgstr "filterText"
+
+msgid "is maintained by"
+msgstr "メンテナンス担当者："
+
+msgid "loaded-excluded-pages"
+msgstr "loaded-excluded-pages"
+
+msgid "logCurrentRowCount"
+msgstr "logCurrentRowCount"
+
+msgid "logCurrentSizeDiskUsage"
+msgstr "logCurrentSizeDiskUsage"
+
+msgid "logslinkHTML"
+msgstr "logslinkHTML"
+
+msgid "of"
+msgstr "/"
+
+msgid "pageIDAndType"
+msgstr "pageIDAndType"
+
+msgid "postedURL"
+msgstr "postedURL"
+
+msgid "redirectPageTitle"
+msgstr "redirectPageTitle"
+
+msgid "rowActions"
+msgstr "rowActions"
+
+msgid "rowClass"
+msgstr "rowClass"
+
+msgid "rowCode"
+msgstr "rowCode"
+
+msgid "rowURL"
+msgstr "rowURL"
+
+msgid "selecteSsettingsLevel"
+msgstr "selecteSsettingsLevel"
+
+msgid "selectedAutoCats"
+msgstr "selectedAutoCats"
+
+msgid "selectedAutoRedirects"
+msgstr "selectedAutoRedirects"
+
+msgid "selectedAutoTags"
+msgstr "selectedAutoTags"
+
+msgid "selectedCapture404"
+msgstr "selectedCapture404"
+
+msgid "selectedDefaultRedirect301"
+msgstr "selectedDefaultRedirect301"
+
+msgid "selectedDefaultRedirect302"
+msgstr "selectedDefaultRedirect302"
+
+msgid "selectedRemoveMatches"
+msgstr "selectedRemoveMatches"
+
+msgid "selectedSendErrorLogs"
+msgstr "selectedSendErrorLogs"
+
+msgid "selectedThemeCalm"
+msgstr "selectedThemeCalm"
+
+msgid "selectedThemeMono"
+msgstr "selectedThemeMono"
+
+msgid "selectedThemeNeon"
+msgstr "selectedThemeNeon"
+
+msgid "selectedThemeObsidian"
+msgstr "selectedThemeObsidian"
+
+msgid "selectedUnderSettings"
+msgstr "selectedUnderSettings"
+
+msgid "showSearchFilter"
+msgstr "showSearchFilter"
+
+msgid "statusTitle"
+msgstr "statusTitle"
+
+msgid "toolsExportRedirectsLink"
+msgstr "toolsExportRedirectsLink"
+
+msgid "toolsImportFormActionLink"
+msgstr "toolsImportFormActionLink"
+
+msgid "toolsImportRedirectsLink"
+msgstr "toolsImportRedirectsLink"
+
+msgid "toolsMaintenanceFormActionLink"
+msgstr "toolsMaintenanceFormActionLink"
+
+msgid "toolsPurgeFormActionLink"
+msgstr "toolsPurgeFormActionLink"
+
+msgid "urlPlaceholder"
+msgstr "urlPlaceholder"
+
+msgid "will match any URL that begins with"
+msgstr "で始まる任意のURLと一致します"
+
+#. Plural form with HTML
+#: includes/View.php
+msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
+msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
+msgstr[0] "処理が必要な<a>%s件の記録済み404 URL</a>があります。"
+
+#. Plural form with %s
+#: includes/DataAccess.php
+msgid "%s redirect entry was moved to the trash."
+msgid_plural "%s redirect entries were moved to the trash."
+msgstr[0] "%s件のリダイレクトエントリーがゴミ箱に移動されました。"

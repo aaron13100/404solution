@@ -1,6 +1,6 @@
-# Translation file for 404 Solution WordPress Plugin
+# Vertaalbestand voor 404 Solution WordPress Plugin
 # Copyright (C) 2025 404 Solution
-# This file is distributed under the same license as the 404 Solution plugin.
+# Dit bestand wordt gedistribueerd onder dezelfde licentie als de 404 Solution plugin.
 #
 msgid ""
 msgstr ""
@@ -9,610 +9,610 @@ msgstr ""
 "POT-Creation-Date: 2025-11-11 07:26+0000\n"
 "PO-Revision-Date: 2025-11-11 07:26+0000\n"
 "Last-Translator: Auto-Generated\n"
-"Language-Team: French\n"
-"Language: fr_FR\n"
+"Language-Team: Dutch\n"
+"Language: nl_NL\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: 404 Solution Translation Generator v2\n"
 "X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
 msgid "%1$s - %2$s of %3$s"
-msgstr "%1$s - %2$s de %3$s"
+msgstr "%1$s - %2$s van %3$s"
 
 msgid "(A custom string has been entered.)"
-msgstr "(Une chaîne personnalisée a été saisie.)"
+msgstr "(Een aangepaste tekenreeks is ingevoerd.)"
 
 msgid "(A page has been selected.)"
-msgstr "(Une page a été sélectionnée.)"
+msgstr "(Een pagina is geselecteerd.)"
 
 msgid "(All results displayed for \"%s.\")"
-msgstr "(Tous les résultats affichés pour \"%s.\")"
+msgstr "(Alle resultaten weergegeven voor \"%s.\")"
 
 msgid "(All results displayed.)"
-msgstr "(Tous les résultats affichés.)"
+msgstr "(Alle resultaten weergegeven.)"
 
 msgid "(An external URL will be used.)"
-msgstr "(Une URL externe sera utilisée.)"
+msgstr "(Een externe URL wordt gebruikt.)"
 
 msgid "(Begin typing a URL)"
-msgstr "(Commencez à taper une URL)"
+msgstr "(Begin met het typen van een URL)"
 
 msgid "(Data truncated. Too many results for \"%s!\".)"
-msgstr "(Données tronquées. Trop de résultats pour \"%s!\".)"
+msgstr "(Gegevens afgekapt. Te veel resultaten voor \"%s!\".)"
 
 msgid "(Data truncated. Too many results!)"
-msgstr "(Données tronquées. Trop de résultats !)"
+msgstr "(Gegevens afgekapt. Te veel resultaten!)"
 
 msgid "(Default 404 Page)"
-msgstr "(Page 404 par défaut)"
+msgstr "(Standaard 404-pagina)"
 
 msgid "(Explain)"
-msgstr "(Expliquer)"
+msgstr "(Uitleg)"
 
 msgid "(Hide Info)"
-msgstr "(Masquer les informations)"
+msgstr "(Verberg info)"
 
 msgid "(Home Page)"
-msgstr "(Page d'accueil)"
+msgstr "(Startpagina)"
 
 msgid "(No matching results found for \"%s.\")"
-msgstr "(Aucun résultat correspondant trouvé pour \"%s.\")"
+msgstr "(Geen overeenkomende resultaten gevonden voor \"%s.\")"
 
 msgid "(No matching results found.)"
-msgstr "(Aucun résultat correspondant trouvé.)"
+msgstr "(Geen overeenkomende resultaten gevonden.)"
 
 msgid "(Please choose from the dropdown list instead of typing your own URL.)"
-msgstr "(Veuillez choisir dans la liste déroulante au lieu de taper votre propre URL.)"
+msgstr "(Kies alstublieft uit de keuzelijst in plaats van uw eigen URL in te typen.)"
 
 msgid "(Required)"
-msgstr "(Requis)"
+msgstr "(Verplicht)"
 
 msgid "(Show All Logs)"
-msgstr "(Afficher tous les journaux)"
+msgstr "(Toon alle logs)"
 
 msgid "(Special)"
-msgstr "(Spécial)"
+msgstr "(Speciaal)"
 
 msgid "(The log file does not exist.)"
-msgstr "(Le fichier journal n'existe pas.)"
+msgstr "(Het logbestand bestaat niet.)"
 
 msgid "(The specified page doesn't exist. Please update this setting.)"
-msgstr "(La page spécifiée n'existe pas. Veuillez mettre à jour ce paramètre.)"
+msgstr "(De opgegeven pagina bestaat niet. Werk deze instelling bij.)"
 
 msgid "(Type a page name or an external URL)"
-msgstr "(Tapez un nom de page ou une URL externe)"
+msgstr "(Typ een paginanaam of een externe URL)"
 
 msgid "(Type a page name)"
-msgstr "(Tapez un nom de page)"
+msgstr "(Typ een paginanaam)"
 
 msgid "(Type to filter)"
-msgstr "(Taper pour filtrer)"
+msgstr "(Typ om te filteren)"
 
 msgid "(don't suggest .jpg files)"
-msgstr "(ne pas suggérer les fichiers .jpg)"
+msgstr "(stel geen .jpg-bestanden voor)"
 
 msgid "(don't suggest .pdf files)"
-msgstr "(ne pas suggérer les fichiers .pdf)"
+msgstr "(stel geen .pdf-bestanden voor)"
 
 msgid "(don't suggest pages within any directory named /private/)"
-msgstr "(ne pas suggérer les pages dans un répertoire nommé /private/)"
+msgstr "(stel geen pagina's voor binnen een map met de naam /private/)"
 
 msgid "(don't suggest pages within the /members/ directory)"
-msgstr "(ne pas suggérer les pages dans le répertoire /members/)"
+msgstr "(stel geen pagina's voor binnen de map /members/)"
 
 msgid "(don't suggest the specific page with slug 'old-contact-page')"
-msgstr "(ne pas suggérer la page spécifique avec le slug 'old-contact-page')"
+msgstr "(stel de specifieke pagina met slug 'old-contact-page' niet voor)"
 
 msgid "(ignore all .jpg files)"
-msgstr "(ignorer tous les fichiers .jpg)"
+msgstr "(negeer alle .jpg-bestanden)"
 
 msgid "(ignore all .js files)"
-msgstr "(ignorer tous les fichiers .js)"
+msgstr "(negeer alle .js-bestanden)"
 
 msgid "(ignore all .php files)"
-msgstr "(ignorer tous les fichiers .php)"
+msgstr "(negeer alle .php-bestanden)"
 
 msgid "(ignore everything in the cache directory)"
-msgstr "(ignorer tout dans le répertoire cache)"
+msgstr "(negeer alles in de cache-map)"
 
 msgid "(ignore everything in this directory)"
-msgstr "(ignorer tout dans ce répertoire)"
+msgstr "(negeer alles in deze map)"
 
 msgid "(unless a redirect to the page already exists)."
-msgstr "(sauf si une redirection vers la page existe déjà)."
+msgstr "(tenzij er al een omleiding naar de pagina bestaat)."
 
 msgid "* 404s are still redirected when possible."
-msgstr "* Les 404 sont toujours redirigées lorsque c'est possible."
+msgstr "* 404's worden nog steeds omgeleid wanneer mogelijk."
 
 msgid "* Do not capture 404 URLs."
-msgstr "* Ne pas capturer les URLs 404."
+msgstr "* Leg geen 404-URL's vast."
 
 msgid "* Do not redirect 404s for the patterns listed here."
-msgstr "* Ne pas rediriger les 404 pour les motifs listés ici."
+msgstr "* Leid geen 404's om voor de hier vermelde patronen."
 
 msgid "* Do not redirect 404s from the user agents listed here."
-msgstr "* Ne pas rediriger les 404 depuis les agents utilisateurs listés ici."
+msgstr "* Leid geen 404's om van de hier vermelde user agents."
 
 msgid "* If the string appears anywhere within the user agent string then it's a match."
-msgstr "* Si la chaîne apparaît n'importe où dans la chaîne agent utilisateur, alors c'est une correspondance."
+msgstr "* Als de tekenreeks ergens in de user agent string voorkomt, is het een match."
 
 msgid "* One pattern per line."
-msgstr "* Un motif par ligne."
+msgstr "* Eén patroon per regel."
 
 msgid "* One string per line."
-msgstr "* Une chaîne par ligne."
+msgstr "* Eén tekenreeks per regel."
 
 msgid "* One type per line."
-msgstr "* Un type par ligne."
+msgstr "* Eén type per regel."
 
 msgid "* Strings are case insensitive."
-msgstr "* Les chaînes ne sont pas sensibles à la casse."
+msgstr "* Tekenreeksen zijn hoofdletterongevoelig."
 
 msgid "* Strings are case sensitive."
-msgstr "* Les chaînes sont sensibles à la casse."
+msgstr "* Tekenreeksen zijn hoofdlettergevoelig."
 
 msgid "* These patterns match the path of a URL, not a title.\""
-msgstr "* Ces motifs correspondent au chemin d'une URL, pas à un titre.\""
+msgstr "* Deze patronen komen overeen met het pad van een URL, niet met een titel.\""
 
 msgid "* Use an asterisk (*) to match \"any pattern.\""
-msgstr "* Utilisez un astérisque (*) pour correspondre à \"n'importe quel motif.\""
+msgstr "* Gebruik een sterretje (*) om overeen te komen met \"elk patroon.\""
 
 msgid "404 Page Suggestions"
-msgstr "Suggestions de page 404"
+msgstr "404-paginasuggesties"
 
 msgid "404 URL marked as %s successfully!"
-msgstr "URL 404 marquée comme %s avec succès !"
+msgstr "404-URL succesvol gemarkeerd als %s!"
 
 msgid "<a>View</a> the debug file."
-msgstr "<a>Voir</a> le fichier de débogage."
+msgstr "<a>Bekijk</a> het debug-bestand."
 
 msgid "Action Taken"
-msgstr "Action effectuée"
+msgstr "Ondernomen actie"
 
 msgid "Add Redirect"
-msgstr "Ajouter une redirection"
+msgstr "Omleiding toevoegen"
 
 msgid "Add a Manual Redirect"
-msgstr "Ajouter une redirection manuelle"
+msgstr "Handmatige omleiding toevoegen"
 
 msgid "Add a Redirect"
-msgstr "Ajouter une redirection"
+msgstr "Een omleiding toevoegen"
 
 msgid "Admin notification email(s)"
-msgstr "E-mail(s) de notification administrateur"
+msgstr "Beheerdersmelding e-mail(s)"
 
 msgid "Admin notification level"
-msgstr "Niveau de notification admin"
+msgstr "Beheerdersmeldingsniveau"
 
 msgid "Admin theme"
-msgstr "Thème d'administration"
+msgstr "Beheerdersthema"
 
 msgid "Advanced Settings (Etc)"
-msgstr "Paramètres avancés (etc.)"
+msgstr "Geavanceerde instellingen (etc.)"
 
 msgid "All"
-msgstr "Tous"
+msgstr "Alle"
 
 msgid "All other redirects must be deleted and only one regex redirect for all URLs must be created for this to work."
-msgstr "Toutes les autres redirections doivent être supprimées et une seule redirection regex pour toutes les URLs doit être créée pour que cela fonctionne."
+msgstr "Alle andere omleidingen moeten worden verwijderd en er moet slechts één regex-omleiding voor alle URL's worden aangemaakt om dit te laten werken."
 
 msgid "All trashed URLs have been deleted!"
-msgstr "Toutes les URLs dans la corbeille ont été supprimées !"
+msgstr "Alle verwijderde URL's zijn gewist!"
 
 msgid "Allow category suggestions"
-msgstr "Autoriser les suggestions de catégories"
+msgstr "Categoriesuggesties toestaan"
 
 msgid "Allow tag suggestions"
-msgstr "Autoriser les suggestions d'étiquettes"
+msgstr "Tagsuggesties toestaan"
 
 msgid "An unknown error has occurred."
-msgstr "Une erreur inconnue s'est produite."
+msgstr "Er is een onbekende fout opgetreden."
 
 msgid "Apply"
-msgstr "Appliquer"
+msgstr "Toepassen"
 
 msgid "At the same level as the Settings and Tools menu"
-msgstr "Au même niveau que le menu Paramètres et Outils"
+msgstr "Op hetzelfde niveau als het menu Instellingen en Hulpmiddelen"
 
 msgid "Auto"
-msgstr "Auto"
+msgstr "Automatisch"
 
 msgid "Auto redirect deletion"
-msgstr "Suppression automatique des redirections"
+msgstr "Automatische omleidingsverwijdering"
 
 msgid "Automatic 301 Redirects"
-msgstr "Redirections 301 automatiques"
+msgstr "Automatische 301-omleidingen"
 
 msgid "Automatic 302 Redirects"
-msgstr "Redirections 302 automatiques"
+msgstr "Automatische 302-omleidingen"
 
 msgid "Automatic Redirects"
-msgstr "Redirections automatiques"
+msgstr "Automatische omleidingen"
 
 msgid "Automatically created"
-msgstr "Créé automatiquement"
+msgstr "Automatisch aangemaakt"
 
 msgid "Automatically creates redirects based on best possible suggested page."
-msgstr "Crée automatiquement des redirections basées sur la meilleure page suggérée possible."
+msgstr "Maakt automatisch omleidingen aan op basis van de best mogelijke voorgestelde pagina."
 
 msgid "Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time."
-msgstr "Supprime automatiquement les URLs 404 capturées si elles n'ont pas été utilisées pendant la durée spécifiée."
+msgstr "Verwijdert automatisch vastgelegde 404-URL's als ze gedurende de opgegeven periode niet zijn gebruikt."
 
 msgid "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
-msgstr "Supprime automatiquement les redirections de pages créées manuellement si elles n'ont pas été utilisées pendant la durée spécifiée."
+msgstr "Verwijdert automatisch handmatig aangemaakte pagina-omleidingen als ze gedurende de opgegeven periode niet zijn gebruikt."
 
 msgid "Calm Ops (Light)"
-msgstr "Calm Ops (Clair)"
+msgstr "Calm Ops (licht)"
 
 msgid "Captured 404 URLs"
-msgstr "URLs 404 capturées"
+msgstr "Vastgelegde 404-URL's"
 
 msgid "Captured URLs"
-msgstr "URLs capturées"
+msgstr "Vastgelegde URL's"
 
 msgid "Captured URLs (0 Disables Notification)"
-msgstr "URLs capturées (0 désactive la notification)"
+msgstr "Vastgelegde URL's (0 schakelt melding uit)"
 
 msgid "Categories"
-msgstr "Catégories"
+msgstr "Categorieën"
 
 msgid "Category"
-msgstr "Catégorie"
+msgstr "Categorie"
 
 msgid "Category:"
-msgstr "Catégorie :"
+msgstr "Categorie:"
 
 msgid "Changes may not be updated immediately when ordering by this column"
-msgstr "Les modifications peuvent ne pas être mises à jour immédiatement lors du tri par cette colonne"
+msgstr "Wijzigingen worden mogelijk niet onmiddellijk bijgewerkt bij sorteren op deze kolom"
 
 msgid "Checks each redirect for a new matching permalink before the user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted."
-msgstr "Vérifie chaque redirection pour un nouveau permalien correspondant avant que l'utilisateur ne soit redirigé. Si un nouveau permalien de page est trouvé correspondant à l'URL redirigée, alors la redirection sera supprimée."
+msgstr "Controleert elke omleiding op een nieuwe overeenkomende permalink voordat de gebruiker wordt omgeleid. Als een nieuwe pagina-permalink wordt gevonden die overeenkomt met de omgeleide URL, wordt de omleiding verwijderd."
 
 msgid "Choose at least one URL"
-msgstr "Choisissez au moins une URL"
+msgstr "Kies ten minste één URL"
 
 msgid "Choose whether the 404 Settings link appears under the \"Settings\" menu or elsewhere."
-msgstr "Choisissez si le lien Paramètres 404 apparaît sous le menu \"Paramètres\" ou ailleurs."
+msgstr "Kies of de link naar 404-instellingen onder het menu \"Instellingen\" of ergens anders verschijnt."
 
 msgid "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
-msgstr "Choisissez le thème de couleur pour les pages d'administration. Le thème change immédiatement pour l'aperçu et sera enregistré lorsque vous cliquez sur \"Enregistrer les paramètres\"."
+msgstr "Kies het kleurthema voor de beheerderspagina's. Het thema verandert onmiddellijk voor de preview en wordt opgeslagen wanneer u op \"Instellingen opslaan\" klikt."
 
 msgid "Cleanup is done daily."
-msgstr "Le nettoyage est effectué quotidiennement."
+msgstr "Opschoning gebeurt dagelijks."
 
 msgid "Click to view debug data for all suggestions"
-msgstr "Cliquer pour voir les données de débogage de toutes les suggestions"
+msgstr "Klik om debug-gegevens voor alle suggesties te bekijken"
 
 msgid "Collect incoming 404 URLs"
-msgstr "Collecter les URLs 404 entrantes"
+msgstr "Binnenkomende 404-URL's vastleggen"
 
 msgid "Collected 404 URL deletion"
-msgstr "Suppression des URLs 404 collectées"
+msgstr "Verzamelde 404-URL-verwijdering"
 
 msgid "Create a CSV file with the redirects and captured 404s."
-msgstr "Créer un fichier CSV avec les redirections et les 404 capturées."
+msgstr "Maak een CSV-bestand aan met de omleidingen en vastgelegde 404's."
 
 msgid "Create and Download"
-msgstr "Créer et télécharger"
+msgstr "Aanmaken en downloaden"
 
 msgid "Create automatic redirects"
-msgstr "Créer des redirections automatiques"
+msgstr "Automatische omleidingen aanmaken"
 
 msgid "Create automatic redirects for categories"
-msgstr "Créer des redirections automatiques pour les catégories"
+msgstr "Automatische omleidingen voor categorieën aanmaken"
 
 msgid "Create automatic redirects for tags"
-msgstr "Créer des redirections automatiques pour les étiquettes"
+msgstr "Automatische omleidingen voor tags aanmaken"
 
 msgid "Created"
-msgstr "Créé"
+msgstr "Aangemaakt"
 
 msgid "Credits"
-msgstr "Crédits"
+msgstr "Credits"
 
 msgid "Current approximate log disk usage"
-msgstr "Utilisation disque approximative actuelle des journaux"
+msgstr "Huidig geschat schijfgebruik van logs"
 
 msgid "Custom"
-msgstr "Personnalisé"
+msgstr "Aangepast"
 
 msgid "Custom Taxonomies"
-msgstr "Taxonomies personnalisées"
+msgstr "Aangepaste taxonomieën"
 
 msgid "DATABASE_VERSION"
 msgstr "DATABASE_VERSION"
 
 msgid "DB version"
-msgstr "Version BD"
+msgstr "DB-versie"
 
 msgid "Date"
-msgstr "Date"
+msgstr "Datum"
 
 msgid "Days (0 Disables Auto Delete)"
-msgstr "Jours (0 désactive la suppression automatique)"
+msgstr "Dagen (0 schakelt automatisch verwijderen uit)"
 
 msgid "Debug Log"
-msgstr "Journal de débogage"
+msgstr "Debug-log"
 
 msgid "Debug file not found. (%s)"
-msgstr "Fichier de débogage non trouvé. (%s)"
+msgstr "Debug-bestand niet gevonden. (%s)"
 
 msgid "Debug file size: %1$s KB (%2$s MB)."
-msgstr "Taille du fichier de débogage : %1$s Ko (%2$s Mo)."
+msgstr "Debug-bestandsgrootte: %1$s KB (%2$s MB)."
 
 msgid "Debug file size: %s KB."
-msgstr "Taille du fichier de débogage : %s Ko."
+msgstr "Debug-bestandsgrootte: %s KB."
 
 msgid "Debug file(s) deleted. (%s)"
-msgstr "Fichier(s) de débogage supprimé(s). (%s)"
+msgstr "Debug-bestand(en) verwijderd. (%s)"
 
 msgid "Debug logging"
-msgstr "Journalisation de débogage"
+msgstr "Debug-logging"
 
 msgid "Default WordPress post types are \"post\" and \"page.\""
-msgstr "Les types de contenu WordPress par défaut sont \"post\" et \"page.\""
+msgstr "Standaard WordPress-berichttypen zijn \"post\" en \"page.\""
 
 msgid "Default redirect type"
-msgstr "Type de redirection par défaut"
+msgstr "Standaard omleidingstype"
 
 msgid "Delete the Debug File"
-msgstr "Supprimer le fichier de débogage"
+msgstr "Debug-bestand verwijderen"
 
 msgid "Destination"
-msgstr "Destination"
+msgstr "Bestemming"
 
 msgid "Display Before/After each suggested page"
-msgstr "Afficher Avant/Après chaque page suggérée"
+msgstr "Weergave voor/na elke voorgestelde pagina"
 
 msgid "Display Before/After page suggestions"
-msgstr "Afficher Avant/Après les suggestions de pages"
+msgstr "Weergave voor/na paginasuggesties"
 
 msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
-msgstr "Afficher une notification WordPress admin lorsque le nombre d'URLs capturées dépasse ce nombre"
+msgstr "Toon een WordPress-beheerdersmelding wanneer het aantal vastgelegde URL's boven dit aantal komt"
 
 msgid "Display if no suggestion results"
-msgstr "Afficher s'il n'y a aucun résultat de suggestion"
+msgstr "Weergave als er geen suggestieresultaten zijn"
 
 msgid "Display the closest matching pages by using the shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
-msgstr "Afficher les pages les plus proches correspondantes en utilisant le shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
+msgstr "Toon de best overeenkomende pagina's met behulp van de shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
 
 msgid "Displayed 404 Page"
-msgstr "Page 404 affichée"
+msgstr "Weergegeven 404-pagina"
 
 msgid "Earliest log date"
-msgstr "Date du journal la plus ancienne"
+msgstr "Vroegste logdatum"
 
 msgid "Edit Redirect"
-msgstr "Modifier la redirection"
+msgstr "Omleiding bewerken"
 
 msgid "Edit Redirect Details"
-msgstr "Modifier les détails de redirection"
+msgstr "Omleidingsdetails bewerken"
 
 msgid "Empty Trash"
-msgstr "Vider la corbeille"
+msgstr "Prullenbak legen"
 
 msgid "Error: An invalid purge type was selected. Exiting."
-msgstr "Erreur : Type de purge invalide sélectionné. Sortie."
+msgstr "Fout: Er is een ongeldig opschoningstype geselecteerd. Afsluiten."
 
 msgid "Error: Auto match score value must be a number between 0 and 99"
-msgstr "Erreur : Le score de correspondance auto doit être entre 0 et 99"
+msgstr "Fout: Automatische match-scorewaarde moet een getal tussen 0 en 99 zijn"
 
 msgid "Error: Bad %s operation specified."
-msgstr "Erreur : Opération %s incorrecte spécifiée."
+msgstr "Fout: Ongeldige %s-bewerking opgegeven."
 
 msgid "Error: Bad data passed for update redirect request."
-msgstr "Erreur : Données incorrectes pour la mise à jour de la redirection."
+msgstr "Fout: Onjuiste gegevens doorgegeven voor updateomleidingsverzoek."
 
 msgid "Error: Bad trash operation specified."
-msgstr "Erreur : Opération de corbeille incorrecte spécifiée."
+msgstr "Fout: Ongeldige prullenbakbewerking opgegeven."
 
 msgid "Error: Data not formatted properly."
-msgstr "Erreur : Données mal formatées."
+msgstr "Fout: Gegevens niet correct opgemaakt."
 
 msgid "Error: External URL doesn't contain ://"
-msgstr "Erreur : L'URL externe ne contient pas ://"
+msgstr "Fout: Externe URL bevat geen ://"
 
 msgid "Error: External URL is too short."
-msgstr "Erreur : L'URL externe est trop courte."
+msgstr "Fout: Externe URL is te kort."
 
 msgid "Error: Invalid theme selected"
-msgstr "Erreur : Thème invalide sélectionné"
+msgstr "Fout: Ongeldig thema geselecteerd"
 
 msgid "Error: Invalid value specified for default redirect type"
-msgstr "Erreur : Valeur invalide spécifiée pour le type de redirection par défaut"
+msgstr "Fout: Ongeldige waarde opgegeven voor standaard omleidingstype"
 
 msgid "Error: Maximum number of suggest value must be a number greater than or equal to 1"
-msgstr "Erreur : Le nombre maximum de suggestions doit être ≥ 1"
+msgstr "Fout: Maximaal aantal suggestiewaarde moet een getal groter dan of gelijk aan 1 zijn"
 
 msgid "Error: No ID(s) found for edit request."
-msgstr "Erreur : Aucun ID trouvé pour la modification."
+msgstr "Fout: Geen ID('s) gevonden voor bewerkingsverzoek."
 
 msgid "Error: No ID(s) specified for bulk action. (%s)"
-msgstr "Erreur : Aucun ID spécifié pour l'action groupée. (%s)"
+msgstr "Fout: Geen ID('s) opgegeven voor bulkactie. (%s)"
 
 msgid "Error: No records were imported. SQL result: %s"
-msgstr "Erreur : Aucun enregistrement importé. Résultat SQL : %s"
+msgstr "Fout: Geen records geïmporteerd. SQL-resultaat: %s"
 
 msgid "Error: No redirect types were selected. No purges will be done."
-msgstr "Erreur : Aucun type de redirection sélectionné. Aucune purge."
+msgstr "Fout: Geen omleidingstypen geselecteerd. Er worden geen opschoningen uitgevoerd."
 
 msgid "Error: No valid redirect types were selected. Exiting."
-msgstr "Erreur : Aucun type de redirection valide sélectionné. Sortie."
+msgstr "Fout: Geen geldige omleidingstypen geselecteerd. Afsluiten."
 
 msgid "Error: Suggestion minimum score value must be a number between 1 and 99"
-msgstr "Erreur : Le score minimum de suggestion doit être entre 1 et 99"
+msgstr "Fout: Minimale suggestiescorewaarde moet een getal tussen 1 en 99 zijn"
 
 msgid "Error: Template redirect priority value must be a number between 0 and 999"
-msgstr "Erreur : La priorité de redirection de modèle doit être entre 0 et 999"
+msgstr "Fout: Template-omleidingsprioriteitswaarde moet een getal tussen 0 en 999 zijn"
 
 msgid "Error: URL is a required field."
-msgstr "Erreur : L'URL est un champ obligatoire."
+msgstr "Fout: URL is een verplicht veld."
 
 msgid "Error: URL must start with /"
-msgstr "Erreur : L'URL doit commencer par /"
+msgstr "Fout: URL moet beginnen met /"
 
 msgid "Error: Unable to move redirect from trash."
-msgstr "Erreur : impossible de restaurer la redirection de la corbeille."
+msgstr "Fout: Kan omleiding niet uit prullenbak halen."
 
 msgid "Error: Unable to move redirect to trash."
-msgstr "Erreur : impossible de déplacer la redirection dans la corbeille."
+msgstr "Fout: Kan omleiding niet naar prullenbak verplaatsen."
 
 msgid "Error: Unable to update redirect data."
-msgstr "Erreur : impossible de mettre à jour les données de redirection."
+msgstr "Fout: Kan omleidingsgegevens niet bijwerken."
 
 msgid "Error: Unknown Database Error!"
-msgstr "Erreur : Erreur de base de données inconnue !"
+msgstr "Fout: Onbekende databasefout!"
 
 msgid "Error: Unrecognized bulk action. (%s)"
-msgstr "Erreur : Action groupée non reconnue. (%s)"
+msgstr "Fout: Onbekende bulkactie. (%s)"
 
 msgid "Error: You didn't check the I understand checkbox. No importing for you!"
-msgstr "Erreur : Vous n'avez pas coché Je comprends. Pas d'importation !"
+msgstr "Fout: U heeft het selectievakje 'Ik begrijp het' niet aangevinkt. Geen import voor u!"
 
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
-msgstr "Erreur : Vous n'avez pas coché Je comprends. Pas de purge !"
+msgstr "Fout: U heeft het selectievakje 'Ik begrijp het' niet aangevinkt. Geen opschoning van records voor u!"
 
 msgid "Error: You selected external URL but did not enter a URL."
-msgstr "Erreur : Vous avez sélectionné URL externe mais n'avez pas saisi d'URL."
+msgstr "Fout: U heeft externe URL geselecteerd maar geen URL ingevoerd."
 
 msgid "Error: unable to add new redirect."
-msgstr "Erreur : impossible d'ajouter une nouvelle redirection."
+msgstr "Fout: kan nieuwe omleiding niet toevoegen."
 
 msgid "Error: unable to mark URL as %s"
-msgstr "Erreur : impossible de marquer l'URL comme %s"
+msgstr "Fout: kan URL niet markeren als %s"
 
 msgid "Error: unable to remove URL from %s list"
-msgstr "Erreur : impossible de retirer l'URL de la liste %s"
+msgstr "Fout: kan URL niet verwijderen uit %s-lijst"
 
 msgid "Etcetera"
 msgstr "Etcetera"
 
 msgid "Even if more pages could be suggested, show at most this many (default: 5)"
-msgstr "Même si plus de pages pourraient être suggérées, afficher au maximum ce nombre (défaut : 5)"
+msgstr "Zelfs als er meer pagina's kunnen worden voorgesteld, toon maximaal dit aantal (standaard: 5)"
 
 msgid "Example"
-msgstr "Exemple"
+msgstr "Voorbeeld"
 
 msgid "Examples:"
-msgstr "Exemples :"
+msgstr "Voorbeelden:"
 
 msgid "Exclude Specific Pages, Posts, Categories, Etc"
-msgstr "Exclure des pages, articles, catégories spécifiques, etc."
+msgstr "Specifieke pagina's, berichten, categorieën, etc. uitsluiten"
 
 msgid "Exclude Suggestion URLs (Regex)"
-msgstr "Exclure les URLs de suggestion (Regex)"
+msgstr "Suggestie-URL's uitsluiten (Regex)"
 
 msgid "Exclude potential suggestions if their final URL matches one of these patterns."
-msgstr "Exclure les suggestions potentielles si leur URL finale correspond à l'un de ces motifs."
+msgstr "Sluit potentiële suggesties uit als hun uiteindelijke URL overeenkomt met een van deze patronen."
 
 msgid "Export"
-msgstr "Exporter"
+msgstr "Exporteren"
 
 msgid "External"
-msgstr "Externe"
+msgstr "Extern"
 
 msgid "External Page"
-msgstr "Page externe"
+msgstr "Externe pagina"
 
 msgid "External User Agents - Do Not Log"
-msgstr "Agents utilisateurs externes - Ne pas enregistrer"
+msgstr "Externe user agents - niet loggen"
 
 msgid "Files and Folders Ignore Strings - Do Not Process"
-msgstr "Chaînes à ignorer pour fichiers et dossiers - Ne pas traiter"
+msgstr "Bestanden en mappen negeertekenreeksen - niet verwerken"
 
 msgid "Files and folders listed here will be ignored."
-msgstr "Les fichiers et dossiers listés ici seront ignorés."
+msgstr "Bestanden en mappen die hier worden vermeld, worden genegeerd."
 
 msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
-msgstr "D'abord, toutes les URLs \"correspondance exacte\" normales sont vérifiées, puis toutes les URLs d'expression régulière sont vérifiées."
+msgstr "Eerst worden alle normale \"exacte overeenkomst\" URL's gecontroleerd, daarna worden alle reguliere expressie URL's gecontroleerd."
 
 msgid "General Settings"
-msgstr "Paramètres généraux"
+msgstr "Algemene instellingen"
 
 msgid "Go to first page"
-msgstr "Aller à la première page"
+msgstr "Ga naar eerste pagina"
 
 msgid "Go to last page"
-msgstr "Aller à la dernière page"
+msgstr "Ga naar laatste pagina"
 
 msgid "Go to next page"
-msgstr "Aller à la page suivante"
+msgstr "Ga naar volgende pagina"
 
 msgid "Go to previous page"
-msgstr "Aller à la page précédente"
+msgstr "Ga naar vorige pagina"
 
 msgid "Help the developer by sending error logs"
-msgstr "Aider le développeur en envoyant les journaux d'erreurs"
+msgstr "Help de ontwikkelaar door foutlogs te verzenden"
 
 msgid "Here are some other great pages"
-msgstr "Voici d'autres pages intéressantes"
+msgstr "Hier zijn enkele andere geweldige pagina's"
 
 msgid "Hits"
-msgstr "Visites"
+msgstr "Hits"
 
 msgid "Hits Redirected"
-msgstr "Visites redirigées"
+msgstr "Hits omgeleid"
 
 msgid "Home Page"
-msgstr "Page d'accueil"
+msgstr "Startpagina"
 
 msgid "Home Page:"
-msgstr "Page d'accueil :"
+msgstr "Startpagina:"
 
 msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
-msgstr "Je comprends la déclaration ci-dessus, je sais ce que je fais... bla bla bla. Supprimez simplement les enregistrements !"
+msgstr "Ik begrijp bovenstaande verklaring, ik weet wat ik doe... bla bla bla. Verwijder de records gewoon!"
 
 msgid "I understand the above statement."
-msgstr "Je comprends la déclaration ci-dessus."
+msgstr "Ik begrijp bovenstaande verklaring."
 
 msgid "IP Address"
-msgstr "Adresse IP"
+msgstr "IP-adres"
 
 msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
-msgstr "Si aucune page n'atteint le score de correspondance minimum, alors ce texte sera affiché.  (défaut : &lt;p&gt;Aucune suggestion. :/ &lt;/p&gt;)"
+msgstr "Als geen enkele pagina de minimale matchscore haalt, wordt deze tekst weergegeven.  (standaard: &lt;p&gt;Geen suggesties. :/ &lt;/p&gt;)"
 
 msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
-msgstr "Si vous avez créé des types de contenu personnalisés et souhaitez rediriger les utilisateurs vers ceux-ci, vous devrez les saisir ici."
+msgstr "Als u aangepaste berichttypen heeft gemaakt en gebruikers daarnaar wilt omleiden, moet u ze hier invoeren."
 
 msgid "If you've created custom taxonomies and would like to redirect users to them, you'll have to enter them here."
-msgstr "Si vous avez créé des taxonomies personnalisées et souhaitez rediriger les utilisateurs vers celles-ci, vous devrez les saisir ici."
+msgstr "Als u aangepaste taxonomieën heeft gemaakt en gebruikers daarnaar wilt omleiden, moet u ze hier invoeren."
 
 msgid "Ignore 404 Error"
-msgstr "Ignorer l'erreur 404"
+msgstr "404-fout negeren"
 
 msgid "Ignored 404 URLs"
-msgstr "URLs 404 ignorées"
+msgstr "Genegeerde 404-URL's"
 
 msgid "Ignored URLs"
-msgstr "URLs ignorées"
+msgstr "Genegeerde URL's"
 
 msgid "Import"
-msgstr "Importer"
+msgstr "Importeren"
 
 msgid "Import 404 Redirected Data"
-msgstr "Importer les données de redirections 404"
+msgstr "404-omleidingsgegevens importeren"
 
 msgid "Import a CSV file with the redirects and captured 404s."
-msgstr "Importer un fichier CSV avec les redirections et les 404 capturées."
+msgstr "Importeer een CSV-bestand met de omleidingen en vastgelegde 404's."
 
 msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
-msgstr "Y compris casser le site en créant de mauvaises redirections, en saisissant une mauvaise expression régulière, en supprimant des redirections existantes et en donnant à d'autres utilisateurs un accès administrateur au plugin."
+msgstr "Inclusief het breken van de site door slechte omleidingen aan te maken, een slechte reguliere expressie in te voeren, bestaande omleidingen te verwijderen en andere gebruikers beheerderstoegang tot de plugin te geven."
 
 msgid "Internal Process User Agents - Do Not Log"
-msgstr "Agents utilisateurs de processus internes - Ne pas enregistrer"
+msgstr "Interne proces-user agents - niet loggen"
 
 msgid "Issue deleting debug file. (%s)"
-msgstr "Problème lors de la suppression du fichier de débogage. (%s)"
+msgstr "Probleem bij het verwijderen van debug-bestand. (%s)"
 
 msgid "JAPANESE_FLASHCARDS_URL"
 msgstr "JAPANESE_FLASHCARDS_URL"
 
 msgid "Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit."
-msgstr "Conserve les enregistrements de journal les plus récents (et supprime les plus anciens) lorsque l'utilisation du disque atteint cette limite."
+msgstr "Behoudt de meest recente (en verwijdert de oudste) logrecords wanneer het schijfgebruik deze limiet bereikt."
 
 msgid "LINK_FIRST_PAGE"
 msgstr "LINK_FIRST_PAGE"
@@ -627,109 +627,109 @@ msgid "LINK_PREVIOUS_PAGE"
 msgstr "LINK_PREVIOUS_PAGE"
 
 msgid "Last Used"
-msgstr "Dernière utilisation"
+msgstr "Laatst gebruikt"
 
 msgid "List one user name per line."
-msgstr "Listez un nom d'utilisateur par ligne."
+msgstr "Vermeld één gebruikersnaam per regel."
 
 msgid "Log files are checked daily when maintenance is run."
-msgstr "Les fichiers journaux sont vérifiés quotidiennement lors de l'exécution de la maintenance."
+msgstr "Logbestanden worden dagelijks gecontroleerd wanneer onderhoud wordt uitgevoerd."
 
 msgid "Log raw IPs"
-msgstr "Enregistrer les IPs brutes"
+msgstr "Onbewerkte IP's loggen"
 
 msgid "Logging raw IP addresses may not meet the EU General Data Protection Regulation (GDPR) guidelines."
-msgstr "L'enregistrement des adresses IP brutes peut ne pas respecter les directives du Règlement Général sur la Protection des Données (RGPD) de l'UE."
+msgstr "Het loggen van onbewerkte IP-adressen voldoet mogelijk niet aan de richtlijnen van de EU Algemene Verordening Gegevensbescherming (AVG)."
 
 msgid "Logs"
-msgstr "Journaux"
+msgstr "Logs"
 
 msgid "MB"
-msgstr "Mo"
+msgstr "MB"
 
 msgid "Maintenance"
-msgstr "Maintenance"
+msgstr "Onderhoud"
 
 msgid "Monochrome Minimal (Light)"
-msgstr "Monochrome Minimal (Clair)"
+msgstr "Monochroom minimaal (licht)"
 
 msgid "Major version auto update delay"
-msgstr "Délai de mise à jour automatique de version majeure"
+msgstr "Vertraging auto-update hoofdversie"
 
 msgid "Man"
-msgstr "Manuel"
+msgstr "Hand"
 
 msgid "Manual 301 Redirects"
-msgstr "Redirections 301 manuelles"
+msgstr "Handmatige 301-omleidingen"
 
 msgid "Manual 302 Redirects"
-msgstr "Redirections 302 manuelles"
+msgstr "Handmatige 302-omleidingen"
 
 msgid "Manual Redirects"
-msgstr "Redirections manuelles"
+msgstr "Handmatige omleidingen"
 
 msgid "Manual redirect deletion"
-msgstr "Suppression de redirection manuelle"
+msgstr "Handmatige omleidingsverwijdering"
 
 msgid "Manually created"
-msgstr "Créé manuellement"
+msgstr "Handmatig aangemaakt"
 
 msgid "Maximum log disk usage (MB)"
-msgstr "Utilisation disque maximale des journaux (Mo)"
+msgstr "Maximaal schijfgebruik logs (MB)"
 
 msgid "Maximum number of suggestions to display"
-msgstr "Nombre maximum de suggestions à afficher"
+msgstr "Maximaal aantal weer te geven suggesties"
 
 msgid "Minimum match score"
-msgstr "Score de correspondance minimum"
+msgstr "Minimale matchscore"
 
 msgid "Minimum score of suggestions to display"
-msgstr "Score minimum des suggestions à afficher"
+msgstr "Minimale score van weer te geven suggesties"
 
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
-msgstr "Plusieurs adresses e-mail peuvent être séparées par des virgules (,). L'adresse e-mail \"de\" est toujours l'e-mail administrateur WordPress par défaut :"
+msgstr "Meerdere e-mailadressen kunnen worden gescheiden door komma's (,). Het \"van\" e-mailadres is altijd het standaard WordPress-beheerders-e-mailadres:"
 
 msgid "Neon Slate (Dark)"
-msgstr "Neon Slate (Sombre)"
+msgstr "Neon Slate (donker)"
 
 msgid "Never Used"
-msgstr "Jamais utilisé"
+msgstr "Nooit gebruikt"
 
 msgid "New Redirect Added Successfully!"
-msgstr "Nouvelle redirection ajoutée avec succès !"
+msgstr "Nieuwe omleiding succesvol toegevoegd!"
 
 msgid "New major version => wait this many days. New minor version => automatically update about 3 days after the release date."
-msgstr "Nouvelle version majeure => attendre ce nombre de jours. Nouvelle version mineure => mise à jour automatique environ 3 jours après la date de sortie."
+msgstr "Nieuwe hoofdversie => wacht zoveel dagen. Nieuwe kleine versie => automatisch bijwerken ongeveer 3 dagen na de releasedatum."
 
 msgid "No Captured 404 Records To Display"
-msgstr "Aucun enregistrement 404 capturé à afficher"
+msgstr "Geen vastgelegde 404-records om weer te geven"
 
 msgid "No Redirect Records To Display"
-msgstr "Aucun enregistrement de redirection à afficher"
+msgstr "Geen omleidingsrecords om weer te geven"
 
 msgid "No Results To Display"
-msgstr "Aucun résultat à afficher"
+msgstr "Geen resultaten om weer te geven"
 
 msgid "No suggestions. :/"
-msgstr "Aucune suggestion. :/"
+msgstr "Geen suggesties. :/"
 
 msgid "No suggestions. :/ "
-msgstr "Aucune suggestion. :/ "
+msgstr "Geen suggesties. :/ "
 
 msgid "Note that including a bad regular expression or one that takes too long will break your website."
-msgstr "Notez qu'inclure une mauvaise expression régulière ou une qui prend trop de temps cassera votre site web."
+msgstr "Houd er rekening mee dat het toevoegen van een slechte reguliere expressie of een die te lang duurt, uw website zal breken."
 
 msgid "Note: Do not include the parenthesis or explanations shown in the examples above."
-msgstr "Note : N'incluez pas les parenthèses ou les explications montrées dans les exemples ci-dessus."
+msgstr "Opmerking: neem de haakjes of uitleg uit de bovenstaande voorbeelden niet over."
 
 msgid "Note: Here is a list of all post types in the database:"
-msgstr "Note : Voici une liste de tous les types de contenu dans la base de données :"
+msgstr "Opmerking: hier is een lijst van alle berichttypen in de database:"
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
-msgstr "Note : Les \"scores\" qui apparaissent au format \"(75.7576)\" après les liens de page ne sont affichés que pour les utilisateurs administrateurs."
+msgstr "Opmerking: de \"scores\" die in het formaat \"(75.7576)\" na de paginakoppelingen verschijnen, worden alleen weergegeven voor beheerders."
 
 msgid "Obsidian Blue (Dark)"
-msgstr "Obsidian Blue (Sombre)"
+msgstr "Obsidian Blue (donker)"
 
 msgid "OPTION_MIN_AUTO_SCORE"
 msgstr "OPTION_MIN_AUTO_SCORE"
@@ -738,142 +738,142 @@ msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
 msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
 
 msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
-msgstr "Un e-mail sera envoyé par jour (lors de l'exécution de la maintenance) jusqu'à ce que le nombre de 404 capturées passe en dessous du nombre spécifié dans les paramètres d'alerte."
+msgstr "Er wordt één e-mail per dag verzonden (wanneer onderhoud wordt uitgevoerd) totdat het aantal vastgelegde 404's onder het in de waarschuwingsinstellingen opgegeven aantal komt."
 
 msgid "Only create an automatic redirect if the suggested page has a score above the specified number (default 90)"
-msgstr "Créer une redirection automatique uniquement si la page suggérée a un score supérieur au nombre spécifié (défaut 90)"
+msgstr "Maak alleen een automatische omleiding aan als de voorgestelde pagina een score heeft boven het opgegeven aantal (standaard 90)"
 
 msgid "Options"
-msgstr "Options"
+msgstr "Opties"
 
 msgid "Options Saved Successfully!"
-msgstr "Options enregistrées avec succès !"
+msgstr "Opties succesvol opgeslagen!"
 
 msgid "Organize Later"
-msgstr "Organiser plus tard"
+msgstr "Later organiseren"
 
 msgid "Page"
-msgstr "Page"
+msgstr "Pagina"
 
 msgid "Page Not Found Displayed"
-msgstr "Page non trouvée affichée"
+msgstr "Pagina niet gevonden weergegeven"
 
 msgid "Page Redirects"
-msgstr "Redirections de page"
+msgstr "Pagina-omleidingen"
 
 msgid "Page suggestions title"
-msgstr "Titre des suggestions de page"
+msgstr "Titel paginasuggesties"
 
 msgid "Pages listed here will not be redirected to"
-msgstr "Les pages listées ici ne seront pas utilisées comme destination de redirection"
+msgstr "Pagina's die hier worden vermeld, worden niet naar omgeleid"
 
 msgid "Permanent 301"
 msgstr "Permanent 301"
 
 msgid "Plugin Admin Users"
-msgstr "Utilisateurs administrateurs du plugin"
+msgstr "Plugin-beheerders"
 
 msgid "Plugin version"
-msgstr "Version du plugin"
+msgstr "Plugin-versie"
 
 msgid "Purge Entries!"
-msgstr "Purger les entrées !"
+msgstr "Items opschonen!"
 
 msgid "Purge Options"
-msgstr "Options de purge"
+msgstr "Opschoningsopties"
 
 msgid "Purge Type"
-msgstr "Type de purge"
+msgstr "Opschoningstype"
 
 msgid "REDIRECT_TO_USER_FIELD_WARNING"
 msgstr "REDIRECT_TO_USER_FIELD_WARNING"
 
 msgid "Recognized Post Types"
-msgstr "Types de contenu reconnus"
+msgstr "Herkende berichttypen"
 
 msgid "Records imported: %s"
-msgstr "Enregistrements importés : %s"
+msgstr "Records geïmporteerd: %s"
 
 msgid "Redirect"
-msgstr "Redirection"
+msgstr "Omleiding"
 
 msgid "Redirect & Capture Logs"
-msgstr "Journaux de redirection et capture"
+msgstr "Omleidings- en vastleggingslogs"
 
 msgid "Redirect Details"
-msgstr "Détails de redirection"
+msgstr "Omleidingsdetails"
 
 msgid "Redirect Information Updated Successfully!"
-msgstr "Informations de redirection mises à jour avec succès !"
+msgstr "Omleidingsinformatie succesvol bijgewerkt!"
 
 msgid "Redirect Removed Successfully!"
-msgstr "Redirection supprimée avec succès !"
+msgstr "Omleiding succesvol verwijderd!"
 
 msgid "Redirect Type"
-msgstr "Type de redirection"
+msgstr "Omleidingstype"
 
 msgid "Redirect Types"
-msgstr "Types de redirection"
+msgstr "Omleidingstypen"
 
 msgid "Redirect all requests"
-msgstr "Rediriger toutes les requêtes"
+msgstr "Alle verzoeken omleiden"
 
 msgid "Redirect all unhandled 404s to"
-msgstr "Rediriger toutes les 404 non gérées vers"
+msgstr "Alle onafgehandelde 404's omleiden naar"
 
 msgid "Redirect moved to trash successfully!"
-msgstr "Redirection déplacée dans la corbeille avec succès !"
+msgstr "Omleiding succesvol naar prullenbak verplaatst!"
 
 msgid "Redirect restored from trash successfully!"
-msgstr "Redirection restaurée de la corbeille avec succès !"
+msgstr "Omleiding succesvol hersteld uit prullenbak!"
 
 msgid "Redirect to"
-msgstr "Rediriger vers"
+msgstr "Omleiden naar"
 
 msgid "Redirected to"
-msgstr "Redirigé vers"
+msgstr "Omgeleid naar"
 
 msgid "Redirects"
-msgstr "Redirections"
+msgstr "Omleidingen"
 
 msgid "Referrer"
-msgstr "Référent"
+msgstr "Verwijzer"
 
 msgid "RegEx"
 msgstr "RegEx"
 
 msgid "Regular Expression (Manually Created)"
-msgstr "Expression régulière (créée manuellement)"
+msgstr "Reguliere expressie (handmatig aangemaakt)"
 
 msgid "Remove Ignore Status"
-msgstr "Retirer le statut Ignoré"
+msgstr "Negeer-status verwijderen"
 
 msgid "Remove Later Status"
-msgstr "Retirer le statut Plus tard"
+msgstr "Later-status verwijderen"
 
 msgid "Remove redirect upon matching permalink"
-msgstr "Supprimer la redirection lors de la correspondance du permalien"
+msgstr "Omleiding verwijderen bij overeenkomende permalink"
 
 msgid "Removed 404 URL from %s list successfully!"
-msgstr "URL 404 retirée de la liste %s avec succès !"
+msgstr "404-URL succesvol verwijderd uit %s-lijst!"
 
 msgid "Removes auto created redirects if they haven't been used for the specified amount of time."
-msgstr "Supprime les redirections créées automatiquement si elles n'ont pas été utilisées pendant la durée spécifiée."
+msgstr "Verwijdert automatisch aangemaakte omleidingen als ze gedurende de opgegeven periode niet zijn gebruikt."
 
 msgid "Required"
-msgstr "Requis"
+msgstr "Verplicht"
 
 msgid "Restore"
-msgstr "Restaurer"
+msgstr "Herstellen"
 
 msgid "Rows per page:"
-msgstr "Lignes par page :"
+msgstr "Rijen per pagina:"
 
 msgid "Run Maintenance"
-msgstr "Exécuter la maintenance"
+msgstr "Onderhoud uitvoeren"
 
 msgid "Run maintenance to delete old data (etc).&nbsp;&nbsp;It is not necessary to run this manually, as it's done automatically on a daily basis."
-msgstr "Exécuter la maintenance pour supprimer les anciennes données (etc.).&nbsp;&nbsp;Il n'est pas nécessaire de l'exécuter manuellement, car cela est fait automatiquement quotidiennement."
+msgstr "Voer onderhoud uit om oude gegevens te verwijderen (etc).&nbsp;&nbsp;Het is niet nodig om dit handmatig uit te voeren, omdat dit automatisch dagelijks gebeurt."
 
 msgid "SELECTED_SUGGEST_CATS"
 msgstr "SELECTED_SUGGEST_CATS"
@@ -909,31 +909,31 @@ msgid "SUGGEST_USER_TITLE"
 msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
-msgstr "Vérification de cohérence"
+msgstr "Gezondheidscontrole"
 
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
-msgstr "Les agents utilisateurs de moteurs de recherche ne doivent pas aller ici afin qu'ils soient redirigés lorsque la structure des slugs change."
+msgstr "Zoekmachine-user agents horen hier niet thuis, zodat ze worden omgeleid wanneer de slug-structuur verandert."
 
 msgid "Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
-msgstr "Puisqu'un groupe de capture est utilisé, vous pouvez utiliser un remplacement $1 dans la chaîne de destination d'une URL externe."
+msgstr "Omdat er een capture-groep wordt gebruikt, kunt u een $1-vervanging gebruiken in de bestemmingsstring van een externe URL."
 
 msgid "So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
-msgstr "Veuillez donc faire preuve de prudence et les tester ailleurs avant de les essayer ici. Si vous ne savez pas ce que vous faites, n'utilisez pas cette option (car elle n'est pas nécessaire au fonctionnement du plugin)."
+msgstr "Wees dus voorzichtig en test ze elders voordat u ze hier probeert. Als u niet weet wat u doet, gebruik deze optie dan alstublieft niet (omdat het niet nodig is voor de werking van de plugin)."
 
 msgid "Some options were not saved successfully."
-msgstr "Certaines options n'ont pas été enregistrées avec succès."
+msgstr "Sommige opties zijn niet succesvol opgeslagen."
 
 msgid "Special"
-msgstr "Spécial"
+msgstr "Speciaal"
 
 msgid "Stats"
-msgstr "Statistiques"
+msgstr "Statistieken"
 
 msgid "Status"
-msgstr "Statut"
+msgstr "Status"
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
-msgstr "Les formats supportés sont : <B>from_url,status,type,to_url,wp_type</B>"
+msgstr "Ondersteunde formaten zijn: <B>from_url,status,type,to_url,wp_type</B>"
 
 msgid "TEXT_BEFORE_LINKS"
 msgstr "TEXT_BEFORE_LINKS"
@@ -960,211 +960,211 @@ msgid "TOOLTIP_POPUP_EXPLANATION_URL"
 msgstr "TOOLTIP_POPUP_EXPLANATION_URL"
 
 msgid "Tag"
-msgstr "Étiquette"
+msgstr "Tag"
 
 msgid "Tag:"
-msgstr "Étiquette :"
+msgstr "Tag:"
 
 msgid "Tags"
-msgstr "Étiquettes"
+msgstr "Tags"
 
 msgid "Template Redirect Priority"
-msgstr "Priorité de redirection de modèle"
+msgstr "Template-omleidingsprioriteit"
 
 msgid "Temporary 302"
-msgstr "Temporaire 302"
+msgstr "Tijdelijk 302"
 
 msgid "The \"product\" type is for WooCommerce users."
-msgstr "Le type \"product\" est pour les utilisateurs WooCommerce."
+msgstr "Het type \"product\" is voor WooCommerce-gebruikers."
 
 msgid "The 404 Solution menu should appear"
-msgstr "Le menu Solution 404 devrait apparaître"
+msgstr "Het 404 Solution-menu moet verschijnen"
 
 msgid "The file seems to have loaded okay. Please check the redirects page."
-msgstr "Le fichier semble avoir été chargé correctement. Veuillez vérifier la page des redirections."
+msgstr "Het bestand lijkt correct te zijn geladen. Controleer de omleidingspagina."
 
 msgid "The plugin will only redirect the post types specified here."
-msgstr "Le plugin ne redirigera que les types de contenu spécifiés ici."
+msgstr "De plugin leidt alleen de hier opgegeven berichttypen om."
 
 msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
-msgstr "Le plugin redirigera vers les taxonomies normales (catégories et étiquettes) et celles listées ici."
+msgstr "De plugin leidt om naar normale taxonomieën (categorieën en tags) en de hier vermelde."
 
 msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "La page suggérée doit \"scorer\" au moins ce montant pour être affichée comme suggestion (min : 10, max : 90, défaut : 25)"
+msgstr "De voorgestelde pagina moet minstens deze score \"halen\" om als suggestie te worden getoond (min: 10, max: 90, standaard: 25)"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
-msgstr "La page 404 spécifiée par l'utilisateur n'a pas été trouvée. Veuillez mettre à jour la page 404 spécifiée par l'utilisateur dans la page Options."
+msgstr "De door de gebruiker opgegeven 404-pagina is niet gevonden. Werk de door de gebruiker opgegeven 404-pagina bij op de pagina Opties."
 
 msgid "This cannot be undone. All redirects for URLs that do not already exist will be imported."
-msgstr "Ceci ne peut pas être annulé. Toutes les redirections pour les URLs qui n'existent pas déjà seront importées."
+msgstr "Dit kan niet ongedaan worden gemaakt. Alle omleidingen voor URL's die nog niet bestaan, worden geïmporteerd."
 
 msgid "This creates the list. For example, use &lt;ol style=\"list-style-type: none;\"&gt; to hide the numbers in the list. (defaults: &lt;ol&gt; / &lt;/ol&gt;)"
-msgstr "Ceci crée la liste. Par exemple, utilisez &lt;ol style=\"list-style-type: none;\"&gt; pour masquer les numéros dans la liste. (défauts : &lt;ol&gt; / &lt;/ol&gt;)"
+msgstr "Dit maakt de lijst aan. Gebruik bijvoorbeeld &lt;ol style=\"list-style-type: none;\"&gt; om de nummers in de lijst te verbergen. (standaard: &lt;ol&gt; / &lt;/ol&gt;)"
 
 msgid "This is best for internal processes that don't need to be redirected when the slug structure changes."
-msgstr "Ceci est idéal pour les processus internes qui n'ont pas besoin d'être redirigés lorsque la structure des slugs change."
+msgstr "Dit is het beste voor interne processen die niet hoeven te worden omgeleid wanneer de slug-structuur verandert."
 
 msgid "This is best for search engine bots that do need to be redirected when the slug structure changes."
-msgstr "Ceci est idéal pour les robots de moteurs de recherche qui ont besoin d'être redirigés lorsque la structure des slugs change."
+msgstr "Dit is het beste voor zoekmachine-bots die wel moeten worden omgeleid wanneer de slug-structuur verandert."
 
 msgid "This is for a domain name change."
-msgstr "Ceci est pour un changement de nom de domaine."
+msgstr "Dit is voor een domeinnaamwijziging."
 
 msgid "This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
-msgstr "Ceci est pour quand un utilisateur demande une page qui n'existe pas et qu'il n'est pas automatiquement redirigé vers une page correspondante."
+msgstr "Dit is voor wanneer een gebruiker een pagina opvraagt die niet bestaat en ze niet automatisch worden omgeleid naar een overeenkomende pagina."
 
 msgid "This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin."
-msgstr "Ce n'est pas requis pour que le plugin fonctionne, mais c'est utile pour le développeur et pour les futures versions du plugin."
+msgstr "Dit is niet vereist voor de werking van de plugin, maar het is nuttig voor de ontwikkelaar en voor toekomstige versies van de plugin."
 
 msgid "This only affects the list of potential matches shown to the user on a custom 404 page."
-msgstr "Ceci n'affecte que la liste des correspondances potentielles affichées à l'utilisateur sur une page 404 personnalisée."
+msgstr "Dit heeft alleen invloed op de lijst met mogelijke overeenkomsten die aan de gebruiker op een aangepaste 404-pagina worden getoond."
 
 msgid "This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported)."
-msgstr "Ceci révèle : tout dans le journal de débogage, l'adresse e-mail admin, les extensions PHP installées, les plugins actifs, la version PHP, la version WordPress, la version MySQL, le total des pages et articles publiés, etc. (tout ce qui est demandé lorsqu'un problème est signalé)."
+msgstr "Dit onthult: alles in de debug-log, het beheerders-e-mailadres, geïnstalleerde PHP-extensies, actieve plugins, PHP-versie, WordPress-versie, MySQL-versie, totaal aantal gepubliceerde pagina's en berichten, etc. (alles wat wordt gevraagd wanneer een probleem wordt gerapporteerd)."
 
 msgid "This sets how early in the process a 404 is handled by this plugin. If there are multiple plugins that should handle a 404, then set this higher (999) so that this plugin gets the 404 last. (default 9)"
-msgstr "Ceci définit à quel moment du processus une 404 est gérée par ce plugin. S'il y a plusieurs plugins qui devraient gérer une 404, alors augmentez ce nombre (999) pour que ce plugin reçoive la 404 en dernier. (défaut 9)"
+msgstr "Dit bepaalt hoe vroeg in het proces een 404 wordt afgehandeld door deze plugin. Als er meerdere plugins zijn die een 404 moeten afhandelen, stel dit dan hoger in (999) zodat deze plugin de 404 als laatste krijgt. (standaard 9)"
 
 msgid "This shortcode can be used on the 404 page and will display a list of suggested pages."
-msgstr "Ce shortcode peut être utilisé sur la page 404 et affichera une liste de pages suggérées."
+msgstr "Deze shortcode kan worden gebruikt op de 404-pagina en toont een lijst met voorgestelde pagina's."
 
 msgid "This surrounds each item in the list. (defaults: &lt;li&gt; / &lt;/li&gt;)"
-msgstr "Ceci entoure chaque élément de la liste. (défauts : &lt;li&gt; / &lt;/li&gt;)"
+msgstr "Dit omringt elk item in de lijst. (standaard: &lt;li&gt; / &lt;/li&gt;)"
 
 msgid "This text will appear before the list of suggestions (default: &lt;h3&gt;Here are some other great pages&lt;/h3&gt;)"
-msgstr "Ce texte apparaîtra avant la liste des suggestions (défaut : &lt;h3&gt;Voici d'autres pages intéressantes&lt;/h3&gt;)"
+msgstr "Deze tekst verschijnt vóór de lijst met suggesties (standaard: &lt;h3&gt;Hier zijn enkele andere geweldige pagina's&lt;/h3&gt;)"
 
 msgid "This will break your website."
-msgstr "Ceci cassera votre site web."
+msgstr "Dit zal uw website breken."
 
 msgid "This will not change the URL if the destination 404 page is set to (Default 404 Page) or Home Page."
-msgstr "Ceci ne changera pas l'URL si la page de destination 404 est définie sur (Page 404 par défaut) ou Page d'accueil."
+msgstr "Dit zal de URL niet wijzigen als de bestemmings-404-pagina is ingesteld op (Standaard 404-pagina) of Startpagina."
 
 msgid "Tools"
-msgstr "Outils"
+msgstr "Hulpmiddelen"
 
 msgid "Total Redirects"
-msgstr "Total des redirections"
+msgstr "Totaal omleidingen"
 
 msgid "Total URLs"
-msgstr "Total des URLs"
+msgstr "Totaal URL's"
 
 msgid "Trash"
-msgstr "Corbeille"
+msgstr "Prullenbak"
 
 msgid "Trash Redirected URL"
-msgstr "Mettre l'URL redirigée à la corbeille"
+msgstr "Omgeleide URL naar prullenbak"
 
 msgid "Trashed Redirects"
-msgstr "Redirections dans la corbeille"
+msgstr "Verwijderde omleidingen"
 
 msgid "Trashed URLs"
-msgstr "URLs dans la corbeille"
+msgstr "Verwijderde URL's"
 
 msgid "Treat this URL as a regular expression"
-msgstr "Traiter cette URL comme une expression régulière"
+msgstr "Behandel deze URL als een reguliere expressie"
 
 msgid "Type"
 msgstr "Type"
 
 msgid "Type a page name here and select it to add it to the exlusion list"
-msgstr "Tapez un nom de page ici et sélectionnez-la pour l'ajouter à la liste d'exclusion"
+msgstr "Typ hier een paginanaam en selecteer deze om deze aan de uitsluitingslijst toe te voegen"
 
 msgid "URL"
 msgstr "URL"
 
 msgid "URL(s) deleted"
-msgstr "URL(s) supprimée(s)"
+msgstr "URL('s) verwijderd"
 
 msgid "URL(s) marked as Captured."
-msgstr "URL(s) marquée(s) comme Capturée."
+msgstr "URL('s) gemarkeerd als vastgelegd."
 
 msgid "URL(s) marked as Ignored."
-msgstr "URL(s) marquée(s) comme Ignorée."
+msgstr "URL('s) gemarkeerd als genegeerd."
 
 msgid "URL(s) marked as Later."
-msgstr "URL(s) marquée(s) comme Plus tard."
+msgstr "URL('s) gemarkeerd als later."
 
 msgid "URL(s) moved to trash"
-msgstr "URL(s) déplacée(s) dans la corbeille"
+msgstr "URL('s) naar prullenbak verplaatst"
 
 msgid "URL(s) restored."
-msgstr "URL(s) restaurée(s)."
+msgstr "URL('s) hersteld."
 
 msgid "URLs"
-msgstr "URLs"
+msgstr "URL's"
 
 msgid "Under the Settings menu"
-msgstr "Sous le menu Paramètres"
+msgstr "Onder het menu Instellingen"
 
 msgid "Unique Page Not Found Referrers"
-msgstr "Référents uniques de page non trouvée"
+msgstr "Unieke verwijzers pagina niet gevonden"
 
 msgid "Unique Page Not Found URLs"
-msgstr "URLs uniques de page non trouvée"
+msgstr "Unieke URL's pagina niet gevonden"
 
 msgid "Unique Page Not Found Visitors"
-msgstr "Visiteurs uniques de page non trouvée"
+msgstr "Unieke bezoekers pagina niet gevonden"
 
 msgid "Unique Redirected Referrers"
-msgstr "Référents redirigés uniques"
+msgstr "Unieke omgeleide verwijzers"
 
 msgid "Unique Redirected Visitors"
-msgstr "Visiteurs redirigés uniques"
+msgstr "Unieke omgeleide bezoekers"
 
 msgid "Unique URLs Redirected"
-msgstr "URLs redirigées uniques"
+msgstr "Unieke omgeleide URL's"
 
 msgid "Unknown"
-msgstr "Inconnu"
+msgstr "Onbekend"
 
 msgid "Update Redirect"
-msgstr "Mettre à jour la redirection"
+msgstr "Omleiding bijwerken"
 
 msgid "Update the URL bar"
-msgstr "Mettre à jour la barre d'URL"
+msgstr "URL-balk bijwerken"
 
 msgid "Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
-msgstr "Utilisez une ligne par agent utilisateur. Si le texte est trouvé n'importe où dans la chaîne agent utilisateur, alors il s'applique."
+msgstr "Gebruik één regel per user agent. Als de tekst ergens in de user agent string wordt gevonden, is het van toepassing."
 
 msgid "User"
-msgstr "Utilisateur"
+msgstr "Gebruiker"
 
 msgid "User names listed here will be able to do everything an admin can do with the plugin."
-msgstr "Les noms d'utilisateur listés ici pourront faire tout ce qu'un administrateur peut faire avec le plugin."
+msgstr "Gebruikersnamen die hier worden vermeld, kunnen alles doen wat een beheerder met de plugin kan doen."
 
 msgid "Using the purge options will move all selected redirects to the trash. You must then empty the trash to delete them."
-msgstr "L'utilisation des options de purge déplacera toutes les redirections sélectionnées dans la corbeille. Vous devrez ensuite vider la corbeille pour les supprimer."
+msgstr "Het gebruik van de opschoningsopties verplaatst alle geselecteerde omleidingen naar de prullenbak. U moet vervolgens de prullenbak legen om ze te verwijderen."
 
 msgid "View logs for"
-msgstr "Voir les journaux pour"
+msgstr "Bekijk logs voor"
 
 msgid "Visit"
-msgstr "Visiter"
+msgstr "Bezoeken"
 
 msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "ATTENTION : Lorsque mal utilisé, ceci CASSERA votre site web. Utilisez à vos propres risques. S'il vous plaît, pour l'amour de tout ce qui est sacré, laissez ceci vide si vous ne savez pas ce que vous faites."
+msgstr "WAARSCHUWING: Bij onjuist gebruik zal dit uw website breken. Gebruik op eigen risico. Alstublieft, voor de lieve vrede, laat dit leeg als u niet weet wat u doet."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
-msgstr "Lorsqu'une erreur est détectée par le plugin, envoyer le fichier journal complet au développeur."
+msgstr "Wanneer de plugin een fout detecteert, e-mail het volledige logbestand naar de ontwikkelaar."
 
 msgid "When checked the URL will be changed from the custom 404 page URL to the URL originally requested (after the page headers load)."
-msgstr "Lorsque coché, l'URL sera changée de l'URL de page 404 personnalisée vers l'URL originalement demandée (après le chargement des en-têtes de page)."
+msgstr "Wanneer aangevinkt, wordt de URL gewijzigd van de aangepaste 404-pagina-URL naar de oorspronkelijk aangevraagde URL (nadat de paginakopteksten zijn geladen)."
 
 msgid "When checked, the text is treated as a regular expression."
-msgstr "Lorsque coché, le texte est traité comme une expression régulière."
+msgstr "Wanneer aangevinkt, wordt de tekst behandeld als een reguliere expressie."
 
 msgid "When selected, ALL REQUESTS (even for pages that exist, even for non-404s) will be treated like a 404."
-msgstr "Lorsque sélectionné, TOUTES LES REQUÊTES (même pour les pages qui existent, même pour les non-404) seront traitées comme une 404."
+msgstr "Wanneer geselecteerd, worden ALLE VERZOEKEN (zelfs voor pagina's die bestaan, zelfs voor niet-404's) behandeld als een 404."
 
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here."
-msgstr "Lorsque le nombre de 404 capturées déclencherait une notification admin, un e-mail sera envoyé aux adresses spécifiées ici."
+msgstr "Wanneer het aantal vastgelegde 404's een beheerdersmelding zou veroorzaken, wordt er een e-mail verzonden naar de hier opgegeven adressen."
 
 msgid "You can see which are recognized by looking at the default 404 destination option."
-msgstr "Vous pouvez voir lesquelles sont reconnues en regardant l'option de destination 404 par défaut."
+msgstr "U kunt zien welke worden herkend door te kijken naar de standaard 404-bestemmingsoptie."
 
 msgid "You can see which post types are recognized by looking at the default 404 destination option, which has a list of pages, posts, products, etc."
-msgstr "Vous pouvez voir quels types de contenu sont reconnus en regardant l'option de destination 404 par défaut, qui a une liste de pages, articles, produits, etc."
+msgstr "U kunt zien welke berichttypen worden herkend door te kijken naar de standaard 404-bestemmingsoptie, die een lijst bevat van pagina's, berichten, producten, etc."
 
 msgid "add-exclude-page-data-url"
 msgstr "add-exclude-page-data-url"
@@ -1176,10 +1176,10 @@ msgid "ajaxTrashLink"
 msgstr "ajaxTrashLink"
 
 msgid "and <B>from_url,to_url</B>"
-msgstr "et <B>from_url,to_url</B>"
+msgstr "en <B>from_url,to_url</B>"
 
 msgid "and redirect to the specified page."
-msgstr "et rediriger vers la page spécifiée."
+msgstr "en omleiden naar de opgegeven pagina."
 
 msgid "bulkOptions"
 msgstr "bulkOptions"
@@ -1191,7 +1191,7 @@ msgid "data-url"
 msgstr "data-url"
 
 msgid "days (0 means immediately, default 30)"
-msgstr "jours (0 signifie immédiatement, défaut 30)"
+msgstr "dagen (0 betekent onmiddellijk, standaard 30)"
 
 msgid "deletePermanentlyHTML"
 msgstr "deletePermanentlyHTML"
@@ -1218,7 +1218,7 @@ msgid "filterText"
 msgstr "filterText"
 
 msgid "is maintained by"
-msgstr "est maintenu par"
+msgstr "wordt onderhouden door"
 
 msgid "loaded-excluded-pages"
 msgstr "loaded-excluded-pages"
@@ -1233,7 +1233,7 @@ msgid "logslinkHTML"
 msgstr "logslinkHTML"
 
 msgid "of"
-msgstr "de"
+msgstr "van"
 
 msgid "pageIDAndType"
 msgstr "pageIDAndType"
@@ -1323,18 +1323,18 @@ msgid "urlPlaceholder"
 msgstr "urlPlaceholder"
 
 msgid "will match any URL that begins with"
-msgstr "correspondra à toute URL qui commence par"
+msgstr "komt overeen met elke URL die begint met"
 
 #. Plural form with HTML
 #: includes/View.php
 msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
 msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
-msgstr[0] "Il y a <a>%s URL 404 capturée</a> qui doit être traitée."
-msgstr[1] "Il y a <a>%s URLs 404 capturées</a> qui doivent être traitées."
+msgstr[0] "Er is <a>%s vastgelegde 404-URL</a> die moet worden verwerkt."
+msgstr[1] "Er zijn <a>%s vastgelegde 404-URL's</a> die moeten worden verwerkt."
 
 #. Plural form with %s
 #: includes/DataAccess.php
 msgid "%s redirect entry was moved to the trash."
 msgid_plural "%s redirect entries were moved to the trash."
-msgstr[0] "%s entrée de redirection a été déplacée dans la corbeille."
-msgstr[1] "%s entrées de redirection ont été déplacées dans la corbeille."
+msgstr[0] "%s omleidingsitem is naar de prullenbak verplaatst."
+msgstr[1] "%s omleidingsitems zijn naar de prullenbak verplaatst."

@@ -9,8 +9,8 @@ msgstr ""
 "POT-Creation-Date: 2025-11-11 07:26+0000\n"
 "PO-Revision-Date: 2025-11-11 07:26+0000\n"
 "Last-Translator: Auto-Generated\n"
-"Language-Team: French\n"
-"Language: fr_FR\n"
+"Language-Team: Brazilian Portuguese\n"
+"Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -24,595 +24,595 @@ msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s de %3$s"
 
 msgid "(A custom string has been entered.)"
-msgstr "(Une chaîne personnalisée a été saisie.)"
+msgstr "(Uma string personalizada foi inserida.)"
 
 msgid "(A page has been selected.)"
-msgstr "(Une page a été sélectionnée.)"
+msgstr "(Uma página foi selecionada.)"
 
 msgid "(All results displayed for \"%s.\")"
-msgstr "(Tous les résultats affichés pour \"%s.\")"
+msgstr "(Todos os resultados exibidos para \"%s.\")"
 
 msgid "(All results displayed.)"
-msgstr "(Tous les résultats affichés.)"
+msgstr "(Todos os resultados exibidos.)"
 
 msgid "(An external URL will be used.)"
-msgstr "(Une URL externe sera utilisée.)"
+msgstr "(Uma URL externa será usada.)"
 
 msgid "(Begin typing a URL)"
-msgstr "(Commencez à taper une URL)"
+msgstr "(Comece a digitar uma URL)"
 
 msgid "(Data truncated. Too many results for \"%s!\".)"
-msgstr "(Données tronquées. Trop de résultats pour \"%s!\".)"
+msgstr "(Dados truncados. Muitos resultados para \"%s!\".)"
 
 msgid "(Data truncated. Too many results!)"
-msgstr "(Données tronquées. Trop de résultats !)"
+msgstr "(Dados truncados. Muitos resultados!)"
 
 msgid "(Default 404 Page)"
-msgstr "(Page 404 par défaut)"
+msgstr "(Página 404 Padrão)"
 
 msgid "(Explain)"
-msgstr "(Expliquer)"
+msgstr "(Explicar)"
 
 msgid "(Hide Info)"
-msgstr "(Masquer les informations)"
+msgstr "(Ocultar Informações)"
 
 msgid "(Home Page)"
-msgstr "(Page d'accueil)"
+msgstr "(Página Inicial)"
 
 msgid "(No matching results found for \"%s.\")"
-msgstr "(Aucun résultat correspondant trouvé pour \"%s.\")"
+msgstr "(Nenhum resultado correspondente encontrado para \"%s.\")"
 
 msgid "(No matching results found.)"
-msgstr "(Aucun résultat correspondant trouvé.)"
+msgstr "(Nenhum resultado correspondente encontrado.)"
 
 msgid "(Please choose from the dropdown list instead of typing your own URL.)"
-msgstr "(Veuillez choisir dans la liste déroulante au lieu de taper votre propre URL.)"
+msgstr "(Por favor, escolha da lista suspensa em vez de digitar sua própria URL.)"
 
 msgid "(Required)"
-msgstr "(Requis)"
+msgstr "(Obrigatório)"
 
 msgid "(Show All Logs)"
-msgstr "(Afficher tous les journaux)"
+msgstr "(Mostrar Todos os Logs)"
 
 msgid "(Special)"
-msgstr "(Spécial)"
+msgstr "(Especial)"
 
 msgid "(The log file does not exist.)"
-msgstr "(Le fichier journal n'existe pas.)"
+msgstr "(O arquivo de log não existe.)"
 
 msgid "(The specified page doesn't exist. Please update this setting.)"
-msgstr "(La page spécifiée n'existe pas. Veuillez mettre à jour ce paramètre.)"
+msgstr "(A página especificada não existe. Por favor, atualize esta configuração.)"
 
 msgid "(Type a page name or an external URL)"
-msgstr "(Tapez un nom de page ou une URL externe)"
+msgstr "(Digite o nome de uma página ou uma URL externa)"
 
 msgid "(Type a page name)"
-msgstr "(Tapez un nom de page)"
+msgstr "(Digite o nome de uma página)"
 
 msgid "(Type to filter)"
-msgstr "(Taper pour filtrer)"
+msgstr "(Digite para filtrar)"
 
 msgid "(don't suggest .jpg files)"
-msgstr "(ne pas suggérer les fichiers .jpg)"
+msgstr "(não sugerir arquivos .jpg)"
 
 msgid "(don't suggest .pdf files)"
-msgstr "(ne pas suggérer les fichiers .pdf)"
+msgstr "(não sugerir arquivos .pdf)"
 
 msgid "(don't suggest pages within any directory named /private/)"
-msgstr "(ne pas suggérer les pages dans un répertoire nommé /private/)"
+msgstr "(não sugerir páginas dentro de qualquer diretório chamado /private/)"
 
 msgid "(don't suggest pages within the /members/ directory)"
-msgstr "(ne pas suggérer les pages dans le répertoire /members/)"
+msgstr "(não sugerir páginas dentro do diretório /members/)"
 
 msgid "(don't suggest the specific page with slug 'old-contact-page')"
-msgstr "(ne pas suggérer la page spécifique avec le slug 'old-contact-page')"
+msgstr "(não sugerir a página específica com slug 'old-contact-page')"
 
 msgid "(ignore all .jpg files)"
-msgstr "(ignorer tous les fichiers .jpg)"
+msgstr "(ignorar todos os arquivos .jpg)"
 
 msgid "(ignore all .js files)"
-msgstr "(ignorer tous les fichiers .js)"
+msgstr "(ignorar todos os arquivos .js)"
 
 msgid "(ignore all .php files)"
-msgstr "(ignorer tous les fichiers .php)"
+msgstr "(ignorar todos os arquivos .php)"
 
 msgid "(ignore everything in the cache directory)"
-msgstr "(ignorer tout dans le répertoire cache)"
+msgstr "(ignorar tudo no diretório de cache)"
 
 msgid "(ignore everything in this directory)"
-msgstr "(ignorer tout dans ce répertoire)"
+msgstr "(ignorar tudo neste diretório)"
 
 msgid "(unless a redirect to the page already exists)."
-msgstr "(sauf si une redirection vers la page existe déjà)."
+msgstr "(a menos que um redirecionamento para a página já exista)."
 
 msgid "* 404s are still redirected when possible."
-msgstr "* Les 404 sont toujours redirigées lorsque c'est possible."
+msgstr "* Erros 404 ainda são redirecionados quando possível."
 
 msgid "* Do not capture 404 URLs."
-msgstr "* Ne pas capturer les URLs 404."
+msgstr "* Não capturar URLs 404."
 
 msgid "* Do not redirect 404s for the patterns listed here."
-msgstr "* Ne pas rediriger les 404 pour les motifs listés ici."
+msgstr "* Não redirecionar 404s para os padrões listados aqui."
 
 msgid "* Do not redirect 404s from the user agents listed here."
-msgstr "* Ne pas rediriger les 404 depuis les agents utilisateurs listés ici."
+msgstr "* Não redirecionar 404s dos user agents listados aqui."
 
 msgid "* If the string appears anywhere within the user agent string then it's a match."
-msgstr "* Si la chaîne apparaît n'importe où dans la chaîne agent utilisateur, alors c'est une correspondance."
+msgstr "* Se a string aparecer em qualquer lugar dentro da string do user agent, então há correspondência."
 
 msgid "* One pattern per line."
-msgstr "* Un motif par ligne."
+msgstr "* Um padrão por linha."
 
 msgid "* One string per line."
-msgstr "* Une chaîne par ligne."
+msgstr "* Uma string por linha."
 
 msgid "* One type per line."
-msgstr "* Un type par ligne."
+msgstr "* Um tipo por linha."
 
 msgid "* Strings are case insensitive."
-msgstr "* Les chaînes ne sont pas sensibles à la casse."
+msgstr "* Strings não diferenciam maiúsculas de minúsculas."
 
 msgid "* Strings are case sensitive."
-msgstr "* Les chaînes sont sensibles à la casse."
+msgstr "* Strings diferenciam maiúsculas de minúsculas."
 
 msgid "* These patterns match the path of a URL, not a title.\""
-msgstr "* Ces motifs correspondent au chemin d'une URL, pas à un titre.\""
+msgstr "* Estes padrões correspondem ao caminho de uma URL, não a um título.\""
 
 msgid "* Use an asterisk (*) to match \"any pattern.\""
-msgstr "* Utilisez un astérisque (*) pour correspondre à \"n'importe quel motif.\""
+msgstr "* Use um asterisco (*) para corresponder a \"qualquer padrão.\""
 
 msgid "404 Page Suggestions"
-msgstr "Suggestions de page 404"
+msgstr "Sugestões de Página 404"
 
 msgid "404 URL marked as %s successfully!"
-msgstr "URL 404 marquée comme %s avec succès !"
+msgstr "URL 404 marcada como %s com sucesso!"
 
 msgid "<a>View</a> the debug file."
-msgstr "<a>Voir</a> le fichier de débogage."
+msgstr "<a>Visualizar</a> o arquivo de debug."
 
 msgid "Action Taken"
-msgstr "Action effectuée"
+msgstr "Ação Executada"
 
 msgid "Add Redirect"
-msgstr "Ajouter une redirection"
+msgstr "Adicionar Redirecionamento"
 
 msgid "Add a Manual Redirect"
-msgstr "Ajouter une redirection manuelle"
+msgstr "Adicionar um Redirecionamento Manual"
 
 msgid "Add a Redirect"
-msgstr "Ajouter une redirection"
+msgstr "Adicionar um Redirecionamento"
 
 msgid "Admin notification email(s)"
-msgstr "E-mail(s) de notification administrateur"
+msgstr "E-mail(s) de notificação do administrador"
 
 msgid "Admin notification level"
-msgstr "Niveau de notification admin"
+msgstr "Nível de notificação do administrador"
 
 msgid "Admin theme"
-msgstr "Thème d'administration"
+msgstr "Tema do administrador"
 
 msgid "Advanced Settings (Etc)"
-msgstr "Paramètres avancés (etc.)"
+msgstr "Configurações Avançadas (Etc)"
 
 msgid "All"
-msgstr "Tous"
+msgstr "Todos"
 
 msgid "All other redirects must be deleted and only one regex redirect for all URLs must be created for this to work."
-msgstr "Toutes les autres redirections doivent être supprimées et une seule redirection regex pour toutes les URLs doit être créée pour que cela fonctionne."
+msgstr "Todos os outros redirecionamentos devem ser excluídos e apenas um redirecionamento regex para todas as URLs deve ser criado para que isso funcione."
 
 msgid "All trashed URLs have been deleted!"
-msgstr "Toutes les URLs dans la corbeille ont été supprimées !"
+msgstr "Todas as URLs excluídas foram deletadas!"
 
 msgid "Allow category suggestions"
-msgstr "Autoriser les suggestions de catégories"
+msgstr "Permitir sugestões de categoria"
 
 msgid "Allow tag suggestions"
-msgstr "Autoriser les suggestions d'étiquettes"
+msgstr "Permitir sugestões de tag"
 
 msgid "An unknown error has occurred."
-msgstr "Une erreur inconnue s'est produite."
+msgstr "Ocorreu um erro desconhecido."
 
 msgid "Apply"
-msgstr "Appliquer"
+msgstr "Aplicar"
 
 msgid "At the same level as the Settings and Tools menu"
-msgstr "Au même niveau que le menu Paramètres et Outils"
+msgstr "No mesmo nível do menu Configurações e Ferramentas"
 
 msgid "Auto"
 msgstr "Auto"
 
 msgid "Auto redirect deletion"
-msgstr "Suppression automatique des redirections"
+msgstr "Exclusão automática de redirecionamento"
 
 msgid "Automatic 301 Redirects"
-msgstr "Redirections 301 automatiques"
+msgstr "Redirecionamentos 301 Automáticos"
 
 msgid "Automatic 302 Redirects"
-msgstr "Redirections 302 automatiques"
+msgstr "Redirecionamentos 302 Automáticos"
 
 msgid "Automatic Redirects"
-msgstr "Redirections automatiques"
+msgstr "Redirecionamentos Automáticos"
 
 msgid "Automatically created"
-msgstr "Créé automatiquement"
+msgstr "Criado automaticamente"
 
 msgid "Automatically creates redirects based on best possible suggested page."
-msgstr "Crée automatiquement des redirections basées sur la meilleure page suggérée possible."
+msgstr "Cria automaticamente redirecionamentos com base na melhor página sugerida possível."
 
 msgid "Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time."
-msgstr "Supprime automatiquement les URLs 404 capturées si elles n'ont pas été utilisées pendant la durée spécifiée."
+msgstr "Remove automaticamente URLs 404 que foram capturadas se não tiverem sido usadas pelo período especificado."
 
 msgid "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
-msgstr "Supprime automatiquement les redirections de pages créées manuellement si elles n'ont pas été utilisées pendant la durée spécifiée."
+msgstr "Remove automaticamente redirecionamentos de página criados manualmente se não tiverem sido usados pelo período especificado."
 
 msgid "Calm Ops (Light)"
-msgstr "Calm Ops (Clair)"
+msgstr "Calm Ops (Claro)"
 
 msgid "Captured 404 URLs"
-msgstr "URLs 404 capturées"
+msgstr "URLs 404 Capturadas"
 
 msgid "Captured URLs"
-msgstr "URLs capturées"
+msgstr "URLs Capturadas"
 
 msgid "Captured URLs (0 Disables Notification)"
-msgstr "URLs capturées (0 désactive la notification)"
+msgstr "URLs Capturadas (0 Desabilita Notificação)"
 
 msgid "Categories"
-msgstr "Catégories"
+msgstr "Categorias"
 
 msgid "Category"
-msgstr "Catégorie"
+msgstr "Categoria"
 
 msgid "Category:"
-msgstr "Catégorie :"
+msgstr "Categoria:"
 
 msgid "Changes may not be updated immediately when ordering by this column"
-msgstr "Les modifications peuvent ne pas être mises à jour immédiatement lors du tri par cette colonne"
+msgstr "As alterações podem não ser atualizadas imediatamente ao ordenar por esta coluna"
 
 msgid "Checks each redirect for a new matching permalink before the user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted."
-msgstr "Vérifie chaque redirection pour un nouveau permalien correspondant avant que l'utilisateur ne soit redirigé. Si un nouveau permalien de page est trouvé correspondant à l'URL redirigée, alors la redirection sera supprimée."
+msgstr "Verifica cada redirecionamento para um novo permalink correspondente antes do usuário ser redirecionado. Se um novo permalink de página for encontrado correspondendo à URL redirecionada, então o redirecionamento será excluído."
 
 msgid "Choose at least one URL"
-msgstr "Choisissez au moins une URL"
+msgstr "Escolha pelo menos uma URL"
 
 msgid "Choose whether the 404 Settings link appears under the \"Settings\" menu or elsewhere."
-msgstr "Choisissez si le lien Paramètres 404 apparaît sous le menu \"Paramètres\" ou ailleurs."
+msgstr "Escolha se o link das Configurações 404 aparece no menu \"Configurações\" ou em outro lugar."
 
 msgid "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
-msgstr "Choisissez le thème de couleur pour les pages d'administration. Le thème change immédiatement pour l'aperçu et sera enregistré lorsque vous cliquez sur \"Enregistrer les paramètres\"."
+msgstr "Escolha o tema de cor para as páginas de administração. O tema muda imediatamente para visualização e será salvo quando você clicar em \"Salvar Configurações\"."
 
 msgid "Cleanup is done daily."
-msgstr "Le nettoyage est effectué quotidiennement."
+msgstr "A limpeza é feita diariamente."
 
 msgid "Click to view debug data for all suggestions"
-msgstr "Cliquer pour voir les données de débogage de toutes les suggestions"
+msgstr "Clique para visualizar dados de debug para todas as sugestões"
 
 msgid "Collect incoming 404 URLs"
-msgstr "Collecter les URLs 404 entrantes"
+msgstr "Coletar URLs 404 recebidas"
 
 msgid "Collected 404 URL deletion"
-msgstr "Suppression des URLs 404 collectées"
+msgstr "Exclusão de URLs 404 coletadas"
 
 msgid "Create a CSV file with the redirects and captured 404s."
-msgstr "Créer un fichier CSV avec les redirections et les 404 capturées."
+msgstr "Criar um arquivo CSV com os redirecionamentos e 404s capturados."
 
 msgid "Create and Download"
-msgstr "Créer et télécharger"
+msgstr "Criar e Baixar"
 
 msgid "Create automatic redirects"
-msgstr "Créer des redirections automatiques"
+msgstr "Criar redirecionamentos automáticos"
 
 msgid "Create automatic redirects for categories"
-msgstr "Créer des redirections automatiques pour les catégories"
+msgstr "Criar redirecionamentos automáticos para categorias"
 
 msgid "Create automatic redirects for tags"
-msgstr "Créer des redirections automatiques pour les étiquettes"
+msgstr "Criar redirecionamentos automáticos para tags"
 
 msgid "Created"
-msgstr "Créé"
+msgstr "Criado"
 
 msgid "Credits"
-msgstr "Crédits"
+msgstr "Créditos"
 
 msgid "Current approximate log disk usage"
-msgstr "Utilisation disque approximative actuelle des journaux"
+msgstr "Uso aproximado atual de disco do log"
 
 msgid "Custom"
-msgstr "Personnalisé"
+msgstr "Personalizado"
 
 msgid "Custom Taxonomies"
-msgstr "Taxonomies personnalisées"
+msgstr "Taxonomias Personalizadas"
 
 msgid "DATABASE_VERSION"
 msgstr "DATABASE_VERSION"
 
 msgid "DB version"
-msgstr "Version BD"
+msgstr "Versão do BD"
 
 msgid "Date"
-msgstr "Date"
+msgstr "Data"
 
 msgid "Days (0 Disables Auto Delete)"
-msgstr "Jours (0 désactive la suppression automatique)"
+msgstr "Dias (0 Desabilita Exclusão Automática)"
 
 msgid "Debug Log"
-msgstr "Journal de débogage"
+msgstr "Log de Debug"
 
 msgid "Debug file not found. (%s)"
-msgstr "Fichier de débogage non trouvé. (%s)"
+msgstr "Arquivo de debug não encontrado. (%s)"
 
 msgid "Debug file size: %1$s KB (%2$s MB)."
-msgstr "Taille du fichier de débogage : %1$s Ko (%2$s Mo)."
+msgstr "Tamanho do arquivo de debug: %1$s KB (%2$s MB)."
 
 msgid "Debug file size: %s KB."
-msgstr "Taille du fichier de débogage : %s Ko."
+msgstr "Tamanho do arquivo de debug: %s KB."
 
 msgid "Debug file(s) deleted. (%s)"
-msgstr "Fichier(s) de débogage supprimé(s). (%s)"
+msgstr "Arquivo(s) de debug deletado(s). (%s)"
 
 msgid "Debug logging"
-msgstr "Journalisation de débogage"
+msgstr "Log de debug"
 
 msgid "Default WordPress post types are \"post\" and \"page.\""
-msgstr "Les types de contenu WordPress par défaut sont \"post\" et \"page.\""
+msgstr "Os tipos de post padrão do WordPress são \"post\" e \"page.\""
 
 msgid "Default redirect type"
-msgstr "Type de redirection par défaut"
+msgstr "Tipo de redirecionamento padrão"
 
 msgid "Delete the Debug File"
-msgstr "Supprimer le fichier de débogage"
+msgstr "Deletar o Arquivo de Debug"
 
 msgid "Destination"
-msgstr "Destination"
+msgstr "Destino"
 
 msgid "Display Before/After each suggested page"
-msgstr "Afficher Avant/Après chaque page suggérée"
+msgstr "Exibir Antes/Depois de cada página sugerida"
 
 msgid "Display Before/After page suggestions"
-msgstr "Afficher Avant/Après les suggestions de pages"
+msgstr "Exibir Antes/Depois das sugestões de página"
 
 msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
-msgstr "Afficher une notification WordPress admin lorsque le nombre d'URLs capturées dépasse ce nombre"
+msgstr "Exibir uma notificação de administrador do WordPress quando o número de URLs capturadas ultrapassar este número"
 
 msgid "Display if no suggestion results"
-msgstr "Afficher s'il n'y a aucun résultat de suggestion"
+msgstr "Exibir se não houver resultados de sugestão"
 
 msgid "Display the closest matching pages by using the shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
-msgstr "Afficher les pages les plus proches correspondantes en utilisant le shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
+msgstr "Exiba as páginas mais correspondentes usando o shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
 
 msgid "Displayed 404 Page"
-msgstr "Page 404 affichée"
+msgstr "Página 404 Exibida"
 
 msgid "Earliest log date"
-msgstr "Date du journal la plus ancienne"
+msgstr "Data mais antiga do log"
 
 msgid "Edit Redirect"
-msgstr "Modifier la redirection"
+msgstr "Editar Redirecionamento"
 
 msgid "Edit Redirect Details"
-msgstr "Modifier les détails de redirection"
+msgstr "Editar Detalhes do Redirecionamento"
 
 msgid "Empty Trash"
-msgstr "Vider la corbeille"
+msgstr "Esvaziar Lixeira"
 
 msgid "Error: An invalid purge type was selected. Exiting."
-msgstr "Erreur : Type de purge invalide sélectionné. Sortie."
+msgstr "Erro: Um tipo de limpeza inválido foi selecionado. Saindo."
 
 msgid "Error: Auto match score value must be a number between 0 and 99"
-msgstr "Erreur : Le score de correspondance auto doit être entre 0 et 99"
+msgstr "Erro: O valor da pontuação de correspondência automática deve ser um número entre 0 e 99"
 
 msgid "Error: Bad %s operation specified."
-msgstr "Erreur : Opération %s incorrecte spécifiée."
+msgstr "Erro: Operação %s incorreta especificada."
 
 msgid "Error: Bad data passed for update redirect request."
-msgstr "Erreur : Données incorrectes pour la mise à jour de la redirection."
+msgstr "Erro: Dados incorretos passados para a solicitação de atualização de redirecionamento."
 
 msgid "Error: Bad trash operation specified."
-msgstr "Erreur : Opération de corbeille incorrecte spécifiée."
+msgstr "Erro: Operação de lixeira incorreta especificada."
 
 msgid "Error: Data not formatted properly."
-msgstr "Erreur : Données mal formatées."
+msgstr "Erro: Dados não formatados corretamente."
 
 msgid "Error: External URL doesn't contain ://"
-msgstr "Erreur : L'URL externe ne contient pas ://"
+msgstr "Erro: URL externa não contém ://"
 
 msgid "Error: External URL is too short."
-msgstr "Erreur : L'URL externe est trop courte."
+msgstr "Erro: URL externa é muito curta."
 
 msgid "Error: Invalid theme selected"
-msgstr "Erreur : Thème invalide sélectionné"
+msgstr "Erro: Tema inválido selecionado"
 
 msgid "Error: Invalid value specified for default redirect type"
-msgstr "Erreur : Valeur invalide spécifiée pour le type de redirection par défaut"
+msgstr "Erro: Valor inválido especificado para o tipo de redirecionamento padrão"
 
 msgid "Error: Maximum number of suggest value must be a number greater than or equal to 1"
-msgstr "Erreur : Le nombre maximum de suggestions doit être ≥ 1"
+msgstr "Erro: O número máximo de sugestões deve ser um número maior ou igual a 1"
 
 msgid "Error: No ID(s) found for edit request."
-msgstr "Erreur : Aucun ID trouvé pour la modification."
+msgstr "Erro: Nenhum ID encontrado para a solicitação de edição."
 
 msgid "Error: No ID(s) specified for bulk action. (%s)"
-msgstr "Erreur : Aucun ID spécifié pour l'action groupée. (%s)"
+msgstr "Erro: Nenhum ID especificado para ação em massa. (%s)"
 
 msgid "Error: No records were imported. SQL result: %s"
-msgstr "Erreur : Aucun enregistrement importé. Résultat SQL : %s"
+msgstr "Erro: Nenhum registro foi importado. Resultado SQL: %s"
 
 msgid "Error: No redirect types were selected. No purges will be done."
-msgstr "Erreur : Aucun type de redirection sélectionné. Aucune purge."
+msgstr "Erro: Nenhum tipo de redirecionamento foi selecionado. Nenhuma limpeza será feita."
 
 msgid "Error: No valid redirect types were selected. Exiting."
-msgstr "Erreur : Aucun type de redirection valide sélectionné. Sortie."
+msgstr "Erro: Nenhum tipo de redirecionamento válido foi selecionado. Saindo."
 
 msgid "Error: Suggestion minimum score value must be a number between 1 and 99"
-msgstr "Erreur : Le score minimum de suggestion doit être entre 1 et 99"
+msgstr "Erro: O valor mínimo de pontuação de sugestão deve ser um número entre 1 e 99"
 
 msgid "Error: Template redirect priority value must be a number between 0 and 999"
-msgstr "Erreur : La priorité de redirection de modèle doit être entre 0 et 999"
+msgstr "Erro: O valor de prioridade de redirecionamento de template deve ser um número entre 0 e 999"
 
 msgid "Error: URL is a required field."
-msgstr "Erreur : L'URL est un champ obligatoire."
+msgstr "Erro: URL é um campo obrigatório."
 
 msgid "Error: URL must start with /"
-msgstr "Erreur : L'URL doit commencer par /"
+msgstr "Erro: URL deve começar com /"
 
 msgid "Error: Unable to move redirect from trash."
-msgstr "Erreur : impossible de restaurer la redirection de la corbeille."
+msgstr "Erro: Não foi possível mover o redirecionamento da lixeira."
 
 msgid "Error: Unable to move redirect to trash."
-msgstr "Erreur : impossible de déplacer la redirection dans la corbeille."
+msgstr "Erro: Não foi possível mover o redirecionamento para a lixeira."
 
 msgid "Error: Unable to update redirect data."
-msgstr "Erreur : impossible de mettre à jour les données de redirection."
+msgstr "Erro: Não foi possível atualizar os dados do redirecionamento."
 
 msgid "Error: Unknown Database Error!"
-msgstr "Erreur : Erreur de base de données inconnue !"
+msgstr "Erro: Erro de Banco de Dados Desconhecido!"
 
 msgid "Error: Unrecognized bulk action. (%s)"
-msgstr "Erreur : Action groupée non reconnue. (%s)"
+msgstr "Erro: Ação em massa não reconhecida. (%s)"
 
 msgid "Error: You didn't check the I understand checkbox. No importing for you!"
-msgstr "Erreur : Vous n'avez pas coché Je comprends. Pas d'importation !"
+msgstr "Erro: Você não marcou a caixa \"Eu entendo\". Sem importação para você!"
 
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
-msgstr "Erreur : Vous n'avez pas coché Je comprends. Pas de purge !"
+msgstr "Erro: Você não marcou a caixa \"Eu entendo\". Sem limpeza de registros para você!"
 
 msgid "Error: You selected external URL but did not enter a URL."
-msgstr "Erreur : Vous avez sélectionné URL externe mais n'avez pas saisi d'URL."
+msgstr "Erro: Você selecionou URL externa mas não inseriu uma URL."
 
 msgid "Error: unable to add new redirect."
-msgstr "Erreur : impossible d'ajouter une nouvelle redirection."
+msgstr "Erro: não foi possível adicionar novo redirecionamento."
 
 msgid "Error: unable to mark URL as %s"
-msgstr "Erreur : impossible de marquer l'URL comme %s"
+msgstr "Erro: não foi possível marcar URL como %s"
 
 msgid "Error: unable to remove URL from %s list"
-msgstr "Erreur : impossible de retirer l'URL de la liste %s"
+msgstr "Erro: não foi possível remover URL da lista %s"
 
 msgid "Etcetera"
-msgstr "Etcetera"
+msgstr "Diversos"
 
 msgid "Even if more pages could be suggested, show at most this many (default: 5)"
-msgstr "Même si plus de pages pourraient être suggérées, afficher au maximum ce nombre (défaut : 5)"
+msgstr "Mesmo que mais páginas possam ser sugeridas, mostrar no máximo esta quantidade (padrão: 5)"
 
 msgid "Example"
-msgstr "Exemple"
+msgstr "Exemplo"
 
 msgid "Examples:"
-msgstr "Exemples :"
+msgstr "Exemplos:"
 
 msgid "Exclude Specific Pages, Posts, Categories, Etc"
-msgstr "Exclure des pages, articles, catégories spécifiques, etc."
+msgstr "Excluir Páginas Específicas, Posts, Categorias, Etc"
 
 msgid "Exclude Suggestion URLs (Regex)"
-msgstr "Exclure les URLs de suggestion (Regex)"
+msgstr "Excluir URLs de Sugestão (Regex)"
 
 msgid "Exclude potential suggestions if their final URL matches one of these patterns."
-msgstr "Exclure les suggestions potentielles si leur URL finale correspond à l'un de ces motifs."
+msgstr "Excluir sugestões potenciais se sua URL final corresponder a um destes padrões."
 
 msgid "Export"
-msgstr "Exporter"
+msgstr "Exportar"
 
 msgid "External"
-msgstr "Externe"
+msgstr "Externa"
 
 msgid "External Page"
-msgstr "Page externe"
+msgstr "Página Externa"
 
 msgid "External User Agents - Do Not Log"
-msgstr "Agents utilisateurs externes - Ne pas enregistrer"
+msgstr "User Agents Externos - Não Registrar"
 
 msgid "Files and Folders Ignore Strings - Do Not Process"
-msgstr "Chaînes à ignorer pour fichiers et dossiers - Ne pas traiter"
+msgstr "Strings de Ignorar Arquivos e Pastas - Não Processar"
 
 msgid "Files and folders listed here will be ignored."
-msgstr "Les fichiers et dossiers listés ici seront ignorés."
+msgstr "Arquivos e pastas listados aqui serão ignorados."
 
 msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
-msgstr "D'abord, toutes les URLs \"correspondance exacte\" normales sont vérifiées, puis toutes les URLs d'expression régulière sont vérifiées."
+msgstr "Primeiro, todas as URLs de \"correspondência exata\" normais são verificadas, depois todas as URLs de expressão regular são verificadas."
 
 msgid "General Settings"
-msgstr "Paramètres généraux"
+msgstr "Configurações Gerais"
 
 msgid "Go to first page"
-msgstr "Aller à la première page"
+msgstr "Ir para a primeira página"
 
 msgid "Go to last page"
-msgstr "Aller à la dernière page"
+msgstr "Ir para a última página"
 
 msgid "Go to next page"
-msgstr "Aller à la page suivante"
+msgstr "Ir para a próxima página"
 
 msgid "Go to previous page"
-msgstr "Aller à la page précédente"
+msgstr "Ir para a página anterior"
 
 msgid "Help the developer by sending error logs"
-msgstr "Aider le développeur en envoyant les journaux d'erreurs"
+msgstr "Ajudar o desenvolvedor enviando logs de erro"
 
 msgid "Here are some other great pages"
-msgstr "Voici d'autres pages intéressantes"
+msgstr "Aqui estão algumas outras ótimas páginas"
 
 msgid "Hits"
-msgstr "Visites"
+msgstr "Acessos"
 
 msgid "Hits Redirected"
-msgstr "Visites redirigées"
+msgstr "Acessos Redirecionados"
 
 msgid "Home Page"
-msgstr "Page d'accueil"
+msgstr "Página Inicial"
 
 msgid "Home Page:"
-msgstr "Page d'accueil :"
+msgstr "Página Inicial:"
 
 msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
-msgstr "Je comprends la déclaration ci-dessus, je sais ce que je fais... bla bla bla. Supprimez simplement les enregistrements !"
+msgstr "Eu entendo a declaração acima, eu sei o que estou fazendo... blá blá blá. Apenas delete os registros!"
 
 msgid "I understand the above statement."
-msgstr "Je comprends la déclaration ci-dessus."
+msgstr "Eu entendo a declaração acima."
 
 msgid "IP Address"
-msgstr "Adresse IP"
+msgstr "Endereço IP"
 
 msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
-msgstr "Si aucune page n'atteint le score de correspondance minimum, alors ce texte sera affiché.  (défaut : &lt;p&gt;Aucune suggestion. :/ &lt;/p&gt;)"
+msgstr "Se nenhuma página atender à pontuação mínima de correspondência, então este texto será exibido.  (padrão: &lt;p&gt;Nenhuma sugestão. :/ &lt;/p&gt;)"
 
 msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
-msgstr "Si vous avez créé des types de contenu personnalisés et souhaitez rediriger les utilisateurs vers ceux-ci, vous devrez les saisir ici."
+msgstr "Se você criou tipos de post personalizados e gostaria de redirecionar usuários para eles, você terá que inseri-los aqui."
 
 msgid "If you've created custom taxonomies and would like to redirect users to them, you'll have to enter them here."
-msgstr "Si vous avez créé des taxonomies personnalisées et souhaitez rediriger les utilisateurs vers celles-ci, vous devrez les saisir ici."
+msgstr "Se você criou taxonomias personalizadas e gostaria de redirecionar usuários para elas, você terá que inseri-las aqui."
 
 msgid "Ignore 404 Error"
-msgstr "Ignorer l'erreur 404"
+msgstr "Ignorar Erro 404"
 
 msgid "Ignored 404 URLs"
-msgstr "URLs 404 ignorées"
+msgstr "URLs 404 Ignoradas"
 
 msgid "Ignored URLs"
-msgstr "URLs ignorées"
+msgstr "URLs Ignoradas"
 
 msgid "Import"
-msgstr "Importer"
+msgstr "Importar"
 
 msgid "Import 404 Redirected Data"
-msgstr "Importer les données de redirections 404"
+msgstr "Importar Dados Redirecionados 404"
 
 msgid "Import a CSV file with the redirects and captured 404s."
-msgstr "Importer un fichier CSV avec les redirections et les 404 capturées."
+msgstr "Importar um arquivo CSV com os redirecionamentos e 404s capturados."
 
 msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
-msgstr "Y compris casser le site en créant de mauvaises redirections, en saisissant une mauvaise expression régulière, en supprimant des redirections existantes et en donnant à d'autres utilisateurs un accès administrateur au plugin."
+msgstr "Incluindo quebrar o site criando redirecionamentos ruins, inserindo uma expressão regular ruim, excluindo redirecionamentos existentes e dando a outros usuários acesso administrativo ao plugin."
 
 msgid "Internal Process User Agents - Do Not Log"
-msgstr "Agents utilisateurs de processus internes - Ne pas enregistrer"
+msgstr "User Agents de Processo Interno - Não Registrar"
 
 msgid "Issue deleting debug file. (%s)"
-msgstr "Problème lors de la suppression du fichier de débogage. (%s)"
+msgstr "Problema ao deletar arquivo de debug. (%s)"
 
 msgid "JAPANESE_FLASHCARDS_URL"
 msgstr "JAPANESE_FLASHCARDS_URL"
 
 msgid "Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit."
-msgstr "Conserve les enregistrements de journal les plus récents (et supprime les plus anciens) lorsque l'utilisation du disque atteint cette limite."
+msgstr "Mantém os registros de log mais recentes (e exclui os mais antigos) quando o uso do disco atinge este limite."
 
 msgid "LINK_FIRST_PAGE"
 msgstr "LINK_FIRST_PAGE"
@@ -627,109 +627,109 @@ msgid "LINK_PREVIOUS_PAGE"
 msgstr "LINK_PREVIOUS_PAGE"
 
 msgid "Last Used"
-msgstr "Dernière utilisation"
+msgstr "Último Uso"
 
 msgid "List one user name per line."
-msgstr "Listez un nom d'utilisateur par ligne."
+msgstr "Liste um nome de usuário por linha."
 
 msgid "Log files are checked daily when maintenance is run."
-msgstr "Les fichiers journaux sont vérifiés quotidiennement lors de l'exécution de la maintenance."
+msgstr "Os arquivos de log são verificados diariamente quando a manutenção é executada."
 
 msgid "Log raw IPs"
-msgstr "Enregistrer les IPs brutes"
+msgstr "Registrar IPs brutos"
 
 msgid "Logging raw IP addresses may not meet the EU General Data Protection Regulation (GDPR) guidelines."
-msgstr "L'enregistrement des adresses IP brutes peut ne pas respecter les directives du Règlement Général sur la Protection des Données (RGPD) de l'UE."
+msgstr "O registro de endereços IP brutos pode não atender às diretrizes do Regulamento Geral de Proteção de Dados (GDPR) da UE."
 
 msgid "Logs"
-msgstr "Journaux"
+msgstr "Logs"
 
 msgid "MB"
-msgstr "Mo"
+msgstr "MB"
 
 msgid "Maintenance"
-msgstr "Maintenance"
+msgstr "Manutenção"
 
 msgid "Monochrome Minimal (Light)"
-msgstr "Monochrome Minimal (Clair)"
+msgstr "Monocromático Minimalista (Claro)"
 
 msgid "Major version auto update delay"
-msgstr "Délai de mise à jour automatique de version majeure"
+msgstr "Atraso de atualização automática de versão principal"
 
 msgid "Man"
-msgstr "Manuel"
+msgstr "Manual"
 
 msgid "Manual 301 Redirects"
-msgstr "Redirections 301 manuelles"
+msgstr "Redirecionamentos 301 Manuais"
 
 msgid "Manual 302 Redirects"
-msgstr "Redirections 302 manuelles"
+msgstr "Redirecionamentos 302 Manuais"
 
 msgid "Manual Redirects"
-msgstr "Redirections manuelles"
+msgstr "Redirecionamentos Manuais"
 
 msgid "Manual redirect deletion"
-msgstr "Suppression de redirection manuelle"
+msgstr "Exclusão de redirecionamento manual"
 
 msgid "Manually created"
-msgstr "Créé manuellement"
+msgstr "Criado manualmente"
 
 msgid "Maximum log disk usage (MB)"
-msgstr "Utilisation disque maximale des journaux (Mo)"
+msgstr "Uso máximo de disco do log (MB)"
 
 msgid "Maximum number of suggestions to display"
-msgstr "Nombre maximum de suggestions à afficher"
+msgstr "Número máximo de sugestões a exibir"
 
 msgid "Minimum match score"
-msgstr "Score de correspondance minimum"
+msgstr "Pontuação mínima de correspondência"
 
 msgid "Minimum score of suggestions to display"
-msgstr "Score minimum des suggestions à afficher"
+msgstr "Pontuação mínima de sugestões a exibir"
 
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
-msgstr "Plusieurs adresses e-mail peuvent être séparées par des virgules (,). L'adresse e-mail \"de\" est toujours l'e-mail administrateur WordPress par défaut :"
+msgstr "Vários endereços de e-mail podem ser separados por vírgulas (,). O endereço de e-mail \"de\" é sempre o e-mail de administrador padrão do WordPress:"
 
 msgid "Neon Slate (Dark)"
-msgstr "Neon Slate (Sombre)"
+msgstr "Neon Slate (Escuro)"
 
 msgid "Never Used"
-msgstr "Jamais utilisé"
+msgstr "Nunca Usado"
 
 msgid "New Redirect Added Successfully!"
-msgstr "Nouvelle redirection ajoutée avec succès !"
+msgstr "Novo Redirecionamento Adicionado com Sucesso!"
 
 msgid "New major version => wait this many days. New minor version => automatically update about 3 days after the release date."
-msgstr "Nouvelle version majeure => attendre ce nombre de jours. Nouvelle version mineure => mise à jour automatique environ 3 jours après la date de sortie."
+msgstr "Nova versão principal => aguardar esta quantidade de dias. Nova versão secundária => atualizar automaticamente cerca de 3 dias após a data de lançamento."
 
 msgid "No Captured 404 Records To Display"
-msgstr "Aucun enregistrement 404 capturé à afficher"
+msgstr "Nenhum Registro 404 Capturado para Exibir"
 
 msgid "No Redirect Records To Display"
-msgstr "Aucun enregistrement de redirection à afficher"
+msgstr "Nenhum Registro de Redirecionamento para Exibir"
 
 msgid "No Results To Display"
-msgstr "Aucun résultat à afficher"
+msgstr "Nenhum Resultado para Exibir"
 
 msgid "No suggestions. :/"
-msgstr "Aucune suggestion. :/"
+msgstr "Nenhuma sugestão. :/"
 
 msgid "No suggestions. :/ "
-msgstr "Aucune suggestion. :/ "
+msgstr "Nenhuma sugestão. :/ "
 
 msgid "Note that including a bad regular expression or one that takes too long will break your website."
-msgstr "Notez qu'inclure une mauvaise expression régulière ou une qui prend trop de temps cassera votre site web."
+msgstr "Observe que incluir uma expressão regular ruim ou uma que demore muito tempo quebrará seu site."
 
 msgid "Note: Do not include the parenthesis or explanations shown in the examples above."
-msgstr "Note : N'incluez pas les parenthèses ou les explications montrées dans les exemples ci-dessus."
+msgstr "Nota: Não inclua os parênteses ou explicações mostradas nos exemplos acima."
 
 msgid "Note: Here is a list of all post types in the database:"
-msgstr "Note : Voici une liste de tous les types de contenu dans la base de données :"
+msgstr "Nota: Aqui está uma lista de todos os tipos de post no banco de dados:"
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
-msgstr "Note : Les \"scores\" qui apparaissent au format \"(75.7576)\" après les liens de page ne sont affichés que pour les utilisateurs administrateurs."
+msgstr "Nota: As \"pontuações\" que aparecem no formato \"(75.7576)\" após os links de página são exibidas apenas para usuários administradores."
 
 msgid "Obsidian Blue (Dark)"
-msgstr "Obsidian Blue (Sombre)"
+msgstr "Obsidian Blue (Escuro)"
 
 msgid "OPTION_MIN_AUTO_SCORE"
 msgstr "OPTION_MIN_AUTO_SCORE"
@@ -738,142 +738,142 @@ msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
 msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
 
 msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
-msgstr "Un e-mail sera envoyé par jour (lors de l'exécution de la maintenance) jusqu'à ce que le nombre de 404 capturées passe en dessous du nombre spécifié dans les paramètres d'alerte."
+msgstr "Um e-mail será enviado por dia (quando a manutenção for executada) até que o número de 404s capturados fique abaixo do número especificado nas configurações de alerta."
 
 msgid "Only create an automatic redirect if the suggested page has a score above the specified number (default 90)"
-msgstr "Créer une redirection automatique uniquement si la page suggérée a un score supérieur au nombre spécifié (défaut 90)"
+msgstr "Criar apenas um redirecionamento automático se a página sugerida tiver uma pontuação acima do número especificado (padrão 90)"
 
 msgid "Options"
-msgstr "Options"
+msgstr "Opções"
 
 msgid "Options Saved Successfully!"
-msgstr "Options enregistrées avec succès !"
+msgstr "Opções Salvas com Sucesso!"
 
 msgid "Organize Later"
-msgstr "Organiser plus tard"
+msgstr "Organizar Depois"
 
 msgid "Page"
-msgstr "Page"
+msgstr "Página"
 
 msgid "Page Not Found Displayed"
-msgstr "Page non trouvée affichée"
+msgstr "Página Não Encontrada Exibida"
 
 msgid "Page Redirects"
-msgstr "Redirections de page"
+msgstr "Redirecionamentos de Página"
 
 msgid "Page suggestions title"
-msgstr "Titre des suggestions de page"
+msgstr "Título das sugestões de página"
 
 msgid "Pages listed here will not be redirected to"
-msgstr "Les pages listées ici ne seront pas utilisées comme destination de redirection"
+msgstr "Páginas listadas aqui não receberão redirecionamento"
 
 msgid "Permanent 301"
-msgstr "Permanent 301"
+msgstr "Permanente 301"
 
 msgid "Plugin Admin Users"
-msgstr "Utilisateurs administrateurs du plugin"
+msgstr "Usuários Administradores do Plugin"
 
 msgid "Plugin version"
-msgstr "Version du plugin"
+msgstr "Versão do plugin"
 
 msgid "Purge Entries!"
-msgstr "Purger les entrées !"
+msgstr "Limpar Entradas!"
 
 msgid "Purge Options"
-msgstr "Options de purge"
+msgstr "Opções de Limpeza"
 
 msgid "Purge Type"
-msgstr "Type de purge"
+msgstr "Tipo de Limpeza"
 
 msgid "REDIRECT_TO_USER_FIELD_WARNING"
 msgstr "REDIRECT_TO_USER_FIELD_WARNING"
 
 msgid "Recognized Post Types"
-msgstr "Types de contenu reconnus"
+msgstr "Tipos de Post Reconhecidos"
 
 msgid "Records imported: %s"
-msgstr "Enregistrements importés : %s"
+msgstr "Registros importados: %s"
 
 msgid "Redirect"
-msgstr "Redirection"
+msgstr "Redirecionamento"
 
 msgid "Redirect & Capture Logs"
-msgstr "Journaux de redirection et capture"
+msgstr "Logs de Redirecionamento e Captura"
 
 msgid "Redirect Details"
-msgstr "Détails de redirection"
+msgstr "Detalhes do Redirecionamento"
 
 msgid "Redirect Information Updated Successfully!"
-msgstr "Informations de redirection mises à jour avec succès !"
+msgstr "Informações do Redirecionamento Atualizadas com Sucesso!"
 
 msgid "Redirect Removed Successfully!"
-msgstr "Redirection supprimée avec succès !"
+msgstr "Redirecionamento Removido com Sucesso!"
 
 msgid "Redirect Type"
-msgstr "Type de redirection"
+msgstr "Tipo de Redirecionamento"
 
 msgid "Redirect Types"
-msgstr "Types de redirection"
+msgstr "Tipos de Redirecionamento"
 
 msgid "Redirect all requests"
-msgstr "Rediriger toutes les requêtes"
+msgstr "Redirecionar todas as solicitações"
 
 msgid "Redirect all unhandled 404s to"
-msgstr "Rediriger toutes les 404 non gérées vers"
+msgstr "Redirecionar todos os 404s não tratados para"
 
 msgid "Redirect moved to trash successfully!"
-msgstr "Redirection déplacée dans la corbeille avec succès !"
+msgstr "Redirecionamento movido para a lixeira com sucesso!"
 
 msgid "Redirect restored from trash successfully!"
-msgstr "Redirection restaurée de la corbeille avec succès !"
+msgstr "Redirecionamento restaurado da lixeira com sucesso!"
 
 msgid "Redirect to"
-msgstr "Rediriger vers"
+msgstr "Redirecionar para"
 
 msgid "Redirected to"
-msgstr "Redirigé vers"
+msgstr "Redirecionado para"
 
 msgid "Redirects"
-msgstr "Redirections"
+msgstr "Redirecionamentos"
 
 msgid "Referrer"
-msgstr "Référent"
+msgstr "Referenciador"
 
 msgid "RegEx"
 msgstr "RegEx"
 
 msgid "Regular Expression (Manually Created)"
-msgstr "Expression régulière (créée manuellement)"
+msgstr "Expressão Regular (Criada Manualmente)"
 
 msgid "Remove Ignore Status"
-msgstr "Retirer le statut Ignoré"
+msgstr "Remover Status de Ignorado"
 
 msgid "Remove Later Status"
-msgstr "Retirer le statut Plus tard"
+msgstr "Remover Status de Depois"
 
 msgid "Remove redirect upon matching permalink"
-msgstr "Supprimer la redirection lors de la correspondance du permalien"
+msgstr "Remover redirecionamento ao encontrar permalink correspondente"
 
 msgid "Removed 404 URL from %s list successfully!"
-msgstr "URL 404 retirée de la liste %s avec succès !"
+msgstr "URL 404 removida da lista %s com sucesso!"
 
 msgid "Removes auto created redirects if they haven't been used for the specified amount of time."
-msgstr "Supprime les redirections créées automatiquement si elles n'ont pas été utilisées pendant la durée spécifiée."
+msgstr "Remove redirecionamentos criados automaticamente se não tiverem sido usados pelo período especificado."
 
 msgid "Required"
-msgstr "Requis"
+msgstr "Obrigatório"
 
 msgid "Restore"
-msgstr "Restaurer"
+msgstr "Restaurar"
 
 msgid "Rows per page:"
-msgstr "Lignes par page :"
+msgstr "Linhas por página:"
 
 msgid "Run Maintenance"
-msgstr "Exécuter la maintenance"
+msgstr "Executar Manutenção"
 
 msgid "Run maintenance to delete old data (etc).&nbsp;&nbsp;It is not necessary to run this manually, as it's done automatically on a daily basis."
-msgstr "Exécuter la maintenance pour supprimer les anciennes données (etc.).&nbsp;&nbsp;Il n'est pas nécessaire de l'exécuter manuellement, car cela est fait automatiquement quotidiennement."
+msgstr "Execute a manutenção para excluir dados antigos (etc).&nbsp;&nbsp;Não é necessário executar isso manualmente, pois é feito automaticamente diariamente."
 
 msgid "SELECTED_SUGGEST_CATS"
 msgstr "SELECTED_SUGGEST_CATS"
@@ -909,31 +909,31 @@ msgid "SUGGEST_USER_TITLE"
 msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
-msgstr "Vérification de cohérence"
+msgstr "Verificação de Sanidade"
 
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
-msgstr "Les agents utilisateurs de moteurs de recherche ne doivent pas aller ici afin qu'ils soient redirigés lorsque la structure des slugs change."
+msgstr "User agents de mecanismos de busca não devem ir aqui para que sejam redirecionados quando a estrutura do slug mudar."
 
 msgid "Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
-msgstr "Puisqu'un groupe de capture est utilisé, vous pouvez utiliser un remplacement $1 dans la chaîne de destination d'une URL externe."
+msgstr "Como um grupo de captura é usado, você pode usar uma substituição $1 na string de destino de uma URL externa."
 
 msgid "So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
-msgstr "Veuillez donc faire preuve de prudence et les tester ailleurs avant de les essayer ici. Si vous ne savez pas ce que vous faites, n'utilisez pas cette option (car elle n'est pas nécessaire au fonctionnement du plugin)."
+msgstr "Portanto, use cautela e teste-os em outro lugar antes de tentar aqui. Se você não sabe o que está fazendo, por favor não use esta opção (pois não é necessária para o funcionamento do plugin)."
 
 msgid "Some options were not saved successfully."
-msgstr "Certaines options n'ont pas été enregistrées avec succès."
+msgstr "Algumas opções não foram salvas com sucesso."
 
 msgid "Special"
-msgstr "Spécial"
+msgstr "Especial"
 
 msgid "Stats"
-msgstr "Statistiques"
+msgstr "Estatísticas"
 
 msgid "Status"
-msgstr "Statut"
+msgstr "Status"
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
-msgstr "Les formats supportés sont : <B>from_url,status,type,to_url,wp_type</B>"
+msgstr "Os formatos suportados são: <B>from_url,status,type,to_url,wp_type</B>"
 
 msgid "TEXT_BEFORE_LINKS"
 msgstr "TEXT_BEFORE_LINKS"
@@ -960,211 +960,211 @@ msgid "TOOLTIP_POPUP_EXPLANATION_URL"
 msgstr "TOOLTIP_POPUP_EXPLANATION_URL"
 
 msgid "Tag"
-msgstr "Étiquette"
+msgstr "Tag"
 
 msgid "Tag:"
-msgstr "Étiquette :"
+msgstr "Tag:"
 
 msgid "Tags"
-msgstr "Étiquettes"
+msgstr "Tags"
 
 msgid "Template Redirect Priority"
-msgstr "Priorité de redirection de modèle"
+msgstr "Prioridade de Redirecionamento de Template"
 
 msgid "Temporary 302"
-msgstr "Temporaire 302"
+msgstr "Temporário 302"
 
 msgid "The \"product\" type is for WooCommerce users."
-msgstr "Le type \"product\" est pour les utilisateurs WooCommerce."
+msgstr "O tipo \"product\" é para usuários do WooCommerce."
 
 msgid "The 404 Solution menu should appear"
-msgstr "Le menu Solution 404 devrait apparaître"
+msgstr "O menu 404 Solution deve aparecer"
 
 msgid "The file seems to have loaded okay. Please check the redirects page."
-msgstr "Le fichier semble avoir été chargé correctement. Veuillez vérifier la page des redirections."
+msgstr "O arquivo parece ter carregado corretamente. Por favor, verifique a página de redirecionamentos."
 
 msgid "The plugin will only redirect the post types specified here."
-msgstr "Le plugin ne redirigera que les types de contenu spécifiés ici."
+msgstr "O plugin só redirecionará os tipos de post especificados aqui."
 
 msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
-msgstr "Le plugin redirigera vers les taxonomies normales (catégories et étiquettes) et celles listées ici."
+msgstr "O plugin redirecionará para taxonomias normais (categorias e tags) e as listadas aqui."
 
 msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "La page suggérée doit \"scorer\" au moins ce montant pour être affichée comme suggestion (min : 10, max : 90, défaut : 25)"
+msgstr "A página sugerida deve \"pontuar\" pelo menos isso para ser mostrada como uma sugestão (mín: 10, máx: 90, padrão: 25)"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
-msgstr "La page 404 spécifiée par l'utilisateur n'a pas été trouvée. Veuillez mettre à jour la page 404 spécifiée par l'utilisateur dans la page Options."
+msgstr "A página 404 especificada pelo usuário não foi encontrada. Por favor, atualize a página 404 especificada pelo usuário na página de Opções."
 
 msgid "This cannot be undone. All redirects for URLs that do not already exist will be imported."
-msgstr "Ceci ne peut pas être annulé. Toutes les redirections pour les URLs qui n'existent pas déjà seront importées."
+msgstr "Isso não pode ser desfeito. Todos os redirecionamentos para URLs que ainda não existem serão importados."
 
 msgid "This creates the list. For example, use &lt;ol style=\"list-style-type: none;\"&gt; to hide the numbers in the list. (defaults: &lt;ol&gt; / &lt;/ol&gt;)"
-msgstr "Ceci crée la liste. Par exemple, utilisez &lt;ol style=\"list-style-type: none;\"&gt; pour masquer les numéros dans la liste. (défauts : &lt;ol&gt; / &lt;/ol&gt;)"
+msgstr "Isso cria a lista. Por exemplo, use &lt;ol style=\"list-style-type: none;\"&gt; para ocultar os números na lista. (padrões: &lt;ol&gt; / &lt;/ol&gt;)"
 
 msgid "This is best for internal processes that don't need to be redirected when the slug structure changes."
-msgstr "Ceci est idéal pour les processus internes qui n'ont pas besoin d'être redirigés lorsque la structure des slugs change."
+msgstr "Isso é melhor para processos internos que não precisam ser redirecionados quando a estrutura do slug muda."
 
 msgid "This is best for search engine bots that do need to be redirected when the slug structure changes."
-msgstr "Ceci est idéal pour les robots de moteurs de recherche qui ont besoin d'être redirigés lorsque la structure des slugs change."
+msgstr "Isso é melhor para bots de mecanismos de busca que precisam ser redirecionados quando a estrutura do slug muda."
 
 msgid "This is for a domain name change."
-msgstr "Ceci est pour un changement de nom de domaine."
+msgstr "Isso é para uma mudança de nome de domínio."
 
 msgid "This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
-msgstr "Ceci est pour quand un utilisateur demande une page qui n'existe pas et qu'il n'est pas automatiquement redirigé vers une page correspondante."
+msgstr "Isso é para quando um usuário solicita uma página que não existe e não é redirecionado automaticamente para uma página correspondente."
 
 msgid "This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin."
-msgstr "Ce n'est pas requis pour que le plugin fonctionne, mais c'est utile pour le développeur et pour les futures versions du plugin."
+msgstr "Isso não é necessário para o funcionamento do plugin, mas é útil para o desenvolvedor e para versões futuras do plugin."
 
 msgid "This only affects the list of potential matches shown to the user on a custom 404 page."
-msgstr "Ceci n'affecte que la liste des correspondances potentielles affichées à l'utilisateur sur une page 404 personnalisée."
+msgstr "Isso afeta apenas a lista de correspondências potenciais mostradas ao usuário em uma página 404 personalizada."
 
 msgid "This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported)."
-msgstr "Ceci révèle : tout dans le journal de débogage, l'adresse e-mail admin, les extensions PHP installées, les plugins actifs, la version PHP, la version WordPress, la version MySQL, le total des pages et articles publiés, etc. (tout ce qui est demandé lorsqu'un problème est signalé)."
+msgstr "Isso revela: tudo no log de debug, o endereço de e-mail do administrador, extensões PHP instaladas, plugins ativos, versão do PHP, versão do WordPress, versão do MySQL, total de páginas e posts publicados, etc. (tudo solicitado quando um problema é relatado)."
 
 msgid "This sets how early in the process a 404 is handled by this plugin. If there are multiple plugins that should handle a 404, then set this higher (999) so that this plugin gets the 404 last. (default 9)"
-msgstr "Ceci définit à quel moment du processus une 404 est gérée par ce plugin. S'il y a plusieurs plugins qui devraient gérer une 404, alors augmentez ce nombre (999) pour que ce plugin reçoive la 404 en dernier. (défaut 9)"
+msgstr "Isso define quão cedo no processo um 404 é tratado por este plugin. Se houver vários plugins que devem tratar um 404, então defina isso mais alto (999) para que este plugin obtenha o 404 por último. (padrão 9)"
 
 msgid "This shortcode can be used on the 404 page and will display a list of suggested pages."
-msgstr "Ce shortcode peut être utilisé sur la page 404 et affichera une liste de pages suggérées."
+msgstr "Este shortcode pode ser usado na página 404 e exibirá uma lista de páginas sugeridas."
 
 msgid "This surrounds each item in the list. (defaults: &lt;li&gt; / &lt;/li&gt;)"
-msgstr "Ceci entoure chaque élément de la liste. (défauts : &lt;li&gt; / &lt;/li&gt;)"
+msgstr "Isso envolve cada item na lista. (padrões: &lt;li&gt; / &lt;/li&gt;)"
 
 msgid "This text will appear before the list of suggestions (default: &lt;h3&gt;Here are some other great pages&lt;/h3&gt;)"
-msgstr "Ce texte apparaîtra avant la liste des suggestions (défaut : &lt;h3&gt;Voici d'autres pages intéressantes&lt;/h3&gt;)"
+msgstr "Este texto aparecerá antes da lista de sugestões (padrão: &lt;h3&gt;Aqui estão algumas outras ótimas páginas&lt;/h3&gt;)"
 
 msgid "This will break your website."
-msgstr "Ceci cassera votre site web."
+msgstr "Isso quebrará seu site."
 
 msgid "This will not change the URL if the destination 404 page is set to (Default 404 Page) or Home Page."
-msgstr "Ceci ne changera pas l'URL si la page de destination 404 est définie sur (Page 404 par défaut) ou Page d'accueil."
+msgstr "Isso não mudará a URL se a página 404 de destino estiver definida como (Página 404 Padrão) ou Página Inicial."
 
 msgid "Tools"
-msgstr "Outils"
+msgstr "Ferramentas"
 
 msgid "Total Redirects"
-msgstr "Total des redirections"
+msgstr "Total de Redirecionamentos"
 
 msgid "Total URLs"
-msgstr "Total des URLs"
+msgstr "Total de URLs"
 
 msgid "Trash"
-msgstr "Corbeille"
+msgstr "Lixeira"
 
 msgid "Trash Redirected URL"
-msgstr "Mettre l'URL redirigée à la corbeille"
+msgstr "Mover URL Redirecionada para Lixeira"
 
 msgid "Trashed Redirects"
-msgstr "Redirections dans la corbeille"
+msgstr "Redirecionamentos na Lixeira"
 
 msgid "Trashed URLs"
-msgstr "URLs dans la corbeille"
+msgstr "URLs na Lixeira"
 
 msgid "Treat this URL as a regular expression"
-msgstr "Traiter cette URL comme une expression régulière"
+msgstr "Tratar esta URL como uma expressão regular"
 
 msgid "Type"
-msgstr "Type"
+msgstr "Tipo"
 
 msgid "Type a page name here and select it to add it to the exlusion list"
-msgstr "Tapez un nom de page ici et sélectionnez-la pour l'ajouter à la liste d'exclusion"
+msgstr "Digite um nome de página aqui e selecione-o para adicioná-lo à lista de exclusão"
 
 msgid "URL"
 msgstr "URL"
 
 msgid "URL(s) deleted"
-msgstr "URL(s) supprimée(s)"
+msgstr "URL(s) deletada(s)"
 
 msgid "URL(s) marked as Captured."
-msgstr "URL(s) marquée(s) comme Capturée."
+msgstr "URL(s) marcada(s) como Capturada."
 
 msgid "URL(s) marked as Ignored."
-msgstr "URL(s) marquée(s) comme Ignorée."
+msgstr "URL(s) marcada(s) como Ignorada."
 
 msgid "URL(s) marked as Later."
-msgstr "URL(s) marquée(s) comme Plus tard."
+msgstr "URL(s) marcada(s) como Depois."
 
 msgid "URL(s) moved to trash"
-msgstr "URL(s) déplacée(s) dans la corbeille"
+msgstr "URL(s) movida(s) para a lixeira"
 
 msgid "URL(s) restored."
-msgstr "URL(s) restaurée(s)."
+msgstr "URL(s) restaurada(s)."
 
 msgid "URLs"
 msgstr "URLs"
 
 msgid "Under the Settings menu"
-msgstr "Sous le menu Paramètres"
+msgstr "No menu Configurações"
 
 msgid "Unique Page Not Found Referrers"
-msgstr "Référents uniques de page non trouvée"
+msgstr "Referenciadores Únicos de Página Não Encontrada"
 
 msgid "Unique Page Not Found URLs"
-msgstr "URLs uniques de page non trouvée"
+msgstr "URLs Únicas de Página Não Encontrada"
 
 msgid "Unique Page Not Found Visitors"
-msgstr "Visiteurs uniques de page non trouvée"
+msgstr "Visitantes Únicos de Página Não Encontrada"
 
 msgid "Unique Redirected Referrers"
-msgstr "Référents redirigés uniques"
+msgstr "Referenciadores Únicos Redirecionados"
 
 msgid "Unique Redirected Visitors"
-msgstr "Visiteurs redirigés uniques"
+msgstr "Visitantes Únicos Redirecionados"
 
 msgid "Unique URLs Redirected"
-msgstr "URLs redirigées uniques"
+msgstr "URLs Únicas Redirecionadas"
 
 msgid "Unknown"
-msgstr "Inconnu"
+msgstr "Desconhecido"
 
 msgid "Update Redirect"
-msgstr "Mettre à jour la redirection"
+msgstr "Atualizar Redirecionamento"
 
 msgid "Update the URL bar"
-msgstr "Mettre à jour la barre d'URL"
+msgstr "Atualizar a barra de URL"
 
 msgid "Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
-msgstr "Utilisez une ligne par agent utilisateur. Si le texte est trouvé n'importe où dans la chaîne agent utilisateur, alors il s'applique."
+msgstr "Use uma linha por user agent. Se o texto for encontrado em qualquer lugar na string do user agent, então se aplica."
 
 msgid "User"
-msgstr "Utilisateur"
+msgstr "Usuário"
 
 msgid "User names listed here will be able to do everything an admin can do with the plugin."
-msgstr "Les noms d'utilisateur listés ici pourront faire tout ce qu'un administrateur peut faire avec le plugin."
+msgstr "Nomes de usuário listados aqui poderão fazer tudo que um administrador pode fazer com o plugin."
 
 msgid "Using the purge options will move all selected redirects to the trash. You must then empty the trash to delete them."
-msgstr "L'utilisation des options de purge déplacera toutes les redirections sélectionnées dans la corbeille. Vous devrez ensuite vider la corbeille pour les supprimer."
+msgstr "Usar as opções de limpeza moverá todos os redirecionamentos selecionados para a lixeira. Você deve então esvaziar a lixeira para deletá-los."
 
 msgid "View logs for"
-msgstr "Voir les journaux pour"
+msgstr "Ver logs de"
 
 msgid "Visit"
-msgstr "Visiter"
+msgstr "Visitar"
 
 msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "ATTENTION : Lorsque mal utilisé, ceci CASSERA votre site web. Utilisez à vos propres risques. S'il vous plaît, pour l'amour de tout ce qui est sacré, laissez ceci vide si vous ne savez pas ce que vous faites."
+msgstr "AVISO: Quando usado incorretamente, isso IRÁ quebrar seu site. Use por sua conta e risco. Por favor, pelo amor de tudo que é sagrado, deixe isso vazio se você não sabe o que está fazendo."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
-msgstr "Lorsqu'une erreur est détectée par le plugin, envoyer le fichier journal complet au développeur."
+msgstr "Quando um erro é detectado pelo plugin, enviar o arquivo de log completo por e-mail para o desenvolvedor."
 
 msgid "When checked the URL will be changed from the custom 404 page URL to the URL originally requested (after the page headers load)."
-msgstr "Lorsque coché, l'URL sera changée de l'URL de page 404 personnalisée vers l'URL originalement demandée (après le chargement des en-têtes de page)."
+msgstr "Quando marcado, a URL será alterada da URL da página 404 personalizada para a URL originalmente solicitada (após o carregamento dos cabeçalhos da página)."
 
 msgid "When checked, the text is treated as a regular expression."
-msgstr "Lorsque coché, le texte est traité comme une expression régulière."
+msgstr "Quando marcado, o texto é tratado como uma expressão regular."
 
 msgid "When selected, ALL REQUESTS (even for pages that exist, even for non-404s) will be treated like a 404."
-msgstr "Lorsque sélectionné, TOUTES LES REQUÊTES (même pour les pages qui existent, même pour les non-404) seront traitées comme une 404."
+msgstr "Quando selecionado, TODAS AS SOLICITAÇÕES (mesmo para páginas que existem, mesmo para não-404s) serão tratadas como um 404."
 
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here."
-msgstr "Lorsque le nombre de 404 capturées déclencherait une notification admin, un e-mail sera envoyé aux adresses spécifiées ici."
+msgstr "Quando o número de 404s capturados causar uma notificação de administrador, um e-mail será enviado para os endereços especificados aqui."
 
 msgid "You can see which are recognized by looking at the default 404 destination option."
-msgstr "Vous pouvez voir lesquelles sont reconnues en regardant l'option de destination 404 par défaut."
+msgstr "Você pode ver quais são reconhecidos observando a opção de destino 404 padrão."
 
 msgid "You can see which post types are recognized by looking at the default 404 destination option, which has a list of pages, posts, products, etc."
-msgstr "Vous pouvez voir quels types de contenu sont reconnus en regardant l'option de destination 404 par défaut, qui a une liste de pages, articles, produits, etc."
+msgstr "Você pode ver quais tipos de post são reconhecidos observando a opção de destino 404 padrão, que tem uma lista de páginas, posts, produtos, etc."
 
 msgid "add-exclude-page-data-url"
 msgstr "add-exclude-page-data-url"
@@ -1176,10 +1176,10 @@ msgid "ajaxTrashLink"
 msgstr "ajaxTrashLink"
 
 msgid "and <B>from_url,to_url</B>"
-msgstr "et <B>from_url,to_url</B>"
+msgstr "e <B>from_url,to_url</B>"
 
 msgid "and redirect to the specified page."
-msgstr "et rediriger vers la page spécifiée."
+msgstr "e redirecionar para a página especificada."
 
 msgid "bulkOptions"
 msgstr "bulkOptions"
@@ -1191,7 +1191,7 @@ msgid "data-url"
 msgstr "data-url"
 
 msgid "days (0 means immediately, default 30)"
-msgstr "jours (0 signifie immédiatement, défaut 30)"
+msgstr "dias (0 significa imediatamente, padrão 30)"
 
 msgid "deletePermanentlyHTML"
 msgstr "deletePermanentlyHTML"
@@ -1218,7 +1218,7 @@ msgid "filterText"
 msgstr "filterText"
 
 msgid "is maintained by"
-msgstr "est maintenu par"
+msgstr "é mantido por"
 
 msgid "loaded-excluded-pages"
 msgstr "loaded-excluded-pages"
@@ -1323,18 +1323,18 @@ msgid "urlPlaceholder"
 msgstr "urlPlaceholder"
 
 msgid "will match any URL that begins with"
-msgstr "correspondra à toute URL qui commence par"
+msgstr "corresponderá a qualquer URL que comece com"
 
 #. Plural form with HTML
 #: includes/View.php
 msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
 msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
-msgstr[0] "Il y a <a>%s URL 404 capturée</a> qui doit être traitée."
-msgstr[1] "Il y a <a>%s URLs 404 capturées</a> qui doivent être traitées."
+msgstr[0] "Existe <a>%s URL 404 capturada</a> que precisa ser processada."
+msgstr[1] "Existem <a>%s URLs 404 capturadas</a> para serem processadas."
 
 #. Plural form with %s
 #: includes/DataAccess.php
 msgid "%s redirect entry was moved to the trash."
 msgid_plural "%s redirect entries were moved to the trash."
-msgstr[0] "%s entrée de redirection a été déplacée dans la corbeille."
-msgstr[1] "%s entrées de redirection ont été déplacées dans la corbeille."
+msgstr[0] "%s entrada de redirecionamento foi movida para a lixeira."
+msgstr[1] "%s entradas de redirecionamento foram movidas para a lixeira."

@@ -1,0 +1,1342 @@
+# Translation file for 404 Solution WordPress Plugin
+# Copyright (C) 2025 404 Solution
+# This file is distributed under the same license as the 404 Solution plugin.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 404 Solution\n"
+"Report-Msgid-Bugs-To: https://github.com/aaron13100/404solution/issues\n"
+"POT-Creation-Date: 2025-11-11 07:26+0000\n"
+"PO-Revision-Date: 2025-11-11 07:26+0000\n"
+"Last-Translator: Auto-Generated\n"
+"Language-Team: Russian\n"
+"Language: ru_RU\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Generator: 404 Solution Translation Generator v2\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-SearchPath-0: .\n"
+
+msgid "%1$s - %2$s of %3$s"
+msgstr "%1$s - %2$s из %3$s"
+
+msgid "(A custom string has been entered.)"
+msgstr "(Введена пользовательская строка.)"
+
+msgid "(A page has been selected.)"
+msgstr "(Страница выбрана.)"
+
+msgid "(All results displayed for \"%s.\")"
+msgstr "(Все результаты показаны для \"%s.\")"
+
+msgid "(All results displayed.)"
+msgstr "(Все результаты показаны.)"
+
+msgid "(An external URL will be used.)"
+msgstr "(Будет использован внешний URL.)"
+
+msgid "(Begin typing a URL)"
+msgstr "(Начните вводить URL)"
+
+msgid "(Data truncated. Too many results for \"%s!\".)"
+msgstr "(Данные обрезаны. Слишком много результатов для \"%s!\".)"
+
+msgid "(Data truncated. Too many results!)"
+msgstr "(Данные обрезаны. Слишком много результатов!)"
+
+msgid "(Default 404 Page)"
+msgstr "(Страница 404 по умолчанию)"
+
+msgid "(Explain)"
+msgstr "(Пояснение)"
+
+msgid "(Hide Info)"
+msgstr "(Скрыть информацию)"
+
+msgid "(Home Page)"
+msgstr "(Главная страница)"
+
+msgid "(No matching results found for \"%s.\")"
+msgstr "(Совпадений не найдено для \"%s.\")"
+
+msgid "(No matching results found.)"
+msgstr "(Совпадений не найдено.)"
+
+msgid "(Please choose from the dropdown list instead of typing your own URL.)"
+msgstr "(Пожалуйста, выберите из выпадающего списка вместо ввода собственного URL.)"
+
+msgid "(Required)"
+msgstr "(Обязательно)"
+
+msgid "(Show All Logs)"
+msgstr "(Показать все журналы)"
+
+msgid "(Special)"
+msgstr "(Специальная)"
+
+msgid "(The log file does not exist.)"
+msgstr "(Файл журнала не существует.)"
+
+msgid "(The specified page doesn't exist. Please update this setting.)"
+msgstr "(Указанная страница не существует. Пожалуйста, обновите эту настройку.)"
+
+msgid "(Type a page name or an external URL)"
+msgstr "(Введите название страницы или внешний URL)"
+
+msgid "(Type a page name)"
+msgstr "(Введите название страницы)"
+
+msgid "(Type to filter)"
+msgstr "(Введите для фильтрации)"
+
+msgid "(don't suggest .jpg files)"
+msgstr "(не предлагать файлы .jpg)"
+
+msgid "(don't suggest .pdf files)"
+msgstr "(не предлагать файлы .pdf)"
+
+msgid "(don't suggest pages within any directory named /private/)"
+msgstr "(не предлагать страницы из любой директории /private/)"
+
+msgid "(don't suggest pages within the /members/ directory)"
+msgstr "(не предлагать страницы из директории /members/)"
+
+msgid "(don't suggest the specific page with slug 'old-contact-page')"
+msgstr "(не предлагать конкретную страницу со слагом 'old-contact-page')"
+
+msgid "(ignore all .jpg files)"
+msgstr "(игнорировать все файлы .jpg)"
+
+msgid "(ignore all .js files)"
+msgstr "(игнорировать все файлы .js)"
+
+msgid "(ignore all .php files)"
+msgstr "(игнорировать все файлы .php)"
+
+msgid "(ignore everything in the cache directory)"
+msgstr "(игнорировать всё в директории cache)"
+
+msgid "(ignore everything in this directory)"
+msgstr "(игнорировать всё в этой директории)"
+
+msgid "(unless a redirect to the page already exists)."
+msgstr "(если перенаправление на страницу еще не существует)."
+
+msgid "* 404s are still redirected when possible."
+msgstr "* 404 всё равно перенаправляются, когда это возможно."
+
+msgid "* Do not capture 404 URLs."
+msgstr "* Не собирать 404 URL."
+
+msgid "* Do not redirect 404s for the patterns listed here."
+msgstr "* Не перенаправлять 404 для перечисленных здесь шаблонов."
+
+msgid "* Do not redirect 404s from the user agents listed here."
+msgstr "* Не перенаправлять 404 от перечисленных здесь пользовательских агентов."
+
+msgid "* If the string appears anywhere within the user agent string then it's a match."
+msgstr "* Если строка встречается где-либо в строке пользовательского агента, это считается совпадением."
+
+msgid "* One pattern per line."
+msgstr "* Один шаблон на строку."
+
+msgid "* One string per line."
+msgstr "* Одна строка на каждую строку."
+
+msgid "* One type per line."
+msgstr "* Один тип на строку."
+
+msgid "* Strings are case insensitive."
+msgstr "* Строки не зависят от регистра."
+
+msgid "* Strings are case sensitive."
+msgstr "* Строки зависят от регистра."
+
+msgid "* These patterns match the path of a URL, not a title.\""
+msgstr "* Эти шаблоны сопоставляются с путем URL, а не с заголовком.\""
+
+msgid "* Use an asterisk (*) to match \"any pattern.\""
+msgstr "* Используйте звездочку (*) для соответствия \"любому шаблону.\""
+
+msgid "404 Page Suggestions"
+msgstr "Предложения страниц 404"
+
+msgid "404 URL marked as %s successfully!"
+msgstr "404 URL помечен как %s успешно!"
+
+msgid "<a>View</a> the debug file."
+msgstr "<a>Просмотреть</a> отладочный файл."
+
+msgid "Action Taken"
+msgstr "Выполненное действие"
+
+msgid "Add Redirect"
+msgstr "Добавить перенаправление"
+
+msgid "Add a Manual Redirect"
+msgstr "Добавить ручное перенаправление"
+
+msgid "Add a Redirect"
+msgstr "Добавить перенаправление"
+
+msgid "Admin notification email(s)"
+msgstr "Email(ы) для уведомлений администратора"
+
+msgid "Admin notification level"
+msgstr "Уровень уведомлений администратора"
+
+msgid "Admin theme"
+msgstr "Тема администратора"
+
+msgid "Advanced Settings (Etc)"
+msgstr "Расширенные настройки (Прочее)"
+
+msgid "All"
+msgstr "Все"
+
+msgid "All other redirects must be deleted and only one regex redirect for all URLs must be created for this to work."
+msgstr "Все остальные перенаправления должны быть удалены и создано только одно regex перенаправление для всех URL, чтобы это работало."
+
+msgid "All trashed URLs have been deleted!"
+msgstr "Все URL в корзине были удалены!"
+
+msgid "Allow category suggestions"
+msgstr "Разрешить предложения категорий"
+
+msgid "Allow tag suggestions"
+msgstr "Разрешить предложения меток"
+
+msgid "An unknown error has occurred."
+msgstr "Произошла неизвестная ошибка."
+
+msgid "Apply"
+msgstr "Применить"
+
+msgid "At the same level as the Settings and Tools menu"
+msgstr "На том же уровне, что и меню Настройки и Инструменты"
+
+msgid "Auto"
+msgstr "Авто"
+
+msgid "Auto redirect deletion"
+msgstr "Автоматическое удаление перенаправлений"
+
+msgid "Automatic 301 Redirects"
+msgstr "Автоматические 301 перенаправления"
+
+msgid "Automatic 302 Redirects"
+msgstr "Автоматические 302 перенаправления"
+
+msgid "Automatic Redirects"
+msgstr "Автоматические перенаправления"
+
+msgid "Automatically created"
+msgstr "Создано автоматически"
+
+msgid "Automatically creates redirects based on best possible suggested page."
+msgstr "Автоматически создает перенаправления на основе наилучшей предложенной страницы."
+
+msgid "Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time."
+msgstr "Автоматически удаляет собранные 404 URL, если они не использовались в течение указанного времени."
+
+msgid "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
+msgstr "Автоматически удаляет созданные вручную перенаправления страниц, если они не использовались в течение указанного времени."
+
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops (Светлая)"
+
+msgid "Captured 404 URLs"
+msgstr "Собранные 404 URL"
+
+msgid "Captured URLs"
+msgstr "Собранные URL"
+
+msgid "Captured URLs (0 Disables Notification)"
+msgstr "Собранные URL (0 отключает уведомления)"
+
+msgid "Categories"
+msgstr "Категории"
+
+msgid "Category"
+msgstr "Категория"
+
+msgid "Category:"
+msgstr "Категория:"
+
+msgid "Changes may not be updated immediately when ordering by this column"
+msgstr "Изменения могут не обновляться немедленно при сортировке по этому столбцу"
+
+msgid "Checks each redirect for a new matching permalink before the user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted."
+msgstr "Проверяет каждое перенаправление на наличие нового соответствующего постоянного адреса перед перенаправлением пользователя. Если найден новый постоянный адрес страницы, соответствующий перенаправляемому URL, то перенаправление будет удалено."
+
+msgid "Choose at least one URL"
+msgstr "Выберите хотя бы один URL"
+
+msgid "Choose whether the 404 Settings link appears under the \"Settings\" menu or elsewhere."
+msgstr "Выберите, где должна появляться ссылка на настройки 404 — в меню \"Настройки\" или отдельно."
+
+msgid "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
+msgstr "Выберите цветовую тему для страниц администратора. Тема меняется немедленно для предварительного просмотра и будет сохранена при нажатии \"Сохранить настройки\"."
+
+msgid "Cleanup is done daily."
+msgstr "Очистка выполняется ежедневно."
+
+msgid "Click to view debug data for all suggestions"
+msgstr "Нажмите, чтобы просмотреть отладочные данные для всех предложений"
+
+msgid "Collect incoming 404 URLs"
+msgstr "Собирать входящие 404 URL"
+
+msgid "Collected 404 URL deletion"
+msgstr "Удаление собранных 404 URL"
+
+msgid "Create a CSV file with the redirects and captured 404s."
+msgstr "Создать CSV файл с перенаправлениями и собранными 404."
+
+msgid "Create and Download"
+msgstr "Создать и скачать"
+
+msgid "Create automatic redirects"
+msgstr "Создавать автоматические перенаправления"
+
+msgid "Create automatic redirects for categories"
+msgstr "Создавать автоматические перенаправления для категорий"
+
+msgid "Create automatic redirects for tags"
+msgstr "Создавать автоматические перенаправления для меток"
+
+msgid "Created"
+msgstr "Создано"
+
+msgid "Credits"
+msgstr "Разработчики"
+
+msgid "Current approximate log disk usage"
+msgstr "Текущее приблизительное использование диска журналами"
+
+msgid "Custom"
+msgstr "Пользовательские"
+
+msgid "Custom Taxonomies"
+msgstr "Пользовательские таксономии"
+
+msgid "DATABASE_VERSION"
+msgstr "DATABASE_VERSION"
+
+msgid "DB version"
+msgstr "Версия БД"
+
+msgid "Date"
+msgstr "Дата"
+
+msgid "Days (0 Disables Auto Delete)"
+msgstr "Дней (0 отключает автоудаление)"
+
+msgid "Debug Log"
+msgstr "Журнал отладки"
+
+msgid "Debug file not found. (%s)"
+msgstr "Файл отладки не найден. (%s)"
+
+msgid "Debug file size: %1$s KB (%2$s MB)."
+msgstr "Размер файла отладки: %1$s KB (%2$s MB)."
+
+msgid "Debug file size: %s KB."
+msgstr "Размер файла отладки: %s KB."
+
+msgid "Debug file(s) deleted. (%s)"
+msgstr "Файл(ы) отладки удалены. (%s)"
+
+msgid "Debug logging"
+msgstr "Журналирование отладки"
+
+msgid "Default WordPress post types are \"post\" and \"page.\""
+msgstr "Типы записей WordPress по умолчанию — это \"post\" и \"page.\""
+
+msgid "Default redirect type"
+msgstr "Тип перенаправления по умолчанию"
+
+msgid "Delete the Debug File"
+msgstr "Удалить файл отладки"
+
+msgid "Destination"
+msgstr "Назначение"
+
+msgid "Display Before/After each suggested page"
+msgstr "Отображать До/После каждой предложенной страницы"
+
+msgid "Display Before/After page suggestions"
+msgstr "Отображать До/После предложений страниц"
+
+msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
+msgstr "Показывать уведомление администратора WordPress, когда количество собранных URL превышает это число"
+
+msgid "Display if no suggestion results"
+msgstr "Отображать при отсутствии результатов предложений"
+
+msgid "Display the closest matching pages by using the shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
+msgstr "Отображать наиболее подходящие страницы с помощью шорткода <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
+
+msgid "Displayed 404 Page"
+msgstr "Отображаемая страница 404"
+
+msgid "Earliest log date"
+msgstr "Самая ранняя дата журнала"
+
+msgid "Edit Redirect"
+msgstr "Редактировать перенаправление"
+
+msgid "Edit Redirect Details"
+msgstr "Редактировать детали перенаправления"
+
+msgid "Empty Trash"
+msgstr "Очистить корзину"
+
+msgid "Error: An invalid purge type was selected. Exiting."
+msgstr "Ошибка: Выбран недопустимый тип очистки. Завершение."
+
+msgid "Error: Auto match score value must be a number between 0 and 99"
+msgstr "Ошибка: Значение оценки автоматического совпадения должно быть числом от 0 до 99"
+
+msgid "Error: Bad %s operation specified."
+msgstr "Ошибка: Указана неверная операция %s."
+
+msgid "Error: Bad data passed for update redirect request."
+msgstr "Ошибка: Переданы неверные данные для запроса обновления перенаправления."
+
+msgid "Error: Bad trash operation specified."
+msgstr "Ошибка: Указана неверная операция с корзиной."
+
+msgid "Error: Data not formatted properly."
+msgstr "Ошибка: Данные неправильно отформатированы."
+
+msgid "Error: External URL doesn't contain ://"
+msgstr "Ошибка: Внешний URL не содержит ://"
+
+msgid "Error: External URL is too short."
+msgstr "Ошибка: Внешний URL слишком короткий."
+
+msgid "Error: Invalid theme selected"
+msgstr "Ошибка: Выбрана недопустимая тема"
+
+msgid "Error: Invalid value specified for default redirect type"
+msgstr "Ошибка: Указано недопустимое значение для типа перенаправления по умолчанию"
+
+msgid "Error: Maximum number of suggest value must be a number greater than or equal to 1"
+msgstr "Ошибка: Максимальное количество предложений должно быть числом больше или равно 1"
+
+msgid "Error: No ID(s) found for edit request."
+msgstr "Ошибка: Не найдены ID для запроса редактирования."
+
+msgid "Error: No ID(s) specified for bulk action. (%s)"
+msgstr "Ошибка: Не указаны ID для массового действия. (%s)"
+
+msgid "Error: No records were imported. SQL result: %s"
+msgstr "Ошибка: Записи не были импортированы. Результат SQL: %s"
+
+msgid "Error: No redirect types were selected. No purges will be done."
+msgstr "Ошибка: Типы перенаправлений не выбраны. Очистка не будет выполнена."
+
+msgid "Error: No valid redirect types were selected. Exiting."
+msgstr "Ошибка: Не выбраны допустимые типы перенаправлений. Завершение."
+
+msgid "Error: Suggestion minimum score value must be a number between 1 and 99"
+msgstr "Ошибка: Минимальная оценка предложения должна быть числом от 1 до 99"
+
+msgid "Error: Template redirect priority value must be a number between 0 and 999"
+msgstr "Ошибка: Приоритет перенаправления шаблона должен быть числом от 0 до 999"
+
+msgid "Error: URL is a required field."
+msgstr "Ошибка: URL — обязательное поле."
+
+msgid "Error: URL must start with /"
+msgstr "Ошибка: URL должен начинаться с /"
+
+msgid "Error: Unable to move redirect from trash."
+msgstr "Ошибка: Невозможно восстановить перенаправление из корзины."
+
+msgid "Error: Unable to move redirect to trash."
+msgstr "Ошибка: Невозможно переместить перенаправление в корзину."
+
+msgid "Error: Unable to update redirect data."
+msgstr "Ошибка: Невозможно обновить данные перенаправления."
+
+msgid "Error: Unknown Database Error!"
+msgstr "Ошибка: Неизвестная ошибка базы данных!"
+
+msgid "Error: Unrecognized bulk action. (%s)"
+msgstr "Ошибка: Нераспознанное массовое действие. (%s)"
+
+msgid "Error: You didn't check the I understand checkbox. No importing for you!"
+msgstr "Ошибка: Вы не отметили флажок \"Я понимаю\". Импорт невозможен!"
+
+msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
+msgstr "Ошибка: Вы не отметили флажок \"Я понимаю\". Очистка записей невозможна!"
+
+msgid "Error: You selected external URL but did not enter a URL."
+msgstr "Ошибка: Вы выбрали внешний URL, но не ввели URL."
+
+msgid "Error: unable to add new redirect."
+msgstr "Ошибка: невозможно добавить новое перенаправление."
+
+msgid "Error: unable to mark URL as %s"
+msgstr "Ошибка: невозможно пометить URL как %s"
+
+msgid "Error: unable to remove URL from %s list"
+msgstr "Ошибка: невозможно удалить URL из списка %s"
+
+msgid "Etcetera"
+msgstr "Прочее"
+
+msgid "Even if more pages could be suggested, show at most this many (default: 5)"
+msgstr "Даже если можно предложить больше страниц, показывать не более указанного количества (по умолчанию: 5)"
+
+msgid "Example"
+msgstr "Пример"
+
+msgid "Examples:"
+msgstr "Примеры:"
+
+msgid "Exclude Specific Pages, Posts, Categories, Etc"
+msgstr "Исключить конкретные страницы, записи, категории и т.д."
+
+msgid "Exclude Suggestion URLs (Regex)"
+msgstr "Исключить URL предложений (Regex)"
+
+msgid "Exclude potential suggestions if their final URL matches one of these patterns."
+msgstr "Исключить потенциальные предложения, если их конечный URL соответствует одному из этих шаблонов."
+
+msgid "Export"
+msgstr "Экспорт"
+
+msgid "External"
+msgstr "Внешние"
+
+msgid "External Page"
+msgstr "Внешняя страница"
+
+msgid "External User Agents - Do Not Log"
+msgstr "Внешние пользовательские агенты — не журналировать"
+
+msgid "Files and Folders Ignore Strings - Do Not Process"
+msgstr "Строки игнорирования файлов и папок — не обрабатывать"
+
+msgid "Files and folders listed here will be ignored."
+msgstr "Файлы и папки, перечисленные здесь, будут игнорироваться."
+
+msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
+msgstr "Сначала проверяются все обычные URL \"точного совпадения\", затем проверяются все URL регулярных выражений."
+
+msgid "General Settings"
+msgstr "Общие настройки"
+
+msgid "Go to first page"
+msgstr "Перейти на первую страницу"
+
+msgid "Go to last page"
+msgstr "Перейти на последнюю страницу"
+
+msgid "Go to next page"
+msgstr "Перейти на следующую страницу"
+
+msgid "Go to previous page"
+msgstr "Перейти на предыдущую страницу"
+
+msgid "Help the developer by sending error logs"
+msgstr "Помочь разработчику, отправляя журналы ошибок"
+
+msgid "Here are some other great pages"
+msgstr "Вот несколько других отличных страниц"
+
+msgid "Hits"
+msgstr "Обращения"
+
+msgid "Hits Redirected"
+msgstr "Перенаправленные обращения"
+
+msgid "Home Page"
+msgstr "Главная страница"
+
+msgid "Home Page:"
+msgstr "Главная страница:"
+
+msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
+msgstr "Я понимаю вышеизложенное, я знаю, что делаю... бла-бла-бла. Просто удалите записи!"
+
+msgid "I understand the above statement."
+msgstr "Я понимаю вышеизложенное."
+
+msgid "IP Address"
+msgstr "IP-адрес"
+
+msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
+msgstr "Если ни одна страница не соответствует минимальной оценке совпадения, будет отображен этот текст.  (по умолчанию: &lt;p&gt;Нет предложений. :/ &lt;/p&gt;)"
+
+msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
+msgstr "Если вы создали пользовательские типы записей и хотите перенаправлять пользователей на них, вам нужно ввести их здесь."
+
+msgid "If you've created custom taxonomies and would like to redirect users to them, you'll have to enter them here."
+msgstr "Если вы создали пользовательские таксономии и хотите перенаправлять пользователей на них, вам нужно ввести их здесь."
+
+msgid "Ignore 404 Error"
+msgstr "Игнорировать ошибку 404"
+
+msgid "Ignored 404 URLs"
+msgstr "Игнорируемые 404 URL"
+
+msgid "Ignored URLs"
+msgstr "Игнорируемые URL"
+
+msgid "Import"
+msgstr "Импорт"
+
+msgid "Import 404 Redirected Data"
+msgstr "Импортировать данные перенаправлений 404"
+
+msgid "Import a CSV file with the redirects and captured 404s."
+msgstr "Импортировать CSV файл с перенаправлениями и собранными 404."
+
+msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
+msgstr "Включая возможность сломать сайт, создавая неправильные перенаправления, вводя неправильное регулярное выражение, удаляя существующие перенаправления и предоставляя другим пользователям административный доступ к плагину."
+
+msgid "Internal Process User Agents - Do Not Log"
+msgstr "Внутренние процессы пользовательских агентов — не журналировать"
+
+msgid "Issue deleting debug file. (%s)"
+msgstr "Проблема при удалении файла отладки. (%s)"
+
+msgid "JAPANESE_FLASHCARDS_URL"
+msgstr "JAPANESE_FLASHCARDS_URL"
+
+msgid "Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit."
+msgstr "Сохраняет самые свежие (и удаляет самые старые) записи журнала, когда использование диска достигает этого лимита."
+
+msgid "LINK_FIRST_PAGE"
+msgstr "LINK_FIRST_PAGE"
+
+msgid "LINK_LAST_PAGE"
+msgstr "LINK_LAST_PAGE"
+
+msgid "LINK_NEXT_PAGE"
+msgstr "LINK_NEXT_PAGE"
+
+msgid "LINK_PREVIOUS_PAGE"
+msgstr "LINK_PREVIOUS_PAGE"
+
+msgid "Last Used"
+msgstr "Последнее использование"
+
+msgid "List one user name per line."
+msgstr "Перечислите по одному имени пользователя на строку."
+
+msgid "Log files are checked daily when maintenance is run."
+msgstr "Файлы журналов проверяются ежедневно при выполнении обслуживания."
+
+msgid "Log raw IPs"
+msgstr "Журналировать настоящие IP"
+
+msgid "Logging raw IP addresses may not meet the EU General Data Protection Regulation (GDPR) guidelines."
+msgstr "Журналирование настоящих IP-адресов может не соответствовать требованиям Общего регламента ЕС по защите данных (GDPR)."
+
+msgid "Logs"
+msgstr "Журналы"
+
+msgid "MB"
+msgstr "МБ"
+
+msgid "Maintenance"
+msgstr "Обслуживание"
+
+msgid "Monochrome Minimal (Light)"
+msgstr "Monochrome Minimal (Светлая)"
+
+msgid "Major version auto update delay"
+msgstr "Задержка автообновления мажорной версии"
+
+msgid "Man"
+msgstr "Вручную"
+
+msgid "Manual 301 Redirects"
+msgstr "Ручные 301 перенаправления"
+
+msgid "Manual 302 Redirects"
+msgstr "Ручные 302 перенаправления"
+
+msgid "Manual Redirects"
+msgstr "Ручные перенаправления"
+
+msgid "Manual redirect deletion"
+msgstr "Удаление ручных перенаправлений"
+
+msgid "Manually created"
+msgstr "Создано вручную"
+
+msgid "Maximum log disk usage (MB)"
+msgstr "Максимальное использование диска журналами (МБ)"
+
+msgid "Maximum number of suggestions to display"
+msgstr "Максимальное количество отображаемых предложений"
+
+msgid "Minimum match score"
+msgstr "Минимальная оценка совпадения"
+
+msgid "Minimum score of suggestions to display"
+msgstr "Минимальная оценка отображаемых предложений"
+
+msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
+msgstr "Несколько адресов электронной почты можно разделить запятыми (,). Адрес \"от\" всегда является адресом электронной почты администратора WordPress по умолчанию:"
+
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate (Темная)"
+
+msgid "Never Used"
+msgstr "Никогда не использовалось"
+
+msgid "New Redirect Added Successfully!"
+msgstr "Новое перенаправление успешно добавлено!"
+
+msgid "New major version => wait this many days. New minor version => automatically update about 3 days after the release date."
+msgstr "Новая мажорная версия => подождать указанное количество дней. Новая минорная версия => автоматически обновляться примерно через 3 дня после даты выпуска."
+
+msgid "No Captured 404 Records To Display"
+msgstr "Нет собранных записей 404 для отображения"
+
+msgid "No Redirect Records To Display"
+msgstr "Нет записей перенаправлений для отображения"
+
+msgid "No Results To Display"
+msgstr "Нет результатов для отображения"
+
+msgid "No suggestions. :/"
+msgstr "Нет предложений. :/"
+
+msgid "No suggestions. :/ "
+msgstr "Нет предложений. :/ "
+
+msgid "Note that including a bad regular expression or one that takes too long will break your website."
+msgstr "Обратите внимание, что использование неправильного регулярного выражения или слишком медленного сломает ваш сайт."
+
+msgid "Note: Do not include the parenthesis or explanations shown in the examples above."
+msgstr "Примечание: Не включайте скобки или пояснения, показанные в примерах выше."
+
+msgid "Note: Here is a list of all post types in the database:"
+msgstr "Примечание: Вот список всех типов записей в базе данных:"
+
+msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
+msgstr "Примечание: \"Оценки\", которые отображаются в формате \"(75.7576)\" после ссылок на страницы, видны только администраторам."
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue (Темная)"
+
+msgid "OPTION_MIN_AUTO_SCORE"
+msgstr "OPTION_MIN_AUTO_SCORE"
+
+msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
+msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
+
+msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
+msgstr "Одно письмо будет отправляться в день (при выполнении обслуживания), пока количество собранных 404 не станет меньше числа, указанного в настройках оповещения."
+
+msgid "Only create an automatic redirect if the suggested page has a score above the specified number (default 90)"
+msgstr "Создавать автоматическое перенаправление только если у предложенной страницы оценка выше указанного числа (по умолчанию 90)"
+
+msgid "Options"
+msgstr "Настройки"
+
+msgid "Options Saved Successfully!"
+msgstr "Настройки успешно сохранены!"
+
+msgid "Organize Later"
+msgstr "Разобрать позже"
+
+msgid "Page"
+msgstr "Страница"
+
+msgid "Page Not Found Displayed"
+msgstr "Отображено \"Страница не найдена\""
+
+msgid "Page Redirects"
+msgstr "Перенаправления страниц"
+
+msgid "Page suggestions title"
+msgstr "Заголовок предложений страниц"
+
+msgid "Pages listed here will not be redirected to"
+msgstr "Страницы, перечисленные здесь, не будут использоваться для перенаправления"
+
+msgid "Permanent 301"
+msgstr "Постоянное 301"
+
+msgid "Plugin Admin Users"
+msgstr "Пользователи-администраторы плагина"
+
+msgid "Plugin version"
+msgstr "Версия плагина"
+
+msgid "Purge Entries!"
+msgstr "Очистить записи!"
+
+msgid "Purge Options"
+msgstr "Параметры очистки"
+
+msgid "Purge Type"
+msgstr "Тип очистки"
+
+msgid "REDIRECT_TO_USER_FIELD_WARNING"
+msgstr "REDIRECT_TO_USER_FIELD_WARNING"
+
+msgid "Recognized Post Types"
+msgstr "Распознанные типы записей"
+
+msgid "Records imported: %s"
+msgstr "Импортировано записей: %s"
+
+msgid "Redirect"
+msgstr "Перенаправление"
+
+msgid "Redirect & Capture Logs"
+msgstr "Журналы перенаправлений и сбора"
+
+msgid "Redirect Details"
+msgstr "Детали перенаправления"
+
+msgid "Redirect Information Updated Successfully!"
+msgstr "Информация о перенаправлении успешно обновлена!"
+
+msgid "Redirect Removed Successfully!"
+msgstr "Перенаправление успешно удалено!"
+
+msgid "Redirect Type"
+msgstr "Тип перенаправления"
+
+msgid "Redirect Types"
+msgstr "Типы перенаправлений"
+
+msgid "Redirect all requests"
+msgstr "Перенаправлять все запросы"
+
+msgid "Redirect all unhandled 404s to"
+msgstr "Перенаправлять все необработанные 404 на"
+
+msgid "Redirect moved to trash successfully!"
+msgstr "Перенаправление успешно перемещено в корзину!"
+
+msgid "Redirect restored from trash successfully!"
+msgstr "Перенаправление успешно восстановлено из корзины!"
+
+msgid "Redirect to"
+msgstr "Перенаправить на"
+
+msgid "Redirected to"
+msgstr "Перенаправлено на"
+
+msgid "Redirects"
+msgstr "Перенаправления"
+
+msgid "Referrer"
+msgstr "Источник перехода"
+
+msgid "RegEx"
+msgstr "RegEx"
+
+msgid "Regular Expression (Manually Created)"
+msgstr "Регулярное выражение (создано вручную)"
+
+msgid "Remove Ignore Status"
+msgstr "Убрать статус игнорирования"
+
+msgid "Remove Later Status"
+msgstr "Убрать статус \"Позже\""
+
+msgid "Remove redirect upon matching permalink"
+msgstr "Удалять перенаправление при совпадении постоянной ссылки"
+
+msgid "Removed 404 URL from %s list successfully!"
+msgstr "404 URL успешно удален из списка %s!"
+
+msgid "Removes auto created redirects if they haven't been used for the specified amount of time."
+msgstr "Удаляет автоматически созданные перенаправления, если они не использовались в течение указанного времени."
+
+msgid "Required"
+msgstr "Обязательно"
+
+msgid "Restore"
+msgstr "Восстановить"
+
+msgid "Rows per page:"
+msgstr "Строк на странице:"
+
+msgid "Run Maintenance"
+msgstr "Выполнить обслуживание"
+
+msgid "Run maintenance to delete old data (etc).&nbsp;&nbsp;It is not necessary to run this manually, as it's done automatically on a daily basis."
+msgstr "Выполнить обслуживание для удаления старых данных (и т.д.).&nbsp;&nbsp;Не обязательно запускать это вручную, так как это выполняется автоматически ежедневно."
+
+msgid "SELECTED_SUGGEST_CATS"
+msgstr "SELECTED_SUGGEST_CATS"
+
+msgid "SELECTED_SUGGEST_TAGS"
+msgstr "SELECTED_SUGGEST_TAGS"
+
+msgid "SELECTED_SUGGEST_URL"
+msgstr "SELECTED_SUGGEST_URL"
+
+msgid "SUGGEST_MAX_SUGGESTIONS"
+msgstr "SUGGEST_MAX_SUGGESTIONS"
+
+msgid "SUGGEST_MIN_SCORE"
+msgstr "SUGGEST_MIN_SCORE"
+
+msgid "SUGGEST_USER_AFTER"
+msgstr "SUGGEST_USER_AFTER"
+
+msgid "SUGGEST_USER_BEFORE"
+msgstr "SUGGEST_USER_BEFORE"
+
+msgid "SUGGEST_USER_ENTRY_AFTER"
+msgstr "SUGGEST_USER_ENTRY_AFTER"
+
+msgid "SUGGEST_USER_ENTRY_BEFORE"
+msgstr "SUGGEST_USER_ENTRY_BEFORE"
+
+msgid "SUGGEST_USER_NO_RESULTS"
+msgstr "SUGGEST_USER_NO_RESULTS"
+
+msgid "SUGGEST_USER_TITLE"
+msgstr "SUGGEST_USER_TITLE"
+
+msgid "Sanity Check"
+msgstr "Проверка работоспособности"
+
+msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
+msgstr "Пользовательские агенты поисковых систем не должны быть здесь, чтобы они перенаправлялись при изменении структуры слагов."
+
+msgid "Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "Поскольку используется группа захвата, вы можете использовать замену $1 в строке назначения внешнего URL."
+
+msgid "So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
+msgstr "Пожалуйста, будьте осторожны и протестируйте их в другом месте, прежде чем пробовать здесь. Если вы не знаете, что делаете, пожалуйста, не используйте эту опцию (так как она не обязательна для работы плагина)."
+
+msgid "Some options were not saved successfully."
+msgstr "Некоторые настройки не были сохранены успешно."
+
+msgid "Special"
+msgstr "Специальные"
+
+msgid "Stats"
+msgstr "Статистика"
+
+msgid "Status"
+msgstr "Статус"
+
+msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
+msgstr "Поддерживаемые форматы: <B>from_url,status,type,to_url,wp_type</B>"
+
+msgid "TEXT_BEFORE_LINKS"
+msgstr "TEXT_BEFORE_LINKS"
+
+msgid "TEXT_CURRENT_PAGE"
+msgstr "TEXT_CURRENT_PAGE"
+
+msgid "TEXT_SHOW_ROWS"
+msgstr "TEXT_SHOW_ROWS"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
+msgstr "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_EMPTY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMPTY"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_EMTPY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMTPY"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_PAGE"
+msgstr "TOOLTIP_POPUP_EXPLANATION_PAGE"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_URL"
+msgstr "TOOLTIP_POPUP_EXPLANATION_URL"
+
+msgid "Tag"
+msgstr "Метка"
+
+msgid "Tag:"
+msgstr "Метка:"
+
+msgid "Tags"
+msgstr "Метки"
+
+msgid "Template Redirect Priority"
+msgstr "Приоритет перенаправления шаблона"
+
+msgid "Temporary 302"
+msgstr "Временное 302"
+
+msgid "The \"product\" type is for WooCommerce users."
+msgstr "Тип \"product\" предназначен для пользователей WooCommerce."
+
+msgid "The 404 Solution menu should appear"
+msgstr "Меню 404 Solution должно появляться"
+
+msgid "The file seems to have loaded okay. Please check the redirects page."
+msgstr "Файл, похоже, загрузился нормально. Пожалуйста, проверьте страницу перенаправлений."
+
+msgid "The plugin will only redirect the post types specified here."
+msgstr "Плагин будет перенаправлять только типы записей, указанные здесь."
+
+msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
+msgstr "Плагин будет перенаправлять на обычные таксономии (категории и метки) и те, что перечислены здесь."
+
+msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
+msgstr "Предложенная страница должна \"набрать\" как минимум такую оценку, чтобы быть показанной в качестве предложения (мин: 10, макс: 90, по умолчанию: 25)"
+
+msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
+msgstr "Указанная пользователем страница 404 не найдена. Пожалуйста, обновите указанную пользователем страницу 404 на странице настроек."
+
+msgid "This cannot be undone. All redirects for URLs that do not already exist will be imported."
+msgstr "Это действие нельзя отменить. Будут импортированы все перенаправления для URL, которые еще не существуют."
+
+msgid "This creates the list. For example, use &lt;ol style=\"list-style-type: none;\"&gt; to hide the numbers in the list. (defaults: &lt;ol&gt; / &lt;/ol&gt;)"
+msgstr "Это создает список. Например, используйте &lt;ol style=\"list-style-type: none;\"&gt; чтобы скрыть номера в списке. (по умолчанию: &lt;ol&gt; / &lt;/ol&gt;)"
+
+msgid "This is best for internal processes that don't need to be redirected when the slug structure changes."
+msgstr "Это лучше всего подходит для внутренних процессов, которые не нужно перенаправлять при изменении структуры слагов."
+
+msgid "This is best for search engine bots that do need to be redirected when the slug structure changes."
+msgstr "Это лучше всего подходит для ботов поисковых систем, которые должны быть перенаправлены при изменении структуры слагов."
+
+msgid "This is for a domain name change."
+msgstr "Это для изменения доменного имени."
+
+msgid "This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
+msgstr "Это для случаев, когда пользователь запрашивает несуществующую страницу и не перенаправляется автоматически на соответствующую страницу."
+
+msgid "This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin."
+msgstr "Это не обязательно для работы плагина, но полезно для разработчика и будущих версий плагина."
+
+msgid "This only affects the list of potential matches shown to the user on a custom 404 page."
+msgstr "Это влияет только на список потенциальных совпадений, показываемых пользователю на пользовательской странице 404."
+
+msgid "This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported)."
+msgstr "Это раскрывает: всё в журнале отладки, адрес электронной почты администратора, установленные расширения PHP, активные плагины, версию PHP, версию WordPress, версию MySQL, общее количество опубликованных страниц и записей и т.д. (всё, что запрашивается при сообщении о проблеме)."
+
+msgid "This sets how early in the process a 404 is handled by this plugin. If there are multiple plugins that should handle a 404, then set this higher (999) so that this plugin gets the 404 last. (default 9)"
+msgstr "Это устанавливает, насколько рано в процессе 404 обрабатывается этим плагином. Если есть несколько плагинов, которые должны обрабатывать 404, установите это значение выше (999), чтобы этот плагин получал 404 последним. (по умолчанию 9)"
+
+msgid "This shortcode can be used on the 404 page and will display a list of suggested pages."
+msgstr "Этот шорткод можно использовать на странице 404, и он отобразит список предложенных страниц."
+
+msgid "This surrounds each item in the list. (defaults: &lt;li&gt; / &lt;/li&gt;)"
+msgstr "Это окружает каждый элемент в списке. (по умолчанию: &lt;li&gt; / &lt;/li&gt;)"
+
+msgid "This text will appear before the list of suggestions (default: &lt;h3&gt;Here are some other great pages&lt;/h3&gt;)"
+msgstr "Этот текст будет появляться перед списком предложений (по умолчанию: &lt;h3&gt;Вот несколько других отличных страниц&lt;/h3&gt;)"
+
+msgid "This will break your website."
+msgstr "Это сломает ваш сайт."
+
+msgid "This will not change the URL if the destination 404 page is set to (Default 404 Page) or Home Page."
+msgstr "Это не изменит URL, если целевая страница 404 установлена на (Страница 404 по умолчанию) или Главная страница."
+
+msgid "Tools"
+msgstr "Инструменты"
+
+msgid "Total Redirects"
+msgstr "Всего перенаправлений"
+
+msgid "Total URLs"
+msgstr "Всего URL"
+
+msgid "Trash"
+msgstr "Корзина"
+
+msgid "Trash Redirected URL"
+msgstr "Переместить перенаправленный URL в корзину"
+
+msgid "Trashed Redirects"
+msgstr "Перенаправления в корзине"
+
+msgid "Trashed URLs"
+msgstr "URL в корзине"
+
+msgid "Treat this URL as a regular expression"
+msgstr "Обрабатывать этот URL как регулярное выражение"
+
+msgid "Type"
+msgstr "Тип"
+
+msgid "Type a page name here and select it to add it to the exlusion list"
+msgstr "Введите название страницы здесь и выберите его, чтобы добавить в список исключений"
+
+msgid "URL"
+msgstr "URL"
+
+msgid "URL(s) deleted"
+msgstr "URL удален(ы)"
+
+msgid "URL(s) marked as Captured."
+msgstr "URL отмечен(ы) как собранный(е)."
+
+msgid "URL(s) marked as Ignored."
+msgstr "URL отмечен(ы) как игнорируемый(е)."
+
+msgid "URL(s) marked as Later."
+msgstr "URL отмечен(ы) как \"Позже\"."
+
+msgid "URL(s) moved to trash"
+msgstr "URL перемещен(ы) в корзину"
+
+msgid "URL(s) restored."
+msgstr "URL восстановлен(ы)."
+
+msgid "URLs"
+msgstr "URLs"
+
+msgid "Under the Settings menu"
+msgstr "В меню Настройки"
+
+msgid "Unique Page Not Found Referrers"
+msgstr "Уникальные источники переходов для страницы не найдена"
+
+msgid "Unique Page Not Found URLs"
+msgstr "Уникальные URL страницы не найдена"
+
+msgid "Unique Page Not Found Visitors"
+msgstr "Уникальные посетители страницы не найдена"
+
+msgid "Unique Redirected Referrers"
+msgstr "Уникальные источники перенаправленных переходов"
+
+msgid "Unique Redirected Visitors"
+msgstr "Уникальные перенаправленные посетители"
+
+msgid "Unique URLs Redirected"
+msgstr "Уникальные перенаправленные URL"
+
+msgid "Unknown"
+msgstr "Неизвестно"
+
+msgid "Update Redirect"
+msgstr "Обновить перенаправление"
+
+msgid "Update the URL bar"
+msgstr "Обновить адресную строку"
+
+msgid "Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
+msgstr "Используйте одну строку на каждый пользовательский агент. Если текст найден где-либо в строке пользовательского агента, он применяется."
+
+msgid "User"
+msgstr "Пользователь"
+
+msgid "User names listed here will be able to do everything an admin can do with the plugin."
+msgstr "Пользователи, перечисленные здесь, смогут делать всё, что может делать администратор с плагином."
+
+msgid "Using the purge options will move all selected redirects to the trash. You must then empty the trash to delete them."
+msgstr "Использование параметров очистки переместит все выбранные перенаправления в корзину. Затем необходимо очистить корзину, чтобы удалить их."
+
+msgid "View logs for"
+msgstr "Просмотреть журналы для"
+
+msgid "Visit"
+msgstr "Перейти"
+
+msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
+msgstr "ВНИМАНИЕ: При неправильном использовании это СЛОМАЕТ ваш сайт. Используйте на свой страх и риск. Пожалуйста, ради всего святого, оставьте это поле пустым, если не знаете, что делаете."
+
+msgid "When an error is detected by the plugin, email the entire log file to the developer."
+msgstr "Когда плагин обнаруживает ошибку, отправлять весь файл журнала разработчику по электронной почте."
+
+msgid "When checked the URL will be changed from the custom 404 page URL to the URL originally requested (after the page headers load)."
+msgstr "Если отмечено, URL будет изменен с URL пользовательской страницы 404 на изначально запрошенный URL (после загрузки заголовков страницы)."
+
+msgid "When checked, the text is treated as a regular expression."
+msgstr "Если отмечено, текст обрабатывается как регулярное выражение."
+
+msgid "When selected, ALL REQUESTS (even for pages that exist, even for non-404s) will be treated like a 404."
+msgstr "При выборе ВСЕ ЗАПРОСЫ (даже для существующих страниц, даже для не-404) будут обрабатываться как 404."
+
+msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here."
+msgstr "Когда количество собранных 404 вызовет уведомление администратора, письмо будет отправлено на адреса, указанные здесь."
+
+msgid "You can see which are recognized by looking at the default 404 destination option."
+msgstr "Вы можете увидеть, какие распознаются, посмотрев на опцию назначения 404 по умолчанию."
+
+msgid "You can see which post types are recognized by looking at the default 404 destination option, which has a list of pages, posts, products, etc."
+msgstr "Вы можете увидеть, какие типы записей распознаются, посмотрев на опцию назначения 404 по умолчанию, в которой есть список страниц, записей, продуктов и т.д."
+
+msgid "add-exclude-page-data-url"
+msgstr "add-exclude-page-data-url"
+
+msgid "addManualRedirectAction"
+msgstr "addManualRedirectAction"
+
+msgid "ajaxTrashLink"
+msgstr "ajaxTrashLink"
+
+msgid "and <B>from_url,to_url</B>"
+msgstr "и <B>from_url,to_url</B>"
+
+msgid "and redirect to the specified page."
+msgstr "и перенаправить на указанную страницу."
+
+msgid "bulkOptions"
+msgstr "bulkOptions"
+
+msgid "data-pagination-ajax-url"
+msgstr "data-pagination-ajax-url"
+
+msgid "data-url"
+msgstr "data-url"
+
+msgid "days (0 means immediately, default 30)"
+msgstr "дней (0 означает немедленно, по умолчанию 30)"
+
+msgid "deletePermanentlyHTML"
+msgstr "deletePermanentlyHTML"
+
+msgid "destination-does-not-exist"
+msgstr "destination-does-not-exist"
+
+msgid "destination-exists"
+msgstr "destination-exists"
+
+msgid "disallow-redirect-all-requests"
+msgstr "disallow-redirect-all-requests"
+
+msgid "earliestLogDate"
+msgstr "earliestLogDate"
+
+msgid "editLink"
+msgstr "editLink"
+
+msgid "editlinkHTML"
+msgstr "editlinkHTML"
+
+msgid "filterText"
+msgstr "filterText"
+
+msgid "is maintained by"
+msgstr "поддерживается"
+
+msgid "loaded-excluded-pages"
+msgstr "loaded-excluded-pages"
+
+msgid "logCurrentRowCount"
+msgstr "logCurrentRowCount"
+
+msgid "logCurrentSizeDiskUsage"
+msgstr "logCurrentSizeDiskUsage"
+
+msgid "logslinkHTML"
+msgstr "logslinkHTML"
+
+msgid "of"
+msgstr "из"
+
+msgid "pageIDAndType"
+msgstr "pageIDAndType"
+
+msgid "postedURL"
+msgstr "postedURL"
+
+msgid "redirectPageTitle"
+msgstr "redirectPageTitle"
+
+msgid "rowActions"
+msgstr "rowActions"
+
+msgid "rowClass"
+msgstr "rowClass"
+
+msgid "rowCode"
+msgstr "rowCode"
+
+msgid "rowURL"
+msgstr "rowURL"
+
+msgid "selecteSsettingsLevel"
+msgstr "selecteSsettingsLevel"
+
+msgid "selectedAutoCats"
+msgstr "selectedAutoCats"
+
+msgid "selectedAutoRedirects"
+msgstr "selectedAutoRedirects"
+
+msgid "selectedAutoTags"
+msgstr "selectedAutoTags"
+
+msgid "selectedCapture404"
+msgstr "selectedCapture404"
+
+msgid "selectedDefaultRedirect301"
+msgstr "selectedDefaultRedirect301"
+
+msgid "selectedDefaultRedirect302"
+msgstr "selectedDefaultRedirect302"
+
+msgid "selectedRemoveMatches"
+msgstr "selectedRemoveMatches"
+
+msgid "selectedSendErrorLogs"
+msgstr "selectedSendErrorLogs"
+
+msgid "selectedThemeCalm"
+msgstr "selectedThemeCalm"
+
+msgid "selectedThemeMono"
+msgstr "selectedThemeMono"
+
+msgid "selectedThemeNeon"
+msgstr "selectedThemeNeon"
+
+msgid "selectedThemeObsidian"
+msgstr "selectedThemeObsidian"
+
+msgid "selectedUnderSettings"
+msgstr "selectedUnderSettings"
+
+msgid "showSearchFilter"
+msgstr "showSearchFilter"
+
+msgid "statusTitle"
+msgstr "statusTitle"
+
+msgid "toolsExportRedirectsLink"
+msgstr "toolsExportRedirectsLink"
+
+msgid "toolsImportFormActionLink"
+msgstr "toolsImportFormActionLink"
+
+msgid "toolsImportRedirectsLink"
+msgstr "toolsImportRedirectsLink"
+
+msgid "toolsMaintenanceFormActionLink"
+msgstr "toolsMaintenanceFormActionLink"
+
+msgid "toolsPurgeFormActionLink"
+msgstr "toolsPurgeFormActionLink"
+
+msgid "urlPlaceholder"
+msgstr "urlPlaceholder"
+
+msgid "will match any URL that begins with"
+msgstr "совпадет с любым URL, который начинается с"
+
+#. Plural form with HTML
+#: includes/View.php
+msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
+msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
+msgstr[0] "Имеется <a>%s собранный 404 URL</a>, который необходимо обработать."
+msgstr[1] "Имеется <a>%s собранных 404 URL</a>, которые необходимо обработать."
+msgstr[2] "Имеется <a>%s собранных 404 URL</a>, которые необходимо обработать."
+
+#. Plural form with %s
+#: includes/DataAccess.php
+msgid "%s redirect entry was moved to the trash."
+msgid_plural "%s redirect entries were moved to the trash."
+msgstr[0] "%s запись перенаправления была перемещена в корзину."
+msgstr[1] "%s записи перенаправления были перемещены в корзину."
+msgstr[2] "%s записей перенаправления были перемещены в корзину."

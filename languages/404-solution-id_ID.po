@@ -9,610 +9,610 @@ msgstr ""
 "POT-Creation-Date: 2025-11-11 07:26+0000\n"
 "PO-Revision-Date: 2025-11-11 07:26+0000\n"
 "Last-Translator: Auto-Generated\n"
-"Language-Team: French\n"
-"Language: fr_FR\n"
+"Language-Team: Indonesian\n"
+"Language: id_ID\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: 404 Solution Translation Generator v2\n"
 "X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
 msgid "%1$s - %2$s of %3$s"
-msgstr "%1$s - %2$s de %3$s"
+msgstr "%1$s - %2$s dari %3$s"
 
 msgid "(A custom string has been entered.)"
-msgstr "(Une chaîne personnalisée a été saisie.)"
+msgstr "(String kustom telah dimasukkan.)"
 
 msgid "(A page has been selected.)"
-msgstr "(Une page a été sélectionnée.)"
+msgstr "(Sebuah halaman telah dipilih.)"
 
 msgid "(All results displayed for \"%s.\")"
-msgstr "(Tous les résultats affichés pour \"%s.\")"
+msgstr "(Semua hasil ditampilkan untuk \"%s.\")"
 
 msgid "(All results displayed.)"
-msgstr "(Tous les résultats affichés.)"
+msgstr "(Semua hasil ditampilkan.)"
 
 msgid "(An external URL will be used.)"
-msgstr "(Une URL externe sera utilisée.)"
+msgstr "(URL eksternal akan digunakan.)"
 
 msgid "(Begin typing a URL)"
-msgstr "(Commencez à taper une URL)"
+msgstr "(Mulai ketik URL)"
 
 msgid "(Data truncated. Too many results for \"%s!\".)"
-msgstr "(Données tronquées. Trop de résultats pour \"%s!\".)"
+msgstr "(Data dipotong. Terlalu banyak hasil untuk \"%s!\".)"
 
 msgid "(Data truncated. Too many results!)"
-msgstr "(Données tronquées. Trop de résultats !)"
+msgstr "(Data dipotong. Terlalu banyak hasil!)"
 
 msgid "(Default 404 Page)"
-msgstr "(Page 404 par défaut)"
+msgstr "(Halaman 404 Default)"
 
 msgid "(Explain)"
-msgstr "(Expliquer)"
+msgstr "(Penjelasan)"
 
 msgid "(Hide Info)"
-msgstr "(Masquer les informations)"
+msgstr "(Sembunyikan Info)"
 
 msgid "(Home Page)"
-msgstr "(Page d'accueil)"
+msgstr "(Halaman Beranda)"
 
 msgid "(No matching results found for \"%s.\")"
-msgstr "(Aucun résultat correspondant trouvé pour \"%s.\")"
+msgstr "(Tidak ada hasil yang cocok untuk \"%s.\")"
 
 msgid "(No matching results found.)"
-msgstr "(Aucun résultat correspondant trouvé.)"
+msgstr "(Tidak ada hasil yang cocok.)"
 
 msgid "(Please choose from the dropdown list instead of typing your own URL.)"
-msgstr "(Veuillez choisir dans la liste déroulante au lieu de taper votre propre URL.)"
+msgstr "(Silakan pilih dari daftar dropdown daripada mengetik URL Anda sendiri.)"
 
 msgid "(Required)"
-msgstr "(Requis)"
+msgstr "(Wajib)"
 
 msgid "(Show All Logs)"
-msgstr "(Afficher tous les journaux)"
+msgstr "(Tampilkan Semua Log)"
 
 msgid "(Special)"
-msgstr "(Spécial)"
+msgstr "(Khusus)"
 
 msgid "(The log file does not exist.)"
-msgstr "(Le fichier journal n'existe pas.)"
+msgstr "(File log tidak ada.)"
 
 msgid "(The specified page doesn't exist. Please update this setting.)"
-msgstr "(La page spécifiée n'existe pas. Veuillez mettre à jour ce paramètre.)"
+msgstr "(Halaman yang ditentukan tidak ada. Silakan perbarui pengaturan ini.)"
 
 msgid "(Type a page name or an external URL)"
-msgstr "(Tapez un nom de page ou une URL externe)"
+msgstr "(Ketik nama halaman atau URL eksternal)"
 
 msgid "(Type a page name)"
-msgstr "(Tapez un nom de page)"
+msgstr "(Ketik nama halaman)"
 
 msgid "(Type to filter)"
-msgstr "(Taper pour filtrer)"
+msgstr "(Ketik untuk memfilter)"
 
 msgid "(don't suggest .jpg files)"
-msgstr "(ne pas suggérer les fichiers .jpg)"
+msgstr "(jangan sarankan file .jpg)"
 
 msgid "(don't suggest .pdf files)"
-msgstr "(ne pas suggérer les fichiers .pdf)"
+msgstr "(jangan sarankan file .pdf)"
 
 msgid "(don't suggest pages within any directory named /private/)"
-msgstr "(ne pas suggérer les pages dans un répertoire nommé /private/)"
+msgstr "(jangan sarankan halaman dalam direktori bernama /private/)"
 
 msgid "(don't suggest pages within the /members/ directory)"
-msgstr "(ne pas suggérer les pages dans le répertoire /members/)"
+msgstr "(jangan sarankan halaman dalam direktori /members/)"
 
 msgid "(don't suggest the specific page with slug 'old-contact-page')"
-msgstr "(ne pas suggérer la page spécifique avec le slug 'old-contact-page')"
+msgstr "(jangan sarankan halaman dengan slug 'old-contact-page')"
 
 msgid "(ignore all .jpg files)"
-msgstr "(ignorer tous les fichiers .jpg)"
+msgstr "(abaikan semua file .jpg)"
 
 msgid "(ignore all .js files)"
-msgstr "(ignorer tous les fichiers .js)"
+msgstr "(abaikan semua file .js)"
 
 msgid "(ignore all .php files)"
-msgstr "(ignorer tous les fichiers .php)"
+msgstr "(abaikan semua file .php)"
 
 msgid "(ignore everything in the cache directory)"
-msgstr "(ignorer tout dans le répertoire cache)"
+msgstr "(abaikan semua yang ada di direktori cache)"
 
 msgid "(ignore everything in this directory)"
-msgstr "(ignorer tout dans ce répertoire)"
+msgstr "(abaikan semua yang ada di direktori ini)"
 
 msgid "(unless a redirect to the page already exists)."
-msgstr "(sauf si une redirection vers la page existe déjà)."
+msgstr "(kecuali redirect ke halaman tersebut sudah ada)."
 
 msgid "* 404s are still redirected when possible."
-msgstr "* Les 404 sont toujours redirigées lorsque c'est possible."
+msgstr "* 404 tetap di-redirect jika memungkinkan."
 
 msgid "* Do not capture 404 URLs."
-msgstr "* Ne pas capturer les URLs 404."
+msgstr "* Jangan tangkap URL 404."
 
 msgid "* Do not redirect 404s for the patterns listed here."
-msgstr "* Ne pas rediriger les 404 pour les motifs listés ici."
+msgstr "* Jangan redirect 404 untuk pola yang tercantum di sini."
 
 msgid "* Do not redirect 404s from the user agents listed here."
-msgstr "* Ne pas rediriger les 404 depuis les agents utilisateurs listés ici."
+msgstr "* Jangan redirect 404 dari user agent yang tercantum di sini."
 
 msgid "* If the string appears anywhere within the user agent string then it's a match."
-msgstr "* Si la chaîne apparaît n'importe où dans la chaîne agent utilisateur, alors c'est une correspondance."
+msgstr "* Jika string muncul di mana saja dalam string user agent maka itu cocok."
 
 msgid "* One pattern per line."
-msgstr "* Un motif par ligne."
+msgstr "* Satu pola per baris."
 
 msgid "* One string per line."
-msgstr "* Une chaîne par ligne."
+msgstr "* Satu string per baris."
 
 msgid "* One type per line."
-msgstr "* Un type par ligne."
+msgstr "* Satu tipe per baris."
 
 msgid "* Strings are case insensitive."
-msgstr "* Les chaînes ne sont pas sensibles à la casse."
+msgstr "* String tidak peka huruf besar/kecil."
 
 msgid "* Strings are case sensitive."
-msgstr "* Les chaînes sont sensibles à la casse."
+msgstr "* String peka huruf besar/kecil."
 
 msgid "* These patterns match the path of a URL, not a title.\""
-msgstr "* Ces motifs correspondent au chemin d'une URL, pas à un titre.\""
+msgstr "* Pola ini cocok dengan path URL, bukan judul.\""
 
 msgid "* Use an asterisk (*) to match \"any pattern.\""
-msgstr "* Utilisez un astérisque (*) pour correspondre à \"n'importe quel motif.\""
+msgstr "* Gunakan tanda bintang (*) untuk mencocokkan \"pola apa pun.\""
 
 msgid "404 Page Suggestions"
-msgstr "Suggestions de page 404"
+msgstr "Saran Halaman 404"
 
 msgid "404 URL marked as %s successfully!"
-msgstr "URL 404 marquée comme %s avec succès !"
+msgstr "URL 404 berhasil ditandai sebagai %s!"
 
 msgid "<a>View</a> the debug file."
-msgstr "<a>Voir</a> le fichier de débogage."
+msgstr "<a>Lihat</a> file debug."
 
 msgid "Action Taken"
-msgstr "Action effectuée"
+msgstr "Tindakan yang Diambil"
 
 msgid "Add Redirect"
-msgstr "Ajouter une redirection"
+msgstr "Tambah Redirect"
 
 msgid "Add a Manual Redirect"
-msgstr "Ajouter une redirection manuelle"
+msgstr "Tambah Redirect Manual"
 
 msgid "Add a Redirect"
-msgstr "Ajouter une redirection"
+msgstr "Tambah Redirect"
 
 msgid "Admin notification email(s)"
-msgstr "E-mail(s) de notification administrateur"
+msgstr "Email notifikasi admin"
 
 msgid "Admin notification level"
-msgstr "Niveau de notification admin"
+msgstr "Level notifikasi admin"
 
 msgid "Admin theme"
-msgstr "Thème d'administration"
+msgstr "Tema admin"
 
 msgid "Advanced Settings (Etc)"
-msgstr "Paramètres avancés (etc.)"
+msgstr "Pengaturan Lanjutan (Dll)"
 
 msgid "All"
-msgstr "Tous"
+msgstr "Semua"
 
 msgid "All other redirects must be deleted and only one regex redirect for all URLs must be created for this to work."
-msgstr "Toutes les autres redirections doivent être supprimées et une seule redirection regex pour toutes les URLs doit être créée pour que cela fonctionne."
+msgstr "Semua redirect lainnya harus dihapus dan hanya satu redirect regex untuk semua URL yang harus dibuat agar ini berfungsi."
 
 msgid "All trashed URLs have been deleted!"
-msgstr "Toutes les URLs dans la corbeille ont été supprimées !"
+msgstr "Semua URL yang ada di tempat sampah telah dihapus!"
 
 msgid "Allow category suggestions"
-msgstr "Autoriser les suggestions de catégories"
+msgstr "Izinkan saran kategori"
 
 msgid "Allow tag suggestions"
-msgstr "Autoriser les suggestions d'étiquettes"
+msgstr "Izinkan saran tag"
 
 msgid "An unknown error has occurred."
-msgstr "Une erreur inconnue s'est produite."
+msgstr "Terjadi kesalahan yang tidak diketahui."
 
 msgid "Apply"
-msgstr "Appliquer"
+msgstr "Terapkan"
 
 msgid "At the same level as the Settings and Tools menu"
-msgstr "Au même niveau que le menu Paramètres et Outils"
+msgstr "Pada level yang sama dengan menu Pengaturan dan Alat"
 
 msgid "Auto"
-msgstr "Auto"
+msgstr "Otomatis"
 
 msgid "Auto redirect deletion"
-msgstr "Suppression automatique des redirections"
+msgstr "Penghapusan redirect otomatis"
 
 msgid "Automatic 301 Redirects"
-msgstr "Redirections 301 automatiques"
+msgstr "Redirect 301 Otomatis"
 
 msgid "Automatic 302 Redirects"
-msgstr "Redirections 302 automatiques"
+msgstr "Redirect 302 Otomatis"
 
 msgid "Automatic Redirects"
-msgstr "Redirections automatiques"
+msgstr "Redirect Otomatis"
 
 msgid "Automatically created"
-msgstr "Créé automatiquement"
+msgstr "Dibuat secara otomatis"
 
 msgid "Automatically creates redirects based on best possible suggested page."
-msgstr "Crée automatiquement des redirections basées sur la meilleure page suggérée possible."
+msgstr "Secara otomatis membuat redirect berdasarkan halaman yang disarankan terbaik."
 
 msgid "Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time."
-msgstr "Supprime automatiquement les URLs 404 capturées si elles n'ont pas été utilisées pendant la durée spécifiée."
+msgstr "Secara otomatis menghapus URL 404 yang telah ditangkap jika belum digunakan selama waktu yang ditentukan."
 
 msgid "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
-msgstr "Supprime automatiquement les redirections de pages créées manuellement si elles n'ont pas été utilisées pendant la durée spécifiée."
+msgstr "Secara otomatis menghapus redirect halaman yang dibuat secara manual jika belum digunakan selama waktu yang ditentukan."
 
 msgid "Calm Ops (Light)"
-msgstr "Calm Ops (Clair)"
+msgstr "Calm Ops (Terang)"
 
 msgid "Captured 404 URLs"
-msgstr "URLs 404 capturées"
+msgstr "URL 404 yang Ditangkap"
 
 msgid "Captured URLs"
-msgstr "URLs capturées"
+msgstr "URL yang Ditangkap"
 
 msgid "Captured URLs (0 Disables Notification)"
-msgstr "URLs capturées (0 désactive la notification)"
+msgstr "URL yang Ditangkap (0 Menonaktifkan Notifikasi)"
 
 msgid "Categories"
-msgstr "Catégories"
+msgstr "Kategori"
 
 msgid "Category"
-msgstr "Catégorie"
+msgstr "Kategori"
 
 msgid "Category:"
-msgstr "Catégorie :"
+msgstr "Kategori:"
 
 msgid "Changes may not be updated immediately when ordering by this column"
-msgstr "Les modifications peuvent ne pas être mises à jour immédiatement lors du tri par cette colonne"
+msgstr "Perubahan mungkin tidak diperbarui secara langsung saat mengurutkan berdasarkan kolom ini"
 
 msgid "Checks each redirect for a new matching permalink before the user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted."
-msgstr "Vérifie chaque redirection pour un nouveau permalien correspondant avant que l'utilisateur ne soit redirigé. Si un nouveau permalien de page est trouvé correspondant à l'URL redirigée, alors la redirection sera supprimée."
+msgstr "Memeriksa setiap redirect untuk permalink yang cocok sebelum pengguna di-redirect. Jika permalink halaman baru ditemukan yang cocok dengan URL redirect maka redirect akan dihapus."
 
 msgid "Choose at least one URL"
-msgstr "Choisissez au moins une URL"
+msgstr "Pilih setidaknya satu URL"
 
 msgid "Choose whether the 404 Settings link appears under the \"Settings\" menu or elsewhere."
-msgstr "Choisissez si le lien Paramètres 404 apparaît sous le menu \"Paramètres\" ou ailleurs."
+msgstr "Pilih apakah link Pengaturan 404 muncul di bawah menu \"Pengaturan\" atau di tempat lain."
 
 msgid "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
-msgstr "Choisissez le thème de couleur pour les pages d'administration. Le thème change immédiatement pour l'aperçu et sera enregistré lorsque vous cliquez sur \"Enregistrer les paramètres\"."
+msgstr "Pilih tema warna untuk halaman admin. Tema berubah langsung untuk pratinjau, dan akan disimpan saat Anda mengklik \"Simpan Pengaturan\"."
 
 msgid "Cleanup is done daily."
-msgstr "Le nettoyage est effectué quotidiennement."
+msgstr "Pembersihan dilakukan setiap hari."
 
 msgid "Click to view debug data for all suggestions"
-msgstr "Cliquer pour voir les données de débogage de toutes les suggestions"
+msgstr "Klik untuk melihat data debug untuk semua saran"
 
 msgid "Collect incoming 404 URLs"
-msgstr "Collecter les URLs 404 entrantes"
+msgstr "Kumpulkan URL 404 yang masuk"
 
 msgid "Collected 404 URL deletion"
-msgstr "Suppression des URLs 404 collectées"
+msgstr "Penghapusan URL 404 yang terkumpul"
 
 msgid "Create a CSV file with the redirects and captured 404s."
-msgstr "Créer un fichier CSV avec les redirections et les 404 capturées."
+msgstr "Buat file CSV dengan redirect dan 404 yang ditangkap."
 
 msgid "Create and Download"
-msgstr "Créer et télécharger"
+msgstr "Buat dan Unduh"
 
 msgid "Create automatic redirects"
-msgstr "Créer des redirections automatiques"
+msgstr "Buat redirect otomatis"
 
 msgid "Create automatic redirects for categories"
-msgstr "Créer des redirections automatiques pour les catégories"
+msgstr "Buat redirect otomatis untuk kategori"
 
 msgid "Create automatic redirects for tags"
-msgstr "Créer des redirections automatiques pour les étiquettes"
+msgstr "Buat redirect otomatis untuk tag"
 
 msgid "Created"
-msgstr "Créé"
+msgstr "Dibuat"
 
 msgid "Credits"
-msgstr "Crédits"
+msgstr "Kredit"
 
 msgid "Current approximate log disk usage"
-msgstr "Utilisation disque approximative actuelle des journaux"
+msgstr "Penggunaan disk log saat ini (perkiraan)"
 
 msgid "Custom"
-msgstr "Personnalisé"
+msgstr "Kustom"
 
 msgid "Custom Taxonomies"
-msgstr "Taxonomies personnalisées"
+msgstr "Taksonomi Kustom"
 
 msgid "DATABASE_VERSION"
 msgstr "DATABASE_VERSION"
 
 msgid "DB version"
-msgstr "Version BD"
+msgstr "Versi DB"
 
 msgid "Date"
-msgstr "Date"
+msgstr "Tanggal"
 
 msgid "Days (0 Disables Auto Delete)"
-msgstr "Jours (0 désactive la suppression automatique)"
+msgstr "Hari (0 Menonaktifkan Penghapusan Otomatis)"
 
 msgid "Debug Log"
-msgstr "Journal de débogage"
+msgstr "Log Debug"
 
 msgid "Debug file not found. (%s)"
-msgstr "Fichier de débogage non trouvé. (%s)"
+msgstr "File debug tidak ditemukan. (%s)"
 
 msgid "Debug file size: %1$s KB (%2$s MB)."
-msgstr "Taille du fichier de débogage : %1$s Ko (%2$s Mo)."
+msgstr "Ukuran file debug: %1$s KB (%2$s MB)."
 
 msgid "Debug file size: %s KB."
-msgstr "Taille du fichier de débogage : %s Ko."
+msgstr "Ukuran file debug: %s KB."
 
 msgid "Debug file(s) deleted. (%s)"
-msgstr "Fichier(s) de débogage supprimé(s). (%s)"
+msgstr "File debug dihapus. (%s)"
 
 msgid "Debug logging"
-msgstr "Journalisation de débogage"
+msgstr "Pencatatan debug"
 
 msgid "Default WordPress post types are \"post\" and \"page.\""
-msgstr "Les types de contenu WordPress par défaut sont \"post\" et \"page.\""
+msgstr "Tipe post WordPress default adalah \"post\" dan \"page.\""
 
 msgid "Default redirect type"
-msgstr "Type de redirection par défaut"
+msgstr "Tipe redirect default"
 
 msgid "Delete the Debug File"
-msgstr "Supprimer le fichier de débogage"
+msgstr "Hapus File Debug"
 
 msgid "Destination"
-msgstr "Destination"
+msgstr "Tujuan"
 
 msgid "Display Before/After each suggested page"
-msgstr "Afficher Avant/Après chaque page suggérée"
+msgstr "Tampilkan Sebelum/Sesudah setiap halaman yang disarankan"
 
 msgid "Display Before/After page suggestions"
-msgstr "Afficher Avant/Après les suggestions de pages"
+msgstr "Tampilkan Sebelum/Sesudah saran halaman"
 
 msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
-msgstr "Afficher une notification WordPress admin lorsque le nombre d'URLs capturées dépasse ce nombre"
+msgstr "Tampilkan notifikasi admin WordPress saat jumlah URL yang ditangkap melebihi angka ini"
 
 msgid "Display if no suggestion results"
-msgstr "Afficher s'il n'y a aucun résultat de suggestion"
+msgstr "Tampilkan jika tidak ada hasil saran"
 
 msgid "Display the closest matching pages by using the shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
-msgstr "Afficher les pages les plus proches correspondantes en utilisant le shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
+msgstr "Tampilkan halaman yang paling cocok dengan menggunakan shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
 
 msgid "Displayed 404 Page"
-msgstr "Page 404 affichée"
+msgstr "Halaman 404 yang Ditampilkan"
 
 msgid "Earliest log date"
-msgstr "Date du journal la plus ancienne"
+msgstr "Tanggal log tertua"
 
 msgid "Edit Redirect"
-msgstr "Modifier la redirection"
+msgstr "Edit Redirect"
 
 msgid "Edit Redirect Details"
-msgstr "Modifier les détails de redirection"
+msgstr "Edit Detail Redirect"
 
 msgid "Empty Trash"
-msgstr "Vider la corbeille"
+msgstr "Kosongkan Tempat Sampah"
 
 msgid "Error: An invalid purge type was selected. Exiting."
-msgstr "Erreur : Type de purge invalide sélectionné. Sortie."
+msgstr "Kesalahan: Tipe pembersihan tidak valid dipilih. Keluar."
 
 msgid "Error: Auto match score value must be a number between 0 and 99"
-msgstr "Erreur : Le score de correspondance auto doit être entre 0 et 99"
+msgstr "Kesalahan: Nilai skor pencocokan otomatis harus berupa angka antara 0 dan 99"
 
 msgid "Error: Bad %s operation specified."
-msgstr "Erreur : Opération %s incorrecte spécifiée."
+msgstr "Kesalahan: Operasi %s tidak valid ditentukan."
 
 msgid "Error: Bad data passed for update redirect request."
-msgstr "Erreur : Données incorrectes pour la mise à jour de la redirection."
+msgstr "Kesalahan: Data tidak valid diteruskan untuk permintaan pembaruan redirect."
 
 msgid "Error: Bad trash operation specified."
-msgstr "Erreur : Opération de corbeille incorrecte spécifiée."
+msgstr "Kesalahan: Operasi tempat sampah tidak valid ditentukan."
 
 msgid "Error: Data not formatted properly."
-msgstr "Erreur : Données mal formatées."
+msgstr "Kesalahan: Data tidak diformat dengan benar."
 
 msgid "Error: External URL doesn't contain ://"
-msgstr "Erreur : L'URL externe ne contient pas ://"
+msgstr "Kesalahan: URL eksternal tidak mengandung ://"
 
 msgid "Error: External URL is too short."
-msgstr "Erreur : L'URL externe est trop courte."
+msgstr "Kesalahan: URL eksternal terlalu pendek."
 
 msgid "Error: Invalid theme selected"
-msgstr "Erreur : Thème invalide sélectionné"
+msgstr "Kesalahan: Tema tidak valid dipilih"
 
 msgid "Error: Invalid value specified for default redirect type"
-msgstr "Erreur : Valeur invalide spécifiée pour le type de redirection par défaut"
+msgstr "Kesalahan: Nilai tidak valid ditentukan untuk tipe redirect default"
 
 msgid "Error: Maximum number of suggest value must be a number greater than or equal to 1"
-msgstr "Erreur : Le nombre maximum de suggestions doit être ≥ 1"
+msgstr "Kesalahan: Nilai jumlah maksimum saran harus berupa angka lebih besar atau sama dengan 1"
 
 msgid "Error: No ID(s) found for edit request."
-msgstr "Erreur : Aucun ID trouvé pour la modification."
+msgstr "Kesalahan: Tidak ada ID yang ditemukan untuk permintaan edit."
 
 msgid "Error: No ID(s) specified for bulk action. (%s)"
-msgstr "Erreur : Aucun ID spécifié pour l'action groupée. (%s)"
+msgstr "Kesalahan: Tidak ada ID yang ditentukan untuk tindakan massal. (%s)"
 
 msgid "Error: No records were imported. SQL result: %s"
-msgstr "Erreur : Aucun enregistrement importé. Résultat SQL : %s"
+msgstr "Kesalahan: Tidak ada catatan yang diimpor. Hasil SQL: %s"
 
 msgid "Error: No redirect types were selected. No purges will be done."
-msgstr "Erreur : Aucun type de redirection sélectionné. Aucune purge."
+msgstr "Kesalahan: Tidak ada tipe redirect yang dipilih. Tidak ada pembersihan yang akan dilakukan."
 
 msgid "Error: No valid redirect types were selected. Exiting."
-msgstr "Erreur : Aucun type de redirection valide sélectionné. Sortie."
+msgstr "Kesalahan: Tidak ada tipe redirect yang valid dipilih. Keluar."
 
 msgid "Error: Suggestion minimum score value must be a number between 1 and 99"
-msgstr "Erreur : Le score minimum de suggestion doit être entre 1 et 99"
+msgstr "Kesalahan: Nilai skor minimum saran harus berupa angka antara 1 dan 99"
 
 msgid "Error: Template redirect priority value must be a number between 0 and 999"
-msgstr "Erreur : La priorité de redirection de modèle doit être entre 0 et 999"
+msgstr "Kesalahan: Nilai prioritas redirect template harus berupa angka antara 0 dan 999"
 
 msgid "Error: URL is a required field."
-msgstr "Erreur : L'URL est un champ obligatoire."
+msgstr "Kesalahan: URL adalah field yang wajib diisi."
 
 msgid "Error: URL must start with /"
-msgstr "Erreur : L'URL doit commencer par /"
+msgstr "Kesalahan: URL harus dimulai dengan /"
 
 msgid "Error: Unable to move redirect from trash."
-msgstr "Erreur : impossible de restaurer la redirection de la corbeille."
+msgstr "Kesalahan: Tidak dapat memindahkan redirect dari tempat sampah."
 
 msgid "Error: Unable to move redirect to trash."
-msgstr "Erreur : impossible de déplacer la redirection dans la corbeille."
+msgstr "Kesalahan: Tidak dapat memindahkan redirect ke tempat sampah."
 
 msgid "Error: Unable to update redirect data."
-msgstr "Erreur : impossible de mettre à jour les données de redirection."
+msgstr "Kesalahan: Tidak dapat memperbarui data redirect."
 
 msgid "Error: Unknown Database Error!"
-msgstr "Erreur : Erreur de base de données inconnue !"
+msgstr "Kesalahan: Kesalahan Database Tidak Diketahui!"
 
 msgid "Error: Unrecognized bulk action. (%s)"
-msgstr "Erreur : Action groupée non reconnue. (%s)"
+msgstr "Kesalahan: Tindakan massal tidak dikenali. (%s)"
 
 msgid "Error: You didn't check the I understand checkbox. No importing for you!"
-msgstr "Erreur : Vous n'avez pas coché Je comprends. Pas d'importation !"
+msgstr "Kesalahan: Anda tidak mencentang kotak \"Saya mengerti\". Tidak ada impor untuk Anda!"
 
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
-msgstr "Erreur : Vous n'avez pas coché Je comprends. Pas de purge !"
+msgstr "Kesalahan: Anda tidak mencentang kotak \"Saya mengerti\". Tidak ada pembersihan catatan untuk Anda!"
 
 msgid "Error: You selected external URL but did not enter a URL."
-msgstr "Erreur : Vous avez sélectionné URL externe mais n'avez pas saisi d'URL."
+msgstr "Kesalahan: Anda memilih URL eksternal tetapi tidak memasukkan URL."
 
 msgid "Error: unable to add new redirect."
-msgstr "Erreur : impossible d'ajouter une nouvelle redirection."
+msgstr "Kesalahan: tidak dapat menambahkan redirect baru."
 
 msgid "Error: unable to mark URL as %s"
-msgstr "Erreur : impossible de marquer l'URL comme %s"
+msgstr "Kesalahan: tidak dapat menandai URL sebagai %s"
 
 msgid "Error: unable to remove URL from %s list"
-msgstr "Erreur : impossible de retirer l'URL de la liste %s"
+msgstr "Kesalahan: tidak dapat menghapus URL dari daftar %s"
 
 msgid "Etcetera"
-msgstr "Etcetera"
+msgstr "Lain-lain"
 
 msgid "Even if more pages could be suggested, show at most this many (default: 5)"
-msgstr "Même si plus de pages pourraient être suggérées, afficher au maximum ce nombre (défaut : 5)"
+msgstr "Meskipun lebih banyak halaman dapat disarankan, tampilkan paling banyak sejumlah ini (default: 5)"
 
 msgid "Example"
-msgstr "Exemple"
+msgstr "Contoh"
 
 msgid "Examples:"
-msgstr "Exemples :"
+msgstr "Contoh:"
 
 msgid "Exclude Specific Pages, Posts, Categories, Etc"
-msgstr "Exclure des pages, articles, catégories spécifiques, etc."
+msgstr "Kecualikan Halaman, Post, Kategori, Dll Tertentu"
 
 msgid "Exclude Suggestion URLs (Regex)"
-msgstr "Exclure les URLs de suggestion (Regex)"
+msgstr "Kecualikan URL Saran (Regex)"
 
 msgid "Exclude potential suggestions if their final URL matches one of these patterns."
-msgstr "Exclure les suggestions potentielles si leur URL finale correspond à l'un de ces motifs."
+msgstr "Kecualikan saran potensial jika URL akhir mereka cocok dengan salah satu pola ini."
 
 msgid "Export"
-msgstr "Exporter"
+msgstr "Ekspor"
 
 msgid "External"
-msgstr "Externe"
+msgstr "Eksternal"
 
 msgid "External Page"
-msgstr "Page externe"
+msgstr "Halaman Eksternal"
 
 msgid "External User Agents - Do Not Log"
-msgstr "Agents utilisateurs externes - Ne pas enregistrer"
+msgstr "User Agent Eksternal - Jangan Dicatat"
 
 msgid "Files and Folders Ignore Strings - Do Not Process"
-msgstr "Chaînes à ignorer pour fichiers et dossiers - Ne pas traiter"
+msgstr "String Abaikan File dan Folder - Jangan Diproses"
 
 msgid "Files and folders listed here will be ignored."
-msgstr "Les fichiers et dossiers listés ici seront ignorés."
+msgstr "File dan folder yang tercantum di sini akan diabaikan."
 
 msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
-msgstr "D'abord, toutes les URLs \"correspondance exacte\" normales sont vérifiées, puis toutes les URLs d'expression régulière sont vérifiées."
+msgstr "Pertama, semua URL \"pencocokan tepat\" normal diperiksa, kemudian semua URL regular expression diperiksa."
 
 msgid "General Settings"
-msgstr "Paramètres généraux"
+msgstr "Pengaturan Umum"
 
 msgid "Go to first page"
-msgstr "Aller à la première page"
+msgstr "Ke halaman pertama"
 
 msgid "Go to last page"
-msgstr "Aller à la dernière page"
+msgstr "Ke halaman terakhir"
 
 msgid "Go to next page"
-msgstr "Aller à la page suivante"
+msgstr "Ke halaman berikutnya"
 
 msgid "Go to previous page"
-msgstr "Aller à la page précédente"
+msgstr "Ke halaman sebelumnya"
 
 msgid "Help the developer by sending error logs"
-msgstr "Aider le développeur en envoyant les journaux d'erreurs"
+msgstr "Bantu pengembang dengan mengirim log kesalahan"
 
 msgid "Here are some other great pages"
-msgstr "Voici d'autres pages intéressantes"
+msgstr "Berikut adalah beberapa halaman hebat lainnya"
 
 msgid "Hits"
-msgstr "Visites"
+msgstr "Kunjungan"
 
 msgid "Hits Redirected"
-msgstr "Visites redirigées"
+msgstr "Kunjungan yang Di-redirect"
 
 msgid "Home Page"
-msgstr "Page d'accueil"
+msgstr "Halaman Beranda"
 
 msgid "Home Page:"
-msgstr "Page d'accueil :"
+msgstr "Halaman Beranda:"
 
 msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
-msgstr "Je comprends la déclaration ci-dessus, je sais ce que je fais... bla bla bla. Supprimez simplement les enregistrements !"
+msgstr "Saya mengerti pernyataan di atas, saya tahu apa yang saya lakukan... bla bla bla. Hapus saja catatannya!"
 
 msgid "I understand the above statement."
-msgstr "Je comprends la déclaration ci-dessus."
+msgstr "Saya mengerti pernyataan di atas."
 
 msgid "IP Address"
-msgstr "Adresse IP"
+msgstr "Alamat IP"
 
 msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
-msgstr "Si aucune page n'atteint le score de correspondance minimum, alors ce texte sera affiché.  (défaut : &lt;p&gt;Aucune suggestion. :/ &lt;/p&gt;)"
+msgstr "Jika tidak ada halaman yang memenuhi skor pencocokan minimum, maka teks ini akan ditampilkan.  (default: &lt;p&gt;Tidak ada saran. :/ &lt;/p&gt;)"
 
 msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
-msgstr "Si vous avez créé des types de contenu personnalisés et souhaitez rediriger les utilisateurs vers ceux-ci, vous devrez les saisir ici."
+msgstr "Jika Anda telah membuat tipe post kustom dan ingin meng-redirect pengguna ke sana, Anda harus memasukkannya di sini."
 
 msgid "If you've created custom taxonomies and would like to redirect users to them, you'll have to enter them here."
-msgstr "Si vous avez créé des taxonomies personnalisées et souhaitez rediriger les utilisateurs vers celles-ci, vous devrez les saisir ici."
+msgstr "Jika Anda telah membuat taksonomi kustom dan ingin meng-redirect pengguna ke sana, Anda harus memasukkannya di sini."
 
 msgid "Ignore 404 Error"
-msgstr "Ignorer l'erreur 404"
+msgstr "Abaikan Kesalahan 404"
 
 msgid "Ignored 404 URLs"
-msgstr "URLs 404 ignorées"
+msgstr "URL 404 yang Diabaikan"
 
 msgid "Ignored URLs"
-msgstr "URLs ignorées"
+msgstr "URL yang Diabaikan"
 
 msgid "Import"
-msgstr "Importer"
+msgstr "Impor"
 
 msgid "Import 404 Redirected Data"
-msgstr "Importer les données de redirections 404"
+msgstr "Impor Data Redirect 404"
 
 msgid "Import a CSV file with the redirects and captured 404s."
-msgstr "Importer un fichier CSV avec les redirections et les 404 capturées."
+msgstr "Impor file CSV dengan redirect dan 404 yang ditangkap."
 
 msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
-msgstr "Y compris casser le site en créant de mauvaises redirections, en saisissant une mauvaise expression régulière, en supprimant des redirections existantes et en donnant à d'autres utilisateurs un accès administrateur au plugin."
+msgstr "Termasuk merusak situs dengan membuat redirect buruk, memasukkan regular expression buruk, menghapus redirect yang ada, dan memberikan akses admin plugin ke pengguna lain."
 
 msgid "Internal Process User Agents - Do Not Log"
-msgstr "Agents utilisateurs de processus internes - Ne pas enregistrer"
+msgstr "User Agent Proses Internal - Jangan Dicatat"
 
 msgid "Issue deleting debug file. (%s)"
-msgstr "Problème lors de la suppression du fichier de débogage. (%s)"
+msgstr "Masalah saat menghapus file debug. (%s)"
 
 msgid "JAPANESE_FLASHCARDS_URL"
 msgstr "JAPANESE_FLASHCARDS_URL"
 
 msgid "Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit."
-msgstr "Conserve les enregistrements de journal les plus récents (et supprime les plus anciens) lorsque l'utilisation du disque atteint cette limite."
+msgstr "Menyimpan catatan log terbaru (dan menghapus yang terlama) saat penggunaan disk mencapai batas ini."
 
 msgid "LINK_FIRST_PAGE"
 msgstr "LINK_FIRST_PAGE"
@@ -627,109 +627,109 @@ msgid "LINK_PREVIOUS_PAGE"
 msgstr "LINK_PREVIOUS_PAGE"
 
 msgid "Last Used"
-msgstr "Dernière utilisation"
+msgstr "Terakhir Digunakan"
 
 msgid "List one user name per line."
-msgstr "Listez un nom d'utilisateur par ligne."
+msgstr "Daftarkan satu nama pengguna per baris."
 
 msgid "Log files are checked daily when maintenance is run."
-msgstr "Les fichiers journaux sont vérifiés quotidiennement lors de l'exécution de la maintenance."
+msgstr "File log diperiksa setiap hari saat pemeliharaan dijalankan."
 
 msgid "Log raw IPs"
-msgstr "Enregistrer les IPs brutes"
+msgstr "Catat IP mentah"
 
 msgid "Logging raw IP addresses may not meet the EU General Data Protection Regulation (GDPR) guidelines."
-msgstr "L'enregistrement des adresses IP brutes peut ne pas respecter les directives du Règlement Général sur la Protection des Données (RGPD) de l'UE."
+msgstr "Mencatat alamat IP mentah mungkin tidak memenuhi pedoman Peraturan Perlindungan Data Umum UE (GDPR)."
 
 msgid "Logs"
-msgstr "Journaux"
+msgstr "Log"
 
 msgid "MB"
-msgstr "Mo"
+msgstr "MB"
 
 msgid "Maintenance"
-msgstr "Maintenance"
+msgstr "Pemeliharaan"
 
 msgid "Monochrome Minimal (Light)"
-msgstr "Monochrome Minimal (Clair)"
+msgstr "Monochrome Minimal (Terang)"
 
 msgid "Major version auto update delay"
-msgstr "Délai de mise à jour automatique de version majeure"
+msgstr "Penundaan pembaruan otomatis versi mayor"
 
 msgid "Man"
-msgstr "Manuel"
+msgstr "Manual"
 
 msgid "Manual 301 Redirects"
-msgstr "Redirections 301 manuelles"
+msgstr "Redirect 301 Manual"
 
 msgid "Manual 302 Redirects"
-msgstr "Redirections 302 manuelles"
+msgstr "Redirect 302 Manual"
 
 msgid "Manual Redirects"
-msgstr "Redirections manuelles"
+msgstr "Redirect Manual"
 
 msgid "Manual redirect deletion"
-msgstr "Suppression de redirection manuelle"
+msgstr "Penghapusan redirect manual"
 
 msgid "Manually created"
-msgstr "Créé manuellement"
+msgstr "Dibuat secara manual"
 
 msgid "Maximum log disk usage (MB)"
-msgstr "Utilisation disque maximale des journaux (Mo)"
+msgstr "Penggunaan disk log maksimum (MB)"
 
 msgid "Maximum number of suggestions to display"
-msgstr "Nombre maximum de suggestions à afficher"
+msgstr "Jumlah maksimum saran yang ditampilkan"
 
 msgid "Minimum match score"
-msgstr "Score de correspondance minimum"
+msgstr "Skor pencocokan minimum"
 
 msgid "Minimum score of suggestions to display"
-msgstr "Score minimum des suggestions à afficher"
+msgstr "Skor minimum saran yang ditampilkan"
 
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
-msgstr "Plusieurs adresses e-mail peuvent être séparées par des virgules (,). L'adresse e-mail \"de\" est toujours l'e-mail administrateur WordPress par défaut :"
+msgstr "Beberapa alamat email dapat dipisahkan dengan koma (,). Alamat email \"dari\" selalu merupakan email admin WordPress default:"
 
 msgid "Neon Slate (Dark)"
-msgstr "Neon Slate (Sombre)"
+msgstr "Neon Slate (Gelap)"
 
 msgid "Never Used"
-msgstr "Jamais utilisé"
+msgstr "Tidak Pernah Digunakan"
 
 msgid "New Redirect Added Successfully!"
-msgstr "Nouvelle redirection ajoutée avec succès !"
+msgstr "Redirect Baru Berhasil Ditambahkan!"
 
 msgid "New major version => wait this many days. New minor version => automatically update about 3 days after the release date."
-msgstr "Nouvelle version majeure => attendre ce nombre de jours. Nouvelle version mineure => mise à jour automatique environ 3 jours après la date de sortie."
+msgstr "Versi mayor baru => tunggu sejumlah hari ini. Versi minor baru => perbarui otomatis sekitar 3 hari setelah tanggal rilis."
 
 msgid "No Captured 404 Records To Display"
-msgstr "Aucun enregistrement 404 capturé à afficher"
+msgstr "Tidak Ada Catatan 404 yang Ditangkap untuk Ditampilkan"
 
 msgid "No Redirect Records To Display"
-msgstr "Aucun enregistrement de redirection à afficher"
+msgstr "Tidak Ada Catatan Redirect untuk Ditampilkan"
 
 msgid "No Results To Display"
-msgstr "Aucun résultat à afficher"
+msgstr "Tidak Ada Hasil untuk Ditampilkan"
 
 msgid "No suggestions. :/"
-msgstr "Aucune suggestion. :/"
+msgstr "Tidak ada saran. :/"
 
 msgid "No suggestions. :/ "
-msgstr "Aucune suggestion. :/ "
+msgstr "Tidak ada saran. :/ "
 
 msgid "Note that including a bad regular expression or one that takes too long will break your website."
-msgstr "Notez qu'inclure une mauvaise expression régulière ou une qui prend trop de temps cassera votre site web."
+msgstr "Perhatikan bahwa menyertakan regular expression buruk atau yang membutuhkan waktu terlalu lama akan merusak situs web Anda."
 
 msgid "Note: Do not include the parenthesis or explanations shown in the examples above."
-msgstr "Note : N'incluez pas les parenthèses ou les explications montrées dans les exemples ci-dessus."
+msgstr "Catatan: Jangan sertakan tanda kurung atau penjelasan yang ditampilkan dalam contoh di atas."
 
 msgid "Note: Here is a list of all post types in the database:"
-msgstr "Note : Voici une liste de tous les types de contenu dans la base de données :"
+msgstr "Catatan: Berikut adalah daftar semua tipe post dalam database:"
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
-msgstr "Note : Les \"scores\" qui apparaissent au format \"(75.7576)\" après les liens de page ne sont affichés que pour les utilisateurs administrateurs."
+msgstr "Catatan: \"Skor\" yang muncul dalam format \"(75.7576)\" setelah link halaman hanya ditampilkan untuk pengguna admin."
 
 msgid "Obsidian Blue (Dark)"
-msgstr "Obsidian Blue (Sombre)"
+msgstr "Obsidian Blue (Gelap)"
 
 msgid "OPTION_MIN_AUTO_SCORE"
 msgstr "OPTION_MIN_AUTO_SCORE"
@@ -738,142 +738,142 @@ msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
 msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
 
 msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
-msgstr "Un e-mail sera envoyé par jour (lors de l'exécution de la maintenance) jusqu'à ce que le nombre de 404 capturées passe en dessous du nombre spécifié dans les paramètres d'alerte."
+msgstr "Satu email akan dikirim per hari (saat pemeliharaan dijalankan) hingga jumlah 404 yang ditangkap turun di bawah angka yang ditentukan dalam pengaturan peringatan."
 
 msgid "Only create an automatic redirect if the suggested page has a score above the specified number (default 90)"
-msgstr "Créer une redirection automatique uniquement si la page suggérée a un score supérieur au nombre spécifié (défaut 90)"
+msgstr "Hanya buat redirect otomatis jika halaman yang disarankan memiliki skor di atas angka yang ditentukan (default 90)"
 
 msgid "Options"
-msgstr "Options"
+msgstr "Opsi"
 
 msgid "Options Saved Successfully!"
-msgstr "Options enregistrées avec succès !"
+msgstr "Opsi Berhasil Disimpan!"
 
 msgid "Organize Later"
-msgstr "Organiser plus tard"
+msgstr "Atur Nanti"
 
 msgid "Page"
-msgstr "Page"
+msgstr "Halaman"
 
 msgid "Page Not Found Displayed"
-msgstr "Page non trouvée affichée"
+msgstr "Halaman Tidak Ditemukan Ditampilkan"
 
 msgid "Page Redirects"
-msgstr "Redirections de page"
+msgstr "Redirect Halaman"
 
 msgid "Page suggestions title"
-msgstr "Titre des suggestions de page"
+msgstr "Judul saran halaman"
 
 msgid "Pages listed here will not be redirected to"
-msgstr "Les pages listées ici ne seront pas utilisées comme destination de redirection"
+msgstr "Halaman yang tercantum di sini tidak akan di-redirect ke"
 
 msgid "Permanent 301"
-msgstr "Permanent 301"
+msgstr "Permanen 301"
 
 msgid "Plugin Admin Users"
-msgstr "Utilisateurs administrateurs du plugin"
+msgstr "Pengguna Admin Plugin"
 
 msgid "Plugin version"
-msgstr "Version du plugin"
+msgstr "Versi plugin"
 
 msgid "Purge Entries!"
-msgstr "Purger les entrées !"
+msgstr "Bersihkan Entri!"
 
 msgid "Purge Options"
-msgstr "Options de purge"
+msgstr "Opsi Pembersihan"
 
 msgid "Purge Type"
-msgstr "Type de purge"
+msgstr "Tipe Pembersihan"
 
 msgid "REDIRECT_TO_USER_FIELD_WARNING"
 msgstr "REDIRECT_TO_USER_FIELD_WARNING"
 
 msgid "Recognized Post Types"
-msgstr "Types de contenu reconnus"
+msgstr "Tipe Post yang Dikenali"
 
 msgid "Records imported: %s"
-msgstr "Enregistrements importés : %s"
+msgstr "Catatan yang diimpor: %s"
 
 msgid "Redirect"
-msgstr "Redirection"
+msgstr "Redirect"
 
 msgid "Redirect & Capture Logs"
-msgstr "Journaux de redirection et capture"
+msgstr "Log Redirect & Tangkapan"
 
 msgid "Redirect Details"
-msgstr "Détails de redirection"
+msgstr "Detail Redirect"
 
 msgid "Redirect Information Updated Successfully!"
-msgstr "Informations de redirection mises à jour avec succès !"
+msgstr "Informasi Redirect Berhasil Diperbarui!"
 
 msgid "Redirect Removed Successfully!"
-msgstr "Redirection supprimée avec succès !"
+msgstr "Redirect Berhasil Dihapus!"
 
 msgid "Redirect Type"
-msgstr "Type de redirection"
+msgstr "Tipe Redirect"
 
 msgid "Redirect Types"
-msgstr "Types de redirection"
+msgstr "Tipe Redirect"
 
 msgid "Redirect all requests"
-msgstr "Rediriger toutes les requêtes"
+msgstr "Redirect semua permintaan"
 
 msgid "Redirect all unhandled 404s to"
-msgstr "Rediriger toutes les 404 non gérées vers"
+msgstr "Redirect semua 404 yang tidak ditangani ke"
 
 msgid "Redirect moved to trash successfully!"
-msgstr "Redirection déplacée dans la corbeille avec succès !"
+msgstr "Redirect berhasil dipindahkan ke tempat sampah!"
 
 msgid "Redirect restored from trash successfully!"
-msgstr "Redirection restaurée de la corbeille avec succès !"
+msgstr "Redirect berhasil dipulihkan dari tempat sampah!"
 
 msgid "Redirect to"
-msgstr "Rediriger vers"
+msgstr "Redirect ke"
 
 msgid "Redirected to"
-msgstr "Redirigé vers"
+msgstr "Di-redirect ke"
 
 msgid "Redirects"
-msgstr "Redirections"
+msgstr "Redirect"
 
 msgid "Referrer"
-msgstr "Référent"
+msgstr "Perujuk"
 
 msgid "RegEx"
 msgstr "RegEx"
 
 msgid "Regular Expression (Manually Created)"
-msgstr "Expression régulière (créée manuellement)"
+msgstr "Regular Expression (Dibuat Manual)"
 
 msgid "Remove Ignore Status"
-msgstr "Retirer le statut Ignoré"
+msgstr "Hapus Status Abaikan"
 
 msgid "Remove Later Status"
-msgstr "Retirer le statut Plus tard"
+msgstr "Hapus Status Nanti"
 
 msgid "Remove redirect upon matching permalink"
-msgstr "Supprimer la redirection lors de la correspondance du permalien"
+msgstr "Hapus redirect saat permalink cocok"
 
 msgid "Removed 404 URL from %s list successfully!"
-msgstr "URL 404 retirée de la liste %s avec succès !"
+msgstr "URL 404 berhasil dihapus dari daftar %s!"
 
 msgid "Removes auto created redirects if they haven't been used for the specified amount of time."
-msgstr "Supprime les redirections créées automatiquement si elles n'ont pas été utilisées pendant la durée spécifiée."
+msgstr "Menghapus redirect yang dibuat otomatis jika belum digunakan selama waktu yang ditentukan."
 
 msgid "Required"
-msgstr "Requis"
+msgstr "Wajib"
 
 msgid "Restore"
-msgstr "Restaurer"
+msgstr "Pulihkan"
 
 msgid "Rows per page:"
-msgstr "Lignes par page :"
+msgstr "Baris per halaman:"
 
 msgid "Run Maintenance"
-msgstr "Exécuter la maintenance"
+msgstr "Jalankan Pemeliharaan"
 
 msgid "Run maintenance to delete old data (etc).&nbsp;&nbsp;It is not necessary to run this manually, as it's done automatically on a daily basis."
-msgstr "Exécuter la maintenance pour supprimer les anciennes données (etc.).&nbsp;&nbsp;Il n'est pas nécessaire de l'exécuter manuellement, car cela est fait automatiquement quotidiennement."
+msgstr "Jalankan pemeliharaan untuk menghapus data lama (dll).&nbsp;&nbsp;Tidak perlu menjalankan ini secara manual, karena dilakukan secara otomatis setiap hari."
 
 msgid "SELECTED_SUGGEST_CATS"
 msgstr "SELECTED_SUGGEST_CATS"
@@ -909,31 +909,31 @@ msgid "SUGGEST_USER_TITLE"
 msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
-msgstr "Vérification de cohérence"
+msgstr "Pemeriksaan Validitas"
 
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
-msgstr "Les agents utilisateurs de moteurs de recherche ne doivent pas aller ici afin qu'ils soient redirigés lorsque la structure des slugs change."
+msgstr "User agent mesin pencari tidak boleh masuk ke sini sehingga mereka akan di-redirect saat struktur slug berubah."
 
 msgid "Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
-msgstr "Puisqu'un groupe de capture est utilisé, vous pouvez utiliser un remplacement $1 dans la chaîne de destination d'une URL externe."
+msgstr "Karena grup tangkapan digunakan, Anda dapat menggunakan pengganti $1 dalam string tujuan URL eksternal."
 
 msgid "So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
-msgstr "Veuillez donc faire preuve de prudence et les tester ailleurs avant de les essayer ici. Si vous ne savez pas ce que vous faites, n'utilisez pas cette option (car elle n'est pas nécessaire au fonctionnement du plugin)."
+msgstr "Jadi harap berhati-hati dan uji di tempat lain sebelum mencobanya di sini. Jika Anda tidak tahu apa yang Anda lakukan, harap jangan gunakan opsi ini (karena tidak diperlukan untuk fungsi plugin)."
 
 msgid "Some options were not saved successfully."
-msgstr "Certaines options n'ont pas été enregistrées avec succès."
+msgstr "Beberapa opsi tidak berhasil disimpan."
 
 msgid "Special"
-msgstr "Spécial"
+msgstr "Khusus"
 
 msgid "Stats"
-msgstr "Statistiques"
+msgstr "Statistik"
 
 msgid "Status"
-msgstr "Statut"
+msgstr "Status"
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
-msgstr "Les formats supportés sont : <B>from_url,status,type,to_url,wp_type</B>"
+msgstr "Format yang didukung adalah: <B>from_url,status,type,to_url,wp_type</B>"
 
 msgid "TEXT_BEFORE_LINKS"
 msgstr "TEXT_BEFORE_LINKS"
@@ -960,211 +960,211 @@ msgid "TOOLTIP_POPUP_EXPLANATION_URL"
 msgstr "TOOLTIP_POPUP_EXPLANATION_URL"
 
 msgid "Tag"
-msgstr "Étiquette"
+msgstr "Tag"
 
 msgid "Tag:"
-msgstr "Étiquette :"
+msgstr "Tag:"
 
 msgid "Tags"
-msgstr "Étiquettes"
+msgstr "Tag"
 
 msgid "Template Redirect Priority"
-msgstr "Priorité de redirection de modèle"
+msgstr "Prioritas Redirect Template"
 
 msgid "Temporary 302"
-msgstr "Temporaire 302"
+msgstr "Sementara 302"
 
 msgid "The \"product\" type is for WooCommerce users."
-msgstr "Le type \"product\" est pour les utilisateurs WooCommerce."
+msgstr "Tipe \"product\" adalah untuk pengguna WooCommerce."
 
 msgid "The 404 Solution menu should appear"
-msgstr "Le menu Solution 404 devrait apparaître"
+msgstr "Menu 404 Solution seharusnya muncul"
 
 msgid "The file seems to have loaded okay. Please check the redirects page."
-msgstr "Le fichier semble avoir été chargé correctement. Veuillez vérifier la page des redirections."
+msgstr "File sepertinya telah dimuat dengan baik. Silakan periksa halaman redirect."
 
 msgid "The plugin will only redirect the post types specified here."
-msgstr "Le plugin ne redirigera que les types de contenu spécifiés ici."
+msgstr "Plugin hanya akan meng-redirect tipe post yang ditentukan di sini."
 
 msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
-msgstr "Le plugin redirigera vers les taxonomies normales (catégories et étiquettes) et celles listées ici."
+msgstr "Plugin akan meng-redirect ke taksonomi normal (kategori dan tag) dan yang tercantum di sini."
 
 msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "La page suggérée doit \"scorer\" au moins ce montant pour être affichée comme suggestion (min : 10, max : 90, défaut : 25)"
+msgstr "Halaman yang disarankan harus \"mencetak skor\" setidaknya sebanyak ini untuk ditampilkan sebagai saran (min: 10, maks: 90, default: 25)"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
-msgstr "La page 404 spécifiée par l'utilisateur n'a pas été trouvée. Veuillez mettre à jour la page 404 spécifiée par l'utilisateur dans la page Options."
+msgstr "Halaman 404 yang ditentukan pengguna tidak ditemukan. Silakan perbarui halaman 404 yang ditentukan pengguna di halaman Opsi."
 
 msgid "This cannot be undone. All redirects for URLs that do not already exist will be imported."
-msgstr "Ceci ne peut pas être annulé. Toutes les redirections pour les URLs qui n'existent pas déjà seront importées."
+msgstr "Ini tidak dapat dibatalkan. Semua redirect untuk URL yang belum ada akan diimpor."
 
 msgid "This creates the list. For example, use &lt;ol style=\"list-style-type: none;\"&gt; to hide the numbers in the list. (defaults: &lt;ol&gt; / &lt;/ol&gt;)"
-msgstr "Ceci crée la liste. Par exemple, utilisez &lt;ol style=\"list-style-type: none;\"&gt; pour masquer les numéros dans la liste. (défauts : &lt;ol&gt; / &lt;/ol&gt;)"
+msgstr "Ini membuat daftar. Misalnya, gunakan &lt;ol style=\"list-style-type: none;\"&gt; untuk menyembunyikan angka dalam daftar. (default: &lt;ol&gt; / &lt;/ol&gt;)"
 
 msgid "This is best for internal processes that don't need to be redirected when the slug structure changes."
-msgstr "Ceci est idéal pour les processus internes qui n'ont pas besoin d'être redirigés lorsque la structure des slugs change."
+msgstr "Ini terbaik untuk proses internal yang tidak perlu di-redirect saat struktur slug berubah."
 
 msgid "This is best for search engine bots that do need to be redirected when the slug structure changes."
-msgstr "Ceci est idéal pour les robots de moteurs de recherche qui ont besoin d'être redirigés lorsque la structure des slugs change."
+msgstr "Ini terbaik untuk bot mesin pencari yang perlu di-redirect saat struktur slug berubah."
 
 msgid "This is for a domain name change."
-msgstr "Ceci est pour un changement de nom de domaine."
+msgstr "Ini untuk perubahan nama domain."
 
 msgid "This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
-msgstr "Ceci est pour quand un utilisateur demande une page qui n'existe pas et qu'il n'est pas automatiquement redirigé vers une page correspondante."
+msgstr "Ini untuk saat pengguna meminta halaman yang tidak ada dan mereka tidak secara otomatis di-redirect ke halaman yang cocok."
 
 msgid "This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin."
-msgstr "Ce n'est pas requis pour que le plugin fonctionne, mais c'est utile pour le développeur et pour les futures versions du plugin."
+msgstr "Ini tidak diperlukan agar plugin berfungsi, tetapi bermanfaat bagi pengembang dan untuk versi plugin di masa mendatang."
 
 msgid "This only affects the list of potential matches shown to the user on a custom 404 page."
-msgstr "Ceci n'affecte que la liste des correspondances potentielles affichées à l'utilisateur sur une page 404 personnalisée."
+msgstr "Ini hanya mempengaruhi daftar kecocokan potensial yang ditampilkan kepada pengguna pada halaman 404 kustom."
 
 msgid "This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported)."
-msgstr "Ceci révèle : tout dans le journal de débogage, l'adresse e-mail admin, les extensions PHP installées, les plugins actifs, la version PHP, la version WordPress, la version MySQL, le total des pages et articles publiés, etc. (tout ce qui est demandé lorsqu'un problème est signalé)."
+msgstr "Ini mengungkapkan: semua yang ada di log debug, alamat email admin, ekstensi PHP yang terinstal, plugin aktif, versi PHP, versi WordPress, versi MySQL, total halaman dan post yang dipublikasikan, dll. (semua yang diminta saat masalah dilaporkan)."
 
 msgid "This sets how early in the process a 404 is handled by this plugin. If there are multiple plugins that should handle a 404, then set this higher (999) so that this plugin gets the 404 last. (default 9)"
-msgstr "Ceci définit à quel moment du processus une 404 est gérée par ce plugin. S'il y a plusieurs plugins qui devraient gérer une 404, alors augmentez ce nombre (999) pour que ce plugin reçoive la 404 en dernier. (défaut 9)"
+msgstr "Ini mengatur seberapa awal dalam proses 404 ditangani oleh plugin ini. Jika ada beberapa plugin yang harus menangani 404, maka atur ini lebih tinggi (999) sehingga plugin ini mendapatkan 404 terakhir. (default 9)"
 
 msgid "This shortcode can be used on the 404 page and will display a list of suggested pages."
-msgstr "Ce shortcode peut être utilisé sur la page 404 et affichera une liste de pages suggérées."
+msgstr "Shortcode ini dapat digunakan pada halaman 404 dan akan menampilkan daftar halaman yang disarankan."
 
 msgid "This surrounds each item in the list. (defaults: &lt;li&gt; / &lt;/li&gt;)"
-msgstr "Ceci entoure chaque élément de la liste. (défauts : &lt;li&gt; / &lt;/li&gt;)"
+msgstr "Ini mengelilingi setiap item dalam daftar. (default: &lt;li&gt; / &lt;/li&gt;)"
 
 msgid "This text will appear before the list of suggestions (default: &lt;h3&gt;Here are some other great pages&lt;/h3&gt;)"
-msgstr "Ce texte apparaîtra avant la liste des suggestions (défaut : &lt;h3&gt;Voici d'autres pages intéressantes&lt;/h3&gt;)"
+msgstr "Teks ini akan muncul sebelum daftar saran (default: &lt;h3&gt;Berikut adalah beberapa halaman hebat lainnya&lt;/h3&gt;)"
 
 msgid "This will break your website."
-msgstr "Ceci cassera votre site web."
+msgstr "Ini akan merusak situs web Anda."
 
 msgid "This will not change the URL if the destination 404 page is set to (Default 404 Page) or Home Page."
-msgstr "Ceci ne changera pas l'URL si la page de destination 404 est définie sur (Page 404 par défaut) ou Page d'accueil."
+msgstr "Ini tidak akan mengubah URL jika halaman tujuan 404 diatur ke (Halaman 404 Default) atau Halaman Beranda."
 
 msgid "Tools"
-msgstr "Outils"
+msgstr "Alat"
 
 msgid "Total Redirects"
-msgstr "Total des redirections"
+msgstr "Total Redirect"
 
 msgid "Total URLs"
-msgstr "Total des URLs"
+msgstr "Total URL"
 
 msgid "Trash"
-msgstr "Corbeille"
+msgstr "Tempat Sampah"
 
 msgid "Trash Redirected URL"
-msgstr "Mettre l'URL redirigée à la corbeille"
+msgstr "Buang URL yang Di-redirect"
 
 msgid "Trashed Redirects"
-msgstr "Redirections dans la corbeille"
+msgstr "Redirect di Tempat Sampah"
 
 msgid "Trashed URLs"
-msgstr "URLs dans la corbeille"
+msgstr "URL di Tempat Sampah"
 
 msgid "Treat this URL as a regular expression"
-msgstr "Traiter cette URL comme une expression régulière"
+msgstr "Perlakukan URL ini sebagai regular expression"
 
 msgid "Type"
-msgstr "Type"
+msgstr "Tipe"
 
 msgid "Type a page name here and select it to add it to the exlusion list"
-msgstr "Tapez un nom de page ici et sélectionnez-la pour l'ajouter à la liste d'exclusion"
+msgstr "Ketik nama halaman di sini dan pilih untuk menambahkannya ke daftar pengecualian"
 
 msgid "URL"
 msgstr "URL"
 
 msgid "URL(s) deleted"
-msgstr "URL(s) supprimée(s)"
+msgstr "URL dihapus"
 
 msgid "URL(s) marked as Captured."
-msgstr "URL(s) marquée(s) comme Capturée."
+msgstr "URL ditandai sebagai Ditangkap."
 
 msgid "URL(s) marked as Ignored."
-msgstr "URL(s) marquée(s) comme Ignorée."
+msgstr "URL ditandai sebagai Diabaikan."
 
 msgid "URL(s) marked as Later."
-msgstr "URL(s) marquée(s) comme Plus tard."
+msgstr "URL ditandai sebagai Nanti."
 
 msgid "URL(s) moved to trash"
-msgstr "URL(s) déplacée(s) dans la corbeille"
+msgstr "URL dipindahkan ke tempat sampah"
 
 msgid "URL(s) restored."
-msgstr "URL(s) restaurée(s)."
+msgstr "URL dipulihkan."
 
 msgid "URLs"
-msgstr "URLs"
+msgstr "URL"
 
 msgid "Under the Settings menu"
-msgstr "Sous le menu Paramètres"
+msgstr "Di bawah menu Pengaturan"
 
 msgid "Unique Page Not Found Referrers"
-msgstr "Référents uniques de page non trouvée"
+msgstr "Perujuk Unik Halaman Tidak Ditemukan"
 
 msgid "Unique Page Not Found URLs"
-msgstr "URLs uniques de page non trouvée"
+msgstr "URL Unik Halaman Tidak Ditemukan"
 
 msgid "Unique Page Not Found Visitors"
-msgstr "Visiteurs uniques de page non trouvée"
+msgstr "Pengunjung Unik Halaman Tidak Ditemukan"
 
 msgid "Unique Redirected Referrers"
-msgstr "Référents redirigés uniques"
+msgstr "Perujuk Unik yang Di-redirect"
 
 msgid "Unique Redirected Visitors"
-msgstr "Visiteurs redirigés uniques"
+msgstr "Pengunjung Unik yang Di-redirect"
 
 msgid "Unique URLs Redirected"
-msgstr "URLs redirigées uniques"
+msgstr "URL Unik yang Di-redirect"
 
 msgid "Unknown"
-msgstr "Inconnu"
+msgstr "Tidak Diketahui"
 
 msgid "Update Redirect"
-msgstr "Mettre à jour la redirection"
+msgstr "Perbarui Redirect"
 
 msgid "Update the URL bar"
-msgstr "Mettre à jour la barre d'URL"
+msgstr "Perbarui bilah URL"
 
 msgid "Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
-msgstr "Utilisez une ligne par agent utilisateur. Si le texte est trouvé n'importe où dans la chaîne agent utilisateur, alors il s'applique."
+msgstr "Gunakan satu baris per user agent. Jika teks ditemukan di mana saja dalam string user agent maka itu berlaku."
 
 msgid "User"
-msgstr "Utilisateur"
+msgstr "Pengguna"
 
 msgid "User names listed here will be able to do everything an admin can do with the plugin."
-msgstr "Les noms d'utilisateur listés ici pourront faire tout ce qu'un administrateur peut faire avec le plugin."
+msgstr "Nama pengguna yang tercantum di sini akan dapat melakukan semua yang dapat dilakukan admin dengan plugin."
 
 msgid "Using the purge options will move all selected redirects to the trash. You must then empty the trash to delete them."
-msgstr "L'utilisation des options de purge déplacera toutes les redirections sélectionnées dans la corbeille. Vous devrez ensuite vider la corbeille pour les supprimer."
+msgstr "Menggunakan opsi pembersihan akan memindahkan semua redirect yang dipilih ke tempat sampah. Anda kemudian harus mengosongkan tempat sampah untuk menghapusnya."
 
 msgid "View logs for"
-msgstr "Voir les journaux pour"
+msgstr "Lihat log untuk"
 
 msgid "Visit"
-msgstr "Visiter"
+msgstr "Kunjungi"
 
 msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "ATTENTION : Lorsque mal utilisé, ceci CASSERA votre site web. Utilisez à vos propres risques. S'il vous plaît, pour l'amour de tout ce qui est sacré, laissez ceci vide si vous ne savez pas ce que vous faites."
+msgstr "PERINGATAN: Jika digunakan dengan tidak benar ini AKAN merusak situs web Anda. Gunakan dengan risiko Anda sendiri. Tolong, demi segala sesuatu yang suci, biarkan ini kosong jika Anda tidak tahu apa yang Anda lakukan."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
-msgstr "Lorsqu'une erreur est détectée par le plugin, envoyer le fichier journal complet au développeur."
+msgstr "Saat kesalahan terdeteksi oleh plugin, kirim email seluruh file log ke pengembang."
 
 msgid "When checked the URL will be changed from the custom 404 page URL to the URL originally requested (after the page headers load)."
-msgstr "Lorsque coché, l'URL sera changée de l'URL de page 404 personnalisée vers l'URL originalement demandée (après le chargement des en-têtes de page)."
+msgstr "Jika dicentang, URL akan diubah dari URL halaman 404 kustom ke URL yang awalnya diminta (setelah header halaman dimuat)."
 
 msgid "When checked, the text is treated as a regular expression."
-msgstr "Lorsque coché, le texte est traité comme une expression régulière."
+msgstr "Jika dicentang, teks diperlakukan sebagai regular expression."
 
 msgid "When selected, ALL REQUESTS (even for pages that exist, even for non-404s) will be treated like a 404."
-msgstr "Lorsque sélectionné, TOUTES LES REQUÊTES (même pour les pages qui existent, même pour les non-404) seront traitées comme une 404."
+msgstr "Jika dipilih, SEMUA PERMINTAAN (bahkan untuk halaman yang ada, bahkan untuk non-404) akan diperlakukan seperti 404."
 
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here."
-msgstr "Lorsque le nombre de 404 capturées déclencherait une notification admin, un e-mail sera envoyé aux adresses spécifiées ici."
+msgstr "Ketika jumlah 404 yang ditangkap akan menyebabkan notifikasi admin, email akan dikirim ke alamat yang ditentukan di sini."
 
 msgid "You can see which are recognized by looking at the default 404 destination option."
-msgstr "Vous pouvez voir lesquelles sont reconnues en regardant l'option de destination 404 par défaut."
+msgstr "Anda dapat melihat mana yang dikenali dengan melihat opsi tujuan 404 default."
 
 msgid "You can see which post types are recognized by looking at the default 404 destination option, which has a list of pages, posts, products, etc."
-msgstr "Vous pouvez voir quels types de contenu sont reconnus en regardant l'option de destination 404 par défaut, qui a une liste de pages, articles, produits, etc."
+msgstr "Anda dapat melihat tipe post mana yang dikenali dengan melihat opsi tujuan 404 default, yang memiliki daftar halaman, post, produk, dll."
 
 msgid "add-exclude-page-data-url"
 msgstr "add-exclude-page-data-url"
@@ -1176,10 +1176,10 @@ msgid "ajaxTrashLink"
 msgstr "ajaxTrashLink"
 
 msgid "and <B>from_url,to_url</B>"
-msgstr "et <B>from_url,to_url</B>"
+msgstr "dan <B>from_url,to_url</B>"
 
 msgid "and redirect to the specified page."
-msgstr "et rediriger vers la page spécifiée."
+msgstr "dan redirect ke halaman yang ditentukan."
 
 msgid "bulkOptions"
 msgstr "bulkOptions"
@@ -1191,7 +1191,7 @@ msgid "data-url"
 msgstr "data-url"
 
 msgid "days (0 means immediately, default 30)"
-msgstr "jours (0 signifie immédiatement, défaut 30)"
+msgstr "hari (0 berarti segera, default 30)"
 
 msgid "deletePermanentlyHTML"
 msgstr "deletePermanentlyHTML"
@@ -1218,7 +1218,7 @@ msgid "filterText"
 msgstr "filterText"
 
 msgid "is maintained by"
-msgstr "est maintenu par"
+msgstr "dipelihara oleh"
 
 msgid "loaded-excluded-pages"
 msgstr "loaded-excluded-pages"
@@ -1233,7 +1233,7 @@ msgid "logslinkHTML"
 msgstr "logslinkHTML"
 
 msgid "of"
-msgstr "de"
+msgstr "dari"
 
 msgid "pageIDAndType"
 msgstr "pageIDAndType"
@@ -1323,18 +1323,16 @@ msgid "urlPlaceholder"
 msgstr "urlPlaceholder"
 
 msgid "will match any URL that begins with"
-msgstr "correspondra à toute URL qui commence par"
+msgstr "akan cocok dengan URL apa pun yang dimulai dengan"
 
 #. Plural form with HTML
 #: includes/View.php
 msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
 msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
-msgstr[0] "Il y a <a>%s URL 404 capturée</a> qui doit être traitée."
-msgstr[1] "Il y a <a>%s URLs 404 capturées</a> qui doivent être traitées."
+msgstr[0] "Ada <a>%s URL 404 yang ditangkap</a> yang perlu diproses."
 
 #. Plural form with %s
 #: includes/DataAccess.php
 msgid "%s redirect entry was moved to the trash."
 msgid_plural "%s redirect entries were moved to the trash."
-msgstr[0] "%s entrée de redirection a été déplacée dans la corbeille."
-msgstr[1] "%s entrées de redirection ont été déplacées dans la corbeille."
+msgstr[0] "%s entri redirect dipindahkan ke tempat sampah."
