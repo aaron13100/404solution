@@ -422,9 +422,11 @@ class ABJ_404_Solution_View {
      * @param string $postboxId The ID for the postbox
      * @param string $title The title of the section
      * @param string $content The content to display
+     * @param bool $initiallyVisible Whether the section should be visible by default (for progressive enhancement)
      */
-    function echoOptionsSection($sectionId, $postboxId, $title, $content) {
-        echo "<div class=\"abj404-options-section\" data-section=\"" . esc_attr($sectionId) . "\">";
+    function echoOptionsSection($sectionId, $postboxId, $title, $content, $initiallyVisible = false) {
+        $visibleClass = $initiallyVisible ? ' visible' : '';
+        echo "<div class=\"abj404-options-section" . $visibleClass . "\" data-section=\"" . esc_attr($sectionId) . "\">";
         $this->echoPostBox($postboxId, $title, $content);
         echo "</div>";
     }
@@ -776,19 +778,20 @@ class ABJ_404_Solution_View {
         $abj404view->echoChipsNavigation($showSuggestions);
 
         // Render each section with chips-compatible wrapper
+        // First section is visible by default for progressive enhancement (in case JS fails)
         $contentAutomaticRedirects = $abj404view->getAdminOptionsPageAutoRedirects($options);
-        $abj404view->echoOptionsSection("abj404-autooptions", "abj404-autooptions", __('Automatic Redirects', '404-solution'), $contentAutomaticRedirects);
+        $abj404view->echoOptionsSection("abj404-autooptions", "abj404-autooptions", __('Automatic Redirects', '404-solution'), $contentAutomaticRedirects, true);
 
         $contentGeneralSettings = $abj404view->getAdminOptionsPageGeneralSettings($options);
-        $abj404view->echoOptionsSection("abj404-generaloptions", "abj404-generaloptions", __('General Settings', '404-solution'), $contentGeneralSettings);
+        $abj404view->echoOptionsSection("abj404-generaloptions", "abj404-generaloptions", __('General Settings', '404-solution'), $contentGeneralSettings, false);
 
         $contentAdvancedSettings = $abj404view->getAdminOptionsPageAdvancedSettings($options);
-        $abj404view->echoOptionsSection("abj404-advancedoptions", "abj404-advancedoptions", __('Advanced Settings (Etc)', '404-solution'), $contentAdvancedSettings);
+        $abj404view->echoOptionsSection("abj404-advancedoptions", "abj404-advancedoptions", __('Advanced Settings (Etc)', '404-solution'), $contentAdvancedSettings, false);
 
         // Only render suggestions section if the suggestions view is available
         if ($abj404viewSuggestions !== null && method_exists($abj404viewSuggestions, 'getAdminOptionsPage404Suggestions')) {
             $content404PageSuggestions = $abj404viewSuggestions->getAdminOptionsPage404Suggestions($options);
-            $abj404view->echoOptionsSection("abj404-suggestoptions", "abj404-suggestoptions", __('404 Page Suggestions', '404-solution'), $content404PageSuggestions);
+            $abj404view->echoOptionsSection("abj404-suggestoptions", "abj404-suggestoptions", __('404 Page Suggestions', '404-solution'), $content404PageSuggestions, false);
         }
 
         echo "<input type=\"submit\" name=\"abj404-optionssub\" id=\"abj404-optionssub\" " .

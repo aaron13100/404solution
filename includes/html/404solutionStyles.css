@@ -221,8 +221,8 @@ ul .ui-autocomplete-category.data-overflow-category {
     gap: 8px;
     margin: 0 0 20px 0;
     padding: 12px 0;
-    background: #fff;
-    border-bottom: 1px solid #ccd0d4;
+    background: var(--abj404-surface, #fff);
+    border-bottom: 1px solid var(--abj404-border, #ccd0d4);
 }
 
 /* Make chips sticky on desktop */
@@ -239,9 +239,9 @@ ul .ui-autocomplete-category.data-overflow-category {
 /* Individual chip button */
 .abj404-chip {
     appearance: none;
-    border: 1px solid #8c8f94;
-    background: #fff;
-    color: #2c3338;
+    border: 1px solid var(--abj404-border, #8c8f94);
+    background: var(--abj404-surface, #fff);
+    color: var(--abj404-text, #2c3338);
     padding: 6px 12px;
     border-radius: 16px;
     cursor: pointer;
@@ -255,20 +255,21 @@ ul .ui-autocomplete-category.data-overflow-category {
 }
 
 .abj404-chip:hover {
-    background: #f6f7f7;
-    border-color: #50575e;
+    background: var(--abj404-surface-muted, #f6f7f7);
+    border-color: var(--abj404-text-muted, #50575e);
 }
 
 .abj404-chip:focus {
-    outline: 2px solid #2271b1;
+    outline: 2px solid var(--abj404-focus, #2271b1);
     outline-offset: 1px;
 }
 
 /* Active/pressed chip state */
 .abj404-chip[aria-pressed="true"] {
-    background: #f0f6fc;
-    border-color: #2271b1;
-    box-shadow: inset 0 0 0 1px rgba(34, 113, 177, 0.15);
+    background: var(--abj404-bg-muted, #f0f6fc);
+    border-color: var(--abj404-accent, #2271b1);
+    box-shadow: inset 0 0 0 1px currentColor;
+    opacity: 0.9;
 }
 
 /* Chip color dots */
