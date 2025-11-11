@@ -76,13 +76,14 @@ class ABJ_404_Solution_ShortCode {
 			// replace the current URL with the user's actual requested URL.
 			$requestedURL = $_REQUEST[$updateURLCookieName];
 			$userFriendlyURL = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ?
-				"https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $requestedURL;
-			
-			$content .= "window.history.replaceState({}, null, '" .
-				$userFriendlyURL . "');\n";
-			
+				"https" : "http") . "://" . $_SERVER['HTTP_HOST'] . esc_url($requestedURL);
+
+			// Use wp_json_encode to safely encode the URL for JavaScript to prevent XSS
+			$content .= "window.history.replaceState({}, null, " .
+				wp_json_encode($userFriendlyURL) . ");\n";
+
 			$debugMessage .= "Updating the URL from " . $_SERVER['REQUEST_URI'] .
-				" to " . $userFriendlyURL . ", ";
+				" to " . esc_url($userFriendlyURL) . ", ";
 		}
 		
 		if ($content != '') {

@@ -1031,6 +1031,28 @@ class ABJ_404_Solution_PluginLogic {
     function doImportFile() {
         $anyIssuesToNote = array();
         if (isset($_FILES['import_file']) && $_FILES['import_file']['error'] == UPLOAD_ERR_OK) {
+            // Validate file extension to prevent malicious file uploads
+            $allowed_extensions = array('csv', 'txt');
+            $file_ext = strtolower(pathinfo($_FILES['import_file']['name'], PATHINFO_EXTENSION));
+            if (!in_array($file_ext, $allowed_extensions)) {
+                return "Error: Invalid file type. Only CSV/TXT files are allowed.";
+            }
+
+            // Validate file size (max 5MB to prevent DoS)
+            $max_file_size = 5 * 1024 * 1024; // 5MB in bytes
+            if ($_FILES['import_file']['size'] > $max_file_size) {
+                return "Error: File too large. Maximum size is 5MB.";
+            }
+
+            // Validate MIME type
+            $allowed_mime_types = array('text/csv', 'text/plain', 'application/csv', 'text/comma-separated-values', 'application/vnd.ms-excel');
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime_type = finfo_file($finfo, $_FILES['import_file']['tmp_name']);
+            finfo_close($finfo);
+            if (!in_array($mime_type, $allowed_mime_types)) {
+                return "Error: Invalid file type. Only CSV files are allowed.";
+            }
+
             // Open the uploaded file for reading
             $file_handle = fopen($_FILES['import_file']['tmp_name'], 'r');
             if (!$file_handle) {
@@ -1565,15 +1587,31 @@ class ABJ_404_Solution_PluginLogic {
         $response['message'] = "";
         
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
-            $userEnteredURL = esc_url($this->dao->getPostOrGetSanitize('redirect_to_user_field'));
+            $userEnteredURL = esc_url($this->dao->getPostOrGetSanitize('redirect_to_user_field'), array('http', 'https'));
             if ($userEnteredURL == "") {
                 $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<BR/>";
-                
+
             } else if ($this->f->strlen($userEnteredURL) < 8) {
                 $response['message'] = __('Error: External URL is too short.', '404-solution') . "<BR/>";
-                
+
             } else if ($this->f->strpos($userEnteredURL, "://") === false) {
                 $response['message'] = __("Error: External URL doesn't contain ://", '404-solution') . "<BR/>";
+
+            } else {
+                // Validate that URL uses safe protocol (http/https only)
+                $parsed_url = parse_url($userEnteredURL);
+                if (!isset($parsed_url['scheme']) || !in_array(strtolower($parsed_url['scheme']), array('http', 'https'))) {
+                    $response['message'] = __('Error: External URL must use http:// or https:// protocol only.', '404-solution') . "<BR/>";
+                }
+
+                // Allow filtering of external redirect URLs for additional validation
+                // Usage: add_filter('abj404_validate_external_redirect', function($url) { /* validation */ return $url; });
+                $validated_url = apply_filters('abj404_validate_external_redirect', $userEnteredURL);
+                if ($validated_url === false) {
+                    $response['message'] = __('Error: External redirect URL failed validation.', '404-solution') . "<BR/>";
+                } else {
+                    $userEnteredURL = $validated_url;
+                }
             }
         }
 
@@ -2282,18 +2320,19 @@ class ABJ_404_Solution_PluginLogic {
     	// try a normal redirect using a header.
     	$this->setCookieWithPreviousRequest();
         wp_redirect($finalDestination, $status, ABJ404_NAME);
-        
-        // TODO add an ajax request here that fires after 5 seconds. 
+
+        // TODO add an ajax request here that fires after 5 seconds.
         // upon getting the request the server will log the error. the plugin could then notify an admin.
-        
+
         // This javascript redirect will only appear if the header redirect did not work for some reason.
+        // Use wp_json_encode to safely encode URL for JavaScript to prevent XSS
         $c = '<script>' . 'function doRedirect() {' . "\n" .
-                '   window.location.replace("' . $location . '");' . "\n" .
+                '   window.location.replace(' . wp_json_encode($sanitizedLocation) . ');' . "\n" .
                 '}' . "\n" .
                 'setTimeout(doRedirect, 1);' . "\n" .
                 '</script>' . "\n" .
-                'Page moved: <a href="' . $location . $commentPartAndQueryPart . '">' . 
-        			$location . '</a>';
+                'Page moved: <a href="' . esc_url($finalDestination) . '">' .
+        			esc_html($location) . '</a>';
         echo $c;
         exit;
     }

@@ -10,14 +10,46 @@ class ABJ_404_Solution_Ajax_Php {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_Ajax_Php();
 		}
-		
+
 		return self::$instance;
 	}
-	
+
+	/** Rate limiting helper to prevent abuse of AJAX endpoints.
+	 * @param string $action The action being rate limited
+	 * @param int $max_requests Maximum requests allowed per time window
+	 * @param int $time_window Time window in seconds (default 60)
+	 * @return bool True if rate limit exceeded, false otherwise
+	 */
+	static function checkRateLimit($action, $max_requests = 100, $time_window = 60) {
+		// Get user identifier (prefer user ID, fallback to IP)
+		$user_id = get_current_user_id();
+		if ($user_id) {
+			$identifier = 'user_' . $user_id;
+		} else {
+			$identifier = 'ip_' . md5($_SERVER['REMOTE_ADDR']);
+		}
+
+		$transient_key = 'abj404_rate_limit_' . $action . '_' . $identifier;
+		$request_count = get_transient($transient_key);
+
+		if ($request_count === false) {
+			// First request in this time window
+			set_transient($transient_key, 1, $time_window);
+			return false;
+		} elseif ($request_count >= $max_requests) {
+			// Rate limit exceeded
+			return true;
+		} else {
+			// Increment counter
+			set_transient($transient_key, $request_count + 1, $time_window);
+			return false;
+		}
+	}
+
 	/** Find logs to display. */
 	static function updateOptions() {
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-		
+
 		$abj404logic->updateOptionsFromPOST();
 	}
 	
@@ -26,8 +58,28 @@ class ABJ_404_Solution_Ajax_Php {
     	$abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();;
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
-        
+
+        // Verify nonce for CSRF protection
+        if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'abj404_ajax')) {
+            echo json_encode(array('error' => 'Invalid security token'));
+            exit();
+        }
+
+        // Verify user has appropriate capabilities
+        if (!current_user_can('manage_options')) {
+            echo json_encode(array('error' => 'Unauthorized'));
+            exit();
+        }
+
+        // Rate limiting to prevent abuse (100 requests per minute)
+        if (self::checkRateLimit('view_logs', 100, 60)) {
+            echo json_encode(array('error' => 'Rate limit exceeded. Please try again later.'));
+            exit();
+        }
+
+        // Limit search term length to prevent DoS
         $term = $f->strtolower(sanitize_text_field($_GET['term']));
+        $term = substr($term, 0, 100);
         $suggestions = array();
 
         $suggestion = array();
@@ -56,8 +108,28 @@ class ABJ_404_Solution_Ajax_Php {
         $abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
-        
+
+        // Verify nonce for CSRF protection
+        if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'abj404_ajax')) {
+            echo json_encode(array('error' => 'Invalid security token'));
+            exit();
+        }
+
+        // Verify user has appropriate capabilities
+        if (!current_user_can('manage_options')) {
+            echo json_encode(array('error' => 'Unauthorized'));
+            exit();
+        }
+
+        // Rate limiting to prevent abuse (100 requests per minute)
+        if (self::checkRateLimit('redirect_pages', 100, 60)) {
+            echo json_encode(array('error' => 'Rate limit exceeded. Please try again later.'));
+            exit();
+        }
+
+        // Limit search term length to prevent DoS
         $term = $f->strtolower(sanitize_text_field($_GET['term']));
+        $term = substr($term, 0, 100);
         $includeDefault404Page = $_GET['includeDefault404Page'] == "true";
         $includeSpecial = array_key_exists('includeSpecial', $_GET) && 
         	$_GET['includeSpecial'] == "true";
