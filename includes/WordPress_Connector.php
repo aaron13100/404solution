@@ -50,15 +50,25 @@ class ABJ_404_Solution_WordPress_Connector {
 	/** Setup. */
     static function init() {
     	if (is_admin()) {
-            register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::doUnregisterCrons');
+            register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::runOnPluginDeactivation');
             register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::runOnPluginActivation');
-            
+
+            // Multisite support: handle new blog creation
+            if (is_multisite()) {
+                // WordPress < 5.1 compatibility
+                add_action('wpmu_new_blog', 'ABJ_404_Solution_PluginLogic::activateNewSite', 10, 6);
+                // WordPress >= 5.1 compatibility
+                add_action('wp_initialize_site', 'ABJ_404_Solution_PluginLogic::activateNewSiteModern', 10, 2);
+                // Handle blog deletion
+                add_action('delete_blog', 'ABJ_404_Solution_PluginLogic::deleteBlogData', 10, 2);
+            }
+
             // include only if necessary
-            add_filter("plugin_action_links_" . ABJ404_NAME, 
+            add_filter("plugin_action_links_" . ABJ404_NAME,
             	'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
-            add_action('admin_notices', 
+            add_action('admin_notices',
             	'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
-            add_action('admin_menu', 
+            add_action('admin_menu',
             	'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
             // a priority of 11 makes sure our style sheet is more important than jquery's. otherwise the indent
             // doesn't work for the ajax dropdown list.
@@ -67,13 +77,13 @@ class ABJ_404_Solution_WordPress_Connector {
             add_action('admin_head',
             	'ABJ_404_Solution_WordPress_Connector::add_theme_script');
             // wp_ajax_nopriv_ is for normal users
-            
+
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_updateOptions', 'ABJ_404_Solution_Ajax_Php::updateOptions');
         }
-        
+
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
     }
 
