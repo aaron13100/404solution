@@ -231,6 +231,9 @@ msgstr ""
 msgid "Admin notification level"
 msgstr "Niveau de notification admin"
 
+msgid "Admin theme"
+msgstr "Thème d'administration"
+
 msgid "Advanced Settings (Etc)"
 msgstr "Paramètres avancés (etc.)"
 
@@ -287,6 +290,9 @@ msgstr "Supprime automatiquement les URLs 404 capturées si elles n'ont pas ét�
 msgid "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
 msgstr "Supprime automatiquement les redirections de pages créées manuellement si elles n'ont pas été utilisées pendant la durée spécifiée."
 
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops (Clair)"
+
 msgid "Captured 404 URLs"
 msgstr "URLs 404 capturées"
 
@@ -316,6 +322,9 @@ msgstr "Choisissez au moins une URL"
 
 msgid "Choose whether the 404 Settings link appears under the \"Settings\" menu or elsewhere."
 msgstr "Choisissez si le lien Paramètres 404 apparaît sous le menu \"Paramètres\" ou ailleurs."
+
+msgid "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
+msgstr "Choisissez le thème de couleur pour les pages d'administration. Le thème change immédiatement pour l'aperçu et sera enregistré lorsque vous cliquez sur \"Enregistrer les paramètres\"."
 
 #, fuzzy
 msgid "Cleanup is done daily."
@@ -727,6 +736,9 @@ msgstr "Mo"
 msgid "Maintenance"
 msgstr "Maintenance"
 
+msgid "Monochrome Minimal (Light)"
+msgstr "Monochrome Minimal (Clair)"
+
 #, fuzzy
 msgid "Major version auto update delay"
 msgstr ""
@@ -765,6 +777,9 @@ msgstr "Score minimum des suggestions à afficher"
 #, fuzzy
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr ""
+
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate (Sombre)"
 
 msgid "Never Used"
 msgstr "Jamais utilisé"
@@ -808,6 +823,9 @@ msgstr ""
 #, fuzzy
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
 msgstr ""
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue (Sombre)"
 
 #, fuzzy
 msgid "OPTION_MIN_AUTO_SCORE"
@@ -1465,6 +1483,18 @@ msgstr ""
 #, fuzzy
 msgid "selectedSendErrorLogs"
 msgstr ""
+
+msgid "selectedThemeCalm"
+msgstr "selectedThemeCalm"
+
+msgid "selectedThemeMono"
+msgstr "selectedThemeMono"
+
+msgid "selectedThemeNeon"
+msgstr "selectedThemeNeon"
+
+msgid "selectedThemeObsidian"
+msgstr "selectedThemeObsidian"
 
 #, fuzzy
 msgid "selectedUnderSettings"

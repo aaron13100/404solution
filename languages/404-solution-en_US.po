@@ -188,6 +188,9 @@ msgstr "Admin notification email(s)"
 msgid "Admin notification level"
 msgstr "Admin notification level"
 
+msgid "Admin theme"
+msgstr "Admin theme"
+
 msgid "Advanced Settings (Etc)"
 msgstr "Advanced Settings (Etc)"
 
@@ -242,6 +245,9 @@ msgstr "Automatically removes 404 URLs that have been captured if they haven't b
 msgid "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
 msgstr "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
 
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops (Light)"
+
 msgid "Captured 404 URLs"
 msgstr "Captured 404 URLs"
 
@@ -271,6 +277,9 @@ msgstr "Choose at least one URL"
 
 msgid "Choose whether the 404 Settings link appears under the \"Settings\" menu or elsewhere."
 msgstr "Choose whether the 404 Settings link appears under the \"Settings\" menu or elsewhere."
+
+msgid "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
+msgstr "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
 
 msgid "Cleanup is done daily."
 msgstr "Cleanup is done daily."
@@ -641,6 +650,9 @@ msgstr "MB"
 msgid "Maintenance"
 msgstr "Maintenance"
 
+msgid "Monochrome Minimal (Light)"
+msgstr "Monochrome Minimal (Light)"
+
 msgid "Major version auto update delay"
 msgstr "Major version auto update delay"
 
@@ -677,6 +689,9 @@ msgstr "Minimum score of suggestions to display"
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate (Dark)"
+
 msgid "Never Used"
 msgstr "Never Used"
 
@@ -712,6 +727,9 @@ msgstr "Note: Here is a list of all post types in the database:"
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
 msgstr "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue (Dark)"
 
 msgid "OPTION_MIN_AUTO_SCORE"
 msgstr "OPTION_MIN_AUTO_SCORE"
@@ -1264,6 +1282,18 @@ msgstr "selectedRemoveMatches"
 
 msgid "selectedSendErrorLogs"
 msgstr "selectedSendErrorLogs"
+
+msgid "selectedThemeCalm"
+msgstr "selectedThemeCalm"
+
+msgid "selectedThemeMono"
+msgstr "selectedThemeMono"
+
+msgid "selectedThemeNeon"
+msgstr "selectedThemeNeon"
+
+msgid "selectedThemeObsidian"
+msgstr "selectedThemeObsidian"
 
 msgid "selectedUnderSettings"
 msgstr "selectedUnderSettings"
