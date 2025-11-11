@@ -198,8 +198,14 @@
     }
 
     function initializeHidingHeader() {
-        const navTabWrapper = $('.nav-tab-wrapper');
         const chipsContainer = $('.abj404-chips-container');
+
+        // Only enable hiding header on Options page (where chips exist)
+        if (chipsContainer.length === 0) {
+            return; // Not Options page, skip hiding header
+        }
+
+        const navTabWrapper = $('.nav-tab-wrapper');
 
         if (navTabWrapper.length === 0) {
             return; // No tabs found
