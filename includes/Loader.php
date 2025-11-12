@@ -56,6 +56,7 @@ ABJ_404_Solution_ErrorHandler::init();
 if (is_admin()) {
 	ABJ_404_Solution_PermalinkCache::init();
 	ABJ_404_Solution_SpellChecker::init();
+	ABJ_404_Solution_SlugChangeHandler::init();
 
     // Get services from the container instead of using getInstance()
     // Keeping the global variables for backward compatibility during migration
