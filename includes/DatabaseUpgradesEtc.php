@@ -1273,9 +1273,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                         break;
                     }
 
-                    // Small delay to prevent server overload
-                    usleep(50000); // 50ms
-
                 } catch (Exception $e) {
                     $this->logger->errorMessage("Error during N-gram cache rebuild at offset {$offset}: " . $e->getMessage());
                     $totalStats['failed'] += $batchSize; // Mark batch as failed

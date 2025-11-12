@@ -541,7 +541,7 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getPermalinkEtcFromCache($id) {
-        $query = "select * from {wp_abj404_permalink_cache} where id = " . $id;
+        $query = "select id, url, meta, url_length, post_parent from {wp_abj404_permalink_cache} where id = " . $id;
         $results = $this->queryAndGetResults($query);
         
         $rows = $results['rows'];
@@ -572,7 +572,7 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getSpellingPermalinksFromCache($requestedURLRaw) {
-        $query = "select * from {wp_abj404_spelling_cache} where url = '" . esc_sql($requestedURLRaw) . "'";
+        $query = "select id, url, matchdata from {wp_abj404_spelling_cache} where url = '" . esc_sql($requestedURLRaw) . "'";
         $results = $this->queryAndGetResults($query);
         
         $rows = $results['rows'];
@@ -696,9 +696,9 @@ class ABJ_404_Solution_DataAccess {
     */
    function getLogDiskUsage() {
        global $wpdb;
-       
+
        // we have to analyze the table first for the query to be valid.
-       $result = $this->queryAndGetResults("OPTIMIZE TABLE {wp_abj404_logsv2}");
+       $result = $this->queryAndGetResults("ANALYZE TABLE {wp_abj404_logsv2}");
 
        if ($result['last_error'] != '') {
            $this->logger->errorMessage("Error: " . esc_html($result['last_error']));
@@ -1168,23 +1168,72 @@ class ABJ_404_Solution_DataAccess {
                 " seconds.");
     }
     
-    /** 
+    /**
      * @param array $rows
      */
     function populateLogsData($rows) {
-        // note: according to https://stackoverflow.com/a/10121508 we should not used a pointer here to modify
-        // the data that we're currently looping through.
+        global $wpdb;
+
+        // If no rows, return early
+        if (empty($rows)) {
+            return $rows;
+        }
+
+        // Extract all non-empty URLs from rows
+        $urls = array();
+        foreach ($rows as $row) {
+            if ($row['url'] != null && !empty($row['url'])) {
+                $urls[] = $row['url'];
+            }
+        }
+
+        // If no valid URLs, return rows unchanged
+        if (empty($urls)) {
+            return $rows;
+        }
+
+        // Remove duplicates to avoid unnecessary work
+        $urls = array_unique($urls);
+
+        // Fetch all logs data in a single batch query
+        $placeholders = implode(',', array_fill(0, count($urls), '%s'));
+        $query = $wpdb->prepare(
+            "SELECT requested_url,
+                    MIN(id) AS logsid,
+                    MAX(timestamp) AS last_used,
+                    COUNT(requested_url) AS logshits
+             FROM {$wpdb->prefix}abj404_logsv2
+             WHERE requested_url IN ($placeholders)
+             GROUP BY requested_url",
+            $urls
+        );
+
+        $logsResults = $wpdb->get_results($query, ARRAY_A);
+
+        // Check for errors
+        if ($wpdb->last_error) {
+            $this->logger->errorMessage("Error executing batch logs query. Err: " . $wpdb->last_error);
+            return $rows;
+        }
+
+        // Index logs data by URL for fast lookup
+        $logsDataByUrl = array();
+        foreach ($logsResults as $logRow) {
+            $logsDataByUrl[$logRow['requested_url']] = $logRow;
+        }
+
+        // Populate rows with logs data using indexed lookup
         foreach ($rows as &$row) {
             if ($row['url'] != null && !empty($row['url'])) {
-                $logsData = $this->getLogsIDandURL($row['url']);
-                if (!empty($logsData)) {
-                    $row['logsid'] = $logsData[0]['logsid'];
-                    $row['logshits'] = $logsData[0]['logshits'];
-                    $row['last_used'] = $logsData[0]['last_used'];
+                if (isset($logsDataByUrl[$row['url']])) {
+                    $logData = $logsDataByUrl[$row['url']];
+                    $row['logsid'] = $logData['logsid'];
+                    $row['logshits'] = $logData['logshits'];
+                    $row['last_used'] = $logData['last_used'];
                 }
             }
         }
-        
+
         return $rows;
     }
 
@@ -1940,10 +1989,10 @@ class ABJ_404_Solution_DataAccess {
      * @global type $wpdb
      * @return array
      */
-    function getPublishedTags($slug = null) {
+    function getPublishedTags($slug = null, $limit = null) {
         global $wpdb;
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        
+
         // get the valid post types
         $options = $abj404logic->getOptions();
 
@@ -1953,14 +2002,20 @@ class ABJ_404_Solution_DataAccess {
             $recognizedCategories .= "'" . trim($this->f->strtolower($category)) . "', ";
         }
         $recognizedCategories = rtrim($recognizedCategories, ", ");
-        
+
         if ($slug != null) {
             $slug = "*/ and wp_terms.slug = '" . esc_sql($slug) . "'\n";
         }
-        
+
+        $limitClause = '';
+        if ($limit !== null && is_numeric($limit) && $limit > 0) {
+            $limitClause = "LIMIT " . intval($limit);
+        }
+
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedTags.sql");
         $query = $this->f->str_replace('{slug}', $slug, $query);
+        $query = $this->f->str_replace('{limit}', $limitClause, $query);
         $query = $this->doTableNameReplacements($query);
         $query = $this->f->str_replace('{recognizedCategories}', $recognizedCategories, $query);
         
@@ -2010,10 +2065,10 @@ class ABJ_404_Solution_DataAccess {
      * @param int $term_id
      * @return array
      */
-    function getPublishedCategories($term_id = null, $slug = null) {
+    function getPublishedCategories($term_id = null, $slug = null, $limit = null) {
         global $wpdb;
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        
+
         // get the valid post types
         $options = $abj404logic->getOptions();
 
@@ -2026,20 +2081,26 @@ class ABJ_404_Solution_DataAccess {
             $recognizedCategories .= "'" . trim($this->f->strtolower($category)) . "', ";
         }
         $recognizedCategories = rtrim($recognizedCategories, ", ");
-        
+
         if ($term_id != null) {
             $term_id = "*/ and {wp_terms}.term_id = " . $term_id . "\n";
         }
-        
+
         if ($slug != null) {
             $slug = "*/ and {wp_terms}.slug = '" . esc_sql($slug) . "'\n";
         }
-        
+
+        $limitClause = '';
+        if ($limit !== null && is_numeric($limit) && $limit > 0) {
+            $limitClause = "LIMIT " . intval($limit);
+        }
+
         // load the query and do the replacements.
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedCategories.sql");
         $query = $this->f->str_replace('{recognizedCategories}', $recognizedCategories, $query);
         $query = $this->f->str_replace('{term_id}', $term_id, $query);
         $query = $this->f->str_replace('{slug}', $slug, $query);
+        $query = $this->f->str_replace('{limit}', $limitClause, $query);
         $query = $this->doTableNameReplacements($query);
         
         $rows = $wpdb->get_results($query);
