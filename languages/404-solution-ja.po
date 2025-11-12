@@ -1373,3 +1373,15 @@ msgstr[0] "処理が必要な<a>%s件の記録済み404 URL</a>があります�
 msgid "%s redirect entry was moved to the trash."
 msgid_plural "%s redirect entries were moved to the trash."
 msgstr[0] "%s件のリダイレクトエントリーがゴミ箱に移動されました。"
+
+#: includes/DatabaseUpgradesEtc.php:119
+msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
+msgstr ""
+
+#: includes/DatabaseUpgradesEtc.php:123
+msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
+msgstr ""
+
+#: includes/DatabaseUpgradesEtc.php:136
+msgid "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
+msgstr ""

@@ -1375,3 +1375,15 @@ msgid "%s redirect entry was moved to the trash."
 msgid_plural "%s redirect entries were moved to the trash."
 msgstr[0] "%s Weiterleitungseintrag wurde in den Papierkorb verschoben."
 msgstr[1] "%s Weiterleitungseinträge wurden in den Papierkorb verschoben."
+
+#: includes/DatabaseUpgradesEtc.php:119
+msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
+msgstr ""
+
+#: includes/DatabaseUpgradesEtc.php:123
+msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
+msgstr ""
+
+#: includes/DatabaseUpgradesEtc.php:136
+msgid "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
+msgstr ""

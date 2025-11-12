@@ -198,7 +198,7 @@ class ABJ_404_Solution_NGramFilter {
         $result = $wpdb->replace(
             $table,
             [
-                'page_id' => (int)$pageId,
+                'id' => (int)$pageId,
                 'url' => $url,
                 'url_normalized' => $urlNormalized,
                 'ngrams' => $ngramJson,
@@ -227,7 +227,7 @@ class ABJ_404_Solution_NGramFilter {
 
         $table = $wpdb->prefix . 'abj404_ngram_cache';
         $query = $wpdb->prepare(
-            "SELECT ngrams FROM {$table} WHERE page_id = %d",
+            "SELECT ngrams FROM {$table} WHERE id = %d",
             $pageId
         );
 
@@ -247,7 +247,7 @@ class ABJ_404_Solution_NGramFilter {
      * on large sites. Use findSimilarPagesEfficient() instead for sites with > 1000 pages.
      *
      * @deprecated Use database-side filtering for large sites
-     * @return array Array of cached entries with page_id, url, url_normalized, and ngrams
+     * @return array Array of cached entries with id, url, url_normalized, and ngrams
      */
     public function getAllCachedNGrams() {
         global $wpdb;
@@ -265,7 +265,7 @@ class ABJ_404_Solution_NGramFilter {
             $this->logger->infoMessage("WARNING: N-gram cache has {$count} entries. This may cause memory issues.");
         }
 
-        $query = "SELECT page_id, url, url_normalized, ngrams, ngram_count FROM {$table}";
+        $query = "SELECT id, url, url_normalized, ngrams, ngram_count FROM {$table}";
 
         $results = $wpdb->get_results($query, ARRAY_A);
 
@@ -303,7 +303,7 @@ class ABJ_404_Solution_NGramFilter {
 
         // Database-side filtering by ngram_count range
         $query = $wpdb->prepare(
-            "SELECT page_id, url, url_normalized, ngrams, ngram_count
+            "SELECT id, url, url_normalized, ngrams, ngram_count
              FROM {$table}
              WHERE ngram_count BETWEEN %d AND %d
              LIMIT %d",
@@ -340,7 +340,7 @@ class ABJ_404_Solution_NGramFilter {
         global $wpdb;
 
         $table = $wpdb->prefix . 'abj404_ngram_cache';
-        $result = $wpdb->delete($table, ['page_id' => $pageId], ['%d']);
+        $result = $wpdb->delete($table, ['id' => $pageId], ['%d']);
 
         return $result !== false;
     }
@@ -499,7 +499,7 @@ class ABJ_404_Solution_NGramFilter {
      * @param string $url404 The 404 URL to find matches for
      * @param float $minSimilarity Minimum Dice coefficient (default: 0.4)
      * @param int $maxCandidates Maximum candidates to return (default: 100)
-     * @return array Associative array [page_id => similarity_score] sorted by score (descending)
+     * @return array Associative array [id => similarity_score] sorted by score (descending)
      */
     public function findSimilarPages($url404, $minSimilarity = 0.4, $maxCandidates = 100) {
         global $wpdb;
@@ -543,7 +543,7 @@ class ABJ_404_Solution_NGramFilter {
         // Step 3: Compute similarity for each page
         $similarities = [];
         foreach ($cachedPages as $page) {
-            $pageId = $page['page_id'];
+            $pageId = $page['id'];
             $pageNGrams = $page['ngrams'];
 
             // Quick optimization: Skip if N-gram counts are too different

@@ -99,9 +99,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$this->correctCollations();
     	
     	$this->updateTableEngineToInnoDB();
-    	
+
     	$this->createIndexes();
-    	
+
     	// we could do this only when a table is created or when the "meta" column is created
     	// but it doesn't take long anyway so we do it every night.
     	$this->permalinkCache->updatePermalinkCache(1);
