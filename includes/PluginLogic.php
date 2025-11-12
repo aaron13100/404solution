@@ -2083,7 +2083,7 @@ class ABJ_404_Solution_PluginLogic {
 
         if (array_key_exists('admin_theme', $postData) && isset($postData['admin_theme'])) {
             // Only allow specific theme values
-            $allowed_themes = array('calm', 'mono', 'neon', 'obsidian');
+            $allowed_themes = array('default', 'calm', 'mono', 'neon', 'obsidian');
             $theme = sanitize_text_field($postData['admin_theme']);
             if (in_array($theme, $allowed_themes)) {
                 $options['admin_theme'] = $theme;

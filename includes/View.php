@@ -1921,7 +1921,8 @@ class ABJ_404_Solution_View {
         }
 
         // Theme selection
-        $adminTheme = isset($options['admin_theme']) ? $options['admin_theme'] : 'mono';
+        $adminTheme = isset($options['admin_theme']) ? $options['admin_theme'] : 'default';
+        $selectedThemeDefault = ($adminTheme == 'default') ? " selected" : "";
         $selectedThemeCalm = ($adminTheme == 'calm') ? " selected" : "";
         $selectedThemeMono = ($adminTheme == 'mono') ? " selected" : "";
         $selectedThemeNeon = ($adminTheme == 'neon') ? " selected" : "";
@@ -1956,6 +1957,7 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{selectedRemoveMatches}', $selectedRemoveMatches, $html);
         $html = $this->f->str_replace('{selectedUnderSettings}', $selectedUnderSettings, $html);
         $html = $this->f->str_replace('{selecteSsettingsLevel}', $selecteSsettingsLevel, $html);
+        $html = $this->f->str_replace('{selectedThemeDefault}', $selectedThemeDefault, $html);
         $html = $this->f->str_replace('{selectedThemeCalm}', $selectedThemeCalm, $html);
         $html = $this->f->str_replace('{selectedThemeMono}', $selectedThemeMono, $html);
         $html = $this->f->str_replace('{selectedThemeNeon}', $selectedThemeNeon, $html);

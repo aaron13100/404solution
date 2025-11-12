@@ -21,18 +21,23 @@
 
         /**
          * Apply theme to the body element
-         * @param {string} theme - Theme name (calm, mono, neon, obsidian)
+         * @param {string} theme - Theme name (default, calm, mono, neon, obsidian)
          */
         function applyTheme(theme) {
             // Validate theme value
-            var allowedThemes = ['calm', 'mono', 'neon', 'obsidian'];
+            var allowedThemes = ['default', 'calm', 'mono', 'neon', 'obsidian'];
             if (allowedThemes.indexOf(theme) === -1) {
                 console.warn('Invalid theme selected:', theme);
-                theme = 'mono'; // Default fallback
+                theme = 'default'; // Default fallback
             }
 
-            // Apply the theme to the body
-            $('body').attr('data-theme', theme);
+            // For 'default' theme, remove data-theme attribute to use WordPress defaults
+            if (theme === 'default') {
+                $('body').removeAttr('data-theme');
+            } else {
+                // Apply the theme to the body
+                $('body').attr('data-theme', theme);
+            }
 
             // Also update the select value if it doesn't match
             if (themeSelect.val() !== theme) {
@@ -50,8 +55,8 @@
 
         // Initialize: ensure the body has the correct theme on page load
         // This is redundant with the PHP script but provides a fallback
-        var initialTheme = themeSelect.val() || 'mono';
-        if (!$('body').attr('data-theme')) {
+        var initialTheme = themeSelect.val() || 'default';
+        if (!$('body').attr('data-theme') && initialTheme !== 'default') {
             applyTheme(initialTheme);
         }
     });

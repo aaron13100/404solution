@@ -161,12 +161,17 @@ class ABJ_404_Solution_WordPress_Connector {
 
         $logic = ABJ_404_Solution_PluginLogic::getInstance();
         $options = $logic->getOptions();
-        $theme = isset($options['admin_theme']) ? $options['admin_theme'] : 'mono';
+        $theme = isset($options['admin_theme']) ? $options['admin_theme'] : 'default';
 
         // Sanitize theme value - only allow specific values
-        $allowed_themes = array('calm', 'mono', 'neon', 'obsidian');
+        $allowed_themes = array('default', 'calm', 'mono', 'neon', 'obsidian');
         if (!in_array($theme, $allowed_themes)) {
-            $theme = 'mono';
+            $theme = 'default';
+        }
+
+        // Don't set data-theme attribute for 'default' theme
+        if ($theme === 'default') {
+            return;
         }
 
         echo '<script type="text/javascript">';

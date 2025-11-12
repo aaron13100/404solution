@@ -5,10 +5,14 @@
  * Themes are applied via the data-theme attribute on the body element.
  *
  * Available themes:
- * - mono (default): Monochrome Minimal (Light) - Grayscale with blue accents
+ * - default: Default WordPress styling - no custom theme applied
+ * - mono: Monochrome Minimal (Light) - Grayscale with blue accents
  * - calm: Calm Ops (Light) - Balanced blues and greens
  * - neon: Neon Slate (Dark) - Dark with violet and cyan accents
  * - obsidian: Obsidian Blue (Dark) - Deep blue dark theme
+ *
+ * Note: The "default" theme does not set a data-theme attribute,
+ * allowing WordPress to use its default admin styling.
  */
 
 /* ===== Default Theme: Monochrome Minimal (Light) ===== */
