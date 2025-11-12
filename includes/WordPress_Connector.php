@@ -192,6 +192,9 @@ class ABJ_404_Solution_WordPress_Connector {
     /** Output critical theme CSS inline to prevent FOUC (Flash of Unstyled Content).
      * This outputs the CSS variables for the selected theme directly in the <head>
      * before any external CSS files load, eliminating the flash when a custom theme is selected.
+     *
+     * Additionally, this sets the data-theme attribute on both HTML and body elements
+     * via a synchronous script, ensuring the attribute exists before CSS is parsed.
      */
     static function outputCriticalThemeCSS() {
         // Only run on our plugin pages
@@ -215,6 +218,23 @@ class ABJ_404_Solution_WordPress_Connector {
         if ($theme === 'default') {
             return;
         }
+
+        // Output synchronous script to set data-theme attributes immediately
+        // This MUST run before CSS is parsed to prevent flash
+        // Setting on html immediately, and body as soon as it's available
+        echo '<script id="abj404-theme-setter">';
+        echo '(function(){';
+        echo 'var theme="' . esc_js($theme) . '";';
+        echo 'document.documentElement.setAttribute("data-theme",theme);';
+        echo 'function setBodyTheme(){';
+        echo 'if(document.body){';
+        echo 'document.body.setAttribute("data-theme",theme);';
+        echo '}else{';
+        echo 'setTimeout(setBodyTheme,0);';
+        echo '}}';
+        echo 'setBodyTheme();';
+        echo '})();';
+        echo '</script>' . "\n";
 
         // Define CSS variables for each theme
         $themeVariables = array(
