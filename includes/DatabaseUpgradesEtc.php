@@ -106,8 +106,35 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	// but it doesn't take long anyway so we do it every night.
     	$this->permalinkCache->updatePermalinkCache(1);
 
-    	// Rebuild N-gram cache after permalink cache update
-    	$this->rebuildNGramCache();
+    	// One-time N-gram cache initialization (only on first install or upgrade)
+    	if (get_option('abj404_ngram_cache_initialized') !== '1') {
+    		$this->logger->debugMessage("N-gram cache not initialized. Starting one-time build...");
+
+    		$stats = $this->rebuildNGramCache();
+
+    		// Only set flag if build was successful
+    		if ($stats['success'] > 0 || $stats['total_pages'] == 0) {
+    			update_option('abj404_ngram_cache_initialized', '1');
+    			$this->logger->infoMessage("N-gram cache initialization complete. Flag set.");
+
+    			// Show admin notice on upgrade (not on fresh install to avoid clutter)
+    			if ($updatingToNewVersion && $stats['success'] > 0) {
+    				$message = sprintf(
+    					__('404 Solution: Built N-gram cache for %d pages to optimize spell checking performance.', '404-solution'),
+    					$stats['success']
+    				);
+    				add_settings_error('abj404_settings', 'ngram_cache_built', $message, 'updated');
+    			}
+    		} else if ($stats['failed'] > 0) {
+    			$this->logger->errorMessage(sprintf(
+    				"N-gram cache initialization had failures: %d processed, %d failed. Will retry on next activation.",
+    				$stats['processed'],
+    				$stats['failed']
+    			));
+    		}
+    	} else {
+    		$this->logger->debugMessage("N-gram cache already initialized. Skipping rebuild.");
+    	}
 
     	// Run one-time migration to relative paths (Issue #24)
     	if (get_option('abj404_migrated_to_relative_paths') !== '1') {
@@ -1049,60 +1076,98 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * Rebuild the N-gram cache for all pages.
      *
      * This method rebuilds the N-gram cache in batches to avoid memory issues
-     * and timeouts on large sites. It's called automatically after permalink cache updates.
+     * and timeouts on large sites. It's called automatically during plugin activation
+     * or version upgrades, but only if the cache hasn't been initialized yet.
      *
      * @param int $batchSize Number of pages to process per batch (default: 100)
-     * @return array Statistics about the rebuild process
+     * @param bool $forceRebuild Force rebuild even if cache is already populated (default: false)
+     * @return array Statistics: ['total_pages' => int, 'processed' => int, 'success' => int, 'failed' => int]
      */
-    function rebuildNGramCache($batchSize = 100) {
+    function rebuildNGramCache($batchSize = 100, $forceRebuild = false) {
         global $wpdb;
+
+        $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+
+        // Check if cache is already populated (unless force rebuild)
+        if (!$forceRebuild) {
+            $existingCount = $wpdb->get_var("SELECT COUNT(*) FROM {$ngramTable}");
+            if ($existingCount > 0) {
+                $this->logger->debugMessage("N-gram cache already contains {$existingCount} entries. Skipping rebuild (use forceRebuild=true to override).");
+                return [
+                    'total_pages' => $existingCount,
+                    'processed' => 0,
+                    'success' => $existingCount,
+                    'failed' => 0,
+                    'skipped' => true
+                ];
+            }
+        }
 
         $this->logger->debugMessage("Starting N-gram cache rebuild...");
 
-        // Clear existing N-gram cache
-        $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
-        $wpdb->query("TRUNCATE TABLE {$ngramTable}");
+        // Clear existing N-gram cache (only if force rebuild or empty)
+        $result = $wpdb->query("TRUNCATE TABLE {$ngramTable}");
+        if ($result === false) {
+            $this->logger->errorMessage("Failed to truncate N-gram cache table: " . $wpdb->last_error);
+            return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 1, 'error' => $wpdb->last_error];
+        }
 
-        // Get total page count
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        // Get total page count from permalink cache
         $totalPages = $wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
 
+        if ($totalPages === null) {
+            $this->logger->errorMessage("Failed to query permalink cache table: " . $wpdb->last_error);
+            return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 1, 'error' => $wpdb->last_error];
+        }
+
         if ($totalPages == 0) {
-            $this->logger->debugMessage("No pages in permalink cache. N-gram cache rebuild skipped.");
+            $this->logger->debugMessage("No pages in permalink cache. N-gram cache rebuild skipped (will rebuild when pages are added).");
             return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 0];
         }
 
-        $this->logger->debugMessage("Rebuilding N-gram cache for {$totalPages} pages...");
+        $this->logger->infoMessage("Rebuilding N-gram cache for {$totalPages} pages in batches of {$batchSize}...");
 
         // Process in batches
         $offset = 0;
         $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
 
         while ($offset < $totalPages) {
-            $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
+            try {
+                $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
 
-            $totalStats['processed'] += $stats['processed'];
-            $totalStats['success'] += $stats['success'];
-            $totalStats['failed'] += $stats['failed'];
+                $totalStats['processed'] += $stats['processed'];
+                $totalStats['success'] += $stats['success'];
+                $totalStats['failed'] += $stats['failed'];
 
-            $offset += $batchSize;
+                $offset += $batchSize;
 
-            // Stop if we processed fewer pages than expected (end of data)
-            if ($stats['processed'] < $batchSize) {
-                break;
+                // Stop if we processed fewer pages than expected (end of data)
+                if ($stats['processed'] < $batchSize) {
+                    break;
+                }
+
+                // Small delay to prevent server overload
+                usleep(50000); // 50ms
+
+            } catch (Exception $e) {
+                $this->logger->errorMessage("Error during N-gram cache rebuild at offset {$offset}: " . $e->getMessage());
+                $totalStats['failed'] += $batchSize; // Mark batch as failed
+                $offset += $batchSize; // Continue to next batch
             }
-
-            // Small delay to prevent server overload
-            usleep(50000); // 50ms
         }
 
         $totalStats['total_pages'] = $totalPages;
 
+        $successRate = $totalStats['processed'] > 0 ?
+            round(($totalStats['success'] / $totalStats['processed']) * 100, 1) : 0;
+
         $this->logger->infoMessage(sprintf(
-            "N-gram cache rebuild complete: %d pages, %d success, %d failed",
+            "N-gram cache rebuild complete: %d pages processed, %d success, %d failed (%.1f%% success rate)",
             $totalStats['processed'],
             $totalStats['success'],
-            $totalStats['failed']
+            $totalStats['failed'],
+            $successRate
         ));
 
         return $totalStats;
