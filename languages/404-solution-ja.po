@@ -364,6 +364,9 @@ msgstr "デバッグファイルが削除されました。（%s）"
 msgid "Debug logging"
 msgstr "デバッグログの記録"
 
+msgid "Default"
+msgstr "Default"
+
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "デフォルトのWordPress投稿タイプは「post」と「page」です。"
 

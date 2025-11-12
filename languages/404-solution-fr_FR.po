@@ -362,6 +362,9 @@ msgstr "Fichier(s) de débogage supprimé(s). (%s)"
 msgid "Debug logging"
 msgstr "Journalisation de débogage"
 
+msgid "Default"
+msgstr "Default"
+
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "Les types de contenu WordPress par défaut sont \"post\" et \"page.\""
 

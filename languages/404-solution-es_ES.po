@@ -364,6 +364,9 @@ msgstr "Archivo(s) de depuración eliminado(s). (%s)"
 msgid "Debug logging"
 msgstr "Registro de depuración"
 
+msgid "Default"
+msgstr "Default"
+
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "Los tipos de entrada predeterminados de WordPress son \"post\" y \"page\"."
 

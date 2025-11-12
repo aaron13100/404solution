@@ -364,6 +364,9 @@ msgstr "File debug dihapus. (%s)"
 msgid "Debug logging"
 msgstr "Pencatatan debug"
 
+msgid "Default"
+msgstr "Default"
+
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "Tipe post WordPress default adalah \"post\" dan \"page.\""
 

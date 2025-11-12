@@ -364,6 +364,9 @@ msgstr "调试文件已删除。(%s)"
 msgid "Debug logging"
 msgstr "调试日志记录"
 
+msgid "Default"
+msgstr "Default"
+
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "WordPress 默认文章类型为 \"post\" 和 \"page\"。"
 

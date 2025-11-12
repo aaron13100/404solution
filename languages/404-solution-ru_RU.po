@@ -364,6 +364,9 @@ msgstr "Файл(ы) отладки удалены. (%s)"
 msgid "Debug logging"
 msgstr "Журналирование отладки"
 
+msgid "Default"
+msgstr "Default"
+
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "Типы записей WordPress по умолчанию — это \"post\" и \"page.\""
 

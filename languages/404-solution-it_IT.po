@@ -364,6 +364,9 @@ msgstr "File di debug eliminato/i. (%s)"
 msgid "Debug logging"
 msgstr "Registrazione debug"
 
+msgid "Default"
+msgstr "Default"
+
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "I tipi di post predefiniti di WordPress sono \"post\" e \"page.\""
 
