@@ -727,15 +727,14 @@ class ABJ_404_Solution_DataAccess {
 
         if (count($types) >= 1) {
             $query = "select count(id) as count from {wp_abj404_redirects} where 1 and (status in (";
-            
-            $filteredTypes = array();
-            foreach ($types as $type) {
-            	array_push($filteredTypes, esc_sql($type));
-            }
+
+            // Use absint() for proper integer sanitization to prevent SQL injection
+            $filteredTypes = array_map('absint', $types);
             $typesForSQL = implode(", ", $filteredTypes);
             $query .= $typesForSQL . "))";
 
-            $query .= " and disabled = " . esc_sql($trashed);
+            // Use absint() for integer parameter sanitization
+            $query .= " and disabled = " . absint($trashed);
 
             $result = $this->queryAndGetResults($query);
             $rows = $result['rows'];
