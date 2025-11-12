@@ -20,3 +20,5 @@ where ( wp_term_taxonomy.taxonomy = 'post_tag' )
 /*  */
 
 order by wp_terms.name
+
+{limit}

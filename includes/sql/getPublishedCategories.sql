@@ -27,3 +27,5 @@ where ( wp_term_taxonomy.taxonomy in ('category', 'product_cat') or lower({wp_te
 /*  */
 
 order by {wp_terms}.name
+
+{limit}

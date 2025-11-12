@@ -144,11 +144,11 @@ class ABJ_404_Solution_Ajax_Php {
         // order the results. this also sets the page depth (for child pages).
         $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes, true);
         $publishedPosts = $abj404AjaxPhp->formatRedirectDestinations($rowsOtherTypes);
-        
-        $cats = $abj404dao->getPublishedCategories();
+
+        $cats = $abj404dao->getPublishedCategories(null, null, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         $categoryOptions = $abj404AjaxPhp->formatCategoryDestinations($cats);
-        
-        $tags = $abj404dao->getPublishedTags();
+
+        $tags = $abj404dao->getPublishedTags(null, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         $tagOptions = $abj404AjaxPhp->formatTagDestinations($tags);
         
         $customCategoriesMap = $abj404logic->getMapOfCustomCategories($cats);
