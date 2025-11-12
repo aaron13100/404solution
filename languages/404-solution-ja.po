@@ -20,6 +20,9 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
+
+msgid "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
+msgstr "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %3$s中%2$s"
 
@@ -426,6 +429,12 @@ msgstr "エラー：外部URLに://が含まれていません"
 
 msgid "Error: External URL is too short."
 msgstr "エラー：外部URLが短すぎます。"
+
+msgid "Error: External redirect URL failed validation."
+msgstr "Error: External redirect URL failed validation."
+
+msgid "Error: External URL must use http:// or https:// protocol only."
+msgstr "Error: External URL must use http:// or https:// protocol only."
 
 msgid "Error: Invalid theme selected"
 msgstr "エラー：無効なテーマが選択されました"

@@ -108,7 +108,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		// Show admin notice if migration occurred
     		if ($updatingToNewVersion && !empty($migrationResults['redirects_updated'])) {
     			$message = sprintf(
-    				__('404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format.', '404solution'),
+    				__('404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format.', '404-solution'),
     				$migrationResults['redirects_updated'],
     				$migrationResults['logs_updated']
     			);

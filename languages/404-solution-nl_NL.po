@@ -20,6 +20,9 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
+
+msgid "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
+msgstr "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s van %3$s"
 
@@ -426,6 +429,12 @@ msgstr "Fout: Externe URL bevat geen ://"
 
 msgid "Error: External URL is too short."
 msgstr "Fout: Externe URL is te kort."
+
+msgid "Error: External redirect URL failed validation."
+msgstr "Error: External redirect URL failed validation."
+
+msgid "Error: External URL must use http:// or https:// protocol only."
+msgstr "Error: External URL must use http:// or https:// protocol only."
 
 msgid "Error: Invalid theme selected"
 msgstr "Fout: Ongeldig thema geselecteerd"
