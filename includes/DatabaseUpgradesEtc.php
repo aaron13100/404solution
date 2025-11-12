@@ -31,6 +31,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	/** @var ABJ_404_Solution_PluginLogic */
 	private $logic;
 
+	/** @var ABJ_404_Solution_NGramFilter */
+	private $ngramFilter;
+
 	/**
 	 * Constructor with dependency injection.
 	 *
@@ -40,8 +43,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 * @param ABJ_404_Solution_PermalinkCache|null $permalinkCache Permalink cache service
 	 * @param ABJ_404_Solution_SynchronizationUtils|null $syncUtils Sync utilities
 	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
+	 * @param ABJ_404_Solution_NGramFilter|null $ngramFilter N-gram filter service
 	 */
-	public function __construct($dataAccess = null, $logging = null, $functions = null, $permalinkCache = null, $syncUtils = null, $pluginLogic = null) {
+	public function __construct($dataAccess = null, $logging = null, $functions = null, $permalinkCache = null, $syncUtils = null, $pluginLogic = null, $ngramFilter = null) {
 		// Use injected dependencies or fall back to getInstance() for backward compatibility
 		$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
 		$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
@@ -49,6 +53,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		$this->permalinkCache = $permalinkCache !== null ? $permalinkCache : ABJ_404_Solution_PermalinkCache::getInstance();
 		$this->syncUtils = $syncUtils !== null ? $syncUtils : ABJ_404_Solution_SynchronizationUtils::getInstance();
 		$this->logic = $pluginLogic !== null ? $pluginLogic : ABJ_404_Solution_PluginLogic::getInstance();
+		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : ABJ_404_Solution_NGramFilter::getInstance();
 	}
 
 	public static function getInstance() {
@@ -100,6 +105,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	// we could do this only when a table is created or when the "meta" column is created
     	// but it doesn't take long anyway so we do it every night.
     	$this->permalinkCache->updatePermalinkCache(1);
+
+    	// Rebuild N-gram cache after permalink cache update
+    	$this->rebuildNGramCache();
 
     	// Run one-time migration to relative paths (Issue #24)
     	if (get_option('abj404_migrated_to_relative_paths') !== '1') {
@@ -195,23 +203,28 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
     	$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
     	$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
+    	$ngramCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_ngram_cache}");
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
         $this->dao->queryAndGetResults($query);
         $this->verifyColumns($permalinkCacheTable, $query);
-        
+
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
         $this->dao->queryAndGetResults($query);
         $this->verifyColumns($spellingCacheTable, $query);
-        
+
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createNGramCacheTable.sql");
+        $this->dao->queryAndGetResults($query);
+        $this->verifyColumns($ngramCacheTable, $query);
+
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
         $this->dao->queryAndGetResults($query);
         $this->verifyColumns($redirectsTable, $query);
-        
+
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $this->dao->queryAndGetResults($query);
         $this->verifyColumns($logsTable, $query);
-        
+
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
         $this->dao->queryAndGetResults($query);
         $this->verifyColumns($lookupTable, $query);
@@ -224,23 +237,28 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
     	$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
     	$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
-    	
+    	$ngramCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_ngram_cache}");
+
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
     	$query = $this->f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
     	$this->verifyIndexes($permalinkCacheTable, $query);
-    	
+
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
     	$query = $this->f->str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
     	$this->verifyIndexes($spellingCacheTable, $query);
-    	
+
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createNGramCacheTable.sql");
+    	$query = $this->f->str_replace('{wp_abj404_ngram_cache}', $ngramCacheTable, $query);
+    	$this->verifyIndexes($ngramCacheTable, $query);
+
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
     	$query = $this->f->str_replace('{redirectsTable}', $redirectsTable, $query);
     	$this->verifyIndexes($redirectsTable, $query);
-    	
+
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
     	$query = $this->f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
     	$this->verifyIndexes($logsTable, $query);
-    	
+
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
     	$query = $this->f->str_replace('{wp_abj404_lookup}', $lookupTable, $query);
     	$this->verifyIndexes($lookupTable, $query);
@@ -1023,7 +1041,70 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     " days old), currently version " . ABJ404_VERSION . " is installed.");
             return true;
         }
-        
+
         return false;
+    }
+
+    /**
+     * Rebuild the N-gram cache for all pages.
+     *
+     * This method rebuilds the N-gram cache in batches to avoid memory issues
+     * and timeouts on large sites. It's called automatically after permalink cache updates.
+     *
+     * @param int $batchSize Number of pages to process per batch (default: 100)
+     * @return array Statistics about the rebuild process
+     */
+    function rebuildNGramCache($batchSize = 100) {
+        global $wpdb;
+
+        $this->logger->debugMessage("Starting N-gram cache rebuild...");
+
+        // Clear existing N-gram cache
+        $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
+        $wpdb->query("TRUNCATE TABLE {$ngramTable}");
+
+        // Get total page count
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        $totalPages = $wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
+
+        if ($totalPages == 0) {
+            $this->logger->debugMessage("No pages in permalink cache. N-gram cache rebuild skipped.");
+            return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 0];
+        }
+
+        $this->logger->debugMessage("Rebuilding N-gram cache for {$totalPages} pages...");
+
+        // Process in batches
+        $offset = 0;
+        $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
+
+        while ($offset < $totalPages) {
+            $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
+
+            $totalStats['processed'] += $stats['processed'];
+            $totalStats['success'] += $stats['success'];
+            $totalStats['failed'] += $stats['failed'];
+
+            $offset += $batchSize;
+
+            // Stop if we processed fewer pages than expected (end of data)
+            if ($stats['processed'] < $batchSize) {
+                break;
+            }
+
+            // Small delay to prevent server overload
+            usleep(50000); // 50ms
+        }
+
+        $totalStats['total_pages'] = $totalPages;
+
+        $this->logger->infoMessage(sprintf(
+            "N-gram cache rebuild complete: %d pages, %d success, %d failed",
+            $totalStats['processed'],
+            $totalStats['success'],
+            $totalStats['failed']
+        ));
+
+        return $totalStats;
     }
 }

@@ -64,7 +64,7 @@ function abj_404_solution_init_services() {
 
     /**
      * Database upgrades - handles schema migrations and upgrades.
-     * Dependencies: data_access, logging, functions, permalink_cache, sync_utils, plugin_logic
+     * Dependencies: data_access, logging, functions, permalink_cache, sync_utils, plugin_logic, ngram_filter
      */
     $container->set('database_upgrades', function($c) {
         return new ABJ_404_Solution_DatabaseUpgradesEtc(
@@ -73,7 +73,8 @@ function abj_404_solution_init_services() {
             $c->get('functions'),
             $c->get('permalink_cache'),
             $c->get('sync_utils'),
-            $c->get('plugin_logic')
+            $c->get('plugin_logic'),
+            $c->get('ngram_filter')
         );
     });
 
@@ -86,6 +87,18 @@ function abj_404_solution_init_services() {
             $c->get('data_access'),
             $c->get('logging'),
             $c->get('plugin_logic')
+        );
+    });
+
+    /**
+     * N-gram filter - provides N-gram based spell checker optimization.
+     * Dependencies: data_access, logging, functions
+     */
+    $container->set('ngram_filter', function($c) {
+        return new ABJ_404_Solution_NGramFilter(
+            $c->get('data_access'),
+            $c->get('logging'),
+            $c->get('functions')
         );
     });
 
@@ -107,7 +120,7 @@ function abj_404_solution_init_services() {
 
     /**
      * Spell checker service - handles URL matching and suggestions.
-     * Dependencies: functions, plugin_logic, data_access, logging, permalink_cache
+     * Dependencies: functions, plugin_logic, data_access, logging, permalink_cache, ngram_filter
      */
     $container->set('spell_checker', function($c) {
         return new ABJ_404_Solution_SpellChecker(
@@ -115,7 +128,8 @@ function abj_404_solution_init_services() {
             $c->get('plugin_logic'),
             $c->get('data_access'),
             $c->get('logging'),
-            $c->get('permalink_cache')
+            $c->get('permalink_cache'),
+            $c->get('ngram_filter')
         );
     });
 
@@ -213,6 +227,7 @@ function abj_get_instance($className) {
         'ABJ_404_Solution_ErrorHandler' => 'error_handler',
         'ABJ_404_Solution_DatabaseUpgradesEtc' => 'database_upgrades',
         'ABJ_404_Solution_PermalinkCache' => 'permalink_cache',
+        'ABJ_404_Solution_NGramFilter' => 'ngram_filter',
         'ABJ_404_Solution_SlugChangeHandler' => 'slug_change_handler',
         'ABJ_404_Solution_PublishedPostsProvider' => 'published_posts_provider',
         'ABJ_404_Solution_SynchronizationUtils' => 'sync_utils',
