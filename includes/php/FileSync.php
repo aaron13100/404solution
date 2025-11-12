@@ -21,10 +21,14 @@ class ABJ_404_Solution_FileSync {
 		$filePath = $this->getSyncFilePath($key);
 		$fileUtils = ABJ_404_Solution_Functions::getInstance();
 
-		// Fixed: TOCTOU race condition - just try to read atomically instead of check-then-read
-		$contents = $fileUtils->readFileContents($filePath, false);
-
-		return ($contents === false) ? "" : $contents;
+		// Fixed: TOCTOU race condition - catch exception instead of check-then-read
+		try {
+			$contents = $fileUtils->readFileContents($filePath, false);
+			return $contents;
+		} catch (Exception $e) {
+			// File doesn't exist or can't be read - return empty string
+			return "";
+		}
 	}
 	
 	function writeOwnerToFile($key, $uniqueID) {
