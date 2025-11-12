@@ -541,7 +541,7 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getPermalinkEtcFromCache($id) {
-        $query = "select * from {wp_abj404_permalink_cache} where id = " . $id;
+        $query = "select id, url, meta, url_length, post_parent from {wp_abj404_permalink_cache} where id = " . $id;
         $results = $this->queryAndGetResults($query);
         
         $rows = $results['rows'];
@@ -572,7 +572,7 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getSpellingPermalinksFromCache($requestedURLRaw) {
-        $query = "select * from {wp_abj404_spelling_cache} where url = '" . esc_sql($requestedURLRaw) . "'";
+        $query = "select id, url, matchdata from {wp_abj404_spelling_cache} where url = '" . esc_sql($requestedURLRaw) . "'";
         $results = $this->queryAndGetResults($query);
         
         $rows = $results['rows'];
@@ -696,9 +696,9 @@ class ABJ_404_Solution_DataAccess {
     */
    function getLogDiskUsage() {
        global $wpdb;
-       
+
        // we have to analyze the table first for the query to be valid.
-       $result = $this->queryAndGetResults("OPTIMIZE TABLE {wp_abj404_logsv2}");
+       $result = $this->queryAndGetResults("ANALYZE TABLE {wp_abj404_logsv2}");
 
        if ($result['last_error'] != '') {
            $this->logger->errorMessage("Error: " . esc_html($result['last_error']));
