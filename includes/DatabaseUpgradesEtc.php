@@ -69,22 +69,26 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @global type $wpdb
      */
     function createDatabaseTables($updatingToNewVersion = false) {
-    	
+
     	$synchronizedKeyFromUser = "create_db_tables";
     	$uniqueID = $this->syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
-    	
+
     	if ($uniqueID == '' || $uniqueID == null) {
     		$this->logger->debugMessage("Avoiding multiple calls for creating database tables.");
     		return;
     	}
-    	
+
+    	// Fixed: Use finally block to ensure lock is ALWAYS released, even on fatal errors
     	try {
     		$this->reallyCreateDatabaseTables($updatingToNewVersion);
-    		
-    	} catch (Exception $e) {
+
+    	} catch (Throwable $e) {  // Fixed: Catch Throwable (Exception + Error) instead of just Exception
     		$this->logger->errorMessage("Error creating database tables. ", $e);
+    		throw $e;  // Re-throw to propagate the error
+    	} finally {
+    		// This ALWAYS executes, even on fatal errors or exceptions
+    		$this->syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
     	}
-    	$this->syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
     }
     
     private function reallyCreateDatabaseTables($updatingToNewVersion = false) {
