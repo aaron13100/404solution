@@ -73,6 +73,18 @@ class ABJ_404_Solution_NGramFilter {
         // Normalize: lowercase and use mbstring for UTF-8 support
         $url = $this->f->strtolower($url);
 
+        // Limit URL length to prevent excessive N-gram generation
+        // Most real URLs are < 200 chars. Limiting to 500 prevents:
+        // - Memory exhaustion (4000+ N-grams for 2083 char URLs)
+        // - Slow JSON encoding/decoding
+        // - Database bloat
+        $maxLength = 500;
+        $originalLength = $this->f->strlen($url);
+        if ($originalLength > $maxLength) {
+            $this->logger->debugMessage("URL too long for N-gram extraction: {$originalLength} chars, truncating to {$maxLength}");
+            $url = $this->f->substr($url, 0, $maxLength);
+        }
+
         $result = [];
         $length = $this->f->strlen($url);
 
@@ -88,7 +100,8 @@ class ABJ_404_Solution_NGramFilter {
 
             // Store under 'bi' for n=2, 'tri' for n=3
             $key = ($n == 2) ? 'bi' : 'tri';
-            $result[$key] = array_keys($ngrams);
+            // Convert keys to strings to prevent PHP from converting numeric strings to integers
+            $result[$key] = array_map('strval', array_keys($ngrams));
         }
 
         return $result;
@@ -204,18 +217,37 @@ class ABJ_404_Solution_NGramFilter {
     /**
      * Get all cached N-grams for similarity queries.
      *
+     * WARNING: This loads all cache entries into memory. On large sites (10K+ pages),
+     * this can consume 20-120MB of memory. Consider using pagination or database-side
+     * filtering for production sites with > 5000 pages.
+     *
      * @return array Array of cached entries with page_id, url, url_normalized, and ngrams
      */
     public function getAllCachedNGrams() {
         global $wpdb;
 
         $table = $wpdb->prefix . 'abj404_ngram_cache';
+
+        // Check cache size first to warn about potential memory issues
+        $count = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+        if ($count > 5000) {
+            $this->logger->debugMessage("WARNING: N-gram cache has {$count} entries. This may cause memory issues. Consider implementing pagination.");
+        }
+
         $query = "SELECT page_id, url, url_normalized, ngrams, ngram_count FROM {$table}";
 
         $results = $wpdb->get_results($query, ARRAY_A);
 
-        // Decode JSON for each entry
+        if (!is_array($results)) {
+            return [];
+        }
+
+        // Decode JSON for each entry and ensure array format
         foreach ($results as &$row) {
+            // Handle both object and array results (defensive coding for test environments)
+            if (is_object($row)) {
+                $row = (array) $row;
+            }
             $row['ngrams'] = json_decode($row['ngrams'], true);
         }
 
@@ -262,6 +294,10 @@ class ABJ_404_Solution_NGramFilter {
 
         $pages = $wpdb->get_results($query, ARRAY_A);
 
+        if (!is_array($pages)) {
+            $pages = [];
+        }
+
         $stats = [
             'processed' => 0,
             'success' => 0,
@@ -269,6 +305,11 @@ class ABJ_404_Solution_NGramFilter {
         ];
 
         foreach ($pages as $page) {
+            // Handle both object and array results (defensive coding for test environments)
+            if (is_object($page)) {
+                $page = (array) $page;
+            }
+
             $pageId = $page['id'];
             $url = $page['url'];
 

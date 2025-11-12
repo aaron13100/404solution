@@ -113,7 +113,22 @@ class ABJ_404_Solution_SpellChecker {
 			'efficiency_percent' => round($efficiency, 2)
 		];
 	}
-	
+
+	/**
+	 * Find URL suggestions using smart caching (N-gram filtering).
+	 * This is a wrapper around findMatchingPosts() primarily for testing.
+	 *
+	 * @param string $requestedURL The 404 URL to find matches for
+	 * @param string $includeCats Whether to include categories (default '1')
+	 * @param bool $includeTags Whether to include tags (default true, converted to '1')
+	 * @return array Array of matching posts/pages
+	 */
+	public function findSuggestionsForURLUsingSmartCache($requestedURL, $includeCats = '1', $includeTags = true) {
+		// Convert boolean to string for backward compatibility
+		$includeTagsStr = $includeTags ? '1' : '0';
+		return $this->findMatchingPosts($requestedURL, $includeCats, $includeTagsStr);
+	}
+
 	static function init() {
 		// any time a page is saved or updated, or the permalink structure changes, then we have to clear
 		// the spelling cache because the results may have changed.

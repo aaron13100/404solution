@@ -755,7 +755,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $abj404logging->infoMessage("Migration already in progress, skipping.");
             return array('errors' => array('Migration already in progress'));
         }
-        set_transient('abj404_migration_in_progress', '1', 86400); // 24 hour lock
+        // Use 30-minute lock instead of 24 hours to allow retry if migration crashes
+        // Most migrations complete in < 5 minutes, 30 min allows for crashes/timeouts
+        set_transient('abj404_migration_in_progress', '1', 1800); // 30 minute lock
 
         // Get current WordPress subdirectory
         $homeURL = get_home_url();

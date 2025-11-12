@@ -745,3 +745,7 @@ msgstr ""
 #: includes/functions.php:79
 msgid "No Results To Display."
 msgstr ""
+#: includes/DatabaseUpgradesEtc.php:123
+msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
+msgstr ""
+
