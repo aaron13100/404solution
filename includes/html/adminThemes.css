@@ -17,7 +17,9 @@
 
 /* ===== Default Theme: Monochrome Minimal (Light) ===== */
 :root,
-body:not([data-theme]),
+html:not([data-theme]),
+html:not([data-theme]) body,
+html[data-theme="mono"],
 body[data-theme="mono"] {
   --abj404-bg: #F8FAFC;
   --abj404-bg-muted: #F5F7FA;
@@ -42,6 +44,7 @@ body[data-theme="mono"] {
 }
 
 /* === Calm Ops (Light) === */
+html[data-theme="calm"],
 body[data-theme="calm"] {
   --abj404-bg: #F7FAFD;
   --abj404-bg-muted: #F1F6FE;
@@ -66,6 +69,7 @@ body[data-theme="calm"] {
 }
 
 /* === Neon Slate (Dark) === */
+html[data-theme="neon"],
 body[data-theme="neon"] {
   --abj404-bg: #0C0F13;
   --abj404-bg-muted: #11151A;
@@ -90,6 +94,7 @@ body[data-theme="neon"] {
 }
 
 /* === Obsidian Blue (Dark) === */
+html[data-theme="obsidian"],
 body[data-theme="obsidian"] {
   --abj404-bg: #0A0F1A;
   --abj404-bg-muted: #0E1522;
@@ -115,15 +120,23 @@ body[data-theme="obsidian"] {
 
 /* ===== Apply theme colors to WordPress admin elements ===== */
 /* Using high specificity selectors to avoid !important */
+/* Note: Selectors check both html[data-theme] and body[data-theme] */
+/* to support early theme application before body element is ready */
 
 /* Background colors */
+html[data-theme] body .wrap,
 body[data-theme] .wrap,
+html[data-theme] body.wp-admin #wpwrap .wrap,
 body[data-theme].wp-admin #wpwrap .wrap {
   background-color: var(--abj404-bg);
   color: var(--abj404-text);
 }
 
 /* Page headings (like "404 Solution Options") */
+html[data-theme] body .wrap h1,
+html[data-theme] body .wrap h2,
+html[data-theme] body .wrap > h1,
+html[data-theme] body .wrap > h2,
 body[data-theme] .wrap h1,
 body[data-theme] .wrap h2,
 body[data-theme] .wrap > h1,
@@ -132,6 +145,8 @@ body[data-theme] .wrap > h2 {
 }
 
 /* Post boxes (the main content containers) */
+html[data-theme] body .postbox,
+html[data-theme] body .postbox-container .metabox-holder .postbox,
 body[data-theme] .postbox,
 body[data-theme] .postbox-container .metabox-holder .postbox {
   background-color: var(--abj404-surface);
@@ -139,12 +154,17 @@ body[data-theme] .postbox-container .metabox-holder .postbox {
   color: var(--abj404-text);
 }
 
+html[data-theme] body .postbox .inside,
 body[data-theme] .postbox .inside {
   background-color: var(--abj404-surface);
   color: var(--abj404-text);
 }
 
 /* Postbox headers */
+html[data-theme] body .postbox h2,
+html[data-theme] body .postbox h3,
+html[data-theme] body .postbox .hndle,
+html[data-theme] body .hndle,
 body[data-theme] .postbox h2,
 body[data-theme] .postbox h3,
 body[data-theme] .postbox .hndle,
