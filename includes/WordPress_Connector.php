@@ -74,6 +74,9 @@ class ABJ_404_Solution_WordPress_Connector {
             // doesn't work for the ajax dropdown list.
             add_action('admin_enqueue_scripts',
             	'ABJ_404_Solution_WordPress_Connector::add_scripts', 11);
+            // Output critical theme CSS early (priority 1) to prevent FOUC
+            add_action('admin_head',
+            	'ABJ_404_Solution_WordPress_Connector::outputCriticalThemeCSS', 1);
             add_action('admin_head',
             	'ABJ_404_Solution_WordPress_Connector::add_theme_script');
             // wp_ajax_nopriv_ is for normal users
@@ -184,6 +187,131 @@ class ABJ_404_Solution_WordPress_Connector {
         echo '  }';
         echo '})();';
         echo '</script>';
+    }
+
+    /** Output critical theme CSS inline to prevent FOUC (Flash of Unstyled Content).
+     * This outputs the CSS variables for the selected theme directly in the <head>
+     * before any external CSS files load, eliminating the flash when a custom theme is selected.
+     */
+    static function outputCriticalThemeCSS() {
+        // Only run on our plugin pages
+        if (!array_key_exists('abj404_settingsPageName', $GLOBALS) ||
+            !array_key_exists('page', $_GET) ||
+            $_GET['page'] != ABJ404_PP) {
+            return;
+        }
+
+        $logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $options = $logic->getOptions();
+        $theme = isset($options['admin_theme']) ? $options['admin_theme'] : 'default';
+
+        // Sanitize theme value - only allow specific values
+        $allowed_themes = array('default', 'calm', 'mono', 'neon', 'obsidian');
+        if (!in_array($theme, $allowed_themes)) {
+            $theme = 'default';
+        }
+
+        // Don't output inline CSS for 'default' theme - let WordPress defaults apply
+        if ($theme === 'default') {
+            return;
+        }
+
+        // Define CSS variables for each theme
+        $themeVariables = array(
+            'mono' => array(
+                '--abj404-bg' => '#F8FAFC',
+                '--abj404-bg-muted' => '#F5F7FA',
+                '--abj404-surface' => '#ffffff',
+                '--abj404-surface-muted' => '#F1F5F9',
+                '--abj404-text' => '#111827',
+                '--abj404-text-muted' => '#6B7280',
+                '--abj404-border' => '#E5E7EB',
+                '--abj404-primary' => '#374151',
+                '--abj404-accent' => '#2563EB',
+                '--abj404-info' => '#3B82F6',
+                '--abj404-success' => '#10B981',
+                '--abj404-warning' => '#F59E0B',
+                '--abj404-danger' => '#EF4444',
+                '--abj404-focus' => '#93C5FD',
+                '--abj404-table-header' => '#F1F5F9',
+                '--abj404-row-hover' => '#F5F7FA',
+                '--abj404-row-selected' => '#DBEAFE',
+                '--abj404-badge-bg' => '#EFF1F5',
+                '--abj404-badge-text' => '#374151',
+            ),
+            'calm' => array(
+                '--abj404-bg' => '#F7FAFD',
+                '--abj404-bg-muted' => '#F1F6FE',
+                '--abj404-surface' => '#ffffff',
+                '--abj404-surface-muted' => '#E9F0FB',
+                '--abj404-text' => '#17223B',
+                '--abj404-text-muted' => '#5A6B86',
+                '--abj404-border' => '#E1E8F5',
+                '--abj404-primary' => '#1E6BD6',
+                '--abj404-accent' => '#00A27A',
+                '--abj404-info' => '#2B8AE2',
+                '--abj404-success' => '#20B67A',
+                '--abj404-warning' => '#F6A700',
+                '--abj404-danger' => '#D53F3F',
+                '--abj404-focus' => '#5AA2FF',
+                '--abj404-table-header' => '#E9F0FB',
+                '--abj404-row-hover' => '#F1F6FE',
+                '--abj404-row-selected' => '#D7E8FF',
+                '--abj404-badge-bg' => '#EEF2F8',
+                '--abj404-badge-text' => '#3E546E',
+            ),
+            'neon' => array(
+                '--abj404-bg' => '#0C0F13',
+                '--abj404-bg-muted' => '#11151A',
+                '--abj404-surface' => '#151A21',
+                '--abj404-surface-muted' => '#1B222B',
+                '--abj404-text' => '#E5EAF2',
+                '--abj404-text-muted' => '#A6B0C3',
+                '--abj404-border' => '#273141',
+                '--abj404-primary' => '#7C3AED',
+                '--abj404-accent' => '#22D3EE',
+                '--abj404-info' => '#60A5FA',
+                '--abj404-success' => '#34D399',
+                '--abj404-warning' => '#F59E0B',
+                '--abj404-danger' => '#F87171',
+                '--abj404-focus' => '#38BDF8',
+                '--abj404-table-header' => '#1F2732',
+                '--abj404-row-hover' => '#192028',
+                '--abj404-row-selected' => '#0E2936',
+                '--abj404-badge-bg' => '#202734',
+                '--abj404-badge-text' => '#CFD8E6',
+            ),
+            'obsidian' => array(
+                '--abj404-bg' => '#0A0F1A',
+                '--abj404-bg-muted' => '#0E1522',
+                '--abj404-surface' => '#121826',
+                '--abj404-surface-muted' => '#172032',
+                '--abj404-text' => '#E6ECF7',
+                '--abj404-text-muted' => '#A9B7CC',
+                '--abj404-border' => '#223149',
+                '--abj404-primary' => '#1D4ED8',
+                '--abj404-accent' => '#A78BFA',
+                '--abj404-info' => '#60A5FA',
+                '--abj404-success' => '#22C55E',
+                '--abj404-warning' => '#F59E0B',
+                '--abj404-danger' => '#EF4444',
+                '--abj404-focus' => '#93C5FD',
+                '--abj404-table-header' => '#1B253A',
+                '--abj404-row-hover' => '#141C2C',
+                '--abj404-row-selected' => '#1A2A46',
+                '--abj404-badge-bg' => '#1A2438',
+                '--abj404-badge-text' => '#DCE6F7',
+            ),
+        );
+
+        // Output inline critical CSS if theme is selected
+        if (isset($themeVariables[$theme])) {
+            echo '<style id="abj404-critical-theme-css">:root{';
+            foreach ($themeVariables[$theme] as $var => $value) {
+                echo esc_html($var) . ':' . esc_html($value) . ';';
+            }
+            echo '}</style>';
+        }
     }
 
     static function remove_admin_footer_text($content) {
