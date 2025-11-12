@@ -166,15 +166,16 @@ class ABJ_404_Solution_SpellChecker {
 		// 3 options: save a new page, save an existing page (update), delete a page.
 		$deleteSpellingCache = false;
 		$deleteFromPermalinkCache = false;
+		$invalidateNGramCache = false;
 		$reason = '';
 
 		// 2: save an existing page. if any of the following changed then delete
 		// from the permalink cache: slug, type, status.
-		// if any of the following changed then delete the entire spelling cache: 
+		// if any of the following changed then delete the entire spelling cache:
 		// slug, type, status.
 		$cacheRow = $this->dao->getPermalinkEtcFromCache($post_id);
 		$cacheRow = (isset($cacheRow)) ? $cacheRow : array();
-		$oldSlug = (array_key_exists('url', $cacheRow)) ? 
+		$oldSlug = (array_key_exists('url', $cacheRow)) ?
 			rtrim(ltrim($cacheRow['url'], '/'), '/') : '(not found)';
 		$newSlug = $post->post_name;
 		$matches = array();
@@ -183,15 +184,16 @@ class ABJ_404_Solution_SpellChecker {
 		$oldStatus = count($matches) > 1 ? $matches[1] : '(not found)';
 		preg_match('/t:(\\w+?),/', $metaRow, $matches);
 		$oldPostType = count($matches) > 1 ? $matches[1] : '(not found)';
-		if ($update && $saveOrDelete == 'save' && 
+		if ($update && $saveOrDelete == 'save' &&
 				($oldSlug != $newSlug ||
 				$oldStatus != $post->post_status ||
 				$oldPostType != $post->post_type)
 			) {
 			$deleteSpellingCache = true; // TODO only delete where the page is referenced.
 			$deleteFromPermalinkCache = true;
-			$reason = 'change. slug (' . $oldSlug . '(to)' . $newSlug . '), status (' . 
-				$oldStatus . '(to)' . $post->post_status . '), type (' . $oldPostType . 
+			$invalidateNGramCache = true;
+			$reason = 'change. slug (' . $oldSlug . '(to)' . $newSlug . '), status (' .
+				$oldStatus . '(to)' . $post->post_status . '), type (' . $oldPostType .
 				'(to)' . $post->post_type . ')';
 		}
 
@@ -233,23 +235,32 @@ class ABJ_404_Solution_SpellChecker {
 		if (!$update && $saveOrDelete == 'save') {
 			$deleteSpellingCache = true; // delete all.
 			$deleteFromPermalinkCache = false; // it's not there anyway.
+			$invalidateNGramCache = false; // it's not there anyway.
 			$reason = 'new page';
 		}
 
-		// delete a page. 
+		// delete a page.
 		if ($saveOrDelete == 'delete') {
 			$deleteSpellingCache = true; // TODO only delete where the page is referenced.
 			$deleteFromPermalinkCache = true;
+			$invalidateNGramCache = true;
 			$reason = 'deleted page';
 		}
 
 		if ($deleteFromPermalinkCache) {
 			$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
-				": Delete from permalink cache: " . $post_id . ", action: " . 
+				": Delete from permalink cache: " . $post_id . ", action: " .
 				$saveOrDelete . ", reason: " . $reason);
 			$this->dao->removeFromPermalinkCache($post_id);
 			// let's update some links.
 			$this->permalinkCache->updatePermalinkCache(0.1);
+		}
+
+		if ($invalidateNGramCache) {
+			$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
+				": Invalidate N-gram cache entry: " . $post_id . ", action: " .
+				$saveOrDelete . ", reason: " . $reason);
+			$this->ngramFilter->invalidatePage($post_id);
 		}
 
 		if ($deleteSpellingCache) {

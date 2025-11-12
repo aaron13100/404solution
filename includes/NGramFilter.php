@@ -81,7 +81,7 @@ class ABJ_404_Solution_NGramFilter {
         $maxLength = 500;
         $originalLength = $this->f->strlen($url);
         if ($originalLength > $maxLength) {
-            $this->logger->debugMessage("URL too long for N-gram extraction: {$originalLength} chars, truncating to {$maxLength}");
+            $this->logger->infoMessage("WARNING: URL too long for N-gram extraction: {$originalLength} chars, truncating to {$maxLength}. URL: " . $this->f->substr($url, 0, 100) . "...");
             $url = $this->f->substr($url, 0, $maxLength);
         }
 
@@ -161,9 +161,35 @@ class ABJ_404_Solution_NGramFilter {
      * @return bool Success status
      */
     public function storeNGrams($pageId, $url, $urlNormalized, $ngrams) {
+        // Input validation
+        if (!is_numeric($pageId) || $pageId <= 0) {
+            $this->logger->errorMessage("Invalid page ID for N-gram storage: " . var_export($pageId, true));
+            return false;
+        }
+
+        if (!is_string($url) || !is_string($urlNormalized)) {
+            $this->logger->errorMessage("Invalid URL type for N-gram storage (page ID {$pageId})");
+            return false;
+        }
+
+        if (!is_array($ngrams) || !isset($ngrams['bi']) || !isset($ngrams['tri'])) {
+            $this->logger->errorMessage("Invalid N-gram structure for page ID {$pageId}");
+            return false;
+        }
+
+        if (!is_array($ngrams['bi']) || !is_array($ngrams['tri'])) {
+            $this->logger->errorMessage("Invalid N-gram array types for page ID {$pageId}");
+            return false;
+        }
+
         global $wpdb;
 
         $ngramJson = json_encode($ngrams);
+        if ($ngramJson === false) {
+            $this->logger->errorMessage("Failed to JSON encode N-grams for page ID {$pageId}");
+            return false;
+        }
+
         $ngramCount = count($ngrams['bi']) + count($ngrams['tri']);
 
         $table = $wpdb->prefix . 'abj404_ngram_cache';
@@ -172,7 +198,7 @@ class ABJ_404_Solution_NGramFilter {
         $result = $wpdb->replace(
             $table,
             [
-                'page_id' => $pageId,
+                'page_id' => (int)$pageId,
                 'url' => $url,
                 'url_normalized' => $urlNormalized,
                 'ngrams' => $ngramJson,
@@ -217,10 +243,10 @@ class ABJ_404_Solution_NGramFilter {
     /**
      * Get all cached N-grams for similarity queries.
      *
-     * WARNING: This loads all cache entries into memory. On large sites (10K+ pages),
-     * this can consume 20-120MB of memory. Consider using pagination or database-side
-     * filtering for production sites with > 5000 pages.
+     * DEPRECATED: This method loads all entries into memory and should not be used
+     * on large sites. Use findSimilarPagesEfficient() instead for sites with > 1000 pages.
      *
+     * @deprecated Use database-side filtering for large sites
      * @return array Array of cached entries with page_id, url, url_normalized, and ngrams
      */
     public function getAllCachedNGrams() {
@@ -228,10 +254,15 @@ class ABJ_404_Solution_NGramFilter {
 
         $table = $wpdb->prefix . 'abj404_ngram_cache';
 
-        // Check cache size first to warn about potential memory issues
+        // Check cache size first - abort if too large
         $count = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+        if ($count > 10000) {
+            $this->logger->errorMessage("CRITICAL: N-gram cache has {$count} entries. Cannot load into memory. Feature disabled for this request.");
+            return [];
+        }
+
         if ($count > 5000) {
-            $this->logger->debugMessage("WARNING: N-gram cache has {$count} entries. This may cause memory issues. Consider implementing pagination.");
+            $this->logger->infoMessage("WARNING: N-gram cache has {$count} entries. This may cause memory issues.");
         }
 
         $query = "SELECT page_id, url, url_normalized, ngrams, ngram_count FROM {$table}";
@@ -255,6 +286,50 @@ class ABJ_404_Solution_NGramFilter {
     }
 
     /**
+     * Get cached N-grams efficiently with database-side filtering.
+     *
+     * This method filters candidates in the database before loading into memory,
+     * drastically reducing memory usage for large sites.
+     *
+     * @param int $minNgramCount Minimum N-gram count (for filtering dissimilar pages)
+     * @param int $maxNgramCount Maximum N-gram count
+     * @param int $limit Maximum number of results to return
+     * @return array Array of cached entries
+     */
+    public function getCachedNGramsFiltered($minNgramCount, $maxNgramCount, $limit = 1000) {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'abj404_ngram_cache';
+
+        // Database-side filtering by ngram_count range
+        $query = $wpdb->prepare(
+            "SELECT page_id, url, url_normalized, ngrams, ngram_count
+             FROM {$table}
+             WHERE ngram_count BETWEEN %d AND %d
+             LIMIT %d",
+            $minNgramCount,
+            $maxNgramCount,
+            $limit
+        );
+
+        $results = $wpdb->get_results($query, ARRAY_A);
+
+        if (!is_array($results)) {
+            return [];
+        }
+
+        // Decode JSON for each entry
+        foreach ($results as &$row) {
+            if (is_object($row)) {
+                $row = (array) $row;
+            }
+            $row['ngrams'] = json_decode($row['ngrams'], true);
+        }
+
+        return $results;
+    }
+
+    /**
      * Invalidate (delete) N-grams for a specific page.
      * Call this when a page is updated or deleted.
      *
@@ -268,6 +343,73 @@ class ABJ_404_Solution_NGramFilter {
         $result = $wpdb->delete($table, ['page_id' => $pageId], ['%d']);
 
         return $result !== false;
+    }
+
+    /**
+     * Update N-grams for specific pages (incremental update).
+     *
+     * This method updates N-grams for specific page IDs, useful when
+     * individual pages are added or updated in the permalink cache.
+     *
+     * @param array $pageIds Array of page IDs to update
+     * @return array Statistics: ['processed' => int, 'success' => int, 'failed' => int]
+     */
+    public function updateNGramsForPages($pageIds) {
+        if (empty($pageIds) || !is_array($pageIds)) {
+            return ['processed' => 0, 'success' => 0, 'failed' => 0];
+        }
+
+        global $wpdb;
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+
+        // Prepare IN clause for page IDs
+        $placeholders = implode(',', array_fill(0, count($pageIds), '%d'));
+        $query = $wpdb->prepare(
+            "SELECT id, url FROM {$permalinkCacheTable} WHERE id IN ({$placeholders})",
+            ...$pageIds
+        );
+
+        $pages = $wpdb->get_results($query, ARRAY_A);
+
+        if (!is_array($pages)) {
+            return ['processed' => 0, 'success' => 0, 'failed' => 0];
+        }
+
+        $stats = ['processed' => 0, 'success' => 0, 'failed' => 0];
+
+        foreach ($pages as $page) {
+            if (is_object($page)) {
+                $page = (array) $page;
+            }
+
+            $pageId = $page['id'];
+            $url = $page['url'];
+
+            // Normalize URL for matching (lowercase, trim)
+            $urlNormalized = $this->f->strtolower(trim($url));
+
+            // Extract N-grams
+            $ngrams = $this->extractNGrams($urlNormalized);
+
+            // Store in database
+            $success = $this->storeNGrams($pageId, $url, $urlNormalized, $ngrams);
+
+            $stats['processed']++;
+            if ($success) {
+                $stats['success']++;
+            } else {
+                $stats['failed']++;
+            }
+        }
+
+        $this->logger->debugMessage(sprintf(
+            "Incremental N-gram update: %d pages, %d success, %d failed",
+            $stats['processed'],
+            $stats['success'],
+            $stats['failed']
+        ));
+
+        return $stats;
     }
 
     /**
@@ -348,7 +490,7 @@ class ABJ_404_Solution_NGramFilter {
      *
      * Process:
      * 1. Extract N-grams for the 404 URL (~0.1ms)
-     * 2. Load all cached N-grams from DB (10-50ms, one query)
+     * 2. Load filtered cached N-grams from DB (database-side filtering)
      * 3. Compute Dice similarity for each (~0.05ms each)
      * 4. Filter by minimum similarity threshold (removes 80-90%)
      * 5. Sort by similarity (best matches first)
@@ -360,18 +502,41 @@ class ABJ_404_Solution_NGramFilter {
      * @return array Associative array [page_id => similarity_score] sorted by score (descending)
      */
     public function findSimilarPages($url404, $minSimilarity = 0.4, $maxCandidates = 100) {
+        global $wpdb;
+
         // Start timing for performance tracking
         $startTime = microtime(true);
 
         // Step 1: Extract N-grams for the 404 URL
         $url404Normalized = $this->f->strtolower(trim($url404));
         $queryNGrams = $this->extractNGrams($url404Normalized);
+        $queryCombinedCount = count($queryNGrams['bi']) + count($queryNGrams['tri']);
 
-        // Step 2: Load all cached N-grams
-        $cachedPages = $this->getAllCachedNGrams();
+        // Check cache size to determine strategy
+        $table = $wpdb->prefix . 'abj404_ngram_cache';
+        $totalCount = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+
+        if ($totalCount == 0) {
+            $this->logger->debugMessage("N-gram cache is empty. Run rebuildCache() first.");
+            return [];
+        }
+
+        // Step 2: Load cached N-grams with smart filtering
+        // Calculate N-gram count range for filtering (40% tolerance)
+        $minCount = max(1, (int)($queryCombinedCount * 0.4));
+        $maxCount = (int)($queryCombinedCount * 2.5);
+
+        // Use efficient database-side filtering for large caches
+        if ($totalCount > 1000) {
+            $this->logger->debugMessage("Using database-side filtering for {$totalCount} entries");
+            $cachedPages = $this->getCachedNGramsFiltered($minCount, $maxCount, 5000);
+        } else {
+            // For small caches, load all (legacy behavior)
+            $cachedPages = $this->getAllCachedNGrams();
+        }
 
         if (empty($cachedPages)) {
-            $this->logger->debugMessage("N-gram cache is empty. Run rebuildCache() first.");
+            $this->logger->debugMessage("No matching candidates after filtering.");
             return [];
         }
 
@@ -382,10 +547,8 @@ class ABJ_404_Solution_NGramFilter {
             $pageNGrams = $page['ngrams'];
 
             // Quick optimization: Skip if N-gram counts are too different
-            $queryCombinedCount = count($queryNGrams['bi']) + count($queryNGrams['tri']);
+            // (This is redundant for filtered queries but kept for unfiltered path)
             $pageCombinedCount = $page['ngram_count'];
-
-            // If one set is less than 40% the size of the other, they can't be similar enough
             $countRatio = min($queryCombinedCount, $pageCombinedCount) / max($queryCombinedCount, $pageCombinedCount);
             if ($countRatio < 0.4) {
                 continue;
@@ -412,7 +575,8 @@ class ABJ_404_Solution_NGramFilter {
         $duration = ($endTime - $startTime) * 1000; // Convert to milliseconds
 
         $this->logger->debugMessage(sprintf(
-            "N-gram filtering: %d cached pages → %d candidates (≥%.2f similarity) in %.2fms",
+            "N-gram filtering: %d total, %d examined → %d candidates (≥%.2f similarity) in %.2fms",
+            $totalCount,
             count($cachedPages),
             count($similarities),
             $minSimilarity,
