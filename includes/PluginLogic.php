@@ -561,28 +561,33 @@ class ABJ_404_Solution_PluginLogic {
      */
     function updateToNewVersion($options) {
         $syncUtils = ABJ_404_Solution_SynchronizationUtils::getInstance();
-        
+
         $synchronizedKeyFromUser = "update_db_version";
         $uniqueID = $syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
-        
+
         if ($uniqueID == '' || $uniqueID == null) {
         	$this->logger->debugMessage("Avoiding infinite loop on database update.");
             return $options;
         }
 
         $returnValue = $options;
+
+        // Fixed: Use finally block to ensure lock is ALWAYS released, even on fatal errors
         try {
             $returnValue = $this->updateToNewVersionAction($options);
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {  // Fixed: Catch Throwable (Exception + Error) instead of just Exception
             $this->logger->errorMessage("Error updating to new version. ", $e);
+            throw $e;  // Re-throw to propagate the error
+        } finally {
+            // This ALWAYS executes, even on fatal errors or exceptions
+            $syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
         }
-        $syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
-        
+
         // update the permalink cache because updating the plugin version may affect it.
         $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
         $permalinkCache->updatePermalinkCache(1);
-        
+
         return $returnValue;
     }
     

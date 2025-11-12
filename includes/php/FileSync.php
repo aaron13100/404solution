@@ -20,19 +20,22 @@ class ABJ_404_Solution_FileSync {
 	function getOwnerFromFile($key) {
 		$filePath = $this->getSyncFilePath($key);
 		$fileUtils = ABJ_404_Solution_Functions::getInstance();
-		
-		if (!file_exists($filePath)) {
-			return "";
-		}
-		
+
+		// Fixed: TOCTOU race condition - just try to read atomically instead of check-then-read
 		$contents = $fileUtils->readFileContents($filePath, false);
-		
-		return $contents;
+
+		return ($contents === false) ? "" : $contents;
 	}
 	
 	function writeOwnerToFile($key, $uniqueID) {
 		$filePath = $this->getSyncFilePath($key);
-		file_put_contents($filePath, $uniqueID, LOCK_EX);
+
+		// Fixed: Check return value to handle write failures (disk full, permissions, etc.)
+		$result = @file_put_contents($filePath, $uniqueID, LOCK_EX);
+
+		if ($result === false) {
+			throw new Exception("Failed to write lock file: " . $filePath);
+		}
 	}
 	
 	function releaseLock($uniqueID, $key) {

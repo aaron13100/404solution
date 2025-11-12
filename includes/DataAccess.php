@@ -442,12 +442,12 @@ class ABJ_404_Solution_DataAccess {
     function executeAsTransaction($statementArray) {
         $exception = null;
         $allIsWell = true;
-        
+
         global $wpdb;
-        
+
         try {
             $wpdb->query('START TRANSACTION');
-            
+
             foreach ($statementArray as $statement) {
                 $wpdb->query($statement);
                 if ($wpdb->last_error != null) {
@@ -457,18 +457,18 @@ class ABJ_404_Solution_DataAccess {
                     break;
                 }
             }
-        } catch (Exception $ex) {
+        } catch (Throwable $ex) {  // Fixed: Catch Throwable (Exception + Error) for PHP 7+ compatibility
             $allIsWell = false;
             $exception = $ex;
         }
-        
+
         if ($allIsWell && $exception == null) {
             $wpdb->query('commit');
-            
+
         } else {
             $wpdb->query('rollback');
         }
-        
+
         if ($exception != null) {
             throw $exception;
         }
