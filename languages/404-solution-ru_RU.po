@@ -1395,3 +1395,114 @@ msgstr ""
 #: includes/DatabaseUpgradesEtc.php:136
 msgid "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
 msgstr ""
+
+msgid "Warning:"
+msgstr "Warning:"
+
+msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
+msgstr "This will permanently delete the plugin files. You can choose to keep or remove your data below."
+
+msgid "What should happen to your data?"
+msgstr "What should happen to your data?"
+
+msgid "Keep my redirects (%d redirects)"
+msgstr "Keep my redirects (%d redirects)"
+
+msgid "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
+msgstr "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
+
+msgid "Keep 404 logs"
+msgstr "Keep 404 logs"
+
+msgid "Historical 404 data and logs will be preserved if checked."
+msgstr "Historical 404 data and logs will be preserved if checked."
+
+msgid "Note: Cache tables will always be deleted as they can be rebuilt."
+msgstr "Note: Cache tables will always be deleted as they can be rebuilt."
+
+msgid "Why are you uninstalling? (Optional)"
+msgstr "Why are you uninstalling? (Optional)"
+
+msgid "Temporary deactivation for debugging"
+msgstr "Temporary deactivation for debugging"
+
+msgid "The plugin is not working as expected"
+msgstr "The plugin is not working as expected"
+
+msgid "I found a better plugin"
+msgstr "I found a better plugin"
+
+msgid "I no longer need this functionality"
+msgstr "I no longer need this functionality"
+
+msgid "Too complicated to configure"
+msgstr "Too complicated to configure"
+
+msgid "Performance issues"
+msgstr "Performance issues"
+
+msgid "Other reason"
+msgstr "Other reason"
+
+msgid "Help us improve (Optional)"
+msgstr "Help us improve (Optional)"
+
+msgid "Send feedback to help improve the plugin"
+msgstr "Send feedback to help improve the plugin"
+
+msgid "Your email (optional):"
+msgstr "Your email (optional):"
+
+msgid "your@email.com (optional)"
+msgstr "your@email.com (optional)"
+
+msgid "Additional details:"
+msgstr "Additional details:"
+
+msgid "Please share any additional feedback..."
+msgstr "Please share any additional feedback..."
+
+msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
+msgstr "Your feedback helps us improve. We respect your privacy and will not share your information."
+
+msgid "Insufficient permissions"
+msgstr "Insufficient permissions"
+
+msgid "Preferences saved successfully"
+msgstr "Preferences saved successfully"
+
+msgid "Failed to save preferences"
+msgstr "Failed to save preferences"
+
+msgid "N-gram cache rebuild is already in progress. Please wait for it to complete."
+msgstr "N-gram cache rebuild is already in progress. Please wait for it to complete."
+
+msgid "Error rebuilding N-gram cache: %s"
+msgstr "Error rebuilding N-gram cache: %s"
+
+msgid "N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed."
+msgstr "N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed."
+
+msgid "Spelling cache cleared successfully."
+msgstr "Spelling cache cleared successfully."
+
+msgid "Cache Management"
+msgstr "Cache Management"
+
+msgid "N-gram Cache"
+msgstr "N-gram Cache"
+
+msgid "Rebuild the N-gram spell checker cache. This optimizes 404 URL matching performance. May take several minutes on large sites."
+msgstr "Rebuild the N-gram spell checker cache. This optimizes 404 URL matching performance. May take several minutes on large sites."
+
+msgid "Rebuild N-gram Cache"
+msgstr "Rebuild N-gram Cache"
+
+msgid "Spelling Cache"
+msgstr "Spelling Cache"
+
+msgid "Clear the spelling cache to force recalculation of URL matches. Useful after making significant content changes."
+msgstr "Clear the spelling cache to force recalculation of URL matches. Useful after making significant content changes."
+
+msgid "Clear Spelling Cache"
+msgstr "Clear Spelling Cache"
