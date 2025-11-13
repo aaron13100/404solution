@@ -183,32 +183,20 @@ class ABJ_404_Solution_WordPress_Connector {
             $theme = 'default';
         }
 
-        // Don't set data-theme attribute for 'default' theme, but add browser detection
+        // Don't set data-theme attribute for 'default' theme
+        // This respects WordPress admin color scheme (default/Fresh is light)
+        // and avoids overriding it with browser dark mode preference
         if ($theme === 'default') {
-            // Add JavaScript to detect browser/OS dark mode preference
+            // Ensure no data-theme attribute is set for default/light theme
             echo '<script type="text/javascript">';
             echo '(function() {';
-            echo '  // Check if browser prefers dark mode';
-            echo '  if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {';
-            echo '    // Auto-apply obsidian theme for dark mode';
-            echo '    document.documentElement.setAttribute("data-theme", "obsidian");';
-            echo '    if (document.body) document.body.setAttribute("data-theme", "obsidian");';
-            echo '    document.addEventListener("DOMContentLoaded", function() {';
-            echo '      if (document.body) document.body.setAttribute("data-theme", "obsidian");';
-            echo '    });';
-            echo '  }';
-            echo '  // Listen for changes in color scheme preference';
-            echo '  if (window.matchMedia) {';
-            echo '    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(e) {';
-            echo '      var theme = e.matches ? "obsidian" : "default";';
-            echo '      if (theme === "default") {';
-            echo '        document.documentElement.removeAttribute("data-theme");';
-            echo '        if (document.body) document.body.removeAttribute("data-theme");';
-            echo '      } else {';
-            echo '        document.documentElement.setAttribute("data-theme", theme);';
-            echo '        if (document.body) document.body.setAttribute("data-theme", theme);';
-            echo '      }';
-            echo '    });';
+            echo '  // Remove any data-theme attributes to use default WordPress styling';
+            echo '  document.documentElement.removeAttribute("data-theme");';
+            echo '  document.addEventListener("DOMContentLoaded", function() {';
+            echo '    if (document.body) document.body.removeAttribute("data-theme");';
+            echo '  });';
+            echo '  if (document.body) {';
+            echo '    document.body.removeAttribute("data-theme");';
             echo '  }';
             echo '})();';
             echo '</script>';
@@ -309,22 +297,22 @@ class ABJ_404_Solution_WordPress_Connector {
             $theme = 'default';
         }
 
-        // For 'default' theme, add browser dark mode detection
+        // For 'default' theme, don't set data-theme attribute
+        // This respects WordPress admin color scheme (default/Fresh is light)
+        // and avoids overriding it with browser dark mode preference
         if ($theme === 'default') {
-            // Add critical script to detect browser dark mode and apply obsidian theme
-            echo '<script id="abj404-dark-mode-detector">';
+            // No theme CSS needed for default - use WordPress default styling
+            // Ensure no data-theme attribute is set
+            echo '<script id="abj404-theme-remover">';
             echo '(function(){';
-            echo 'if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches){';
-            echo 'var theme="obsidian";';
-            echo 'document.documentElement.setAttribute("data-theme",theme);';
-            echo 'function setBodyTheme(){';
+            echo 'document.documentElement.removeAttribute("data-theme");';
+            echo 'function removeBodyTheme(){';
             echo 'if(document.body){';
-            echo 'document.body.setAttribute("data-theme",theme);';
+            echo 'document.body.removeAttribute("data-theme");';
             echo '}else{';
-            echo 'setTimeout(setBodyTheme,0);';
+            echo 'setTimeout(removeBodyTheme,0);';
             echo '}}';
-            echo 'setBodyTheme();';
-            echo '}';
+            echo 'removeBodyTheme();';
             echo '})();';
             echo '</script>' . "\n";
             return;
