@@ -767,7 +767,7 @@ class ABJ_404_Solution_View {
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
         $urlParts = parse_url(urldecode($_SERVER['REQUEST_URI']));
         $currentURL = $urlParts['path'];
-        if (is_array($options) && array_key_exists('menuLocation', $options) && isset($options['menuLocation']) &&
+        if (is_array($options) && isset($options['menuLocation']) &&
                 $options['menuLocation'] == 'settingsLevel') {
             if ($this->f->strpos($currentURL, 'options-general.php') !== false) {
                 // the option changed and we're at the wrong URL now, so we redirect to the correct one.
@@ -881,12 +881,12 @@ class ABJ_404_Solution_View {
         }
 
         $recnum = null;
-        if (array_key_exists('id', $_GET) && isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {
-            $this->logger->debugMessage("Edit redirect page. GET ID: " . 
+        if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {
+            $this->logger->debugMessage("Edit redirect page. GET ID: " .
                     wp_kses_post(json_encode($_GET['id'])));
             $recnum = absint($_GET['id']);
-            
-        } else if (array_key_exists('id', $_POST) && isset($_POST['id']) && $this->f->regexMatch('[0-9]+', $_POST['id'])) {
+
+        } else if (isset($_POST['id']) && $this->f->regexMatch('[0-9]+', $_POST['id'])) {
             $this->logger->debugMessage("Edit redirect page. POST ID: " . 
                     wp_kses_post(json_encode($_POST['id'])));
             $recnum = absint($_POST['id']);
@@ -1641,7 +1641,7 @@ class ABJ_404_Solution_View {
         $link = wp_nonce_url($url, "abj404addRedirect");
 
         $urlPlaceholder = parse_url(get_home_url(), PHP_URL_PATH) . "/example";
-        if (array_key_exists('url', $_POST) && isset($_POST['url']) && $_POST['url'] != '') {
+        if (isset($_POST['url']) && $_POST['url'] != '') {
             $postedURL = esc_url($_POST['url']);
         } else {
             $postedURL = $urlPlaceholder;
