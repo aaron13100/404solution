@@ -521,7 +521,22 @@ class ABJ_404_Solution_NGramFilter {
         $totalCount = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
 
         if ($totalCount == 0) {
-            $this->logger->debugMessage("N-gram cache is empty. Run rebuildCache() first.");
+            $this->logger->debugMessage("N-gram cache is empty.");
+
+            // Schedule background rebuild if not already initialized/scheduled
+            // This ensures automatic recovery from empty cache state
+            if (get_option('abj404_ngram_cache_initialized') !== '1') {
+                try {
+                    $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+                    $dbUpgrades->scheduleNGramCacheRebuild();
+                    $this->logger->infoMessage("Empty N-gram cache detected during 404 request. Scheduled background rebuild.");
+                } catch (Exception $e) {
+                    $this->logger->errorMessage("Failed to schedule N-gram cache rebuild: " . $e->getMessage());
+                }
+            } else {
+                $this->logger->debugMessage("N-gram cache rebuild already initialized or scheduled.");
+            }
+
             return [];
         }
 

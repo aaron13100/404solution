@@ -297,11 +297,26 @@ class ABJ_404_Solution_SpellChecker {
 				if (array_key_exists("HTTP_USER_AGENT", $_SERVER)) {
 					$httpUserAgent = $_SERVER['HTTP_USER_AGENT'];
 				}
-				
+
 				$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
 					": Spelling cache deleted (post change). Action: " . $saveOrDelete .
-					", ID: " . $post_id . ", type: " . $postType . ", reason: " . 
+					", ID: " . $post_id . ", type: " . $postType . ", reason: " .
 					$reason . ", agent: " . $httpUserAgent);
+			}
+		}
+
+		// Schedule background N-gram cache rebuild for new pages
+		// This ensures new content is immediately available for spell checking
+		if (!$update && $saveOrDelete == 'save') {
+			try {
+				$dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+				$dbUpgrades->scheduleNGramCacheRebuild();
+				$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
+					": Scheduled N-gram cache rebuild for new page. ID: " . $post_id);
+			} catch (Exception $e) {
+				$this->logger->errorMessage(__CLASS__ . "/" . __FUNCTION__ .
+					": Exception while scheduling N-gram cache rebuild for post ID " . $post_id .
+					": " . $e->getMessage());
 			}
 		}
 	}

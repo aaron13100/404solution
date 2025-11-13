@@ -1172,6 +1172,18 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function rebuildNGramCacheAsync($offset = 0) {
         global $wpdb;
 
+        // Race condition protection: Use transient lock to prevent concurrent execution
+        $lockKey = 'abj404_ngram_rebuild_lock';
+        $lockTimeout = 30 * MINUTE_IN_SECONDS; // 30 minutes for large sites
+
+        if (get_transient($lockKey)) {
+            $this->logger->debugMessage("N-gram async rebuild already in progress (locked). Skipping.");
+            return;
+        }
+
+        // Acquire lock
+        set_transient($lockKey, true, $lockTimeout);
+
         $batchSize = 50; // Smaller batches for async processing
         $maxBatchesPerRun = 20; // Process up to 1000 pages per cron run
 
@@ -1181,6 +1193,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         if ($totalPages == 0) {
             $this->logger->debugMessage("No pages to process. Setting initialized flag.");
             update_option('abj404_ngram_cache_initialized', '1');
+            delete_transient($lockKey); // Release lock
             return;
         }
 
@@ -1233,9 +1246,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         if ($offset < $totalPages) {
             wp_schedule_single_event(time() + 10, 'abj404_rebuild_ngram_cache_hook', [$offset]);
             $this->logger->debugMessage("Rescheduled next batch at offset {$offset}");
+            // Keep lock active for next batch (will be checked again when next event runs)
+            delete_transient($lockKey);
         } else {
-            // All done! Set the initialization flag
+            // All done! Set the initialization flag and release lock
             update_option('abj404_ngram_cache_initialized', '1');
+            delete_transient($lockKey);
             $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$totalStats['processed']} processed, {$totalStats['success']} success, {$totalStats['failed']} failed.");
         }
     }
