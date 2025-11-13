@@ -123,6 +123,16 @@ body[data-theme="obsidian"] {
 /* Note: Selectors check both html[data-theme] and body[data-theme] */
 /* to support early theme application before body element is ready */
 
+/* Background colors for WordPress admin wrapper elements */
+html[data-theme] body.wp-admin #wpcontent,
+body[data-theme].wp-admin #wpcontent,
+html[data-theme] body.wp-admin #wpbody,
+body[data-theme].wp-admin #wpbody,
+html[data-theme] body.wp-admin #wpbody-content,
+body[data-theme].wp-admin #wpbody-content {
+  background-color: var(--abj404-bg);
+}
+
 /* Background colors */
 html[data-theme] body .wrap,
 body[data-theme] .wrap,
@@ -273,6 +283,7 @@ body[data-theme] a:hover {
 /* Navigation tabs */
 body[data-theme] .nav-tab-wrapper,
 body[data-theme] .wrap .nav-tab-wrapper {
+  background-color: var(--abj404-bg);
   border-bottom-color: var(--abj404-border);
 }
 
