@@ -2253,11 +2253,7 @@ class ABJ_404_Solution_View {
         if ($sub == 'abj404_logs') {
             $num_records = $this->dao->getLogsCount($tableOptions['logsid']);
         } else {
-            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-                $num_records = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
-            } else {
-                $num_records = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
-            }
+            $num_records = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
         }
 
         // Ensure perpage is never 0 to prevent division by zero
