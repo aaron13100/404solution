@@ -1034,7 +1034,36 @@ class ABJ_404_Solution_PluginLogic {
             if (check_admin_referer('abj404_runMaintenance') && is_admin()) {
                 $message = $this->dao->deleteOldRedirectsCron();
             } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " . 
+                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
+                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
+            }
+        } else if ($action == "rebuildNgramCache") {
+            if (check_admin_referer('abj404_rebuildNgramCache') && is_admin()) {
+                $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+                $result = $dbUpgrades->rebuildNGramCache(100, true); // Force rebuild
+
+                if (isset($result['locked']) && $result['locked']) {
+                    $message = __('N-gram cache rebuild is already in progress. Please wait for it to complete.', '404-solution');
+                } else if (isset($result['error'])) {
+                    $message = sprintf(__('Error rebuilding N-gram cache: %s', '404-solution'), esc_html($result['error']));
+                } else {
+                    $message = sprintf(
+                        __('N-gram cache rebuilt successfully: %d entries processed, %d successful, %d failed.', '404-solution'),
+                        $result['processed'],
+                        $result['success'],
+                        $result['failed']
+                    );
+                }
+            } else {
+                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
+                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
+            }
+        } else if ($action == "clearSpellingCache") {
+            if (check_admin_referer('abj404_clearSpellingCache') && is_admin()) {
+                $this->dao->deleteSpellingCache();
+                $message = __('Spelling cache cleared successfully.', '404-solution');
+            } else {
+                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
         } else if ($this->f->substr($action . '', 0, 4) == "bulk") {

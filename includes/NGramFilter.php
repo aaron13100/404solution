@@ -160,7 +160,7 @@ class ABJ_404_Solution_NGramFilter {
      * @param array $ngrams N-gram data (format: ['bi' => [...], 'tri' => [...]])
      * @return bool Success status
      */
-    public function storeNGrams($pageId, $url, $urlNormalized, $ngrams) {
+    public function storeNGrams($pageId, $url, $urlNormalized, $ngrams, $type = 'post') {
         // Input validation
         if (!is_numeric($pageId) || $pageId <= 0) {
             $this->logger->errorMessage("Invalid page ID for N-gram storage: " . var_export($pageId, true));
@@ -199,13 +199,14 @@ class ABJ_404_Solution_NGramFilter {
             $table,
             [
                 'id' => (int)$pageId,
+                'type' => $type,
                 'url' => $url,
                 'url_normalized' => $urlNormalized,
                 'ngrams' => $ngramJson,
                 'ngram_count' => $ngramCount,
                 'last_updated' => current_time('mysql')
             ],
-            ['%d', '%s', '%s', '%s', '%d', '%s']
+            ['%d', '%s', '%s', '%s', '%s', '%d', '%s']
         );
 
         if ($result === false) {
@@ -220,15 +221,17 @@ class ABJ_404_Solution_NGramFilter {
      * Get N-grams for a specific page.
      *
      * @param int $pageId The page/post ID
+     * @param string $type Entity type: 'post', 'page', 'category', 'tag' (default: 'post')
      * @return array|null N-gram data or null if not found
      */
-    public function getNGramsForPage($pageId) {
+    public function getNGramsForPage($pageId, $type = 'post') {
         global $wpdb;
 
         $table = $wpdb->prefix . 'abj404_ngram_cache';
         $query = $wpdb->prepare(
-            "SELECT ngrams FROM {$table} WHERE id = %d",
-            $pageId
+            "SELECT ngrams FROM {$table} WHERE id = %d AND type = %s",
+            $pageId,
+            $type
         );
 
         $result = $wpdb->get_var($query);
@@ -334,13 +337,14 @@ class ABJ_404_Solution_NGramFilter {
      * Call this when a page is updated or deleted.
      *
      * @param int $pageId The page/post ID
+     * @param string $type Entity type: 'post', 'page', 'category', 'tag' (default: 'post')
      * @return bool Success status
      */
-    public function invalidatePage($pageId) {
+    public function invalidatePage($pageId, $type = 'post') {
         global $wpdb;
 
         $table = $wpdb->prefix . 'abj404_ngram_cache';
-        $result = $wpdb->delete($table, ['id' => $pageId], ['%d']);
+        $result = $wpdb->delete($table, ['id' => $pageId, 'type' => $type], ['%d', '%s']);
 
         return $result !== false;
     }
