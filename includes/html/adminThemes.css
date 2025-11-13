@@ -75,8 +75,8 @@ body[data-theme="neon"] {
   --abj404-bg-muted: #11151A;
   --abj404-surface: #151A21;
   --abj404-surface-muted: #1B222B;
-  --abj404-text: #E5EAF2;
-  --abj404-text-muted: #A6B0C3;
+  --abj404-text: #DDE3EB;        /* Reduced from #E5EAF2 to prevent halation */
+  --abj404-text-muted: #B4BFD0;  /* Improved from #A6B0C3 for better contrast */
   --abj404-border: #273141;
   --abj404-primary: #7C3AED;
   --abj404-accent: #22D3EE;
@@ -89,7 +89,7 @@ body[data-theme="neon"] {
   --abj404-row-hover: #192028;
   --abj404-row-selected: #0E2936;
   --abj404-badge-bg: #202734;
-  --abj404-badge-text: #CFD8E6;
+  --abj404-badge-text: #D0D8E6;  /* Reduced from #CFD8E6 for consistency */
   --abj404-link: var(--abj404-accent);
 }
 
@@ -100,8 +100,8 @@ body[data-theme="obsidian"] {
   --abj404-bg-muted: #0E1522;
   --abj404-surface: #121826;
   --abj404-surface-muted: #172032;
-  --abj404-text: #E6ECF7;
-  --abj404-text-muted: #A9B7CC;
+  --abj404-text: #DEE5F0;        /* Reduced from #E6ECF7 to prevent halation */
+  --abj404-text-muted: #B8C4D8;  /* Improved from #A9B7CC for better contrast */
   --abj404-border: #223149;
   --abj404-primary: #1D4ED8;
   --abj404-accent: #A78BFA;
@@ -114,7 +114,7 @@ body[data-theme="obsidian"] {
   --abj404-row-hover: #141C2C;
   --abj404-row-selected: #1A2A46;
   --abj404-badge-bg: #1A2438;
-  --abj404-badge-text: #DCE6F7;
+  --abj404-badge-text: #D5DEF0;  /* Reduced from #DCE6F7 for consistency */
   --abj404-link: #93C5FD;
 }
 
@@ -564,4 +564,63 @@ body[data-theme="neon"] input[type="radio"],
 body[data-theme="obsidian"] input[type="checkbox"],
 body[data-theme="obsidian"] input[type="radio"] {
   filter: invert(1) hue-rotate(180deg);
+}
+
+/* ===== Typography optimizations for dark themes ===== */
+/* Improve readability by adjusting font rendering and weights for dark backgrounds */
+
+/* Font smoothing for crisper text rendering on dark backgrounds */
+body[data-theme="neon"],
+body[data-theme="obsidian"] {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Reduce font weight on dark backgrounds (text appears heavier on dark) */
+body[data-theme="neon"] .postbox,
+body[data-theme="neon"] .postbox .inside,
+body[data-theme="neon"] p,
+body[data-theme="neon"] td,
+body[data-theme="neon"] th,
+body[data-theme="neon"] label,
+body[data-theme="obsidian"] .postbox,
+body[data-theme="obsidian"] .postbox .inside,
+body[data-theme="obsidian"] p,
+body[data-theme="obsidian"] td,
+body[data-theme="obsidian"] th,
+body[data-theme="obsidian"] label {
+  font-weight: 400;
+}
+
+/* Adjust bold/strong elements to use medium weight instead of bold */
+body[data-theme="neon"] strong,
+body[data-theme="neon"] b,
+body[data-theme="neon"] .button-primary,
+body[data-theme="obsidian"] strong,
+body[data-theme="obsidian"] b,
+body[data-theme="obsidian"] .button-primary {
+  font-weight: 500;
+}
+
+/* Increase line height for better readability in body text */
+body[data-theme="neon"] .postbox .inside,
+body[data-theme="neon"] .form-text,
+body[data-theme="neon"] .description,
+body[data-theme="neon"] p.description,
+body[data-theme="obsidian"] .postbox .inside,
+body[data-theme="obsidian"] .form-text,
+body[data-theme="obsidian"] .description,
+body[data-theme="obsidian"] p.description {
+  line-height: 1.6;
+}
+
+/* Improve table readability with better spacing */
+body[data-theme="neon"] table.wp-list-table tbody td,
+body[data-theme="neon"] .widefat tbody td,
+body[data-theme="obsidian"] table.wp-list-table tbody td,
+body[data-theme="obsidian"] .widefat tbody td {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  line-height: 1.5;
 }
