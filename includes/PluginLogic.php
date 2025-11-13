@@ -1676,15 +1676,18 @@ class ABJ_404_Solution_PluginLogic {
             
             // decide whether we're updating one or multiple redirects.
             if ($fromURL != "") {
-                $this->dao->updateRedirect($typeAndDest['type'], $typeAndDest['dest'], 
-                        $fromURL, $_POST['id'], $_POST['code'], $statusType);
+                $id = isset($_POST['id']) ? $_POST['id'] : 0;
+                $code = isset($_POST['code']) ? $_POST['code'] : '';
+                $this->dao->updateRedirect($typeAndDest['type'], $typeAndDest['dest'],
+                        $fromURL, $id, $code, $statusType);
 
             } else if ($ids_multiple != "") {
                 // get the redirect data for each ID.
                 $redirects_multiple = $this->dao->getRedirectsByIDs($ids_multiple);
+                $code = isset($_POST['code']) ? $_POST['code'] : '';
                 foreach ($redirects_multiple as $redirect) {
-                    $this->dao->updateRedirect($typeAndDest['type'], $typeAndDest['dest'], 
-                            $redirect['url'], $redirect['id'], $_POST['code'], $statusType);
+                    $this->dao->updateRedirect($typeAndDest['type'], $typeAndDest['dest'],
+                            $redirect['url'], $redirect['id'], $code, $statusType);
                 }
 
             } else {
@@ -1703,12 +1706,17 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function getRedirectTypeAndDest() {
-        
+
         $response = array();
         $response['type'] = "";
         $response['dest'] = "";
         $response['message'] = "";
-        
+
+        if (!isset($_POST['redirect_to_data_field_id'])) {
+            $response['message'] = __('Error: Redirect destination is required.', '404-solution') . "<BR/>";
+            return $response;
+        }
+
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             $userEnteredURL = esc_url($this->dao->getPostOrGetSanitize('redirect_to_user_field'), array('http', 'https'));
             if ($userEnteredURL == "") {
@@ -1745,7 +1753,7 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             $response['type'] = ABJ404_TYPE_EXTERNAL;
-            $response['dest'] = $_POST['redirect_to_user_field'];
+            $response['dest'] = isset($_POST['redirect_to_user_field']) ? $_POST['redirect_to_user_field'] : '';
         } else {
             if (count($info) == 2) {
                 $response['dest'] = absint($info[0]);
@@ -1765,12 +1773,12 @@ class ABJ_404_Solution_PluginLogic {
      */
     function addAdminRedirect() {
         $message = "";
-        
-        if ($_POST['manual_redirect_url'] == "") {
+
+        if (!isset($_POST['manual_redirect_url']) || $_POST['manual_redirect_url'] == "") {
             $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
             return $message;
         }
-            
+
         if ($this->f->substr($_POST['manual_redirect_url'], 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
             return $message;
