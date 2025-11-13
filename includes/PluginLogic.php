@@ -2137,6 +2137,13 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
 
+        // Handle disable_auto_dark_mode checkbox (unchecked = not in postData)
+        if (isset($postData['disable_auto_dark_mode']) && $postData['disable_auto_dark_mode'] == '1') {
+            $options['disable_auto_dark_mode'] = '1';
+        } else {
+            $options['disable_auto_dark_mode'] = '0';
+        }
+
         if (isset($postData['days_wait_before_major_update'])) {
             if (is_numeric($postData['days_wait_before_major_update'])) {
                 $options['days_wait_before_major_update'] = absint($postData['days_wait_before_major_update']);

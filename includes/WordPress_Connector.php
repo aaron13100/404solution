@@ -169,14 +169,49 @@ class ABJ_404_Solution_WordPress_Connector {
         $options = $logic->getOptions();
         $theme = isset($options['admin_theme']) ? $options['admin_theme'] : 'default';
 
+        // Check if auto dark mode detection is enabled (default: enabled)
+        $auto_dark_mode = !isset($options['disable_auto_dark_mode']) || $options['disable_auto_dark_mode'] != '1';
+
+        // If theme is 'default' and auto dark mode is enabled, check for dark mode
+        if ($theme === 'default' && $auto_dark_mode) {
+            $theme = self::getAutoSelectedTheme();
+        }
+
         // Sanitize theme value - only allow specific values
         $allowed_themes = array('default', 'calm', 'mono', 'neon', 'obsidian');
         if (!in_array($theme, $allowed_themes)) {
             $theme = 'default';
         }
 
-        // Don't set data-theme attribute for 'default' theme
+        // Don't set data-theme attribute for 'default' theme, but add browser detection
         if ($theme === 'default') {
+            // Add JavaScript to detect browser/OS dark mode preference
+            echo '<script type="text/javascript">';
+            echo '(function() {';
+            echo '  // Check if browser prefers dark mode';
+            echo '  if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {';
+            echo '    // Auto-apply obsidian theme for dark mode';
+            echo '    document.documentElement.setAttribute("data-theme", "obsidian");';
+            echo '    if (document.body) document.body.setAttribute("data-theme", "obsidian");';
+            echo '    document.addEventListener("DOMContentLoaded", function() {';
+            echo '      if (document.body) document.body.setAttribute("data-theme", "obsidian");';
+            echo '    });';
+            echo '  }';
+            echo '  // Listen for changes in color scheme preference';
+            echo '  if (window.matchMedia) {';
+            echo '    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(e) {';
+            echo '      var theme = e.matches ? "obsidian" : "default";';
+            echo '      if (theme === "default") {';
+            echo '        document.documentElement.removeAttribute("data-theme");';
+            echo '        if (document.body) document.body.removeAttribute("data-theme");';
+            echo '      } else {';
+            echo '        document.documentElement.setAttribute("data-theme", theme);';
+            echo '        if (document.body) document.body.setAttribute("data-theme", theme);';
+            echo '      }';
+            echo '    });';
+            echo '  }';
+            echo '})();';
+            echo '</script>';
             return;
         }
 
@@ -190,6 +225,55 @@ class ABJ_404_Solution_WordPress_Connector {
         echo '  }';
         echo '})();';
         echo '</script>';
+    }
+
+    /** Detect if dark mode is enabled from various sources.
+     * Checks WordPress admin color scheme, dark mode plugins, and browser preference.
+     *
+     * @return bool True if dark mode is detected, false otherwise
+     */
+    static function isDarkModeDetected() {
+        // Check WordPress admin color scheme
+        $current_user_id = get_current_user_id();
+        if ($current_user_id) {
+            $admin_color = get_user_meta($current_user_id, 'admin_color', true);
+            // WordPress dark color schemes: midnight, ectoplasm, coffee
+            $dark_schemes = array('midnight', 'ectoplasm', 'coffee');
+            if (in_array($admin_color, $dark_schemes)) {
+                return true;
+            }
+        }
+
+        // Check for popular dark mode plugins
+        // WP Dark Mode plugin
+        if (get_option('wp_dark_mode_enabled')) {
+            return true;
+        }
+
+        // Dark Mode for WP Dashboard plugin
+        if (get_option('dark_mode_for_wp_dashboard_enabled')) {
+            return true;
+        }
+
+        // Check if any dark mode plugin class exists
+        if (class_exists('WP_Dark_Mode') || class_exists('Dark_Mode_For_WP_Dashboard')) {
+            return true;
+        }
+
+        // Browser/OS preference will be checked via JavaScript
+        return false;
+    }
+
+    /** Get the auto-selected theme based on dark mode detection.
+     *
+     * @return string The theme to use ('obsidian' for dark mode, 'default' otherwise)
+     */
+    static function getAutoSelectedTheme() {
+        if (self::isDarkModeDetected()) {
+            // Default to obsidian for dark mode (can be changed to 'neon' if preferred)
+            return 'obsidian';
+        }
+        return 'default';
     }
 
     /** Output critical theme CSS inline to prevent FOUC (Flash of Unstyled Content).
@@ -211,14 +295,38 @@ class ABJ_404_Solution_WordPress_Connector {
         $options = $logic->getOptions();
         $theme = isset($options['admin_theme']) ? $options['admin_theme'] : 'default';
 
+        // Check if auto dark mode detection is enabled (default: enabled)
+        $auto_dark_mode = !isset($options['disable_auto_dark_mode']) || $options['disable_auto_dark_mode'] != '1';
+
+        // If theme is 'default' and auto dark mode is enabled, check for dark mode
+        if ($theme === 'default' && $auto_dark_mode) {
+            $theme = self::getAutoSelectedTheme();
+        }
+
         // Sanitize theme value - only allow specific values
         $allowed_themes = array('default', 'calm', 'mono', 'neon', 'obsidian');
         if (!in_array($theme, $allowed_themes)) {
             $theme = 'default';
         }
 
-        // Don't output inline CSS for 'default' theme - let WordPress defaults apply
+        // For 'default' theme, add browser dark mode detection
         if ($theme === 'default') {
+            // Add critical script to detect browser dark mode and apply obsidian theme
+            echo '<script id="abj404-dark-mode-detector">';
+            echo '(function(){';
+            echo 'if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches){';
+            echo 'var theme="obsidian";';
+            echo 'document.documentElement.setAttribute("data-theme",theme);';
+            echo 'function setBodyTheme(){';
+            echo 'if(document.body){';
+            echo 'document.body.setAttribute("data-theme",theme);';
+            echo '}else{';
+            echo 'setTimeout(setBodyTheme,0);';
+            echo '}}';
+            echo 'setBodyTheme();';
+            echo '}';
+            echo '})();';
+            echo '</script>' . "\n";
             return;
         }
 

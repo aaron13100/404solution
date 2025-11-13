@@ -1947,6 +1947,10 @@ class ABJ_404_Solution_View {
         $selectedThemeNeon = ($adminTheme == 'neon') ? " selected" : "";
         $selectedThemeObsidian = ($adminTheme == 'obsidian') ? " selected" : "";
 
+        // Auto dark mode detection checkbox
+        $disableAutoDarkMode = isset($options['disable_auto_dark_mode']) && $options['disable_auto_dark_mode'] == '1';
+        $disableAutoDarkModeChecked = $disableAutoDarkMode ? " checked" : "";
+
         $logSizeBytes = $this->dao->getLogDiskUsage();
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
         $totalLogLines = $this->dao->getLogsCount(0);
@@ -1981,6 +1985,7 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{selectedThemeMono}', $selectedThemeMono, $html);
         $html = $this->f->str_replace('{selectedThemeNeon}', $selectedThemeNeon, $html);
         $html = $this->f->str_replace('{selectedThemeObsidian}', $selectedThemeObsidian, $html);
+        $html = $this->f->str_replace('{disableAutoDarkModeChecked}', $disableAutoDarkModeChecked, $html);
         $html = $this->f->str_replace('{admin_notification_email}', $options['admin_notification_email'], $html);
         $html = $this->f->str_replace('{default_wordpress_admin_email}', get_option('admin_email'), $html);
         $html = $this->f->str_replace('{PHP_VERSION}', PHP_VERSION, $html);
