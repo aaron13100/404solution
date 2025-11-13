@@ -757,3 +757,107 @@ msgstr ""
 msgid "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
 msgstr ""
 
+
+#: includes/UninstallModal.php
+msgid "Warning:"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "What should happen to your data?"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Keep my redirects (%d redirects)"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Keep 404 logs"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Historical 404 data and logs will be preserved if checked."
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Note: Cache tables will always be deleted as they can be rebuilt."
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Why are you uninstalling? (Optional)"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Temporary deactivation for debugging"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "The plugin is not working as expected"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "I found a better plugin"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "I no longer need this functionality"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Too complicated to configure"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Performance issues"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Other reason"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Help us improve (Optional)"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Send feedback to help improve the plugin"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Your email (optional):"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "your@email.com (optional)"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Additional details:"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Please share any additional feedback..."
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Insufficient permissions"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Preferences saved successfully"
+msgstr ""
+
+#: includes/UninstallModal.php
+msgid "Failed to save preferences"
+msgstr ""
