@@ -389,6 +389,29 @@ body[data-theme] a.nav-tab-active:hover {
   color: var(--abj404-text);
 }
 
+/* Filter navigation (All, Manual Redirects, etc.) */
+html[data-theme] body.wp-admin .subsubsub a,
+body[data-theme].wp-admin .subsubsub a,
+html[data-theme] body .subsubsub a,
+body[data-theme] .subsubsub a {
+  color: var(--abj404-link) !important;
+}
+
+html[data-theme] body.wp-admin .subsubsub a:hover,
+body[data-theme].wp-admin .subsubsub a:hover,
+html[data-theme] body .subsubsub a:hover,
+body[data-theme] .subsubsub a:hover {
+  color: var(--abj404-link-hover) !important;
+}
+
+html[data-theme] body.wp-admin .subsubsub a.current,
+body[data-theme].wp-admin .subsubsub a.current,
+html[data-theme] body .subsubsub a.current,
+body[data-theme] .subsubsub a.current {
+  color: var(--abj404-text) !important;
+  font-weight: 600;
+}
+
 /* Notices and messages */
 body[data-theme] .notice,
 body[data-theme] .updated,
@@ -464,6 +487,70 @@ body[data-theme] input[type="file"]::-webkit-file-upload-button:hover {
   background-color: var(--abj404-primary) !important;
   border-color: var(--abj404-primary) !important;
   color: #ffffff !important;
+}
+
+/* Chips navigation - preserve scroll spy functionality */
+/* Override general button styles for chips to maintain their distinct states */
+html[data-theme] body.wp-admin .abj404-chip,
+body[data-theme].wp-admin .abj404-chip,
+html[data-theme] body .abj404-chip,
+body[data-theme] .abj404-chip {
+  background-color: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+  color: var(--abj404-text) !important;
+  border-radius: 8px !important;
+  opacity: 0.5;
+}
+
+html[data-theme] body.wp-admin .abj404-chip:hover,
+body[data-theme].wp-admin .abj404-chip:hover,
+html[data-theme] body .abj404-chip:hover,
+body[data-theme] .abj404-chip:hover {
+  background-color: var(--abj404-surface-muted) !important;
+  border-color: var(--abj404-text-muted) !important;
+  opacity: 0.7;
+}
+
+/* Section visible (pressed/shown) */
+html[data-theme] body.wp-admin .abj404-chip[aria-pressed="true"],
+body[data-theme].wp-admin .abj404-chip[aria-pressed="true"],
+html[data-theme] body .abj404-chip[aria-pressed="true"],
+body[data-theme] .abj404-chip[aria-pressed="true"] {
+  background-color: var(--abj404-bg-muted) !important;
+  border-color: var(--abj404-accent) !important;
+  box-shadow: inset 0 0 0 1px currentColor !important;
+  opacity: 0.9;
+}
+
+/* Section currently in viewport - Scroll Spy Active State */
+html[data-theme] body.wp-admin .abj404-chip.active,
+body[data-theme].wp-admin .abj404-chip.active,
+html[data-theme] body .abj404-chip.active,
+body[data-theme] .abj404-chip.active {
+  background-color: var(--abj404-accent) !important;
+  border-color: var(--abj404-accent) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(34, 113, 177, 0.3) !important;
+  opacity: 1 !important;
+  transform: scale(1.05) !important;
+}
+
+html[data-theme] body.wp-admin .abj404-chip.active:hover,
+body[data-theme].wp-admin .abj404-chip.active:hover,
+html[data-theme] body .abj404-chip.active:hover,
+body[data-theme] .abj404-chip.active:hover {
+  background-color: var(--abj404-accent) !important;
+  box-shadow: 0 3px 12px rgba(34, 113, 177, 0.4) !important;
+}
+
+/* Active chip - make dot brighter/white */
+html[data-theme] body.wp-admin .abj404-chip.active .abj404-chip-dot,
+body[data-theme].wp-admin .abj404-chip.active .abj404-chip-dot,
+html[data-theme] body .abj404-chip.active .abj404-chip-dot,
+body[data-theme] .abj404-chip.active .abj404-chip-dot {
+  background: #fff !important;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.6) !important;
 }
 
 /* Special styling for dark themes */
