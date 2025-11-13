@@ -767,16 +767,16 @@ class ABJ_404_Solution_View {
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
         $urlParts = parse_url(urldecode($_SERVER['REQUEST_URI']));
         $currentURL = $urlParts['path'];
-        if (is_array($options) && array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
+        if (is_array($options) && array_key_exists('menuLocation', $options) && isset($options['menuLocation']) &&
                 $options['menuLocation'] == 'settingsLevel') {
-            if ($this->f->strpos($currentURL, 'options-general.php') != false) {
+            if ($this->f->strpos($currentURL, 'options-general.php') !== false) {
                 // the option changed and we're at the wrong URL now, so we redirect to the correct one.
-                $this->logic->forceRedirect(admin_url() . "admin.php?page=" . 
+                $this->logic->forceRedirect(admin_url() . "admin.php?page=" .
                         ABJ404_PP . '&subpage=abj404_options');
             }
-        } else if ($this->f->strpos($currentURL, 'admin.php') != false) {
+        } else if ($this->f->strpos($currentURL, 'admin.php') !== false) {
             // if the current URL has admin.php then the URLs don't match and we need to reload.
-            $this->logic->forceRedirect(admin_url() . "options-general.php?page=" . 
+            $this->logic->forceRedirect(admin_url() . "options-general.php?page=" .
                     ABJ404_PP . '&subpage=abj404_options');
         }
 
