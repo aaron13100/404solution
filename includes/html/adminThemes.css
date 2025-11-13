@@ -91,9 +91,6 @@ body[data-theme="neon"] {
   --abj404-badge-bg: #202734;
   --abj404-badge-text: #D0D8E6;  /* Reduced from #CFD8E6 for consistency */
   --abj404-link: var(--abj404-accent);
-  --abj404-button-bg: #1F2732;   /* Lighter than surface for button visibility */
-  --abj404-button-border: #3A4556;  /* Defined border for clear button outline */
-  --abj404-button-hover-bg: #293340;  /* Enhanced hover state */
 }
 
 /* === Obsidian Blue (Dark) === */
@@ -119,9 +116,6 @@ body[data-theme="obsidian"] {
   --abj404-badge-bg: #1A2438;
   --abj404-badge-text: #D5DEF0;  /* Reduced from #DCE6F7 for consistency */
   --abj404-link: #93C5FD;
-  --abj404-button-bg: #1B253A;   /* Lighter than surface for button visibility */
-  --abj404-button-border: #2D4165;  /* Defined border for clear button outline */
-  --abj404-button-hover-bg: #243050;  /* Enhanced hover state */
 }
 
 /* ===== Apply theme colors to WordPress admin elements ===== */
@@ -316,13 +310,12 @@ html[data-theme] body .button,
 html[data-theme] body .button-secondary,
 body[data-theme] .button,
 body[data-theme] .button-secondary {
-  background-color: var(--abj404-button-bg, var(--abj404-surface)) !important;
-  border-color: var(--abj404-button-border, var(--abj404-border)) !important;
+  background-color: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
   color: var(--abj404-text) !important;
   border-radius: 8px !important;
   border-style: solid !important;
   border-width: 1px !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 html[data-theme] body.wp-admin button:hover,
@@ -337,9 +330,8 @@ html[data-theme] body .button:hover,
 html[data-theme] body .button-secondary:hover,
 body[data-theme] .button:hover,
 body[data-theme] .button-secondary:hover {
-  background-color: var(--abj404-button-hover-bg, var(--abj404-surface-muted)) !important;
+  background-color: var(--abj404-surface-muted) !important;
   border-color: var(--abj404-primary) !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 html[data-theme] body .button-primary,
