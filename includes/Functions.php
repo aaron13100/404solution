@@ -601,9 +601,24 @@ abstract class ABJ_404_Solution_Functions {
                 $abj404logging->debugMessage("curl didn't work for downloading a URL. " . $e->getMessage());
             }
         }
-        
+
+        // Fallback to file_put_contents if curl didn't work or isn't available
         ABJ_404_Solution_Functions::safeUnlink($filePath);
-        file_put_contents($filePath, fopen($url, 'r'));
+        try {
+            $fileHandle = @fopen($url, 'r');
+            if ($fileHandle === false) {
+                $abj404logging->errorMessage("Failed to open URL for reading: " . $url);
+                return;
+            }
+            $result = file_put_contents($filePath, $fileHandle);
+            fclose($fileHandle);
+
+            if ($result === false) {
+                $abj404logging->errorMessage("Failed to write file: " . $filePath);
+            }
+        } catch (Exception $e) {
+            $abj404logging->errorMessage("Failed to download URL to file. URL: " . $url . ", Error: " . $e->getMessage());
+        }
     }
     
     /** 
