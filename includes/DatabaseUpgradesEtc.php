@@ -1500,4 +1500,149 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
         return $stats;
     }
+
+    /**
+     * Build ngrams for all categories.
+     * Should be called during initial setup or manual rebuild.
+     *
+     * @param int $batchSize Number of categories to process per batch (default: 50)
+     * @return array Statistics: ['processed' => int, 'success' => int, 'failed' => int]
+     */
+    function buildNGramsForCategories($batchSize = 50) {
+        $this->logger->debugMessage("Building N-grams for categories...");
+
+        $categories = $this->dao->getPublishedCategories();
+
+        if (empty($categories)) {
+            $this->logger->debugMessage("No published categories found.");
+            return ['processed' => 0, 'success' => 0, 'failed' => 0];
+        }
+
+        $stats = ['processed' => 0, 'success' => 0, 'failed' => 0];
+
+        foreach ($categories as $category) {
+            try {
+                $termId = $category->term_id;
+                $url = $category->url;
+
+                if (empty($url) || $url === 'in code') {
+                    $this->logger->debugMessage("Skipping category {$termId} - no valid URL");
+                    continue;
+                }
+
+                // Normalize URL
+                $urlNormalized = $this->f->strtolower(trim($url));
+
+                // Extract N-grams
+                $ngrams = $this->ngramFilter->extractNGrams($urlNormalized);
+
+                // Store with type='category'
+                $success = $this->ngramFilter->storeNGrams($termId, $url, $urlNormalized, $ngrams, 'category');
+
+                $stats['processed']++;
+                if ($success) {
+                    $stats['success']++;
+                } else {
+                    $stats['failed']++;
+                }
+            } catch (Exception $e) {
+                $this->logger->errorMessage("Failed to build ngram for category {$termId}: " . $e->getMessage());
+                $stats['processed']++;
+                $stats['failed']++;
+            }
+        }
+
+        $this->logger->infoMessage("Category N-grams built: {$stats['processed']} processed, {$stats['success']} success, {$stats['failed']} failed.");
+
+        return $stats;
+    }
+
+    /**
+     * Build ngrams for all tags.
+     * Should be called during initial setup or manual rebuild.
+     *
+     * @param int $batchSize Number of tags to process per batch (default: 50)
+     * @return array Statistics: ['processed' => int, 'success' => int, 'failed' => int]
+     */
+    function buildNGramsForTags($batchSize = 50) {
+        $this->logger->debugMessage("Building N-grams for tags...");
+
+        $tags = $this->dao->getPublishedTags();
+
+        if (empty($tags)) {
+            $this->logger->debugMessage("No published tags found.");
+            return ['processed' => 0, 'success' => 0, 'failed' => 0];
+        }
+
+        $stats = ['processed' => 0, 'success' => 0, 'failed' => 0];
+
+        foreach ($tags as $tag) {
+            try {
+                $termId = $tag->term_id;
+                $url = $tag->url;
+
+                if (empty($url) || $url === 'in code') {
+                    $this->logger->debugMessage("Skipping tag {$termId} - no valid URL");
+                    continue;
+                }
+
+                // Normalize URL
+                $urlNormalized = $this->f->strtolower(trim($url));
+
+                // Extract N-grams
+                $ngrams = $this->ngramFilter->extractNGrams($urlNormalized);
+
+                // Store with type='tag'
+                $success = $this->ngramFilter->storeNGrams($termId, $url, $urlNormalized, $ngrams, 'tag');
+
+                $stats['processed']++;
+                if ($success) {
+                    $stats['success']++;
+                } else {
+                    $stats['failed']++;
+                }
+            } catch (Exception $e) {
+                $this->logger->errorMessage("Failed to build ngram for tag {$termId}: " . $e->getMessage());
+                $stats['processed']++;
+                $stats['failed']++;
+            }
+        }
+
+        $this->logger->infoMessage("Tag N-grams built: {$stats['processed']} processed, {$stats['success']} success, {$stats['failed']} failed.");
+
+        return $stats;
+    }
+
+    /**
+     * Build ngrams for all content types (posts, pages, categories, tags).
+     * This is the comprehensive rebuild that should be called from the Tools page.
+     *
+     * @param int $batchSize Number of items to process per batch
+     * @return array Combined statistics
+     */
+    function buildNGramsForAllContent($batchSize = 100) {
+        $this->logger->infoMessage("Starting comprehensive N-gram cache build for all content types...");
+
+        // Rebuild posts/pages (existing functionality)
+        $postsStats = $this->rebuildNGramCache($batchSize, true);
+
+        // Build categories
+        $categoriesStats = $this->buildNGramsForCategories($batchSize);
+
+        // Build tags
+        $tagsStats = $this->buildNGramsForTags($batchSize);
+
+        $totalStats = [
+            'posts' => $postsStats,
+            'categories' => $categoriesStats,
+            'tags' => $tagsStats,
+            'total_processed' => ($postsStats['processed'] ?? 0) + ($categoriesStats['processed'] ?? 0) + ($tagsStats['processed'] ?? 0),
+            'total_success' => ($postsStats['success'] ?? 0) + ($categoriesStats['success'] ?? 0) + ($tagsStats['success'] ?? 0),
+            'total_failed' => ($postsStats['failed'] ?? 0) + ($categoriesStats['failed'] ?? 0) + ($tagsStats['failed'] ?? 0)
+        ];
+
+        $this->logger->infoMessage("Comprehensive N-gram build complete: {$totalStats['total_processed']} total processed, {$totalStats['total_success']} success, {$totalStats['total_failed']} failed.");
+
+        return $totalStats;
+    }
 }

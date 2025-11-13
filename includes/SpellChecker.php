@@ -251,22 +251,46 @@ class ABJ_404_Solution_SpellChecker {
 			$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
 				": Delete from permalink cache: " . $post_id . ", action: " .
 				$saveOrDelete . ", reason: " . $reason);
-			$this->dao->removeFromPermalinkCache($post_id);
-			// let's update some links.
-			$this->permalinkCache->updatePermalinkCache(0.1);
+
+			try {
+				$this->dao->removeFromPermalinkCache($post_id);
+				// let's update some links.
+				$this->permalinkCache->updatePermalinkCache(0.1);
+			} catch (Exception $e) {
+				$this->logger->errorMessage(__CLASS__ . "/" . __FUNCTION__ .
+					": Exception while updating permalink cache for post ID " . $post_id .
+					": " . $e->getMessage());
+			}
 		}
 
 		if ($invalidateNGramCache) {
 			$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
 				": Invalidate N-gram cache entry: " . $post_id . ", action: " .
 				$saveOrDelete . ", reason: " . $reason);
-			$this->ngramFilter->invalidatePage($post_id);
+
+			try {
+				$result = $this->ngramFilter->invalidatePage($post_id);
+				if (!$result) {
+					$this->logger->errorMessage(__CLASS__ . "/" . __FUNCTION__ .
+						": Failed to invalidate N-gram cache for post ID " . $post_id .
+						". The cache may be out of sync until next daily maintenance.");
+				}
+			} catch (Exception $e) {
+				$this->logger->errorMessage(__CLASS__ . "/" . __FUNCTION__ .
+					": Exception while invalidating N-gram cache for post ID " . $post_id .
+					": " . $e->getMessage());
+			}
 		}
 
 		if ($deleteSpellingCache) {
 			// TODO only delete the items from the cache that refer
 			// to the post ID that was deleted?
-			$this->dao->deleteSpellingCache();
+			try {
+				$this->dao->deleteSpellingCache();
+			} catch (Exception $e) {
+				$this->logger->errorMessage(__CLASS__ . "/" . __FUNCTION__ .
+					": Exception while deleting spelling cache: " . $e->getMessage());
+			}
 
 			if ($this->logger->isDebug()) {
 				$httpUserAgent = "(none)";

@@ -1040,18 +1040,21 @@ class ABJ_404_Solution_PluginLogic {
         } else if ($action == "rebuildNgramCache") {
             if (check_admin_referer('abj404_rebuildNgramCache') && is_admin()) {
                 $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-                $result = $dbUpgrades->rebuildNGramCache(100, true); // Force rebuild
+                $result = $dbUpgrades->buildNGramsForAllContent(100); // Build for all content types
 
-                if (isset($result['locked']) && $result['locked']) {
+                if (isset($result['posts']['locked']) && $result['posts']['locked']) {
                     $message = __('N-gram cache rebuild is already in progress. Please wait for it to complete.', '404-solution');
-                } else if (isset($result['error'])) {
-                    $message = sprintf(__('Error rebuilding N-gram cache: %s', '404-solution'), esc_html($result['error']));
+                } else if (isset($result['posts']['error'])) {
+                    $message = sprintf(__('Error rebuilding N-gram cache: %s', '404-solution'), esc_html($result['posts']['error']));
                 } else {
                     $message = sprintf(
-                        __('N-gram cache rebuilt successfully: %d entries processed, %d successful, %d failed.', '404-solution'),
-                        $result['processed'],
-                        $result['success'],
-                        $result['failed']
+                        __('N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed.', '404-solution'),
+                        $result['total_processed'],
+                        $result['posts']['processed'] ?? 0,
+                        $result['categories']['processed'] ?? 0,
+                        $result['tags']['processed'] ?? 0,
+                        $result['total_success'],
+                        $result['total_failed']
                     );
                 }
             } else {
