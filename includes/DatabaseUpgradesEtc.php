@@ -1382,13 +1382,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
 
     /**
-     * Sync missing ngram entries for posts/pages that don't have them yet.
+     * Sync missing ngram entries for posts/pages and categories that don't have them yet.
      * This runs as a background task to add entries for newly published content.
      *
      * Uses the same lock as rebuildNGramCache to prevent concurrent execution.
      *
      * @param int $batchSize Number of entries to process per batch (default: 50)
-     * @return array Statistics: ['added' => int, 'failed' => int, 'already_existed' => int]
+     * @return array Statistics: ['posts_added' => int, 'posts_failed' => int, 'categories_added' => int, 'categories_failed' => int]
      */
     function syncMissingNGrams($batchSize = 50) {
         global $wpdb;
@@ -1397,7 +1397,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $lockKey = 'abj404_ngram_rebuild_lock';
         if (get_transient($lockKey)) {
             $this->logger->debugMessage("Ngram sync skipped - rebuild/sync already in progress.");
-            return ['added' => 0, 'failed' => 0, 'already_existed' => 0, 'locked' => true];
+            return ['posts_added' => 0, 'posts_failed' => 0, 'categories_added' => 0, 'categories_failed' => 0, 'locked' => true];
         }
 
         // Set lock (30 minute timeout)
@@ -1407,6 +1407,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
             $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
 
+            $stats = ['posts_added' => 0, 'posts_failed' => 0, 'categories_added' => 0, 'categories_failed' => 0];
+
+            // ===== SYNC POSTS =====
             // Find posts in permalink cache that don't have ngram entries
             // Using LEFT JOIN to find missing entries
             $query = $wpdb->prepare(
@@ -1421,32 +1424,88 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $missingIds = $wpdb->get_col($query);
 
             if ($wpdb->last_error) {
-                $this->logger->errorMessage("Failed to query for missing ngram entries: " . $wpdb->last_error);
+                $this->logger->errorMessage("Failed to query for missing post ngram entries: " . $wpdb->last_error);
                 delete_transient($lockKey);
-                return ['added' => 0, 'failed' => 1, 'already_existed' => 0, 'error' => $wpdb->last_error];
+                return array_merge($stats, ['error' => $wpdb->last_error]);
             }
 
-            $stats = ['added' => 0, 'failed' => 0, 'already_existed' => 0];
+            if (!empty($missingIds)) {
+                $this->logger->infoMessage("Found " . count($missingIds) . " posts missing ngram entries. Adding...");
 
-            if (empty($missingIds)) {
-                $this->logger->debugMessage("No missing ngram entries found. All posts are synced.");
-                delete_transient($lockKey);
-                return $stats;
+                // Add ngrams for missing posts
+                $result = $this->ngramFilter->updateNGramsForPages($missingIds);
+
+                if (isset($result['success'])) {
+                    $stats['posts_added'] = $result['success'];
+                }
+                if (isset($result['failed'])) {
+                    $stats['posts_failed'] = $result['failed'];
+                }
+            } else {
+                $this->logger->debugMessage("No missing post ngram entries found. All posts are synced.");
             }
 
-            $this->logger->infoMessage("Found " . count($missingIds) . " posts missing ngram entries. Adding...");
+            // ===== SYNC CATEGORIES =====
+            // Get all published categories
+            $categories = $this->dao->getPublishedCategories();
 
-            // Add ngrams for missing posts
-            $result = $this->ngramFilter->updateNGramsForPages($missingIds);
+            if (!empty($categories)) {
+                $missingCategories = [];
 
-            if (isset($result['success'])) {
-                $stats['added'] = $result['success'];
+                // Check which categories are missing from ngram cache
+                foreach ($categories as $category) {
+                    $termId = $category->term_id;
+
+                    // Check if this category already has an ngram entry
+                    $exists = $wpdb->get_var($wpdb->prepare(
+                        "SELECT COUNT(*) FROM {$ngramTable} WHERE id = %d AND type = 'category'",
+                        $termId
+                    ));
+
+                    if ($exists == 0) {
+                        $missingCategories[] = $category;
+                    }
+                }
+
+                if (!empty($missingCategories)) {
+                    $this->logger->infoMessage("Found " . count($missingCategories) . " categories missing ngram entries. Adding...");
+
+                    // Add ngrams for missing categories
+                    foreach ($missingCategories as $category) {
+                        try {
+                            $termId = $category->term_id;
+                            $url = $category->url;
+
+                            if (empty($url) || $url === 'in code') {
+                                $this->logger->debugMessage("Skipping category {$termId} - no valid URL");
+                                continue;
+                            }
+
+                            // Normalize URL
+                            $urlNormalized = $this->f->strtolower(trim($url));
+
+                            // Extract N-grams
+                            $ngrams = $this->ngramFilter->extractNGrams($urlNormalized);
+
+                            // Store with type='category'
+                            $success = $this->ngramFilter->storeNGrams($termId, $url, $urlNormalized, $ngrams, 'category');
+
+                            if ($success) {
+                                $stats['categories_added']++;
+                            } else {
+                                $stats['categories_failed']++;
+                            }
+                        } catch (Exception $e) {
+                            $this->logger->errorMessage("Failed to add ngram for category {$termId}: " . $e->getMessage());
+                            $stats['categories_failed']++;
+                        }
+                    }
+                } else {
+                    $this->logger->debugMessage("No missing category ngram entries found. All categories are synced.");
+                }
             }
-            if (isset($result['failed'])) {
-                $stats['failed'] = $result['failed'];
-            }
 
-            $this->logger->infoMessage("Ngram sync complete: {$stats['added']} added, {$stats['failed']} failed.");
+            $this->logger->infoMessage("Ngram sync complete: {$stats['posts_added']} posts added, {$stats['posts_failed']} posts failed, {$stats['categories_added']} categories added, {$stats['categories_failed']} categories failed.");
 
             return $stats;
 
@@ -1457,10 +1516,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
 
     /**
-     * Cleanup orphaned ngram entries that don't have corresponding posts/pages.
-     * This removes stale entries when posts are deleted.
+     * Cleanup orphaned ngram entries that don't have corresponding posts/pages or categories.
+     * This removes stale entries when posts are deleted or categories are removed.
      *
-     * @return array Statistics: ['deleted' => int, 'errors' => int]
+     * @return array Statistics: ['posts_deleted' => int, 'categories_deleted' => int, 'errors' => int]
      */
     function cleanupOrphanedNGrams() {
         global $wpdb;
@@ -1470,6 +1529,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
         $this->logger->debugMessage("Checking for orphaned ngram entries...");
 
+        $stats = ['posts_deleted' => 0, 'categories_deleted' => 0, 'errors' => 0];
+
+        // ===== CLEANUP ORPHANED POSTS =====
         // Find ngram entries for posts that don't exist in permalink cache
         // Using LEFT JOIN to find orphaned entries
         $query = "SELECT ng.id, ng.type
@@ -1477,39 +1539,90 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                   LEFT JOIN {$permalinkCacheTable} pc ON ng.id = pc.id AND ng.type = 'post'
                   WHERE ng.type = 'post' AND pc.id IS NULL";
 
-        $orphanedEntries = $wpdb->get_results($query);
+        $orphanedPosts = $wpdb->get_results($query);
 
         if ($wpdb->last_error) {
-            $this->logger->errorMessage("Failed to query for orphaned ngram entries: " . $wpdb->last_error);
-            return ['deleted' => 0, 'errors' => 1, 'error' => $wpdb->last_error];
+            $this->logger->errorMessage("Failed to query for orphaned post ngram entries: " . $wpdb->last_error);
+            return array_merge($stats, ['error' => $wpdb->last_error]);
         }
 
-        $stats = ['deleted' => 0, 'errors' => 0];
+        if (!empty($orphanedPosts)) {
+            $this->logger->infoMessage("Found " . count($orphanedPosts) . " orphaned post ngram entries. Deleting...");
 
-        if (empty($orphanedEntries)) {
-            $this->logger->debugMessage("No orphaned ngram entries found.");
-            return $stats;
+            // Delete each orphaned post entry
+            foreach ($orphanedPosts as $entry) {
+                $result = $wpdb->delete(
+                    $ngramTable,
+                    ['id' => $entry->id, 'type' => $entry->type],
+                    ['%d', '%s']
+                );
+
+                if ($result === false) {
+                    $this->logger->errorMessage("Failed to delete orphaned post ngram entry ID {$entry->id}: " . $wpdb->last_error);
+                    $stats['errors']++;
+                } else {
+                    $stats['posts_deleted']++;
+                }
+            }
+        } else {
+            $this->logger->debugMessage("No orphaned post ngram entries found.");
         }
 
-        $this->logger->infoMessage("Found " . count($orphanedEntries) . " orphaned ngram entries. Deleting...");
+        // ===== CLEANUP ORPHANED CATEGORIES =====
+        // Get all published categories
+        $publishedCategories = $this->dao->getPublishedCategories();
+        $publishedCategoryIds = [];
 
-        // Delete each orphaned entry
-        foreach ($orphanedEntries as $entry) {
-            $result = $wpdb->delete(
-                $ngramTable,
-                ['id' => $entry->id, 'type' => $entry->type],
-                ['%d', '%s']
-            );
-
-            if ($result === false) {
-                $this->logger->errorMessage("Failed to delete orphaned ngram entry ID {$entry->id}: " . $wpdb->last_error);
-                $stats['errors']++;
-            } else {
-                $stats['deleted']++;
+        if (!empty($publishedCategories)) {
+            foreach ($publishedCategories as $category) {
+                $publishedCategoryIds[] = $category->term_id;
             }
         }
 
-        $this->logger->infoMessage("Orphaned ngram cleanup complete: {$stats['deleted']} deleted, {$stats['errors']} errors.");
+        // Get all category ngram entries
+        $categoryNGramEntries = $wpdb->get_results(
+            "SELECT DISTINCT id FROM {$ngramTable} WHERE type = 'category'"
+        );
+
+        if ($wpdb->last_error) {
+            $this->logger->errorMessage("Failed to query for category ngram entries: " . $wpdb->last_error);
+            return array_merge($stats, ['error' => $wpdb->last_error]);
+        }
+
+        if (!empty($categoryNGramEntries)) {
+            $orphanedCategories = [];
+
+            // Find category ngram entries that don't have corresponding published categories
+            foreach ($categoryNGramEntries as $entry) {
+                if (!in_array($entry->id, $publishedCategoryIds)) {
+                    $orphanedCategories[] = $entry->id;
+                }
+            }
+
+            if (!empty($orphanedCategories)) {
+                $this->logger->infoMessage("Found " . count($orphanedCategories) . " orphaned category ngram entries. Deleting...");
+
+                // Delete orphaned category entries
+                foreach ($orphanedCategories as $categoryId) {
+                    $result = $wpdb->delete(
+                        $ngramTable,
+                        ['id' => $categoryId, 'type' => 'category'],
+                        ['%d', '%s']
+                    );
+
+                    if ($result === false) {
+                        $this->logger->errorMessage("Failed to delete orphaned category ngram entry ID {$categoryId}: " . $wpdb->last_error);
+                        $stats['errors']++;
+                    } else {
+                        $stats['categories_deleted']++;
+                    }
+                }
+            } else {
+                $this->logger->debugMessage("No orphaned category ngram entries found.");
+            }
+        }
+
+        $this->logger->infoMessage("Orphaned ngram cleanup complete: {$stats['posts_deleted']} posts deleted, {$stats['categories_deleted']} categories deleted, {$stats['errors']} errors.");
 
         return $stats;
     }
