@@ -160,7 +160,7 @@ class ABJ_404_Solution_NGramFilter {
      * @param array $ngrams N-gram data (format: ['bi' => [...], 'tri' => [...]])
      * @return bool Success status
      */
-    public function storeNGrams($pageId, $url, $urlNormalized, $ngrams) {
+    public function storeNGrams($pageId, $url, $urlNormalized, $ngrams, $type = 'post') {
         // Input validation
         if (!is_numeric($pageId) || $pageId <= 0) {
             $this->logger->errorMessage("Invalid page ID for N-gram storage: " . var_export($pageId, true));
@@ -199,13 +199,14 @@ class ABJ_404_Solution_NGramFilter {
             $table,
             [
                 'id' => (int)$pageId,
+                'type' => $type,
                 'url' => $url,
                 'url_normalized' => $urlNormalized,
                 'ngrams' => $ngramJson,
                 'ngram_count' => $ngramCount,
                 'last_updated' => current_time('mysql')
             ],
-            ['%d', '%s', '%s', '%s', '%d', '%s']
+            ['%d', '%s', '%s', '%s', '%s', '%d', '%s']
         );
 
         if ($result === false) {
@@ -220,15 +221,17 @@ class ABJ_404_Solution_NGramFilter {
      * Get N-grams for a specific page.
      *
      * @param int $pageId The page/post ID
+     * @param string $type Entity type: 'post', 'page', 'category', 'tag' (default: 'post')
      * @return array|null N-gram data or null if not found
      */
-    public function getNGramsForPage($pageId) {
+    public function getNGramsForPage($pageId, $type = 'post') {
         global $wpdb;
 
         $table = $wpdb->prefix . 'abj404_ngram_cache';
         $query = $wpdb->prepare(
-            "SELECT ngrams FROM {$table} WHERE id = %d",
-            $pageId
+            "SELECT ngrams FROM {$table} WHERE id = %d AND type = %s",
+            $pageId,
+            $type
         );
 
         $result = $wpdb->get_var($query);
@@ -334,13 +337,14 @@ class ABJ_404_Solution_NGramFilter {
      * Call this when a page is updated or deleted.
      *
      * @param int $pageId The page/post ID
+     * @param string $type Entity type: 'post', 'page', 'category', 'tag' (default: 'post')
      * @return bool Success status
      */
-    public function invalidatePage($pageId) {
+    public function invalidatePage($pageId, $type = 'post') {
         global $wpdb;
 
         $table = $wpdb->prefix . 'abj404_ngram_cache';
-        $result = $wpdb->delete($table, ['id' => $pageId], ['%d']);
+        $result = $wpdb->delete($table, ['id' => $pageId, 'type' => $type], ['%d', '%s']);
 
         return $result !== false;
     }
@@ -583,6 +587,9 @@ class ABJ_404_Solution_NGramFilter {
             $duration
         ));
 
+        // Track usage stats
+        $this->trackNGramUsage($totalCount, count($cachedPages), count($similarities), $duration);
+
         return $similarities;
     }
 
@@ -612,8 +619,87 @@ class ABJ_404_Solution_NGramFilter {
 
         $stats = [
             'total_entries' => $wpdb->get_var("SELECT COUNT(*) FROM {$table}"),
+            'posts_entries' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'post'"),
+            'category_entries' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'category'"),
+            'tag_entries' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'tag'"),
             'last_updated' => $wpdb->get_var("SELECT MAX(last_updated) FROM {$table}")
         ];
+
+        return $stats;
+    }
+
+    /**
+     * Track N-gram usage statistics.
+     *
+     * @param int $totalInCache Total entries in cache
+     * @param int $examined Number of entries examined
+     * @param int $candidates Number of candidates returned
+     * @param float $duration Time taken in milliseconds
+     */
+    private function trackNGramUsage($totalInCache, $examined, $candidates, $duration) {
+        // Get current stats
+        $stats = get_option('abj404_ngram_usage_stats', [
+            'total_queries' => 0,
+            'total_entries_examined' => 0,
+            'total_candidates_returned' => 0,
+            'total_duration_ms' => 0,
+            'avg_reduction_percent' => 0,
+            'last_reset' => time()
+        ]);
+
+        // Update stats
+        $stats['total_queries']++;
+        $stats['total_entries_examined'] += $examined;
+        $stats['total_candidates_returned'] += $candidates;
+        $stats['total_duration_ms'] += $duration;
+
+        // Calculate average reduction (how much ngrams reduced the search space)
+        if ($totalInCache > 0) {
+            $reductionPercent = (($totalInCache - $examined) / $totalInCache) * 100;
+            $stats['avg_reduction_percent'] = (($stats['avg_reduction_percent'] * ($stats['total_queries'] - 1)) + $reductionPercent) / $stats['total_queries'];
+        }
+
+        // Reset stats monthly to avoid unbounded growth
+        $monthAgo = time() - (30 * 24 * 60 * 60);
+        if ($stats['last_reset'] < $monthAgo) {
+            $stats = [
+                'total_queries' => 1,
+                'total_entries_examined' => $examined,
+                'total_candidates_returned' => $candidates,
+                'total_duration_ms' => $duration,
+                'avg_reduction_percent' => ($totalInCache > 0) ? (($totalInCache - $examined) / $totalInCache) * 100 : 0,
+                'last_reset' => time()
+            ];
+        }
+
+        update_option('abj404_ngram_usage_stats', $stats);
+    }
+
+    /**
+     * Get N-gram usage statistics.
+     *
+     * @return array Usage statistics
+     */
+    public function getUsageStats() {
+        $stats = get_option('abj404_ngram_usage_stats', [
+            'total_queries' => 0,
+            'total_entries_examined' => 0,
+            'total_candidates_returned' => 0,
+            'total_duration_ms' => 0,
+            'avg_reduction_percent' => 0,
+            'last_reset' => time()
+        ]);
+
+        // Calculate averages
+        if ($stats['total_queries'] > 0) {
+            $stats['avg_examined_per_query'] = round($stats['total_entries_examined'] / $stats['total_queries'], 1);
+            $stats['avg_candidates_per_query'] = round($stats['total_candidates_returned'] / $stats['total_queries'], 1);
+            $stats['avg_duration_ms'] = round($stats['total_duration_ms'] / $stats['total_queries'], 2);
+        } else {
+            $stats['avg_examined_per_query'] = 0;
+            $stats['avg_candidates_per_query'] = 0;
+            $stats['avg_duration_ms'] = 0;
+        }
 
         return $stats;
     }

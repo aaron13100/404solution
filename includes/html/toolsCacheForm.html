@@ -1,0 +1,19 @@
+<form method="POST" name="tools-cache-ngram" action="{toolsNgramCacheFormActionLink}" style="display:inline-block; margin-right: 10px;">
+    <input type="hidden" name="action" value="rebuildNgramCache">
+    <p>
+        <strong>{N-gram Cache}</strong>
+    </p>
+    {Rebuild the N-gram spell checker cache. This optimizes 404 URL matching performance. May take several minutes on large sites.}
+    <BR/>
+    <input type="submit" value="{Rebuild N-gram Cache}" class="button-secondary">
+</form>
+
+<form method="POST" name="tools-cache-spelling" action="{toolsSpellingCacheFormActionLink}" style="display:inline-block;">
+    <input type="hidden" name="action" value="clearSpellingCache">
+    <p>
+        <strong>{Spelling Cache}</strong>
+    </p>
+    {Clear the spelling cache to force recalculation of URL matches. Useful after making significant content changes.}
+    <BR/>
+    <input type="submit" value="{Clear Spelling Cache}" class="button-secondary">
+</form>

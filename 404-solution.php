@@ -218,6 +218,11 @@ function abj404_dailyMaintenanceCronJobListener() {
     require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     $abj404dao->deleteOldRedirectsCron();
+
+    // Ngram cache maintenance: sync missing entries and cleanup orphaned ones
+    $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+    $dbUpgrades->syncMissingNGrams();
+    $dbUpgrades->cleanupOrphanedNGrams();
 }
 function abj404_updateLogsHitsTableListener() {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");

@@ -145,6 +145,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		}
     	}
 
+    	// Run one-time migration to add type column to ngram cache
+    	if (get_option('abj404_ngram_type_column_added') !== '1') {
+    		$this->addTypeColumnToNGramCache();
+    	}
+
     	if ($updatingToNewVersion) {
     		$this->correctIssuesAfter();
     	}
@@ -939,6 +944,65 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         return $results;
     }
 
+    /**
+     * One-time migration to add 'type' column to ngram cache table.
+     * This allows storing posts, pages, categories, and tags without ID conflicts.
+     */
+    function addTypeColumnToNGramCache() {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'abj404_ngram_cache';
+
+        try {
+            // Check if column already exists
+            $columns = $wpdb->get_results("SHOW COLUMNS FROM {$table} LIKE 'type'");
+
+            if (empty($columns)) {
+                $this->logger->infoMessage("Adding 'type' column to ngram cache table...");
+
+                // Add the type column with default 'post' for backward compatibility
+                $wpdb->query("ALTER TABLE {$table} ADD COLUMN `type` varchar(20) NOT NULL DEFAULT 'post' COMMENT 'Entity type: post, page, category, tag' AFTER `id`");
+
+                if ($wpdb->last_error) {
+                    throw new Exception("Failed to add type column: " . $wpdb->last_error);
+                }
+
+                // Drop the old primary key
+                $wpdb->query("ALTER TABLE {$table} DROP PRIMARY KEY");
+
+                if ($wpdb->last_error) {
+                    throw new Exception("Failed to drop old primary key: " . $wpdb->last_error);
+                }
+
+                // Add new composite primary key
+                $wpdb->query("ALTER TABLE {$table} ADD PRIMARY KEY (`id`, `type`)");
+
+                if ($wpdb->last_error) {
+                    throw new Exception("Failed to add composite primary key: " . $wpdb->last_error);
+                }
+
+                // Add index on type column for faster queries
+                $wpdb->query("ALTER TABLE {$table} ADD KEY `idx_type` (`type`)");
+
+                if ($wpdb->last_error) {
+                    // Non-fatal - index is just for optimization
+                    $this->logger->infoMessage("Warning: Could not add type index: " . $wpdb->last_error);
+                }
+
+                $this->logger->infoMessage("Successfully added 'type' column to ngram cache table.");
+            } else {
+                $this->logger->debugMessage("Type column already exists in ngram cache table.");
+            }
+
+            // Mark migration as complete
+            update_option('abj404_ngram_type_column_added', '1');
+
+        } catch (Exception $e) {
+            $this->logger->errorMessage("Failed to migrate ngram cache table: " . $e->getMessage());
+            // Don't mark as complete so it will retry next time
+        }
+    }
+
     function updatePluginCheck() {
         
         $pluginInfo = $this->dao->getLatestPluginVersion();
@@ -1299,5 +1363,283 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             // Always release the lock
             delete_transient($lockKey);
         }
+    }
+
+    /**
+     * Sync missing ngram entries for posts/pages that don't have them yet.
+     * This runs as a background task to add entries for newly published content.
+     *
+     * Uses the same lock as rebuildNGramCache to prevent concurrent execution.
+     *
+     * @param int $batchSize Number of entries to process per batch (default: 50)
+     * @return array Statistics: ['added' => int, 'failed' => int, 'already_existed' => int]
+     */
+    function syncMissingNGrams($batchSize = 50) {
+        global $wpdb;
+
+        // Use the same lock as rebuild to prevent concurrent execution
+        $lockKey = 'abj404_ngram_rebuild_lock';
+        if (get_transient($lockKey)) {
+            $this->logger->debugMessage("Ngram sync skipped - rebuild/sync already in progress.");
+            return ['added' => 0, 'failed' => 0, 'already_existed' => 0, 'locked' => true];
+        }
+
+        // Set lock (30 minute timeout)
+        set_transient($lockKey, time(), 1800);
+
+        try {
+            $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
+            $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+
+            // Find posts in permalink cache that don't have ngram entries
+            // Using LEFT JOIN to find missing entries
+            $query = $wpdb->prepare(
+                "SELECT pc.id
+                 FROM {$permalinkCacheTable} pc
+                 LEFT JOIN {$ngramTable} ng ON pc.id = ng.id AND ng.type = 'post'
+                 WHERE ng.id IS NULL
+                 LIMIT %d",
+                $batchSize
+            );
+
+            $missingIds = $wpdb->get_col($query);
+
+            if ($wpdb->last_error) {
+                $this->logger->errorMessage("Failed to query for missing ngram entries: " . $wpdb->last_error);
+                delete_transient($lockKey);
+                return ['added' => 0, 'failed' => 1, 'already_existed' => 0, 'error' => $wpdb->last_error];
+            }
+
+            $stats = ['added' => 0, 'failed' => 0, 'already_existed' => 0];
+
+            if (empty($missingIds)) {
+                $this->logger->debugMessage("No missing ngram entries found. All posts are synced.");
+                delete_transient($lockKey);
+                return $stats;
+            }
+
+            $this->logger->infoMessage("Found " . count($missingIds) . " posts missing ngram entries. Adding...");
+
+            // Add ngrams for missing posts
+            $result = $this->ngramFilter->updateNGramsForPages($missingIds);
+
+            if (isset($result['success'])) {
+                $stats['added'] = $result['success'];
+            }
+            if (isset($result['failed'])) {
+                $stats['failed'] = $result['failed'];
+            }
+
+            $this->logger->infoMessage("Ngram sync complete: {$stats['added']} added, {$stats['failed']} failed.");
+
+            return $stats;
+
+        } finally {
+            // Always release the lock
+            delete_transient($lockKey);
+        }
+    }
+
+    /**
+     * Cleanup orphaned ngram entries that don't have corresponding posts/pages.
+     * This removes stale entries when posts are deleted.
+     *
+     * @return array Statistics: ['deleted' => int, 'errors' => int]
+     */
+    function cleanupOrphanedNGrams() {
+        global $wpdb;
+
+        $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+
+        $this->logger->debugMessage("Checking for orphaned ngram entries...");
+
+        // Find ngram entries for posts that don't exist in permalink cache
+        // Using LEFT JOIN to find orphaned entries
+        $query = "SELECT ng.id, ng.type
+                  FROM {$ngramTable} ng
+                  LEFT JOIN {$permalinkCacheTable} pc ON ng.id = pc.id AND ng.type = 'post'
+                  WHERE ng.type = 'post' AND pc.id IS NULL";
+
+        $orphanedEntries = $wpdb->get_results($query);
+
+        if ($wpdb->last_error) {
+            $this->logger->errorMessage("Failed to query for orphaned ngram entries: " . $wpdb->last_error);
+            return ['deleted' => 0, 'errors' => 1, 'error' => $wpdb->last_error];
+        }
+
+        $stats = ['deleted' => 0, 'errors' => 0];
+
+        if (empty($orphanedEntries)) {
+            $this->logger->debugMessage("No orphaned ngram entries found.");
+            return $stats;
+        }
+
+        $this->logger->infoMessage("Found " . count($orphanedEntries) . " orphaned ngram entries. Deleting...");
+
+        // Delete each orphaned entry
+        foreach ($orphanedEntries as $entry) {
+            $result = $wpdb->delete(
+                $ngramTable,
+                ['id' => $entry->id, 'type' => $entry->type],
+                ['%d', '%s']
+            );
+
+            if ($result === false) {
+                $this->logger->errorMessage("Failed to delete orphaned ngram entry ID {$entry->id}: " . $wpdb->last_error);
+                $stats['errors']++;
+            } else {
+                $stats['deleted']++;
+            }
+        }
+
+        $this->logger->infoMessage("Orphaned ngram cleanup complete: {$stats['deleted']} deleted, {$stats['errors']} errors.");
+
+        return $stats;
+    }
+
+    /**
+     * Build ngrams for all categories.
+     * Should be called during initial setup or manual rebuild.
+     *
+     * @param int $batchSize Number of categories to process per batch (default: 50)
+     * @return array Statistics: ['processed' => int, 'success' => int, 'failed' => int]
+     */
+    function buildNGramsForCategories($batchSize = 50) {
+        $this->logger->debugMessage("Building N-grams for categories...");
+
+        $categories = $this->dao->getPublishedCategories();
+
+        if (empty($categories)) {
+            $this->logger->debugMessage("No published categories found.");
+            return ['processed' => 0, 'success' => 0, 'failed' => 0];
+        }
+
+        $stats = ['processed' => 0, 'success' => 0, 'failed' => 0];
+
+        foreach ($categories as $category) {
+            try {
+                $termId = $category->term_id;
+                $url = $category->url;
+
+                if (empty($url) || $url === 'in code') {
+                    $this->logger->debugMessage("Skipping category {$termId} - no valid URL");
+                    continue;
+                }
+
+                // Normalize URL
+                $urlNormalized = $this->f->strtolower(trim($url));
+
+                // Extract N-grams
+                $ngrams = $this->ngramFilter->extractNGrams($urlNormalized);
+
+                // Store with type='category'
+                $success = $this->ngramFilter->storeNGrams($termId, $url, $urlNormalized, $ngrams, 'category');
+
+                $stats['processed']++;
+                if ($success) {
+                    $stats['success']++;
+                } else {
+                    $stats['failed']++;
+                }
+            } catch (Exception $e) {
+                $this->logger->errorMessage("Failed to build ngram for category {$termId}: " . $e->getMessage());
+                $stats['processed']++;
+                $stats['failed']++;
+            }
+        }
+
+        $this->logger->infoMessage("Category N-grams built: {$stats['processed']} processed, {$stats['success']} success, {$stats['failed']} failed.");
+
+        return $stats;
+    }
+
+    /**
+     * Build ngrams for all tags.
+     * Should be called during initial setup or manual rebuild.
+     *
+     * @param int $batchSize Number of tags to process per batch (default: 50)
+     * @return array Statistics: ['processed' => int, 'success' => int, 'failed' => int]
+     */
+    function buildNGramsForTags($batchSize = 50) {
+        $this->logger->debugMessage("Building N-grams for tags...");
+
+        $tags = $this->dao->getPublishedTags();
+
+        if (empty($tags)) {
+            $this->logger->debugMessage("No published tags found.");
+            return ['processed' => 0, 'success' => 0, 'failed' => 0];
+        }
+
+        $stats = ['processed' => 0, 'success' => 0, 'failed' => 0];
+
+        foreach ($tags as $tag) {
+            try {
+                $termId = $tag->term_id;
+                $url = $tag->url;
+
+                if (empty($url) || $url === 'in code') {
+                    $this->logger->debugMessage("Skipping tag {$termId} - no valid URL");
+                    continue;
+                }
+
+                // Normalize URL
+                $urlNormalized = $this->f->strtolower(trim($url));
+
+                // Extract N-grams
+                $ngrams = $this->ngramFilter->extractNGrams($urlNormalized);
+
+                // Store with type='tag'
+                $success = $this->ngramFilter->storeNGrams($termId, $url, $urlNormalized, $ngrams, 'tag');
+
+                $stats['processed']++;
+                if ($success) {
+                    $stats['success']++;
+                } else {
+                    $stats['failed']++;
+                }
+            } catch (Exception $e) {
+                $this->logger->errorMessage("Failed to build ngram for tag {$termId}: " . $e->getMessage());
+                $stats['processed']++;
+                $stats['failed']++;
+            }
+        }
+
+        $this->logger->infoMessage("Tag N-grams built: {$stats['processed']} processed, {$stats['success']} success, {$stats['failed']} failed.");
+
+        return $stats;
+    }
+
+    /**
+     * Build ngrams for all content types (posts, pages, categories, tags).
+     * This is the comprehensive rebuild that should be called from the Tools page.
+     *
+     * @param int $batchSize Number of items to process per batch
+     * @return array Combined statistics
+     */
+    function buildNGramsForAllContent($batchSize = 100) {
+        $this->logger->infoMessage("Starting comprehensive N-gram cache build for all content types...");
+
+        // Rebuild posts/pages (existing functionality)
+        $postsStats = $this->rebuildNGramCache($batchSize, true);
+
+        // Build categories
+        $categoriesStats = $this->buildNGramsForCategories($batchSize);
+
+        // Build tags
+        $tagsStats = $this->buildNGramsForTags($batchSize);
+
+        $totalStats = [
+            'posts' => $postsStats,
+            'categories' => $categoriesStats,
+            'tags' => $tagsStats,
+            'total_processed' => ($postsStats['processed'] ?? 0) + ($categoriesStats['processed'] ?? 0) + ($tagsStats['processed'] ?? 0),
+            'total_success' => ($postsStats['success'] ?? 0) + ($categoriesStats['success'] ?? 0) + ($tagsStats['success'] ?? 0),
+            'total_failed' => ($postsStats['failed'] ?? 0) + ($categoriesStats['failed'] ?? 0) + ($tagsStats['failed'] ?? 0)
+        ];
+
+        $this->logger->infoMessage("Comprehensive N-gram build complete: {$totalStats['total_processed']} total processed, {$totalStats['total_success']} success, {$totalStats['total_failed']} failed.");
+
+        return $totalStats;
     }
 }

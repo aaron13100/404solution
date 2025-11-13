@@ -748,6 +748,25 @@ class ABJ_404_Solution_View {
         echo " <div class=\"meta-box-sortables\">";
         $abj404view->echoPostBox("abj404-purgeRedirects", __('Etcetera', '404-solution'), $html);
         echo "</div></div></div>";
+
+        // ------------------------------------
+        // Cache management tools
+        $ngramLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_rebuildNgramCache");
+        $spellingLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_clearSpellingCache");
+
+        // read the html content.
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsCacheForm.html");
+        // do special replacements
+        $html = $this->f->str_replace('{toolsNgramCacheFormActionLink}', $ngramLink, $html);
+        $html = $this->f->str_replace('{toolsSpellingCacheFormActionLink}', $spellingLink, $html);
+        // constants and translations.
+        $html = $this->f->doNormalReplacements($html);
+
+        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
+        echo "<div class=\"metabox-holder\">";
+        echo " <div class=\"meta-box-sortables\">";
+        $abj404view->echoPostBox("abj404-cacheTools", __('Cache Management', '404-solution'), $html);
+        echo "</div></div></div>";
     }
     
     function echoAdminOptionsPage() {
