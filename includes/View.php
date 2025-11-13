@@ -81,8 +81,8 @@ class ABJ_404_Solution_View {
 		$result['logslink'] = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $logsId;
 
 		if ($isCapturedPage) {
-			// Captured page has hardcoded subpage (with double ampersand bug)
-			$result['trashlink'] = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $id .
+			// Captured page has hardcoded subpage
+			$result['trashlink'] = "?page=" . ABJ404_PP . "&subpage=abj404_captured&id=" . $id .
 				"&subpage=" . $sub;
 			$result['ajaxTrashLink'] = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']) .
 				"&subpage=" . $sub;
@@ -111,9 +111,9 @@ class ABJ_404_Solution_View {
 
 		// Captured page has ignore and later links
 		if ($isCapturedPage) {
-			$result['ignorelink'] = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $id .
+			$result['ignorelink'] = "?page=" . ABJ404_PP . "&subpage=abj404_captured&id=" . $id .
 				"&subpage=" . $sub;
-			$result['laterlink'] = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $id .
+			$result['laterlink'] = "?page=" . ABJ404_PP . "&subpage=abj404_captured&id=" . $id .
 				"&subpage=" . $sub;
 
 			// Ignore title and action
