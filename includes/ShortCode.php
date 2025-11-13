@@ -40,7 +40,7 @@ class ABJ_404_Solution_ShortCode {
 			$debugMessage .= "do not update (no cookie found), ";
 		}
 
-		$dest404page = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ?
+		$dest404page = (isset($options['dest404page']) ?
 			$options['dest404page'] :
 			ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
 		
@@ -155,8 +155,8 @@ class ABJ_404_Solution_ShortCode {
          	"</script> \n";
         }
         
-        if (array_key_exists(ABJ404_PP, $_REQUEST) && isset($_REQUEST[ABJ404_PP]) && 
-                array_key_exists($cookieName, $_REQUEST[ABJ404_PP]) && isset($_REQUEST[ABJ404_PP][$cookieName])) {
+        if (isset($_REQUEST[ABJ404_PP]) &&
+                isset($_REQUEST[ABJ404_PP][$cookieName])) {
             $urlRequest = $_REQUEST[ABJ404_PP][$cookieName];
         }
         

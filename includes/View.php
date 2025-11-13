@@ -81,8 +81,8 @@ class ABJ_404_Solution_View {
 		$result['logslink'] = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $logsId;
 
 		if ($isCapturedPage) {
-			// Captured page has hardcoded subpage (with double ampersand bug)
-			$result['trashlink'] = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $id .
+			// Captured page has hardcoded subpage
+			$result['trashlink'] = "?page=" . ABJ404_PP . "&subpage=abj404_captured&id=" . $id .
 				"&subpage=" . $sub;
 			$result['ajaxTrashLink'] = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']) .
 				"&subpage=" . $sub;
@@ -111,9 +111,9 @@ class ABJ_404_Solution_View {
 
 		// Captured page has ignore and later links
 		if ($isCapturedPage) {
-			$result['ignorelink'] = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $id .
+			$result['ignorelink'] = "?page=" . ABJ404_PP . "&subpage=abj404_captured&id=" . $id .
 				"&subpage=" . $sub;
-			$result['laterlink'] = "?page=" . ABJ404_PP . "&&subpage=abj404_captured&id=" . $id .
+			$result['laterlink'] = "?page=" . ABJ404_PP . "&subpage=abj404_captured&id=" . $id .
 				"&subpage=" . $sub;
 
 			// Ignore title and action
@@ -767,16 +767,16 @@ class ABJ_404_Solution_View {
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
         $urlParts = parse_url(urldecode($_SERVER['REQUEST_URI']));
         $currentURL = $urlParts['path'];
-        if (is_array($options) && array_key_exists('menuLocation', $options) && isset($options['menuLocation']) && 
+        if (is_array($options) && isset($options['menuLocation']) &&
                 $options['menuLocation'] == 'settingsLevel') {
-            if ($this->f->strpos($currentURL, 'options-general.php') != false) {
+            if ($this->f->strpos($currentURL, 'options-general.php') !== false) {
                 // the option changed and we're at the wrong URL now, so we redirect to the correct one.
-                $this->logic->forceRedirect(admin_url() . "admin.php?page=" . 
+                $this->logic->forceRedirect(admin_url() . "admin.php?page=" .
                         ABJ404_PP . '&subpage=abj404_options');
             }
-        } else if ($this->f->strpos($currentURL, 'admin.php') != false) {
+        } else if ($this->f->strpos($currentURL, 'admin.php') !== false) {
             // if the current URL has admin.php then the URLs don't match and we need to reload.
-            $this->logic->forceRedirect(admin_url() . "options-general.php?page=" . 
+            $this->logic->forceRedirect(admin_url() . "options-general.php?page=" .
                     ABJ404_PP . '&subpage=abj404_options');
         }
 
@@ -881,12 +881,12 @@ class ABJ_404_Solution_View {
         }
 
         $recnum = null;
-        if (array_key_exists('id', $_GET) && isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {
-            $this->logger->debugMessage("Edit redirect page. GET ID: " . 
+        if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {
+            $this->logger->debugMessage("Edit redirect page. GET ID: " .
                     wp_kses_post(json_encode($_GET['id'])));
             $recnum = absint($_GET['id']);
-            
-        } else if (array_key_exists('id', $_POST) && isset($_POST['id']) && $this->f->regexMatch('[0-9]+', $_POST['id'])) {
+
+        } else if (isset($_POST['id']) && $this->f->regexMatch('[0-9]+', $_POST['id'])) {
             $this->logger->debugMessage("Edit redirect page. POST ID: " . 
                     wp_kses_post(json_encode($_POST['id'])));
             $recnum = absint($_POST['id']);
@@ -1641,7 +1641,7 @@ class ABJ_404_Solution_View {
         $link = wp_nonce_url($url, "abj404addRedirect");
 
         $urlPlaceholder = parse_url(get_home_url(), PHP_URL_PATH) . "/example";
-        if (array_key_exists('url', $_POST) && isset($_POST['url']) && $_POST['url'] != '') {
+        if (isset($_POST['url']) && $_POST['url'] != '') {
             $postedURL = esc_url($_POST['url']);
         } else {
             $postedURL = $urlPlaceholder;
@@ -2253,11 +2253,7 @@ class ABJ_404_Solution_View {
         if ($sub == 'abj404_logs') {
             $num_records = $this->dao->getLogsCount($tableOptions['logsid']);
         } else {
-            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
-                $num_records = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
-            } else {
-                $num_records = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
-            }
+            $num_records = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
         }
 
         // Ensure perpage is never 0 to prevent division by zero

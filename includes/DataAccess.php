@@ -1587,13 +1587,13 @@ class ABJ_404_Solution_DataAccess {
         }
 
         // Remove Automatic Redirects
-        if (array_key_exists('auto_deletion', $options) && isset($options['auto_deletion']) && $options['auto_deletion'] != '0') {
+        if (isset($options['auto_deletion']) && $options['auto_deletion'] != '0') {
             $status_list = ABJ404_STATUS_AUTO;
             $autoRedirectsCount = $this->deleteOldRedirectsByType($options, $now, 'auto_deletion', $status_list, 'Automatic redirect');
         }
 
         // Remove Manual Redirects
-        if (array_key_exists('manual_deletion', $options) && isset($options['manual_deletion']) && $options['manual_deletion'] != '0') {
+        if (isset($options['manual_deletion']) && $options['manual_deletion'] != '0') {
             $status_list = ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_REGEX;
             $manualRedirectsCount = $this->deleteOldRedirectsByType($options, $now, 'manual_deletion', $status_list, 'Manual redirect');
         }
@@ -1631,7 +1631,7 @@ class ABJ_404_Solution_DataAccess {
                 $renamed;
         
         // only send a 404 notification email during daily maintenance.
-        if (array_key_exists('admin_notification_email', $options) && isset($options['admin_notification_email']) && 
+        if (isset($options['admin_notification_email']) &&
                 $this->f->strlen(trim($options['admin_notification_email'])) > 5) {
             
             if ($manually_fired) {
@@ -1644,7 +1644,7 @@ class ABJ_404_Solution_DataAccess {
             $message .= ', Admin email notification option turned off.';
         }
 
-        if (array_key_exists('send_error_logs', $options) && isset($options['send_error_logs']) && 
+        if (isset($options['send_error_logs']) &&
                 $options['send_error_logs'] == '1') {
             if ($this->logger->emailErrorLogIfNecessary()) {
                 $message .= ", Log file emailed to developer.";
@@ -2129,7 +2129,7 @@ class ABJ_404_Solution_DataAccess {
             return $message;
         }
         
-        if (!array_key_exists('types', $_POST) || !isset($_POST['types']) || $_POST['types'] == '') {
+        if (!isset($_POST['types']) || $_POST['types'] == '') {
             $message = __('Error: No redirect types were selected. No purges will be done.', '404-solution');
             return $message;
         }
