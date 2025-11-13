@@ -264,7 +264,7 @@ ul .ui-autocomplete-category.data-overflow-category {
     background: var(--abj404-surface, #fff);
     color: var(--abj404-text, #2c3338);
     padding: 6px 12px;
-    border-radius: 16px;
+    border-radius: 8px;
     cursor: pointer;
     user-select: none;
     display: inline-flex;

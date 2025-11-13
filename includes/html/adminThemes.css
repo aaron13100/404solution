@@ -133,6 +133,12 @@ body[data-theme].wp-admin #wpbody-content {
   background-color: var(--abj404-bg);
 }
 
+/* Body background color */
+html[data-theme] body.wp-admin,
+body[data-theme].wp-admin {
+  background-color: var(--abj404-bg) !important;
+}
+
 /* Background colors */
 html[data-theme] body .wrap,
 body[data-theme] .wrap,
@@ -224,6 +230,27 @@ body[data-theme] .widefat tbody td {
 }
 
 /* Form elements */
+html[data-theme] body.wp-admin input[type="text"],
+html[data-theme] body.wp-admin input[type="number"],
+html[data-theme] body.wp-admin input[type="email"],
+html[data-theme] body.wp-admin input[type="password"],
+html[data-theme] body.wp-admin input[type="search"],
+html[data-theme] body.wp-admin textarea,
+html[data-theme] body.wp-admin select,
+body[data-theme].wp-admin input[type="text"],
+body[data-theme].wp-admin input[type="number"],
+body[data-theme].wp-admin input[type="email"],
+body[data-theme].wp-admin input[type="password"],
+body[data-theme].wp-admin input[type="search"],
+body[data-theme].wp-admin textarea,
+body[data-theme].wp-admin select,
+html[data-theme] body input[type="text"],
+html[data-theme] body input[type="number"],
+html[data-theme] body input[type="email"],
+html[data-theme] body input[type="password"],
+html[data-theme] body input[type="search"],
+html[data-theme] body textarea,
+html[data-theme] body select,
 body[data-theme] input[type="text"],
 body[data-theme] input[type="number"],
 body[data-theme] input[type="email"],
@@ -231,11 +258,33 @@ body[data-theme] input[type="password"],
 body[data-theme] input[type="search"],
 body[data-theme] textarea,
 body[data-theme] select {
-  background-color: var(--abj404-surface);
-  border-color: var(--abj404-border);
-  color: var(--abj404-text);
+  background-color: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+  color: var(--abj404-text) !important;
+  border-radius: 4px !important;
 }
 
+html[data-theme] body.wp-admin input[type="text"]:focus,
+html[data-theme] body.wp-admin input[type="number"]:focus,
+html[data-theme] body.wp-admin input[type="email"]:focus,
+html[data-theme] body.wp-admin input[type="password"]:focus,
+html[data-theme] body.wp-admin input[type="search"]:focus,
+html[data-theme] body.wp-admin textarea:focus,
+html[data-theme] body.wp-admin select:focus,
+body[data-theme].wp-admin input[type="text"]:focus,
+body[data-theme].wp-admin input[type="number"]:focus,
+body[data-theme].wp-admin input[type="email"]:focus,
+body[data-theme].wp-admin input[type="password"]:focus,
+body[data-theme].wp-admin input[type="search"]:focus,
+body[data-theme].wp-admin textarea:focus,
+body[data-theme].wp-admin select:focus,
+html[data-theme] body input[type="text"]:focus,
+html[data-theme] body input[type="number"]:focus,
+html[data-theme] body input[type="email"]:focus,
+html[data-theme] body input[type="password"]:focus,
+html[data-theme] body input[type="search"]:focus,
+html[data-theme] body textarea:focus,
+html[data-theme] body select:focus,
 body[data-theme] input[type="text"]:focus,
 body[data-theme] input[type="number"]:focus,
 body[data-theme] input[type="email"]:focus,
@@ -243,31 +292,62 @@ body[data-theme] input[type="password"]:focus,
 body[data-theme] input[type="search"]:focus,
 body[data-theme] textarea:focus,
 body[data-theme] select:focus {
-  border-color: var(--abj404-focus);
-  outline-color: var(--abj404-focus);
+  border-color: var(--abj404-focus) !important;
+  outline-color: var(--abj404-focus) !important;
 }
 
 /* Buttons */
+/* High specificity selectors to override WordPress defaults */
+html[data-theme] body.wp-admin button,
+html[data-theme] body.wp-admin input[type="button"],
+html[data-theme] body.wp-admin input[type="submit"],
+html[data-theme] body.wp-admin input[type="reset"],
+body[data-theme].wp-admin button,
+body[data-theme].wp-admin input[type="button"],
+body[data-theme].wp-admin input[type="submit"],
+body[data-theme].wp-admin input[type="reset"],
+html[data-theme] body .button,
+html[data-theme] body .button-secondary,
 body[data-theme] .button,
 body[data-theme] .button-secondary {
-  background-color: var(--abj404-surface);
-  border-color: var(--abj404-border);
-  color: var(--abj404-text);
+  background-color: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+  color: var(--abj404-text) !important;
+  border-radius: 8px !important;
+  border-style: solid !important;
+  border-width: 1px !important;
 }
 
+html[data-theme] body.wp-admin button:hover,
+html[data-theme] body.wp-admin input[type="button"]:hover,
+html[data-theme] body.wp-admin input[type="submit"]:hover,
+html[data-theme] body.wp-admin input[type="reset"]:hover,
+body[data-theme].wp-admin button:hover,
+body[data-theme].wp-admin input[type="button"]:hover,
+body[data-theme].wp-admin input[type="submit"]:hover,
+body[data-theme].wp-admin input[type="reset"]:hover,
+html[data-theme] body .button:hover,
+html[data-theme] body .button-secondary:hover,
 body[data-theme] .button:hover,
 body[data-theme] .button-secondary:hover {
-  background-color: var(--abj404-surface-muted);
-  border-color: var(--abj404-primary);
+  background-color: var(--abj404-surface-muted) !important;
+  border-color: var(--abj404-primary) !important;
 }
 
-body[data-theme] .button-primary {
-  background-color: var(--abj404-primary);
-  border-color: var(--abj404-primary);
-  color: #ffffff;
+html[data-theme] body .button-primary,
+body[data-theme] .button-primary,
+html[data-theme] body input[type="submit"].button-primary,
+body[data-theme] input[type="submit"].button-primary {
+  background-color: var(--abj404-primary) !important;
+  border-color: var(--abj404-primary) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
 }
 
-body[data-theme] .button-primary:hover {
+html[data-theme] body .button-primary:hover,
+body[data-theme] .button-primary:hover,
+html[data-theme] body input[type="submit"].button-primary:hover,
+body[data-theme] input[type="submit"].button-primary:hover {
   opacity: 0.9;
 }
 
@@ -350,6 +430,40 @@ body[data-theme] .description,
 body[data-theme] .form-text,
 body[data-theme] p.description {
   color: var(--abj404-text-muted);
+}
+
+/* File input styling */
+html[data-theme] body.wp-admin input[type="file"],
+body[data-theme].wp-admin input[type="file"],
+html[data-theme] body input[type="file"],
+body[data-theme] input[type="file"] {
+  background-color: var(--abj404-surface) !important;
+  border: 1px solid var(--abj404-border) !important;
+  border-radius: 8px !important;
+  color: var(--abj404-text) !important;
+  padding: 6px 12px !important;
+}
+
+html[data-theme] body.wp-admin input[type="file"]::-webkit-file-upload-button,
+body[data-theme].wp-admin input[type="file"]::-webkit-file-upload-button,
+html[data-theme] body input[type="file"]::-webkit-file-upload-button,
+body[data-theme] input[type="file"]::-webkit-file-upload-button {
+  background-color: var(--abj404-surface-muted) !important;
+  border: 1px solid var(--abj404-border) !important;
+  border-radius: 6px !important;
+  color: var(--abj404-text) !important;
+  padding: 6px 12px !important;
+  margin-right: 12px !important;
+  cursor: pointer !important;
+}
+
+html[data-theme] body.wp-admin input[type="file"]::-webkit-file-upload-button:hover,
+body[data-theme].wp-admin input[type="file"]::-webkit-file-upload-button:hover,
+html[data-theme] body input[type="file"]::-webkit-file-upload-button:hover,
+body[data-theme] input[type="file"]::-webkit-file-upload-button:hover {
+  background-color: var(--abj404-primary) !important;
+  border-color: var(--abj404-primary) !important;
+  color: #ffffff !important;
 }
 
 /* Special styling for dark themes */
