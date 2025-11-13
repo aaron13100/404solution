@@ -85,6 +85,9 @@ class ABJ_404_Solution_WordPress_Connector {
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_updateOptions', 'ABJ_404_Solution_Ajax_Php::updateOptions');
+
+            // Initialize uninstall modal (shows popup when user deletes plugin)
+            ABJ_404_Solution_UninstallModal::init();
         }
 
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
