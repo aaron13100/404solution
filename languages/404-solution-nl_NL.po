@@ -475,6 +475,9 @@ msgstr "Fout: URL is een verplicht veld."
 msgid "Error: URL must start with /"
 msgstr "Fout: URL moet beginnen met /"
 
+msgid "Error: Redirect destination is required."
+msgstr "Error: Redirect destination is required."
+
 msgid "Error: Unable to move redirect from trash."
 msgstr "Fout: Kan omleiding niet uit prullenbak halen."
 

@@ -475,6 +475,9 @@ msgstr "Erro: URL é um campo obrigatório."
 msgid "Error: URL must start with /"
 msgstr "Erro: URL deve começar com /"
 
+msgid "Error: Redirect destination is required."
+msgstr "Error: Redirect destination is required."
+
 msgid "Error: Unable to move redirect from trash."
 msgstr "Erro: Não foi possível mover o redirecionamento da lixeira."
 

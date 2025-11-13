@@ -475,6 +475,9 @@ msgstr "Kesalahan: URL adalah field yang wajib diisi."
 msgid "Error: URL must start with /"
 msgstr "Kesalahan: URL harus dimulai dengan /"
 
+msgid "Error: Redirect destination is required."
+msgstr "Error: Redirect destination is required."
+
 msgid "Error: Unable to move redirect from trash."
 msgstr "Kesalahan: Tidak dapat memindahkan redirect dari tempat sampah."
 

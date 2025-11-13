@@ -475,6 +475,9 @@ msgstr "Fehler: URL ist ein Pflichtfeld."
 msgid "Error: URL must start with /"
 msgstr "Fehler: URL muss mit / beginnen"
 
+msgid "Error: Redirect destination is required."
+msgstr "Error: Redirect destination is required."
+
 msgid "Error: Unable to move redirect from trash."
 msgstr "Fehler: Weiterleitung kann nicht aus dem Papierkorb wiederhergestellt werden."
 

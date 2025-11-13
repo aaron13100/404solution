@@ -475,6 +475,9 @@ msgstr "错误：URL 为必填字段。"
 msgid "Error: URL must start with /"
 msgstr "错误：URL 必须以 / 开头"
 
+msgid "Error: Redirect destination is required."
+msgstr "Error: Redirect destination is required."
+
 msgid "Error: Unable to move redirect from trash."
 msgstr "错误：无法从回收站移出重定向。"
 

@@ -475,6 +475,9 @@ msgstr "エラー：URLは必須フィールドです。"
 msgid "Error: URL must start with /"
 msgstr "エラー：URLは/で始まる必要があります"
 
+msgid "Error: Redirect destination is required."
+msgstr "Error: Redirect destination is required."
+
 msgid "Error: Unable to move redirect from trash."
 msgstr "エラー：ゴミ箱からリダイレクトを移動できません。"
 
