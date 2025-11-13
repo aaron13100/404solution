@@ -91,6 +91,10 @@ body[data-theme="neon"] {
   --abj404-badge-bg: #202734;
   --abj404-badge-text: #D0D8E6;  /* Reduced from #CFD8E6 for consistency */
   --abj404-link: var(--abj404-accent);
+  --abj404-button-bg: #3D4A5C;   /* Much brighter than surface for clear button visibility */
+  --abj404-button-border: #5A6B7F;  /* Bright border for definition */
+  --abj404-button-hover-bg: #4A5A6E;  /* Lighter hover state */
+  --abj404-button-text: #E8EDF3;  /* Slightly brighter text for buttons */
 }
 
 /* === Obsidian Blue (Dark) === */
@@ -116,6 +120,10 @@ body[data-theme="obsidian"] {
   --abj404-badge-bg: #1A2438;
   --abj404-badge-text: #D5DEF0;  /* Reduced from #DCE6F7 for consistency */
   --abj404-link: #93C5FD;
+  --abj404-button-bg: #2D3F5C;   /* Much brighter than surface for clear button visibility */
+  --abj404-button-border: #4A6085;  /* Bright border for definition */
+  --abj404-button-hover-bg: #3A4F6E;  /* Lighter hover state */
+  --abj404-button-text: #E8EFF7;  /* Slightly brighter text for buttons */
 }
 
 /* ===== Apply theme colors to WordPress admin elements ===== */
@@ -310,12 +318,13 @@ html[data-theme] body .button,
 html[data-theme] body .button-secondary,
 body[data-theme] .button,
 body[data-theme] .button-secondary {
-  background-color: var(--abj404-surface) !important;
-  border-color: var(--abj404-border) !important;
-  color: var(--abj404-text) !important;
+  background-color: var(--abj404-button-bg, var(--abj404-surface)) !important;
+  border-color: var(--abj404-button-border, var(--abj404-border)) !important;
+  color: var(--abj404-button-text, var(--abj404-text)) !important;
   border-radius: 8px !important;
   border-style: solid !important;
   border-width: 1px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
 html[data-theme] body.wp-admin button:hover,
@@ -330,8 +339,10 @@ html[data-theme] body .button:hover,
 html[data-theme] body .button-secondary:hover,
 body[data-theme] .button:hover,
 body[data-theme] .button-secondary:hover {
-  background-color: var(--abj404-surface-muted) !important;
+  background-color: var(--abj404-button-hover-bg, var(--abj404-surface-muted)) !important;
   border-color: var(--abj404-primary) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+  transform: translateY(-1px);
 }
 
 html[data-theme] body .button-primary,
