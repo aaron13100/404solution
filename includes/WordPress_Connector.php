@@ -693,7 +693,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $pageName = "404 Solution";
 
         // Admin notice
-        if (array_key_exists('admin_notification', $options) && isset($options['admin_notification']) && $options['admin_notification'] != '0') {
+        if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
             $captured = $instance->dao->getCapturedCountForNotification();
             if (isset($options['admin_notification']) && $captured >= $options['admin_notification']) {
                 $pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . esc_html($captured) . "</span></span>";
@@ -704,7 +704,7 @@ class ABJ_404_Solution_WordPress_Connector {
             }
         }
 
-        if (array_key_exists('menuLocation', $options) && isset($options['menuLocation']) &&
+        if (isset($options['menuLocation']) &&
                 $options['menuLocation'] == 'settingsLevel') {
             // this adds the settings link at the same level as the "Tools" and "Settings" menu items.
 			$GLOBALS['abj404_settingsPageName'] = add_menu_page(PLUGIN_NAME, PLUGIN_NAME, 'manage_options', 'abj404_solution',
