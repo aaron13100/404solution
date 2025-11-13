@@ -287,7 +287,7 @@ class ABJ_404_Solution_PluginLogic {
         // this is for requests like website.com/?p=123
         $query = $wp_query->query;
         // if it's not set then don't use it.
-        if (!array_key_exists('p', $query) || !isset($query['p'])) {
+        if (!isset($query['p'])) {
             return;
         }
         $pageid = $query['p'];
@@ -446,7 +446,7 @@ class ABJ_404_Solution_PluginLogic {
         
         // ---------------------------------------
         // if there's a default 404 page specified then use that.
-        $dest404page = (array_key_exists('dest404page', $options) && isset($options['dest404page']) ? 
+        $dest404page = (isset($options['dest404page']) ?
                 $options['dest404page'] : 
             ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
         
@@ -530,7 +530,7 @@ class ABJ_404_Solution_PluginLogic {
         $missing = false;
         foreach ($defaults as $key => $value) {
             if (!isset($options) || $options == '' ||
-                    !array_key_exists($key, $options) || !isset($options[$key]) || '' == $options[$key]) {
+                    !isset($options[$key]) || '' == $options[$key]) {
                 $options[$key] = $value;
                 $missing = true;
             }
@@ -1039,7 +1039,7 @@ class ABJ_404_Solution_PluginLogic {
             }
         } else if ($this->f->substr($action . '', 0, 4) == "bulk") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
-                if (!array_key_exists('idnum', $_POST) || !isset($_POST['idnum'])) {
+                if (!isset($_POST['idnum'])) {
                     $this->logger->debugMessage("No ID(s) specified for bulk action: " . esc_html($action));
                     echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'), 
                         esc_html($action), false);
@@ -1062,7 +1062,7 @@ class ABJ_404_Solution_PluginLogic {
         
         $message = "";
         // Handle Trash Functionality
-        if (array_key_exists('trash', $_GET) && isset($_GET['trash'])) {
+        if (isset($_GET['trash'])) {
             if (check_admin_referer('abj404_trashRedirect') && is_admin()) {
                 $trash = "";
                 if ($_GET['trash'] == 0) {
@@ -1404,7 +1404,7 @@ class ABJ_404_Solution_PluginLogic {
     private function handleStatusUpdate($paramName, $nonceAction, $activeStatus, $errorActionName, $successActionName) {
         $message = "";
 
-        if (array_key_exists($paramName, $_GET) && isset($_GET[$paramName])) {
+        if (isset($_GET[$paramName])) {
             if (check_admin_referer($nonceAction) && is_admin()) {
                 if ($_GET[$paramName] != 0 && $_GET[$paramName] != 1) {
                     $this->logger->debugMessage("Unexpected {$errorActionName} operation: " .
@@ -1668,7 +1668,7 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($typeAndDest['type'] != "" && $typeAndDest['dest'] !== "") {
             $statusType = ABJ404_STATUS_MANUAL;
-            if (array_key_exists('is_regex_url', $_POST) && isset($_POST['is_regex_url']) && 
+            if (isset($_POST['is_regex_url']) &&
                 $_POST['is_regex_url'] != '0') {
                 
                 $statusType = ABJ404_STATUS_REGEX;
@@ -1793,7 +1793,7 @@ class ABJ_404_Solution_PluginLogic {
         if ($typeAndDest['type'] != "" && $typeAndDest['dest'] !== "") {
             // url match type. regex or normal exact match.
             $statusType = ABJ404_STATUS_MANUAL;
-            if (array_key_exists('is_regex_url', $_POST) && isset($_POST['is_regex_url']) && 
+            if (isset($_POST['is_regex_url']) &&
                 $_POST['is_regex_url'] != '0') {
                 
                 $statusType = ABJ404_STATUS_REGEX;
@@ -1896,14 +1896,14 @@ class ABJ_404_Solution_PluginLogic {
         $tableOptions['paged'] = $this->dao->getPostOrGetSanitize("paged", 1);
 
         $perPageOption = ABJ404_OPTION_DEFAULT_PERPAGE;
-        if (array_key_exists('perpage', $options) && isset($options['perpage'])) {
+        if (isset($options['perpage'])) {
             $perPageOption = max(absint($options['perpage']), ABJ404_OPTION_MIN_PERPAGE);
         }
         $tableOptions['perpage'] = $this->dao->getPostOrGetSanitize("perpage", $perPageOption);
 
         $tableOptions['logsid'] = 0;
         if ($this->dao->getPostOrGetSanitize('subpage') == "abj404_logs") {
-            if (array_key_exists('id', $_GET) && isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {                
+            if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {                
                 $tableOptions['logsid'] = absint($_GET['id']);
                 
             } else if (array_key_exists('redirect_to_data_field_id', $_GET) && 
@@ -2041,7 +2041,7 @@ class ABJ_404_Solution_PluginLogic {
     private function updateRedirectSettings(&$options, $postData) {
         $message = "";
 
-        if (array_key_exists('default_redirect', $postData) && isset($postData['default_redirect'])) {
+        if (isset($postData['default_redirect'])) {
             if ($postData['default_redirect'] == "301" || $postData['default_redirect'] == "302") {
                 $options['default_redirect'] = intval($postData['default_redirect']);
             } else {
@@ -2049,17 +2049,17 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
 
-        if (array_key_exists('redirect_to_data_field_id', $postData) && isset($postData['redirect_to_data_field_id'])) {
+        if (isset($postData['redirect_to_data_field_id'])) {
             $options['dest404page'] = sanitize_text_field($postData['redirect_to_data_field_id']);
         }
-        if (array_key_exists('redirect_to_data_field_title', $postData) && isset($postData['redirect_to_data_field_title'])) {
+        if (isset($postData['redirect_to_data_field_title'])) {
             $options['dest404pageURL'] = sanitize_text_field($postData['redirect_to_data_field_title']);
             if ($options['dest404page'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             	$options['dest404page'] = $options['dest404pageURL'] . '|' . ABJ404_TYPE_EXTERNAL;
             }
         }
 
-        if (array_key_exists('template_redirect_priority', $postData) && isset($postData['template_redirect_priority'])) {
+        if (isset($postData['template_redirect_priority'])) {
             if (is_numeric($postData['template_redirect_priority']) && $postData['template_redirect_priority'] >= 0 && $postData['template_redirect_priority'] <= 999) {
                 $options['template_redirect_priority'] = absint($postData['template_redirect_priority']);
             } else {
@@ -2078,23 +2078,23 @@ class ABJ_404_Solution_PluginLogic {
     private function updateWordPressSettings(&$options, $postData) {
         $message = "";
 
-        if (array_key_exists('ignore_dontprocess', $postData) && isset($postData['ignore_dontprocess'])) {
+        if (isset($postData['ignore_dontprocess'])) {
         	$options['ignore_dontprocess'] = wp_kses_post($postData['ignore_dontprocess']);
         }
-        if (array_key_exists('ignore_doprocess', $postData) && isset($postData['ignore_doprocess'])) {
+        if (isset($postData['ignore_doprocess'])) {
         	$options['ignore_doprocess'] = wp_kses_post($postData['ignore_doprocess']);
         }
-        if (array_key_exists('recognized_post_types', $postData) && isset($postData['recognized_post_types'])) {
+        if (isset($postData['recognized_post_types'])) {
         	$options['recognized_post_types'] = wp_kses_post($postData['recognized_post_types']);
         }
-        if (array_key_exists('recognized_categories', $postData) && isset($postData['recognized_categories'])) {
+        if (isset($postData['recognized_categories'])) {
         	$options['recognized_categories'] = wp_kses_post($postData['recognized_categories']);
         }
-        if (array_key_exists('menuLocation', $postData) && isset($postData['menuLocation'])) {
+        if (isset($postData['menuLocation'])) {
         	$options['menuLocation'] = wp_kses_post($postData['menuLocation']);
         }
 
-        if (array_key_exists('admin_theme', $postData) && isset($postData['admin_theme'])) {
+        if (isset($postData['admin_theme'])) {
             // Only allow specific theme values
             $allowed_themes = array('default', 'calm', 'mono', 'neon', 'obsidian');
             $theme = sanitize_text_field($postData['admin_theme']);
@@ -2105,7 +2105,7 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
 
-        if (array_key_exists('days_wait_before_major_update', $postData) && isset($postData['days_wait_before_major_update'])) {
+        if (isset($postData['days_wait_before_major_update'])) {
             if (is_numeric($postData['days_wait_before_major_update'])) {
                 $options['days_wait_before_major_update'] = absint($postData['days_wait_before_major_update']);
             } else {
@@ -2125,13 +2125,13 @@ class ABJ_404_Solution_PluginLogic {
     private function updateNotificationSettings(&$options, $postData) {
         $message = "";
 
-        if (array_key_exists('admin_notification', $postData) && isset($postData['admin_notification'])) {
+        if (isset($postData['admin_notification'])) {
             if (is_numeric($postData['admin_notification'])) {
                 $options['admin_notification'] = absint($postData['admin_notification']);
             }
         }
 
-        if (array_key_exists('admin_notification_email', $postData) && isset($postData['admin_notification_email'])) {
+        if (isset($postData['admin_notification_email'])) {
             $options['admin_notification_email'] = trim(wp_kses_post($postData['admin_notification_email']));
         }
 
@@ -2151,7 +2151,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return string Error message if validation fails, empty string otherwise
      */
     private function validateAndSetNumericField(&$options, $postData, $fieldName, $errorMessage, $minValue = 0, $useAbsintForCheck = false) {
-        if (array_key_exists($fieldName, $postData) && isset($postData[$fieldName])) {
+        if (isset($postData[$fieldName])) {
             $value = $postData[$fieldName];
             $passesValidation = false;
 
@@ -2207,7 +2207,7 @@ class ABJ_404_Solution_PluginLogic {
     private function updateSuggestionSettings(&$options, $postData) {
         $message = "";
 
-        if (array_key_exists('suggest_minscore', $postData) && isset($postData['suggest_minscore'])) {
+        if (isset($postData['suggest_minscore'])) {
             if (is_numeric($postData['suggest_minscore']) && $postData['suggest_minscore'] >= 0 && $postData['suggest_minscore'] <= 99) {
                 $options['suggest_minscore'] = min(max(absint($postData['suggest_minscore']), 10), 90);
             } else {
@@ -2215,7 +2215,7 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
 
-        if (array_key_exists('suggest_max', $postData) && isset($postData['suggest_max'])) {
+        if (isset($postData['suggest_max'])) {
             if (is_numeric($postData['suggest_max']) && $postData['suggest_max'] >= 1) {
                 if ($options['suggest_max'] != absint($postData['suggest_max'])) {
                     $this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
@@ -2233,7 +2233,7 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
 
-        if (array_key_exists('auto_score', $postData) && isset($postData['auto_score'])) {
+        if (isset($postData['auto_score'])) {
             if (is_numeric($postData['auto_score']) && $postData['auto_score'] >= 0 && $postData['auto_score'] <= 99) {
                 $options['auto_score'] = absint($postData['auto_score']);
             } else {
@@ -2298,7 +2298,7 @@ class ABJ_404_Solution_PluginLogic {
     private function updateRegexPatternSettings(&$options, $postData) {
         $message = "";
 
-        if (array_key_exists('folders_files_ignore', $postData) && isset($postData['folders_files_ignore'])) {
+        if (isset($postData['folders_files_ignore'])) {
             $options['folders_files_ignore'] = wp_unslash(wp_kses_post($postData['folders_files_ignore']));
 
             // make the regular expressions usable.
@@ -2345,7 +2345,7 @@ class ABJ_404_Solution_PluginLogic {
     private function updateAdminUsers(&$options, $postData) {
         $message = "";
 
-        if (array_key_exists('plugin_admin_users', $postData) && isset($postData['plugin_admin_users'])) {
+        if (isset($postData['plugin_admin_users'])) {
         	$pluginAdminUsers = $postData['plugin_admin_users'];
         	if (is_array($pluginAdminUsers)) {
         		$pluginAdminUsers = array_filter($pluginAdminUsers,
@@ -2370,7 +2370,7 @@ class ABJ_404_Solution_PluginLogic {
             $this->logger->warn("Exclude pages settings lost.");
             $options['excludePages[]'] = '';
         }
-        if (array_key_exists('excludePages[]', $postData) && isset($postData['excludePages[]'])) {
+        if (isset($postData['excludePages[]'])) {
         	$oldExcludePages = json_decode($options['excludePages[]']);
         	if (!is_array($postData['excludePages[]'])) {
         		$postData['excludePages[]'] = array($postData['excludePages[]']);
@@ -2755,7 +2755,7 @@ class ABJ_404_Solution_PluginLogic {
     function shouldNotifyAboutCaptured404s($captured404Count) {
         $options = $this->getOptions(true);
         
-        if (array_key_exists('admin_notification', $options) && isset($options['admin_notification']) && $options['admin_notification'] != '0') {
+        if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
             if ($captured404Count >= $options['admin_notification']) {
                 return true;
             }
