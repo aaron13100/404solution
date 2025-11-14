@@ -1581,6 +1581,8 @@ class ABJ_404_Solution_DataAccess {
 
         // Fix for MAX_JOIN_SIZE error (reported by 24 users - 53% of errors)
         // Set SQL_BIG_SELECTS=1 to allow large queries during maintenance operations
+        // IMPORTANT: This is a SESSION-LEVEL setting that only affects this connection
+        // and automatically expires when the script finishes (no permanent database changes)
         // This is safe for cron jobs and prevents "The SELECT would examine more than MAX_JOIN_SIZE rows" error
         global $wpdb;
         $wpdb->query("SET SQL_BIG_SELECTS=1");
@@ -2390,6 +2392,8 @@ class ABJ_404_Solution_DataAccess {
 
     	// Fix for MAX_JOIN_SIZE error (reported by 8 users - 18% of errors)
     	// Set SQL_BIG_SELECTS=1 to allow large queries during permalink cache updates
+    	// IMPORTANT: This is a SESSION-LEVEL setting that only affects this connection
+    	// and automatically expires when the script finishes (no permanent database changes)
     	// This prevents "The SELECT would examine more than MAX_JOIN_SIZE rows" error on large sites
     	global $wpdb;
     	$wpdb->query("SET SQL_BIG_SELECTS=1");
