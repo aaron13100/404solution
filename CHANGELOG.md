@@ -1,5 +1,14 @@
 # Changelog #
 
+## Version 3.0.0 (Nov 15, 2025) ##
+* Improvement: Add themes. Add automatic dark mode detection for WordPress admin.
+* Improvement: Better support and faster suggestions for sites with 10k+ pages.
+* FIX: Resolve MAX_JOIN_SIZE errors for large sites during maintenance operations by using SQL_BIG_SELECTS for cleanup queries.
+* FIX: Resolve MySQL Server Gone Away errors during long-running operations by checking and restoring database connections.
+* FIX: Resolve PHP 8.2 deprecation error when mb_substr receives null for domain root URLs (e.g., http://example.com).
+* FIX: Fix duplicate subpage parameters in admin URLs that were causing URLs like '?page=x&subpage=y&subpage=y'.
+* FIX: Add isset() checks before accessing $_POST array elements to prevent PHP 8.0+ warnings.
+
 ## Version 2.36.10 (April 29, 2025) ##
 * FIX: Fix the '_load_textdomain_just_in_time was called incorrectly' issue again, this time for @apos37.
 
