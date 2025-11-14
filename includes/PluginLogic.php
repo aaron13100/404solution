@@ -1816,7 +1816,8 @@ class ABJ_404_Solution_PluginLogic {
             return $message;
         }
 
-        if ($this->f->substr($_POST['manual_redirect_url'], 0, 1) != "/") {
+        $manualURL = isset($_POST['manual_redirect_url']) ? $_POST['manual_redirect_url'] : '';
+        if ($this->f->substr($manualURL, 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
             return $message;
         }
@@ -1836,9 +1837,11 @@ class ABJ_404_Solution_PluginLogic {
                 $statusType = ABJ404_STATUS_REGEX;
             }
             
-            $this->dao->setupRedirect(esc_url($_POST['manual_redirect_url']), $statusType, 
-                    $typeAndDest['type'], $typeAndDest['dest'], 
-                    sanitize_text_field($_POST['code']), 0);
+            $code = isset($_POST['code']) && !empty($_POST['code']) ? $_POST['code'] : ABJ404_STATUS_MANUAL;
+
+            $this->dao->setupRedirect(esc_url($_POST['manual_redirect_url']), $statusType,
+                    $typeAndDest['type'], $typeAndDest['dest'],
+                    sanitize_text_field($code), 0);
             
         } else {
             $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
@@ -2001,6 +2004,10 @@ class ABJ_404_Solution_PluginLogic {
         $options = $this->getOptions();
 
         // get the submitted settings
+        if (!isset($_POST['encodedData'])) {
+            $this->logger->errorMessage('Missing encodedData in POST');
+            return;
+        }
         $encodedData = $_POST['encodedData'];
         $postData = $this->f->decodeComplicatedData($encodedData);
 
