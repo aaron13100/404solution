@@ -23,6 +23,10 @@ class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
     }
     
     function substr($str, $start, $length = null) {
+        // PHP 8.2+ doesn't accept null for string parameter
+        if ($str === null) {
+            return '';
+        }
         return mb_substr($str, $start, $length);
     }
 
