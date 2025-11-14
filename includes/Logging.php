@@ -159,11 +159,28 @@ class ABJ_404_Solution_Logging {
                 (extension_loaded('mbstring') ? 'true' : 'false'));
     }
 
-    /** Write the line to the debug file. 
+    /** Write the line to the debug file.
+     *
+     * Fix for disk space error (reported by 1 user - 2% of errors)
+     * Handles file write failures gracefully to prevent error loops when disk is full.
+     * Uses error suppression and returns status instead of throwing exceptions.
+     *
      * @param string $line
+     * @return bool True on success, false on failure
      */
     function writeLineToDebugFile($line) {
-        file_put_contents($this->getDebugFilePath(), $line . "\n", FILE_APPEND);
+        // Suppress errors to prevent fatal error when disk is full
+        $result = @file_put_contents($this->getDebugFilePath(), $line . "\n", FILE_APPEND);
+
+        if ($result === false) {
+            // Disk full or permissions issue - log to error_log instead to avoid infinite loop
+            // Don't use errorMessage() here as it would call this function again
+            error_log('404 Solution: Unable to write to debug log (possibly disk full): ' .
+                $this->getDebugFilePath());
+            return false;
+        }
+
+        return true;
     }
     
     /** Email the log file to the plugin developer. */

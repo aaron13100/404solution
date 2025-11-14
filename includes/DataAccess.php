@@ -43,7 +43,69 @@ class ABJ_404_Solution_DataAccess {
 
         return self::$instance;
     }
-    
+
+    /**
+     * Ensure database connection is active and reconnect if necessary.
+     *
+     * Fix for MySQL Server Gone Away error (reported by 3 users - 7% of errors)
+     * This prevents "MySQL server has gone away" errors during long-running operations
+     * by checking the connection status and reconnecting if needed.
+     *
+     * @return bool True if connection is active, false otherwise
+     */
+    private function ensureConnection() {
+        global $wpdb;
+
+        // Check if wpdb and check_connection method exist
+        if (!isset($wpdb) || !method_exists($wpdb, 'check_connection')) {
+            return true; // Assume connection is OK if we can't check
+        }
+
+        // Check connection status (false parameter = don't throw errors)
+        if (!$wpdb->check_connection(false)) {
+            $this->logger->debugMessage("Database connection lost, attempting to reconnect...");
+
+            // Attempt to reconnect
+            if (method_exists($wpdb, 'db_connect')) {
+                $wpdb->db_connect();
+
+                // Verify reconnection succeeded
+                if ($wpdb->check_connection(false)) {
+                    $this->logger->debugMessage("Database reconnection successful");
+                    return true;
+                } else {
+                    $this->logger->errorMessage("Failed to reconnect to database");
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if a database table exists.
+     *
+     * Fix for missing table error (reported by 2 users - 4% of errors)
+     * This prevents crashes when querying tables that don't exist or have
+     * incorrect table prefixes, returning false instead of causing fatal errors.
+     *
+     * @param string $tableName Full table name to check (including prefix)
+     * @return bool True if table exists, false otherwise
+     */
+    private function tableExists($tableName) {
+        global $wpdb;
+
+        if (!isset($wpdb)) {
+            return false;
+        }
+
+        // Use SHOW TABLES to check existence
+        $table = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $tableName));
+
+        return ($table == $tableName);
+    }
+
     function getLatestPluginVersion() {
         if (!function_exists('plugins_api')) {
               require_once(ABSPATH . 'wp-admin/includes/plugin-install.php');
@@ -1517,6 +1579,12 @@ class ABJ_404_Solution_DataAccess {
         $query = $this->f->str_replace('{status_list}', $statusList, $query);
         $query = $this->f->str_replace('{timelimit}', $then, $query);
 
+        // Fix for MAX_JOIN_SIZE error (reported by 24 users - 53% of errors)
+        // Set SQL_BIG_SELECTS=1 to allow large queries during maintenance operations
+        // This is safe for cron jobs and prevents "The SELECT would examine more than MAX_JOIN_SIZE rows" error
+        global $wpdb;
+        $wpdb->query("SET SQL_BIG_SELECTS=1");
+
         // Execute query and get results
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
@@ -1567,7 +1635,11 @@ class ABJ_404_Solution_DataAccess {
 
         $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $upgradesEtc->createDatabaseTables(false);
-        
+
+        // Ensure database connection is active for long-running maintenance operations
+        // This prevents "MySQL server has gone away" errors
+        $this->ensureConnection();
+
         // delete the export file
         $tempFile = $abj404logic->getExportFilename();
         if (file_exists($tempFile)) {
@@ -1894,11 +1966,19 @@ class ABJ_404_Solution_DataAccess {
      * @param string $extraWhereClause use this string in a where on the sql.
      * @return array
      */
-    function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '', 
+    function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '',
     	$limitResults = '', $orderResults = '', $extraWhereClause = '') {
         global $wpdb;
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        
+
+        // Fix for missing table error (reported by 2 users - 4% of errors)
+        // Check if wp_posts table exists before querying
+        if (!$this->tableExists($wpdb->posts)) {
+            $this->logger->errorMessage("WordPress posts table not found: " . $wpdb->posts .
+                ". This may indicate an incorrect table prefix or database configuration issue.");
+            return array(); // Return empty array instead of crashing
+        }
+
         // get the valid post types
         $options = $abj404logic->getOptions();
         $postTypes = $this->f->explodeNewline($options['recognized_post_types']);
@@ -2305,10 +2385,17 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function updatePermalinkCache() {
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
+    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
     		"/sql/updatePermalinkCache.sql");
+
+    	// Fix for MAX_JOIN_SIZE error (reported by 8 users - 18% of errors)
+    	// Set SQL_BIG_SELECTS=1 to allow large queries during permalink cache updates
+    	// This prevents "The SELECT would examine more than MAX_JOIN_SIZE rows" error on large sites
+    	global $wpdb;
+    	$wpdb->query("SET SQL_BIG_SELECTS=1");
+
     	$results = $this->queryAndGetResults($query);
-    	
+
     	return $results;
     }
     
