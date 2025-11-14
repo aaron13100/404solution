@@ -93,9 +93,9 @@ class ABJ_404_Solution_UserRequest {
                 $urlParts[$key] = $f->selectivelyURLEncode($value);
             }
         }
-        
+
         // remove a pointless trailing /amp
-        if (
+        if (isset($urlParts['path']) &&
         	($f->endsWithCaseInsensitive($urlParts['path'], '/amp') ||
         	 $f->endsWithCaseInsensitive($urlParts['path'], '/amp/')
         	)
@@ -110,12 +110,13 @@ class ABJ_404_Solution_UserRequest {
          * http://localhost:8888/404solution-site/2019/02/hello-world2/comment-page-2
          * http://localhost:8888/404solution-site/2019/02/hello-world2/comment-page-2/?quer=true
          */
-        $urlWithoutCommentPage = $urlParts['path'];
+        // Fix for PHP 8.2: Handle URLs with no path component (e.g., http://example.com)
+        $urlWithoutCommentPage = isset($urlParts['path']) ? $urlParts['path'] : '/';
         $commentPagePart = '';
         $results = array();
         if (isset($wp_rewrite) && isset($wp_rewrite->comments_pagination_base)) {
         	$commentregex = '(.*)\/(' . $wp_rewrite->comments_pagination_base . '-[0-9]{1,})(\/|\z)?(.*)';
-        	$f->regexMatch($commentregex, $urlParts['path'], $results);
+        	$f->regexMatch($commentregex, $urlWithoutCommentPage, $results);
         	
         	if (!empty($results)) {
         		$urlWithoutCommentPage = $results[1];

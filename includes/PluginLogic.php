@@ -176,6 +176,11 @@ class ABJ_404_Solution_PluginLogic {
      * @return string
      */
     function removeHomeDirectory($urlRequest) {
+    	// PHP 8.2+: Handle null input gracefully
+    	if ($urlRequest === null) {
+    		return '/';
+    	}
+
     	$f = $this->f;
     	$urlHomeDirectory = $this->urlHomeDirectory;
 
