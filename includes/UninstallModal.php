@@ -228,7 +228,7 @@ class ABJ_404_Solution_UninstallModal {
                     ></textarea>
 
                     <p class="description" style="margin-left: 0; margin-top: 8px;">
-                        <?php _e('Your feedback helps us improve. We respect your privacy and will not share your information.', '404-solution'); ?>
+                        <?php _e('Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information.', '404-solution'); ?>
                     </p>
                 </div>
             </div>

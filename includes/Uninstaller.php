@@ -172,8 +172,7 @@ class ABJ_404_Solution_Uninstaller {
      */
     private static function sendFeedbackEmail($preferences) {
         // Plugin author email
-        // TODO: Update this email address to your actual support email
-        $to = 'support@ajexperience.com';
+        $to = '404solution@ajexperience.com';
 
         $subject = '404 Solution - Uninstall Feedback';
 
@@ -216,6 +215,30 @@ class ABJ_404_Solution_Uninstaller {
         $message .= "Plugin Version: 2.36.10\n";
         $message .= "Site URL: " . get_site_url() . "\n";
         $message .= "Site Language: " . get_locale() . "\n";
+
+        // Get installed plugins information
+        if (!function_exists('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        $all_plugins = get_plugins();
+        $active_plugins = get_option('active_plugins', array());
+
+        // Add installed plugins list
+        $message .= "\n--- Installed Plugins ---\n";
+        if (!empty($all_plugins)) {
+            foreach ($all_plugins as $plugin_path => $plugin_data) {
+                $is_active = in_array($plugin_path, $active_plugins) ? ' (Active)' : ' (Inactive)';
+                $message .= sprintf(
+                    "%s %s%s\n",
+                    $plugin_data['Name'],
+                    $plugin_data['Version'],
+                    $is_active
+                );
+            }
+        } else {
+            $message .= "No plugins found\n";
+        }
 
         // Data deletion choices
         $message .= "\n--- User's Data Choices ---\n";
