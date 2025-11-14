@@ -861,3 +861,11 @@ msgstr ""
 #: includes/UninstallModal.php
 msgid "Failed to save preferences"
 msgstr ""
+
+#: includes/html/adminOptionsGeneral.html
+msgid "Disable automatic dark mode detection"
+msgstr ""
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
+msgstr ""

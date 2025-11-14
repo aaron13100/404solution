@@ -1501,3 +1501,9 @@ msgstr "Clear the spelling cache to force recalculation of URL matches. Useful a
 
 msgid "Clear Spelling Cache"
 msgstr "Clear Spelling Cache"
+
+msgid "Disable automatic dark mode detection"
+msgstr "Disable automatic dark mode detection"
+
+msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
+msgstr "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
