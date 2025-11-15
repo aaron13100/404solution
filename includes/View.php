@@ -1308,11 +1308,14 @@ class ABJ_404_Solution_View {
             }
             $allRowActions = implode("\n | ", $rowActions);
             
+            // Build full URL with WordPress base path for subdirectory installations
+            $fullVisitorURL = esc_url(home_url($row['url']));
+
             $tempHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowCapturedURLs.html");
             $tempHtml = $this->f->str_replace('{rowActions}', $allRowActions, $tempHtml);
             $tempHtml = $this->f->str_replace('{rowid}', $row['id'], $tempHtml);
             $tempHtml = $this->f->str_replace('{rowClass}', $class, $tempHtml);
-            $tempHtml = $this->f->str_replace('{editLink}', $editlink, $tempHtml);
+            $tempHtml = $this->f->str_replace('{editLink}', $fullVisitorURL, $tempHtml);
             $tempHtml = $this->f->str_replace('{logsLink}', $logslink, $tempHtml);
             $tempHtml = $this->f->str_replace('{trashLink}', $trashlink, $tempHtml);
             $tempHtml = $this->f->str_replace('{ajaxTrashLink}', $ajaxTrashLink, $tempHtml);
@@ -1602,10 +1605,13 @@ class ABJ_404_Solution_View {
                 }
             }
             
+            // Build full URL with WordPress base path for subdirectory installations
+            $fullVisitorURL = esc_url(home_url($row['url']));
+
             $htmlTemp = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
             $htmlTemp = $this->f->str_replace('{rowid}', $row['id'], $htmlTemp);
             $htmlTemp = $this->f->str_replace('{rowClass}', $class, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{editLink}', $row['url'], $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{editLink}', $fullVisitorURL, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{rowURL}', esc_html($row['url']), $htmlTemp);
             $htmlTemp = $this->f->str_replace('{editlinkHTML}', $editlinkHTML, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{logslinkHTML}', $logslinkHTML, $htmlTemp);
