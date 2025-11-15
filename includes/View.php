@@ -1697,8 +1697,8 @@ class ABJ_404_Solution_View {
 
         $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectBottom.html");
         $html = $this->f->str_replace('{addManualRedirectAction}', $link, $html);
-        $html = $this->f->str_replace('{urlPlaceholder}', $urlPlaceholder, $html);
-        $html = $this->f->str_replace('{postedURL}', $postedURL, $html);
+        $html = $this->f->str_replace('{urlPlaceholder}', esc_attr($urlPlaceholder), $html);
+        $html = $this->f->str_replace('{postedURL}', esc_attr($postedURL), $html);
         $html = $this->f->str_replace('{301selected}', $selected301, $html);
         $html = $this->f->str_replace('{302selected}', $selected302, $html);
         
@@ -2369,8 +2369,8 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{TEXT_CURRENT_PAGE}', $currentPageText, $html);
         $html = $this->f->str_replace('{LINK_NEXT_PAGE}', esc_url($nexturl), $html);
         $html = $this->f->str_replace('{LINK_LAST_PAGE}', esc_url($lasturl), $html);
-        $html = $this->f->str_replace('{filterText}', $tableOptions['filterText'], $html);
-        $html = $this->f->str_replace('{data-pagination-ajax-url}', $ajaxPaginationLink, $html);
+        $html = $this->f->str_replace('{filterText}', esc_attr($tableOptions['filterText']), $html);
+        $html = $this->f->str_replace('{data-pagination-ajax-url}', esc_attr($ajaxPaginationLink), $html);
         // constants and translations.
         $html = $this->f->doNormalReplacements($html);
         

@@ -16,8 +16,8 @@ class ABJ_404_Solution_ViewUpdater {
 		
     static function init() {
         $me = ABJ_404_Solution_ViewUpdater::getInstance();
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxUpdatePaginationLinks', 
-                array($me, 'ABJ_404_Solution_ViewUpdater::getPaginationLinks'));
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxUpdatePaginationLinks',
+                array($me, 'getPaginationLinks'));
         // wp_ajax_nopriv_ is for normal users
     }
     
@@ -31,7 +31,7 @@ class ABJ_404_Solution_ViewUpdater {
         $nonce = $abj404dao->getPostOrGetSanitize('nonce');
 
         // Verify nonce for CSRF protection
-        if (!wp_verify_nonce($nonce, 'abj404_pagination')) {
+        if (!wp_verify_nonce($nonce, 'abj404_updatePaginationLink')) {
             header('Content-type: application/json; charset=UTF-8');
             echo json_encode(array('error' => 'Invalid security token'));
             exit;
@@ -71,8 +71,7 @@ class ABJ_404_Solution_ViewUpdater {
         }
         
         header('Content-type: application/json; charset=UTF-8');
-        header('Content-Encoding: gzip');
-        echo gzencode(json_encode($data));
+        echo json_encode($data);
         exit;
     }
     

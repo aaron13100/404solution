@@ -188,31 +188,16 @@ class ABJ_404_Solution_WordPress_Connector {
         // and avoids overriding it with browser dark mode preference
         if ($theme === 'default') {
             // Ensure no data-theme attribute is set for default/light theme
-            echo '<script type="text/javascript">';
-            echo '(function() {';
-            echo '  // Remove any data-theme attributes to use default WordPress styling';
-            echo '  document.documentElement.removeAttribute("data-theme");';
-            echo '  document.addEventListener("DOMContentLoaded", function() {';
-            echo '    if (document.body) document.body.removeAttribute("data-theme");';
-            echo '  });';
-            echo '  if (document.body) {';
-            echo '    document.body.removeAttribute("data-theme");';
-            echo '  }';
-            echo '})();';
-            echo '</script>';
+            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeRemoverScript.html");
+            echo $html;
             return;
         }
 
-        echo '<script type="text/javascript">';
-        echo '(function() {';
-        echo '  document.addEventListener("DOMContentLoaded", function() {';
-        echo '    document.body.setAttribute("data-theme", "' . esc_js($theme) . '");';
-        echo '  });';
-        echo '  if (document.body) {';
-        echo '    document.body.setAttribute("data-theme", "' . esc_js($theme) . '");';
-        echo '  }';
-        echo '})();';
-        echo '</script>';
+        // Set custom theme attribute
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeSetterScript.html");
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $html = $f->str_replace('{theme}', esc_js($theme), $html);
+        echo $html;
     }
 
     /** Detect if dark mode is enabled from various sources.
@@ -303,37 +288,18 @@ class ABJ_404_Solution_WordPress_Connector {
         if ($theme === 'default') {
             // No theme CSS needed for default - use WordPress default styling
             // Ensure no data-theme attribute is set
-            echo '<script id="abj404-theme-remover">';
-            echo '(function(){';
-            echo 'document.documentElement.removeAttribute("data-theme");';
-            echo 'function removeBodyTheme(){';
-            echo 'if(document.body){';
-            echo 'document.body.removeAttribute("data-theme");';
-            echo '}else{';
-            echo 'setTimeout(removeBodyTheme,0);';
-            echo '}}';
-            echo 'removeBodyTheme();';
-            echo '})();';
-            echo '</script>' . "\n";
+            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeRemoverScript.html");
+            echo $html;
             return;
         }
 
         // Output synchronous script to set data-theme attributes immediately
         // This MUST run before CSS is parsed to prevent flash
         // Setting on html immediately, and body as soon as it's available
-        echo '<script id="abj404-theme-setter">';
-        echo '(function(){';
-        echo 'var theme="' . esc_js($theme) . '";';
-        echo 'document.documentElement.setAttribute("data-theme",theme);';
-        echo 'function setBodyTheme(){';
-        echo 'if(document.body){';
-        echo 'document.body.setAttribute("data-theme",theme);';
-        echo '}else{';
-        echo 'setTimeout(setBodyTheme,0);';
-        echo '}}';
-        echo 'setBodyTheme();';
-        echo '})();';
-        echo '</script>' . "\n";
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeSetterScript.html");
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $html = $f->str_replace('{theme}', esc_js($theme), $html);
+        echo $html;
 
         // Define CSS variables for each theme
         $themeVariables = array(
@@ -807,6 +773,11 @@ class ABJ_404_Solution_WordPress_Connector {
      * - Shows again in 7 days after "Ask again later"
      */
     static function maybeShowReviewRequest() {
+        // Only show on 404 Solution plugin pages
+        if (!isset($_GET['page']) || $_GET['page'] !== ABJ404_PP) {
+            return;
+        }
+
         // Check if user permanently dismissed this
         $dismissed = get_user_meta(get_current_user_id(), 'abj404_review_dismissed', true);
         if ($dismissed === 'permanent') {
@@ -847,24 +818,24 @@ class ABJ_404_Solution_WordPress_Connector {
                 // User thinks it deserves 5 stars - show review link
                 update_user_meta(get_current_user_id(), 'abj404_review_step', 'show_review_link');
                 delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-                return;
             } elseif ($response === 'not_yet') {
                 // User doesn't think it deserves 5 stars - show feedback form
                 update_user_meta(get_current_user_id(), 'abj404_review_step', 'show_feedback');
                 delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-                return;
             } elseif ($response === 'ask_later') {
                 // User wants to be reminded in 7 days
                 update_user_meta(get_current_user_id(), 'abj404_review_remind_later', time() + (7 * 86400));
                 delete_user_meta(get_current_user_id(), 'abj404_review_step');
-                return;
             } elseif ($response === 'never') {
                 // User never wants to see this - PERMANENT dismissal
                 update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
                 delete_user_meta(get_current_user_id(), 'abj404_review_step');
                 delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-                return;
             }
+
+            // Redirect to remove query parameter and show the appropriate notice
+            wp_safe_redirect(remove_query_arg(array('abj404_review_response', '_wpnonce')));
+            exit;
         }
 
         // Handle "Going to review now" button click - PERMANENT dismissal
@@ -873,7 +844,11 @@ class ABJ_404_Solution_WordPress_Connector {
                 update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
                 delete_user_meta(get_current_user_id(), 'abj404_review_step');
                 delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-                return;
+
+                // Open review page in new tab and redirect current page to clean URL
+                echo '<script>window.open("https://wordpress.org/support/plugin/404-solution/reviews/#new-post", "_blank");</script>';
+                wp_safe_redirect(remove_query_arg(array('abj404_leaving_review', '_wpnonce')));
+                exit;
             }
         }
 
@@ -997,7 +972,7 @@ class ABJ_404_Solution_WordPress_Connector {
     private static function showReviewLinkNotice() {
         // URL that marks as done when they click to go leave review
         $review_link_url = wp_nonce_url(
-            add_query_arg('abj404_leaving_review', '1', 'https://wordpress.org/support/plugin/404-solution/reviews/#new-post'),
+            add_query_arg('abj404_leaving_review', '1'),
             'abj404_leaving_review'
         );
 
@@ -1017,7 +992,7 @@ class ABJ_404_Solution_WordPress_Connector {
         echo '<li>Click "Submit" and you\'re done!</li>';
         echo '</ol>';
         echo '<p>';
-        echo '<a href="' . esc_url($review_link_url) . '" class="button button-primary" target="_blank" style="margin-right: 10px;">Leave a 5-Star Review →</a>';
+        echo '<a href="' . esc_url($review_link_url) . '" class="button button-primary" style="margin-right: 10px;">Leave a 5-Star Review →</a>';
         echo '<a href="' . esc_url($never_url) . '" style="text-decoration: none; color: #999;">Never ask again</a>';
         echo '</p>';
         echo '</div>';
