@@ -796,11 +796,12 @@ class ABJ_404_Solution_WordPress_Connector {
         }
     }
 
-    /** Display a review request notification after 7 days of plugin use.
-     * Shows only once and can be dismissed permanently.
+    /** Display a review request notification after 14 days of plugin use.
+     * Uses a qualification question to ensure only satisfied users are directed to leave reviews.
+     * Unhappy users are directed to provide feedback instead.
      */
     static function maybeShowReviewRequest() {
-        // Check if user already dismissed this notice
+        // Check if user already interacted with this notice
         $dismissed = get_user_meta(get_current_user_id(), 'abj404_review_dismissed', true);
         if ($dismissed) {
             return;
@@ -815,33 +816,153 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
 
-        // Show review request after 7 days (604800 seconds)
+        // Show review request after 14 days (1209600 seconds)
         $days_installed = (time() - $installed_time) / 86400;
-        if ($days_installed < 7) {
+        if ($days_installed < 14) {
             return;
         }
 
-        // Handle dismiss action
-        if (isset($_GET['abj404_dismiss_review']) && wp_verify_nonce($_GET['_wpnonce'], 'abj404_dismiss_review')) {
+        // Handle user responses
+        if (isset($_GET['abj404_review_response'])) {
+            if (!wp_verify_nonce($_GET['_wpnonce'], 'abj404_review_response')) {
+                return;
+            }
+
+            $response = sanitize_text_field($_GET['abj404_review_response']);
+
+            if ($response === 'yes') {
+                // User thinks it deserves 5 stars - show review link
+                update_user_meta(get_current_user_id(), 'abj404_review_step', 'show_review_link');
+                return; // Will show review link on next page load
+            } elseif ($response === 'no') {
+                // User doesn't think it deserves 5 stars - show feedback form
+                update_user_meta(get_current_user_id(), 'abj404_review_step', 'show_feedback');
+                return; // Will show feedback form on next page load
+            } elseif ($response === 'dismiss') {
+                // User dismissed - don't show again
+                update_user_meta(get_current_user_id(), 'abj404_review_dismissed', true);
+                return;
+            }
+        }
+
+        // Handle feedback submission
+        if (isset($_POST['abj404_submit_feedback']) &&
+            wp_verify_nonce($_POST['abj404_feedback_nonce'], 'abj404_submit_feedback')) {
+
+            $feedback_category = sanitize_text_field($_POST['feedback_category']);
+            $feedback_details = sanitize_textarea_field($_POST['feedback_details']);
+
+            // Store feedback for admin review
+            $feedback_data = get_option('abj404_user_feedback', array());
+            $feedback_data[] = array(
+                'timestamp' => current_time('mysql'),
+                'user_id' => get_current_user_id(),
+                'category' => $feedback_category,
+                'details' => $feedback_details,
+                'wp_version' => get_bloginfo('version'),
+                'plugin_version' => ABJ404_VERSION
+            );
+            update_option('abj404_user_feedback', $feedback_data);
+
+            // Mark as dismissed
             update_user_meta(get_current_user_id(), 'abj404_review_dismissed', true);
+
+            // Show thank you message
+            echo '<div class="notice notice-success is-dismissible">';
+            echo '<p><strong>Thank you for your feedback!</strong></p>';
+            echo '<p>We really appreciate you taking the time to help us improve 404 Solution. Your feedback will be reviewed by our development team.</p>';
+            echo '</div>';
             return;
         }
 
-        // Build dismiss URL
+        // Check what step we're on
+        $review_step = get_user_meta(get_current_user_id(), 'abj404_review_step', true);
+
+        if ($review_step === 'show_review_link') {
+            // Step 2a: User said YES - show review link
+            self::showReviewLinkNotice();
+        } elseif ($review_step === 'show_feedback') {
+            // Step 2b: User said NO - show feedback form
+            self::showFeedbackFormNotice();
+        } else {
+            // Step 1: Initial qualification question
+            self::showQualificationQuestion();
+        }
+    }
+
+    /** Step 1: Show the initial qualification question */
+    private static function showQualificationQuestion() {
+        $yes_url = wp_nonce_url(
+            add_query_arg('abj404_review_response', 'yes'),
+            'abj404_review_response'
+        );
+        $no_url = wp_nonce_url(
+            add_query_arg('abj404_review_response', 'no'),
+            'abj404_review_response'
+        );
         $dismiss_url = wp_nonce_url(
-            add_query_arg('abj404_dismiss_review', '1'),
-            'abj404_dismiss_review'
+            add_query_arg('abj404_review_response', 'dismiss'),
+            'abj404_review_response'
         );
 
-        // Display the notice
-        echo '<div class="notice notice-success is-dismissible abj404-review-notice">';
-        echo '<p><strong>🎉 Enjoying 404 Solution?</strong></p>';
-        echo '<p>That\'s great! Could you take 2 minutes to leave a review? Your feedback helps other WordPress users find this plugin and motivates us to keep improving it.</p>';
+        echo '<div class="notice notice-info abj404-review-notice" style="position: relative; padding-right: 38px;">';
+        echo '<p><strong>Quick Question about 404 Solution</strong></p>';
+        echo '<p>You\'ve been using 404 Solution for a couple weeks now. We\'d love to know:</p>';
+        echo '<p style="font-size: 14px; margin: 15px 0;"><strong>Do you think 404 Solution deserves a 5-star review?</strong></p>';
         echo '<p>';
-        echo '<a href="https://wordpress.org/support/plugin/404-solution/reviews/#new-post" class="button button-primary" target="_blank" style="margin-right: 10px;">Leave a Review ⭐</a>';
-        echo '<a href="' . esc_url($dismiss_url) . '" class="button">I Already Did</a> ';
-        echo '<a href="' . esc_url($dismiss_url) . '" class="button">Maybe Later</a>';
+        echo '<a href="' . esc_url($yes_url) . '" class="button button-primary" style="margin-right: 10px;">⭐ Yes, it\'s great!</a>';
+        echo '<a href="' . esc_url($no_url) . '" class="button" style="margin-right: 10px;">Not yet</a>';
+        echo '<a href="' . esc_url($dismiss_url) . '" style="text-decoration: none; color: #666;">Maybe later</a>';
         echo '</p>';
+        echo '</div>';
+    }
+
+    /** Step 2a: User said YES - show review link and thank you */
+    private static function showReviewLinkNotice() {
+        $dismiss_url = wp_nonce_url(
+            add_query_arg('abj404_review_response', 'dismiss'),
+            'abj404_review_response'
+        );
+
+        echo '<div class="notice notice-success abj404-review-notice">';
+        echo '<p><strong>🎉 Awesome! Thank you!</strong></p>';
+        echo '<p>We\'re thrilled that 404 Solution is working well for you. Your review will help other WordPress users discover this plugin.</p>';
+        echo '<p><strong>Here\'s how to leave a review:</strong></p>';
+        echo '<ol style="margin-left: 20px;">';
+        echo '<li>Click the button below to open the WordPress.org review page</li>';
+        echo '<li>Click the stars to select 5 stars ⭐⭐⭐⭐⭐</li>';
+        echo '<li>Write a few words about your experience (optional but helpful!)</li>';
+        echo '<li>Click "Submit" and you\'re done!</li>';
+        echo '</ol>';
+        echo '<p>';
+        echo '<a href="https://wordpress.org/support/plugin/404-solution/reviews/#new-post" class="button button-primary" target="_blank" style="margin-right: 10px;">Leave a 5-Star Review →</a>';
+        echo '<a href="' . esc_url($dismiss_url) . '" class="button">I\'ll do it later</a>';
+        echo '</p>';
+        echo '</div>';
+    }
+
+    /** Step 2b: User said NO - show feedback form */
+    private static function showFeedbackFormNotice() {
+        echo '<div class="notice notice-warning abj404-review-notice">';
+        echo '<p><strong>We\'d love to hear what we can improve</strong></p>';
+        echo '<p>Your feedback is valuable! Please let us know what would make 404 Solution better for you.</p>';
+        echo '<form method="post" style="margin-top: 15px;">';
+        wp_nonce_field('abj404_submit_feedback', 'abj404_feedback_nonce');
+        echo '<p><strong>What\'s the main issue?</strong></p>';
+        echo '<p>';
+        echo '<label style="display: block; margin: 8px 0;"><input type="radio" name="feedback_category" value="performance" required> It\'s slowing down my site</label>';
+        echo '<label style="display: block; margin: 8px 0;"><input type="radio" name="feedback_category" value="redirects"> The redirects aren\'t working well</label>';
+        echo '<label style="display: block; margin: 8px 0;"><input type="radio" name="feedback_category" value="interface"> The interface is confusing</label>';
+        echo '<label style="display: block; margin: 8px 0;"><input type="radio" name="feedback_category" value="features"> Missing features I need</label>';
+        echo '<label style="display: block; margin: 8px 0;"><input type="radio" name="feedback_category" value="bugs"> I encountered bugs or errors</label>';
+        echo '<label style="display: block; margin: 8px 0;"><input type="radio" name="feedback_category" value="other"> Other</label>';
+        echo '</p>';
+        echo '<p><strong>Additional details (optional):</strong></p>';
+        echo '<p><textarea name="feedback_details" rows="4" style="width: 100%; max-width: 600px;" placeholder="Tell us more about what you\'d like to see improved..."></textarea></p>';
+        echo '<p>';
+        echo '<input type="submit" name="abj404_submit_feedback" class="button button-primary" value="Send Feedback">';
+        echo '</p>';
+        echo '</form>';
         echo '</div>';
     }
 
