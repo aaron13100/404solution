@@ -846,7 +846,10 @@ class ABJ_404_Solution_WordPress_Connector {
                 delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
 
                 // Open review page in new tab and redirect current page to clean URL
-                echo '<script>window.open("https://wordpress.org/support/plugin/404-solution/reviews/#new-post", "_blank");</script>';
+                $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/reviewRedirectScript.html");
+                $f = ABJ_404_Solution_Functions::getInstance();
+                $html = $f->str_replace('{review_url}', esc_js('https://wordpress.org/support/plugin/404-solution/reviews/#new-post'), $html);
+                echo $html;
                 wp_safe_redirect(remove_query_arg(array('abj404_leaving_review', '_wpnonce')));
                 exit;
             }
@@ -886,10 +889,8 @@ class ABJ_404_Solution_WordPress_Connector {
             delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
 
             // Show thank you message
-            echo '<div class="notice notice-success is-dismissible">';
-            echo '<p><strong>Thank you for your feedback!</strong></p>';
-            echo '<p>We really appreciate you taking the time to help us improve 404 Solution. Your feedback has been sent to our development team.</p>';
-            echo '</div>';
+            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/feedbackSuccessNotice.html");
+            echo $html;
             return;
         }
 
@@ -956,16 +957,13 @@ class ABJ_404_Solution_WordPress_Connector {
             'abj404_review_response'
         );
 
-        echo '<div class="notice notice-info abj404-review-notice">';
-        echo '<p>You\'ve been using 404 Solution for a couple weeks now.</p>';
-        echo '<p style="font-size: 15px; margin: 15px 0 10px 0;"><strong>Do you think 404 Solution deserves a 5-star review?</strong></p>';
-        echo '<p>';
-        echo '<a href="' . esc_url($yes_url) . '" class="button button-primary" style="margin-right: 10px;">⭐ Yes</a>';
-        echo '<a href="' . esc_url($not_yet_url) . '" class="button" style="margin-right: 10px;">Not yet</a>';
-        echo '<a href="' . esc_url($ask_later_url) . '" class="button" style="margin-right: 10px;">Ask again later</a>';
-        echo '<a href="' . esc_url($never_url) . '" style="text-decoration: none; color: #999;">Never ask again</a>';
-        echo '</p>';
-        echo '</div>';
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/reviewQualificationQuestion.html");
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $html = $f->str_replace('{yes_url}', esc_attr($yes_url), $html);
+        $html = $f->str_replace('{not_yet_url}', esc_attr($not_yet_url), $html);
+        $html = $f->str_replace('{ask_later_url}', esc_attr($ask_later_url), $html);
+        $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
+        echo $html;
     }
 
     /** Step 2a: User said YES - show review link and thank you */
@@ -981,21 +979,11 @@ class ABJ_404_Solution_WordPress_Connector {
             'abj404_review_response'
         );
 
-        echo '<div class="notice notice-success abj404-review-notice">';
-        echo '<p><strong>🎉 Awesome! Thank you!</strong></p>';
-        echo '<p>We\'re thrilled that 404 Solution is working well for you. Your review will help other WordPress users discover this plugin.</p>';
-        echo '<p><strong>Here\'s how to leave a review:</strong></p>';
-        echo '<ol style="margin-left: 20px;">';
-        echo '<li>Click the button below to open the WordPress.org review page</li>';
-        echo '<li>Click the stars to select 5 stars ⭐⭐⭐⭐⭐</li>';
-        echo '<li>Write a few words about your experience (optional but helpful!)</li>';
-        echo '<li>Click "Submit" and you\'re done!</li>';
-        echo '</ol>';
-        echo '<p>';
-        echo '<a href="' . esc_url($review_link_url) . '" class="button button-primary" style="margin-right: 10px;">Leave a 5-Star Review →</a>';
-        echo '<a href="' . esc_url($never_url) . '" style="text-decoration: none; color: #999;">Never ask again</a>';
-        echo '</p>';
-        echo '</div>';
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/reviewLinkNotice.html");
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $html = $f->str_replace('{review_link_url}', esc_attr($review_link_url), $html);
+        $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
+        echo $html;
     }
 
     /** Step 2b: User said NOT YET - show feedback form */
@@ -1005,30 +993,16 @@ class ABJ_404_Solution_WordPress_Connector {
             'abj404_review_response'
         );
 
-        echo '<div class="notice notice-warning abj404-review-notice">';
-        echo '<p><strong>We\'d love to hear what we can improve</strong></p>';
-        echo '<p>Your feedback is valuable! Please let us know what would make 404 Solution better for you.</p>';
-        echo '<form method="post" style="margin-top: 15px;">';
+        // Get nonce field HTML
+        ob_start();
         wp_nonce_field('abj404_submit_feedback', 'abj404_feedback_nonce');
-        echo '<p><strong>What needs improvement? (select all that apply)</strong></p>';
-        echo '<p style="margin-left: 10px;">';
-        echo '<label style="display: block; margin: 8px 0;"><input type="checkbox" name="feedback_issues[]" value="performance"> It\'s slowing down my site</label>';
-        echo '<label style="display: block; margin: 8px 0;"><input type="checkbox" name="feedback_issues[]" value="redirects_not_working"> The redirects aren\'t working well</label>';
-        echo '<label style="display: block; margin: 8px 0;"><input type="checkbox" name="feedback_issues[]" value="too_many_redirects"> Creating too many automatic redirects</label>';
-        echo '<label style="display: block; margin: 8px 0;"><input type="checkbox" name="feedback_issues[]" value="interface_confusing"> The interface is confusing</label>';
-        echo '<label style="display: block; margin: 8px 0;"><input type="checkbox" name="feedback_issues[]" value="missing_features"> Missing features I need</label>';
-        echo '<label style="display: block; margin: 8px 0;"><input type="checkbox" name="feedback_issues[]" value="bugs_errors"> I encountered bugs or errors</label>';
-        echo '<label style="display: block; margin: 8px 0;"><input type="checkbox" name="feedback_issues[]" value="documentation"> Documentation is unclear</label>';
-        echo '<label style="display: block; margin: 8px 0;"><input type="checkbox" name="feedback_issues[]" value="other"> Other</label>';
-        echo '</p>';
-        echo '<p><strong>Please tell us more:</strong></p>';
-        echo '<p><textarea name="feedback_details" rows="5" style="width: 100%; max-width: 600px;" placeholder="What specific improvements would you like to see? The more detail you provide, the better we can help."></textarea></p>';
-        echo '<p>';
-        echo '<input type="submit" name="abj404_submit_feedback" class="button button-primary" value="Send Feedback" style="margin-right: 15px;">';
-        echo '<a href="' . esc_url($never_url) . '" style="text-decoration: none; color: #999;">Never ask again</a>';
-        echo '</p>';
-        echo '</form>';
-        echo '</div>';
+        $nonce_field = ob_get_clean();
+
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/feedbackFormNotice.html");
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $html = $f->str_replace('{nonce_field}', $nonce_field, $html);
+        $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
+        echo $html;
     }
 
     /** Adds a link under the "Settings" link to the plugin page.
