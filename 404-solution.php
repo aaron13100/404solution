@@ -3,7 +3,7 @@
 /*
 	Plugin Name: 404 Solution
 	Plugin URI:  https://www.ajexperience.com/404-solution/
-	Description: Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors
+	Description: The smartest 404 plugin - uses intelligent matching and spell-checking to find what visitors were actually looking for, not just redirect to homepage
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 

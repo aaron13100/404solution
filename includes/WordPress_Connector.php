@@ -789,8 +789,60 @@ class ABJ_404_Solution_WordPress_Connector {
                     $msg = $abj404view->getDashboardNotificationCaptured($captured404Count);
                     echo $msg;
                 }
+
+                // Show review request after 7 days of use
+                self::maybeShowReviewRequest();
             }
         }
+    }
+
+    /** Display a review request notification after 7 days of plugin use.
+     * Shows only once and can be dismissed permanently.
+     */
+    static function maybeShowReviewRequest() {
+        // Check if user already dismissed this notice
+        $dismissed = get_user_meta(get_current_user_id(), 'abj404_review_dismissed', true);
+        if ($dismissed) {
+            return;
+        }
+
+        // Get plugin installation/activation time
+        $installed_time = get_option('abj404_installed_time');
+        if (!$installed_time) {
+            // First time - record installation time
+            $installed_time = time();
+            update_option('abj404_installed_time', $installed_time);
+            return;
+        }
+
+        // Show review request after 7 days (604800 seconds)
+        $days_installed = (time() - $installed_time) / 86400;
+        if ($days_installed < 7) {
+            return;
+        }
+
+        // Handle dismiss action
+        if (isset($_GET['abj404_dismiss_review']) && wp_verify_nonce($_GET['_wpnonce'], 'abj404_dismiss_review')) {
+            update_user_meta(get_current_user_id(), 'abj404_review_dismissed', true);
+            return;
+        }
+
+        // Build dismiss URL
+        $dismiss_url = wp_nonce_url(
+            add_query_arg('abj404_dismiss_review', '1'),
+            'abj404_dismiss_review'
+        );
+
+        // Display the notice
+        echo '<div class="notice notice-success is-dismissible abj404-review-notice">';
+        echo '<p><strong>🎉 Enjoying 404 Solution?</strong></p>';
+        echo '<p>That\'s great! Could you take 2 minutes to leave a review? Your feedback helps other WordPress users find this plugin and motivates us to keep improving it.</p>';
+        echo '<p>';
+        echo '<a href="https://wordpress.org/support/plugin/404-solution/reviews/#new-post" class="button button-primary" target="_blank" style="margin-right: 10px;">Leave a Review ⭐</a>';
+        echo '<a href="' . esc_url($dismiss_url) . '" class="button">I Already Did</a> ';
+        echo '<a href="' . esc_url($dismiss_url) . '" class="button">Maybe Later</a>';
+        echo '</p>';
+        echo '</div>';
     }
 
     /** Adds a link under the "Settings" link to the plugin page.
