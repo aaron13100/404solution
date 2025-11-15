@@ -1240,16 +1240,6 @@ class ABJ_404_Solution_SpellChecker {
 			$listOfIDsToReturn = array_merge($listOfIDsToReturn, $listOfMinDistanceIDs);
 		}
 
-		// if there are more than X IDs to return, then only use the matches where words match.
-		if (count($listOfIDsToReturn) > 300 && count($idsWithWordsInCommon) >= $onlyNeedThisManyPages) {
-			$maybeOKguesses = array_intersect($listOfIDsToReturn, $idsWithWordsInCommon);
-
-			if (count($maybeOKguesses) >= $onlyNeedThisManyPages) {
-				return $maybeOKguesses;
-			}
-			return $idsWithWordsInCommon;
-		}
-
 		// OPTIMIZATION 4: Better candidate ordering
 		// Prioritize candidates with word overlap to fill early termination heap faster
 		// This makes subsequent filtering more effective
@@ -1260,6 +1250,7 @@ class ABJ_404_Solution_SpellChecker {
 		// OPTIMIZATION 5: N-gram filtering
 		// Use N-gram similarity to further reduce candidates before Levenshtein
 		// This reduces candidates by 80-90% while maintaining match quality
+		// Apply BEFORE the > 300 check to maximize efficiency gains
 		$beforeNGramCount = count($listOfIDsToReturn);
 		if ($beforeNGramCount > 50 && $this->ngramFilter->isCachePopulated()) {
 			// Use N-gram filter to get similarity scores for all pages
@@ -1288,6 +1279,17 @@ class ABJ_404_Solution_SpellChecker {
 					100 * (1 - count($listOfIDsToReturn) / $beforeNGramCount)
 				));
 			}
+		}
+
+		// OPTIMIZATION 6: Early return for large candidate sets (after N-gram filtering)
+		// If there are still more than 300 IDs after N-gram filtering, only use matches where words match
+		if (count($listOfIDsToReturn) > 300 && count($idsWithWordsInCommon) >= $onlyNeedThisManyPages) {
+			$maybeOKguesses = array_intersect($listOfIDsToReturn, $idsWithWordsInCommon);
+
+			if (count($maybeOKguesses) >= $onlyNeedThisManyPages) {
+				return $maybeOKguesses;
+			}
+			return $idsWithWordsInCommon;
 		}
 
 		$result = array();

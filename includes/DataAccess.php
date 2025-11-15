@@ -56,17 +56,21 @@ class ABJ_404_Solution_DataAccess {
     private function ensureConnection() {
         global $wpdb;
 
-        // Check if wpdb and check_connection method exist
-        if (!isset($wpdb) || !method_exists($wpdb, 'check_connection')) {
-            return true; // Assume connection is OK if we can't check
+        // Check if wpdb exists
+        if (!isset($wpdb)) {
+            return true; // Assume connection is OK if wpdb doesn't exist
         }
 
-        // Check connection status (false parameter = don't throw errors)
-        if (!$wpdb->check_connection(false)) {
-            $this->logger->debugMessage("Database connection lost, attempting to reconnect...");
+        // Try to check connection (WordPress 3.9+)
+        try {
+            // Try to call check_connection - if it doesn't exist, we'll catch the error
+            $isConnected = $wpdb->check_connection(false);
 
-            // Attempt to reconnect
-            if (method_exists($wpdb, 'db_connect')) {
+            // If not connected, attempt reconnection
+            if (!$isConnected) {
+                $this->logger->debugMessage("Database connection lost, attempting to reconnect...");
+
+                // Attempt to reconnect
                 $wpdb->db_connect();
 
                 // Verify reconnection succeeded
@@ -78,6 +82,14 @@ class ABJ_404_Solution_DataAccess {
                     return false;
                 }
             }
+        } catch (Exception $e) {
+            // If check fails, assume connection is OK to avoid breaking functionality
+            $this->logger->debugMessage("Connection check failed: " . $e->getMessage());
+            return true;
+        } catch (Error $e) {
+            // Handle fatal errors (e.g., method doesn't exist)
+            $this->logger->debugMessage("Connection check not available: " . $e->getMessage());
+            return true;
         }
 
         return true;
@@ -255,16 +267,20 @@ class ABJ_404_Solution_DataAccess {
      */
     function queryAndGetResults($query, $options = array()) {
         global $wpdb;
+
+        // Ensure database connection is active (prevents "MySQL server has gone away" errors)
+        $this->ensureConnection();
+
         $ignoreErrorStrings = array();
-        
-        $options = array_merge(array('log_errors' => true, 
+
+        $options = array_merge(array('log_errors' => true,
             'log_too_slow' => true, 'ignore_errors' => array(),
-            'query_params' => array()), 
+            'query_params' => array()),
             $options);
-        
+
        	$ignoreErrorStrings = $options['ignore_errors'];
         $queryParameters = $options['query_params'];
-        
+
         $query = $this->doTableNameReplacements($query);
 
         if (!empty($queryParameters)) {
