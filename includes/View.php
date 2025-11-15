@@ -1020,8 +1020,8 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
         $html = $this->f->str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = $this->f->str_replace('{pageIDAndType}', $pageIDAndType, $html);
-        $html = $this->f->str_replace('{data-url}', 
-                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true", $html);
+        $html = $this->f->str_replace('{data-url}',
+                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $html);
         $html = $this->f->doNormalReplacements($html);
         echo $html;
         
@@ -1692,8 +1692,8 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{redirectPageTitle}', '', $html);
         $html = $this->f->str_replace('{pageIDAndType}', '', $html);
         $html = $this->f->str_replace('{redirectPageTitle}', '', $html);
-        $html = $this->f->str_replace('{data-url}', 
-                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true", $html);
+        $html = $this->f->str_replace('{data-url}',
+                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $html);
 
         $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectBottom.html");
         $html = $this->f->str_replace('{addManualRedirectAction}', $link, $html);
@@ -1797,8 +1797,8 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{redirectPageTitle}', $pageTitle, $html);
         $html = $this->f->str_replace('{pageIDAndType}', $userSelectedDefault404Page, $html);
         $html = $this->f->str_replace('{redirectPageTitle}', $pageTitle, $html);
-        $html = $this->f->str_replace('{data-url}', 
-                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true", $html);
+        $html = $this->f->str_replace('{data-url}',
+                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $html);
         $html = $this->f->doNormalReplacements($html);
         $content .= $html;
 
