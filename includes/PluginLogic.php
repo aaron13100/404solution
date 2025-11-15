@@ -1045,22 +1045,20 @@ class ABJ_404_Solution_PluginLogic {
         } else if ($action == "rebuildNgramCache") {
             if (check_admin_referer('abj404_rebuildNgramCache') && is_admin()) {
                 $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-                $result = $dbUpgrades->buildNGramsForAllContent(100); // Build for all content types
 
-                if (isset($result['posts']['locked']) && $result['posts']['locked']) {
-                    $message = __('N-gram cache rebuild is already in progress. Please wait for it to complete.', '404-solution');
-                } else if (isset($result['posts']['error'])) {
-                    $message = sprintf(__('Error rebuilding N-gram cache: %s', '404-solution'), esc_html($result['posts']['error']));
+                // Use async rebuild to avoid timeouts on large sites
+                $scheduled = $dbUpgrades->scheduleNGramCacheRebuild();
+
+                if ($scheduled) {
+                    $message = __('N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally.', '404-solution');
                 } else {
-                    $message = sprintf(
-                        __('N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed.', '404-solution'),
-                        $result['total_processed'],
-                        $result['posts']['processed'] ?? 0,
-                        $result['categories']['processed'] ?? 0,
-                        $result['tags']['processed'] ?? 0,
-                        $result['total_success'],
-                        $result['total_failed']
-                    );
+                    // Check if already running
+                    $nextScheduled = wp_next_scheduled('abj404_rebuild_ngram_cache_hook');
+                    if ($nextScheduled) {
+                        $message = __('N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete.', '404-solution');
+                    } else {
+                        $message = __('Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration.', '404-solution');
+                    }
                 }
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
