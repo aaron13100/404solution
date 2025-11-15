@@ -114,6 +114,7 @@ class ABJ_404_Solution_WordPress_Connector {
 		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-ui-autocomplete');
 		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-effects-core');
 		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-effects-highlight');
+		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-color');
         
         wp_register_script('abj404-redirect_to_ajax', plugin_dir_url(__FILE__) . 'ajax/redirect_to_ajax.js', 
                 array('jquery', 'jquery-ui-autocomplete'));

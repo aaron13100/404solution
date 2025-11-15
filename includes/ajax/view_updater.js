@@ -98,16 +98,21 @@ function paginationLinksChange(triggerItem) {
     var subpage = getURLParameter('subpage');
     var trashFilter = getURLParameter('filter');
 
+    // Extract nonce from the AJAX URL
+    var nonceMatch = url.match(/[?&]nonce=([^&]+)/);
+    var nonce = nonceMatch ? nonceMatch[1] : '';
+
     // do an ajax call to update the data
     jQuery.ajax({
         url: url,
         type: 'POST',
         dataType: "json",
         data: {
-            rowsPerPage: rowsPerPage, 
+            rowsPerPage: rowsPerPage,
             filterText: filterText,
             filter: trashFilter,
-            subpage: subpage
+            subpage: subpage,
+            nonce: nonce
         },
         success: function (result) {
             // get the current text value
@@ -146,13 +151,9 @@ function paginationLinksChange(triggerItem) {
         	bindTrashLinkListeners();
         },
         error: function (jqXHR, textStatus, errorThrown) {
-            alert("Ajax error. Result: " + JSON.stringify(textStatus, null, 2) + 
+            alert("Ajax error. Result: " + JSON.stringify(textStatus, null, 2) +
                     ", error: " + JSON.stringify(errorThrown, null, 2));
         }
     });
-
-    // we do the animation after the ajax request so that it's happening while the server is thinking.
-    jQuery(allSelectors).animate({backgroundColor: fadeToColor}, 3000);
-
 }
 
