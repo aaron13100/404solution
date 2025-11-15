@@ -155,5 +155,8 @@ function paginationLinksChange(triggerItem) {
                     ", error: " + JSON.stringify(errorThrown, null, 2));
         }
     });
+
+    // Phase 1: Start fading to gray immediately while waiting for AJAX response
+    jQuery(allSelectors).animate({backgroundColor: fadeToColor}, 3000);
 }
 
