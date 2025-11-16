@@ -20,7 +20,7 @@
         }
 
         /**
-         * Apply theme to the body element
+         * Apply theme to the html and body elements
          * @param {string} theme - Theme name (default, calm, mono, neon, obsidian)
          */
         function applyTheme(theme) {
@@ -33,10 +33,10 @@
 
             // For 'default' theme, remove data-theme attribute to use WordPress defaults
             if (theme === 'default') {
-                $('body').removeAttr('data-theme');
+                $('html, body').removeAttr('data-theme');
             } else {
-                // Apply the theme to the body
-                $('body').attr('data-theme', theme);
+                // Apply the theme to both html and body elements to match CSS selectors
+                $('html, body').attr('data-theme', theme);
             }
 
             // Also update the select value if it doesn't match
@@ -53,10 +53,10 @@
             applyTheme(selectedTheme);
         });
 
-        // Initialize: ensure the body has the correct theme on page load
+        // Initialize: ensure both html and body have the correct theme on page load
         // This is redundant with the PHP script but provides a fallback
         var initialTheme = themeSelect.val() || 'default';
-        if (!$('body').attr('data-theme') && initialTheme !== 'default') {
+        if (!$('html').attr('data-theme') && initialTheme !== 'default') {
             applyTheme(initialTheme);
         }
     });
