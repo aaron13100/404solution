@@ -476,13 +476,16 @@ class ABJ_404_Solution_NGramFilter {
             }
         }
 
-        $this->logger->debugMessage(sprintf(
-            "N-gram cache rebuild batch (offset %d): %d processed, %d success, %d failed",
-            $offset,
-            $stats['processed'],
-            $stats['success'],
-            $stats['failed']
-        ));
+        // Log only every 1000 pages to reduce log verbosity
+        if ($offset % 1000 == 0) {
+            $this->logger->debugMessage(sprintf(
+                "N-gram cache rebuild batch (offset %d): %d processed, %d success, %d failed",
+                $offset,
+                $stats['processed'],
+                $stats['success'],
+                $stats['failed']
+            ));
+        }
 
         return $stats;
     }
