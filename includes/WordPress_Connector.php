@@ -77,8 +77,6 @@ class ABJ_404_Solution_WordPress_Connector {
             // Output critical theme CSS early (priority 1) to prevent FOUC
             add_action('admin_head',
             	'ABJ_404_Solution_WordPress_Connector::outputCriticalThemeCSS', 1);
-            add_action('admin_head',
-            	'ABJ_404_Solution_WordPress_Connector::add_theme_script');
             // wp_ajax_nopriv_ is for normal users
 
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
@@ -155,50 +153,6 @@ class ABJ_404_Solution_WordPress_Connector {
                 null);
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-themes', ABJ404_URL . 'includes/html/adminThemes.css',
                 null);
-    }
-
-    /** Add inline script to apply the selected theme to the body element */
-    static function add_theme_script() {
-        // Only run on our plugin pages
-        if (!array_key_exists('abj404_settingsPageName', $GLOBALS) ||
-            !array_key_exists('page', $_GET) ||
-            $_GET['page'] != ABJ404_PP) {
-            return;
-        }
-
-        $logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $options = $logic->getOptions();
-        $theme = isset($options['admin_theme']) ? $options['admin_theme'] : 'default';
-
-        // Check if auto dark mode detection is enabled (default: enabled)
-        $auto_dark_mode = !isset($options['disable_auto_dark_mode']) || $options['disable_auto_dark_mode'] != '1';
-
-        // If theme is 'default' and auto dark mode is enabled, check for dark mode
-        if ($theme === 'default' && $auto_dark_mode) {
-            $theme = self::getAutoSelectedTheme();
-        }
-
-        // Sanitize theme value - only allow specific values
-        $allowed_themes = array('default', 'calm', 'mono', 'neon', 'obsidian');
-        if (!in_array($theme, $allowed_themes)) {
-            $theme = 'default';
-        }
-
-        // Don't set data-theme attribute for 'default' theme
-        // This respects WordPress admin color scheme (default/Fresh is light)
-        // and avoids overriding it with browser dark mode preference
-        if ($theme === 'default') {
-            // Ensure no data-theme attribute is set for default/light theme
-            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeRemoverScript.html");
-            echo $html;
-            return;
-        }
-
-        // Set custom theme attribute
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeSetterScript.html");
-        $f = ABJ_404_Solution_Functions::getInstance();
-        $html = $f->str_replace('{theme}', esc_js($theme), $html);
-        echo $html;
     }
 
     /** Detect if dark mode is enabled from various sources.

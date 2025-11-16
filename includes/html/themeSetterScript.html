@@ -1,10 +1,19 @@
 <script type="text/javascript">
 (function() {
-  document.addEventListener("DOMContentLoaded", function() {
-    document.body.setAttribute("data-theme", "{theme}");
-  });
+  // Apply theme synchronously to html element to prevent FOUC
+  // This runs immediately when the script executes in <head>, before body is parsed
+  document.documentElement.setAttribute("data-theme", "{theme}");
+
+  // Also apply to body for redundancy (ensures both html and body have the attribute)
   if (document.body) {
     document.body.setAttribute("data-theme", "{theme}");
+  } else {
+    // If body not available yet, set it when DOM is ready
+    document.addEventListener("DOMContentLoaded", function() {
+      if (document.body) {
+        document.body.setAttribute("data-theme", "{theme}");
+      }
+    });
   }
 })();
 </script>

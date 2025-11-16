@@ -1,12 +1,19 @@
 <script type="text/javascript">
 (function() {
-  /* Remove any data-theme attributes to use default WordPress styling */
+  // Remove theme synchronously from html element to use default WordPress styling
+  // This runs immediately when the script executes in <head>, before body is parsed
   document.documentElement.removeAttribute("data-theme");
-  document.addEventListener("DOMContentLoaded", function() {
-    if (document.body) document.body.removeAttribute("data-theme");
-  });
+
+  // Also remove from body for redundancy (ensures both html and body have no theme)
   if (document.body) {
     document.body.removeAttribute("data-theme");
+  } else {
+    // If body not available yet, remove it when DOM is ready
+    document.addEventListener("DOMContentLoaded", function() {
+      if (document.body) {
+        document.body.removeAttribute("data-theme");
+      }
+    });
   }
 })();
 </script>
