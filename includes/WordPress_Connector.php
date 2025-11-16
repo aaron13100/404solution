@@ -350,7 +350,20 @@ class ABJ_404_Solution_WordPress_Connector {
             foreach ($themeVariables[$theme] as $var => $value) {
                 echo esc_html($var) . ':' . esc_html($value) . ';';
             }
-            echo '}</style>';
+            echo '}';
+
+            // Critical navigation tab styles to prevent flash
+            echo 'html[data-theme] .nav-tab-wrapper,body[data-theme] .nav-tab-wrapper{';
+            echo 'background-color:var(--abj404-bg);border-bottom-color:var(--abj404-border);';
+            echo '}';
+            echo 'html[data-theme] .nav-tab,body[data-theme] a.nav-tab{';
+            echo 'background-color:var(--abj404-surface);border-color:var(--abj404-border);color:var(--abj404-text);';
+            echo '}';
+            echo 'html[data-theme] .nav-tab-active,body[data-theme] a.nav-tab-active{';
+            echo 'background-color:var(--abj404-bg);border-bottom-color:var(--abj404-bg);color:var(--abj404-text);';
+            echo '}';
+
+            echo '</style>';
         }
     }
 
