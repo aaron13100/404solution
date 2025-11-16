@@ -223,6 +223,9 @@ function abj404_dailyMaintenanceCronJobListener() {
     $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
     $dbUpgrades->syncMissingNGrams();
     $dbUpgrades->cleanupOrphanedNGrams();
+
+    // Clean up expired rate limit transients to prevent wp_options bloat
+    $dbUpgrades->cleanupExpiredRateLimitTransients();
 }
 function abj404_updateLogsHitsTableListener() {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");

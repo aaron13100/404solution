@@ -1141,12 +1141,28 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @return bool True if scheduled successfully
      */
     function scheduleNGramCacheRebuild() {
+        global $wpdb;
+
+        // Check if rebuild is already in progress by examining persistent offset
+        $currentOffset = get_option('abj404_ngram_rebuild_offset', 0);
+        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        $totalPages = $wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
+
+        // If offset is between 0 and total (exclusive), rebuild is in progress
+        if ($currentOffset > 0 && $currentOffset < $totalPages) {
+            $this->logger->debugMessage("N-gram cache rebuild already in progress at offset {$currentOffset} of {$totalPages}");
+            return true;
+        }
+
         // Check if already scheduled
         $nextScheduled = wp_next_scheduled('abj404_rebuild_ngram_cache_hook');
         if ($nextScheduled) {
             $this->logger->debugMessage("N-gram cache rebuild already scheduled for " . date('Y-m-d H:i:s', $nextScheduled));
             return true;
         }
+
+        // Reset offset to 0 and schedule new rebuild
+        update_option('abj404_ngram_rebuild_offset', 0);
 
         // Schedule to run in 30 seconds (gives time for activation to complete)
         $scheduled = wp_schedule_single_event(time() + 30, 'abj404_rebuild_ngram_cache_hook');
@@ -1163,96 +1179,118 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     /**
      * WP-Cron callback: Rebuild N-gram cache in batches (async).
      *
-     * This is called by WP-Cron and processes the cache rebuild in small batches
-     * to avoid timeouts and memory issues. It reschedules itself if more work remains.
+     * Lock Acquisition Flow (per-batch):
+     * 1. Create unique ID
+     * 2. Write unique ID to lock if empty
+     * 3. Sleep 30ms (allows race condition resolution)
+     * 4. Read lock back and verify ownership
+     * 5. Process batch only if lock belongs to this process
+     * 6. Release lock in finally block
      *
-     * @param int $offset Current batch offset (default: 0)
+     * Persistent State:
+     * - wp_option 'abj404_ngram_rebuild_offset' tracks current progress
+     * - Allows resume after cron chain breaks
+     * - Lock scope: per-batch (not spanning entire rebuild)
+     *
+     * @param int $offset Current batch offset (default: 0, overridden by wp_options)
      * @return void
      */
     function rebuildNGramCacheAsync($offset = 0) {
         global $wpdb;
 
-        // Race condition protection: Use transient lock to prevent concurrent execution
-        $lockKey = 'abj404_ngram_rebuild_lock';
-        $lockTimeout = 30 * MINUTE_IN_SECONDS; // 30 minutes for large sites
-
-        if (get_transient($lockKey)) {
-            $this->logger->debugMessage("N-gram async rebuild already in progress (locked). Skipping.");
+        // Acquire lock using SynchronizationUtils (per-batch lock)
+        $uniqueID = $this->syncUtils->synchronizerAcquireLockTry('ngram_rebuild');
+        if (empty($uniqueID)) {
+            $this->logger->debugMessage("N-gram async rebuild batch already processing (another process holds lock). Skipping.");
             return;
         }
 
-        // Acquire lock
-        set_transient($lockKey, true, $lockTimeout);
+        try {
+            // Resume from persistent offset (ignore parameter, use stored value)
+            $offset = get_option('abj404_ngram_rebuild_offset', 0);
 
-        $batchSize = 50; // Smaller batches for async processing
-        $maxBatchesPerRun = 20; // Process up to 1000 pages per cron run
+            $batchSize = 50; // Smaller batches for async processing
+            $maxBatchesPerRun = 20; // Process up to 1000 pages per cron run
 
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-        $totalPages = $wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
+            $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+            $totalPages = $wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
 
-        if ($totalPages == 0) {
-            $this->logger->debugMessage("No pages to process. Setting initialized flag.");
-            update_option('abj404_ngram_cache_initialized', '1');
-            delete_transient($lockKey); // Release lock
-            return;
-        }
-
-        $this->logger->infoMessage(sprintf(
-            "Async N-gram rebuild: Processing batch at offset %d of %d total pages",
-            $offset,
-            $totalPages
-        ));
-
-        // Process batches
-        $batchesProcessed = 0;
-        $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
-
-        while ($batchesProcessed < $maxBatchesPerRun && $offset < $totalPages) {
-            try {
-                $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
-
-                $totalStats['processed'] += $stats['processed'];
-                $totalStats['success'] += $stats['success'];
-                $totalStats['failed'] += $stats['failed'];
-
-                $offset += $batchSize;
-                $batchesProcessed++;
-
-                // Stop if we processed fewer pages than expected (end of data)
-                if ($stats['processed'] < $batchSize) {
-                    break;
-                }
-
-            } catch (Exception $e) {
-                $this->logger->errorMessage("Error during async N-gram cache rebuild at offset {$offset}: " . $e->getMessage());
-                $totalStats['failed'] += $batchSize;
-                $offset += $batchSize;
-                $batchesProcessed++;
+            if ($totalPages == 0) {
+                $this->logger->debugMessage("No pages to process. Setting initialized flag.");
+                update_option('abj404_ngram_cache_initialized', '1');
+                update_option('abj404_ngram_rebuild_offset', 0);
+                return;
             }
-        }
 
-        $progress = $totalPages > 0 ? round(($offset / $totalPages) * 100, 1) : 100;
+            $this->logger->infoMessage(sprintf(
+                "Async N-gram rebuild: Processing batch at offset %d of %d total pages",
+                $offset,
+                $totalPages
+            ));
 
-        $this->logger->infoMessage(sprintf(
-            "Async N-gram rebuild progress: %d%% complete (%d/%d pages), %d success, %d failed",
-            $progress,
-            $offset,
-            $totalPages,
-            $totalStats['success'],
-            $totalStats['failed']
-        ));
+            // Process batches
+            $batchesProcessed = 0;
+            $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
 
-        // If more work remains, reschedule
-        if ($offset < $totalPages) {
-            wp_schedule_single_event(time() + 10, 'abj404_rebuild_ngram_cache_hook', [$offset]);
-            $this->logger->debugMessage("Rescheduled next batch at offset {$offset}");
-            // Keep lock active for next batch (will be checked again when next event runs)
-            delete_transient($lockKey);
-        } else {
-            // All done! Set the initialization flag and release lock
-            update_option('abj404_ngram_cache_initialized', '1');
-            delete_transient($lockKey);
-            $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$totalStats['processed']} processed, {$totalStats['success']} success, {$totalStats['failed']} failed.");
+            while ($batchesProcessed < $maxBatchesPerRun && $offset < $totalPages) {
+                try {
+                    $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
+
+                    $totalStats['processed'] += $stats['processed'];
+                    $totalStats['success'] += $stats['success'];
+                    $totalStats['failed'] += $stats['failed'];
+
+                    $offset += $batchSize;
+                    $batchesProcessed++;
+
+                    // Update persistent offset after each batch
+                    update_option('abj404_ngram_rebuild_offset', $offset);
+
+                    // Stop if we processed fewer pages than expected (end of data)
+                    if ($stats['processed'] < $batchSize) {
+                        break;
+                    }
+
+                } catch (Exception $e) {
+                    $this->logger->errorMessage("Error during async N-gram cache rebuild at offset {$offset}: " . $e->getMessage());
+                    $totalStats['failed'] += $batchSize;
+                    $offset += $batchSize;
+                    $batchesProcessed++;
+
+                    // Update persistent offset even on error
+                    update_option('abj404_ngram_rebuild_offset', $offset);
+                }
+            }
+
+            $progress = $totalPages > 0 ? round(($offset / $totalPages) * 100, 1) : 100;
+
+            $this->logger->infoMessage(sprintf(
+                "Async N-gram rebuild progress: %d%% complete (%d/%d pages), %d success, %d failed",
+                $progress,
+                $offset,
+                $totalPages,
+                $totalStats['success'],
+                $totalStats['failed']
+            ));
+
+            // If more work remains, reschedule
+            if ($offset < $totalPages) {
+                $scheduled = wp_schedule_single_event(time() + 10, 'abj404_rebuild_ngram_cache_hook', [$offset]);
+                if ($scheduled === false) {
+                    $this->logger->errorMessage("Failed to schedule next N-gram rebuild batch at offset {$offset}");
+                } else {
+                    $this->logger->debugMessage("Rescheduled next batch at offset {$offset}");
+                }
+            } else {
+                // All done! Set the initialization flag and reset offset
+                update_option('abj404_ngram_cache_initialized', '1');
+                update_option('abj404_ngram_rebuild_offset', 0);
+                $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$totalStats['processed']} processed, {$totalStats['success']} success, {$totalStats['failed']} failed.");
+            }
+
+        } finally {
+            // Always release lock, even if exception occurs
+            $this->syncUtils->synchronizerReleaseLock($uniqueID, 'ngram_rebuild');
         }
     }
 
@@ -1623,6 +1661,73 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         }
 
         $this->logger->infoMessage("Orphaned ngram cleanup complete: {$stats['posts_deleted']} posts deleted, {$stats['categories_deleted']} categories deleted, {$stats['errors']} errors.");
+
+        return $stats;
+    }
+
+    /**
+     * Clean up expired rate limit transients from wp_options table.
+     *
+     * WordPress transients are supposed to auto-delete when they expire, but in practice
+     * they can accumulate over time. This maintenance task removes expired rate limit
+     * transients to prevent wp_options table bloat.
+     *
+     * Called during daily maintenance cron job.
+     *
+     * @return array Statistics: ['deleted' => int, 'errors' => int]
+     */
+    function cleanupExpiredRateLimitTransients() {
+        global $wpdb;
+
+        $this->logger->debugMessage("Cleaning up expired rate limit transients...");
+
+        $stats = ['deleted' => 0, 'errors' => 0];
+
+        // Delete expired rate limit transients
+        // WordPress stores transients as two rows: _transient_* and _transient_timeout_*
+        // The timeout row contains the expiration timestamp
+        // We delete both the value and timeout rows for expired transients
+
+        $currentTime = time();
+
+        // Find all expired rate limit timeout keys
+        $query = $wpdb->prepare(
+            "SELECT option_name FROM {$wpdb->options}
+             WHERE option_name LIKE %s
+             AND option_value < %d",
+            $wpdb->esc_like('_transient_timeout_abj404_rate_limit_') . '%',
+            $currentTime
+        );
+
+        $expiredTimeouts = $wpdb->get_col($query);
+
+        if ($wpdb->last_error) {
+            $this->logger->errorMessage("Failed to query for expired rate limit transients: " . $wpdb->last_error);
+            return ['deleted' => 0, 'errors' => 1, 'error' => $wpdb->last_error];
+        }
+
+        if (!empty($expiredTimeouts)) {
+            $this->logger->debugMessage("Found " . count($expiredTimeouts) . " expired rate limit transients to delete.");
+
+            foreach ($expiredTimeouts as $timeoutKey) {
+                // Get the corresponding value key (remove '_timeout' from the name)
+                $valueKey = str_replace('_transient_timeout_', '_transient_', $timeoutKey);
+
+                // Delete both the timeout and value rows
+                $timeoutDeleted = delete_option($timeoutKey);
+                $valueDeleted = delete_option($valueKey);
+
+                if ($timeoutDeleted || $valueDeleted) {
+                    $stats['deleted']++;
+                } else {
+                    $stats['errors']++;
+                }
+            }
+
+            $this->logger->debugMessage("Deleted {$stats['deleted']} expired rate limit transients, {$stats['errors']} errors.");
+        } else {
+            $this->logger->debugMessage("No expired rate limit transients found.");
+        }
 
         return $stats;
     }

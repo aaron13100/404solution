@@ -111,6 +111,8 @@ class ABJ_404_Solution_Uninstaller {
             'abj404_migrated_to_relative_paths',
             'abj404_migration_results',
             'abj404_ngram_cache_initialized',
+            'abj404_ngram_type_column_added',
+            'abj404_ngram_rebuild_offset',
             'abj404_uninstall_preferences' // Clean up the transient too
         );
 
