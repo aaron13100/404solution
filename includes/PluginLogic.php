@@ -1044,20 +1044,33 @@ class ABJ_404_Solution_PluginLogic {
             }
         } else if ($action == "rebuildNgramCache") {
             if (check_admin_referer('abj404_rebuildNgramCache') && is_admin()) {
-                $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+                // Server-side request deduplication to prevent race conditions
+                $userId = get_current_user_id();
+                $transientKey = 'abj404_ngram_rebuild_request_' . $userId;
+                $recentRequest = get_transient($transientKey);
 
-                // Use async rebuild to avoid timeouts on large sites
-                $scheduled = $dbUpgrades->scheduleNGramCacheRebuild();
-
-                if ($scheduled) {
-                    $message = __('N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally.', '404-solution');
+                if ($recentRequest) {
+                    // Duplicate request within 10 seconds - likely from rapid button clicks
+                    $message = __('N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete.', '404-solution');
                 } else {
-                    // Check if already running
-                    $nextScheduled = wp_next_scheduled('abj404_rebuild_ngram_cache_hook');
-                    if ($nextScheduled) {
-                        $message = __('N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete.', '404-solution');
+                    // Set transient to prevent duplicate requests for 10 seconds
+                    set_transient($transientKey, time(), 10);
+
+                    $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+
+                    // Use async rebuild to avoid timeouts on large sites
+                    $scheduled = $dbUpgrades->scheduleNGramCacheRebuild();
+
+                    if ($scheduled) {
+                        $message = __('N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally.', '404-solution');
                     } else {
-                        $message = __('Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration.', '404-solution');
+                        // Check if already running
+                        $nextScheduled = wp_next_scheduled('abj404_rebuild_ngram_cache_hook');
+                        if ($nextScheduled) {
+                            $message = __('N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete.', '404-solution');
+                        } else {
+                            $message = __('Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration.', '404-solution');
+                        }
                     }
                 }
             } else {
