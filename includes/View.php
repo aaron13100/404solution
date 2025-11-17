@@ -1851,8 +1851,8 @@ class ABJ_404_Solution_View {
         $mbFileSize = $this->logger->getDebugFileSize() / 1024 / 1000;
         $mbFileSizePretty = number_format($mbFileSize, 2, ".", ",");
         /* Translators: 1: The file size in KB. 2: The file size in MB. */
-        $debugFileSize = sprintf(__('Debug file size: %1$s KB (%2$s MB).', '404-solution'), 
-                $kbFileSize, $mbFileSize);                
+        $debugFileSize = sprintf(__('Debug file size: %1$s KB (%2$s MB).', '404-solution'),
+                $kbFileSizePretty, $mbFileSizePretty);                
         
         $allPostTypesTemp = $this->dao->getAllPostTypes();
         // Ensure we have an array before imploding
