@@ -24,6 +24,9 @@ define( 'ABJ404_STATUS_CAPTURED', 3 );
 define( 'ABJ404_STATUS_IGNORED', 4 );
 define( 'ABJ404_STATUS_LATER', 5 );
 define( 'ABJ404_STATUS_REGEX', 6 );
+// Note: TRASH is handled via the 'disabled' column, not status. This constant exists for
+// backward compatibility with UninstallModal.php. Value 0 ensures 'status != 0' returns all rows.
+define( 'ABJ404_STATUS_TRASH', 0 );
 
 // Redirect types
 define( 'ABJ404_TYPE_404_DISPLAYED', 0 );
