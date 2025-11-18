@@ -118,7 +118,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->scheduleNGramCacheRebuild();
 
     		// Show admin notice that build is scheduled
-    		if ($updatingToNewVersion) {
+    		if ($updatingToNewVersion && function_exists('add_settings_error')) {
     			$message = sprintf(
     				__('404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites.', '404-solution')
     			);
@@ -135,7 +135,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$migrationResults = $this->migrateURLsToRelativePaths();
 
     		// Show admin notice if migration occurred
-    		if ($updatingToNewVersion && !empty($migrationResults['redirects_updated'])) {
+    		if ($updatingToNewVersion && !empty($migrationResults['redirects_updated']) && function_exists('add_settings_error')) {
     			$message = sprintf(
     				__('404 Solution: Migrated %d redirects to subdirectory-independent format.', '404-solution'),
     				$migrationResults['redirects_updated']
