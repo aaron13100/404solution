@@ -37,8 +37,9 @@ class ABJ_404_Solution_ViewUpdater {
             exit;
         }
 
-        // Verify user has appropriate capabilities
-        if (!current_user_can('manage_options')) {
+        // Verify user has appropriate capabilities (respects plugin admin users)
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        if (!$abj404logic->userIsPluginAdmin()) {
             header('Content-type: application/json; charset=UTF-8');
             echo json_encode(array('error' => 'Unauthorized'));
             exit;

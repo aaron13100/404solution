@@ -1898,7 +1898,7 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
         
         $html = $this->f->str_replace('{add-exclude-page-data-url}',
-        	"admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false&includeSpecial=false", $html);
+        	"admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false&includeSpecial=false&nonce=" . wp_create_nonce('abj404_ajax'), $html);
         $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
         	__('(Type a page name)', '404-solution'), $html);
         $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
