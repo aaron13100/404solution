@@ -144,11 +144,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		}
     	}
 
-    	// Run one-time migration to add type column to ngram cache
-    	if (get_option('abj404_ngram_type_column_added') !== '1') {
-    		$this->addTypeColumnToNGramCache();
-    	}
-
     	if ($updatingToNewVersion) {
     		$this->correctIssuesAfter();
     	}
@@ -890,64 +885,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         return $results;
     }
 
-    /**
-     * One-time migration to add 'type' column to ngram cache table.
-     * This allows storing posts, pages, categories, and tags without ID conflicts.
-     */
-    function addTypeColumnToNGramCache() {
-        global $wpdb;
-
-        $table = $wpdb->prefix . 'abj404_ngram_cache';
-
-        try {
-            // Check if column already exists
-            $columns = $wpdb->get_results("SHOW COLUMNS FROM {$table} LIKE 'type'");
-
-            if (empty($columns)) {
-                $this->logger->infoMessage("Adding 'type' column to ngram cache table...");
-
-                // Add the type column with default 'post' for backward compatibility
-                $wpdb->query("ALTER TABLE {$table} ADD COLUMN `type` varchar(20) NOT NULL DEFAULT 'post' COMMENT 'Entity type: post, page, category, tag' AFTER `id`");
-
-                if ($wpdb->last_error) {
-                    throw new Exception("Failed to add type column: " . $wpdb->last_error);
-                }
-
-                // Drop the old primary key
-                $wpdb->query("ALTER TABLE {$table} DROP PRIMARY KEY");
-
-                if ($wpdb->last_error) {
-                    throw new Exception("Failed to drop old primary key: " . $wpdb->last_error);
-                }
-
-                // Add new composite primary key
-                $wpdb->query("ALTER TABLE {$table} ADD PRIMARY KEY (`id`, `type`)");
-
-                if ($wpdb->last_error) {
-                    throw new Exception("Failed to add composite primary key: " . $wpdb->last_error);
-                }
-
-                // Add index on type column for faster queries
-                $wpdb->query("ALTER TABLE {$table} ADD KEY `idx_type` (`type`)");
-
-                if ($wpdb->last_error) {
-                    // Non-fatal - index is just for optimization
-                    $this->logger->infoMessage("Warning: Could not add type index: " . $wpdb->last_error);
-                }
-
-                $this->logger->infoMessage("Successfully added 'type' column to ngram cache table.");
-            } else {
-                $this->logger->debugMessage("Type column already exists in ngram cache table.");
-            }
-
-            // Mark migration as complete
-            update_option('abj404_ngram_type_column_added', '1');
-
-        } catch (Exception $e) {
-            $this->logger->errorMessage("Failed to migrate ngram cache table: " . $e->getMessage());
-            // Don't mark as complete so it will retry next time
-        }
-    }
 
     function updatePluginCheck() {
         
