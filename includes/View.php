@@ -1294,7 +1294,7 @@ class ABJ_404_Solution_View {
             if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
                 $rowActions[] = '<span class="edit"><a href="' . esc_url($editlink) . '" title="{Edit Redirect Details}">{Edit}</a></span>';
             }
-            $rowActions[] = '<span class="trash"><a href="#" class="ajax-trash-link" data-url="{ajaxTrashLink}" title="trashtitle}">{trashtitle}</a></span>';
+            $rowActions[] = '<span class="trash"><a href="#" class="ajax-trash-link" data-url="{ajaxTrashLink}" title="{trashtitle}">{trashtitle}</a></span>';
             if ($row['logsid'] > 0) {
                 $rowActions[] = '<span class="view"><a href="{logsLink}" title="{View Redirect Logs}">{View Logs}</a></span>';
             } else {
