@@ -2037,7 +2037,8 @@ class ABJ_404_Solution_View {
                 __('(Please choose from the dropdown list instead of typing your own URL.)', '404-solution'), $html);
         $html = $this->f->str_replace('{pageIDAndType}', $pageIDAndType, $html);
         $html = $this->f->str_replace('{redirectPageTitle}', $redirectPageTitle, $html);
-        $html = $this->f->str_replace('{data-url}', "admin-ajax.php?action=echoViewLogsFor", $html);
+        $html = $this->f->str_replace('{data-url}',
+                "admin-ajax.php?action=echoViewLogsFor&nonce=" . wp_create_nonce('abj404_ajax'), $html);
         $html = $this->f->doNormalReplacements($html);
         echo $html;
         // ----------------- dropdown search box. end.
