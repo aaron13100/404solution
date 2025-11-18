@@ -1,5 +1,5 @@
 # Translation file for 404 Solution WordPress Plugin
-# Copyright (C) 2025 404 Solution
+# Copyright (C) 2025 Aaron J
 # This file is distributed under the same license as the 404 Solution plugin.
 #
 msgid ""
@@ -22,7 +22,7 @@ msgstr ""
 
 
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr "404 Solution: Se migraron %d redirecciones a formato independiente de subdirectorio."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s de %3$s"
 
@@ -1392,7 +1392,7 @@ msgstr ""
 
 #: includes/DatabaseUpgradesEtc.php:140
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr ""
+msgstr "404 Solution: Se migraron %d redirecciones a formato independiente de subdirectorio."
 
 msgid "Warning:"
 msgstr "Warning:"

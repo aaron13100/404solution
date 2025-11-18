@@ -1,5 +1,5 @@
 # Translation file for 404 Solution WordPress Plugin
-# Copyright (C) 2025 404 Solution
+# Copyright (C) 2025 Aaron J
 # This file is distributed under the same license as the 404 Solution plugin.
 #
 msgid ""
