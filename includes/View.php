@@ -2126,7 +2126,7 @@ class ABJ_404_Solution_View {
             }
             $html .= "</td>";
             $html .= "<td>";
-            if ($row['action'] == "404") {
+            if (trim($row['action']) == "404" || trim($row['action']) == "http://404") {
                 $html .= __('Displayed 404 Page', '404-solution');
             } else {
                 $html .= __('Redirected to', '404-solution') . " ";

@@ -21,8 +21,8 @@ msgstr ""
 "X-Poedit-SearchPath-0: .\n"
 
 
-msgid "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
-msgstr "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
+msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s of %3$s"
 
@@ -1387,9 +1387,9 @@ msgstr "404 Solution: N-gram spell check cache is being built in the background 
 msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
 msgstr "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
 
-#: includes/DatabaseUpgradesEtc.php:136
-msgid "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
-msgstr "404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format."
+#: includes/DatabaseUpgradesEtc.php:140
+msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr "404 Solution: Migrated %d redirects to subdirectory-independent format."
 
 msgid "Warning:"
 msgstr "Warning:"

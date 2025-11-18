@@ -137,9 +137,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		// Show admin notice if migration occurred
     		if ($updatingToNewVersion && !empty($migrationResults['redirects_updated'])) {
     			$message = sprintf(
-    				__('404 Solution: Migrated %d redirects and %d log entries to subdirectory-independent format.', '404-solution'),
-    				$migrationResults['redirects_updated'],
-    				$migrationResults['logs_updated']
+    				__('404 Solution: Migrated %d redirects to subdirectory-independent format.', '404-solution'),
+    				$migrationResults['redirects_updated']
     			);
     			add_settings_error('abj404_settings', 'migration_success', $message, 'updated');
     		}
@@ -774,7 +773,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
         $results = array(
             'redirects_updated' => 0,
-            'logs_updated' => 0,
             'subdirectory' => $subdirectory,
             'errors' => array()
         );
@@ -787,6 +785,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         }
 
         try {
+            $startTime = microtime(true);
+
             // Fix HIGH #1: Start transaction for atomic migration
             $wpdb->query('START TRANSACTION');
 
@@ -816,7 +816,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 if ($redirect->url === $subdirectory || $redirect->url === $subdirectory . '/') {
                     // Convert exact subdirectory match to root path
                     $newURL = '/';
-                    $abj404logging->debugMessage("Converting exact subdirectory match to root for redirect ID {$redirect->id}");
                 } else {
                     // Remove subdirectory prefix
                     // Fix CRITICAL #1 (3rd review): Use $f->substr for consistent character encoding
@@ -824,7 +823,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
                     // Skip if result is empty or just slash (shouldn't happen due to query, but defensive)
                     if (empty($newURL) || $newURL === '/') {
-                        $abj404logging->debugMessage("Skipping redirect ID {$redirect->id} with unexpected empty result");
                         continue;
                     }
 
@@ -848,67 +846,15 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 $results['redirects_updated']++;
             }
 
-            $abj404logging->infoMessage("Migrated {$results['redirects_updated']} redirects.");
+            $duration = microtime(true) - $startTime;
+            $abj404logging->infoMessage(sprintf(
+                "Migrated %d redirects in %.2f seconds.",
+                $results['redirects_updated'],
+                $duration
+            ));
 
-            // MIGRATE LOGS TABLE
-            $logsTable = $wpdb->prefix . 'abj404_logsv2';
-
-            $abj404logging->infoMessage("Migrating logs table to relative paths...");
-
-            // Fix CRITICAL #3: Query should find exact matches too (not just LIKE)
-            $logsQuery = $wpdb->prepare(
-                "SELECT id, requested_url FROM {$logsTable}
-                 WHERE requested_url = %s OR requested_url = %s OR requested_url LIKE %s",
-                $subdirectory,                              // Exact match: /blog
-                $subdirectory . '/',                        // With slash: /blog/
-                $wpdb->esc_like($subdirectory . '/') . '%' // With path: /blog/*
-            );
-
-            $logsToMigrate = $wpdb->get_results($logsQuery);
-
-            // Fix Issue #7: Check for database errors
-            if ($logsToMigrate === null) {
-                throw new Exception("Failed to query logs table: " . $wpdb->last_error);
-            }
-
-            foreach ($logsToMigrate as $log) {
-                // Fix CRITICAL #3: Handle exact subdirectory match specially
-                if ($log->requested_url === $subdirectory || $log->requested_url === $subdirectory . '/') {
-                    // Convert exact subdirectory match to root path
-                    $newURL = '/';
-                    $abj404logging->debugMessage("Converting exact subdirectory match to root for log ID {$log->id}");
-                } else {
-                    // Remove subdirectory prefix
-                    // Fix CRITICAL #1 (3rd review): Use $f->substr for consistent character encoding
-                    $newURL = $f->substr($log->requested_url, $f->strlen($subdirectory));
-
-                    // Skip if result is empty or just slash (shouldn't happen due to query, but defensive)
-                    if (empty($newURL) || $newURL === '/') {
-                        $abj404logging->debugMessage("Skipping log ID {$log->id} with unexpected empty result");
-                        continue;
-                    }
-
-                    // Ensure leading slash
-                    $newURL = '/' . ltrim($newURL, '/');
-                }
-
-                // Update the record
-                $updated = $wpdb->update(
-                    $logsTable,
-                    array('requested_url' => $newURL),
-                    array('id' => $log->id),
-                    array('%s'),
-                    array('%d')
-                );
-
-                if ($updated === false) {
-                    throw new Exception("Failed to update log ID {$log->id}: " . $wpdb->last_error);
-                }
-
-                $results['logs_updated']++;
-            }
-
-            $abj404logging->infoMessage("Migrated {$results['logs_updated']} log entries.");
+            // Note: Log entries are intentionally NOT migrated for performance.
+            // Historical logs with absolute paths are display-only and don't affect functionality.
 
             // Fix HIGH #1 (2nd review): Commit transaction
             $wpdb->query('COMMIT');

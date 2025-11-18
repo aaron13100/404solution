@@ -1482,7 +1482,10 @@ class ABJ_404_Solution_DataAccess {
         }
 
         // extra escaping suggestions from chatgpt
-        $action = esc_url_raw($action);
+        // Don't escape "404" as a URL since it's not a URL, it's a status indicator
+        if (trim($action) != "404") {
+            $action = esc_url_raw($action);
+        }
             
         // ------------ debug message begin
         $helperFunctions = ABJ_404_Solution_Functions::getInstance();
