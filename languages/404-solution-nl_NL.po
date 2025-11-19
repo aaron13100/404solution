@@ -1384,11 +1384,11 @@ msgstr[1] "%s omleidingsitems zijn naar de prullenbak verplaatst."
 
 #: includes/DatabaseUpgradesEtc.php:119
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
-msgstr ""
+msgstr "404 Solution: N-gram spellingcontrole cache wordt op de achtergrond opgebouwd om de prestaties te optimaliseren. Dit kan enkele minuten duren op grote websites."
 
 #: includes/DatabaseUpgradesEtc.php:123
 msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
-msgstr ""
+msgstr "404 Solution: N-gram cache opgebouwd voor %d pagina's om de prestaties van spellingcontrole te optimaliseren."
 
 #: includes/DatabaseUpgradesEtc.php:140
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."

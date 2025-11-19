@@ -1386,11 +1386,11 @@ msgstr[2] "%s записей перенаправления были перем�
 
 #: includes/DatabaseUpgradesEtc.php:119
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
-msgstr ""
+msgstr "404 Solution: Кэш проверки орфографии N-gram создается в фоновом режиме для оптимизации производительности. На больших сайтах это может занять несколько минут."
 
 #: includes/DatabaseUpgradesEtc.php:123
 msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
-msgstr ""
+msgstr "404 Solution: Создан кэш N-gram для %d страниц для оптимизации производительности проверки орфографии."
 
 #: includes/DatabaseUpgradesEtc.php:140
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."

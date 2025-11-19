@@ -1380,145 +1380,145 @@ msgstr[1] "%s entrées de redirection ont été déplacées dans la corbeille."
 
 #: includes/DatabaseUpgradesEtc.php:119
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
-msgstr ""
+msgstr "404 Solution : Le cache de vérification orthographique N-gram est en cours de construction en arrière-plan pour optimiser les performances. Cela peut prendre quelques minutes sur les sites volumineux."
 
 #: includes/DatabaseUpgradesEtc.php:125
 msgid "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."
-msgstr ""
+msgstr "404 Solution : Le cache de vérification orthographique N-gram est en cours de construction en arrière-plan%s pour optimiser les performances. Cela peut prendre quelques minutes sur les sites volumineux."
 
 #: includes/DatabaseUpgradesEtc.php:123
 msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
-msgstr ""
+msgstr "404 Solution : Cache N-gram construit pour %d pages afin d'optimiser les performances de vérification orthographique."
 
 #: includes/DatabaseUpgradesEtc.php:140
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution : %d redirections migrées vers un format indépendant des sous-répertoires."
 
 msgid "Warning:"
-msgstr "Warning:"
+msgstr "Attention :"
 
 msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
-msgstr "This will permanently delete the plugin files. You can choose to keep or remove your data below."
+msgstr "Cela supprimera définitivement les fichiers du plugin. Vous pouvez choisir de conserver ou de supprimer vos données ci-dessous."
 
 msgid "What should happen to your data?"
-msgstr "What should happen to your data?"
+msgstr "Que doit-il advenir de vos données ?"
 
 msgid "Keep my redirects (%d redirects)"
-msgstr "Keep my redirects (%d redirects)"
+msgstr "Conserver mes redirections (%d redirections)"
 
 msgid "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
-msgstr "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
+msgstr "Cochez cette option si vous prévoyez de réinstaller le plugin plus tard. Vos configurations de redirection seront préservées."
 
 msgid "Keep 404 logs"
-msgstr "Keep 404 logs"
+msgstr "Conserver les journaux 404"
 
 msgid "Historical 404 data and logs will be preserved if checked."
-msgstr "Historical 404 data and logs will be preserved if checked."
+msgstr "Les données et journaux 404 historiques seront préservés si cette option est cochée."
 
 msgid "Note: Cache tables will always be deleted as they can be rebuilt."
-msgstr "Note: Cache tables will always be deleted as they can be rebuilt."
+msgstr "Remarque : Les tables de cache seront toujours supprimées car elles peuvent être reconstruites."
 
 msgid "Why are you uninstalling? (Optional)"
-msgstr "Why are you uninstalling? (Optional)"
+msgstr "Pourquoi désinstallez-vous ce plugin ? (Optionnel)"
 
 msgid "Temporary deactivation for debugging"
-msgstr "Temporary deactivation for debugging"
+msgstr "Désactivation temporaire pour débogage"
 
 msgid "The plugin is not working as expected"
-msgstr "The plugin is not working as expected"
+msgstr "Le plugin ne fonctionne pas comme prévu"
 
 msgid "I found a better plugin"
-msgstr "I found a better plugin"
+msgstr "J'ai trouvé un meilleur plugin"
 
 msgid "I no longer need this functionality"
-msgstr "I no longer need this functionality"
+msgstr "Je n'ai plus besoin de cette fonctionnalité"
 
 msgid "Too complicated to configure"
-msgstr "Too complicated to configure"
+msgstr "Trop compliqué à configurer"
 
 msgid "Performance issues"
-msgstr "Performance issues"
+msgstr "Problèmes de performance"
 
 msgid "Other reason"
-msgstr "Other reason"
+msgstr "Autre raison"
 
 msgid "Help us improve (Optional)"
-msgstr "Help us improve (Optional)"
+msgstr "Aidez-nous à améliorer ce plugin (Optionnel)"
 
 msgid "Send feedback to help improve the plugin"
-msgstr "Send feedback to help improve the plugin"
+msgstr "Envoyez vos commentaires pour nous aider à améliorer le plugin"
 
 msgid "Your email (optional):"
-msgstr "Your email (optional):"
+msgstr "Votre courriel (optionnel) :"
 
 msgid "your@email.com (optional)"
-msgstr "your@email.com (optional)"
+msgstr "votre@courriel.com (optionnel)"
 
 msgid "Additional details:"
-msgstr "Additional details:"
+msgstr "Détails supplémentaires :"
 
 msgid "Please share any additional feedback..."
-msgstr "Please share any additional feedback..."
+msgstr "Veuillez partager tout commentaire supplémentaire..."
 
 msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
-msgstr "Your feedback helps us improve. We respect your privacy and will not share your information."
+msgstr "Vos commentaires nous aident à améliorer ce plugin. Nous respectons votre vie privée et ne partagerons pas vos informations."
 
 msgid "Insufficient permissions"
-msgstr "Insufficient permissions"
+msgstr "Permissions insuffisantes"
 
 msgid "Preferences saved successfully"
-msgstr "Preferences saved successfully"
+msgstr "Préférences enregistrées avec succès"
 
 msgid "Failed to save preferences"
-msgstr "Failed to save preferences"
+msgstr "Échec de l'enregistrement des préférences"
 
 msgid "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
-msgstr "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
+msgstr "La reconstruction du cache N-gram a été planifiée et s'exécutera en arrière-plan. Cela peut prendre plusieurs minutes sur les sites volumineux. Vous pouvez continuer à utiliser le plugin normalement."
 
 msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
-msgstr "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
+msgstr "Échec de la planification de la reconstruction du cache N-gram. Veuillez réessayer ou vérifier votre configuration cron WordPress."
 
 msgid "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
-msgstr "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
+msgstr "La reconstruction du cache N-gram est déjà planifiée ou en cours. Veuillez attendre qu'elle se termine."
 
 msgid "N-gram cache rebuild is already in progress. Please wait for it to complete."
-msgstr "N-gram cache rebuild is already in progress. Please wait for it to complete."
+msgstr "La reconstruction du cache N-gram est déjà en cours. Veuillez attendre qu'elle se termine."
 
 msgid "Error rebuilding N-gram cache: %s"
-msgstr "Error rebuilding N-gram cache: %s"
+msgstr "Erreur lors de la reconstruction du cache N-gram : %s"
 
 msgid "N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed."
-msgstr "N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed."
+msgstr "Cache N-gram reconstruit avec succès : %d entrées totales traitées (%d articles/pages, %d catégories, %d étiquettes), %d réussies, %d échouées."
 
 msgid "Spelling cache cleared successfully."
-msgstr "Spelling cache cleared successfully."
+msgstr "Cache orthographique effacé avec succès."
 
 msgid "Cache Management"
-msgstr "Cache Management"
+msgstr "Gestion du cache"
 
 msgid "N-gram Cache"
-msgstr "N-gram Cache"
+msgstr "Cache N-gram"
 
 msgid "Rebuild the N-gram spell checker cache. This optimizes 404 URL matching performance. May take several minutes on large sites."
-msgstr "Rebuild the N-gram spell checker cache. This optimizes 404 URL matching performance. May take several minutes on large sites."
+msgstr "Reconstruire le cache de vérification orthographique N-gram. Cela optimise les performances de correspondance d'URL 404. Peut prendre plusieurs minutes sur les sites volumineux."
 
 msgid "Rebuild N-gram Cache"
-msgstr "Rebuild N-gram Cache"
+msgstr "Reconstruire le cache N-gram"
 
 msgid "Spelling Cache"
-msgstr "Spelling Cache"
+msgstr "Cache orthographique"
 
 msgid "Clear the spelling cache to force recalculation of URL matches. Useful after making significant content changes."
-msgstr "Clear the spelling cache to force recalculation of URL matches. Useful after making significant content changes."
+msgstr "Effacer le cache orthographique pour forcer le recalcul des correspondances d'URL. Utile après avoir apporté des modifications de contenu importantes."
 
 msgid "Clear Spelling Cache"
-msgstr "Clear Spelling Cache"
+msgstr "Effacer le cache orthographique"
 
 msgid "Disable automatic dark mode detection"
-msgstr "Disable automatic dark mode detection"
+msgstr "Désactiver la détection automatique du mode sombre"
 
 msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
-msgstr "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
+msgstr "Lorsque cette option est décochée et que le thème est réglé sur « Par défaut », le plugin basculera automatiquement vers un thème sombre si votre palette de couleurs d'administration WordPress est sombre (Midnight, Ectoplasm, Coffee), si vous avez un plugin de mode sombre activé, ou si votre navigateur/système d'exploitation préfère le mode sombre."
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
-msgstr "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
+msgstr "Vos commentaires nous aident à améliorer ce plugin. Les informations système (version WordPress, version PHP, plugins installés) seront incluses. Nous respectons votre vie privée et ne partagerons pas vos informations."

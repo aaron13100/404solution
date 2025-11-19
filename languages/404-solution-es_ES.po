@@ -1384,11 +1384,11 @@ msgstr[1] "%s entradas de redirección se movieron a la papelera."
 
 #: includes/DatabaseUpgradesEtc.php:119
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
-msgstr ""
+msgstr "404 Solution: La caché de verificación ortográfica N-gram se está construyendo en segundo plano para optimizar el rendimiento. Esto puede tardar algunos minutos en sitios grandes."
 
 #: includes/DatabaseUpgradesEtc.php:123
 msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
-msgstr ""
+msgstr "404 Solution: Caché N-gram construida para %d páginas para optimizar el rendimiento de la verificación ortográfica."
 
 #: includes/DatabaseUpgradesEtc.php:140
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."

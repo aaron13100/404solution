@@ -1382,11 +1382,11 @@ msgstr[0] "%s件のリダイレクトエントリーがゴミ箱に移動され�
 
 #: includes/DatabaseUpgradesEtc.php:119
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
-msgstr ""
+msgstr "404 Solution: パフォーマンスを最適化するため、N-gramスペルチェックキャッシュをバックグラウンドで構築しています。大規模なサイトでは数分かかる場合があります。"
 
 #: includes/DatabaseUpgradesEtc.php:123
 msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
-msgstr ""
+msgstr "404 Solution: スペルチェックのパフォーマンスを最適化するため、%d件のページ用にN-gramキャッシュを構築しました。"
 
 #: includes/DatabaseUpgradesEtc.php:140
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."

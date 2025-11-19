@@ -1382,132 +1382,132 @@ msgstr[0] "%s entri redirect dipindahkan ke tempat sampah."
 
 #: includes/DatabaseUpgradesEtc.php:119
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
-msgstr ""
+msgstr "404 Solution: Cache pemeriksaan ejaan N-gram sedang dibangun di latar belakang untuk mengoptimalkan kinerja. Ini mungkin memakan waktu beberapa menit pada situs besar."
 
 #: includes/DatabaseUpgradesEtc.php:123
 msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
-msgstr ""
+msgstr "404 Solution: Cache N-gram dibangun untuk %d halaman untuk mengoptimalkan kinerja pemeriksaan ejaan."
 
 #: includes/DatabaseUpgradesEtc.php:140
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution: Memigrasikan %d pengalihan ke format independen subdirektori."
 
 msgid "Warning:"
-msgstr "Warning:"
+msgstr "Peringatan:"
 
 msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
-msgstr "This will permanently delete the plugin files. You can choose to keep or remove your data below."
+msgstr "Ini akan menghapus file plugin secara permanen. Anda dapat memilih untuk menyimpan atau menghapus data Anda di bawah ini."
 
 msgid "What should happen to your data?"
-msgstr "What should happen to your data?"
+msgstr "Apa yang harus terjadi pada data Anda?"
 
 msgid "Keep my redirects (%d redirects)"
-msgstr "Keep my redirects (%d redirects)"
+msgstr "Simpan pengalihan saya (%d pengalihan)"
 
 msgid "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
-msgstr "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
+msgstr "Centang ini jika Anda berencana menginstal ulang plugin nanti. Konfigurasi pengalihan Anda akan dipertahankan."
 
 msgid "Keep 404 logs"
-msgstr "Keep 404 logs"
+msgstr "Simpan log 404"
 
 msgid "Historical 404 data and logs will be preserved if checked."
-msgstr "Historical 404 data and logs will be preserved if checked."
+msgstr "Data dan log 404 historis akan dipertahankan jika dicentang."
 
 msgid "Note: Cache tables will always be deleted as they can be rebuilt."
-msgstr "Note: Cache tables will always be deleted as they can be rebuilt."
+msgstr "Catatan: Tabel cache akan selalu dihapus karena dapat dibangun kembali."
 
 msgid "Why are you uninstalling? (Optional)"
-msgstr "Why are you uninstalling? (Optional)"
+msgstr "Mengapa Anda mencopot pemasangan? (Opsional)"
 
 msgid "Temporary deactivation for debugging"
-msgstr "Temporary deactivation for debugging"
+msgstr "Penonaktifan sementara untuk debugging"
 
 msgid "The plugin is not working as expected"
-msgstr "The plugin is not working as expected"
+msgstr "Plugin tidak berfungsi seperti yang diharapkan"
 
 msgid "I found a better plugin"
-msgstr "I found a better plugin"
+msgstr "Saya menemukan plugin yang lebih baik"
 
 msgid "I no longer need this functionality"
-msgstr "I no longer need this functionality"
+msgstr "Saya tidak lagi memerlukan fungsi ini"
 
 msgid "Too complicated to configure"
-msgstr "Too complicated to configure"
+msgstr "Terlalu rumit untuk dikonfigurasi"
 
 msgid "Performance issues"
-msgstr "Performance issues"
+msgstr "Masalah kinerja"
 
 msgid "Other reason"
-msgstr "Other reason"
+msgstr "Alasan lain"
 
 msgid "Help us improve (Optional)"
-msgstr "Help us improve (Optional)"
+msgstr "Bantu kami meningkatkan (Opsional)"
 
 msgid "Send feedback to help improve the plugin"
-msgstr "Send feedback to help improve the plugin"
+msgstr "Kirim masukan untuk membantu meningkatkan plugin"
 
 msgid "Your email (optional):"
-msgstr "Your email (optional):"
+msgstr "Email Anda (opsional):"
 
 msgid "your@email.com (optional)"
-msgstr "your@email.com (optional)"
+msgstr "email@anda.com (opsional)"
 
 msgid "Additional details:"
-msgstr "Additional details:"
+msgstr "Detail tambahan:"
 
 msgid "Please share any additional feedback..."
-msgstr "Please share any additional feedback..."
+msgstr "Silakan bagikan masukan tambahan..."
 
 msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
-msgstr "Your feedback helps us improve. We respect your privacy and will not share your information."
+msgstr "Masukan Anda membantu kami meningkatkan plugin. Kami menghormati privasi Anda dan tidak akan membagikan informasi Anda."
 
 msgid "Insufficient permissions"
-msgstr "Insufficient permissions"
+msgstr "Izin tidak mencukupi"
 
 msgid "Preferences saved successfully"
-msgstr "Preferences saved successfully"
+msgstr "Preferensi berhasil disimpan"
 
 msgid "Failed to save preferences"
-msgstr "Failed to save preferences"
+msgstr "Gagal menyimpan preferensi"
 
 msgid "N-gram cache rebuild is already in progress. Please wait for it to complete."
-msgstr "N-gram cache rebuild is already in progress. Please wait for it to complete."
+msgstr "Pembangunan ulang cache N-gram sedang berlangsung. Harap tunggu hingga selesai."
 
 msgid "Error rebuilding N-gram cache: %s"
-msgstr "Error rebuilding N-gram cache: %s"
+msgstr "Kesalahan saat membangun ulang cache N-gram: %s"
 
 msgid "N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed."
-msgstr "N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed."
+msgstr "Cache N-gram berhasil dibangun ulang: %d total entri diproses (%d posting/halaman, %d kategori, %d tag), %d berhasil, %d gagal."
 
 msgid "Spelling cache cleared successfully."
-msgstr "Spelling cache cleared successfully."
+msgstr "Cache ejaan berhasil dihapus."
 
 msgid "Cache Management"
-msgstr "Cache Management"
+msgstr "Manajemen Cache"
 
 msgid "N-gram Cache"
-msgstr "N-gram Cache"
+msgstr "Cache N-gram"
 
 msgid "Rebuild the N-gram spell checker cache. This optimizes 404 URL matching performance. May take several minutes on large sites."
-msgstr "Rebuild the N-gram spell checker cache. This optimizes 404 URL matching performance. May take several minutes on large sites."
+msgstr "Bangun ulang cache pemeriksa ejaan N-gram. Ini mengoptimalkan kinerja pencocokan URL 404. Mungkin memakan waktu beberapa menit pada situs besar."
 
 msgid "Rebuild N-gram Cache"
-msgstr "Rebuild N-gram Cache"
+msgstr "Bangun Ulang Cache N-gram"
 
 msgid "Spelling Cache"
-msgstr "Spelling Cache"
+msgstr "Cache Ejaan"
 
 msgid "Clear the spelling cache to force recalculation of URL matches. Useful after making significant content changes."
-msgstr "Clear the spelling cache to force recalculation of URL matches. Useful after making significant content changes."
+msgstr "Hapus cache ejaan untuk memaksa perhitungan ulang pencocokan URL. Berguna setelah membuat perubahan konten yang signifikan."
 
 msgid "Clear Spelling Cache"
-msgstr "Clear Spelling Cache"
+msgstr "Hapus Cache Ejaan"
 
 msgid "Disable automatic dark mode detection"
-msgstr "Disable automatic dark mode detection"
+msgstr "Nonaktifkan deteksi mode gelap otomatis"
 
 msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
-msgstr "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
+msgstr "Ketika tidak dicentang dan tema diatur ke \"Default\", plugin akan otomatis beralih ke tema gelap jika skema warna admin WordPress Anda gelap (Midnight, Ectoplasm, Coffee), jika Anda memiliki plugin mode gelap yang diaktifkan, atau jika browser/OS Anda lebih menyukai mode gelap."
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
-msgstr "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
+msgstr "Masukan Anda membantu kami meningkatkan plugin. Informasi sistem (versi WordPress, versi PHP, plugin yang terinstal) akan disertakan. Kami menghormati privasi Anda dan tidak akan membagikan informasi Anda."

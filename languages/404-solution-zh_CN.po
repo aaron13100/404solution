@@ -1382,11 +1382,11 @@ msgstr[0] "%s 个重定向条目已移至回收站。"
 
 #: includes/DatabaseUpgradesEtc.php:119
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
-msgstr ""
+msgstr "404 Solution：正在后台构建 N-gram 拼写检查缓存以优化性能。在大型网站上可能需要几分钟。"
 
 #: includes/DatabaseUpgradesEtc.php:123
 msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
-msgstr ""
+msgstr "404 Solution：已为 %d 个页面构建 N-gram 缓存以优化拼写检查性能。"
 
 #: includes/DatabaseUpgradesEtc.php:140
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
