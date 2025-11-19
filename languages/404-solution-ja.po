@@ -1507,7 +1507,7 @@ msgid "Disable automatic dark mode detection"
 msgstr "Disable automatic dark mode detection"
 
 msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
-msgstr "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
+msgstr "チェックを外し、テーマが「デフォルト」に設定されている場合、WordPressの管理画面カラースキームがダーク（Midnight、Ectoplasm、Coffee）である場合、ダークモードプラグインが有効になっている場合、またはブラウザ/OSがダークモードを優先する場合、プラグインは自動的にダークテーマに切り替わります。"
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
-msgstr "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
+msgstr "フィードバックは改善に役立ちます。システム情報（WordPressバージョン、PHPバージョン、インストール済みプラグイン）が含まれます。プライバシーを尊重し、情報を共有することはありません。"

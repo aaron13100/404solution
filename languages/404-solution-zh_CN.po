@@ -1393,73 +1393,73 @@ msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution：已将 %d 个重定向迁移到与子目录无关的格式。"
 
 msgid "Warning:"
-msgstr "Warning:"
+msgstr "警告："
 
 msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
-msgstr "This will permanently delete the plugin files. You can choose to keep or remove your data below."
+msgstr "这将永久删除插件文件。您可以在下方选择保留或删除您的数据。"
 
 msgid "What should happen to your data?"
-msgstr "What should happen to your data?"
+msgstr "您的数据应该如何处理？"
 
 msgid "Keep my redirects (%d redirects)"
-msgstr "Keep my redirects (%d redirects)"
+msgstr "保留我的重定向（%d 个重定向）"
 
 msgid "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
-msgstr "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
+msgstr "如果您计划稍后重新安装插件，请勾选此项。您的重定向配置将被保留。"
 
 msgid "Keep 404 logs"
-msgstr "Keep 404 logs"
+msgstr "保留 404 日志"
 
 msgid "Historical 404 data and logs will be preserved if checked."
-msgstr "Historical 404 data and logs will be preserved if checked."
+msgstr "勾选此项后，历史 404 数据和日志将被保留。"
 
 msgid "Note: Cache tables will always be deleted as they can be rebuilt."
-msgstr "Note: Cache tables will always be deleted as they can be rebuilt."
+msgstr "注意：缓存表将始终被删除，因为它们可以重建。"
 
 msgid "Why are you uninstalling? (Optional)"
-msgstr "Why are you uninstalling? (Optional)"
+msgstr "您为什么要卸载？（可选）"
 
 msgid "Temporary deactivation for debugging"
-msgstr "Temporary deactivation for debugging"
+msgstr "临时停用以进行调试"
 
 msgid "The plugin is not working as expected"
-msgstr "The plugin is not working as expected"
+msgstr "插件未按预期工作"
 
 msgid "I found a better plugin"
-msgstr "I found a better plugin"
+msgstr "我找到了更好的插件"
 
 msgid "I no longer need this functionality"
-msgstr "I no longer need this functionality"
+msgstr "我不再需要此功能"
 
 msgid "Too complicated to configure"
-msgstr "Too complicated to configure"
+msgstr "配置过于复杂"
 
 msgid "Performance issues"
-msgstr "Performance issues"
+msgstr "性能问题"
 
 msgid "Other reason"
-msgstr "Other reason"
+msgstr "其他原因"
 
 msgid "Help us improve (Optional)"
-msgstr "Help us improve (Optional)"
+msgstr "帮助我们改进（可选）"
 
 msgid "Send feedback to help improve the plugin"
-msgstr "Send feedback to help improve the plugin"
+msgstr "发送反馈以帮助改进插件"
 
 msgid "Your email (optional):"
-msgstr "Your email (optional):"
+msgstr "您的电子邮箱（可选）："
 
 msgid "your@email.com (optional)"
-msgstr "your@email.com (optional)"
+msgstr "your@email.com（可选）"
 
 msgid "Additional details:"
-msgstr "Additional details:"
+msgstr "其他详细信息："
 
 msgid "Please share any additional feedback..."
-msgstr "Please share any additional feedback..."
+msgstr "请分享任何其他反馈..."
 
 msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
-msgstr "Your feedback helps us improve. We respect your privacy and will not share your information."
+msgstr "您的反馈帮助我们改进。我们尊重您的隐私，不会分享您的信息。"
 
 msgid "Insufficient permissions"
 msgstr "Insufficient permissions"
@@ -1507,7 +1507,7 @@ msgid "Disable automatic dark mode detection"
 msgstr "Disable automatic dark mode detection"
 
 msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
-msgstr "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
+msgstr "取消勾选且主题设置为"默认"时，如果您的 WordPress 管理配色方案为深色（Midnight、Ectoplasm、Coffee），或启用了深色模式插件，或您的浏览器/操作系统偏好深色模式，插件将自动切换到深色主题。"
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
-msgstr "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
+msgstr "您的反馈帮助我们改进。系统信息（WordPress 版本、PHP 版本、已安装的插件）将被包含在内。我们尊重您的隐私，不会分享您的信息。"
