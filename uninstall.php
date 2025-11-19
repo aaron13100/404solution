@@ -45,10 +45,25 @@ delete_transient('abj404_uninstall_preferences');
 
 // Handle both single-site and multisite installations
 if (is_multisite()) {
-    // Multisite: Uninstall from all sites in the network
-    ABJ_404_Solution_Uninstaller::multisite_uninstall($preferences);
+    // Check if the plugin is network-activated
+    // Only run network-wide uninstall if it was activated network-wide
+    if (!function_exists('is_plugin_active_for_network')) {
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
+
+    // Determine the plugin file path relative to plugins directory
+    $plugin_file = '404-solution/404-solution.php';
+    $is_network_active = is_plugin_active_for_network($plugin_file);
+
+    if ($is_network_active) {
+        // Network-activated: Uninstall from all sites in the network
+        ABJ_404_Solution_Uninstaller::multisite_uninstall($preferences);
+    } else {
+        // Single-site activation: Only uninstall from current site
+        ABJ_404_Solution_Uninstaller::uninstall($preferences);
+    }
 } else {
-    // Single site: Standard uninstall
+    // Single site installation: Standard uninstall
     ABJ_404_Solution_Uninstaller::uninstall($preferences);
 }
 

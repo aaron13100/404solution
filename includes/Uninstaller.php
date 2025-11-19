@@ -35,11 +35,25 @@ class ABJ_404_Solution_Uninstaller {
     /**
      * Handle multisite uninstallation
      * Runs uninstall process for each site in the network
+     * IMPORTANT: This should only be called when the plugin is network-activated
      *
      * @param array $preferences User's uninstall preferences
      */
     public static function multisite_uninstall($preferences) {
         global $wpdb;
+
+        // Safety check: Verify this is actually a network-wide uninstall
+        // This prevents accidental data loss if called incorrectly
+        if (!function_exists('is_plugin_active_for_network')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        $plugin_file = '404-solution/404-solution.php';
+        if (!is_plugin_active_for_network($plugin_file)) {
+            // Log error and bail out - this method should not have been called
+            error_log('404 Solution: multisite_uninstall() called but plugin is not network-activated. Aborting to prevent data loss.');
+            return;
+        }
 
         // Get all blog IDs in the network
         $blog_ids = $wpdb->get_col("SELECT blog_id FROM $wpdb->blogs");
