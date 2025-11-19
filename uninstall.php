@@ -16,7 +16,8 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 }
 
 // Additional security: Verify user has permission to delete plugins
-if (!current_user_can('activate_plugins')) {
+// Allow WP-CLI and other automated contexts where current_user_can() returns false
+if (!defined('WP_CLI') && !current_user_can('activate_plugins')) {
     exit;
 }
 
