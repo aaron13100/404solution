@@ -1383,6 +1383,10 @@ msgstr[1] "%s redirect entries were moved to the trash."
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
 msgstr "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
 
+#: includes/DatabaseUpgradesEtc.php:125
+msgid "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."
+msgstr "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."
+
 #: includes/DatabaseUpgradesEtc.php:123
 msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
 msgstr "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
