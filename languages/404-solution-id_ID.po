@@ -434,10 +434,10 @@ msgid "Error: External URL is too short."
 msgstr "Kesalahan: URL eksternal terlalu pendek."
 
 msgid "Error: External redirect URL failed validation."
-msgstr "Error: External redirect URL failed validation."
+msgstr "Kesalahan: URL redirect eksternal gagal validasi."
 
 msgid "Error: External URL must use http:// or https:// protocol only."
-msgstr "Error: External URL must use http:// or https:// protocol only."
+msgstr "Kesalahan: URL eksternal harus menggunakan protokol http:// atau https:// saja."
 
 msgid "Error: Invalid theme selected"
 msgstr "Kesalahan: Tema tidak valid dipilih"
@@ -476,7 +476,7 @@ msgid "Error: URL must start with /"
 msgstr "Kesalahan: URL harus dimulai dengan /"
 
 msgid "Error: Redirect destination is required."
-msgstr "Error: Redirect destination is required."
+msgstr "Kesalahan: Destinasi redirect diperlukan."
 
 msgid "Error: Unable to move redirect from trash."
 msgstr "Kesalahan: Tidak dapat memindahkan redirect dari tempat sampah."

@@ -432,10 +432,10 @@ msgid "Error: External URL is too short."
 msgstr "Erreur : L'URL externe est trop courte."
 
 msgid "Error: External redirect URL failed validation."
-msgstr "Error: External redirect URL failed validation."
+msgstr "Erreur : La validation de l'URL de redirection externe a échoué."
 
 msgid "Error: External URL must use http:// or https:// protocol only."
-msgstr "Error: External URL must use http:// or https:// protocol only."
+msgstr "Erreur : L'URL externe doit utiliser uniquement le protocole http:// ou https://."
 
 msgid "Error: Invalid theme selected"
 msgstr "Erreur : Thème invalide sélectionné"
@@ -474,7 +474,7 @@ msgid "Error: URL must start with /"
 msgstr "Erreur : L'URL doit commencer par /"
 
 msgid "Error: Redirect destination is required."
-msgstr "Error: Redirect destination is required."
+msgstr "Erreur : La destination de redirection est requise."
 
 msgid "Error: Unable to move redirect from trash."
 msgstr "Erreur : impossible de restaurer la redirection de la corbeille."

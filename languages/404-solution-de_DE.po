@@ -434,10 +434,10 @@ msgid "Error: External URL is too short."
 msgstr "Fehler: Externe URL ist zu kurz."
 
 msgid "Error: External redirect URL failed validation."
-msgstr "Error: External redirect URL failed validation."
+msgstr "Fehler: Die Validierung der externen Weiterleitungs-URL ist fehlgeschlagen."
 
 msgid "Error: External URL must use http:// or https:// protocol only."
-msgstr "Error: External URL must use http:// or https:// protocol only."
+msgstr "Fehler: Externe URL muss nur das http:// oder https:// Protokoll verwenden."
 
 msgid "Error: Invalid theme selected"
 msgstr "Fehler: Ungültiges Theme ausgewählt"
@@ -476,7 +476,7 @@ msgid "Error: URL must start with /"
 msgstr "Fehler: URL muss mit / beginnen"
 
 msgid "Error: Redirect destination is required."
-msgstr "Error: Redirect destination is required."
+msgstr "Fehler: Weiterleitungsziel ist erforderlich."
 
 msgid "Error: Unable to move redirect from trash."
 msgstr "Fehler: Weiterleitung kann nicht aus dem Papierkorb wiederhergestellt werden."
@@ -1395,73 +1395,73 @@ msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution: %d Weiterleitungen in unterverzeichnisunabhängiges Format migriert."
 
 msgid "Warning:"
-msgstr "Warning:"
+msgstr "Warnung:"
 
 msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
-msgstr "This will permanently delete the plugin files. You can choose to keep or remove your data below."
+msgstr "Dies wird die Plugin-Dateien dauerhaft löschen. Sie können unten wählen, ob Sie Ihre Daten behalten oder entfernen möchten."
 
 msgid "What should happen to your data?"
-msgstr "What should happen to your data?"
+msgstr "Was soll mit Ihren Daten geschehen?"
 
 msgid "Keep my redirects (%d redirects)"
-msgstr "Keep my redirects (%d redirects)"
+msgstr "Meine Weiterleitungen behalten (%d Weiterleitungen)"
 
 msgid "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
-msgstr "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
+msgstr "Aktivieren Sie dies, wenn Sie das Plugin später neu installieren möchten. Ihre Weiterleitungskonfigurationen bleiben erhalten."
 
 msgid "Keep 404 logs"
-msgstr "Keep 404 logs"
+msgstr "404-Protokolle behalten"
 
 msgid "Historical 404 data and logs will be preserved if checked."
-msgstr "Historical 404 data and logs will be preserved if checked."
+msgstr "Historische 404-Daten und Protokolle bleiben erhalten, wenn aktiviert."
 
 msgid "Note: Cache tables will always be deleted as they can be rebuilt."
-msgstr "Note: Cache tables will always be deleted as they can be rebuilt."
+msgstr "Hinweis: Cache-Tabellen werden immer gelöscht, da sie neu erstellt werden können."
 
 msgid "Why are you uninstalling? (Optional)"
-msgstr "Why are you uninstalling? (Optional)"
+msgstr "Warum deinstallieren Sie? (Optional)"
 
 msgid "Temporary deactivation for debugging"
-msgstr "Temporary deactivation for debugging"
+msgstr "Vorübergehende Deaktivierung zum Debuggen"
 
 msgid "The plugin is not working as expected"
-msgstr "The plugin is not working as expected"
+msgstr "Das Plugin funktioniert nicht wie erwartet"
 
 msgid "I found a better plugin"
-msgstr "I found a better plugin"
+msgstr "Ich habe ein besseres Plugin gefunden"
 
 msgid "I no longer need this functionality"
-msgstr "I no longer need this functionality"
+msgstr "Ich benötige diese Funktionalität nicht mehr"
 
 msgid "Too complicated to configure"
-msgstr "Too complicated to configure"
+msgstr "Zu kompliziert zu konfigurieren"
 
 msgid "Performance issues"
-msgstr "Performance issues"
+msgstr "Leistungsprobleme"
 
 msgid "Other reason"
-msgstr "Other reason"
+msgstr "Anderer Grund"
 
 msgid "Help us improve (Optional)"
-msgstr "Help us improve (Optional)"
+msgstr "Helfen Sie uns zu verbessern (Optional)"
 
 msgid "Send feedback to help improve the plugin"
-msgstr "Send feedback to help improve the plugin"
+msgstr "Senden Sie Feedback, um das Plugin zu verbessern"
 
 msgid "Your email (optional):"
-msgstr "Your email (optional):"
+msgstr "Ihre E-Mail (optional):"
 
 msgid "your@email.com (optional)"
-msgstr "your@email.com (optional)"
+msgstr "ihre@email.de (optional)"
 
 msgid "Additional details:"
-msgstr "Additional details:"
+msgstr "Zusätzliche Details:"
 
 msgid "Please share any additional feedback..."
-msgstr "Please share any additional feedback..."
+msgstr "Bitte teilen Sie uns zusätzliches Feedback mit..."
 
 msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
-msgstr "Your feedback helps us improve. We respect your privacy and will not share your information."
+msgstr "Ihr Feedback hilft uns zu verbessern. Wir respektieren Ihre Privatsphäre und werden Ihre Informationen nicht weitergeben."
 
 msgid "Insufficient permissions"
 msgstr "Insufficient permissions"
@@ -1509,7 +1509,7 @@ msgid "Disable automatic dark mode detection"
 msgstr "Disable automatic dark mode detection"
 
 msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
-msgstr "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
+msgstr "Wenn deaktiviert und das Theme auf \"Standard\" eingestellt ist, wechselt das Plugin automatisch zu einem dunklen Theme, wenn Ihr WordPress-Admin-Farbschema dunkel ist (Midnight, Ectoplasm, Coffee), wenn Sie ein Dark-Mode-Plugin aktiviert haben oder wenn Ihr Browser/Betriebssystem den Dunkelmodus bevorzugt."
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
-msgstr "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
+msgstr "Ihr Feedback hilft uns zu verbessern. Systeminformationen (WordPress-Version, PHP-Version, installierte Plugins) werden eingeschlossen. Wir respektieren Ihre Privatsphäre und werden Ihre Informationen nicht weitergeben."
