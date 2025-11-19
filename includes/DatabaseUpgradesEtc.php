@@ -728,9 +728,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
 
     /**
-     * Migrate existing redirects and logs from absolute paths to relative paths.
+     * Migrate existing redirects from absolute paths to relative paths.
      * This is a one-time migration for upgrading from versions prior to 2.37.0.
      * Fixes Issue #24: Redirects now survive WordPress subdirectory changes.
+     *
+     * Uses a single atomic SQL UPDATE statement - no locks or transactions needed.
      *
      * @return array Migration results with counts
      */
@@ -738,32 +740,16 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         global $wpdb;
 
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        // Fix CRITICAL #1 (3rd review): Use Functions class for consistent character encoding
-        $f = ABJ_404_Solution_Functions::getInstance();
-
-        // Fix CRITICAL #2 (2nd review): Add migration lock to prevent race conditions
-        // Fix MEDIUM #2 (5th review): Extend lock timeout to 24 hours for very large datasets
-        // Sites with 100K+ redirects may need several hours for migration
-        if (get_transient('abj404_migration_in_progress')) {
-            $abj404logging->infoMessage("Migration already in progress, skipping.");
-            return array('errors' => array('Migration already in progress'));
-        }
-        // Use 30-minute lock instead of 24 hours to allow retry if migration crashes
-        // Most migrations complete in < 5 minutes, 30 min allows for crashes/timeouts
-        set_transient('abj404_migration_in_progress', '1', 1800); // 30 minute lock
 
         // Get current WordPress subdirectory
         $homeURL = get_home_url();
         $urlPath = parse_url($homeURL, PHP_URL_PATH);
 
-        // Fix Issue #1: Handle parse_url() failure
         if ($urlPath === false || $urlPath === null) {
             $urlPath = '';
         }
 
-        // Fix HIGH #2 (4th review): Decode subdirectory for consistency with runtime
         $decodedPath = rawurldecode(rtrim($urlPath, '/'));
-        // Fix HIGH #3 (4th review): Remove null bytes and control characters for security
         $subdirectory = preg_replace('/[\x00-\x1F\x7F]/', '', $decodedPath);
 
         $results = array(
@@ -775,75 +761,47 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         // Skip if WordPress is at domain root (no subdirectory)
         if (empty($subdirectory) || $subdirectory === '/') {
             $abj404logging->debugMessage("No subdirectory detected. Migration skipped.");
-            delete_transient('abj404_migration_in_progress');
             return $results;
         }
 
-        try {
-            $startTime = microtime(true);
+        $startTime = microtime(true);
+        $redirectsTable = $wpdb->prefix . 'abj404_redirects';
 
-            // Fix HIGH #1: Start transaction for atomic migration
-            $wpdb->query('START TRANSACTION');
+        $abj404logging->infoMessage("Migrating redirects table to relative paths...");
 
-            // MIGRATE REDIRECTS TABLE
-            $redirectsTable = $wpdb->prefix . 'abj404_redirects';
+        // Single SQL UPDATE - atomic at database level, no transaction needed
+        // Uses CHAR_LENGTH() for UTF-8 multibyte character safety
+        $subdirectoryWithSlash = $subdirectory . '/';
 
-            $abj404logging->infoMessage("Migrating redirects table to relative paths...");
+        $updateQuery = $wpdb->prepare(
+            "UPDATE {$redirectsTable}
+             SET url = CASE
+                 WHEN url = %s OR url = %s THEN '/'
+                 WHEN url LIKE %s THEN CONCAT('/', SUBSTRING(url, CHAR_LENGTH(%s) + 1))
+                 ELSE url
+             END
+             WHERE url = %s OR url = %s OR url LIKE %s",
+            $subdirectory,                                  // CASE: exact match /blog
+            $subdirectoryWithSlash,                         // CASE: with slash /blog/
+            $wpdb->esc_like($subdirectoryWithSlash) . '%', // CASE: with path /blog/*
+            $subdirectoryWithSlash,                         // SUBSTRING length calculation
+            $subdirectory,                                  // WHERE: exact match
+            $subdirectoryWithSlash,                         // WHERE: with slash
+            $wpdb->esc_like($subdirectoryWithSlash) . '%'  // WHERE: with path
+        );
 
-            // Fix CRITICAL #3: Query should find exact matches too (not just LIKE)
-            $redirectsQuery = $wpdb->prepare(
-                "SELECT id, url FROM {$redirectsTable}
-                 WHERE url = %s OR url = %s OR url LIKE %s",
-                $subdirectory,                              // Exact match: /blog
-                $subdirectory . '/',                        // With slash: /blog/
-                $wpdb->esc_like($subdirectory . '/') . '%' // With path: /blog/*
-            );
+        $updateResult = $wpdb->query($updateQuery);
 
-            $redirectsToMigrate = $wpdb->get_results($redirectsQuery);
-
-            // Fix Issue #7: Check for database errors
-            if ($redirectsToMigrate === null) {
-                throw new Exception("Failed to query redirects table: " . $wpdb->last_error);
-            }
-
-            foreach ($redirectsToMigrate as $redirect) {
-                // Fix CRITICAL #3: Handle exact subdirectory match specially
-                if ($redirect->url === $subdirectory || $redirect->url === $subdirectory . '/') {
-                    // Convert exact subdirectory match to root path
-                    $newURL = '/';
-                } else {
-                    // Remove subdirectory prefix
-                    // Fix CRITICAL #1 (3rd review): Use $f->substr for consistent character encoding
-                    $newURL = $f->substr($redirect->url, $f->strlen($subdirectory));
-
-                    // Skip if result is empty or just slash (shouldn't happen due to query, but defensive)
-                    if (empty($newURL) || $newURL === '/') {
-                        continue;
-                    }
-
-                    // Ensure leading slash
-                    $newURL = '/' . ltrim($newURL, '/');
-                }
-
-                // Update the record
-                $updated = $wpdb->update(
-                    $redirectsTable,
-                    array('url' => $newURL),
-                    array('id' => $redirect->id),
-                    array('%s'),
-                    array('%d')
-                );
-
-                if ($updated === false) {
-                    throw new Exception("Failed to update redirect ID {$redirect->id}: " . $wpdb->last_error);
-                }
-
-                $results['redirects_updated']++;
-            }
+        // Check for errors
+        if ($updateResult === false) {
+            $results['errors'][] = "Failed to update redirects: " . $wpdb->last_error;
+            $abj404logging->errorMessage("Migration failed: " . $wpdb->last_error);
+        } else {
+            $results['redirects_updated'] = $updateResult;
 
             $duration = microtime(true) - $startTime;
             $abj404logging->infoMessage(sprintf(
-                "Migrated %d redirects in %.2f seconds.",
+                "Migrated %d redirects in %.4f seconds.",
                 $results['redirects_updated'],
                 $duration
             ));
@@ -851,35 +809,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             // Note: Log entries are intentionally NOT migrated for performance.
             // Historical logs with absolute paths are display-only and don't affect functionality.
 
-            // Fix HIGH #1 (2nd review): Commit transaction
-            $wpdb->query('COMMIT');
-
-            // Fix HIGH #1 (6th review): Capture commit error immediately to avoid race condition
-            // $wpdb->last_error is a shared global that can be overwritten by any query
-            // If WordPress hook fires between COMMIT and check, error could be lost
-            $commitError = $wpdb->last_error;
-
-            // Fix CRITICAL #2 (5th review): Set options AFTER commit for atomicity
-            // update_option() is NOT transactional - it commits immediately to wp_options
-            // Setting the flag before COMMIT could mark migration complete even if COMMIT fails
-            // This would cause permanent data corruption (flag says done, but data not migrated)
-            if (empty($results['errors']) && $commitError === '') {
-                update_option('abj404_migrated_to_relative_paths', '1');
-                update_option('abj404_migration_results', $results);
-                $abj404logging->infoMessage("Migration to relative paths completed successfully.");
-            } else {
-                $errorMsg = $commitError !== '' ? " Commit error: " . $commitError : '';
-                $abj404logging->errorMessage("Migration completed with errors. Will retry on next run. Errors: " . implode('; ', $results['errors']) . $errorMsg);
-            }
-
-        } catch (Exception $e) {
-            // Fix HIGH #1: Rollback transaction on error
-            $wpdb->query('ROLLBACK');
-            $results['errors'][] = $e->getMessage();
-            $abj404logging->errorMessage("Migration failed and rolled back: " . $e->getMessage());
-        } finally {
-            // Fix CRITICAL #2: Always release the lock
-            delete_transient('abj404_migration_in_progress');
+            // Mark migration as complete
+            update_option('abj404_migrated_to_relative_paths', '1');
+            update_option('abj404_migration_results', $results);
+            $abj404logging->infoMessage("Migration to relative paths completed successfully.");
         }
 
         return $results;
