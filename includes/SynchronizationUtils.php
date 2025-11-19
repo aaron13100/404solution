@@ -235,11 +235,12 @@ class ABJ_404_Solution_SynchronizationUtils {
     	if ($this->isFileMode()) {
     		$fileSync = ABJ_404_Solution_FileSync::getInstance();
     		$owner = $fileSync->getOwnerFromFile($key);
-    		
+
     	} else {
-    		$owner = get_option($key);
+    		// MULTISITE: Use network-aware option for N-gram locks
+    		$owner = $this->getNetworkAwareOption($key);
     	}
-    	
+
     	return $owner;
     }
     function writeOwner($key, $owner) {
@@ -247,7 +248,8 @@ class ABJ_404_Solution_SynchronizationUtils {
     		$fileSync = ABJ_404_Solution_FileSync::getInstance();
     		$fileSync->writeOwnerToFile($key, $owner);
     	} else {
-    		update_option($key, $owner);
+    		// MULTISITE: Use network-aware option for N-gram locks
+    		$this->updateNetworkAwareOption($key, $owner);
     	}
     }
     function deleteOwner($owner, $key) {
@@ -255,8 +257,86 @@ class ABJ_404_Solution_SynchronizationUtils {
     		$fileSync = ABJ_404_Solution_FileSync::getInstance();
     		$fileSync->releaseLock($owner, $key);
     	} else {
-    		delete_option($key);
+    		// MULTISITE: Use network-aware option for N-gram locks
+    		$this->deleteNetworkAwareOption($key);
     	}
+    }
+
+    /**
+     * Check if the plugin is network-activated in a multisite environment.
+     *
+     * @return bool True if network-activated, false otherwise
+     */
+    private function isNetworkActivated() {
+        if (!is_multisite()) {
+            return false;
+        }
+
+        if (!function_exists('is_plugin_active_for_network')) {
+            require_once ABSPATH . '/wp-admin/includes/plugin.php';
+        }
+
+        return is_plugin_active_for_network(plugin_basename(ABJ404_FILE));
+    }
+
+    /**
+     * Determine if this lock key should use network-wide storage.
+     *
+     * N-gram rebuild locks (ngram_rebuild, ngram_schedule) must be network-wide
+     * to coordinate across all sites. Other locks remain site-specific.
+     *
+     * @param string $key The lock key
+     * @return bool True if should use network-wide storage
+     */
+    private function shouldUseNetworkStorage($key) {
+        // Extract the user-provided key from the internal key format
+        $userKey = str_replace(ABJ404_PP . "_" . self::SYNC_KEY_PREFIX, '', $key);
+
+        // N-gram locks must be network-wide when network-activated
+        $networkWideLocks = ['ngram_rebuild', 'ngram_schedule'];
+
+        return $this->isNetworkActivated() && in_array($userKey, $networkWideLocks);
+    }
+
+    /**
+     * Get an option value, using network-wide storage for N-gram locks.
+     *
+     * @param string $key The option key
+     * @param mixed $default Default value if option doesn't exist
+     * @return mixed The option value
+     */
+    private function getNetworkAwareOption($key, $default = false) {
+        if ($this->shouldUseNetworkStorage($key)) {
+            return get_site_option($key, $default);
+        }
+        return get_option($key, $default);
+    }
+
+    /**
+     * Update an option value, using network-wide storage for N-gram locks.
+     *
+     * @param string $key The option key
+     * @param mixed $value The value to store
+     * @return bool True if updated successfully
+     */
+    private function updateNetworkAwareOption($key, $value) {
+        if ($this->shouldUseNetworkStorage($key)) {
+            return update_site_option($key, $value);
+        }
+        return update_option($key, $value);
+    }
+
+    /**
+     * Delete an option, using network-wide storage for N-gram locks.
+     *
+     * @param string $key The option key
+     * @return bool True if deleted successfully
+     */
+    private function deleteNetworkAwareOption($key) {
+        if ($this->shouldUseNetworkStorage($key)) {
+            return delete_site_option($key);
+        }
+        return delete_option($key);
     }
 
     /** 

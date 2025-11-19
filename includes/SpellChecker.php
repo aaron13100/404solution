@@ -305,17 +305,29 @@ class ABJ_404_Solution_SpellChecker {
 			}
 		}
 
-		// Schedule background N-gram cache rebuild for new pages
-		// This ensures new content is immediately available for spell checking
-		if (!$update && $saveOrDelete == 'save') {
+		// Update N-gram cache for single post (incremental update for performance)
+		// Use incremental update API to avoid rebuilding entire cache on every post save
+		if ($saveOrDelete == 'save' && in_array($post->post_status, array('publish', 'published'))) {
 			try {
-				$dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-				$dbUpgrades->scheduleNGramCacheRebuild();
-				$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
-					": Scheduled N-gram cache rebuild for new page. ID: " . $post_id);
+				// Ensure permalink cache is updated first (for new posts)
+				// This is lightweight and idempotent, so safe to call even if already updated
+				$this->permalinkCache->updatePermalinkCache(0.1);
+
+				// Only update N-grams for this specific post (incremental)
+				$stats = $this->ngramFilter->updateNGramsForPages(array($post_id));
+
+				if ($stats['success'] > 0) {
+					$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
+						": Incrementally updated N-grams for post ID: " . $post_id .
+						" (processed: {$stats['processed']}, success: {$stats['success']}, failed: {$stats['failed']})");
+				} else if ($stats['failed'] > 0) {
+					$this->logger->errorMessage(__CLASS__ . "/" . __FUNCTION__ .
+						": Failed to update N-grams for post ID: " . $post_id .
+						" (stats: " . json_encode($stats) . ")");
+				}
 			} catch (Exception $e) {
 				$this->logger->errorMessage(__CLASS__ . "/" . __FUNCTION__ .
-					": Exception while scheduling N-gram cache rebuild for post ID " . $post_id .
+					": Exception while updating N-grams for post ID " . $post_id .
 					": " . $e->getMessage());
 			}
 		}

@@ -260,15 +260,40 @@ class ABJ_404_Solution_UninstallModal {
             'feedback_details' => isset($_POST['feedback_details']) ? sanitize_textarea_field($_POST['feedback_details']) : ''
         );
 
-        // Save as transient (expires in 1 hour)
-        // Using transient because plugin files will be deleted soon
-        $saved = set_transient('abj404_uninstall_preferences', $preferences, HOUR_IN_SECONDS);
+        // Save preferences using site options for multisite compatibility
+        // In multisite, use site_option for network-activated plugins, regular option for single-site
+        $option_name = 'abj404_uninstall_preferences';
 
-        if ($saved) {
+        if (is_multisite() && self::isNetworkActivated()) {
+            // Network-activated: Use site option (accessible across all sites)
+            $saved = update_site_option($option_name, $preferences);
+        } else {
+            // Single-site or site-specific activation: Use regular option
+            $saved = update_option($option_name, $preferences, false); // autoload=false
+        }
+
+        if ($saved !== false) {
             wp_send_json_success(array('message' => __('Preferences saved successfully', '404-solution')));
         } else {
             wp_send_json_error(array('message' => __('Failed to save preferences', '404-solution')));
         }
+    }
+
+    /**
+     * Check if plugin is network-activated
+     *
+     * @return bool True if network-activated, false otherwise
+     */
+    private static function isNetworkActivated() {
+        if (!is_multisite()) {
+            return false;
+        }
+
+        if (!function_exists('is_plugin_active_for_network')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        return is_plugin_active_for_network(plugin_basename(ABJ404_FILE));
     }
 
     /**

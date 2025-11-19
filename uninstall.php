@@ -23,8 +23,31 @@ if (!current_user_can('activate_plugins')) {
 // Load the Uninstaller class
 require_once __DIR__ . '/includes/Uninstaller.php';
 
-// Get saved preferences from the uninstall modal (stored as transient)
-$preferences = get_transient('abj404_uninstall_preferences');
+// Get saved preferences from the uninstall modal
+// Use site option for network-activated plugins, regular option for single-site
+$option_name = 'abj404_uninstall_preferences';
+$preferences = false;
+
+if (is_multisite()) {
+    // Check if the plugin is network-activated
+    if (!function_exists('is_plugin_active_for_network')) {
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
+
+    $plugin_file = '404-solution/404-solution.php';
+    $is_network_active = is_plugin_active_for_network($plugin_file);
+
+    if ($is_network_active) {
+        // Network-activated: Get from site options
+        $preferences = get_site_option($option_name);
+    } else {
+        // Site-specific activation: Get from regular options
+        $preferences = get_option($option_name);
+    }
+} else {
+    // Single-site: Get from regular options
+    $preferences = get_option($option_name);
+}
 
 // If no preferences were saved, use safe defaults
 // This happens if user deleted plugin without using the modal
@@ -40,8 +63,12 @@ if (false === $preferences || !is_array($preferences)) {
     );
 }
 
-// Delete the transient (cleanup)
-delete_transient('abj404_uninstall_preferences');
+// Delete the preferences (cleanup)
+if (is_multisite() && isset($is_network_active) && $is_network_active) {
+    delete_site_option($option_name);
+} else {
+    delete_option($option_name);
+}
 
 // Handle both single-site and multisite installations
 if (is_multisite()) {

@@ -940,14 +940,69 @@ class ABJ_404_Solution_PluginLogic {
             switch_to_blog($blog_id);
 
             global $wpdb;
-            // Remove custom database tables
+
+            // Remove ALL custom database tables
+            // Core tables
             $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_redirects");
             $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_logsv2");
-            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_permalink_cache");
+            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_lookup");
 
-            // Remove options
-            delete_option('abj404_settings');
-            delete_option('abj404_db_version');
+            // Cache tables
+            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_permalink_cache");
+            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_ngram_cache");
+            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_spelling_cache");
+
+            // Temporary tables
+            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_logs_hits_temp");
+
+            // Remove ALL plugin options
+            $plugin_options = array(
+                'abj404_settings',
+                'abj404_db_version',
+                'abj404_migrated_to_relative_paths',
+                'abj404_migration_results',
+                'abj404_ngram_cache_initialized',
+                'abj404_ngram_rebuild_offset',
+                'abj404_ngram_usage_stats',
+                'abj404_installed_time',
+                'abj404_user_feedback',
+                'abj404_uninstall_preferences'
+            );
+
+            foreach ($plugin_options as $option) {
+                delete_option($option);
+            }
+
+            // Delete dynamic sync options (using LIKE pattern)
+            $wpdb->query(
+                $wpdb->prepare(
+                    "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+                    $wpdb->esc_like('abj404_sync_') . '%'
+                )
+            );
+
+            // Clear ALL scheduled cron jobs for this blog
+            $cron_hooks = array(
+                'abj404_cleanupCronAction',
+                'abj404_updateLogsHitsTableAction',
+                'abj404_updatePermalinkCacheAction',
+                'abj404_rebuild_ngram_cache_hook'
+            );
+
+            foreach ($cron_hooks as $hook) {
+                wp_clear_scheduled_hook($hook);
+            }
+
+            // Also clear legacy cron hooks
+            $legacy_hooks = array(
+                'abj404_duplicateCronAction',
+                'abj404_updatePermalinkCache',
+                'abj404_cleanupCron'
+            );
+
+            foreach ($legacy_hooks as $hook) {
+                wp_clear_scheduled_hook($hook);
+            }
 
             restore_current_blog();
         }

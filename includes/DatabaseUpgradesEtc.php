@@ -111,7 +111,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$this->permalinkCache->updatePermalinkCache(1);
 
     	// One-time N-gram cache initialization (async via WP-Cron to prevent blocking)
-    	if (get_option('abj404_ngram_cache_initialized') !== '1') {
+    	// MULTISITE: Use network-aware option getter to check initialization status
+    	if ($this->getNetworkAwareOption('abj404_ngram_cache_initialized') !== '1') {
     		$this->logger->debugMessage("N-gram cache not initialized. Scheduling background build...");
 
     		// Schedule async rebuild via WP-Cron instead of blocking activation
@@ -119,8 +120,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
     		// Show admin notice that build is scheduled
     		if ($updatingToNewVersion && function_exists('add_settings_error')) {
+    			$context = is_multisite() && $this->isNetworkActivated() ? ' across all sites in the network' : '';
     			$message = sprintf(
-    				__('404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites.', '404-solution')
+    				__('404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites.', '404-solution'),
+    				$context
     			);
     			add_settings_error('abj404_settings', 'ngram_cache_scheduled', $message, 'updated');
     		}
@@ -954,42 +957,65 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * This schedules background processing of N-gram cache to prevent blocking
      * plugin activation on large sites. The rebuild happens in small batches.
      *
+     * MULTISITE COORDINATION:
+     * - Uses network-wide state (site_option) to prevent race conditions
+     * - Only the main site (blog_id 1) schedules the rebuild
+     * - All sites share the same rebuild state via network options
+     * - Distributed locking prevents concurrent execution
+     *
      * @return bool True if scheduled successfully
      */
     function scheduleNGramCacheRebuild() {
         global $wpdb;
 
-        // Check if rebuild is already in progress by examining persistent offset
-        $currentOffset = get_option('abj404_ngram_rebuild_offset', 0);
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-        $totalPages = $wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
+        // MULTISITE: Acquire network-wide lock to prevent race conditions during scheduling
+        $lockKey = 'ngram_schedule';
+        $uniqueID = $this->syncUtils->synchronizerAcquireLockTry($lockKey);
 
-        // If offset is between 0 and total (exclusive), rebuild is in progress
-        if ($currentOffset > 0 && $currentOffset < $totalPages) {
-            $this->logger->debugMessage("N-gram cache rebuild already in progress at offset {$currentOffset} of {$totalPages}");
+        if (empty($uniqueID)) {
+            $this->logger->debugMessage("N-gram rebuild scheduling: Another process holds the lock. Skipping.");
+            return true; // Another site is already handling scheduling
+        }
+
+        try {
+            // MULTISITE: Use network-aware option getter
+            $currentOffset = $this->getNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
+
+            // MULTISITE: Count pages across all sites if network-activated
+            $totalPages = $this->countTotalPagesForNGramRebuild();
+
+            // If offset is between 0 and total (exclusive), rebuild is in progress
+            if ($currentOffset > 0 && $currentOffset < $totalPages) {
+                $this->logger->debugMessage("N-gram cache rebuild already in progress at offset {$currentOffset} of {$totalPages}");
+                return true;
+            }
+
+            // Check if already scheduled
+            $nextScheduled = wp_next_scheduled('abj404_rebuild_ngram_cache_hook');
+            if ($nextScheduled) {
+                $this->logger->debugMessage("N-gram cache rebuild already scheduled for " . date('Y-m-d H:i:s', $nextScheduled));
+                return true;
+            }
+
+            // MULTISITE: Reset offset using network-aware setter
+            $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
+
+            // Schedule to run in 30 seconds (gives time for activation to complete)
+            $scheduled = wp_schedule_single_event(time() + 30, 'abj404_rebuild_ngram_cache_hook');
+
+            if ($scheduled === false) {
+                $this->logger->errorMessage("Failed to schedule N-gram cache rebuild.");
+                return false;
+            }
+
+            $context = is_multisite() ? ' (network-wide)' : '';
+            $this->logger->infoMessage("N-gram cache rebuild scheduled to start in 30 seconds{$context}.");
             return true;
+
+        } finally {
+            // Always release the lock
+            $this->syncUtils->synchronizerReleaseLock($uniqueID, $lockKey);
         }
-
-        // Check if already scheduled
-        $nextScheduled = wp_next_scheduled('abj404_rebuild_ngram_cache_hook');
-        if ($nextScheduled) {
-            $this->logger->debugMessage("N-gram cache rebuild already scheduled for " . date('Y-m-d H:i:s', $nextScheduled));
-            return true;
-        }
-
-        // Reset offset to 0 and schedule new rebuild
-        update_option('abj404_ngram_rebuild_offset', 0);
-
-        // Schedule to run in 30 seconds (gives time for activation to complete)
-        $scheduled = wp_schedule_single_event(time() + 30, 'abj404_rebuild_ngram_cache_hook');
-
-        if ($scheduled === false) {
-            $this->logger->errorMessage("Failed to schedule N-gram cache rebuild.");
-            return false;
-        }
-
-        $this->logger->infoMessage("N-gram cache rebuild scheduled to start in 30 seconds.");
-        return true;
     }
 
     /**
@@ -1003,12 +1029,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * 5. Process batch only if lock belongs to this process
      * 6. Release lock in finally block
      *
-     * Persistent State:
-     * - wp_option 'abj404_ngram_rebuild_offset' tracks current progress
+     * Persistent State (MULTISITE-AWARE):
+     * - Network option 'abj404_ngram_rebuild_offset' tracks current progress
      * - Allows resume after cron chain breaks
      * - Lock scope: per-batch (not spanning entire rebuild)
+     * - Uses network-wide state in multisite to prevent race conditions
      *
-     * @param int $offset Current batch offset (default: 0, overridden by wp_options)
+     * MULTISITE BEHAVIOR:
+     * - Any site can execute the cron, but state is coordinated network-wide
+     * - Offset tracking uses network options (site_option) when network-activated
+     * - Prevents multiple sites from rebuilding simultaneously or duplicating work
+     * - Processes pages from all sites in the network
+     *
+     * @param int $offset Current batch offset (default: 0, overridden by network options)
      * @return void
      */
     function rebuildNGramCacheAsync($offset = 0) {
@@ -1022,26 +1055,28 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         }
 
         try {
-            // Resume from persistent offset (ignore parameter, use stored value)
-            $offset = get_option('abj404_ngram_rebuild_offset', 0);
+            // MULTISITE: Resume from persistent offset using network-aware getter
+            $offset = $this->getNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
 
             $batchSize = 50; // Smaller batches for async processing
             $maxBatchesPerRun = 20; // Process up to 1000 pages per cron run
 
-            $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
-            $totalPages = $wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
+            // MULTISITE: Count pages across all sites if network-activated
+            $totalPages = $this->countTotalPagesForNGramRebuild();
 
             if ($totalPages == 0) {
                 $this->logger->debugMessage("No pages to process. Setting initialized flag.");
-                update_option('abj404_ngram_cache_initialized', '1');
-                update_option('abj404_ngram_rebuild_offset', 0);
+                $this->updateNetworkAwareOption('abj404_ngram_cache_initialized', '1');
+                $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
                 return;
             }
 
+            $context = is_multisite() ? ' (network-wide)' : '';
             $this->logger->infoMessage(sprintf(
-                "Async N-gram rebuild: Processing batch at offset %d of %d total pages",
+                "Async N-gram rebuild: Processing batch at offset %d of %d total pages%s",
                 $offset,
-                $totalPages
+                $totalPages,
+                $context
             ));
 
             // Process batches
@@ -1050,6 +1085,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
             while ($batchesProcessed < $maxBatchesPerRun && $offset < $totalPages) {
                 try {
+                    // MULTISITE: rebuildCache handles multisite internally
                     $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
 
                     $totalStats['processed'] += $stats['processed'];
@@ -1059,8 +1095,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     $offset += $batchSize;
                     $batchesProcessed++;
 
-                    // Update persistent offset after each batch
-                    update_option('abj404_ngram_rebuild_offset', $offset);
+                    // MULTISITE: Update persistent offset using network-aware setter
+                    $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', $offset);
 
                     // Stop if we processed fewer pages than expected (end of data)
                     if ($stats['processed'] < $batchSize) {
@@ -1073,20 +1109,21 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     $offset += $batchSize;
                     $batchesProcessed++;
 
-                    // Update persistent offset even on error
-                    update_option('abj404_ngram_rebuild_offset', $offset);
+                    // MULTISITE: Update persistent offset even on error
+                    $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', $offset);
                 }
             }
 
             $progress = $totalPages > 0 ? round(($offset / $totalPages) * 100, 1) : 100;
 
             $this->logger->infoMessage(sprintf(
-                "Async N-gram rebuild progress: %d%% complete (%d/%d pages), %d success, %d failed",
+                "Async N-gram rebuild progress: %d%% complete (%d/%d pages), %d success, %d failed%s",
                 $progress,
                 $offset,
                 $totalPages,
                 $totalStats['success'],
-                $totalStats['failed']
+                $totalStats['failed'],
+                $context
             ));
 
             // If more work remains, reschedule
@@ -1098,10 +1135,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     $this->logger->debugMessage("Rescheduled next batch at offset {$offset}");
                 }
             } else {
-                // All done! Set the initialization flag and reset offset
-                update_option('abj404_ngram_cache_initialized', '1');
-                update_option('abj404_ngram_rebuild_offset', 0);
-                $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$totalStats['processed']} processed, {$totalStats['success']} success, {$totalStats['failed']} failed.");
+                // MULTISITE: All done! Set the initialization flag and reset offset using network-aware setters
+                $this->updateNetworkAwareOption('abj404_ngram_cache_initialized', '1');
+                $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
+                $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$totalStats['processed']} processed, {$totalStats['success']} success, {$totalStats['failed']} failed{$context}.");
             }
 
         } finally {
@@ -1691,5 +1728,100 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $this->logger->infoMessage("Comprehensive N-gram build complete: {$totalStats['total_processed']} total processed, {$totalStats['total_success']} success, {$totalStats['total_failed']} failed.");
 
         return $totalStats;
+    }
+
+    /**
+     * Check if the plugin is network-activated in a multisite environment.
+     *
+     * @return bool True if network-activated, false otherwise
+     */
+    private function isNetworkActivated() {
+        if (!is_multisite()) {
+            return false;
+        }
+
+        if (!function_exists('is_plugin_active_for_network')) {
+            require_once ABSPATH . '/wp-admin/includes/plugin.php';
+        }
+
+        return is_plugin_active_for_network(plugin_basename(ABJ404_FILE));
+    }
+
+    /**
+     * Get an option value, using network-wide storage in multisite when network-activated.
+     *
+     * MULTISITE BEHAVIOR:
+     * - Network-activated: Uses get_site_option() for network-wide state
+     * - Single-site or per-site activation: Uses get_option() for site-specific state
+     *
+     * This ensures that N-gram rebuild state is shared across all sites in network-activated
+     * scenarios, preventing race conditions and duplicate work.
+     *
+     * @param string $option_name The option name
+     * @param mixed $default Default value if option doesn't exist
+     * @return mixed The option value
+     */
+    private function getNetworkAwareOption($option_name, $default = false) {
+        if ($this->isNetworkActivated()) {
+            return get_site_option($option_name, $default);
+        }
+        return get_option($option_name, $default);
+    }
+
+    /**
+     * Update an option value, using network-wide storage in multisite when network-activated.
+     *
+     * MULTISITE BEHAVIOR:
+     * - Network-activated: Uses update_site_option() for network-wide state
+     * - Single-site or per-site activation: Uses update_option() for site-specific state
+     *
+     * This ensures that N-gram rebuild state is shared across all sites in network-activated
+     * scenarios, preventing race conditions and duplicate work.
+     *
+     * @param string $option_name The option name
+     * @param mixed $value The value to store
+     * @return bool True if updated successfully
+     */
+    private function updateNetworkAwareOption($option_name, $value) {
+        if ($this->isNetworkActivated()) {
+            return update_site_option($option_name, $value);
+        }
+        return update_option($option_name, $value);
+    }
+
+    /**
+     * Count total pages for N-gram rebuild across all sites if network-activated.
+     *
+     * MULTISITE BEHAVIOR:
+     * - Network-activated: Counts permalink cache entries across ALL sites in the network
+     * - Single-site: Counts only current site's permalink cache entries
+     *
+     * This allows the rebuild process to accurately track progress when processing
+     * pages from multiple sites.
+     *
+     * @return int Total number of pages to process
+     */
+    private function countTotalPagesForNGramRebuild() {
+        global $wpdb;
+
+        if (!$this->isNetworkActivated()) {
+            // Single site: count only current site's pages
+            $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+            return (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
+        }
+
+        // Multisite network-activated: count pages across all sites
+        $sites = get_sites(array('fields' => 'ids', 'number' => 0));
+        $totalPages = 0;
+
+        foreach ($sites as $blog_id) {
+            switch_to_blog($blog_id);
+            $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+            $sitePages = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
+            $totalPages += $sitePages;
+            restore_current_blog();
+        }
+
+        return $totalPages;
     }
 }

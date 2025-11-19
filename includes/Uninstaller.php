@@ -58,14 +58,11 @@ class ABJ_404_Solution_Uninstaller {
         // Get all blog IDs in the network
         $blog_ids = $wpdb->get_col("SELECT blog_id FROM $wpdb->blogs");
 
-        $original_blog_id = get_current_blog_id();
-
         foreach ($blog_ids as $blog_id) {
             switch_to_blog($blog_id);
             self::uninstall($preferences);
+            restore_current_blog();
         }
-
-        switch_to_blog($original_blog_id);
     }
 
     /**
@@ -126,13 +123,13 @@ class ABJ_404_Solution_Uninstaller {
             'abj404_migration_results',
             'abj404_ngram_cache_initialized',
             'abj404_ngram_rebuild_offset',
-            'abj404_uninstall_preferences' // Clean up the transient too
+            'abj404_uninstall_preferences' // Clean up the preferences option
         );
 
         // Delete each option
         foreach ($options as $option) {
             delete_option($option);
-            delete_site_option($option); // For multisite
+            delete_site_option($option); // For multisite (network options)
         }
 
         // Delete dynamic sync options (using LIKE pattern)
