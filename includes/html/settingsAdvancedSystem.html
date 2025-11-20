@@ -1,0 +1,59 @@
+<p>{DB version}: {DATABASE_VERSION}, PHP: {PHP_VERSION}, WordPress: {WP_VERSION}, MySQL: {MYSQL_VERSION},
+WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
+
+<!-- .............................. -->
+
+<p><label for="auto_score">{Minimum match score}:</label> <input type="text" name="auto_score" id="auto_score" value="{OPTION_MIN_AUTO_SCORE}" style="width: 50px;"><BR/>
+&nbsp;&nbsp;&nbsp;{Only create an automatic redirect if the suggested page has a score above the specified number (default 90)}
+</p>
+<!-- .............................. -->
+
+<p><label for="template_redirect_priority">{Template Redirect Priority}:</label> <input type="text" name="template_redirect_priority" id="template_redirect_priority" value="{OPTION_TEMPLATE_REDIRECT_PRIORITY}" style="width: 50px;"><BR/>
+&nbsp;&nbsp;&nbsp;{This sets how early in the process a 404 is handled by this plugin. If there are multiple plugins that should handle a 404, then set this higher (999) so that this plugin gets the 404 last. (default 9)}
+</p>
+<!-- .............................. -->
+
+<style>
+    .closeLI {
+        margin-bottom: initial;
+    }
+</style>
+<table border=1>
+    <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
+    <tr><td valign="top">
+            <label for="plugin_admin_users">{Plugin Admin Users}
+                <BR/><BR/>
+
+            {User names listed here will be able to do everything an admin can do with the plugin.}
+            {Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin.}
+
+            <BR/><BR/>
+            {List one user name per line.}
+            </label>
+
+    </td><td>
+        <textarea rows="6" cols="60" name="plugin_admin_users" id="plugin_admin_users" >{plugin_admin_users}</textarea>
+
+    </td></tr>
+
+</table>
+
+<!-- .............................. -->
+<p>
+    <label for="days_wait_before_major_update">{Major version auto update delay}: </label>
+    <input type="text" name="days_wait_before_major_update" id="days_wait_before_major_update" value="{days_wait_before_major_update}" style="width: 50px;">
+        {days (0 means immediately, default 30)}
+    <BR/>
+    &nbsp;&nbsp;&nbsp;{New major version => wait this many days. New minor version => automatically update about 3 days after the release date. }
+</p>
+
+<!-- .............................. -->
+<p class="hide-when-{disallow-redirect-all-requests}">
+   <label for="redirect_all_requests">{Redirect all requests}:</label>
+   <input type="checkbox" name="redirect_all_requests" id="redirect_all_requests" value="1" checked="redirect_all_requests" />
+   <br/>&nbsp;&nbsp;&nbsp;
+   {This will break your website.}
+   {When selected, ALL REQUESTS (even for pages that exist, even for non-404s) will be treated like a 404.}
+   {This is for a domain name change.}
+   {All other redirects must be deleted and only one regex redirect for all URLs must be created for this to work.}
+</p>

@@ -199,6 +199,15 @@ msgstr "Avanzado"
 
 
 msgid "Advanced Settings (Etc)"
+
+msgid "Content & URL Filtering"
+msgstr "Filtrado de Contenido y URL"
+
+msgid "Logging & Privacy"
+msgstr "Registro y Privacidad"
+
+msgid "Advanced Configuration"
+msgstr "Configuración Avanzada"
 msgstr "Configuración avanzada (Etc)"
 
 msgid "All"

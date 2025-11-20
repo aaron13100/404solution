@@ -1,0 +1,66 @@
+<!-- .............................. -->
+<p>
+   <label for="log_raw_ips">{Log raw IPs}:</label>
+   <input type="checkbox" name="log_raw_ips" id="log_raw_ips" value="1" checked="log_raw_ips" />
+<BR/>
+&nbsp;&nbsp;&nbsp;{Logging raw IP addresses may not meet the EU General Data Protection Regulation (GDPR) guidelines.}</p>
+
+<!-- .............................. -->
+
+<style>
+    .closeLI {
+        margin-bottom: initial;
+    }
+</style>
+<table border=1>
+    <tr><td valign="top">
+            <label for="ignore_dontprocess">{Internal Process User Agents - Do Not Log}
+            <ul>
+                <li class="closeLI">{* Do not redirect 404s from the user agents listed here.}</li>
+                <li class="closeLI">{* Do not capture 404 URLs.}</li>
+                <li class="closeLI">{* Strings are case insensitive.}</li>
+                <li class="closeLI">{* One string per line.}</li>
+                <li class="closeLI">{* If the string appears anywhere within the user agent string then it's a match.}</li>
+            </ul>
+                {This is best for internal processes that don't need to be redirected when the slug structure changes. }
+                {Search engine user agents should not go here so that they will be redirected when the slug structure changes. }
+            </label>
+    </td><td>
+        <textarea rows="6" cols="60" name="ignore_dontprocess" id="ignore_dontprocess" >{ignore_dontprocess}</textarea>
+
+    </td></tr>
+
+    <tr><td valign="top">
+            <label for="ignore_doprocess">{External User Agents - Do Not Log}
+            <ul>
+                <li class="closeLI">{* 404s are still redirected when possible.}</li>
+                <li class="closeLI">{* Do not capture 404 URLs.}</li>
+                <li class="closeLI">{* Strings are case insensitive.}</li>
+                <li class="closeLI">{* One string per line.}</li>
+                <li class="closeLI">{* If the string appears anywhere within the user agent string then it's a match.}</li>
+            </ul>
+            {This is best for search engine bots that do need to be redirected when the slug structure changes. }
+            {Use one line per user agent. If the text is found anywhere in the user agent string then it applies. }
+            </label>
+
+    </td><td>
+        <textarea rows="6" cols="60" name="ignore_doprocess" id="ignore_doprocess" >{ignore_doprocess}</textarea>
+
+    </td></tr>
+
+</table>
+
+<!-- .............................. -->
+<p>
+   <label for="debug_mode">{Debug logging}:</label>
+   <input type="checkbox" name="debug_mode" id="debug_mode" value="1" checked="debug_mode" />
+   <br/>&nbsp;&nbsp;&nbsp;
+
+   {<a>View</a> the debug file.}
+
+   <input type="button" name="deleteDebugFile" id="deleteDebugFile"
+   	value="{Delete the Debug File}"
+   	style="-webkit-appearance: none; -moz-appearance: none; appearance: none;" >
+   {Debug file size: %s KB.}
+
+</p>

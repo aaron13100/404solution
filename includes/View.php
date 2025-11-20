@@ -808,8 +808,14 @@ class ABJ_404_Solution_View {
         $contentGeneralSettings = $abj404view->getAdminOptionsPageGeneralSettings($options);
         $abj404view->echoOptionsSection("abj404-generaloptions", "abj404-generaloptions", __('General Settings', '404-solution'), $contentGeneralSettings, true);
 
-        $contentAdvancedSettings = $abj404view->getAdminOptionsPageAdvancedSettings($options);
-        $abj404view->echoOptionsSection("abj404-advancedoptions", "abj404-advancedoptions", __('Advanced Settings (Etc)', '404-solution'), $contentAdvancedSettings, true);
+        $contentAdvancedContent = $abj404view->getAdminOptionsPageAdvancedContent($options);
+        $abj404view->echoOptionsSection("abj404-advanced-content", "abj404-advanced-content", __('Content & URL Filtering', '404-solution'), $contentAdvancedContent, true);
+
+        $contentAdvancedLogging = $abj404view->getAdminOptionsPageAdvancedLogging($options);
+        $abj404view->echoOptionsSection("abj404-advanced-logging", "abj404-advanced-logging", __('Logging & Privacy', '404-solution'), $contentAdvancedLogging, true);
+
+        $contentAdvancedSystem = $abj404view->getAdminOptionsPageAdvancedSystem($options);
+        $abj404view->echoOptionsSection("abj404-advanced-system", "abj404-advanced-system", __('Advanced Configuration', '404-solution'), $contentAdvancedSystem, true);
 
         // Only render suggestions section if the suggestions view is available
         if ($abj404viewSuggestions !== null && method_exists($abj404viewSuggestions, 'getAdminOptionsPage404Suggestions')) {
@@ -1891,7 +1897,134 @@ class ABJ_404_Solution_View {
         return $html;
     }
 
-    /** 
+    /**
+     * Get the HTML content for the Content & URL Filtering section
+     * @param array $options
+     * @return string
+     */
+    function getAdminOptionsPageAdvancedContent($options) {
+        $allPostTypesTemp = $this->dao->getAllPostTypes();
+        // Ensure we have an array before imploding
+        $allPostTypes = is_array($allPostTypesTemp) ? esc_html(implode(', ', $allPostTypesTemp)) : '';
+
+        // Read the html content
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvancedContent.html");
+
+        $html = $this->f->str_replace('{recognized_post_types}',
+            str_replace('\\n', "\n", wp_kses_post($options['recognized_post_types'])), $html);
+        $html = $this->f->str_replace('{all_post_types}', $allPostTypes, $html);
+
+        $html = $this->f->str_replace('{recognized_categories}',
+            str_replace('\\n', "\n", wp_kses_post($options['recognized_categories'])), $html);
+        $html = $this->f->str_replace('{folders_files_ignore}',
+            str_replace('\\n', "\n", wp_kses_post($options['folders_files_ignore'])), $html);
+        $html = $this->f->str_replace('{suggest_regex_exclusions}',
+            str_replace('\\n', "\n", esc_textarea($options['suggest_regex_exclusions'])), $html);
+
+        $html = $this->f->str_replace('{add-exclude-page-data-url}',
+            "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false&includeSpecial=false&nonce=" . wp_create_nonce('abj404_ajax'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
+            __('(Type a page name)', '404-solution'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
+            __('(A page has been selected.)', '404-solution'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+            __('(A custom string has been entered.)', '404-solution'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
+            __('(An external URL will be used.)', '404-solution'), $html);
+        $html = $this->f->str_replace('{loaded-excluded-pages}',
+            urlencode($options['excludePages[]']), $html);
+
+        // Constants and translations
+        $html = $this->f->doNormalReplacements($html);
+
+        return $html;
+    }
+
+    /**
+     * Get the HTML content for the Logging & Privacy section
+     * @param array $options
+     * @return string
+     */
+    function getAdminOptionsPageAdvancedLogging($options) {
+        $selectedLogRawIPs = $this->getCheckedAttr($options, 'log_raw_ips');
+        $selectedDebugLogging = $this->getCheckedAttr($options, 'debug_mode');
+
+        $debugExplanation = '';
+        if ($this->logger->debugFileExists()) {
+            $debugExplanation = '<a href="' . esc_url(admin_url('admin.php?page=' . ABJ404_PP .
+                '&subpage=abj404_debugfile')) . '" target="_blank">' . __('View', '404-solution') . '</a> ' .
+                __('the debug file.', '404-solution');
+        } else {
+            $debugExplanation = __('(The debug file does not exist yet.)', '404-solution');
+        }
+
+        $kbFileSize = $this->logger->getDebugFileSize() / 1024;
+        $kbFileSizePretty = number_format($kbFileSize, 2, ".", ",");
+        $mbFileSize = $this->logger->getDebugFileSize() / 1024 / 1000;
+        $mbFileSizePretty = number_format($mbFileSize, 2, ".", ",");
+        /* Translators: 1: The file size in KB. 2: The file size in MB. */
+        $debugFileSize = sprintf(__('Debug file size: %1$s KB (%2$s MB).', '404-solution'),
+                $kbFileSizePretty, $mbFileSizePretty);
+
+        // Read the html content
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvancedLogging.html");
+
+        $html = $this->f->str_replace('checked="log_raw_ips"', $selectedLogRawIPs, $html);
+        $html = $this->f->str_replace('checked="debug_mode"', $selectedDebugLogging, $html);
+        $html = $this->f->str_replace('{<a>View</a> the debug file.}', $debugExplanation, $html);
+        $html = $this->f->str_replace('{Debug file size: %s KB.}', $debugFileSize, $html);
+
+        $html = $this->f->str_replace('{ignore_dontprocess}',
+            str_replace('\\n', "\n", wp_kses_post($options['ignore_dontprocess'])), $html);
+        $html = $this->f->str_replace('{ignore_doprocess}',
+            str_replace('\\n', "\n", wp_kses_post($options['ignore_doprocess'])), $html);
+
+        // Constants and translations
+        $html = $this->f->doNormalReplacements($html);
+
+        return $html;
+    }
+
+    /**
+     * Get the HTML content for the Advanced Configuration section
+     * @param array $options
+     * @return string
+     */
+    function getAdminOptionsPageAdvancedSystem($options) {
+        $selectedRedirectAllRequests = $this->getCheckedAttr($options, 'redirect_all_requests');
+
+        $hideRedirectAllRequests = "false";
+        if (array_key_exists('disallow-redirect-all-requests', $options)
+                && $options['disallow-redirect-all-requests'] == '1') {
+            $hideRedirectAllRequests = "true";
+        }
+
+        // Read the html content
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvancedSystem.html");
+
+        $html = $this->f->str_replace('{DATABASE_VERSION}', esc_html($options['DB_VERSION']), $html);
+        $html = $this->f->str_replace('checked="redirect_all_requests"', $selectedRedirectAllRequests, $html);
+        $html = $this->f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
+
+        $html = $this->f->str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($options['auto_score']), $html);
+        $html = $this->f->str_replace('{OPTION_TEMPLATE_REDIRECT_PRIORITY}', esc_attr($options['template_redirect_priority']), $html);
+        $html = $this->f->str_replace('{days_wait_before_major_update}', $options['days_wait_before_major_update'], $html);
+
+        // Handle plugin_admin_users - convert array to string first before sanitization
+        $pluginAdminUsers = $options['plugin_admin_users'];
+        if (is_array($pluginAdminUsers)) {
+            $pluginAdminUsers = implode("\n", $pluginAdminUsers);
+        }
+        $pluginAdminUsers = str_replace('\\n', "\n", wp_kses_post($pluginAdminUsers));
+        $html = $this->f->str_replace('{plugin_admin_users}', wp_kses_post($pluginAdminUsers), $html);
+
+        // Constants and translations
+        $html = $this->f->doNormalReplacements($html);
+
+        return $html;
+    }
+
+    /**
      * @param array $options
      * @return string
      */

@@ -199,6 +199,15 @@ msgstr "Lanjutan"
 
 
 msgid "Advanced Settings (Etc)"
+
+msgid "Content & URL Filtering"
+msgstr "Penyaringan Konten & URL"
+
+msgid "Logging & Privacy"
+msgstr "Pencatatan & Privasi"
+
+msgid "Advanced Configuration"
+msgstr "Konfigurasi Lanjutan"
 msgstr "Pengaturan Lanjutan (Dll)"
 
 msgid "All"

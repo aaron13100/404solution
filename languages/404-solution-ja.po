@@ -199,6 +199,15 @@ msgstr "高度な設定"
 
 
 msgid "Advanced Settings (Etc)"
+
+msgid "Content & URL Filtering"
+msgstr "コンテンツとURLのフィルタリング"
+
+msgid "Logging & Privacy"
+msgstr "ログとプライバシー"
+
+msgid "Advanced Configuration"
+msgstr "詳細設定"
 msgstr "詳細設定（その他）"
 
 msgid "All"

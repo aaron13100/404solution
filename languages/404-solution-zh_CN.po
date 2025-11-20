@@ -200,6 +200,15 @@ msgstr "高级"
 
 
 msgid "Advanced Settings (Etc)"
+
+msgid "Content & URL Filtering"
+msgstr "内容和URL过滤"
+
+msgid "Logging & Privacy"
+msgstr "日志和隐私"
+
+msgid "Advanced Configuration"
+msgstr "高级配置"
 msgstr "高级设置（等）"
 
 msgid "All"

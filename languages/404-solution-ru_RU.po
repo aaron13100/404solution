@@ -199,6 +199,15 @@ msgstr "Дополнительно"
 
 
 msgid "Advanced Settings (Etc)"
+
+msgid "Content & URL Filtering"
+msgstr "Фильтрация Контента и URL"
+
+msgid "Logging & Privacy"
+msgstr "Логирование и Конфиденциальность"
+
+msgid "Advanced Configuration"
+msgstr "Расширенная Конфигурация"
 msgstr "Расширенные настройки (Прочее)"
 
 msgid "All"
