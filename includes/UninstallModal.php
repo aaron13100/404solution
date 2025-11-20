@@ -118,6 +118,13 @@ class ABJ_404_Solution_UninstallModal {
             #abj404-feedback-fields textarea {
                 margin-top: 8px;
             }
+            #abj404-email-notice {
+                border-left-color: #72aee6;
+                background: #f0f6fc;
+            }
+            #abj404-email-notice p {
+                margin: 0.5em 0;
+            }
         ');
 
         // Output modal HTML in footer
@@ -165,7 +172,10 @@ class ABJ_404_Solution_UninstallModal {
                 </p>
 
                 <!-- Deactivation Reason -->
-                <h3><?php _e('Why are you deactivating? (Optional)', '404-solution'); ?></h3>
+                <h3><?php _e('Help improve the plugin (Optional)', '404-solution'); ?></h3>
+                <p class="description" style="margin: 0 0 10px 0;">
+                    <?php _e('Share why you\'re deactivating. Your feedback helps us improve.', '404-solution'); ?>
+                </p>
 
                 <div class="abj404-uninstall-reasons">
                     <label>
@@ -196,6 +206,13 @@ class ABJ_404_Solution_UninstallModal {
                         <input type="radio" name="abj404-reason" value="other">
                         <?php _e('Other reason', '404-solution'); ?>
                     </label>
+                </div>
+
+                <!-- Email Notice (shown when feedback will be sent) -->
+                <div id="abj404-email-notice" class="notice notice-info inline" style="display:none; margin: 15px 0;">
+                    <p>
+                        📧 <strong><?php _e('Your feedback will be emailed to the developer', '404-solution'); ?></strong>
+                    </p>
                 </div>
 
                 <!-- Feedback Section -->

@@ -1441,6 +1441,18 @@ msgid "Other reason"
 msgstr "Alasan lain"
 
 msgid "Help us improve (Optional)"
+
+msgid "Help improve the plugin (Optional)"
+msgstr "Bantu meningkatkan plugin (Opsional)"
+
+msgid "Share why you're deactivating. Your feedback helps us improve."
+msgstr "Bagikan alasan Anda menonaktifkan. Masukan Anda membantu kami untuk berkembang."
+
+msgid "Your feedback will be emailed to the developer"
+msgstr "Masukan Anda akan dikirim melalui email kepada pengembang"
+
+msgid "Email Feedback & Deactivate"
+msgstr "Kirim masukan dan nonaktifkan"
 msgstr "Bantu kami meningkatkan (Opsional)"
 
 msgid "Send feedback to help improve the plugin"

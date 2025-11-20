@@ -1443,6 +1443,18 @@ msgid "Other reason"
 msgstr "Autre raison"
 
 msgid "Help us improve (Optional)"
+
+msgid "Help improve the plugin (Optional)"
+msgstr "Aider à améliorer le plugin (Optionnel)"
+
+msgid "Share why you're deactivating. Your feedback helps us improve."
+msgstr "Partagez pourquoi vous désactivez. Vos commentaires nous aident à nous améliorer."
+
+msgid "Your feedback will be emailed to the developer"
+msgstr "Vos commentaires seront envoyés par e-mail au développeur"
+
+msgid "Email Feedback & Deactivate"
+msgstr "Envoyer commentaires et désactiver"
 msgstr "Aidez-nous à améliorer ce plugin (Optionnel)"
 
 msgid "Send feedback to help improve the plugin"
