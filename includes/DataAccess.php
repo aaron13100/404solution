@@ -1575,6 +1575,14 @@ class ABJ_404_Solution_DataAccess {
         $deletionTime = $deletionDays * 86400;
         $then = $now - $deletionTime;
 
+        // Debug: Log the deletion parameters to diagnose timing issues
+        $this->logger->debugMessage("deleteOldRedirectsByType for '" . $debugMessageType . "': " .
+            "optionKey=" . $optionKey . ", " .
+            "deletionDays=" . $deletionDays . ", " .
+            "now=" . $now . " (" . date('Y-m-d H:i:s', $now) . "), " .
+            "then=" . $then . " (" . date('Y-m-d H:i:s', $then) . "), " .
+            "deletionTime=" . $deletionTime . " seconds");
+
         // Load and prepare SQL query
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
         $query = $this->f->str_replace('{status_list}', $statusList, $query);
@@ -1594,6 +1602,12 @@ class ABJ_404_Solution_DataAccess {
 
         // Delete each redirect and log
         foreach ($rows as $row) {
+            // Debug: Log the most_recent timestamp for diagnosis
+            $this->logger->debugMessage("deleteOldRedirectsByType: Deleting redirect ID " . $row['id'] .
+                ", most_recent=" . $row['most_recent'] . " (" . date('Y-m-d H:i:s', $row['most_recent']) . ")" .
+                ", then=" . $then . " (" . date('Y-m-d H:i:s', $then) . ")" .
+                ", comparison: " . $row['most_recent'] . " <= " . $then . " = " . ($row['most_recent'] <= $then ? 'true' : 'false'));
+
             // Build debug message based on redirect type
             if ($debugMessageType === 'Captured 404') {
                 $this->logger->debugMessage("Captured 404 for \"" . $row['from_url'] .
