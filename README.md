@@ -22,14 +22,6 @@ Automatically redirect 404s when the slug matches (for permalink changes), when 
 
 Convert your 404 traffic by providing your visitors with a better browsing experience and eliminate 404 URLs on your site.
 
-## Etc ##
-* Untested: Test whether changing the permalink structure twice (3 different permalinks structures total) causes us to
-    forward twice unnecessarily. Test by doing the following: Choose a permalink structre, create a page, change the 
-    permalink structure, go to the old URL of the page to create an automatic redirect, change the permalink structure
-    to a third type, go to the old URL of the page. Are we forwarded to the second (non-existent) permalink structre and 
-    not the current valid one?  Workaround: Delete all redirects and start over.
-* To be added: Multilingual support using icl_object_id.
-
 ## Installation ##
 
 1. Unzip the files and upload the contents to `/wp-content/plugins/`.
@@ -72,7 +64,7 @@ No, it's not. Only 404s are redirected. Did the page exist at the time of the re
 
 ### Have you written any other programs?  ###
 
-Please try this website for studying Japanese flashcards.    
+Other stuff is here. 
 [https://www.ajexperience.com/](https://www.ajexperience.com/)
 
 ## Screenshots ##
