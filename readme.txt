@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 3.0.0
+Stable tag: 3.0.1
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -27,7 +27,7 @@ When a visitor hits a broken link like `/prodcut/awesome-item` (typo), most plug
 
 **WooCommerce Optimized** – Specifically designed to work with products, categories, variations, and custom post types.
 
-**5-Star Rated** – Trusted by 10,000+ WordPress sites with a perfect rating.
+**5-Star Rated** – Trusted by 10,000+ WordPress sites with a high rating.
 
 = Core Features =
 
@@ -77,12 +77,6 @@ When a visitor hits a broken link like `/prodcut/awesome-item` (typo), most plug
 * Automatic performance optimization for large sites
 
 **Note:** For high-traffic sites with thousands of simultaneous users, disable "Create automatic redirects" and avoid using the shortcode to ensure optimal performance.
-
-= See It In Action =
-
-Check out the plugin in action at [https://www.ajexperience.com/404-solution/](https://www.ajexperience.com/404-solution/)
-
-Convert your 404 traffic by providing visitors with a better browsing experience and eliminate 404 errors on your site.
 
 == Installation ==
 
@@ -244,6 +238,9 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.0.1 (Nov 20, 2025) =
+* FIX: Correct the deactivate feedback trigger.
 
 = Version 3.0.0 (Nov 17, 2025) =
 * Improvement: Add themes. Add automatic dark mode detection for WordPress admin.

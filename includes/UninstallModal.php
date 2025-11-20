@@ -272,8 +272,20 @@ class ABJ_404_Solution_UninstallModal {
             $saved = update_option($option_name, $preferences, false); // autoload=false
         }
 
+        // Send feedback email if requested
+        $email_sent = false;
+        if ($saved !== false && $preferences['send_feedback']) {
+            $email_sent = self::sendFeedbackEmail($preferences);
+        }
+
         if ($saved !== false) {
-            wp_send_json_success(array('message' => __('Preferences saved successfully', '404-solution')));
+            $message = __('Preferences saved successfully', '404-solution');
+            if ($preferences['send_feedback']) {
+                $message .= $email_sent
+                    ? ' ' . __('Feedback sent successfully.', '404-solution')
+                    : ' ' . __('Note: Feedback email could not be sent.', '404-solution');
+            }
+            wp_send_json_success(array('message' => $message));
         } else {
             wp_send_json_error(array('message' => __('Failed to save preferences', '404-solution')));
         }

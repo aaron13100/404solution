@@ -80,7 +80,7 @@ Other stuff is here.
 
 ## Changelog ##
 
-## Version 3.0.0 (Nov 17, 2025) ##
+## Version 3.0.1 (Nov 20, 2025) ##
 * FIX: Correct the deactivate feedback trigger.
 
 ## Version 3.0.0 (Nov 17, 2025) ##
