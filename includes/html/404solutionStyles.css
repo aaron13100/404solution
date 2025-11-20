@@ -211,219 +211,90 @@ ul .ui-autocomplete-category.data-overflow-category {
   }
 
 /* ============================================
-   Options Page Chips Navigation
+   Options Page Accordion
    ============================================ */
 
-/* Chips container with save button */
-.abj404-chips-container {
+/* Accordion controls (Expand All button) */
+.abj404-accordion-controls {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
     margin: 0 0 20px 0;
     padding: 12px 0;
-    background: var(--abj404-surface, #fff);
-    border-bottom: 1px solid var(--abj404-border, #ccd0d4);
 }
 
-/* Chips navigation */
-.abj404-chips-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    flex: 1;
+/* Accordion section container */
+.abj404-accordion-section {
+    margin-bottom: 16px;
 }
 
-/* Save button in chips container */
-.abj404-save-button {
-    flex-shrink: 0;
-    white-space: nowrap;
-}
-
-/* Make chips container sticky on desktop */
-@media (min-width: 783px) {
-    .abj404-chips-container {
-        position: sticky;
-        top: var(--chips-top-with-tabs, 78px); /* Calculated dynamically by JavaScript */
-        z-index: 100;
-        padding: 12px 16px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        transition: top 0.3s ease-in-out;
-    }
-
-    /* When tabs are hidden, chips move up to just below admin bar */
-    .abj404-chips-container.tabs-are-hidden {
-        top: var(--admin-bar-height, 32px); /* Calculated dynamically by JavaScript */
-    }
-}
-
-/* Individual chip button */
-.abj404-chip {
-    appearance: none;
-    border: 1px solid var(--abj404-border, #8c8f94);
-    background: var(--abj404-surface, #fff);
-    color: var(--abj404-text, #2c3338);
-    padding: 6px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    user-select: none;
-    display: inline-flex;
-    gap: 6px;
-    align-items: center;
-    font-size: 13px;
-    line-height: 1.4;
-    transition: all 0.15s ease-in-out;
-}
-
-.abj404-chip:hover {
-    background: var(--abj404-surface-muted, #f6f7f7);
-    border-color: var(--abj404-text-muted, #50575e);
-}
-
-.abj404-chip:focus {
-    outline: 2px solid var(--abj404-focus, #2271b1);
-    outline-offset: 1px;
-}
-
-/* Active/pressed chip state (section visible) */
-.abj404-chip[aria-pressed="true"] {
-    background: var(--abj404-bg-muted, #f0f6fc);
-    border-color: var(--abj404-accent, #2271b1);
-    box-shadow: inset 0 0 0 1px currentColor;
-    opacity: 0.9;
-}
-
-/* Dimmed chip state (section hidden) */
-.abj404-chip[aria-pressed="false"] {
-    opacity: 0.5;
-}
-
-.abj404-chip[aria-pressed="false"]:hover {
-    opacity: 0.7;
-}
-
-/* Active chip state (section currently in viewport) - Scroll Spy */
-.abj404-chip.active {
-    background: var(--abj404-accent, #2271b1);
-    border-color: var(--abj404-accent, #2271b1);
-    color: #fff;
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(34, 113, 177, 0.3);
-    opacity: 1;
-    transform: scale(1.05);
-}
-
-.abj404-chip.active:hover {
-    background: var(--abj404-accent, #135e96);
-    box-shadow: 0 3px 12px rgba(34, 113, 177, 0.4);
-}
-
-/* Active chip - make dot brighter/white */
-.abj404-chip.active .abj404-chip-dot {
-    background: #fff !important;
-    box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
-}
-
-/* Chip color dots */
-.abj404-chip-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-}
-
-/* Color scheme for different chips - using theme-neutral colors */
-.abj404-chip.chip-autooptions .abj404-chip-dot {
-    background: #00a32a; /* WordPress green for automatic/good */
-}
-
-.abj404-chip.chip-generaloptions .abj404-chip-dot {
-    background: #0073aa; /* WordPress blue for general settings */
-}
-
-.abj404-chip.chip-advancedoptions .abj404-chip-dot {
-    background: #826eb4; /* Purple for advanced */
-}
-
-.abj404-chip.chip-suggestoptions .abj404-chip-dot {
-    background: #d63638; /* WordPress alert color for suggestions/attention */
-}
-
-/* Options sections */
-.abj404-options-section {
-    display: none;
-}
-
-.abj404-options-section.visible {
-    display: block;
-}
-
-/* Scroll margin to account for sticky elements */
-.abj404-options-section {
-    scroll-margin-top: 48px; /* Admin bar (32px) + chips (~16px) */
-}
-
-@media (min-width: 783px) {
-    .abj404-options-section {
-        scroll-margin-top: 80px; /* Admin bar + chips + padding */
-    }
-}
-
-/* Section header with hide button */
-.abj404-section-header {
-    position: relative;
+/* Accordion header (clickable) */
+.abj404-accordion-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
-
-.abj404-section-header span {
-    flex: 1;
-}
-
-/* Hide button (X) in section header */
-.abj404-section-hide {
-    appearance: none;
-    background: none;
-    border: none;
-    color: var(--abj404-text-muted, #646970);
-    font-size: 24px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 4px 8px;
-    margin: 0 0 0 12px;
+    margin: 0;
+    padding: 14px 16px;
+    background: var(--abj404-surface, #fff);
+    border: 1px solid var(--abj404-border, #ccd0d4);
     border-radius: 4px;
-    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
 }
 
-.abj404-section-hide:hover {
-    background: var(--abj404-surface-muted, #f0f0f1);
+.abj404-accordion-header:hover {
+    background: var(--abj404-surface-hover, #f6f7f7);
+    border-color: var(--abj404-primary, #2271b1);
+}
+
+.abj404-accordion-header:focus-visible {
+    outline: 2px solid var(--abj404-primary, #2271b1);
+    outline-offset: 2px;
+}
+
+/* Accordion header text */
+.abj404-accordion-header > span:first-child {
+    font-size: 14px;
+    font-weight: 600;
     color: var(--abj404-text, #2c3338);
 }
 
-.abj404-section-hide:focus {
-    outline: 2px solid var(--abj404-focus, #2271b1);
-    outline-offset: 1px;
+/* Accordion toggle arrow */
+.abj404-accordion-toggle {
+    font-size: 12px;
+    color: var(--abj404-text-muted, #646970);
+    transition: transform 0.3s ease;
+    display: inline-block;
 }
 
-.abj404-section-hide:active {
-    transform: scale(0.95);
+/* Rotate arrow when expanded */
+.abj404-accordion-header[aria-expanded="true"] .abj404-accordion-toggle {
+    transform: rotate(180deg);
+}
+
+/* Accordion content */
+.abj404-accordion-content {
+    margin-top: -1px; /* Overlap border with header */
+}
+
+.abj404-accordion-content .postbox {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
 
 /* Mobile adjustments */
 @media (max-width: 782px) {
-    .abj404-chips-container {
-        top: 46px; /* Mobile admin bar height */
-        padding: 8px 12px;
+    .abj404-accordion-header {
+        padding: 12px 14px;
+    }
+
+    .abj404-accordion-controls {
         flex-wrap: wrap;
     }
 
-    .abj404-chip {
-        font-size: 12px;
-        padding: 5px 10px;
-    }
-
-    .abj404-save-button {
+    .abj404-accordion-controls input[type="submit"] {
         width: 100%;
     }
 }

@@ -421,65 +421,37 @@ class ABJ_404_Solution_View {
     }
 
     /**
-     * Echo a section-wrapped postbox for the options page with chips navigation
-     * @param string $sectionId The section identifier for the chip navigation
+     * Echo an accordion section
+     * @param string $sectionId The section identifier
      * @param string $postboxId The ID for the postbox
      * @param string $title The title of the section
      * @param string $content The content to display
-     * @param bool $initiallyVisible Whether the section should be visible by default (for progressive enhancement)
+     * @param bool $initiallyVisible Not used (kept for compatibility)
      */
     function echoOptionsSection($sectionId, $postboxId, $title, $content, $initiallyVisible = false) {
-        $visibleClass = $initiallyVisible ? ' visible' : '';
-        echo "<div class=\"abj404-options-section" . $visibleClass . "\" data-section=\"" . esc_attr($sectionId) . "\">";
-        $this->echoPostBoxWithHide($postboxId, $title, $content, $sectionId);
-        echo "</div>";
-    }
-
-    /**
-     * Echo a postbox with a hide button
-     * @param string $id The ID for the postbox
-     * @param string $title The title of the section
-     * @param string $content The content to display
-     * @param string $sectionId The section identifier for the hide button
-     */
-    function echoPostBoxWithHide($id, $title, $content, $sectionId) {
-        echo "<div id=\"" . esc_attr($id) . "\" class=\"postbox\">";
-        echo "<h3 class=\"abj404-section-header\">";
+        echo "<div class=\"abj404-accordion-section\" data-section=\"" . esc_attr($sectionId) . "\">";
+        echo "<h2 class=\"abj404-accordion-header\" role=\"button\" aria-expanded=\"false\" tabindex=\"0\">";
         echo "<span>" . esc_html($title) . "</span>";
-        echo "<button type=\"button\" class=\"abj404-section-hide\" data-section=\"" . esc_attr($sectionId) . "\" aria-label=\"" . esc_attr(sprintf(__('Hide %s', '404-solution'), $title)) . "\">&times;</button>";
-        echo "</h3>";
-        echo "<div class=\"inside\">" . $content /* Can't escape here, as contains forms */ . "</div>";
+        echo "<span class=\"abj404-accordion-toggle\" aria-hidden=\"true\">▼</span>";
+        echo "</h2>";
+        echo "<div class=\"abj404-accordion-content\" style=\"display:none;\">";
+        $this->echoPostBox($postboxId, $title, $content);
+        echo "</div>";
         echo "</div>";
     }
 
+
     /**
-     * Echo the chips navigation for the options page with save button
-     * @param bool $showSuggestions Whether to show the suggestions chip
+     * Echo the expand/collapse all button and save button
+     * @param bool $showSuggestions Not used (kept for compatibility)
      */
-    function echoChipsNavigation($showSuggestions = true) {
+    function echoExpandCollapseButton($showSuggestions = true) {
         ?>
-        <div class="abj404-chips-container">
-            <nav class="abj404-chips-nav" aria-label="<?php echo esc_attr__('Section filters', '404-solution'); ?>">
-                <button class="abj404-chip chip-autooptions" data-target="abj404-autooptions" type="button" aria-pressed="true">
-                    <span class="abj404-chip-dot" aria-hidden="true"></span>
-                    <?php echo esc_html__('Auto Redirects', '404-solution'); ?>
-                </button>
-                <button class="abj404-chip chip-generaloptions" data-target="abj404-generaloptions" type="button" aria-pressed="false">
-                    <span class="abj404-chip-dot" aria-hidden="true"></span>
-                    <?php echo esc_html__('General', '404-solution'); ?>
-                </button>
-                <button class="abj404-chip chip-advancedoptions" data-target="abj404-advancedoptions" type="button" aria-pressed="false">
-                    <span class="abj404-chip-dot" aria-hidden="true"></span>
-                    <?php echo esc_html__('Advanced', '404-solution'); ?>
-                </button>
-                <?php if ($showSuggestions): ?>
-                <button class="abj404-chip chip-suggestoptions" data-target="abj404-suggestoptions" type="button" aria-pressed="false">
-                    <span class="abj404-chip-dot" aria-hidden="true"></span>
-                    <?php echo esc_html__('Suggestions', '404-solution'); ?>
-                </button>
-                <?php endif; ?>
-            </nav>
-            <input type="submit" name="abj404-optionssub" id="abj404-optionssub" value="<?php echo esc_attr__('Save Settings', '404-solution'); ?>" class="button-primary abj404-save-button">
+        <div class="abj404-accordion-controls">
+            <button type="button" id="abj404-expand-collapse-all" class="button">
+                <?php echo esc_html__('Expand All', '404-solution'); ?>
+            </button>
+            <input type="submit" name="abj404-optionssub" id="abj404-optionssub" value="<?php echo esc_attr__('Save Settings', '404-solution'); ?>" class="button-primary">
         </div>
         <?php
     }
@@ -825,10 +797,10 @@ class ABJ_404_Solution_View {
         $showSuggestions = ($abj404viewSuggestions !== null &&
                            method_exists($abj404viewSuggestions, 'getAdminOptionsPage404Suggestions'));
 
-        // Add chips navigation
-        $abj404view->echoChipsNavigation($showSuggestions);
+        // Add expand/collapse all button
+        $abj404view->echoExpandCollapseButton($showSuggestions);
 
-        // Render each section with chips-compatible wrapper
+        // Render each section with accordion structure
         // All sections are visible by default
         $contentAutomaticRedirects = $abj404view->getAdminOptionsPageAutoRedirects($options);
         $abj404view->echoOptionsSection("abj404-autooptions", "abj404-autooptions", __('Automatic Redirects', '404-solution'), $contentAutomaticRedirects, true);
