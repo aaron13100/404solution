@@ -118,13 +118,6 @@ class ABJ_404_Solution_UninstallModal {
             #abj404-feedback-fields textarea {
                 margin-top: 8px;
             }
-            #abj404-email-notice {
-                border-left-color: #72aee6;
-                background: #f0f6fc;
-            }
-            #abj404-email-notice p {
-                margin: 0.5em 0;
-            }
         ');
 
         // Output modal HTML in footer
@@ -206,13 +199,6 @@ class ABJ_404_Solution_UninstallModal {
                         <input type="radio" name="abj404-reason" value="other">
                         <?php _e('Other reason', '404-solution'); ?>
                     </label>
-                </div>
-
-                <!-- Email Notice (shown when feedback will be sent) -->
-                <div id="abj404-email-notice" class="notice notice-info inline" style="display:none; margin: 15px 0;">
-                    <p>
-                        📧 <strong><?php _e('Your feedback will be emailed to the developer', '404-solution'); ?></strong>
-                    </p>
                 </div>
 
                 <!-- Feedback Section -->

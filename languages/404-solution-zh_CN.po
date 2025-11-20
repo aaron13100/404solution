@@ -1459,8 +1459,6 @@ msgstr "帮助改进插件（可选）"
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "分享您停用的原因。您的反馈帮助我们改进。"
 
-msgid "Your feedback will be emailed to the developer"
-msgstr "您的反馈将通过电子邮件发送给开发者"
 
 msgid "Email Feedback & Deactivate"
 msgstr "发送反馈并停用"

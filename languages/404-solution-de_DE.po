@@ -1450,8 +1450,6 @@ msgstr "Helfen Sie, das Plugin zu verbessern (Optional)"
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "Teilen Sie uns mit, warum Sie deaktivieren. Ihr Feedback hilft uns, uns zu verbessern."
 
-msgid "Your feedback will be emailed to the developer"
-msgstr "Ihr Feedback wird per E-Mail an den Entwickler gesendet"
 
 msgid "Email Feedback & Deactivate"
 msgstr "Feedback senden und deaktivieren"

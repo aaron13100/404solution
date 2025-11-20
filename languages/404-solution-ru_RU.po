@@ -1452,8 +1452,6 @@ msgstr "Помочь улучшить плагин (Необязательно)"
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "Поделитесь, почему вы деактивируете. Ваш отзыв помогает нам стать лучше."
 
-msgid "Your feedback will be emailed to the developer"
-msgstr "Ваш отзыв будет отправлен разработчику по электронной почте"
 
 msgid "Email Feedback & Deactivate"
 msgstr "Отправить отзыв и деактивировать"

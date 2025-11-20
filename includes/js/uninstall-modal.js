@@ -111,26 +111,37 @@
         }
 
         /**
-         * Update email indicators (button text and notice) based on whether email will be sent
+         * Update button text based on whether email will be sent
          */
         function updateEmailIndicators() {
             var willSendEmail = checkIfEmailWillBeSent();
             var $deactivateButton = $('.ui-dialog-buttonpane .button-danger');
-            var $emailNotice = $('#abj404-email-notice');
 
             if (willSendEmail) {
-                // Show email indicators
+                // Update button text to indicate email will be sent
                 $deactivateButton.text('Email Feedback & Deactivate');
-                $emailNotice.slideDown(200);
             } else {
-                // Hide email indicators
+                // Default button text
                 $deactivateButton.text('Deactivate Plugin');
-                $emailNotice.slideUp(200);
             }
         }
 
-        // Add event listeners to update email indicators
-        $('input[name="abj404-reason"]').on('change', updateEmailIndicators);
+        // Store the currently selected radio button for deselection functionality
+        var currentlySelectedReason = null;
+
+        // Add event listeners to update button text
+        $('input[name="abj404-reason"]').on('click', function() {
+            // Allow deselecting radio buttons by clicking again
+            if (currentlySelectedReason === this) {
+                // Clicking the same radio button again - deselect it
+                $(this).prop('checked', false);
+                currentlySelectedReason = null;
+            } else {
+                // New selection
+                currentlySelectedReason = this;
+            }
+            updateEmailIndicators();
+        });
         $('#abj404-feedback-details').on('input', updateEmailIndicators);
 
         /**
@@ -227,6 +238,7 @@
 
             // Reset radio buttons
             $('input[name="abj404-reason"]').prop('checked', false);
+            currentlySelectedReason = null; // Reset stored selection
 
             // Reset text inputs
             $('#abj404-feedback-email').val('');
@@ -241,9 +253,6 @@
 
             // Reset opacity
             $modal.find('.abj404-uninstall-content').css('opacity', '1');
-
-            // Reset email indicators
-            $('#abj404-email-notice').hide();
         }
     });
 
