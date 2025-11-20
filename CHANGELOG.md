@@ -2,6 +2,7 @@
 
 ## Version 3.0.1 (Nov 20, 2025) ##
 * FIX: Correct the deactivate feedback trigger.
+* FIX: Log slow query content correctly. 
 
 ## Version 3.0.0 (Nov 17, 2025) ##
 * Improvement: Add themes. Add automatic dark mode detection for WordPress admin.
