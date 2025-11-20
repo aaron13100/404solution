@@ -224,7 +224,7 @@ class ABJ_404_Solution_Uninstaller {
         $message .= "--- System Information ---\n";
         $message .= "WordPress Version: " . get_bloginfo('version') . "\n";
         $message .= "PHP Version: " . PHP_VERSION . "\n";
-        $message .= "Plugin Version: 3.0.0\n";
+        $message .= "Plugin Version: 3.0.1\n";
         $message .= "Site URL: " . get_site_url() . "\n";
         $message .= "Site Language: " . get_locale() . "\n";
 
