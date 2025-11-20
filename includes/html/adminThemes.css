@@ -24,6 +24,7 @@ body[data-theme="mono"] {
   --abj404-bg: #F8FAFC;
   --abj404-bg-muted: #F5F7FA;
   --abj404-surface: #ffffff;
+  --abj404-surface-hover: #F6F7F7;  /* Light gray for hover */
   --abj404-surface-muted: #F1F5F9;
   --abj404-text: #111827;
   --abj404-text-muted: #6B7280;
@@ -49,6 +50,7 @@ body[data-theme="calm"] {
   --abj404-bg: #F7FAFD;
   --abj404-bg-muted: #F1F6FE;
   --abj404-surface: #ffffff;
+  --abj404-surface-hover: #F1F6FE;  /* Light blue-gray for hover */
   --abj404-surface-muted: #E9F0FB;
   --abj404-text: #17223B;
   --abj404-text-muted: #5A6B86;
@@ -74,6 +76,7 @@ body[data-theme="neon"] {
   --abj404-bg: #0C0F13;
   --abj404-bg-muted: #11151A;
   --abj404-surface: #151A21;
+  --abj404-surface-hover: #1B222B;  /* Slightly lighter than surface for hover */
   --abj404-surface-muted: #1B222B;
   --abj404-text: #DDE3EB;        /* Reduced from #E5EAF2 to prevent halation */
   --abj404-text-muted: #B4BFD0;  /* Improved from #A6B0C3 for better contrast */
@@ -103,6 +106,7 @@ body[data-theme="obsidian"] {
   --abj404-bg: #0A0F1A;
   --abj404-bg-muted: #0E1522;
   --abj404-surface: #121826;
+  --abj404-surface-hover: #172032;  /* Slightly lighter than surface for hover */
   --abj404-surface-muted: #172032;
   --abj404-text: #DEE5F0;        /* Reduced from #E6ECF7 to prevent halation */
   --abj404-text-muted: #B8C4D8;  /* Improved from #A9B7CC for better contrast */

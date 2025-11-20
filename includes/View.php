@@ -435,7 +435,10 @@ class ABJ_404_Solution_View {
         echo "<span class=\"abj404-accordion-toggle\" aria-hidden=\"true\">▼</span>";
         echo "</h2>";
         echo "<div class=\"abj404-accordion-content\" style=\"display:none;\">";
-        $this->echoPostBox($postboxId, $title, $content);
+        // Don't include the postbox title since the accordion header already shows it
+        echo "<div id=\"" . esc_attr($postboxId) . "\" class=\"postbox\">";
+        echo "<div class=\"inside\">" . $content /* Can't escape here, as contains forms */ . "</div>";
+        echo "</div>";
         echo "</div>";
         echo "</div>";
     }
