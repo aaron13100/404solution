@@ -1949,14 +1949,9 @@ class ABJ_404_Solution_View {
         $selectedLogRawIPs = $this->getCheckedAttr($options, 'log_raw_ips');
         $selectedDebugLogging = $this->getCheckedAttr($options, 'debug_mode');
 
-        $debugExplanation = '';
-        if ($this->logger->debugFileExists()) {
-            $debugExplanation = '<a href="' . esc_url(admin_url('admin.php?page=' . ABJ404_PP .
-                '&subpage=abj404_debugfile')) . '" target="_blank">' . __('View', '404-solution') . '</a> ' .
-                __('the debug file.', '404-solution');
-        } else {
-            $debugExplanation = __('(The debug file does not exist yet.)', '404-solution');
-        }
+        $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
+        $debugLogLink = $this->logic->getDebugLogFileLink();
+        $debugExplanation = $this->f->str_replace('<a>', '<a href="' . $debugLogLink . '" target="_blank" >', $debugExplanation);
 
         $kbFileSize = $this->logger->getDebugFileSize() / 1024;
         $kbFileSizePretty = number_format($kbFileSize, 2, ".", ",");
