@@ -210,6 +210,21 @@ msgid "Advanced Configuration"
 msgstr "Konfigurasi Lanjutan"
 msgstr "Pengaturan Lanjutan (Dll)"
 
+msgid "Expand All"
+msgstr "Perluas semua"
+
+msgid "Collapse All"
+msgstr "Ciutkan semua"
+
+msgid "Feedback sent successfully."
+msgstr "Umpan balik berhasil dikirim."
+
+msgid "Note: Feedback email could not be sent."
+msgstr "Catatan: Email umpan balik tidak dapat dikirim."
+
+msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+msgstr "Menghapus URL 404 yang ditangkap jika belum digunakan selama waktu yang ditentukan."
+
 msgid "All"
 msgstr "Semua"
 

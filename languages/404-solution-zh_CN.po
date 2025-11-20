@@ -211,6 +211,21 @@ msgid "Advanced Configuration"
 msgstr "高级配置"
 msgstr "高级设置（等）"
 
+msgid "Expand All"
+msgstr "展开全部"
+
+msgid "Collapse All"
+msgstr "折叠全部"
+
+msgid "Feedback sent successfully."
+msgstr "反馈发送成功。"
+
+msgid "Note: Feedback email could not be sent."
+msgstr "注意：反馈邮件无法发送。"
+
+msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+msgstr "删除在指定时间内未使用的捕获的404 URL。"
+
 msgid "All"
 msgstr "全部"
 

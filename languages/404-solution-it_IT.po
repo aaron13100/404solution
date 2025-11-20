@@ -210,6 +210,21 @@ msgid "Advanced Configuration"
 msgstr "Configurazione Avanzata"
 msgstr "Impostazioni avanzate (varie)"
 
+msgid "Expand All"
+msgstr "Espandi tutto"
+
+msgid "Collapse All"
+msgstr "Comprimi tutto"
+
+msgid "Feedback sent successfully."
+msgstr "Feedback inviato con successo."
+
+msgid "Note: Feedback email could not be sent."
+msgstr "Nota: L'email di feedback non ha potuto essere inviata."
+
+msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+msgstr "Rimuove gli URL 404 acquisiti che non sono stati utilizzati per il tempo specificato."
+
 msgid "All"
 msgstr "Tutti"
 

@@ -210,6 +210,21 @@ msgid "Advanced Configuration"
 msgstr "Расширенная Конфигурация"
 msgstr "Расширенные настройки (Прочее)"
 
+msgid "Expand All"
+msgstr "Развернуть все"
+
+msgid "Collapse All"
+msgstr "Свернуть все"
+
+msgid "Feedback sent successfully."
+msgstr "Отзыв успешно отправлен."
+
+msgid "Note: Feedback email could not be sent."
+msgstr "Примечание: Письмо с отзывом не может быть отправлено."
+
+msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+msgstr "Удаляет захваченные URL-адреса 404, которые не использовались в течение указанного времени."
+
 msgid "All"
 msgstr "Все"
 

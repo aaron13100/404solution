@@ -209,6 +209,21 @@ msgid "Advanced Configuration"
 msgstr "Advanced Configuration"
 msgstr "Advanced Settings (Etc)"
 
+msgid "Expand All"
+msgstr "Expand All"
+
+msgid "Collapse All"
+msgstr "Collapse All"
+
+msgid "Feedback sent successfully."
+msgstr "Feedback sent successfully."
+
+msgid "Note: Feedback email could not be sent."
+msgstr "Note: Feedback email could not be sent."
+
+msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+msgstr "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+
 msgid "All"
 msgstr "All"
 

@@ -210,6 +210,21 @@ msgid "Advanced Configuration"
 msgstr "詳細設定"
 msgstr "詳細設定（その他）"
 
+msgid "Expand All"
+msgstr "すべて展開"
+
+msgid "Collapse All"
+msgstr "すべて折りたたむ"
+
+msgid "Feedback sent successfully."
+msgstr "フィードバックが正常に送信されました。"
+
+msgid "Note: Feedback email could not be sent."
+msgstr "注意：フィードバックメールを送信できませんでした。"
+
+msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+msgstr "指定された時間使用されていないキャプチャされた404 URLを削除します。"
+
 msgid "All"
 msgstr "すべて"
 
