@@ -814,20 +814,37 @@ class ABJ_404_Solution_PluginLogic {
     /** Create database tables. Register crons. etc.
      * Handles both single-site and multisite activations.
      *
+     * For network activations, sites are activated asynchronously in the background
+     * to prevent timeouts on large networks.
+     *
      * @param bool $network_wide Whether this is a network-wide activation
      * @global type $abj404logic
      * @global type $abj404dao
      */
     static function runOnPluginActivation($network_wide = false) {
         if (is_multisite() && $network_wide) {
-            // Network activation: activate for all sites in the network
+            // Network activation: Schedule background activation to prevent timeouts
             $sites = get_sites(array('fields' => 'ids', 'number' => 0));
 
-            foreach ($sites as $blog_id) {
-                switch_to_blog($blog_id);
-                self::activateSingleSite();
-                restore_current_blog();
-            }
+            // Store list of pending site IDs in network option
+            update_site_option('abj404_pending_network_activation', $sites);
+            update_site_option('abj404_network_activation_total', count($sites));
+
+            // Schedule first batch immediately
+            wp_schedule_single_event(time(), 'abj404_network_activation_hook');
+
+            // Show admin notice that activation is happening in background
+            add_action('network_admin_notices', function() {
+                $pending = get_site_option('abj404_pending_network_activation', array());
+                $total = get_site_option('abj404_network_activation_total', 0);
+                $completed = $total - count($pending);
+
+                if (!empty($pending)) {
+                    echo '<div class="notice notice-info"><p><strong>404 Solution:</strong> Network activation in progress... ' .
+                         esc_html($completed) . ' of ' . esc_html($total) . ' sites activated. ' .
+                         'This will complete in the background.</p></div>';
+                }
+            });
         } else {
             // Single site activation (or individual subsite activation)
             self::activateSingleSite();
@@ -860,6 +877,48 @@ class ABJ_404_Solution_PluginLogic {
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
         $abj404logic->doUpdateDBVersionOption();
+    }
+
+    /**
+     * Background cron handler for network activation.
+     * Processes one site at a time to prevent timeouts.
+     * Reschedules itself if more sites remain.
+     */
+    static function networkActivationCronHandler() {
+        // Get list of pending sites
+        $pending = get_site_option('abj404_pending_network_activation', array());
+
+        if (empty($pending)) {
+            // All done! Clean up network options
+            delete_site_option('abj404_pending_network_activation');
+            delete_site_option('abj404_network_activation_total');
+            return;
+        }
+
+        // Process one site
+        $blog_id = array_shift($pending);
+
+        try {
+            switch_to_blog($blog_id);
+            self::activateSingleSite();
+            restore_current_blog();
+        } catch (Exception $e) {
+            // Log error but continue with other sites
+            error_log('404 Solution: Network activation failed for site ' . $blog_id . ': ' . $e->getMessage());
+            restore_current_blog();
+        }
+
+        // Update pending list
+        update_site_option('abj404_pending_network_activation', $pending);
+
+        // Schedule next site (10 seconds delay to spread load)
+        if (!empty($pending)) {
+            wp_schedule_single_event(time() + 10, 'abj404_network_activation_hook');
+        } else {
+            // All done! Clean up network options
+            delete_site_option('abj404_pending_network_activation');
+            delete_site_option('abj404_network_activation_total');
+        }
     }
 
     /**

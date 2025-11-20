@@ -1029,17 +1029,16 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * 5. Process batch only if lock belongs to this process
      * 6. Release lock in finally block
      *
-     * Persistent State (MULTISITE-AWARE):
-     * - Network option 'abj404_ngram_rebuild_offset' tracks current progress
-     * - Allows resume after cron chain breaks
-     * - Lock scope: per-batch (not spanning entire rebuild)
-     * - Uses network-wide state in multisite to prevent race conditions
+     * MULTISITE BEHAVIOR (FIXED):
+     * - Processes one site at a time completely before moving to the next site
+     * - Uses network options to track: pending sites, current site, and offset within current site
+     * - Switches to each site's blog context before processing its pages
+     * - Prevents the bug where only the first site got cache entries
+     * - Progress tracking shows per-site and network-wide completion status
      *
-     * MULTISITE BEHAVIOR:
-     * - Any site can execute the cron, but state is coordinated network-wide
-     * - Offset tracking uses network options (site_option) when network-activated
-     * - Prevents multiple sites from rebuilding simultaneously or duplicating work
-     * - Processes pages from all sites in the network
+     * SINGLE SITE BEHAVIOR:
+     * - Uses simple offset tracking with network-aware options
+     * - Processes all pages in batches until complete
      *
      * @param int $offset Current batch offset (default: 0, overridden by network options)
      * @return void
@@ -1055,90 +1054,210 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         }
 
         try {
-            // MULTISITE: Resume from persistent offset using network-aware getter
-            $offset = $this->getNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
-
             $batchSize = 50; // Smaller batches for async processing
             $maxBatchesPerRun = 20; // Process up to 1000 pages per cron run
 
-            // MULTISITE: Count pages across all sites if network-activated
-            $totalPages = $this->countTotalPagesForNGramRebuild();
+            // MULTISITE: Process one site at a time to ensure all sites get cache entries
+            if ($this->isNetworkActivated()) {
+                // Get or initialize list of pending sites
+                $pendingSites = $this->getNetworkAwareOption('abj404_ngram_pending_sites', null);
 
-            if ($totalPages == 0) {
-                $this->logger->debugMessage("No pages to process. Setting initialized flag.");
-                $this->updateNetworkAwareOption('abj404_ngram_cache_initialized', '1');
-                $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
-                return;
-            }
+                if ($pendingSites === null) {
+                    // First run: Initialize site list and tracking
+                    $sites = get_sites(array('fields' => 'ids', 'number' => 0));
+                    $this->updateNetworkAwareOption('abj404_ngram_pending_sites', $sites);
+                    $this->updateNetworkAwareOption('abj404_ngram_total_sites', count($sites));
+                    $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', 0);
+                    $pendingSites = $sites;
+                }
 
-            $context = is_multisite() ? ' (network-wide)' : '';
-            $this->logger->infoMessage(sprintf(
-                "Async N-gram rebuild: Processing batch at offset %d of %d total pages%s",
-                $offset,
-                $totalPages,
-                $context
-            ));
+                if (empty($pendingSites)) {
+                    // All sites processed!
+                    $this->updateNetworkAwareOption('abj404_ngram_cache_initialized', '1');
+                    $this->updateNetworkAwareOption('abj404_ngram_pending_sites', null);
+                    $this->updateNetworkAwareOption('abj404_ngram_total_sites', null);
+                    $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', null);
+                    $this->logger->infoMessage("N-gram cache rebuild complete for all sites in network!");
+                    return;
+                }
 
-            // Process batches
-            $batchesProcessed = 0;
-            $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
+                // Get current site to process
+                $currentSiteId = $pendingSites[0];
+                $offset = $this->getNetworkAwareOption('abj404_ngram_current_site_offset', 0);
+                $totalSites = $this->getNetworkAwareOption('abj404_ngram_total_sites', count($pendingSites));
+                $completedSites = $totalSites - count($pendingSites);
 
-            while ($batchesProcessed < $maxBatchesPerRun && $offset < $totalPages) {
-                try {
-                    // MULTISITE: rebuildCache handles multisite internally
-                    $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
+                // Switch to the site being processed
+                switch_to_blog($currentSiteId);
 
-                    $totalStats['processed'] += $stats['processed'];
-                    $totalStats['success'] += $stats['success'];
-                    $totalStats['failed'] += $stats['failed'];
+                // Count pages for THIS site only
+                $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+                $sitePages = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
 
-                    $offset += $batchSize;
-                    $batchesProcessed++;
+                if ($sitePages == 0) {
+                    // This site has no pages, move to next site
+                    array_shift($pendingSites);
+                    $this->updateNetworkAwareOption('abj404_ngram_pending_sites', $pendingSites);
+                    $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', 0);
+                    restore_current_blog();
 
-                    // MULTISITE: Update persistent offset using network-aware setter
-                    $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', $offset);
+                    $this->logger->infoMessage(sprintf(
+                        "Site %d has no pages. Moving to next site. Progress: %d/%d sites completed.",
+                        $currentSiteId,
+                        $completedSites + 1,
+                        $totalSites
+                    ));
 
-                    // Stop if we processed fewer pages than expected (end of data)
-                    if ($stats['processed'] < $batchSize) {
-                        break;
+                    // Reschedule immediately for next site
+                    wp_schedule_single_event(time(), 'abj404_rebuild_ngram_cache_hook');
+                    return;
+                }
+
+                $this->logger->infoMessage(sprintf(
+                    "Processing N-gram cache for site %d (Site %d of %d): Offset %d of %d pages",
+                    $currentSiteId,
+                    $completedSites + 1,
+                    $totalSites,
+                    $offset,
+                    $sitePages
+                ));
+
+                // Process batches for current site
+                $batchesProcessed = 0;
+                $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
+
+                while ($batchesProcessed < $maxBatchesPerRun && $offset < $sitePages) {
+                    try {
+                        // Process batch (already switched to correct blog)
+                        $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
+
+                        $totalStats['processed'] += $stats['processed'];
+                        $totalStats['success'] += $stats['success'];
+                        $totalStats['failed'] += $stats['failed'];
+
+                        $offset += $batchSize;
+                        $batchesProcessed++;
+
+                        // Update offset for current site
+                        $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', $offset);
+
+                        // Stop if we processed fewer pages than expected (end of site data)
+                        if ($stats['processed'] < $batchSize) {
+                            break;
+                        }
+
+                    } catch (Exception $e) {
+                        $this->logger->errorMessage("Error during N-gram rebuild for site {$currentSiteId} at offset {$offset}: " . $e->getMessage());
+                        $totalStats['failed'] += $batchSize;
+                        $offset += $batchSize;
+                        $batchesProcessed++;
+                        $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', $offset);
                     }
-
-                } catch (Exception $e) {
-                    $this->logger->errorMessage("Error during async N-gram cache rebuild at offset {$offset}: " . $e->getMessage());
-                    $totalStats['failed'] += $batchSize;
-                    $offset += $batchSize;
-                    $batchesProcessed++;
-
-                    // MULTISITE: Update persistent offset even on error
-                    $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', $offset);
                 }
-            }
 
-            $progress = $totalPages > 0 ? round(($offset / $totalPages) * 100, 1) : 100;
+                $progress = $sitePages > 0 ? round(($offset / $sitePages) * 100, 1) : 100;
 
-            $this->logger->infoMessage(sprintf(
-                "Async N-gram rebuild progress: %d%% complete (%d/%d pages), %d success, %d failed%s",
-                $progress,
-                $offset,
-                $totalPages,
-                $totalStats['success'],
-                $totalStats['failed'],
-                $context
-            ));
+                $this->logger->infoMessage(sprintf(
+                    "Site %d progress: %d%% complete (%d/%d pages), %d success, %d failed",
+                    $currentSiteId,
+                    $progress,
+                    $offset,
+                    $sitePages,
+                    $totalStats['success'],
+                    $totalStats['failed']
+                ));
 
-            // If more work remains, reschedule
-            if ($offset < $totalPages) {
-                $scheduled = wp_schedule_single_event(time() + 10, 'abj404_rebuild_ngram_cache_hook', [$offset]);
-                if ($scheduled === false) {
-                    $this->logger->errorMessage("Failed to schedule next N-gram rebuild batch at offset {$offset}");
-                } else {
-                    $this->logger->debugMessage("Rescheduled next batch at offset {$offset}");
+                // Check if current site is complete
+                if ($offset >= $sitePages) {
+                    // Site complete! Move to next site
+                    array_shift($pendingSites);
+                    $this->updateNetworkAwareOption('abj404_ngram_pending_sites', $pendingSites);
+                    $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', 0);
+
+                    $this->logger->infoMessage(sprintf(
+                        "Site %d complete! Progress: %d/%d sites completed.",
+                        $currentSiteId,
+                        $completedSites + 1,
+                        $totalSites
+                    ));
                 }
+
+                restore_current_blog();
+
+                // Reschedule for next batch or next site
+                wp_schedule_single_event(time() + 10, 'abj404_rebuild_ngram_cache_hook');
+
             } else {
-                // MULTISITE: All done! Set the initialization flag and reset offset using network-aware setters
-                $this->updateNetworkAwareOption('abj404_ngram_cache_initialized', '1');
-                $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
-                $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$totalStats['processed']} processed, {$totalStats['success']} success, {$totalStats['failed']} failed{$context}.");
+                // SINGLE SITE: Use original simple logic
+                $offset = $this->getNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
+                $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+                $totalPages = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
+
+                if ($totalPages == 0) {
+                    $this->logger->debugMessage("No pages to process. Setting initialized flag.");
+                    $this->updateNetworkAwareOption('abj404_ngram_cache_initialized', '1');
+                    $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
+                    return;
+                }
+
+                $this->logger->infoMessage(sprintf(
+                    "Async N-gram rebuild: Processing batch at offset %d of %d total pages",
+                    $offset,
+                    $totalPages
+                ));
+
+                // Process batches
+                $batchesProcessed = 0;
+                $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
+
+                while ($batchesProcessed < $maxBatchesPerRun && $offset < $totalPages) {
+                    try {
+                        $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
+
+                        $totalStats['processed'] += $stats['processed'];
+                        $totalStats['success'] += $stats['success'];
+                        $totalStats['failed'] += $stats['failed'];
+
+                        $offset += $batchSize;
+                        $batchesProcessed++;
+
+                        $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', $offset);
+
+                        if ($stats['processed'] < $batchSize) {
+                            break;
+                        }
+
+                    } catch (Exception $e) {
+                        $this->logger->errorMessage("Error during async N-gram cache rebuild at offset {$offset}: " . $e->getMessage());
+                        $totalStats['failed'] += $batchSize;
+                        $offset += $batchSize;
+                        $batchesProcessed++;
+                        $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', $offset);
+                    }
+                }
+
+                $progress = $totalPages > 0 ? round(($offset / $totalPages) * 100, 1) : 100;
+
+                $this->logger->infoMessage(sprintf(
+                    "Async N-gram rebuild progress: %d%% complete (%d/%d pages), %d success, %d failed",
+                    $progress,
+                    $offset,
+                    $totalPages,
+                    $totalStats['success'],
+                    $totalStats['failed']
+                ));
+
+                if ($offset < $totalPages) {
+                    $scheduled = wp_schedule_single_event(time() + 10, 'abj404_rebuild_ngram_cache_hook', [$offset]);
+                    if ($scheduled === false) {
+                        $this->logger->errorMessage("Failed to schedule next N-gram rebuild batch at offset {$offset}");
+                    }
+                } else {
+                    // All done!
+                    $this->updateNetworkAwareOption('abj404_ngram_cache_initialized', '1');
+                    $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
+                    $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$totalStats['processed']} processed, {$totalStats['success']} success, {$totalStats['failed']} failed.");
+                }
             }
 
         } finally {
