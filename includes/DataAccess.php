@@ -308,14 +308,8 @@ class ABJ_404_Solution_DataAccess {
         $result['insert_id'] = $wpdb->insert_id;
         
         if (!is_array($result['rows'])) {
-            // Only log query details in debug mode to prevent information disclosure
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-        	    $this->logger->errorMessage("Query result is not an array. Query: " . $query,
+            $this->logger->errorMessage("Query result is not an array. Query: " . $query,
         			new Exception("Query result is not an array."));
-            } else {
-                $this->logger->errorMessage("Query result is not an array.",
-        			new Exception("Query result is not an array."));
-            }
         }
         
         if ($options['log_errors'] && $result['last_error'] != '') {
@@ -364,30 +358,18 @@ class ABJ_404_Solution_DataAccess {
                     $stripped_query = "((" . ABJ_404_Solution_WPUtils::stringify_wp_error($stripped_query) . "))";
                 }
 
-                // Only log full query details in debug mode to prevent information disclosure
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-            	    $this->logger->errorMessage("Ugh. SQL query error: " . $result['last_error'] .
+                $this->logger->errorMessage("Ugh. SQL query error: " . $result['last_error'] .
 					    ", SQL: " . $query .
 	            	    ", Execution time: " . round($timer->getElapsedTime(), 2) .
 	            	    ", DB ver: " . $wpdb->db_version() .
             		    ", Variables: " . $variables .
             	        ", stripped_query: " . $stripped_query);
-                } else {
-                    // Log sanitized error without exposing query details
-                    $this->logger->errorMessage("SQL query error: " . $result['last_error'] .
-                        ", Execution time: " . round($timer->getElapsedTime(), 2));
-                }
             }
             
         } else {
             if ($options['log_too_slow'] && $timer->getElapsedTime() > 5) {
-                // Only log query details in debug mode to prevent information disclosure
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    $this->logger->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " .
-                            $query);
-                } else {
-                    $this->logger->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds)");
-                }
+                $this->logger->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " .
+                        $query);
             }
         }
         
