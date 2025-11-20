@@ -103,13 +103,14 @@
          */
         function handleDeactivation(deactivateUrl) {
             // Gather user preferences
+            // Explicitly convert booleans to 'true'/'false' strings for PHP compatibility
             var preferences = {
                 action: 'abj404_save_uninstall_prefs',
                 nonce: abj404UninstallModal.nonce,
-                delete_redirects: !$('#abj404-keep-redirects').is(':checked'),
-                delete_logs: !$('#abj404-keep-logs').is(':checked'),
-                delete_cache: true, // Always delete cache
-                send_feedback: $('#abj404-send-feedback').is(':checked'),
+                delete_redirects: !$('#abj404-keep-redirects').is(':checked') ? 'true' : 'false',
+                delete_logs: !$('#abj404-keep-logs').is(':checked') ? 'true' : 'false',
+                delete_cache: 'true', // Always delete cache
+                send_feedback: $('#abj404-send-feedback').is(':checked') ? 'true' : 'false',
                 uninstall_reason: $('input[name="abj404-reason"]:checked').val() || '',
                 feedback_email: $('#abj404-feedback-email').val(),
                 feedback_details: $('#abj404-feedback-details').val()
@@ -124,24 +125,57 @@
             $modal.find('.abj404-uninstall-content').css('opacity', '0.6');
 
             // Save preferences via AJAX
+            console.log('404 Solution: Sending AJAX request with preferences:', preferences);
+
             $.post(ajaxurl, preferences)
                 .done(function(response) {
+                    console.log('404 Solution: AJAX Response received:', response);
+
                     if (response.success) {
                         // Preferences saved successfully
-                        console.log('404 Solution: Deactivation preferences saved');
+                        console.log('404 Solution: ✓ SUCCESS - ' + response.data.message);
+
+                        // Update modal text with result
+                        $modal.find('.abj404-uninstall-content').prepend(
+                            '<div class="notice notice-success" style="margin-bottom:15px;"><p><strong>' +
+                            response.data.message +
+                            '</strong></p></div>'
+                        );
                     } else {
                         // Save failed but continue anyway
-                        console.warn('404 Solution: Failed to save preferences, continuing with defaults');
+                        console.warn('404 Solution: ✗ FAILED - ' + (response.data.message || 'Unknown error'));
+
+                        // Update modal text with error
+                        $modal.find('.abj404-uninstall-content').prepend(
+                            '<div class="notice notice-warning" style="margin-bottom:15px;"><p><strong>' +
+                            (response.data.message || 'Failed to save preferences') +
+                            '</strong></p></div>'
+                        );
                     }
                 })
                 .fail(function(jqXHR, textStatus, errorThrown) {
                     // AJAX failed but continue anyway
-                    console.error('404 Solution: AJAX error, continuing with defaults');
+                    console.error('404 Solution: AJAX error:', textStatus, errorThrown);
+                    console.error('404 Solution: Response:', jqXHR.responseText);
                 })
                 .always(function() {
-                    // Always redirect to deactivate URL (even if save failed)
-                    // The preferences will be used if/when the plugin is later deleted
-                    window.location.href = deactivateUrl;
+                    // Brief delay to show feedback, then redirect to deactivate URL
+                    console.log('404 Solution: Redirecting to deactivation in 3 seconds...');
+
+                    // Re-enable buttons and update text
+                    $buttons.prop('disabled', false);
+                    $buttons.filter('.button-danger').text('Deactivating in 3...');
+
+                    var countdown = 3;
+                    var countdownInterval = setInterval(function() {
+                        countdown--;
+                        if (countdown > 0) {
+                            $buttons.filter('.button-danger').text('Deactivating in ' + countdown + '...');
+                        } else {
+                            clearInterval(countdownInterval);
+                            window.location.href = deactivateUrl;
+                        }
+                    }, 1000);
                 });
         }
 

@@ -250,15 +250,22 @@ class ABJ_404_Solution_UninstallModal {
         }
 
         // Get preferences from AJAX request
+        // Use filter_var to properly handle boolean values sent from JavaScript
         $preferences = array(
-            'delete_redirects' => isset($_POST['delete_redirects']) && $_POST['delete_redirects'] === 'true',
-            'delete_logs' => isset($_POST['delete_logs']) && $_POST['delete_logs'] === 'true',
+            'delete_redirects' => isset($_POST['delete_redirects']) && filter_var($_POST['delete_redirects'], FILTER_VALIDATE_BOOLEAN),
+            'delete_logs' => isset($_POST['delete_logs']) && filter_var($_POST['delete_logs'], FILTER_VALIDATE_BOOLEAN),
             'delete_cache' => true, // Always delete cache tables
-            'send_feedback' => isset($_POST['send_feedback']) && $_POST['send_feedback'] === 'true',
+            'send_feedback' => isset($_POST['send_feedback']) && filter_var($_POST['send_feedback'], FILTER_VALIDATE_BOOLEAN),
             'uninstall_reason' => isset($_POST['uninstall_reason']) ? sanitize_text_field($_POST['uninstall_reason']) : '',
             'feedback_email' => isset($_POST['feedback_email']) ? sanitize_email($_POST['feedback_email']) : '',
             'feedback_details' => isset($_POST['feedback_details']) ? sanitize_textarea_field($_POST['feedback_details']) : ''
         );
+
+        // Debug logging
+        error_log('404 Solution: AJAX handler received deactivation preferences');
+        error_log('404 Solution: Raw POST send_feedback = ' . (isset($_POST['send_feedback']) ? $_POST['send_feedback'] : 'NOT SET'));
+        error_log('404 Solution: Parsed send_feedback = ' . ($preferences['send_feedback'] ? 'true' : 'false'));
+        error_log('404 Solution: Parsed preferences: ' . print_r($preferences, true));
 
         // Save preferences using site options for multisite compatibility
         // In multisite, use site_option for network-activated plugins, regular option for single-site
@@ -272,15 +279,22 @@ class ABJ_404_Solution_UninstallModal {
             $saved = update_option($option_name, $preferences, false); // autoload=false
         }
 
-        // Send feedback email if requested
+        // Send feedback email if user provided any feedback
+        // Send if: (radio button selected) OR (send feedback checkbox checked AND has details text)
+        $has_reason = !empty($preferences['uninstall_reason']);
+        $has_feedback_text = $preferences['send_feedback'] && !empty($preferences['feedback_details']);
+        $should_send_email = $has_reason || $has_feedback_text;
+
+        error_log('404 Solution: has_reason=' . ($has_reason ? 'true' : 'false') . ', has_feedback_text=' . ($has_feedback_text ? 'true' : 'false') . ', should_send_email=' . ($should_send_email ? 'true' : 'false'));
+
         $email_sent = false;
-        if ($saved !== false && $preferences['send_feedback']) {
+        if ($saved !== false && $should_send_email) {
             $email_sent = self::sendFeedbackEmail($preferences);
         }
 
         if ($saved !== false) {
             $message = __('Preferences saved successfully', '404-solution');
-            if ($preferences['send_feedback']) {
+            if ($should_send_email) {
                 $message .= $email_sent
                     ? ' ' . __('Feedback sent successfully.', '404-solution')
                     : ' ' . __('Note: Feedback email could not be sent.', '404-solution');
@@ -339,5 +353,124 @@ class ABJ_404_Solution_UninstallModal {
         $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE status != " . ABJ404_STATUS_TRASH);
 
         return $count ? intval($count) : 0;
+    }
+
+    /**
+     * Send feedback email to plugin author
+     *
+     * @param array $preferences User preferences including feedback
+     * @return bool True if email sent successfully, false otherwise
+     */
+    private static function sendFeedbackEmail($preferences) {
+        // Get site information
+        global $wp_version;
+
+        $site_name = get_bloginfo('name');
+        $admin_email = get_option('admin_email');
+
+        // Get plugin information
+        $redirect_count = self::getRedirectCount();
+
+        // Gather system information (excluding site URL for privacy)
+        $system_info = array(
+            'WordPress Version' => $wp_version,
+            'PHP Version' => phpversion(),
+            'Plugin Version' => defined('ABJ404_VERSION') ? ABJ404_VERSION : 'Unknown',
+            'Multisite' => is_multisite() ? 'Yes' : 'No',
+            'Active Plugins' => self::getActivePluginsList(),
+            'Redirect Count' => $redirect_count
+        );
+
+        // Build email subject
+        $subject = sprintf('[404 Solution] Deactivation Feedback from %s', $site_name);
+
+        // Build email body
+        $body = "Deactivation feedback received:\n\n";
+        $body .= "═══════════════════════════════════════\n";
+        $body .= "USER FEEDBACK\n";
+        $body .= "═══════════════════════════════════════\n\n";
+
+        if (!empty($preferences['uninstall_reason'])) {
+            $body .= "Reason: " . ucfirst(str_replace('_', ' ', $preferences['uninstall_reason'])) . "\n\n";
+        }
+
+        if (!empty($preferences['feedback_details'])) {
+            $body .= "Details:\n" . $preferences['feedback_details'] . "\n\n";
+        }
+
+        if (!empty($preferences['feedback_email'])) {
+            $body .= "User Email: " . $preferences['feedback_email'] . "\n\n";
+        }
+
+        $body .= "═══════════════════════════════════════\n";
+        $body .= "SYSTEM INFORMATION\n";
+        $body .= "═══════════════════════════════════════\n\n";
+
+        foreach ($system_info as $label => $value) {
+            $body .= sprintf("%-20s: %s\n", $label, $value);
+        }
+
+        $body .= "\n═══════════════════════════════════════\n";
+        $body .= "This feedback was sent automatically when the user deactivated the plugin.\n";
+
+        // Set email headers
+        $headers = array(
+            'Content-Type: text/plain; charset=UTF-8',
+            'From: ' . $site_name . ' <' . $admin_email . '>'
+        );
+
+        // Add reply-to if user provided email
+        if (!empty($preferences['feedback_email'])) {
+            $headers[] = 'Reply-To: ' . $preferences['feedback_email'];
+        }
+
+        // Send email to plugin author
+        $to = defined('ABJ404_AUTHOR_EMAIL') ? ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';
+
+        // Log email attempt
+        error_log('404 Solution: Attempting to send feedback email to ' . $to);
+        error_log('404 Solution: Email subject: ' . $subject);
+        error_log('404 Solution: Feedback checkbox was checked: send_feedback=' . ($preferences['send_feedback'] ? 'true' : 'false'));
+
+        // Hook to log wp_mail failures
+        add_action('wp_mail_failed', function($error) {
+            error_log('404 Solution: wp_mail() FAILED - ' . $error->get_error_message());
+        });
+
+        $result = wp_mail($to, $subject, $body, $headers);
+
+        // Log result
+        if ($result) {
+            error_log('404 Solution: wp_mail() returned TRUE - email sent successfully');
+        } else {
+            error_log('404 Solution: wp_mail() returned FALSE - email send failed');
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get list of active plugins
+     *
+     * @return string Comma-separated list of active plugin names
+     */
+    private static function getActivePluginsList() {
+        if (!function_exists('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        $all_plugins = get_plugins();
+        $active_plugins = get_option('active_plugins', array());
+
+        $active_plugin_names = array();
+        foreach ($active_plugins as $plugin_path) {
+            if (isset($all_plugins[$plugin_path])) {
+                $active_plugin_names[] = $all_plugins[$plugin_path]['Name'];
+            }
+        }
+
+        return !empty($active_plugin_names)
+            ? implode(', ', array_slice($active_plugin_names, 0, 10)) . (count($active_plugin_names) > 10 ? '...' : '')
+            : 'None';
     }
 }
