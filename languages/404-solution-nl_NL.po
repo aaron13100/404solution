@@ -1394,11 +1394,11 @@ msgstr "404 Solution: N-gram cache opgebouwd voor %d pagina's om de prestaties v
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution: %d omleidingen gemigreerd naar submapsonafhankelijk formaat."
 
-msgid "Warning:"
-msgstr "Waarschuwing:"
+msgid "Before deactivating:"
+msgstr "Voor het deactiveren:"
 
-msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
-msgstr "Dit zal de pluginbestanden permanent verwijderen. U kunt hieronder kiezen om uw gegevens te bewaren of te verwijderen."
+msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
+msgstr "Kies wat er met uw gegevens moet gebeuren. Deze voorkeuren worden opgeslagen voor later als u besluit de plugin te verwijderen."
 
 msgid "What should happen to your data?"
 msgstr "Wat moet er met uw gegevens gebeuren?"
@@ -1418,8 +1418,8 @@ msgstr "Historische 404-gegevens en logs worden bewaard indien aangevinkt."
 msgid "Note: Cache tables will always be deleted as they can be rebuilt."
 msgstr "Opmerking: Cachetabellen worden altijd verwijderd omdat ze opnieuw kunnen worden opgebouwd."
 
-msgid "Why are you uninstalling? (Optional)"
-msgstr "Waarom verwijdert u de plugin? (Optioneel)"
+msgid "Why are you deactivating? (Optional)"
+msgstr "Waarom deactiveert u de plugin? (Optioneel)"
 
 msgid "Temporary deactivation for debugging"
 msgstr "Tijdelijke deactivering voor debugging"

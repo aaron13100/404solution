@@ -1,15 +1,15 @@
 <?php
 
 /**
- * Handles the uninstall modal popup display and AJAX functionality
- * Completely separate from existing plugin code
+ * Handles the deactivation modal popup display and AJAX functionality
+ * Shows options before plugin deactivation to preserve user data
  *
  * @since 2.36.11
  */
 class ABJ_404_Solution_UninstallModal {
 
     /**
-     * Initialize the uninstall modal functionality
+     * Initialize the deactivation modal functionality
      */
     public static function init() {
         // Enqueue assets only on plugins.php page
@@ -136,8 +136,8 @@ class ABJ_404_Solution_UninstallModal {
                 <!-- Warning Box -->
                 <div class="notice notice-warning inline" style="margin: 0 0 15px 0;">
                     <p>
-                        <strong>⚠️ <?php _e('Warning:', '404-solution'); ?></strong>
-                        <?php _e('This will permanently delete the plugin files. You can choose to keep or remove your data below.', '404-solution'); ?>
+                        <strong>⚠️ <?php _e('Before deactivating:', '404-solution'); ?></strong>
+                        <?php _e('Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin.', '404-solution'); ?>
                     </p>
                 </div>
 
@@ -164,8 +164,8 @@ class ABJ_404_Solution_UninstallModal {
                     <?php _e('Note: Cache tables will always be deleted as they can be rebuilt.', '404-solution'); ?>
                 </p>
 
-                <!-- Uninstall Reason -->
-                <h3><?php _e('Why are you uninstalling? (Optional)', '404-solution'); ?></h3>
+                <!-- Deactivation Reason -->
+                <h3><?php _e('Why are you deactivating? (Optional)', '404-solution'); ?></h3>
 
                 <div class="abj404-uninstall-reasons">
                     <label>

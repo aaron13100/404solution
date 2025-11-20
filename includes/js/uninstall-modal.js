@@ -1,6 +1,6 @@
 /**
- * 404 Solution - Uninstall Modal Handler
- * Intercepts plugin deletion and displays modal for user preferences
+ * 404 Solution - Deactivation Modal Handler
+ * Intercepts plugin deactivation and displays modal for user preferences
  *
  * @since 2.36.11
  */
@@ -26,21 +26,21 @@
             return; // Plugin row not found
         }
 
-        // Find the delete link within the plugin row
-        var $deleteLink = $pluginRow.find('.delete a');
+        // Find the deactivate link within the plugin row
+        var $deactivateLink = $pluginRow.find('.deactivate a');
 
-        if (!$deleteLink.length) {
-            return; // Delete link not found (plugin might be active)
+        if (!$deactivateLink.length) {
+            return; // Deactivate link not found (plugin might already be inactive)
         }
 
-        // Store original delete URL
-        var originalDeleteUrl = $deleteLink.attr('href');
+        // Store original deactivate URL
+        var originalDeactivateUrl = $deactivateLink.attr('href');
 
         // Initialize jQuery UI Dialog modal
         var $modal = $('#abj404-uninstall-modal');
 
         $modal.dialog({
-            title: '404 Solution - Uninstall Options',
+            title: '404 Solution - Deactivation Options',
             dialogClass: 'wp-dialog abj404-uninstall-dialog',
             autoOpen: false,
             draggable: false,
@@ -62,10 +62,10 @@
                     }
                 },
                 {
-                    text: 'Uninstall Plugin',
+                    text: 'Deactivate Plugin',
                     class: 'button button-primary button-danger',
                     click: function() {
-                        handleUninstall(originalDeleteUrl);
+                        handleDeactivation(originalDeactivateUrl);
                     }
                 }
             ],
@@ -84,8 +84,8 @@
             }
         });
 
-        // Intercept delete link click
-        $deleteLink.on('click', function(e) {
+        // Intercept deactivate link click
+        $deactivateLink.on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             $modal.dialog('open');
@@ -97,11 +97,11 @@
         });
 
         /**
-         * Handle uninstall: Save preferences via AJAX, then redirect to delete URL
+         * Handle deactivation: Save preferences via AJAX, then redirect to deactivate URL
          *
-         * @param {string} deleteUrl Original WordPress delete URL
+         * @param {string} deactivateUrl Original WordPress deactivate URL
          */
-        function handleUninstall(deleteUrl) {
+        function handleDeactivation(deactivateUrl) {
             // Gather user preferences
             var preferences = {
                 action: 'abj404_save_uninstall_prefs',
@@ -128,7 +128,7 @@
                 .done(function(response) {
                     if (response.success) {
                         // Preferences saved successfully
-                        console.log('404 Solution: Uninstall preferences saved');
+                        console.log('404 Solution: Deactivation preferences saved');
                     } else {
                         // Save failed but continue anyway
                         console.warn('404 Solution: Failed to save preferences, continuing with defaults');
@@ -139,9 +139,9 @@
                     console.error('404 Solution: AJAX error, continuing with defaults');
                 })
                 .always(function() {
-                    // Always redirect to delete URL (even if save failed)
-                    // The uninstall.php will use defaults if preferences weren't saved
-                    window.location.href = deleteUrl;
+                    // Always redirect to deactivate URL (even if save failed)
+                    // The preferences will be used if/when the plugin is later deleted
+                    window.location.href = deactivateUrl;
                 });
         }
 
@@ -166,7 +166,7 @@
 
             // Reset button states
             $('.ui-dialog-buttonpane button').prop('disabled', false);
-            $('.ui-dialog-buttonpane .button-danger').text('Uninstall Plugin');
+            $('.ui-dialog-buttonpane .button-danger').text('Deactivate Plugin');
 
             // Reset opacity
             $modal.find('.abj404-uninstall-content').css('opacity', '1');

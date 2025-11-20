@@ -1392,11 +1392,11 @@ msgstr "404 Solution: Cache N-gram dibangun untuk %d halaman untuk mengoptimalka
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution: Memigrasikan %d pengalihan ke format independen subdirektori."
 
-msgid "Warning:"
-msgstr "Peringatan:"
+msgid "Before deactivating:"
+msgstr "Sebelum menonaktifkan:"
 
-msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
-msgstr "Ini akan menghapus file plugin secara permanen. Anda dapat memilih untuk menyimpan atau menghapus data Anda di bawah ini."
+msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
+msgstr "Pilih apa yang harus terjadi pada data Anda. Preferensi ini akan disimpan untuk nanti jika Anda memutuskan untuk menghapus plugin."
 
 msgid "What should happen to your data?"
 msgstr "Apa yang harus terjadi pada data Anda?"
@@ -1416,8 +1416,8 @@ msgstr "Data dan log 404 historis akan dipertahankan jika dicentang."
 msgid "Note: Cache tables will always be deleted as they can be rebuilt."
 msgstr "Catatan: Tabel cache akan selalu dihapus karena dapat dibangun kembali."
 
-msgid "Why are you uninstalling? (Optional)"
-msgstr "Mengapa Anda mencopot pemasangan? (Opsional)"
+msgid "Why are you deactivating? (Optional)"
+msgstr "Mengapa Anda menonaktifkan? (Opsional)"
 
 msgid "Temporary deactivation for debugging"
 msgstr "Penonaktifan sementara untuk debugging"

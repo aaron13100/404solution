@@ -1403,11 +1403,11 @@ msgstr "404 Solution：已为 %d 个页面构建 N-gram 缓存以优化拼写检
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution：已将 %d 个重定向迁移到与子目录无关的格式。"
 
-msgid "Warning:"
-msgstr "警告："
+msgid "Before deactivating:"
+msgstr "停用前："
 
-msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
-msgstr "这将永久删除插件文件。您可以在下方选择保留或删除您的数据。"
+msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
+msgstr "选择如何处理您的数据。如果您决定删除插件，这些偏好设置将被保存以备后用。"
 
 msgid "What should happen to your data?"
 msgstr "您的数据应该如何处理？"
@@ -1427,8 +1427,8 @@ msgstr "勾选此项后，历史 404 数据和日志将被保留。"
 msgid "Note: Cache tables will always be deleted as they can be rebuilt."
 msgstr "注意：缓存表将始终被删除，因为它们可以重建。"
 
-msgid "Why are you uninstalling? (Optional)"
-msgstr "您为什么要卸载？（可选）"
+msgid "Why are you deactivating? (Optional)"
+msgstr "您为什么要停用？（可选）"
 
 msgid "Temporary deactivation for debugging"
 msgstr "临时停用以进行调试"

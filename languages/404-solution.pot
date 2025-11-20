@@ -759,11 +759,11 @@ msgstr ""
 
 
 #: includes/UninstallModal.php
-msgid "Warning:"
+msgid "Before deactivating:"
 msgstr ""
 
 #: includes/UninstallModal.php
-msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
+msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
 msgstr ""
 
 #: includes/UninstallModal.php
@@ -791,7 +791,7 @@ msgid "Note: Cache tables will always be deleted as they can be rebuilt."
 msgstr ""
 
 #: includes/UninstallModal.php
-msgid "Why are you uninstalling? (Optional)"
+msgid "Why are you deactivating? (Optional)"
 msgstr ""
 
 #: includes/UninstallModal.php

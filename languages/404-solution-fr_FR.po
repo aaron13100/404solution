@@ -1394,11 +1394,11 @@ msgstr "404 Solution : Cache N-gram construit pour %d pages afin d'optimiser les
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution : %d redirections migrées vers un format indépendant des sous-répertoires."
 
-msgid "Warning:"
-msgstr "Attention :"
+msgid "Before deactivating:"
+msgstr "Avant de désactiver :"
 
-msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
-msgstr "Cela supprimera définitivement les fichiers du plugin. Vous pouvez choisir de conserver ou de supprimer vos données ci-dessous."
+msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
+msgstr "Choisissez ce qui doit arriver à vos données. Ces préférences seront enregistrées pour plus tard si vous décidez de supprimer le plugin."
 
 msgid "What should happen to your data?"
 msgstr "Que doit-il advenir de vos données ?"
@@ -1418,8 +1418,8 @@ msgstr "Les données et journaux 404 historiques seront préservés si cette opt
 msgid "Note: Cache tables will always be deleted as they can be rebuilt."
 msgstr "Remarque : Les tables de cache seront toujours supprimées car elles peuvent être reconstruites."
 
-msgid "Why are you uninstalling? (Optional)"
-msgstr "Pourquoi désinstallez-vous ce plugin ? (Optionnel)"
+msgid "Why are you deactivating? (Optional)"
+msgstr "Pourquoi désactivez-vous ce plugin ? (Optionnel)"
 
 msgid "Temporary deactivation for debugging"
 msgstr "Désactivation temporaire pour débogage"

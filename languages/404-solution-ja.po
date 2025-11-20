@@ -1399,11 +1399,11 @@ msgstr "404 Solution: スペルチェックのパフォーマンスを最適化�
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution: %d件のリダイレクトをサブディレクトリに依存しない形式に移行しました。"
 
-msgid "Warning:"
-msgstr "警告："
+msgid "Before deactivating:"
+msgstr "無効化する前に："
 
-msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
-msgstr "これによりプラグインファイルが完全に削除されます。以下でデータを保持するか削除するかを選択できます。"
+msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
+msgstr "データをどうするか選択してください。これらの設定は、後でプラグインを削除することにした場合のために保存されます。"
 
 msgid "What should happen to your data?"
 msgstr "データをどうしますか？"
@@ -1423,8 +1423,8 @@ msgstr "チェックすると、過去の404データとログが保持されま
 msgid "Note: Cache tables will always be deleted as they can be rebuilt."
 msgstr "注：キャッシュテーブルは再構築できるため、常に削除されます。"
 
-msgid "Why are you uninstalling? (Optional)"
-msgstr "アンインストールする理由は何ですか？（任意）"
+msgid "Why are you deactivating? (Optional)"
+msgstr "無効化する理由は何ですか？（任意）"
 
 msgid "Temporary deactivation for debugging"
 msgstr "デバッグのための一時的な無効化"

@@ -1396,11 +1396,11 @@ msgstr "404 Solution: Создан кэш N-gram для %d страниц для
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution: Мигрировано %d перенаправлений в формат, независимый от подкаталогов."
 
-msgid "Warning:"
-msgstr "Предупреждение:"
+msgid "Before deactivating:"
+msgstr "Перед деактивацией:"
 
-msgid "This will permanently delete the plugin files. You can choose to keep or remove your data below."
-msgstr "Это безвозвратно удалит файлы плагина. Вы можете выбрать, сохранить или удалить ваши данные ниже."
+msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
+msgstr "Выберите, что делать с вашими данными. Эти настройки будут сохранены на будущее, если вы решите удалить плагин."
 
 msgid "What should happen to your data?"
 msgstr "Что делать с вашими данными?"
@@ -1420,8 +1420,8 @@ msgstr "Исторические данные и журналы 404 будут �
 msgid "Note: Cache tables will always be deleted as they can be rebuilt."
 msgstr "Примечание: Таблицы кэша всегда будут удаляться, так как их можно восстановить."
 
-msgid "Why are you uninstalling? (Optional)"
-msgstr "Почему вы удаляете плагин? (Необязательно)"
+msgid "Why are you deactivating? (Optional)"
+msgstr "Почему вы деактивируете плагин? (Необязательно)"
 
 msgid "Temporary deactivation for debugging"
 msgstr "Временное отключение для отладки"

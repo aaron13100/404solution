@@ -81,6 +81,9 @@ Other stuff is here.
 ## Changelog ##
 
 ## Version 3.0.0 (Nov 17, 2025) ##
+* FIX: Correct the deactivate feedback trigger.
+
+## Version 3.0.0 (Nov 17, 2025) ##
 * Improvement: Add themes. Add automatic dark mode detection for WordPress admin.
 * Improvement: Better support and faster suggestions for sites with 10k+ pages.
 * FIX: Resolve MAX_JOIN_SIZE errors for large sites during maintenance operations by using SQL_BIG_SELECTS for cleanup queries.
