@@ -228,8 +228,8 @@ msgstr "設定メニューとツールメニューと同じレベルに表示"
 msgid "Auto"
 msgstr "自動"
 
-msgid "Auto redirect deletion"
-msgstr "自動リダイレクトの削除"
+msgid "Delete automatic redirects after"
+msgstr "自動リダイレクトを削除する期間"
 
 msgid "Auto Redirects"
 msgstr "自動リダイレクト"
@@ -250,11 +250,11 @@ msgstr "自動的に作成されました"
 msgid "Automatically creates redirects based on best possible suggested page."
 msgstr "最適な提案ページに基づいて自動的にリダイレクトを作成します。"
 
-msgid "Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time."
-msgstr "指定された期間使用されなかった記録済み404 URLを自動的に削除します。"
+msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+msgstr "指定された期間使用されていないキャプチャした404 URLを削除します。"
 
-msgid "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
-msgstr "指定された期間使用されなかった手動作成されたページリダイレクトを自動的に削除します。"
+msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
+msgstr "指定された期間使用されていない手動で作成されたリダイレクトを削除します。自動作成されたリダイレクトには影響しません。"
 
 msgid "Calm Ops (Light)"
 msgstr "Calm Ops（ライト）"
@@ -301,8 +301,8 @@ msgstr "クリックするとすべての提案のデバッグデータを表示
 msgid "Collect incoming 404 URLs"
 msgstr "受信した404 URLを記録"
 
-msgid "Collected 404 URL deletion"
-msgstr "記録済み404 URLの削除"
+msgid "Delete captured 404 URLs after"
+msgstr "キャプチャした404 URLを削除する期間"
 
 msgid "Create a CSV file with the redirects and captured 404s."
 msgstr "リダイレクトと記録済み404のCSVファイルを作成します。"
@@ -343,8 +343,8 @@ msgstr "DBバージョン"
 msgid "Date"
 msgstr "日付"
 
-msgid "Days (0 Disables Auto Delete)"
-msgstr "日数（0で自動削除を無効化）"
+msgid "days without use (0 to disable)"
+msgstr "日間未使用（0で無効化）"
 
 msgid "Debug Log"
 msgstr "デバッグログ"
@@ -699,8 +699,8 @@ msgstr "手動302リダイレクト"
 msgid "Manual Redirects"
 msgstr "手動リダイレクト"
 
-msgid "Manual redirect deletion"
-msgstr "手動リダイレクトの削除"
+msgid "Delete manual redirects after"
+msgstr "手動リダイレクトを削除する期間"
 
 msgid "Manually created"
 msgstr "手動で作成されました"
@@ -888,8 +888,8 @@ msgstr "一致するパーマリンクが見つかった場合リダイレクト
 msgid "Removed 404 URL from %s list successfully!"
 msgstr "%sリストから404 URLを正常に削除しました！"
 
-msgid "Removes auto created redirects if they haven't been used for the specified amount of time."
-msgstr "指定された期間使用されなかった自動作成されたリダイレクトを削除します。"
+msgid "Removes automatically created redirects if they haven't been used for the specified amount of time. Does not affect manually created redirects."
+msgstr "指定された期間使用されていない自動作成されたリダイレクトを削除します。手動で作成されたリダイレクトには影響しません。"
 
 msgid "Required"
 msgstr "必須"

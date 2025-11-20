@@ -32,14 +32,14 @@
     {One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings.} 
 </p>
 <p>
-    <label for="capture_deletion">{Collected 404 URL deletion}:</label>
-    <input type="text" name="capture_deletion" id="capture_deletion" value="{capture_deletion}" style="width: 50px;"> {Days (0 Disables Auto Delete)}
-    <BR/>&nbsp;&nbsp;&nbsp;{Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time.}
+    <label for="capture_deletion">{Delete captured 404 URLs after}:</label>
+    <input type="text" name="capture_deletion" id="capture_deletion" value="{capture_deletion}" style="width: 50px;"> {days without use (0 to disable)}
+    <BR/>&nbsp;&nbsp;&nbsp;{Removes captured 404 URLs if they haven't been used for the specified amount of time.}
 </p>
 <p>
-    <label for="manual_deletion">{Manual redirect deletion}:</label>
-    <input type="text" name="manual_deletion" id="manual_deletion" value="{manual_deletion}" style="width: 50px;"> {Days (0 Disables Auto Delete)}
-    <BR/>&nbsp;&nbsp;&nbsp;{Automatically removes manually created page redirects if they haven't been used for the specified amount of time.}
+    <label for="manual_deletion">{Delete manual redirects after}:</label>
+    <input type="text" name="manual_deletion" id="manual_deletion" value="{manual_deletion}" style="width: 50px;"> {days without use (0 to disable)}
+    <BR/>&nbsp;&nbsp;&nbsp;{Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects.}
 </p>
 <p>
     <label for="maximum_log_disk_usage">{Maximum log disk usage (MB)}:</label>

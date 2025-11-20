@@ -228,8 +228,8 @@ msgstr "На том же уровне, что и меню Настройки и 
 msgid "Auto"
 msgstr "Авто"
 
-msgid "Auto redirect deletion"
-msgstr "Автоматическое удаление перенаправлений"
+msgid "Delete automatic redirects after"
+msgstr "Удалить автоматические перенаправления через"
 
 msgid "Auto Redirects"
 msgstr "Автоматические перенаправления"
@@ -250,11 +250,11 @@ msgstr "Создано автоматически"
 msgid "Automatically creates redirects based on best possible suggested page."
 msgstr "Автоматически создает перенаправления на основе наилучшей предложенной страницы."
 
-msgid "Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time."
-msgstr "Автоматически удаляет собранные 404 URL, если они не использовались в течение указанного времени."
+msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+msgstr "Удаляет захваченные URL 404, если они не использовались в течение указанного времени."
 
-msgid "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
-msgstr "Автоматически удаляет созданные вручную перенаправления страниц, если они не использовались в течение указанного времени."
+msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
+msgstr "Удаляет вручную созданные перенаправления, если они не использовались в течение указанного времени. Не влияет на автоматически созданные перенаправления."
 
 msgid "Calm Ops (Light)"
 msgstr "Calm Ops (Светлая)"
@@ -301,8 +301,8 @@ msgstr "Нажмите, чтобы просмотреть отладочные �
 msgid "Collect incoming 404 URLs"
 msgstr "Собирать входящие 404 URL"
 
-msgid "Collected 404 URL deletion"
-msgstr "Удаление собранных 404 URL"
+msgid "Delete captured 404 URLs after"
+msgstr "Удалить захваченные URL 404 через"
 
 msgid "Create a CSV file with the redirects and captured 404s."
 msgstr "Создать CSV файл с перенаправлениями и собранными 404."
@@ -343,8 +343,8 @@ msgstr "Версия БД"
 msgid "Date"
 msgstr "Дата"
 
-msgid "Days (0 Disables Auto Delete)"
-msgstr "Дней (0 отключает автоудаление)"
+msgid "days without use (0 to disable)"
+msgstr "дней без использования (0 для отключения)"
 
 msgid "Debug Log"
 msgstr "Журнал отладки"
@@ -697,8 +697,8 @@ msgstr "Ручные 302 перенаправления"
 msgid "Manual Redirects"
 msgstr "Ручные перенаправления"
 
-msgid "Manual redirect deletion"
-msgstr "Удаление ручных перенаправлений"
+msgid "Delete manual redirects after"
+msgstr "Удалить ручные перенаправления через"
 
 msgid "Manually created"
 msgstr "Создано вручную"
@@ -886,8 +886,8 @@ msgstr "Удалять перенаправление при совпадени�
 msgid "Removed 404 URL from %s list successfully!"
 msgstr "404 URL успешно удален из списка %s!"
 
-msgid "Removes auto created redirects if they haven't been used for the specified amount of time."
-msgstr "Удаляет автоматически созданные перенаправления, если они не использовались в течение указанного времени."
+msgid "Removes automatically created redirects if they haven't been used for the specified amount of time. Does not affect manually created redirects."
+msgstr "Удаляет автоматически созданные перенаправления, если они не использовались в течение указанного времени. Не влияет на вручную созданные перенаправления."
 
 msgid "Required"
 msgstr "Обязательно"
