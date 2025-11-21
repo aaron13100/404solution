@@ -214,7 +214,7 @@ ul .ui-autocomplete-category.data-overflow-category {
    Options Page Accordion
    ============================================ */
 
-/* Accordion controls (Expand All button) */
+/* Accordion controls (Expand All button and Save Settings) */
 .abj404-accordion-controls {
     display: flex;
     align-items: center;
@@ -222,6 +222,25 @@ ul .ui-autocomplete-category.data-overflow-category {
     gap: 12px;
     margin: 0 0 20px 0;
     padding: 12px 0;
+}
+
+/* Make accordion controls sticky on larger screens */
+@media (min-width: 783px) {
+    .abj404-accordion-controls {
+        position: sticky;
+        top: 75px;
+        z-index: 100;
+        background: #f0f0f1;
+        padding: 12px 16px;
+        margin: 0 -16px 20px -16px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* Dark theme background for sticky controls */
+    html[data-theme="neon"] .abj404-accordion-controls,
+    html[data-theme="obsidian"] .abj404-accordion-controls {
+        background: var(--abj-bg-primary);
+    }
 }
 
 /* Accordion section container */

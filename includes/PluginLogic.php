@@ -555,6 +555,7 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function updateOptions($options) {
+    	$old_options = $this->options;
     	update_option('abj404_settings', $options);
     	$this->options = $options;
     }

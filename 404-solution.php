@@ -275,6 +275,7 @@ function abj404_override_plugin_locale($locale, $domain) {
 	// Only override for our plugin's text domain
 	if ($domain === '404-solution') {
 		$options = get_option('abj404_settings');
+
 		// Check if language override is set and not empty
 		if (is_array($options) && !empty($options['plugin_language_override'])) {
 			return $options['plugin_language_override'];
@@ -282,12 +283,25 @@ function abj404_override_plugin_locale($locale, $domain) {
 	}
 	return $locale;
 }
-add_filter('plugin_locale', 'abj404_override_plugin_locale', 10, 2);
+add_filter('plugin_locale', 'abj404_override_plugin_locale', 999, 2);
 
 /** This only runs after WordPress is done enqueuing scripts. */
 function abj404_loadSomethingWhenWordPressIsReady() {
 	/** Load the text domain for translation of the plugin. */
-	load_plugin_textdomain('404-solution', false, dirname(plugin_basename(ABJ404_FILE)) . '/languages' );
+	$options = get_option('abj404_settings');
+	$override_locale = !empty($options['plugin_language_override']) ? $options['plugin_language_override'] : '';
+
+	if (!empty($override_locale)) {
+		// Directly load the specific .mo file for the override locale
+		$mo_file = ABJ404_PATH . 'languages/404-solution-' . $override_locale . '.mo';
+		if (file_exists($mo_file)) {
+			load_textdomain('404-solution', $mo_file);
+		}
+	} else {
+		// Use normal WordPress translation loading
+		$lang_dir = dirname(plugin_basename(ABJ404_FILE)) . '/languages';
+		load_plugin_textdomain('404-solution', false, $lang_dir);
+	}
 
 	// make debugging easier on localhost etc	
 	$serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
