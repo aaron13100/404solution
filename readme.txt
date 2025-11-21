@@ -245,6 +245,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * FIX: Language file format issues for various languages. 
 * FIX: Correct the deactivate feedback trigger.
 * FIX: Log slow query content correctly. 
+* FIX: Table creation issues on "multisites.""
 
 = Version 3.0.0 (Nov 17, 2025) =
 * Improvement: Add themes. Add automatic dark mode detection for WordPress admin.
