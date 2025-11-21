@@ -74,17 +74,23 @@
     function initExpandCollapseAll() {
         var $button = $('#abj404-expand-collapse-all');
 
-        $button.on('click', function() {
-            var buttonText = $button.text().trim();
+        // Initialize button text and state
+        $button.text(abj404Accordion.expandAll);
+        $button.data('state', 'collapsed');
 
-            if (buttonText === 'Expand All' || buttonText.indexOf('Expand') !== -1) {
+        $button.on('click', function() {
+            var state = $button.data('state');
+
+            if (state === 'collapsed') {
                 // Expand all sections
                 expandAllSections();
-                $button.text('Collapse All');
+                $button.text(abj404Accordion.collapseAll);
+                $button.data('state', 'expanded');
             } else {
                 // Collapse all sections
                 collapseAllSections();
-                $button.text('Expand All');
+                $button.text(abj404Accordion.expandAll);
+                $button.data('state', 'collapsed');
             }
 
             // Save state
@@ -180,7 +186,7 @@
             if (hasExpandedSections) {
                 var allExpanded = Object.values(state).every(function(val) { return val === true; });
                 if (allExpanded) {
-                    $('#abj404-expand-collapse-all').text('Collapse All');
+                    $('#abj404-expand-collapse-all').text(abj404Accordion.collapseAll).data('state', 'expanded');
                 }
             }
         } catch (e) {

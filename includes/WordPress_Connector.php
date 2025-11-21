@@ -149,6 +149,12 @@ class ABJ_404_Solution_WordPress_Connector {
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-options-accordion', plugin_dir_url(__FILE__) . 'js/optionsAccordion.js',
         	array('jquery'));
 
+        // Localize accordion strings for translation
+        wp_localize_script('abj404-options-accordion', 'abj404Accordion', array(
+            'expandAll' => __('Expand All', '404-solution'),
+            'collapseAll' => __('Collapse All', '404-solution'),
+        ));
+
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
                 null);
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-themes', ABJ404_URL . 'includes/html/adminThemes.css',
@@ -384,7 +390,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         $settings_link = '<a href="options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options">' .
-                __('Settings') . '</a>';
+                __('Settings', '404-solution') . '</a>';
         array_unshift($links, $settings_link);
 
         $debugExplanation = __('Debug Log', '404-solution');
