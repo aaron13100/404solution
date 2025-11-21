@@ -259,8 +259,30 @@ function abj404_getUploadsDir() {
 	$uploadsDirArray = wp_upload_dir(null, false);
 	$uploadsDir = $uploadsDirArray['basedir'];
 	$uploadsDir .= DIRECTORY_SEPARATOR . 'temp_' . ABJ404_PP . DIRECTORY_SEPARATOR;
-	return $uploadsDir;	
+	return $uploadsDir;
 }
+
+/**
+ * Override the locale for this plugin if user has configured a language override.
+ * This allows users to use a different language for the 404 Solution plugin
+ * than their WordPress site language or user language preference.
+ *
+ * @param string $locale The current locale.
+ * @param string $domain The text domain.
+ * @return string The locale to use for translation loading.
+ */
+function abj404_override_plugin_locale($locale, $domain) {
+	// Only override for our plugin's text domain
+	if ($domain === '404-solution') {
+		$options = get_option('abj404_settings');
+		// Check if language override is set and not empty
+		if (is_array($options) && !empty($options['plugin_language_override'])) {
+			return $options['plugin_language_override'];
+		}
+	}
+	return $locale;
+}
+add_filter('plugin_locale', 'abj404_override_plugin_locale', 10, 2);
 
 /** This only runs after WordPress is done enqueuing scripts. */
 function abj404_loadSomethingWhenWordPressIsReady() {

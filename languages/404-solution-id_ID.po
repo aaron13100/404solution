@@ -1545,3 +1545,16 @@ msgstr "Ketika tidak dicentang dan tema diatur ke \"Default\", plugin akan otoma
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
 msgstr "Masukan Anda membantu kami meningkatkan plugin. Informasi sistem (versi WordPress, versi PHP, plugin yang terinstal) akan disertakan. Kami menghormati privasi Anda dan tidak akan membagikan informasi Anda."
+
+msgid "Plugin Language Override"
+msgstr "Penggantian Bahasa Plugin"
+
+msgid "Use WordPress Default"
+msgstr "Gunakan Default WordPress"
+
+msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
+msgstr "Ganti bahasa yang digunakan untuk antarmuka admin plugin ini. Biarkan pada \"Gunakan Default WordPress\" untuk menghormati pengaturan bahasa WordPress dan pengguna."
+
+#: includes/PluginLogic.php
+msgid "Error: Invalid language selected"
+msgstr "Kesalahan: Bahasa yang dipilih tidak valid"

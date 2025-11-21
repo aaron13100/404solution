@@ -1549,3 +1549,16 @@ msgstr "Когда снято и тема установлена на \"Default\
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
 msgstr "Ваш отзыв помогает нам улучшаться. Будет включена системная информация (версия WordPress, версия PHP, установленные плагины). Мы уважаем вашу конфиденциальность и не будем делиться вашей информацией."
+
+msgid "Plugin Language Override"
+msgstr "Переопределение языка плагина"
+
+msgid "Use WordPress Default"
+msgstr "Использовать настройки WordPress по умолчанию"
+
+msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
+msgstr "Переопределить язык, используемый для административного интерфейса этого плагина. Оставьте \"Использовать настройки WordPress по умолчанию\", чтобы соблюдать настройки языка WordPress и пользователя."
+
+#: includes/PluginLogic.php
+msgid "Error: Invalid language selected"
+msgstr "Ошибка: Выбран недопустимый язык"

@@ -1560,3 +1560,16 @@ msgstr ""
 #: includes/PluginLogic.php
 msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
 msgstr ""
+
+msgid "Plugin Language Override"
+msgstr "Plugin Language Override"
+
+msgid "Use WordPress Default"
+msgstr "Use WordPress Default"
+
+msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
+msgstr "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
+
+#: includes/PluginLogic.php
+msgid "Error: Invalid language selected"
+msgstr "Error: Invalid language selected"

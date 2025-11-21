@@ -1557,3 +1557,16 @@ msgstr "Ombyggnad av N-gram cache har schemalagts och kommer att köras i bakgru
 #: includes/PluginLogic.php
 msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
 msgstr "Misslyckades med att schemalägga ombyggnad av N-gram cache. Vänligen försök igen eller kontrollera din WordPress cron-konfiguration."
+
+msgid "Plugin Language Override"
+msgstr "Plugin-språköverstyring"
+
+msgid "Use WordPress Default"
+msgstr "Använd WordPress standardinställning"
+
+msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
+msgstr "Överstyr språket som används för detta plugins administrationsgränssnitt. Lämna på \"Använd WordPress standardinställning\" för att respektera WordPress och användarspråkinställningar."
+
+#: includes/PluginLogic.php
+msgid "Error: Invalid language selected"
+msgstr "Fel: Ogiltigt språk valt"

@@ -1547,3 +1547,16 @@ msgstr "Quando desmarcado e o tema está definido como \"Padrão\", o plugin mud
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
 msgstr "Seu feedback nos ajuda a melhorar. Informações do sistema (versão do WordPress, versão do PHP, plugins instalados) serão incluídas. Respeitamos sua privacidade e não compartilharemos suas informações."
+
+msgid "Plugin Language Override"
+msgstr "Substituição de idioma do plugin"
+
+msgid "Use WordPress Default"
+msgstr "Usar padrão do WordPress"
+
+msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
+msgstr "Substitua o idioma usado para a interface de administração deste plugin. Deixe em \"Usar padrão do WordPress\" para respeitar as configurações de idioma do WordPress e do usuário."
+
+#: includes/PluginLogic.php
+msgid "Error: Invalid language selected"
+msgstr "Erro: Idioma inválido selecionado"

@@ -1547,3 +1547,16 @@ msgstr "Quando deselezionato e il tema è impostato su \"Predefinito\", il plugi
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
 msgstr "Il tuo feedback ci aiuta a migliorare. Verranno incluse informazioni di sistema (versione WordPress, versione PHP, plugin installati). Rispettiamo la tua privacy e non condivideremo le tue informazioni."
+
+msgid "Plugin Language Override"
+msgstr "Sostituzione della lingua del plugin"
+
+msgid "Use WordPress Default"
+msgstr "Usa predefinito di WordPress"
+
+msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
+msgstr "Sostituisci la lingua utilizzata per l'interfaccia di amministrazione di questo plugin. Lascia su \"Usa predefinito di WordPress\" per rispettare le impostazioni della lingua di WordPress e dell'utente."
+
+#: includes/PluginLogic.php
+msgid "Error: Invalid language selected"
+msgstr "Errore: Lingua non valida selezionata"

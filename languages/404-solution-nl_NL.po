@@ -1547,3 +1547,16 @@ msgstr "Wanneer uitgeschakeld en het thema is ingesteld op \"Standaard\", schake
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
 msgstr "Uw feedback helpt ons verbeteren. Systeeminformatie (WordPress-versie, PHP-versie, geïnstalleerde plugins) wordt meegestuurd. We respecteren uw privacy en zullen uw informatie niet delen."
+
+msgid "Plugin Language Override"
+msgstr "Plugin-taaloverride"
+
+msgid "Use WordPress Default"
+msgstr "WordPress-standaard gebruiken"
+
+msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
+msgstr "Override de taal die wordt gebruikt voor de beheerinterface van deze plugin. Laat op \"WordPress-standaard gebruiken\" staan om de WordPress- en gebruikerstaalinstellingen te respecteren."
+
+#: includes/PluginLogic.php
+msgid "Error: Invalid language selected"
+msgstr "Fout: Ongeldige taal geselecteerd"

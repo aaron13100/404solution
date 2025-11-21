@@ -767,6 +767,9 @@ class ABJ_404_Solution_PluginLogic {
             'days_wait_before_major_update' => 30,
             'DB_VERSION' => '0.0.0',
             'menuLocation' => 'underSettings',
+            'admin_theme' => 'default',
+            'plugin_language_override' => '',
+            'disable_auto_dark_mode' => '0',
             'admin_notification_email' => '',
             'page_redirects_order_by' => 'url',
             'page_redirects_order' => 'ASC',
@@ -2271,6 +2274,17 @@ class ABJ_404_Solution_PluginLogic {
                 $options['admin_theme'] = $theme;
             } else {
                 $message .= __('Error: Invalid theme selected', '404-solution') . ".<BR/>";
+            }
+        }
+
+        if (isset($postData['plugin_language_override'])) {
+            // Only allow specific locale values
+            $allowed_locales = array('', 'en_US', 'de_DE', 'es_ES', 'fr_FR', 'it_IT', 'pt_BR', 'nl_NL', 'ru_RU', 'ja', 'zh_CN', 'id_ID', 'sv_SE');
+            $locale = sanitize_text_field($postData['plugin_language_override']);
+            if (in_array($locale, $allowed_locales)) {
+                $options['plugin_language_override'] = $locale;
+            } else {
+                $message .= __('Error: Invalid language selected', '404-solution') . ".<BR/>";
             }
         }
 

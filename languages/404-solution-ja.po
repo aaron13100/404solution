@@ -1552,3 +1552,16 @@ msgstr "チェックを外し、テーマが「デフォルト」に設定され
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
 msgstr "フィードバックは改善に役立ちます。システム情報（WordPressバージョン、PHPバージョン、インストール済みプラグイン）が含まれます。プライバシーを尊重し、情報を共有することはありません。"
+
+msgid "Plugin Language Override"
+msgstr "プラグイン言語オーバーライド"
+
+msgid "Use WordPress Default"
+msgstr "WordPressのデフォルトを使用"
+
+msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
+msgstr "このプラグインの管理インターフェースで使用される言語をオーバーライドします。「WordPressのデフォルトを使用」のままにすると、WordPressとユーザーの言語設定が尊重されます。"
+
+#: includes/PluginLogic.php
+msgid "Error: Invalid language selected"
+msgstr "エラー：無効な言語が選択されました"

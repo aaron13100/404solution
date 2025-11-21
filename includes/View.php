@@ -2056,6 +2056,22 @@ class ABJ_404_Solution_View {
         $selectedThemeNeon = ($adminTheme == 'neon') ? " selected" : "";
         $selectedThemeObsidian = ($adminTheme == 'obsidian') ? " selected" : "";
 
+        // Language override selection
+        $pluginLanguage = isset($options['plugin_language_override']) ? $options['plugin_language_override'] : '';
+        $selectedLanguageDefault = ($pluginLanguage == '') ? " selected" : "";
+        $selectedLanguageEnUS = ($pluginLanguage == 'en_US') ? " selected" : "";
+        $selectedLanguageDeDE = ($pluginLanguage == 'de_DE') ? " selected" : "";
+        $selectedLanguageEsES = ($pluginLanguage == 'es_ES') ? " selected" : "";
+        $selectedLanguageFrFR = ($pluginLanguage == 'fr_FR') ? " selected" : "";
+        $selectedLanguageItIT = ($pluginLanguage == 'it_IT') ? " selected" : "";
+        $selectedLanguagePtBR = ($pluginLanguage == 'pt_BR') ? " selected" : "";
+        $selectedLanguageNlNL = ($pluginLanguage == 'nl_NL') ? " selected" : "";
+        $selectedLanguageRuRU = ($pluginLanguage == 'ru_RU') ? " selected" : "";
+        $selectedLanguageJa = ($pluginLanguage == 'ja') ? " selected" : "";
+        $selectedLanguageZhCN = ($pluginLanguage == 'zh_CN') ? " selected" : "";
+        $selectedLanguageIdID = ($pluginLanguage == 'id_ID') ? " selected" : "";
+        $selectedLanguageSvSE = ($pluginLanguage == 'sv_SE') ? " selected" : "";
+
         // Auto dark mode detection checkbox
         $disableAutoDarkMode = isset($options['disable_auto_dark_mode']) && $options['disable_auto_dark_mode'] == '1';
         $disableAutoDarkModeChecked = $disableAutoDarkMode ? " checked" : "";
@@ -2094,6 +2110,19 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{selectedThemeMono}', $selectedThemeMono, $html);
         $html = $this->f->str_replace('{selectedThemeNeon}', $selectedThemeNeon, $html);
         $html = $this->f->str_replace('{selectedThemeObsidian}', $selectedThemeObsidian, $html);
+        $html = $this->f->str_replace('{selectedLanguageDefault}', $selectedLanguageDefault, $html);
+        $html = $this->f->str_replace('{selectedLanguageEnUS}', $selectedLanguageEnUS, $html);
+        $html = $this->f->str_replace('{selectedLanguageDeDE}', $selectedLanguageDeDE, $html);
+        $html = $this->f->str_replace('{selectedLanguageEsES}', $selectedLanguageEsES, $html);
+        $html = $this->f->str_replace('{selectedLanguageFrFR}', $selectedLanguageFrFR, $html);
+        $html = $this->f->str_replace('{selectedLanguageItIT}', $selectedLanguageItIT, $html);
+        $html = $this->f->str_replace('{selectedLanguagePtBR}', $selectedLanguagePtBR, $html);
+        $html = $this->f->str_replace('{selectedLanguageNlNL}', $selectedLanguageNlNL, $html);
+        $html = $this->f->str_replace('{selectedLanguageRuRU}', $selectedLanguageRuRU, $html);
+        $html = $this->f->str_replace('{selectedLanguageJa}', $selectedLanguageJa, $html);
+        $html = $this->f->str_replace('{selectedLanguageZhCN}', $selectedLanguageZhCN, $html);
+        $html = $this->f->str_replace('{selectedLanguageIdID}', $selectedLanguageIdID, $html);
+        $html = $this->f->str_replace('{selectedLanguageSvSE}', $selectedLanguageSvSE, $html);
         $html = $this->f->str_replace('{disableAutoDarkModeChecked}', $disableAutoDarkModeChecked, $html);
         $html = $this->f->str_replace('{admin_notification_email}', $options['admin_notification_email'], $html);
         $html = $this->f->str_replace('{default_wordpress_admin_email}', get_option('admin_email'), $html);

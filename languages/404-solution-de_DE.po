@@ -1547,3 +1547,16 @@ msgstr "Wenn deaktiviert und das Theme auf \"Standard\" eingestellt ist, wechsel
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
 msgstr "Ihr Feedback hilft uns zu verbessern. Systeminformationen (WordPress-Version, PHP-Version, installierte Plugins) werden eingeschlossen. Wir respektieren Ihre Privatsphäre und werden Ihre Informationen nicht weitergeben."
+
+msgid "Plugin Language Override"
+msgstr "Plugin-Sprachüberschreibung"
+
+msgid "Use WordPress Default"
+msgstr "WordPress-Standard verwenden"
+
+msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
+msgstr "Überschreiben Sie die für die Admin-Oberfläche dieses Plugins verwendete Sprache. Belassen Sie \"WordPress-Standard verwenden\", um die WordPress- und Benutzerspracheinstellungen zu respektieren."
+
+#: includes/PluginLogic.php
+msgid "Error: Invalid language selected"
+msgstr "Fehler: Ungültige Sprache ausgewählt"
