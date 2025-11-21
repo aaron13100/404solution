@@ -40,7 +40,7 @@
         var $modal = $('#abj404-uninstall-modal');
 
         $modal.dialog({
-            title: '404 Solution - Deactivation Options',
+            title: abj404UninstallModal.i18n.dialogTitle,
             dialogClass: 'wp-dialog abj404-uninstall-dialog',
             autoOpen: false,
             draggable: false,
@@ -55,14 +55,14 @@
             },
             buttons: [
                 {
-                    text: 'Cancel',
+                    text: abj404UninstallModal.i18n.btnCancel,
                     class: 'button',
                     click: function() {
                         $(this).dialog('close');
                     }
                 },
                 {
-                    text: 'Deactivate Plugin',
+                    text: abj404UninstallModal.i18n.btnDeactivate,
                     class: 'button button-primary button-danger',
                     click: function() {
                         handleDeactivation(originalDeactivateUrl);
@@ -119,10 +119,10 @@
 
             if (willSendEmail) {
                 // Update button text to indicate email will be sent
-                $deactivateButton.text('Email Feedback & Deactivate');
+                $deactivateButton.text(abj404UninstallModal.i18n.btnEmailDeactivate);
             } else {
                 // Default button text
-                $deactivateButton.text('Deactivate Plugin');
+                $deactivateButton.text(abj404UninstallModal.i18n.btnDeactivate);
             }
         }
 
@@ -167,7 +167,7 @@
             // Disable buttons during save
             var $buttons = $('.ui-dialog-buttonpane button');
             $buttons.prop('disabled', true);
-            $buttons.filter('.button-danger').text('Saving...');
+            $buttons.filter('.button-danger').text(abj404UninstallModal.i18n.btnSaving);
 
             // Show loading indicator
             $modal.find('.abj404-uninstall-content').css('opacity', '0.6');
@@ -212,7 +212,7 @@
 
                     // Re-enable buttons and update text
                     $buttons.prop('disabled', false);
-                    $buttons.filter('.button-danger').text('Deactivating');
+                    $buttons.filter('.button-danger').text(abj404UninstallModal.i18n.btnDeactivating);
 
                     var countdown = 3;
                     var countdownInterval = setInterval(function() {
@@ -249,7 +249,7 @@
 
             // Reset button states
             $('.ui-dialog-buttonpane button').prop('disabled', false);
-            $('.ui-dialog-buttonpane .button-danger').text('Deactivate Plugin');
+            $('.ui-dialog-buttonpane .button-danger').text(abj404UninstallModal.i18n.btnDeactivate);
 
             // Reset opacity
             $modal.find('.abj404-uninstall-content').css('opacity', '1');

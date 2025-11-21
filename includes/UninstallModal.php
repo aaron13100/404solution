@@ -55,7 +55,15 @@ class ABJ_404_Solution_UninstallModal {
         wp_localize_script('abj404-uninstall-modal', 'abj404UninstallModal', array(
             'nonce' => wp_create_nonce('abj404_uninstall_nonce'),
             'pluginSlug' => self::getPluginSlug(),
-            'redirectCount' => $redirectCount
+            'redirectCount' => $redirectCount,
+            'i18n' => array(
+                'dialogTitle' => __('404 Solution - Deactivation Options', '404-solution'),
+                'btnCancel' => __('Cancel', '404-solution'),
+                'btnDeactivate' => __('Deactivate Plugin', '404-solution'),
+                'btnSaving' => __('Saving...', '404-solution'),
+                'btnDeactivating' => __('Deactivating', '404-solution'),
+                'btnEmailDeactivate' => __('Email Feedback & Deactivate', '404-solution'),
+            )
         ));
 
         // Custom CSS for modal styling
