@@ -21,6 +21,24 @@ msgstr ""
 "X-Poedit-SearchPath-0: .\n"
 
 
+msgid "404 Solution - Deactivation Options"
+msgstr "404 Solution - 停用选项"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Deactivate Plugin"
+msgstr "停用插件"
+
+msgid "Deactivating"
+msgstr "正在停用"
+
+msgid "Saving..."
+msgstr "正在保存..."
+
+msgid "Settings"
+msgstr "设置"
+
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution：已将 %d 个重定向迁移到与子目录无关的格式。"
 msgid "%1$s - %2$s of %3$s"
@@ -210,7 +228,6 @@ msgstr "日志和隐私"
 
 msgid "Advanced Configuration"
 msgstr "高级配置"
-msgstr "高级设置（等）"
 
 msgid "Expand All"
 msgstr "展开全部"
@@ -1547,7 +1564,7 @@ msgid "Disable automatic dark mode detection"
 msgstr "禁用自动深色模式检测"
 
 msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
-msgstr "取消勾选且主题设置为"默认"时，如果您的 WordPress 管理配色方案为深色（Midnight、Ectoplasm、Coffee），或启用了深色模式插件，或您的浏览器/操作系统偏好深色模式，插件将自动切换到深色主题。"
+msgstr "取消勾选且主题设置为\\\"默认\\\"时，如果您的 WordPress 管理配色方案为深色（Midnight、Ectoplasm、Coffee），或启用了深色模式插件，或您的浏览器/操作系统偏好深色模式，插件将自动切换到深色主题。"
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
 msgstr "您的反馈帮助我们改进。系统信息（WordPress 版本、PHP 版本、已安装的插件）将被包含在内。我们尊重您的隐私，不会分享您的信息。"
@@ -1559,8 +1576,41 @@ msgid "Use WordPress Default"
 msgstr "使用 WordPress 默认设置"
 
 msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
-msgstr "覆盖此插件管理界面使用的语言。保持"使用 WordPress 默认设置"以遵循 WordPress 和用户语言设置。"
+msgstr "覆盖此插件管理界面使用的语言。保持\\\"使用 WordPress 默认设置\\\"以遵循 WordPress 和用户语言设置。"
 
 #: includes/PluginLogic.php
 msgid "Error: Invalid language selected"
 msgstr "错误：选择了无效的语言"
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When an error is detected by the plugin, email the entire log file to the developer. This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). Log files are checked daily when maintenance is run."
+msgstr "当插件检测到错误时，将整个日志文件通过电子邮件发送给开发人员。这不是插件运行所必需的，但对开发人员和插件的未来版本很有帮助。这会显示：调试日志中的所有内容、管理员电子邮件地址、已安装的PHP扩展、活动插件、PHP版本、WordPress版本、MySQL版本、已发布页面和文章总数等（报告问题时所询问的所有内容）。日志文件在运行维护时每天检查。"
+
+#: includes/html/viewSuggestions.html
+# translation-verified: Technical shortcode name [abj404_solution_page_suggestions] intentionally in English
+msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
+msgstr "使用短代码 [abj404_solution_page_suggestions] 显示最匹配的页面。"
+
+#: includes/html/viewSuggestions.html
+msgid "This shortcode can be used on the 404 page and will display a list of suggested pages. This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
+msgstr "此短代码可在404页面上使用，并将显示建议页面的列表。这是为了当用户请求不存在的页面且未自动重定向到匹配页面时使用。"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for search engine bots that do need to be redirected when the slug structure changes. Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
+msgstr "这最适合在 slug 结构更改时需要重定向的搜索引擎机器人。每个用户代理使用一行。如果在用户代理字符串中的任何位置找到文本，则适用。"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for internal processes that don't need to be redirected when the slug structure changes. Search engine user agents should not go here so that they will be redirected when the slug structure changes."
+msgstr "这最适合在 slug 结构更改时不需要重定向的内部进程。搜索引擎用户代理不应放在这里，以便在 slug 结构更改时重定向它们。"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedContent.html
+msgid "Pages listed here will not be redirected to (unless a redirect to the page already exists)."
+msgstr "此处列出的页面不会被重定向到（除非页面的重定向已存在）。"
+
+#: includes/html/settingsAdvanced.html
+msgid "The plugin will only redirect the post types specified here. Default WordPress post types are \"post\" and \"page.\" The \"product\" type is for WooCommerce users."
+msgstr "插件将只重定向此处指定的文章类型。默认的WordPress文章类型是\\\"post\\\"和\\\"page\\\"。\\\"product\\\"类型适用于WooCommerce用户。"
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
+msgstr "当捕获的404数量会导致管理员通知时，将向此处指定的地址发送电子邮件。多个电子邮件地址可以用逗号（,）分隔。\\\"发件人\\\"电子邮件地址始终是默认的WordPress管理员电子邮件："

@@ -21,6 +21,24 @@ msgstr ""
 "X-Poedit-SearchPath-0: .\n"
 
 
+msgid "404 Solution - Deactivation Options"
+msgstr "404 Solution - Options de désactivation"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Deactivate Plugin"
+msgstr "Désactiver le plugin"
+
+msgid "Deactivating"
+msgstr "Désactivation"
+
+msgid "Saving..."
+msgstr "Enregistrement..."
+
+msgid "Settings"
+msgstr "Paramètres"
+
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution : %d redirections migrées vers un format indépendant des sous-répertoires."
 msgid "%1$s - %2$s of %3$s"
@@ -1563,3 +1581,35 @@ msgstr "Remplacez la langue utilisée pour l'interface d'administration de ce pl
 #: includes/PluginLogic.php
 msgid "Error: Invalid language selected"
 msgstr "Erreur : Langue invalide sélectionnée"
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When an error is detected by the plugin, email the entire log file to the developer. This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). Log files are checked daily when maintenance is run."
+msgstr "Lorsqu'une erreur est détectée par le plugin, envoyez le fichier journal complet au développeur par e-mail. Cela n'est pas nécessaire pour que le plugin fonctionne, mais c'est utile pour le développeur et pour les futures versions du plugin. Cela révèle : tout dans le journal de débogage, l'adresse e-mail de l'administrateur, les extensions PHP installées, les plugins actifs, la version PHP, la version WordPress, la version MySQL, le total des pages et articles publiés, etc. (tout ce qui est demandé lors du signalement d'un problème). Les fichiers journaux sont vérifiés quotidiennement lors de la maintenance."
+
+#: includes/html/viewSuggestions.html
+msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
+msgstr "Affichez les pages les plus proches en utilisant le shortcode [abj404_solution_page_suggestions]."
+
+#: includes/html/viewSuggestions.html
+msgid "This shortcode can be used on the 404 page and will display a list of suggested pages. This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
+msgstr "Ce shortcode peut être utilisé sur la page 404 et affichera une liste de pages suggérées. C'est pour lorsqu'un utilisateur demande une page qui n'existe pas et qu'il n'est pas automatiquement redirigé vers une page correspondante."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for search engine bots that do need to be redirected when the slug structure changes. Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
+msgstr "Ceci est idéal pour les robots de moteurs de recherche qui doivent être redirigés lorsque la structure du slug change. Utilisez une ligne par agent utilisateur. Si le texte se trouve n'importe où dans la chaîne de l'agent utilisateur, il s'applique."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for internal processes that don't need to be redirected when the slug structure changes. Search engine user agents should not go here so that they will be redirected when the slug structure changes."
+msgstr "Ceci est idéal pour les processus internes qui n'ont pas besoin d'être redirigés lorsque la structure du slug change. Les agents utilisateurs des moteurs de recherche ne doivent pas être placés ici afin qu'ils soient redirigés lorsque la structure du slug change."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedContent.html
+msgid "Pages listed here will not be redirected to (unless a redirect to the page already exists)."
+msgstr "Les pages répertoriées ici ne seront pas redirigées vers (sauf si une redirection vers la page existe déjà)."
+
+#: includes/html/settingsAdvanced.html
+msgid "The plugin will only redirect the post types specified here. Default WordPress post types are \"post\" and \"page.\" The \"product\" type is for WooCommerce users."
+msgstr "Le plugin ne redirigera que les types de publication spécifiés ici. Les types de publication WordPress par défaut sont « post » et « page ». Le type « product » est destiné aux utilisateurs de WooCommerce."
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
+msgstr "Lorsque le nombre de 404 capturés entraînerait une notification d'administrateur, un e-mail sera envoyé aux adresses spécifiées ici. Plusieurs adresses e-mail peuvent être séparées par des virgules (,). L'adresse e-mail « de » est toujours l'e-mail d'administrateur WordPress par défaut :"

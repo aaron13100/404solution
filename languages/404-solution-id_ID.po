@@ -21,6 +21,24 @@ msgstr ""
 "X-Poedit-SearchPath-0: .\n"
 
 
+msgid "404 Solution - Deactivation Options"
+msgstr "404 Solution - Opsi Penonaktifan"
+
+msgid "Cancel"
+msgstr "Batal"
+
+msgid "Deactivate Plugin"
+msgstr "Nonaktifkan Plugin"
+
+msgid "Deactivating"
+msgstr "Menonaktifkan"
+
+msgid "Saving..."
+msgstr "Menyimpan..."
+
+msgid "Settings"
+msgstr "Pengaturan"
+
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution: Memigrasikan %d pengalihan ke format independen subdirektori."
 msgid "%1$s - %2$s of %3$s"
@@ -209,7 +227,6 @@ msgstr "Pencatatan & Privasi"
 
 msgid "Advanced Configuration"
 msgstr "Konfigurasi Lanjutan"
-msgstr "Pengaturan Lanjutan (Dll)"
 
 msgid "Expand All"
 msgstr "Perluas semua"
@@ -1553,3 +1570,35 @@ msgstr "Ganti bahasa yang digunakan untuk antarmuka admin plugin ini. Biarkan pa
 #: includes/PluginLogic.php
 msgid "Error: Invalid language selected"
 msgstr "Kesalahan: Bahasa yang dipilih tidak valid"
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When an error is detected by the plugin, email the entire log file to the developer. This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). Log files are checked daily when maintenance is run."
+msgstr "Ketika kesalahan terdeteksi oleh plugin, kirim seluruh file log ke pengembang melalui email. Ini tidak diperlukan agar plugin berfungsi, tetapi ini membantu pengembang dan untuk versi plugin di masa mendatang. Ini mengungkapkan: semua yang ada di log debug, alamat email admin, ekstensi PHP yang terinstal, plugin aktif, versi PHP, versi WordPress, versi MySQL, total halaman dan posting yang dipublikasikan, dll. (semua yang diminta saat melaporkan masalah). File log diperiksa setiap hari saat pemeliharaan dijalankan."
+
+#: includes/html/viewSuggestions.html
+msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
+msgstr "Tampilkan halaman yang paling cocok dengan menggunakan shortcode [abj404_solution_page_suggestions]."
+
+#: includes/html/viewSuggestions.html
+msgid "This shortcode can be used on the 404 page and will display a list of suggested pages. This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
+msgstr "Shortcode ini dapat digunakan pada halaman 404 dan akan menampilkan daftar halaman yang disarankan. Ini untuk ketika pengguna meminta halaman yang tidak ada dan mereka tidak secara otomatis dialihkan ke halaman yang cocok."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for search engine bots that do need to be redirected when the slug structure changes. Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
+msgstr "Ini terbaik untuk bot mesin pencari yang perlu dialihkan ketika struktur slug berubah. Gunakan satu baris per agen pengguna. Jika teks ditemukan di mana saja dalam string agen pengguna maka itu berlaku."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for internal processes that don't need to be redirected when the slug structure changes. Search engine user agents should not go here so that they will be redirected when the slug structure changes."
+msgstr "Ini terbaik untuk proses internal yang tidak perlu dialihkan ketika struktur slug berubah. Agen pengguna mesin pencari tidak boleh dimasukkan di sini sehingga mereka akan dialihkan ketika struktur slug berubah."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedContent.html
+msgid "Pages listed here will not be redirected to (unless a redirect to the page already exists)."
+msgstr "Halaman yang tercantum di sini tidak akan dialihkan ke (kecuali pengalihan ke halaman sudah ada)."
+
+#: includes/html/settingsAdvanced.html
+msgid "The plugin will only redirect the post types specified here. Default WordPress post types are \"post\" and \"page.\" The \"product\" type is for WooCommerce users."
+msgstr "Plugin hanya akan mengalihkan jenis posting yang ditentukan di sini. Jenis posting WordPress default adalah \"post\" dan \"page\". Jenis \"product\" adalah untuk pengguna WooCommerce."
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
+msgstr "Ketika jumlah 404 yang ditangkap akan menyebabkan notifikasi admin, email akan dikirim ke alamat yang ditentukan di sini. Beberapa alamat email dapat dipisahkan dengan koma (,). Alamat email \"dari\" selalu email admin WordPress default:"

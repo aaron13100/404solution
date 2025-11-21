@@ -35,8 +35,7 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
                 <li class="closeLI">{* One string per line.}</li>
                 <li class="closeLI">{* If the string appears anywhere within the user agent string then it's a match.}</li>
             </ul>
-                {This is best for internal processes that don't need to be redirected when the slug structure changes. }
-                {Search engine user agents should not go here so that they will be redirected when the slug structure changes. }
+                {This is best for internal processes that don't need to be redirected when the slug structure changes. Search engine user agents should not go here so that they will be redirected when the slug structure changes.}
             </label>
     </td><td>
         <textarea rows="6" cols="60" name="ignore_dontprocess" id="ignore_dontprocess" >{ignore_dontprocess}</textarea>
@@ -52,8 +51,7 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
                 <li class="closeLI">{* One string per line.}</li>
                 <li class="closeLI">{* If the string appears anywhere within the user agent string then it's a match.}</li>
             </ul>
-            {This is best for search engine bots that do need to be redirected when the slug structure changes. }
-            {Use one line per user agent. If the text is found anywhere in the user agent string then it applies. }
+            {This is best for search engine bots that do need to be redirected when the slug structure changes. Use one line per user agent. If the text is found anywhere in the user agent string then it applies.}
             </label>
             
     </td><td>
@@ -65,12 +63,10 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
             <label for="recognized_post_types">{Recognized Post Types} 
                 <BR/><BR/>
 
-            {The plugin will only redirect the post types specified here. }
-            {Default WordPress post types are "post" and "page." }
-            {The "product" type is for WooCommerce users.}
+            {The plugin will only redirect the post types specified here. Default WordPress post types are "post" and "page." The "product" type is for WooCommerce users.}
             <BR/><BR/>
-            {If you've created custom post types and would like to redirect users to them, you'll have to enter them here. }
-            {You can see which post types are recognized by looking at the default 404 destination option, which has a list of pages, posts, products, etc. }
+            {If you've created custom post types and would like to redirect users to them, you'll have to enter them here.}
+            {You can see which post types are recognized by looking at the default 404 destination option, which has a list of pages, posts, products, etc.}
             <ul>
                 <li class="closeLI">{* Strings are case insensitive.}</li>
                 <li class="closeLI">{* One type per line.}</li>
@@ -80,7 +76,7 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
     </td><td>
         <textarea rows="6" cols="60" name="recognized_post_types" id="recognized_post_types" >{recognized_post_types}</textarea>
         <BR/>
-        {Note: Here is a list of all post types in the database: }{all_post_types}
+        {Note: Here is a list of all post types in the database:}{all_post_types}
     </td></tr>
 
     <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
@@ -90,7 +86,7 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
 
             {The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here.}
             <BR/><BR/>
-            {If you've created custom taxonomies and would like to redirect users to them, you'll have to enter them here. }
+            {If you've created custom taxonomies and would like to redirect users to them, you'll have to enter them here.}
             {You can see which are recognized by looking at the default 404 destination option.}
             <ul>
                 <li class="closeLI">{* Strings are case insensitive.}</li>
@@ -107,16 +103,16 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
             <label for="folders_files_ignore">{Files and Folders Ignore Strings - Do Not Process} 
                 <BR/><BR/>
 
-            {Files and folders listed here will be ignored. }
-            
+            {Files and folders listed here will be ignored.}
+
             <ul>
                 <li class="closeLI">{* Do not redirect 404s for the patterns listed here.}</li>
                 <li class="closeLI">{* Do not capture 404 URLs.}</li>
                 <li class="closeLI">{* Strings are case sensitive.}</li>
                 <li class="closeLI">{* One string per line.}</li>
-                <li class="closeLI">{* Use an asterisk (*) to match "any pattern." }</li>
+                <li class="closeLI">{* Use an asterisk (*) to match "any pattern."}</li>
             </ul>
-            {Examples: }
+            {Examples:}
             <ul>
                 <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;wp-content/cache/* </li>
                 <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(ignore everything in the cache directory)}</div>
@@ -139,9 +135,9 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
                 
             </ul>
                 
-            {Note: Do not include the parenthesis or explanations shown in the examples above. }
+            {Note: Do not include the parenthesis or explanations shown in the examples above.}
             <BR/><BR/>
-            <div style="font-weight: bold; color: red;">{WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing. }</div>
+            <div style="font-weight: bold; color: red;">{WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing.}</div>
             
             </label>
             
@@ -161,10 +157,10 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
         
         <ul>
             <li class="closeLI">{* One pattern per line.}</li>
-            <li class="closeLI">{* Use an asterisk (*) to match "any pattern." }</li>
-            <li class="closeLI">{* These patterns match the path of a URL, not a title." }</li>
+            <li class="closeLI">{* Use an asterisk (*) to match "any pattern."}</li>
+            <li class="closeLI">{* These patterns match the path of a URL, not a title."}</li>
         </ul>
-        {Examples: }
+        {Examples:}
         <ul>
             <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;*.pdf </li>
             <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(don't suggest .pdf files)}</div>
@@ -175,7 +171,7 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
             <BR/>
             
             <li style="font-weight: bold; display: inline;" class="closeLI">&nbsp;&nbsp;&nbsp;/members/* </li>
-            <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{ (don't suggest pages within the /members/ directory)}</div>
+            <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(don't suggest pages within the /members/ directory)}</div>
 
             <BR/>
             
@@ -187,9 +183,9 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
             <div style="font-weight: lighter; display: inline;">&nbsp;&nbsp;&nbsp;{(don't suggest the specific page with slug 'old-contact-page')}</div>                             
         </ul>
             
-        {Note: Do not include the parenthesis or explanations shown in the examples above. }
+        {Note: Do not include the parenthesis or explanations shown in the examples above.}
         <BR/><BR/>
-        <div style="font-weight: bold; color: red;">{WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing. }</div>
+        <div style="font-weight: bold; color: red;">{WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing.}</div>
         
         </label>
         
@@ -203,8 +199,8 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
     <tr><td valign="top">
             <label for="exlclude_pages_list">{Exclude Specific Pages, Posts, Categories, Etc} 
                 <BR/><BR/>
-            {Pages listed here will not be redirected to }
-            {(unless a redirect to the page already exists). }
+            {Pages listed here will not be redirected to}
+            {(unless a redirect to the page already exists).}
             </label>
             
             <BR/><BR/>
@@ -263,7 +259,7 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
     <input type="text" name="days_wait_before_major_update" id="days_wait_before_major_update" value="{days_wait_before_major_update}" style="width: 50px;">
         {days (0 means immediately, default 30)}
     <BR/>
-    &nbsp;&nbsp;&nbsp;{New major version => wait this many days. New minor version => automatically update about 3 days after the release date. }
+    &nbsp;&nbsp;&nbsp;{New major version => wait this many days. New minor version => automatically update about 3 days after the release date.}
 </p>
 
 <!-- .............................. -->

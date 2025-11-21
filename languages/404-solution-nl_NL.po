@@ -21,6 +21,24 @@ msgstr ""
 "X-Poedit-SearchPath-0: .\n"
 
 
+msgid "404 Solution - Deactivation Options"
+msgstr "404 Solution - Deactiveringsopties"
+
+msgid "Cancel"
+msgstr "Annuleren"
+
+msgid "Deactivate Plugin"
+msgstr "Plugin deactiveren"
+
+msgid "Deactivating"
+msgstr "Deactiveren"
+
+msgid "Saving..."
+msgstr "Opslaan..."
+
+msgid "Settings"
+msgstr "Instellingen"
+
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution: %d omleidingen gemigreerd naar submapsonafhankelijk formaat."
 msgid "%1$s - %2$s of %3$s"
@@ -209,7 +227,6 @@ msgstr "Loggen & Privacy"
 
 msgid "Advanced Configuration"
 msgstr "Geavanceerde Configuratie"
-msgstr "Geavanceerde instellingen (etc.)"
 
 msgid "Expand All"
 msgstr "Alles uitklappen"
@@ -1555,3 +1572,35 @@ msgstr "Override de taal die wordt gebruikt voor de beheerinterface van deze plu
 #: includes/PluginLogic.php
 msgid "Error: Invalid language selected"
 msgstr "Fout: Ongeldige taal geselecteerd"
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When an error is detected by the plugin, email the entire log file to the developer. This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). Log files are checked daily when maintenance is run."
+msgstr "Wanneer de plugin een fout detecteert, wordt het hele logbestand per e-mail naar de ontwikkelaar gestuurd. Dit is niet vereist voor de werking van de plugin, maar het is nuttig voor de ontwikkelaar en voor toekomstige versies van de plugin. Dit onthult: alles in het debuglogboek, het e-mailadres van de beheerder, geïnstalleerde PHP-extensies, actieve plugins, PHP-versie, WordPress-versie, MySQL-versie, totaal gepubliceerde pagina's en berichten, enz. (alles wat wordt gevraagd wanneer een probleem wordt gemeld). Logbestanden worden dagelijks gecontroleerd wanneer onderhoud wordt uitgevoerd."
+
+#: includes/html/viewSuggestions.html
+msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
+msgstr "Toon de best passende pagina's door de shortcode [abj404_solution_page_suggestions] te gebruiken."
+
+#: includes/html/viewSuggestions.html
+msgid "This shortcode can be used on the 404 page and will display a list of suggested pages. This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
+msgstr "Deze shortcode kan worden gebruikt op de 404-pagina en toont een lijst met voorgestelde pagina's. Dit is voor wanneer een gebruiker een pagina opvraagt die niet bestaat en ze niet automatisch worden doorgestuurd naar een overeenkomende pagina."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for search engine bots that do need to be redirected when the slug structure changes. Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
+msgstr "Dit is het beste voor zoekmachinebots die moeten worden doorgestuurd wanneer de slug-structuur verandert. Gebruik één regel per user agent. Als de tekst ergens in de user agent-string wordt gevonden, is deze van toepassing."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for internal processes that don't need to be redirected when the slug structure changes. Search engine user agents should not go here so that they will be redirected when the slug structure changes."
+msgstr "Dit is het beste voor interne processen die niet hoeven te worden doorgestuurd wanneer de slug-structuur verandert. User agents van zoekmachines mogen hier niet worden geplaatst, zodat ze worden doorgestuurd wanneer de slug-structuur verandert."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedContent.html
+msgid "Pages listed here will not be redirected to (unless a redirect to the page already exists)."
+msgstr "Pagina's die hier worden vermeld, worden niet doorgestuurd naar (tenzij er al een doorverwijzing naar de pagina bestaat)."
+
+#: includes/html/settingsAdvanced.html
+msgid "The plugin will only redirect the post types specified here. Default WordPress post types are \"post\" and \"page.\" The \"product\" type is for WooCommerce users."
+msgstr "De plugin stuurt alleen de hier opgegeven berichttypen door. Standaard WordPress-berichttypen zijn \"post\" en \"page\". Het type \"product\" is voor WooCommerce-gebruikers."
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
+msgstr "Wanneer het aantal vastgelegde 404's een beheerdermelding zou veroorzaken, wordt er een e-mail verzonden naar de hier opgegeven adressen. Meerdere e-mailadressen kunnen worden gescheiden door komma's (,). Het \"van\" e-mailadres is altijd de standaard WordPress-beheerder-e-mail:"

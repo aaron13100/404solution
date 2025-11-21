@@ -2056,6 +2056,9 @@ class ABJ_404_Solution_View {
         $selectedThemeNeon = ($adminTheme == 'neon') ? " selected" : "";
         $selectedThemeObsidian = ($adminTheme == 'obsidian') ? " selected" : "";
 
+        // Theme name translations
+        $themeDefault = __('Default', '404-solution');
+
         // Language override selection
         $pluginLanguage = isset($options['plugin_language_override']) ? $options['plugin_language_override'] : '';
         $selectedLanguageDefault = ($pluginLanguage == '') ? " selected" : "";
@@ -2110,6 +2113,7 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{selectedThemeMono}', $selectedThemeMono, $html);
         $html = $this->f->str_replace('{selectedThemeNeon}', $selectedThemeNeon, $html);
         $html = $this->f->str_replace('{selectedThemeObsidian}', $selectedThemeObsidian, $html);
+        $html = $this->f->str_replace('{theme_default}', $themeDefault, $html);
         $html = $this->f->str_replace('{selectedLanguageDefault}', $selectedLanguageDefault, $html);
         $html = $this->f->str_replace('{selectedLanguageEnUS}', $selectedLanguageEnUS, $html);
         $html = $this->f->str_replace('{selectedLanguageDeDE}', $selectedLanguageDeDE, $html);
@@ -2587,10 +2591,10 @@ class ABJ_404_Solution_View {
 
             $recordCount = 0;
             if ($type == ABJ404_STATUS_MANUAL) {
-                $title = "Manual Redirects";
+                $title = __('Manual Redirects', '404-solution');
                 $recordCount = $this->dao->getRecordCount(array($type, ABJ404_STATUS_REGEX));
             } else if ($type == ABJ404_STATUS_AUTO) {
-                $title = "Automatic Redirects";
+                $title = __('Automatic Redirects', '404-solution');
                 $recordCount = $this->dao->getRecordCount(array($type));
             } else if ($type == ABJ404_STATUS_CAPTURED) {
                 $title = "Captured URLs";

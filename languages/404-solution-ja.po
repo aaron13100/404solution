@@ -21,6 +21,25 @@ msgstr ""
 "X-Poedit-SearchPath-0: .\n"
 
 
+# translation-verified: Product name "404 Solution" intentionally in English
+msgid "404 Solution - Deactivation Options"
+msgstr "404 Solution - 無効化オプション"
+
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgid "Deactivate Plugin"
+msgstr "プラグインを無効化"
+
+msgid "Deactivating"
+msgstr "無効化中"
+
+msgid "Saving..."
+msgstr "保存中..."
+
+msgid "Settings"
+msgstr "設定"
+
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution: %d件のリダイレクトをサブディレクトリに依存しない形式に移行しました。"
 msgid "%1$s - %2$s of %3$s"
@@ -209,7 +228,6 @@ msgstr "ログとプライバシー"
 
 msgid "Advanced Configuration"
 msgstr "詳細設定"
-msgstr "詳細設定（その他）"
 
 msgid "Expand All"
 msgstr "すべて展開"
@@ -1560,3 +1578,35 @@ msgstr "このプラグインの管理インターフェースで使用される
 #: includes/PluginLogic.php
 msgid "Error: Invalid language selected"
 msgstr "エラー：無効な言語が選択されました"
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When an error is detected by the plugin, email the entire log file to the developer. This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). Log files are checked daily when maintenance is run."
+msgstr "プラグインがエラーを検出すると、ログファイル全体を開発者にメールで送信します。これはプラグインが機能するために必要ではありませんが、開発者および将来のバージョンのプラグインにとって役立ちます。これにより、デバッグログのすべて、管理者のメールアドレス、インストールされたPHP拡張機能、アクティブなプラグイン、PHPバージョン、WordPressバージョン、MySQLバージョン、公開されたページと投稿の合計数など（問題が報告されたときに要求されるすべて）が明らかになります。ログファイルはメンテナンスの実行時に毎日チェックされます。"
+
+#: includes/html/viewSuggestions.html
+msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
+msgstr "ショートコード[abj404_solution_page_suggestions]を使用して、最も近いページを表示します。"
+
+#: includes/html/viewSuggestions.html
+msgid "This shortcode can be used on the 404 page and will display a list of suggested pages. This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
+msgstr "このショートコードは404ページで使用でき、提案されたページのリストを表示します。これは、ユーザーが存在しないページをリクエストし、一致するページに自動的にリダイレクトされない場合のためのものです。"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for search engine bots that do need to be redirected when the slug structure changes. Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
+msgstr "これは、スラグ構造が変更されたときにリダイレクトする必要がある検索エンジンボットに最適です。ユーザーエージェントごとに1行を使用します。ユーザーエージェント文字列のどこかにテキストが見つかった場合、それが適用されます。"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for internal processes that don't need to be redirected when the slug structure changes. Search engine user agents should not go here so that they will be redirected when the slug structure changes."
+msgstr "これは、スラグ構造が変更されたときにリダイレクトする必要のない内部プロセスに最適です。検索エンジンのユーザーエージェントは、スラグ構造が変更されたときにリダイレクトされるように、ここに配置しないでください。"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedContent.html
+msgid "Pages listed here will not be redirected to (unless a redirect to the page already exists)."
+msgstr "ここにリストされているページにはリダイレクトされません（ページへのリダイレクトがすでに存在する場合を除く）。"
+
+#: includes/html/settingsAdvanced.html
+msgid "The plugin will only redirect the post types specified here. Default WordPress post types are \"post\" and \"page.\" The \"product\" type is for WooCommerce users."
+msgstr "プラグインは、ここで指定された投稿タイプのみをリダイレクトします。デフォルトのWordPress投稿タイプは「post」と「page」です。「product」タイプはWooCommerceユーザー用です。"
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
+msgstr "キャプチャされた404の数が管理者通知を引き起こす場合、ここで指定されたアドレスにメールが送信されます。複数のメールアドレスはカンマ（,）で区切ることができます。「差出人」メールアドレスは常にデフォルトのWordPress管理者メールです："

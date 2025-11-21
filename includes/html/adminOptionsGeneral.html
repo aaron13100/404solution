@@ -1,10 +1,7 @@
 <p>
     <label for="send_error_logs">{Help the developer by sending error logs}:</label>
     <input type="checkbox" name="send_error_logs" id="send_error_logs" value="1" {selectedSendErrorLogs}>
-    <BR/>&nbsp;&nbsp;&nbsp;{When an error is detected by the plugin, email the entire log file to the developer. }
-    {This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. }
-    {This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). } 
-    {Log files are checked daily when maintenance is run. }
+    <BR/>&nbsp;&nbsp;&nbsp;{When an error is detected by the plugin, email the entire log file to the developer. This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). Log files are checked daily when maintenance is run.}
 </p>
 
 <p>
@@ -26,8 +23,7 @@
 <p>
     <label for="admin_notification_email">{Admin notification email(s)}:</label>
     <input type="text" name="admin_notification_email" id="admin_notification_email" value="{admin_notification_email}" style="width: 500px;">
-    <BR/>&nbsp;&nbsp;&nbsp;{When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. }
-    {Multiple email addresses can be separated by commas (,). The "from" email address is always the default WordPress admin email: } 
+    <BR/>&nbsp;&nbsp;&nbsp;{When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The "from" email address is always the default WordPress admin email:} 
     <span style="font-weight: bold;">{default_wordpress_admin_email}</span>. 
     {One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings.} 
 </p>
@@ -63,7 +59,7 @@
 <p>
     <label for="admin_theme">{Admin theme}:</label>
     <select name="admin_theme" id="admin_theme">
-        <option value="default" {selectedThemeDefault}>{Default}</option>
+        <option value="default" {selectedThemeDefault}>{theme_default}</option>
         <option value="calm" {selectedThemeCalm}>{Calm Ops (Light)}</option>
         <option value="mono" {selectedThemeMono}>{Monochrome Minimal (Light)}</option>
         <option value="neon" {selectedThemeNeon}>{Neon Slate (Dark)}</option>
