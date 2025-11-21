@@ -263,9 +263,8 @@ class ABJ_404_Solution_DataAccess {
     /**
      * Extract filename from SQL comment wrapper for safe logging.
      *
-     * When SQL files are loaded, they include comments like:
-     * /* -- /full/path/to/file.sql BEGIN -- */
-     * This extracts just the filename (file.sql) for production logging
+     * When SQL files are loaded, they're wrapped in comment blocks with the filename.
+     * This extracts just the filename (e.g. "file.sql") for production logging
      * without exposing potentially sensitive query content or PII.
      *
      * @param string $query The SQL query potentially containing a filename comment
