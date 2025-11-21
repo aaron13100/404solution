@@ -144,6 +144,12 @@ class ABJ_404_Solution_WordPress_Connector {
                 array('jquery'));
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-general-js', plugin_dir_url(__FILE__) . 'js/general.js',
         	array('jquery'));
+
+        // Localize general.js strings for translation
+        wp_localize_script('abj404-general-js', 'abj404General', array(
+            'savingSettings' => __('Saving settings...', '404-solution'),
+        ));
+
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-theme-preview', plugin_dir_url(__FILE__) . 'js/themePreview.js',
         	array('jquery'));
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-options-accordion', plugin_dir_url(__FILE__) . 'js/optionsAccordion.js',

@@ -122,7 +122,7 @@ function showSaveOverlay() {
         // Update message to default
         var message = overlay.querySelector('.abj404-save-message');
         if (message) {
-            message.textContent = 'Saving settings...';
+            message.textContent = abj404General.savingSettings;
         }
     }
 }
