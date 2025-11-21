@@ -248,11 +248,17 @@ function abj404_networkActivationListener() {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	ABJ_404_Solution_PluginLogic::networkActivationCronHandler();
 }
+function abj404_networkActivationBackgroundListener() {
+	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+	$upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+	$upgradesEtc->processMultisiteActivationBatch();
+}
 add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
 add_action('abj404_updateLogsHitsTableAction', 'abj404_updateLogsHitsTableListener');
 add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheListener', 10, 2);
 add_action('abj404_rebuild_ngram_cache_hook', 'abj404_rebuildNGramCacheListener', 10, 1);
 add_action('abj404_network_activation_hook', 'abj404_networkActivationListener');
+add_action('abj404_network_activation_background', 'abj404_networkActivationBackgroundListener');
 
 function abj404_getUploadsDir() {
 	// figure out the temp directory location.

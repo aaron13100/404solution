@@ -98,9 +98,22 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->correctIssuesBefore();
     	}
 
-    	// MULTISITE: Create tables for all sites in the network when network-activated
+    	// MULTISITE: Process current site immediately, schedule background task for remaining sites
     	if ($this->isNetworkActivated()) {
-    		$this->createTablesForAllSites();
+    		// Create tables for current site immediately (prevents timeout on activation)
+    		$currentBlogId = get_current_blog_id();
+    		$this->runInitialCreateTables();
+    		$this->correctCollations();
+    		$this->updateTableEngineToInnoDB();
+    		$this->createIndexes();
+
+    		$this->logger->infoMessage(sprintf(
+    			"Network activation: Created tables for current site (ID %d). Scheduling background task for remaining sites.",
+    			$currentBlogId
+    		));
+
+    		// Schedule background processing for all other sites
+    		$this->scheduleBackgroundMultisiteActivation($currentBlogId);
     	} else {
     		// Single site or site-activated: create tables for current site only
     		$this->runInitialCreateTables();
@@ -254,6 +267,132 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
         $this->dao->queryAndGetResults($query);
         $this->verifyColumns($lookupTable, $query);
+    }
+
+    /**
+     * Schedule background multisite activation to process remaining sites via WP-Cron.
+     *
+     * @param int $alreadyProcessedBlogId Blog ID that was already processed during activation
+     */
+    private function scheduleBackgroundMultisiteActivation($alreadyProcessedBlogId) {
+        // Store the processed blog ID so cron handler knows to skip it
+        update_site_option('abj404_activation_processed_blogs', array($alreadyProcessedBlogId));
+        update_site_option('abj404_activation_in_progress', true);
+
+        // Schedule immediate execution (within 30 seconds)
+        $hookName = 'abj404_network_activation_background';
+
+        // Check if already scheduled
+        if (wp_next_scheduled($hookName)) {
+            $this->logger->debugMessage("Background multisite activation already scheduled.");
+            return;
+        }
+
+        $scheduled = wp_schedule_single_event(time() + 30, $hookName);
+
+        if ($scheduled === false) {
+            $this->logger->errorMessage("Failed to schedule background multisite activation. Remaining sites will not have tables created automatically.");
+        } else {
+            $this->logger->infoMessage("Background multisite activation scheduled successfully.");
+        }
+    }
+
+    /**
+     * Process multisite activation in batches (called by WP-Cron).
+     *
+     * Processes remaining sites that weren't handled during initial activation.
+     * Processes up to 10 sites per run to avoid timeouts, then reschedules itself
+     * if more sites remain.
+     *
+     * @return bool True if all sites processed, false if more remain
+     */
+    public function processMultisiteActivationBatch() {
+        global $wpdb;
+
+        // Get list of already processed blogs
+        $processedBlogs = get_site_option('abj404_activation_processed_blogs', array());
+        if (!is_array($processedBlogs)) {
+            $processedBlogs = array();
+        }
+
+        // Get all sites in the network
+        $allSites = get_sites(array('fields' => 'ids', 'number' => 0));
+        $remainingSites = array_diff($allSites, $processedBlogs);
+
+        if (empty($remainingSites)) {
+            // All sites processed - cleanup and exit
+            delete_site_option('abj404_activation_processed_blogs');
+            delete_site_option('abj404_activation_in_progress');
+            $this->logger->infoMessage("Background multisite activation complete. All sites processed.");
+            return true;
+        }
+
+        // Process up to 10 sites per batch to avoid timeouts
+        $batchSize = 10;
+        $sitesToProcess = array_slice($remainingSites, 0, $batchSize);
+        $totalRemaining = count($remainingSites);
+
+        $this->logger->infoMessage(sprintf(
+            "Processing multisite activation batch: %d sites (of %d remaining)",
+            count($sitesToProcess),
+            $totalRemaining
+        ));
+
+        foreach ($sitesToProcess as $siteId) {
+            try {
+                switch_to_blog($siteId);
+
+                $this->logger->debugMessage(sprintf(
+                    "Creating tables for site ID %d (prefix: %s)...",
+                    $siteId,
+                    $wpdb->prefix
+                ));
+
+                $this->runInitialCreateTables();
+                $this->correctCollations();
+                $this->updateTableEngineToInnoDB();
+                $this->createIndexes();
+
+                $processedBlogs[] = $siteId;
+                update_site_option('abj404_activation_processed_blogs', $processedBlogs);
+
+                $this->logger->debugMessage(sprintf(
+                    "Successfully created tables for site ID %d",
+                    $siteId
+                ));
+
+            } catch (Throwable $e) {
+                $this->logger->errorMessage(sprintf(
+                    "Failed to create tables for site ID %d: %s",
+                    $siteId,
+                    $e->getMessage()
+                ));
+                // Mark as processed anyway to avoid getting stuck
+                $processedBlogs[] = $siteId;
+                update_site_option('abj404_activation_processed_blogs', $processedBlogs);
+            } finally {
+                restore_current_blog();
+            }
+        }
+
+        // If more sites remain, reschedule
+        $stillRemaining = count($remainingSites) - count($sitesToProcess);
+        if ($stillRemaining > 0) {
+            $this->logger->infoMessage(sprintf(
+                "Batch complete. Rescheduling for %d remaining sites.",
+                $stillRemaining
+            ));
+
+            // Schedule next batch in 30 seconds
+            wp_schedule_single_event(time() + 30, 'abj404_network_activation_background');
+            return false;
+        } else {
+            // All done
+            delete_site_option('abj404_activation_processed_blogs');
+            delete_site_option('abj404_activation_in_progress');
+            $this->logger->infoMessage("Background multisite activation complete. All sites processed.");
+            return true;
+        }
     }
 
     /**

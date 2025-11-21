@@ -259,7 +259,26 @@ class ABJ_404_Solution_DataAccess {
 
     	return $existingTableSQL;
     }
-    
+
+    /**
+     * Extract filename from SQL comment wrapper for safe logging.
+     *
+     * When SQL files are loaded, they include comments like:
+     * /* -- /full/path/to/file.sql BEGIN -- */
+     * This extracts just the filename (file.sql) for production logging
+     * without exposing potentially sensitive query content or PII.
+     *
+     * @param string $query The SQL query potentially containing a filename comment
+     * @return string The extracted filename or 'inline-query' if no comment found
+     */
+    private function extractSqlFilename($query) {
+        // Extract filename from: /* -- /path/to/file.sql BEGIN -- */
+        if (preg_match('/\/\*\s*-+\s*(.+?\.sql)\s+BEGIN\s*-+\s*\*\//i', $query, $matches)) {
+            return basename($matches[1]);
+        }
+        return 'inline-query';
+    }
+
     /** Return the results of the query in a variable.
      * @param string $query
      * @param array $options
@@ -358,8 +377,11 @@ class ABJ_404_Solution_DataAccess {
                     $stripped_query = "((" . ABJ_404_Solution_WPUtils::stringify_wp_error($stripped_query) . "))";
                 }
 
+                // In production (WP_DEBUG off), only log SQL filename to avoid PII exposure
+                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
+
                 $this->logger->errorMessage("Ugh. SQL query error: " . $result['last_error'] .
-					    ", SQL: " . $query .
+					    ", SQL: " . $sqlInfo .
 	            	    ", Execution time: " . round($timer->getElapsedTime(), 2) .
 	            	    ", DB ver: " . $wpdb->db_version() .
             		    ", Variables: " . $variables .
@@ -368,8 +390,10 @@ class ABJ_404_Solution_DataAccess {
             
         } else {
             if ($options['log_too_slow'] && $timer->getElapsedTime() > 5) {
+                // In production (WP_DEBUG off), only log SQL filename to avoid PII exposure
+                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
                 $this->logger->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " .
-                        $query);
+                        $sqlInfo);
             }
         }
         

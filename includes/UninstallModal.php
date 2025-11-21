@@ -264,11 +264,13 @@ class ABJ_404_Solution_UninstallModal {
             'feedback_details' => isset($_POST['feedback_details']) ? sanitize_textarea_field($_POST['feedback_details']) : ''
         );
 
-        // Debug logging
-        error_log('404 Solution: AJAX handler received deactivation preferences');
-        error_log('404 Solution: Raw POST send_feedback = ' . (isset($_POST['send_feedback']) ? $_POST['send_feedback'] : 'NOT SET'));
-        error_log('404 Solution: Parsed send_feedback = ' . ($preferences['send_feedback'] ? 'true' : 'false'));
-        error_log('404 Solution: Parsed preferences: ' . print_r($preferences, true));
+        // Debug logging (only in debug mode to avoid logging PII like email/feedback in production)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('404 Solution: AJAX handler received deactivation preferences');
+            error_log('404 Solution: Raw POST send_feedback = ' . (isset($_POST['send_feedback']) ? $_POST['send_feedback'] : 'NOT SET'));
+            error_log('404 Solution: Parsed send_feedback = ' . ($preferences['send_feedback'] ? 'true' : 'false'));
+            error_log('404 Solution: Parsed preferences: ' . print_r($preferences, true));
+        }
 
         // Save preferences using site options for multisite compatibility
         // In multisite, use site_option for network-activated plugins, regular option for single-site
@@ -288,7 +290,9 @@ class ABJ_404_Solution_UninstallModal {
         $has_feedback_text = $preferences['send_feedback'] && !empty($preferences['feedback_details']);
         $should_send_email = $has_reason || $has_feedback_text;
 
-        error_log('404 Solution: has_reason=' . ($has_reason ? 'true' : 'false') . ', has_feedback_text=' . ($has_feedback_text ? 'true' : 'false') . ', should_send_email=' . ($should_send_email ? 'true' : 'false'));
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('404 Solution: has_reason=' . ($has_reason ? 'true' : 'false') . ', has_feedback_text=' . ($has_feedback_text ? 'true' : 'false') . ', should_send_email=' . ($should_send_email ? 'true' : 'false'));
+        }
 
         $email_sent = false;
         if ($saved !== false && $should_send_email) {
@@ -430,23 +434,29 @@ class ABJ_404_Solution_UninstallModal {
         // Send email to plugin author
         $to = defined('ABJ404_AUTHOR_EMAIL') ? ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';
 
-        // Log email attempt
-        error_log('404 Solution: Attempting to send feedback email to ' . $to);
-        error_log('404 Solution: Email subject: ' . $subject);
-        error_log('404 Solution: Feedback checkbox was checked: send_feedback=' . ($preferences['send_feedback'] ? 'true' : 'false'));
+        // Log email attempt (only in debug mode)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('404 Solution: Attempting to send feedback email to ' . $to);
+            error_log('404 Solution: Email subject: ' . $subject);
+            error_log('404 Solution: Feedback checkbox was checked: send_feedback=' . ($preferences['send_feedback'] ? 'true' : 'false'));
+        }
 
-        // Hook to log wp_mail failures
-        add_action('wp_mail_failed', function($error) {
-            error_log('404 Solution: wp_mail() FAILED - ' . $error->get_error_message());
-        });
+        // Hook to log wp_mail failures (only in debug mode)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            add_action('wp_mail_failed', function($error) {
+                error_log('404 Solution: wp_mail() FAILED - ' . $error->get_error_message());
+            });
+        }
 
         $result = wp_mail($to, $subject, $body, $headers);
 
-        // Log result
-        if ($result) {
-            error_log('404 Solution: wp_mail() returned TRUE - email sent successfully');
-        } else {
-            error_log('404 Solution: wp_mail() returned FALSE - email send failed');
+        // Log result (only in debug mode)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            if ($result) {
+                error_log('404 Solution: wp_mail() returned TRUE - email sent successfully');
+            } else {
+                error_log('404 Solution: wp_mail() returned FALSE - email send failed');
+            }
         }
 
         return $result;
