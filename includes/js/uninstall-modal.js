@@ -212,13 +212,13 @@
 
                     // Re-enable buttons and update text
                     $buttons.prop('disabled', false);
-                    $buttons.filter('.button-danger').text('Deactivating in 3...');
+                    $buttons.filter('.button-danger').text('Deactivating');
 
                     var countdown = 3;
                     var countdownInterval = setInterval(function() {
                         countdown--;
                         if (countdown > 0) {
-                            $buttons.filter('.button-danger').text('Deactivating in ' + countdown + '...');
+                            // Countdown continues silently without updating button text
                         } else {
                             clearInterval(countdownInterval);
                             window.location.href = deactivateUrl;
