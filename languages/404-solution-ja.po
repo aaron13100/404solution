@@ -199,7 +199,7 @@ msgstr "高度な設定"
 
 
 msgid "Advanced Settings (Etc)"
-msgstr "Advanced Settings (Etc)"
+msgstr "詳細設定（その他）"
 
 msgid "Content & URL Filtering"
 msgstr "コンテンツとURLのフィルタリング"
@@ -1467,7 +1467,7 @@ msgid "Other reason"
 msgstr "その他の理由"
 
 msgid "Help us improve (Optional)"
-msgstr "Help us improve (Optional)"
+msgstr "改善にご協力ください（任意）"
 
 msgid "Help improve the plugin (Optional)"
 msgstr "プラグインの改善にご協力ください（任意）"

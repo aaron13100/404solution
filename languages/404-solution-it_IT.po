@@ -1461,7 +1461,7 @@ msgid "Other reason"
 msgstr "Altro motivo"
 
 msgid "Help us improve (Optional)"
-msgstr "Help us improve (Optional)"
+msgstr "Aiutaci a migliorare (Opzionale)"
 
 msgid "Help improve the plugin (Optional)"
 msgstr "Aiutaci a migliorare il plugin (Opzionale)"

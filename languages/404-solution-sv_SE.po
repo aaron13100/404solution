@@ -1460,7 +1460,7 @@ msgid "Other reason"
 msgstr "Annan anledning"
 
 msgid "Help us improve (Optional)"
-msgstr "Help us improve (Optional)"
+msgstr "Hjälp oss att förbättra (Valfritt)"
 
 msgid "Help improve the plugin (Optional)"
 msgstr "Hjälp till att förbättra plugin:et (Valfritt)"
