@@ -295,7 +295,8 @@ add_filter('plugin_locale', 'abj404_override_plugin_locale', 999, 2);
 function abj404_loadSomethingWhenWordPressIsReady() {
 	/** Load the text domain for translation of the plugin. */
 	$options = get_option('abj404_settings');
-	$override_locale = !empty($options['plugin_language_override']) ? $options['plugin_language_override'] : '';
+	$override_locale = (is_array($options) && !empty($options['plugin_language_override']))
+		? $options['plugin_language_override'] : '';
 
 	if (!empty($override_locale)) {
 		// Directly load the specific .mo file for the override locale

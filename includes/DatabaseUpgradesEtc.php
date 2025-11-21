@@ -99,7 +99,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	}
 
     	// MULTISITE: Process current site immediately, schedule background task for remaining sites
-    	if ($this->isNetworkActivated()) {
+    	// Only during activation, not during updates/repairs
+    	if ($this->isNetworkActivated() && !$updatingToNewVersion) {
     		// Create tables for current site immediately (prevents timeout on activation)
     		$currentBlogId = get_current_blog_id();
     		$this->runInitialCreateTables();
@@ -343,27 +344,36 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 switch_to_blog($siteId);
 
                 $this->logger->debugMessage(sprintf(
-                    "Creating tables for site ID %d (prefix: %s)...",
+                    "Activating site ID %d (prefix: %s)...",
                     $siteId,
                     $wpdb->prefix
                 ));
+
+                // Run full activation for this site (not just table creation)
+                add_option('abj404_settings', '', '', 'no');
 
                 $this->runInitialCreateTables();
                 $this->correctCollations();
                 $this->updateTableEngineToInnoDB();
                 $this->createIndexes();
 
+                ABJ_404_Solution_PluginLogic::doRegisterCrons();
+
+                // Update DB version for this site
+                $logic = ABJ_404_Solution_PluginLogic::getInstance();
+                $logic->doUpdateDBVersionOption();
+
                 $processedBlogs[] = $siteId;
                 update_site_option('abj404_activation_processed_blogs', $processedBlogs);
 
                 $this->logger->debugMessage(sprintf(
-                    "Successfully created tables for site ID %d",
+                    "Successfully activated site ID %d",
                     $siteId
                 ));
 
             } catch (Throwable $e) {
                 $this->logger->errorMessage(sprintf(
-                    "Failed to create tables for site ID %d: %s",
+                    "Failed to activate site ID %d: %s",
                     $siteId,
                     $e->getMessage()
                 ));

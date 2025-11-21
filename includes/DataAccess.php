@@ -326,7 +326,9 @@ class ABJ_404_Solution_DataAccess {
         $result['insert_id'] = $wpdb->insert_id;
         
         if (!is_array($result['rows'])) {
-            $this->logger->errorMessage("Query result is not an array. Query: " . $query,
+            // In production (WP_DEBUG off), only log SQL filename to avoid PII exposure
+            $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
+            $this->logger->errorMessage("Query result is not an array. Query: " . $sqlInfo,
         			new Exception("Query result is not an array."));
         }
         
