@@ -1001,10 +1001,37 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
 
             // Schedule to run in 30 seconds (gives time for activation to complete)
-            $scheduled = wp_schedule_single_event(time() + 30, 'abj404_rebuild_ngram_cache_hook');
+            $scheduleTime = time() + 30;
+            $hookName = 'abj404_rebuild_ngram_cache_hook';
+            $scheduled = wp_schedule_single_event($scheduleTime, $hookName);
 
             if ($scheduled === false) {
-                $this->logger->errorMessage("Failed to schedule N-gram cache rebuild.");
+                global $wpdb;
+
+                // Gather comprehensive diagnostic information for troubleshooting
+                $cronDisabled = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
+                $alreadyScheduled = wp_next_scheduled($hookName);
+                $dbError = !empty($wpdb->last_error) ? $wpdb->last_error : 'none';
+                $rebuildOffset = $this->getNetworkAwareOption('abj404_ngram_rebuild_offset', 'not set');
+                $cacheInitialized = $this->getNetworkAwareOption('abj404_ngram_cache_initialized', 'not set');
+
+                $errorMsg = sprintf(
+                    "Failed to schedule N-gram cache rebuild. Hook: %s, Schedule time: %d (current: %d), " .
+                    "Already scheduled: %s, WP-Cron disabled: %s, DB error: %s, " .
+                    "Rebuild offset: %s, Cache initialized: %s, Multisite: %s, Blog ID: %d",
+                    $hookName,
+                    $scheduleTime,
+                    time(),
+                    $alreadyScheduled ? date('Y-m-d H:i:s', $alreadyScheduled) : 'no',
+                    $cronDisabled ? 'yes' : 'no',
+                    $dbError,
+                    $rebuildOffset,
+                    $cacheInitialized,
+                    is_multisite() ? 'yes' : 'no',
+                    get_current_blog_id()
+                );
+
+                $this->logger->errorMessage($errorMsg);
                 return false;
             }
 
@@ -1248,9 +1275,37 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 ));
 
                 if ($offset < $totalPages) {
-                    $scheduled = wp_schedule_single_event(time() + 10, 'abj404_rebuild_ngram_cache_hook', [$offset]);
+                    $scheduleTime = time() + 10;
+                    $hookName = 'abj404_rebuild_ngram_cache_hook';
+                    $scheduled = wp_schedule_single_event($scheduleTime, $hookName, [$offset]);
+
                     if ($scheduled === false) {
-                        $this->logger->errorMessage("Failed to schedule next N-gram rebuild batch at offset {$offset}");
+                        global $wpdb;
+
+                        // Gather comprehensive diagnostic information for troubleshooting
+                        $cronDisabled = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
+                        $alreadyScheduled = wp_next_scheduled($hookName, [$offset]);
+                        $dbError = !empty($wpdb->last_error) ? $wpdb->last_error : 'none';
+                        $cacheInitialized = $this->getNetworkAwareOption('abj404_ngram_cache_initialized', 'not set');
+
+                        $errorMsg = sprintf(
+                            "Failed to schedule next N-gram rebuild batch at offset %d. Hook: %s, Schedule time: %d (current: %d), " .
+                            "Already scheduled: %s, WP-Cron disabled: %s, DB error: %s, " .
+                            "Cache initialized: %s, Progress: %.1f%%, Multisite: %s, Blog ID: %d",
+                            $offset,
+                            $hookName,
+                            $scheduleTime,
+                            time(),
+                            $alreadyScheduled ? date('Y-m-d H:i:s', $alreadyScheduled) : 'no',
+                            $cronDisabled ? 'yes' : 'no',
+                            $dbError,
+                            $cacheInitialized,
+                            $progress,
+                            is_multisite() ? 'yes' : 'no',
+                            get_current_blog_id()
+                        );
+
+                        $this->logger->errorMessage($errorMsg);
                     }
                 } else {
                     // All done!
