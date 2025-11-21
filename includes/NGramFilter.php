@@ -519,6 +519,12 @@ class ABJ_404_Solution_NGramFilter {
         $queryNGrams = $this->extractNGrams($url404Normalized);
         $queryCombinedCount = count($queryNGrams['bi']) + count($queryNGrams['tri']);
 
+        // Early return if search term is too short for N-gram filtering
+        if ($queryCombinedCount == 0) {
+            $this->logger->debugMessage("Search term too short for N-gram filtering: '{$url404}'");
+            return [];
+        }
+
         // Check cache size to determine strategy
         $table = $wpdb->prefix . 'abj404_ngram_cache';
         $totalCount = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
@@ -571,7 +577,11 @@ class ABJ_404_Solution_NGramFilter {
             // Quick optimization: Skip if N-gram counts are too different
             // (This is redundant for filtered queries but kept for unfiltered path)
             $pageCombinedCount = $page['ngram_count'];
-            $countRatio = min($queryCombinedCount, $pageCombinedCount) / max($queryCombinedCount, $pageCombinedCount);
+            $denominator = max($queryCombinedCount, $pageCombinedCount);
+            if ($denominator == 0) {
+                continue; // Skip comparison when both have no n-grams
+            }
+            $countRatio = min($queryCombinedCount, $pageCombinedCount) / $denominator;
             if ($countRatio < 0.4) {
                 continue;
             }
