@@ -198,6 +198,7 @@ msgid "Advanced"
 msgstr "Avancerat"
 
 msgid "Advanced Settings (Etc)"
+msgstr "Advanced Settings (Etc)"
 
 msgid "Content & URL Filtering"
 msgstr "Innehålls- och URL-filtrering"
@@ -220,9 +221,6 @@ msgstr "Feedback skickad framgångsrikt."
 
 msgid "Note: Feedback email could not be sent."
 msgstr "Obs: Feedback-e-post kunde inte skickas."
-
-msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
-msgstr "Tar bort fångade 404-URL:er om de inte har använts under den angivna tidsperioden."
 
 msgid "All"
 msgstr "Alla"
@@ -1413,9 +1411,6 @@ msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking 
 msgstr "404 Solution: Byggde N-gram cache för %d sidor för att optimera stavningskontrollprestanda."
 
 #: includes/DatabaseUpgradesEtc.php:140
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: Migrerade %d omdirigeringar till underkatalogsoberoende format."
-
 msgid "Before deactivating:"
 msgstr "Före avaktivering:"
 
@@ -1465,6 +1460,7 @@ msgid "Other reason"
 msgstr "Annan anledning"
 
 msgid "Help us improve (Optional)"
+msgstr "Help us improve (Optional)"
 
 msgid "Help improve the plugin (Optional)"
 msgstr "Hjälp till att förbättra plugin:et (Valfritt)"
@@ -1475,7 +1471,6 @@ msgstr "Dela varför du avaktiverar. Din feedback hjälper oss att förbättra."
 
 msgid "Email Feedback & Deactivate"
 msgstr "Skicka feedback och avaktivera"
-msgstr "Hjälp oss att förbättra (Valfritt)"
 
 msgid "Send feedback to help improve the plugin"
 msgstr "Skicka feedback för att hjälpa till att förbättra plugin:et"

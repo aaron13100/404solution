@@ -198,6 +198,7 @@ msgid "Advanced"
 msgstr "Avancé"
 
 msgid "Advanced Settings (Etc)"
+msgstr "Advanced Settings (Etc)"
 
 msgid "Content & URL Filtering"
 msgstr "Filtrage de Contenu et URL"
@@ -207,7 +208,6 @@ msgstr "Journalisation et Confidentialité"
 
 msgid "Advanced Configuration"
 msgstr "Configuration Avancée"
-msgstr "Paramètres avancés (etc.)"
 
 msgid "Expand All"
 msgstr "Tout développer"
@@ -220,9 +220,6 @@ msgstr "Commentaires envoyés avec succès."
 
 msgid "Note: Feedback email could not be sent."
 msgstr "Note : L'e-mail de commentaire n'a pas pu être envoyé."
-
-msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
-msgstr "Supprime les URLs 404 capturées qui n'ont pas été utilisées pendant la durée spécifiée."
 
 msgid "All"
 msgstr "Tous"
@@ -1415,9 +1412,6 @@ msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking 
 msgstr "404 Solution : Cache N-gram construit pour %d pages afin d'optimiser les performances de vérification orthographique."
 
 #: includes/DatabaseUpgradesEtc.php:140
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution : %d redirections migrées vers un format indépendant des sous-répertoires."
-
 msgid "Before deactivating:"
 msgstr "Avant de désactiver :"
 
@@ -1467,6 +1461,7 @@ msgid "Other reason"
 msgstr "Autre raison"
 
 msgid "Help us improve (Optional)"
+msgstr "Help us improve (Optional)"
 
 msgid "Help improve the plugin (Optional)"
 msgstr "Aider à améliorer le plugin (Optionnel)"
@@ -1477,7 +1472,6 @@ msgstr "Partagez pourquoi vous désactivez. Vos commentaires nous aident à nous
 
 msgid "Email Feedback & Deactivate"
 msgstr "Envoyer commentaires et désactiver"
-msgstr "Aidez-nous à améliorer ce plugin (Optionnel)"
 
 msgid "Send feedback to help improve the plugin"
 msgstr "Envoyez vos commentaires pour nous aider à améliorer le plugin"

@@ -199,6 +199,7 @@ msgstr "Lanjutan"
 
 
 msgid "Advanced Settings (Etc)"
+msgstr "Advanced Settings (Etc)"
 
 msgid "Content & URL Filtering"
 msgstr "Penyaringan Konten & URL"
@@ -221,9 +222,6 @@ msgstr "Umpan balik berhasil dikirim."
 
 msgid "Note: Feedback email could not be sent."
 msgstr "Catatan: Email umpan balik tidak dapat dikirim."
-
-msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
-msgstr "Menghapus URL 404 yang ditangkap jika belum digunakan selama waktu yang ditentukan."
 
 msgid "All"
 msgstr "Semua"
@@ -1413,9 +1411,6 @@ msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking 
 msgstr "404 Solution: Cache N-gram dibangun untuk %d halaman untuk mengoptimalkan kinerja pemeriksaan ejaan."
 
 #: includes/DatabaseUpgradesEtc.php:140
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: Memigrasikan %d pengalihan ke format independen subdirektori."
-
 msgid "Before deactivating:"
 msgstr "Sebelum menonaktifkan:"
 
@@ -1465,6 +1460,7 @@ msgid "Other reason"
 msgstr "Alasan lain"
 
 msgid "Help us improve (Optional)"
+msgstr "Help us improve (Optional)"
 
 msgid "Help improve the plugin (Optional)"
 msgstr "Bantu meningkatkan plugin (Opsional)"
@@ -1475,7 +1471,6 @@ msgstr "Bagikan alasan Anda menonaktifkan. Masukan Anda membantu kami untuk berk
 
 msgid "Email Feedback & Deactivate"
 msgstr "Kirim masukan dan nonaktifkan"
-msgstr "Bantu kami meningkatkan (Opsional)"
 
 msgid "Send feedback to help improve the plugin"
 msgstr "Kirim masukan untuk membantu meningkatkan plugin"

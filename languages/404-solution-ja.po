@@ -199,6 +199,7 @@ msgstr "高度な設定"
 
 
 msgid "Advanced Settings (Etc)"
+msgstr "Advanced Settings (Etc)"
 
 msgid "Content & URL Filtering"
 msgstr "コンテンツとURLのフィルタリング"
@@ -221,9 +222,6 @@ msgstr "フィードバックが正常に送信されました。"
 
 msgid "Note: Feedback email could not be sent."
 msgstr "注意：フィードバックメールを送信できませんでした。"
-
-msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
-msgstr "指定された時間使用されていないキャプチャされた404 URLを削除します。"
 
 msgid "All"
 msgstr "すべて"
@@ -1420,9 +1418,6 @@ msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking 
 msgstr "404 Solution: スペルチェックのパフォーマンスを最適化するため、%d件のページ用にN-gramキャッシュを構築しました。"
 
 #: includes/DatabaseUpgradesEtc.php:140
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: %d件のリダイレクトをサブディレクトリに依存しない形式に移行しました。"
-
 msgid "Before deactivating:"
 msgstr "無効化する前に："
 
@@ -1472,6 +1467,7 @@ msgid "Other reason"
 msgstr "その他の理由"
 
 msgid "Help us improve (Optional)"
+msgstr "Help us improve (Optional)"
 
 msgid "Help improve the plugin (Optional)"
 msgstr "プラグインの改善にご協力ください（任意）"
@@ -1482,7 +1478,6 @@ msgstr "無効化する理由を共有してください。お客様のフィー
 
 msgid "Email Feedback & Deactivate"
 msgstr "フィードバックを送信して無効化"
-msgstr "改善にご協力ください（任意）"
 
 msgid "Send feedback to help improve the plugin"
 msgstr "プラグインの改善に役立つフィードバックを送信する"

@@ -199,6 +199,7 @@ msgstr "Дополнительно"
 
 
 msgid "Advanced Settings (Etc)"
+msgstr "Advanced Settings (Etc)"
 
 msgid "Content & URL Filtering"
 msgstr "Фильтрация Контента и URL"
@@ -221,9 +222,6 @@ msgstr "Отзыв успешно отправлен."
 
 msgid "Note: Feedback email could not be sent."
 msgstr "Примечание: Письмо с отзывом не может быть отправлено."
-
-msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
-msgstr "Удаляет захваченные URL-адреса 404, которые не использовались в течение указанного времени."
 
 msgid "All"
 msgstr "Все"
@@ -1417,9 +1415,6 @@ msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking 
 msgstr "404 Solution: Создан кэш N-gram для %d страниц для оптимизации производительности проверки орфографии."
 
 #: includes/DatabaseUpgradesEtc.php:140
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: Мигрировано %d перенаправлений в формат, независимый от подкаталогов."
-
 msgid "Before deactivating:"
 msgstr "Перед деактивацией:"
 
@@ -1469,6 +1464,7 @@ msgid "Other reason"
 msgstr "Другая причина"
 
 msgid "Help us improve (Optional)"
+msgstr "Help us improve (Optional)"
 
 msgid "Help improve the plugin (Optional)"
 msgstr "Помочь улучшить плагин (Необязательно)"
@@ -1479,7 +1475,6 @@ msgstr "Поделитесь, почему вы деактивируете. Ва
 
 msgid "Email Feedback & Deactivate"
 msgstr "Отправить отзыв и деактивировать"
-msgstr "Помогите нам улучшиться (Необязательно)"
 
 msgid "Send feedback to help improve the plugin"
 msgstr "Отправить отзыв, чтобы помочь улучшить плагин"

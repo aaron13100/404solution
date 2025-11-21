@@ -198,6 +198,7 @@ msgid "Advanced"
 msgstr "Advanced"
 
 msgid "Advanced Settings (Etc)"
+msgstr "Advanced Configuration"
 
 msgid "Content & URL Filtering"
 msgstr "Content & URL Filtering"
@@ -207,7 +208,6 @@ msgstr "Logging & Privacy"
 
 msgid "Advanced Configuration"
 msgstr "Advanced Configuration"
-msgstr "Advanced Settings (Etc)"
 
 msgid "Expand All"
 msgstr "Expand All"
@@ -220,9 +220,6 @@ msgstr "Feedback sent successfully."
 
 msgid "Note: Feedback email could not be sent."
 msgstr "Note: Feedback email could not be sent."
-
-msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
-msgstr "Removes captured 404 URLs if they haven't been used for the specified amount of time."
 
 msgid "All"
 msgstr "All"
@@ -1416,9 +1413,6 @@ msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking 
 msgstr "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
 
 #: includes/DatabaseUpgradesEtc.php:140
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: Migrated %d redirects to subdirectory-independent format."
-
 msgid "Before deactivating:"
 msgstr "Before deactivating:"
 
@@ -1468,6 +1462,7 @@ msgid "Other reason"
 msgstr "Other reason"
 
 msgid "Help us improve (Optional)"
+msgstr "Help improve the plugin (Optional)"
 
 msgid "Help improve the plugin (Optional)"
 msgstr "Help improve the plugin (Optional)"
@@ -1478,7 +1473,6 @@ msgstr "Share why you're deactivating. Your feedback helps us improve."
 
 msgid "Email Feedback & Deactivate"
 msgstr "Email Feedback & Deactivate"
-msgstr "Help us improve (Optional)"
 
 msgid "Send feedback to help improve the plugin"
 msgstr "Send feedback to help improve the plugin"

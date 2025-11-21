@@ -200,6 +200,7 @@ msgstr "高级"
 
 
 msgid "Advanced Settings (Etc)"
+msgstr "Advanced Settings (Etc)"
 
 msgid "Content & URL Filtering"
 msgstr "内容和URL过滤"
@@ -222,9 +223,6 @@ msgstr "反馈发送成功。"
 
 msgid "Note: Feedback email could not be sent."
 msgstr "注意：反馈邮件无法发送。"
-
-msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
-msgstr "删除在指定时间内未使用的捕获的404 URL。"
 
 msgid "All"
 msgstr "全部"
@@ -1424,9 +1422,6 @@ msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking 
 msgstr "404 Solution：已为 %d 个页面构建 N-gram 缓存以优化拼写检查性能。"
 
 #: includes/DatabaseUpgradesEtc.php:140
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution：已将 %d 个重定向迁移到与子目录无关的格式。"
-
 msgid "Before deactivating:"
 msgstr "停用前："
 
@@ -1476,6 +1471,7 @@ msgid "Other reason"
 msgstr "其他原因"
 
 msgid "Help us improve (Optional)"
+msgstr "Help us improve (Optional)"
 
 msgid "Help improve the plugin (Optional)"
 msgstr "帮助改进插件（可选）"
@@ -1486,7 +1482,6 @@ msgstr "分享您停用的原因。您的反馈帮助我们改进。"
 
 msgid "Email Feedback & Deactivate"
 msgstr "发送反馈并停用"
-msgstr "帮助我们改进（可选）"
 
 msgid "Send feedback to help improve the plugin"
 msgstr "发送反馈以帮助改进插件"
