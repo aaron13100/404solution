@@ -1006,6 +1006,15 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $scheduled = wp_schedule_single_event($scheduleTime, $hookName);
 
             if ($scheduled === false) {
+                // Quick check for DISABLE_WP_CRON as immediate diagnostic
+                if (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON) {
+                    $this->logger->errorMessage(
+                        "Cannot schedule N-gram cache rebuild: WP-Cron is disabled (DISABLE_WP_CRON=true). " .
+                        "Consider enabling WP-Cron or using server-side cron with a fallback mechanism."
+                    );
+                    return false;
+                }
+
                 global $wpdb;
 
                 // Gather comprehensive diagnostic information for troubleshooting
@@ -1280,10 +1289,18 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                     $scheduled = wp_schedule_single_event($scheduleTime, $hookName, [$offset]);
 
                     if ($scheduled === false) {
-                        global $wpdb;
+                        // Quick check for DISABLE_WP_CRON as immediate diagnostic
+                        if (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON) {
+                            $this->logger->errorMessage(
+                                "Cannot schedule next N-gram rebuild batch at offset {$offset}: WP-Cron is disabled (DISABLE_WP_CRON=true). " .
+                                "Consider enabling WP-Cron or using server-side cron with a fallback mechanism."
+                            );
+                            // Don't return - let the rebuild complete gracefully, just log the issue
+                        } else {
+                            global $wpdb;
 
-                        // Gather comprehensive diagnostic information for troubleshooting
-                        $cronDisabled = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
+                            // Gather comprehensive diagnostic information for troubleshooting
+                            $cronDisabled = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
                         $alreadyScheduled = wp_next_scheduled($hookName, [$offset]);
                         $dbError = !empty($wpdb->last_error) ? $wpdb->last_error : 'none';
                         $cacheInitialized = $this->getNetworkAwareOption('abj404_ngram_cache_initialized', 'not set');
@@ -1305,7 +1322,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                             get_current_blog_id()
                         );
 
-                        $this->logger->errorMessage($errorMsg);
+                            $this->logger->errorMessage($errorMsg);
+                        }
                     }
                 } else {
                     // All done!
