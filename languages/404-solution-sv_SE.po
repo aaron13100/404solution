@@ -1,0 +1,1559 @@
+# Translation file for 404 Solution WordPress Plugin
+# Copyright (C) 2025 Aaron J
+# This file is distributed under the same license as the 404 Solution plugin.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 404 Solution\n"
+"Report-Msgid-Bugs-To: https://github.com/aaron13100/404solution/issues\n"
+"POT-Creation-Date: 2025-11-11 07:26+0000\n"
+"PO-Revision-Date: 2025-11-21 00:00+0000\n"
+"Last-Translator: Auto-Generated\n"
+"Language-Team: Swedish\n"
+"Language: sv_SE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: 404 Solution Translation Generator v2\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-SearchPath-0: .\n"
+
+
+msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr "404 Solution: Migrerade %d omdirigeringar till underkatalogsoberoende format."
+msgid "%1$s - %2$s of %3$s"
+msgstr "%1$s - %2$s av %3$s"
+
+msgid "(A custom string has been entered.)"
+msgstr "(En anpassad sträng har angivits.)"
+
+msgid "(A page has been selected.)"
+msgstr "(En sida har valts.)"
+
+msgid "(All results displayed for \"%s.\")"
+msgstr "(Alla resultat visas för \"%s.\")"
+
+msgid "(All results displayed.)"
+msgstr "(Alla resultat visas.)"
+
+msgid "(An external URL will be used.)"
+msgstr "(En extern URL kommer att användas.)"
+
+msgid "(Begin typing a URL)"
+msgstr "(Börja skriva en URL)"
+
+msgid "(Data truncated. Too many results for \"%s!\".)"
+msgstr "(Data trunkerad. För många resultat för \"%s!\".)"
+
+msgid "(Data truncated. Too many results!)"
+msgstr "(Data trunkerad. För många resultat!)"
+
+msgid "(Default 404 Page)"
+msgstr "(Standard 404-sida)"
+
+msgid "(Explain)"
+msgstr "(Förklara)"
+
+msgid "(Hide Info)"
+msgstr "(Dölj info)"
+
+msgid "(Home Page)"
+msgstr "(Startsida)"
+
+msgid "(No matching results found for \"%s.\")"
+msgstr "(Inga matchande resultat hittades för \"%s.\")"
+
+msgid "(No matching results found.)"
+msgstr "(Inga matchande resultat hittades.)"
+
+msgid "(Please choose from the dropdown list instead of typing your own URL.)"
+msgstr "(Vänligen välj från rullgardinsmenyn istället för att skriva din egen URL.)"
+
+msgid "(Required)"
+msgstr "(Obligatorisk)"
+
+msgid "(Show All Logs)"
+msgstr "(Visa alla loggar)"
+
+msgid "(Special)"
+msgstr "(Speciell)"
+
+msgid "(The log file does not exist.)"
+msgstr "(Loggfilen existerar inte.)"
+
+msgid "(The specified page doesn't exist. Please update this setting.)"
+msgstr "(Den angivna sidan existerar inte. Vänligen uppdatera denna inställning.)"
+
+msgid "(Type a page name or an external URL)"
+msgstr "(Skriv ett sidnamn eller en extern URL)"
+
+msgid "(Type a page name)"
+msgstr "(Skriv ett sidnamn)"
+
+msgid "(Type to filter)"
+msgstr "(Skriv för att filtrera)"
+
+msgid "(don't suggest .jpg files)"
+msgstr "(föreslå inte .jpg-filer)"
+
+msgid "(don't suggest .pdf files)"
+msgstr "(föreslå inte .pdf-filer)"
+
+msgid "(don't suggest pages within any directory named /private/)"
+msgstr "(föreslå inte sidor inom någon katalog som heter /private/)"
+
+msgid "(don't suggest pages within the /members/ directory)"
+msgstr "(föreslå inte sidor inom katalogen /members/)"
+
+msgid "(don't suggest the specific page with slug 'old-contact-page')"
+msgstr "(föreslå inte den specifika sidan med slug 'old-contact-page')"
+
+msgid "(ignore all .jpg files)"
+msgstr "(ignorera alla .jpg-filer)"
+
+msgid "(ignore all .js files)"
+msgstr "(ignorera alla .js-filer)"
+
+msgid "(ignore all .php files)"
+msgstr "(ignorera alla .php-filer)"
+
+msgid "(ignore everything in the cache directory)"
+msgstr "(ignorera allt i cache-katalogen)"
+
+msgid "(ignore everything in this directory)"
+msgstr "(ignorera allt i denna katalog)"
+
+msgid "(unless a redirect to the page already exists)."
+msgstr "(såvida inte en omdirigering till sidan redan finns)."
+
+msgid "* 404s are still redirected when possible."
+msgstr "* 404:or omdirigeras fortfarande när det är möjligt."
+
+msgid "* Do not capture 404 URLs."
+msgstr "* Fånga inte 404-URL:er."
+
+msgid "* Do not redirect 404s for the patterns listed here."
+msgstr "* Omdirigera inte 404:or för de mönster som listas här."
+
+msgid "* Do not redirect 404s from the user agents listed here."
+msgstr "* Omdirigera inte 404:or från de användaragenter som listas här."
+
+msgid "* If the string appears anywhere within the user agent string then it's a match."
+msgstr "* Om strängen förekommer någonstans i användaragentsträngen är det en match."
+
+msgid "* One pattern per line."
+msgstr "* Ett mönster per rad."
+
+msgid "* One string per line."
+msgstr "* En sträng per rad."
+
+msgid "* One type per line."
+msgstr "* En typ per rad."
+
+msgid "* Strings are case insensitive."
+msgstr "* Strängar är skiftlägesokänsliga."
+
+msgid "* Strings are case sensitive."
+msgstr "* Strängar är skiftlägeskänsliga."
+
+msgid "* These patterns match the path of a URL, not a title.\""
+msgstr "* Dessa mönster matchar sökvägen till en URL, inte en titel.\""
+
+msgid "* Use an asterisk (*) to match \"any pattern.\""
+msgstr "* Använd en asterisk (*) för att matcha \"vilket mönster som helst.\""
+
+msgid "404 Page Suggestions"
+msgstr "404-sidförslag"
+
+msgid "404 URL marked as %s successfully!"
+msgstr "404-URL markerad som %s framgångsrikt!"
+
+msgid "<a>View</a> the debug file."
+msgstr "<a>Visa</a> felsökningsfilen."
+
+msgid "Action Taken"
+msgstr "Åtgärd vidtagen"
+
+msgid "Add Redirect"
+msgstr "Lägg till omdirigering"
+
+msgid "Add a Manual Redirect"
+msgstr "Lägg till en manuell omdirigering"
+
+msgid "Add a Redirect"
+msgstr "Lägg till en omdirigering"
+
+msgid "Admin notification email(s)"
+msgstr "E-post för administratörsmeddelanden"
+
+msgid "Admin notification level"
+msgstr "Nivå för administratörsmeddelanden"
+
+msgid "Admin theme"
+msgstr "Administratörstema"
+
+msgid "Advanced"
+msgstr "Avancerat"
+
+msgid "Advanced Settings (Etc)"
+
+msgid "Content & URL Filtering"
+msgstr "Innehålls- och URL-filtrering"
+
+msgid "Logging & Privacy"
+msgstr "Loggning och integritet"
+
+msgid "Advanced Configuration"
+msgstr "Avancerad konfiguration"
+msgstr "Avancerade inställningar (Etc)"
+
+msgid "Expand All"
+msgstr "Expandera alla"
+
+msgid "Collapse All"
+msgstr "Fäll ihop alla"
+
+msgid "Feedback sent successfully."
+msgstr "Feedback skickad framgångsrikt."
+
+msgid "Note: Feedback email could not be sent."
+msgstr "Obs: Feedback-e-post kunde inte skickas."
+
+msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+msgstr "Tar bort fångade 404-URL:er om de inte har använts under den angivna tidsperioden."
+
+msgid "All"
+msgstr "Alla"
+
+msgid "All other redirects must be deleted and only one regex redirect for all URLs must be created for this to work."
+msgstr "Alla andra omdirigeringar måste raderas och endast en regex-omdirigering för alla URL:er måste skapas för att detta ska fungera."
+
+msgid "All trashed URLs have been deleted!"
+msgstr "Alla URL:er i papperskorgen har raderats!"
+
+msgid "Allow category suggestions"
+msgstr "Tillåt kategoriförslag"
+
+msgid "Allow tag suggestions"
+msgstr "Tillåt taggförslag"
+
+msgid "An unknown error has occurred."
+msgstr "Ett okänt fel har inträffat."
+
+msgid "Apply"
+msgstr "Verkställ"
+
+msgid "At the same level as the Settings and Tools menu"
+msgstr "På samma nivå som menyn Inställningar och Verktyg"
+
+msgid "Auto"
+msgstr "Automatisk"
+
+msgid "Delete automatic redirects after"
+msgstr "Radera automatiska omdirigeringar efter"
+
+msgid "Auto Redirects"
+msgstr "Automatiska omdirigeringar"
+
+msgid "Automatic 301 Redirects"
+msgstr "Automatiska 301-omdirigeringar"
+
+msgid "Automatic 302 Redirects"
+msgstr "Automatiska 302-omdirigeringar"
+
+msgid "Automatic Redirects"
+msgstr "Automatiska omdirigeringar"
+
+msgid "Automatically created"
+msgstr "Automatiskt skapad"
+
+msgid "Automatically creates redirects based on best possible suggested page."
+msgstr "Skapar automatiskt omdirigeringar baserat på den bästa möjliga föreslagna sidan."
+
+msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
+msgstr "Tar bort manuellt skapade omdirigeringar om de inte har använts under den angivna tidsperioden. Påverkar inte automatiskt skapade omdirigeringar."
+
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops (Ljus)"
+
+msgid "Captured 404 URLs"
+msgstr "Fångade 404-URL:er"
+
+msgid "Captured URLs"
+msgstr "Fångade URL:er"
+
+msgid "Captured URLs (0 Disables Notification)"
+msgstr "Fångade URL:er (0 inaktiverar meddelanden)"
+
+msgid "Categories"
+msgstr "Kategorier"
+
+msgid "Category"
+msgstr "Kategori"
+
+msgid "Category:"
+msgstr "Kategori:"
+
+msgid "Changes may not be updated immediately when ordering by this column"
+msgstr "Ändringar kanske inte uppdateras omedelbart när du sorterar efter denna kolumn"
+
+msgid "Checks each redirect for a new matching permalink before the user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted."
+msgstr "Kontrollerar varje omdirigering för en ny matchande permalänk innan användaren omdirigeras. Om en ny sidpermalänk hittas som matchar den omdirigerade URL:en kommer omdirigeringen att raderas."
+
+msgid "Choose at least one URL"
+msgstr "Välj minst en URL"
+
+msgid "Choose whether the 404 Settings link appears under the \"Settings\" menu or elsewhere."
+msgstr "Välj om länken 404-inställningar ska visas under menyn \"Inställningar\" eller någon annanstans."
+
+msgid "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
+msgstr "Välj färgtema för administrationssidorna. Temat ändras omedelbart för förhandsgranskning och sparas när du klickar på \"Spara inställningar\"."
+
+msgid "Cleanup is done daily."
+msgstr "Rensning görs dagligen."
+
+msgid "Click to view debug data for all suggestions"
+msgstr "Klicka för att visa felsökningsdata för alla förslag"
+
+msgid "Collect incoming 404 URLs"
+msgstr "Samla inkommande 404-URL:er"
+
+msgid "Delete captured 404 URLs after"
+msgstr "Radera fångade 404-URL:er efter"
+
+msgid "Create a CSV file with the redirects and captured 404s."
+msgstr "Skapa en CSV-fil med omdirigeringarna och fångade 404:or."
+
+msgid "Create and Download"
+msgstr "Skapa och ladda ner"
+
+msgid "Create automatic redirects"
+msgstr "Skapa automatiska omdirigeringar"
+
+msgid "Create automatic redirects for categories"
+msgstr "Skapa automatiska omdirigeringar för kategorier"
+
+msgid "Create automatic redirects for tags"
+msgstr "Skapa automatiska omdirigeringar för taggar"
+
+msgid "Created"
+msgstr "Skapad"
+
+msgid "Credits"
+msgstr "Erkännanden"
+
+msgid "Current approximate log disk usage"
+msgstr "Aktuell ungefärlig diskutrymme för loggar"
+
+msgid "Custom"
+msgstr "Anpassad"
+
+msgid "Custom Taxonomies"
+msgstr "Anpassade taxonomier"
+
+msgid "DATABASE_VERSION"
+msgstr "DATABASE_VERSION"
+
+msgid "DB version"
+msgstr "DB-version"
+
+msgid "Date"
+msgstr "Datum"
+
+msgid "days without use (0 to disable)"
+msgstr "dagar utan användning (0 för att inaktivera)"
+
+msgid "Debug Log"
+msgstr "Felsökningslogg"
+
+msgid "Debug file not found. (%s)"
+msgstr "Felsökningsfil hittades inte. (%s)"
+
+msgid "Debug file size: %1$s KB (%2$s MB)."
+msgstr "Felsökningsfilstorlek: %1$s KB (%2$s MB)."
+
+msgid "Debug file size: %s KB."
+msgstr "Felsökningsfilstorlek: %s KB."
+
+msgid "Debug file(s) deleted. (%s)"
+msgstr "Felsökningsfil(er) raderad(e). (%s)"
+
+msgid "Debug logging"
+msgstr "Felsökningsloggning"
+
+msgid "Default"
+msgstr "Standard"
+
+msgid "Default WordPress post types are \"post\" and \"page.\""
+msgstr "WordPress standardinläggstyper är \"post\" och \"page\"."
+
+msgid "Default redirect type"
+msgstr "Standardomdirigeringstyp"
+
+msgid "Delete the Debug File"
+msgstr "Radera felsökningsfilen"
+
+msgid "Destination"
+msgstr "Destination"
+
+msgid "Display Before/After each suggested page"
+msgstr "Visa före/efter varje föreslagen sida"
+
+msgid "Display Before/After page suggestions"
+msgstr "Visa före/efter sidförslag"
+
+msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
+msgstr "Visa ett WordPress-administratörsmeddelande när antalet fångade URL:er överskrider detta antal"
+
+msgid "Display if no suggestion results"
+msgstr "Visa om inga förslagsresultat"
+
+msgid "Display the closest matching pages by using the shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
+msgstr "Visa de närmast matchande sidorna genom att använda kortkoden <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
+
+msgid "Displayed 404 Page"
+msgstr "Visad 404-sida"
+
+msgid "Earliest log date"
+msgstr "Tidigaste loggdatum"
+
+msgid "Edit Redirect"
+msgstr "Redigera omdirigering"
+
+msgid "Edit Redirect Details"
+msgstr "Redigera omdirigeringsdetaljer"
+
+msgid "Empty Trash"
+msgstr "Töm papperskorgen"
+
+msgid "Error: An invalid purge type was selected. Exiting."
+msgstr "Fel: En ogiltig rensningstyp valdes. Avslutar."
+
+msgid "Error: Auto match score value must be a number between 0 and 99"
+msgstr "Fel: Värdet för automatisk matchningspoäng måste vara ett tal mellan 0 och 99"
+
+msgid "Error: Bad %s operation specified."
+msgstr "Fel: Ogiltig %s-operation angiven."
+
+msgid "Error: Bad data passed for update redirect request."
+msgstr "Fel: Felaktig data skickades för uppdatering av omdirigeringsbegäran."
+
+msgid "Error: Bad trash operation specified."
+msgstr "Fel: Ogiltig papperskorgsoperation angiven."
+
+msgid "Error: Data not formatted properly."
+msgstr "Fel: Data är inte korrekt formaterad."
+
+msgid "Error: External URL doesn't contain ://"
+msgstr "Fel: Extern URL innehåller inte ://"
+
+msgid "Error: External URL is too short."
+msgstr "Fel: Extern URL är för kort."
+
+msgid "Error: External redirect URL failed validation."
+msgstr "Fel: Extern omdirigerings-URL misslyckades med valideringen."
+
+msgid "Error: External URL must use http:// or https:// protocol only."
+msgstr "Fel: Extern URL måste endast använda http:// eller https:// protokoll."
+
+msgid "Error: Invalid theme selected"
+msgstr "Fel: Ogiltigt tema valt"
+
+msgid "Error: Invalid value specified for default redirect type"
+msgstr "Fel: Ogiltigt värde angivet för standardomdirigeringstyp"
+
+msgid "Error: Maximum number of suggest value must be a number greater than or equal to 1"
+msgstr "Fel: Maximalt antal förslag måste vara ett tal större än eller lika med 1"
+
+msgid "Error: No ID(s) found for edit request."
+msgstr "Fel: Inga ID(n) hittades för redigeringsbegäran."
+
+msgid "Error: No ID(s) specified for bulk action. (%s)"
+msgstr "Fel: Inga ID(n) angivna för massåtgärd. (%s)"
+
+msgid "Error: No records were imported. SQL result: %s"
+msgstr "Fel: Inga poster importerades. SQL-resultat: %s"
+
+msgid "Error: No redirect types were selected. No purges will be done."
+msgstr "Fel: Inga omdirigeringstyper valdes. Ingen rensning kommer att göras."
+
+msgid "Error: No valid redirect types were selected. Exiting."
+msgstr "Fel: Inga giltiga omdirigeringstyper valdes. Avslutar."
+
+msgid "Error: Suggestion minimum score value must be a number between 1 and 99"
+msgstr "Fel: Minsta poäng för förslag måste vara ett tal mellan 1 och 99"
+
+msgid "Error: Template redirect priority value must be a number between 0 and 999"
+msgstr "Fel: Prioritetsvärde för mallomdirigering måste vara ett tal mellan 0 och 999"
+
+msgid "Error: URL is a required field."
+msgstr "Fel: URL är ett obligatoriskt fält."
+
+msgid "Error: URL must start with /"
+msgstr "Fel: URL måste börja med /"
+
+msgid "Error: Redirect destination is required."
+msgstr "Fel: Omdirigeringsdestination krävs."
+
+msgid "Error: Unable to move redirect from trash."
+msgstr "Fel: Kan inte flytta omdirigering från papperskorgen."
+
+msgid "Error: Unable to move redirect to trash."
+msgstr "Fel: Kan inte flytta omdirigering till papperskorgen."
+
+msgid "Error: Unable to update redirect data."
+msgstr "Fel: Kan inte uppdatera omdirigeringsdata."
+
+msgid "Error: Unknown Database Error!"
+msgstr "Fel: Okänt databasfel!"
+
+msgid "Error: Unrecognized bulk action. (%s)"
+msgstr "Fel: Okänd massåtgärd. (%s)"
+
+msgid "Error: You didn't check the I understand checkbox. No importing for you!"
+msgstr "Fel: Du markerade inte kryssrutan Jag förstår. Ingen import för dig!"
+
+msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
+msgstr "Fel: Du markerade inte kryssrutan Jag förstår. Ingen rensning av poster för dig!"
+
+msgid "Error: You selected external URL but did not enter a URL."
+msgstr "Fel: Du valde extern URL men angav ingen URL."
+
+msgid "Error: unable to add new redirect."
+msgstr "Fel: kan inte lägga till ny omdirigering."
+
+msgid "Error: unable to mark URL as %s"
+msgstr "Fel: kan inte markera URL som %s"
+
+msgid "Error: unable to remove URL from %s list"
+msgstr "Fel: kan inte ta bort URL från %s-listan"
+
+msgid "Etcetera"
+msgstr "Etcetera"
+
+msgid "Even if more pages could be suggested, show at most this many (default: 5)"
+msgstr "Även om fler sidor kunde föreslås, visa som mest så här många (standard: 5)"
+
+msgid "Example"
+msgstr "Exempel"
+
+msgid "Examples:"
+msgstr "Exempel:"
+
+msgid "Exclude Specific Pages, Posts, Categories, Etc"
+msgstr "Exkludera specifika sidor, inlägg, kategorier, etc"
+
+msgid "Exclude Suggestion URLs (Regex)"
+msgstr "Exkludera förslags-URL:er (Regex)"
+
+msgid "Exclude potential suggestions if their final URL matches one of these patterns."
+msgstr "Exkludera potentiella förslag om deras slutliga URL matchar något av dessa mönster."
+
+msgid "Export"
+msgstr "Exportera"
+
+msgid "External"
+msgstr "Extern"
+
+msgid "External Page"
+msgstr "Extern sida"
+
+msgid "External User Agents - Do Not Log"
+msgstr "Externa användaragenter - logga inte"
+
+msgid "Files and Folders Ignore Strings - Do Not Process"
+msgstr "Filer och mappar ignorera strängar - bearbeta inte"
+
+msgid "Files and folders listed here will be ignored."
+msgstr "Filer och mappar som listas här kommer att ignoreras."
+
+msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
+msgstr "Först kontrolleras alla normala \"exakt matchande\" URL:er, sedan kontrolleras alla reguljäruttrycks-URL:er."
+
+msgid "General"
+msgstr "Allmänt"
+
+msgid "General Settings"
+msgstr "Allmänna inställningar"
+
+msgid "Go to first page"
+msgstr "Gå till första sidan"
+
+msgid "Go to last page"
+msgstr "Gå till sista sidan"
+
+msgid "Go to next page"
+msgstr "Gå till nästa sida"
+
+msgid "Go to previous page"
+msgstr "Gå till föregående sida"
+
+msgid "Help the developer by sending error logs"
+msgstr "Hjälp utvecklaren genom att skicka felloggar"
+
+msgid "Here are some other great pages"
+msgstr "Här är några andra bra sidor"
+
+msgid "Hide %s"
+msgstr "Dölj %s"
+
+msgid "Hits"
+msgstr "Träffar"
+
+msgid "Hits Redirected"
+msgstr "Träffar omdirigerade"
+
+msgid "Home Page"
+msgstr "Startsida"
+
+msgid "Home Page:"
+msgstr "Startsida:"
+
+msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
+msgstr "Jag förstår ovanstående uttalande, jag vet vad jag gör... bla bla bla. Radera bara posterna!"
+
+msgid "I understand the above statement."
+msgstr "Jag förstår ovanstående uttalande."
+
+msgid "IP Address"
+msgstr "IP-adress"
+
+msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
+msgstr "Om inga sidor uppfyller minsta matchningspoäng, kommer denna text att visas. (standard: &lt;p&gt;Inga förslag. :/ &lt;/p&gt;)"
+
+msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
+msgstr "Om du har skapat anpassade inläggstyper och vill omdirigera användare till dem måste du ange dem här."
+
+msgid "If you've created custom taxonomies and would like to redirect users to them, you'll have to enter them here."
+msgstr "Om du har skapat anpassade taxonomier och vill omdirigera användare till dem måste du ange dem här."
+
+msgid "Ignore 404 Error"
+msgstr "Ignorera 404-fel"
+
+msgid "Ignored 404 URLs"
+msgstr "Ignorerade 404-URL:er"
+
+msgid "Ignored URLs"
+msgstr "Ignorerade URL:er"
+
+msgid "Import"
+msgstr "Importera"
+
+msgid "Import 404 Redirected Data"
+msgstr "Importera 404-omdirigeringsdata"
+
+msgid "Import a CSV file with the redirects and captured 404s."
+msgstr "Importera en CSV-fil med omdirigeringar och fångade 404:or."
+
+msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
+msgstr "Inklusive att bryta webbplatsen genom att skapa dåliga omdirigeringar, ange ett felaktigt reguljärt uttryck, radera befintliga omdirigeringar och ge andra användare administratörsåtkomst till plugin:et."
+
+msgid "Internal Process User Agents - Do Not Log"
+msgstr "Interna processanvändaragenter - logga inte"
+
+msgid "Issue deleting debug file. (%s)"
+msgstr "Problem med att radera felsökningsfil. (%s)"
+
+msgid "JAPANESE_FLASHCARDS_URL"
+msgstr "JAPANESE_FLASHCARDS_URL"
+
+msgid "Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit."
+msgstr "Behåller de senaste (och raderar de äldsta) loggposterna när diskanvändningen når denna gräns."
+
+msgid "LINK_FIRST_PAGE"
+msgstr "LINK_FIRST_PAGE"
+
+msgid "LINK_LAST_PAGE"
+msgstr "LINK_LAST_PAGE"
+
+msgid "LINK_NEXT_PAGE"
+msgstr "LINK_NEXT_PAGE"
+
+msgid "LINK_PREVIOUS_PAGE"
+msgstr "LINK_PREVIOUS_PAGE"
+
+msgid "Last Used"
+msgstr "Senast använd"
+
+msgid "List one user name per line."
+msgstr "Lista ett användarnamn per rad."
+
+msgid "Log files are checked daily when maintenance is run."
+msgstr "Loggfiler kontrolleras dagligen när underhåll körs."
+
+msgid "Log raw IPs"
+msgstr "Logga rå IP:er"
+
+msgid "Logging raw IP addresses may not meet the EU General Data Protection Regulation (GDPR) guidelines."
+msgstr "Loggning av rå IP-adresser kanske inte uppfyller EU:s allmänna dataskyddsförordning (GDPR) riktlinjer."
+
+msgid "Logs"
+msgstr "Loggar"
+
+msgid "MB"
+msgstr "MB"
+
+msgid "Maintenance"
+msgstr "Underhåll"
+
+msgid "Monochrome Minimal (Light)"
+msgstr "Monokrom minimal (Ljus)"
+
+msgid "Major version auto update delay"
+msgstr "Fördröjning för automatisk uppdatering av huvudversion"
+
+msgid "Man"
+msgstr "Manuell"
+
+msgid "Manual 301 Redirects"
+msgstr "Manuella 301-omdirigeringar"
+
+msgid "Manual 302 Redirects"
+msgstr "Manuella 302-omdirigeringar"
+
+msgid "Manual Redirects"
+msgstr "Manuella omdirigeringar"
+
+msgid "Delete manual redirects after"
+msgstr "Radera manuella omdirigeringar efter"
+
+msgid "Manually created"
+msgstr "Manuellt skapad"
+
+msgid "Maximum log disk usage (MB)"
+msgstr "Maximal loggdiskanvändning (MB)"
+
+msgid "Maximum number of suggestions to display"
+msgstr "Maximalt antal förslag att visa"
+
+msgid "Minimum match score"
+msgstr "Minsta matchningspoäng"
+
+msgid "Minimum score of suggestions to display"
+msgstr "Minsta poäng för förslag att visa"
+
+msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
+msgstr "Flera e-postadresser kan separeras med kommatecken (,). Avsändarens e-postadress är alltid standard WordPress admin-e-post:"
+
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate (Mörk)"
+
+msgid "Never Used"
+msgstr "Aldrig använd"
+
+msgid "New Redirect Added Successfully!"
+msgstr "Ny omdirigering tillagd framgångsrikt!"
+
+msgid "New major version => wait this many days. New minor version => automatically update about 3 days after the release date."
+msgstr "Ny huvudversion => vänta så här många dagar. Ny mindre version => uppdatera automatiskt cirka 3 dagar efter releasedatum."
+
+msgid "No Captured 404 Records To Display"
+msgstr "Inga fångade 404-poster att visa"
+
+msgid "No Redirect Records To Display"
+msgstr "Inga omdirigeringsposter att visa"
+
+msgid "No Results To Display"
+msgstr "Inga resultat att visa"
+
+msgid "No suggestions. :/"
+msgstr "Inga förslag. :/"
+
+msgid "No suggestions. :/ "
+msgstr "Inga förslag. :/ "
+
+msgid "Note that including a bad regular expression or one that takes too long will break your website."
+msgstr "Observera att inkludering av ett felaktigt reguljärt uttryck eller ett som tar för lång tid kommer att bryta din webbplats."
+
+msgid "Note: Do not include the parenthesis or explanations shown in the examples above."
+msgstr "Obs: Inkludera inte parenteserna eller förklaringarna som visas i exemplen ovan."
+
+msgid "Note: Here is a list of all post types in the database:"
+msgstr "Obs: Här är en lista över alla inläggstyper i databasen:"
+
+msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
+msgstr "Obs: \"Poängen\" som visas i formatet \"(75.7576)\" efter sidlänkarna visas endast för administratörsanvändare."
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue (Mörk)"
+
+msgid "OPTION_MIN_AUTO_SCORE"
+msgstr "OPTION_MIN_AUTO_SCORE"
+
+msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
+msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
+
+msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
+msgstr "Ett e-postmeddelande skickas per dag (när underhåll körs) tills antalet fångade 404:or går under det antal som anges i varningsinställningarna."
+
+msgid "Only create an automatic redirect if the suggested page has a score above the specified number (default 90)"
+msgstr "Skapa endast en automatisk omdirigering om den föreslagna sidan har en poäng över det angivna numret (standard 90)"
+
+msgid "Options"
+msgstr "Alternativ"
+
+msgid "Options Saved Successfully!"
+msgstr "Alternativ sparade framgångsrikt!"
+
+msgid "Organize Later"
+msgstr "Organisera senare"
+
+msgid "Page"
+msgstr "Sida"
+
+msgid "Page Not Found Displayed"
+msgstr "Sidan hittades inte visad"
+
+msgid "Page Redirects"
+msgstr "Sidomdirigeringar"
+
+msgid "Page suggestions title"
+msgstr "Titel för sidförslag"
+
+msgid "Pages listed here will not be redirected to"
+msgstr "Sidor som listas här kommer inte att omdirigeras till"
+
+msgid "Permanent 301"
+msgstr "Permanent 301"
+
+msgid "Plugin Admin Users"
+msgstr "Plugin administratörsanvändare"
+
+msgid "Plugin version"
+msgstr "Plugin-version"
+
+msgid "Purge Entries!"
+msgstr "Rensa poster!"
+
+msgid "Purge Options"
+msgstr "Rensningsalternativ"
+
+msgid "Purge Type"
+msgstr "Rensningstyp"
+
+msgid "REDIRECT_TO_USER_FIELD_WARNING"
+msgstr "REDIRECT_TO_USER_FIELD_WARNING"
+
+msgid "Recognized Post Types"
+msgstr "Erkända inläggstyper"
+
+msgid "Records imported: %s"
+msgstr "Poster importerade: %s"
+
+msgid "Redirect"
+msgstr "Omdirigering"
+
+msgid "Redirect & Capture Logs"
+msgstr "Omdirigeringsloggar och fångstloggar"
+
+msgid "Redirect Details"
+msgstr "Omdirigeringsdetaljer"
+
+msgid "Redirect Information Updated Successfully!"
+msgstr "Omdirigeringsinformation uppdaterad framgångsrikt!"
+
+msgid "Redirect Removed Successfully!"
+msgstr "Omdirigering borttagen framgångsrikt!"
+
+msgid "Redirect Type"
+msgstr "Omdirigeringstyp"
+
+msgid "Redirect Types"
+msgstr "Omdirigeringstyper"
+
+msgid "Redirect all requests"
+msgstr "Omdirigera alla förfrågningar"
+
+msgid "Redirect all unhandled 404s to"
+msgstr "Omdirigera alla ohanterade 404:or till"
+
+msgid "Redirect moved to trash successfully!"
+msgstr "Omdirigering flyttad till papperskorgen framgångsrikt!"
+
+msgid "Redirect restored from trash successfully!"
+msgstr "Omdirigering återställd från papperskorgen framgångsrikt!"
+
+msgid "Redirect to"
+msgstr "Omdirigera till"
+
+msgid "Redirected to"
+msgstr "Omdirigerad till"
+
+msgid "Redirects"
+msgstr "Omdirigeringar"
+
+msgid "Referrer"
+msgstr "Referent"
+
+msgid "RegEx"
+msgstr "RegEx"
+
+msgid "Regular Expression (Manually Created)"
+msgstr "Reguljärt uttryck (manuellt skapat)"
+
+msgid "Remove Ignore Status"
+msgstr "Ta bort ignoreringsstatus"
+
+msgid "Remove Later Status"
+msgstr "Ta bort senare-status"
+
+msgid "Remove redirect upon matching permalink"
+msgstr "Ta bort omdirigering vid matchande permalänk"
+
+msgid "Removed 404 URL from %s list successfully!"
+msgstr "Tog bort 404-URL från %s-listan framgångsrikt!"
+
+msgid "Removes automatically created redirects if they haven't been used for the specified amount of time. Does not affect manually created redirects."
+msgstr "Tar bort automatiskt skapade omdirigeringar om de inte har använts under den angivna tidsperioden. Påverkar inte manuellt skapade omdirigeringar."
+
+msgid "Required"
+msgstr "Obligatorisk"
+
+msgid "Restore"
+msgstr "Återställ"
+
+msgid "Rows per page:"
+msgstr "Rader per sida:"
+
+msgid "Run Maintenance"
+msgstr "Kör underhåll"
+
+msgid "Run maintenance to delete old data (etc).&nbsp;&nbsp;It is not necessary to run this manually, as it's done automatically on a daily basis."
+msgstr "Kör underhåll för att radera gammal data (etc).&nbsp;&nbsp;Det är inte nödvändigt att köra detta manuellt, eftersom det görs automatiskt dagligen."
+
+msgid "SELECTED_SUGGEST_CATS"
+msgstr "SELECTED_SUGGEST_CATS"
+
+msgid "SELECTED_SUGGEST_TAGS"
+msgstr "SELECTED_SUGGEST_TAGS"
+
+msgid "SELECTED_SUGGEST_URL"
+msgstr "SELECTED_SUGGEST_URL"
+
+msgid "SUGGEST_MAX_SUGGESTIONS"
+msgstr "SUGGEST_MAX_SUGGESTIONS"
+
+msgid "SUGGEST_MIN_SCORE"
+msgstr "SUGGEST_MIN_SCORE"
+
+msgid "SUGGEST_USER_AFTER"
+msgstr "SUGGEST_USER_AFTER"
+
+msgid "SUGGEST_USER_BEFORE"
+msgstr "SUGGEST_USER_BEFORE"
+
+msgid "SUGGEST_USER_ENTRY_AFTER"
+msgstr "SUGGEST_USER_ENTRY_AFTER"
+
+msgid "SUGGEST_USER_ENTRY_BEFORE"
+msgstr "SUGGEST_USER_ENTRY_BEFORE"
+
+msgid "SUGGEST_USER_NO_RESULTS"
+msgstr "SUGGEST_USER_NO_RESULTS"
+
+msgid "SUGGEST_USER_TITLE"
+msgstr "SUGGEST_USER_TITLE"
+
+msgid "Sanity Check"
+msgstr "Sanitetskontroll"
+
+msgid "Save Settings"
+msgstr "Spara inställningar"
+
+msgid "Saving settings..."
+msgstr "Sparar inställningar..."
+
+msgid "Section filters"
+msgstr "Sektionsfilter"
+
+msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
+msgstr "Sökmotors användaragenter bör inte placeras här så att de omdirigeras när slug-strukturen ändras."
+
+msgid "Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "Eftersom en fångstgrupp används kan du använda en $1-ersättning i destinationssträngen för en extern URL."
+
+msgid "So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
+msgstr "Så var försiktig och testa dem någon annanstans innan du provar dem här. Om du inte vet vad du gör, vänligen använd inte detta alternativ (eftersom det inte är nödvändigt för plugin:ets funktion)."
+
+msgid "Some options were not saved successfully."
+msgstr "Några alternativ sparades inte framgångsrikt."
+
+msgid "Special"
+msgstr "Speciell"
+
+msgid "Stats"
+msgstr "Statistik"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Suggestions"
+msgstr "Förslag"
+
+msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
+msgstr "Format som stöds är: <B>from_url,status,type,to_url,wp_type</B>"
+
+msgid "TEXT_BEFORE_LINKS"
+msgstr "TEXT_BEFORE_LINKS"
+
+msgid "TEXT_CURRENT_PAGE"
+msgstr "TEXT_CURRENT_PAGE"
+
+msgid "TEXT_SHOW_ROWS"
+msgstr "TEXT_SHOW_ROWS"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
+msgstr "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_EMPTY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMPTY"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_EMTPY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMTPY"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_PAGE"
+msgstr "TOOLTIP_POPUP_EXPLANATION_PAGE"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_URL"
+msgstr "TOOLTIP_POPUP_EXPLANATION_URL"
+
+msgid "Tag"
+msgstr "Tagg"
+
+msgid "Tag:"
+msgstr "Tagg:"
+
+msgid "Tags"
+msgstr "Taggar"
+
+msgid "Template Redirect Priority"
+msgstr "Prioritet för mallomdirigering"
+
+msgid "Temporary 302"
+msgstr "Temporär 302"
+
+msgid "The \"product\" type is for WooCommerce users."
+msgstr "Typen \"product\" är för WooCommerce-användare."
+
+msgid "The 404 Solution menu should appear"
+msgstr "404 Solution-menyn bör visas"
+
+msgid "The file seems to have loaded okay. Please check the redirects page."
+msgstr "Filen verkar ha laddats korrekt. Vänligen kontrollera omdirigeringssidan."
+
+msgid "The plugin will only redirect the post types specified here."
+msgstr "Plugin:et kommer endast att omdirigera de inläggstyper som anges här."
+
+msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
+msgstr "Plugin:et kommer att omdirigera till normala taxonomier (kategorier och taggar) och de som listas här."
+
+msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
+msgstr "Den föreslagna sidan måste \"poängsätta\" minst så här mycket för att visas som ett förslag (min: 10, max: 90, standard: 25)"
+
+msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
+msgstr "Den användarspecificerade 404-sidan hittades inte. Vänligen uppdatera den användarspecificerade 404-sidan på alternativsidan."
+
+msgid "This cannot be undone. All redirects for URLs that do not already exist will be imported."
+msgstr "Detta kan inte ångras. Alla omdirigeringar för URL:er som inte redan finns kommer att importeras."
+
+msgid "This creates the list. For example, use &lt;ol style=\"list-style-type: none;\"&gt; to hide the numbers in the list. (defaults: &lt;ol&gt; / &lt;/ol&gt;)"
+msgstr "Detta skapar listan. Till exempel, använd &lt;ol style=\"list-style-type: none;\"&gt; för att dölja siffrorna i listan. (standard: &lt;ol&gt; / &lt;/ol&gt;)"
+
+msgid "This is best for internal processes that don't need to be redirected when the slug structure changes."
+msgstr "Detta är bäst för interna processer som inte behöver omdirigeras när slug-strukturen ändras."
+
+msgid "This is best for search engine bots that do need to be redirected when the slug structure changes."
+msgstr "Detta är bäst för sökmotorbottar som behöver omdirigeras när slug-strukturen ändras."
+
+msgid "This is for a domain name change."
+msgstr "Detta är för en domännamnändring."
+
+msgid "This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
+msgstr "Detta är för när en användare begär en sida som inte existerar och de inte automatiskt omdirigeras till en matchande sida."
+
+msgid "This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin."
+msgstr "Detta krävs inte för att plugin:et ska fungera, men det är till hjälp för utvecklaren och för framtida versioner av plugin:et."
+
+msgid "This only affects the list of potential matches shown to the user on a custom 404 page."
+msgstr "Detta påverkar endast listan över potentiella matchningar som visas för användaren på en anpassad 404-sida."
+
+msgid "This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported)."
+msgstr "Detta avslöjar: allt i felsökningsloggen, admin-e-postadressen, installerade PHP-tillägg, aktiva plugin, PHP-version, WordPress-version, MySQL-version, totalt antal publicerade sidor och inlägg, etc. (allt som efterfrågas när ett problem rapporteras)."
+
+msgid "This sets how early in the process a 404 is handled by this plugin. If there are multiple plugins that should handle a 404, then set this higher (999) so that this plugin gets the 404 last. (default 9)"
+msgstr "Detta anger hur tidigt i processen en 404 hanteras av detta plugin. Om det finns flera plugin som ska hantera en 404, sätt då detta högre (999) så att detta plugin får 404:an sist. (standard 9)"
+
+msgid "This shortcode can be used on the 404 page and will display a list of suggested pages."
+msgstr "Denna kortkod kan användas på 404-sidan och kommer att visa en lista över föreslagna sidor."
+
+msgid "This surrounds each item in the list. (defaults: &lt;li&gt; / &lt;/li&gt;)"
+msgstr "Detta omger varje objekt i listan. (standard: &lt;li&gt; / &lt;/li&gt;)"
+
+msgid "This text will appear before the list of suggestions (default: &lt;h3&gt;Here are some other great pages&lt;/h3&gt;)"
+msgstr "Denna text kommer att visas före listan med förslag (standard: &lt;h3&gt;Här är några andra bra sidor&lt;/h3&gt;)"
+
+msgid "This will break your website."
+msgstr "Detta kommer att bryta din webbplats."
+
+msgid "This will not change the URL if the destination 404 page is set to (Default 404 Page) or Home Page."
+msgstr "Detta kommer inte att ändra URL:en om destinations-404-sidan är inställd på (Standard 404-sida) eller Startsida."
+
+msgid "Tools"
+msgstr "Verktyg"
+
+msgid "Total Redirects"
+msgstr "Totalt antal omdirigeringar"
+
+msgid "Total URLs"
+msgstr "Totalt antal URL:er"
+
+msgid "Trash"
+msgstr "Papperskorg"
+
+msgid "Trash Redirected URL"
+msgstr "Papperskorg omdirigerad URL"
+
+msgid "Trashed Redirects"
+msgstr "Omdirigeringar i papperskorgen"
+
+msgid "Trashed URLs"
+msgstr "URL:er i papperskorgen"
+
+msgid "Treat this URL as a regular expression"
+msgstr "Behandla denna URL som ett reguljärt uttryck"
+
+msgid "Type"
+msgstr "Typ"
+
+msgid "Type a page name here and select it to add it to the exlusion list"
+msgstr "Skriv ett sidnamn här och välj det för att lägga till det i exkluderingslistan"
+
+msgid "URL"
+msgstr "URL"
+
+msgid "URL(s) deleted"
+msgstr "URL(er) raderade"
+
+msgid "URL(s) marked as Captured."
+msgstr "URL(er) markerade som fångade."
+
+msgid "URL(s) marked as Ignored."
+msgstr "URL(er) markerade som ignorerade."
+
+msgid "URL(s) marked as Later."
+msgstr "URL(er) markerade som senare."
+
+msgid "URL(s) moved to trash"
+msgstr "URL(er) flyttade till papperskorgen"
+
+msgid "URL(s) restored."
+msgstr "URL(er) återställda."
+
+msgid "URLs"
+msgstr "URL:er"
+
+msgid "Under the Settings menu"
+msgstr "Under menyn Inställningar"
+
+msgid "Unique Page Not Found Referrers"
+msgstr "Unika referenter för sidan hittades inte"
+
+msgid "Unique Page Not Found URLs"
+msgstr "Unika URL:er för sidan hittades inte"
+
+msgid "Unique Page Not Found Visitors"
+msgstr "Unika besökare för sidan hittades inte"
+
+msgid "Unique Redirected Referrers"
+msgstr "Unika omdirigerade referenter"
+
+msgid "Unique Redirected Visitors"
+msgstr "Unika omdirigerade besökare"
+
+msgid "Unique URLs Redirected"
+msgstr "Unika URL:er omdirigerade"
+
+msgid "Unknown"
+msgstr "Okänd"
+
+msgid "Update Redirect"
+msgstr "Uppdatera omdirigering"
+
+msgid "Update the URL bar"
+msgstr "Uppdatera URL-fältet"
+
+msgid "Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
+msgstr "Använd en rad per användaragent. Om texten hittas någonstans i användaragentsträngen gäller det."
+
+msgid "User"
+msgstr "Användare"
+
+msgid "User names listed here will be able to do everything an admin can do with the plugin."
+msgstr "Användarnamn som listas här kommer att kunna göra allt en administratör kan göra med plugin:et."
+
+msgid "Using the purge options will move all selected redirects to the trash. You must then empty the trash to delete them."
+msgstr "Att använda rensningsalternativen kommer att flytta alla valda omdirigeringar till papperskorgen. Du måste sedan tömma papperskorgen för att radera dem."
+
+msgid "View logs for"
+msgstr "Visa loggar för"
+
+msgid "Visit"
+msgstr "Besök"
+
+msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
+msgstr "VARNING: När detta används felaktigt KOMMER det att bryta din webbplats. Använd på egen risk. Snälla, för kärleken till allt som är heligt, lämna detta tomt om du inte vet vad du gör."
+
+msgid "When an error is detected by the plugin, email the entire log file to the developer."
+msgstr "När ett fel upptäcks av plugin:et, skicka hela loggfilen till utvecklaren."
+
+msgid "When checked the URL will be changed from the custom 404 page URL to the URL originally requested (after the page headers load)."
+msgstr "När detta är markerat kommer URL:en att ändras från den anpassade 404-sidans URL till den ursprungligen begärda URL:en (efter att sidhuvudena laddats)."
+
+msgid "When checked, the text is treated as a regular expression."
+msgstr "När detta är markerat behandlas texten som ett reguljärt uttryck."
+
+msgid "When selected, ALL REQUESTS (even for pages that exist, even for non-404s) will be treated like a 404."
+msgstr "När detta är valt kommer ALLA FÖRFRÅGNINGAR (även för sidor som existerar, även för icke-404:or) att behandlas som en 404."
+
+msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here."
+msgstr "När antalet fångade 404:or skulle orsaka ett administratörsmeddelande kommer ett e-postmeddelande att skickas till de adresser som anges här."
+
+msgid "You can see which are recognized by looking at the default 404 destination option."
+msgstr "Du kan se vilka som är erkända genom att titta på standardalternativet för 404-destination."
+
+msgid "You can see which post types are recognized by looking at the default 404 destination option, which has a list of pages, posts, products, etc."
+msgstr "Du kan se vilka inläggstyper som är erkända genom att titta på standardalternativet för 404-destination, som har en lista över sidor, inlägg, produkter, etc."
+
+msgid "add-exclude-page-data-url"
+msgstr "add-exclude-page-data-url"
+
+msgid "addManualRedirectAction"
+msgstr "addManualRedirectAction"
+
+msgid "ajaxTrashLink"
+msgstr "ajaxTrashLink"
+
+msgid "and <B>from_url,to_url</B>"
+msgstr "och <B>from_url,to_url</B>"
+
+msgid "and redirect to the specified page."
+msgstr "och omdirigera till den angivna sidan."
+
+msgid "bulkOptions"
+msgstr "bulkOptions"
+
+msgid "data-pagination-ajax-url"
+msgstr "data-pagination-ajax-url"
+
+msgid "data-url"
+msgstr "data-url"
+
+msgid "days (0 means immediately, default 30)"
+msgstr "dagar (0 betyder omedelbart, standard 30)"
+
+msgid "deletePermanentlyHTML"
+msgstr "deletePermanentlyHTML"
+
+msgid "destination-does-not-exist"
+msgstr "destination-does-not-exist"
+
+msgid "destination-exists"
+msgstr "destination-exists"
+
+msgid "disallow-redirect-all-requests"
+msgstr "disallow-redirect-all-requests"
+
+msgid "earliestLogDate"
+msgstr "earliestLogDate"
+
+msgid "editLink"
+msgstr "editLink"
+
+msgid "editlinkHTML"
+msgstr "editlinkHTML"
+
+msgid "filterText"
+msgstr "filterText"
+
+msgid "is maintained by"
+msgstr "underhålls av"
+
+msgid "loaded-excluded-pages"
+msgstr "loaded-excluded-pages"
+
+msgid "logCurrentRowCount"
+msgstr "logCurrentRowCount"
+
+msgid "logCurrentSizeDiskUsage"
+msgstr "logCurrentSizeDiskUsage"
+
+msgid "logslinkHTML"
+msgstr "logslinkHTML"
+
+msgid "of"
+msgstr "av"
+
+msgid "pageIDAndType"
+msgstr "pageIDAndType"
+
+msgid "postedURL"
+msgstr "postedURL"
+
+msgid "redirectPageTitle"
+msgstr "redirectPageTitle"
+
+msgid "rowActions"
+msgstr "rowActions"
+
+msgid "rowClass"
+msgstr "rowClass"
+
+msgid "rowCode"
+msgstr "rowCode"
+
+msgid "rowURL"
+msgstr "rowURL"
+
+msgid "selecteSsettingsLevel"
+msgstr "selecteSsettingsLevel"
+
+msgid "selectedAutoCats"
+msgstr "selectedAutoCats"
+
+msgid "selectedAutoRedirects"
+msgstr "selectedAutoRedirects"
+
+msgid "selectedAutoTags"
+msgstr "selectedAutoTags"
+
+msgid "selectedCapture404"
+msgstr "selectedCapture404"
+
+msgid "selectedDefaultRedirect301"
+msgstr "selectedDefaultRedirect301"
+
+msgid "selectedDefaultRedirect302"
+msgstr "selectedDefaultRedirect302"
+
+msgid "selectedRemoveMatches"
+msgstr "selectedRemoveMatches"
+
+msgid "selectedSendErrorLogs"
+msgstr "selectedSendErrorLogs"
+
+msgid "selectedThemeCalm"
+msgstr "selectedThemeCalm"
+
+msgid "selectedThemeMono"
+msgstr "selectedThemeMono"
+
+msgid "selectedThemeNeon"
+msgstr "selectedThemeNeon"
+
+msgid "selectedThemeObsidian"
+msgstr "selectedThemeObsidian"
+
+msgid "selectedUnderSettings"
+msgstr "selectedUnderSettings"
+
+msgid "showSearchFilter"
+msgstr "showSearchFilter"
+
+msgid "statusTitle"
+msgstr "statusTitle"
+
+msgid "toolsExportRedirectsLink"
+msgstr "toolsExportRedirectsLink"
+
+msgid "toolsImportFormActionLink"
+msgstr "toolsImportFormActionLink"
+
+msgid "toolsImportRedirectsLink"
+msgstr "toolsImportRedirectsLink"
+
+msgid "toolsMaintenanceFormActionLink"
+msgstr "toolsMaintenanceFormActionLink"
+
+msgid "toolsPurgeFormActionLink"
+msgstr "toolsPurgeFormActionLink"
+
+msgid "urlPlaceholder"
+msgstr "urlPlaceholder"
+
+msgid "will match any URL that begins with"
+msgstr "kommer att matcha vilken URL som helst som börjar med"
+
+#. Plural form with HTML
+#: includes/View.php
+msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
+msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
+msgstr[0] "Det finns <a>%s fångad 404-URL</a> som behöver bearbetas."
+msgstr[1] "Det finns <a>%s fångade 404-URL:er</a> som behöver bearbetas."
+
+#. Plural form with %s
+#: includes/DataAccess.php
+msgid "%s redirect entry was moved to the trash."
+msgid_plural "%s redirect entries were moved to the trash."
+msgstr[0] "%s omdirigeringspost flyttades till papperskorgen."
+msgstr[1] "%s omdirigeringsposter flyttades till papperskorgen."
+
+
+#: includes/DatabaseUpgradesEtc.php:119
+msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
+msgstr "404 Solution: N-gram stavningskontrollcache byggs i bakgrunden för att optimera prestanda. Detta kan ta några minuter på stora webbplatser."
+
+#: includes/DatabaseUpgradesEtc.php:125
+msgid "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."
+msgstr "404 Solution: N-gram stavningskontrollcache byggs i bakgrunden%s för att optimera prestanda. Detta kan ta några minuter på stora webbplatser."
+
+#: includes/DatabaseUpgradesEtc.php:123
+msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
+msgstr "404 Solution: Byggde N-gram cache för %d sidor för att optimera stavningskontrollprestanda."
+
+#: includes/DatabaseUpgradesEtc.php:140
+msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr "404 Solution: Migrerade %d omdirigeringar till underkatalogsoberoende format."
+
+msgid "Before deactivating:"
+msgstr "Före avaktivering:"
+
+msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
+msgstr "Välj vad som ska hända med din data. Dessa inställningar kommer att sparas för senare om du bestämmer dig för att radera plugin:et."
+
+msgid "What should happen to your data?"
+msgstr "Vad ska hända med din data?"
+
+msgid "Keep my redirects (%d redirects)"
+msgstr "Behåll mina omdirigeringar (%d omdirigeringar)"
+
+msgid "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
+msgstr "Markera detta om du planerar att återinstallera plugin:et senare. Dina omdirigeringskonfigurationer kommer att bevaras."
+
+msgid "Keep 404 logs"
+msgstr "Behåll 404-loggar"
+
+msgid "Historical 404 data and logs will be preserved if checked."
+msgstr "Historisk 404-data och loggar kommer att bevaras om markerat."
+
+msgid "Note: Cache tables will always be deleted as they can be rebuilt."
+msgstr "Obs: Cachetabeller kommer alltid att raderas eftersom de kan byggas om."
+
+msgid "Why are you deactivating? (Optional)"
+msgstr "Varför avaktiverar du? (Valfritt)"
+
+msgid "Temporary deactivation for debugging"
+msgstr "Tillfällig avaktivering för felsökning"
+
+msgid "The plugin is not working as expected"
+msgstr "Plugin:et fungerar inte som förväntat"
+
+msgid "I found a better plugin"
+msgstr "Jag hittade ett bättre plugin"
+
+msgid "I no longer need this functionality"
+msgstr "Jag behöver inte längre denna funktionalitet"
+
+msgid "Too complicated to configure"
+msgstr "För komplicerat att konfigurera"
+
+msgid "Performance issues"
+msgstr "Prestandaproblem"
+
+msgid "Other reason"
+msgstr "Annan anledning"
+
+msgid "Help us improve (Optional)"
+
+msgid "Help improve the plugin (Optional)"
+msgstr "Hjälp till att förbättra plugin:et (Valfritt)"
+
+msgid "Share why you're deactivating. Your feedback helps us improve."
+msgstr "Dela varför du avaktiverar. Din feedback hjälper oss att förbättra."
+
+
+msgid "Email Feedback & Deactivate"
+msgstr "Skicka feedback och avaktivera"
+msgstr "Hjälp oss att förbättra (Valfritt)"
+
+msgid "Send feedback to help improve the plugin"
+msgstr "Skicka feedback för att hjälpa till att förbättra plugin:et"
+
+msgid "Your email (optional):"
+msgstr "Din e-post (valfritt):"
+
+msgid "your@email.com (optional)"
+msgstr "din@epost.se (valfritt)"
+
+msgid "Additional details:"
+msgstr "Ytterligare detaljer:"
+
+msgid "Please share any additional feedback..."
+msgstr "Vänligen dela eventuell ytterligare feedback..."
+
+msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
+msgstr "Din feedback hjälper oss att förbättra. Vi respekterar din integritet och kommer inte att dela din information."
+
+msgid "Insufficient permissions"
+msgstr "Otillräckliga behörigheter"
+
+msgid "Preferences saved successfully"
+msgstr "Inställningar sparade framgångsrikt"
+
+msgid "Failed to save preferences"
+msgstr "Misslyckades med att spara inställningar"
+
+msgid "N-gram cache rebuild is already in progress. Please wait for it to complete."
+msgstr "Ombyggnad av N-gram cache pågår redan. Vänligen vänta tills den är klar."
+
+msgid "Error rebuilding N-gram cache: %s"
+msgstr "Fel vid ombyggnad av N-gram cache: %s"
+
+msgid "N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed."
+msgstr "N-gram cache ombyggd framgångsrikt: %d totalt antal poster bearbetade (%d inlägg/sidor, %d kategorier, %d taggar), %d lyckade, %d misslyckade."
+
+msgid "Spelling cache cleared successfully."
+msgstr "Stavningscache rensad framgångsrikt."
+
+msgid "Cache Management"
+msgstr "Cachehantering"
+
+msgid "N-gram Cache"
+msgstr "N-gram cache"
+
+msgid "Rebuild the N-gram spell checker cache. This optimizes 404 URL matching performance. May take several minutes on large sites."
+msgstr "Bygg om N-gram stavningskontrollcachen. Detta optimerar 404-URL matchningsprestanda. Kan ta flera minuter på stora webbplatser."
+
+msgid "Rebuild N-gram Cache"
+msgstr "Bygg om N-gram cache"
+
+msgid "Spelling Cache"
+msgstr "Stavningscache"
+
+msgid "Clear the spelling cache to force recalculation of URL matches. Useful after making significant content changes."
+msgstr "Rensa stavningscachen för att tvinga omberäkning av URL-matchningar. Användbart efter att ha gjort betydande innehållsändringar."
+
+msgid "Clear Spelling Cache"
+msgstr "Rensa stavningscache"
+
+msgid "Disable automatic dark mode detection"
+msgstr "Inaktivera automatisk detektering av mörkt läge"
+
+msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
+msgstr "När omarkerad och temat är inställt på \"Standard\" kommer plugin:et automatiskt att byta till ett mörkt tema om ditt WordPress adminfärgschema är mörkt (Midnight, Ectoplasm, Coffee), om du har ett mörkt läge-plugin aktiverat, eller om din webbläsare/OS föredrar mörkt läge."
+
+msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
+msgstr "Din feedback hjälper oss att förbättra. Systeminformation (WordPress-version, PHP-version, installerade plugin) kommer att inkluderas. Vi respekterar din integritet och kommer inte att dela din information."
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
+msgstr "Ombyggnad av N-gram cache är redan schemalagd eller pågår. Vänligen vänta tills den är klar."
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
+msgstr "Ombyggnad av N-gram cache har schemalagts och kommer att köras i bakgrunden. Detta kan ta flera minuter på stora webbplatser. Du kan fortsätta använda plugin:et normalt."
+
+#: includes/PluginLogic.php
+msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
+msgstr "Misslyckades med att schemalägga ombyggnad av N-gram cache. Vänligen försök igen eller kontrollera din WordPress cron-konfiguration."
