@@ -2,6 +2,8 @@
 
 ## Version 3.0.1 (Nov 20, 2025) ##
 * Improvement: Use accordions on the settings screen instead of chips.
+* FIX: Division by 0 in the new ngram filter.
+* FIX: Language file format issues for various languages. 
 * FIX: Correct the deactivate feedback trigger.
 * FIX: Log slow query content correctly. 
 
