@@ -93,18 +93,21 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     
     private function reallyCreateDatabaseTables($updatingToNewVersion = false) {
 		$this->renameAbj404TablesToLowerCase();
-		
+
     	if ($updatingToNewVersion) {
     		$this->correctIssuesBefore();
     	}
-    	
-    	$this->runInitialCreateTables();
-    	
-    	$this->correctCollations();
-    	
-    	$this->updateTableEngineToInnoDB();
 
-    	$this->createIndexes();
+    	// MULTISITE: Create tables for all sites in the network when network-activated
+    	if ($this->isNetworkActivated()) {
+    		$this->createTablesForAllSites();
+    	} else {
+    		// Single site or site-activated: create tables for current site only
+    		$this->runInitialCreateTables();
+    		$this->correctCollations();
+    		$this->updateTableEngineToInnoDB();
+    		$this->createIndexes();
+    	}
 
     	// we could do this only when a table is created or when the "meta" column is created
     	// but it doesn't take long anyway so we do it every night.
@@ -252,7 +255,85 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $this->dao->queryAndGetResults($query);
         $this->verifyColumns($lookupTable, $query);
     }
-    
+
+    /**
+     * Create tables for all sites in a multisite network.
+     *
+     * This function iterates through all sites in the network and creates
+     * the plugin's database tables for each site. This ensures that when
+     * the plugin is network-activated, all sites have the necessary tables.
+     *
+     * @since 3.0.1
+     */
+    private function createTablesForAllSites() {
+        global $wpdb;
+
+        // Get all sites in the network
+        $sites = get_sites(array('fields' => 'ids', 'number' => 0));
+        $totalSites = count($sites);
+        $successCount = 0;
+        $failureCount = 0;
+
+        $this->logger->infoMessage(sprintf(
+            "Starting network-wide table creation for %d sites.",
+            $totalSites
+        ));
+
+        foreach ($sites as $siteId) {
+            try {
+                // Switch to the site
+                switch_to_blog($siteId);
+
+                $currentPrefix = $wpdb->prefix;
+                $this->logger->debugMessage(sprintf(
+                    "Creating tables for site ID %d (prefix: %s)...",
+                    $siteId,
+                    $currentPrefix
+                ));
+
+                // Create tables for this site
+                $this->runInitialCreateTables();
+                $this->correctCollations();
+                $this->updateTableEngineToInnoDB();
+                $this->createIndexes();
+
+                $successCount++;
+                $this->logger->debugMessage(sprintf(
+                    "Successfully created tables for site ID %d (prefix: %s)",
+                    $siteId,
+                    $currentPrefix
+                ));
+
+            } catch (Throwable $e) {
+                $failureCount++;
+                $this->logger->errorMessage(sprintf(
+                    "Failed to create tables for site ID %d (prefix: %s): %s",
+                    $siteId,
+                    $wpdb->prefix,
+                    $e->getMessage()
+                ));
+            } finally {
+                // Always restore blog context
+                restore_current_blog();
+            }
+        }
+
+        // Log summary
+        $this->logger->infoMessage(sprintf(
+            "Network-wide table creation complete: %d successful, %d failed out of %d total sites.",
+            $successCount,
+            $failureCount,
+            $totalSites
+        ));
+
+        if ($failureCount > 0) {
+            $this->logger->errorMessage(sprintf(
+                "Warning: Table creation failed for %d sites. Check error logs for details.",
+                $failureCount
+            ));
+        }
+    }
+
     function createIndexes() {
     	global $wpdb;
     	$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");

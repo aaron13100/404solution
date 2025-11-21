@@ -210,7 +210,22 @@ class ABJ_404_Solution_NGramFilter {
         );
 
         if ($result === false) {
-            $this->logger->errorMessage("Failed to store N-grams for page ID {$pageId}: " . $wpdb->last_error);
+            // Enhanced error message with multisite context and table details
+            $errorContext = sprintf(
+                "Failed to store N-grams for page ID %d: %s, Table: %s, Prefix: %s, DB: %s",
+                $pageId,
+                $wpdb->last_error,
+                $table,
+                $wpdb->prefix,
+                $wpdb->dbname
+            );
+
+            // Add multisite context if applicable
+            if (is_multisite()) {
+                $errorContext .= sprintf(", Blog ID: %d", get_current_blog_id());
+            }
+
+            $this->logger->errorMessage($errorContext);
             return false;
         }
 
