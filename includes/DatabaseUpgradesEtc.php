@@ -1941,6 +1941,76 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     }
 
     /**
+     * Daily insurance check: verify tables exist and repair if needed.
+     *
+     * This is a safety net that runs during daily maintenance to catch:
+     * - Failed table creation during activation/upgrade
+     * - Database corruption or manual table deletions
+     * - Edge cases we haven't anticipated
+     *
+     * Behavior:
+     * - Network-activated multisite: Verifies ALL sites (insurance for network)
+     * - Per-site or single site: Verifies CURRENT site only
+     *
+     * The check is lightweight (one SHOW TABLES query per site) and the repair
+     * reuses the same idempotent table creation logic used during activation.
+     *
+     * @return void
+     */
+    public function runDailyInsuranceCheck() {
+        if (!is_multisite() || !$this->isNetworkActivated()) {
+            // Single site or per-site activation: verify current site only
+            $this->verifyAndRepairCurrentSite();
+            return;
+        }
+
+        // Network-activated: verify all sites (insurance)
+        $sites = get_sites(['fields' => 'ids', 'number' => 0]);
+
+        $this->logger->debugMessage(sprintf(
+            "Network-activated: Running insurance check for %d sites...",
+            count($sites)
+        ));
+
+        foreach ($sites as $blog_id) {
+            switch_to_blog($blog_id);
+            $this->verifyAndRepairCurrentSite();
+            restore_current_blog();
+        }
+
+        $this->logger->debugMessage("Insurance check complete.");
+    }
+
+    /**
+     * Verify and repair tables for the current site only.
+     *
+     * Quick check: does the ngram_cache table exist?
+     * This is a sentinel table - if it's missing, other tables likely are too.
+     *
+     * @return void
+     */
+    private function verifyAndRepairCurrentSite() {
+        global $wpdb;
+
+        $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
+        $tableExists = $wpdb->get_var("SHOW TABLES LIKE '{$ngramTable}'");
+
+        if (!$tableExists) {
+            $this->logger->infoMessage(sprintf(
+                "Site %d (prefix: %s) is missing tables. Running repair...",
+                get_current_blog_id(),
+                $wpdb->prefix
+            ));
+
+            // Repair: call the same idempotent routine activation uses
+            // This is safe because createDatabaseTables() is idempotent
+            $this->createDatabaseTables(false);  // false = not updating to new version
+
+            $this->logger->infoMessage("Table repair complete for site " . get_current_blog_id());
+        }
+    }
+
+    /**
      * Clean up expired rate limit transients from wp_options table.
      *
      * WordPress transients are supposed to auto-delete when they expire, but in practice
@@ -2005,6 +2075,29 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         }
 
         return $stats;
+    }
+
+    /**
+     * Run all database maintenance tasks.
+     *
+     * This is the main orchestrator method called by the daily maintenance cron job.
+     * It coordinates all database-related maintenance tasks in the proper order.
+     *
+     * Called by: abj404_dailyMaintenanceCronJobListener() in 404-solution.php
+     *
+     * @return void
+     */
+    public function runDatabaseMaintenanceTasks() {
+        // Insurance: Verify tables exist (per-site or network-wide based on activation mode)
+        // This catches failed activations, database corruption, and edge cases
+        $this->runDailyInsuranceCheck();
+
+        // Ngram cache maintenance: sync missing entries and cleanup orphaned ones
+        $this->syncMissingNGrams();
+        $this->cleanupOrphanedNGrams();
+
+        // Clean up expired rate limit transients to prevent wp_options bloat
+        $this->cleanupExpiredRateLimitTransients();
     }
 
     /**

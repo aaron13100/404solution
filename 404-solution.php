@@ -221,13 +221,8 @@ function abj404_dailyMaintenanceCronJobListener() {
     $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
     $abj404dao->deleteOldRedirectsCron();
 
-    // Ngram cache maintenance: sync missing entries and cleanup orphaned ones
     $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-    $dbUpgrades->syncMissingNGrams();
-    $dbUpgrades->cleanupOrphanedNGrams();
-
-    // Clean up expired rate limit transients to prevent wp_options bloat
-    $dbUpgrades->cleanupExpiredRateLimitTransients();
+    $dbUpgrades->runDatabaseMaintenanceTasks();
 }
 function abj404_updateLogsHitsTableListener() {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
