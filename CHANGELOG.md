@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 3.0.2 (Nov 22, 2025) ##
+* FIX: Table creation issues on multisite. (Thanks to debug file participants!)
+
 ## Version 3.0.1 (Nov 20, 2025) ##
 * Improvement: Use accordions on the settings screen instead of chips.
 * FIX: Division by 0 in the new ngram filter.

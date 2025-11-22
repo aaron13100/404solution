@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 3.0.1
+Stable tag: 3.0.2
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -238,6 +238,9 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.0.2 (Nov 22, 2025) =
+* FIX: Table creation issues on multisite. (Thanks to debug file participants!)
 
 = Version 3.0.1 (Nov 20, 2025) =
 * Improvement: Use accordions on the settings screen instead of chips.
