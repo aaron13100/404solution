@@ -59,10 +59,10 @@ class ABJ_404_Solution_UninstallModal {
             'i18n' => array(
                 'dialogTitle' => __('404 Solution - Deactivation Options', '404-solution'),
                 'btnCancel' => __('Cancel', '404-solution'),
-                'btnDeactivate' => __('Deactivate Plugin', '404-solution'),
-                'btnSaving' => __('Saving...', '404-solution'),
+                'btnSkipFeedback' => __('Deactivate without feedback', '404-solution'),
+                'btnDeactivate' => __('Email Feedback & Deactivate', '404-solution'),
+                'btnSaving' => __('Processing...', '404-solution'),
                 'btnDeactivating' => __('Deactivating', '404-solution'),
-                'btnEmailDeactivate' => __('Email Feedback & Deactivate', '404-solution'),
             )
         ));
 
@@ -89,7 +89,7 @@ class ABJ_404_Solution_UninstallModal {
             }
             .abj404-uninstall-content label {
                 display: block;
-                margin: 15px 0;
+                margin: 8px 0;
                 cursor: pointer;
             }
             .abj404-uninstall-content label input[type="checkbox"],
@@ -97,15 +97,16 @@ class ABJ_404_Solution_UninstallModal {
                 margin-right: 8px;
             }
             .abj404-uninstall-content .description {
-                margin: 5px 0 0 25px;
+                margin: 0;
                 color: #646970;
-                font-size: 13px;
+                font-size: 12px;
             }
             .abj404-uninstall-content h3 {
-                margin-top: 20px;
-                margin-bottom: 10px;
+                margin-top: 18px;
+                margin-bottom: 8px;
                 border-bottom: 1px solid #dcdcde;
-                padding-bottom: 8px;
+                padding-bottom: 6px;
+                font-size: 14px;
             }
             .abj404-uninstall-content h3:first-child {
                 margin-top: 0;
@@ -114,17 +115,20 @@ class ABJ_404_Solution_UninstallModal {
                 margin-left: 25px;
             }
             .abj404-uninstall-reasons label {
-                margin: 8px 0;
+                margin: 6px 0;
+                font-size: 13px;
             }
-            #abj404-feedback-fields {
-                margin-top: 10px;
-                padding: 15px;
-                background: #f6f7f7;
-                border-radius: 4px;
+            .abj404-followup-section {
+                margin: 12px 0 !important;
+                padding: 12px !important;
             }
-            #abj404-feedback-fields input,
-            #abj404-feedback-fields textarea {
-                margin-top: 8px;
+            .abj404-followup-section p {
+                margin: 0 0 8px 0 !important;
+                font-size: 13px !important;
+            }
+            .abj404-followup-section label {
+                margin: 4px 0 !important;
+                font-size: 13px !important;
             }
         ');
 
@@ -141,42 +145,33 @@ class ABJ_404_Solution_UninstallModal {
         ?>
         <div id="abj404-uninstall-modal" class="hidden" style="max-width:600px">
             <div class="abj404-uninstall-content">
-                <!-- Warning Box -->
-                <div class="notice notice-warning inline" style="margin: 0 0 15px 0;">
-                    <p>
-                        <strong>⚠️ <?php _e('Before deactivating:', '404-solution'); ?></strong>
-                        <?php _e('Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin.', '404-solution'); ?>
-                    </p>
-                </div>
-
                 <!-- Data Deletion Options -->
-                <h3><?php _e('What should happen to your data?', '404-solution'); ?></h3>
+                <h3 style="margin-top: 0;">
+                    ⚠️ <?php _e('Before deactivating, choose what happens to your data:', '404-solution'); ?>
+                </h3>
 
                 <label>
                     <input type="checkbox" id="abj404-keep-redirects" checked>
-                    <strong><?php printf(__('Keep my redirects (%d redirects)', '404-solution'), $redirectCount); ?></strong>
-                    <p class="description">
-                        <?php _e('Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved.', '404-solution'); ?>
-                    </p>
+                    <strong><?php printf(__('Keep my redirects (%d)', '404-solution'), $redirectCount); ?></strong>
+                    <span class="description" style="display: inline; margin-left: 5px;">
+                        <?php _e('— saves them for later if you reinstall', '404-solution'); ?>
+                    </span>
                 </label>
 
                 <label>
                     <input type="checkbox" id="abj404-keep-logs" checked>
                     <strong><?php _e('Keep 404 logs', '404-solution'); ?></strong>
-                    <p class="description">
-                        <?php _e('Historical 404 data and logs will be preserved if checked.', '404-solution'); ?>
-                    </p>
+                    <span class="description" style="display: inline; margin-left: 5px;">
+                        <?php _e('— historical data preserved', '404-solution'); ?>
+                    </span>
                 </label>
 
-                <p class="description" style="margin-left: 0; font-style: italic;">
-                    <?php _e('Note: Cache tables will always be deleted as they can be rebuilt.', '404-solution'); ?>
+                <p class="description" style="margin: 5px 0 0 25px; font-size: 12px;">
+                    <?php _e('Cache tables are always deleted (can be rebuilt)', '404-solution'); ?>
                 </p>
 
                 <!-- Deactivation Reason -->
-                <h3><?php _e('Help improve the plugin (Optional)', '404-solution'); ?></h3>
-                <p class="description" style="margin: 0 0 10px 0;">
-                    <?php _e('Share why you\'re deactivating. Your feedback helps us improve.', '404-solution'); ?>
-                </p>
+                <h3 style="margin-top: 20px;"><?php _e('Help us improve (Optional)', '404-solution'); ?></h3>
 
                 <div class="abj404-uninstall-reasons">
                     <label>
@@ -209,39 +204,142 @@ class ABJ_404_Solution_UninstallModal {
                     </label>
                 </div>
 
-                <!-- Feedback Section -->
-                <h3><?php _e('Help us improve (Optional)', '404-solution'); ?></h3>
+                <!-- Conditional follow-up sections (shown based on selected reason) -->
+                <div id="abj404-followup-not-working" class="abj404-followup-section" style="display:none; background: #f6f7f7; border-radius: 4px; border-left: 3px solid #d63638;">
+                    <p style="font-weight: 600;">
+                        <?php _e('What specifically isn\'t working?', '404-solution'); ?>
+                    </p>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="redirects-not-triggering">
+                        <?php _e('Redirects not triggering/working', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="settings-not-saving">
+                        <?php _e('Settings not saving', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="admin-errors">
+                        <?php _e('Admin pages showing errors', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="suggestions-not-appearing">
+                        <?php _e('Suggestions not appearing', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="plugin-conflicts">
+                        <?php _e('Conflicts with other plugins', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="other-issue">
+                        <?php _e('Other issue (please specify below)', '404-solution'); ?>
+                    </label>
+                </div>
 
-                <label>
-                    <input type="checkbox" id="abj404-send-feedback">
-                    <strong><?php _e('Send feedback to help improve the plugin', '404-solution'); ?></strong>
-                </label>
+                <div id="abj404-followup-performance" class="abj404-followup-section" style="display:none; background: #f6f7f7; border-radius: 4px; border-left: 3px solid #d63638;">
+                    <p style="font-weight: 600;">
+                        <?php _e('What type of performance issue?', '404-solution'); ?>
+                    </p>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="slow-admin">
+                        <?php _e('Slow admin dashboard', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="slow-frontend">
+                        <?php _e('Slow frontend page loads', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="high-database">
+                        <?php _e('High database usage', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="memory-issues">
+                        <?php _e('Memory issues', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="other-performance">
+                        <?php _e('Other (please specify below)', '404-solution'); ?>
+                    </label>
+                </div>
 
-                <div id="abj404-feedback-fields" style="display:none;">
-                    <label for="abj404-feedback-email">
-                        <?php _e('Your email (optional):', '404-solution'); ?>
+                <div id="abj404-followup-complicated" class="abj404-followup-section" style="display:none; background: #f6f7f7; border-radius: 4px; border-left: 3px solid #d63638;">
+                    <p style="font-weight: 600;">
+                        <?php _e('What was confusing?', '404-solution'); ?>
+                    </p>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="settings-confusing">
+                        <?php _e('Settings are confusing', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="too-many-options">
+                        <?php _e('Too many options', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="unclear-docs">
+                        <?php _e('Unclear documentation', '404-solution'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="other-confusion">
+                        <?php _e('Other (please specify below)', '404-solution'); ?>
+                    </label>
+                </div>
+
+                <!-- Follow-up for "Found a better plugin" -->
+                <div id="abj404-followup-better-plugin" class="abj404-followup-section" style="display:none; padding: 0 !important;">
+                    <label for="abj404-better-plugin-name" style="margin-bottom: 5px;">
+                        <?php _e('Which plugin are you switching to?', '404-solution'); ?>
+                    </label>
+                    <input
+                        type="text"
+                        id="abj404-better-plugin-name"
+                        class="widefat"
+                        placeholder="<?php _e('Plugin name (optional)', '404-solution'); ?>"
+                    >
+                </div>
+
+                <!-- Follow-up for "Other reason" -->
+                <div id="abj404-followup-other" class="abj404-followup-section" style="display:none; padding: 0 !important;">
+                    <label for="abj404-other-reason-text" style="margin-bottom: 5px;">
+                        <?php _e('Please tell us more (optional):', '404-solution'); ?>
+                    </label>
+                    <textarea
+                        id="abj404-other-reason-text"
+                        rows="3"
+                        class="widefat"
+                        placeholder="<?php _e('What\'s your reason for deactivating?', '404-solution'); ?>"
+                    ></textarea>
+                </div>
+
+                <!-- Additional details for conditional sections -->
+                <div id="abj404-followup-details" class="abj404-followup-section" style="display:none; padding: 0 !important; margin-top: 10px !important;">
+                    <label for="abj404-followup-details-text" style="margin-bottom: 5px;">
+                        <?php _e('Additional details (optional):', '404-solution'); ?>
+                    </label>
+                    <textarea
+                        id="abj404-followup-details-text"
+                        rows="3"
+                        class="widefat"
+                        placeholder="<?php _e('Any other information about the issue...', '404-solution'); ?>"
+                    ></textarea>
+                </div>
+
+                <!-- Optional Feedback Email -->
+                <div id="abj404-feedback-email-section" style="margin: 15px 0 10px 0;">
+                    <label for="abj404-feedback-email" style="display: block; margin-bottom: 5px;">
+                        <strong><?php _e('Your email (optional):', '404-solution'); ?></strong>
                     </label>
                     <input
                         type="email"
                         id="abj404-feedback-email"
-                        placeholder="<?php _e('your@email.com (optional)', '404-solution'); ?>"
+                        placeholder="<?php _e('For follow-up if needed', '404-solution'); ?>"
                         class="widefat"
                     >
-
-                    <label for="abj404-feedback-details" style="margin-top: 10px;">
-                        <?php _e('Additional details:', '404-solution'); ?>
-                    </label>
-                    <textarea
-                        id="abj404-feedback-details"
-                        rows="3"
-                        class="widefat"
-                        placeholder="<?php _e('Please share any additional feedback...', '404-solution'); ?>"
-                    ></textarea>
-
-                    <p class="description" style="margin-left: 0; margin-top: 8px;">
-                        <?php _e('Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information.', '404-solution'); ?>
-                    </p>
                 </div>
+
+                <!-- Technical Details Opt-in -->
+                <label style="margin: 10px 0 15px 0; display: block;">
+                    <input type="checkbox" id="abj404-include-diagnostics" checked>
+                    <?php _e('Include technical details (system info + sanitized log excerpt) to help diagnose the issue', '404-solution'); ?>
+                </label>
             </div>
         </div>
         <?php
@@ -263,13 +361,17 @@ class ABJ_404_Solution_UninstallModal {
         // Get preferences from AJAX request
         // Use filter_var to properly handle boolean values sent from JavaScript
         $preferences = array(
-            'delete_redirects' => isset($_POST['delete_redirects']) && filter_var($_POST['delete_redirects'], FILTER_VALIDATE_BOOLEAN),
-            'delete_logs' => isset($_POST['delete_logs']) && filter_var($_POST['delete_logs'], FILTER_VALIDATE_BOOLEAN),
+            'delete_redirects' => isset($_POST['delete_redirects']) ? filter_var($_POST['delete_redirects'], FILTER_VALIDATE_BOOLEAN) : false,
+            'delete_logs' => isset($_POST['delete_logs']) ? filter_var($_POST['delete_logs'], FILTER_VALIDATE_BOOLEAN) : false,
             'delete_cache' => true, // Always delete cache tables
-            'send_feedback' => isset($_POST['send_feedback']) && filter_var($_POST['send_feedback'], FILTER_VALIDATE_BOOLEAN),
+            'send_feedback' => isset($_POST['send_feedback']) ? filter_var($_POST['send_feedback'], FILTER_VALIDATE_BOOLEAN) : false,
             'uninstall_reason' => isset($_POST['uninstall_reason']) ? sanitize_text_field($_POST['uninstall_reason']) : '',
+            'selected_issues' => isset($_POST['selected_issues']) ? sanitize_text_field($_POST['selected_issues']) : '',
+            'followup_details' => isset($_POST['followup_details']) ? sanitize_textarea_field($_POST['followup_details']) : '',
+            'better_plugin_name' => isset($_POST['better_plugin_name']) ? sanitize_text_field($_POST['better_plugin_name']) : '',
+            'other_reason_text' => isset($_POST['other_reason_text']) ? sanitize_textarea_field($_POST['other_reason_text']) : '',
             'feedback_email' => isset($_POST['feedback_email']) ? sanitize_email($_POST['feedback_email']) : '',
-            'feedback_details' => isset($_POST['feedback_details']) ? sanitize_textarea_field($_POST['feedback_details']) : ''
+            'include_diagnostics' => isset($_POST['include_diagnostics']) ? filter_var($_POST['include_diagnostics'], FILTER_VALIDATE_BOOLEAN) : false
         );
 
         // Debug logging (only in debug mode to avoid logging PII like email/feedback in production)
@@ -286,38 +388,37 @@ class ABJ_404_Solution_UninstallModal {
 
         if (is_multisite() && self::isNetworkActivated()) {
             // Network-activated: Use site option (accessible across all sites)
-            $saved = update_site_option($option_name, $preferences);
+            update_site_option($option_name, $preferences);
         } else {
             // Single-site or site-specific activation: Use regular option
-            $saved = update_option($option_name, $preferences, false); // autoload=false
+            update_option($option_name, $preferences, false); // autoload=false
         }
 
-        // Send feedback email if user provided any feedback
-        // Send if: (radio button selected) OR (send feedback checkbox checked AND has details text)
-        $has_reason = !empty($preferences['uninstall_reason']);
-        $has_feedback_text = $preferences['send_feedback'] && !empty($preferences['feedback_details']);
-        $should_send_email = $has_reason || $has_feedback_text;
+        // Send feedback email only if user explicitly opted in
+        $should_send_email = $preferences['send_feedback'];
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('404 Solution: has_reason=' . ($has_reason ? 'true' : 'false') . ', has_feedback_text=' . ($has_feedback_text ? 'true' : 'false') . ', should_send_email=' . ($should_send_email ? 'true' : 'false'));
+            error_log('404 Solution: send_feedback=' . ($preferences['send_feedback'] ? 'true' : 'false') . ', should_send_email=' . ($should_send_email ? 'true' : 'false'));
         }
 
         $email_sent = false;
-        if ($saved !== false && $should_send_email) {
+        if ($should_send_email) {
             $email_sent = self::sendFeedbackEmail($preferences);
         }
 
-        if ($saved !== false) {
-            $message = __('Preferences saved successfully', '404-solution');
-            if ($should_send_email) {
-                $message .= $email_sent
-                    ? ' ' . __('Feedback sent successfully.', '404-solution')
-                    : ' ' . __('Note: Feedback email could not be sent.', '404-solution');
-            }
-            wp_send_json_success(array('message' => $message));
+        // Build success message
+        if ($should_send_email) {
+            // User sent feedback - show appropriate message
+            $message = $email_sent
+                ? __('Feedback sent successfully.', '404-solution')
+                : __('Feedback could not be sent.', '404-solution');
         } else {
-            wp_send_json_error(array('message' => __('Failed to save preferences', '404-solution')));
+            // User skipped feedback - minimal message (won't be shown anyway due to instant redirect)
+            $message = '';
         }
+
+        // Always return success - update_option() returns false if value unchanged, which is fine
+        wp_send_json_success(array('message' => $message));
     }
 
     /**
@@ -406,23 +507,61 @@ class ABJ_404_Solution_UninstallModal {
         $body .= "═══════════════════════════════════════\n\n";
 
         if (!empty($preferences['uninstall_reason'])) {
-            $body .= "Reason: " . ucfirst(str_replace('_', ' ', $preferences['uninstall_reason'])) . "\n\n";
+            $body .= "Reason: " . ucfirst(str_replace('-', ' ', $preferences['uninstall_reason'])) . "\n\n";
         }
 
-        if (!empty($preferences['feedback_details'])) {
-            $body .= "Details:\n" . $preferences['feedback_details'] . "\n\n";
+        // Show selected issues (checkboxes)
+        if (!empty($preferences['selected_issues'])) {
+            $body .= "Specific Issues:\n";
+            $issues = explode(',', $preferences['selected_issues']);
+            foreach ($issues as $issue) {
+                $body .= "  ☑ " . ucfirst(str_replace('-', ' ', $issue)) . "\n";
+            }
+            $body .= "\n";
+        }
+
+        // Show additional details from follow-up textarea
+        if (!empty($preferences['followup_details'])) {
+            $body .= "Additional Details:\n" . $preferences['followup_details'] . "\n\n";
+        }
+
+        // Show better plugin name if provided
+        if (!empty($preferences['better_plugin_name'])) {
+            $body .= "Switching to: " . $preferences['better_plugin_name'] . "\n\n";
+        }
+
+        // Show other reason details if provided
+        if (!empty($preferences['other_reason_text'])) {
+            $body .= "Other Reason Details:\n" . $preferences['other_reason_text'] . "\n\n";
         }
 
         if (!empty($preferences['feedback_email'])) {
             $body .= "User Email: " . $preferences['feedback_email'] . "\n\n";
         }
 
-        $body .= "═══════════════════════════════════════\n";
-        $body .= "SYSTEM INFORMATION\n";
-        $body .= "═══════════════════════════════════════\n\n";
+        // Include diagnostics if user opted in
+        if (!empty($preferences['include_diagnostics'])) {
+            // Plugin debug log excerpt
+            $body .= "═══════════════════════════════════════\n";
+            $body .= "PLUGIN DEBUG LOG\n";
+            $body .= "═══════════════════════════════════════\n\n";
 
-        foreach ($system_info as $label => $value) {
-            $body .= sprintf("%-20s: %s\n", $label, $value);
+            try {
+                $logger = ABJ_404_Solution_Logging::getInstance();
+                $logExcerpt = $logger->getSanitizedLogExcerptForSupport();
+                $body .= $logExcerpt . "\n\n";
+            } catch (Exception $e) {
+                $body .= "Unable to retrieve log excerpt\n\n";
+            }
+
+            // System information
+            $body .= "═══════════════════════════════════════\n";
+            $body .= "SYSTEM INFORMATION\n";
+            $body .= "═══════════════════════════════════════\n\n";
+
+            foreach ($system_info as $label => $value) {
+                $body .= sprintf("%-20s: %s\n", $label, $value);
+            }
         }
 
         $body .= "\n═══════════════════════════════════════\n";

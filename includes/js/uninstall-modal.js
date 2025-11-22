@@ -62,10 +62,17 @@
                     }
                 },
                 {
+                    text: abj404UninstallModal.i18n.btnSkipFeedback,
+                    class: 'button button-link',
+                    click: function() {
+                        handleDeactivation(originalDeactivateUrl, false); // false = skip feedback
+                    }
+                },
+                {
                     text: abj404UninstallModal.i18n.btnDeactivate,
                     class: 'button button-primary button-danger',
                     click: function() {
-                        handleDeactivation(originalDeactivateUrl);
+                        handleDeactivation(originalDeactivateUrl, true); // true = send feedback
                     }
                 }
             ],
@@ -91,65 +98,57 @@
             $modal.dialog('open');
         });
 
-        // Show/hide feedback fields when checkbox is toggled
-        $('#abj404-send-feedback').on('change', function() {
-            $('#abj404-feedback-fields').slideToggle(200);
-            updateEmailIndicators();
-        });
-
-        /**
-         * Check if email will be sent based on current form state
-         * Email is sent if: (reason selected) OR (feedback checkbox + text provided)
-         *
-         * @return {boolean} True if email will be sent
-         */
-        function checkIfEmailWillBeSent() {
-            var hasReason = $('input[name="abj404-reason"]:checked').length > 0;
-            var hasFeedbackText = $('#abj404-send-feedback').is(':checked') &&
-                                  $('#abj404-feedback-details').val().trim().length > 0;
-            return hasReason || hasFeedbackText;
-        }
-
-        /**
-         * Update button text based on whether email will be sent
-         */
-        function updateEmailIndicators() {
-            var willSendEmail = checkIfEmailWillBeSent();
-            var $deactivateButton = $('.ui-dialog-buttonpane .button-danger');
-
-            if (willSendEmail) {
-                // Update button text to indicate email will be sent
-                $deactivateButton.text(abj404UninstallModal.i18n.btnEmailDeactivate);
-            } else {
-                // Default button text
-                $deactivateButton.text(abj404UninstallModal.i18n.btnDeactivate);
-            }
-        }
-
         // Store the currently selected radio button for deselection functionality
         var currentlySelectedReason = null;
 
-        // Add event listeners to update button text
+        // Show/hide conditional follow-up sections based on selected reason
         $('input[name="abj404-reason"]').on('click', function() {
             // Allow deselecting radio buttons by clicking again
             if (currentlySelectedReason === this) {
                 // Clicking the same radio button again - deselect it
                 $(this).prop('checked', false);
                 currentlySelectedReason = null;
+                // Hide all follow-up sections
+                $('.abj404-followup-section').slideUp(200);
             } else {
                 // New selection
                 currentlySelectedReason = this;
+                var selectedValue = $(this).val();
+
+                // Hide all follow-up sections first
+                $('.abj404-followup-section').slideUp(200);
+
+                // Show relevant follow-up section based on selection
+                if (selectedValue === 'not-working') {
+                    $('#abj404-followup-not-working').slideDown(200);
+                    $('#abj404-followup-details').slideDown(200);
+                } else if (selectedValue === 'performance') {
+                    $('#abj404-followup-performance').slideDown(200);
+                    $('#abj404-followup-details').slideDown(200);
+                } else if (selectedValue === 'too-complicated') {
+                    $('#abj404-followup-complicated').slideDown(200);
+                    $('#abj404-followup-details').slideDown(200);
+                } else if (selectedValue === 'found-better') {
+                    $('#abj404-followup-better-plugin').slideDown(200);
+                } else if (selectedValue === 'other') {
+                    $('#abj404-followup-other').slideDown(200);
+                }
             }
-            updateEmailIndicators();
         });
-        $('#abj404-feedback-details').on('input', updateEmailIndicators);
 
         /**
          * Handle deactivation: Save preferences via AJAX, then redirect to deactivate URL
          *
          * @param {string} deactivateUrl Original WordPress deactivate URL
+         * @param {boolean} sendFeedback Whether to send feedback email
          */
-        function handleDeactivation(deactivateUrl) {
+        function handleDeactivation(deactivateUrl, sendFeedback) {
+            // Collect selected issue checkboxes
+            var selectedIssues = [];
+            $('.abj404-issue-checkbox:checked').each(function() {
+                selectedIssues.push($(this).val());
+            });
+
             // Gather user preferences
             // Explicitly convert booleans to 'true'/'false' strings for PHP compatibility
             var preferences = {
@@ -158,10 +157,14 @@
                 delete_redirects: !$('#abj404-keep-redirects').is(':checked') ? 'true' : 'false',
                 delete_logs: !$('#abj404-keep-logs').is(':checked') ? 'true' : 'false',
                 delete_cache: 'true', // Always delete cache
-                send_feedback: $('#abj404-send-feedback').is(':checked') ? 'true' : 'false',
+                send_feedback: sendFeedback ? 'true' : 'false',
                 uninstall_reason: $('input[name="abj404-reason"]:checked').val() || '',
+                selected_issues: selectedIssues.join(','),
+                followup_details: $('#abj404-followup-details-text').val(),
+                better_plugin_name: $('#abj404-better-plugin-name').val(),
+                other_reason_text: $('#abj404-other-reason-text').val(),
                 feedback_email: $('#abj404-feedback-email').val(),
-                feedback_details: $('#abj404-feedback-details').val()
+                include_diagnostics: $('#abj404-include-diagnostics').is(':checked') ? 'true' : 'false'
             };
 
             // Disable buttons during save
@@ -183,12 +186,14 @@
                         // Preferences saved successfully
                         console.log('404 Solution: ✓ SUCCESS - ' + response.data.message);
 
-                        // Update modal text with result
-                        $modal.find('.abj404-uninstall-content').prepend(
-                            '<div class="notice notice-success" style="margin-bottom:15px;"><p><strong>' +
-                            response.data.message +
-                            '</strong></p></div>'
-                        );
+                        // Only show success notice if there's a message (when feedback was sent)
+                        if (response.data.message) {
+                            $modal.find('.abj404-uninstall-content').prepend(
+                                '<div class="notice notice-success" style="margin-bottom:15px;"><p><strong>' +
+                                response.data.message +
+                                '</strong></p></div>'
+                            );
+                        }
                     } else {
                         // Save failed but continue anyway
                         console.warn('404 Solution: ✗ FAILED - ' + (response.data.message || 'Unknown error'));
@@ -207,23 +212,10 @@
                     console.error('404 Solution: Response:', jqXHR.responseText);
                 })
                 .always(function() {
-                    // Brief delay to show feedback, then redirect to deactivate URL
-                    console.log('404 Solution: Redirecting to deactivation in 3 seconds...');
-
-                    // Re-enable buttons and update text
-                    $buttons.prop('disabled', false);
+                    // Update button text and redirect immediately
                     $buttons.filter('.button-danger').text(abj404UninstallModal.i18n.btnDeactivating);
-
-                    var countdown = 3;
-                    var countdownInterval = setInterval(function() {
-                        countdown--;
-                        if (countdown > 0) {
-                            // Countdown continues silently without updating button text
-                        } else {
-                            clearInterval(countdownInterval);
-                            window.location.href = deactivateUrl;
-                        }
-                    }, 1000);
+                    console.log('404 Solution: Redirecting to deactivation...');
+                    window.location.href = deactivateUrl;
                 });
         }
 
@@ -234,25 +226,32 @@
             // Reset checkboxes to defaults
             $('#abj404-keep-redirects').prop('checked', true);
             $('#abj404-keep-logs').prop('checked', true);
-            $('#abj404-send-feedback').prop('checked', false);
+            $('#abj404-include-diagnostics').prop('checked', true);
 
             // Reset radio buttons
             $('input[name="abj404-reason"]').prop('checked', false);
             currentlySelectedReason = null; // Reset stored selection
 
-            // Reset text inputs
-            $('#abj404-feedback-email').val('');
-            $('#abj404-feedback-details').val('');
+            // Reset issue checkboxes
+            $('.abj404-issue-checkbox').prop('checked', false);
 
-            // Hide feedback fields
-            $('#abj404-feedback-fields').hide();
+            // Reset all text inputs and textareas
+            $('#abj404-feedback-email').val('');
+            $('#abj404-followup-details-text').val('');
+            $('#abj404-better-plugin-name').val('');
+            $('#abj404-other-reason-text').val('');
+
+            // Hide all follow-up sections
+            $('.abj404-followup-section').hide();
 
             // Reset button states
             $('.ui-dialog-buttonpane button').prop('disabled', false);
-            $('.ui-dialog-buttonpane .button-danger').text(abj404UninstallModal.i18n.btnDeactivate);
 
             // Reset opacity
             $modal.find('.abj404-uninstall-content').css('opacity', '1');
+
+            // Remove any success/error notices
+            $modal.find('.notice').remove();
         }
     });
 

@@ -361,6 +361,120 @@ class ABJ_404_Solution_Logging {
         return $latestErrorLineFound;
     }
     
+    /**
+     * Get sanitized log excerpt for support emails
+     * Collects last 3-5 ERROR/WARN entries with sanitization for privacy
+     *
+     * @return string Sanitized log excerpt or message if no errors found
+     */
+    function getSanitizedLogExcerptForSupport() {
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $errorEntries = array();
+        $maxEntries = 5;
+        $totalLines = 0;
+        $handle = null;
+
+        try {
+            $debugFilePath = $this->getDebugFilePath();
+
+            if (!file_exists($debugFilePath)) {
+                return "No log file available";
+            }
+
+            if ($handle = fopen($debugFilePath, "r")) {
+                $currentEntry = array();
+                $collectingEntry = false;
+
+                // Read file line by line
+                while (($line = fgets($handle)) !== false) {
+                    $totalLines++;
+
+                    // Check if this is an ERROR or WARN line
+                    $hasError = stripos($line, '(ERROR)') !== false;
+                    $hasWarn = stripos($line, '(WARN)') !== false;
+                    $isDeleteError = stripos($line, 'SQL query error: DELETE command denied to user') !== false;
+
+                    // Start collecting if we find ERROR or WARN (but skip known benign errors)
+                    if (($hasError || $hasWarn) && !$isDeleteError) {
+                        // If we were collecting a previous entry, save it
+                        if ($collectingEntry && !empty($currentEntry)) {
+                            $errorEntries[] = $currentEntry;
+                            // Keep only last N entries (sliding window)
+                            if (count($errorEntries) > $maxEntries) {
+                                array_shift($errorEntries);
+                            }
+                        }
+
+                        // Start new entry
+                        $currentEntry = array($this->sanitizeLogLine($line));
+                        $collectingEntry = true;
+
+                    } else if ($collectingEntry &&
+                               !$f->regexMatch("^\d{4}[-]\d{2}[-]\d{2} .*\(\w+\):\s.*$", $line)) {
+                        // Continue collecting multiline error (not a new log entry)
+                        $currentEntry[] = $this->sanitizeLogLine($line);
+
+                    } else {
+                        // New log entry started, save previous if exists
+                        if ($collectingEntry && !empty($currentEntry)) {
+                            $errorEntries[] = $currentEntry;
+                            if (count($errorEntries) > $maxEntries) {
+                                array_shift($errorEntries);
+                            }
+                        }
+                        $collectingEntry = false;
+                        $currentEntry = array();
+                    }
+                }
+
+                // Save last entry if we were still collecting
+                if ($collectingEntry && !empty($currentEntry)) {
+                    $errorEntries[] = $currentEntry;
+                    if (count($errorEntries) > $maxEntries) {
+                        array_shift($errorEntries);
+                    }
+                }
+
+                fclose($handle);
+
+            } else {
+                return "Log file not readable";
+            }
+
+        } catch (Exception $e) {
+            return "Error reading log file";
+        }
+
+        // Format output
+        if (empty($errorEntries)) {
+            return "No ERROR or WARN entries found in log";
+        }
+
+        $output = "Last " . count($errorEntries) . " ERROR/WARN entries:\n\n";
+        foreach ($errorEntries as $entry) {
+            $output .= implode("\n", $entry) . "\n\n";
+        }
+
+        return trim($output);
+    }
+
+    /**
+     * Sanitize a single log line for privacy
+     * Removes query strings from URLs and masks email addresses
+     *
+     * @param string $line Log line to sanitize
+     * @return string Sanitized line
+     */
+    private function sanitizeLogLine($line) {
+        // Strip query strings from URLs (everything after ? in http/https URLs)
+        $line = preg_replace('/(https?:\/\/[^\s?]+)\?[^\s]*/', '$1', $line);
+
+        // Mask email-like patterns
+        $line = preg_replace('/\S+@\S+/', '<redacted-email>', $line);
+
+        return $line;
+    }
+
     /** Return the path to the debug file.
      * @return string
      */
