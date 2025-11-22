@@ -1949,57 +1949,69 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * - Edge cases we haven't anticipated
      *
      * Behavior:
-     * - Network-activated multisite: Verifies ALL sites (insurance for network)
-     * - Per-site or single site: Verifies CURRENT site only
+     * - Verifies CURRENT site only (per-site cron execution)
+     * - In multisite networks, each site's cron verifies its own tables
+     * - This avoids O(N²) performance when N sites each loop through N sites
      *
-     * The check is lightweight (one SHOW TABLES query per site) and the repair
+     * The check is lightweight (6 SHOW TABLES queries) and the repair
      * reuses the same idempotent table creation logic used during activation.
      *
      * @return void
      */
     public function runDailyInsuranceCheck() {
-        if (!is_multisite() || !$this->isNetworkActivated()) {
-            // Single site or per-site activation: verify current site only
-            $this->verifyAndRepairCurrentSite();
-            return;
-        }
-
-        // Network-activated: verify all sites (insurance)
-        $sites = get_sites(['fields' => 'ids', 'number' => 0]);
-
-        $this->logger->debugMessage(sprintf(
-            "Network-activated: Running insurance check for %d sites...",
-            count($sites)
-        ));
-
-        foreach ($sites as $blog_id) {
-            switch_to_blog($blog_id);
-            $this->verifyAndRepairCurrentSite();
-            restore_current_blog();
-        }
-
-        $this->logger->debugMessage("Insurance check complete.");
+        // Always verify current site only
+        // Per-site cron execution ensures network coverage without O(N²) duplication
+        $this->verifyAndRepairCurrentSite();
     }
 
     /**
      * Verify and repair tables for the current site only.
      *
-     * Quick check: does the ngram_cache table exist?
-     * This is a sentinel table - if it's missing, other tables likely are too.
+     * Checks all 6 required tables for the plugin:
+     * - abj404_redirects (redirect rules)
+     * - abj404_logsv2 (404 hits and redirect logs)
+     * - abj404_lookup (user/location lookups)
+     * - abj404_permalink_cache (performance cache)
+     * - abj404_spelling_cache (spell-check results cache)
+     * - abj404_ngram_cache (n-gram search cache)
+     *
+     * If ANY table is missing, triggers full table creation/repair.
      *
      * @return void
      */
     private function verifyAndRepairCurrentSite() {
         global $wpdb;
 
-        $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
-        $tableExists = $wpdb->get_var("SHOW TABLES LIKE '{$ngramTable}'");
+        // Define all required tables
+        $requiredTables = [
+            'abj404_redirects',
+            'abj404_logsv2',
+            'abj404_lookup',
+            'abj404_permalink_cache',
+            'abj404_spelling_cache',
+            'abj404_ngram_cache',
+        ];
 
-        if (!$tableExists) {
+        $missingTables = [];
+
+        // Check each required table
+        foreach ($requiredTables as $tableName) {
+            $fullTableName = $wpdb->prefix . $tableName;
+            $tableExists = $wpdb->get_var("SHOW TABLES LIKE '{$fullTableName}'");
+
+            if (!$tableExists) {
+                $missingTables[] = $tableName;
+            }
+        }
+
+        // If any tables are missing, run repair
+        if (!empty($missingTables)) {
             $this->logger->infoMessage(sprintf(
-                "Site %d (prefix: %s) is missing tables. Running repair...",
+                "Site %d (prefix: %s) is missing %d table(s): %s. Running repair...",
                 get_current_blog_id(),
-                $wpdb->prefix
+                $wpdb->prefix,
+                count($missingTables),
+                implode(', ', $missingTables)
             ));
 
             // Repair: call the same idempotent routine activation uses
