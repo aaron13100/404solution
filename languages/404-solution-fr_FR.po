@@ -1613,3 +1613,135 @@ msgstr "Le plugin ne redirigera que les types de publication spécifiés ici. Le
 #: includes/html/adminOptionsGeneral.html
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Lorsque le nombre de 404 capturés entraînerait une notification d'administrateur, un e-mail sera envoyé aux adresses spécifiées ici. Plusieurs adresses e-mail peuvent être séparées par des virgules (,). L'adresse e-mail « de » est toujours l'e-mail d'administrateur WordPress par défaut :"
+
+#: includes/UninstallModal.php
+msgid "Deactivate without feedback"
+msgstr "Désactiver sans commentaire"
+
+#: includes/UninstallModal.php
+msgid "Processing..."
+msgstr "Traitement..."
+
+#: includes/UninstallModal.php
+msgid "Before deactivating, choose what happens to your data:"
+msgstr "Avant de désactiver, choisissez ce qui arrive à vos données :"
+
+#: includes/UninstallModal.php
+msgid "Keep my redirects (%d)"
+msgstr "Conserver mes redirections (%d)"
+
+#: includes/UninstallModal.php
+msgid "— saves them for later if you reinstall"
+msgstr "— les enregistre pour plus tard si vous réinstallez"
+
+#: includes/UninstallModal.php
+msgid "— historical data preserved"
+msgstr "— données historiques conservées"
+
+#: includes/UninstallModal.php
+msgid "Cache tables are always deleted (can be rebuilt)"
+msgstr "Les tables de cache sont toujours supprimées (peuvent être reconstruites)"
+
+#: includes/UninstallModal.php
+msgid "What specifically isn't working?"
+msgstr "Qu'est-ce qui ne fonctionne pas précisément ?"
+
+#: includes/UninstallModal.php
+msgid "Redirects not triggering/working"
+msgstr "Les redirections ne se déclenchent pas/ne fonctionnent pas"
+
+#: includes/UninstallModal.php
+msgid "Settings not saving"
+msgstr "Les paramètres ne s'enregistrent pas"
+
+#: includes/UninstallModal.php
+msgid "Admin pages showing errors"
+msgstr "Les pages d'administration affichent des erreurs"
+
+#: includes/UninstallModal.php
+msgid "Suggestions not appearing"
+msgstr "Les suggestions n'apparaissent pas"
+
+#: includes/UninstallModal.php
+msgid "Conflicts with other plugins"
+msgstr "Conflits avec d'autres plugins"
+
+#: includes/UninstallModal.php
+msgid "Other issue (please specify below)"
+msgstr "Autre problème (veuillez préciser ci-dessous)"
+
+#: includes/UninstallModal.php
+msgid "What type of performance issue?"
+msgstr "Quel type de problème de performance ?"
+
+#: includes/UninstallModal.php
+msgid "Slow admin dashboard"
+msgstr "Tableau de bord administrateur lent"
+
+#: includes/UninstallModal.php
+msgid "Slow frontend page loads"
+msgstr "Chargement lent des pages frontend"
+
+#: includes/UninstallModal.php
+msgid "High database usage"
+msgstr "Utilisation élevée de la base de données"
+
+#: includes/UninstallModal.php
+msgid "Memory issues"
+msgstr "Problèmes de mémoire"
+
+#: includes/UninstallModal.php
+msgid "Other (please specify below)"
+msgstr "Autre (veuillez préciser ci-dessous)"
+
+#: includes/UninstallModal.php
+msgid "What was confusing?"
+msgstr "Qu'est-ce qui était confus ?"
+
+#: includes/UninstallModal.php
+msgid "Settings are confusing"
+msgstr "Les paramètres sont confus"
+
+#: includes/UninstallModal.php
+msgid "Too many options"
+msgstr "Trop d'options"
+
+#: includes/UninstallModal.php
+msgid "Unclear documentation"
+msgstr "Documentation peu claire"
+
+#: includes/UninstallModal.php
+msgid "Which plugin are you switching to?"
+msgstr "Vers quel plugin passez-vous ?"
+
+#: includes/UninstallModal.php
+msgid "Plugin name (optional)"
+msgstr "Nom du plugin (optionnel)"
+
+#: includes/UninstallModal.php
+msgid "Please tell us more (optional):"
+msgstr "Veuillez nous en dire plus (optionnel) :"
+
+#: includes/UninstallModal.php
+msgid "What's your reason for deactivating?"
+msgstr "Quelle est votre raison de désactiver ?"
+
+#: includes/UninstallModal.php
+msgid "Additional details (optional):"
+msgstr "Détails supplémentaires (optionnel) :"
+
+#: includes/UninstallModal.php
+msgid "Any other information about the issue..."
+msgstr "Toute autre information sur le problème..."
+
+#: includes/UninstallModal.php
+msgid "For follow-up if needed"
+msgstr "Pour suivi si nécessaire"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (system info + sanitized log excerpt) to help diagnose the issue"
+msgstr "Inclure les détails techniques (informations système + extrait de journal nettoyé) pour aider à diagnostiquer le problème"
+
+#: includes/UninstallModal.php
+msgid "Feedback could not be sent."
+msgstr "Le commentaire n'a pas pu être envoyé."
