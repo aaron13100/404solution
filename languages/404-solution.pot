@@ -859,6 +859,10 @@ msgid "Insufficient permissions"
 msgstr ""
 
 #: includes/UninstallModal.php
+msgid "Could not save preferences. Your choices may not be preserved."
+msgstr ""
+
+#: includes/UninstallModal.php
 msgid "Preferences saved successfully"
 msgstr ""
 

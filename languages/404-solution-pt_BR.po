@@ -1512,6 +1512,9 @@ msgstr "Seu feedback nos ajuda a melhorar. Respeitamos sua privacidade e não co
 msgid "Insufficient permissions"
 msgstr "Insufficient permissions"
 
+msgid "Could not save preferences. Your choices may not be preserved."
+msgstr "Não foi possível salvar as preferências. Suas escolhas podem não ser preservadas."
+
 msgid "Preferences saved successfully"
 msgstr "Preferences saved successfully"
 

@@ -1521,6 +1521,9 @@ msgstr "您的反馈帮助我们改进。我们尊重您的隐私，不会分享
 msgid "Insufficient permissions"
 msgstr "权限不足"
 
+msgid "Could not save preferences. Your choices may not be preserved."
+msgstr "无法保存设置。您的选择可能无法保留。"
+
 msgid "Preferences saved successfully"
 msgstr "偏好设置已成功保存"
 

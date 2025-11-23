@@ -612,9 +612,10 @@ class ABJ_404_Solution_Logging {
             $line
         );
 
-        // Redact IPv6 addresses using existing md5lastOctet function
+        // Redact IPv6 addresses (including compressed forms) using existing md5lastOctet function
+        // Comprehensive regex handles: full addresses, zero-compressed (::), loopback (::1), etc.
         $line = preg_replace_callback(
-            '/\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b/',
+            '/\b(?:(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:(?::[0-9a-fA-F]{1,4}){1,6}|:(?:(?::[0-9a-fA-F]{1,4}){1,7}|:))\b/',
             function($matches) use ($f) {
                 return $f->md5lastOctet($matches[0]);
             },

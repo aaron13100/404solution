@@ -1514,6 +1514,9 @@ msgstr "Ваш отзыв помогает нам улучшаться. Мы у�
 msgid "Insufficient permissions"
 msgstr "Недостаточно прав"
 
+msgid "Could not save preferences. Your choices may not be preserved."
+msgstr "Не удалось сохранить настройки. Ваш выбор может не быть сохранен."
+
 msgid "Preferences saved successfully"
 msgstr "Настройки успешно сохранены"
 

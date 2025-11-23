@@ -386,12 +386,31 @@ class ABJ_404_Solution_UninstallModal {
         // In multisite, use site_option for network-activated plugins, regular option for single-site
         $option_name = 'abj404_uninstall_preferences';
 
+        // Capture return value to verify save success
+        $save_result = false;
         if (is_multisite() && self::isNetworkActivated()) {
             // Network-activated: Use site option (accessible across all sites)
-            update_site_option($option_name, $preferences);
+            $save_result = update_site_option($option_name, $preferences);
         } else {
             // Single-site or site-specific activation: Use regular option
-            update_option($option_name, $preferences, false); // autoload=false
+            $save_result = update_option($option_name, $preferences, false); // autoload=false
+        }
+
+        // Verify the save was successful (false could mean unchanged OR failure)
+        if ($save_result === false) {
+            // Read back the option to verify it was actually saved
+            $saved_value = is_multisite() && self::isNetworkActivated()
+                ? get_site_option($option_name)
+                : get_option($option_name);
+
+            // If the saved value doesn't match what we tried to save, it's a real failure
+            if ($saved_value !== $preferences) {
+                wp_send_json_error(array(
+                    'message' => __('Could not save preferences. Your choices may not be preserved.', '404-solution')
+                ));
+                return;
+            }
+            // If values match, the false return was just because value was unchanged (which is OK)
         }
 
         // Send feedback email only if user explicitly opted in
@@ -417,7 +436,7 @@ class ABJ_404_Solution_UninstallModal {
             $message = '';
         }
 
-        // Always return success - update_option() returns false if value unchanged, which is fine
+        // Return success (failures are already handled above)
         wp_send_json_success(array('message' => $message));
     }
 

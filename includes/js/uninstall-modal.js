@@ -108,15 +108,20 @@
                 // Clicking the same radio button again - deselect it
                 $(this).prop('checked', false);
                 currentlySelectedReason = null;
-                // Hide all follow-up sections
-                $('.abj404-followup-section').slideUp(200);
+                // Hide all follow-up sections and clear their checkboxes
+                $('.abj404-followup-section').slideUp(200, function() {
+                    $(this).find('.abj404-issue-checkbox').prop('checked', false);
+                });
             } else {
                 // New selection
                 currentlySelectedReason = this;
                 var selectedValue = $(this).val();
 
-                // Hide all follow-up sections first
-                $('.abj404-followup-section').slideUp(200);
+                // Hide all follow-up sections first and clear their checkboxes
+                $('.abj404-followup-section').slideUp(200, function() {
+                    // Clear checkboxes in hidden sections to prevent stale values
+                    $(this).find('.abj404-issue-checkbox').prop('checked', false);
+                });
 
                 // Show relevant follow-up section based on selection
                 if (selectedValue === 'not-working') {

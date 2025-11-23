@@ -1518,6 +1518,9 @@ msgstr "フィードバックは改善に役立ちます。プライバシーを
 msgid "Insufficient permissions"
 msgstr "権限が不足しています"
 
+msgid "Could not save preferences. Your choices may not be preserved."
+msgstr "設定を保存できませんでした。選択内容が保持されない可能性があります。"
+
 msgid "Preferences saved successfully"
 msgstr "設定が正常に保存されました"
 

@@ -1513,6 +1513,9 @@ msgstr "Din feedback hjälper oss att förbättra. Vi respekterar din integritet
 msgid "Insufficient permissions"
 msgstr "Otillräckliga behörigheter"
 
+msgid "Could not save preferences. Your choices may not be preserved."
+msgstr "Kunde inte spara inställningar. Dina val kanske inte bevaras."
+
 msgid "Preferences saved successfully"
 msgstr "Inställningar sparade framgångsrikt"
 

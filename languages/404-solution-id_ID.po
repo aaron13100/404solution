@@ -1510,6 +1510,9 @@ msgstr "Masukan Anda membantu kami meningkatkan plugin. Kami menghormati privasi
 msgid "Insufficient permissions"
 msgstr "Izin tidak mencukupi"
 
+msgid "Could not save preferences. Your choices may not be preserved."
+msgstr "Tidak dapat menyimpan preferensi. Pilihan Anda mungkin tidak tersimpan."
+
 msgid "Preferences saved successfully"
 msgstr "Preferensi berhasil disimpan"
 

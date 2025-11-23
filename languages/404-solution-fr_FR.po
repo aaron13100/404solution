@@ -1512,6 +1512,9 @@ msgstr "Vos commentaires nous aident à améliorer ce plugin. Nous respectons vo
 msgid "Insufficient permissions"
 msgstr "Permissions insuffisantes"
 
+msgid "Could not save preferences. Your choices may not be preserved."
+msgstr "Impossible d'enregistrer les préférences. Vos choix peuvent ne pas être préservés."
+
 msgid "Preferences saved successfully"
 msgstr "Préférences enregistrées avec succès"
 
