@@ -80,6 +80,11 @@ Other stuff is here.
 
 ## Changelog ##
 
+## Version 3.0.3 (Nov 23, 2025) ##
+* Improved: GDPR compliance in log files (just in case). 
+* Improved: Some missing translation keys.
+* Improved: Deactivation feedback. 
+
 ## Version 3.0.2 (Nov 22, 2025) ##
 * FIX: Table creation issues on multisite. (Thanks to debug file participants!)
 
