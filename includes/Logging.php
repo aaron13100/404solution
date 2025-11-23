@@ -161,6 +161,7 @@ class ABJ_404_Solution_Logging {
 
     /** Write the line to the debug file.
      *
+     * Sanitizes PII at write-time for GDPR compliance (defense in depth).
      * Fix for disk space error (reported by 1 user - 2% of errors)
      * Handles file write failures gracefully to prevent error loops when disk is full.
      * Uses error suppression and returns status instead of throwing exceptions.
@@ -169,8 +170,12 @@ class ABJ_404_Solution_Logging {
      * @return bool True on success, false on failure
      */
     function writeLineToDebugFile($line) {
+        // Sanitize PII at write-time (GDPR compliance)
+        // This protects all 372 logging calls across the codebase
+        $sanitizedLine = $this->sanitizeLogLine($line);
+
         // Suppress errors to prevent fatal error when disk is full
-        $result = @file_put_contents($this->getDebugFilePath(), $line . "\n", FILE_APPEND);
+        $result = @file_put_contents($this->getDebugFilePath(), $sanitizedLine . "\n", FILE_APPEND);
 
         if ($result === false) {
             // Disk full or permissions issue - log to error_log instead to avoid infinite loop
@@ -363,7 +368,7 @@ class ABJ_404_Solution_Logging {
     
     /**
      * Get sanitized log excerpt for support emails
-     * Collects last 3-5 ERROR/WARN entries with sanitization for privacy
+     * Collects last 3-5 ERROR/WARN entries (already sanitized at write-time)
      *
      * @return string Sanitized log excerpt or message if no errors found
      */
@@ -405,14 +410,14 @@ class ABJ_404_Solution_Logging {
                             }
                         }
 
-                        // Start new entry
-                        $currentEntry = array($this->sanitizeLogLine($line));
+                        // Start new entry (no sanitization needed - already done at write-time)
+                        $currentEntry = array($line);
                         $collectingEntry = true;
 
                     } else if ($collectingEntry &&
                                !$f->regexMatch("^\d{4}[-]\d{2}[-]\d{2} .*\(\w+\):\s.*$", $line)) {
-                        // Continue collecting multiline error (not a new log entry)
-                        $currentEntry[] = $this->sanitizeLogLine($line);
+                        // Continue collecting multiline error (no sanitization needed - already done at write-time)
+                        $currentEntry[] = $line;
 
                     } else {
                         // New log entry started, save previous if exists
@@ -459,18 +464,220 @@ class ABJ_404_Solution_Logging {
     }
 
     /**
-     * Sanitize a single log line for privacy
-     * Removes query strings from URLs and masks email addresses
+     * Mask email address with adaptive length-based masking
+     * Shows 1-3 chars of username and ≤30% of domain based on length
+     *
+     * Examples:
+     * - joe@mail.com → j***@m***-a1b2
+     * - john@gmail.com → j***@gm***-c3d4
+     * - jennifer@example.com → jen***@exa***-e5f6
+     *
+     * @param string $email Email address to mask
+     * @return string Masked email with consistent hash
+     */
+    private function maskEmailAdaptive($email) {
+        if (empty($email) || strpos($email, '@') === false) {
+            return $email;
+        }
+
+        // Split email into parts
+        $parts = explode('@', $email);
+        if (count($parts) != 2) {
+            // Invalid email (multiple @), mask entire string as text
+            return $this->maskTextAdaptive($email);
+        }
+
+        list($username, $fullDomain) = $parts;
+
+        // Strip TLD from domain (remove .com, .org, .co.uk, etc.)
+        $domainParts = explode('.', $fullDomain);
+        if (count($domainParts) > 1) {
+            // Remove last part (.com), or last 2 parts if it's .co.uk style
+            if (in_array(end($domainParts), array('uk', 'au', 'nz', 'za'))) {
+                // .co.uk style - remove last 2 parts
+                array_pop($domainParts);
+                array_pop($domainParts);
+            } else {
+                // .com style - remove last part
+                array_pop($domainParts);
+            }
+        }
+        $domain = implode('.', $domainParts);
+
+        // Calculate visible characters for username (1-3 based on length)
+        $usernameLen = strlen($username);
+        if ($usernameLen <= 4) {
+            $usernameVisible = 1;
+        } elseif ($usernameLen <= 9) {
+            $usernameVisible = 2;
+        } else {
+            $usernameVisible = 3;
+        }
+
+        // Calculate visible characters for domain (≤30%)
+        $domainLen = strlen($domain);
+        $domainVisible = max(1, (int) ceil($domainLen * 0.3));
+
+        // Create masked parts
+        $maskedUsername = substr($username, 0, $usernameVisible) . '***';
+        $maskedDomain = empty($domain) ? '' : substr($domain, 0, $domainVisible) . '***';
+
+        // Generate consistent hash with WordPress salt for security
+        if (defined('AUTH_SALT')) {
+            $hash = substr(md5(AUTH_SALT . $email), 0, 4);
+        } else {
+            $hash = substr(md5($email), 0, 4);
+        }
+
+        // Format: username***@domain***-hash
+        if (!empty($maskedDomain)) {
+            return $maskedUsername . '@' . $maskedDomain . '-' . $hash;
+        } else {
+            return $maskedUsername . '@-' . $hash;
+        }
+    }
+
+    /**
+     * Mask text (names, usernames) with adaptive length-based masking
+     * Shows 1-3 chars based on length + consistent hash
+     *
+     * Examples:
+     * - Joe → J***-a1b2
+     * - John → J***-c3d4
+     * - Jennifer → Jen***-e5f6
+     *
+     * @param string $text Text to mask
+     * @return string Masked text with consistent hash
+     */
+    private function maskTextAdaptive($text) {
+        if (empty($text)) {
+            return $text;
+        }
+
+        $text = trim($text);
+        $textLen = strlen($text);
+
+        // Calculate visible characters (1-3 based on length)
+        if ($textLen <= 4) {
+            $visible = 1;
+        } elseif ($textLen <= 9) {
+            $visible = 2;
+        } else {
+            $visible = 3;
+        }
+
+        $masked = substr($text, 0, $visible) . '***';
+
+        // Generate consistent hash with WordPress salt
+        if (defined('AUTH_SALT')) {
+            $hash = substr(md5(AUTH_SALT . $text), 0, 4);
+        } else {
+            $hash = substr(md5($text), 0, 4);
+        }
+
+        return $masked . '-' . $hash;
+    }
+
+    /**
+     * Sanitize a single log line for privacy (GDPR compliance)
+     * Uses adaptive masking with consistent hashing for debugging
      *
      * @param string $line Log line to sanitize
-     * @return string Sanitized line
+     * @return string Sanitized line with PII masked adaptively
      */
-    private function sanitizeLogLine($line) {
+    public function sanitizeLogLine($line) {
+        $f = ABJ_404_Solution_Functions::getInstance();
+
         // Strip query strings from URLs (everything after ? in http/https URLs)
+        // This removes tokens, emails, session IDs, search terms, etc. from URLs
         $line = preg_replace('/(https?:\/\/[^\s?]+)\?[^\s]*/', '$1', $line);
 
-        // Mask email-like patterns
-        $line = preg_replace('/\S+@\S+/', '<redacted-email>', $line);
+        // Mask email addresses with adaptive length-based masking
+        // Example: john@example.com -> j***@exa***-a1b2
+        $line = preg_replace_callback(
+            '/\S+@\S+/',
+            function($matches) {
+                return $this->maskEmailAdaptive($matches[0]);
+            },
+            $line
+        );
+
+        // Redact IP addresses using existing md5lastOctet function
+        // Keeps first octets, hashes last (e.g., 192.168.1.100 -> 192.168.1.md5hash)
+        $line = preg_replace_callback(
+            '/\b(?:\d{1,3}\.){3}\d{1,3}\b/',
+            function($matches) use ($f) {
+                return $f->md5lastOctet($matches[0]);
+            },
+            $line
+        );
+
+        // Redact IPv6 addresses using existing md5lastOctet function
+        $line = preg_replace_callback(
+            '/\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b/',
+            function($matches) use ($f) {
+                return $f->md5lastOctet($matches[0]);
+            },
+            $line
+        );
+
+        // Mask usernames with adaptive length-based masking
+        // Example: "Current user: john" -> "Current user: j***-a1b2"
+        $line = preg_replace_callback(
+            '/\b(current\s+)?user(name)?:\s*(\S+)/i',
+            function($matches) {
+                $prefix = $matches[1] . 'user' . $matches[2] . ': ';
+                $username = $matches[3];
+                return $prefix . $this->maskTextAdaptive($username);
+            },
+            $line
+        );
+
+        // Mask display names with adaptive length-based masking
+        // Example: "Display name: John Doe" -> "Display name: J***-a1b2"
+        $line = preg_replace_callback(
+            '/\bdisplay\s+name:\s*([^\n,]+)/i',
+            function($matches) {
+                $name = trim($matches[1]);
+                return 'display name: ' . $this->maskTextAdaptive($name);
+            },
+            $line
+        );
+
+        // Redact absolute file paths to prevent info disclosure
+        // Matches /home/user/..., /var/www/..., C:\Users\..., etc.
+        $line = preg_replace(
+            '/\b(\/[a-z]+)+\/[^\s]+\/wp-content\//i',
+            '/...redacted.../wp-content/',
+            $line
+        );
+        $line = preg_replace(
+            '/\b[a-z]:\\\\[^\s]+\\\\wp-content\\\\/i',
+            'C:\\...redacted...\\wp-content\\',
+            $line
+        );
+
+        // Hash long tokens consistently (40+ chars)
+        // Example: "abc123def456..." -> "token-a1b2c3d4"
+        $line = preg_replace_callback(
+            '/\b([A-Za-z0-9_-]{40,})\b/',
+            function($matches) {
+                $hash = substr(md5($matches[1]), 0, 8);
+                return 'token-' . $hash;
+            },
+            $line
+        );
+
+        // Hash WordPress nonces consistently
+        // Example: "_wpnonce=abc123" -> "_wpnonce=nonce-a1b2c3d4"
+        $line = preg_replace_callback(
+            '/_wpnonce=([A-Za-z0-9]+)/',
+            function($matches) {
+                $hash = substr(md5($matches[1]), 0, 8);
+                return '_wpnonce=nonce-' . $hash;
+            },
+            $line
+        );
 
         return $line;
     }

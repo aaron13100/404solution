@@ -1610,3 +1610,151 @@ msgstr "プラグインは、ここで指定された投稿タイプのみをリ
 #: includes/html/adminOptionsGeneral.html
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "キャプチャされた404の数が管理者通知を引き起こす場合、ここで指定されたアドレスにメールが送信されます。複数のメールアドレスはカンマ（,）で区切ることができます。「差出人」メールアドレスは常にデフォルトのWordPress管理者メールです："
+
+#: includes/DatabaseUpgradesEtc.php:125
+msgid "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."
+msgstr "404 Solution: パフォーマンスを最適化するために、N-gramスペルチェックキャッシュがバックグラウンドで構築されています%s。大規模なサイトでは数分かかる場合があります。"
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
+msgstr "N-gramキャッシュの再構築はすでにスケジュールされているか、進行中です。完了するまでお待ちください。"
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
+msgstr "N-gramキャッシュの再構築がスケジュールされ、バックグラウンドで実行されます。大規模なサイトでは数分かかる場合があります。プラグインは通常どおり使用できます。"
+
+#: includes/PluginLogic.php
+msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
+msgstr "N-gramキャッシュの再構築をスケジュールできませんでした。もう一度試すか、WordPressのcron設定を確認してください。"
+
+#: includes/UninstallModal.php
+msgid "Deactivate without feedback"
+msgstr "フィードバックなしで無効化"
+
+#: includes/UninstallModal.php
+msgid "Processing..."
+msgstr "処理中..."
+
+#: includes/UninstallModal.php
+msgid "Before deactivating, choose what happens to your data:"
+msgstr "無効化する前に、データをどうするか選択してください："
+
+#: includes/UninstallModal.php
+msgid "Keep my redirects (%d)"
+msgstr "リダイレクトを保持する（%d）"
+
+#: includes/UninstallModal.php
+msgid "— saves them for later if you reinstall"
+msgstr "— 再インストール時のために保存します"
+
+#: includes/UninstallModal.php
+msgid "— historical data preserved"
+msgstr "— 履歴データは保持されます"
+
+#: includes/UninstallModal.php
+msgid "Cache tables are always deleted (can be rebuilt)"
+msgstr "キャッシュテーブルは常に削除されます（再構築可能）"
+
+#: includes/UninstallModal.php
+msgid "What specifically isn't working?"
+msgstr "具体的に何が機能していませんか？"
+
+#: includes/UninstallModal.php
+msgid "Redirects not triggering/working"
+msgstr "リダイレクトがトリガーされない/機能しない"
+
+#: includes/UninstallModal.php
+msgid "Settings not saving"
+msgstr "設定が保存されない"
+
+#: includes/UninstallModal.php
+msgid "Admin pages showing errors"
+msgstr "管理ページにエラーが表示される"
+
+#: includes/UninstallModal.php
+msgid "Suggestions not appearing"
+msgstr "提案が表示されない"
+
+#: includes/UninstallModal.php
+msgid "Conflicts with other plugins"
+msgstr "他のプラグインとの競合"
+
+#: includes/UninstallModal.php
+msgid "Other issue (please specify below)"
+msgstr "その他の問題（以下に指定してください）"
+
+#: includes/UninstallModal.php
+msgid "What type of performance issue?"
+msgstr "どのような種類のパフォーマンス問題ですか？"
+
+#: includes/UninstallModal.php
+msgid "Slow admin dashboard"
+msgstr "管理ダッシュボードが遅い"
+
+#: includes/UninstallModal.php
+msgid "Slow frontend page loads"
+msgstr "フロントエンドページの読み込みが遅い"
+
+#: includes/UninstallModal.php
+msgid "High database usage"
+msgstr "データベース使用率が高い"
+
+#: includes/UninstallModal.php
+msgid "Memory issues"
+msgstr "メモリの問題"
+
+#: includes/UninstallModal.php
+msgid "Other (please specify below)"
+msgstr "その他（以下に指定してください）"
+
+#: includes/UninstallModal.php
+msgid "What was confusing?"
+msgstr "何が分かりにくかったですか？"
+
+#: includes/UninstallModal.php
+msgid "Settings are confusing"
+msgstr "設定が分かりにくい"
+
+#: includes/UninstallModal.php
+msgid "Too many options"
+msgstr "オプションが多すぎる"
+
+#: includes/UninstallModal.php
+msgid "Unclear documentation"
+msgstr "ドキュメントが不明瞭"
+
+#: includes/UninstallModal.php
+msgid "Which plugin are you switching to?"
+msgstr "どのプラグインに切り替えますか？"
+
+#: includes/UninstallModal.php
+msgid "Plugin name (optional)"
+msgstr "プラグイン名（任意）"
+
+#: includes/UninstallModal.php
+msgid "Please tell us more (optional):"
+msgstr "詳しく教えてください（任意）："
+
+#: includes/UninstallModal.php
+msgid "What's your reason for deactivating?"
+msgstr "無効化する理由は何ですか？"
+
+#: includes/UninstallModal.php
+msgid "Additional details (optional):"
+msgstr "追加の詳細（任意）："
+
+#: includes/UninstallModal.php
+msgid "Any other information about the issue..."
+msgstr "問題に関するその他の情報..."
+
+#: includes/UninstallModal.php
+msgid "For follow-up if needed"
+msgstr "必要に応じてフォローアップ用"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (system info + sanitized log excerpt) to help diagnose the issue"
+msgstr "問題の診断に役立つ技術的な詳細を含める（システム情報 + サニタイズされたログの抜粋）"
+
+#: includes/UninstallModal.php
+msgid "Feedback could not be sent."
+msgstr "フィードバックを送信できませんでした。"

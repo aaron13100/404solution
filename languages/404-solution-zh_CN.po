@@ -1614,3 +1614,151 @@ msgstr "插件将只重定向此处指定的文章类型。默认的WordPress文
 #: includes/html/adminOptionsGeneral.html
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "当捕获的404数量会导致管理员通知时，将向此处指定的地址发送电子邮件。多个电子邮件地址可以用逗号（,）分隔。\\\"发件人\\\"电子邮件地址始终是默认的WordPress管理员电子邮件："
+
+#: includes/DatabaseUpgradesEtc.php:125
+msgid "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."
+msgstr "404 Solution: 正在后台%s构建 N-gram 拼写检查缓存以优化性能。在大型网站上可能需要几分钟。"
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
+msgstr "N-gram 缓存重建已经计划或正在进行中。请等待其完成。"
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
+msgstr "N-gram 缓存重建已计划并将在后台运行。在大型网站上可能需要几分钟。您可以正常继续使用插件。"
+
+#: includes/PluginLogic.php
+msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
+msgstr "无法计划 N-gram 缓存重建。请重试或检查您的 WordPress cron 配置。"
+
+#: includes/UninstallModal.php
+msgid "Deactivate without feedback"
+msgstr "停用而不提供反馈"
+
+#: includes/UninstallModal.php
+msgid "Processing..."
+msgstr "处理中..."
+
+#: includes/UninstallModal.php
+msgid "Before deactivating, choose what happens to your data:"
+msgstr "在停用之前，选择如何处理您的数据："
+
+#: includes/UninstallModal.php
+msgid "Keep my redirects (%d)"
+msgstr "保留我的重定向（%d）"
+
+#: includes/UninstallModal.php
+msgid "— saves them for later if you reinstall"
+msgstr "— 如果您重新安装，将保存它们以备后用"
+
+#: includes/UninstallModal.php
+msgid "— historical data preserved"
+msgstr "— 保留历史数据"
+
+#: includes/UninstallModal.php
+msgid "Cache tables are always deleted (can be rebuilt)"
+msgstr "缓存表始终被删除（可以重建）"
+
+#: includes/UninstallModal.php
+msgid "What specifically isn't working?"
+msgstr "具体是什么不起作用？"
+
+#: includes/UninstallModal.php
+msgid "Redirects not triggering/working"
+msgstr "重定向未触发/不起作用"
+
+#: includes/UninstallModal.php
+msgid "Settings not saving"
+msgstr "设置未保存"
+
+#: includes/UninstallModal.php
+msgid "Admin pages showing errors"
+msgstr "管理页面显示错误"
+
+#: includes/UninstallModal.php
+msgid "Suggestions not appearing"
+msgstr "建议未显示"
+
+#: includes/UninstallModal.php
+msgid "Conflicts with other plugins"
+msgstr "与其他插件冲突"
+
+#: includes/UninstallModal.php
+msgid "Other issue (please specify below)"
+msgstr "其他问题（请在下面说明）"
+
+#: includes/UninstallModal.php
+msgid "What type of performance issue?"
+msgstr "什么类型的性能问题？"
+
+#: includes/UninstallModal.php
+msgid "Slow admin dashboard"
+msgstr "管理仪表板缓慢"
+
+#: includes/UninstallModal.php
+msgid "Slow frontend page loads"
+msgstr "前端页面加载缓慢"
+
+#: includes/UninstallModal.php
+msgid "High database usage"
+msgstr "数据库使用率高"
+
+#: includes/UninstallModal.php
+msgid "Memory issues"
+msgstr "内存问题"
+
+#: includes/UninstallModal.php
+msgid "Other (please specify below)"
+msgstr "其他（请在下面说明）"
+
+#: includes/UninstallModal.php
+msgid "What was confusing?"
+msgstr "什么让人困惑？"
+
+#: includes/UninstallModal.php
+msgid "Settings are confusing"
+msgstr "设置令人困惑"
+
+#: includes/UninstallModal.php
+msgid "Too many options"
+msgstr "选项太多"
+
+#: includes/UninstallModal.php
+msgid "Unclear documentation"
+msgstr "文档不清楚"
+
+#: includes/UninstallModal.php
+msgid "Which plugin are you switching to?"
+msgstr "您要切换到哪个插件？"
+
+#: includes/UninstallModal.php
+msgid "Plugin name (optional)"
+msgstr "插件名称（可选）"
+
+#: includes/UninstallModal.php
+msgid "Please tell us more (optional):"
+msgstr "请告诉我们更多信息（可选）："
+
+#: includes/UninstallModal.php
+msgid "What's your reason for deactivating?"
+msgstr "您停用的原因是什么？"
+
+#: includes/UninstallModal.php
+msgid "Additional details (optional):"
+msgstr "其他详细信息（可选）："
+
+#: includes/UninstallModal.php
+msgid "Any other information about the issue..."
+msgstr "有关该问题的任何其他信息..."
+
+#: includes/UninstallModal.php
+msgid "For follow-up if needed"
+msgstr "如有需要，用于后续跟进"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (system info + sanitized log excerpt) to help diagnose the issue"
+msgstr "包括技术详细信息（系统信息 + 已清理的日志摘录）以帮助诊断问题"
+
+#: includes/UninstallModal.php
+msgid "Feedback could not be sent."
+msgstr "无法发送反馈。"

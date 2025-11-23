@@ -1604,3 +1604,151 @@ msgstr "Il plugin reindirizzerà solo i tipi di post specificati qui. I tipi di 
 #: includes/html/adminOptionsGeneral.html
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Quando il numero di 404 catturati causerebbe una notifica all'amministratore, verrà inviata un'email agli indirizzi specificati qui. Più indirizzi email possono essere separati da virgole (,). L'indirizzo email \"da\" è sempre l'email dell'amministratore WordPress predefinita:"
+
+#: includes/DatabaseUpgradesEtc.php:125
+msgid "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."
+msgstr "404 Solution: La cache del controllo ortografico N-gram è in fase di costruzione in background%s per ottimizzare le prestazioni. Questo potrebbe richiedere alcuni minuti su siti di grandi dimensioni."
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
+msgstr "La ricostruzione della cache N-gram è già pianificata o in corso. Attendere il completamento."
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
+msgstr "La ricostruzione della cache N-gram è stata pianificata e verrà eseguita in background. Questo potrebbe richiedere diversi minuti su siti di grandi dimensioni. È possibile continuare a utilizzare normalmente il plugin."
+
+#: includes/PluginLogic.php
+msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
+msgstr "Impossibile pianificare la ricostruzione della cache N-gram. Riprova o controlla la configurazione cron di WordPress."
+
+#: includes/UninstallModal.php
+msgid "Deactivate without feedback"
+msgstr "Disattiva senza feedback"
+
+#: includes/UninstallModal.php
+msgid "Processing..."
+msgstr "Elaborazione..."
+
+#: includes/UninstallModal.php
+msgid "Before deactivating, choose what happens to your data:"
+msgstr "Prima di disattivare, scegli cosa succede ai tuoi dati:"
+
+#: includes/UninstallModal.php
+msgid "Keep my redirects (%d)"
+msgstr "Mantieni i miei reindirizzamenti (%d)"
+
+#: includes/UninstallModal.php
+msgid "— saves them for later if you reinstall"
+msgstr "— li salva per dopo se reinstalli"
+
+#: includes/UninstallModal.php
+msgid "— historical data preserved"
+msgstr "— dati storici conservati"
+
+#: includes/UninstallModal.php
+msgid "Cache tables are always deleted (can be rebuilt)"
+msgstr "Le tabelle della cache vengono sempre eliminate (possono essere ricostruite)"
+
+#: includes/UninstallModal.php
+msgid "What specifically isn't working?"
+msgstr "Cosa non funziona nello specifico?"
+
+#: includes/UninstallModal.php
+msgid "Redirects not triggering/working"
+msgstr "I reindirizzamenti non si attivano/funzionano"
+
+#: includes/UninstallModal.php
+msgid "Settings not saving"
+msgstr "Le impostazioni non vengono salvate"
+
+#: includes/UninstallModal.php
+msgid "Admin pages showing errors"
+msgstr "Le pagine di amministrazione mostrano errori"
+
+#: includes/UninstallModal.php
+msgid "Suggestions not appearing"
+msgstr "I suggerimenti non compaiono"
+
+#: includes/UninstallModal.php
+msgid "Conflicts with other plugins"
+msgstr "Conflitti con altri plugin"
+
+#: includes/UninstallModal.php
+msgid "Other issue (please specify below)"
+msgstr "Altro problema (specificare di seguito)"
+
+#: includes/UninstallModal.php
+msgid "What type of performance issue?"
+msgstr "Che tipo di problema di prestazioni?"
+
+#: includes/UninstallModal.php
+msgid "Slow admin dashboard"
+msgstr "Dashboard di amministrazione lenta"
+
+#: includes/UninstallModal.php
+msgid "Slow frontend page loads"
+msgstr "Caricamento lento delle pagine frontend"
+
+#: includes/UninstallModal.php
+msgid "High database usage"
+msgstr "Utilizzo elevato del database"
+
+#: includes/UninstallModal.php
+msgid "Memory issues"
+msgstr "Problemi di memoria"
+
+#: includes/UninstallModal.php
+msgid "Other (please specify below)"
+msgstr "Altro (specificare di seguito)"
+
+#: includes/UninstallModal.php
+msgid "What was confusing?"
+msgstr "Cosa è stato confuso?"
+
+#: includes/UninstallModal.php
+msgid "Settings are confusing"
+msgstr "Le impostazioni sono confuse"
+
+#: includes/UninstallModal.php
+msgid "Too many options"
+msgstr "Troppe opzioni"
+
+#: includes/UninstallModal.php
+msgid "Unclear documentation"
+msgstr "Documentazione poco chiara"
+
+#: includes/UninstallModal.php
+msgid "Which plugin are you switching to?"
+msgstr "A quale plugin stai passando?"
+
+#: includes/UninstallModal.php
+msgid "Plugin name (optional)"
+msgstr "Nome del plugin (opzionale)"
+
+#: includes/UninstallModal.php
+msgid "Please tell us more (optional):"
+msgstr "Dicci di più (opzionale):"
+
+#: includes/UninstallModal.php
+msgid "What's your reason for deactivating?"
+msgstr "Qual è il motivo della disattivazione?"
+
+#: includes/UninstallModal.php
+msgid "Additional details (optional):"
+msgstr "Dettagli aggiuntivi (opzionale):"
+
+#: includes/UninstallModal.php
+msgid "Any other information about the issue..."
+msgstr "Qualsiasi altra informazione sul problema..."
+
+#: includes/UninstallModal.php
+msgid "For follow-up if needed"
+msgstr "Per follow-up se necessario"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (system info + sanitized log excerpt) to help diagnose the issue"
+msgstr "Includi dettagli tecnici (informazioni di sistema + estratto di log sanificato) per aiutare a diagnosticare il problema"
+
+#: includes/UninstallModal.php
+msgid "Feedback could not be sent."
+msgstr "Il feedback non può essere inviato."

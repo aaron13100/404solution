@@ -1604,3 +1604,151 @@ msgstr "De plugin stuurt alleen de hier opgegeven berichttypen door. Standaard W
 #: includes/html/adminOptionsGeneral.html
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Wanneer het aantal vastgelegde 404's een beheerdermelding zou veroorzaken, wordt er een e-mail verzonden naar de hier opgegeven adressen. Meerdere e-mailadressen kunnen worden gescheiden door komma's (,). Het \"van\" e-mailadres is altijd de standaard WordPress-beheerder-e-mail:"
+
+#: includes/DatabaseUpgradesEtc.php:125
+msgid "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."
+msgstr "404 Solution: N-gram spellingcontrole-cache wordt op de achtergrond%s opgebouwd om de prestaties te optimaliseren. Dit kan een paar minuten duren op grote sites."
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
+msgstr "N-gram cache herbouw is al gepland of wordt uitgevoerd. Wacht tot het is voltooid."
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
+msgstr "N-gram cache herbouw is gepland en wordt op de achtergrond uitgevoerd. Dit kan enkele minuten duren op grote sites. U kunt de plugin normaal blijven gebruiken."
+
+#: includes/PluginLogic.php
+msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
+msgstr "N-gram cache herbouw kon niet worden gepland. Probeer het opnieuw of controleer uw WordPress cron-configuratie."
+
+#: includes/UninstallModal.php
+msgid "Deactivate without feedback"
+msgstr "Deactiveren zonder feedback"
+
+#: includes/UninstallModal.php
+msgid "Processing..."
+msgstr "Verwerken..."
+
+#: includes/UninstallModal.php
+msgid "Before deactivating, choose what happens to your data:"
+msgstr "Kies voordat u deactiveert wat er met uw gegevens gebeurt:"
+
+#: includes/UninstallModal.php
+msgid "Keep my redirects (%d)"
+msgstr "Bewaar mijn omleidingen (%d)"
+
+#: includes/UninstallModal.php
+msgid "— saves them for later if you reinstall"
+msgstr "— bewaart ze voor later als u opnieuw installeert"
+
+#: includes/UninstallModal.php
+msgid "— historical data preserved"
+msgstr "— historische gegevens bewaard"
+
+#: includes/UninstallModal.php
+msgid "Cache tables are always deleted (can be rebuilt)"
+msgstr "Cache-tabellen worden altijd verwijderd (kunnen opnieuw worden opgebouwd)"
+
+#: includes/UninstallModal.php
+msgid "What specifically isn't working?"
+msgstr "Wat werkt er specifiek niet?"
+
+#: includes/UninstallModal.php
+msgid "Redirects not triggering/working"
+msgstr "Omleidingen worden niet geactiveerd/werken niet"
+
+#: includes/UninstallModal.php
+msgid "Settings not saving"
+msgstr "Instellingen worden niet opgeslagen"
+
+#: includes/UninstallModal.php
+msgid "Admin pages showing errors"
+msgstr "Beheerpagina's tonen fouten"
+
+#: includes/UninstallModal.php
+msgid "Suggestions not appearing"
+msgstr "Suggesties verschijnen niet"
+
+#: includes/UninstallModal.php
+msgid "Conflicts with other plugins"
+msgstr "Conflicten met andere plugins"
+
+#: includes/UninstallModal.php
+msgid "Other issue (please specify below)"
+msgstr "Ander probleem (specificeer hieronder)"
+
+#: includes/UninstallModal.php
+msgid "What type of performance issue?"
+msgstr "Wat voor soort prestatieprobleem?"
+
+#: includes/UninstallModal.php
+msgid "Slow admin dashboard"
+msgstr "Traag beheerdashboard"
+
+#: includes/UninstallModal.php
+msgid "Slow frontend page loads"
+msgstr "Trage frontend-paginaladingen"
+
+#: includes/UninstallModal.php
+msgid "High database usage"
+msgstr "Hoog databasegebruik"
+
+#: includes/UninstallModal.php
+msgid "Memory issues"
+msgstr "Geheugenproblemen"
+
+#: includes/UninstallModal.php
+msgid "Other (please specify below)"
+msgstr "Ander (specificeer hieronder)"
+
+#: includes/UninstallModal.php
+msgid "What was confusing?"
+msgstr "Wat was verwarrend?"
+
+#: includes/UninstallModal.php
+msgid "Settings are confusing"
+msgstr "Instellingen zijn verwarrend"
+
+#: includes/UninstallModal.php
+msgid "Too many options"
+msgstr "Te veel opties"
+
+#: includes/UninstallModal.php
+msgid "Unclear documentation"
+msgstr "Onduidelijke documentatie"
+
+#: includes/UninstallModal.php
+msgid "Which plugin are you switching to?"
+msgstr "Naar welke plugin schakelt u over?"
+
+#: includes/UninstallModal.php
+msgid "Plugin name (optional)"
+msgstr "Pluginnaam (optioneel)"
+
+#: includes/UninstallModal.php
+msgid "Please tell us more (optional):"
+msgstr "Vertel ons meer (optioneel):"
+
+#: includes/UninstallModal.php
+msgid "What's your reason for deactivating?"
+msgstr "Wat is uw reden voor deactivering?"
+
+#: includes/UninstallModal.php
+msgid "Additional details (optional):"
+msgstr "Aanvullende details (optioneel):"
+
+#: includes/UninstallModal.php
+msgid "Any other information about the issue..."
+msgstr "Andere informatie over het probleem..."
+
+#: includes/UninstallModal.php
+msgid "For follow-up if needed"
+msgstr "Voor follow-up indien nodig"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (system info + sanitized log excerpt) to help diagnose the issue"
+msgstr "Technische details opnemen (systeeminformatie + opgeschoond logfragment) om het probleem te diagnosticeren"
+
+#: includes/UninstallModal.php
+msgid "Feedback could not be sent."
+msgstr "Feedback kon niet worden verzonden."

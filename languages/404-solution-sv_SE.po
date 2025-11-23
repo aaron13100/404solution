@@ -287,6 +287,9 @@ msgstr "Automatiskt skapad"
 msgid "Automatically creates redirects based on best possible suggested page."
 msgstr "Skapar automatiskt omdirigeringar baserat på den bästa möjliga föreslagna sidan."
 
+msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+msgstr "Tar bort fångade 404-URL:er om de inte har använts under den angivna tidsperioden."
+
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "Tar bort manuellt skapade omdirigeringar om de inte har använts under den angivna tidsperioden. Påverkar inte automatiskt skapade omdirigeringar."
 
@@ -1614,3 +1617,135 @@ msgstr "Plugin kommer endast att omdirigera de inläggstyper som anges här. Sta
 #: includes/html/adminOptionsGeneral.html
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "När antalet infångade 404:or skulle orsaka en administratörsavisering skickas ett e-postmeddelande till de adresser som anges här. Flera e-postadresser kan separeras med kommatecken (,). \"Från\"-e-postadressen är alltid standardadministratörens e-postadress för WordPress:"
+
+#: includes/UninstallModal.php
+msgid "Deactivate without feedback"
+msgstr "Inaktivera utan feedback"
+
+#: includes/UninstallModal.php
+msgid "Processing..."
+msgstr "Bearbetar..."
+
+#: includes/UninstallModal.php
+msgid "Before deactivating, choose what happens to your data:"
+msgstr "Innan du inaktiverar, välj vad som händer med dina data:"
+
+#: includes/UninstallModal.php
+msgid "Keep my redirects (%d)"
+msgstr "Behåll mina omdirigeringar (%d)"
+
+#: includes/UninstallModal.php
+msgid "— saves them for later if you reinstall"
+msgstr "— sparar dem för senare om du installerar om"
+
+#: includes/UninstallModal.php
+msgid "— historical data preserved"
+msgstr "— historisk data bevarad"
+
+#: includes/UninstallModal.php
+msgid "Cache tables are always deleted (can be rebuilt)"
+msgstr "Cache-tabeller raderas alltid (kan byggas om)"
+
+#: includes/UninstallModal.php
+msgid "What specifically isn't working?"
+msgstr "Vad fungerar specifikt inte?"
+
+#: includes/UninstallModal.php
+msgid "Redirects not triggering/working"
+msgstr "Omdirigeringar utlöses inte/fungerar inte"
+
+#: includes/UninstallModal.php
+msgid "Settings not saving"
+msgstr "Inställningar sparas inte"
+
+#: includes/UninstallModal.php
+msgid "Admin pages showing errors"
+msgstr "Adminsidor visar fel"
+
+#: includes/UninstallModal.php
+msgid "Suggestions not appearing"
+msgstr "Förslag visas inte"
+
+#: includes/UninstallModal.php
+msgid "Conflicts with other plugins"
+msgstr "Konflikter med andra plugin"
+
+#: includes/UninstallModal.php
+msgid "Other issue (please specify below)"
+msgstr "Annat problem (ange nedan)"
+
+#: includes/UninstallModal.php
+msgid "What type of performance issue?"
+msgstr "Vilken typ av prestandaproblem?"
+
+#: includes/UninstallModal.php
+msgid "Slow admin dashboard"
+msgstr "Långsam adminpanel"
+
+#: includes/UninstallModal.php
+msgid "Slow frontend page loads"
+msgstr "Långsam sidinläsning på frontend"
+
+#: includes/UninstallModal.php
+msgid "High database usage"
+msgstr "Hög databasanvändning"
+
+#: includes/UninstallModal.php
+msgid "Memory issues"
+msgstr "Minnesproblem"
+
+#: includes/UninstallModal.php
+msgid "Other (please specify below)"
+msgstr "Annat (ange nedan)"
+
+#: includes/UninstallModal.php
+msgid "What was confusing?"
+msgstr "Vad var förvirrande?"
+
+#: includes/UninstallModal.php
+msgid "Settings are confusing"
+msgstr "Inställningarna är förvirrande"
+
+#: includes/UninstallModal.php
+msgid "Too many options"
+msgstr "För många alternativ"
+
+#: includes/UninstallModal.php
+msgid "Unclear documentation"
+msgstr "Oklar dokumentation"
+
+#: includes/UninstallModal.php
+msgid "Which plugin are you switching to?"
+msgstr "Vilket plugin byter du till?"
+
+#: includes/UninstallModal.php
+msgid "Plugin name (optional)"
+msgstr "Plugin-namn (valfritt)"
+
+#: includes/UninstallModal.php
+msgid "Please tell us more (optional):"
+msgstr "Berätta mer (valfritt):"
+
+#: includes/UninstallModal.php
+msgid "What's your reason for deactivating?"
+msgstr "Vad är din anledning till att inaktivera?"
+
+#: includes/UninstallModal.php
+msgid "Additional details (optional):"
+msgstr "Ytterligare detaljer (valfritt):"
+
+#: includes/UninstallModal.php
+msgid "Any other information about the issue..."
+msgstr "Annan information om problemet..."
+
+#: includes/UninstallModal.php
+msgid "For follow-up if needed"
+msgstr "För uppföljning vid behov"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (system info + sanitized log excerpt) to help diagnose the issue"
+msgstr "Inkludera tekniska detaljer (systeminformation + rensad loggutdrag) för att hjälpa till att diagnostisera problemet"
+
+#: includes/UninstallModal.php
+msgid "Feedback could not be sent."
+msgstr "Feedback kunde inte skickas."
