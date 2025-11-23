@@ -613,9 +613,9 @@ class ABJ_404_Solution_Logging {
         );
 
         // Redact IPv6 addresses (including compressed forms) using existing md5lastOctet function
-        // Comprehensive regex handles: full addresses, zero-compressed (::), loopback (::1), etc.
+        // Negative lookbehind prevents matching mid-hex-string; handles ::1, 2001:db8::1, etc.
         $line = preg_replace_callback(
-            '/\b(?:(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:(?::[0-9a-fA-F]{1,4}){1,6}|:(?:(?::[0-9a-fA-F]{1,4}){1,7}|:))\b/',
+            '/(?<![0-9A-Fa-f:])(?:(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:(?::[0-9a-fA-F]{1,4}){1,6}|:(?:(?::[0-9a-fA-F]{1,4}){1,7}|:))(?![0-9A-Fa-f:])/',
             function($matches) use ($f) {
                 return $f->md5lastOctet($matches[0]);
             },
@@ -646,10 +646,11 @@ class ABJ_404_Solution_Logging {
         );
 
         // Redact absolute file paths to prevent info disclosure
-        // Matches /home/user/..., /var/www/..., C:\Users\..., etc.
+        // Matches /home/user/..., /var/www/..., etc.
+        // Captures leading space/start to preserve formatting
         $line = preg_replace(
-            '/\b(\/[a-z]+)+\/[^\s]+\/wp-content\//i',
-            '/...redacted.../wp-content/',
+            '/(^|\s)(\/[^\s]+\/wp-content\/)/i',
+            '$1/...redacted.../wp-content/',
             $line
         );
         $line = preg_replace(
