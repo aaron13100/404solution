@@ -291,6 +291,10 @@ class ABJ_404_Solution_Logging {
         $bodyLines[] = "Plugin version: " . ABJ404_VERSION;
         $bodyLines[] = "MySQL version: " . $wpdb->db_version();
         $bodyLines[] = "Site URL: " . get_site_url();
+        $bodyLines[] = "Multisite: " . (is_multisite() ? 'yes' : 'no');
+        if (is_multisite()) {
+            $bodyLines[] = "Network activated: " . (is_plugin_active_for_network(plugin_basename(ABJ404_FILE)) ? 'yes' : 'no');
+        }
         $bodyLines[] = "WP_MEMORY_LIMIT: " . WP_MEMORY_LIMIT;
         $bodyLines[] = "Extensions: " . implode(", ", get_loaded_extensions());
         $bodyLines[] = "Published posts: " . $published_posts . ", published pages: " . $published_pages;
