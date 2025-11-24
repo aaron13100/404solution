@@ -644,7 +644,13 @@ class ABJ_404_Solution_DataAccess {
     
     function storeSpellingPermalinksToCache($requestedURLRaw, $returnValue) {
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertSpellingCache.sql");
-        $query = $this->f->str_replace('{url}', esc_sql($requestedURLRaw), $query);
+
+        // Sanitize invalid UTF-8 sequences before storing to database
+        // This prevents "Could not perform query because it contains invalid data" errors
+        // when URLs contain invalid UTF-8 byte sequences (e.g., %c1%1c from scanner probes)
+        $cleanURL = $this->f->sanitizeInvalidUTF8($requestedURLRaw);
+
+        $query = $this->f->str_replace('{url}', esc_sql($cleanURL), $query);
         $query = $this->f->str_replace('{matchdata}', esc_sql(json_encode($returnValue)), $query);
 
         $this->queryAndGetResults($query);

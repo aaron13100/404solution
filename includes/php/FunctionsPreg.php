@@ -97,5 +97,58 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
         return $charToUse;
     }
 
+    /**
+     * Sanitize invalid UTF-8 byte sequences from a string.
+     *
+     * This is the fallback implementation for systems without mbstring extension.
+     * It uses preg_replace with the 'u' modifier to remove invalid UTF-8 sequences.
+     *
+     * The approach:
+     * 1. Use iconv if available (faster and more reliable)
+     * 2. Fall back to preg_replace to remove non-UTF-8 bytes
+     * 3. Remove control characters that cause database issues
+     *
+     * @param string|null $string The string to sanitize
+     * @return string The sanitized string with only valid UTF-8 characters
+     */
+    function sanitizeInvalidUTF8($string) {
+        // Handle null and empty cases
+        if ($string === null || $string === '') {
+            return '';
+        }
+
+        // Convert to string if not already
+        if (!is_string($string)) {
+            $string = strval($string);
+        }
+
+        // Try iconv first (if available, it's very efficient)
+        if (function_exists('iconv')) {
+            // iconv with //IGNORE will skip invalid UTF-8 sequences
+            $sanitized = iconv('UTF-8', 'UTF-8//IGNORE', $string);
+
+            // iconv returns false on error, fall through to preg approach
+            if ($sanitized !== false) {
+                // Remove null bytes and problematic control characters
+                $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $sanitized);
+                return $sanitized;
+            }
+        }
+
+        // Fallback: use preg_replace to strip invalid UTF-8
+        // The 'u' modifier makes preg treat the pattern as UTF-8
+        // This will replace invalid UTF-8 sequences with empty string
+        $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $string);
+
+        // Additional pass: remove any remaining invalid UTF-8 sequences
+        // Match valid UTF-8 sequences and keep only those
+        $sanitized = preg_replace('/[^\x09\x0A\x0D\x20-\x7E\xC0-\xFD][\x80-\xBF]*/', '', $sanitized);
+
+        // Final cleanup: ensure no control characters remain
+        $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $sanitized);
+
+        return $sanitized;
+    }
+
 }
 

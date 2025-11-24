@@ -231,7 +231,9 @@ abstract class ABJ_404_Solution_Functions {
     abstract function regexMatchi($pattern, $string, &$regs = null);
     
     abstract function regexReplace($pattern, $replacement, $string);
-    
+
+    abstract function sanitizeInvalidUTF8($string);
+
     /**  Used with array_filter()
      * @param string $value
      * @return boolean
