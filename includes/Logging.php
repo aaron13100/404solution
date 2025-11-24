@@ -292,7 +292,7 @@ class ABJ_404_Solution_Logging {
         $bodyLines[] = "MySQL version: " . $wpdb->db_version();
         $bodyLines[] = "Site URL: " . get_site_url();
         $bodyLines[] = "Multisite: " . (is_multisite() ? 'yes' : 'no');
-        if (is_multisite()) {
+        if (is_multisite() && function_exists('is_plugin_active_for_network')) {
             $bodyLines[] = "Network activated: " . (is_plugin_active_for_network(plugin_basename(ABJ404_FILE)) ? 'yes' : 'no');
         }
         $bodyLines[] = "WP_MEMORY_LIMIT: " . WP_MEMORY_LIMIT;

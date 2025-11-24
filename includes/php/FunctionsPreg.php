@@ -135,16 +135,30 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
             }
         }
 
-        // Fallback: use preg_replace to strip invalid UTF-8
-        // The 'u' modifier makes preg treat the pattern as UTF-8
-        // This will replace invalid UTF-8 sequences with empty string
-        $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $string);
+        // Fallback: use preg_replace with 'u' modifier to validate UTF-8
+        // The //u modifier forces UTF-8 mode - invalid sequences cause match failure
+        // By replacing '' with '', we essentially validate and keep only valid UTF-8
+        $sanitized = @preg_replace('//u', '', $string);
 
-        // Additional pass: remove any remaining invalid UTF-8 sequences
-        // Match valid UTF-8 sequences and keep only those
-        $sanitized = preg_replace('/[^\x09\x0A\x0D\x20-\x7E\xC0-\xFD][\x80-\xBF]*/', '', $sanitized);
+        // If preg_replace failed (invalid UTF-8), use byte-by-byte filtering
+        if ($sanitized === null) {
+            // Filter out invalid UTF-8 lead bytes:
+            // - C0, C1 (overlong 2-byte sequences)
+            // - F5-FF (invalid lead bytes beyond UTF-8 range)
+            // Keep valid ranges: C2-DF (2-byte), E0-EF (3-byte), F0-F4 (4-byte)
+            $sanitized = preg_replace('/[\xC0\xC1\xF5-\xFF][\x80-\xBF]*/', '', $string);
 
-        // Final cleanup: ensure no control characters remain
+            // Remove incomplete sequences (continuation bytes without lead byte)
+            $sanitized = preg_replace('/[\x80-\xBF]+/', '', $sanitized);
+
+            // Verify the result is now valid UTF-8 by attempting a UTF-8 match
+            if (@preg_match('//u', $sanitized) === false) {
+                // Still invalid - fall back to ASCII-only (safe but lossy)
+                $sanitized = preg_replace('/[^\x09\x0A\x0D\x20-\x7E]/', '', $string);
+            }
+        }
+
+        // Remove null bytes and other problematic control characters
         $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $sanitized);
 
         return $sanitized;
