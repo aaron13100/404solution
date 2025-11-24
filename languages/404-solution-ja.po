@@ -43,7 +43,7 @@ msgstr "設定"
 msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr "404 Solution: %d件のリダイレクトをサブディレクトリに依存しない形式に移行しました。"
 msgid "%1$s - %2$s of %3$s"
-msgstr "%1$s - %3$s中%2$s"
+msgstr "%1$s - %3$sの%2$s"
 
 msgid "(A custom string has been entered.)"
 msgstr "（カスタム文字列が入力されています。）"
@@ -61,7 +61,7 @@ msgid "(An external URL will be used.)"
 msgstr "（外部URLが使用されます。）"
 
 msgid "(Begin typing a URL)"
-msgstr "（URLの入力を開始してください）"
+msgstr "（URLを入力）"
 
 msgid "(Data truncated. Too many results for \"%s!\".)"
 msgstr "（データが切り捨てられました。「%s」の結果が多すぎます！）"
@@ -106,10 +106,10 @@ msgid "(The specified page doesn't exist. Please update this setting.)"
 msgstr "（指定されたページは存在しません。この設定を更新してください。）"
 
 msgid "(Type a page name or an external URL)"
-msgstr "（ページ名または外部URLを入力してください）"
+msgstr "（ページ名またはURLを入力）"
 
 msgid "(Type a page name)"
-msgstr "（ページ名を入力してください）"
+msgstr "（ページ名を入力）"
 
 msgid "(Type to filter)"
 msgstr "（フィルタリングするには入力してください）"
@@ -205,10 +205,10 @@ msgid "Add a Redirect"
 msgstr "リダイレクトを追加"
 
 msgid "Admin notification email(s)"
-msgstr "管理者通知メールアドレス"
+msgstr "通知先メールアドレス"
 
 msgid "Admin notification level"
-msgstr "管理者通知レベル"
+msgstr "通知レベル"
 
 msgid "Admin theme"
 msgstr "管理画面テーマ"
@@ -263,13 +263,13 @@ msgid "Apply"
 msgstr "適用"
 
 msgid "At the same level as the Settings and Tools menu"
-msgstr "設定メニューとツールメニューと同じレベルに表示"
+msgstr "設定メニューやツールメニューと同じ階層に表示"
 
 msgid "Auto"
 msgstr "自動"
 
 msgid "Delete automatic redirects after"
-msgstr "自動リダイレクトを削除する期間"
+msgstr "自動リダイレクトの削除期間"
 
 msgid "Auto Redirects"
 msgstr "自動リダイレクト"
@@ -288,10 +288,10 @@ msgid "Automatically created"
 msgstr "自動的に作成されました"
 
 msgid "Automatically creates redirects based on best possible suggested page."
-msgstr "最適な提案ページに基づいて自動的にリダイレクトを作成します。"
+msgstr "最も適切な提案ページに基づいて自動的にリダイレクトを作成します。"
 
 msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
-msgstr "指定された期間使用されていないキャプチャした404 URLを削除します。"
+msgstr "指定期間使用されなかった404 URLを削除します。"
 
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "指定された期間使用されていない手動で作成されたリダイレクトを削除します。自動作成されたリダイレクトには影響しません。"
@@ -306,7 +306,7 @@ msgid "Captured URLs"
 msgstr "記録済みURL"
 
 msgid "Captured URLs (0 Disables Notification)"
-msgstr "記録済みURL数（0で通知を無効化）"
+msgstr "記録済みURL数（0で無効）"
 
 msgid "Categories"
 msgstr "カテゴリー"
@@ -321,7 +321,7 @@ msgid "Changes may not be updated immediately when ordering by this column"
 msgstr "この列で並べ替えた場合、変更がすぐに更新されない場合があります"
 
 msgid "Checks each redirect for a new matching permalink before the user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted."
-msgstr "ユーザーがリダイレクトされる前に、各リダイレクトが新しく一致するパーマリンクがないかチェックします。リダイレクトされたURLと一致する新しいページパーマリンクが見つかった場合、リダイレクトは削除されます。"
+msgstr "ユーザーがリダイレクトされる前に、各リダイレクトが新しく一致するパーマリンクがないか確認します。リダイレクトされたURLと一致する新しいページパーマリンクが見つかった場合、リダイレクトは削除されます。"
 
 msgid "Choose at least one URL"
 msgstr "少なくとも1つのURLを選択してください"
@@ -342,7 +342,7 @@ msgid "Collect incoming 404 URLs"
 msgstr "受信した404 URLを記録"
 
 msgid "Delete captured 404 URLs after"
-msgstr "キャプチャした404 URLを削除する期間"
+msgstr "記録済み404 URLの削除期間"
 
 msgid "Create a CSV file with the redirects and captured 404s."
 msgstr "リダイレクトと記録済み404のCSVファイルを作成します。"
@@ -384,7 +384,7 @@ msgid "Date"
 msgstr "日付"
 
 msgid "days without use (0 to disable)"
-msgstr "日間未使用（0で無効化）"
+msgstr "日間未使用で削除（0で無効）"
 
 msgid "Debug Log"
 msgstr "デバッグログ"
@@ -426,7 +426,7 @@ msgid "Display Before/After page suggestions"
 msgstr "ページ提案の前後に表示"
 
 msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
-msgstr "記録済みURL数がこの数値を超えた場合にWordPress管理者通知を表示します"
+msgstr "記録済みURL数がこの数値を超えた場合、WordPress管理者通知を表示します"
 
 msgid "Display if no suggestion results"
 msgstr "提案結果がない場合に表示"
@@ -535,7 +535,7 @@ msgid "Error: Unrecognized bulk action. (%s)"
 msgstr "エラー：認識されない一括アクションです。（%s）"
 
 msgid "Error: You didn't check the I understand checkbox. No importing for you!"
-msgstr "エラー：「理解しました」チェックボックスがチェックされていません。インポートできません！"
+msgstr "エラー：「理解しました」チェックボックスがチェックされていません。インポートは実行されません。"
 
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
 msgstr "エラー：「理解しました」チェックボックスがチェックされていません。レコードのパージはできません！"
@@ -556,7 +556,7 @@ msgid "Etcetera"
 msgstr "その他"
 
 msgid "Even if more pages could be suggested, show at most this many (default: 5)"
-msgstr "より多くのページが提案できる場合でも、最大でこの数まで表示します（デフォルト：5）"
+msgstr "さらに多くのページを提案できる場合でも、最大でこの数まで表示します（デフォルト：5）"
 
 msgid "Example"
 msgstr "例"
@@ -592,7 +592,7 @@ msgid "Files and folders listed here will be ignored."
 msgstr "ここにリストされているファイルとフォルダーは無視されます。"
 
 msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
-msgstr "まず、すべての通常の「完全一致」URLがチェックされ、次にすべての正規表現URLがチェックされます。"
+msgstr "まず、すべての通常の「完全一致」URLを確認し、次にすべての正規表現URLを確認します。"
 
 msgid "General"
 msgstr "一般"
@@ -634,7 +634,7 @@ msgid "Home Page:"
 msgstr "ホームページ："
 
 msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
-msgstr "上記の記述を理解し、自分が何をしているのか分かっています...とにかくレコードを削除してください！"
+msgstr "上記の記述を理解し、自分が何をしているのか分かっています...それでもレコードを削除します"
 
 msgid "I understand the above statement."
 msgstr "上記の記述を理解しました。"
@@ -670,7 +670,7 @@ msgid "Import a CSV file with the redirects and captured 404s."
 msgstr "リダイレクトと記録済み404のCSVファイルをインポートします。"
 
 msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
-msgstr "不正なリダイレクトの作成、不正な正規表現の入力、既存のリダイレクトの削除、他のユーザーへのプラグイン管理者アクセスの付与など、サイトを破壊する可能性があります。"
+msgstr "不正なリダイレクトの作成、不正な正規表現の入力、既存のリダイレクトの削除、他のユーザーへのプラグイン管理者アクセスの付与など、サイトが破損する可能性があります。"
 
 msgid "Internal Process User Agents - Do Not Log"
 msgstr "内部プロセスユーザーエージェント - ログに記録しない"
@@ -682,7 +682,7 @@ msgid "JAPANESE_FLASHCARDS_URL"
 msgstr "JAPANESE_FLASHCARDS_URL"
 
 msgid "Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit."
-msgstr "ディスク使用量がこの制限に達すると、最新のログレコードを保持し（最も古いものを削除し）ます。"
+msgstr "ディスク使用量がこの制限に達すると、最新のログレコードを保持し、最も古いものを削除します。"
 
 msgid "LINK_FIRST_PAGE"
 msgstr "LINK_FIRST_PAGE"
@@ -740,7 +740,7 @@ msgid "Manual Redirects"
 msgstr "手動リダイレクト"
 
 msgid "Delete manual redirects after"
-msgstr "手動リダイレクトを削除する期間"
+msgstr "手動リダイレクトの削除期間"
 
 msgid "Manually created"
 msgstr "手動で作成されました"
@@ -788,7 +788,7 @@ msgid "No suggestions. :/ "
 msgstr "提案がありません。:/ "
 
 msgid "Note that including a bad regular expression or one that takes too long will break your website."
-msgstr "不正な正規表現や処理に時間がかかりすぎる正規表現を含めると、ウェブサイトが壊れることに注意してください。"
+msgstr "不正な正規表現や処理に時間がかかりすぎる正規表現を含めると、サイトが正常に動作しなくなることに注意してください。"
 
 msgid "Note: Do not include the parenthesis or explanations shown in the examples above."
 msgstr "注：上記の例に示されている括弧や説明は含めないでください。"
@@ -848,7 +848,7 @@ msgid "Plugin version"
 msgstr "プラグインバージョン"
 
 msgid "Purge Entries!"
-msgstr "エントリーをパージ！"
+msgstr "エントリーをパージ"
 
 msgid "Purge Options"
 msgstr "パージオプション"
@@ -1018,7 +1018,7 @@ msgstr "提案"
 
 # translation-verified: Contains technical field names
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
-msgstr "サポートされている形式：<B>from_url,status,type,to_url,wp_type</B>"
+msgstr "サポートされている形式は：<B>from_url,status,type,to_url,wp_type</B>"
 
 msgid "TEXT_BEFORE_LINKS"
 msgstr "TEXT_BEFORE_LINKS"
@@ -1084,7 +1084,7 @@ msgid "This cannot be undone. All redirects for URLs that do not already exist w
 msgstr "これは元に戻せません。まだ存在しないURLのすべてのリダイレクトがインポートされます。"
 
 msgid "This creates the list. For example, use &lt;ol style=\"list-style-type: none;\"&gt; to hide the numbers in the list. (defaults: &lt;ol&gt; / &lt;/ol&gt;)"
-msgstr "これはリストを作成します。たとえば、&lt;ol style=\"list-style-type: none;\"&gt;を使用してリスト内の番号を非表示にします。（デフォルト：&lt;ol&gt; / &lt;/ol&gt;）"
+msgstr "リストを作成するためのタグです。たとえば、&lt;ol style=\"list-style-type: none;\"&gt;を使用してリスト内の番号を非表示にします。（デフォルト：&lt;ol&gt; / &lt;/ol&gt;）"
 
 msgid "This is best for internal processes that don't need to be redirected when the slug structure changes."
 msgstr "これは、スラッグ構造が変更されたときにリダイレクトする必要のない内部プロセスに最適です。"
@@ -1122,7 +1122,7 @@ msgid "This text will appear before the list of suggestions (default: &lt;h3&gt;
 msgstr "このテキストは提案のリストの前に表示されます（デフォルト：&lt;h3&gt;Here are some other great pages&lt;/h3&gt;）"
 
 msgid "This will break your website."
-msgstr "これによりウェブサイトが壊れます。"
+msgstr "サイトが破損する可能性があります。"
 
 msgid "This will not change the URL if the destination 404 page is set to (Default 404 Page) or Home Page."
 msgstr "宛先404ページが（デフォルト404ページ）またはホームページに設定されている場合、URLは変更されません。"
@@ -1185,13 +1185,13 @@ msgid "Under the Settings menu"
 msgstr "設定メニューの下"
 
 msgid "Unique Page Not Found Referrers"
-msgstr "ユニークなページ未検出リファラー数"
+msgstr "ユニークなリファラー数（404）"
 
 msgid "Unique Page Not Found URLs"
-msgstr "ユニークなページ未検出URL数"
+msgstr "ユニーク404 URL数"
 
 msgid "Unique Page Not Found Visitors"
-msgstr "ユニークなページ未検出訪問者数"
+msgstr "ユニーク訪問者数（404）"
 
 msgid "Unique Redirected Referrers"
 msgstr "ユニークなリダイレクトされたリファラー数"
@@ -1230,13 +1230,13 @@ msgid "Visit"
 msgstr "訪問"
 
 msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "警告：これを誤って使用すると、ウェブサイトが壊れます。自己責任で使用してください。自分が何をしているのか分からない場合は、これを空のままにしてください。"
+msgstr "警告：これを誤って使用すると、サイトが正常に動作しなくなります。自己責任で使用してください。自分が何をしているのか分からない場合は、これを空のままにしてください。"
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
 msgstr "プラグインがエラーを検出したときに、ログファイル全体を開発者にメールで送信します。"
 
 msgid "When checked the URL will be changed from the custom 404 page URL to the URL originally requested (after the page headers load)."
-msgstr "チェックすると、URLはカスタム404ページのURLから元々リクエストされたURLに変更されます（ページヘッダーの読み込み後）。"
+msgstr "チェックすると、URLをカスタム404ページのURLから元々リクエストされたURLに変更します（ページヘッダーの読み込み後）。"
 
 msgid "When checked, the text is treated as a regular expression."
 msgstr "チェックすると、テキストは正規表現として扱われます。"
@@ -1245,7 +1245,7 @@ msgid "When selected, ALL REQUESTS (even for pages that exist, even for non-404s
 msgstr "選択すると、すべてのリクエスト（存在するページに対しても、404以外に対しても）が404として扱われます。"
 
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here."
-msgstr "記録済み404の数が管理者通知を引き起こす場合、ここで指定されたアドレスにメールが送信されます。"
+msgstr "記録済み404の数が管理者通知を引き起こす場合、ここで指定されたアドレスにメールを送信します。"
 
 msgid "You can see which are recognized by looking at the default 404 destination option."
 msgstr "デフォルトの404リダイレクト先オプションを見ることで、どれが認識されているかを確認できます。"
@@ -1321,7 +1321,7 @@ msgid "logslinkHTML"
 msgstr "logslinkHTML"
 
 msgid "of"
-msgstr "/"
+msgstr "の"
 
 msgid "pageIDAndType"
 msgstr "pageIDAndType"
@@ -1612,7 +1612,7 @@ msgstr "プラグインは、ここで指定された投稿タイプのみをリ
 
 #: includes/html/adminOptionsGeneral.html
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
-msgstr "キャプチャされた404の数が管理者通知を引き起こす場合、ここで指定されたアドレスにメールが送信されます。複数のメールアドレスはカンマ（,）で区切ることができます。「差出人」メールアドレスは常にデフォルトのWordPress管理者メールです："
+msgstr "記録済み404の数が管理者通知を引き起こす場合、ここで指定されたアドレスにメールを送信します。複数のメールアドレスはカンマ（,）で区切ることができます。「差出人」メールアドレスは常にデフォルトのWordPress管理者メールです："
 
 #: includes/DatabaseUpgradesEtc.php:125
 msgid "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."

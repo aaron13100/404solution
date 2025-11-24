@@ -126,7 +126,7 @@ msgid "(don't suggest pages within the /members/ directory)"
 msgstr "(не предлагать страницы из директории /members/)"
 
 msgid "(don't suggest the specific page with slug 'old-contact-page')"
-msgstr "(не предлагать конкретную страницу со слагом 'old-contact-page')"
+msgstr "(не предлагать конкретную страницу с URL 'old-contact-page')"
 
 msgid "(ignore all .jpg files)"
 msgstr "(игнорировать все файлы .jpg)"
@@ -150,7 +150,7 @@ msgid "* 404s are still redirected when possible."
 msgstr "* 404 всё равно перенаправляются, когда это возможно."
 
 msgid "* Do not capture 404 URLs."
-msgstr "* Не собирать 404 URL."
+msgstr "* Не собирать URL 404."
 
 msgid "* Do not redirect 404s for the patterns listed here."
 msgstr "* Не перенаправлять 404 для перечисленных здесь шаблонов."
@@ -165,7 +165,7 @@ msgid "* One pattern per line."
 msgstr "* Один шаблон на строку."
 
 msgid "* One string per line."
-msgstr "* Одна строка на каждую строку."
+msgstr "* Одна запись на строку."
 
 msgid "* One type per line."
 msgstr "* Один тип на строку."
@@ -186,7 +186,7 @@ msgid "404 Page Suggestions"
 msgstr "Предложения страниц 404"
 
 msgid "404 URL marked as %s successfully!"
-msgstr "404 URL помечен как %s успешно!"
+msgstr "URL 404 успешно помечен как %s."
 
 msgid "<a>View</a> the debug file."
 msgstr "<a>Просмотреть</a> отладочный файл."
@@ -217,16 +217,16 @@ msgstr "Дополнительно"
 
 
 msgid "Advanced Settings (Etc)"
-msgstr "Advanced Settings (Etc)"
+msgstr "Дополнительные настройки (и т.д.)"
 
 msgid "Content & URL Filtering"
-msgstr "Фильтрация Контента и URL"
+msgstr "Фильтрация контента и URL"
 
 msgid "Logging & Privacy"
-msgstr "Логирование и Конфиденциальность"
+msgstr "Журналирование и конфиденциальность"
 
 msgid "Advanced Configuration"
-msgstr "Расширенная Конфигурация"
+msgstr "Расширенные настройки"
 
 msgid "Expand All"
 msgstr "Развернуть все"
@@ -247,7 +247,7 @@ msgid "All other redirects must be deleted and only one regex redirect for all U
 msgstr "Все остальные перенаправления должны быть удалены и создано только одно regex перенаправление для всех URL, чтобы это работало."
 
 msgid "All trashed URLs have been deleted!"
-msgstr "Все URL в корзине были удалены!"
+msgstr "Все URL из корзины удалены."
 
 msgid "Allow category suggestions"
 msgstr "Разрешить предложения категорий"
@@ -287,10 +287,10 @@ msgid "Automatically created"
 msgstr "Создано автоматически"
 
 msgid "Automatically creates redirects based on best possible suggested page."
-msgstr "Автоматически создает перенаправления на основе наилучшей предложенной страницы."
+msgstr "Автоматически создает перенаправления на наиболее подходящую страницу."
 
 msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
-msgstr "Удаляет захваченные URL 404, если они не использовались в течение указанного времени."
+msgstr "Удаляет собранные URL 404, если они не использовались в течение указанного времени."
 
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "Удаляет вручную созданные перенаправления, если они не использовались в течение указанного времени. Не влияет на автоматически созданные перенаправления."
@@ -341,10 +341,10 @@ msgid "Collect incoming 404 URLs"
 msgstr "Собирать входящие 404 URL"
 
 msgid "Delete captured 404 URLs after"
-msgstr "Удалить захваченные URL 404 через"
+msgstr "Удалить собранные URL 404 через"
 
 msgid "Create a CSV file with the redirects and captured 404s."
-msgstr "Создать CSV файл с перенаправлениями и собранными 404."
+msgstr "Создать CSV-файл с перенаправлениями и собранными 404."
 
 msgid "Create and Download"
 msgstr "Создать и скачать"
@@ -401,7 +401,7 @@ msgid "Debug file(s) deleted. (%s)"
 msgstr "Файл(ы) отладки удалены. (%s)"
 
 msgid "Debug logging"
-msgstr "Журналирование отладки"
+msgstr "Запись отладки"
 
 msgid "Default"
 msgstr "Default"
@@ -581,7 +581,7 @@ msgid "External Page"
 msgstr "Внешняя страница"
 
 msgid "External User Agents - Do Not Log"
-msgstr "Внешние пользовательские агенты — не журналировать"
+msgstr "Внешние пользовательские агенты — не записывать"
 
 msgid "Files and Folders Ignore Strings - Do Not Process"
 msgstr "Строки игнорирования файлов и папок — не обрабатывать"
@@ -632,7 +632,7 @@ msgid "Home Page:"
 msgstr "Главная страница:"
 
 msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
-msgstr "Я понимаю вышеизложенное, я знаю, что делаю... бла-бла-бла. Просто удалите записи!"
+msgstr "Я понимаю вышеизложенное, я знаю, что делаю и т.д. Просто удалите записи."
 
 msgid "I understand the above statement."
 msgstr "Я понимаю вышеизложенное."
@@ -665,13 +665,13 @@ msgid "Import 404 Redirected Data"
 msgstr "Импортировать данные перенаправлений 404"
 
 msgid "Import a CSV file with the redirects and captured 404s."
-msgstr "Импортировать CSV файл с перенаправлениями и собранными 404."
+msgstr "Импортировать CSV-файл с перенаправлениями и собранными 404."
 
 msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
-msgstr "Включая возможность сломать сайт, создавая неправильные перенаправления, вводя неправильное регулярное выражение, удаляя существующие перенаправления и предоставляя другим пользователям административный доступ к плагину."
+msgstr "Включая возможность нарушить работу сайта, создавая неправильные перенаправления, вводя неправильное регулярное выражение, удаляя существующие перенаправления и предоставляя другим пользователям административный доступ к плагину."
 
 msgid "Internal Process User Agents - Do Not Log"
-msgstr "Внутренние процессы пользовательских агентов — не журналировать"
+msgstr "Внутренние процессы пользовательских агентов — не записывать"
 
 msgid "Issue deleting debug file. (%s)"
 msgstr "Проблема при удалении файла отладки. (%s)"
@@ -704,10 +704,10 @@ msgid "Log files are checked daily when maintenance is run."
 msgstr "Файлы журналов проверяются ежедневно при выполнении обслуживания."
 
 msgid "Log raw IPs"
-msgstr "Журналировать настоящие IP"
+msgstr "Записывать реальные IP-адреса"
 
 msgid "Logging raw IP addresses may not meet the EU General Data Protection Regulation (GDPR) guidelines."
-msgstr "Журналирование настоящих IP-адресов может не соответствовать требованиям Общего регламента ЕС по защите данных (GDPR)."
+msgstr "Запись реальных IP-адресов может не соответствовать требованиям GDPR."
 
 msgid "Logs"
 msgstr "Журналы"
@@ -725,7 +725,7 @@ msgid "Major version auto update delay"
 msgstr "Задержка автообновления мажорной версии"
 
 msgid "Man"
-msgstr "Вручную"
+msgstr "Ручн."
 
 msgid "Manual 301 Redirects"
 msgstr "Ручные 301 перенаправления"
@@ -785,7 +785,7 @@ msgid "No suggestions. :/ "
 msgstr "Нет предложений. :/ "
 
 msgid "Note that including a bad regular expression or one that takes too long will break your website."
-msgstr "Обратите внимание, что использование неправильного регулярного выражения или слишком медленного сломает ваш сайт."
+msgstr "Обратите внимание, что использование неправильного регулярного выражения или слишком медленного нарушит работу сайта."
 
 msgid "Note: Do not include the parenthesis or explanations shown in the examples above."
 msgstr "Примечание: Не включайте скобки или пояснения, показанные в примерах выше."
@@ -824,7 +824,7 @@ msgid "Page"
 msgstr "Страница"
 
 msgid "Page Not Found Displayed"
-msgstr "Отображено \"Страница не найдена\""
+msgstr "Показов страницы 404"
 
 msgid "Page Redirects"
 msgstr "Перенаправления страниц"
@@ -845,7 +845,7 @@ msgid "Plugin version"
 msgstr "Версия плагина"
 
 msgid "Purge Entries!"
-msgstr "Очистить записи!"
+msgstr "Очистить записи"
 
 msgid "Purge Options"
 msgstr "Параметры очистки"
@@ -872,10 +872,10 @@ msgid "Redirect Details"
 msgstr "Детали перенаправления"
 
 msgid "Redirect Information Updated Successfully!"
-msgstr "Информация о перенаправлении успешно обновлена!"
+msgstr "Информация о перенаправлении обновлена."
 
 msgid "Redirect Removed Successfully!"
-msgstr "Перенаправление успешно удалено!"
+msgstr "Перенаправление удалено."
 
 msgid "Redirect Type"
 msgstr "Тип перенаправления"
@@ -890,10 +890,10 @@ msgid "Redirect all unhandled 404s to"
 msgstr "Перенаправлять все необработанные 404 на"
 
 msgid "Redirect moved to trash successfully!"
-msgstr "Перенаправление успешно перемещено в корзину!"
+msgstr "Перенаправление перемещено в корзину."
 
 msgid "Redirect restored from trash successfully!"
-msgstr "Перенаправление успешно восстановлено из корзины!"
+msgstr "Перенаправление восстановлено из корзины."
 
 msgid "Redirect to"
 msgstr "Перенаправить на"
@@ -923,7 +923,7 @@ msgid "Remove redirect upon matching permalink"
 msgstr "Удалять перенаправление при совпадении постоянной ссылки"
 
 msgid "Removed 404 URL from %s list successfully!"
-msgstr "404 URL успешно удален из списка %s!"
+msgstr "URL 404 удален из списка %s."
 
 msgid "Removes automatically created redirects if they haven't been used for the specified amount of time. Does not affect manually created redirects."
 msgstr "Удаляет автоматически созданные перенаправления, если они не использовались в течение указанного времени. Не влияет на вручную созданные перенаправления."
@@ -938,10 +938,10 @@ msgid "Rows per page:"
 msgstr "Строк на странице:"
 
 msgid "Run Maintenance"
-msgstr "Выполнить обслуживание"
+msgstr "Запустить обслуживание"
 
 msgid "Run maintenance to delete old data (etc).&nbsp;&nbsp;It is not necessary to run this manually, as it's done automatically on a daily basis."
-msgstr "Выполнить обслуживание для удаления старых данных (и т.д.).&nbsp;&nbsp;Не обязательно запускать это вручную, так как это выполняется автоматически ежедневно."
+msgstr "Запустить обслуживание для удаления старых данных (и т.д.).&nbsp;&nbsp;Не обязательно запускать это вручную, так как это выполняется автоматически ежедневно."
 
 msgid "SELECTED_SUGGEST_CATS"
 msgstr "SELECTED_SUGGEST_CATS"
@@ -990,7 +990,7 @@ msgstr "Фильтры разделов"
 
 
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
-msgstr "Пользовательские агенты поисковых систем не должны быть здесь, чтобы они перенаправлялись при изменении структуры слагов."
+msgstr "Пользовательские агенты поисковых систем не должны быть здесь, чтобы они перенаправлялись при изменении структуры URL."
 
 msgid "Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
 msgstr "Поскольку используется группа захвата, вы можете использовать замену $1 в строке назначения внешнего URL."
@@ -999,7 +999,7 @@ msgid "So please use caution and test them elsewhere before trying them here. If
 msgstr "Пожалуйста, будьте осторожны и протестируйте их в другом месте, прежде чем пробовать здесь. Если вы не знаете, что делаете, пожалуйста, не используйте эту опцию (так как она не обязательна для работы плагина)."
 
 msgid "Some options were not saved successfully."
-msgstr "Некоторые настройки не были сохранены успешно."
+msgstr "Некоторые настройки не были сохранены."
 
 msgid "Special"
 msgstr "Специальные"
@@ -1084,10 +1084,10 @@ msgid "This creates the list. For example, use &lt;ol style=\"list-style-type: n
 msgstr "Это создает список. Например, используйте &lt;ol style=\"list-style-type: none;\"&gt; чтобы скрыть номера в списке. (по умолчанию: &lt;ol&gt; / &lt;/ol&gt;)"
 
 msgid "This is best for internal processes that don't need to be redirected when the slug structure changes."
-msgstr "Это лучше всего подходит для внутренних процессов, которые не нужно перенаправлять при изменении структуры слагов."
+msgstr "Это лучше всего подходит для внутренних процессов, которые не нужно перенаправлять при изменении структуры URL."
 
 msgid "This is best for search engine bots that do need to be redirected when the slug structure changes."
-msgstr "Это лучше всего подходит для ботов поисковых систем, которые должны быть перенаправлены при изменении структуры слагов."
+msgstr "Это лучше всего подходит для ботов поисковых систем, которые должны быть перенаправлены при изменении структуры URL."
 
 msgid "This is for a domain name change."
 msgstr "Это для изменения доменного имени."
@@ -1117,7 +1117,7 @@ msgid "This text will appear before the list of suggestions (default: &lt;h3&gt;
 msgstr "Этот текст будет появляться перед списком предложений (по умолчанию: &lt;h3&gt;Вот несколько других отличных страниц&lt;/h3&gt;)"
 
 msgid "This will break your website."
-msgstr "Это сломает ваш сайт."
+msgstr "Это нарушит работу сайта."
 
 msgid "This will not change the URL if the destination 404 page is set to (Default 404 Page) or Home Page."
 msgstr "Это не изменит URL, если целевая страница 404 установлена на (Страница 404 по умолчанию) или Главная страница."
@@ -1183,7 +1183,7 @@ msgid "Unique Page Not Found Referrers"
 msgstr "Уникальные источники переходов для страницы не найдена"
 
 msgid "Unique Page Not Found URLs"
-msgstr "Уникальные URL страницы не найдена"
+msgstr "Уникальные URL 404"
 
 msgid "Unique Page Not Found Visitors"
 msgstr "Уникальные посетители страницы не найдена"
@@ -1225,7 +1225,7 @@ msgid "Visit"
 msgstr "Перейти"
 
 msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "ВНИМАНИЕ: При неправильном использовании это СЛОМАЕТ ваш сайт. Используйте на свой страх и риск. Пожалуйста, ради всего святого, оставьте это поле пустым, если не знаете, что делаете."
+msgstr "ВНИМАНИЕ: При неправильном использовании это нарушит работу сайта. Используйте на свой страх и риск. Пожалуйста, оставьте это поле пустым, если не знаете, что делаете."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
 msgstr "Когда плагин обнаруживает ошибку, отправлять весь файл журнала разработчику по электронной почте."
@@ -1469,7 +1469,7 @@ msgid "I found a better plugin"
 msgstr "Я нашел лучший плагин"
 
 msgid "I no longer need this functionality"
-msgstr "Мне больше не нужна эта функциональность"
+msgstr "Мне больше не нужна эта функция"
 
 msgid "Too complicated to configure"
 msgstr "Слишком сложно настраивать"
@@ -1518,22 +1518,22 @@ msgid "Could not save preferences. Your choices may not be preserved."
 msgstr "Не удалось сохранить настройки. Ваш выбор может не быть сохранен."
 
 msgid "Preferences saved successfully"
-msgstr "Настройки успешно сохранены"
+msgstr "Настройки сохранены"
 
 msgid "Failed to save preferences"
 msgstr "Не удалось сохранить настройки"
 
 msgid "N-gram cache rebuild is already in progress. Please wait for it to complete."
-msgstr "Восстановление кэша N-gram уже выполняется. Пожалуйста, подождите завершения."
+msgstr "Перестроение кэша N-gram уже выполняется. Пожалуйста, подождите завершения."
 
 msgid "Error rebuilding N-gram cache: %s"
-msgstr "Ошибка при восстановлении кэша N-gram: %s"
+msgstr "Ошибка при перестроении кэша N-gram: %s"
 
 msgid "N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed."
-msgstr "Кэш N-gram успешно восстановлен: обработано %d записей (%d записей/страниц, %d категорий, %d меток), %d успешно, %d с ошибками."
+msgstr "Кэш N-gram перестроен: обработано %d записей (%d записей/страниц, %d категорий, %d меток), %d успешно, %d с ошибками."
 
 msgid "Spelling cache cleared successfully."
-msgstr "Кэш проверки орфографии успешно очищен."
+msgstr "Кэш проверки орфографии очищен."
 
 msgid "Cache Management"
 msgstr "Управление кэшем"
@@ -1542,10 +1542,10 @@ msgid "N-gram Cache"
 msgstr "Кэш N-gram"
 
 msgid "Rebuild the N-gram spell checker cache. This optimizes 404 URL matching performance. May take several minutes on large sites."
-msgstr "Восстановить кэш проверки орфографии N-gram. Это оптимизирует производительность сопоставления 404 URL. На больших сайтах может занять несколько минут."
+msgstr "Перестроить кэш проверки орфографии N-gram. Это оптимизирует производительность сопоставления 404 URL. На больших сайтах может занять несколько минут."
 
 msgid "Rebuild N-gram Cache"
-msgstr "Восстановить кэш N-gram"
+msgstr "Перестроить кэш N-gram"
 
 msgid "Spelling Cache"
 msgstr "Кэш проверки орфографии"
@@ -1592,11 +1592,11 @@ msgstr "Этот шорткод можно использовать на стр�
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
 msgid "This is best for search engine bots that do need to be redirected when the slug structure changes. Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
-msgstr "Это лучше всего подходит для ботов поисковых систем, которые должны перенаправляться при изменении структуры слага. Используйте одну строку на агента пользователя. Если текст найден где-либо в строке агента пользователя, то он применяется."
+msgstr "Это лучше всего подходит для ботов поисковых систем, которые должны перенаправляться при изменении структуры URL. Используйте одну строку на агента пользователя. Если текст найден где-либо в строке агента пользователя, то он применяется."
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
 msgid "This is best for internal processes that don't need to be redirected when the slug structure changes. Search engine user agents should not go here so that they will be redirected when the slug structure changes."
-msgstr "Это лучше всего подходит для внутренних процессов, которые не нужно перенаправлять при изменении структуры слага. Агенты пользователей поисковых систем не должны размещаться здесь, чтобы они перенаправлялись при изменении структуры слага."
+msgstr "Это лучше всего подходит для внутренних процессов, которые не нужно перенаправлять при изменении структуры URL. Агенты пользователей поисковых систем не должны размещаться здесь, чтобы они перенаправлялись при изменении структуры URL."
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedContent.html
 msgid "Pages listed here will not be redirected to (unless a redirect to the page already exists)."
@@ -1628,7 +1628,7 @@ msgstr "Не удалось запланировать пересоздание 
 
 #: includes/UninstallModal.php
 msgid "Deactivate without feedback"
-msgstr "Деактивировать без отзыва"
+msgstr "Деактивировать без обратной связи"
 
 #: includes/UninstallModal.php
 msgid "Processing..."

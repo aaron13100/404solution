@@ -150,7 +150,7 @@ msgid "* 404s are still redirected when possible."
 msgstr "* 404:or omdirigeras fortfarande när det är möjligt."
 
 msgid "* Do not capture 404 URLs."
-msgstr "* Fånga inte 404-URL:er."
+msgstr "* Samla inte in 404-URL:er."
 
 msgid "* Do not redirect 404s for the patterns listed here."
 msgstr "* Omdirigera inte 404:or för de mönster som listas här."
@@ -186,7 +186,7 @@ msgid "404 Page Suggestions"
 msgstr "404-sidförslag"
 
 msgid "404 URL marked as %s successfully!"
-msgstr "404-URL markerad som %s framgångsrikt!"
+msgstr "404-URL har markerats som %s."
 
 msgid "<a>View</a> the debug file."
 msgstr "<a>Visa</a> felsökningsfilen."
@@ -216,7 +216,7 @@ msgid "Advanced"
 msgstr "Avancerat"
 
 msgid "Advanced Settings (Etc)"
-msgstr "Advanced Settings (Etc)"
+msgstr "Avancerade inställningar (m.m.)"
 
 msgid "Content & URL Filtering"
 msgstr "Innehålls- och URL-filtrering"
@@ -234,7 +234,7 @@ msgid "Collapse All"
 msgstr "Fäll ihop alla"
 
 msgid "Feedback sent successfully."
-msgstr "Feedback skickad framgångsrikt."
+msgstr "Feedback har skickats."
 
 msgid "Note: Feedback email could not be sent."
 msgstr "Obs: Feedback-e-post kunde inte skickas."
@@ -258,13 +258,13 @@ msgid "An unknown error has occurred."
 msgstr "Ett okänt fel har inträffat."
 
 msgid "Apply"
-msgstr "Verkställ"
+msgstr "Tillämpa"
 
 msgid "At the same level as the Settings and Tools menu"
 msgstr "På samma nivå som menyn Inställningar och Verktyg"
 
 msgid "Auto"
-msgstr "Automatisk"
+msgstr "Auto"
 
 msgid "Delete automatic redirects after"
 msgstr "Radera automatiska omdirigeringar efter"
@@ -288,7 +288,7 @@ msgid "Automatically creates redirects based on best possible suggested page."
 msgstr "Skapar automatiskt omdirigeringar baserat på den bästa möjliga föreslagna sidan."
 
 msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
-msgstr "Tar bort fångade 404-URL:er om de inte har använts under den angivna tidsperioden."
+msgstr "Tar bort insamlade 404-URL:er om de inte har använts under den angivna tidsperioden."
 
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "Tar bort manuellt skapade omdirigeringar om de inte har använts under den angivna tidsperioden. Påverkar inte automatiskt skapade omdirigeringar."
@@ -297,13 +297,13 @@ msgid "Calm Ops (Light)"
 msgstr "Calm Ops (Ljus)"
 
 msgid "Captured 404 URLs"
-msgstr "Fångade 404-URL:er"
+msgstr "Insamlade 404-URL:er"
 
 msgid "Captured URLs"
-msgstr "Fångade URL:er"
+msgstr "Insamlade URL:er"
 
 msgid "Captured URLs (0 Disables Notification)"
-msgstr "Fångade URL:er (0 inaktiverar meddelanden)"
+msgstr "Insamlade URL:er (0 inaktiverar meddelanden)"
 
 msgid "Categories"
 msgstr "Kategorier"
@@ -336,16 +336,16 @@ msgid "Click to view debug data for all suggestions"
 msgstr "Klicka för att visa felsökningsdata för alla förslag"
 
 msgid "Collect incoming 404 URLs"
-msgstr "Samla inkommande 404-URL:er"
+msgstr "Samla in inkommande 404-URL:er"
 
 msgid "Delete captured 404 URLs after"
-msgstr "Radera fångade 404-URL:er efter"
+msgstr "Radera insamlade 404-URL:er efter"
 
 msgid "Create a CSV file with the redirects and captured 404s."
-msgstr "Skapa en CSV-fil med omdirigeringarna och fångade 404:or."
+msgstr "Skapa en CSV-fil med omdirigeringarna och insamlade 404:or."
 
 msgid "Create and Download"
-msgstr "Skapa och ladda ner"
+msgstr "Skapa och hämta"
 
 msgid "Create automatic redirects"
 msgstr "Skapa automatiska omdirigeringar"
@@ -423,10 +423,10 @@ msgid "Display Before/After page suggestions"
 msgstr "Visa före/efter sidförslag"
 
 msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
-msgstr "Visa ett WordPress-administratörsmeddelande när antalet fångade URL:er överskrider detta antal"
+msgstr "Visa ett WordPress-administratörsmeddelande när antalet insamlade URL:er överskrider detta antal"
 
 msgid "Display if no suggestion results"
-msgstr "Visa om inga förslagsresultat"
+msgstr "Visa om inga förslag hittas"
 
 msgid "Display the closest matching pages by using the shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
 msgstr "Visa de närmast matchande sidorna genom att använda kortkoden <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
@@ -579,7 +579,7 @@ msgid "External Page"
 msgstr "Extern sida"
 
 msgid "External User Agents - Do Not Log"
-msgstr "Externa användaragenter - logga inte"
+msgstr "Externa användaragenter – loggas ej"
 
 msgid "Files and Folders Ignore Strings - Do Not Process"
 msgstr "Filer och mappar ignorera strängar - bearbeta inte"
@@ -663,7 +663,7 @@ msgid "Import 404 Redirected Data"
 msgstr "Importera 404-omdirigeringsdata"
 
 msgid "Import a CSV file with the redirects and captured 404s."
-msgstr "Importera en CSV-fil med omdirigeringar och fångade 404:or."
+msgstr "Importera en CSV-fil med omdirigeringar och insamlade 404:or."
 
 msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
 msgstr "Inklusive att bryta webbplatsen genom att skapa dåliga omdirigeringar, ange ett felaktigt reguljärt uttryck, radera befintliga omdirigeringar och ge andra användare administratörsåtkomst till plugin:et."
@@ -723,7 +723,7 @@ msgid "Major version auto update delay"
 msgstr "Fördröjning för automatisk uppdatering av huvudversion"
 
 msgid "Man"
-msgstr "Manuell"
+msgstr "Man"
 
 msgid "Manual 301 Redirects"
 msgstr "Manuella 301-omdirigeringar"
@@ -762,13 +762,13 @@ msgid "Never Used"
 msgstr "Aldrig använd"
 
 msgid "New Redirect Added Successfully!"
-msgstr "Ny omdirigering tillagd framgångsrikt!"
+msgstr "Ny omdirigering har lagts till."
 
 msgid "New major version => wait this many days. New minor version => automatically update about 3 days after the release date."
 msgstr "Ny huvudversion => vänta så här många dagar. Ny mindre version => uppdatera automatiskt cirka 3 dagar efter releasedatum."
 
 msgid "No Captured 404 Records To Display"
-msgstr "Inga fångade 404-poster att visa"
+msgstr "Inga insamlade 404-poster att visa"
 
 msgid "No Redirect Records To Display"
 msgstr "Inga omdirigeringsposter att visa"
@@ -804,16 +804,16 @@ msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
 msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
 
 msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
-msgstr "Ett e-postmeddelande skickas per dag (när underhåll körs) tills antalet fångade 404:or går under det antal som anges i varningsinställningarna."
+msgstr "Ett e-postmeddelande skickas per dag (när underhåll körs) tills antalet insamlade 404:or går under det antal som anges i varningsinställningarna."
 
 msgid "Only create an automatic redirect if the suggested page has a score above the specified number (default 90)"
-msgstr "Skapa endast en automatisk omdirigering om den föreslagna sidan har en poäng över det angivna numret (standard 90)"
+msgstr "Skapa endast en automatisk omdirigering om den föreslagna sidan har en poäng över det angivna värdet (standard 90)"
 
 msgid "Options"
 msgstr "Alternativ"
 
 msgid "Options Saved Successfully!"
-msgstr "Alternativ sparade framgångsrikt!"
+msgstr "Alternativ har sparats."
 
 msgid "Organize Later"
 msgstr "Organisera senare"
@@ -822,13 +822,13 @@ msgid "Page"
 msgstr "Sida"
 
 msgid "Page Not Found Displayed"
-msgstr "Sidan hittades inte visad"
+msgstr "404-visningar"
 
 msgid "Page Redirects"
 msgstr "Sidomdirigeringar"
 
 msgid "Page suggestions title"
-msgstr "Titel för sidförslag"
+msgstr "Rubrik för sidförslag"
 
 msgid "Pages listed here will not be redirected to"
 msgstr "Sidor som listas här kommer inte att omdirigeras till"
@@ -870,10 +870,10 @@ msgid "Redirect Details"
 msgstr "Omdirigeringsdetaljer"
 
 msgid "Redirect Information Updated Successfully!"
-msgstr "Omdirigeringsinformation uppdaterad framgångsrikt!"
+msgstr "Omdirigeringsinformation har uppdaterats."
 
 msgid "Redirect Removed Successfully!"
-msgstr "Omdirigering borttagen framgångsrikt!"
+msgstr "Omdirigering har tagits bort."
 
 msgid "Redirect Type"
 msgstr "Omdirigeringstyp"
@@ -888,10 +888,10 @@ msgid "Redirect all unhandled 404s to"
 msgstr "Omdirigera alla ohanterade 404:or till"
 
 msgid "Redirect moved to trash successfully!"
-msgstr "Omdirigering flyttad till papperskorgen framgångsrikt!"
+msgstr "Omdirigeringen har flyttats till papperskorgen."
 
 msgid "Redirect restored from trash successfully!"
-msgstr "Omdirigering återställd från papperskorgen framgångsrikt!"
+msgstr "Omdirigeringen har återställts från papperskorgen."
 
 msgid "Redirect to"
 msgstr "Omdirigera till"
@@ -921,7 +921,7 @@ msgid "Remove redirect upon matching permalink"
 msgstr "Ta bort omdirigering vid matchande permalänk"
 
 msgid "Removed 404 URL from %s list successfully!"
-msgstr "Tog bort 404-URL från %s-listan framgångsrikt!"
+msgstr "404-URL har tagits bort från %s-listan."
 
 msgid "Removes automatically created redirects if they haven't been used for the specified amount of time. Does not affect manually created redirects."
 msgstr "Tar bort automatiskt skapade omdirigeringar om de inte har använts under den angivna tidsperioden. Påverkar inte manuellt skapade omdirigeringar."
@@ -996,7 +996,7 @@ msgid "So please use caution and test them elsewhere before trying them here. If
 msgstr "Så var försiktig och testa dem någon annanstans innan du provar dem här. Om du inte vet vad du gör, vänligen använd inte detta alternativ (eftersom det inte är nödvändigt för plugin:ets funktion)."
 
 msgid "Some options were not saved successfully."
-msgstr "Några alternativ sparades inte framgångsrikt."
+msgstr "Vissa alternativ kunde inte sparas."
 
 msgid "Special"
 msgstr "Speciell"
@@ -1155,7 +1155,7 @@ msgid "URL(s) deleted"
 msgstr "URL(er) raderade"
 
 msgid "URL(s) marked as Captured."
-msgstr "URL(er) markerade som fångade."
+msgstr "URL(er) markerade som insamlade."
 
 msgid "URL(s) marked as Ignored."
 msgstr "URL(er) markerade som ignorerade."
@@ -1176,13 +1176,13 @@ msgid "Under the Settings menu"
 msgstr "Under menyn Inställningar"
 
 msgid "Unique Page Not Found Referrers"
-msgstr "Unika referenter för sidan hittades inte"
+msgstr "Unika hänvisare till 404-sidor"
 
 msgid "Unique Page Not Found URLs"
-msgstr "Unika URL:er för sidan hittades inte"
+msgstr "Unika URL:er för 404-sidor"
 
 msgid "Unique Page Not Found Visitors"
-msgstr "Unika besökare för sidan hittades inte"
+msgstr "Unika besökare som fick 404-fel"
 
 msgid "Unique Redirected Referrers"
 msgstr "Unika omdirigerade referenter"
@@ -1236,7 +1236,7 @@ msgid "When selected, ALL REQUESTS (even for pages that exist, even for non-404s
 msgstr "När detta är valt kommer ALLA FÖRFRÅGNINGAR (även för sidor som existerar, även för icke-404:or) att behandlas som en 404."
 
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here."
-msgstr "När antalet fångade 404:or skulle orsaka ett administratörsmeddelande kommer ett e-postmeddelande att skickas till de adresser som anges här."
+msgstr "När antalet insamlade 404:or skulle orsaka ett administratörsmeddelande kommer ett e-postmeddelande att skickas till de adresser som anges här."
 
 msgid "You can see which are recognized by looking at the default 404 destination option."
 msgstr "Du kan se vilka som är erkända genom att titta på standardalternativet för 404-destination."
@@ -1407,8 +1407,8 @@ msgstr "kommer att matcha vilken URL som helst som börjar med"
 #: includes/View.php
 msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
 msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
-msgstr[0] "Det finns <a>%s fångad 404-URL</a> som behöver bearbetas."
-msgstr[1] "Det finns <a>%s fångade 404-URL:er</a> som behöver bearbetas."
+msgstr[0] "Det finns <a>%s insamlad 404-URL</a> som behöver bearbetas."
+msgstr[1] "Det finns <a>%s insamlade 404-URL:er</a> som behöver bearbetas."
 
 #. Plural form with %s
 #: includes/DataAccess.php
@@ -1432,13 +1432,13 @@ msgstr "404 Solution: Byggde N-gram cache för %d sidor för att optimera stavni
 
 #: includes/DatabaseUpgradesEtc.php:140
 msgid "Before deactivating:"
-msgstr "Före avaktivering:"
+msgstr "Innan du avaktiverar:"
 
 msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
-msgstr "Välj vad som ska hända med din data. Dessa inställningar kommer att sparas för senare om du bestämmer dig för att radera plugin:et."
+msgstr "Välj vad som ska hända med dina data. Dessa inställningar kommer att sparas för senare om du bestämmer dig för att radera plugin:et."
 
 msgid "What should happen to your data?"
-msgstr "Vad ska hända med din data?"
+msgstr "Vad ska hända med dina data?"
 
 msgid "Keep my redirects (%d redirects)"
 msgstr "Behåll mina omdirigeringar (%d omdirigeringar)"
@@ -1505,7 +1505,7 @@ msgid "Additional details:"
 msgstr "Ytterligare detaljer:"
 
 msgid "Please share any additional feedback..."
-msgstr "Vänligen dela eventuell ytterligare feedback..."
+msgstr "Vänligen dela mer feedback..."
 
 msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
 msgstr "Din feedback hjälper oss att förbättra. Vi respekterar din integritet och kommer inte att dela din information."
@@ -1517,7 +1517,7 @@ msgid "Could not save preferences. Your choices may not be preserved."
 msgstr "Kunde inte spara inställningar. Dina val kanske inte bevaras."
 
 msgid "Preferences saved successfully"
-msgstr "Inställningar sparade framgångsrikt"
+msgstr "Inställningar har sparats"
 
 msgid "Failed to save preferences"
 msgstr "Misslyckades med att spara inställningar"
@@ -1529,10 +1529,10 @@ msgid "Error rebuilding N-gram cache: %s"
 msgstr "Fel vid ombyggnad av N-gram cache: %s"
 
 msgid "N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed."
-msgstr "N-gram cache ombyggd framgångsrikt: %d totalt antal poster bearbetade (%d inlägg/sidor, %d kategorier, %d taggar), %d lyckade, %d misslyckade."
+msgstr "N-gram cache har byggts om: %d totalt antal poster bearbetade (%d inlägg/sidor, %d kategorier, %d taggar), %d lyckade, %d misslyckade."
 
 msgid "Spelling cache cleared successfully."
-msgstr "Stavningscache rensad framgångsrikt."
+msgstr "Stavningscache har rensats."
 
 msgid "Cache Management"
 msgstr "Cachehantering"
@@ -1619,7 +1619,7 @@ msgstr "Plugin kommer endast att omdirigera de inläggstyper som anges här. Sta
 
 #: includes/html/adminOptionsGeneral.html
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
-msgstr "När antalet infångade 404:or skulle orsaka en administratörsavisering skickas ett e-postmeddelande till de adresser som anges här. Flera e-postadresser kan separeras med kommatecken (,). \"Från\"-e-postadressen är alltid standardadministratörens e-postadress för WordPress:"
+msgstr "När antalet insamlade 404:or skulle orsaka en administratörsavisering skickas ett e-postmeddelande till de adresser som anges här. Flera e-postadresser kan separeras med kommatecken (,). \"Från\"-e-postadressen är alltid standardadministratörens e-postadress för WordPress:"
 
 #: includes/UninstallModal.php
 msgid "Deactivate without feedback"

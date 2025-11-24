@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: 404 Solution\n"
 "Report-Msgid-Bugs-To: https://github.com/aaron13100/404solution/issues\n"
 "POT-Creation-Date: 2025-11-11 07:26+0000\n"
-"PO-Revision-Date: 2025-11-11 07:26+0000\n"
+"PO-Revision-Date: 2025-11-24 00:00+0000\n"
 "Last-Translator: Auto-Generated\n"
 "Language-Team: Chinese (Simplified)\n"
 "Language: zh_CN\n"
@@ -108,10 +108,10 @@ msgid "(Type a page name or an external URL)"
 msgstr "(输入页面名称或外部 URL)"
 
 msgid "(Type a page name)"
-msgstr "(输入页面名称)"
+msgstr "(请输入页面名称)"
 
 msgid "(Type to filter)"
-msgstr "(输入以过滤)"
+msgstr "(输入进行筛选)"
 
 msgid "(don't suggest .jpg files)"
 msgstr "(不建议 .jpg 文件)"
@@ -127,7 +127,7 @@ msgstr "(不建议 /members/ 目录下的页面)"
 
 # translation-verified: Contains technical slug example
 msgid "(don't suggest the specific page with slug 'old-contact-page')"
-msgstr "(不建议别名为 'old-contact-page' 的特定页面)"
+msgstr "(不建议 slug 为 'old-contact-page' 的特定页面)"
 
 msgid "(ignore all .jpg files)"
 msgstr "(忽略所有 .jpg 文件)"
@@ -151,7 +151,7 @@ msgid "* 404s are still redirected when possible."
 msgstr "* 404 仍会在可能时重定向。"
 
 msgid "* Do not capture 404 URLs."
-msgstr "* 不捕获 404 URL。"
+msgstr "* 不记录 404 URL。"
 
 msgid "* Do not redirect 404s for the patterns listed here."
 msgstr "* 不对此处列出的模式进行 404 重定向。"
@@ -205,7 +205,7 @@ msgid "Add a Redirect"
 msgstr "添加重定向"
 
 msgid "Admin notification email(s)"
-msgstr "管理员通知邮箱"
+msgstr "管理员通知邮件地址"
 
 msgid "Admin notification level"
 msgstr "管理员通知级别"
@@ -221,7 +221,7 @@ msgid "Advanced Settings (Etc)"
 msgstr "高级设置（其他）"
 
 msgid "Content & URL Filtering"
-msgstr "内容和URL过滤"
+msgstr "内容和 URL 过滤"
 
 msgid "Logging & Privacy"
 msgstr "日志和隐私"
@@ -245,16 +245,16 @@ msgid "All"
 msgstr "全部"
 
 msgid "All other redirects must be deleted and only one regex redirect for all URLs must be created for this to work."
-msgstr "必须删除所有其他重定向，并且仅创建一个针对所有 URL 的正则表达式重定向才能使其工作。"
+msgstr "必须删除所有其他重定向，并且仅创建一个针对所有 URL 的正则表达式重定向才能正常工作。"
 
 msgid "All trashed URLs have been deleted!"
-msgstr "所有已删除的 URL 已清空！"
+msgstr "回收站已清空"
 
 msgid "Allow category suggestions"
-msgstr "允许分类建议"
+msgstr "启用分类建议"
 
 msgid "Allow tag suggestions"
-msgstr "允许标签建议"
+msgstr "启用标签建议"
 
 msgid "An unknown error has occurred."
 msgstr "发生未知错误。"
@@ -269,7 +269,7 @@ msgid "Auto"
 msgstr "自动"
 
 msgid "Delete automatic redirects after"
-msgstr "删除自动重定向的期限"
+msgstr "自动删除自动重定向的时间"
 
 msgid "Auto Redirects"
 msgstr "自动重定向"
@@ -288,10 +288,10 @@ msgid "Automatically created"
 msgstr "自动创建"
 
 msgid "Automatically creates redirects based on best possible suggested page."
-msgstr "根据最佳推荐页面自动创建重定向。"
+msgstr "根据最匹配的页面自动创建重定向。"
 
 msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
-msgstr "删除在指定时间内未使用的捕获的404 URL。"
+msgstr "删除在指定时间内未使用的已记录的 404 URL。"
 
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "删除在指定时间内未使用的手动创建的重定向。不影响自动创建的重定向。"
@@ -300,13 +300,13 @@ msgid "Calm Ops (Light)"
 msgstr "沉静运维（浅色）"
 
 msgid "Captured 404 URLs"
-msgstr "已捕获的 404 URL"
+msgstr "已记录的 404 URL"
 
 msgid "Captured URLs"
-msgstr "已捕获的 URL"
+msgstr "已记录的 URL"
 
 msgid "Captured URLs (0 Disables Notification)"
-msgstr "已捕获的 URL（0 禁用通知）"
+msgstr "已记录的 URL（0 禁用通知）"
 
 msgid "Categories"
 msgstr "分类"
@@ -342,10 +342,10 @@ msgid "Collect incoming 404 URLs"
 msgstr "收集传入的 404 URL"
 
 msgid "Delete captured 404 URLs after"
-msgstr "删除捕获的404 URL的期限"
+msgstr "自动删除已记录 404 URL 的时间"
 
 msgid "Create a CSV file with the redirects and captured 404s."
-msgstr "创建包含重定向和已捕获的 404 的 CSV 文件。"
+msgstr "创建包含重定向和已记录的 404 的 CSV 文件。"
 
 msgid "Create and Download"
 msgstr "创建并下载"
@@ -384,7 +384,7 @@ msgid "Date"
 msgstr "日期"
 
 msgid "days without use (0 to disable)"
-msgstr "天未使用（0为禁用）"
+msgstr "天未使用（0 表示禁用）"
 
 msgid "Debug Log"
 msgstr "调试日志"
@@ -428,7 +428,7 @@ msgid "Display Before/After page suggestions"
 msgstr "在页面建议的前后显示"
 
 msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
-msgstr "当已捕获的 URL 数量超过此数字时，显示 WordPress 管理员通知"
+msgstr "当已记录的 404 URL 超过此数量时，显示 WordPress 管理员通知"
 
 msgid "Display if no suggestion results"
 msgstr "无建议结果时显示"
@@ -468,7 +468,7 @@ msgid "Error: Bad trash operation specified."
 msgstr "错误：指定了错误的回收站操作。"
 
 msgid "Error: Data not formatted properly."
-msgstr "错误：数据格式不正确。"
+msgstr "错误：数据格式错误。"
 
 msgid "Error: External URL doesn't contain ://"
 msgstr "错误：外部 URL 不包含 ://"
@@ -514,7 +514,7 @@ msgid "Error: Template redirect priority value must be a number between 0 and 99
 msgstr "错误：模板重定向优先级值必须是 0 到 999 之间的数字"
 
 msgid "Error: URL is a required field."
-msgstr "错误：URL 为必填字段。"
+msgstr "错误：URL 不能为空。"
 
 msgid "Error: URL must start with /"
 msgstr "错误：URL 必须以 / 开头"
@@ -670,7 +670,7 @@ msgid "Import 404 Redirected Data"
 msgstr "导入 404 重定向数据"
 
 msgid "Import a CSV file with the redirects and captured 404s."
-msgstr "导入包含重定向和已捕获的 404 的 CSV 文件。"
+msgstr "导入包含重定向和已记录的 404 的 CSV 文件。"
 
 msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
 msgstr "包括通过创建错误的重定向、输入错误的正则表达式、删除现有重定向以及授予其他用户对插件的管理员访问权限来破坏站点。"
@@ -709,10 +709,10 @@ msgid "Log files are checked daily when maintenance is run."
 msgstr "运行维护时，每天检查日志文件。"
 
 msgid "Log raw IPs"
-msgstr "记录原始 IP"
+msgstr "记录真实 IP"
 
 msgid "Logging raw IP addresses may not meet the EU General Data Protection Regulation (GDPR) guidelines."
-msgstr "记录原始 IP 地址可能不符合欧盟通用数据保护条例 (GDPR) 的准则。"
+msgstr "记录真实 IP 地址可能不符合欧盟 GDPR 隐私保护规范。"
 
 msgid "Logs"
 msgstr "日志"
@@ -742,7 +742,7 @@ msgid "Manual Redirects"
 msgstr "手动重定向"
 
 msgid "Delete manual redirects after"
-msgstr "删除手动重定向的期限"
+msgstr "自动删除手动重定向的时间"
 
 msgid "Manually created"
 msgstr "手动创建"
@@ -775,7 +775,7 @@ msgid "New major version => wait this many days. New minor version => automatica
 msgstr "新主要版本 => 等待这么多天。新次要版本 => 发布日期后约 3 天自动更新。"
 
 msgid "No Captured 404 Records To Display"
-msgstr "没有可显示的已捕获 404 记录"
+msgstr "没有可显示的已记录 404 记录"
 
 msgid "No Redirect Records To Display"
 msgstr "没有可显示的重定向记录"
@@ -811,7 +811,7 @@ msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
 msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
 
 msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
-msgstr "每天将发送一封电子邮件（运行维护时），直到已捕获的 404 数量低于警报设置中指定的数量。"
+msgstr "每天将发送一封电子邮件（运行维护时），直到已记录的 404 数量低于警报设置中指定的数量。"
 
 msgid "Only create an automatic redirect if the suggested page has a score above the specified number (default 90)"
 msgstr "仅当推荐页面的分数高于指定数字时才创建自动重定向（默认 90）"
@@ -850,7 +850,7 @@ msgid "Plugin version"
 msgstr "插件版本"
 
 msgid "Purge Entries!"
-msgstr "清除条目！"
+msgstr "清除记录"
 
 msgid "Purge Options"
 msgstr "清除选项"
@@ -895,7 +895,7 @@ msgid "Redirect all unhandled 404s to"
 msgstr "将所有未处理的 404 重定向到"
 
 msgid "Redirect moved to trash successfully!"
-msgstr "重定向已成功移至回收站！"
+msgstr "已移至回收站"
 
 msgid "Redirect restored from trash successfully!"
 msgstr "重定向已成功从回收站恢复！"
@@ -913,7 +913,7 @@ msgid "Referrer"
 msgstr "引荐来源"
 
 msgid "RegEx"
-msgstr "正则表达式"
+msgstr "正则"
 
 msgid "Regular Expression (Manually Created)"
 msgstr "正则表达式（手动创建）"
@@ -937,7 +937,7 @@ msgid "Required"
 msgstr "必填"
 
 msgid "Restore"
-msgstr "恢复"
+msgstr "还原"
 
 msgid "Rows per page:"
 msgstr "每页行数："
@@ -1078,7 +1078,7 @@ msgid "The plugin will redirect to normal taxonomies (categories and tags) and t
 msgstr "插件将重定向到常规分类法（分类和标签）以及此处列出的分类法。"
 
 msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "推荐页面必须至少 \"得分\" 这么多才能显示为建议（最小：10，最大：90，默认：25）"
+msgstr "匹配度必须达到此分数才能显示为建议（最小：10，最大：90，默认：25）"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
 msgstr "未找到用户指定的 404 页面。请在选项页面上更新用户指定的 404 页面。"
@@ -1167,13 +1167,13 @@ msgid "URL(s) deleted"
 msgstr "URL 已删除"
 
 msgid "URL(s) marked as Captured."
-msgstr "URL 已标记为已捕获。"
+msgstr "URL 已标记为捕获状态。"
 
 msgid "URL(s) marked as Ignored."
-msgstr "URL 已标记为已忽略。"
+msgstr "URL 已标记为忽略状态。"
 
 msgid "URL(s) marked as Later."
-msgstr "URL 已标记为稍后。"
+msgstr "URL 已标记为稍后状态。"
 
 msgid "URL(s) moved to trash"
 msgstr "URL 已移至回收站"
@@ -1248,7 +1248,7 @@ msgid "When selected, ALL REQUESTS (even for pages that exist, even for non-404s
 msgstr "选中后，所有请求（即使是存在的页面，即使不是 404）都将被视为 404。"
 
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here."
-msgstr "当已捕获的 404 数量会导致管理员通知时，将向此处指定的地址发送电子邮件。"
+msgstr "当已记录的 404 数量会导致管理员通知时，将向此处指定的地址发送电子邮件。"
 
 msgid "You can see which are recognized by looking at the default 404 destination option."
 msgstr "您可以通过查看默认 404 目标选项来了解哪些已被识别。"
@@ -1422,7 +1422,7 @@ msgstr "将匹配以此开头的任何 URL"
 #: includes/View.php
 msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
 msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
-msgstr[0] "有 <a>%s 个已捕获的 404 URL</a> 需要处理。"
+msgstr[0] "有 <a>%s 个已记录的 404 URL</a> 需要处理。"
 
 #. Plural form with %s
 #: includes/DataAccess.php
@@ -1498,7 +1498,7 @@ msgstr "分享您停用的原因。您的反馈帮助我们改进。"
 
 
 msgid "Email Feedback & Deactivate"
-msgstr "发送反馈并停用"
+msgstr "提交反馈并停用"
 
 msgid "Send feedback to help improve the plugin"
 msgstr "发送反馈以帮助改进插件"
@@ -1596,7 +1596,7 @@ msgstr "使用短代码 [abj404_solution_page_suggestions] 显示最匹配的页
 
 #: includes/html/viewSuggestions.html
 msgid "This shortcode can be used on the 404 page and will display a list of suggested pages. This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
-msgstr "此短代码可在404页面上使用，并将显示建议页面的列表。这是为了当用户请求不存在的页面且未自动重定向到匹配页面时使用。"
+msgstr "此短代码可在 404 页面上使用，并将显示建议页面的列表。这是为了当用户请求不存在的页面且未自动重定向到匹配页面时使用。"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
 msgid "This is best for search engine bots that do need to be redirected when the slug structure changes. Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
@@ -1616,7 +1616,7 @@ msgstr "插件将只重定向此处指定的文章类型。默认的WordPress文
 
 #: includes/html/adminOptionsGeneral.html
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
-msgstr "当捕获的404数量会导致管理员通知时，将向此处指定的地址发送电子邮件。多个电子邮件地址可以用逗号（,）分隔。\\\"发件人\\\"电子邮件地址始终是默认的WordPress管理员电子邮件："
+msgstr "当已记录的 404 数量会导致管理员通知时，将向此处指定的地址发送电子邮件。多个电子邮件地址可以用逗号（,）分隔。\\\"发件人\\\"电子邮件地址始终是默认的WordPress管理员电子邮件："
 
 #: includes/DatabaseUpgradesEtc.php:125
 msgid "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."

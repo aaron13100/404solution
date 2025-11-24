@@ -87,7 +87,7 @@ msgid "(No matching results found.)"
 msgstr "(Geen overeenkomende resultaten gevonden.)"
 
 msgid "(Please choose from the dropdown list instead of typing your own URL.)"
-msgstr "(Kies alstublieft uit de keuzelijst in plaats van uw eigen URL in te typen.)"
+msgstr "(Kies graag uit de keuzelijst in plaats van uw eigen URL in te typen.)"
 
 msgid "(Required)"
 msgstr "(Verplicht)"
@@ -192,7 +192,7 @@ msgid "<a>View</a> the debug file."
 msgstr "<a>Bekijk</a> het debug-bestand."
 
 msgid "Action Taken"
-msgstr "Ondernomen actie"
+msgstr "Actie"
 
 msgid "Add Redirect"
 msgstr "Omleiding toevoegen"
@@ -204,10 +204,10 @@ msgid "Add a Redirect"
 msgstr "Een omleiding toevoegen"
 
 msgid "Admin notification email(s)"
-msgstr "Beheerdersmelding e-mail(s)"
+msgstr "E-mail(s) voor beheerdermeldingen"
 
 msgid "Admin notification level"
-msgstr "Beheerdersmeldingsniveau"
+msgstr "Meldingsniveau voor beheerders"
 
 msgid "Admin theme"
 msgstr "Beheerdersthema"
@@ -217,10 +217,10 @@ msgstr "Geavanceerd"
 
 
 msgid "Advanced Settings (Etc)"
-msgstr "Advanced Settings (Etc)"
+msgstr "Geavanceerde Instellingen (etc.)"
 
 msgid "Content & URL Filtering"
-msgstr "Inhoud & URL Filtering"
+msgstr "Inhoud- en URL-filtering"
 
 msgid "Logging & Privacy"
 msgstr "Loggen & Privacy"
@@ -262,10 +262,10 @@ msgid "Apply"
 msgstr "Toepassen"
 
 msgid "At the same level as the Settings and Tools menu"
-msgstr "Op hetzelfde niveau als het menu Instellingen en Hulpmiddelen"
+msgstr "Op hetzelfde niveau als het menu Instellingen en Extra"
 
 msgid "Auto"
-msgstr "Automatisch"
+msgstr "Auto"
 
 msgid "Delete automatic redirects after"
 msgstr "Automatische omleidingen verwijderen na"
@@ -287,7 +287,7 @@ msgid "Automatically created"
 msgstr "Automatisch aangemaakt"
 
 msgid "Automatically creates redirects based on best possible suggested page."
-msgstr "Maakt automatisch omleidingen aan op basis van de best mogelijke voorgestelde pagina."
+msgstr "Maakt automatisch omleidingen aan op basis van de best passende voorgestelde pagina."
 
 msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
 msgstr "Verwijdert vastgelegde 404-URL's als ze gedurende de opgegeven tijd niet zijn gebruikt."
@@ -338,7 +338,7 @@ msgid "Click to view debug data for all suggestions"
 msgstr "Klik om debug-gegevens voor alle suggesties te bekijken"
 
 msgid "Collect incoming 404 URLs"
-msgstr "Binnenkomende 404-URL's vastleggen"
+msgstr "Inkomende 404-URL's vastleggen"
 
 msgid "Delete captured 404 URLs after"
 msgstr "Vastgelegde 404-URL's verwijderen na"
@@ -431,7 +431,7 @@ msgid "Display if no suggestion results"
 msgstr "Weergave als er geen suggestieresultaten zijn"
 
 msgid "Display the closest matching pages by using the shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
-msgstr "Toon de best overeenkomende pagina's met behulp van de shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
+msgstr "Toon de best passende pagina's met behulp van de shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
 
 msgid "Displayed 404 Page"
 msgstr "Weergegeven 404-pagina"
@@ -449,7 +449,7 @@ msgid "Empty Trash"
 msgstr "Prullenbak legen"
 
 msgid "Error: An invalid purge type was selected. Exiting."
-msgstr "Fout: Er is een ongeldig opschoningstype geselecteerd. Afsluiten."
+msgstr "Fout: Er is een ongeldig opschoningstype geselecteerd."
 
 msgid "Error: Auto match score value must be a number between 0 and 99"
 msgstr "Fout: Automatische match-scorewaarde moet een getal tussen 0 en 99 zijn"
@@ -500,7 +500,7 @@ msgid "Error: No redirect types were selected. No purges will be done."
 msgstr "Fout: Geen omleidingstypen geselecteerd. Er worden geen opschoningen uitgevoerd."
 
 msgid "Error: No valid redirect types were selected. Exiting."
-msgstr "Fout: Geen geldige omleidingstypen geselecteerd. Afsluiten."
+msgstr "Fout: Geen geldige omleidingstypen geselecteerd."
 
 msgid "Error: Suggestion minimum score value must be a number between 1 and 99"
 msgstr "Fout: Minimale suggestiescorewaarde moet een getal tussen 1 en 99 zijn"
@@ -542,13 +542,13 @@ msgid "Error: You selected external URL but did not enter a URL."
 msgstr "Fout: U heeft externe URL geselecteerd maar geen URL ingevoerd."
 
 msgid "Error: unable to add new redirect."
-msgstr "Fout: kan nieuwe omleiding niet toevoegen."
+msgstr "Fout: Kan nieuwe omleiding niet toevoegen."
 
 msgid "Error: unable to mark URL as %s"
-msgstr "Fout: kan URL niet markeren als %s"
+msgstr "Fout: Kan URL niet markeren als %s"
 
 msgid "Error: unable to remove URL from %s list"
-msgstr "Fout: kan URL niet verwijderen uit %s-lijst"
+msgstr "Fout: Kan URL niet verwijderen uit %s-lijst"
 
 msgid "Etcetera"
 msgstr "Etcetera"
@@ -632,7 +632,7 @@ msgid "Home Page:"
 msgstr "Startpagina:"
 
 msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
-msgstr "Ik begrijp bovenstaande verklaring, ik weet wat ik doe... bla bla bla. Verwijder de records gewoon!"
+msgstr "Ik begrijp bovenstaande verklaring, ik weet wat ik doe... enzovoort. Verwijder de records gewoon!"
 
 msgid "I understand the above statement."
 msgstr "Ik begrijp bovenstaande verklaring."
@@ -725,7 +725,7 @@ msgid "Major version auto update delay"
 msgstr "Vertraging auto-update hoofdversie"
 
 msgid "Man"
-msgstr "Hand"
+msgstr "Man"
 
 msgid "Manual 301 Redirects"
 msgstr "Handmatige 301-omleidingen"
@@ -845,7 +845,7 @@ msgid "Plugin version"
 msgstr "Plugin-versie"
 
 msgid "Purge Entries!"
-msgstr "Items opschonen!"
+msgstr "Gegevens opschonen"
 
 msgid "Purge Options"
 msgstr "Opschoningsopties"
@@ -890,10 +890,10 @@ msgid "Redirect all unhandled 404s to"
 msgstr "Alle onafgehandelde 404's omleiden naar"
 
 msgid "Redirect moved to trash successfully!"
-msgstr "Omleiding succesvol naar prullenbak verplaatst!"
+msgstr "Omleiding is naar de prullenbak verplaatst."
 
 msgid "Redirect restored from trash successfully!"
-msgstr "Omleiding succesvol hersteld uit prullenbak!"
+msgstr "Omleiding is hersteld uit de prullenbak."
 
 msgid "Redirect to"
 msgstr "Omleiden naar"
@@ -920,7 +920,7 @@ msgid "Remove Later Status"
 msgstr "Later-status verwijderen"
 
 msgid "Remove redirect upon matching permalink"
-msgstr "Omleiding verwijderen bij overeenkomende permalink"
+msgstr "Omleiding verwijderen wanneer permalink overeenkomt"
 
 msgid "Removed 404 URL from %s list successfully!"
 msgstr "404-URL succesvol verwijderd uit %s-lijst!"
@@ -996,7 +996,7 @@ msgid "Since a capture group is used, you can use a $1 replacement in the destin
 msgstr "Omdat er een capture-groep wordt gebruikt, kunt u een $1-vervanging gebruiken in de bestemmingsstring van een externe URL."
 
 msgid "So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
-msgstr "Wees dus voorzichtig en test ze elders voordat u ze hier probeert. Als u niet weet wat u doet, gebruik deze optie dan alstublieft niet (omdat het niet nodig is voor de werking van de plugin)."
+msgstr "Wees dus voorzichtig en test ze elders voordat u ze hier probeert. Als u niet weet wat u doet, gebruik deze optie dan graag niet (omdat het niet nodig is voor de werking van de plugin)."
 
 msgid "Some options were not saved successfully."
 msgstr "Sommige opties zijn niet succesvol opgeslagen."
@@ -1072,7 +1072,7 @@ msgid "The plugin will redirect to normal taxonomies (categories and tags) and t
 msgstr "De plugin leidt om naar normale taxonomieën (categorieën en tags) en de hier vermelde."
 
 msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "De voorgestelde pagina moet minstens deze score \"halen\" om als suggestie te worden getoond (min: 10, max: 90, standaard: 25)"
+msgstr "De voorgestelde pagina moet minimaal deze score halen om als suggestie te worden getoond (min: 10, max: 90, standaard: 25)"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
 msgstr "De door de gebruiker opgegeven 404-pagina is niet gevonden. Werk de door de gebruiker opgegeven 404-pagina bij op de pagina Opties."
@@ -1123,7 +1123,7 @@ msgid "This will not change the URL if the destination 404 page is set to (Defau
 msgstr "Dit zal de URL niet wijzigen als de bestemmings-404-pagina is ingesteld op (Standaard 404-pagina) of Startpagina."
 
 msgid "Tools"
-msgstr "Hulpmiddelen"
+msgstr "Extra"
 
 msgid "Total Redirects"
 msgstr "Totaal omleidingen"
@@ -1225,7 +1225,7 @@ msgid "Visit"
 msgstr "Bezoeken"
 
 msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "WAARSCHUWING: Bij onjuist gebruik zal dit uw website breken. Gebruik op eigen risico. Alstublieft, voor de lieve vrede, laat dit leeg als u niet weet wat u doet."
+msgstr "WAARSCHUWING: Bij onjuist gebruik zal dit uw website breken. Gebruik op eigen risico. Laat dit veld leeg als u niet weet wat u doet."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
 msgstr "Wanneer de plugin een fout detecteert, e-mail het volledige logbestand naar de ontwikkelaar."
@@ -1504,7 +1504,7 @@ msgid "Additional details:"
 msgstr "Aanvullende details:"
 
 msgid "Please share any additional feedback..."
-msgstr "Deel alstublieft eventuele aanvullende feedback..."
+msgstr "Deel graag eventuele aanvullende feedback..."
 
 msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
 msgstr "Uw feedback helpt ons verbeteren. We respecteren uw privacy en zullen uw informatie niet delen."

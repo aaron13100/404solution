@@ -27,8 +27,6 @@ When a visitor hits a broken link like `/prodcut/awesome-item` (typo), most plug
 
 **WooCommerce Optimized** – Specifically designed to work with products, categories, variations, and custom post types.
 
-**5-Star Rated** – Trusted by 10,000+ WordPress sites with a high rating.
-
 = Core Features =
 
 * **Automatic intelligent redirects** based on the best possible match for the URL

@@ -28,7 +28,7 @@ msgid "Cancel"
 msgstr "Annuler"
 
 msgid "Deactivate Plugin"
-msgstr "Désactiver le plugin"
+msgstr "Désactiver l'extension"
 
 msgid "Deactivating"
 msgstr "Désactivation"
@@ -60,7 +60,7 @@ msgid "(An external URL will be used.)"
 msgstr "(Une URL externe sera utilisée.)"
 
 msgid "(Begin typing a URL)"
-msgstr "(Commencez à taper une URL)"
+msgstr "(Saisir une URL)"
 
 msgid "(Data truncated. Too many results for \"%s!\".)"
 msgstr "(Données tronquées. Trop de résultats pour \"%s!\".)"
@@ -105,10 +105,10 @@ msgid "(The specified page doesn't exist. Please update this setting.)"
 msgstr "(La page spécifiée n'existe pas. Veuillez mettre à jour ce paramètre.)"
 
 msgid "(Type a page name or an external URL)"
-msgstr "(Tapez un nom de page ou une URL externe)"
+msgstr "(Saisir un nom de page ou une URL externe)"
 
 msgid "(Type a page name)"
-msgstr "(Tapez un nom de page)"
+msgstr "(Saisir un nom de page)"
 
 msgid "(Type to filter)"
 msgstr "(Taper pour filtrer)"
@@ -177,10 +177,10 @@ msgid "* Strings are case sensitive."
 msgstr "* Les chaînes sont sensibles à la casse."
 
 msgid "* These patterns match the path of a URL, not a title.\""
-msgstr "* Ces motifs correspondent au chemin d'une URL, pas à un titre.\""
+msgstr "* Ces motifs correspondent au chemin d'une URL, pas à un titre."
 
 msgid "* Use an asterisk (*) to match \"any pattern.\""
-msgstr "* Utilisez un astérisque (*) pour correspondre à \"n'importe quel motif.\""
+msgstr "* Utilisez un astérisque (*) pour correspondre à « n'importe quel motif »."
 
 msgid "404 Page Suggestions"
 msgstr "Suggestions de page 404"
@@ -207,7 +207,7 @@ msgid "Admin notification email(s)"
 msgstr "E-mail(s) de notification administrateur"
 
 msgid "Admin notification level"
-msgstr "Niveau de notification admin"
+msgstr "Niveau de notification administrateur"
 
 msgid "Admin theme"
 msgstr "Thème d'administration"
@@ -216,16 +216,16 @@ msgid "Advanced"
 msgstr "Avancé"
 
 msgid "Advanced Settings (Etc)"
-msgstr "Advanced Settings (Etc)"
+msgstr "Paramètres avancés (etc.)"
 
 msgid "Content & URL Filtering"
-msgstr "Filtrage de Contenu et URL"
+msgstr "Filtrage de contenu et URL"
 
 msgid "Logging & Privacy"
-msgstr "Journalisation et Confidentialité"
+msgstr "Journalisation et confidentialité"
 
 msgid "Advanced Configuration"
-msgstr "Configuration Avancée"
+msgstr "Configuration avancée"
 
 msgid "Expand All"
 msgstr "Tout développer"
@@ -234,10 +234,10 @@ msgid "Collapse All"
 msgstr "Tout réduire"
 
 msgid "Feedback sent successfully."
-msgstr "Commentaires envoyés avec succès."
+msgstr "Retour envoyé avec succès."
 
 msgid "Note: Feedback email could not be sent."
-msgstr "Note : L'e-mail de commentaire n'a pas pu être envoyé."
+msgstr "Note : L'e-mail de retour n'a pas pu être envoyé."
 
 msgid "All"
 msgstr "Tous"
@@ -285,7 +285,7 @@ msgid "Automatically created"
 msgstr "Créé automatiquement"
 
 msgid "Automatically creates redirects based on best possible suggested page."
-msgstr "Crée automatiquement des redirections basées sur la meilleure page suggérée possible."
+msgstr "Crée automatiquement des redirections vers la page la mieux adaptée."
 
 msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
 msgstr "Supprime les URLs 404 capturées si elles n'ont pas été utilisées pendant la durée spécifiée."
@@ -303,7 +303,7 @@ msgid "Captured URLs"
 msgstr "URLs capturées"
 
 msgid "Captured URLs (0 Disables Notification)"
-msgstr "URLs capturées (0 désactive la notification)"
+msgstr "URLs capturées (0 pour désactiver la notification)"
 
 msgid "Categories"
 msgstr "Catégories"
@@ -324,10 +324,10 @@ msgid "Choose at least one URL"
 msgstr "Choisissez au moins une URL"
 
 msgid "Choose whether the 404 Settings link appears under the \"Settings\" menu or elsewhere."
-msgstr "Choisissez si le lien Paramètres 404 apparaît sous le menu \"Paramètres\" ou ailleurs."
+msgstr "Choisissez si le lien Paramètres 404 apparaît sous le menu « Paramètres » ou ailleurs."
 
 msgid "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
-msgstr "Choisissez le thème de couleur pour les pages d'administration. Le thème change immédiatement pour l'aperçu et sera enregistré lorsque vous cliquez sur \"Enregistrer les paramètres\"."
+msgstr "Choisissez le thème de couleur pour les pages d'administration. Le thème change immédiatement pour l'aperçu et sera enregistré lorsque vous cliquez sur « Enregistrer les paramètres »."
 
 msgid "Cleanup is done daily."
 msgstr "Le nettoyage est effectué quotidiennement."
@@ -402,10 +402,10 @@ msgid "Debug logging"
 msgstr "Journalisation de débogage"
 
 msgid "Default"
-msgstr "Default"
+msgstr "Par défaut"
 
 msgid "Default WordPress post types are \"post\" and \"page.\""
-msgstr "Les types de contenu WordPress par défaut sont \"post\" et \"page.\""
+msgstr "Les types de contenu WordPress par défaut sont « post » et « page »."
 
 msgid "Default redirect type"
 msgstr "Type de redirection par défaut"
@@ -423,7 +423,7 @@ msgid "Display Before/After page suggestions"
 msgstr "Afficher Avant/Après les suggestions de pages"
 
 msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
-msgstr "Afficher une notification WordPress admin lorsque le nombre d'URLs capturées dépasse ce nombre"
+msgstr "Afficher une notification administrateur WordPress lorsque le nombre d'URLs capturées dépasse ce nombre"
 
 msgid "Display if no suggestion results"
 msgstr "Afficher s'il n'y a aucun résultat de suggestion"
@@ -483,7 +483,7 @@ msgid "Error: Invalid value specified for default redirect type"
 msgstr "Erreur : Valeur invalide spécifiée pour le type de redirection par défaut"
 
 msgid "Error: Maximum number of suggest value must be a number greater than or equal to 1"
-msgstr "Erreur : Le nombre maximum de suggestions doit être ≥ 1"
+msgstr "Erreur : Le nombre maximum de suggestions doit être supérieur ou égal à 1"
 
 msgid "Error: No ID(s) found for edit request."
 msgstr "Erreur : Aucun ID trouvé pour la modification."
@@ -495,7 +495,7 @@ msgid "Error: No records were imported. SQL result: %s"
 msgstr "Erreur : Aucun enregistrement importé. Résultat SQL : %s"
 
 msgid "Error: No redirect types were selected. No purges will be done."
-msgstr "Erreur : Aucun type de redirection sélectionné. Aucune purge."
+msgstr "Erreur : Aucun type de redirection sélectionné. Aucune purge ne sera effectuée."
 
 msgid "Error: No valid redirect types were selected. Exiting."
 msgstr "Erreur : Aucun type de redirection valide sélectionné. Sortie."
@@ -531,10 +531,10 @@ msgid "Error: Unrecognized bulk action. (%s)"
 msgstr "Erreur : Action groupée non reconnue. (%s)"
 
 msgid "Error: You didn't check the I understand checkbox. No importing for you!"
-msgstr "Erreur : Vous n'avez pas coché Je comprends. Pas d'importation !"
+msgstr "Erreur : Vous n'avez pas coché Je comprends. Aucune importation ne sera effectuée."
 
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
-msgstr "Erreur : Vous n'avez pas coché Je comprends. Pas de purge !"
+msgstr "Erreur : Vous n'avez pas coché Je comprends. Aucune purge ne sera effectuée."
 
 msgid "Error: You selected external URL but did not enter a URL."
 msgstr "Erreur : Vous avez sélectionné URL externe mais n'avez pas saisi d'URL."
@@ -618,10 +618,10 @@ msgid "Hide %s"
 msgstr "Masquer %s"
 
 msgid "Hits"
-msgstr "Visites"
+msgstr "Consultations"
 
 msgid "Hits Redirected"
-msgstr "Visites redirigées"
+msgstr "Consultations redirigées"
 
 msgid "Home Page"
 msgstr "Page d'accueil"
@@ -630,7 +630,7 @@ msgid "Home Page:"
 msgstr "Page d'accueil :"
 
 msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
-msgstr "Je comprends la déclaration ci-dessus, je sais ce que je fais... bla bla bla. Supprimez simplement les enregistrements !"
+msgstr "Je comprends la déclaration ci-dessus, je sais ce que je fais... Supprimez simplement les enregistrements !"
 
 msgid "I understand the above statement."
 msgstr "Je comprends la déclaration ci-dessus."
@@ -666,7 +666,7 @@ msgid "Import a CSV file with the redirects and captured 404s."
 msgstr "Importer un fichier CSV avec les redirections et les 404 capturées."
 
 msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
-msgstr "Y compris casser le site en créant de mauvaises redirections, en saisissant une mauvaise expression régulière, en supprimant des redirections existantes et en donnant à d'autres utilisateurs un accès administrateur au plugin."
+msgstr "Y compris endommager le site en créant de mauvaises redirections, en saisissant une mauvaise expression régulière, en supprimant des redirections existantes et en donnant à d'autres utilisateurs un accès administrateur à l'extension."
 
 msgid "Internal Process User Agents - Do Not Log"
 msgstr "Agents utilisateurs de processus internes - Ne pas enregistrer"
@@ -723,7 +723,7 @@ msgid "Major version auto update delay"
 msgstr "Délai de mise à jour automatique de version majeure"
 
 msgid "Man"
-msgstr "Manuel"
+msgstr "Man"
 
 msgid "Manual 301 Redirects"
 msgstr "Redirections 301 manuelles"
@@ -783,7 +783,7 @@ msgid "No suggestions. :/ "
 msgstr "Aucune suggestion. :/ "
 
 msgid "Note that including a bad regular expression or one that takes too long will break your website."
-msgstr "Notez qu'inclure une mauvaise expression régulière ou une qui prend trop de temps cassera votre site web."
+msgstr "Attention : une expression régulière incorrecte ou trop lente endommagera votre site web."
 
 msgid "Note: Do not include the parenthesis or explanations shown in the examples above."
 msgstr "Note : N'incluez pas les parenthèses ou les explications montrées dans les exemples ci-dessus."
@@ -792,7 +792,7 @@ msgid "Note: Here is a list of all post types in the database:"
 msgstr "Note : Voici une liste de tous les types de contenu dans la base de données :"
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
-msgstr "Note : Les \"scores\" qui apparaissent au format \"(75.7576)\" après les liens de page ne sont affichés que pour les utilisateurs administrateurs."
+msgstr "Note : Les « scores » qui apparaissent au format « (75.7576) » après les liens de page ne sont affichés que pour les utilisateurs administrateurs."
 
 msgid "Obsidian Blue (Dark)"
 msgstr "Obsidian Blue (Sombre)"
@@ -837,10 +837,10 @@ msgid "Permanent 301"
 msgstr "Permanent 301"
 
 msgid "Plugin Admin Users"
-msgstr "Utilisateurs administrateurs du plugin"
+msgstr "Utilisateurs administrateurs de l'extension"
 
 msgid "Plugin version"
-msgstr "Version du plugin"
+msgstr "Version de l'extension"
 
 msgid "Purge Entries!"
 msgstr "Purger les entrées !"
@@ -993,7 +993,7 @@ msgid "Since a capture group is used, you can use a $1 replacement in the destin
 msgstr "Puisqu'un groupe de capture est utilisé, vous pouvez utiliser un remplacement $1 dans la chaîne de destination d'une URL externe."
 
 msgid "So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
-msgstr "Veuillez donc faire preuve de prudence et les tester ailleurs avant de les essayer ici. Si vous ne savez pas ce que vous faites, n'utilisez pas cette option (car elle n'est pas nécessaire au fonctionnement du plugin)."
+msgstr "Veuillez donc faire preuve de prudence et les tester ailleurs avant de les essayer ici. Si vous ne savez pas ce que vous faites, n'utilisez pas cette option (car elle n'est pas nécessaire au fonctionnement de l'extension)."
 
 msgid "Some options were not saved successfully."
 msgstr "Certaines options n'ont pas été enregistrées avec succès."
@@ -1053,7 +1053,7 @@ msgid "Temporary 302"
 msgstr "Temporaire 302"
 
 msgid "The \"product\" type is for WooCommerce users."
-msgstr "Le type \"product\" est pour les utilisateurs WooCommerce."
+msgstr "Le type « product » est pour les utilisateurs WooCommerce."
 
 msgid "The 404 Solution menu should appear"
 msgstr "Le menu Solution 404 devrait apparaître"
@@ -1062,10 +1062,10 @@ msgid "The file seems to have loaded okay. Please check the redirects page."
 msgstr "Le fichier semble avoir été chargé correctement. Veuillez vérifier la page des redirections."
 
 msgid "The plugin will only redirect the post types specified here."
-msgstr "Le plugin ne redirigera que les types de contenu spécifiés ici."
+msgstr "L'extension ne redirigera que les types de contenu spécifiés ici."
 
 msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
-msgstr "Le plugin redirigera vers les taxonomies normales (catégories et étiquettes) et celles listées ici."
+msgstr "L'extension redirigera vers les taxonomies normales (catégories et étiquettes) et celles listées ici."
 
 msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
 msgstr "La page suggérée doit \"scorer\" au moins ce montant pour être affichée comme suggestion (min : 10, max : 90, défaut : 25)"
@@ -1092,16 +1092,16 @@ msgid "This is for when a user requests a page that doesn't exist and they are n
 msgstr "Ceci est pour quand un utilisateur demande une page qui n'existe pas et qu'il n'est pas automatiquement redirigé vers une page correspondante."
 
 msgid "This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin."
-msgstr "Ce n'est pas requis pour que le plugin fonctionne, mais c'est utile pour le développeur et pour les futures versions du plugin."
+msgstr "Ce n'est pas requis pour que l'extension fonctionne, mais c'est utile pour le développeur et pour les futures versions de l'extension."
 
 msgid "This only affects the list of potential matches shown to the user on a custom 404 page."
 msgstr "Ceci n'affecte que la liste des correspondances potentielles affichées à l'utilisateur sur une page 404 personnalisée."
 
 msgid "This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported)."
-msgstr "Ceci révèle : tout dans le journal de débogage, l'adresse e-mail admin, les extensions PHP installées, les plugins actifs, la version PHP, la version WordPress, la version MySQL, le total des pages et articles publiés, etc. (tout ce qui est demandé lorsqu'un problème est signalé)."
+msgstr "Ceci révèle : tout dans le journal de débogage, l'adresse e-mail administrateur, les extensions PHP installées, les extensions actives, la version PHP, la version WordPress, la version MySQL, le total des pages et articles publiés, etc. (tout ce qui est demandé lorsqu'un problème est signalé)."
 
 msgid "This sets how early in the process a 404 is handled by this plugin. If there are multiple plugins that should handle a 404, then set this higher (999) so that this plugin gets the 404 last. (default 9)"
-msgstr "Ceci définit à quel moment du processus une 404 est gérée par ce plugin. S'il y a plusieurs plugins qui devraient gérer une 404, alors augmentez ce nombre (999) pour que ce plugin reçoive la 404 en dernier. (défaut 9)"
+msgstr "Ceci définit à quel moment du processus une 404 est gérée par cette extension. S'il y a plusieurs extensions qui devraient gérer une 404, alors augmentez ce nombre (999) pour que cette extension reçoive la 404 en dernier. (défaut 9)"
 
 msgid "This shortcode can be used on the 404 page and will display a list of suggested pages."
 msgstr "Ce shortcode peut être utilisé sur la page 404 et affichera une liste de pages suggérées."
@@ -1113,7 +1113,7 @@ msgid "This text will appear before the list of suggestions (default: &lt;h3&gt;
 msgstr "Ce texte apparaîtra avant la liste des suggestions (défaut : &lt;h3&gt;Voici d'autres pages intéressantes&lt;/h3&gt;)"
 
 msgid "This will break your website."
-msgstr "Ceci cassera votre site web."
+msgstr "Ceci endommagera votre site web."
 
 msgid "This will not change the URL if the destination 404 page is set to (Default 404 Page) or Home Page."
 msgstr "Ceci ne changera pas l'URL si la page de destination 404 est définie sur (Page 404 par défaut) ou Page d'accueil."
@@ -1146,7 +1146,7 @@ msgid "Type"
 msgstr "Type"
 
 msgid "Type a page name here and select it to add it to the exlusion list"
-msgstr "Tapez un nom de page ici et sélectionnez-la pour l'ajouter à la liste d'exclusion"
+msgstr "Saisir un nom de page ici et sélectionnez-le pour l'ajouter à la liste d'exclusion"
 
 msgid "URL"
 msgstr "URL"
@@ -1209,7 +1209,7 @@ msgid "User"
 msgstr "Utilisateur"
 
 msgid "User names listed here will be able to do everything an admin can do with the plugin."
-msgstr "Les noms d'utilisateur listés ici pourront faire tout ce qu'un administrateur peut faire avec le plugin."
+msgstr "Les noms d'utilisateur listés ici pourront faire tout ce qu'un administrateur peut faire avec l'extension."
 
 msgid "Using the purge options will move all selected redirects to the trash. You must then empty the trash to delete them."
 msgstr "L'utilisation des options de purge déplacera toutes les redirections sélectionnées dans la corbeille. Vous devrez ensuite vider la corbeille pour les supprimer."
@@ -1221,10 +1221,10 @@ msgid "Visit"
 msgstr "Visiter"
 
 msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "ATTENTION : Lorsque mal utilisé, ceci CASSERA votre site web. Utilisez à vos propres risques. S'il vous plaît, pour l'amour de tout ce qui est sacré, laissez ceci vide si vous ne savez pas ce que vous faites."
+msgstr "ATTENTION : Une mauvaise utilisation ENDOMMAGERA votre site web. Utilisez à vos propres risques. S'il vous plaît, pour l'amour de tout ce qui est sacré, laissez ceci vide si vous ne savez pas ce que vous faites."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
-msgstr "Lorsqu'une erreur est détectée par le plugin, envoyer le fichier journal complet au développeur."
+msgstr "Lorsqu'une erreur est détectée par l'extension, envoyer le fichier journal complet au développeur."
 
 msgid "When checked the URL will be changed from the custom 404 page URL to the URL originally requested (after the page headers load)."
 msgstr "Lorsque coché, l'URL sera changée de l'URL de page 404 personnalisée vers l'URL originalement demandée (après le chargement des en-têtes de page)."
@@ -1236,7 +1236,7 @@ msgid "When selected, ALL REQUESTS (even for pages that exist, even for non-404s
 msgstr "Lorsque sélectionné, TOUTES LES REQUÊTES (même pour les pages qui existent, même pour les non-404) seront traitées comme une 404."
 
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here."
-msgstr "Lorsque le nombre de 404 capturées déclencherait une notification admin, un e-mail sera envoyé aux adresses spécifiées ici."
+msgstr "Lorsque le nombre de 404 capturées déclencherait une notification administrateur, un e-mail sera envoyé aux adresses spécifiées ici."
 
 msgid "You can see which are recognized by looking at the default 404 destination option."
 msgstr "Vous pouvez voir lesquelles sont reconnues en regardant l'option de destination 404 par défaut."
@@ -1434,7 +1434,7 @@ msgid "Before deactivating:"
 msgstr "Avant de désactiver :"
 
 msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
-msgstr "Choisissez ce qui doit arriver à vos données. Ces préférences seront enregistrées pour plus tard si vous décidez de supprimer le plugin."
+msgstr "Choisissez ce qui doit arriver à vos données. Ces préférences seront enregistrées pour plus tard si vous décidez de supprimer l'extension."
 
 msgid "What should happen to your data?"
 msgstr "Que doit-il advenir de vos données ?"
@@ -1443,7 +1443,7 @@ msgid "Keep my redirects (%d redirects)"
 msgstr "Conserver mes redirections (%d redirections)"
 
 msgid "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
-msgstr "Cochez cette option si vous prévoyez de réinstaller le plugin plus tard. Vos configurations de redirection seront préservées."
+msgstr "Cochez cette option si vous prévoyez de réinstaller l'extension plus tard. Vos configurations de redirection seront préservées."
 
 msgid "Keep 404 logs"
 msgstr "Conserver les journaux 404"
@@ -1452,19 +1452,19 @@ msgid "Historical 404 data and logs will be preserved if checked."
 msgstr "Les données et journaux 404 historiques seront préservés si cette option est cochée."
 
 msgid "Note: Cache tables will always be deleted as they can be rebuilt."
-msgstr "Remarque : Les tables de cache seront toujours supprimées car elles peuvent être reconstruites."
+msgstr "Note : Les tables de cache seront toujours supprimées car elles peuvent être reconstruites."
 
 msgid "Why are you deactivating? (Optional)"
-msgstr "Pourquoi désactivez-vous ce plugin ? (Optionnel)"
+msgstr "Pourquoi désactivez-vous cette extension ? (Facultatif)"
 
 msgid "Temporary deactivation for debugging"
 msgstr "Désactivation temporaire pour débogage"
 
 msgid "The plugin is not working as expected"
-msgstr "Le plugin ne fonctionne pas comme prévu"
+msgstr "L'extension ne fonctionne pas comme prévu"
 
 msgid "I found a better plugin"
-msgstr "J'ai trouvé un meilleur plugin"
+msgstr "J'ai trouvé une meilleure extension"
 
 msgid "I no longer need this functionality"
 msgstr "Je n'ai plus besoin de cette fonctionnalité"
@@ -1479,35 +1479,35 @@ msgid "Other reason"
 msgstr "Autre raison"
 
 msgid "Help us improve (Optional)"
-msgstr "Aidez-nous à nous améliorer (Optionnel)"
+msgstr "Aidez-nous à nous améliorer (Facultatif)"
 
 msgid "Help improve the plugin (Optional)"
-msgstr "Aider à améliorer le plugin (Optionnel)"
+msgstr "Aider à améliorer l'extension (Facultatif)"
 
 msgid "Share why you're deactivating. Your feedback helps us improve."
-msgstr "Partagez pourquoi vous désactivez. Vos commentaires nous aident à nous améliorer."
+msgstr "Partagez pourquoi vous désactivez. Votre retour nous aide à nous améliorer."
 
 
 msgid "Email Feedback & Deactivate"
-msgstr "Envoyer commentaires et désactiver"
+msgstr "Envoyer retour et désactiver"
 
 msgid "Send feedback to help improve the plugin"
-msgstr "Envoyez vos commentaires pour nous aider à améliorer le plugin"
+msgstr "Envoyer votre retour pour nous aider à améliorer l'extension"
 
 msgid "Your email (optional):"
-msgstr "Votre courriel (optionnel) :"
+msgstr "Votre e-mail (facultatif) :"
 
 msgid "your@email.com (optional)"
-msgstr "votre@courriel.com (optionnel)"
+msgstr "votre@e-mail.com (facultatif)"
 
 msgid "Additional details:"
 msgstr "Détails supplémentaires :"
 
 msgid "Please share any additional feedback..."
-msgstr "Veuillez partager tout commentaire supplémentaire..."
+msgstr "Veuillez partager tout retour supplémentaire..."
 
 msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
-msgstr "Vos commentaires nous aident à améliorer ce plugin. Nous respectons votre vie privée et ne partagerons pas vos informations."
+msgstr "Votre retour nous aide à améliorer cette extension. Nous respectons votre vie privée et ne partagerons pas vos informations."
 
 msgid "Insufficient permissions"
 msgstr "Permissions insuffisantes"
@@ -1522,7 +1522,7 @@ msgid "Failed to save preferences"
 msgstr "Échec de l'enregistrement des préférences"
 
 msgid "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
-msgstr "La reconstruction du cache N-gram a été planifiée et s'exécutera en arrière-plan. Cela peut prendre plusieurs minutes sur les sites volumineux. Vous pouvez continuer à utiliser le plugin normalement."
+msgstr "La reconstruction du cache N-gram a été planifiée et s'exécutera en arrière-plan. Cela peut prendre plusieurs minutes sur les sites volumineux. Vous pouvez continuer à utiliser l'extension normalement."
 
 msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
 msgstr "Échec de la planification de la reconstruction du cache N-gram. Veuillez réessayer ou vérifier votre configuration cron WordPress."
@@ -1567,19 +1567,19 @@ msgid "Disable automatic dark mode detection"
 msgstr "Désactiver la détection automatique du mode sombre"
 
 msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
-msgstr "Lorsque cette option est décochée et que le thème est réglé sur « Par défaut », le plugin basculera automatiquement vers un thème sombre si votre palette de couleurs d'administration WordPress est sombre (Midnight, Ectoplasm, Coffee), si vous avez un plugin de mode sombre activé, ou si votre navigateur/système d'exploitation préfère le mode sombre."
+msgstr "Lorsque cette option est décochée et que le thème est réglé sur « Par défaut », l'extension basculera automatiquement vers un thème sombre si votre palette de couleurs d'administration WordPress est sombre (Midnight, Ectoplasm, Coffee), si vous avez une extension de mode sombre activée, ou si votre navigateur/système d'exploitation préfère le mode sombre."
 
 msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
-msgstr "Vos commentaires nous aident à améliorer ce plugin. Les informations système (version WordPress, version PHP, plugins installés) seront incluses. Nous respectons votre vie privée et ne partagerons pas vos informations."
+msgstr "Votre retour nous aide à améliorer cette extension. Les informations système (version WordPress, version PHP, extensions installées) seront incluses. Nous respectons votre vie privée et ne partagerons pas vos informations."
 
 msgid "Plugin Language Override"
-msgstr "Remplacement de la langue du plugin"
+msgstr "Remplacement de la langue de l'extension"
 
 msgid "Use WordPress Default"
 msgstr "Utiliser le paramètre par défaut de WordPress"
 
 msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
-msgstr "Remplacez la langue utilisée pour l'interface d'administration de ce plugin. Laissez sur « Utiliser le paramètre par défaut de WordPress » pour respecter les paramètres de langue de WordPress et de l'utilisateur."
+msgstr "Remplacez la langue utilisée pour l'interface d'administration de cette extension. Laissez sur « Utiliser le paramètre par défaut de WordPress » pour respecter les paramètres de langue de WordPress et de l'utilisateur."
 
 #: includes/PluginLogic.php
 msgid "Error: Invalid language selected"
@@ -1587,7 +1587,7 @@ msgstr "Erreur : Langue invalide sélectionnée"
 
 #: includes/html/adminOptionsGeneral.html
 msgid "When an error is detected by the plugin, email the entire log file to the developer. This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). Log files are checked daily when maintenance is run."
-msgstr "Lorsqu'une erreur est détectée par le plugin, envoyez le fichier journal complet au développeur par e-mail. Cela n'est pas nécessaire pour que le plugin fonctionne, mais c'est utile pour le développeur et pour les futures versions du plugin. Cela révèle : tout dans le journal de débogage, l'adresse e-mail de l'administrateur, les extensions PHP installées, les plugins actifs, la version PHP, la version WordPress, la version MySQL, le total des pages et articles publiés, etc. (tout ce qui est demandé lors du signalement d'un problème). Les fichiers journaux sont vérifiés quotidiennement lors de la maintenance."
+msgstr "Lorsqu'une erreur est détectée par l'extension, envoyez le fichier journal complet au développeur par e-mail. Cela n'est pas nécessaire pour que l'extension fonctionne, mais c'est utile pour le développeur et pour les futures versions de l'extension. Cela révèle : tout dans le journal de débogage, l'adresse e-mail de l'administrateur, les extensions PHP installées, les extensions actives, la version PHP, la version WordPress, la version MySQL, le total des pages et articles publiés, etc. (tout ce qui est demandé lors du signalement d'un problème). Les fichiers journaux sont vérifiés quotidiennement lors de la maintenance."
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
@@ -1611,7 +1611,7 @@ msgstr "Les pages répertoriées ici ne seront pas redirigées vers (sauf si une
 
 #: includes/html/settingsAdvanced.html
 msgid "The plugin will only redirect the post types specified here. Default WordPress post types are \"post\" and \"page.\" The \"product\" type is for WooCommerce users."
-msgstr "Le plugin ne redirigera que les types de publication spécifiés ici. Les types de publication WordPress par défaut sont « post » et « page ». Le type « product » est destiné aux utilisateurs de WooCommerce."
+msgstr "L'extension ne redirigera que les types de publication spécifiés ici. Les types de publication WordPress par défaut sont « post » et « page ». Le type « product » est destiné aux utilisateurs de WooCommerce."
 
 #: includes/html/adminOptionsGeneral.html
 msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
@@ -1619,7 +1619,7 @@ msgstr "Lorsque le nombre de 404 capturés entraînerait une notification d'admi
 
 #: includes/UninstallModal.php
 msgid "Deactivate without feedback"
-msgstr "Désactiver sans commentaire"
+msgstr "Désactiver sans retour"
 
 #: includes/UninstallModal.php
 msgid "Processing..."
@@ -1667,7 +1667,7 @@ msgstr "Les suggestions n'apparaissent pas"
 
 #: includes/UninstallModal.php
 msgid "Conflicts with other plugins"
-msgstr "Conflits avec d'autres plugins"
+msgstr "Conflits avec d'autres extensions"
 
 #: includes/UninstallModal.php
 msgid "Other issue (please specify below)"
@@ -1715,15 +1715,15 @@ msgstr "Documentation peu claire"
 
 #: includes/UninstallModal.php
 msgid "Which plugin are you switching to?"
-msgstr "Vers quel plugin passez-vous ?"
+msgstr "Vers quelle extension passez-vous ?"
 
 #: includes/UninstallModal.php
 msgid "Plugin name (optional)"
-msgstr "Nom du plugin (optionnel)"
+msgstr "Nom de l'extension (facultatif)"
 
 #: includes/UninstallModal.php
 msgid "Please tell us more (optional):"
-msgstr "Veuillez nous en dire plus (optionnel) :"
+msgstr "Veuillez nous en dire plus (facultatif) :"
 
 #: includes/UninstallModal.php
 msgid "What's your reason for deactivating?"
@@ -1731,7 +1731,7 @@ msgstr "Quelle est votre raison de désactiver ?"
 
 #: includes/UninstallModal.php
 msgid "Additional details (optional):"
-msgstr "Détails supplémentaires (optionnel) :"
+msgstr "Détails supplémentaires (facultatif) :"
 
 #: includes/UninstallModal.php
 msgid "Any other information about the issue..."
@@ -1747,4 +1747,4 @@ msgstr "Inclure les détails techniques (informations système + extrait de jour
 
 #: includes/UninstallModal.php
 msgid "Feedback could not be sent."
-msgstr "Le commentaire n'a pas pu être envoyé."
+msgstr "Le retour n'a pas pu être envoyé."
