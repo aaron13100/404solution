@@ -228,7 +228,7 @@ class ABJ_404_Solution_DataAccess {
         }
         $replacements['{wp_users}'] = $wpdb->users;
         $replacements['{wp_prefix}'] = $wpdb->prefix;
-        $replacements['{wp_prefix_lower}'] = $this->f->strtolower($wpdb->prefix);
+        $replacements['{wp_prefix_lower}'] = $this->getLowercasePrefix();
         
         // wp database table replacements
         $query = $this->f->str_replace(array_keys($replacements), array_values($replacements), $query);
@@ -237,9 +237,31 @@ class ABJ_404_Solution_DataAccess {
         // for some strings (/404solution-site/%BA%D0%25/) the mb_ereg_replace doesn't work.
         $fpreg = ABJ_404_Solution_FunctionsPreg::getInstance();
         $query = $fpreg->regexReplace('[{]wp_abj404_(.*?)[}]', 
-            strtolower($wpdb->prefix) . "abj404_\\1", $query);
+            $this->getLowercasePrefix() . "abj404_\\1", $query);
         
         return $query;
+    }
+
+    /**
+     * Get the normalized (lowercase) prefix used for all plugin tables.
+     * This avoids case-sensitive MySQL filesystems from treating mixed-case
+     * prefixes as distinct tables.
+     *
+     * @return string
+     */
+    public function getLowercasePrefix() {
+        global $wpdb;
+        return $this->f->strtolower($wpdb->prefix);
+    }
+
+    /**
+     * Build a fully-qualified plugin table name using the normalized prefix.
+     *
+     * @param string $tableSuffix Table name without the WordPress prefix.
+     * @return string
+     */
+    public function getPrefixedTableName($tableSuffix) {
+        return $this->getLowercasePrefix() . ltrim($tableSuffix, '_');
     }
     
     /** Returns the create table statement.
@@ -1288,12 +1310,13 @@ class ABJ_404_Solution_DataAccess {
 
         // Fetch all logs data in a single batch query
         $placeholders = implode(',', array_fill(0, count($urls), '%s'));
+        $logsTable = $this->getPrefixedTableName('abj404_logsv2');
         $query = $wpdb->prepare(
             "SELECT requested_url,
                     MIN(id) AS logsid,
                     MAX(timestamp) AS last_used,
                     COUNT(requested_url) AS logshits
-             FROM {$wpdb->prefix}abj404_logsv2
+             FROM {$logsTable}
              WHERE requested_url IN ($placeholders)
              GROUP BY requested_url",
             $urls

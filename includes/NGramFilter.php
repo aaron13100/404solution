@@ -192,7 +192,7 @@ class ABJ_404_Solution_NGramFilter {
 
         $ngramCount = count($ngrams['bi']) + count($ngrams['tri']);
 
-        $table = $wpdb->prefix . 'abj404_ngram_cache';
+        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
         // Use REPLACE to handle updates (REPLACE = DELETE + INSERT)
         $result = $wpdb->replace(
@@ -216,7 +216,7 @@ class ABJ_404_Solution_NGramFilter {
                 $pageId,
                 $wpdb->last_error,
                 $table,
-                $wpdb->prefix,
+                $this->dao->getLowercasePrefix(),
                 $wpdb->dbname
             );
 
@@ -242,7 +242,7 @@ class ABJ_404_Solution_NGramFilter {
     public function getNGramsForPage($pageId, $type = 'post') {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'abj404_ngram_cache';
+        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
         $query = $wpdb->prepare(
             "SELECT ngrams FROM {$table} WHERE id = %d AND type = %s",
             $pageId,
@@ -270,7 +270,7 @@ class ABJ_404_Solution_NGramFilter {
     public function getAllCachedNGrams() {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'abj404_ngram_cache';
+        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
         // Check cache size first - abort if too large
         $count = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
@@ -317,7 +317,7 @@ class ABJ_404_Solution_NGramFilter {
     public function getCachedNGramsFiltered($minNgramCount, $maxNgramCount, $limit = 1000) {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'abj404_ngram_cache';
+        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
         // Database-side filtering by ngram_count range
         $query = $wpdb->prepare(
@@ -358,7 +358,7 @@ class ABJ_404_Solution_NGramFilter {
     public function invalidatePage($pageId, $type = 'post') {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'abj404_ngram_cache';
+        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
         $result = $wpdb->delete($table, ['id' => $pageId, 'type' => $type], ['%d', '%s']);
 
         return $result !== false;
@@ -379,7 +379,7 @@ class ABJ_404_Solution_NGramFilter {
         }
 
         global $wpdb;
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
 
         // Prepare IN clause for page IDs
         $placeholders = implode(',', array_fill(0, count($pageIds), '%d'));
@@ -444,7 +444,7 @@ class ABJ_404_Solution_NGramFilter {
     public function rebuildCache($batchSize = 100, $offset = 0) {
         global $wpdb;
 
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
 
         // Get a batch of pages from permalink cache
         $query = $wpdb->prepare(
@@ -541,7 +541,7 @@ class ABJ_404_Solution_NGramFilter {
         }
 
         // Check cache size to determine strategy
-        $table = $wpdb->prefix . 'abj404_ngram_cache';
+        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
         $totalCount = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
 
         if ($totalCount == 0) {
@@ -644,7 +644,7 @@ class ABJ_404_Solution_NGramFilter {
     public function isCachePopulated() {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'abj404_ngram_cache';
+        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
         $count = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
 
         return $count > 0;
@@ -658,7 +658,7 @@ class ABJ_404_Solution_NGramFilter {
     public function getCacheStats() {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'abj404_ngram_cache';
+        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
         $stats = [
             'total_entries' => $wpdb->get_var("SELECT COUNT(*) FROM {$table}"),

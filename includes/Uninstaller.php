@@ -72,7 +72,8 @@ class ABJ_404_Solution_Uninstaller {
      * @param array $preferences User preferences
      */
     private static function deleteTables($wpdb, $preferences) {
-        $prefix = $wpdb->prefix;
+        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $prefix = $dao->getLowercasePrefix();
 
         // Delete redirect table if user chose to
         if ($preferences['delete_redirects']) {

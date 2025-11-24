@@ -998,7 +998,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         }
 
         $startTime = microtime(true);
-        $redirectsTable = $wpdb->prefix . 'abj404_redirects';
+        $redirectsTable = $this->dao->getPrefixedTableName('abj404_redirects');
 
         $abj404logging->infoMessage("Migrating redirects table to relative paths...");
 
@@ -1357,7 +1357,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 switch_to_blog($currentSiteId);
 
                 // Count pages for THIS site only
-                $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+                $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
                 $sitePages = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
 
                 if ($sitePages == 0) {
@@ -1456,7 +1456,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             } else {
                 // SINGLE SITE: Use original simple logic
                 $offset = $this->getNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
-                $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+                $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
                 $totalPages = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
 
                 if ($totalPages == 0) {
@@ -1601,8 +1601,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         set_transient($lockKey, time(), 1800);
 
         try {
-            $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
-            $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+            $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+            $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
 
             // Check if cache is already populated (unless force rebuild)
             if (!$forceRebuild) {
@@ -1717,8 +1717,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         set_transient($lockKey, time(), 1800);
 
         try {
-            $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
-            $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+            $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+            $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
 
             $stats = ['posts_added' => 0, 'posts_failed' => 0, 'categories_added' => 0, 'categories_failed' => 0];
 
@@ -1837,8 +1837,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function cleanupOrphanedNGrams() {
         global $wpdb;
 
-        $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
-        $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+        $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+        $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
 
         $this->logger->debugMessage("Checking for orphaned ngram entries...");
 
@@ -1993,10 +1993,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         ];
 
         $missingTables = [];
+        $normalizedPrefix = $this->dao->getLowercasePrefix();
 
         // Check each required table
         foreach ($requiredTables as $tableName) {
-            $fullTableName = $wpdb->prefix . $tableName;
+            $fullTableName = $this->dao->getPrefixedTableName($tableName);
             $tableExists = $wpdb->get_var("SHOW TABLES LIKE '{$fullTableName}'");
 
             if (!$tableExists) {
@@ -2007,9 +2008,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         // If any tables are missing, run repair
         if (!empty($missingTables)) {
             $this->logger->infoMessage(sprintf(
-                "Site %d (prefix: %s) is missing %d table(s): %s. Running repair...",
+                "Site %d (prefix: %s, normalized: %s) is missing %d table(s): %s. Running repair...",
                 get_current_blog_id(),
                 $wpdb->prefix,
+                $normalizedPrefix,
                 count($missingTables),
                 implode(', ', $missingTables)
             ));
@@ -2333,7 +2335,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
         if (!$this->isNetworkActivated()) {
             // Single site: count only current site's pages
-            $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+            $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
             return (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
         }
 
@@ -2343,7 +2345,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
         foreach ($sites as $blog_id) {
             switch_to_blog($blog_id);
-            $permalinkCacheTable = $wpdb->prefix . 'abj404_permalink_cache';
+            $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
             $sitePages = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
             $totalPages += $sitePages;
             restore_current_blog();

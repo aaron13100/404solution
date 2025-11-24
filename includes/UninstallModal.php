@@ -476,10 +476,11 @@ class ABJ_404_Solution_UninstallModal {
      */
     private static function getRedirectCount() {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'abj404_redirects';
+        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $table_name = $dao->getPrefixedTableName('abj404_redirects');
 
         // Check if table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
 
         if (!$table_exists) {
             return 0;

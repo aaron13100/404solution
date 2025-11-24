@@ -679,7 +679,7 @@ class ABJ_404_Solution_PluginLogic {
                     $this->logger->infoMessage($result['rows_affected'] . 
                             ' log rows were migrated to the new table structre.');
                     // log the rows inserted/migrated.
-                    $wpdb->query('drop table ' . $this->f->strtolower($wpdb->prefix) . 'abj404_logs');
+                    $wpdb->query('drop table ' . $this->dao->getLowercasePrefix() . 'abj404_logs');
                 }
             }
         }
@@ -1003,20 +1003,22 @@ class ABJ_404_Solution_PluginLogic {
             switch_to_blog($blog_id);
 
             global $wpdb;
+            $dao = ABJ_404_Solution_DataAccess::getInstance();
+            $prefix = $dao->getLowercasePrefix();
 
             // Remove ALL custom database tables
             // Core tables
-            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_redirects");
-            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_logsv2");
-            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_lookup");
+            $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_redirects");
+            $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_logsv2");
+            $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_lookup");
 
             // Cache tables
-            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_permalink_cache");
-            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_ngram_cache");
-            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_spelling_cache");
+            $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_permalink_cache");
+            $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_ngram_cache");
+            $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_spelling_cache");
 
             // Temporary tables
-            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}abj404_logs_hits_temp");
+            $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_logs_hits_temp");
 
             // Remove ALL plugin options
             $plugin_options = array(
