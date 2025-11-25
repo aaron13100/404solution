@@ -215,6 +215,29 @@ msgstr "Admin theme"
 msgid "Advanced"
 msgstr "Advanced"
 
+#: includes/View.php - Inline mode toggle
+msgid "Simple"
+msgstr "Simple"
+
+#: includes/View.php - Quick links / Sticky save bar / Toast notification
+msgid "View Stats"
+msgstr "View Stats"
+
+msgid "Captured 404s"
+msgstr "Captured 404s"
+
+msgid "Documentation"
+msgstr "Documentation"
+
+msgid "Plugin v%s"
+msgstr "Plugin v%s"
+
+msgid "Settings saved successfully!"
+msgstr "Settings saved successfully!"
+
+msgid "Smart Matching"
+msgstr "Smart Matching"
+
 msgid "Advanced Settings (Etc)"
 msgstr "Advanced Configuration"
 
@@ -293,9 +316,6 @@ msgstr "Removes captured 404 URLs if they haven't been used for the specified am
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 
-msgid "Calm Ops (Light)"
-msgstr "Calm Ops (Light)"
-
 msgid "Captured 404 URLs"
 msgstr "Captured 404 URLs"
 
@@ -334,9 +354,6 @@ msgstr "Cleanup is done daily."
 
 msgid "Click to view debug data for all suggestions"
 msgstr "Click to view debug data for all suggestions"
-
-msgid "Collect incoming 404 URLs"
-msgstr "Collect incoming 404 URLs"
 
 msgid "Delete captured 404 URLs after"
 msgstr "Delete captured 404 URLs after"
@@ -719,9 +736,6 @@ msgstr "MB"
 msgid "Maintenance"
 msgstr "Maintenance"
 
-msgid "Monochrome Minimal (Light)"
-msgstr "Monochrome Minimal (Light)"
-
 msgid "Major version auto update delay"
 msgstr "Major version auto update delay"
 
@@ -758,9 +772,6 @@ msgstr "Minimum score of suggestions to display"
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 
-msgid "Neon Slate (Dark)"
-msgstr "Neon Slate (Dark)"
-
 msgid "Never Used"
 msgstr "Never Used"
 
@@ -796,9 +807,6 @@ msgstr "Note: Here is a list of all post types in the database:"
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
 msgstr "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
-
-msgid "Obsidian Blue (Dark)"
-msgstr "Obsidian Blue (Dark)"
 
 msgid "OPTION_MIN_AUTO_SCORE"
 msgstr "OPTION_MIN_AUTO_SCORE"
@@ -1755,3 +1763,106 @@ msgstr "Include technical details (system info + sanitized log excerpt) to help 
 #: includes/UninstallModal.php
 msgid "Feedback could not be sent."
 msgstr "Feedback could not be sent."
+
+msgid "Collect incoming 404 URLs"
+msgstr "Collect incoming 404 URLs"
+
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops (Light)"
+
+msgid "Monochrome Minimal (Light)"
+msgstr "Monochrome Minimal (Light)"
+
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate (Dark)"
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue (Dark)"
+
+#: includes/ajax/SettingsModeToggle.php
+msgid "Invalid security token"
+msgstr "Invalid security token"
+
+msgid "Unauthorized"
+msgstr "Unauthorized"
+
+msgid "Invalid mode"
+msgstr "Invalid mode"
+
+msgid "Settings mode updated"
+msgstr "Settings mode updated"
+
+msgid "Failed to update settings mode"
+msgstr "Failed to update settings mode"
+#: includes/View.php - Simple/Advanced Mode Toggle
+msgid "Simple Mode"
+msgstr "Simple Mode"
+
+msgid "Advanced Mode"
+msgstr "Advanced Mode"
+
+msgid "Simple Mode shows essential options only. Switch to Advanced Mode for full configuration."
+msgstr "Simple Mode shows essential options only. Switch to Advanced Mode for full configuration."
+
+msgid "Advanced Mode shows all options. Switch to Simple Mode for a streamlined view."
+msgstr "Advanced Mode shows all options. Switch to Simple Mode for a streamlined view."
+
+msgid "Default (Follows WordPress)"
+msgstr "Default (Follows WordPress)"
+
+msgid "Core Settings"
+msgstr "Core Settings"
+
+msgid "404 Capture"
+msgstr "404 Capture"
+
+msgid "Default 404 destination"
+msgstr "Default 404 destination"
+
+msgid "Where to send visitors when a 404 error occurs"
+msgstr "Where to send visitors when a 404 error occurs"
+
+msgid "Automatically redirect 404s to similar pages when a good match is found"
+msgstr "Automatically redirect 404s to similar pages when a good match is found"
+
+msgid "Redirect type"
+msgstr "Redirect type"
+
+msgid "301 for SEO, 302 for temporary changes"
+msgstr "301 for SEO, 302 for temporary changes"
+
+msgid "Log 404 errors so you can review and fix them"
+msgstr "Log 404 errors so you can review and fix them"
+
+msgid "Delete captured URLs after"
+msgstr "Delete captured URLs after"
+
+msgid "days"
+msgstr "days"
+
+msgid "Auto-remove old 404 records (0 to keep forever)"
+msgstr "Auto-remove old 404 records (0 to keep forever)"
+
+msgid "Notify me when captured URLs exceed"
+msgstr "Notify me when captured URLs exceed"
+
+msgid "Show admin notice when 404 count gets high (0 to disable)"
+msgstr "Show admin notice when 404 count gets high (0 to disable)"
+
+msgid "Maximum log storage"
+msgstr "Maximum log storage"
+
+msgid "Oldest logs are deleted when this limit is reached"
+msgstr "Oldest logs are deleted when this limit is reached"
+
+msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
+msgstr "Need more control? Switch to Advanced Mode for 30+ additional options."
+
+msgid "Need more control?"
+msgstr "Need more control?"
+
+msgid "Switch to Advanced Mode"
+msgstr "Switch to Advanced Mode"
+
+msgid "for 30+ additional options."
+msgstr "for 30+ additional options."

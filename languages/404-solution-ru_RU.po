@@ -215,6 +215,28 @@ msgstr "Тема администратора"
 msgid "Advanced"
 msgstr "Дополнительно"
 
+#: includes/View.php - Inline mode toggle
+msgid "Simple"
+msgstr "Простой"
+
+#: includes/View.php - Quick links / Sticky save bar / Toast notification
+msgid "View Stats"
+msgstr "Просмотр статистики"
+
+msgid "Captured 404s"
+msgstr "Захваченные 404"
+
+msgid "Documentation"
+msgstr "Документация"
+
+msgid "Plugin v%s"
+msgstr "Плагин v%s"
+
+msgid "Settings saved successfully!"
+msgstr "Настройки успешно сохранены!"
+
+msgid "Smart Matching"
+msgstr "Умное сопоставление"
 
 msgid "Advanced Settings (Etc)"
 msgstr "Дополнительные настройки (и т.д.)"
@@ -295,9 +317,6 @@ msgstr "Удаляет собранные URL 404, если они не испо
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "Удаляет вручную созданные перенаправления, если они не использовались в течение указанного времени. Не влияет на автоматически созданные перенаправления."
 
-msgid "Calm Ops (Light)"
-msgstr "Calm Ops (Светлая)"
-
 msgid "Captured 404 URLs"
 msgstr "Собранные 404 URL"
 
@@ -336,9 +355,6 @@ msgstr "Очистка выполняется ежедневно."
 
 msgid "Click to view debug data for all suggestions"
 msgstr "Нажмите, чтобы просмотреть отладочные данные для всех предложений"
-
-msgid "Collect incoming 404 URLs"
-msgstr "Собирать входящие 404 URL"
 
 msgid "Delete captured 404 URLs after"
 msgstr "Удалить собранные URL 404 через"
@@ -721,9 +737,6 @@ msgstr "МБ"
 msgid "Maintenance"
 msgstr "Обслуживание"
 
-msgid "Monochrome Minimal (Light)"
-msgstr "Monochrome Minimal (Светлая)"
-
 msgid "Major version auto update delay"
 msgstr "Задержка автообновления мажорной версии"
 
@@ -760,9 +773,6 @@ msgstr "Минимальная оценка отображаемых предл�
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Несколько адресов электронной почты можно разделить запятыми (,). Адрес \"от\" всегда является адресом электронной почты администратора WordPress по умолчанию:"
 
-msgid "Neon Slate (Dark)"
-msgstr "Neon Slate (Темная)"
-
 msgid "Never Used"
 msgstr "Никогда не использовалось"
 
@@ -798,9 +808,6 @@ msgstr "Примечание: Вот список всех типов запис
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
 msgstr "Примечание: \"Оценки\", которые отображаются в формате \"(75.7576)\" после ссылок на страницы, видны только администраторам."
-
-msgid "Obsidian Blue (Dark)"
-msgstr "Obsidian Blue (Темная)"
 
 msgid "OPTION_MIN_AUTO_SCORE"
 msgstr "OPTION_MIN_AUTO_SCORE"
@@ -1760,3 +1767,105 @@ msgstr "Включить технические сведения (информа
 #: includes/UninstallModal.php
 msgid "Feedback could not be sent."
 msgstr "Не удалось отправить отзыв."
+
+msgid "Collect incoming 404 URLs"
+msgstr "Собирать входящие URL-адреса 404"
+
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops (Светлая)"
+
+msgid "Monochrome Minimal (Light)"
+msgstr "Монохромный минимализм (Светлая)"
+
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate (Тёмная)"
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue (Тёмная)"
+#: includes/ajax/SettingsModeToggle.php
+msgid "Invalid security token"
+msgstr "Недействительный токен безопасности"
+
+msgid "Unauthorized"
+msgstr "Не авторизован"
+
+msgid "Invalid mode"
+msgstr "Недопустимый режим"
+
+msgid "Settings mode updated"
+msgstr "Режим настроек обновлён"
+
+msgid "Failed to update settings mode"
+msgstr "Не удалось обновить режим настроек"
+#: includes/View.php - Simple/Advanced Mode Toggle
+msgid "Simple Mode"
+msgstr "Простой режим"
+
+msgid "Advanced Mode"
+msgstr "Расширенный режим"
+
+msgid "Simple Mode shows essential options only. Switch to Advanced Mode for full configuration."
+msgstr "Простой режим показывает только основные параметры. Переключитесь в расширенный режим для полной настройки."
+
+msgid "Advanced Mode shows all options. Switch to Simple Mode for a streamlined view."
+msgstr "Расширенный режим показывает все параметры. Переключитесь в простой режим для упрощённого вида."
+
+msgid "Default (Follows WordPress)"
+msgstr "По умолчанию (следует WordPress)"
+
+msgid "Core Settings"
+msgstr "Основные настройки"
+
+msgid "404 Capture"
+msgstr "Захват 404"
+
+msgid "Default 404 destination"
+msgstr "Назначение 404 по умолчанию"
+
+msgid "Where to send visitors when a 404 error occurs"
+msgstr "Куда направлять посетителей при возникновении ошибки 404"
+
+msgid "Automatically redirect 404s to similar pages when a good match is found"
+msgstr "Автоматически перенаправлять 404 на похожие страницы при обнаружении хорошего совпадения"
+
+msgid "Redirect type"
+msgstr "Тип перенаправления"
+
+msgid "301 for SEO, 302 for temporary changes"
+msgstr "301 для SEO, 302 для временных изменений"
+
+msgid "Log 404 errors so you can review and fix them"
+msgstr "Записывать ошибки 404, чтобы вы могли просмотреть и исправить их"
+
+msgid "Delete captured URLs after"
+msgstr "Удалять захваченные URL через"
+
+msgid "days"
+msgstr "дней"
+
+msgid "Auto-remove old 404 records (0 to keep forever)"
+msgstr "Автоматически удалять старые записи 404 (0 для вечного хранения)"
+
+msgid "Notify me when captured URLs exceed"
+msgstr "Уведомлять, когда захваченные URL превышают"
+
+msgid "Show admin notice when 404 count gets high (0 to disable)"
+msgstr "Показывать уведомление админа при высоком количестве 404 (0 для отключения)"
+
+msgid "Maximum log storage"
+msgstr "Максимальный объём журнала"
+
+msgid "Oldest logs are deleted when this limit is reached"
+msgstr "Самые старые записи удаляются при достижении этого предела"
+
+msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
+msgstr "Нужно больше контроля? Переключитесь в расширенный режим для 30+ дополнительных параметров."
+
+msgid "Need more control?"
+msgstr "Need more control?"
+
+msgid "Switch to Advanced Mode"
+msgstr "Switch to Advanced Mode"
+
+msgid "for 30+ additional options."
+msgstr "for 30+ additional options."

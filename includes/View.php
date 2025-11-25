@@ -330,7 +330,7 @@ class ABJ_404_Solution_View {
      */
     function outputAdminHeaderTabs($sub = 'list', $message = '') {
         ABJ_404_Solution_WPNotices::echoAdminNotices();
-        
+
         if ($sub == "abj404_options") {
             $header = " " . __('Options', '404-solution');
         } else if ($sub == 'abj404_logs') {
@@ -350,7 +350,22 @@ class ABJ_404_Solution_View {
         } else {
             echo "\n<div id=\"icon-tools\" class=\"icon32\"></div>";
         }
-        echo "\n<h2>" . PLUGIN_NAME . esc_html($header) . "</h2>";
+
+        // For options page, wrap header and mode toggle in a flex container
+        if ($sub == "abj404_options") {
+            echo "\n<div class=\"abj404-header-row\">";
+            echo "<h2>" . PLUGIN_NAME . esc_html($header) . "</h2>";
+            echo "<div class=\"abj404-header-controls\">";
+            $this->echoInlineModeToggle();
+            // Expand/Collapse All button for both Simple and Advanced modes
+            echo '<button type="button" id="abj404-expand-collapse-all" class="button">';
+            echo esc_html__('Expand All', '404-solution');
+            echo '</button>';
+            echo "</div>";
+            echo "</div>";
+        } else {
+            echo "\n<h2>" . PLUGIN_NAME . esc_html($header) . "</h2>";
+        }
         if ($message != "") {
             $allowed_tags = array(
                 'br' => array(),
@@ -424,26 +439,109 @@ class ABJ_404_Solution_View {
     }
 
     /**
-     * Echo an accordion section
+     * Echo an accordion section using card-based layout
      * @param string $sectionId The section identifier
      * @param string $postboxId The ID for the postbox
      * @param string $title The title of the section
      * @param string $content The content to display
-     * @param bool $initiallyVisible Not used (kept for compatibility)
+     * @param bool $initiallyVisible Whether the card starts expanded (default: false)
+     * @param string $icon The SVG icon for the card header (optional)
+     * @param string $badge Optional info badge text
      */
-    function echoOptionsSection($sectionId, $postboxId, $title, $content, $initiallyVisible = false) {
-        echo "<div class=\"abj404-accordion-section\" data-section=\"" . esc_attr($sectionId) . "\">";
-        echo "<h2 class=\"abj404-accordion-header\" role=\"button\" aria-expanded=\"false\" tabindex=\"0\">";
-        echo "<span>" . esc_html($title) . "</span>";
-        echo "<span class=\"abj404-accordion-toggle\" aria-hidden=\"true\">▼</span>";
+    function echoOptionsSection($sectionId, $postboxId, $title, $content, $initiallyVisible = false, $icon = '', $badge = '') {
+        $expandedClass = $initiallyVisible ? ' expanded' : '';
+
+        echo "<div class=\"abj404-card" . esc_attr($expandedClass) . "\" data-card=\"" . esc_attr($sectionId) . "\" id=\"" . esc_attr($postboxId) . "\">";
+        echo "<div class=\"abj404-card-header\" onclick=\"abj404ToggleCard(this)\" role=\"button\" aria-expanded=\"" . ($initiallyVisible ? 'true' : 'false') . "\" tabindex=\"0\">";
+        echo "<h2 class=\"abj404-card-title\">";
+        if ($icon) {
+            echo $icon; // Icon is pre-sanitized SVG
+        }
+        echo esc_html($title);
+        if ($badge) {
+            echo "<span class=\"abj404-info-badge\">" . esc_html($badge) . "</span>";
+        }
         echo "</h2>";
-        echo "<div class=\"abj404-accordion-content\" style=\"display:none;\">";
-        // Don't include the postbox title since the accordion header already shows it
-        echo "<div id=\"" . esc_attr($postboxId) . "\" class=\"postbox\">";
-        echo "<div class=\"inside\">" . $content /* Can't escape here, as contains forms */ . "</div>";
+        echo "<svg class=\"abj404-collapse-icon\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">";
+        echo "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 9l-7 7-7-7\"></path>";
+        echo "</svg>";
+        echo "</div>";
+        echo "<div class=\"abj404-card-content\">";
+        echo $content; /* Can't escape here, as contains forms */
         echo "</div>";
         echo "</div>";
-        echo "</div>";
+    }
+
+    /**
+     * Get SVG icon for a section
+     * @param string $iconName The icon name
+     * @return string The SVG icon markup
+     */
+    function getCardIcon($iconName) {
+        $icons = array(
+            'lightning' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>',
+            'gear' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>',
+            'filter' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>',
+            'document' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>',
+            'sliders' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>',
+            'lightbulb' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>'
+        );
+        return isset($icons[$iconName]) ? $icons[$iconName] : '';
+    }
+
+    /**
+     * Echo the quick links navigation bar
+     */
+    function echoQuickLinks() {
+        $statsUrl = admin_url('admin.php?page=' . ABJ404_PP . '&subpage=abj404_stats');
+        $capturedUrl = admin_url('admin.php?page=' . ABJ404_PP . '&subpage=abj404_captured');
+        $redirectsUrl = admin_url('admin.php?page=' . ABJ404_PP . '&subpage=abj404_redirects');
+        $docsUrl = 'https://ajexoop.com/404-solution/documentation/';
+
+        echo '<div class="abj404-quick-links">';
+        echo '<a href="' . esc_url($statsUrl) . '" class="abj404-quick-link">';
+        echo '<span class="abj404-quick-link-icon">📊</span>';
+        echo esc_html__('View Stats', '404-solution');
+        echo '</a>';
+        echo '<a href="' . esc_url($capturedUrl) . '" class="abj404-quick-link">';
+        echo '<span class="abj404-quick-link-icon">📝</span>';
+        echo esc_html__('Captured 404s', '404-solution');
+        echo '</a>';
+        echo '<a href="' . esc_url($redirectsUrl) . '" class="abj404-quick-link">';
+        echo '<span class="abj404-quick-link-icon">🔄</span>';
+        echo esc_html__('Page Redirects', '404-solution');
+        echo '</a>';
+        echo '<a href="' . esc_url($docsUrl) . '" class="abj404-quick-link" target="_blank" rel="noopener">';
+        echo '<span class="abj404-quick-link-icon">📚</span>';
+        echo esc_html__('Documentation', '404-solution');
+        echo '</a>';
+        echo '</div>';
+    }
+
+    /**
+     * Echo the sticky save bar
+     */
+    function echoStickySaveBar() {
+        $version = ABJ404_VERSION;
+        echo '<div class="abj404-sticky-save-bar">';
+        echo '<div class="abj404-save-bar-status">';
+        /* translators: %s: plugin version number */
+        echo esc_html(sprintf(__('Plugin v%s', '404-solution'), $version));
+        echo '</div>';
+        echo '<div class="abj404-save-bar-actions">';
+        echo '<input type="submit" name="abj404-optionssub" id="abj404-optionssub" value="' . esc_attr__('Save Settings', '404-solution') . '" class="button button-primary abj404-btn abj404-btn-primary">';
+        echo '</div>';
+        echo '</div>';
+    }
+
+    /**
+     * Echo the success toast notification container
+     */
+    function echoToastNotification() {
+        echo '<div id="abj404-toast" class="abj404-toast">';
+        echo '<span class="abj404-toast-icon">✓</span> ';
+        echo '<span class="abj404-toast-message">' . esc_html__('Settings saved successfully!', '404-solution') . '</span>';
+        echo '</div>';
     }
 
 
@@ -460,6 +558,170 @@ class ABJ_404_Solution_View {
             <input type="submit" name="abj404-optionssub" id="abj404-optionssub" value="<?php echo esc_attr__('Save Settings', '404-solution'); ?>" class="button-primary">
         </div>
         <?php
+    }
+
+    /**
+     * Echo the Simple/Advanced mode toggle control.
+     * @param string $currentMode 'simple' or 'advanced'
+     */
+    function echoSettingsModeToggle($currentMode) {
+        $simpleActive = ($currentMode === 'simple') ? 'active' : '';
+        $advancedActive = ($currentMode === 'advanced') ? 'active' : '';
+        $simplePressedState = ($currentMode === 'simple') ? 'true' : 'false';
+        $advancedPressedState = ($currentMode === 'advanced') ? 'true' : 'false';
+
+        if ($currentMode === 'simple') {
+            $modeDescription = __('Simple Mode shows essential options only. Switch to Advanced Mode for full configuration.', '404-solution');
+        } else {
+            $modeDescription = __('Advanced Mode shows all options. Switch to Simple Mode for a streamlined view.', '404-solution');
+        }
+
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsModeToggle.html");
+        $html = $this->f->str_replace('{nonce}', wp_create_nonce('abj404_mode_toggle'), $html);
+        $html = $this->f->str_replace('{simpleActive}', $simpleActive, $html);
+        $html = $this->f->str_replace('{advancedActive}', $advancedActive, $html);
+        $html = $this->f->str_replace('{simplePressedState}', $simplePressedState, $html);
+        $html = $this->f->str_replace('{advancedPressedState}', $advancedPressedState, $html);
+        $html = $this->f->str_replace('{Simple Mode}', __('Simple Mode', '404-solution'), $html);
+        $html = $this->f->str_replace('{Advanced Mode}', __('Advanced Mode', '404-solution'), $html);
+        $html = $this->f->str_replace('{mode_description}', $modeDescription, $html);
+
+        echo $html;
+    }
+
+    /**
+     * Echo an inline (compact) mode toggle for the header row.
+     * This is a smaller version without the description text.
+     */
+    function echoInlineModeToggle() {
+        $currentMode = $this->logic->getSettingsMode();
+        $simpleActive = ($currentMode === 'simple') ? 'active' : '';
+        $advancedActive = ($currentMode === 'advanced') ? 'active' : '';
+        $simplePressedState = ($currentMode === 'simple') ? 'true' : 'false';
+        $advancedPressedState = ($currentMode === 'advanced') ? 'true' : 'false';
+
+        echo '<div class="abj404-mode-toggle abj404-mode-toggle-inline" data-nonce="' . esc_attr(wp_create_nonce('abj404_mode_toggle')) . '">';
+        echo '<div class="abj404-mode-toggle-buttons">';
+        echo '<button type="button" class="abj404-mode-btn ' . esc_attr($simpleActive) . '" data-mode="simple" aria-pressed="' . esc_attr($simplePressedState) . '">';
+        echo '<span class="abj404-mode-btn-text">' . esc_html__('Simple', '404-solution') . '</span>';
+        echo '</button>';
+        echo '<button type="button" class="abj404-mode-btn ' . esc_attr($advancedActive) . '" data-mode="advanced" aria-pressed="' . esc_attr($advancedPressedState) . '">';
+        echo '<span class="abj404-mode-btn-text">' . esc_html__('Advanced', '404-solution') . '</span>';
+        echo '</button>';
+        echo '</div>';
+        echo '</div>';
+    }
+
+    /**
+     * Echo the Simple Mode options page.
+     * @param array $options The plugin options
+     */
+    function echoSimpleModeOptions($options) {
+        // Get dest404page dropdown HTML (reuse existing logic)
+        $userSelectedDefault404Page = (array_key_exists('dest404page', $options) &&
+                isset($options['dest404page']) ? $options['dest404page'] : null);
+        $urlDestination = (array_key_exists('dest404pageURL', $options) &&
+                isset($options['dest404pageURL']) ? $options['dest404pageURL'] : null);
+
+        $pageTitle = $this->logic->getPageTitleFromIDAndType($userSelectedDefault404Page, $urlDestination);
+        $pageMissingWarning = "";
+        if ($userSelectedDefault404Page != null) {
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($userSelectedDefault404Page, 0);
+            if (!in_array($permalink['status'], array('publish', 'published'))) {
+                $pageMissingWarning = __("(The specified page doesn't exist. Please update this setting.)", '404-solution');
+            }
+        }
+
+        // Build dest404page dropdown
+        $dest404Dropdown = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
+                "/html/addManualRedirectPageSearchDropdown.html");
+        $dest404Dropdown = $this->f->str_replace('{redirect_to_label}', '', $dest404Dropdown);
+        $dest404Dropdown = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
+                __('(Type a page name or an external URL)', '404-solution'), $dest404Dropdown);
+        $dest404Dropdown = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
+                __('(A page has been selected.)', '404-solution'), $dest404Dropdown);
+        $dest404Dropdown = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+            __('(A custom string has been entered.)', '404-solution'), $dest404Dropdown);
+        $dest404Dropdown = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
+                __('(An external URL will be used.)', '404-solution'), $dest404Dropdown);
+        $dest404Dropdown = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', $pageMissingWarning, $dest404Dropdown);
+        $dest404Dropdown = $this->f->str_replace('{redirectPageTitle}', $pageTitle, $dest404Dropdown);
+        $dest404Dropdown = $this->f->str_replace('{pageIDAndType}', $userSelectedDefault404Page, $dest404Dropdown);
+        $dest404Dropdown = $this->f->str_replace('{data-url}',
+                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $dest404Dropdown);
+        $dest404Dropdown = $this->f->doNormalReplacements($dest404Dropdown);
+
+        // Build selected states for checkboxes and dropdowns
+        $selectedAutoRedirects = $this->getCheckedAttr($options, 'auto_redirects');
+        $selectedCapture404 = $this->getCheckedAttr($options, 'capture_404');
+        $selectedDefaultRedirect301 = ($options['default_redirect'] == '301') ? 'selected' : '';
+        $selectedDefaultRedirect302 = ($options['default_redirect'] == '302') ? 'selected' : '';
+
+        // Theme selections
+        $selectedThemeDefault = ($options['admin_theme'] == 'default') ? 'selected' : '';
+        $selectedThemeCalm = ($options['admin_theme'] == 'calm') ? 'selected' : '';
+        $selectedThemeMono = ($options['admin_theme'] == 'mono') ? 'selected' : '';
+        $selectedThemeNeon = ($options['admin_theme'] == 'neon') ? 'selected' : '';
+        $selectedThemeObsidian = ($options['admin_theme'] == 'obsidian') ? 'selected' : '';
+
+        // Read and build the simple options template
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsSimple.html");
+
+        // Replace dest404page dropdown
+        $html = $this->f->str_replace('{dest404pageOptions}', $dest404Dropdown, $html);
+
+        // Replace checkbox states
+        $html = $this->f->str_replace('{selectedAutoRedirects}', $selectedAutoRedirects, $html);
+        $html = $this->f->str_replace('{selectedCapture404}', $selectedCapture404, $html);
+        $html = $this->f->str_replace('{selectedDefaultRedirect301}', $selectedDefaultRedirect301, $html);
+        $html = $this->f->str_replace('{selectedDefaultRedirect302}', $selectedDefaultRedirect302, $html);
+
+        // Replace values
+        $html = $this->f->str_replace('{capture_deletion}', esc_attr($options['capture_deletion']), $html);
+        $html = $this->f->str_replace('{admin_notification}', esc_attr($options['admin_notification']), $html);
+        $html = $this->f->str_replace('{maximum_log_disk_usage}', esc_attr($options['maximum_log_disk_usage']), $html);
+
+        // Theme selections
+        $html = $this->f->str_replace('{selectedThemeDefault}', $selectedThemeDefault, $html);
+        $html = $this->f->str_replace('{selectedThemeCalm}', $selectedThemeCalm, $html);
+        $html = $this->f->str_replace('{selectedThemeMono}', $selectedThemeMono, $html);
+        $html = $this->f->str_replace('{selectedThemeNeon}', $selectedThemeNeon, $html);
+        $html = $this->f->str_replace('{selectedThemeObsidian}', $selectedThemeObsidian, $html);
+        $html = $this->f->str_replace('{theme_default}', __('Default (Follows WordPress)', '404-solution'), $html);
+
+        // Translate labels
+        $html = $this->f->str_replace('{Core Settings}', __('Core Settings', '404-solution'), $html);
+        $html = $this->f->str_replace('{404 Capture}', __('404 Capture', '404-solution'), $html);
+        $html = $this->f->str_replace('{Maintenance}', __('Maintenance', '404-solution'), $html);
+        $html = $this->f->str_replace('{Default 404 destination}', __('Default 404 destination', '404-solution'), $html);
+        $html = $this->f->str_replace('{Where to send visitors when a 404 error occurs}', __('Where to send visitors when a 404 error occurs', '404-solution'), $html);
+        $html = $this->f->str_replace('{Create automatic redirects}', __('Create automatic redirects', '404-solution'), $html);
+        $html = $this->f->str_replace('{Automatically redirect 404s to similar pages when a good match is found}', __('Automatically redirect 404s to similar pages when a good match is found', '404-solution'), $html);
+        $html = $this->f->str_replace('{Redirect type}', __('Redirect type', '404-solution'), $html);
+        $html = $this->f->str_replace('{Permanent 301}', __('Permanent 301', '404-solution'), $html);
+        $html = $this->f->str_replace('{Temporary 302}', __('Temporary 302', '404-solution'), $html);
+        $html = $this->f->str_replace('{301 for SEO, 302 for temporary changes}', __('301 for SEO, 302 for temporary changes', '404-solution'), $html);
+        $html = $this->f->str_replace('{Collect incoming 404 URLs}', __('Collect incoming 404 URLs', '404-solution'), $html);
+        $html = $this->f->str_replace('{Log 404 errors so you can review and fix them}', __('Log 404 errors so you can review and fix them', '404-solution'), $html);
+        $html = $this->f->str_replace('{Delete captured URLs after}', __('Delete captured URLs after', '404-solution'), $html);
+        $html = $this->f->str_replace('{days}', __('days', '404-solution'), $html);
+        $html = $this->f->str_replace('{Auto-remove old 404 records (0 to keep forever)}', __('Auto-remove old 404 records (0 to keep forever)', '404-solution'), $html);
+        $html = $this->f->str_replace('{Notify me when captured URLs exceed}', __('Notify me when captured URLs exceed', '404-solution'), $html);
+        $html = $this->f->str_replace('{URLs}', __('URLs', '404-solution'), $html);
+        $html = $this->f->str_replace('{Show admin notice when 404 count gets high (0 to disable)}', __('Show admin notice when 404 count gets high (0 to disable)', '404-solution'), $html);
+        $html = $this->f->str_replace('{Maximum log storage}', __('Maximum log storage', '404-solution'), $html);
+        $html = $this->f->str_replace('{Oldest logs are deleted when this limit is reached}', __('Oldest logs are deleted when this limit is reached', '404-solution'), $html);
+        $html = $this->f->str_replace('{Admin theme}', __('Admin theme', '404-solution'), $html);
+        $html = $this->f->str_replace('{Calm Ops (Light)}', __('Calm Ops (Light)', '404-solution'), $html);
+        $html = $this->f->str_replace('{Monochrome Minimal (Light)}', __('Monochrome Minimal (Light)', '404-solution'), $html);
+        $html = $this->f->str_replace('{Neon Slate (Dark)}', __('Neon Slate (Dark)', '404-solution'), $html);
+        $html = $this->f->str_replace('{Obsidian Blue (Dark)}', __('Obsidian Blue (Dark)', '404-solution'), $html);
+        $html = $this->f->str_replace('{Save Settings}', __('Save Settings', '404-solution'), $html);
+        $html = $this->f->str_replace('{Need more control?}', __('Need more control?', '404-solution'), $html);
+        $html = $this->f->str_replace('{Switch to Advanced Mode}', __('Switch to Advanced Mode', '404-solution'), $html);
+        $html = $this->f->str_replace('{for 30+ additional options.}', __('for 30+ additional options.', '404-solution'), $html);
+
+        echo $html;
     }
 
     /** Output the stats page.
@@ -761,6 +1023,9 @@ class ABJ_404_Solution_View {
             $options = [];
         }
 
+        // Get the current user's settings mode preference
+        $settingsMode = $this->logic->getSettingsMode();
+
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
         $urlParts = parse_url(urldecode($_SERVER['REQUEST_URI']));
         $currentURL = $urlParts['path'];
@@ -777,10 +1042,12 @@ class ABJ_404_Solution_View {
                     ABJ404_PP . '&subpage=abj404_options');
         }
 
-        //General Options
-        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
-        echo "<div class=\"metabox-holder\">";
-        echo " <div class=\"meta-box-sortables\">";
+        // Toast notification container
+        $abj404view->echoToastNotification();
+
+        // Main container
+        echo "<div class=\"abj404-container\">";
+        echo "<div class=\"abj404-settings-content\">";
 
         $formBeginning = '<form method="POST" id="admin-options-page" ' .
         	'name="admin-options-page" action="#" data-url="{data-url}">' . "\n";
@@ -799,41 +1066,84 @@ class ABJ_404_Solution_View {
         echo '</div>';
         echo '</div>';
 
-        // Check if suggestions section is available
-        $showSuggestions = ($abj404viewSuggestions !== null &&
-                           method_exists($abj404viewSuggestions, 'getAdminOptionsPage404Suggestions'));
+        if ($settingsMode === 'simple') {
+            // Simple Mode: Show streamlined options with card layout
+            $abj404view->echoSimpleModeOptions($options);
+        } else {
+            // Advanced Mode: Show all card sections with icons
 
-        // Add expand/collapse all button
-        $abj404view->echoExpandCollapseButton($showSuggestions);
+            // Render each section with card structure and icons
+            $contentAutomaticRedirects = $abj404view->getAdminOptionsPageAutoRedirects($options);
+            $abj404view->echoOptionsSection(
+                "abj404-autooptions",
+                "abj404-autooptions",
+                __('Automatic Redirects', '404-solution'),
+                $contentAutomaticRedirects,
+                true,
+                $abj404view->getCardIcon('lightning')
+            );
 
-        // Render each section with accordion structure
-        // All sections are visible by default
-        $contentAutomaticRedirects = $abj404view->getAdminOptionsPageAutoRedirects($options);
-        $abj404view->echoOptionsSection("abj404-autooptions", "abj404-autooptions", __('Automatic Redirects', '404-solution'), $contentAutomaticRedirects, true);
+            $contentGeneralSettings = $abj404view->getAdminOptionsPageGeneralSettings($options);
+            $abj404view->echoOptionsSection(
+                "abj404-generaloptions",
+                "abj404-generaloptions",
+                __('General Settings', '404-solution'),
+                $contentGeneralSettings,
+                true,
+                $abj404view->getCardIcon('gear')
+            );
 
-        $contentGeneralSettings = $abj404view->getAdminOptionsPageGeneralSettings($options);
-        $abj404view->echoOptionsSection("abj404-generaloptions", "abj404-generaloptions", __('General Settings', '404-solution'), $contentGeneralSettings, true);
+            $contentAdvancedContent = $abj404view->getAdminOptionsPageAdvancedContent($options);
+            $abj404view->echoOptionsSection(
+                "abj404-advanced-content",
+                "abj404-advanced-content",
+                __('Content & URL Filtering', '404-solution'),
+                $contentAdvancedContent,
+                true,
+                $abj404view->getCardIcon('filter')
+            );
 
-        $contentAdvancedContent = $abj404view->getAdminOptionsPageAdvancedContent($options);
-        $abj404view->echoOptionsSection("abj404-advanced-content", "abj404-advanced-content", __('Content & URL Filtering', '404-solution'), $contentAdvancedContent, true);
+            $contentAdvancedLogging = $abj404view->getAdminOptionsPageAdvancedLogging($options);
+            $abj404view->echoOptionsSection(
+                "abj404-advanced-logging",
+                "abj404-advanced-logging",
+                __('Logging & Privacy', '404-solution'),
+                $contentAdvancedLogging,
+                true,
+                $abj404view->getCardIcon('document')
+            );
 
-        $contentAdvancedLogging = $abj404view->getAdminOptionsPageAdvancedLogging($options);
-        $abj404view->echoOptionsSection("abj404-advanced-logging", "abj404-advanced-logging", __('Logging & Privacy', '404-solution'), $contentAdvancedLogging, true);
+            $contentAdvancedSystem = $abj404view->getAdminOptionsPageAdvancedSystem($options);
+            $abj404view->echoOptionsSection(
+                "abj404-advanced-system",
+                "abj404-advanced-system",
+                __('Advanced Configuration', '404-solution'),
+                $contentAdvancedSystem,
+                true,
+                $abj404view->getCardIcon('sliders')
+            );
 
-        $contentAdvancedSystem = $abj404view->getAdminOptionsPageAdvancedSystem($options);
-        $abj404view->echoOptionsSection("abj404-advanced-system", "abj404-advanced-system", __('Advanced Configuration', '404-solution'), $contentAdvancedSystem, true);
-
-        // Only render suggestions section if the suggestions view is available
-        if ($abj404viewSuggestions !== null && method_exists($abj404viewSuggestions, 'getAdminOptionsPage404Suggestions')) {
-            $content404PageSuggestions = $abj404viewSuggestions->getAdminOptionsPage404Suggestions($options);
-            $abj404view->echoOptionsSection("abj404-suggestoptions", "abj404-suggestoptions", __('404 Page Suggestions', '404-solution'), $content404PageSuggestions, true);
+            // Only render suggestions section if the suggestions view is available
+            if ($abj404viewSuggestions !== null && method_exists($abj404viewSuggestions, 'getAdminOptionsPage404Suggestions')) {
+                $content404PageSuggestions = $abj404viewSuggestions->getAdminOptionsPage404Suggestions($options);
+                $abj404view->echoOptionsSection(
+                    "abj404-suggestoptions",
+                    "abj404-suggestoptions",
+                    __('404 Page Suggestions', '404-solution'),
+                    $content404PageSuggestions,
+                    true,
+                    $abj404view->getCardIcon('lightbulb')
+                );
+            }
         }
+
+        // Sticky save bar
+        $abj404view->echoStickySaveBar();
 
         echo "</form><!-- end in admin-options-page -->";
 
-        echo "</div>";
-        echo "</div>";
-        echo "</div>";
+        echo "</div>"; // end abj404-settings-content
+        echo "</div>"; // end abj404-container
     }
     
     /** 

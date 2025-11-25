@@ -216,6 +216,28 @@ msgstr "管理画面テーマ"
 msgid "Advanced"
 msgstr "高度な設定"
 
+#: includes/View.php - Inline mode toggle
+msgid "Simple"
+msgstr "シンプル"
+
+#: includes/View.php - Quick links / Sticky save bar / Toast notification
+msgid "View Stats"
+msgstr "統計を表示"
+
+msgid "Captured 404s"
+msgstr "キャプチャされた404"
+
+msgid "Documentation"
+msgstr "ドキュメント"
+
+msgid "Plugin v%s"
+msgstr "プラグイン v%s"
+
+msgid "Settings saved successfully!"
+msgstr "設定が正常に保存されました！"
+
+msgid "Smart Matching"
+msgstr "スマートマッチング"
 
 msgid "Advanced Settings (Etc)"
 msgstr "詳細設定（その他）"
@@ -296,9 +318,6 @@ msgstr "指定期間使用されなかった404 URLを削除します。"
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "指定された期間使用されていない手動で作成されたリダイレクトを削除します。自動作成されたリダイレクトには影響しません。"
 
-msgid "Calm Ops (Light)"
-msgstr "Calm Ops（ライト）"
-
 msgid "Captured 404 URLs"
 msgstr "記録済み404 URL"
 
@@ -337,9 +356,6 @@ msgstr "クリーンアップは毎日実行されます。"
 
 msgid "Click to view debug data for all suggestions"
 msgstr "クリックするとすべての提案のデバッグデータを表示します"
-
-msgid "Collect incoming 404 URLs"
-msgstr "受信した404 URLを記録"
 
 msgid "Delete captured 404 URLs after"
 msgstr "記録済み404 URLの削除期間"
@@ -724,9 +740,6 @@ msgid "Maintenance"
 msgstr "メンテナンス"
 
 # translation-verified: Theme product name
-msgid "Monochrome Minimal (Light)"
-msgstr "Monochrome Minimal（ライト）"
-
 msgid "Major version auto update delay"
 msgstr "メジャーバージョンの自動更新遅延"
 
@@ -763,9 +776,6 @@ msgstr "表示する提案の最小スコア"
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "複数のメールアドレスはカンマ（,）で区切ることができます。「送信元」メールアドレスは常にデフォルトのWordPress管理者メールです："
 
-msgid "Neon Slate (Dark)"
-msgstr "Neon Slate（ダーク）"
-
 msgid "Never Used"
 msgstr "未使用"
 
@@ -801,9 +811,6 @@ msgstr "注：データベース内のすべての投稿タイプのリストは
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
 msgstr "注：ページリンクの後に「(75.7576)」の形式で表示される「スコア」は、管理者ユーザーにのみ表示されます。"
-
-msgid "Obsidian Blue (Dark)"
-msgstr "Obsidian Blue（ダーク）"
 
 msgid "OPTION_MIN_AUTO_SCORE"
 msgstr "OPTION_MIN_AUTO_SCORE"
@@ -1764,3 +1771,105 @@ msgstr "問題の診断に役立つ技術的な詳細を含める（システム
 #: includes/UninstallModal.php
 msgid "Feedback could not be sent."
 msgstr "フィードバックを送信できませんでした。"
+
+msgid "Collect incoming 404 URLs"
+msgstr "受信404 URLを収集"
+
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops（ライト）"
+
+msgid "Monochrome Minimal (Light)"
+msgstr "モノクロミニマル（ライト）"
+
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate（ダーク）"
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue（ダーク）"
+#: includes/ajax/SettingsModeToggle.php
+msgid "Invalid security token"
+msgstr "無効なセキュリティトークン"
+
+msgid "Unauthorized"
+msgstr "認証されていません"
+
+msgid "Invalid mode"
+msgstr "無効なモード"
+
+msgid "Settings mode updated"
+msgstr "設定モードが更新されました"
+
+msgid "Failed to update settings mode"
+msgstr "設定モードの更新に失敗しました"
+#: includes/View.php - Simple/Advanced Mode Toggle
+msgid "Simple Mode"
+msgstr "シンプルモード"
+
+msgid "Advanced Mode"
+msgstr "詳細モード"
+
+msgid "Simple Mode shows essential options only. Switch to Advanced Mode for full configuration."
+msgstr "シンプルモードでは基本的なオプションのみを表示します。完全な設定には詳細モードに切り替えてください。"
+
+msgid "Advanced Mode shows all options. Switch to Simple Mode for a streamlined view."
+msgstr "詳細モードではすべてのオプションを表示します。簡略化された表示にはシンプルモードに切り替えてください。"
+
+msgid "Default (Follows WordPress)"
+msgstr "デフォルト（WordPressに準拠）"
+
+msgid "Core Settings"
+msgstr "基本設定"
+
+msgid "404 Capture"
+msgstr "404キャプチャ"
+
+msgid "Default 404 destination"
+msgstr "デフォルト404リダイレクト先"
+
+msgid "Where to send visitors when a 404 error occurs"
+msgstr "404エラー発生時に訪問者を送る先"
+
+msgid "Automatically redirect 404s to similar pages when a good match is found"
+msgstr "良い一致が見つかった場合、404を類似ページに自動リダイレクト"
+
+msgid "Redirect type"
+msgstr "リダイレクトタイプ"
+
+msgid "301 for SEO, 302 for temporary changes"
+msgstr "SEOには301、一時的な変更には302"
+
+msgid "Log 404 errors so you can review and fix them"
+msgstr "404エラーを記録して確認と修正ができるようにする"
+
+msgid "Delete captured URLs after"
+msgstr "キャプチャしたURLを削除する期間"
+
+msgid "days"
+msgstr "日"
+
+msgid "Auto-remove old 404 records (0 to keep forever)"
+msgstr "古い404レコードを自動削除（0で永久保存）"
+
+msgid "Notify me when captured URLs exceed"
+msgstr "キャプチャURLが超えた時に通知"
+
+msgid "Show admin notice when 404 count gets high (0 to disable)"
+msgstr "404カウントが高くなったら管理者通知を表示（0で無効）"
+
+msgid "Maximum log storage"
+msgstr "最大ログストレージ"
+
+msgid "Oldest logs are deleted when this limit is reached"
+msgstr "この制限に達すると最も古いログが削除されます"
+
+msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
+msgstr "より多くの制御が必要ですか？詳細モードに切り替えて30以上の追加オプションを利用できます。"
+
+msgid "Need more control?"
+msgstr "より詳細な制御が必要ですか？"
+
+msgid "Switch to Advanced Mode"
+msgstr "詳細モードに切り替え"
+
+msgid "for 30+ additional options."
+msgstr "30以上の追加オプションがあります。"

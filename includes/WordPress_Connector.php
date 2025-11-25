@@ -84,6 +84,9 @@ class ABJ_404_Solution_WordPress_Connector {
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
             ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_updateOptions', 'ABJ_404_Solution_Ajax_Php::updateOptions');
 
+            // Initialize settings mode toggle (Simple/Advanced modes)
+            ABJ_404_Solution_Ajax_SettingsModeToggle::init();
+
             // Initialize uninstall modal (shows popup when user deletes plugin)
             ABJ_404_Solution_UninstallModal::init();
         }
@@ -160,6 +163,10 @@ class ABJ_404_Solution_WordPress_Connector {
             'expandAll' => __('Expand All', '404-solution'),
             'collapseAll' => __('Collapse All', '404-solution'),
         ));
+
+        // Settings mode toggle (Simple/Advanced)
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-settings-mode-toggle', plugin_dir_url(__FILE__) . 'ajax/SettingsModeToggle.js',
+        	array('jquery'));
 
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
                 null);

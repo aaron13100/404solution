@@ -215,6 +215,28 @@ msgstr "Tema admin"
 msgid "Advanced"
 msgstr "Lanjutan"
 
+#: includes/View.php - Inline mode toggle
+msgid "Simple"
+msgstr "Sederhana"
+
+#: includes/View.php - Quick links / Sticky save bar / Toast notification
+msgid "View Stats"
+msgstr "Lihat Statistik"
+
+msgid "Captured 404s"
+msgstr "404 yang Ditangkap"
+
+msgid "Documentation"
+msgstr "Dokumentasi"
+
+msgid "Plugin v%s"
+msgstr "Plugin v%s"
+
+msgid "Settings saved successfully!"
+msgstr "Pengaturan berhasil disimpan!"
+
+msgid "Smart Matching"
+msgstr "Pencocokan Cerdas"
 
 msgid "Advanced Settings (Etc)"
 msgstr "Pengaturan Lanjutan (Dll)"
@@ -295,9 +317,6 @@ msgstr "Menghapus URL 404 yang tercatat secara otomatis jika tidak ada aktivitas
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "Menghapus pengalihan yang dibuat manual jika tidak digunakan selama waktu yang ditentukan. Tidak mempengaruhi pengalihan yang dibuat otomatis."
 
-msgid "Calm Ops (Light)"
-msgstr "Calm Ops (Terang)"
-
 msgid "Captured 404 URLs"
 msgstr "URL 404 yang Tercatat"
 
@@ -336,9 +355,6 @@ msgstr "Pembersihan dilakukan setiap hari."
 
 msgid "Click to view debug data for all suggestions"
 msgstr "Klik untuk melihat data debug untuk semua saran"
-
-msgid "Collect incoming 404 URLs"
-msgstr "Kumpulkan URL 404 yang masuk"
 
 msgid "Delete captured 404 URLs after"
 msgstr "Hapus URL 404 yang tercatat setelah"
@@ -721,9 +737,6 @@ msgstr "MB"
 msgid "Maintenance"
 msgstr "Pemeliharaan"
 
-msgid "Monochrome Minimal (Light)"
-msgstr "Monochrome Minimal (Terang)"
-
 msgid "Major version auto update delay"
 msgstr "Penundaan pembaruan otomatis versi utama"
 
@@ -760,9 +773,6 @@ msgstr "Skor minimum saran yang ditampilkan"
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Beberapa alamat email dapat dipisahkan dengan koma (,). Alamat email \"dari\" selalu merupakan email admin WordPress default:"
 
-msgid "Neon Slate (Dark)"
-msgstr "Neon Slate (Gelap)"
-
 msgid "Never Used"
 msgstr "Tidak Pernah Digunakan"
 
@@ -798,9 +808,6 @@ msgstr "Catatan: Berikut adalah daftar semua tipe post dalam database:"
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
 msgstr "Catatan: \"Skor\" yang muncul dalam format \"(75.7576)\" setelah link halaman hanya ditampilkan untuk pengguna admin."
-
-msgid "Obsidian Blue (Dark)"
-msgstr "Obsidian Blue (Gelap)"
 
 msgid "OPTION_MIN_AUTO_SCORE"
 msgstr "OPTION_MIN_AUTO_SCORE"
@@ -1756,3 +1763,105 @@ msgstr "Sertakan detail teknis (info sistem + kutipan log yang dibersihkan) untu
 #: includes/UninstallModal.php
 msgid "Feedback could not be sent."
 msgstr "Masukan tidak dapat dikirim."
+
+msgid "Collect incoming 404 URLs"
+msgstr "Kumpulkan URL 404 yang masuk"
+
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops (Terang)"
+
+msgid "Monochrome Minimal (Light)"
+msgstr "Monokrom Minimal (Terang)"
+
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate (Gelap)"
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue (Gelap)"
+#: includes/ajax/SettingsModeToggle.php
+msgid "Invalid security token"
+msgstr "Token keamanan tidak valid"
+
+msgid "Unauthorized"
+msgstr "Tidak diizinkan"
+
+msgid "Invalid mode"
+msgstr "Mode tidak valid"
+
+msgid "Settings mode updated"
+msgstr "Mode pengaturan diperbarui"
+
+msgid "Failed to update settings mode"
+msgstr "Gagal memperbarui mode pengaturan"
+#: includes/View.php - Simple/Advanced Mode Toggle
+msgid "Simple Mode"
+msgstr "Mode Sederhana"
+
+msgid "Advanced Mode"
+msgstr "Mode Lanjutan"
+
+msgid "Simple Mode shows essential options only. Switch to Advanced Mode for full configuration."
+msgstr "Mode sederhana hanya menampilkan opsi penting. Beralih ke mode lanjutan untuk konfigurasi lengkap."
+
+msgid "Advanced Mode shows all options. Switch to Simple Mode for a streamlined view."
+msgstr "Mode lanjutan menampilkan semua opsi. Beralih ke mode sederhana untuk tampilan yang lebih ringkas."
+
+msgid "Default (Follows WordPress)"
+msgstr "Default (mengikuti WordPress)"
+
+msgid "Core Settings"
+msgstr "Pengaturan Inti"
+
+msgid "404 Capture"
+msgstr "Penangkapan 404"
+
+msgid "Default 404 destination"
+msgstr "Tujuan 404 default"
+
+msgid "Where to send visitors when a 404 error occurs"
+msgstr "Ke mana mengarahkan pengunjung saat terjadi error 404"
+
+msgid "Automatically redirect 404s to similar pages when a good match is found"
+msgstr "Secara otomatis mengalihkan 404 ke halaman serupa saat ditemukan kecocokan yang baik"
+
+msgid "Redirect type"
+msgstr "Jenis pengalihan"
+
+msgid "301 for SEO, 302 for temporary changes"
+msgstr "301 untuk SEO, 302 untuk perubahan sementara"
+
+msgid "Log 404 errors so you can review and fix them"
+msgstr "Catat error 404 agar Anda dapat meninjau dan memperbaikinya"
+
+msgid "Delete captured URLs after"
+msgstr "Hapus URL yang ditangkap setelah"
+
+msgid "days"
+msgstr "hari"
+
+msgid "Auto-remove old 404 records (0 to keep forever)"
+msgstr "Hapus otomatis catatan 404 lama (0 untuk menyimpan selamanya)"
+
+msgid "Notify me when captured URLs exceed"
+msgstr "Beritahu saya ketika URL yang ditangkap melebihi"
+
+msgid "Show admin notice when 404 count gets high (0 to disable)"
+msgstr "Tampilkan pemberitahuan admin saat jumlah 404 tinggi (0 untuk menonaktifkan)"
+
+msgid "Maximum log storage"
+msgstr "Penyimpanan log maksimum"
+
+msgid "Oldest logs are deleted when this limit is reached"
+msgstr "Log terlama dihapus saat batas ini tercapai"
+
+msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
+msgstr "Butuh lebih banyak kontrol? Beralih ke mode lanjutan untuk 30+ opsi tambahan."
+
+msgid "Need more control?"
+msgstr "Need more control?"
+
+msgid "Switch to Advanced Mode"
+msgstr "Switch to Advanced Mode"
+
+msgid "for 30+ additional options."
+msgstr "for 30+ additional options."

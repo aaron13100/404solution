@@ -216,6 +216,28 @@ msgstr "管理主题"
 msgid "Advanced"
 msgstr "高级"
 
+#: includes/View.php - Inline mode toggle
+msgid "Simple"
+msgstr "简单"
+
+#: includes/View.php - Quick links / Sticky save bar / Toast notification
+msgid "View Stats"
+msgstr "查看统计"
+
+msgid "Captured 404s"
+msgstr "已捕获的404"
+
+msgid "Documentation"
+msgstr "文档"
+
+msgid "Plugin v%s"
+msgstr "插件 v%s"
+
+msgid "Settings saved successfully!"
+msgstr "设置保存成功！"
+
+msgid "Smart Matching"
+msgstr "智能匹配"
 
 msgid "Advanced Settings (Etc)"
 msgstr "高级设置（其他）"
@@ -296,9 +318,6 @@ msgstr "删除在指定时间内未使用的已记录的 404 URL。"
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "删除在指定时间内未使用的手动创建的重定向。不影响自动创建的重定向。"
 
-msgid "Calm Ops (Light)"
-msgstr "沉静运维（浅色）"
-
 msgid "Captured 404 URLs"
 msgstr "已记录的 404 URL"
 
@@ -337,9 +356,6 @@ msgstr "每日执行清理。"
 
 msgid "Click to view debug data for all suggestions"
 msgstr "点击查看所有建议的调试数据"
-
-msgid "Collect incoming 404 URLs"
-msgstr "收集传入的 404 URL"
 
 msgid "Delete captured 404 URLs after"
 msgstr "自动删除已记录 404 URL 的时间"
@@ -726,9 +742,6 @@ msgstr "MB"
 msgid "Maintenance"
 msgstr "维护"
 
-msgid "Monochrome Minimal (Light)"
-msgstr "简约单色（浅色）"
-
 msgid "Major version auto update delay"
 msgstr "主要版本自动更新延迟"
 
@@ -765,9 +778,6 @@ msgstr "显示建议的最低分数"
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "多个电子邮件地址可以用逗号 (,) 分隔。\"发件人\" 电子邮件地址始终为默认的 WordPress 管理员邮箱："
 
-msgid "Neon Slate (Dark)"
-msgstr "霓虹板岩（深色）"
-
 msgid "Never Used"
 msgstr "从未使用"
 
@@ -803,9 +813,6 @@ msgstr "注意：以下是数据库中所有文章类型的列表："
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
 msgstr "注意：页面链接后以 \"(75.7576)\" 格式显示的 \"分数\" 仅对管理员用户显示。"
-
-msgid "Obsidian Blue (Dark)"
-msgstr "黑曜蓝（深色）"
 
 msgid "OPTION_MIN_AUTO_SCORE"
 msgstr "OPTION_MIN_AUTO_SCORE"
@@ -1768,3 +1775,105 @@ msgstr "包括技术详细信息（系统信息 + 已清理的日志摘录）以
 #: includes/UninstallModal.php
 msgid "Feedback could not be sent."
 msgstr "无法发送反馈。"
+
+msgid "Collect incoming 404 URLs"
+msgstr "收集传入的404 URL"
+
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops（浅色）"
+
+msgid "Monochrome Minimal (Light)"
+msgstr "单色极简（浅色）"
+
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate（深色）"
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue（深色）"
+#: includes/ajax/SettingsModeToggle.php
+msgid "Invalid security token"
+msgstr "安全令牌无效"
+
+msgid "Unauthorized"
+msgstr "未授权"
+
+msgid "Invalid mode"
+msgstr "无效模式"
+
+msgid "Settings mode updated"
+msgstr "设置模式已更新"
+
+msgid "Failed to update settings mode"
+msgstr "更新设置模式失败"
+#: includes/View.php - Simple/Advanced Mode Toggle
+msgid "Simple Mode"
+msgstr "简单模式"
+
+msgid "Advanced Mode"
+msgstr "高级模式"
+
+msgid "Simple Mode shows essential options only. Switch to Advanced Mode for full configuration."
+msgstr "简单模式仅显示基本选项。切换到高级模式进行完整配置。"
+
+msgid "Advanced Mode shows all options. Switch to Simple Mode for a streamlined view."
+msgstr "高级模式显示所有选项。切换到简单模式获得简洁视图。"
+
+msgid "Default (Follows WordPress)"
+msgstr "默认（跟随WordPress）"
+
+msgid "Core Settings"
+msgstr "核心设置"
+
+msgid "404 Capture"
+msgstr "404捕获"
+
+msgid "Default 404 destination"
+msgstr "默认404目标"
+
+msgid "Where to send visitors when a 404 error occurs"
+msgstr "发生404错误时将访客发送到哪里"
+
+msgid "Automatically redirect 404s to similar pages when a good match is found"
+msgstr "当找到良好匹配时自动将404重定向到类似页面"
+
+msgid "Redirect type"
+msgstr "重定向类型"
+
+msgid "301 for SEO, 302 for temporary changes"
+msgstr "301用于SEO，302用于临时更改"
+
+msgid "Log 404 errors so you can review and fix them"
+msgstr "记录404错误，以便您查看和修复"
+
+msgid "Delete captured URLs after"
+msgstr "在此之后删除捕获的URL"
+
+msgid "days"
+msgstr "天"
+
+msgid "Auto-remove old 404 records (0 to keep forever)"
+msgstr "自动删除旧的404记录（0表示永久保留）"
+
+msgid "Notify me when captured URLs exceed"
+msgstr "当捕获的URL超过时通知我"
+
+msgid "Show admin notice when 404 count gets high (0 to disable)"
+msgstr "当404计数变高时显示管理员通知（0表示禁用）"
+
+msgid "Maximum log storage"
+msgstr "最大日志存储"
+
+msgid "Oldest logs are deleted when this limit is reached"
+msgstr "达到此限制时将删除最旧的日志"
+
+msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
+msgstr "需要更多控制？切换到高级模式获得30多个额外选项。"
+
+msgid "Need more control?"
+msgstr "需要更多控制？"
+
+msgid "Switch to Advanced Mode"
+msgstr "切换到高级模式"
+
+msgid "for 30+ additional options."
+msgstr "提供30多个额外选项。"

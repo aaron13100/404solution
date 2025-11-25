@@ -215,6 +215,29 @@ msgstr "Thème d'administration"
 msgid "Advanced"
 msgstr "Avancé"
 
+#: includes/View.php - Inline mode toggle
+msgid "Simple"
+msgstr "Simple"
+
+#: includes/View.php - Quick links / Sticky save bar / Toast notification
+msgid "View Stats"
+msgstr "Voir les statistiques"
+
+msgid "Captured 404s"
+msgstr "404 capturés"
+
+msgid "Documentation"
+msgstr "Documentation"
+
+msgid "Plugin v%s"
+msgstr "Plugin v%s"
+
+msgid "Settings saved successfully!"
+msgstr "Paramètres enregistrés avec succès !"
+
+msgid "Smart Matching"
+msgstr "Correspondance intelligente"
+
 msgid "Advanced Settings (Etc)"
 msgstr "Paramètres avancés (etc.)"
 
@@ -293,9 +316,6 @@ msgstr "Supprime les URLs 404 capturées si elles n'ont pas été utilisées pen
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "Supprime les redirections créées manuellement si elles n'ont pas été utilisées pendant la durée spécifiée. N'affecte pas les redirections créées automatiquement."
 
-msgid "Calm Ops (Light)"
-msgstr "Calm Ops (Clair)"
-
 msgid "Captured 404 URLs"
 msgstr "URLs 404 capturées"
 
@@ -334,9 +354,6 @@ msgstr "Le nettoyage est effectué quotidiennement."
 
 msgid "Click to view debug data for all suggestions"
 msgstr "Cliquer pour voir les données de débogage de toutes les suggestions"
-
-msgid "Collect incoming 404 URLs"
-msgstr "Collecter les URLs 404 entrantes"
 
 msgid "Delete captured 404 URLs after"
 msgstr "Supprimer les URLs 404 capturées après"
@@ -719,9 +736,6 @@ msgstr "Mo"
 msgid "Maintenance"
 msgstr "Maintenance"
 
-msgid "Monochrome Minimal (Light)"
-msgstr "Monochrome Minimal (Clair)"
-
 msgid "Major version auto update delay"
 msgstr "Délai de mise à jour automatique de version majeure"
 
@@ -758,9 +772,6 @@ msgstr "Score minimum des suggestions à afficher"
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Plusieurs adresses e-mail peuvent être séparées par des virgules (,). L'adresse e-mail \"de\" est toujours l'e-mail administrateur WordPress par défaut :"
 
-msgid "Neon Slate (Dark)"
-msgstr "Neon Slate (Sombre)"
-
 msgid "Never Used"
 msgstr "Jamais utilisé"
 
@@ -796,9 +807,6 @@ msgstr "Note : Voici une liste de tous les types de contenu dans la base de donn
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
 msgstr "Note : Les « scores » qui apparaissent au format « (75.7576) » après les liens de page ne sont affichés que pour les utilisateurs administrateurs."
-
-msgid "Obsidian Blue (Dark)"
-msgstr "Obsidian Blue (Sombre)"
 
 msgid "OPTION_MIN_AUTO_SCORE"
 msgstr "OPTION_MIN_AUTO_SCORE"
@@ -1751,3 +1759,105 @@ msgstr "Inclure les détails techniques (informations système + extrait de jour
 #: includes/UninstallModal.php
 msgid "Feedback could not be sent."
 msgstr "Le retour n'a pas pu être envoyé."
+
+msgid "Collect incoming 404 URLs"
+msgstr "Collecter les URLs 404 entrantes"
+
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops (Clair)"
+
+msgid "Monochrome Minimal (Light)"
+msgstr "Monochrome Minimal (Clair)"
+
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate (Sombre)"
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue (Sombre)"
+#: includes/ajax/SettingsModeToggle.php
+msgid "Invalid security token"
+msgstr "Jeton de sécurité invalide"
+
+msgid "Unauthorized"
+msgstr "Non autorisé"
+
+msgid "Invalid mode"
+msgstr "Mode invalide"
+
+msgid "Settings mode updated"
+msgstr "Mode de paramètres mis à jour"
+
+msgid "Failed to update settings mode"
+msgstr "Échec de la mise à jour du mode de paramètres"
+#: includes/View.php - Simple/Advanced Mode Toggle
+msgid "Simple Mode"
+msgstr "Mode Simple"
+
+msgid "Advanced Mode"
+msgstr "Mode Avancé"
+
+msgid "Simple Mode shows essential options only. Switch to Advanced Mode for full configuration."
+msgstr "Le mode simple affiche uniquement les options essentielles. Passez au mode avancé pour la configuration complète."
+
+msgid "Advanced Mode shows all options. Switch to Simple Mode for a streamlined view."
+msgstr "Le mode avancé affiche toutes les options. Passez au mode simple pour une vue simplifiée."
+
+msgid "Default (Follows WordPress)"
+msgstr "Par défaut (suit WordPress)"
+
+msgid "Core Settings"
+msgstr "Paramètres Principaux"
+
+msgid "404 Capture"
+msgstr "Capture des 404"
+
+msgid "Default 404 destination"
+msgstr "Destination 404 par défaut"
+
+msgid "Where to send visitors when a 404 error occurs"
+msgstr "Où envoyer les visiteurs lorsqu'une erreur 404 se produit"
+
+msgid "Automatically redirect 404s to similar pages when a good match is found"
+msgstr "Rediriger automatiquement les 404 vers des pages similaires lorsqu'une bonne correspondance est trouvée"
+
+msgid "Redirect type"
+msgstr "Type de redirection"
+
+msgid "301 for SEO, 302 for temporary changes"
+msgstr "301 pour le SEO, 302 pour les changements temporaires"
+
+msgid "Log 404 errors so you can review and fix them"
+msgstr "Enregistrer les erreurs 404 pour pouvoir les examiner et les corriger"
+
+msgid "Delete captured URLs after"
+msgstr "Supprimer les URLs capturées après"
+
+msgid "days"
+msgstr "jours"
+
+msgid "Auto-remove old 404 records (0 to keep forever)"
+msgstr "Supprimer automatiquement les anciens enregistrements 404 (0 pour conserver indéfiniment)"
+
+msgid "Notify me when captured URLs exceed"
+msgstr "Me notifier quand les URLs capturées dépassent"
+
+msgid "Show admin notice when 404 count gets high (0 to disable)"
+msgstr "Afficher un avis admin quand le nombre de 404 devient élevé (0 pour désactiver)"
+
+msgid "Maximum log storage"
+msgstr "Stockage maximum des journaux"
+
+msgid "Oldest logs are deleted when this limit is reached"
+msgstr "Les journaux les plus anciens sont supprimés lorsque cette limite est atteinte"
+
+msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
+msgstr "Besoin de plus de contrôle ? Passez au mode avancé pour plus de 30 options supplémentaires."
+
+msgid "Need more control?"
+msgstr "Need more control?"
+
+msgid "Switch to Advanced Mode"
+msgstr "Switch to Advanced Mode"
+
+msgid "for 30+ additional options."
+msgstr "for 30+ additional options."

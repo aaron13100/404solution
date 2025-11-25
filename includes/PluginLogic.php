@@ -130,7 +130,34 @@ class ABJ_404_Solution_PluginLogic {
     	
     	return $isPluginAdmin;
     }
-    
+
+    /**
+     * Get the current user's settings mode preference.
+     * @return string 'simple' or 'advanced'
+     */
+    function getSettingsMode() {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return 'simple';
+        }
+        $mode = get_user_meta($user_id, 'abj404_settings_mode', true);
+        return ($mode === 'advanced') ? 'advanced' : 'simple';
+    }
+
+    /**
+     * Set the current user's settings mode preference.
+     * @param string $mode 'simple' or 'advanced'
+     * @return bool|int Meta ID on success, false on failure
+     */
+    function setSettingsMode($mode) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return false;
+        }
+        $valid_mode = ($mode === 'advanced') ? 'advanced' : 'simple';
+        return update_user_meta($user_id, 'abj404_settings_mode', $valid_mode);
+    }
+
     /** Allow the user to be an admin for the plugin. 
      * @param $allcaps
      * @param $caps

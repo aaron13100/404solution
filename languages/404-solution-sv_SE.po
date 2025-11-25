@@ -215,6 +215,29 @@ msgstr "Administratörstema"
 msgid "Advanced"
 msgstr "Avancerat"
 
+#: includes/View.php - Inline mode toggle
+msgid "Simple"
+msgstr "Enkel"
+
+#: includes/View.php - Quick links / Sticky save bar / Toast notification
+msgid "View Stats"
+msgstr "Visa statistik"
+
+msgid "Captured 404s"
+msgstr "Fångade 404:or"
+
+msgid "Documentation"
+msgstr "Dokumentation"
+
+msgid "Plugin v%s"
+msgstr "Plugin v%s"
+
+msgid "Settings saved successfully!"
+msgstr "Inställningar sparades!"
+
+msgid "Smart Matching"
+msgstr "Smart matchning"
+
 msgid "Advanced Settings (Etc)"
 msgstr "Avancerade inställningar (m.m.)"
 
@@ -293,9 +316,6 @@ msgstr "Tar bort insamlade 404-URL:er om de inte har använts under den angivna 
 msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
 msgstr "Tar bort manuellt skapade omdirigeringar om de inte har använts under den angivna tidsperioden. Påverkar inte automatiskt skapade omdirigeringar."
 
-msgid "Calm Ops (Light)"
-msgstr "Calm Ops (Ljus)"
-
 msgid "Captured 404 URLs"
 msgstr "Insamlade 404-URL:er"
 
@@ -334,9 +354,6 @@ msgstr "Rensning görs dagligen."
 
 msgid "Click to view debug data for all suggestions"
 msgstr "Klicka för att visa felsökningsdata för alla förslag"
-
-msgid "Collect incoming 404 URLs"
-msgstr "Samla in inkommande 404-URL:er"
 
 msgid "Delete captured 404 URLs after"
 msgstr "Radera insamlade 404-URL:er efter"
@@ -719,9 +736,6 @@ msgstr "MB"
 msgid "Maintenance"
 msgstr "Underhåll"
 
-msgid "Monochrome Minimal (Light)"
-msgstr "Monokrom minimal (Ljus)"
-
 msgid "Major version auto update delay"
 msgstr "Fördröjning för automatisk uppdatering av huvudversion"
 
@@ -758,9 +772,6 @@ msgstr "Minsta poäng för förslag att visa"
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Flera e-postadresser kan separeras med kommatecken (,). Avsändarens e-postadress är alltid standard WordPress admin-e-post:"
 
-msgid "Neon Slate (Dark)"
-msgstr "Neon Slate (Mörk)"
-
 msgid "Never Used"
 msgstr "Aldrig använd"
 
@@ -796,9 +807,6 @@ msgstr "Obs: Här är en lista över alla inläggstyper i databasen:"
 
 msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
 msgstr "Obs: \"Poängen\" som visas i formatet \"(75.7576)\" efter sidlänkarna visas endast för administratörsanvändare."
-
-msgid "Obsidian Blue (Dark)"
-msgstr "Obsidian Blue (Mörk)"
 
 msgid "OPTION_MIN_AUTO_SCORE"
 msgstr "OPTION_MIN_AUTO_SCORE"
@@ -1755,3 +1763,105 @@ msgstr "Inkludera tekniska detaljer (systeminformation + rensad loggutdrag) för
 #: includes/UninstallModal.php
 msgid "Feedback could not be sent."
 msgstr "Feedback kunde inte skickas."
+
+msgid "Collect incoming 404 URLs"
+msgstr "Samla in inkommande 404-URLer"
+
+msgid "Calm Ops (Light)"
+msgstr "Calm Ops (Ljust)"
+
+msgid "Monochrome Minimal (Light)"
+msgstr "Monokrom Minimal (Ljust)"
+
+msgid "Neon Slate (Dark)"
+msgstr "Neon Slate (Mörkt)"
+
+msgid "Obsidian Blue (Dark)"
+msgstr "Obsidian Blue (Mörkt)"
+#: includes/ajax/SettingsModeToggle.php
+msgid "Invalid security token"
+msgstr "Ogiltig säkerhetstoken"
+
+msgid "Unauthorized"
+msgstr "Obehörig"
+
+msgid "Invalid mode"
+msgstr "Ogiltigt läge"
+
+msgid "Settings mode updated"
+msgstr "Inställningsläge uppdaterat"
+
+msgid "Failed to update settings mode"
+msgstr "Kunde inte uppdatera inställningsläge"
+#: includes/View.php - Simple/Advanced Mode Toggle
+msgid "Simple Mode"
+msgstr "Enkelt läge"
+
+msgid "Advanced Mode"
+msgstr "Avancerat läge"
+
+msgid "Simple Mode shows essential options only. Switch to Advanced Mode for full configuration."
+msgstr "Enkelt läge visar endast grundläggande alternativ. Byt till avancerat läge för fullständig konfiguration."
+
+msgid "Advanced Mode shows all options. Switch to Simple Mode for a streamlined view."
+msgstr "Avancerat läge visar alla alternativ. Byt till enkelt läge för en förenklad vy."
+
+msgid "Default (Follows WordPress)"
+msgstr "Standard (följer WordPress)"
+
+msgid "Core Settings"
+msgstr "Grundinställningar"
+
+msgid "404 Capture"
+msgstr "404-fångst"
+
+msgid "Default 404 destination"
+msgstr "Standard 404-destination"
+
+msgid "Where to send visitors when a 404 error occurs"
+msgstr "Vart besökare ska skickas när ett 404-fel inträffar"
+
+msgid "Automatically redirect 404s to similar pages when a good match is found"
+msgstr "Omdirigera automatiskt 404-fel till liknande sidor när en bra matchning hittas"
+
+msgid "Redirect type"
+msgstr "Omdirigeringstyp"
+
+msgid "301 for SEO, 302 for temporary changes"
+msgstr "301 för SEO, 302 för tillfälliga ändringar"
+
+msgid "Log 404 errors so you can review and fix them"
+msgstr "Logga 404-fel så att du kan granska och åtgärda dem"
+
+msgid "Delete captured URLs after"
+msgstr "Radera fångade URL:er efter"
+
+msgid "days"
+msgstr "dagar"
+
+msgid "Auto-remove old 404 records (0 to keep forever)"
+msgstr "Ta bort gamla 404-poster automatiskt (0 för att behålla för alltid)"
+
+msgid "Notify me when captured URLs exceed"
+msgstr "Meddela mig när fångade URL:er överstiger"
+
+msgid "Show admin notice when 404 count gets high (0 to disable)"
+msgstr "Visa administratörsmeddelande när 404-antalet blir högt (0 för att inaktivera)"
+
+msgid "Maximum log storage"
+msgstr "Maximal logglagring"
+
+msgid "Oldest logs are deleted when this limit is reached"
+msgstr "Äldsta loggar raderas när denna gräns nås"
+
+msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
+msgstr "Behöver du mer kontroll? Byt till avancerat läge för 30+ ytterligare alternativ."
+
+msgid "Need more control?"
+msgstr "Need more control?"
+
+msgid "Switch to Advanced Mode"
+msgstr "Switch to Advanced Mode"
+
+msgid "for 30+ additional options."
+msgstr "for 30+ additional options."
