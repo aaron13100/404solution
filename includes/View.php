@@ -1875,6 +1875,13 @@ class ABJ_404_Solution_View {
         echo '<div class="abj404-checkbox-group" style="margin-top: 12px;">';
         echo '<input type="checkbox" name="is_regex_url" id="modal_is_regex" class="abj404-checkbox-input" value="1">';
         echo '<label for="modal_is_regex" class="abj404-checkbox-label">' . esc_html__('Treat this URL as a regular expression', '404-solution') . '</label>';
+        echo ' <a href="#" class="abj404-regex-toggle" onclick="abj404ToggleRegexInfo(event)">' . esc_html__('(Explain)', '404-solution') . '</a>';
+        echo '</div>';
+        echo '<div class="abj404-regex-info" style="display: none;">';
+        echo '<p>' . esc_html__('When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don\'t know what you\'re doing please don\'t use this option (as it\'s not necessary for the functioning of the plugin).', '404-solution') . '</p>';
+        echo '<p><strong>' . esc_html__('Example:', '404-solution') . '</strong> <code>/events/(.+)</code></p>';
+        echo '<p>' . esc_html__('/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL.', '404-solution') . '</p>';
+        echo '<p>' . esc_html__('First, all of the normal "exact match" URLs are checked, then all of the regular expression URLs are checked.', '404-solution') . '</p>';
         echo '</div>';
         echo '</div>';
 

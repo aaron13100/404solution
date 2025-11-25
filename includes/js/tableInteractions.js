@@ -249,4 +249,21 @@
         return urlParams.get(param);
     }
 
+    /**
+     * Toggle regex explanation info
+     */
+    window.abj404ToggleRegexInfo = function(event) {
+        event.preventDefault();
+        var $info = $('.abj404-regex-info');
+        var $toggle = $('.abj404-regex-toggle');
+
+        if ($info.is(':visible')) {
+            $info.slideUp(200);
+            $toggle.text('(Explain)');
+        } else {
+            $info.slideDown(200);
+            $toggle.text('(Hide Info)');
+        }
+    };
+
 })(jQuery);
