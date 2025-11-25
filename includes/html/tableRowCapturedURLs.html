@@ -1,15 +1,17 @@
-<tr id="post-{rowid}" class="{rowClass}">
-    <th class="check-column">
-        <input type="checkbox" name="idnum[]" value="{rowid}" onchange="enableDisableApplyButton();">
-    </th>
+<tr class="{rowClass}" id="post-{rowid}">
     <td>
-        <strong><a href="{editLink}" title="Edit Redirect Details">{url}</a></strong>
-        <div class="row-actions">
-            {rowActions}
+        <input type="checkbox" name="idnum[]" value="{rowid}" onchange="enableDisableApplyButton();">
+    </td>
+    <td class="abj404-url-cell" title="{url}">
+        <a href="{visitorURL}" target="_blank" title="{Visit URL}">{url}</a>
+        <div class="abj404-row-actions">
+            {editBtnHTML} | {logsBtnHTML} | {trashBtnHTML}{deleteBtnHTML}{ignoreBtnHTML}{laterBtnHTML}
         </div>
     </td>
-    <td>{hits}</td>
-    <td>{created_date}</td>
-    <td>{last_used_date}</td>
-    <td></td>
+    <td>
+        <span class="abj404-badge {statusBadgeClass}" title="{statusTitle}">{status}</span>
+    </td>
+    <td class="abj404-hits-cell">{hits}</td>
+    <td class="abj404-date-cell hide-on-tablet">{created_date}</td>
+    <td class="abj404-date-cell {lastUsedClass}">{last_used_date}</td>
 </tr>

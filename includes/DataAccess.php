@@ -863,6 +863,71 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /**
+     * Get counts for each redirect status type for display in tabs.
+     * @return array An array with keys: all, manual, auto, regex, trash
+     */
+    function getRedirectStatusCounts() {
+        $query = "SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_MANUAL . " THEN 1 ELSE 0 END) as manual,
+            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_AUTO . " THEN 1 ELSE 0 END) as auto,
+            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_REGEX . " THEN 1 ELSE 0 END) as regex,
+            SUM(CASE WHEN disabled = 1 THEN 1 ELSE 0 END) as trash
+            FROM {wp_abj404_redirects}";
+        $query = $this->doTableNameReplacements($query);
+
+        $result = $this->queryAndGetResults($query);
+        $rows = $result['rows'];
+
+        if (!empty($rows)) {
+            $row = $rows[0];
+            return array(
+                'all' => intval($row['active']),
+                'manual' => intval($row['manual']),
+                'auto' => intval($row['auto']),
+                'regex' => intval($row['regex']),
+                'trash' => intval($row['trash'])
+            );
+        }
+
+        return array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0);
+    }
+
+    /**
+     * Get counts for each captured URL status type.
+     * @return array Array with keys: all, captured, ignored, later, trash
+     */
+    function getCapturedStatusCounts() {
+        $query = "SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_CAPTURED . " THEN 1 ELSE 0 END) as captured,
+            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_IGNORED . " THEN 1 ELSE 0 END) as ignored,
+            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_LATER . " THEN 1 ELSE 0 END) as later,
+            SUM(CASE WHEN disabled = 1 THEN 1 ELSE 0 END) as trash
+            FROM {wp_abj404_redirects}
+            WHERE status IN (" . ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER . ")";
+        $query = $this->doTableNameReplacements($query);
+
+        $result = $this->queryAndGetResults($query);
+        $rows = $result['rows'];
+
+        if (!empty($rows)) {
+            $row = $rows[0];
+            return array(
+                'all' => intval($row['active']),
+                'captured' => intval($row['captured']),
+                'ignored' => intval($row['ignored']),
+                'later' => intval($row['later']),
+                'trash' => intval($row['trash'])
+            );
+        }
+
+        return array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0);
+    }
+
+    /**
      * @global type $wpdb
      * @param int $logID only return results that correspond to the URL of this $logID. Use 0 to get all records.
      * @return int the number of records found.

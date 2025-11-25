@@ -1,45 +1,32 @@
 <tr class="{rowClass}" id="post-{rowid}">
-    
-    <th class="check-column">
-        <input type="checkbox" name="idnum[]" value="{rowid}" onchange="enableDisableApplyButton();">
-    </th>
-
     <td>
-        <strong>
-            <a href="{editLink}" target="_blank" title="{Edit Redirect Details}">{rowURL}</a>
-        </strong>
-        <div class="row-actions">
-            
-            {editlinkHTML}
-
-            <span class="trash">
-                <a href="#" class="ajax-trash-link" data-url="{ajaxTrashLink}" title="{Trash Redirected URL}">{trashtitle}</a>
-            </span> |
-                        
-            {logslinkHTML}
-
-            {deletePermanentlyHTML}
-
+        <input type="checkbox" name="idnum[]" value="{rowid}" onchange="enableDisableApplyButton();">
+    </td>
+    <td class="abj404-url-cell" title="{rowURL}">
+        <a href="{visitorURL}" target="_blank" title="{Visit URL}">{rowURL}</a>
+        <div class="abj404-row-actions">
+            {editBtnHTML} | {logsBtnHTML} | {trashBtnHTML}{deleteBtnHTML}
         </div>
     </td>
-    <td title="{statusTitle}">{status}</td>
-    <td>{type}</td>
     <td>
-		<span style="{destination-exists}">
-			<a {link} target="_blank" title="{title}" class="{dest_class}">{dest}</a>			
-		</span>
-		<span class="lefty-tooltip" style="{destination-does-not-exist}">
-		    <span class="lefty-tooltiptext">This page doesn't exist or is not published so the redirect won't work.</span>
-
-			<a href="{link}" target="_blank" 
-				style="color: black; font-weight: bolder;" >{dest}</a>			
-		</span>
-        
+        <span class="abj404-badge {statusBadgeClass}" title="{statusTitle}">{status}</span>
     </td>
-    <td>{rowCode}</td>
-    <td>{hits}</td>
-    <td>{created_date}</td>
-    <td>{last_used_date}</td>
-    <td/>
+    <td>
+        <span class="abj404-type-badge">{type}</span>
+    </td>
+    <td class="abj404-dest-cell" title="{dest}">
+        <span style="{destination-exists}">
+            <a {link} target="_blank" title="{title}" class="{dest_class}">{dest}</a>
+        </span>
+        <span class="abj404-dest-tooltip" style="{destination-does-not-exist}">
+            <span class="abj404-tooltip-text">{This page doesn't exist or is not published so the redirect won't work.}</span>
+            <a href="{link}" target="_blank" class="abj404-dest-warning">{dest}</a>
+        </span>
+    </td>
+    <td>
+        <span class="abj404-badge {codeBadgeClass}">{rowCode}</span>
+    </td>
+    <td class="abj404-hits-cell">{hits}</td>
+    <td class="abj404-date-cell hide-on-tablet">{created_date}</td>
+    <td class="abj404-date-cell {lastUsedClass}">{last_used_date}</td>
 </tr>
-

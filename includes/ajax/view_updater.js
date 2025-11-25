@@ -84,17 +84,23 @@ function paginationLinksChange(triggerItem) {
     var rowThatChanged = jQuery(triggerItem).parentsUntil('.tablenav').parent();
     var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
     var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();
-    
+
     // make this work for .abj404-pagination-right which has a transparent background.
-    var allSelectors = ('.abj404-pagination-right input, .abj404-pagination-right select' + 
-            ', .wp-list-table .normal-non-alternate, .wp-list-table' + 
-            ", .wp-list-table .alternate, .abj404-pagination-right");
-    
+    var allSelectors = ('.abj404-pagination-right input, .abj404-pagination-right select' +
+            ', .wp-list-table .normal-non-alternate, .wp-list-table, .abj404-table' +
+            ", .wp-list-table .alternate, .abj404-pagination-right, .abj404-filter-bar");
+
     var fadeToColor = 'gray';
-    
-    
-    // get the URL from the html page.
+
+
+    // get the URL from the html page - check multiple possible locations
     var url = jQuery(".abj404-pagination-right").attr("data-pagination-ajax-url");
+    if (!url) {
+        url = jQuery(".abj404-filter-bar").attr("data-pagination-ajax-url");
+    }
+    if (!url) {
+        url = jQuery("[data-pagination-ajax-url]").first().attr("data-pagination-ajax-url");
+    }
     var subpage = getURLParameter('subpage');
     var trashFilter = getURLParameter('filter');
 
@@ -117,12 +123,21 @@ function paginationLinksChange(triggerItem) {
         success: function (result) {
             // get the current text value
             var currentFieldValue = jQuery('input[name=searchFilter]').val();
-            
-            // replace the tables
+
+            // replace the tables - support both old (.wp-list-table) and new (.abj404-table) table classes
             var pageLinks = jQuery('.abj404-pagination-right');
-            jQuery(pageLinks[0]).replaceWith(result.paginationLinksTop);
-            jQuery(pageLinks[1]).replaceWith(result.paginationLinksBottom);
-            jQuery('.wp-list-table').replaceWith(result.table);
+            if (pageLinks.length > 0) {
+                jQuery(pageLinks[0]).replaceWith(result.paginationLinksTop);
+                if (pageLinks.length > 1) {
+                    jQuery(pageLinks[1]).replaceWith(result.paginationLinksBottom);
+                }
+            }
+            // Replace the table - try both class names
+            if (jQuery('.wp-list-table').length > 0) {
+                jQuery('.wp-list-table').replaceWith(result.table);
+            } else if (jQuery('.abj404-table').length > 0) {
+                jQuery('.abj404-table').replaceWith(result.table);
+            }
             bindSearchFieldListeners();
             jQuery('input[name=searchFilter]').val(currentFieldValue);
             jQuery('input[name=searchFilter]').attr("data-previous-value", currentFieldValue);
