@@ -85,13 +85,9 @@ function paginationLinksChange(triggerItem) {
     var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
     var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();
 
-    // make this work for .abj404-pagination-right which has a transparent background.
-    var allSelectors = ('.abj404-pagination-right input, .abj404-pagination-right select' +
-            ', .wp-list-table .normal-non-alternate, .wp-list-table, .abj404-table' +
-            ", .wp-list-table .alternate, .abj404-pagination-right, .abj404-filter-bar");
-
-    var fadeToColor = 'gray';
-
+    // Only fade the table itself, not the filter bar or pagination
+    var tableSelector = jQuery('.abj404-table').length > 0 ? '.abj404-table' : '.wp-list-table';
+    var fadeToColor = '#e0e0e0';
 
     // get the URL from the html page - check multiple possible locations
     var url = jQuery(".abj404-pagination-right").attr("data-pagination-ajax-url");
@@ -107,6 +103,10 @@ function paginationLinksChange(triggerItem) {
     // Extract nonce from the AJAX URL
     var nonceMatch = url.match(/[?&]nonce=([^&]+)/);
     var nonce = nonceMatch ? nonceMatch[1] : '';
+
+    // Phase 1: Start fading table to gray immediately while waiting for AJAX response
+    var $table = jQuery(tableSelector);
+    $table.css('opacity', '0.5');
 
     // do an ajax call to update the data
     jQuery.ajax({
@@ -141,37 +141,19 @@ function paginationLinksChange(triggerItem) {
             bindSearchFieldListeners();
             jQuery('input[name=searchFilter]').val(currentFieldValue);
             jQuery('input[name=searchFilter]').attr("data-previous-value", currentFieldValue);
-            
-            // get the original colors
-            var allSelectorsArr = allSelectors.split(', ');
-            var originalColors = {};
-            for (var i = 0; i < allSelectorsArr.length; i++) {
-                var currentSelector = allSelectorsArr[i];
-                originalColors[currentSelector] = jQuery(currentSelector).css('background-color');
-            }
-            
-            // make them gray immediately as if they were always gray.
-            for (var i = 0; i < allSelectorsArr.length; i++) {
-                var currentSelector = allSelectorsArr[i];
-                jQuery(currentSelector).css('background-color', fadeToColor);
-            }
-            
-            // fade them back to their normal colors.
-            for (var i = 0; i < allSelectorsArr.length; i++) {
-                var currentSelector = allSelectorsArr[i];
-                var originalColor = originalColors[currentSelector];
-                jQuery(currentSelector).animate({backgroundColor: originalColor});
-            }
 
-        	bindTrashLinkListeners();
+            // Fade the new table back in
+            var $newTable = jQuery(tableSelector);
+            $newTable.css('opacity', '0.5').animate({opacity: 1}, 300);
+
+            bindTrashLinkListeners();
         },
         error: function (jqXHR, textStatus, errorThrown) {
+            // Restore table opacity on error
+            jQuery(tableSelector).css('opacity', '1');
             alert("Ajax error. Result: " + JSON.stringify(textStatus, null, 2) +
                     ", error: " + JSON.stringify(errorThrown, null, 2));
         }
     });
-
-    // Phase 1: Start fading to gray immediately while waiting for AJAX response
-    jQuery(allSelectors).animate({backgroundColor: fadeToColor}, 3000);
 }
 
