@@ -112,8 +112,8 @@ function paginationLinksChange(triggerItem) {
     var $wrapper = $table.parent();
     // Remove any existing overlay first
     $wrapper.find('.abj404-loading-overlay').remove();
-    // Add the loading overlay with spinner
-    $wrapper.append('<div class="abj404-loading-overlay"><div class="abj404-spinner"></div></div>');
+    // Add the loading overlay with spinner (spinner-container uses sticky positioning to stay visible)
+    $wrapper.append('<div class="abj404-loading-overlay"><div class="abj404-spinner-container"><div class="abj404-spinner"></div></div></div>');
 
     // do an ajax call to update the data
     jQuery.ajax({

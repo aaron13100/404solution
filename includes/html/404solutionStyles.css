@@ -1834,17 +1834,24 @@ html[data-theme="obsidian"] .abj404-tab.active {
     right: 0;
     bottom: 0;
     background: rgba(255, 255, 255, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: 10;
     border-radius: 8px;
     animation: abj404-fade-in 0.2s ease-out;
+    overflow: hidden;
 }
 
 @keyframes abj404-fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+.abj404-spinner-container {
+    position: sticky;
+    top: 50vh;
+    display: flex;
+    justify-content: center;
+    transform: translateY(-50%);
+    pointer-events: none;
 }
 
 .abj404-spinner {
