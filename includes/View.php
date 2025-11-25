@@ -2219,7 +2219,7 @@ class ABJ_404_Solution_View {
             $htmlTemp = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
             $htmlTemp = $this->f->str_replace('{rowid}', $row['id'], $htmlTemp);
             $htmlTemp = $this->f->str_replace('{rowClass}', $class, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{editLink}', $fullVisitorURL, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{visitorURL}', $fullVisitorURL, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{rowURL}', esc_html($row['url']), $htmlTemp);
 
             // Modern row action buttons
