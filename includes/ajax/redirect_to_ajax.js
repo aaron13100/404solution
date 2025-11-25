@@ -75,6 +75,14 @@ jQuery(document).ready(function($) {
             },
         delay: 500,
         minLength: 0,
+        search: function(event, ui) {
+            // Show loading spinner
+            abj404ShowAutocompleteSpinner(true);
+        },
+        response: function(event, ui) {
+            // Hide loading spinner
+            abj404ShowAutocompleteSpinner(false);
+        },
         select: function(event, ui) {
             event.preventDefault();
             // when an item is selected then update the hidden fields to store it.
@@ -184,4 +192,25 @@ function abj404_isValidURL(url) {
     	return true;
     }
     return false;
+}
+
+/**
+ * Show or hide the autocomplete loading spinner.
+ * @param {boolean} show - true to show, false to hide
+ */
+function abj404ShowAutocompleteSpinner(show) {
+    var $field = jQuery('#redirect_to_user_field');
+    var $spinner = jQuery('#abj404-autocomplete-spinner');
+
+    // Create spinner if it doesn't exist
+    if (!$spinner.length && show) {
+        $spinner = jQuery('<span id="abj404-autocomplete-spinner" class="abj404-autocomplete-spinner"></span>');
+        $field.after($spinner);
+    }
+
+    if (show) {
+        $spinner.show();
+    } else {
+        $spinner.hide();
+    }
 }
