@@ -1063,9 +1063,16 @@ class ABJ_404_Solution_DataAccess {
             // create a temp table and use that instead of a subselect to avoid the sql error
             // "The SELECT would examine more than MAX_JOIN_SIZE rows"
             $this->maybeUpdateRedirectsForViewHitsTable();
-            
-            $logsTableJoin = "  LEFT OUTER JOIN {wp_abj404_logs_hits} logstable \n " . 
-                    "  on binary wp_abj404_redirects.url = binary logstable.requested_url \n ";
+
+            // Verify table was actually created before using it (handles silent creation failures)
+            if ($this->logsHitsTableExists()) {
+                $logsTableJoin = "  LEFT OUTER JOIN {wp_abj404_logs_hits} logstable \n " .
+                        "  on binary wp_abj404_redirects.url = binary logstable.requested_url \n ";
+            } else {
+                // Fall back to null columns if table creation failed
+                $logsTableColumns = "null as logshits, \n null as logsid, \n null as last_used, \n";
+                $this->logger->debugMessage("logs_hits table not available, falling back to null columns");
+            }
         }
         
         if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
@@ -1244,7 +1251,19 @@ class ABJ_404_Solution_DataAccess {
             $this->createRedirectsForViewHitsTable();
         }
     }
-    
+
+    /**
+     * Check if the logs_hits table exists.
+     * Used to verify table was created before using it in queries.
+     * @return bool
+     */
+    function logsHitsTableExists() {
+        $query = "SELECT 1 FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}' LIMIT 1";
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
+        return ($results['rows'] != null && !empty($results['rows']));
+    }
+
     function createRedirectsForViewHitsTable() {
         
         $finalDestTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}");
@@ -2047,6 +2066,10 @@ class ABJ_404_Solution_DataAccess {
         // ----------------
         
         if ($slug != "") {
+            // Sanitize invalid UTF-8 before SQL to prevent database errors
+            // (fixes bug: URLs like %9F%9F%9F%9F-%9F%9F%9F-1.png cause "invalid data" errors)
+            $slug = $this->f->sanitizeInvalidUTF8($slug);
+
             $specifiedSlug = " */\n and CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = "
                     . "'" . esc_sql($slug) . "' \n ";
         } else {
