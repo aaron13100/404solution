@@ -382,47 +382,51 @@ class ABJ_404_Solution_View {
             echo '<div class="' . $cssClasses . '"><p>' . wp_kses($message, $allowed_tags) . "</p></div>\n";
         }
 
-        echo '<h2 class="nav-tab-wrapper">';
+        echo '<nav class="abj404-tab-navigation" role="tablist">';
 
-        $class = "";
-        if ($sub == 'abj404_redirects') {
-            $class = "nav-tab-active";
-        }
-        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_redirects\" title=\"" . __('Page Redirects', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Page Redirects', '404-solution') . "</a>";
+        // Page Redirects tab
+        $class = ($sub == 'abj404_redirects') ? "active" : "";
+        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_redirects" title="' . esc_attr__('Page Redirects', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
+        echo '<span class="dashicons dashicons-randomize"></span>';
+        echo '<span class="abj404-tab-text">' . esc_html__('Page Redirects', '404-solution') . '</span>';
+        echo '</a>';
 
-        $class = "";
-        if ($sub == 'abj404_captured') {
-            $class = "nav-tab-active";
-        }
-        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_captured\" title=\"" . __('Captured 404 URLs', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Captured 404 URLs', '404-solution') . "</a>";
+        // Captured 404 URLs tab
+        $class = ($sub == 'abj404_captured') ? "active" : "";
+        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_captured" title="' . esc_attr__('Captured 404 URLs', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
+        echo '<span class="dashicons dashicons-search"></span>';
+        echo '<span class="abj404-tab-text">' . esc_html__('Captured 404s', '404-solution') . '</span>';
+        echo '</a>';
 
-        $class = "";
-        if ($sub == 'abj404_logs') {
-            $class = "nav-tab-active";
-        }
-        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_logs\" title=\"" . __('Redirect & Capture Logs', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Logs', '404-solution') . "</a>";
+        // Logs tab
+        $class = ($sub == 'abj404_logs') ? "active" : "";
+        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_logs" title="' . esc_attr__('Redirect & Capture Logs', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
+        echo '<span class="dashicons dashicons-list-view"></span>';
+        echo '<span class="abj404-tab-text">' . esc_html__('Logs', '404-solution') . '</span>';
+        echo '</a>';
 
-        $class = "";
-        if ($sub == 'abj404_stats') {
-            $class = "nav-tab-active";
-        }
-        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_stats\" title=\"" . __('Stats', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Stats', '404-solution') . "</a>";
+        // Stats tab
+        $class = ($sub == 'abj404_stats') ? "active" : "";
+        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_stats" title="' . esc_attr__('Stats', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
+        echo '<span class="dashicons dashicons-chart-bar"></span>';
+        echo '<span class="abj404-tab-text">' . esc_html__('Stats', '404-solution') . '</span>';
+        echo '</a>';
 
-        $class = "";
-        if ($sub == 'abj404_tools') {
-            $class = "nav-tab-active";
-        }
-        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_tools\" title=\"" . __('Tools', '404-solution') . "\" class=\"nav-tab " . $class . "\">" . __('Tools', '404-solution') . "</a>";
+        // Tools tab
+        $class = ($sub == 'abj404_tools') ? "active" : "";
+        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_tools" title="' . esc_attr__('Tools', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
+        echo '<span class="dashicons dashicons-admin-tools"></span>';
+        echo '<span class="abj404-tab-text">' . esc_html__('Tools', '404-solution') . '</span>';
+        echo '</a>';
 
-        $class = "";
-        if ($sub == "abj404_options") {
-            $class = "nav-tab-active";
-        }
-        echo "\n<a href=\"?page=" . ABJ404_PP . "&subpage=abj404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . __('Options', '404-solution') . "</a>";
+        // Options tab
+        $class = ($sub == "abj404_options") ? "active" : "";
+        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_options" title="' . esc_attr__('Options', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
+        echo '<span class="dashicons dashicons-admin-generic"></span>';
+        echo '<span class="abj404-tab-text">' . esc_html__('Options', '404-solution') . '</span>';
+        echo '</a>';
 
-        echo "</h2>";
-
-        echo "<hr style=\"border: 0px; border-bottom: 1px solid #DFDFDF; margin-top: 0px; margin-bottom: 0px; \">";
+        echo '</nav>';
     }
     
     /** This outputs a box with a title and some content in it. 
@@ -484,7 +488,17 @@ class ABJ_404_Solution_View {
             'filter' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>',
             'document' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>',
             'sliders' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>',
-            'lightbulb' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>'
+            'lightbulb' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>',
+            // Stats page icons
+            'chart' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>',
+            'warning' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>',
+            'clock' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+            // Tools page icons
+            'download' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>',
+            'upload' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>',
+            'trash' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>',
+            'database' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>',
+            'cog' => '<svg class="abj404-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>'
         );
         return isset($icons[$iconName]) ? $icons[$iconName] : '';
     }
@@ -734,18 +748,35 @@ class ABJ_404_Solution_View {
 
         $redirects = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
         $logs = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
-        $hr = "style=\"border: 0px; margin-bottom: 0px; padding-bottom: 4px; border-bottom: 1px dotted #DEDEDE;\"";
 
-        $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d"; // . ABJ404_STATUS_AUTO;
+        // Main container
+        echo "<div class=\"abj404-container\">";
+        echo "<div class=\"abj404-settings-content\">";
+
+        // Header row with Expand All button
+        echo "<div class=\"abj404-header-row\">";
+        echo "<h2>" . esc_html__('Statistics', '404-solution') . "</h2>";
+        echo "<div class=\"abj404-header-controls\">";
+        echo '<button type="button" id="abj404-expand-collapse-all" class="button">';
+        echo esc_html__('Expand All', '404-solution');
+        echo '</button>';
+        echo "</div>";
+        echo "</div>";
+
+        // Flow layout for stats cards
+        echo "<div class=\"abj404-flow-layout\">";
+
+        // Redirects Statistics Card
+        $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d";
         $auto301 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_AUTO));
 
-        $query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d"; // . ABJ404_STATUS_AUTO;
+        $query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d";
         $auto302 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_AUTO));
 
-        $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d"; // . ABJ404_STATUS_MANUAL;
+        $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d";
         $manual301 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_MANUAL));
 
-        $query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d"; // . ABJ404_STATUS_MANUAL;
+        $query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d";
         $manual302 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_MANUAL));
 
         $query = "select count(id) from $redirects where disabled = 1 and (status = %d or status = %d)";
@@ -753,11 +784,6 @@ class ABJ_404_Solution_View {
 
         $total = $auto301 + $auto302 + $manual301 + $manual302 + $trashed;
 
-        echo "<div class=\"postbox-container\" style=\"float: right; width: 49%;\">";
-        echo "<div class=\"metabox-holder\">";
-        echo " <div class=\"meta-box-sortables\">";
-
-        // Load redirects stats template
         $content = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/statsRedirectsBox.html");
         $content = $this->f->str_replace('{auto301}', esc_html($auto301), $content);
         $content = $this->f->str_replace('{auto302}', esc_html($auto302), $content);
@@ -766,13 +792,13 @@ class ABJ_404_Solution_View {
         $content = $this->f->str_replace('{trashed}', esc_html($trashed), $content);
         $content = $this->f->str_replace('{total}', esc_html($total), $content);
         $content = $this->f->doNormalReplacements($content);
-        $abj404view->echoPostBox("abj404-redirectStats", __('Redirects', '404-solution'), $content);
+        $abj404view->echoOptionsSection('stats-redirects', 'abj404-redirectStats', __('Redirects', '404-solution'), $content, true, $abj404view->getCardIcon('chart'));
 
-        // -------------------------------------------
-        $query = "select count(id) from $redirects where disabled = 0 and status = %d"; // . ABJ404_STATUS_CAPTURED;
+        // Captured URLs Statistics Card
+        $query = "select count(id) from $redirects where disabled = 0 and status = %d";
         $captured = $this->dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED));
 
-        $query = "select count(id) from $redirects where disabled = 0 and status in (%d, %d)"; // . ABJ404_STATUS_IGNORED;
+        $query = "select count(id) from $redirects where disabled = 0 and status in (%d, %d)";
         $ignored = $this->dao->getStatsCount($query, array(ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
 
         $query = "select count(id) from $redirects where disabled = 1 and (status in (%d, %d, %d) )";
@@ -780,40 +806,31 @@ class ABJ_404_Solution_View {
 
         $total = $captured + $ignored + $trashed;
 
-        // Load captured URLs stats template
         $content = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/statsCapturedURLsBox.html");
         $content = $this->f->str_replace('{captured}', esc_html($captured), $content);
         $content = $this->f->str_replace('{ignored}', esc_html($ignored), $content);
         $content = $this->f->str_replace('{trashed}', esc_html($trashed), $content);
         $content = $this->f->str_replace('{total}', esc_html($total), $content);
         $content = $this->f->doNormalReplacements($content);
-        $abj404view->echoPostBox("abj404-capturedStats", __('Captured URLs', '404-solution'), $content);
-        echo "</div>";
-        echo "</div>";
-        echo "</div>";
+        $abj404view->echoOptionsSection('stats-captured', 'abj404-capturedStats', __('Captured URLs', '404-solution'), $content, true, $abj404view->getCardIcon('warning'));
 
-        // -------------------------------------------
-
-        echo "<div class=\"postbox-container\" style=\"width: 49%;\">";
-        echo "<div class=\"metabox-holder\">";
-        echo " <div class=\"meta-box-sortables\">";
-
+        // Periodic Stats Cards
         $today = mktime(0, 0, 0, abs(intval(date('m'))), abs(intval(date('d'))), abs(intval(date('Y'))));
         $firstm = mktime(0, 0, 0, abs(intval(date('m'))), 1, abs(intval(date('Y'))));
         $firsty = mktime(0, 0, 0, 1, 1, abs(intval(date('Y'))));
 
         for ($x = 0; $x <= 3; $x++) {
             if ($x == 0) {
-                $title = "Today's Stats";
+                $title = __("Today's Stats", '404-solution');
                 $ts = $today;
             } else if ($x == 1) {
-                $title = "This Month";
+                $title = __("This Month", '404-solution');
                 $ts = $firstm;
             } else if ($x == 2) {
-                $title = "This Year";
+                $title = __("This Year", '404-solution');
                 $ts = $firsty;
             } else if ($x == 3) {
-                $title = "All Stats";
+                $title = __("All Stats", '404-solution');
                 $ts = 0;
             }
 
@@ -841,7 +858,6 @@ class ABJ_404_Solution_View {
             $query = "select count(distinct referrer) from $logs where timestamp >= $ts and dest_url != %s";
             $distinctrefer = $this->dao->getStatsCount($query, array("404"));
 
-            // Load periodic stats template
             $content = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/statsPeriodicBox.html");
             $content = $this->f->str_replace('{disp404}', esc_html($disp404), $content);
             $content = $this->f->str_replace('{distinct404}', esc_html($distinct404), $content);
@@ -852,11 +868,12 @@ class ABJ_404_Solution_View {
             $content = $this->f->str_replace('{distinctvisitors}', esc_html($distinctvisitors), $content);
             $content = $this->f->str_replace('{distinctrefer}', esc_html($distinctrefer), $content);
             $content = $this->f->doNormalReplacements($content);
-            $abj404view->echoPostBox("abj404-stats" . $x, __($title, '404-solution'), $content);
+            $abj404view->echoOptionsSection('stats-periodic-' . $x, 'abj404-stats' . $x, $title, $content, ($x == 0), $abj404view->getCardIcon('clock'));
         }
-        echo "</div>";
-        echo "</div>";
-        echo "</div>";
+
+        echo "</div>"; // Close flow layout
+        echo "</div>"; // Close settings content
+        echo "</div>"; // Close container
     }
     
     function echoAdminDebugFile() {
@@ -923,90 +940,61 @@ class ABJ_404_Solution_View {
     function echoAdminToolsPage() {
         global $abj404view;
 
-        // ------------------------------------
+        // Main container
+        echo "<div class=\"abj404-container\">";
+        echo "<div class=\"abj404-settings-content\">";
+
+        // Header row with Expand All button
+        echo "<div class=\"abj404-header-row\">";
+        echo "<h2>" . esc_html__('Tools', '404-solution') . "</h2>";
+        echo "<div class=\"abj404-header-controls\">";
+        echo '<button type="button" id="abj404-expand-collapse-all" class="button">';
+        echo esc_html__('Expand All', '404-solution');
+        echo '</button>';
+        echo "</div>";
+        echo "</div>";
+
+        // Export Card
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_exportRedirects");
-        
-        // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsExportForm.html");
-        // do special replacements
         $html = $this->f->str_replace('{toolsExportRedirectsLink}', $link, $html);
-        // constants and translations.
         $html = $this->f->doNormalReplacements($html);
-        
-        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
-        echo "<div class=\"metabox-holder\">";
-        echo " <div class=\"meta-box-sortables\">";
-        $abj404view->echoPostBox("abj404-exportRedirects", __('Export', '404-solution'), $html);
-        // ------------------------------------
-        
-        // ------------------------------------
-        $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", 
-            "abj404_importRedirectsFile");
-        
-        // read the html content.
+        $abj404view->echoOptionsSection('tools-export', 'abj404-exportRedirects', __('Export', '404-solution'), $html, true, $abj404view->getCardIcon('download'));
+
+        // Import Card
+        $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_importRedirectsFile");
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsImportForm.html");
-        // do special replacements
         $html = $this->f->str_replace('{toolsImportRedirectsLink}', $link, $html);
-        // constants and translations.
         $html = $this->f->doNormalReplacements($html);
-        
-        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
-        echo "<div class=\"metabox-holder\">";
-        echo " <div class=\"meta-box-sortables\">";
-        $abj404view->echoPostBox("abj404-importRedirects", __('Import', '404-solution'), $html);
-        // ------------------------------------
-        
+        $abj404view->echoOptionsSection('tools-import', 'abj404-importRedirects', __('Import', '404-solution'), $html, false, $abj404view->getCardIcon('upload'));
+
+        // Purge Card
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
         $link = wp_nonce_url($url, "abj404_purgeRedirects");
-        
-        // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsPurgeForm.html");
-        // do special replacements
         $html = $this->f->str_replace('{toolsPurgeFormActionLink}', $link, $html);
-        // constants and translations.
         $html = $this->f->doNormalReplacements($html);
-        
-        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
-        echo "<div class=\"metabox-holder\">";
-        echo " <div class=\"meta-box-sortables\">";
-        $abj404view->echoPostBox("abj404-purgeRedirects", __('Purge Options', '404-solution'), $html);
-        echo "</div></div></div>";
-        
-        // ------------------------------------
-        $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_runMaintenance");
-        $link .= '&manually_fired=true';
-        
-        // read the html content.
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsEtcForm.html");
-        // do special replacements
-        $html = $this->f->str_replace('{toolsMaintenanceFormActionLink}', $link, $html);
-        // constants and translations.
-        $html = $this->f->doNormalReplacements($html);
-        
-        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
-        echo "<div class=\"metabox-holder\">";
-        echo " <div class=\"meta-box-sortables\">";
-        $abj404view->echoPostBox("abj404-purgeRedirects", __('Etcetera', '404-solution'), $html);
-        echo "</div></div></div>";
+        $abj404view->echoOptionsSection('tools-purge', 'abj404-purgeRedirects', __('Purge Options', '404-solution'), $html, false, $abj404view->getCardIcon('trash'));
 
-        // ------------------------------------
-        // Cache management tools
+        // Cache Management Card
         $ngramLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_rebuildNgramCache");
         $spellingLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_clearSpellingCache");
-
-        // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsCacheForm.html");
-        // do special replacements
         $html = $this->f->str_replace('{toolsNgramCacheFormActionLink}', $ngramLink, $html);
         $html = $this->f->str_replace('{toolsSpellingCacheFormActionLink}', $spellingLink, $html);
-        // constants and translations.
         $html = $this->f->doNormalReplacements($html);
+        $abj404view->echoOptionsSection('tools-cache', 'abj404-cacheTools', __('Cache Management', '404-solution'), $html, false, $abj404view->getCardIcon('database'));
 
-        echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
-        echo "<div class=\"metabox-holder\">";
-        echo " <div class=\"meta-box-sortables\">";
-        $abj404view->echoPostBox("abj404-cacheTools", __('Cache Management', '404-solution'), $html);
-        echo "</div></div></div>";
+        // Etcetera Card
+        $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_runMaintenance");
+        $link .= '&manually_fired=true';
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/toolsEtcForm.html");
+        $html = $this->f->str_replace('{toolsMaintenanceFormActionLink}', $link, $html);
+        $html = $this->f->doNormalReplacements($html);
+        $abj404view->echoOptionsSection('tools-etc', 'abj404-etcTools', __('Etcetera', '404-solution'), $html, false, $abj404view->getCardIcon('cog'));
+
+        echo "</div>";
+        echo "</div>";
     }
     
     function echoAdminOptionsPage() {

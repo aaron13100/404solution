@@ -85,6 +85,23 @@
     margin-bottom: 0;
 }
 
+/* Flow layout for stats page - cards in a flexible grid */
+.abj404-flow-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+.abj404-flow-layout .abj404-card {
+    margin-bottom: 0;
+}
+
+/* For smaller cards that should stay compact */
+.abj404-flow-layout .abj404-card-compact {
+    max-width: 400px;
+}
+
 .abj404-card-header {
     display: flex;
     justify-content: space-between;
@@ -1056,42 +1073,151 @@ ul .ui-autocomplete-category.data-overflow-category {
 }
 
 /* ============================================
-   Hiding Header (Scroll Direction)
+   Navigation Tabs (Modern Design)
    ============================================ */
 
 /* Add spacing for fixed tabs so they don't cover page header */
 .wrap {
-    padding-top: 50px; /* Space for fixed nav-tab-wrapper */
+    padding-top: 50px; /* Space for fixed tab navigation */
 }
 
-/* WordPress plugin tabs - smooth transition */
-.nav-tab-wrapper {
+/* Tab navigation container */
+.abj404-tab-navigation {
     position: fixed;
-    top: var(--admin-bar-height, 32px); /* Calculated dynamically by JavaScript */
+    top: var(--admin-bar-height, 32px);
     left: 160px; /* WordPress admin menu width */
     right: 0;
-    z-index: 101; /* Above chips (100) and content */
-    background: #f0f0f1;
+    z-index: 101;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0 20px;
     margin: 0;
-    padding: 0;
+    display: flex;
+    gap: 4px;
     transition: transform 0.3s ease-in-out;
     will-change: transform;
 }
 
 /* Hide tabs when scrolling down */
-.nav-tab-wrapper.tabs-hidden {
+.abj404-tab-navigation.tabs-hidden {
     transform: translateY(-100%);
+}
+
+/* Individual tab styling */
+.abj404-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 18px;
+    border: none;
+    background: transparent;
+    color: #646970;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.abj404-tab .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 1;
+}
+
+.abj404-tab:hover {
+    color: #2271b1;
+    background: #f6f7f7;
+    text-decoration: none;
+}
+
+.abj404-tab:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.abj404-tab.active {
+    color: #2271b1;
+    border-bottom-color: #2271b1;
+    background: #f6f7f7;
+}
+
+.abj404-tab.active .dashicons {
+    color: #2271b1;
 }
 
 /* Mobile admin bar and folded menu */
 @media screen and (max-width: 960px) {
-    .nav-tab-wrapper {
+    .abj404-tab-navigation {
         left: 36px; /* Folded menu width */
+        padding: 0 12px;
+    }
+
+    .abj404-tab {
+        padding: 12px 14px;
     }
 }
 
 @media screen and (max-width: 782px) {
-    .nav-tab-wrapper {
+    .abj404-tab-navigation {
         left: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
+
+    .abj404-tab {
+        padding: 12px 12px;
+        font-size: 13px;
+    }
+
+    .abj404-tab .dashicons {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* Very small screens - hide tab text, show only icons */
+@media screen and (max-width: 500px) {
+    .abj404-tab-text {
+        display: none;
+    }
+
+    .abj404-tab {
+        padding: 12px 14px;
+    }
+
+    .abj404-tab .dashicons {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Dark theme support */
+html[data-theme="neon"] .abj404-tab-navigation,
+html[data-theme="obsidian"] .abj404-tab-navigation {
+    background: var(--abj-bg-primary, #1e1e1e);
+    border-bottom-color: var(--abj404-border, #3c3c3c);
+}
+
+html[data-theme="neon"] .abj404-tab,
+html[data-theme="obsidian"] .abj404-tab {
+    color: var(--abj404-text-muted, #a0a0a0);
+}
+
+html[data-theme="neon"] .abj404-tab:hover,
+html[data-theme="obsidian"] .abj404-tab:hover {
+    background: var(--abj404-surface, #2d2d2d);
+    color: var(--abj404-primary, #3b82f6);
+}
+
+html[data-theme="neon"] .abj404-tab.active,
+html[data-theme="obsidian"] .abj404-tab.active {
+    background: var(--abj404-surface, #2d2d2d);
+    color: var(--abj404-primary, #3b82f6);
+    border-bottom-color: var(--abj404-primary, #3b82f6);
 }
