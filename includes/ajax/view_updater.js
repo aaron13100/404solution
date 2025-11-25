@@ -104,9 +104,9 @@ function paginationLinksChange(triggerItem) {
     var nonceMatch = url.match(/[?&]nonce=([^&]+)/);
     var nonce = nonceMatch ? nonceMatch[1] : '';
 
-    // Phase 1: Start fading table to gray immediately while waiting for AJAX response
+    // Phase 1: Animate table fading out while waiting for AJAX response
     var $table = jQuery(tableSelector);
-    $table.css('opacity', '0.5');
+    $table.animate({opacity: 0.4}, 400);
 
     // do an ajax call to update the data
     jQuery.ajax({
@@ -144,7 +144,7 @@ function paginationLinksChange(triggerItem) {
 
             // Fade the new table back in
             var $newTable = jQuery(tableSelector);
-            $newTable.css('opacity', '0.5').animate({opacity: 1}, 300);
+            $newTable.css('opacity', '0.4').animate({opacity: 1}, 400);
 
             bindTrashLinkListeners();
         },
