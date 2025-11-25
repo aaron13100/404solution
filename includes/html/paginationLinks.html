@@ -1,12 +1,12 @@
 
+<div class="abj404-pagination tablenav abj404-pagination-right" data-pagination-ajax-url="{data-pagination-ajax-url}">
+    {showSearchFilter}
+    <input type="search" name="searchFilter" placeholder="{(Type to filter)}" value="{filterText}"
+           data-lpignore='true' disabled />
+    <!-- This comment allows us to hide or show the search filter. -->
 
-<div class="tablenav-pages abj404-pagination-right" data-pagination-ajax-url="{data-pagination-ajax-url}">
-        {showSearchFilter}
-        <input type="search" name="searchFilter" placeholder="{(Type to filter)}" value="{filterText}" 
-               data-lpignore='true' disabled />
-        <!-- This comment allows us t hide or show the search filter. -->
-
-        {TEXT_SHOW_ROWS}
+    <div class="abj404-rows-per-page">
+        <span>{TEXT_SHOW_ROWS}</span>
         <select class="perpage" name="perpage" onchange="paginationLinksChange(this);">
             <option value="3">3</option>
             <option value="5">5</option>
@@ -17,15 +17,15 @@
             <option value="200">200</option>
             <option value="500">500</option>
         </select>
-    
-  <span class="displaying-num"> {TEXT_BEFORE_LINKS}</span>
-  <span class="pagination-links">
-    <a href="{LINK_FIRST_PAGE}" class="first-page pagination-link" title="{Go to first page}">«</a>
-    <a href="{LINK_PREVIOUS_PAGE}" class="prev-page pagination-link" title="{Go to previous page}">‹</a>
-    <span class="pagination-text">
-    {TEXT_CURRENT_PAGE}
-    </span>
-    <a href="{LINK_NEXT_PAGE}" class="next-page pagination-link" title="{Go to next page}">›</a>
-    <a href="{LINK_LAST_PAGE}" class="last-page pagination-link" title="{Go to last page}">»</a>
-  </span>
+    </div>
+
+    <div class="abj404-pagination-info">{TEXT_BEFORE_LINKS}</div>
+
+    <div class="abj404-pagination-controls">
+        <a href="{LINK_FIRST_PAGE}" class="abj404-page-btn" title="{Go to first page}">&laquo;</a>
+        <a href="{LINK_PREVIOUS_PAGE}" class="abj404-page-btn" title="{Go to previous page}">&lsaquo;</a>
+        <span class="abj404-pagination-text">{TEXT_CURRENT_PAGE}</span>
+        <a href="{LINK_NEXT_PAGE}" class="abj404-page-btn" title="{Go to next page}">&rsaquo;</a>
+        <a href="{LINK_LAST_PAGE}" class="abj404-page-btn" title="{Go to last page}">&raquo;</a>
+    </div>
 </div>

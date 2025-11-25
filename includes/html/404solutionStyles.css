@@ -1812,6 +1812,13 @@ html[data-theme="obsidian"] .abj404-tab.active {
     color: var(--abj404-text-muted, #646970);
 }
 
+.abj404-pagination-text {
+    padding: 8px 12px;
+    color: var(--abj404-text-muted, #646970);
+    font-size: 14px;
+    white-space: nowrap;
+}
+
 /* ============================================
    Modal Styles
    ============================================ */
