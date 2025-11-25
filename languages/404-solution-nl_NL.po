@@ -538,6 +538,9 @@ msgstr "Fout: U heeft het selectievakje 'Ik begrijp het' niet aangevinkt. Geen i
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
 msgstr "Fout: U heeft het selectievakje 'Ik begrijp het' niet aangevinkt. Geen opschoning van records voor u!"
 
+msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
+msgstr "Fout: De wachttijd vóór een automatische update moet een getal zijn tussen 0 en ongeveer %d."
+
 msgid "Error: You selected external URL but did not enter a URL."
 msgstr "Fout: U heeft externe URL geselecteerd maar geen URL ingevoerd."
 

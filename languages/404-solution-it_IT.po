@@ -538,6 +538,9 @@ msgstr "Errore: non hai spuntato la casella \"Ho capito\". Impossibile procedere
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
 msgstr "Errore: non hai spuntato la casella \"Ho capito\". Impossibile procedere con l'eliminazione."
 
+msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
+msgstr "Errore: il tempo di attesa prima di un aggiornamento automatico deve essere un numero compreso tra 0 e circa %d."
+
 msgid "Error: You selected external URL but did not enter a URL."
 msgstr "Errore: hai selezionato URL esterno ma non hai inserito un URL."
 

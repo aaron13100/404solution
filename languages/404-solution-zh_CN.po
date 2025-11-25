@@ -543,6 +543,9 @@ msgstr "错误：您未勾选 \"我理解\" 复选框。无法为您导入！"
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
 msgstr "错误：您未勾选 \"我理解\" 复选框。无法为您清除记录！"
 
+msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
+msgstr "错误：自动更新前的等待时间必须是一个介于 0 和大约 %d 之间的数字。"
+
 msgid "Error: You selected external URL but did not enter a URL."
 msgstr "错误：您选择了外部 URL 但未输入 URL。"
 

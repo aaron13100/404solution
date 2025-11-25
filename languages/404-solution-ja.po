@@ -540,6 +540,9 @@ msgstr "エラー：「理解しました」チェックボックスがチェッ
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
 msgstr "エラー：「理解しました」チェックボックスがチェックされていません。レコードのパージはできません！"
 
+msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
+msgstr "エラー：自動更新までの待機時間は0から約%dの間の数値でなければなりません。"
+
 msgid "Error: You selected external URL but did not enter a URL."
 msgstr "エラー：外部URLを選択しましたが、URLが入力されていません。"
 

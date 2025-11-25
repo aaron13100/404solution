@@ -538,6 +538,9 @@ msgstr "Erro: Você não marcou a caixa \"Eu entendo\". Sem importação para vo
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
 msgstr "Erro: Você não marcou a caixa \"Eu entendo\". Sem limpeza de registros para você!"
 
+msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
+msgstr "Erro: O tempo de espera antes de uma atualização automática deve ser um número entre 0 e aproximadamente %d."
+
 msgid "Error: You selected external URL but did not enter a URL."
 msgstr "Erro: Você selecionou URL externa mas não inseriu uma URL."
 

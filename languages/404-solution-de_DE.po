@@ -538,6 +538,9 @@ msgstr "Fehler: Sie haben das Kontrollkästchen \"Ich verstehe\" nicht aktiviert
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
 msgstr "Fehler: Sie haben das Kontrollkästchen \"Ich verstehe\" nicht aktiviert. Bereinigung nicht möglich."
 
+msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
+msgstr "Fehler: Die Wartezeit vor einer automatischen Aktualisierung muss eine Zahl zwischen 0 und etwa %d sein."
+
 msgid "Error: You selected external URL but did not enter a URL."
 msgstr "Fehler: Sie haben externe URL ausgewählt, aber keine URL eingegeben."
 

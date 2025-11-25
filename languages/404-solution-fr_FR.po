@@ -536,6 +536,9 @@ msgstr "Erreur : Vous n'avez pas coché Je comprends. Aucune importation ne sera
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
 msgstr "Erreur : Vous n'avez pas coché Je comprends. Aucune purge ne sera effectuée."
 
+msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
+msgstr "Erreur : Le délai d'attente avant une mise à jour automatique doit être un nombre compris entre 0 et environ %d."
+
 msgid "Error: You selected external URL but did not enter a URL."
 msgstr "Erreur : Vous avez sélectionné URL externe mais n'avez pas saisi d'URL."
 

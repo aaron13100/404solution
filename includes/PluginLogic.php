@@ -2302,8 +2302,7 @@ class ABJ_404_Solution_PluginLogic {
             if (is_numeric($postData['days_wait_before_major_update'])) {
                 $options['days_wait_before_major_update'] = absint($postData['days_wait_before_major_update']);
             } else {
-                $message .= __('Error: The time to wait before an automatic update must be a number '
-                        . 'between 0 and something around ' . PHP_INT_MAX . '.', '404-solution') . "<BR/>";
+                $message .= sprintf(__('Error: The time to wait before an automatic update must be a number between 0 and something around %d.', '404-solution'), PHP_INT_MAX) . "<BR/>";
             }
         }
 

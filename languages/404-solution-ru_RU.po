@@ -538,6 +538,9 @@ msgstr "Ошибка: Вы не отметили флажок \"Я понима�
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
 msgstr "Ошибка: Вы не отметили флажок \"Я понимаю\". Очистка записей невозможна!"
 
+msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
+msgstr "Ошибка: Время ожидания перед автоматическим обновлением должно быть числом от 0 до примерно %d."
+
 msgid "Error: You selected external URL but did not enter a URL."
 msgstr "Ошибка: Вы выбрали внешний URL, но не ввели URL."
 

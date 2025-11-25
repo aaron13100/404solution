@@ -538,6 +538,9 @@ msgstr "Error: No marcó la casilla \"Entiendo\". ¡No hay importación para ust
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
 msgstr "Error: No marcó la casilla \"Entiendo\". ¡No hay purga de registros para usted!"
 
+msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
+msgstr "Error: El tiempo de espera antes de una actualización automática debe ser un número entre 0 y aproximadamente %d."
+
 msgid "Error: You selected external URL but did not enter a URL."
 msgstr "Error: Seleccionó URL externa pero no introdujo una URL."
 
