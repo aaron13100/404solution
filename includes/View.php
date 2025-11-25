@@ -1870,7 +1870,7 @@ class ABJ_404_Solution_View {
         // URL field
         echo '<div class="abj404-form-group">';
         echo '<label class="abj404-form-label">' . esc_html__('URL', '404-solution') . ' *</label>';
-        echo '<input type="text" name="url" class="abj404-form-input" placeholder="' . esc_attr($urlPlaceholder) . '" required>';
+        echo '<input type="text" name="manual_redirect_url" class="abj404-form-input" placeholder="' . esc_attr($urlPlaceholder) . '" required>';
         echo '<p class="abj404-form-help">' . esc_html__('The URL path that should be redirected (without domain)', '404-solution') . '</p>';
         echo '<div class="abj404-checkbox-group" style="margin-top: 12px;">';
         echo '<input type="checkbox" name="is_regex_url" id="modal_is_regex" class="abj404-checkbox-input" value="1">';
