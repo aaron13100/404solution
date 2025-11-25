@@ -1886,8 +1886,9 @@ class ABJ_404_Solution_View {
         echo '</div>';
 
         // Redirect to field - using the existing AJAX autocomplete template
-        echo '<div class="abj404-form-group">';
+        echo '<div class="abj404-form-group abj404-autocomplete-wrapper">';
         echo '<label class="abj404-form-label">' . esc_html__('Redirect to', '404-solution') . ' *</label>';
+        echo '<div class="abj404-input-with-spinner">';
 
         // Load the autocomplete HTML template
         $redirectHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectPageSearchDropdown.html");
@@ -1909,6 +1910,10 @@ class ABJ_404_Solution_View {
             "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $redirectHtml);
         $redirectHtml = $this->f->doNormalReplacements($redirectHtml);
         echo $redirectHtml;
+
+        // Spinner element - shown via CSS when input has ui-autocomplete-loading class
+        echo '<span class="abj404-loading-spinner"></span>';
+        echo '</div>';
 
         echo '</div>';
 
