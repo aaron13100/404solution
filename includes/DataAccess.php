@@ -685,6 +685,8 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getSpellingPermalinksFromCache($requestedURLRaw) {
+        // Sanitize invalid UTF-8 before SQL to prevent database errors
+        $requestedURLRaw = $this->f->sanitizeInvalidUTF8($requestedURLRaw);
         $query = "select id, url, matchdata from {wp_abj404_spelling_cache} where url = '" . esc_sql($requestedURLRaw) . "'";
         $results = $this->queryAndGetResults($query);
         
@@ -2164,6 +2166,8 @@ class ABJ_404_Solution_DataAccess {
         $recognizedCategories = rtrim($recognizedCategories, ", ");
 
         if ($slug != null) {
+            // Sanitize invalid UTF-8 before SQL to prevent database errors
+            $slug = $this->f->sanitizeInvalidUTF8($slug);
             $slug = "*/ and wp_terms.slug = '" . esc_sql($slug) . "'\n";
         }
 
@@ -2247,6 +2251,8 @@ class ABJ_404_Solution_DataAccess {
         }
 
         if ($slug != null) {
+            // Sanitize invalid UTF-8 before SQL to prevent database errors
+            $slug = $this->f->sanitizeInvalidUTF8($slug);
             $slug = "*/ and {wp_terms}.slug = '" . esc_sql($slug) . "'\n";
         }
 

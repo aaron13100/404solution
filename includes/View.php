@@ -65,6 +65,9 @@ class ABJ_404_Solution_View {
 	protected function buildTableActionLinks($row, $sub, $tableOptions, $isCapturedPage = false) {
 		$result = [];
 
+		// Sanitize $sub for safe use in URLs (prevents XSS via quote injection)
+		$sub = rawurlencode($sub);
+
 		// ID handling differs between pages
 		if ($isCapturedPage) {
 			// Captured page uses raw ID for most links
