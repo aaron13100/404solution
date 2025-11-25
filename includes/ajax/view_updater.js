@@ -85,9 +85,8 @@ function paginationLinksChange(triggerItem) {
     var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
     var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();
 
-    // Only fade the table itself, not the filter bar or pagination
+    // Only show loading on the table itself, not the filter bar or pagination
     var tableSelector = jQuery('.abj404-table').length > 0 ? '.abj404-table' : '.wp-list-table';
-    var fadeToColor = '#e0e0e0';
 
     // get the URL from the html page - check multiple possible locations
     var url = jQuery(".abj404-pagination-right").attr("data-pagination-ajax-url");
@@ -104,9 +103,17 @@ function paginationLinksChange(triggerItem) {
     var nonceMatch = url.match(/[?&]nonce=([^&]+)/);
     var nonce = nonceMatch ? nonceMatch[1] : '';
 
-    // Phase 1: Animate table fading out while waiting for AJAX response (3 seconds like original)
+    // Show loading overlay on the table
     var $table = jQuery(tableSelector);
-    $table.animate({opacity: 0.4}, 3000);
+    // Wrap table if not already wrapped, and add overlay
+    if (!$table.parent().hasClass('abj404-table-wrapper')) {
+        $table.wrap('<div class="abj404-table-wrapper"></div>');
+    }
+    var $wrapper = $table.parent();
+    // Remove any existing overlay first
+    $wrapper.find('.abj404-loading-overlay').remove();
+    // Add the loading overlay with spinner
+    $wrapper.append('<div class="abj404-loading-overlay"><div class="abj404-spinner"></div></div>');
 
     // do an ajax call to update the data
     jQuery.ajax({
@@ -142,15 +149,16 @@ function paginationLinksChange(triggerItem) {
             jQuery('input[name=searchFilter]').val(currentFieldValue);
             jQuery('input[name=searchFilter]').attr("data-previous-value", currentFieldValue);
 
-            // Fade the new table back in
-            var $newTable = jQuery(tableSelector);
-            $newTable.css('opacity', '0.4').animate({opacity: 1}, 400);
+            // Remove the loading overlay
+            jQuery('.abj404-loading-overlay').fadeOut(200, function() {
+                jQuery(this).remove();
+            });
 
             bindTrashLinkListeners();
         },
         error: function (jqXHR, textStatus, errorThrown) {
-            // Restore table opacity on error
-            jQuery(tableSelector).css('opacity', '1');
+            // Remove the loading overlay on error
+            jQuery('.abj404-loading-overlay').remove();
             alert("Ajax error. Result: " + JSON.stringify(textStatus, null, 2) +
                     ", error: " + JSON.stringify(errorThrown, null, 2));
         }
