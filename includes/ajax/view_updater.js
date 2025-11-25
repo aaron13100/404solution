@@ -104,9 +104,9 @@ function paginationLinksChange(triggerItem) {
     var nonceMatch = url.match(/[?&]nonce=([^&]+)/);
     var nonce = nonceMatch ? nonceMatch[1] : '';
 
-    // Phase 1: Animate table fading out while waiting for AJAX response
+    // Phase 1: Animate table fading out while waiting for AJAX response (3 seconds like original)
     var $table = jQuery(tableSelector);
-    $table.animate({opacity: 0.4}, 400);
+    $table.animate({opacity: 0.4}, 3000);
 
     // do an ajax call to update the data
     jQuery.ajax({
