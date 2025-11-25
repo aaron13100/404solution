@@ -1997,6 +1997,48 @@ html[data-theme="obsidian"] .abj404-tab.active {
     gap: 12px;
 }
 
+/* Modal autocomplete field styling */
+.abj404-modal #redirect_to_user_field {
+    width: 100% !important;
+    padding: 8px 12px;
+    border: 1px solid var(--abj404-border, #c3c4c7);
+    border-radius: 4px;
+    font-size: 14px;
+    background: var(--abj404-surface, #fff);
+    box-sizing: border-box;
+}
+
+.abj404-modal #redirect_to_user_field:focus {
+    border-color: var(--abj404-primary, #2271b1);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--abj404-primary, #2271b1);
+}
+
+/* Hide legacy tooltip in modal - label already present */
+.abj404-modal .lefty-tooltip {
+    display: none;
+}
+
+/* Style explanation text in modal */
+.abj404-modal #redirect_to_user_field_explanation {
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--abj404-text-muted, #646970);
+    font-style: italic;
+}
+
+.abj404-modal #redirect_to_user_field_warning {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+/* Hide template label since we have our own */
+.abj404-modal .add_a_redirect_label {
+    display: none;
+}
+
 /* ============================================
    Empty State
    ============================================ */

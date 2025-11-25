@@ -1885,12 +1885,31 @@ class ABJ_404_Solution_View {
         echo '</div>';
         echo '</div>';
 
-        // Redirect to field
+        // Redirect to field - using the existing AJAX autocomplete template
         echo '<div class="abj404-form-group">';
         echo '<label class="abj404-form-label">' . esc_html__('Redirect to', '404-solution') . ' *</label>';
-        echo '<input type="text" name="redirect_to_user_field" id="modal_redirect_to" class="abj404-form-input" placeholder="' . esc_attr__('Type a page name or an external URL', '404-solution') . '">';
-        echo '<input type="hidden" name="redirect_to" id="modal_redirect_to_hidden" value="">';
-        echo '<p class="abj404-form-help">' . esc_html__('Enter a page name to search, or paste a full URL for external redirects', '404-solution') . '</p>';
+
+        // Load the autocomplete HTML template
+        $redirectHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectPageSearchDropdown.html");
+        $redirectHtml = $this->f->str_replace('{redirect_to_label}', '', $redirectHtml);
+        $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
+            __('(Type a page name or an external URL)', '404-solution'), $redirectHtml);
+        $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMTPY}',
+            __('(Type a page name or an external URL)', '404-solution'), $redirectHtml);
+        $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
+            __('(A page has been selected.)', '404-solution'), $redirectHtml);
+        $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+            __('(A custom string has been entered.)', '404-solution'), $redirectHtml);
+        $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
+            __('(An external URL will be used.)', '404-solution'), $redirectHtml);
+        $redirectHtml = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $redirectHtml);
+        $redirectHtml = $this->f->str_replace('{redirectPageTitle}', '', $redirectHtml);
+        $redirectHtml = $this->f->str_replace('{pageIDAndType}', '', $redirectHtml);
+        $redirectHtml = $this->f->str_replace('{data-url}',
+            "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $redirectHtml);
+        $redirectHtml = $this->f->doNormalReplacements($redirectHtml);
+        echo $redirectHtml;
+
         echo '</div>';
 
         // Redirect type
