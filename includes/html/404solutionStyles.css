@@ -1253,7 +1253,6 @@ html[data-theme="obsidian"] .abj404-tab.active {
     background: var(--abj404-surface, #fff);
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
 }
 
 .abj404-table-header {
@@ -1283,8 +1282,16 @@ html[data-theme="obsidian"] .abj404-tab.active {
     padding: 0 32px;
     display: flex;
     gap: 4px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 32px;
+    z-index: 12;
+}
+
+@media screen and (max-width: 782px) {
+    .abj404-content-tabs {
+        top: 46px;
+    }
 }
 
 .abj404-content-tab {
@@ -1426,6 +1433,15 @@ html[data-theme="obsidian"] .abj404-tab.active {
     align-items: center;
     gap: 16px;
     flex-wrap: wrap;
+    position: sticky;
+    top: 77px;  /* 32px admin bar + ~45px tabs */
+    z-index: 11;
+}
+
+@media screen and (max-width: 782px) {
+    .abj404-bulk-actions {
+        top: 91px;  /* 46px admin bar + ~45px tabs */
+    }
 }
 
 .abj404-bulk-actions.active {
@@ -1455,8 +1471,6 @@ html[data-theme="obsidian"] .abj404-tab.active {
    ============================================ */
 
 .abj404-table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
     margin: 0;
     padding: 0 16px 20px;
 }
@@ -1488,7 +1502,28 @@ html[data-theme="obsidian"] .abj404-tab.active {
     color: var(--abj404-text, #1d2327);
     text-transform: uppercase;
     letter-spacing: 0.3px;
-    white-space: nowrap;
+    white-space: normal;
+    position: sticky;
+    top: 77px;  /* 32px admin bar + ~45px tabs */
+    z-index: 10;
+    background: var(--abj404-bg, #f6f7f7);
+}
+
+@media screen and (max-width: 782px) {
+    .abj404-table th {
+        top: 91px;  /* 46px admin bar + ~45px tabs */
+    }
+}
+
+/* When bulk actions visible, push table header down */
+.abj404-bulk-actions.active ~ .abj404-table-container .abj404-table th {
+    top: 130px;  /* 77px + ~53px bulk actions bar */
+}
+
+@media screen and (max-width: 782px) {
+    .abj404-bulk-actions.active ~ .abj404-table-container .abj404-table th {
+        top: 144px;
+    }
 }
 
 .abj404-table th.sortable {
@@ -1553,10 +1588,7 @@ html[data-theme="obsidian"] .abj404-tab.active {
 .abj404-url-cell {
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     color: var(--abj404-accent, #2271b1);
-    max-width: 180px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-break: break-word;
 }
 
 .abj404-url-cell a {
@@ -1584,16 +1616,11 @@ html[data-theme="obsidian"] .abj404-tab.active {
 
 /* Destination Cell */
 .abj404-dest-cell {
-    max-width: 150px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-break: break-word;
 }
 
 .abj404-dest-cell a {
     display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 /* ============================================
@@ -2316,29 +2343,10 @@ html[data-theme="obsidian"] .abj404-tab.active {
     }
 }
 
-/* Large tablets / small desktops */
-@media screen and (max-width: 1200px) {
-    .abj404-url-cell {
-        max-width: 150px;
-    }
-
-    .abj404-dest-cell {
-        max-width: 120px;
-    }
-}
-
 /* Tablets - hide Created column (Last Used is more useful) */
 @media screen and (max-width: 960px) {
     .abj404-table .hide-on-tablet {
         display: none;
-    }
-
-    .abj404-url-cell {
-        max-width: 120px;
-    }
-
-    .abj404-dest-cell {
-        max-width: 100px;
     }
 
     /* Smaller badges on tablet */
@@ -2358,7 +2366,6 @@ html[data-theme="obsidian"] .abj404-tab.active {
     }
 
     .abj404-url-cell {
-        max-width: 100px;
         font-size: 11px;
     }
 
@@ -2412,9 +2419,7 @@ html[data-theme="obsidian"] .abj404-filter-bar {
     table-layout: auto;
 }
 
-.abj404-logs-table .abj404-url-cell {
-    max-width: 250px;
-}
+/* Logs table URL cells use same word-break as regular tables */
 
 .abj404-logs-search-form {
     display: flex;
