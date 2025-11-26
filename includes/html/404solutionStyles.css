@@ -1253,6 +1253,7 @@ html[data-theme="obsidian"] .abj404-tab.active {
     background: var(--abj404-surface, #fff);
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow-x: clip; /* Prevent tooltips from causing horizontal scroll, doesn't break sticky */
 }
 
 .abj404-table-header {
@@ -1516,12 +1517,15 @@ html[data-theme="obsidian"] .abj404-tab.active {
 }
 
 /* When bulk actions visible, push table header down */
-.abj404-bulk-actions.active ~ .abj404-table-container .abj404-table th {
+/* Matches both .abj404-table-container (Page Redirects) and form (Captured 404s) */
+.abj404-bulk-actions.active ~ .abj404-table-container .abj404-table th,
+.abj404-bulk-actions.active ~ form .abj404-table th {
     top: 130px;  /* 77px + ~53px bulk actions bar */
 }
 
 @media screen and (max-width: 782px) {
-    .abj404-bulk-actions.active ~ .abj404-table-container .abj404-table th {
+    .abj404-bulk-actions.active ~ .abj404-table-container .abj404-table th,
+    .abj404-bulk-actions.active ~ form .abj404-table th {
         top: 144px;
     }
 }
