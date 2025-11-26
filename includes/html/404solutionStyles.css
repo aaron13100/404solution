@@ -2462,15 +2462,18 @@ html[data-theme="obsidian"] .abj404-filter-bar {
     color: var(--abj404-text-muted, #646970);
 }
 
-/* Empty trash button */
-.abj404-empty-trash-btn {
+/* Empty trash button - use higher specificity to override WordPress .button */
+.button.abj404-empty-trash-btn,
+a.abj404-empty-trash-btn {
     margin-left: auto;
-    background: var(--abj404-danger-bg, #fcf0f1);
-    color: var(--abj404-danger-text, #d63638);
-    border-color: var(--abj404-danger-text, #d63638);
+    background: var(--abj404-danger-bg, #fcf0f1) !important;
+    color: var(--abj404-danger-text, #d63638) !important;
+    border-color: var(--abj404-danger-text, #d63638) !important;
 }
 
-.abj404-empty-trash-btn:hover {
-    background: var(--abj404-danger-text, #d63638);
-    color: #fff;
+.button.abj404-empty-trash-btn:hover,
+a.abj404-empty-trash-btn:hover {
+    background: var(--abj404-danger-text, #d63638) !important;
+    color: #fff !important;
+    border-color: var(--abj404-danger-text, #d63638) !important;
 }
