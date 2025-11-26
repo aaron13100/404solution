@@ -412,6 +412,7 @@
 .abj404-header-row h2 {
     margin: 0;
     flex-shrink: 0;
+    order: 1;
 }
 
 /* Header controls - groups mode toggle and expand button */
@@ -420,6 +421,15 @@
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+    margin-left: auto;
+    order: 2;
+}
+
+/* Notices moved into header-row by WordPress JS - force to own row */
+.abj404-header-row .notice {
+    order: 3;
+    flex-basis: 100%;
+    margin: 8px 0 0 0;
 }
 
 .abj404-header-controls #abj404-expand-collapse-all {
