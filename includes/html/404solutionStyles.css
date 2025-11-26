@@ -2477,3 +2477,405 @@ a.abj404-empty-trash-btn:hover {
     color: #fff !important;
     border-color: var(--abj404-danger-text, #d63638) !important;
 }
+
+/* ============================================
+   Options Page Content Styling
+   ============================================ */
+
+/* Form field rows - each paragraph is a form field group */
+.abj404-accordion-content p {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 16px 20px;
+    margin: 0;
+    border-bottom: 1px solid var(--abj404-border-light, #f0f0f1);
+    background: var(--abj404-surface, #fff);
+}
+
+.abj404-accordion-content p:last-child {
+    border-bottom: none;
+}
+
+/* Alternate row coloring for better readability */
+.abj404-accordion-content p:nth-child(even) {
+    background: var(--abj404-surface-alt, #f9f9f9);
+}
+
+/* Labels in form fields */
+.abj404-accordion-content p > label:first-child,
+.abj404-accordion-content p > label[for] {
+    flex: 0 0 280px;
+    font-weight: 600;
+    color: var(--abj404-text, #2c3338);
+    padding-top: 4px;
+}
+
+/* Inputs and selects */
+.abj404-accordion-content input[type="text"],
+.abj404-accordion-content input[type="number"],
+.abj404-accordion-content select {
+    padding: 6px 10px;
+    border: 1px solid var(--abj404-border, #8c8f94);
+    border-radius: 4px;
+    background: var(--abj404-input-bg, #fff);
+    color: var(--abj404-text, #2c3338);
+    font-size: 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.abj404-accordion-content input[type="text"]:focus,
+.abj404-accordion-content input[type="number"]:focus,
+.abj404-accordion-content select:focus {
+    border-color: var(--abj404-primary, #2271b1);
+    box-shadow: 0 0 0 1px var(--abj404-primary, #2271b1);
+    outline: none;
+}
+
+/* Checkboxes - align better */
+.abj404-accordion-content input[type="checkbox"] {
+    margin-top: 5px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* Help text styling - target BR followed by text */
+.abj404-accordion-content p br {
+    display: none;
+}
+
+/* Style inline help text that follows inputs */
+.abj404-accordion-content p > br + text,
+.abj404-accordion-content p::after {
+    flex-basis: 100%;
+    font-size: 13px;
+    color: var(--abj404-text-muted, #646970);
+    line-height: 1.5;
+    padding-left: 288px;
+    margin-top: 4px;
+}
+
+/* Tables in options - modernize the old border=1 tables */
+.abj404-accordion-content table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--abj404-border, #c3c4c7);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0;
+}
+
+.abj404-accordion-content table tr {
+    background: var(--abj404-surface, #fff);
+}
+
+.abj404-accordion-content table tr:nth-child(even) {
+    background: var(--abj404-surface-alt, #f9f9f9);
+}
+
+.abj404-accordion-content table td {
+    padding: 16px 20px;
+    vertical-align: top;
+    border-bottom: 1px solid var(--abj404-border-light, #e0e0e0);
+    border-right: 1px solid var(--abj404-border-light, #e0e0e0);
+}
+
+.abj404-accordion-content table tr:last-child td {
+    border-bottom: none;
+}
+
+.abj404-accordion-content table td:last-child {
+    border-right: none;
+}
+
+/* First column (labels) in table */
+.abj404-accordion-content table td:first-child {
+    width: 45%;
+    font-weight: 500;
+    color: var(--abj404-text, #2c3338);
+    background: var(--abj404-surface-alt, #f6f7f7);
+}
+
+/* Second column (inputs) in table */
+.abj404-accordion-content table td:last-child {
+    width: 55%;
+}
+
+/* Textareas in tables */
+.abj404-accordion-content textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid var(--abj404-border, #8c8f94);
+    border-radius: 4px;
+    background: var(--abj404-input-bg, #fff);
+    color: var(--abj404-text, #2c3338);
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.abj404-accordion-content textarea:focus {
+    border-color: var(--abj404-primary, #2271b1);
+    box-shadow: 0 0 0 1px var(--abj404-primary, #2271b1);
+    outline: none;
+}
+
+/* Lists in options (bullet points) */
+.abj404-accordion-content ul {
+    margin: 8px 0;
+    padding-left: 20px;
+    list-style-type: disc;
+}
+
+.abj404-accordion-content ul li {
+    margin-bottom: 4px;
+    color: var(--abj404-text-muted, #50575e);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.abj404-accordion-content ul li.closeLI {
+    margin-bottom: 2px;
+}
+
+/* Warning text (red warnings) */
+.abj404-accordion-content div[style*="color: red"],
+.abj404-accordion-content div[style*="color:red"] {
+    background: var(--abj404-danger-bg, #fcf0f1) !important;
+    color: var(--abj404-danger-text, #d63638) !important;
+    padding: 12px 16px !important;
+    border-radius: 4px !important;
+    border-left: 4px solid var(--abj404-danger-text, #d63638) !important;
+    margin: 12px 0 !important;
+    font-weight: 500 !important;
+}
+
+/* Note text */
+.abj404-accordion-content td br + text,
+.abj404-accordion-content p br + text {
+    font-size: 13px;
+    color: var(--abj404-text-muted, #646970);
+}
+
+/* Info/help section at top of sections */
+.abj404-accordion-content > p:first-child {
+    background: var(--abj404-surface-alt, #f6f7f7);
+    border-left: 4px solid var(--abj404-primary, #2271b1);
+}
+
+/* Horizontal rule/separator styling */
+.abj404-accordion-content hr {
+    border: none;
+    border-top: 1px solid var(--abj404-border-light, #e0e0e0);
+    margin: 16px 0;
+}
+
+/* DB version info and similar technical info */
+.abj404-accordion-content p:has(> label:empty),
+.abj404-accordion-content p:first-of-type:not(:has(label[for])) {
+    font-size: 13px;
+    color: var(--abj404-text-muted, #646970);
+    background: var(--abj404-surface-alt, #f6f7f7);
+    padding: 12px 20px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+}
+
+/* Mobile responsive adjustments */
+@media screen and (max-width: 782px) {
+    .abj404-accordion-content p {
+        flex-direction: column;
+        padding: 12px 16px;
+    }
+
+    .abj404-accordion-content p > label:first-child,
+    .abj404-accordion-content p > label[for] {
+        flex: none;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .abj404-accordion-content table td {
+        display: block;
+        width: 100% !important;
+        padding: 12px 16px;
+    }
+
+    .abj404-accordion-content table td:first-child {
+        border-bottom: none;
+        padding-bottom: 8px;
+    }
+
+    .abj404-accordion-content textarea {
+        min-height: 100px;
+    }
+}
+
+/* Dark theme adjustments for options */
+html[data-theme="neon"] .abj404-accordion-content p:nth-child(even),
+html[data-theme="obsidian"] .abj404-accordion-content p:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+html[data-theme="neon"] .abj404-accordion-content table td:first-child,
+html[data-theme="obsidian"] .abj404-accordion-content table td:first-child {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+html[data-theme="neon"] .abj404-accordion-content table tr:nth-child(even),
+html[data-theme="obsidian"] .abj404-accordion-content table tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+html[data-theme="neon"] .abj404-accordion-content textarea,
+html[data-theme="obsidian"] .abj404-accordion-content textarea,
+html[data-theme="neon"] .abj404-accordion-content input[type="text"],
+html[data-theme="obsidian"] .abj404-accordion-content input[type="text"],
+html[data-theme="neon"] .abj404-accordion-content select,
+html[data-theme="obsidian"] .abj404-accordion-content select {
+    background: var(--abj404-input-bg, rgba(0, 0, 0, 0.2));
+    border-color: var(--abj404-border, #3d4f5f);
+}
+
+/* Autocomplete dropdown field (redirect to) styling */
+.abj404-accordion-content > label.add_a_redirect_label,
+.abj404-accordion-content > label.add_exlude_page_field_label {
+    display: block;
+    font-weight: 600;
+    color: var(--abj404-text, #2c3338);
+    margin-bottom: 8px;
+    padding: 16px 20px 0;
+}
+
+.abj404-accordion-content > input#redirect_to_user_field,
+.abj404-accordion-content > input#add_exlude_page_field {
+    margin: 0 20px 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--abj404-border, #8c8f94);
+    border-radius: 4px;
+    font-size: 14px;
+    width: calc(50% - 40px) !important;
+}
+
+.abj404-accordion-content > input#redirect_to_user_field:focus,
+.abj404-accordion-content > input#add_exlude_page_field:focus {
+    border-color: var(--abj404-primary, #2271b1);
+    box-shadow: 0 0 0 1px var(--abj404-primary, #2271b1);
+    outline: none;
+}
+
+/* Tooltip styling for autocomplete field */
+.abj404-accordion-content .lefty-tooltip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: var(--abj404-surface-alt, #f0f0f1);
+    border: 1px solid var(--abj404-border, #c3c4c7);
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--abj404-text-muted, #646970);
+    cursor: help;
+    vertical-align: middle;
+    margin-left: 8px;
+}
+
+/* Explanation text below autocomplete */
+.abj404-accordion-content > br + span,
+.abj404-accordion-content #redirect_to_user_field_explanation {
+    display: block;
+    font-size: 13px;
+    color: var(--abj404-text-muted, #646970);
+    margin: 0 20px 16px;
+    font-style: italic;
+}
+
+/* Section title styling for text without labels */
+.abj404-accordion-content > label[for] > br:first-of-type {
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* Make table label cells have better typography */
+.abj404-accordion-content table td:first-child label {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--abj404-text, #2c3338);
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* Style the explanation paragraph in 404 Page Suggestions */
+.abj404-accordion-content > p:first-child:not(:has(label)) {
+    background: var(--abj404-info-bg, #f0f6fc);
+    border-left: 4px solid var(--abj404-primary, #2271b1);
+    padding: 16px 20px;
+    margin: 0 0 16px;
+    line-height: 1.6;
+    font-size: 14px;
+    color: var(--abj404-text, #2c3338);
+}
+
+/* Add bottom border to first row intro text */
+.abj404-accordion-content > p:first-child {
+    border-bottom: 1px solid var(--abj404-border-light, #e0e0e0);
+}
+
+/* Make inline styles in table cells less prominent */
+.abj404-accordion-content table td div[style*="display: inline"] {
+    color: var(--abj404-text-muted, #646970);
+}
+
+/* Note text below textareas in table cells */
+.abj404-accordion-content table td:last-child > br + text,
+.abj404-accordion-content table td:last-child > textarea + br + text {
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--abj404-text-muted, #646970);
+}
+
+/* Closeable list items for exclude pages */
+.abj404-accordion-content .closeable-ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.abj404-accordion-content .closeable-ul li {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--abj404-surface-alt, #f0f0f1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin: 4px;
+    font-size: 13px;
+}
+
+/* Better styling for button groups */
+.abj404-accordion-content button,
+.abj404-accordion-content input[type="button"] {
+    padding: 6px 12px;
+    border: 1px solid var(--abj404-border, #c3c4c7);
+    border-radius: 4px;
+    background: var(--abj404-surface, #fff);
+    color: var(--abj404-text, #2c3338);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.abj404-accordion-content button:hover,
+.abj404-accordion-content input[type="button"]:hover {
+    background: var(--abj404-surface-hover, #f0f0f1);
+    border-color: var(--abj404-primary, #2271b1);
+}
