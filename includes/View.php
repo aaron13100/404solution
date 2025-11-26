@@ -289,7 +289,8 @@ class ABJ_404_Solution_View {
 
         $abj404view->outputAdminHeaderTabs($sub, $message);
         
-        if (($action == 'editRedirect') || ($sub == 'abj404_edit')) {
+        $abj404action = $this->dao->getPostOrGetSanitize('abj404action');
+        if (($action == 'editRedirect') || ($abj404action == 'editRedirect') || ($sub == 'abj404_edit')) {
             $abj404view->echoAdminEditRedirectPage();
         } else if ($sub == 'abj404_redirects') {
             $abj404view->echoAdminRedirectsPage();
@@ -1139,13 +1140,13 @@ class ABJ_404_Solution_View {
      * @global type $abj404logic
      */
     function echoAdminEditRedirectPage() {
-        
+
         $options = $this->logic->getOptions();
-        
-        // this line assures that text will appear below the page tabs at the top.
-        echo "<span class=\"clearbothdisplayblock\" style=\"clear: both; display: block;\" ></span> <BR/>";
-        
-        echo "<h3>" . __('Redirect Details', '404-solution') . "</h3>";
+
+        // Modern page container
+        echo '<div class="abj404-edit-page">';
+        echo '<div class="abj404-edit-container">';
+        echo '<h2>' . esc_html__('Edit Redirect', '404-solution') . '</h2>';
 
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_edit", "abj404editRedirect");
 
@@ -1222,19 +1223,27 @@ class ABJ_404_Solution_View {
                 $isRegexChecked = ' checked ';
             }
 
-            echo "<input type=\"hidden\" name=\"id\" value=\"" . esc_attr($redirect['id']) . "\">";
-            echo "<strong><label for=\"url\">" . __('URL', '404-solution') . 
-                    ":</label></strong> ";
-            echo "<input id=\"url\" style=\"width: 45%;\" type=\"text\" name=\"url\" value=\"" . 
-                    esc_attr($redirect['url']) . "\" required> (" . __('Required', '404-solution') . ")<BR/>\n\n";
-            echo "\n\n" . '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" name="is_regex_url" ';
-            echo 'id="is_regex_url" value="1" ' . $isRegexChecked . '>' . "\n";
-            $html = '<label for="is_regex_url">{Treat this URL as a regular expression}</label> ' . "\n";
-            $html .= '<a id="showInfoLink" onclick="showHideRegexExplanation()" ';
-            
-            $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/showHideRegexExplanation.html");
-            $html = $this->f->doNormalReplacements($html);
-            echo $html;
+            echo '<input type="hidden" name="id" value="' . esc_attr($redirect['id']) . '">';
+
+            // URL field
+            echo '<div class="abj404-form-group">';
+            echo '<label class="abj404-form-label" for="url">' . esc_html__('URL', '404-solution') . ' *</label>';
+            echo '<input type="text" id="url" name="url" class="abj404-form-input" value="' . esc_attr($redirect['url']) . '" required>';
+            echo '</div>';
+
+            // Regex checkbox
+            echo '<div class="abj404-form-group">';
+            echo '<div class="abj404-checkbox-group">';
+            echo '<input type="checkbox" name="is_regex_url" id="is_regex_url" class="abj404-checkbox-input" value="1" ' . $isRegexChecked . '>';
+            echo '<label for="is_regex_url" class="abj404-checkbox-label">' . esc_html__('Treat this URL as a regular expression', '404-solution') . '</label>';
+            echo ' <a href="#" class="abj404-regex-toggle" onclick="abj404ToggleRegexInfo(event)">' . esc_html__('(Explain)', '404-solution') . '</a>';
+            echo '</div>';
+            echo '<div class="abj404-regex-info" style="display: none;">';
+            echo '<p>' . esc_html__('When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don\'t know what you\'re doing please don\'t use this option (as it\'s not necessary for the functioning of the plugin).', '404-solution') . '</p>';
+            echo '<p><strong>' . esc_html__('Example:', '404-solution') . '</strong> <code>/events/(.+)</code></p>';
+            echo '<p>' . esc_html__('/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL.', '404-solution') . '</p>';
+            echo '</div>';
+            echo '</div>';
 
         } else if ($recnums_multiple != null) {
             $redirects_multiple = $this->dao->getRedirectsByIDs($recnums_multiple);
@@ -1245,16 +1254,19 @@ class ABJ_404_Solution_View {
                 return;
             }
 
-            echo "\n" . '<input type="hidden" name="ids_multiple" value="' . esc_html(implode(',', $recnums_multiple)) . '">';
-            echo "\n" . '<table><tr><td style="vertical-align: top; padding-right: 5px; padding-top: 5px;"><strong>';
-            echo "\n" . '<label>' . __('URLs', '404-solution') . ':</label></strong></td> ';
-            
-            echo "\n" . '<td style="vertical-align: top; padding: 5px;">' . "\n" . '<ul style="margin: 0px;">';
+            echo '<input type="hidden" name="ids_multiple" value="' . esc_attr(implode(',', $recnums_multiple)) . '">';
+
+            // Bulk URL list
+            echo '<div class="abj404-form-group">';
+            echo '<label class="abj404-form-label">' . esc_html__('URLs to redirect', '404-solution') . ' (' . count($redirects_multiple) . ')</label>';
+            echo '<div class="abj404-url-list">';
+            echo '<ul>';
             foreach ($redirects_multiple as $redirect) {
-                echo "\n<li>" . esc_html($redirect['url']) . "</li>\n";
+                echo '<li><code>' . esc_html($redirect['url']) . '</code></li>';
             }
-            echo "\n" . '</ul>';
-            echo "\n</td></tr></table>\n";
+            echo '</ul>';
+            echo '</div>';
+            echo '</div>';
             
             // here we set the variable to the first value returned because it's used to set default values
             // in the form data.
@@ -1307,9 +1319,11 @@ class ABJ_404_Solution_View {
         $html = $this->f->doNormalReplacements($html);
         echo $html;
         
-        $this->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'));
-        
-        echo "</form><!-- end admin-edit-redirect -->";
+        $this->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'), $source_page, $filter, $orderby, $order);
+
+        echo '</form>';
+        echo '</div>'; // end abj404-edit-container
+        echo '</div>'; // end abj404-edit-page
     }
     
     function echoRedirectDestinationOptionsOthers($dest, $rows) {
@@ -1775,6 +1789,10 @@ class ABJ_404_Solution_View {
 
         // Bulk actions bar (hidden by default, shown when items selected)
         $url = $this->getBulkOperationsFormURL($sub, $tableOptions);
+
+        // Form must wrap both bulk actions and table so dropdown values are submitted
+        echo '<form method="POST" action="' . esc_url($url) . '">';
+
         echo '<div class="abj404-bulk-actions" id="abj404-bulk-actions">';
         echo '<span class="abj404-selection-info"><strong>0</strong> ' . esc_html__('redirects selected', '404-solution') . '</span>';
         echo '<select class="abj404-filter-select" name="abj404action">';
@@ -1794,8 +1812,7 @@ class ABJ_404_Solution_View {
         echo '<button type="button" class="abj404-btn abj404-btn-secondary abj404-clear-selection" onclick="abj404ClearSelection()">' . esc_html__('Clear Selection', '404-solution') . '</button>';
         echo '</div>';
 
-        // Table container with form
-        echo '<form method="POST" action="' . esc_url($url) . '">';
+        // Table container
         echo '<div class="abj404-table-container">';
         echo $this->getAdminRedirectsPageTable($sub);
         echo '</div>';
@@ -2335,22 +2352,43 @@ class ABJ_404_Solution_View {
      * @param string $codeselected
      * @param string $label
      */
-    function echoEditRedirect($destination, $codeselected, $label) {
-        echo "\r\n<BR/><strong><label for=\"code\">" . __('Redirect Type', '404-solution') . 
-                ":</label></strong> <select id=\"code\" name=\"code\">";
-        
+    function echoEditRedirect($destination, $codeselected, $label, $source_page = null, $filter = null, $orderby = null, $order = null) {
+        // Redirect type dropdown
+        echo '<div class="abj404-form-group">';
+        echo '<label class="abj404-form-label" for="code">' . esc_html__('Redirect Type', '404-solution') . '</label>';
+        echo '<select id="code" name="code" class="abj404-form-select">';
+
         $codes = array(301, 302);
         foreach ($codes as $code) {
-            $selected = "";
-            if ($code == $codeselected) {
-                $selected = " selected";
-            }
-
-            $title = ($code == 301) ? '301 Permanent Redirect' : '302 Temporary Redirect';
-            echo "<option value=\"" . esc_attr($code) . "\"" . $selected . ">" . esc_html($title) . "</option>";
+            $selected = ($code == $codeselected) ? ' selected' : '';
+            $title = ($code == 301) ? '301 - ' . __('Permanent Redirect (Recommended for SEO)', '404-solution') : '302 - ' . __('Temporary Redirect', '404-solution');
+            echo '<option value="' . esc_attr($code) . '"' . $selected . '>' . esc_html($title) . '</option>';
         }
-        echo "</select><BR/>";
-        echo "<input type=\"submit\" value=\"" . $label . "\" class=\"button-secondary\">";
+        echo '</select>';
+        echo '</div>';
+
+        // Button group
+        echo '<div class="abj404-button-group">';
+
+        // Cancel button
+        $cancelUrl = '?page=' . ABJ404_PP;
+        if ($source_page) {
+            $cancelUrl .= '&subpage=' . esc_attr($source_page);
+        }
+        if ($filter !== null) {
+            $cancelUrl .= '&filter=' . esc_attr($filter);
+        }
+        if ($orderby !== null) {
+            $cancelUrl .= '&orderby=' . esc_attr($orderby);
+        }
+        if ($order !== null) {
+            $cancelUrl .= '&order=' . esc_attr($order);
+        }
+        echo '<a href="' . esc_url($cancelUrl) . '" class="abj404-btn abj404-btn-secondary">' . esc_html__('Cancel', '404-solution') . '</a>';
+
+        // Submit button
+        echo '<button type="submit" class="abj404-btn abj404-btn-primary">' . esc_html($label) . '</button>';
+        echo '</div>';
     }
     
     function echoRedirectDestinationOptionsDefaults($currentlySelected) {
