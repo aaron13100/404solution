@@ -2899,42 +2899,23 @@ html[data-theme="obsidian"] .abj404-accordion-content select {
     border-color: #d63638 !important;
 }
 
-/* Links inside accordion content - style as action links */
-.abj404-accordion-content p a,
-.abj404-accordion-content td a {
-    color: var(--abj404-primary, #2271b1);
-    text-decoration: none;
-    font-weight: 500;
-    padding: 6px 12px;
-    border: 1px solid var(--abj404-primary, #2271b1);
-    border-radius: 4px;
-    background: transparent;
-    transition: all 0.2s ease;
-    display: inline-block;
-    margin-right: 8px;
+/* Links inside card content - style as action links */
+.abj404-card-content p a,
+.abj404-card-content td a {
+    color: var(--abj404-primary, #2271b1) !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    padding: 6px 12px !important;
+    border: 1px solid var(--abj404-primary, #2271b1) !important;
+    border-radius: 4px !important;
+    background: var(--abj404-info-bg, #f0f6fc) !important;
+    transition: all 0.2s ease !important;
+    display: inline-block !important;
+    margin-right: 8px !important;
 }
 
-.abj404-accordion-content p a:hover,
-.abj404-accordion-content td a:hover {
-    background: var(--abj404-primary, #2271b1);
-    color: #fff;
-}
-
-/* View link specific styling */
-.abj404-accordion-content p a[href*="debug"],
-.abj404-accordion-content p a:first-of-type {
-    background: var(--abj404-info-bg, #f0f6fc);
-}
-
-/* Debug file info text styling */
-.abj404-accordion-content p:has(#deleteDebugFile) {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-}
-
-/* File size text after delete button */
-.abj404-accordion-content p:has(#deleteDebugFile)::after {
-    content: none;
+.abj404-card-content p a:hover,
+.abj404-card-content td a:hover {
+    background: var(--abj404-primary, #2271b1) !important;
+    color: #fff !important;
 }
