@@ -332,41 +332,7 @@ class ABJ_404_Solution_View {
     function outputAdminHeaderTabs($sub = 'list', $message = '') {
         ABJ_404_Solution_WPNotices::echoAdminNotices();
 
-        if ($sub == "abj404_options") {
-            $header = " " . __('Options', '404-solution');
-        } else if ($sub == 'abj404_logs') {
-            $header = " " . __('Logs', '404-solution');
-        } else if ($sub == 'abj404_stats') {
-            $header = " " . __('Stats', '404-solution');
-        } else if ($sub == 'abj404_edit') {
-            $header = ": " . __('Edit Redirect', '404-solution');
-        } else if ($sub == 'abj404_redirects') {
-            $header = "";
-        } else {
-            $header = "";
-        }
         echo "<div class=\"wrap\" style='z-index: 1;position: relative;'>";
-        if ($sub == "abj404_options") {
-            echo "\n<div id=\"icon-options-general\" class=\"icon32\"></div>";
-        } else {
-            echo "\n<div id=\"icon-tools\" class=\"icon32\"></div>";
-        }
-
-        // For options page, wrap header and mode toggle in a flex container
-        if ($sub == "abj404_options") {
-            echo "\n<div class=\"abj404-header-row\">";
-            echo "<h2>" . PLUGIN_NAME . esc_html($header) . "</h2>";
-            echo "<div class=\"abj404-header-controls\">";
-            $this->echoInlineModeToggle();
-            // Expand/Collapse All button for both Simple and Advanced modes
-            echo '<button type="button" id="abj404-expand-collapse-all" class="button">';
-            echo esc_html__('Expand All', '404-solution');
-            echo '</button>';
-            echo "</div>";
-            echo "</div>";
-        } else {
-            echo "\n<h2>" . PLUGIN_NAME . esc_html($header) . "</h2>";
-        }
         if ($message != "") {
             $allowed_tags = array(
                 'br' => array(),
@@ -426,6 +392,9 @@ class ABJ_404_Solution_View {
         echo '<span class="dashicons dashicons-admin-generic"></span>';
         echo '<span class="abj404-tab-text">' . esc_html__('Options', '404-solution') . '</span>';
         echo '</a>';
+
+        // Plugin branding - right side of tabs
+        echo '<span class="abj404-tab-branding">' . esc_html(PLUGIN_NAME) . '</span>';
 
         echo '</nav>';
     }
@@ -1033,6 +1002,18 @@ class ABJ_404_Solution_View {
 
         // Toast notification container
         $abj404view->echoToastNotification();
+
+        // Options page header with mode toggle and expand button
+        echo "\n<div class=\"abj404-header-row\">";
+        echo "<h2>" . esc_html__('Options', '404-solution') . "</h2>";
+        echo "<div class=\"abj404-header-controls\">";
+        $this->echoInlineModeToggle();
+        // Expand/Collapse All button for both Simple and Advanced modes
+        echo '<button type="button" id="abj404-expand-collapse-all" class="button">';
+        echo esc_html__('Expand All', '404-solution');
+        echo '</button>';
+        echo "</div>";
+        echo "</div>";
 
         // Main container
         echo "<div class=\"abj404-container\">";

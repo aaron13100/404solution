@@ -25,9 +25,9 @@ if (!defined('WP_CLI') && !current_user_can('activate_plugins')) {
     exit;
 }
 
-// Define version constant for use in Uninstaller
-// This matches the version defined in includes/Loader.php
-define('ABJ404_VERSION', '3.0.4');
+// Read version from main plugin file header (single source of truth)
+$plugin_data = get_file_data(__DIR__ . '/404-solution.php', array('Version' => 'Version'));
+define('ABJ404_VERSION', $plugin_data['Version']);
 
 // Load the Uninstaller class
 require_once __DIR__ . '/includes/Uninstaller.php';

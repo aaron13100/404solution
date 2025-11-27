@@ -1182,6 +1182,18 @@ ul .ui-autocomplete-category.data-overflow-category {
     color: #2271b1;
 }
 
+/* Plugin branding in tab bar */
+.abj404-tab-branding {
+    margin-left: auto;
+    padding: 14px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1d2327;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+}
+
 /* Mobile admin bar and folded menu */
 @media screen and (max-width: 960px) {
     .abj404-tab-navigation {
@@ -1213,9 +1225,10 @@ ul .ui-autocomplete-category.data-overflow-category {
     }
 }
 
-/* Very small screens - hide tab text, show only icons */
+/* Very small screens - hide tab text and branding, show only icons */
 @media screen and (max-width: 500px) {
-    .abj404-tab-text {
+    .abj404-tab-text,
+    .abj404-tab-branding {
         display: none;
     }
 
@@ -1253,6 +1266,11 @@ html[data-theme="obsidian"] .abj404-tab.active {
     background: var(--abj404-surface, #2d2d2d);
     color: var(--abj404-primary, #3b82f6);
     border-bottom-color: var(--abj404-primary, #3b82f6);
+}
+
+html[data-theme="neon"] .abj404-tab-branding,
+html[data-theme="obsidian"] .abj404-tab-branding {
+    color: var(--abj404-text, #e0e0e0);
 }
 
 /* ============================================
