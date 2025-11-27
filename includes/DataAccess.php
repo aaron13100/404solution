@@ -880,6 +880,12 @@ class ABJ_404_Solution_DataAccess {
     /** Flag indicating if regex cache should be skipped (too many redirects) */
     private static $regexCacheDisabled = false;
 
+    /** Queue of log entries to be flushed at shutdown */
+    private static $logQueue = [];
+
+    /** Whether shutdown hook has been registered */
+    private static $shutdownHookRegistered = false;
+
     /**
      * Get counts for each redirect status type for display in tabs.
      * Uses transient caching for performance.
@@ -1736,8 +1742,9 @@ class ABJ_404_Solution_DataAccess {
         
         // insert the username into the lookup table and get the ID from the lookup table.
         $usernameLookupID = $this->insertLookupValueAndGetID($current_user_name);
-        
-        $this->insertAndGetResults($logTableName, array(
+
+        // Queue the log entry for batch INSERT at shutdown
+        $this->queueLogEntry([
             'timestamp' => $now,
             'user_ip' => $ipAddressToSave,
             'referrer' => $referer,
@@ -1746,7 +1753,69 @@ class ABJ_404_Solution_DataAccess {
             'requested_url_detail' => $requestedURLDetail,
             'username' => $usernameLookupID,
             'min_log_id' => $minLogID,
-        ));
+        ]);
+    }
+
+    /**
+     * Queue a log entry for batch INSERT at shutdown.
+     * Registers shutdown hook on first entry.
+     *
+     * @param array $entry Log entry data
+     */
+    function queueLogEntry(array $entry): void {
+        self::$logQueue[] = $entry;
+
+        // Register shutdown hook on first entry only
+        if (!self::$shutdownHookRegistered) {
+            self::$shutdownHookRegistered = true;
+            add_action('shutdown', [$this, 'flushLogQueue']);
+        }
+    }
+
+    /**
+     * Flush queued log entries with a batch INSERT.
+     * Called automatically at shutdown.
+     */
+    function flushLogQueue(): void {
+        if (empty(self::$logQueue)) {
+            return;
+        }
+
+        global $wpdb;
+        $tableName = $this->doTableNameReplacements('{wp_abj404_logsv2}');
+
+        // Get column names from first entry
+        $columns = array_keys(self::$logQueue[0]);
+        $columnList = '`' . implode('`, `', $columns) . '`';
+
+        // Build VALUES for each entry
+        $valuesSets = [];
+        foreach (self::$logQueue as $entry) {
+            $values = [];
+            foreach ($columns as $col) {
+                $value = $entry[$col] ?? null;
+                if ($value === null) {
+                    $values[] = 'NULL';
+                } elseif (is_bool($value)) {
+                    $values[] = $value ? '1' : '0';
+                } elseif (is_int($value) || is_float($value)) {
+                    $values[] = (string)$value;
+                } else {
+                    // Use esc_sql for proper WordPress escaping
+                    $escaped = esc_sql((string)$value);
+                    $values[] = "'" . $escaped . "'";
+                }
+            }
+            $valuesSets[] = '(' . implode(', ', $values) . ')';
+        }
+
+        $sql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES " . implode(', ', $valuesSets);
+
+        // Execute batch INSERT
+        $wpdb->query($sql);
+
+        // Clear queue
+        self::$logQueue = [];
     }
 
     /** Insert a value into the lookup table and return the ID of the value.
