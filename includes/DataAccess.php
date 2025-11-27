@@ -13,7 +13,13 @@ class ABJ_404_Solution_DataAccess {
 
     const KEY_REDIRECTS_FOR_VIEW_COUNT = 'abj404_redirects-for-view-count';
 
+    /** @var int Maximum age in seconds before hits table is considered stale */
+    const HITS_TABLE_MAX_AGE_SECONDS = 300; // 5 minutes
+
     private static $instance = null;
+
+    /** @var bool Whether the hits table rebuild has been scheduled for this request */
+    private static $hitsTableRebuildScheduled = false;
 
     /** @var ABJ_404_Solution_Functions */
     private $f;
@@ -1387,41 +1393,39 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function maybeUpdateRedirectsForViewHitsTable() {
-                
-        $query = "select table_comment from information_schema.tables where table_name = '{wp_abj404_logs_hits}'";
-        $results = $this->queryAndGetResults($query);
-        
-        // if the table already exists then just schedule it to be updated later.
-        if ($results['rows'] != null && !empty($results['rows'])) {
-            // the table exists. let's find out how long it took to create the table last time.
-            $rows = $results['rows'];
-            $row1 = $rows[0]; 
-            // change all to lower
-            $row1 = array_change_key_case($row1);
-            
-            $timeToCreatePreviously = 999999;
-            if (floatval($row1['table_comment']) > 0) {
-                $timeToCreatePreviously = floatval($row1['table_comment']);
-            }
 
-            if ($timeToCreatePreviously < 0.3) {
-                $this->logger->debugMessage(__FUNCTION__ . " creating immediately because create time was " .
-                        $timeToCreatePreviously . " seconds.");
-                // it took less than 0.3 seconds so let's just do it again right now.
-                $this->createRedirectsForViewHitsTable();
-                
-            } else {
-                $this->logger->debugMessage(__FUNCTION__ . " creating later because create time was " .
-                        $timeToCreatePreviously . " seconds.");
-                // it takes too long to make the user wait. we'll update it in the background.
-                wp_schedule_single_event(1, self::UPDATE_LOGS_HITS_TABLE_HOOK);
-            }
-            
-        } else {
+        // Check if the table exists
+        if (!$this->logsHitsTableExists()) {
+            // First-time creation: table must exist before query runs, so create synchronously
             $this->logger->debugMessage(__FUNCTION__ . " creating now because the table doesn't exist (first time).");
-            // if the table does not exist, we need to create it now so the query doesn't fail.
-            // This will only happen on the very first load. Subsequent loads will use the threshold check above.
             $this->createRedirectsForViewHitsTable();
+            return;
+        }
+
+        // Check if rebuild is needed (logs have changed since last build)
+        if (!$this->hitsTableNeedsRebuild()) {
+            // No new log entries - skip rebuild to reduce server load
+            return;
+        }
+
+        // Table exists and logs have changed - defer to shutdown hook
+        $this->scheduleHitsTableRebuild();
+    }
+
+    /**
+     * Schedule the hits table to be rebuilt at shutdown.
+     *
+     * Uses a static flag to ensure the hook is only registered once per request,
+     * even if multiple calls to getRedirectsForView with hits sorting occur.
+     *
+     * The shutdown hook runs after the response is sent, so the admin sees the page
+     * immediately with existing data, and fresh data is available on next load.
+     */
+    function scheduleHitsTableRebuild() {
+        if (!self::$hitsTableRebuildScheduled) {
+            self::$hitsTableRebuildScheduled = true;
+            $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild for shutdown hook.");
+            add_action('shutdown', [$this, 'createRedirectsForViewHitsTable']);
         }
     }
 
@@ -1435,6 +1439,149 @@ class ABJ_404_Solution_DataAccess {
         $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
         return ($results['rows'] != null && !empty($results['rows']));
+    }
+
+    /**
+     * Get the maximum log ID from the logs table.
+     *
+     * Used to detect if logs have changed since the hits table was last built.
+     * O(1) query using primary key index.
+     *
+     * @return int Maximum log ID, or 0 if table is empty
+     */
+    function getMaxLogId() {
+        $query = "SELECT MAX(id) FROM {wp_abj404_logsv2}";
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
+
+        if ($results['rows'] == null || empty($results['rows'])) {
+            return 0;
+        }
+
+        $row = $results['rows'][0];
+        // Handle both object and array results
+        $maxId = is_array($row) ? array_values($row)[0] : (array_values((array)$row)[0] ?? 0);
+        return (int)($maxId ?? 0);
+    }
+
+    /**
+     * Get the stored max log ID from the hits table comment.
+     *
+     * Comment format: "elapsed_time|max_log_id" (e.g., "0.35|12345")
+     *
+     * @return int Stored max log ID, or 0 if not found
+     */
+    function getStoredMaxLogId() {
+        $query = "SELECT table_comment FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}'";
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
+
+        if ($results['rows'] == null || empty($results['rows'])) {
+            return 0;
+        }
+
+        $row = $results['rows'][0];
+        $row = array_change_key_case($row);
+        $comment = $row['table_comment'] ?? '';
+
+        // Parse comment format: "elapsed_time|max_log_id"
+        $parts = explode('|', $comment);
+        if (count($parts) >= 2) {
+            return (int)$parts[1];
+        }
+
+        // Old format (just elapsed time) or empty - treat as needing rebuild
+        return 0;
+    }
+
+    /**
+     * Check if the hits table needs to be rebuilt.
+     *
+     * Rebuild is needed if:
+     * 1. MAX(id) from logs differs from stored value (new entries or deletions)
+     * 2. Table is older than HITS_TABLE_MAX_AGE_SECONDS (staleness check)
+     *
+     * @return bool True if rebuild needed
+     */
+    function hitsTableNeedsRebuild() {
+        $storedMaxId = $this->getStoredMaxLogId();
+        $currentMaxId = $this->getMaxLogId();
+
+        // Check if log entries have changed
+        if ($currentMaxId != $storedMaxId) {
+            $this->logger->debugMessage(__FUNCTION__ . " rebuild=yes (max_id changed: stored=$storedMaxId, current=$currentMaxId)");
+            return true;
+        }
+
+        // Check if table is too old (staleness check)
+        $lastUpdated = $this->getLogsHitsTableLastUpdated();
+        if ($lastUpdated !== null) {
+            $age = time() - $lastUpdated;
+            if ($age > self::HITS_TABLE_MAX_AGE_SECONDS) {
+                $this->logger->debugMessage(__FUNCTION__ . " rebuild=yes (stale: age={$age}s > " . self::HITS_TABLE_MAX_AGE_SECONDS . "s)");
+                return true;
+            }
+        }
+
+        $this->logger->debugMessage(__FUNCTION__ . " rebuild=no (max_id=$currentMaxId unchanged, not stale)");
+        return false;
+    }
+
+    /**
+     * Get the last update time of the logs_hits table.
+     *
+     * Uses the MySQL table creation time from information_schema since
+     * the table is dropped and recreated on each rebuild.
+     *
+     * @return int|null Unix timestamp of last update, or null if table doesn't exist
+     */
+    function getLogsHitsTableLastUpdated() {
+        $query = "SELECT create_time FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}'";
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
+
+        if ($results['rows'] == null || empty($results['rows'])) {
+            return null;
+        }
+
+        $row = $results['rows'][0];
+        $row = array_change_key_case($row);
+        $createTime = $row['create_time'] ?? null;
+
+        if ($createTime === null) {
+            return null;
+        }
+
+        // Convert MySQL datetime to Unix timestamp
+        return strtotime($createTime);
+    }
+
+    /**
+     * Get a human-readable "time ago" string for the hits table's last update.
+     *
+     * @return string e.g., "2 minutes ago", "1 hour ago", or empty string if unknown
+     */
+    function getLogsHitsTableLastUpdatedHuman() {
+        $timestamp = $this->getLogsHitsTableLastUpdated();
+
+        if ($timestamp === null) {
+            return '';
+        }
+
+        $diff = time() - $timestamp;
+
+        if ($diff < 60) {
+            return __('Just now', '404-solution');
+        } elseif ($diff < 3600) {
+            $minutes = floor($diff / 60);
+            return sprintf(_n('%d minute ago', '%d minutes ago', $minutes, '404-solution'), $minutes);
+        } elseif ($diff < 86400) {
+            $hours = floor($diff / 3600);
+            return sprintf(_n('%d hour ago', '%d hours ago', $hours, '404-solution'), $hours);
+        } else {
+            $days = floor($diff / 86400);
+            return sprintf(_n('%d day ago', '%d days ago', $days, '404-solution'), $days);
+        }
     }
 
     function createRedirectsForViewHitsTable() {
@@ -1457,9 +1604,13 @@ class ABJ_404_Solution_DataAccess {
         $ttInsertQuery = "insert into " . $tempDestTable . " (requested_url, logsid, " .
         	"last_used, logshits) \n " . $ttSelectQuery;
         $results = $this->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false));
-        
+
+        // Store elapsed time and max log ID in comment for invalidation check
+        // Format: "elapsed_time|max_log_id" (e.g., "0.35|12345")
         $elapsedTime = $results['elapsed_time'];
-        $addComment = "ALTER TABLE " . $tempDestTable . " COMMENT '" . $results['elapsed_time'] . "'";
+        $maxLogId = $this->getMaxLogId();
+        $comment = $elapsedTime . '|' . $maxLogId;
+        $addComment = "ALTER TABLE " . $tempDestTable . " COMMENT '" . $comment . "'";
         $this->queryAndGetResults($addComment);
         
         // drop the old hits table and rename the temp table to the hits table as a transaction

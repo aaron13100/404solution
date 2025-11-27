@@ -172,6 +172,19 @@ class ABJ_404_Solution_WordPress_Connector {
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-table-interactions', plugin_dir_url(__FILE__) . 'js/tableInteractions.js',
         	array('jquery'));
 
+        // Localized strings for time-ago display
+        wp_localize_script('abj404-table-interactions', 'abj404_time_ago', array(
+            'second'  => __('second', '404-solution'),
+            'seconds' => __('seconds', '404-solution'),
+            'minute'  => __('minute', '404-solution'),
+            'minutes' => __('minutes', '404-solution'),
+            'hour'    => __('hour', '404-solution'),
+            'hours'   => __('hours', '404-solution'),
+            'day'     => __('day', '404-solution'),
+            'days'    => __('days', '404-solution'),
+            'ago'     => __('ago', '404-solution'),
+        ));
+
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
                 null);
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-themes', ABJ404_URL . 'includes/html/adminThemes.css',
