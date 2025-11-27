@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 3.0.5
+Stable tag: 3.0.6
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -237,11 +237,14 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Changelog ==
 
-## Version 3.0.5 (Nov 27, 2025) ##
+= Version 3.0.6 (Nov 27, 2025) =
+* FIX: Resolve fatal error "Class ABJ_404_Solution_DataAccess not found" during plugin uninstallation. The Uninstaller now works standalone without requiring the plugin's autoloader.
+
+= Version 3.0.5 (Nov 27, 2025) =
 * Improvement: Options page has Simple/Advanced mode.
 * Improvement: Made the plugin prettier in general.
 
-## Version 3.0.4 (Nov 24, 2025) ##
+= Version 3.0.4 (Nov 24, 2025) =
 * FIX: Resolve SQL error "Could not perform query because it contains invalid data" caused by invalid UTF-8 byte sequences in URLs. Added sanitization to strip invalid UTF-8 characters before database storage.
 * FIX: Resolve "Table doesn't exist" errors on case-sensitive MySQL installations (lower_case_table_names=0) with mixed-case WordPress prefixes. All plugin table references now use normalized lowercase prefixes to match table creation behavior.
 

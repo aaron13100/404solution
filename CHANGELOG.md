@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 3.0.6 (Nov 27, 2025) ##
+* FIX: Resolve fatal error "Class ABJ_404_Solution_DataAccess not found" during plugin uninstallation. The Uninstaller now works standalone without requiring the plugin's autoloader.
+
 ## Version 3.0.5 (Nov 27, 2025) ##
 * Improvement: Options page has Simple/Advanced mode. 
 * Improvement: Made the plugin prettier in general. 
