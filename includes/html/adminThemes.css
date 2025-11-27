@@ -860,3 +860,12 @@ body[data-theme="obsidian"] .widefat tbody td {
   padding-bottom: 12px;
   line-height: 1.5;
 }
+
+/* ===== Loading Overlay for Dark Themes ===== */
+/* Override the white loading overlay with a dark semi-transparent background */
+html[data-theme="neon"] .abj404-loading-overlay,
+body[data-theme="neon"] .abj404-loading-overlay,
+html[data-theme="obsidian"] .abj404-loading-overlay,
+body[data-theme="obsidian"] .abj404-loading-overlay {
+  background: rgba(12, 15, 19, 0.8) !important;
+}
