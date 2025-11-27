@@ -130,6 +130,165 @@ body[data-theme="obsidian"] {
   --abj404-button-text: #E8EFF7;  /* Slightly brighter text for buttons */
 }
 
+/* ===== Mode Toggle Button Overrides ===== */
+/* Exclude mode buttons from general button styles - they have their own distinct styling */
+/* Non-active mode button - should look like a subtle link/tab */
+html[data-theme] body.wp-admin .abj404-mode-btn:not(.active),
+body[data-theme].wp-admin .abj404-mode-btn:not(.active),
+html[data-theme] body .abj404-mode-btn:not(.active),
+body[data-theme] .abj404-mode-btn:not(.active) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--abj404-text-muted) !important;
+}
+
+html[data-theme] body.wp-admin .abj404-mode-btn:not(.active):hover,
+body[data-theme].wp-admin .abj404-mode-btn:not(.active):hover,
+html[data-theme] body .abj404-mode-btn:not(.active):hover,
+body[data-theme] .abj404-mode-btn:not(.active):hover {
+  background: var(--abj404-surface-muted) !important;
+  color: var(--abj404-text) !important;
+  transform: none !important;
+}
+
+/* Active mode button - should be prominent */
+html[data-theme] body.wp-admin .abj404-mode-btn.active,
+body[data-theme].wp-admin .abj404-mode-btn.active,
+html[data-theme] body .abj404-mode-btn.active,
+body[data-theme] .abj404-mode-btn.active {
+  background: var(--abj404-accent) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+}
+
+html[data-theme] body.wp-admin .abj404-mode-btn.active:hover,
+body[data-theme].wp-admin .abj404-mode-btn.active:hover,
+html[data-theme] body .abj404-mode-btn.active:hover,
+body[data-theme] .abj404-mode-btn.active:hover {
+  opacity: 0.9 !important;
+  transform: none !important;
+}
+
+/* ===== Card Styling for Themes ===== */
+/* Apply theme surface color to cards */
+html[data-theme] body .abj404-card,
+body[data-theme] .abj404-card {
+  background: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+}
+
+html[data-theme] body .abj404-card-header,
+body[data-theme] .abj404-card-header {
+  border-bottom-color: var(--abj404-border) !important;
+}
+
+html[data-theme] body .abj404-card-header:hover,
+body[data-theme] .abj404-card-header:hover {
+  background: var(--abj404-surface-hover) !important;
+}
+
+html[data-theme] body .abj404-card-title,
+body[data-theme] .abj404-card-title {
+  color: var(--abj404-text) !important;
+}
+
+html[data-theme] body .abj404-card-content,
+body[data-theme] .abj404-card-content {
+  color: var(--abj404-text) !important;
+}
+
+/* ===== Content Tab (Filter Links) Styling for Themes ===== */
+/* Non-active content tabs - make text readable in dark mode */
+html[data-theme] body .abj404-content-tab,
+body[data-theme] .abj404-content-tab {
+  color: var(--abj404-text) !important;
+}
+
+html[data-theme] body .abj404-content-tab:hover,
+body[data-theme] .abj404-content-tab:hover {
+  color: var(--abj404-accent) !important;
+  background: var(--abj404-surface-hover) !important;
+}
+
+html[data-theme] body .abj404-content-tab.active,
+body[data-theme] .abj404-content-tab.active {
+  color: var(--abj404-accent) !important;
+  background: var(--abj404-surface) !important;
+}
+
+/* Tab count badges - make readable in dark mode */
+html[data-theme] body .abj404-content-tab .abj404-tab-count,
+body[data-theme] .abj404-content-tab .abj404-tab-count {
+  background: var(--abj404-badge-bg) !important;
+  color: var(--abj404-badge-text) !important;
+}
+
+html[data-theme] body .abj404-content-tab.active .abj404-tab-count,
+body[data-theme] .abj404-content-tab.active .abj404-tab-count {
+  background: var(--abj404-accent) !important;
+  color: #fff !important;
+}
+
+/* ===== Logs Table Layout Improvements ===== */
+/* Better column distribution for logs table */
+.abj404-logs-table {
+  table-layout: fixed !important;
+  width: 100%;
+}
+
+/* URL column - most important, give it good width */
+.abj404-logs-table th:nth-child(1),
+.abj404-logs-table td:nth-child(1) {
+  width: 22%;
+  word-break: break-all;
+}
+
+/* IP Address column - fixed width for consistent display */
+.abj404-logs-table th:nth-child(2),
+.abj404-logs-table td:nth-child(2) {
+  width: 15%;
+  white-space: nowrap;
+}
+
+/* Referrer column - constrain with ellipsis */
+.abj404-logs-table th:nth-child(3),
+.abj404-logs-table td:nth-child(3) {
+  width: 28%;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Action column */
+.abj404-logs-table th:nth-child(4),
+.abj404-logs-table td:nth-child(4) {
+  width: 18%;
+}
+
+/* Date column */
+.abj404-logs-table th:nth-child(5),
+.abj404-logs-table td:nth-child(5) {
+  width: 12%;
+  white-space: nowrap;
+}
+
+/* User column */
+.abj404-logs-table th:nth-child(6),
+.abj404-logs-table td:nth-child(6) {
+  width: 5%;
+}
+
+/* Referrer links - full width with ellipsis */
+.abj404-logs-table td:nth-child(3) a {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ===== Apply theme colors to WordPress admin elements ===== */
 /* Using high specificity selectors to avoid !important */
 /* Note: Selectors check both html[data-theme] and body[data-theme] */
