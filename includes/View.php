@@ -2962,14 +2962,14 @@ class ABJ_404_Solution_View {
             if (trim($row['action']) == "404" || trim($row['action']) == "http://404") {
                 $html .= '<span class="abj404-badge abj404-badge-404">' . __('404', '404-solution') . '</span>';
             } else {
-                $html .= '<span class="abj404-badge abj404-badge-redirect">' . __('Redirect', '404-solution') . '</span> ';
+                $html .= '<span class="abj404-badge abj404-badge-redirect">' . __('Redirect', '404-solution') . '</span><br>';
                 $html .= '<a href="' . esc_url($row['action']) . '" title="' . esc_attr($row['action']) . '" target="_blank" class="abj404-action-url">' . esc_html($row['action']) . '</a>';
             }
             $html .= '</td>';
 
             // Date
             $timeToDisplay = abs(intval($row['timestamp']));
-            $html .= '<td class="abj404-date-cell">' . date('Y/m/d h:i:s A', $timeToDisplay) . '</td>';
+            $html .= '<td class="abj404-date-cell">' . date('Y/m/d', $timeToDisplay) . '<br>' . date('h:i:s A', $timeToDisplay) . '</td>';
 
             // User
             $html .= '<td>';

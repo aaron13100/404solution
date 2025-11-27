@@ -467,6 +467,68 @@ body[data-theme] select:focus {
   outline-color: var(--abj404-focus) !important;
 }
 
+/* Select dropdown options */
+html[data-theme] body.wp-admin select option,
+body[data-theme].wp-admin select option,
+html[data-theme] body select option,
+body[data-theme] select option {
+  background-color: var(--abj404-surface) !important;
+  color: var(--abj404-text) !important;
+}
+
+/* jQuery UI Autocomplete dropdown */
+html[data-theme] .ui-autocomplete,
+body[data-theme] .ui-autocomplete,
+html[data-theme] .ui-menu,
+body[data-theme] .ui-menu {
+  background-color: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+  color: var(--abj404-text) !important;
+}
+
+html[data-theme] .ui-autocomplete .ui-menu-item,
+body[data-theme] .ui-autocomplete .ui-menu-item,
+html[data-theme] .ui-menu .ui-menu-item,
+body[data-theme] .ui-menu .ui-menu-item {
+  background-color: var(--abj404-surface) !important;
+  color: var(--abj404-text) !important;
+}
+
+html[data-theme] .ui-autocomplete .ui-menu-item .ui-menu-item-wrapper,
+body[data-theme] .ui-autocomplete .ui-menu-item .ui-menu-item-wrapper,
+html[data-theme] .ui-menu .ui-menu-item .ui-menu-item-wrapper,
+body[data-theme] .ui-menu .ui-menu-item .ui-menu-item-wrapper {
+  color: var(--abj404-text) !important;
+}
+
+html[data-theme] .ui-autocomplete .ui-menu-item:hover,
+body[data-theme] .ui-autocomplete .ui-menu-item:hover,
+html[data-theme] .ui-menu .ui-menu-item:hover,
+body[data-theme] .ui-menu .ui-menu-item:hover,
+html[data-theme] .ui-autocomplete .ui-state-active,
+body[data-theme] .ui-autocomplete .ui-state-active,
+html[data-theme] .ui-autocomplete .ui-state-focus,
+body[data-theme] .ui-autocomplete .ui-state-focus {
+  background-color: var(--abj404-surface-muted) !important;
+  color: var(--abj404-text) !important;
+  border-color: var(--abj404-primary) !important;
+}
+
+html[data-theme] .ui-autocomplete .ui-menu-item-wrapper.ui-state-active,
+body[data-theme] .ui-autocomplete .ui-menu-item-wrapper.ui-state-active {
+  background-color: var(--abj404-primary) !important;
+  color: #ffffff !important;
+}
+
+/* Autocomplete category headers */
+html[data-theme] .ui-autocomplete-category,
+body[data-theme] .ui-autocomplete-category {
+  background-color: var(--abj404-surface-muted) !important;
+  color: var(--abj404-text-muted) !important;
+  font-weight: bold;
+  padding: 4px 8px;
+}
+
 /* Buttons */
 /* High specificity selectors to override WordPress defaults */
 html[data-theme] body.wp-admin button,
