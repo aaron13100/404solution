@@ -562,10 +562,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	}
     	
     	// get the indexes.
+    	// Pattern matches lines starting with "key" - handles composite indexes with commas inside parens
     	$existingTableMatches = null;
     	$goalTableMatches = null;
-    	preg_match_all('/\s*?(\w+[^,]*)(,?)[\r\n]/', $existingTableSQL, $existingTableMatches);
-    	preg_match_all('/\s*?(\w+[^,]*)(,?)[\r\n]/', $createTableStatementGoal, $goalTableMatches);
+    	preg_match_all('/^\s*(key\s+.+?)\s*,?\s*$/im', $existingTableSQL, $existingTableMatches);
+    	preg_match_all('/^\s*(key\s+.+?)\s*,?\s*$/im', $createTableStatementGoal, $goalTableMatches);
     	
     	// create missing columns
     	$goalTableMatchesColumnDDL = $goalTableMatches[1];
@@ -2021,6 +2022,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $this->createDatabaseTables(false);  // false = not updating to new version
 
             $this->logger->infoMessage("Table repair complete for site " . get_current_blog_id());
+        } else {
+            // Tables exist - verify indexes are up to date
+            // This ensures new composite indexes are added even if upgrade didn't run
+            // createIndexes() is idempotent and only adds missing indexes
+            $this->createIndexes();
         }
     }
 

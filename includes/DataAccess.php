@@ -862,11 +862,30 @@ class ABJ_404_Solution_DataAccess {
         return $recordCount;
     }
 
+    /** Cache key for redirect status counts */
+    const CACHE_KEY_REDIRECT_STATUS = 'abj404_redirect_status_counts';
+
+    /** Cache key for captured status counts */
+    const CACHE_KEY_CAPTURED_STATUS = 'abj404_captured_status_counts';
+
+    /** Cache TTL in seconds (24 hours - safety net, primary refresh is event-driven invalidation) */
+    const STATUS_CACHE_TTL = 86400;
+
     /**
      * Get counts for each redirect status type for display in tabs.
+     * Uses transient caching for performance.
+     * @param bool $bypassCache If true, skip cache and query database directly
      * @return array An array with keys: all, manual, auto, regex, trash
      */
-    function getRedirectStatusCounts() {
+    function getRedirectStatusCounts($bypassCache = false) {
+        // Try to get cached value first
+        if (!$bypassCache) {
+            $cached = get_transient(self::CACHE_KEY_REDIRECT_STATUS);
+            if ($cached !== false) {
+                return $cached;
+            }
+        }
+
         $query = "SELECT
             COUNT(*) as total,
             SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active,
@@ -880,9 +899,10 @@ class ABJ_404_Solution_DataAccess {
         $result = $this->queryAndGetResults($query);
         $rows = $result['rows'];
 
+        $counts = array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0);
         if (!empty($rows)) {
             $row = $rows[0];
-            return array(
+            $counts = array(
                 'all' => intval($row['active']),
                 'manual' => intval($row['manual']),
                 'auto' => intval($row['auto']),
@@ -891,14 +911,27 @@ class ABJ_404_Solution_DataAccess {
             );
         }
 
-        return array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0);
+        // Cache the result
+        set_transient(self::CACHE_KEY_REDIRECT_STATUS, $counts, self::STATUS_CACHE_TTL);
+
+        return $counts;
     }
 
     /**
      * Get counts for each captured URL status type.
+     * Uses transient caching for performance.
+     * @param bool $bypassCache If true, skip cache and query database directly
      * @return array Array with keys: all, captured, ignored, later, trash
      */
-    function getCapturedStatusCounts() {
+    function getCapturedStatusCounts($bypassCache = false) {
+        // Try to get cached value first
+        if (!$bypassCache) {
+            $cached = get_transient(self::CACHE_KEY_CAPTURED_STATUS);
+            if ($cached !== false) {
+                return $cached;
+            }
+        }
+
         $query = "SELECT
             COUNT(*) as total,
             SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active,
@@ -913,9 +946,10 @@ class ABJ_404_Solution_DataAccess {
         $result = $this->queryAndGetResults($query);
         $rows = $result['rows'];
 
+        $counts = array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0);
         if (!empty($rows)) {
             $row = $rows[0];
-            return array(
+            $counts = array(
                 'all' => intval($row['active']),
                 'captured' => intval($row['captured']),
                 'ignored' => intval($row['ignored']),
@@ -924,7 +958,19 @@ class ABJ_404_Solution_DataAccess {
             );
         }
 
-        return array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0);
+        // Cache the result
+        set_transient(self::CACHE_KEY_CAPTURED_STATUS, $counts, self::STATUS_CACHE_TTL);
+
+        return $counts;
+    }
+
+    /**
+     * Invalidate cached status counts.
+     * Call this when redirects are created, updated, or deleted.
+     */
+    function invalidateStatusCountsCache() {
+        delete_transient(self::CACHE_KEY_REDIRECT_STATUS);
+        delete_transient(self::CACHE_KEY_CAPTURED_STATUS);
     }
 
     /**
@@ -1688,7 +1734,7 @@ class ABJ_404_Solution_DataAccess {
     	return -1;
     }
 
-    /** 
+    /**
      * @global type $wpdb
      * @param int $id
      */
@@ -1701,6 +1747,9 @@ class ABJ_404_Solution_DataAccess {
         if ($cleanedID >= 0 && is_numeric($id)) {
             $query = "delete from {wp_abj404_redirects} where id = %d";
             $this->queryAndGetResults($query, array('query_params' => array($cleanedID)));
+
+            // Invalidate status counts cache
+            $this->invalidateStatusCountsCache();
         }
     }
 
@@ -1938,7 +1987,12 @@ class ABJ_404_Solution_DataAccess {
                 $rowsDeleted++;
             }
         }
-        
+
+        // Invalidate status counts cache if any duplicates were removed
+        if ($rowsDeleted > 0) {
+            $this->invalidateStatusCountsCache();
+        }
+
         return $rowsDeleted;
     }
 
@@ -2007,8 +2061,11 @@ class ABJ_404_Solution_DataAccess {
                 '%d'
                     )
             );
+
+            // Invalidate status counts cache
+            $this->invalidateStatusCountsCache();
         }
-        
+
         return $wpdb->insert_id;
     }
 
@@ -2516,6 +2573,9 @@ class ABJ_404_Solution_DataAccess {
             'query_params' => array($newstatus, absint($id))
         ));
 
+        // Invalidate status counts cache
+        $this->invalidateStatusCountsCache();
+
         return $result['last_error'];
     }
 
@@ -2527,15 +2587,18 @@ class ABJ_404_Solution_DataAccess {
      */
     function moveRedirectsToTrash($id, $trash) {
         global $wpdb;
-        
+
         $message = "";
         $result = false;
         if ($this->f->regexMatch('[0-9]+', '' . $id)) {
 
             $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
-            $result = $wpdb->update($redirectsTable, 
+            $result = $wpdb->update($redirectsTable,
                     array('disabled' => esc_html($trash)), array('id' => absint($id)), array('%d'), array('%d')
             );
+
+            // Invalidate status counts cache
+            $this->invalidateStatusCountsCache();
         }
         if ($result == false) {
             $message = __('Error: Unknown Database Error!', '404-solution');

@@ -1825,7 +1825,10 @@ class ABJ_404_Solution_PluginLogic {
 
         $result = $this->dao->queryAndGetResults($query);
         $this->logger->debugMessage("doEmptyTrash deleted " . $result['rows_affected'] . " rows total. (" . $sub . ")");
-        
+
+        // Invalidate status counts cache after bulk delete
+        $this->dao->invalidateStatusCountsCache();
+
         $this->dao->queryAndGetResults("optimize table {wp_abj404_redirects}");
     }
     
