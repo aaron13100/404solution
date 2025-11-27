@@ -1437,42 +1437,50 @@ class ABJ_404_Solution_DataAccess {
         return $rows;
     }
 
-    /** 
+    /**
      * @global type $wpdb
      * @param string $specificURL
      * @return array
      */
     function getLogsIDandURL($specificURL = '') {
+        global $wpdb;
     	$whereClause = '';
         if ($specificURL != '') {
-            $whereClause = "where requested_url = '" . $specificURL . "'";
+            // Escape user input to prevent SQL injection
+            $escapedURL = esc_sql($specificURL);
+            $whereClause = "where requested_url = '" . $escapedURL . "'";
         }
-        
+
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsIDandURL.sql");
         $query = $this->f->str_replace('{where_clause_here}', $whereClause, $query);
-        
+
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
 
         return $rows;
     }
     
-    /** 
+    /**
+     * @global type $wpdb
      * @param string $specificURL
      * @param string $limitResults
      * @return array
      */
     function getLogsIDandURLLike($specificURL, $limitResults) {
+        global $wpdb;
     	$whereClause = '';
         if ($specificURL != '') {
-            $whereClause = "where lower(requested_url) like lower('" . $specificURL . "')\n";
+            // Escape user input to prevent SQL injection
+            // Use esc_like for LIKE queries, then esc_sql for the full string
+            $escapedURL = esc_sql($wpdb->esc_like($specificURL));
+            $whereClause = "where lower(requested_url) like lower('" . $escapedURL . "')\n";
             $whereClause .= "and min_log_id = true";
         }
-        
+
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsIDandURLForAjax.sql");
         $query = $this->f->str_replace('{where_clause_here}', $whereClause, $query);
-        $query = $this->f->str_replace('{limit-results}', 'limit ' . $limitResults, $query);
-        
+        $query = $this->f->str_replace('{limit-results}', 'limit ' . absint($limitResults), $query);
+
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
 

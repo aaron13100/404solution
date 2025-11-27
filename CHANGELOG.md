@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 3.0.5 (Nov 27, 2025) ##
+* Improvement: Options page has Simple/Advanced mode. 
+* Improvement: Made the plugin prettier in general. 
+
 ## Version 3.0.4 (Nov 24, 2025) ##
 * FIX: Resolve SQL error "Could not perform query because it contains invalid data" caused by invalid UTF-8 byte sequences in URLs. Added sanitization to strip invalid UTF-8 characters before database storage.
 * FIX: Resolve "Table doesn't exist" errors on case-sensitive MySQL installations (lower_case_table_names=0) with mixed-case WordPress prefixes. All plugin table references now use normalized lowercase prefixes to match table creation behavior.
