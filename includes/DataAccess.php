@@ -871,6 +871,15 @@ class ABJ_404_Solution_DataAccess {
     /** Cache TTL in seconds (24 hours - safety net, primary refresh is event-driven invalidation) */
     const STATUS_CACHE_TTL = 86400;
 
+    /** Maximum number of regex redirects to cache per-request (memory guard) */
+    const REGEX_CACHE_MAX_COUNT = 50;
+
+    /** Per-request cache for regex redirects (static to persist across getInstance calls) */
+    private static $regexRedirectsCache = null;
+
+    /** Flag indicating if regex cache should be skipped (too many redirects) */
+    private static $regexCacheDisabled = false;
+
     /**
      * Get counts for each redirect status type for display in tabs.
      * Uses transient caching for performance.
@@ -974,6 +983,16 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /**
+     * Clear the per-request regex redirects cache.
+     * Primarily used for testing. In production, the cache resets automatically
+     * on each new request since it uses static variables.
+     */
+    function clearRegexRedirectsCache() {
+        self::$regexRedirectsCache = null;
+        self::$regexCacheDisabled = false;
+    }
+
+    /**
      * @global type $wpdb
      * @param int $logID only return results that correspond to the URL of this $logID. Use 0 to get all records.
      * @return int the number of records found.
@@ -1058,22 +1077,57 @@ class ABJ_404_Solution_DataAccess {
         return $rows;
     }
 
-    /** 
+    /**
+     * Get all regex redirects for pattern matching.
+     * Uses per-request caching when redirect count is <= 50 to avoid repeated queries.
+     * Cache is automatically skipped if there are too many regex redirects (memory guard).
+     *
      * @global type $wpdb
      * @return array
      */
     function getRedirectsWithRegEx() {
+        // Return cached results if available (and caching wasn't disabled due to count)
+        if (self::$regexRedirectsCache !== null && !self::$regexCacheDisabled) {
+            return self::$regexRedirectsCache;
+        }
+
+        // If caching was disabled due to too many redirects, just query without caching
+        if (self::$regexCacheDisabled) {
+            return $this->queryRegexRedirects();
+        }
+
+        // First query - check count and decide whether to cache
+        $results = $this->queryRegexRedirects();
+
+        // Only cache if count is within safe memory limits
+        if (count($results) <= self::REGEX_CACHE_MAX_COUNT) {
+            self::$regexRedirectsCache = $results;
+        } else {
+            // Too many regex redirects - disable caching for this request
+            self::$regexCacheDisabled = true;
+        }
+
+        return $results;
+    }
+
+    /**
+     * Execute the regex redirects query.
+     * Separated from getRedirectsWithRegEx() for cache logic clarity.
+     *
+     * @return array
+     */
+    private function queryRegexRedirects() {
         $query = "select \n  {wp_abj404_redirects}.id,\n  {wp_abj404_redirects}.url,\n  {wp_abj404_redirects}.status,\n"
                 . "  {wp_abj404_redirects}.type,\n  {wp_abj404_redirects}.final_dest,\n  {wp_abj404_redirects}.code,\n"
                 . "  {wp_abj404_redirects}.timestamp,\n {wp_posts}.id as wp_post_id\n ";
         $query .= "from {wp_abj404_redirects}\n " .
                 "  LEFT OUTER JOIN {wp_posts} \n " .
                 "    on {wp_abj404_redirects}.final_dest = {wp_posts}.id \n ";
-        
+
         $query .= "where status in (" . ABJ404_STATUS_REGEX . ") \n " .
                 "     and disabled = 0";
         $results = $this->queryAndGetResults($query);
-        
+
         return $results['rows'];
     }
 
