@@ -1264,3 +1264,15 @@ msgstr ""
 #: includes/SetupWizard.php
 msgid "Saving..."
 msgstr ""
+
+#: includes/html/tableRowPageRedirects.html
+msgid "url-is-normal"
+msgstr ""
+
+#: includes/html/tableRowPageRedirects.html
+msgid "url-looks-like-regex"
+msgstr ""
+
+#: includes/html/tableRowPageRedirects.html
+msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+msgstr ""

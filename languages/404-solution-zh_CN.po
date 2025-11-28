@@ -2148,3 +2148,15 @@ msgstr "跳过设置"
 #: includes/SetupWizard.php
 msgid "Save & Get Started"
 msgstr "保存并开始"
+
+#: includes/html/tableRowPageRedirects.html
+msgid "url-is-normal"
+msgstr "url-is-normal"
+
+#: includes/html/tableRowPageRedirects.html
+msgid "url-looks-like-regex"
+msgstr "url-looks-like-regex"
+
+#: includes/html/tableRowPageRedirects.html
+msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+msgstr "此URL看起来像正则表达式，但未标记为正则表达式。编辑重定向并勾选\"将此URL视为正则表达式\"。"

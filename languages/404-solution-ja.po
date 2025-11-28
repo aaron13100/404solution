@@ -2144,3 +2144,15 @@ msgstr "セットアップをスキップ"
 #: includes/SetupWizard.php
 msgid "Save & Get Started"
 msgstr "保存して開始"
+
+#: includes/html/tableRowPageRedirects.html
+msgid "url-is-normal"
+msgstr "url-is-normal"
+
+#: includes/html/tableRowPageRedirects.html
+msgid "url-looks-like-regex"
+msgstr "url-looks-like-regex"
+
+#: includes/html/tableRowPageRedirects.html
+msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+msgstr "このURLは正規表現のように見えますが、正規表現としてマークされていません。リダイレクトを編集し、「このURLを正規表現として扱う」にチェックを入れてください。"
