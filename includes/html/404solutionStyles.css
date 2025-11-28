@@ -883,40 +883,41 @@ ul .ui-autocomplete-category.data-overflow-category {
     text-align: left;
     border-radius: 6px;
     padding: 10px 12px;
-    font-size: 12px;
-    line-height: 1.4;
+    font-size: 13px;
+    line-height: 1.5;
     font-weight: normal;
     white-space: normal;
     word-wrap: break-word;
+    text-transform: none;
 
     /* Position the tooltip */
     position: absolute;
     width: max-content;
     max-width: 300px;
     min-width: 150px;
-    top: calc(100% + 5px);
-    left: 50%;
-    transform: translateX(-50%);
+    top: calc(100% - 8px);
+    left: 0;
+    transform: none;
     z-index: 1000;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
     transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out;
 }
 
-/* Arrow pointing up */
+/* No arrow - tooltip appears below without pointer */
 .lefty-tooltip .lefty-tooltiptext::before {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-bottom-color: var(--abj404-text, #1d2327);
+    display: none;
 }
 
 .lefty-tooltip:hover .lefty-tooltiptext {
     visibility: visible;
     opacity: 1;
+}
+
+/* Tooltips in last columns - align right to prevent overflow */
+th:nth-last-child(-n+3) .lefty-tooltiptext {
+    left: auto;
+    right: 0;
 }
 /* -- - - - - -- - - - - - -- - - - - - - - - - - - - - -*/
 
@@ -1527,10 +1528,8 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     text-align: left;
     padding: 12px 8px;
     font-weight: 600;
-    font-size: 11px;
+    font-size: 13px;
     color: var(--abj404-text, #1d2327);
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
     white-space: normal;
     position: sticky;
     top: 77px;  /* 32px admin bar + ~45px tabs */

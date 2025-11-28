@@ -13,7 +13,13 @@ class ABJ_404_Solution_DataAccess {
 
     const KEY_REDIRECTS_FOR_VIEW_COUNT = 'abj404_redirects-for-view-count';
 
+    /** @var int Maximum age in seconds before hits table is considered stale */
+    const HITS_TABLE_MAX_AGE_SECONDS = 300; // 5 minutes
+
     private static $instance = null;
+
+    /** @var bool Whether the hits table rebuild has been scheduled for this request */
+    private static $hitsTableRebuildScheduled = false;
 
     /** @var ABJ_404_Solution_Functions */
     private $f;
@@ -862,11 +868,45 @@ class ABJ_404_Solution_DataAccess {
         return $recordCount;
     }
 
+    /** Cache key for redirect status counts */
+    const CACHE_KEY_REDIRECT_STATUS = 'abj404_redirect_status_counts';
+
+    /** Cache key for captured status counts */
+    const CACHE_KEY_CAPTURED_STATUS = 'abj404_captured_status_counts';
+
+    /** Cache TTL in seconds (24 hours - safety net, primary refresh is event-driven invalidation) */
+    const STATUS_CACHE_TTL = 86400;
+
+    /** Maximum number of regex redirects to cache per-request (memory guard) */
+    const REGEX_CACHE_MAX_COUNT = 50;
+
+    /** Per-request cache for regex redirects (static to persist across getInstance calls) */
+    private static $regexRedirectsCache = null;
+
+    /** Flag indicating if regex cache should be skipped (too many redirects) */
+    private static $regexCacheDisabled = false;
+
+    /** Queue of log entries to be flushed at shutdown */
+    private static $logQueue = [];
+
+    /** Whether shutdown hook has been registered */
+    private static $shutdownHookRegistered = false;
+
     /**
      * Get counts for each redirect status type for display in tabs.
+     * Uses transient caching for performance.
+     * @param bool $bypassCache If true, skip cache and query database directly
      * @return array An array with keys: all, manual, auto, regex, trash
      */
-    function getRedirectStatusCounts() {
+    function getRedirectStatusCounts($bypassCache = false) {
+        // Try to get cached value first
+        if (!$bypassCache) {
+            $cached = get_transient(self::CACHE_KEY_REDIRECT_STATUS);
+            if ($cached !== false) {
+                return $cached;
+            }
+        }
+
         $query = "SELECT
             COUNT(*) as total,
             SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active,
@@ -880,9 +920,10 @@ class ABJ_404_Solution_DataAccess {
         $result = $this->queryAndGetResults($query);
         $rows = $result['rows'];
 
+        $counts = array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0);
         if (!empty($rows)) {
             $row = $rows[0];
-            return array(
+            $counts = array(
                 'all' => intval($row['active']),
                 'manual' => intval($row['manual']),
                 'auto' => intval($row['auto']),
@@ -891,14 +932,27 @@ class ABJ_404_Solution_DataAccess {
             );
         }
 
-        return array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0);
+        // Cache the result
+        set_transient(self::CACHE_KEY_REDIRECT_STATUS, $counts, self::STATUS_CACHE_TTL);
+
+        return $counts;
     }
 
     /**
      * Get counts for each captured URL status type.
+     * Uses transient caching for performance.
+     * @param bool $bypassCache If true, skip cache and query database directly
      * @return array Array with keys: all, captured, ignored, later, trash
      */
-    function getCapturedStatusCounts() {
+    function getCapturedStatusCounts($bypassCache = false) {
+        // Try to get cached value first
+        if (!$bypassCache) {
+            $cached = get_transient(self::CACHE_KEY_CAPTURED_STATUS);
+            if ($cached !== false) {
+                return $cached;
+            }
+        }
+
         $query = "SELECT
             COUNT(*) as total,
             SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active,
@@ -913,9 +967,10 @@ class ABJ_404_Solution_DataAccess {
         $result = $this->queryAndGetResults($query);
         $rows = $result['rows'];
 
+        $counts = array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0);
         if (!empty($rows)) {
             $row = $rows[0];
-            return array(
+            $counts = array(
                 'all' => intval($row['active']),
                 'captured' => intval($row['captured']),
                 'ignored' => intval($row['ignored']),
@@ -924,7 +979,29 @@ class ABJ_404_Solution_DataAccess {
             );
         }
 
-        return array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0);
+        // Cache the result
+        set_transient(self::CACHE_KEY_CAPTURED_STATUS, $counts, self::STATUS_CACHE_TTL);
+
+        return $counts;
+    }
+
+    /**
+     * Invalidate cached status counts.
+     * Call this when redirects are created, updated, or deleted.
+     */
+    function invalidateStatusCountsCache() {
+        delete_transient(self::CACHE_KEY_REDIRECT_STATUS);
+        delete_transient(self::CACHE_KEY_CAPTURED_STATUS);
+    }
+
+    /**
+     * Clear the per-request regex redirects cache.
+     * Primarily used for testing. In production, the cache resets automatically
+     * on each new request since it uses static variables.
+     */
+    function clearRegexRedirectsCache() {
+        self::$regexRedirectsCache = null;
+        self::$regexCacheDisabled = false;
     }
 
     /**
@@ -1012,22 +1089,57 @@ class ABJ_404_Solution_DataAccess {
         return $rows;
     }
 
-    /** 
+    /**
+     * Get all regex redirects for pattern matching.
+     * Uses per-request caching when redirect count is <= 50 to avoid repeated queries.
+     * Cache is automatically skipped if there are too many regex redirects (memory guard).
+     *
      * @global type $wpdb
      * @return array
      */
     function getRedirectsWithRegEx() {
+        // Return cached results if available (and caching wasn't disabled due to count)
+        if (self::$regexRedirectsCache !== null && !self::$regexCacheDisabled) {
+            return self::$regexRedirectsCache;
+        }
+
+        // If caching was disabled due to too many redirects, just query without caching
+        if (self::$regexCacheDisabled) {
+            return $this->queryRegexRedirects();
+        }
+
+        // First query - check count and decide whether to cache
+        $results = $this->queryRegexRedirects();
+
+        // Only cache if count is within safe memory limits
+        if (count($results) <= self::REGEX_CACHE_MAX_COUNT) {
+            self::$regexRedirectsCache = $results;
+        } else {
+            // Too many regex redirects - disable caching for this request
+            self::$regexCacheDisabled = true;
+        }
+
+        return $results;
+    }
+
+    /**
+     * Execute the regex redirects query.
+     * Separated from getRedirectsWithRegEx() for cache logic clarity.
+     *
+     * @return array
+     */
+    private function queryRegexRedirects() {
         $query = "select \n  {wp_abj404_redirects}.id,\n  {wp_abj404_redirects}.url,\n  {wp_abj404_redirects}.status,\n"
                 . "  {wp_abj404_redirects}.type,\n  {wp_abj404_redirects}.final_dest,\n  {wp_abj404_redirects}.code,\n"
                 . "  {wp_abj404_redirects}.timestamp,\n {wp_posts}.id as wp_post_id\n ";
         $query .= "from {wp_abj404_redirects}\n " .
                 "  LEFT OUTER JOIN {wp_posts} \n " .
                 "    on {wp_abj404_redirects}.final_dest = {wp_posts}.id \n ";
-        
+
         $query .= "where status in (" . ABJ404_STATUS_REGEX . ") \n " .
                 "     and disabled = 0";
         $results = $this->queryAndGetResults($query);
-        
+
         return $results['rows'];
     }
 
@@ -1281,41 +1393,39 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function maybeUpdateRedirectsForViewHitsTable() {
-                
-        $query = "select table_comment from information_schema.tables where table_name = '{wp_abj404_logs_hits}'";
-        $results = $this->queryAndGetResults($query);
-        
-        // if the table already exists then just schedule it to be updated later.
-        if ($results['rows'] != null && !empty($results['rows'])) {
-            // the table exists. let's find out how long it took to create the table last time.
-            $rows = $results['rows'];
-            $row1 = $rows[0]; 
-            // change all to lower
-            $row1 = array_change_key_case($row1);
-            
-            $timeToCreatePreviously = 999999;
-            if (floatval($row1['table_comment']) > 0) {
-                $timeToCreatePreviously = floatval($row1['table_comment']);
-            }
 
-            if ($timeToCreatePreviously < 0.3) {
-                $this->logger->debugMessage(__FUNCTION__ . " creating immediately because create time was " .
-                        $timeToCreatePreviously . " seconds.");
-                // it took less than 0.3 seconds so let's just do it again right now.
-                $this->createRedirectsForViewHitsTable();
-                
-            } else {
-                $this->logger->debugMessage(__FUNCTION__ . " creating later because create time was " .
-                        $timeToCreatePreviously . " seconds.");
-                // it takes too long to make the user wait. we'll update it in the background.
-                wp_schedule_single_event(1, self::UPDATE_LOGS_HITS_TABLE_HOOK);
-            }
-            
-        } else {
+        // Check if the table exists
+        if (!$this->logsHitsTableExists()) {
+            // First-time creation: table must exist before query runs, so create synchronously
             $this->logger->debugMessage(__FUNCTION__ . " creating now because the table doesn't exist (first time).");
-            // if the table does not exist, we need to create it now so the query doesn't fail.
-            // This will only happen on the very first load. Subsequent loads will use the threshold check above.
             $this->createRedirectsForViewHitsTable();
+            return;
+        }
+
+        // Check if rebuild is needed (logs have changed since last build)
+        if (!$this->hitsTableNeedsRebuild()) {
+            // No new log entries - skip rebuild to reduce server load
+            return;
+        }
+
+        // Table exists and logs have changed - defer to shutdown hook
+        $this->scheduleHitsTableRebuild();
+    }
+
+    /**
+     * Schedule the hits table to be rebuilt at shutdown.
+     *
+     * Uses a static flag to ensure the hook is only registered once per request,
+     * even if multiple calls to getRedirectsForView with hits sorting occur.
+     *
+     * The shutdown hook runs after the response is sent, so the admin sees the page
+     * immediately with existing data, and fresh data is available on next load.
+     */
+    function scheduleHitsTableRebuild() {
+        if (!self::$hitsTableRebuildScheduled) {
+            self::$hitsTableRebuildScheduled = true;
+            $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild for shutdown hook.");
+            add_action('shutdown', [$this, 'createRedirectsForViewHitsTable']);
         }
     }
 
@@ -1329,6 +1439,149 @@ class ABJ_404_Solution_DataAccess {
         $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
         return ($results['rows'] != null && !empty($results['rows']));
+    }
+
+    /**
+     * Get the maximum log ID from the logs table.
+     *
+     * Used to detect if logs have changed since the hits table was last built.
+     * O(1) query using primary key index.
+     *
+     * @return int Maximum log ID, or 0 if table is empty
+     */
+    function getMaxLogId() {
+        $query = "SELECT MAX(id) FROM {wp_abj404_logsv2}";
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
+
+        if ($results['rows'] == null || empty($results['rows'])) {
+            return 0;
+        }
+
+        $row = $results['rows'][0];
+        // Handle both object and array results
+        $maxId = is_array($row) ? array_values($row)[0] : (array_values((array)$row)[0] ?? 0);
+        return (int)($maxId ?? 0);
+    }
+
+    /**
+     * Get the stored max log ID from the hits table comment.
+     *
+     * Comment format: "elapsed_time|max_log_id" (e.g., "0.35|12345")
+     *
+     * @return int Stored max log ID, or 0 if not found
+     */
+    function getStoredMaxLogId() {
+        $query = "SELECT table_comment FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}'";
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
+
+        if ($results['rows'] == null || empty($results['rows'])) {
+            return 0;
+        }
+
+        $row = $results['rows'][0];
+        $row = array_change_key_case($row);
+        $comment = $row['table_comment'] ?? '';
+
+        // Parse comment format: "elapsed_time|max_log_id"
+        $parts = explode('|', $comment);
+        if (count($parts) >= 2) {
+            return (int)$parts[1];
+        }
+
+        // Old format (just elapsed time) or empty - treat as needing rebuild
+        return 0;
+    }
+
+    /**
+     * Check if the hits table needs to be rebuilt.
+     *
+     * Rebuild is needed if:
+     * 1. MAX(id) from logs differs from stored value (new entries or deletions)
+     * 2. Table is older than HITS_TABLE_MAX_AGE_SECONDS (staleness check)
+     *
+     * @return bool True if rebuild needed
+     */
+    function hitsTableNeedsRebuild() {
+        $storedMaxId = $this->getStoredMaxLogId();
+        $currentMaxId = $this->getMaxLogId();
+
+        // Check if log entries have changed
+        if ($currentMaxId != $storedMaxId) {
+            $this->logger->debugMessage(__FUNCTION__ . " rebuild=yes (max_id changed: stored=$storedMaxId, current=$currentMaxId)");
+            return true;
+        }
+
+        // Check if table is too old (staleness check)
+        $lastUpdated = $this->getLogsHitsTableLastUpdated();
+        if ($lastUpdated !== null) {
+            $age = time() - $lastUpdated;
+            if ($age > self::HITS_TABLE_MAX_AGE_SECONDS) {
+                $this->logger->debugMessage(__FUNCTION__ . " rebuild=yes (stale: age={$age}s > " . self::HITS_TABLE_MAX_AGE_SECONDS . "s)");
+                return true;
+            }
+        }
+
+        $this->logger->debugMessage(__FUNCTION__ . " rebuild=no (max_id=$currentMaxId unchanged, not stale)");
+        return false;
+    }
+
+    /**
+     * Get the last update time of the logs_hits table.
+     *
+     * Uses the MySQL table creation time from information_schema since
+     * the table is dropped and recreated on each rebuild.
+     *
+     * @return int|null Unix timestamp of last update, or null if table doesn't exist
+     */
+    function getLogsHitsTableLastUpdated() {
+        $query = "SELECT create_time FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}'";
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
+
+        if ($results['rows'] == null || empty($results['rows'])) {
+            return null;
+        }
+
+        $row = $results['rows'][0];
+        $row = array_change_key_case($row);
+        $createTime = $row['create_time'] ?? null;
+
+        if ($createTime === null) {
+            return null;
+        }
+
+        // Convert MySQL datetime to Unix timestamp
+        return strtotime($createTime);
+    }
+
+    /**
+     * Get a human-readable "time ago" string for the hits table's last update.
+     *
+     * @return string e.g., "2 minutes ago", "1 hour ago", or empty string if unknown
+     */
+    function getLogsHitsTableLastUpdatedHuman() {
+        $timestamp = $this->getLogsHitsTableLastUpdated();
+
+        if ($timestamp === null) {
+            return '';
+        }
+
+        $diff = time() - $timestamp;
+
+        if ($diff < 60) {
+            return __('Just now', '404-solution');
+        } elseif ($diff < 3600) {
+            $minutes = floor($diff / 60);
+            return sprintf(_n('%d minute ago', '%d minutes ago', $minutes, '404-solution'), $minutes);
+        } elseif ($diff < 86400) {
+            $hours = floor($diff / 3600);
+            return sprintf(_n('%d hour ago', '%d hours ago', $hours, '404-solution'), $hours);
+        } else {
+            $days = floor($diff / 86400);
+            return sprintf(_n('%d day ago', '%d days ago', $days, '404-solution'), $days);
+        }
     }
 
     function createRedirectsForViewHitsTable() {
@@ -1351,9 +1604,13 @@ class ABJ_404_Solution_DataAccess {
         $ttInsertQuery = "insert into " . $tempDestTable . " (requested_url, logsid, " .
         	"last_used, logshits) \n " . $ttSelectQuery;
         $results = $this->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false));
-        
+
+        // Store elapsed time and max log ID in comment for invalidation check
+        // Format: "elapsed_time|max_log_id" (e.g., "0.35|12345")
         $elapsedTime = $results['elapsed_time'];
-        $addComment = "ALTER TABLE " . $tempDestTable . " COMMENT '" . $results['elapsed_time'] . "'";
+        $maxLogId = $this->getMaxLogId();
+        $comment = $elapsedTime . '|' . $maxLogId;
+        $addComment = "ALTER TABLE " . $tempDestTable . " COMMENT '" . $comment . "'";
         $this->queryAndGetResults($addComment);
         
         // drop the old hits table and rename the temp table to the hits table as a transaction
@@ -1636,8 +1893,9 @@ class ABJ_404_Solution_DataAccess {
         
         // insert the username into the lookup table and get the ID from the lookup table.
         $usernameLookupID = $this->insertLookupValueAndGetID($current_user_name);
-        
-        $this->insertAndGetResults($logTableName, array(
+
+        // Queue the log entry for batch INSERT at shutdown
+        $this->queueLogEntry([
             'timestamp' => $now,
             'user_ip' => $ipAddressToSave,
             'referrer' => $referer,
@@ -1646,7 +1904,69 @@ class ABJ_404_Solution_DataAccess {
             'requested_url_detail' => $requestedURLDetail,
             'username' => $usernameLookupID,
             'min_log_id' => $minLogID,
-        ));
+        ]);
+    }
+
+    /**
+     * Queue a log entry for batch INSERT at shutdown.
+     * Registers shutdown hook on first entry.
+     *
+     * @param array $entry Log entry data
+     */
+    function queueLogEntry(array $entry): void {
+        self::$logQueue[] = $entry;
+
+        // Register shutdown hook on first entry only
+        if (!self::$shutdownHookRegistered) {
+            self::$shutdownHookRegistered = true;
+            add_action('shutdown', [$this, 'flushLogQueue']);
+        }
+    }
+
+    /**
+     * Flush queued log entries with a batch INSERT.
+     * Called automatically at shutdown.
+     */
+    function flushLogQueue(): void {
+        if (empty(self::$logQueue)) {
+            return;
+        }
+
+        global $wpdb;
+        $tableName = $this->doTableNameReplacements('{wp_abj404_logsv2}');
+
+        // Get column names from first entry
+        $columns = array_keys(self::$logQueue[0]);
+        $columnList = '`' . implode('`, `', $columns) . '`';
+
+        // Build VALUES for each entry
+        $valuesSets = [];
+        foreach (self::$logQueue as $entry) {
+            $values = [];
+            foreach ($columns as $col) {
+                $value = $entry[$col] ?? null;
+                if ($value === null) {
+                    $values[] = 'NULL';
+                } elseif (is_bool($value)) {
+                    $values[] = $value ? '1' : '0';
+                } elseif (is_int($value) || is_float($value)) {
+                    $values[] = (string)$value;
+                } else {
+                    // Use esc_sql for proper WordPress escaping
+                    $escaped = esc_sql((string)$value);
+                    $values[] = "'" . $escaped . "'";
+                }
+            }
+            $valuesSets[] = '(' . implode(', ', $values) . ')';
+        }
+
+        $sql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES " . implode(', ', $valuesSets);
+
+        // Execute batch INSERT
+        $wpdb->query($sql);
+
+        // Clear queue
+        self::$logQueue = [];
     }
 
     /** Insert a value into the lookup table and return the ID of the value.
@@ -1688,7 +2008,7 @@ class ABJ_404_Solution_DataAccess {
     	return -1;
     }
 
-    /** 
+    /**
      * @global type $wpdb
      * @param int $id
      */
@@ -1701,6 +2021,9 @@ class ABJ_404_Solution_DataAccess {
         if ($cleanedID >= 0 && is_numeric($id)) {
             $query = "delete from {wp_abj404_redirects} where id = %d";
             $this->queryAndGetResults($query, array('query_params' => array($cleanedID)));
+
+            // Invalidate status counts cache
+            $this->invalidateStatusCountsCache();
         }
     }
 
@@ -1938,7 +2261,12 @@ class ABJ_404_Solution_DataAccess {
                 $rowsDeleted++;
             }
         }
-        
+
+        // Invalidate status counts cache if any duplicates were removed
+        if ($rowsDeleted > 0) {
+            $this->invalidateStatusCountsCache();
+        }
+
         return $rowsDeleted;
     }
 
@@ -2007,8 +2335,11 @@ class ABJ_404_Solution_DataAccess {
                 '%d'
                     )
             );
+
+            // Invalidate status counts cache
+            $this->invalidateStatusCountsCache();
         }
-        
+
         return $wpdb->insert_id;
     }
 
@@ -2516,6 +2847,9 @@ class ABJ_404_Solution_DataAccess {
             'query_params' => array($newstatus, absint($id))
         ));
 
+        // Invalidate status counts cache
+        $this->invalidateStatusCountsCache();
+
         return $result['last_error'];
     }
 
@@ -2527,15 +2861,18 @@ class ABJ_404_Solution_DataAccess {
      */
     function moveRedirectsToTrash($id, $trash) {
         global $wpdb;
-        
+
         $message = "";
         $result = false;
         if ($this->f->regexMatch('[0-9]+', '' . $id)) {
 
             $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
-            $result = $wpdb->update($redirectsTable, 
+            $result = $wpdb->update($redirectsTable,
                     array('disabled' => esc_html($trash)), array('id' => absint($id)), array('%d'), array('%d')
             );
+
+            // Invalidate status counts cache
+            $this->invalidateStatusCountsCache();
         }
         if ($result == false) {
             $message = __('Error: Unknown Database Error!', '404-solution');

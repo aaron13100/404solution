@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     KEY `timestamp` (`timestamp`),
     KEY `disabled` (`disabled`),
     KEY `url` (`url`(190)) USING BTREE,
-    KEY `final_dest` (`final_dest`(190)) USING BTREE
+    KEY `final_dest` (`final_dest`(190)) USING BTREE,
+    KEY `idx_url_disabled_status` (`url`(190), `disabled`, `status`),
+    KEY `idx_status_disabled` (`status`, `disabled`)
 ) COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1
 

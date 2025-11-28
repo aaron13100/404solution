@@ -54,6 +54,28 @@ class ABJ_404_Solution_View {
 	}
 
 	/**
+	 * Get the tooltip HTML for the Hits and Last Used columns.
+	 *
+	 * Includes warning that data may not be immediately updated, plus the last
+	 * update time with a data-timestamp attribute for JS to update dynamically.
+	 *
+	 * @return string Tooltip HTML (not escaped - contains data attributes)
+	 */
+	private function getHitsColumnTooltip() {
+		$tooltip = esc_html__('Data may not be immediately updated. Refresh to see latest changes.', '404-solution');
+
+		$timestamp = $this->dao->getLogsHitsTableLastUpdated();
+		if ($timestamp !== null) {
+			$lastUpdated = $this->dao->getLogsHitsTableLastUpdatedHuman();
+			// Wrap in span with data-timestamp for JS to update dynamically
+			$timeHtml = '<span class="abj404-time-ago" data-timestamp="' . esc_attr($timestamp) . '">' . esc_html($lastUpdated) . '</span>';
+			$tooltip .= ' ' . sprintf(__('Last updated: %s', '404-solution'), $timeHtml);
+		}
+
+		return $tooltip;
+	}
+
+	/**
 	 * Build action links for table rows (edit, logs, trash, delete, etc.)
 	 *
 	 * @param array $row The data row from the database
@@ -1547,12 +1569,13 @@ class ABJ_404_Solution_View {
         $tableOptions = $this->logic->getTableOptions($sub);
 
         // Build column headers with sorting
+        $hitsTooltip = $this->getHitsColumnTooltip();
         $columns = array(
             'url' => array('title' => __('URL', '404-solution'), 'orderby' => 'url'),
             'status' => array('title' => __('Status', '404-solution'), 'orderby' => 'status'),
-            'hits' => array('title' => __('Hits', '404-solution'), 'orderby' => 'logshits'),
+            'hits' => array('title' => __('Hits', '404-solution'), 'orderby' => 'logshits', 'title_attr_html' => $hitsTooltip),
             'timestamp' => array('title' => __('Created', '404-solution'), 'orderby' => 'timestamp', 'class' => 'hide-on-tablet'),
-            'last_used' => array('title' => __('Last Used', '404-solution'), 'orderby' => 'last_used'),
+            'last_used' => array('title' => __('Last Used', '404-solution'), 'orderby' => 'last_used', 'title_attr_html' => $hitsTooltip),
         );
 
         $html = '<table class="abj404-table">';
@@ -1575,9 +1598,26 @@ class ABJ_404_Solution_View {
             } else {
                 $sortClass = trim($extraClass);
             }
-            $classAttr = $sortClass ? ' class="' . $sortClass . '"' : '';
 
-            $html .= '<th' . $classAttr . '><a href="' . esc_url($sortUrl) . '">' . esc_html($col['title']) . $sortIndicator . '</a></th>';
+            // Add tooltip class if title_attr or title_attr_html exists
+            $hasTooltip = (isset($col['title_attr']) && !empty($col['title_attr'])) ||
+                          (isset($col['title_attr_html']) && !empty($col['title_attr_html']));
+            if ($hasTooltip) {
+                $sortClass .= ' lefty-tooltip';
+            }
+            $classAttr = $sortClass ? ' class="' . trim($sortClass) . '"' : '';
+
+            // Build tooltip HTML if present
+            $tooltipHtml = '';
+            if (isset($col['title_attr_html']) && !empty($col['title_attr_html'])) {
+                // Raw HTML (already escaped where needed)
+                $tooltipHtml = '<span class="lefty-tooltiptext">' . $col['title_attr_html'] . '</span>';
+            } elseif (isset($col['title_attr']) && !empty($col['title_attr'])) {
+                // Plain text - escape it
+                $tooltipHtml = '<span class="lefty-tooltiptext">' . esc_html($col['title_attr']) . '</span>';
+            }
+
+            $html .= '<th' . $classAttr . '>' . $tooltipHtml . '<a href="' . esc_url($sortUrl) . '">' . esc_html($col['title']) . $sortIndicator . '</a></th>';
         }
 
         $html .= '</tr></thead>';
@@ -2052,7 +2092,7 @@ class ABJ_404_Solution_View {
         $columns['hits']['title'] = __('Hits', '404-solution');
         $columns['hits']['orderby'] = "logshits";
         $columns['hits']['width'] = "7%";
-        $columns['hits']['title_attr'] = __('Changes may not be updated immediately when ordering by this column', '404-solution');
+        $columns['hits']['title_attr_html'] = $this->getHitsColumnTooltip();
         $columns['timestamp']['title'] = __('Created', '404-solution');
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "10%";
@@ -2060,7 +2100,7 @@ class ABJ_404_Solution_View {
         $columns['last_used']['title'] = __('Last Used', '404-solution');
         $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "10%";
-        $columns['last_used']['title_attr'] = __('Changes may not be updated immediately when ordering by this column', '404-solution');
+        $columns['last_used']['title_attr_html'] = $this->getHitsColumnTooltip();
 
         $html = "<table class=\"abj404-table\"><thead>";
         $html .= $this->getTableColumns($sub, $columns);
@@ -3051,10 +3091,13 @@ class ABJ_404_Solution_View {
             $url .= "&orderby=" . $orderby . "&order=" . $sortorder;
 
             $cssTooltip = '';
-            $title_attr = '';
-            if (array_key_exists('title_attr', $column)) {
-                $title_attr = $column['title_attr'];
-                $cssTooltip = '<span class="lefty-tooltiptext">' . $title_attr . '</span>' . "\n";
+            if (array_key_exists('title_attr_html', $column) && !empty($column['title_attr_html'])) {
+                // Raw HTML (already escaped where needed)
+                $cssTooltip = '<span class="lefty-tooltiptext">' . $column['title_attr_html'] . '</span>' . "\n";
+                $thClass .= ' lefty-tooltip';
+            } elseif (array_key_exists('title_attr', $column) && !empty($column['title_attr'])) {
+                // Plain text - escape it
+                $cssTooltip = '<span class="lefty-tooltiptext">' . esc_html($column['title_attr']) . '</span>' . "\n";
                 $thClass .= ' lefty-tooltip';
             }
 
@@ -3071,8 +3114,8 @@ class ABJ_404_Solution_View {
                 $html .= $title;
             } else {
                 $html .= "<a href=\"" . esc_url($url) . "\">";
-                $html .= '<span class="table_header_' . $orderby . '" >' .
-                        esc_html($title) . $cssTooltip ."</span>";
+                $html .= '<span class="table_header_' . $orderby . '">' .
+                        esc_html($title) . "</span>";
                 $html .= "<span class=\"sorting-indicator\"></span>";
                 $html .= "</a>";
             }
