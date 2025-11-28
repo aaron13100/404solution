@@ -740,6 +740,13 @@ class ABJ_404_Solution_PluginLogic {
             $this->updateOptions($options);
         }
 
+        // Since 3.0.7: Mark existing users as having completed setup wizard
+        // This prevents the wizard from showing to users upgrading from earlier versions
+        if (version_compare($currentDBVersion, '3.0.7') < 0) {
+            update_option('abj404_setup_completed', gmdate('Y-m-d'));
+            $this->logger->infoMessage('Marked setup wizard as completed for existing user.');
+        }
+
         $options = $this->doUpdateDBVersionOption($options);
         $this->logger->infoMessage(self::$uniqID . ": Updating database version to " . 
         	ABJ404_VERSION . " (end).");
@@ -2474,12 +2481,28 @@ class ABJ_404_Solution_PluginLogic {
     private function updateBooleanToggles(&$options, $postData) {
         $message = "";
 
-        // these options all default to 0 if they're not specifically set to 1.
-        $optionsList = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags',
+        // Check if we're in simple or advanced settings mode
+        $settingsMode = $this->getSettingsMode();
+
+        // All boolean options that could be in forms
+        $allBooleanOptions = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags',
             'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips',
         	'redirect_all_requests', 'update_suggest_url'
         );
-        foreach ($optionsList as $optionName) {
+
+        // Options that appear in Simple Mode form
+        $simpleModeOptions = array('auto_redirects', 'capture_404');
+
+        // Determine which options to process from POST data
+        if ($settingsMode === 'simple') {
+            // Simple mode: only process options that are actually in the form
+            $optionsToProcess = $simpleModeOptions;
+        } else {
+            // Advanced mode: process all options (existing behavior)
+            $optionsToProcess = $allBooleanOptions;
+        }
+
+        foreach ($optionsToProcess as $optionName) {
         	$newVal = (array_key_exists($optionName, $postData) && $postData[$optionName] == "1") ? 1 : 0;
 
         	// in case the suggest_cats or suggest_tags is changed.
@@ -2489,6 +2512,13 @@ class ABJ_404_Solution_PluginLogic {
         		$this->dao->deleteSpellingCache();
         	}
             $options[$optionName] = $newVal;
+        }
+
+        // In Simple Mode, sync auto_cats and auto_tags with auto_redirects
+        if ($settingsMode === 'simple') {
+            $autoRedirectsValue = isset($options['auto_redirects']) ? $options['auto_redirects'] : 0;
+            $options['auto_cats'] = $autoRedirectsValue;
+            $options['auto_tags'] = $autoRedirectsValue;
         }
 
         return $message;

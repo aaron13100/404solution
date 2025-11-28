@@ -1,5 +1,10 @@
 # Changelog #
 
+## Version 3.0.7 (Nov 28, 2025) ##
+* Improvement: Load admin pages faster. Load redirects faster.
+* Improvement: Add a two question wizard/setup screen for new users.
+* FIX: Save settings correctly when using simple mode on the options page.
+
 ## Version 3.0.6 (Nov 27, 2025) ##
 * FIX: Resolve fatal error "Class ABJ_404_Solution_DataAccess not found" during plugin uninstallation. The Uninstaller now works standalone without requiring the plugin's autoloader.
 

@@ -89,6 +89,9 @@ class ABJ_404_Solution_WordPress_Connector {
 
             // Initialize uninstall modal (shows popup when user deletes plugin)
             ABJ_404_Solution_UninstallModal::init();
+
+            // Initialize setup wizard (shows on first visit to plugin pages)
+            ABJ_404_Solution_SetupWizard::init();
         }
 
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
