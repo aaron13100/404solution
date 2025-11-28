@@ -2119,7 +2119,7 @@ msgstr "只显示默认的 404 页面"
 
 #: includes/SetupWizard.php
 msgid "Use WordPress's standard \"Page not found\" screen. Manual redirects still work."
-msgstr "使用 WordPress 标准的"页面未找到"屏幕。手动重定向仍然有效。"
+msgstr "使用 WordPress 标准的\"页面未找到\"屏幕。手动重定向仍然有效。"
 
 #: includes/SetupWizard.php
 msgid "Log 404 errors for review?"
