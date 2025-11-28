@@ -892,12 +892,6 @@ class ABJ_404_Solution_DataAccess {
     /** Whether shutdown hook has been registered */
     private static $shutdownHookRegistered = false;
 
-    /** Whitelist of allowed column names for log entries */
-    private static $allowedLogColumns = [
-        'timestamp', 'user_ip', 'referrer', 'dest_url', 'requested_url',
-        'logsv2_id', 'redirect_id', 'min_log_id', 'action_taken',
-        'user_agent', 'http_code', 'lookup_id', 'log_id'
-    ];
 
     /**
      * Get counts for each redirect status type for display in tabs.
@@ -1442,7 +1436,7 @@ class ABJ_404_Solution_DataAccess {
      * @return bool
      */
     function logsHitsTableExists() {
-        $query = "SELECT 1 FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}' LIMIT 1";
+        $query = "SELECT 1 FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}' AND table_schema = DATABASE() LIMIT 1";
         $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
         return ($results['rows'] != null && !empty($results['rows']));
@@ -1479,7 +1473,7 @@ class ABJ_404_Solution_DataAccess {
      * @return int Stored max log ID, or 0 if not found
      */
     function getStoredMaxLogId() {
-        $query = "SELECT table_comment FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}'";
+        $query = "SELECT table_comment FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}' AND table_schema = DATABASE()";
         $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
 
@@ -1543,7 +1537,7 @@ class ABJ_404_Solution_DataAccess {
      * @return int|null Unix timestamp of last update, or null if table doesn't exist
      */
     function getLogsHitsTableLastUpdated() {
-        $query = "SELECT create_time FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}'";
+        $query = "SELECT create_time FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}' AND table_schema = DATABASE()";
         $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
 
@@ -1946,12 +1940,12 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         $tableName = $this->doTableNameReplacements('{wp_abj404_logsv2}');
 
-        // Get column names from first entry and validate against whitelist
+        // Get column names from first entry and validate as safe SQL identifiers
         $columns = array_keys(self::$logQueue[0]);
         $validatedColumns = [];
         foreach ($columns as $col) {
-            // Only allow whitelisted column names (prevents SQL injection via column names)
-            if (in_array($col, self::$allowedLogColumns, true)) {
+            // Validate column name is a safe SQL identifier (alphanumeric + underscore)
+            if (preg_match('/^[a-z_][a-z0-9_]*$/i', $col)) {
                 $validatedColumns[] = $col;
             }
         }
@@ -2077,8 +2071,9 @@ class ABJ_404_Solution_DataAccess {
             $query = "delete from {wp_abj404_redirects} where id = %d";
             $this->queryAndGetResults($query, array('query_params' => array($cleanedID)));
 
-            // Invalidate status counts cache
+            // Invalidate caches
             $this->invalidateStatusCountsCache();
+            $this->clearRegexRedirectsCache();
         }
     }
 
@@ -2391,8 +2386,12 @@ class ABJ_404_Solution_DataAccess {
                     )
             );
 
-            // Invalidate status counts cache
+            // Invalidate caches
             $this->invalidateStatusCountsCache();
+            // Clear regex cache in case a regex redirect was added
+            if ($status == ABJ404_STATUS_REGEX) {
+                $this->clearRegexRedirectsCache();
+            }
         }
 
         return $wpdb->insert_id;
@@ -2902,8 +2901,9 @@ class ABJ_404_Solution_DataAccess {
             'query_params' => array($newstatus, absint($id))
         ));
 
-        // Invalidate status counts cache
+        // Invalidate caches - status change might affect regex redirects
         $this->invalidateStatusCountsCache();
+        $this->clearRegexRedirectsCache();
 
         return $result['last_error'];
     }
@@ -2926,15 +2926,16 @@ class ABJ_404_Solution_DataAccess {
                     array('disabled' => esc_html($trash)), array('id' => absint($id)), array('%d'), array('%d')
             );
 
-            // Invalidate status counts cache
+            // Invalidate caches - disabled change affects regex redirects
             $this->invalidateStatusCountsCache();
+            $this->clearRegexRedirectsCache();
         }
         if ($result == false) {
             $message = __('Error: Unknown Database Error!', '404-solution');
         }
         return $message;
     }
-    
+
     function updatePermalinkCache() {
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
     		"/sql/updatePermalinkCache.sql");
@@ -3007,7 +3008,11 @@ class ABJ_404_Solution_DataAccess {
             '%d'
                 )
         );
-        
+
+        // Invalidate caches - status/url change affects regex redirects
+        $this->invalidateStatusCountsCache();
+        $this->clearRegexRedirectsCache();
+
         // move this redirect out of the trash.
         $this->moveRedirectsToTrash(absint($idForUpdate), 0);
     }

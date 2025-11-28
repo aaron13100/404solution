@@ -28,6 +28,12 @@ class ABJ_404_Solution_PluginLogic {
     /** Use this to avoid an infinite loop when checking if a user has admin access or not. */
     private static $checkingIsAdmin = false;
 
+    /** Allowed column names for orderby parameter. */
+    private static $allowedOrderbyColumns = ['url', 'status', 'type', 'dest', 'code', 'timestamp', 'created', 'lastused'];
+
+    /** Allowed values for order parameter. */
+    private static $allowedOrderValues = ['ASC', 'DESC'];
+
     /** @return ABJ_404_Solution_PluginLogic The singleton instance of the class. */
     public static function getInstance() {
     	if (self::$instance == null) {
@@ -2054,18 +2060,19 @@ class ABJ_404_Solution_PluginLogic {
         $tableOptions['filterText'] = trim($this->dao->getPostOrGetSanitize("filterText", ""));
         $tableOptions['filterText'] = $this->f->str_replace('*/', '', $tableOptions['filterText']);
 
-        if ($this->dao->getPostOrGetSanitize('orderby', "") != "") {
-            $tableOptions['orderby'] = $this->dao->getPostOrGetSanitize('orderby');
+        $orderbyInput = $this->dao->getPostOrGetSanitize('orderby', "");
+        if ($orderbyInput != "" && in_array($orderbyInput, self::$allowedOrderbyColumns, true)) {
+            $tableOptions['orderby'] = $orderbyInput;
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order_by'] = $tableOptions['orderby'];
                 $this->updateOptions($options);
-                
+
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order_by'] = $tableOptions['orderby'];
                 $this->updateOptions($options);
             }
-            
+
         } else if ($pageBeingViewed == "abj404_logs") {
             $tableOptions['orderby'] = "timestamp";
         } else if ($pageBeingViewed == 'abj404_redirects') {
@@ -2073,24 +2080,25 @@ class ABJ_404_Solution_PluginLogic {
         } else if ($pageBeingViewed == 'abj404_captured') {
             $tableOptions['orderby'] = $options['captured_order_by'];
         } else {
-            $tableOptions['orderby'] = "url";
+            $tableOptions['orderby'] = 'url';
         }
 
-        if ($this->dao->getPostOrGetSanitize('order', '') != '') {
-            $tableOptions['order'] = $this->dao->getPostOrGetSanitize('order');
+        $orderInput = strtoupper($this->dao->getPostOrGetSanitize('order', ''));
+        if ($orderInput != '' && in_array($orderInput, self::$allowedOrderValues, true)) {
+            $tableOptions['order'] = $orderInput;
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order'] = $tableOptions['order'];
                 $this->updateOptions($options);
-                
+
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order'] = $tableOptions['order'];
                 $this->updateOptions($options);
             }
-            
+
         } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
             $tableOptions['order'] = "DESC";
-            
+
         } else if ($pageBeingViewed == 'abj404_redirects') {
             $tableOptions['order'] = $options['page_redirects_order'];
 

@@ -356,7 +356,7 @@ class ABJ_404_Solution_SpellChecker {
 		foreach ($regexURLsRows as $row) {
 			$regexURL = $row['url'];
 
-            $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying custom regex "' . $regexURL . '" to URL: ' . 
+            $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying custom regex "' . $regexURL . '" to URL: ' .
                     $requestedURL;
 			$preparedURL = $this->f->str_replace('/', '\/', $regexURL);
 			if ($this->f->regexMatch($preparedURL, $requestedURL)) {

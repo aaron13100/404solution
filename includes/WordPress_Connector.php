@@ -643,7 +643,6 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return boolean true if the user is sent to the default 404 page.
      */
     function tryRegexRedirect($options, $requestedURL) {
-    	
     	$regexPermalink = $this->spellChecker->getPermalinkUsingRegEx($requestedURL);
     	if (!empty($regexPermalink)) {
     		$this->dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match',

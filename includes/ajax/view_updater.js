@@ -96,6 +96,10 @@ function paginationLinksChange(triggerItem) {
     if (!url) {
         url = jQuery("[data-pagination-ajax-url]").first().attr("data-pagination-ajax-url");
     }
+    if (!url) {
+        console.warn('404 Solution: data-pagination-ajax-url attribute not found');
+        return;
+    }
     var subpage = getURLParameter('subpage');
     var trashFilter = getURLParameter('filter');
 
