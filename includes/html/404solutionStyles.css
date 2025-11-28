@@ -2055,6 +2055,15 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     gap: 12px;
 }
 
+/* Modal redirect-to field structure */
+.abj404-modal .abj404-redirect-to-field {
+    margin-bottom: 0;
+}
+
+.abj404-modal .abj404-input-row {
+    display: block;
+}
+
 /* Modal autocomplete field styling */
 .abj404-modal #redirect_to_user_field {
     width: 100% !important;
@@ -2070,6 +2079,16 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     border-color: var(--abj404-primary, #2271b1);
     outline: none;
     box-shadow: 0 0 0 1px var(--abj404-primary, #2271b1);
+}
+
+/* Loading spinner for modal autocomplete */
+.abj404-modal #redirect_to_user_field.ui-autocomplete-loading {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' stroke='%23c3c4c7' stroke-width='2' fill='none'/%3E%3Cpath d='M8 2 A6 6 0 0 1 14 8' stroke='%232271b1' stroke-width='2' fill='none' stroke-linecap='round'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 8 8' to='360 8 8' dur='0.8s' repeatCount='indefinite'/%3E%3C/path%3E%3C/svg%3E");
+    background-color: var(--abj404-surface, #fff);
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px 16px;
+    padding-right: 36px;
 }
 
 /* Hide legacy tooltip in modal - label already present */
@@ -2090,6 +2109,9 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     display: block;
     margin-top: 4px;
     font-size: 13px;
+    font-style: italic;
+    font-weight: bold;
+    color: var(--abj404-danger-text, #d63638);
 }
 
 /* Hide template label since we have our own */
@@ -2183,6 +2205,26 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     border-top: 1px solid var(--abj404-border, #e0e0e0);
 }
 
+/* Redirect-to field wrapper structure */
+.abj404-edit-container .abj404-redirect-to-field {
+    margin-bottom: 20px;
+}
+
+.abj404-edit-container .abj404-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Style the template label to match form labels */
+.abj404-edit-container .add_a_redirect_label {
+    display: block;
+    font-weight: 600;
+    color: var(--abj404-text, #1d2327);
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
 /* Style the autocomplete field on edit page */
 .abj404-edit-container #redirect_to_user_field {
     width: 100%;
@@ -2201,6 +2243,16 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     box-shadow: 0 0 0 1px var(--abj404-accent, #2271b1);
 }
 
+/* Loading spinner for edit page autocomplete */
+.abj404-edit-container #redirect_to_user_field.ui-autocomplete-loading {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' stroke='%23c3c4c7' stroke-width='2' fill='none'/%3E%3Cpath d='M8 2 A6 6 0 0 1 14 8' stroke='%232271b1' stroke-width='2' fill='none' stroke-linecap='round'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 8 8' to='360 8 8' dur='0.8s' repeatCount='indefinite'/%3E%3C/path%3E%3C/svg%3E");
+    background-color: var(--abj404-surface, #fff);
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px 16px;
+    padding-right: 36px;
+}
+
 /* Style the explanation text */
 .abj404-edit-container #redirect_to_user_field_explanation {
     display: block;
@@ -2210,13 +2262,24 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     font-style: italic;
 }
 
-/* Style the tooltip label to look like our form labels */
-.abj404-edit-container .lefty-tooltip {
+/* Style the warning text */
+.abj404-edit-container #redirect_to_user_field_warning {
     display: block;
-    font-weight: 600;
-    color: var(--abj404-text, #1d2327);
-    margin-bottom: 8px;
-    font-size: 14px;
+    margin-top: 4px;
+    font-size: 13px;
+    font-style: italic;
+    font-weight: bold;
+    color: var(--abj404-danger-text, #d63638);
+}
+
+/* Style the tooltip inline with the input */
+.abj404-edit-container .lefty-tooltip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--abj404-text-muted, #646970);
+    cursor: help;
 }
 
 /* ============================================
@@ -2808,8 +2871,20 @@ html[data-theme="obsidian"] .abj404-accordion-content select {
 }
 
 /* Autocomplete dropdown field (redirect to) styling */
-.abj404-accordion-content > label.add_a_redirect_label,
-.abj404-accordion-content > label.add_exlude_page_field_label {
+/* Redirect field wrapper in accordion */
+.abj404-accordion-content .abj404-redirect-to-field {
+    padding: 0 20px;
+}
+
+.abj404-accordion-content .abj404-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.abj404-accordion-content label.add_a_redirect_label,
+.abj404-accordion-content label.add_exlude_page_field_label {
     display: block;
     font-weight: 600;
     color: var(--abj404-text, #2c3338);
@@ -2817,21 +2892,31 @@ html[data-theme="obsidian"] .abj404-accordion-content select {
     padding: 16px 20px 0;
 }
 
-.abj404-accordion-content > input#redirect_to_user_field,
-.abj404-accordion-content > input#add_exlude_page_field {
-    margin: 0 20px 8px;
+.abj404-accordion-content #redirect_to_user_field,
+.abj404-accordion-content input#add_exlude_page_field {
     padding: 8px 12px;
     border: 1px solid var(--abj404-border, #8c8f94);
     border-radius: 4px;
     font-size: 14px;
-    width: calc(50% - 40px) !important;
+    width: 50% !important;
+    max-width: 400px;
 }
 
-.abj404-accordion-content > input#redirect_to_user_field:focus,
-.abj404-accordion-content > input#add_exlude_page_field:focus {
+.abj404-accordion-content #redirect_to_user_field:focus,
+.abj404-accordion-content input#add_exlude_page_field:focus {
     border-color: var(--abj404-primary, #2271b1);
     box-shadow: 0 0 0 1px var(--abj404-primary, #2271b1);
     outline: none;
+}
+
+/* Loading spinner for accordion autocomplete */
+.abj404-accordion-content #redirect_to_user_field.ui-autocomplete-loading {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' stroke='%23c3c4c7' stroke-width='2' fill='none'/%3E%3Cpath d='M8 2 A6 6 0 0 1 14 8' stroke='%232271b1' stroke-width='2' fill='none' stroke-linecap='round'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 8 8' to='360 8 8' dur='0.8s' repeatCount='indefinite'/%3E%3C/path%3E%3C/svg%3E");
+    background-color: var(--abj404-surface, #fff);
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px 16px;
+    padding-right: 36px;
 }
 
 /* Tooltip styling for autocomplete field */
@@ -2849,17 +2934,25 @@ html[data-theme="obsidian"] .abj404-accordion-content select {
     color: var(--abj404-text-muted, #646970);
     cursor: help;
     vertical-align: middle;
-    margin-left: 8px;
 }
 
 /* Explanation text below autocomplete */
-.abj404-accordion-content > br + span,
 .abj404-accordion-content #redirect_to_user_field_explanation {
     display: block;
     font-size: 13px;
     color: var(--abj404-text-muted, #646970);
-    margin: 0 20px 16px;
+    margin-bottom: 16px;
     font-style: italic;
+}
+
+/* Warning text styling */
+.abj404-accordion-content #redirect_to_user_field_warning {
+    display: block;
+    font-size: 13px;
+    font-style: italic;
+    font-weight: bold;
+    color: var(--abj404-danger-text, #d63638);
+    margin-bottom: 8px;
 }
 
 /* Section title styling for text without labels */

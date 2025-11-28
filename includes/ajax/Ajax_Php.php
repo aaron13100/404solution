@@ -132,48 +132,50 @@ class ABJ_404_Solution_Ajax_Php {
         $term = $f->strtolower(sanitize_text_field($_GET['term']));
         $term = substr($term, 0, 100);
         $includeDefault404Page = $_GET['includeDefault404Page'] == "true";
-        $includeSpecial = array_key_exists('includeSpecial', $_GET) && 
+        $includeSpecial = array_key_exists('includeSpecial', $_GET) &&
         	$_GET['includeSpecial'] == "true";
         $suggestions = array();
-        
+
         // add the "Home Page" destination.
-        $specialPages = $abj404AjaxPhp->getDefaultRedirectDestinations($includeDefault404Page, 
+        $specialPages = $abj404AjaxPhp->getDefaultRedirectDestinations($includeDefault404Page,
         	$includeSpecial);
-        
-        // query to get the posts and pages.
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', $term, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
+
+        // Get all published pages and posts
+        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', '', ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         // order the results. this also sets the page depth (for child pages).
         $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes, true);
         $publishedPosts = $abj404AjaxPhp->formatRedirectDestinations($rowsOtherTypes);
+        // Filter posts after formatting
+        $publishedPosts = $abj404AjaxPhp->filterPages($publishedPosts, $term);
 
         $cats = $abj404dao->getPublishedCategories(null, null, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         $categoryOptions = $abj404AjaxPhp->formatCategoryDestinations($cats);
 
         $tags = $abj404dao->getPublishedTags(null, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         $tagOptions = $abj404AjaxPhp->formatTagDestinations($tags);
-        
+
         $customCategoriesMap = $abj404logic->getMapOfCustomCategories($cats);
         $customCategoryOptions = $abj404AjaxPhp->formatCustomCategoryDestinations($customCategoriesMap);
-        
-        // --------------------------------------- 
+
+        // ---------------------------------------
         // now we filter the results based on the search term.
         $specialPages = $abj404AjaxPhp->filterPages($specialPages, $term);
         $categoryOptions = $abj404AjaxPhp->filterPages($categoryOptions, $term);
         $tagOptions = $abj404AjaxPhp->filterPages($tagOptions, $term);
         $customCategoryOptions = $abj404AjaxPhp->filterPages($customCategoryOptions, $term);
-        
+
         // combine and display the search results.
-        $suggestions = array_merge($specialPages, $publishedPosts, $categoryOptions, $tagOptions, 
+        $suggestions = array_merge($specialPages, $publishedPosts, $categoryOptions, $tagOptions,
                 $customCategoryOptions);
 
         // limit search results
         $suggestions = $abj404AjaxPhp->provideSearchFeedback($suggestions, $term);
-                
+
         echo json_encode($suggestions);
-        
+
     	exit();
     }
-    
+
     /** Add a message about whether there are too many results or none at all.
      * @param array $suggestions
      * @param string $suggestions

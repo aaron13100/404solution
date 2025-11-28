@@ -1,29 +1,25 @@
 
 <!-- - - - - - - - - - - - - - - - - - - -  addManualRedirectPageSearchDropdown.html BEGIN -->
 
-<label  class="add_a_redirect_label" for="redirect_to_user_field">{redirect_to_label}:</label>
-<div class="abj404-input-with-spinner">
-<input id="redirect_to_user_field" placeholder="{TOOLTIP_POPUP_EXPLANATION_EMPTY}"
-       style="width: 50%;" type="text" name="redirect_to_user_field"
-       value="{redirectPageTitle}"
-       data-url="{data-url}"
-       data-lpignore="true"
-       data-tooltip-explanation-empty="{TOOLTIP_POPUP_EXPLANATION_EMPTY}"
-       data-tooltip-explanation-page="{TOOLTIP_POPUP_EXPLANATION_PAGE}"
-       data-tooltip-explanation-custom-string="{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}"
-       data-tooltip-explanation-url="{TOOLTIP_POPUP_EXPLANATION_URL}"
-       class="highlight-text-on-focus"
-       required
-       ><span class="abj404-loading-spinner"></span>
+<label class="add_a_redirect_label" for="redirect_to_user_field">{redirect_to_label}:</label>
+<div class="abj404-redirect-to-field">
+    <div class="abj404-input-row">
+        <input id="redirect_to_user_field" placeholder="{TOOLTIP_POPUP_EXPLANATION_EMPTY}"
+               type="text" name="redirect_to_user_field"
+               value="{redirectPageTitle}"
+               data-url="{data-url}"
+               data-lpignore="true"
+               data-tooltip-explanation-empty="{TOOLTIP_POPUP_EXPLANATION_EMPTY}"
+               data-tooltip-explanation-page="{TOOLTIP_POPUP_EXPLANATION_PAGE}"
+               data-tooltip-explanation-custom-string="{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}"
+               data-tooltip-explanation-url="{TOOLTIP_POPUP_EXPLANATION_URL}"
+               class="highlight-text-on-focus"
+               required
+               ><span class="lefty-tooltip">?<span class="lefty-tooltiptext">{TOOLTIP_POPUP_EXPLANATION_EMPTY}</span></span>
+    </div>
+    <span id="redirect_to_user_field_explanation">{TOOLTIP_POPUP_EXPLANATION_EMPTY}</span>
+    <span id="redirect_to_user_field_warning">{REDIRECT_TO_USER_FIELD_WARNING}</span>
 </div>
-<span class="lefty-tooltip">?
-    <span class="lefty-tooltiptext">{TOOLTIP_POPUP_EXPLANATION_EMPTY}</span>
-</span>
-<BR/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<span id="redirect_to_user_field_explanation" style="font-style: italic;">{TOOLTIP_POPUP_EXPLANATION_EMPTY}</span>
-<span id="redirect_to_user_field_warning" 
-style="font-style: italic; font-weight: bold; color: red;">{REDIRECT_TO_USER_FIELD_WARNING}</span>
 <input id="redirect_to_data_field_id" style="width: 50%;"  name="redirect_to_data_field_id" 
        type="hidden" value="{pageIDAndType}">
 <input id="redirect_to_data_field_title" style="width: 50%;"  name="redirect_to_data_field_title"

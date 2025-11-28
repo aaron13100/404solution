@@ -1302,17 +1302,17 @@ class ABJ_404_Solution_View {
             $codeSelected = $redirect['code'];
         }
         
-        $pageTitle = $this->logic->getPageTitleFromIDAndType($pageIDAndType, $redirect['final_dest']);        
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
+        $pageTitle = $this->logic->getPageTitleFromIDAndType($pageIDAndType, $redirect['final_dest']);
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
                 "/html/addManualRedirectPageSearchDropdown.html");
         $html = $this->f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
                 __('(Type a page name or an external URL)', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
                 __('(A page has been selected.)', '404-solution'), $html);
         $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
         	__('(A custom string has been entered.)', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}', 
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
                 __('(An external URL will be used.)', '404-solution'), $html);
         $html = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
         $html = $this->f->str_replace('{redirectPageTitle}', $pageTitle, $html);
