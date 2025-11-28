@@ -1926,9 +1926,8 @@ class ABJ_404_Solution_View {
         // Redirect to field - using the existing AJAX autocomplete template
         echo '<div class="abj404-form-group abj404-autocomplete-wrapper">';
         echo '<label class="abj404-form-label">' . esc_html__('Redirect to', '404-solution') . ' *</label>';
-        echo '<div class="abj404-input-with-spinner">';
 
-        // Load the autocomplete HTML template
+        // Load the autocomplete HTML template (includes wrapper and spinner)
         $redirectHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectPageSearchDropdown.html");
         $redirectHtml = $this->f->str_replace('{redirect_to_label}', '', $redirectHtml);
         $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
@@ -1948,10 +1947,6 @@ class ABJ_404_Solution_View {
             "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $redirectHtml);
         $redirectHtml = $this->f->doNormalReplacements($redirectHtml);
         echo $redirectHtml;
-
-        // Spinner element - shown via CSS when input has ui-autocomplete-loading class
-        echo '<span class="abj404-loading-spinner"></span>';
-        echo '</div>';
 
         echo '</div>';
 
@@ -2191,7 +2186,16 @@ class ABJ_404_Solution_View {
                     $destinationDoesNotExistClass = ' destination-does-not-exist';
                 }
             }
-            $class = $class . $destinationDoesNotExistClass;
+
+            // Check if URL looks like a regex pattern but is not marked as a regex redirect
+            $urlLooksLikeRegexClass = '';
+            $urlLooksLikeRegex = ABJ_404_Solution_Functions::urlLooksLikeRegex($row['url']);
+            $isRegexStatus = ($row['status'] == ABJ404_STATUS_REGEX);
+            if ($urlLooksLikeRegex && !$isRegexStatus) {
+                $urlLooksLikeRegexClass = ' url-looks-like-regex';
+            }
+
+            $class = $class . $destinationDoesNotExistClass . $urlLooksLikeRegexClass;
             
             // -------------------------------------------
             // Build modern row action buttons with icons
@@ -2250,7 +2254,15 @@ class ABJ_404_Solution_View {
                     $destinationDoesNotExist = '';
                 }
             }
-            
+
+            // URL regex warning visibility
+            $urlIsNormal = '';
+            $urlLooksLikeRegexWarning = 'display: none;';
+            if ($urlLooksLikeRegex && !$isRegexStatus) {
+                $urlIsNormal = 'display: none;';
+                $urlLooksLikeRegexWarning = '';
+            }
+
             // Build full URL with WordPress base path for subdirectory installations
             $fullVisitorURL = esc_url(home_url($row['url']));
 
@@ -2259,6 +2271,10 @@ class ABJ_404_Solution_View {
             $htmlTemp = $this->f->str_replace('{rowClass}', $class, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{visitorURL}', $fullVisitorURL, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{rowURL}', esc_html($row['url']), $htmlTemp);
+
+            // URL regex warning
+            $htmlTemp = $this->f->str_replace('{url-is-normal}', $urlIsNormal, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{url-looks-like-regex}', $urlLooksLikeRegexWarning, $htmlTemp);
 
             // Modern row action buttons
             $htmlTemp = $this->f->str_replace('{editBtnHTML}', $editBtnHTML, $htmlTemp);

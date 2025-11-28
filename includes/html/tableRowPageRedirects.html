@@ -3,7 +3,13 @@
         <input type="checkbox" name="idnum[]" value="{rowid}" onchange="enableDisableApplyButton();">
     </td>
     <td class="abj404-url-cell" title="{rowURL}">
-        <a href="{visitorURL}" target="_blank" title="{Visit URL}">{rowURL}</a>
+        <span style="{url-is-normal}">
+            <a href="{visitorURL}" target="_blank" title="{Visit URL}">{rowURL}</a>
+        </span>
+        <span class="abj404-url-tooltip" style="{url-looks-like-regex}">
+            <span class="abj404-tooltip-text">{This URL looks like a regular expression but is not marked as one. Edit the redirect and check "Treat this URL as a regular expression".}</span>
+            <a href="{visitorURL}" target="_blank" class="abj404-url-warning">{rowURL}</a>
+        </span>
         <div class="abj404-row-actions">
             {editBtnHTML} | {logsBtnHTML} | {trashBtnHTML}{deleteBtnHTML}
         </div>

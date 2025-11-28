@@ -688,14 +688,57 @@ abstract class ABJ_404_Solution_Functions {
         // parse the string
         $queryParts = array();
         parse_str($queryString, $queryParts);
-        
+
         // remove the page id
         if (array_key_exists('p', $queryParts)) {
             unset($queryParts['p']);
         }
-        
+
         // rebuild the string.
         return urldecode(http_build_query($queryParts));
+    }
+
+    /**
+     * Check if a URL appears to contain regex patterns.
+     *
+     * This is used to warn users when a redirect URL looks like it contains
+     * regex syntax but is not marked as a regex redirect.
+     *
+     * @param string $url The URL to check
+     * @return bool True if the URL appears to contain regex patterns
+     */
+    static function urlLooksLikeRegex($url) {
+        if (empty($url) || !is_string($url)) {
+            return false;
+        }
+
+        // Common regex patterns that are unlikely to appear in normal URLs
+        $regexIndicators = array(
+            '/\(\.\*\)/',           // (.*)  - common capture-all pattern
+            '/\(\.\+\)/',           // (.+)  - one or more of anything
+            '/\(\?\:/',             // (?:   - non-capturing group
+            '/\(\?=/',              // (?=   - positive lookahead
+            '/\(\?!/',              // (?!   - negative lookahead
+            '/\[\^[^\]]+\]/',       // [^...]  - negated character class
+            '/\[[a-z]-[a-z]\]/i',   // [a-z] or [A-Z] - character range
+            '/\[[0-9]-[0-9]\]/',    // [0-9] - digit range
+            '/\\\\d/',              // \d    - digit shorthand
+            '/\\\\w/',              // \w    - word character shorthand
+            '/\\\\s/',              // \s    - whitespace shorthand
+            '/\.\*/',               // .*    - match anything (greedy)
+            '/\.\+/',               // .+    - match one or more of anything
+            '/\.\?/',               // .?    - match zero or one of anything
+            '/\{\d+,?\d*\}/',       // {n} or {n,} or {n,m} - quantifiers
+            '/\|/',                 // |     - alternation (but common in some URLs, so check context)
+        );
+
+        foreach ($regexIndicators as $pattern) {
+            if (preg_match($pattern, $url)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }
