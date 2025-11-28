@@ -210,7 +210,7 @@ function abj404_404listener() {
     if (!is_404() || is_admin()) {
     	return;
     }
-    
+
     require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     $connector = ABJ_404_Solution_WordPress_Connector::getInstance();
     return $connector->process404();
