@@ -3,8 +3,13 @@
 ## Version 3.0.7 (Nov 28, 2025) ##
 * Improvement: Load admin pages faster. Load redirects faster.
 * Improvement: Add a two question wizard/setup screen for new users.
+* Improvement: Add warning icon when a redirect URL looks like regex but isn't marked as one.
+* Improvement: Add loading spinner when searching for redirect destinations.
+* Security: Multiple security hardening improvements including CSRF protection and XSS prevention.
 * FIX: Save settings correctly when using simple mode on the options page.
-* FIX: Simple page allows changing the defalt 404 page destination now.
+* FIX: Simple page allows changing the default 404 page destination now.
+* FIX: Dark mode checkbox no longer flashes on page load.
+* FIX: Setup wizard form submission now works correctly.
 
 ## Version 3.0.6 (Nov 27, 2025) ##
 * FIX: Resolve fatal error "Class ABJ_404_Solution_DataAccess not found" during plugin uninstallation. The Uninstaller now works standalone without requiring the plugin's autoloader.
