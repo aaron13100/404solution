@@ -17,8 +17,12 @@ class ABJ_404_Solution_SetupWizard {
      * Initialize the setup wizard functionality
      */
     public static function init() {
-        // Handle form submission early (for Save & Get Started)
-        add_action('admin_init', array(__CLASS__, 'handleFormSubmission'));
+        // Handle form submission immediately (must run before any output)
+        // This is called early during plugin load, so we check and handle here
+        if (is_admin() && isset($_POST['abj404_setup_wizard_action'])) {
+            // Use admin_init to ensure WordPress is fully loaded for nonce verification
+            add_action('admin_init', array(__CLASS__, 'handleFormSubmission'), 1);
+        }
 
         // AJAX handler for skip/close (no page reload needed)
         add_action('wp_ajax_abj404_dismiss_setup_wizard', array(__CLASS__, 'handleAjaxDismiss'));
@@ -662,7 +666,9 @@ class ABJ_404_Solution_SetupWizard {
                         <button type="button" id="abj404-setup-skip" class="abj404-setup-skip">
                             <?php esc_html_e('Skip Setup', '404-solution'); ?>
                         </button>
-                        <button type="submit" name="abj404_setup_wizard_action" value="save" class="button abj404-setup-primary">
+                        <!-- Hidden input ensures action is sent even if button is disabled during submit -->
+                        <input type="hidden" name="abj404_setup_wizard_action" value="save">
+                        <button type="submit" class="button abj404-setup-primary">
                             <?php esc_html_e('Save & Get Started', '404-solution'); ?>
                         </button>
                     </div>
