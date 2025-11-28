@@ -46,9 +46,15 @@ class ABJ_404_Solution_Ajax_Php {
 		}
 	}
 
-	/** Find logs to display. */
+	/** Update plugin options via AJAX. */
 	static function updateOptions() {
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+
+		// Verify user has appropriate capabilities (respects plugin admin users)
+		if (!$abj404logic->userIsPluginAdmin()) {
+			wp_send_json_error(array('message' => 'Unauthorized'));
+			return;
+		}
 
 		$abj404logic->updateOptionsFromPOST();
 	}

@@ -748,7 +748,8 @@ class ABJ_404_Solution_PluginLogic {
 
         // Since 3.0.7: Mark existing users as having completed setup wizard
         // This prevents the wizard from showing to users upgrading from earlier versions
-        if (version_compare($currentDBVersion, '3.0.7') < 0) {
+        // Important: Skip this for NEW installs (where DB_VERSION is 0.0.0) so they see the wizard
+        if ($currentDBVersion !== '0.0.0' && version_compare($currentDBVersion, '3.0.7') < 0) {
             update_option('abj404_setup_completed', gmdate('Y-m-d'));
             $this->logger->infoMessage('Marked setup wizard as completed for existing user.');
         }
@@ -1140,7 +1141,7 @@ class ABJ_404_Solution_PluginLogic {
         	sanitize_text_field($_POST['display-this-message']) : '';
         
         if ($action == "updateOptions") {
-        	if (wp_verify_nonce($_POST['nonce'], 'abj404UpdateOptions') || !is_admin()) {
+        	if (wp_verify_nonce($_POST['nonce'], 'abj404UpdateOptions') && is_admin()) {
                 // delete the debug file and lose all changes, or
                 if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile']) {
                     $filepath = $this->logger->getDebugFilePath();
@@ -1321,8 +1322,9 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function handleActionImportFile() {
-        
-        if ($this->dao->getPostOrGetSanitize('action') == 'importRedirectsFile') {
+
+        if (($this->dao->getPostOrGetSanitize('action') == 'importRedirectsFile') && $this->userIsPluginAdmin()) {
+            check_admin_referer('abj404_importRedirects'); // this verifies the nonce
             $result = $this->doImportFile();
             return $result;
         }
@@ -1964,7 +1966,8 @@ class ABJ_404_Solution_PluginLogic {
 
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             $response['type'] = ABJ404_TYPE_EXTERNAL;
-            $response['dest'] = isset($_POST['redirect_to_user_field']) ? $_POST['redirect_to_user_field'] : '';
+            // Use the sanitized $userEnteredURL (created at line 1932) instead of raw POST
+            $response['dest'] = $userEnteredURL;
         } else {
             if (count($info) == 2) {
                 $response['dest'] = absint($info[0]);

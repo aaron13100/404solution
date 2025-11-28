@@ -36,6 +36,21 @@ msgstr "Deactivating"
 msgid "Saving..."
 msgstr "Saving..."
 
+msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
+msgstr "Could not save settings - missing security token. The wizard may appear again on next visit."
+
+msgid "Could not save dismissal. The wizard may appear again on next visit."
+msgstr "Could not save dismissal. The wizard may appear again on next visit."
+
+msgid "Could not save dismissal: "
+msgstr "Could not save dismissal: "
+
+msgid " The wizard may appear again on next visit."
+msgstr " The wizard may appear again on next visit."
+
+msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
+msgstr "Network error - could not save dismissal. The wizard may appear again on next visit."
+
 msgid "Settings"
 msgstr "Settings"
 
@@ -1577,15 +1592,15 @@ msgstr "Your feedback helps us improve. System information (WordPress version, P
 
 #: includes/PluginLogic.php
 msgid "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
-msgstr ""
+msgstr "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
 
 #: includes/PluginLogic.php
 msgid "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
-msgstr ""
+msgstr "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
 
 #: includes/PluginLogic.php
 msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
-msgstr ""
+msgstr "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
 
 msgid "Plugin Language Override"
 msgstr "Plugin Language Override"

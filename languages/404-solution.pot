@@ -1265,6 +1265,26 @@ msgstr ""
 msgid "Saving..."
 msgstr ""
 
+#: includes/SetupWizard.php
+msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Could not save dismissal. The wizard may appear again on next visit."
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Could not save dismissal: "
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid " The wizard may appear again on next visit."
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
+msgstr ""
+
 #: includes/html/tableRowPageRedirects.html
 msgid "url-is-normal"
 msgstr ""

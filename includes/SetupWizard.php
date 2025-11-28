@@ -441,6 +441,54 @@ class ABJ_404_Solution_SetupWizard {
                 z-index: 10;
             }
 
+            /* Toast notification for AJAX errors */
+            .abj404-toast {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: #d63638;
+                color: #fff;
+                padding: 12px 16px;
+                border-radius: 4px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+                z-index: 9999;
+                max-width: 350px;
+                font-size: 13px;
+                line-height: 1.4;
+                animation: abj404-toast-slide 0.3s ease-out;
+            }
+
+            @keyframes abj404-toast-slide {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .abj404-toast-close {
+                background: none;
+                border: none;
+                color: #fff;
+                font-size: 16px;
+                cursor: pointer;
+                float: right;
+                margin: -4px -4px 0 8px;
+                padding: 0 4px;
+                opacity: 0.8;
+            }
+
+            .abj404-toast-close:hover {
+                opacity: 1;
+            }
+
+            body.abj404-dark-mode .abj404-toast {
+                background: #dc3545;
+            }
+
             .abj404-setup-loading span {
                 color: #1d2327;
                 font-size: 14px;
@@ -663,18 +711,65 @@ class ABJ_404_Solution_SetupWizard {
 
                     // Bug #9 fix: Don't send AJAX if no nonce
                     if (!nonce) {
+                        showToast(<?php echo wp_json_encode(__('Could not save settings - missing security token. The wizard may appear again on next visit.', '404-solution')); ?>);
                         return;
                     }
 
-                    // Fire AJAX to mark as complete with error handling (Bug #23 fix)
+                    // Fire AJAX to mark as complete with error handling
                     var xhr = new XMLHttpRequest();
                     xhr.open('POST', ajaxurl, true);
                     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    xhr.onload = function() {
+                        if (xhr.status !== 200) {
+                            showToast(<?php echo wp_json_encode(__('Could not save dismissal. The wizard may appear again on next visit.', '404-solution')); ?>);
+                            return;
+                        }
+                        try {
+                            var response = JSON.parse(xhr.responseText);
+                            if (!response.success) {
+                                var msg = response.data && response.data.message ? response.data.message : '';
+                                showToast(<?php echo wp_json_encode(__('Could not save dismissal: ', '404-solution')); ?> + msg + <?php echo wp_json_encode(__(' The wizard may appear again on next visit.', '404-solution')); ?>);
+                            }
+                        } catch (e) {
+                            showToast(<?php echo wp_json_encode(__('Could not save dismissal. The wizard may appear again on next visit.', '404-solution')); ?>);
+                        }
+                    };
                     xhr.onerror = function() {
-                        // Silent fail - modal already removed, no user impact
-                        console.warn('404 Solution: Failed to save wizard dismissal');
+                        showToast(<?php echo wp_json_encode(__('Network error - could not save dismissal. The wizard may appear again on next visit.', '404-solution')); ?>);
                     };
                     xhr.send('action=abj404_dismiss_setup_wizard&nonce=' + encodeURIComponent(nonce));
+                }
+
+                function showToast(message) {
+                    // Remove any existing toast
+                    var existingToast = document.querySelector('.abj404-toast');
+                    if (existingToast) {
+                        existingToast.remove();
+                    }
+
+                    // Create toast element using DOM methods
+                    var toast = document.createElement('div');
+                    toast.className = 'abj404-toast';
+                    toast.setAttribute('role', 'alert');
+
+                    var closeBtn = document.createElement('button');
+                    closeBtn.className = 'abj404-toast-close';
+                    closeBtn.setAttribute('aria-label', <?php echo wp_json_encode(__('Close', '404-solution')); ?>);
+                    closeBtn.textContent = '\u00D7';
+                    closeBtn.onclick = function() { toast.remove(); };
+
+                    var textNode = document.createTextNode(message);
+
+                    toast.appendChild(closeBtn);
+                    toast.appendChild(textNode);
+                    document.body.appendChild(toast);
+
+                    // Auto-remove after 10 seconds
+                    setTimeout(function() {
+                        if (toast && toast.parentNode) {
+                            toast.remove();
+                        }
+                    }, 10000);
                 }
 
                 function showSavingOverlay() {

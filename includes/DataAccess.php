@@ -588,7 +588,9 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getOldSlug($post_id) {
-    	
+    	// Sanitize post_id to prevent SQL injection
+    	$post_id = absint($post_id);
+
     	// we order by meta_id desc so that the first row will have the most recent value.
     	$query = "select meta_value from {wp_postmeta} \nwhere post_id = {post_id} " .
     		" and meta_key = '_wp_old_slug' \n" .
@@ -641,19 +643,23 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function getPermalinkFromCache($id) {
+        // Sanitize id to prevent SQL injection
+        $id = absint($id);
         $query = "select url from {wp_abj404_permalink_cache} where id = " . $id;
         $results = $this->queryAndGetResults($query);
-        
+
         $rows = $results['rows'];
         if (empty($rows)) {
             return null;
         }
-        
+
         $row1 = $rows[0];
         return $row1['url'];
     }
-    
+
     function getPermalinkEtcFromCache($id) {
+        // Sanitize id to prevent SQL injection
+        $id = absint($id);
         $query = "select id, url, meta, url_length, post_parent from {wp_abj404_permalink_cache} where id = " . $id;
         $results = $this->queryAndGetResults($query);
         
@@ -1012,10 +1018,12 @@ class ABJ_404_Solution_DataAccess {
      */
     function getLogsCount($logID) {
         global $wpdb;
-        
+        // Sanitize logID to prevent SQL injection
+        $logID = absint($logID);
+
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsCount.sql");
         $query = $this->doTableNameReplacements($query);
-        
+
         if ($logID != 0) {
             $query = $this->f->str_replace('/* {SPECIFIC_ID}', '', $query);
             $query = $this->f->str_replace('{logID}', $logID, $query);
@@ -1338,7 +1346,8 @@ class ABJ_404_Solution_DataAccess {
     }
 
     function getExtraDataToPermalinkSuggestions($postIDs) {
-
+        // Sanitize all post IDs to prevent SQL injection
+        $postIDs = array_map('absint', $postIDs);
         $postIDJoined = implode(", ", $postIDs);
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getAdditionalPostData.sql");
@@ -2006,11 +2015,31 @@ class ABJ_404_Solution_DataAccess {
         // Execute batch INSERT
         $result = $wpdb->query($sql);
 
-        // Check for errors before clearing queue (prevents silent data loss)
+        // Check for errors - if batch insert fails, try individual inserts
         if ($result === false && !empty($wpdb->last_error)) {
-            // Log error but still clear queue to prevent infinite retry loops
-            // The error is logged for debugging purposes
-            error_log('404 Solution: flushLogQueue INSERT failed: ' . $wpdb->last_error);
+            $batchError = $wpdb->last_error;
+            $this->logger->errorMessage("flushLogQueue batch INSERT failed: " . $batchError . ". Retrying individual inserts...");
+
+            // Retry each entry individually to salvage what we can
+            $successCount = 0;
+            $failCount = 0;
+            foreach ($valuesSets as $index => $valueSet) {
+                $singleSql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES {$valueSet}";
+                $singleResult = $wpdb->query($singleSql);
+
+                if ($singleResult === false && !empty($wpdb->last_error)) {
+                    $failCount++;
+                    $this->logger->errorMessage("flushLogQueue individual INSERT failed (entry {$index}): " . $wpdb->last_error);
+                } else {
+                    $successCount++;
+                }
+            }
+
+            if ($failCount > 0) {
+                $this->logger->errorMessage("flushLogQueue recovery complete: {$successCount} inserted, {$failCount} failed.");
+            } else {
+                $this->logger->infoMessage("flushLogQueue recovery complete: all {$successCount} entries inserted individually.");
+            }
         }
 
         // Clear queue and reset flag for next request

@@ -165,11 +165,11 @@ class ABJ_404_Solution_View {
 		// Add orderby/order parameters if not default
 		if (is_array($tableOptions) && array_key_exists('orderby', $tableOptions) && array_key_exists('order', $tableOptions)) {
 			if (!($tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC")) {
-				$result['trashlink'] .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
-				$result['deletelink'] .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+				$result['trashlink'] .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
+				$result['deletelink'] .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
 
 				if ($isCapturedPage) {
-					$result['ignorelink'] .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+					$result['ignorelink'] .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
 					// Note: laterlink intentionally does NOT get orderby/order (this is the bug/quirk)
 				}
 			}
@@ -190,7 +190,7 @@ class ABJ_404_Solution_View {
 		// Add orderby/order parameters to edit link
 		if (is_array($tableOptions) && array_key_exists('orderby', $tableOptions) && array_key_exists('order', $tableOptions)) {
 			if (!($tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC")) {
-				$result['editlink'] .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+				$result['editlink'] .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
 			}
 		}
 
@@ -1500,7 +1500,7 @@ class ABJ_404_Solution_View {
         $filterText = isset($tableOptions['filterText']) ? $tableOptions['filterText'] : '';
         $perPage = isset($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
 
-        echo '<div class="abj404-filter-bar tablenav" data-pagination-ajax-url="admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=' . $sub . '&nonce=' . wp_create_nonce('abj404_updatePaginationLink') . '">';
+        echo '<div class="abj404-filter-bar tablenav" data-pagination-ajax-url="admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=' . esc_attr($sub) . '&nonce=' . wp_create_nonce('abj404_updatePaginationLink') . '">';
         echo '<div class="abj404-search-box">';
         echo '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>';
         echo '<input type="search" name="searchFilter" placeholder="' . esc_attr__('Type to filter URLs... (press Enter)', '404-solution') . '" value="' . esc_attr($filterText) . '" data-lpignore="true">';
@@ -1790,7 +1790,7 @@ class ABJ_404_Solution_View {
         $filterText = isset($tableOptions['filterText']) ? $tableOptions['filterText'] : '';
         $perPage = isset($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
 
-        echo '<div class="abj404-filter-bar tablenav" data-pagination-ajax-url="admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=' . $sub . '&nonce=' . wp_create_nonce('abj404_updatePaginationLink') . '">';
+        echo '<div class="abj404-filter-bar tablenav" data-pagination-ajax-url="admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=' . esc_attr($sub) . '&nonce=' . wp_create_nonce('abj404_updatePaginationLink') . '">';
         echo '<div class="abj404-search-box">';
         echo '<svg class="abj404-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">';
         echo '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>';
@@ -1887,7 +1887,7 @@ class ABJ_404_Solution_View {
         $options = $this->logic->getOptions();
         $url = "?page=" . ABJ404_PP;
         if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-            $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+            $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
         }
         if ($tableOptions['filter'] != 0) {
             $url .= "&filter=" . $tableOptions['filter'];
@@ -2001,7 +2001,7 @@ class ABJ_404_Solution_View {
             $baseUrl .= "&filter=" . $tableOptions['filter'];
         }
         if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-            $baseUrl .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+            $baseUrl .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
         }
 
         // Different label for logs vs redirects
@@ -2057,7 +2057,7 @@ class ABJ_404_Solution_View {
             $url .= "&filter=" . $tableOptions['filter'];
         }
         if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-            $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+            $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
         }
         $url = wp_nonce_url($url, 'abj404_bulkProcess');
         return $url;
@@ -2328,7 +2328,7 @@ class ABJ_404_Solution_View {
         
         $url = "?page=" . ABJ404_PP;
         if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-            $url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+            $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
         }
         if ($tableOptions['filter'] != 0) {
             $url .= "&filter=" . $tableOptions['filter'];
@@ -2915,7 +2915,7 @@ class ABJ_404_Solution_View {
         foreach ($perPageOptions as $opt) {
             $selected = ($tableOptions['perpage'] == $opt) ? ' selected' : '';
             $url = "?page=" . ABJ404_PP . "&subpage=abj404_logs" .
-                   "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'] . "&perpage=" . $opt;
+                   "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']) . "&perpage=" . $opt;
             echo '<option value="' . esc_url($url) . '"' . $selected . '>' . $opt . '</option>';
         }
         echo '</select>';
@@ -3158,9 +3158,9 @@ class ABJ_404_Solution_View {
             $url .= "&subpage=abj404_logs&id=" . $tableOptions['logsid'];
         }
 
-        $url .= "&orderby=" . $tableOptions['orderby'];
-        $url .= "&order=" . $tableOptions['order'];
-        $url .= "&filter=" . $tableOptions['filter'];
+        $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']);
+        $url .= "&order=" . sanitize_text_field($tableOptions['order']);
+        $url .= "&filter=" . absint($tableOptions['filter']);
 
         if ($sub == 'abj404_logs') {
             $num_records = $this->dao->getLogsCount($tableOptions['logsid']);
