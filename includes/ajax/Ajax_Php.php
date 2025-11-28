@@ -140,13 +140,11 @@ class ABJ_404_Solution_Ajax_Php {
         $specialPages = $abj404AjaxPhp->getDefaultRedirectDestinations($includeDefault404Page,
         	$includeSpecial);
 
-        // Get all published pages and posts
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', '', ABJ404_MAX_AJAX_DROPDOWN_SIZE);
+        // Query to get the posts and pages matching the search term
+        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', $term, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         // order the results. this also sets the page depth (for child pages).
         $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes, true);
         $publishedPosts = $abj404AjaxPhp->formatRedirectDestinations($rowsOtherTypes);
-        // Filter posts after formatting
-        $publishedPosts = $abj404AjaxPhp->filterPages($publishedPosts, $term);
 
         $cats = $abj404dao->getPublishedCategories(null, null, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         $categoryOptions = $abj404AjaxPhp->formatCategoryDestinations($cats);
