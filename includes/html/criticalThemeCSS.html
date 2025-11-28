@@ -22,4 +22,7 @@ background-color:var(--abj404-surface);border-color:var(--abj404-border);
 html[data-theme] table.wp-list-table tbody td,html[data-theme] .widefat tbody td{
 border-color:var(--abj404-border);color:var(--abj404-text);
 }
+body[data-theme="neon"] input[type="checkbox"],body[data-theme="neon"] input[type="radio"],body[data-theme="obsidian"] input[type="checkbox"],body[data-theme="obsidian"] input[type="radio"]{
+filter:invert(1) hue-rotate(180deg);
+}
 </style>
