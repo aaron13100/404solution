@@ -85,15 +85,23 @@ class ABJ_404_Solution_SetupWizard {
             return;
         }
 
-        // Verify nonce
+        // Verify nonce with error feedback (Bug #10 fix)
         if (!isset($_POST['abj404_setup_wizard_nonce']) ||
             !wp_verify_nonce($_POST['abj404_setup_wizard_nonce'], 'abj404_setup_wizard')) {
-            return;
+            wp_die(
+                esc_html__('Security check failed. Please try again.', '404-solution'),
+                esc_html__('Error', '404-solution'),
+                array('response' => 403, 'back_link' => true)
+            );
         }
 
-        // Verify user capabilities
+        // Verify user capabilities with error feedback (Bug #10 fix)
         if (!current_user_can('manage_options')) {
-            return;
+            wp_die(
+                esc_html__('You do not have permission to access this page.', '404-solution'),
+                esc_html__('Error', '404-solution'),
+                array('response' => 403, 'back_link' => true)
+            );
         }
 
         $action = sanitize_text_field($_POST['abj404_setup_wizard_action']);
@@ -119,6 +127,12 @@ class ABJ_404_Solution_SetupWizard {
         exit;
     }
 
+    /** Allowed values for Q1 (Bug #13 fix) */
+    private static $allowedQ1Values = ['redirect', 'default'];
+
+    /** Allowed values for Q2 (Bug #13 fix) */
+    private static $allowedQ2Values = ['yes', 'no'];
+
     /**
      * Apply settings from wizard form
      */
@@ -127,7 +141,11 @@ class ABJ_404_Solution_SetupWizard {
         $options = $abj404logic->getOptions();
 
         // Question 1: What happens when page not found
+        // Validate against whitelist (Bug #13 fix)
         $q1_answer = isset($_POST['abj404_setup_q1']) ? sanitize_text_field($_POST['abj404_setup_q1']) : 'redirect';
+        if (!in_array($q1_answer, self::$allowedQ1Values, true)) {
+            $q1_answer = 'redirect'; // Default to safe value
+        }
 
         if ($q1_answer === 'redirect') {
             // Automatically redirect to similar page when a match is found
@@ -143,7 +161,11 @@ class ABJ_404_Solution_SetupWizard {
         $options['dest404page'] = '0|' . ABJ404_TYPE_404_DISPLAYED;
 
         // Question 2: Log 404s
+        // Validate against whitelist (Bug #13 fix)
         $q2_answer = isset($_POST['abj404_setup_q2']) ? sanitize_text_field($_POST['abj404_setup_q2']) : 'yes';
+        if (!in_array($q2_answer, self::$allowedQ2Values, true)) {
+            $q2_answer = 'yes'; // Default to safe value
+        }
 
         $options['capture_404'] = ($q2_answer === 'yes') ? '1' : '0';
 
@@ -614,27 +636,75 @@ class ABJ_404_Solution_SetupWizard {
                 var skipBtn = document.getElementById('abj404-setup-skip');
                 var saveBtn = document.querySelector('.abj404-setup-primary');
                 var form = document.querySelector('#abj404-setup-wizard form');
-                var nonce = document.getElementById('abj404_setup_wizard_nonce').value;
+
+                // Bug #9 fix: Null check for nonce element
+                var nonceEl = document.getElementById('abj404_setup_wizard_nonce');
+                var nonce = nonceEl ? nonceEl.value : '';
+
+                // Bug #26 fix: Track dismiss state to prevent multiple calls
+                var isDismissing = false;
+                var isSubmitting = false;
 
                 function dismissWizard() {
+                    // Bug #26 fix: Prevent multiple rapid dismissals
+                    if (isDismissing) {
+                        return;
+                    }
+                    isDismissing = true;
+
+                    // Disable buttons to prevent further clicks
+                    if (closeBtn) closeBtn.disabled = true;
+                    if (skipBtn) skipBtn.disabled = true;
+
                     // Remove modal immediately
                     if (overlay) {
                         overlay.remove();
                     }
 
-                    // Fire-and-forget AJAX to mark as complete
+                    // Bug #9 fix: Don't send AJAX if no nonce
+                    if (!nonce) {
+                        return;
+                    }
+
+                    // Fire AJAX to mark as complete with error handling (Bug #23 fix)
                     var xhr = new XMLHttpRequest();
                     xhr.open('POST', ajaxurl, true);
                     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    xhr.onerror = function() {
+                        // Silent fail - modal already removed, no user impact
+                        console.warn('404 Solution: Failed to save wizard dismissal');
+                    };
                     xhr.send('action=abj404_dismiss_setup_wizard&nonce=' + encodeURIComponent(nonce));
                 }
 
                 function showSavingOverlay() {
-                    // Create and show loading overlay
+                    // Bug #26 fix: Prevent multiple submissions
+                    if (isSubmitting) {
+                        return false;
+                    }
+                    isSubmitting = true;
+
+                    // Disable buttons
+                    if (saveBtn) saveBtn.disabled = true;
+                    if (skipBtn) skipBtn.disabled = true;
+                    if (closeBtn) closeBtn.disabled = true;
+
+                    // Bug #19 fix: Use DOM methods instead of innerHTML
                     var loadingOverlay = document.createElement('div');
                     loadingOverlay.className = 'abj404-setup-loading';
-                    loadingOverlay.innerHTML = '<div class="abj404-setup-spinner"></div><span><?php echo esc_js(__('Saving...', '404-solution')); ?></span>';
-                    overlay.querySelector('.abj404-setup-modal').appendChild(loadingOverlay);
+
+                    var spinner = document.createElement('div');
+                    spinner.className = 'abj404-setup-spinner';
+                    loadingOverlay.appendChild(spinner);
+
+                    var loadingText = document.createElement('span');
+                    loadingText.textContent = <?php echo wp_json_encode(__('Saving...', '404-solution')); ?>;
+                    loadingOverlay.appendChild(loadingText);
+
+                    var modal = overlay ? overlay.querySelector('.abj404-setup-modal') : null;
+                    if (modal) {
+                        modal.appendChild(loadingOverlay);
+                    }
                 }
 
                 if (closeBtn) {

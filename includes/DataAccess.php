@@ -892,6 +892,13 @@ class ABJ_404_Solution_DataAccess {
     /** Whether shutdown hook has been registered */
     private static $shutdownHookRegistered = false;
 
+    /** Whitelist of allowed column names for log entries */
+    private static $allowedLogColumns = [
+        'timestamp', 'user_ip', 'referrer', 'dest_url', 'requested_url',
+        'logsv2_id', 'redirect_id', 'min_log_id', 'action_taken',
+        'user_agent', 'http_code', 'lookup_id', 'log_id'
+    ];
+
     /**
      * Get counts for each redirect status type for display in tabs.
      * Uses transient caching for performance.
@@ -1610,6 +1617,8 @@ class ABJ_404_Solution_DataAccess {
         $elapsedTime = $results['elapsed_time'];
         $maxLogId = $this->getMaxLogId();
         $comment = $elapsedTime . '|' . $maxLogId;
+        // Escape comment and truncate to MySQL's 2048 char limit for table comments
+        $comment = substr(esc_sql($comment), 0, 2048);
         $addComment = "ALTER TABLE " . $tempDestTable . " COMMENT '" . $comment . "'";
         $this->queryAndGetResults($addComment);
         
@@ -1929,22 +1938,53 @@ class ABJ_404_Solution_DataAccess {
      */
     function flushLogQueue(): void {
         if (empty(self::$logQueue)) {
+            // Reset shutdown hook flag for next request (persistent hosting protection)
+            self::$shutdownHookRegistered = false;
             return;
         }
 
         global $wpdb;
         $tableName = $this->doTableNameReplacements('{wp_abj404_logsv2}');
 
-        // Get column names from first entry
+        // Get column names from first entry and validate against whitelist
         $columns = array_keys(self::$logQueue[0]);
-        $columnList = '`' . implode('`, `', $columns) . '`';
+        $validatedColumns = [];
+        foreach ($columns as $col) {
+            // Only allow whitelisted column names (prevents SQL injection via column names)
+            if (in_array($col, self::$allowedLogColumns, true)) {
+                $validatedColumns[] = $col;
+            }
+        }
 
-        // Build VALUES for each entry
+        if (empty($validatedColumns)) {
+            // No valid columns - clear queue and reset flag
+            self::$logQueue = [];
+            self::$shutdownHookRegistered = false;
+            return;
+        }
+
+        $columnList = '`' . implode('`, `', $validatedColumns) . '`';
+
+        // Build VALUES for each entry with proper validation
         $valuesSets = [];
         foreach (self::$logQueue as $entry) {
+            // Validate entry has same structure as first entry
+            $entryColumns = array_keys($entry);
+            $missingCols = array_diff($validatedColumns, $entryColumns);
+            if (!empty($missingCols)) {
+                // Skip entries with missing columns to prevent data corruption
+                continue;
+            }
+
             $values = [];
-            foreach ($columns as $col) {
+            foreach ($validatedColumns as $col) {
                 $value = $entry[$col] ?? null;
+
+                // Type validation - reject objects and arrays
+                if (is_object($value) || is_array($value)) {
+                    $value = null; // Convert to NULL instead of "Array" or "Object"
+                }
+
                 if ($value === null) {
                     $values[] = 'NULL';
                 } elseif (is_bool($value)) {
@@ -1960,13 +2000,28 @@ class ABJ_404_Solution_DataAccess {
             $valuesSets[] = '(' . implode(', ', $values) . ')';
         }
 
+        if (empty($valuesSets)) {
+            // No valid entries - clear queue and reset flag
+            self::$logQueue = [];
+            self::$shutdownHookRegistered = false;
+            return;
+        }
+
         $sql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES " . implode(', ', $valuesSets);
 
         // Execute batch INSERT
-        $wpdb->query($sql);
+        $result = $wpdb->query($sql);
 
-        // Clear queue
+        // Check for errors before clearing queue (prevents silent data loss)
+        if ($result === false && !empty($wpdb->last_error)) {
+            // Log error but still clear queue to prevent infinite retry loops
+            // The error is logged for debugging purposes
+            error_log('404 Solution: flushLogQueue INSERT failed: ' . $wpdb->last_error);
+        }
+
+        // Clear queue and reset flag for next request
         self::$logQueue = [];
+        self::$shutdownHookRegistered = false;
     }
 
     /** Insert a value into the lookup table and return the ID of the value.

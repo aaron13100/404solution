@@ -2020,7 +2020,16 @@ class ABJ_404_Solution_PluginLogic {
         return $message;
     }
 
-    /** 
+    /** Whitelist of allowed orderby columns (Bug #15 fix) */
+    private static $allowedOrderbyColumns = [
+        'url', 'status', 'type', 'dest', 'code', 'timestamp', 'created', 'lastused',
+        'hits', 'logshits', 'last_used', 'requested_url'
+    ];
+
+    /** Whitelist of allowed order values (Bug #15 fix) */
+    private static $allowedOrderValues = ['ASC', 'DESC'];
+
+    /**
      * @param string $pageBeingViewed
      * @return array
      */
@@ -2055,17 +2064,23 @@ class ABJ_404_Solution_PluginLogic {
         $tableOptions['filterText'] = $this->f->str_replace('*/', '', $tableOptions['filterText']);
 
         if ($this->dao->getPostOrGetSanitize('orderby', "") != "") {
-            $tableOptions['orderby'] = $this->dao->getPostOrGetSanitize('orderby');
+            $orderbyInput = $this->dao->getPostOrGetSanitize('orderby');
+            // Validate orderby against whitelist (Bug #15 fix)
+            if (in_array($orderbyInput, self::$allowedOrderbyColumns, true)) {
+                $tableOptions['orderby'] = $orderbyInput;
+            } else {
+                $tableOptions['orderby'] = 'url'; // Default to safe value
+            }
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order_by'] = $tableOptions['orderby'];
                 $this->updateOptions($options);
-                
+
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order_by'] = $tableOptions['orderby'];
                 $this->updateOptions($options);
             }
-            
+
         } else if ($pageBeingViewed == "abj404_logs") {
             $tableOptions['orderby'] = "timestamp";
         } else if ($pageBeingViewed == 'abj404_redirects') {
@@ -2077,17 +2092,23 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if ($this->dao->getPostOrGetSanitize('order', '') != '') {
-            $tableOptions['order'] = $this->dao->getPostOrGetSanitize('order');
+            $orderInput = strtoupper($this->dao->getPostOrGetSanitize('order'));
+            // Validate order against whitelist (Bug #15 fix)
+            if (in_array($orderInput, self::$allowedOrderValues, true)) {
+                $tableOptions['order'] = $orderInput;
+            } else {
+                $tableOptions['order'] = 'ASC'; // Default to safe value
+            }
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order'] = $tableOptions['order'];
                 $this->updateOptions($options);
-                
+
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order'] = $tableOptions['order'];
                 $this->updateOptions($options);
             }
-            
+
         } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
             $tableOptions['order'] = "DESC";
             
