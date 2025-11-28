@@ -2063,3 +2063,79 @@ msgstr "day"
 #: includes/WordPress_Connector.php
 msgid "ago"
 msgstr "ago"
+
+#: includes/SetupWizard.php
+msgid "Security check failed. Please try again."
+msgstr "Sicherheitsprüfung fehlgeschlagen. Bitte versuchen Sie es erneut."
+
+#: includes/SetupWizard.php
+msgid "Error"
+msgstr "Fehler"
+
+#: includes/SetupWizard.php
+msgid "You do not have permission to access this page."
+msgstr "Sie haben keine Berechtigung, auf diese Seite zuzugreifen."
+
+#: includes/SetupWizard.php
+msgid "Welcome to 404 Solution"
+msgstr "Willkommen bei 404 Solution"
+
+#: includes/SetupWizard.php
+msgid "Close"
+msgstr "Schließen"
+
+#: includes/SetupWizard.php
+msgid "404 Solution helps you automatically handle 404 errors and broken links on your site."
+msgstr "404 Solution hilft Ihnen, 404-Fehler und defekte Links auf Ihrer Website automatisch zu behandeln."
+
+#: includes/SetupWizard.php
+msgid "Let's configure how it handles missing pages. You can always change these settings later."
+msgstr "Lassen Sie uns konfigurieren, wie fehlende Seiten behandelt werden. Sie können diese Einstellungen jederzeit ändern."
+
+#: includes/SetupWizard.php
+msgid "When a page is not found, what should happen?"
+msgstr "Was soll passieren, wenn eine Seite nicht gefunden wird?"
+
+#: includes/SetupWizard.php
+msgid "Automatically redirect to similar page (recommended)"
+msgstr "Automatisch auf ähnliche Seite umleiten (empfohlen)"
+
+#: includes/SetupWizard.php
+msgid "When a match is found, redirect visitors automatically"
+msgstr "Bei Übereinstimmung Besucher automatisch umleiten"
+
+#: includes/SetupWizard.php
+msgid "Just show the default 404 page"
+msgstr "Einfach die Standard-404-Seite anzeigen"
+
+#: includes/SetupWizard.php
+msgid "Use WordPress's standard \"Page not found\" screen. Manual redirects still work."
+msgstr "WordPress-Standard \"Seite nicht gefunden\" verwenden. Manuelle Weiterleitungen funktionieren weiterhin."
+
+#: includes/SetupWizard.php
+msgid "Log 404 errors for review?"
+msgstr "404-Fehler zur Überprüfung protokollieren?"
+
+#: includes/SetupWizard.php
+msgid "Yes, log 404 errors"
+msgstr "Ja, 404-Fehler protokollieren"
+
+#: includes/SetupWizard.php
+msgid "Track missing pages so you can create redirects later"
+msgstr "Fehlende Seiten verfolgen, um später Weiterleitungen zu erstellen"
+
+#: includes/SetupWizard.php
+msgid "No, don't log 404s"
+msgstr "Nein, 404-Fehler nicht protokollieren"
+
+#: includes/SetupWizard.php
+msgid "Only handle manually created redirects"
+msgstr "Nur manuell erstellte Weiterleitungen verarbeiten"
+
+#: includes/SetupWizard.php
+msgid "Skip Setup"
+msgstr "Einrichtung überspringen"
+
+#: includes/SetupWizard.php
+msgid "Save & Get Started"
+msgstr "Speichern und loslegen"

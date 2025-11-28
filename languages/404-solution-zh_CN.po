@@ -2072,3 +2072,79 @@ msgstr "天"
 #: includes/WordPress_Connector.php
 msgid "ago"
 msgstr "前"
+
+#: includes/SetupWizard.php
+msgid "Security check failed. Please try again."
+msgstr "安全检查失败。请重试。"
+
+#: includes/SetupWizard.php
+msgid "Error"
+msgstr "错误"
+
+#: includes/SetupWizard.php
+msgid "You do not have permission to access this page."
+msgstr "您没有权限访问此页面。"
+
+#: includes/SetupWizard.php
+msgid "Welcome to 404 Solution"
+msgstr "欢迎使用 404 Solution"
+
+#: includes/SetupWizard.php
+msgid "Close"
+msgstr "关闭"
+
+#: includes/SetupWizard.php
+msgid "404 Solution helps you automatically handle 404 errors and broken links on your site."
+msgstr "404 Solution 帮助您自动处理网站上的 404 错误和断开的链接。"
+
+#: includes/SetupWizard.php
+msgid "Let's configure how it handles missing pages. You can always change these settings later."
+msgstr "让我们配置如何处理缺失的页面。您可以随时更改这些设置。"
+
+#: includes/SetupWizard.php
+msgid "When a page is not found, what should happen?"
+msgstr "当页面未找到时，应该怎么做？"
+
+#: includes/SetupWizard.php
+msgid "Automatically redirect to similar page (recommended)"
+msgstr "自动重定向到相似页面（推荐）"
+
+#: includes/SetupWizard.php
+msgid "When a match is found, redirect visitors automatically"
+msgstr "找到匹配项时，自动重定向访问者"
+
+#: includes/SetupWizard.php
+msgid "Just show the default 404 page"
+msgstr "只显示默认的 404 页面"
+
+#: includes/SetupWizard.php
+msgid "Use WordPress's standard \"Page not found\" screen. Manual redirects still work."
+msgstr "使用 WordPress 标准的"页面未找到"屏幕。手动重定向仍然有效。"
+
+#: includes/SetupWizard.php
+msgid "Log 404 errors for review?"
+msgstr "记录 404 错误以供审查？"
+
+#: includes/SetupWizard.php
+msgid "Yes, log 404 errors"
+msgstr "是，记录 404 错误"
+
+#: includes/SetupWizard.php
+msgid "Track missing pages so you can create redirects later"
+msgstr "跟踪缺失的页面，以便稍后创建重定向"
+
+#: includes/SetupWizard.php
+msgid "No, don't log 404s"
+msgstr "否，不记录 404"
+
+#: includes/SetupWizard.php
+msgid "Only handle manually created redirects"
+msgstr "仅处理手动创建的重定向"
+
+#: includes/SetupWizard.php
+msgid "Skip Setup"
+msgstr "跳过设置"
+
+#: includes/SetupWizard.php
+msgid "Save & Get Started"
+msgstr "保存并开始"

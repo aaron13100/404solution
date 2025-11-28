@@ -1184,3 +1184,83 @@ msgstr ""
 #: includes/View.php
 msgid "Last updated: %s"
 msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Security check failed. Please try again."
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Error"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "You do not have permission to access this page."
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Welcome to 404 Solution"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Close"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "404 Solution helps you automatically handle 404 errors and broken links on your site."
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Let's configure how it handles missing pages. You can always change these settings later."
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "When a page is not found, what should happen?"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Automatically redirect to similar page (recommended)"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "When a match is found, redirect visitors automatically"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Just show the default 404 page"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Use WordPress's standard \"Page not found\" screen. Manual redirects still work."
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Log 404 errors for review?"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Yes, log 404 errors"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Track missing pages so you can create redirects later"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "No, don't log 404s"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Only handle manually created redirects"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Skip Setup"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Save & Get Started"
+msgstr ""
+
+#: includes/SetupWizard.php
+msgid "Saving..."
+msgstr ""

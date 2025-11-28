@@ -2060,3 +2060,79 @@ msgstr "day"
 #: includes/WordPress_Connector.php
 msgid "ago"
 msgstr "ago"
+
+#: includes/SetupWizard.php
+msgid "Security check failed. Please try again."
+msgstr "Pemeriksaan keamanan gagal. Silakan coba lagi."
+
+#: includes/SetupWizard.php
+msgid "Error"
+msgstr "Kesalahan"
+
+#: includes/SetupWizard.php
+msgid "You do not have permission to access this page."
+msgstr "Anda tidak memiliki izin untuk mengakses halaman ini."
+
+#: includes/SetupWizard.php
+msgid "Welcome to 404 Solution"
+msgstr "Selamat datang di 404 Solution"
+
+#: includes/SetupWizard.php
+msgid "Close"
+msgstr "Tutup"
+
+#: includes/SetupWizard.php
+msgid "404 Solution helps you automatically handle 404 errors and broken links on your site."
+msgstr "404 Solution membantu Anda menangani kesalahan 404 dan tautan rusak di situs Anda secara otomatis."
+
+#: includes/SetupWizard.php
+msgid "Let's configure how it handles missing pages. You can always change these settings later."
+msgstr "Mari konfigurasikan cara menangani halaman yang hilang. Anda selalu dapat mengubah pengaturan ini nanti."
+
+#: includes/SetupWizard.php
+msgid "When a page is not found, what should happen?"
+msgstr "Apa yang harus terjadi ketika halaman tidak ditemukan?"
+
+#: includes/SetupWizard.php
+msgid "Automatically redirect to similar page (recommended)"
+msgstr "Alihkan otomatis ke halaman serupa (disarankan)"
+
+#: includes/SetupWizard.php
+msgid "When a match is found, redirect visitors automatically"
+msgstr "Ketika kecocokan ditemukan, alihkan pengunjung secara otomatis"
+
+#: includes/SetupWizard.php
+msgid "Just show the default 404 page"
+msgstr "Tampilkan saja halaman 404 default"
+
+#: includes/SetupWizard.php
+msgid "Use WordPress's standard \"Page not found\" screen. Manual redirects still work."
+msgstr "Gunakan layar standar \"Halaman tidak ditemukan\" WordPress. Pengalihan manual masih berfungsi."
+
+#: includes/SetupWizard.php
+msgid "Log 404 errors for review?"
+msgstr "Catat kesalahan 404 untuk ditinjau?"
+
+#: includes/SetupWizard.php
+msgid "Yes, log 404 errors"
+msgstr "Ya, catat kesalahan 404"
+
+#: includes/SetupWizard.php
+msgid "Track missing pages so you can create redirects later"
+msgstr "Lacak halaman yang hilang untuk membuat pengalihan nanti"
+
+#: includes/SetupWizard.php
+msgid "No, don't log 404s"
+msgstr "Tidak, jangan catat 404"
+
+#: includes/SetupWizard.php
+msgid "Only handle manually created redirects"
+msgstr "Hanya tangani pengalihan yang dibuat secara manual"
+
+#: includes/SetupWizard.php
+msgid "Skip Setup"
+msgstr "Lewati Pengaturan"
+
+#: includes/SetupWizard.php
+msgid "Save & Get Started"
+msgstr "Simpan dan Mulai"

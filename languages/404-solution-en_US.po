@@ -2060,3 +2060,79 @@ msgstr "day"
 #: includes/WordPress_Connector.php
 msgid "ago"
 msgstr "ago"
+
+#: includes/SetupWizard.php
+msgid "Security check failed. Please try again."
+msgstr "Security check failed. Please try again."
+
+#: includes/SetupWizard.php
+msgid "Error"
+msgstr "Error"
+
+#: includes/SetupWizard.php
+msgid "You do not have permission to access this page."
+msgstr "You do not have permission to access this page."
+
+#: includes/SetupWizard.php
+msgid "Welcome to 404 Solution"
+msgstr "Welcome to 404 Solution"
+
+#: includes/SetupWizard.php
+msgid "Close"
+msgstr "Close"
+
+#: includes/SetupWizard.php
+msgid "404 Solution helps you automatically handle 404 errors and broken links on your site."
+msgstr "404 Solution helps you automatically handle 404 errors and broken links on your site."
+
+#: includes/SetupWizard.php
+msgid "Let's configure how it handles missing pages. You can always change these settings later."
+msgstr "Let's configure how it handles missing pages. You can always change these settings later."
+
+#: includes/SetupWizard.php
+msgid "When a page is not found, what should happen?"
+msgstr "When a page is not found, what should happen?"
+
+#: includes/SetupWizard.php
+msgid "Automatically redirect to similar page (recommended)"
+msgstr "Automatically redirect to similar page (recommended)"
+
+#: includes/SetupWizard.php
+msgid "When a match is found, redirect visitors automatically"
+msgstr "When a match is found, redirect visitors automatically"
+
+#: includes/SetupWizard.php
+msgid "Just show the default 404 page"
+msgstr "Just show the default 404 page"
+
+#: includes/SetupWizard.php
+msgid "Use WordPress's standard \"Page not found\" screen. Manual redirects still work."
+msgstr "Use WordPress's standard \"Page not found\" screen. Manual redirects still work."
+
+#: includes/SetupWizard.php
+msgid "Log 404 errors for review?"
+msgstr "Log 404 errors for review?"
+
+#: includes/SetupWizard.php
+msgid "Yes, log 404 errors"
+msgstr "Yes, log 404 errors"
+
+#: includes/SetupWizard.php
+msgid "Track missing pages so you can create redirects later"
+msgstr "Track missing pages so you can create redirects later"
+
+#: includes/SetupWizard.php
+msgid "No, don't log 404s"
+msgstr "No, don't log 404s"
+
+#: includes/SetupWizard.php
+msgid "Only handle manually created redirects"
+msgstr "Only handle manually created redirects"
+
+#: includes/SetupWizard.php
+msgid "Skip Setup"
+msgstr "Skip Setup"
+
+#: includes/SetupWizard.php
+msgid "Save & Get Started"
+msgstr "Save & Get Started"
