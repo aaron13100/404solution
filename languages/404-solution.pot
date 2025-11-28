@@ -1172,3 +1172,15 @@ msgstr ""
 #: includes/WordPress_Connector.php
 msgid "ago"
 msgstr ""
+
+#: includes/DataAccess.php
+msgid "Just now"
+msgstr ""
+
+#: includes/View.php
+msgid "Data may not be immediately updated. Refresh to see latest changes."
+msgstr ""
+
+#: includes/View.php
+msgid "Last updated: %s"
+msgstr ""

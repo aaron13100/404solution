@@ -275,11 +275,11 @@
         var $timeElements = $('.abj404-time-ago[data-timestamp]');
         if (!$timeElements.length) return;
 
-        // Update immediately and then every 30 seconds
+        // Update immediately and then every N seconds
         updateTimeAgo($timeElements);
         setInterval(function() {
             updateTimeAgo($timeElements);
-        }, 30000);
+        }, 10000);
     }
 
     /**
