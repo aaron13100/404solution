@@ -2332,7 +2332,7 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     border-radius: 4px;
     padding: 8px 12px;
     position: absolute;
-    z-index: 1;
+    z-index: 1000;
     bottom: 125%;
     left: 50%;
     transform: translateX(-50%);
