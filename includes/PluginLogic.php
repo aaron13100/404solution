@@ -2020,16 +2020,7 @@ class ABJ_404_Solution_PluginLogic {
         return $message;
     }
 
-    /** Whitelist of allowed orderby columns (Bug #15 fix) */
-    private static $allowedOrderbyColumns = [
-        'url', 'status', 'type', 'dest', 'code', 'timestamp', 'created', 'lastused',
-        'hits', 'logshits', 'last_used', 'requested_url'
-    ];
-
-    /** Whitelist of allowed order values (Bug #15 fix) */
-    private static $allowedOrderValues = ['ASC', 'DESC'];
-
-    /**
+    /** 
      * @param string $pageBeingViewed
      * @return array
      */
@@ -2064,23 +2055,17 @@ class ABJ_404_Solution_PluginLogic {
         $tableOptions['filterText'] = $this->f->str_replace('*/', '', $tableOptions['filterText']);
 
         if ($this->dao->getPostOrGetSanitize('orderby', "") != "") {
-            $orderbyInput = $this->dao->getPostOrGetSanitize('orderby');
-            // Validate orderby against whitelist (Bug #15 fix)
-            if (in_array($orderbyInput, self::$allowedOrderbyColumns, true)) {
-                $tableOptions['orderby'] = $orderbyInput;
-            } else {
-                $tableOptions['orderby'] = 'url'; // Default to safe value
-            }
+            $tableOptions['orderby'] = $this->dao->getPostOrGetSanitize('orderby');
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order_by'] = $tableOptions['orderby'];
                 $this->updateOptions($options);
-
+                
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order_by'] = $tableOptions['orderby'];
                 $this->updateOptions($options);
             }
-
+            
         } else if ($pageBeingViewed == "abj404_logs") {
             $tableOptions['orderby'] = "timestamp";
         } else if ($pageBeingViewed == 'abj404_redirects') {
@@ -2092,23 +2077,17 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if ($this->dao->getPostOrGetSanitize('order', '') != '') {
-            $orderInput = strtoupper($this->dao->getPostOrGetSanitize('order'));
-            // Validate order against whitelist (Bug #15 fix)
-            if (in_array($orderInput, self::$allowedOrderValues, true)) {
-                $tableOptions['order'] = $orderInput;
-            } else {
-                $tableOptions['order'] = 'ASC'; // Default to safe value
-            }
+            $tableOptions['order'] = $this->dao->getPostOrGetSanitize('order');
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order'] = $tableOptions['order'];
                 $this->updateOptions($options);
-
+                
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order'] = $tableOptions['order'];
                 $this->updateOptions($options);
             }
-
+            
         } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
             $tableOptions['order'] = "DESC";
             
@@ -2160,10 +2139,15 @@ class ABJ_404_Solution_PluginLogic {
             if (is_array($value)) {
                 $newData[$key] = $this->sanitizePostData($value, $restoreNewlines);
             } else {
-                $newData[$key] = wp_kses_post($value);
-                $newData[$key] = esc_sql($newData[$key]);
-                if ($restoreNewlines) {
-                    $newData[$key] = str_replace('\n', "\n", $newData[$key]);
+                // Handle null values (PHP 8.1+ deprecation fix)
+                if ($value === null) {
+                    $newData[$key] = '';
+                } else {
+                    $newData[$key] = wp_kses_post($value);
+                    $newData[$key] = esc_sql($newData[$key]);
+                    if ($restoreNewlines) {
+                        $newData[$key] = str_replace('\n', "\n", $newData[$key]);
+                    }
                 }
             }
         }
@@ -2557,7 +2541,10 @@ class ABJ_404_Solution_PluginLogic {
         $optionsListSuggest = array('suggest_title', 'suggest_before', 'suggest_after', 'suggest_entrybefore',
             'suggest_entryafter', 'suggest_noresults');
         foreach ($optionsListSuggest as $optionName) {
-            $options[$optionName] = wp_kses_post($postData[$optionName]);
+            // Only update if the option was posted (Simple Mode doesn't include these)
+            if (isset($postData[$optionName])) {
+                $options[$optionName] = wp_kses_post($postData[$optionName]);
+            }
         }
 
         return $message;
