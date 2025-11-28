@@ -7,6 +7,13 @@
 (function($) {
     'use strict';
 
+    // Escape HTML entities to prevent XSS
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     // Wait for DOM ready
     $(document).ready(function() {
 
@@ -195,7 +202,7 @@
                         if (response.data.message) {
                             $modal.find('.abj404-uninstall-content').prepend(
                                 '<div class="notice notice-success" style="margin-bottom:15px;"><p><strong>' +
-                                response.data.message +
+                                escapeHtml(response.data.message) +
                                 '</strong></p></div>'
                             );
                         }
@@ -206,7 +213,7 @@
                         // Update modal text with error
                         $modal.find('.abj404-uninstall-content').prepend(
                             '<div class="notice notice-warning" style="margin-bottom:15px;"><p><strong>' +
-                            (response.data.message || 'Failed to save preferences') +
+                            escapeHtml(response.data.message || 'Failed to save preferences') +
                             '</strong></p></div>'
                         );
                     }

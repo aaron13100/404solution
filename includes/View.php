@@ -3222,7 +3222,7 @@ class ABJ_404_Solution_View {
         $currentlyShowingText = sprintf(__('%1$s - %2$s of %3$s', '404-solution'), $start, $end, $num_records);
         $currentPageText = __('Page', '404-solution') . " " . $paged . " " . __('of', '404-solution') . " " . esc_html($total_pages);
         $showRowsText = __('Rows per page:', '404-solution');
-        $showRowsLink = wp_nonce_url($url . '&action=changeItemsPerRow', "abj404_importRedirects");
+        $showRowsLink = wp_nonce_url($url . '&action=changeItemsPerRow', "abj404_changeItemsPerRow");
 
         $ajaxPaginationLink = "admin-ajax.php?action=ajaxUpdatePaginationLinks&subpage=" . $sub .
                 "&nonce=" . wp_create_nonce('abj404_updatePaginationLink');

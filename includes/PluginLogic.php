@@ -386,9 +386,9 @@ class ABJ_404_Solution_PluginLogic {
         
         foreach ($userAgents as $agentToIgnore) {
             if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
-                $this->logger->debugMessage("Ignoring user agent (do not redirect): " . 
+                $this->logger->debugMessage("Ignoring user agent (do not redirect): " .
                         esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
-                $ignoreReasonDoNotProcess = 'User agent (do not redirect): ' . $_SERVER['HTTP_USER_AGENT'];
+                $ignoreReasonDoNotProcess = 'User agent (do not redirect): ' . esc_html($_SERVER['HTTP_USER_AGENT']);
             }
         }
         
@@ -1307,8 +1307,9 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function handleActionChangeItemsPerRow() {
-        
-        if ($this->dao->getPostOrGetSanitize('action') == 'changeItemsPerRow') {
+
+        if ($this->dao->getPostOrGetSanitize('action') == 'changeItemsPerRow' && $this->userIsPluginAdmin()) {
+            check_admin_referer('abj404_changeItemsPerRow'); // verify nonce for CSRF protection
             $this->updatePerPageOption(absint($this->dao->getPostOrGetSanitize('perpage')));
         }
     }
@@ -1324,7 +1325,7 @@ class ABJ_404_Solution_PluginLogic {
     function handleActionImportFile() {
 
         if (($this->dao->getPostOrGetSanitize('action') == 'importRedirectsFile') && $this->userIsPluginAdmin()) {
-            check_admin_referer('abj404_importRedirects'); // this verifies the nonce
+            check_admin_referer('abj404_importRedirectsFile'); // this verifies the nonce (must match View.php form nonce)
             $result = $this->doImportFile();
             return $result;
         }

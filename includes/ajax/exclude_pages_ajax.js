@@ -1,6 +1,13 @@
 const EXCL_SEPARATOR_CHAR = '|\\|';
 
-jQuery(document).ready(function($) {	
+// Escape HTML entities to prevent XSS
+function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+jQuery(document).ready(function($) {
     var field = jQuery('#add_exlude_page_field');
     field.keyup(function() {
         jQuery('#add_exlude_page_field').css('background-color', '');
@@ -146,9 +153,10 @@ function addPageToExcludeToList(item) {
 }
 
 function insertExcludePage(ulToAddTo, label, category, value) {
-    ulToAddTo.insertAdjacentHTML('afterbegin', '<li>' + label + 
-    		'<span class="exclude-pages-page-type"> (' + category + ')</span>' +
-    		'<input type="hidden" name="excludePages[]" id="exlucdePages" value="' + value + 
+    // Escape all user-controlled data to prevent XSS
+    ulToAddTo.insertAdjacentHTML('afterbegin', '<li>' + escapeHtml(label) +
+    		'<span class="exclude-pages-page-type"> (' + escapeHtml(category) + ')</span>' +
+    		'<input type="hidden" name="excludePages[]" id="exlucdePages" value="' + escapeHtml(value) +
     		'"/><span class="close i-am-a-close-button">x</span></li>');
 }
 

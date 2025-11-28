@@ -56,6 +56,21 @@ class ABJ_404_Solution_Ajax_Php {
 			return;
 		}
 
+		// Verify nonce for CSRF protection
+		// The nonce is sent as part of the form data which is JSON-encoded in 'encodedData'
+		if (isset($_POST['encodedData'])) {
+			$f = ABJ_404_Solution_Functions::getInstance();
+			$postData = $f->decodeComplicatedData($_POST['encodedData']);
+			$nonce = isset($postData['nonce']) ? $postData['nonce'] : '';
+			if (!wp_verify_nonce($nonce, 'abj404UpdateOptions')) {
+				wp_send_json_error(array('message' => 'Invalid security token'));
+				return;
+			}
+		} else {
+			wp_send_json_error(array('message' => 'Missing form data'));
+			return;
+		}
+
 		$abj404logic->updateOptionsFromPOST();
 	}
 	

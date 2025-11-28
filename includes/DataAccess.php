@@ -1763,17 +1763,27 @@ class ABJ_404_Solution_DataAccess {
      */
     function getLogRecords($tableOptions) {
     	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-    	
+
     	$logsid_included = '';
         $logsid = '';
         if ($tableOptions['logsid'] != 0) {
             $logsid_included = 'specific logs id included. */';
             $logsid = esc_sql($abj404logic->sanitizeForSQL($tableOptions['logsid']));
         }
-        $orderby = esc_sql(sanitize_text_field(
-            $abj404logic->sanitizeForSQL($tableOptions['orderby'])));
-        $order = esc_sql(sanitize_text_field(
-            $abj404logic->sanitizeForSQL($tableOptions['order'])));
+
+        // Whitelist allowed columns for orderby to prevent SQL injection
+        $allowedOrderbyColumns = array('timestamp', 'requested_url', 'dest_url', 'id', 'referrer', 'min_log_id', 'logshits', 'action');
+        $orderby = sanitize_text_field($abj404logic->sanitizeForSQL($tableOptions['orderby']));
+        if (!in_array($orderby, $allowedOrderbyColumns, true)) {
+            $orderby = 'timestamp'; // Safe default
+        }
+
+        // Whitelist allowed order directions
+        $order = strtoupper(sanitize_text_field($abj404logic->sanitizeForSQL($tableOptions['order'])));
+        if (!in_array($order, array('ASC', 'DESC'), true)) {
+            $order = 'DESC'; // Safe default
+        }
+
         $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
         $perpage = absint(sanitize_text_field($tableOptions['perpage']));
         
@@ -2048,25 +2058,21 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /** Insert a value into the lookup table and return the ID of the value.
+     * Uses upsert pattern (INSERT ... ON DUPLICATE KEY UPDATE) for atomic operation.
      * @param string $valueToInsert
      */
     function insertLookupValueAndGetID($valueToInsert) {
+        global $wpdb;
 
-    	$lookupID = intval($this->getLookupIDForUser($valueToInsert));
-    	if ($lookupID >= 0) {
-    		return $lookupID;
-    	}
-
-        // insert the value since it's not there already.
-        // Use prepared statement to prevent SQL injection
-        $query = "INSERT INTO {wp_abj404_lookup} (lkup_value) values (%s)";
+        // Use upsert pattern: single atomic query that handles both insert and duplicate cases
+        // ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id) ensures insert_id is set even for existing rows
+        $query = "INSERT INTO {wp_abj404_lookup} (lkup_value) VALUES (%s)
+            ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)";
         $this->queryAndGetResults($query, array(
-            'ignore_errors' => array("Duplicate entry"),
             'query_params' => array($valueToInsert)
         ));
 
-        $lookupID = $this->getLookupIDForUser($valueToInsert);
-        return $lookupID;
+        return intval($wpdb->insert_id);
     }
 
     function getLookupIDForUser($userName) {
@@ -2734,7 +2740,8 @@ class ABJ_404_Solution_DataAccess {
         $recognizedCategories = rtrim($recognizedCategories, ", ");
 
         if ($term_id != null) {
-            $term_id = "*/ and {wp_terms}.term_id = " . $term_id . "\n";
+            // Cast to integer for safety even though term_id is currently always null from callers
+            $term_id = "*/ and {wp_terms}.term_id = " . intval($term_id) . "\n";
         }
 
         if ($slug != null) {

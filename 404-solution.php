@@ -198,8 +198,8 @@ function abj404_404listener() {
     			isset($options['update_suggest_url']) &&
     			$options['update_suggest_url'] == 1) {
     				
-    			// clear the cookie
-   				$_REQUEST[$cookieName] = $_COOKIE[$cookieName];
+    			// clear the cookie - sanitize before writing to $_REQUEST
+   				$_REQUEST[$cookieName] = sanitize_text_field($_COOKIE[$cookieName]);
     			setcookie($cookieName, '', time() - 5, "/");
     				
     			require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
@@ -317,7 +317,7 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 		}
 	}
 
-	$action = isset($_GET['action']) ? $_GET['action'] : (isset($_POST['action']) ? $_POST['action'] : null);
+	$action = isset($_GET['action']) ? sanitize_text_field($_GET['action']) : (isset($_POST['action']) ? sanitize_text_field($_POST['action']) : null);
 	if ($action === 'exportRedirects') {
 	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();

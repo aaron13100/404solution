@@ -149,6 +149,10 @@ function paginationLinksChange(triggerItem) {
             } else if (jQuery('.abj404-table').length > 0) {
                 jQuery('.abj404-table').replaceWith(result.table);
             }
+            // Reinitialize table interactions (checkboxes, bulk actions) after AJAX refresh
+            if (typeof window.abj404InitTableInteractions === 'function') {
+                window.abj404InitTableInteractions();
+            }
             bindSearchFieldListeners();
             jQuery('input[name=searchFilter]').val(currentFieldValue);
             jQuery('input[name=searchFilter]').attr("data-previous-value", currentFieldValue);

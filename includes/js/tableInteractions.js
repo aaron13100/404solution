@@ -14,7 +14,7 @@
     var selectAllCheckbox = null;
 
     $(document).ready(function() {
-        initTableInteractions();
+        window.abj404InitTableInteractions();
         initModal();
         initFilterBar();
         initRowActions();
@@ -23,8 +23,9 @@
 
     /**
      * Initialize table checkbox and bulk action interactions
+     * Exposed globally for reinitialization after AJAX table refresh
      */
-    function initTableInteractions() {
+    window.abj404InitTableInteractions = function() {
         var $table = $('.abj404-table');
         if (!$table.length) return;
 
