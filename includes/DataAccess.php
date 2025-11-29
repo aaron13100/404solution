@@ -1184,6 +1184,7 @@ class ABJ_404_Solution_DataAccess {
             $this->logger->debugMessage("logs_hits table unavailable, retrying without JOIN: " . $results['last_error']);
             // Retry with queryAllRowsAtOnce = false to skip logs_hits JOIN
             // (The query builder only adds the JOIN when queryAllRowsAtOnce is true)
+            $queryAllRowsAtOnce = false;
             $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false,
                 $limitStart, $limitEnd, false);
             $results = $this->queryAndGetResults($query);
