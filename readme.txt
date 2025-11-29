@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.0.7
+Stable tag: 3.0.8
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -236,6 +236,10 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.0.8 (Nov 29, 2025) =
+* Improvement: Feedback emails now include database collation info even on locked-down hosts (fallback chain for information_schema restrictions).
+* FIX: Tooltip z-index issue where destination tooltips appeared behind sticky table header.
 
 = Version 3.0.7 (Nov 28, 2025) =
 * Improvement: Load admin pages faster. Load redirects faster.

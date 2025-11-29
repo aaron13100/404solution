@@ -80,6 +80,10 @@ Other stuff is here.
 
 ## Changelog ##
 
+## Version 3.0.8 (Nov 29, 2025) ##
+* Improvement: Feedback emails now include database collation info even on locked-down hosts (fallback chain for information_schema restrictions).
+* FIX: Tooltip z-index issue where destination tooltips appeared behind sticky table header.
+
 ## Version 3.0.7 (Nov 28, 2025) ##
 * Improvement: Load admin pages faster. Load redirects faster.
 * Improvement: Add a two question wizard/setup screen for new users.
