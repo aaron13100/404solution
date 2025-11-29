@@ -1167,16 +1167,28 @@ class ABJ_404_Solution_DataAccess {
         $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits')
                 || ($tableOptions['orderby'] == 'last_used');
         
-        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, 
+        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce,
         	$limitStart, $limitEnd, false);
-        
+
         // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
         // they can use a different ID - not the ID from the logs table.
         $ignoreErrorsOoptions = array('log_errors' => false);
-        $this->queryAndGetResults("set session max_join_size = 18446744073709551615", 
+        $this->queryAndGetResults("set session max_join_size = 18446744073709551615",
         	$ignoreErrorsOoptions);
         $this->queryAndGetResults("set session sql_big_selects = 1", $ignoreErrorsOoptions);
         $results = $this->queryAndGetResults($query);
+
+        // Handle race condition: logs_hits table may have been dropped between existence check and query
+        // (fixes bug: "Table 'xxx.wp_abj404_logs_hits' doesn't exist" error during shutdown)
+        if (!empty($results['last_error']) && strpos($results['last_error'], 'logs_hits') !== false) {
+            $this->logger->debugMessage("logs_hits table unavailable, retrying without JOIN: " . $results['last_error']);
+            // Retry with queryAllRowsAtOnce = false to skip logs_hits JOIN
+            // (The query builder only adds the JOIN when queryAllRowsAtOnce is true)
+            $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false,
+                $limitStart, $limitEnd, false);
+            $results = $this->queryAndGetResults($query);
+        }
+
         $rows = $results['rows'];
         $foundRowsBeforeLogsData = count($rows);
         
@@ -2565,8 +2577,18 @@ class ABJ_404_Solution_DataAccess {
             // (fixes bug: URLs like %9F%9F%9F%9F-%9F%9F%9F-1.png cause "invalid data" errors)
             $slug = $this->f->sanitizeInvalidUTF8($slug);
 
-            $specifiedSlug = " */\n and CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = "
-                    . "'" . esc_sql($slug) . "' \n ";
+            // Check if database supports utf8mb4 collation
+            // (fixes bug: Arabic sites on latin1 databases get "invalid data" errors)
+            $dbCollation = $wpdb->get_var("SELECT @@collation_database");
+            if ($dbCollation !== null && strpos($dbCollation, 'utf8mb4') !== false) {
+                // Database supports utf8mb4 - use CAST for proper Unicode comparison
+                $specifiedSlug = " */\n and CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = "
+                        . "'" . esc_sql($slug) . "' \n ";
+            } else {
+                // Legacy database (latin1, utf8, etc.) - use simple comparison
+                $specifiedSlug = " */\n and wp_posts.post_name = "
+                        . "'" . esc_sql($slug) . "' \n ";
+            }
         } else {
             $specifiedSlug = '';
         }

@@ -192,7 +192,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			WHERE table_schema = '{$dbName}' 
 			AND LOWER(table_name) LIKE '%abj404%'";
 		$results = $this->dao->queryAndGetResults($query);
-		
+
+		if (!is_array($results['rows'])) {
+			$this->logger->warn("Could not query information_schema tables for lowercase rename.");
+			return;
+		}
+
 		foreach ($results['rows'] as $row) {
 			$tableName = $row['table_name'] ?? $row['TABLE_NAME'];
 
