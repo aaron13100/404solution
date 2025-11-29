@@ -676,6 +676,7 @@ class ABJ_404_Solution_UninstallModal {
 
     /**
      * Get database version and charset info for diagnostics.
+     * Uses fallback chain for locked-down hosts.
      *
      * @return array Array with 'version', 'charset', and 'collation' keys
      */
@@ -696,8 +697,13 @@ class ABJ_404_Solution_UninstallModal {
 
         // Get database default charset and collation
         if (!defined('DB_NAME')) {
-            return $info;  // Return defaults in test environment
+            // Test environment - use wpdb defaults
+            $info['charset'] = $wpdb->charset ?: 'utf8mb4';
+            $info['collation'] = $wpdb->collate ?: 'utf8mb4_unicode_ci';
+            return $info;
         }
+
+        // Try information_schema.SCHEMATA first
         $db_name = DB_NAME;
         $charset_query = $wpdb->prepare(
             "SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME " .
@@ -706,9 +712,33 @@ class ABJ_404_Solution_UninstallModal {
         );
         $db_result = $wpdb->get_row($charset_query, ARRAY_A);
 
-        if ($db_result) {
-            $info['charset'] = $db_result['DEFAULT_CHARACTER_SET_NAME'] ?? 'Unknown';
+        if ($db_result && !empty($db_result['DEFAULT_CHARACTER_SET_NAME'])) {
+            $info['charset'] = $db_result['DEFAULT_CHARACTER_SET_NAME'];
             $info['collation'] = $db_result['DEFAULT_COLLATION_NAME'] ?? 'Unknown';
+            return $info;
+        }
+
+        // Fallback: SHOW VARIABLES for character_set_database and collation_database
+        $charset_var = $wpdb->get_var("SHOW VARIABLES LIKE 'character_set_database'");
+        $collation_var = $wpdb->get_var("SHOW VARIABLES LIKE 'collation_database'");
+
+        // SHOW VARIABLES returns the variable name, need to get the value
+        $charset_result = $wpdb->get_row("SHOW VARIABLES LIKE 'character_set_database'", ARRAY_A);
+        $collation_result = $wpdb->get_row("SHOW VARIABLES LIKE 'collation_database'", ARRAY_A);
+
+        if ($charset_result && isset($charset_result['Value'])) {
+            $info['charset'] = $charset_result['Value'];
+        }
+        if ($collation_result && isset($collation_result['Value'])) {
+            $info['collation'] = $collation_result['Value'];
+        }
+
+        // Final fallback: WordPress connection settings
+        if ($info['charset'] === 'Unknown') {
+            $info['charset'] = $wpdb->charset ?: (defined('DB_CHARSET') ? DB_CHARSET : 'utf8mb4');
+        }
+        if ($info['collation'] === 'Unknown') {
+            $info['collation'] = $wpdb->collate ?: 'utf8mb4_unicode_ci';
         }
 
         return $info;
@@ -740,7 +770,7 @@ class ABJ_404_Solution_UninstallModal {
 
         // Get baseline from wp_posts
         $targetTable = $wpdb->prefix . 'posts';
-        $targetInfo = self::getTableInfoFromInformationSchema($targetTable);
+        $targetInfo = self::getTableInfo($targetTable);
 
         if ($targetInfo === null || isset($targetInfo['error'])) {
             $errorMsg = isset($targetInfo['error']) ? $targetInfo['error'] : 'table not found';
@@ -769,7 +799,7 @@ class ABJ_404_Solution_UninstallModal {
         );
 
         foreach ($pluginTables as $label => $tableName) {
-            $tableInfo = self::getTableInfoFromInformationSchema($tableName);
+            $tableInfo = self::getTableInfo($tableName);
 
             if ($tableInfo === null) {
                 $summaryLines[] = sprintf(
@@ -814,12 +844,47 @@ class ABJ_404_Solution_UninstallModal {
     }
 
     /**
-     * Get table info (charset, collation, engine) from information_schema.
+     * Get table info with fallback chain for locked-down hosts.
+     *
+     * Tries multiple methods in order:
+     * 1. information_schema (most complete)
+     * 2. SHOW TABLE STATUS (widely permitted)
+     * 3. SHOW CREATE TABLE (parse DDL)
+     * 4. WordPress globals (connection-level defaults)
+     *
+     * @param string $tableName Table name to look up
+     * @return array Array with 'charset', 'collation', 'engine' keys
+     */
+    private static function getTableInfo($tableName) {
+        // Try information_schema first (most complete data)
+        $result = self::tryInformationSchema($tableName);
+        if ($result !== null && !isset($result['error'])) {
+            return $result;
+        }
+
+        // Fallback: SHOW TABLE STATUS
+        $result = self::tryShowTableStatus($tableName);
+        if ($result !== null && !isset($result['error'])) {
+            return $result;
+        }
+
+        // Fallback: SHOW CREATE TABLE
+        $result = self::tryShowCreateTable($tableName);
+        if ($result !== null && !isset($result['error'])) {
+            return $result;
+        }
+
+        // Final fallback: WordPress connection defaults
+        return self::getWpdbDefaults();
+    }
+
+    /**
+     * Try to get table info from information_schema.
      *
      * @param string $tableName Table name to look up
      * @return array|null Array with 'charset', 'collation', 'engine' keys, or null/error array on failure
      */
-    private static function getTableInfoFromInformationSchema($tableName) {
+    private static function tryInformationSchema($tableName) {
         global $wpdb;
 
         // Guard for test environment where wpdb may be a minimal mock
@@ -842,9 +907,9 @@ class ABJ_404_Solution_UninstallModal {
             // Check for permission-related errors
             if (stripos($wpdb->last_error, 'denied') !== false ||
                 stripos($wpdb->last_error, 'permission') !== false) {
-                return array('error' => 'permission denied: ' . substr($wpdb->last_error, 0, 50));
+                return array('error' => 'permission denied');
             }
-            return array('error' => 'query error: ' . substr($wpdb->last_error, 0, 50));
+            return array('error' => 'query error');
         }
 
         // Table not found
@@ -872,6 +937,130 @@ class ABJ_404_Solution_UninstallModal {
             'charset' => $charset,
             'collation' => $collation,
             'engine' => $engine
+        );
+    }
+
+    /**
+     * Try to get table info using SHOW TABLE STATUS.
+     *
+     * @param string $tableName Table name to look up
+     * @return array|null Array with 'charset', 'collation', 'engine' keys, or null/error on failure
+     */
+    private static function tryShowTableStatus($tableName) {
+        global $wpdb;
+
+        if (!method_exists($wpdb, 'get_row')) {
+            return array('error' => 'wpdb methods unavailable');
+        }
+
+        // SHOW TABLE STATUS LIKE requires the table name without database prefix matching
+        $result = $wpdb->get_row(
+            $wpdb->prepare("SHOW TABLE STATUS LIKE %s", $tableName),
+            ARRAY_A
+        );
+
+        if (!empty($wpdb->last_error)) {
+            return array('error' => 'SHOW TABLE STATUS failed');
+        }
+
+        if (empty($result)) {
+            return null;
+        }
+
+        $collation = $result['Collation'] ?? null;
+        $engine = $result['Engine'] ?? 'Unknown';
+        $charset = $collation ? explode('_', $collation)[0] : null;
+
+        if (empty($collation)) {
+            return null;
+        }
+
+        return array(
+            'charset' => $charset,
+            'collation' => $collation,
+            'engine' => $engine
+        );
+    }
+
+    /**
+     * Try to get table info by parsing SHOW CREATE TABLE output.
+     *
+     * @param string $tableName Table name to look up
+     * @return array|null Array with 'charset', 'collation', 'engine' keys, or null on failure
+     */
+    private static function tryShowCreateTable($tableName) {
+        global $wpdb;
+
+        if (!method_exists($wpdb, 'get_row')) {
+            return null;
+        }
+
+        // Use backticks to safely quote table name
+        $result = $wpdb->get_row("SHOW CREATE TABLE `" . esc_sql($tableName) . "`", ARRAY_N);
+
+        if (empty($result[1])) {
+            return null;
+        }
+
+        $ddl = $result[1];
+
+        // Match charset: CHARSET=utf8mb4, DEFAULT CHARSET=utf8mb4, CHARACTER SET utf8mb4
+        preg_match('/(?:DEFAULT\s+)?(?:CHARSET|CHARACTER\s+SET)(?:\s*=\s*|\s+)([\w\d]+)/i', $ddl, $charsetMatch);
+
+        // Match collation: COLLATE=utf8mb4_unicode_ci, COLLATE utf8mb4_unicode_ci
+        preg_match('/(?:DEFAULT\s+)?COLLATE(?:\s*=\s*|\s+)([\w\d_]+)/i', $ddl, $collationMatch);
+
+        // Match engine: ENGINE=InnoDB
+        preg_match('/ENGINE\s*=\s*([\w]+)/i', $ddl, $engineMatch);
+
+        $charset = $charsetMatch[1] ?? null;
+        $collation = $collationMatch[1] ?? null;
+        $engine = $engineMatch[1] ?? 'Unknown';
+
+        // Derive collation from charset if not explicit
+        if ($charset && !$collation) {
+            $collation = $charset . '_general_ci';
+        }
+
+        // Need at least charset or collation to return valid data
+        if (empty($charset) && empty($collation)) {
+            return null;
+        }
+
+        return array(
+            'charset' => $charset ?: explode('_', $collation)[0],
+            'collation' => $collation,
+            'engine' => $engine
+        );
+    }
+
+    /**
+     * Get WordPress connection-level charset/collation as final fallback.
+     *
+     * @return array Array with 'charset', 'collation', 'engine', 'source' keys
+     */
+    private static function getWpdbDefaults() {
+        global $wpdb;
+
+        $charset = 'utf8mb4';
+        $collation = 'utf8mb4_unicode_ci';
+
+        // Try to get from wpdb properties
+        if (isset($wpdb->charset) && !empty($wpdb->charset)) {
+            $charset = $wpdb->charset;
+        } elseif (defined('DB_CHARSET') && DB_CHARSET) {
+            $charset = DB_CHARSET;
+        }
+
+        if (isset($wpdb->collate) && !empty($wpdb->collate)) {
+            $collation = $wpdb->collate;
+        }
+
+        return array(
+            'charset' => $charset,
+            'collation' => $collation,
+            'engine' => 'Unknown',
+            'source' => 'wpdb defaults'
         );
     }
 }
