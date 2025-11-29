@@ -719,10 +719,6 @@ class ABJ_404_Solution_UninstallModal {
         }
 
         // Fallback: SHOW VARIABLES for character_set_database and collation_database
-        $charset_var = $wpdb->get_var("SHOW VARIABLES LIKE 'character_set_database'");
-        $collation_var = $wpdb->get_var("SHOW VARIABLES LIKE 'collation_database'");
-
-        // SHOW VARIABLES returns the variable name, need to get the value
         $charset_result = $wpdb->get_row("SHOW VARIABLES LIKE 'character_set_database'", ARRAY_A);
         $collation_result = $wpdb->get_row("SHOW VARIABLES LIKE 'collation_database'", ARRAY_A);
 
