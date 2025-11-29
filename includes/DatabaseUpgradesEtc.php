@@ -830,29 +830,145 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
     /** Retrieve the collation for a given table name.
      * @param string $tableName
-     * @param ABJ_404_Solution_DataAccess $abj404dao
-     * @param ABJ_404_Solution_Logging $abj404logging
-     * @return string|null The collation for the table, or null if the query failed.
+     * @return array|null Array of [collation, charset] or null if retrieval failed.
      */
 	function getTableCollation($tableName) {
+		// Try SHOW CREATE TABLE first
+		$result = $this->getTableCollationFromShowCreate($tableName);
 
+		if ($result !== null) {
+			return $result;
+		}
+
+		// Fallback to information_schema query
+		$result = $this->getTableCollationFromInformationSchema($tableName);
+
+		if ($result !== null) {
+			return $result;
+		}
+
+		$this->logger->warn("Could not retrieve collation for $tableName from SHOW CREATE TABLE or information_schema.");
+		return null;
+	}
+
+	/** Parse collation/charset from SHOW CREATE TABLE output.
+	 * @param string $tableName
+	 * @return array|null Array of [collation, charset] or null if parsing failed.
+	 */
+	function getTableCollationFromShowCreate($tableName) {
 		$query = "SHOW CREATE TABLE `$tableName`";
 		$results = $this->dao->queryAndGetResults($query);
-	
-		if (!empty($results['rows'][0]['Create Table'])) {
-			$createTableSQL = $results['rows'][0]['Create Table'];
-	
-			preg_match('/COLLATE=([\w\d_]+)/', $createTableSQL, $collationMatch);
-			preg_match('/CHARSET=([\w\d]+)/', $createTableSQL, $charsetMatch);
-	
-			$collation = $collationMatch[1] ?? null;
-			$charset = $charsetMatch[1] ?? null;
 
-			return ($collation && $charset) ? [$collation, $charset] : null;
-		} else {
-			$this->logger->warn("SHOW CREATE TABLE returned no data for $tableName.");
+		// Check for query errors or empty results
+		if (!empty($results['last_error'])) {
+			$this->logger->debugMessage("SHOW CREATE TABLE failed for $tableName: " . $results['last_error']);
 			return null;
 		}
+
+		if (empty($results['rows'][0]) || !is_array($results['rows'][0])) {
+			$this->logger->debugMessage("SHOW CREATE TABLE returned no data for $tableName.");
+			return null;
+		}
+
+		// Use array_values to handle varying column name cases ('Create Table', 'CREATE TABLE', etc.)
+		// SHOW CREATE TABLE returns: [table_name, create_statement]
+		$row = array_values($results['rows'][0]);
+		if (count($row) < 2 || empty($row[1])) {
+			$this->logger->debugMessage("SHOW CREATE TABLE returned unexpected format for $tableName.");
+			return null;
+		}
+
+		$createTableSQL = $row[1];
+
+		// Match multiple MySQL/MariaDB output formats for charset:
+		// - CHARSET=utf8mb4
+		// - DEFAULT CHARSET=utf8mb4
+		// - CHARACTER SET=utf8mb4
+		// - DEFAULT CHARACTER SET=utf8mb4
+		// - CHARACTER SET utf8mb4 (no equals sign, space separator)
+		// - CHARSET = utf8mb4 (spaces around equals)
+		// Note: (?:\s*=\s*|\s+) requires either "=" (with optional spaces) or at least one space
+		preg_match('/(?:DEFAULT\s+)?(?:CHARSET|CHARACTER\s+SET)(?:\s*=\s*|\s+)([\w\d]+)/i', $createTableSQL, $charsetMatch);
+
+		// Match multiple formats for collation:
+		// - COLLATE=utf8mb4_unicode_ci
+		// - DEFAULT COLLATE=utf8mb4_unicode_ci
+		// - COLLATE utf8mb4_unicode_ci (no equals sign, space separator)
+		// - COLLATE = utf8mb4_unicode_ci (spaces around equals)
+		preg_match('/(?:DEFAULT\s+)?COLLATE(?:\s*=\s*|\s+)([\w\d_]+)/i', $createTableSQL, $collationMatch);
+
+		$charset = $charsetMatch[1] ?? null;
+		$collation = $collationMatch[1] ?? null;
+
+		// If we got charset but no explicit collation, derive default collation from charset
+		if ($charset && !$collation) {
+			$collation = $this->getDefaultCollationForCharset($charset);
+		}
+
+		return ($collation && $charset) ? [$collation, $charset] : null;
+	}
+
+	/** Query information_schema for table collation (fallback method).
+	 * @param string $tableName
+	 * @return array|null Array of [collation, charset] or null if query failed.
+	 */
+	function getTableCollationFromInformationSchema($tableName) {
+		global $wpdb;
+
+		$query = $wpdb->prepare(
+			"SELECT TABLE_COLLATION, " .
+			"SUBSTRING_INDEX(TABLE_COLLATION, '_', 1) as TABLE_CHARSET " .
+			"FROM information_schema.tables " .
+			"WHERE TABLE_NAME = %s AND TABLE_SCHEMA = DATABASE()",
+			$tableName
+		);
+
+		$results = $wpdb->get_results($query, ARRAY_A);
+
+		// Check for query errors
+		if (!empty($wpdb->last_error)) {
+			$this->logger->debugMessage("information_schema query failed for $tableName: " . $wpdb->last_error);
+			return null;
+		}
+
+		if (empty($results[0])) {
+			$this->logger->debugMessage("Table $tableName not found in information_schema (may not exist).");
+			return null;
+		}
+
+		// Handle case-insensitive column names (some MySQL configs return uppercase)
+		$row = array_change_key_case($results[0], CASE_UPPER);
+		$collation = $row['TABLE_COLLATION'] ?? null;
+		$charset = $row['TABLE_CHARSET'] ?? null;
+
+		if (empty($collation)) {
+			return null;
+		}
+
+		// Handle edge case where charset extraction might fail
+		if (empty($charset)) {
+			$charset = explode('_', $collation)[0];
+		}
+
+		return [$collation, $charset];
+	}
+
+	/** Get the default collation for a given charset.
+	 * @param string $charset
+	 * @return string|null Default collation or null if unknown.
+	 */
+	function getDefaultCollationForCharset($charset) {
+		// Common charset to default collation mappings
+		$defaults = [
+			'utf8mb4' => 'utf8mb4_general_ci',
+			'utf8' => 'utf8_general_ci',
+			'utf8mb3' => 'utf8mb3_general_ci',
+			'latin1' => 'latin1_swedish_ci',
+			'ascii' => 'ascii_general_ci',
+		];
+
+		$charsetLower = strtolower($charset);
+		return $defaults[$charsetLower] ?? null;
 	}
 	
 	/** Make the collations of our tables match the WP_POSTS table collation. */
@@ -917,16 +1033,23 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			if ($results['last_error'] != null && $results['last_error'] != '' && 
 				strpos($results['last_error'], "Index column size too large") !== false) {
 				
-				$this->logger->infoMessage("Collation change for $tableName failed due to 'Index column size too large'. Deleting indexes and retrying...");
+				$this->logger->warn("Collation change for $tableName failed: Index column size too large. Deleting indexes and retrying...");
 	
 				// delete indexes and try again.
 				$this->deleteIndexes($tableName);
 				
-				$this->dao->queryAndGetResults($query);
-            	$this->logger->infoMessage("I tried to change a collation again: " . $query);
-	
+				$retryResults = $this->dao->queryAndGetResults($query);
+				if (!empty($retryResults['last_error'])) {
+					$this->logger->warn("Collation retry for $tableName failed: " . $retryResults['last_error']);
+				} else {
+					$this->logger->infoMessage("Successfully changed collation of $tableName after retry.");
+				}
+
 			} else if ($results['last_error'] == null || $results['last_error'] == '') {
 				$this->logger->infoMessage("Successfully changed collation of $tableName to $postsTableCollation");
+			} else {
+				// Log other ALTER errors that aren't the known "Index column size" issue
+				$this->logger->warn("Collation change for $tableName failed: " . $results['last_error']);
 			}
 		}
 	}

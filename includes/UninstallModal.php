@@ -476,6 +476,12 @@ class ABJ_404_Solution_UninstallModal {
      */
     private static function getRedirectCount() {
         global $wpdb;
+
+        // Guard for test environment where DataAccess class may not be loaded
+        if (!class_exists('ABJ_404_Solution_DataAccess')) {
+            return 0;
+        }
+
         $dao = ABJ_404_Solution_DataAccess::getInstance();
         $table_name = $dao->getPrefixedTableName('abj404_redirects');
 
@@ -508,10 +514,14 @@ class ABJ_404_Solution_UninstallModal {
         $redirect_count = self::getRedirectCount();
 
         // Gather system information (excluding site URL for privacy)
+        $db_info = self::getDatabaseInfo();
         $system_info = array(
             'WordPress Version' => $wp_version,
             'PHP Version' => phpversion(),
             'Plugin Version' => defined('ABJ404_VERSION') ? ABJ404_VERSION : 'Unknown',
+            'MySQL Version' => $db_info['version'],
+            'DB Charset' => $db_info['charset'],
+            'DB Collation' => $db_info['collation'],
             'Multisite' => is_multisite() ? 'Yes' : 'No',
             'Active Plugins' => self::getActivePluginsList(),
             'Redirect Count' => $redirect_count
@@ -566,13 +576,23 @@ class ABJ_404_Solution_UninstallModal {
             $body .= "PLUGIN DEBUG LOG\n";
             $body .= "═══════════════════════════════════════\n\n";
 
-            try {
-                $logger = ABJ_404_Solution_Logging::getInstance();
-                $logExcerpt = $logger->getSanitizedLogExcerptForSupport();
-                $body .= $logExcerpt . "\n\n";
-            } catch (Exception $e) {
-                $body .= "Unable to retrieve log excerpt\n\n";
+            if (class_exists('ABJ_404_Solution_Logging')) {
+                try {
+                    $logger = ABJ_404_Solution_Logging::getInstance();
+                    $logExcerpt = $logger->getSanitizedLogExcerptForSupport();
+                    $body .= $logExcerpt . "\n\n";
+                } catch (Exception $e) {
+                    $body .= "Unable to retrieve log excerpt\n\n";
+                }
+            } else {
+                $body .= "Log excerpt unavailable (logging class not loaded)\n\n";
             }
+
+            // Database collation snapshot to diagnose charset-related issues
+            $body .= "═══════════════════════════════════════\n";
+            $body .= "DATABASE COLLATIONS\n";
+            $body .= "═══════════════════════════════════════\n\n";
+            $body .= self::getDatabaseCollationSnapshot() . "\n\n";
 
             // System information
             $body .= "═══════════════════════════════════════\n";
@@ -652,5 +672,206 @@ class ABJ_404_Solution_UninstallModal {
         return !empty($active_plugin_names)
             ? implode(', ', array_slice($active_plugin_names, 0, 10)) . (count($active_plugin_names) > 10 ? '...' : '')
             : 'None';
+    }
+
+    /**
+     * Get database version and charset info for diagnostics.
+     *
+     * @return array Array with 'version', 'charset', and 'collation' keys
+     */
+    private static function getDatabaseInfo() {
+        global $wpdb;
+
+        $info = array(
+            'version' => 'Unknown',
+            'charset' => 'Unknown',
+            'collation' => 'Unknown',
+        );
+
+        // Get MySQL/MariaDB version
+        $version = $wpdb->get_var("SELECT VERSION()");
+        if ($version) {
+            $info['version'] = $version;
+        }
+
+        // Get database default charset and collation
+        if (!defined('DB_NAME')) {
+            return $info;  // Return defaults in test environment
+        }
+        $db_name = DB_NAME;
+        $charset_query = $wpdb->prepare(
+            "SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME " .
+            "FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = %s",
+            $db_name
+        );
+        $db_result = $wpdb->get_row($charset_query, ARRAY_A);
+
+        if ($db_result) {
+            $info['charset'] = $db_result['DEFAULT_CHARACTER_SET_NAME'] ?? 'Unknown';
+            $info['collation'] = $db_result['DEFAULT_COLLATION_NAME'] ?? 'Unknown';
+        }
+
+        return $info;
+    }
+
+    /**
+     * Capture charset/collation details for key plugin tables.
+     *
+     * @return string Human-readable summary for email diagnostics
+     */
+    private static function getDatabaseCollationSnapshot() {
+        global $wpdb;
+
+        $summaryLines = array();
+
+        // Show the table prefix to help diagnose prefix mismatch issues
+        $summaryLines[] = "Table prefix: " . $wpdb->prefix;
+        $summaryLines[] = "";
+
+        // Safely get class instances - may not exist in test environment
+        if (!class_exists('ABJ_404_Solution_DatabaseUpgradesEtc') ||
+            !class_exists('ABJ_404_Solution_DataAccess')) {
+            $summaryLines[] = "Collation details unavailable (required classes not loaded).";
+            return implode("\n", $summaryLines);
+        }
+
+        $dbUtils = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+        $dao = ABJ_404_Solution_DataAccess::getInstance();
+
+        // Get baseline from wp_posts
+        $targetTable = $wpdb->prefix . 'posts';
+        $targetInfo = self::getTableInfoFromInformationSchema($targetTable);
+
+        if ($targetInfo === null || isset($targetInfo['error'])) {
+            $errorMsg = isset($targetInfo['error']) ? $targetInfo['error'] : 'table not found';
+            $summaryLines[] = "Could not read collation for {$targetTable} (baseline): {$errorMsg}";
+            return implode("\n", $summaryLines);
+        }
+
+        $targetCollation = $targetInfo['collation'];
+        $targetCharset = $targetInfo['charset'];
+        $targetEngine = $targetInfo['engine'];
+
+        $summaryLines[] = sprintf(
+            "%s -> %s / %s / %s (baseline)",
+            $targetTable,
+            $targetCharset,
+            $targetCollation,
+            $targetEngine
+        );
+
+        $pluginTables = array(
+            'Logs' => $dao->doTableNameReplacements("{wp_abj404_logsv2}"),
+            'Lookup' => $dao->doTableNameReplacements("{wp_abj404_lookup}"),
+            'Permalink Cache' => $dao->doTableNameReplacements("{wp_abj404_permalink_cache}"),
+            'Spelling Cache' => $dao->doTableNameReplacements("{wp_abj404_spelling_cache}"),
+            'Redirects' => $dao->doTableNameReplacements("{wp_abj404_redirects}"),
+        );
+
+        foreach ($pluginTables as $label => $tableName) {
+            $tableInfo = self::getTableInfoFromInformationSchema($tableName);
+
+            if ($tableInfo === null) {
+                $summaryLines[] = sprintf(
+                    "%s (%s) -> unavailable (table not found)",
+                    $label,
+                    $tableName
+                );
+                continue;
+            }
+
+            if (isset($tableInfo['error'])) {
+                $summaryLines[] = sprintf(
+                    "%s (%s) -> unavailable (%s)",
+                    $label,
+                    $tableName,
+                    $tableInfo['error']
+                );
+                continue;
+            }
+
+            $collation = $tableInfo['collation'];
+            $charset = $tableInfo['charset'];
+            $engine = $tableInfo['engine'];
+
+            $matchesBaseline = ($collation === $targetCollation && $charset === $targetCharset);
+            $utf8mb4Note = (stripos($charset, 'utf8mb4') === false) ? ' [non-utf8mb4]' : '';
+            $matchNote = $matchesBaseline ? 'matches' : 'DIFFERS';
+
+            $summaryLines[] = sprintf(
+                "%s (%s) -> %s / %s / %s (%s)%s",
+                $label,
+                $tableName,
+                $charset,
+                $collation,
+                $engine,
+                $matchNote,
+                $utf8mb4Note
+            );
+        }
+
+        return implode("\n", $summaryLines);
+    }
+
+    /**
+     * Get table info (charset, collation, engine) from information_schema.
+     *
+     * @param string $tableName Table name to look up
+     * @return array|null Array with 'charset', 'collation', 'engine' keys, or null/error array on failure
+     */
+    private static function getTableInfoFromInformationSchema($tableName) {
+        global $wpdb;
+
+        // Guard for test environment where wpdb may be a minimal mock
+        if (!method_exists($wpdb, 'get_row')) {
+            return array('error' => 'wpdb methods unavailable');
+        }
+
+        $query = $wpdb->prepare(
+            "SELECT TABLE_COLLATION, ENGINE, " .
+            "SUBSTRING_INDEX(TABLE_COLLATION, '_', 1) as TABLE_CHARSET " .
+            "FROM information_schema.tables " .
+            "WHERE TABLE_NAME = %s AND TABLE_SCHEMA = DATABASE()",
+            $tableName
+        );
+
+        $result = $wpdb->get_row($query, ARRAY_A);
+
+        // Check for query error
+        if (!empty($wpdb->last_error)) {
+            // Check for permission-related errors
+            if (stripos($wpdb->last_error, 'denied') !== false ||
+                stripos($wpdb->last_error, 'permission') !== false) {
+                return array('error' => 'permission denied: ' . substr($wpdb->last_error, 0, 50));
+            }
+            return array('error' => 'query error: ' . substr($wpdb->last_error, 0, 50));
+        }
+
+        // Table not found
+        if (empty($result)) {
+            return null;
+        }
+
+        // Handle case variations in column names
+        $result = array_change_key_case($result, CASE_UPPER);
+
+        $collation = $result['TABLE_COLLATION'] ?? null;
+        $engine = $result['ENGINE'] ?? 'Unknown';
+        $charset = $result['TABLE_CHARSET'] ?? null;
+
+        // Fallback charset extraction from collation
+        if (empty($charset) && !empty($collation)) {
+            $charset = explode('_', $collation)[0];
+        }
+
+        if (empty($collation)) {
+            return array('error' => 'no collation data');
+        }
+
+        return array(
+            'charset' => $charset,
+            'collation' => $collation,
+            'engine' => $engine
+        );
     }
 }

@@ -372,14 +372,17 @@ class ABJ_404_Solution_Logging {
     
     /**
      * Get sanitized log excerpt for support emails
-     * Collects last 3-5 ERROR/WARN entries (already sanitized at write-time)
+     * Collects last 15 ERROR/WARN entries (already sanitized at write-time)
+     * If no errors/warnings found, includes last 20 lines of log for context
      *
      * @return string Sanitized log excerpt or message if no errors found
      */
     function getSanitizedLogExcerptForSupport() {
         $f = ABJ_404_Solution_Functions::getInstance();
         $errorEntries = array();
-        $maxEntries = 5;
+        $recentLines = array();
+        $maxEntries = 15;
+        $maxRecentLines = 20;
         $totalLines = 0;
         $handle = null;
 
@@ -397,6 +400,12 @@ class ABJ_404_Solution_Logging {
                 // Read file line by line
                 while (($line = fgets($handle)) !== false) {
                     $totalLines++;
+
+                    // Keep a sliding window of recent lines (for fallback if no errors)
+                    $recentLines[] = $line;
+                    if (count($recentLines) > $maxRecentLines) {
+                        array_shift($recentLines);
+                    }
 
                     // Check if this is an ERROR or WARN line
                     $hasError = stripos($line, '(ERROR)') !== false;
@@ -456,7 +465,13 @@ class ABJ_404_Solution_Logging {
 
         // Format output
         if (empty($errorEntries)) {
-            return "No ERROR or WARN entries found in log";
+            // No errors/warnings found - include last N lines for context
+            if (empty($recentLines)) {
+                return "Log file is empty";
+            }
+            $output = "No ERROR/WARN entries found. Last " . count($recentLines) . " log lines:\n\n";
+            $output .= implode("", $recentLines);
+            return trim($output);
         }
 
         $output = "Last " . count($errorEntries) . " ERROR/WARN entries:\n\n";
