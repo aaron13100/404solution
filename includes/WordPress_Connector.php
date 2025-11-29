@@ -703,6 +703,10 @@ class ABJ_404_Solution_WordPress_Connector {
                     wp_kses_post(print_r($redirect, true)));
         }
 
+        // Set cookie with original URL so shortcode can display suggestions on destination page
+        // (fixes: manual redirects to custom 404 pages not showing suggestions)
+        $this->logic->setCookieWithPreviousRequest();
+
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
         	$this->dao->logRedirectHit($redirect['url'], $redirect['final_dest'], 'external');
             $this->logic->forceRedirect($redirect['final_dest'], esc_html($redirect['code']));
