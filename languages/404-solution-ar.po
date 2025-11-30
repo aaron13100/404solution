@@ -1,0 +1,2173 @@
+# Translation file for 404 Solution WordPress Plugin - Arabic
+# Copyright (C) 2025 Aaron J
+# This file is distributed under the same license as the 404 Solution plugin.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 404 Solution\n"
+"Report-Msgid-Bugs-To: https://github.com/aaron13100/404solution/issues\n"
+"POT-Creation-Date: 2025-11-11 07:26+0000\n"
+"PO-Revision-Date: 2025-11-29 00:00+0000\n"
+"Last-Translator: Auto-Generated\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);\n"
+"X-Generator: 404 Solution Translation Generator v2\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-SearchPath-0: .\n"
+
+
+msgid "404 Solution - Deactivation Options"
+msgstr "404 Solution - خيارات إلغاء التفعيل"
+
+msgid "Cancel"
+msgstr "إلغاء"
+
+msgid "Deactivate Plugin"
+msgstr "إلغاء تفعيل الإضافة"
+
+msgid "Deactivating"
+msgstr "جارٍ إلغاء التفعيل"
+
+msgid "Saving..."
+msgstr "جارٍ الحفظ..."
+
+msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
+msgstr "تعذر حفظ الإعدادات - رمز الأمان مفقود. قد يظهر المعالج مرة أخرى في الزيارة القادمة."
+
+msgid "Could not save dismissal. The wizard may appear again on next visit."
+msgstr "تعذر حفظ الإغلاق. قد يظهر المعالج مرة أخرى في الزيارة القادمة."
+
+msgid "Could not save dismissal: "
+msgstr "تعذر حفظ الإغلاق: "
+
+msgid " The wizard may appear again on next visit."
+msgstr " قد يظهر المعالج مرة أخرى في الزيارة القادمة."
+
+msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
+msgstr "خطأ في الشبكة - تعذر حفظ الإغلاق. قد يظهر المعالج مرة أخرى في الزيارة القادمة."
+
+msgid "Settings"
+msgstr "الإعدادات"
+
+msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr "404 Solution: تم ترحيل %d عمليات إعادة توجيه إلى تنسيق مستقل عن المجلد الفرعي."
+msgid "%1$s - %2$s of %3$s"
+msgstr "%1$s - %2$s من %3$s"
+
+msgid "(A custom string has been entered.)"
+msgstr "(تم إدخال نص مخصص.)"
+
+msgid "(A page has been selected.)"
+msgstr "(تم اختيار صفحة.)"
+
+msgid "(All results displayed for \"%s.\")"
+msgstr "(تم عرض جميع النتائج لـ \"%s.\")"
+
+msgid "(All results displayed.)"
+msgstr "(تم عرض جميع النتائج.)"
+
+msgid "(An external URL will be used.)"
+msgstr "(سيتم استخدام رابط خارجي.)"
+
+msgid "(Begin typing a URL)"
+msgstr "(ابدأ بكتابة رابط)"
+
+msgid "(Data truncated. Too many results for \"%s!\".)"
+msgstr "(تم اقتطاع البيانات. نتائج كثيرة جداً لـ \"%s!\".)"
+
+msgid "(Data truncated. Too many results!)"
+msgstr "(تم اقتطاع البيانات. نتائج كثيرة جداً!)"
+
+msgid "(Default 404 Page)"
+msgstr "(صفحة 404 الافتراضية)"
+
+msgid "(Explain)"
+msgstr "(شرح)"
+
+msgid "(Hide Info)"
+msgstr "(إخفاء المعلومات)"
+
+msgid "(Home Page)"
+msgstr "(الصفحة الرئيسية)"
+
+msgid "(No matching results found for \"%s.\")"
+msgstr "(لم يتم العثور على نتائج مطابقة لـ \"%s.\")"
+
+msgid "(No matching results found.)"
+msgstr "(لم يتم العثور على نتائج مطابقة.)"
+
+msgid "(Please choose from the dropdown list instead of typing your own URL.)"
+msgstr "(يرجى الاختيار من القائمة المنسدلة بدلاً من كتابة الرابط الخاص بك.)"
+
+msgid "(Required)"
+msgstr "(مطلوب)"
+
+msgid "(Show All Logs)"
+msgstr "(عرض جميع السجلات)"
+
+msgid "(Special)"
+msgstr "(خاص)"
+
+msgid "(The log file does not exist.)"
+msgstr "(ملف السجل غير موجود.)"
+
+msgid "(The specified page doesn't exist. Please update this setting.)"
+msgstr "(الصفحة المحددة غير موجودة. يرجى تحديث هذا الإعداد.)"
+
+msgid "(Type a page name or an external URL)"
+msgstr "(اكتب اسم صفحة أو رابط خارجي)"
+
+msgid "(Type a page name)"
+msgstr "(اكتب اسم صفحة)"
+
+msgid "(Type to filter)"
+msgstr "(اكتب للتصفية)"
+
+msgid "(don't suggest .jpg files)"
+msgstr "(لا تقترح ملفات .jpg)"
+
+msgid "(don't suggest .pdf files)"
+msgstr "(لا تقترح ملفات .pdf)"
+
+msgid "(don't suggest pages within any directory named /private/)"
+msgstr "(لا تقترح صفحات داخل أي مجلد باسم /private/)"
+
+msgid "(don't suggest pages within the /members/ directory)"
+msgstr "(لا تقترح صفحات داخل مجلد /members/)"
+
+msgid "(don't suggest the specific page with slug 'old-contact-page')"
+msgstr "(لا تقترح الصفحة المحددة ذات الاسم المختصر 'old-contact-page')"
+
+msgid "(ignore all .jpg files)"
+msgstr "(تجاهل جميع ملفات .jpg)"
+
+msgid "(ignore all .js files)"
+msgstr "(تجاهل جميع ملفات .js)"
+
+msgid "(ignore all .php files)"
+msgstr "(تجاهل جميع ملفات .php)"
+
+msgid "(ignore everything in the cache directory)"
+msgstr "(تجاهل كل شيء في مجلد الذاكرة المؤقتة)"
+
+msgid "(ignore everything in this directory)"
+msgstr "(تجاهل كل شيء في هذا المجلد)"
+
+msgid "(unless a redirect to the page already exists)."
+msgstr "(ما لم تكن إعادة التوجيه إلى الصفحة موجودة بالفعل)."
+
+msgid "* 404s are still redirected when possible."
+msgstr "* لا يزال يتم إعادة توجيه أخطاء 404 عندما يكون ذلك ممكناً."
+
+msgid "* Do not capture 404 URLs."
+msgstr "* لا تلتقط روابط 404."
+
+msgid "* Do not redirect 404s for the patterns listed here."
+msgstr "* لا تعيد توجيه أخطاء 404 للأنماط المدرجة هنا."
+
+msgid "* Do not redirect 404s from the user agents listed here."
+msgstr "* لا تعيد توجيه أخطاء 404 من وكلاء المستخدم المدرجين هنا."
+
+msgid "* If the string appears anywhere within the user agent string then it's a match."
+msgstr "* إذا ظهر النص في أي مكان ضمن سلسلة وكيل المستخدم فهو مطابق."
+
+msgid "* One pattern per line."
+msgstr "* نمط واحد لكل سطر."
+
+msgid "* One string per line."
+msgstr "* سلسلة واحدة لكل سطر."
+
+msgid "* One type per line."
+msgstr "* نوع واحد لكل سطر."
+
+msgid "* Strings are case insensitive."
+msgstr "* السلاسل غير حساسة لحالة الأحرف."
+
+msgid "* Strings are case sensitive."
+msgstr "* السلاسل حساسة لحالة الأحرف."
+
+msgid "* These patterns match the path of a URL, not a title.\""
+msgstr "* هذه الأنماط تطابق مسار الرابط، وليس العنوان.\""
+
+msgid "* Use an asterisk (*) to match \"any pattern.\""
+msgstr "* استخدم علامة النجمة (*) لمطابقة \"أي نمط.\""
+
+msgid "404 Page Suggestions"
+msgstr "اقتراحات صفحة 404"
+
+msgid "404 URL marked as %s successfully!"
+msgstr "تم وضع علامة على رابط 404 كـ %s بنجاح!"
+
+msgid "<a>View</a> the debug file."
+msgstr "<a>عرض</a> ملف التصحيح."
+
+msgid "Action Taken"
+msgstr "الإجراء المتخذ"
+
+msgid "Add Redirect"
+msgstr "إضافة إعادة توجيه"
+
+msgid "Add a Manual Redirect"
+msgstr "إضافة إعادة توجيه يدوية"
+
+msgid "Add a Redirect"
+msgstr "إضافة إعادة توجيه"
+
+msgid "Admin notification email(s)"
+msgstr "بريد إشعار المدير"
+
+msgid "Admin notification level"
+msgstr "مستوى إشعار المدير"
+
+msgid "Admin theme"
+msgstr "سمة الإدارة"
+
+msgid "Advanced"
+msgstr "متقدم"
+
+#: includes/View.php - Inline mode toggle
+msgid "Simple"
+msgstr "بسيط"
+
+#: includes/View.php - Quick links / Sticky save bar / Toast notification
+msgid "View Stats"
+msgstr "عرض الإحصائيات"
+
+msgid "Captured 404s"
+msgstr "أخطاء 404 الملتقطة"
+
+msgid "Documentation"
+msgstr "التوثيق"
+
+msgid "Plugin v%s"
+msgstr "الإضافة الإصدار %s"
+
+msgid "Settings saved successfully!"
+msgstr "تم حفظ الإعدادات بنجاح!"
+
+msgid "Smart Matching"
+msgstr "المطابقة الذكية"
+
+msgid "Advanced Settings (Etc)"
+msgstr "الإعدادات المتقدمة"
+
+msgid "Content & URL Filtering"
+msgstr "تصفية المحتوى والروابط"
+
+msgid "Logging & Privacy"
+msgstr "التسجيل والخصوصية"
+
+msgid "Advanced Configuration"
+msgstr "التكوين المتقدم"
+
+msgid "Expand All"
+msgstr "توسيع الكل"
+
+msgid "Collapse All"
+msgstr "طي الكل"
+
+msgid "Feedback sent successfully."
+msgstr "تم إرسال الملاحظات بنجاح."
+
+msgid "Note: Feedback email could not be sent."
+msgstr "ملاحظة: تعذر إرسال بريد الملاحظات."
+
+msgid "All"
+msgstr "الكل"
+
+msgid "All other redirects must be deleted and only one regex redirect for all URLs must be created for this to work."
+msgstr "يجب حذف جميع عمليات إعادة التوجيه الأخرى وإنشاء إعادة توجيه regex واحدة فقط لجميع الروابط لكي يعمل هذا."
+
+msgid "All trashed URLs have been deleted!"
+msgstr "تم حذف جميع الروابط المحذوفة!"
+
+msgid "Allow category suggestions"
+msgstr "السماح باقتراحات التصنيفات"
+
+msgid "Allow tag suggestions"
+msgstr "السماح باقتراحات الوسوم"
+
+msgid "An unknown error has occurred."
+msgstr "حدث خطأ غير معروف."
+
+msgid "Apply"
+msgstr "تطبيق"
+
+msgid "At the same level as the Settings and Tools menu"
+msgstr "على نفس مستوى قائمة الإعدادات والأدوات"
+
+msgid "Auto"
+msgstr "تلقائي"
+
+msgid "Delete automatic redirects after"
+msgstr "حذف إعادة التوجيه التلقائية بعد"
+
+msgid "Auto Redirects"
+msgstr "إعادة التوجيه التلقائية"
+
+msgid "Automatic 301 Redirects"
+msgstr "إعادة التوجيه التلقائية 301"
+
+msgid "Automatic 302 Redirects"
+msgstr "إعادة التوجيه التلقائية 302"
+
+msgid "Automatic Redirects"
+msgstr "إعادة التوجيه التلقائية"
+
+msgid "Automatically created"
+msgstr "تم إنشاؤها تلقائياً"
+
+msgid "Automatically creates redirects based on best possible suggested page."
+msgstr "ينشئ تلقائياً إعادة توجيه بناءً على أفضل صفحة مقترحة ممكنة."
+
+msgid "Removes captured 404 URLs if they haven't been used for the specified amount of time."
+msgstr "يزيل روابط 404 الملتقطة إذا لم يتم استخدامها للفترة الزمنية المحددة."
+
+msgid "Removes manually created redirects if they haven't been used for the specified amount of time. Does not affect automatically created redirects."
+msgstr "يزيل إعادة التوجيه المنشأة يدوياً إذا لم يتم استخدامها للفترة الزمنية المحددة. لا يؤثر على إعادة التوجيه المنشأة تلقائياً."
+
+msgid "Captured 404 URLs"
+msgstr "روابط 404 الملتقطة"
+
+msgid "Captured URLs"
+msgstr "الروابط الملتقطة"
+
+msgid "Captured URLs (0 Disables Notification)"
+msgstr "الروابط الملتقطة (0 يعطل الإشعار)"
+
+msgid "Categories"
+msgstr "التصنيفات"
+
+msgid "Category"
+msgstr "تصنيف"
+
+msgid "Category:"
+msgstr "التصنيف:"
+
+msgid "Changes may not be updated immediately when ordering by this column"
+msgstr "قد لا يتم تحديث التغييرات فوراً عند الترتيب حسب هذا العمود"
+
+msgid "Checks each redirect for a new matching permalink before the user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted."
+msgstr "يتحقق من كل إعادة توجيه للعثور على رابط ثابت مطابق جديد قبل إعادة توجيه المستخدم. إذا تم العثور على رابط ثابت جديد للصفحة يطابق الرابط المعاد توجيهه، فسيتم حذف إعادة التوجيه."
+
+msgid "Choose at least one URL"
+msgstr "اختر رابط واحد على الأقل"
+
+msgid "Choose whether the 404 Settings link appears under the \"Settings\" menu or elsewhere."
+msgstr "اختر ما إذا كان رابط إعدادات 404 يظهر تحت قائمة \"الإعدادات\" أو في مكان آخر."
+
+msgid "Choose the color theme for the admin pages. The theme changes immediately for preview, and will be saved when you click \"Save Settings\"."
+msgstr "اختر سمة اللون لصفحات الإدارة. تتغير السمة فوراً للمعاينة، وسيتم حفظها عند النقر على \"حفظ الإعدادات\"."
+
+msgid "Cleanup is done daily."
+msgstr "يتم التنظيف يومياً."
+
+msgid "Click to view debug data for all suggestions"
+msgstr "انقر لعرض بيانات التصحيح لجميع الاقتراحات"
+
+msgid "Delete captured 404 URLs after"
+msgstr "حذف روابط 404 الملتقطة بعد"
+
+msgid "Create a CSV file with the redirects and captured 404s."
+msgstr "إنشاء ملف CSV مع إعادة التوجيه وأخطاء 404 الملتقطة."
+
+msgid "Create and Download"
+msgstr "إنشاء وتنزيل"
+
+msgid "Create automatic redirects"
+msgstr "إنشاء إعادة توجيه تلقائية"
+
+msgid "Create automatic redirects for categories"
+msgstr "إنشاء إعادة توجيه تلقائية للتصنيفات"
+
+msgid "Create automatic redirects for tags"
+msgstr "إنشاء إعادة توجيه تلقائية للوسوم"
+
+msgid "Created"
+msgstr "تم الإنشاء"
+
+msgid "Credits"
+msgstr "الاعتمادات"
+
+msgid "Current approximate log disk usage"
+msgstr "الاستخدام التقريبي الحالي لقرص السجل"
+
+msgid "Custom"
+msgstr "مخصص"
+
+msgid "Custom Taxonomies"
+msgstr "التصنيفات المخصصة"
+
+msgid "DATABASE_VERSION"
+msgstr "DATABASE_VERSION"
+
+msgid "DB version"
+msgstr "إصدار قاعدة البيانات"
+
+msgid "Date"
+msgstr "التاريخ"
+
+msgid "days without use (0 to disable)"
+msgstr "أيام بدون استخدام (0 للتعطيل)"
+
+msgid "Debug Log"
+msgstr "سجل التصحيح"
+
+msgid "Debug file not found. (%s)"
+msgstr "ملف التصحيح غير موجود. (%s)"
+
+msgid "Debug file size: %1$s KB (%2$s MB)."
+msgstr "حجم ملف التصحيح: %1$s كيلوبايت (%2$s ميجابايت)."
+
+msgid "Debug file size: %s KB."
+msgstr "حجم ملف التصحيح: %s كيلوبايت."
+
+msgid "Debug file(s) deleted. (%s)"
+msgstr "تم حذف ملف(ات) التصحيح. (%s)"
+
+msgid "Debug logging"
+msgstr "تسجيل التصحيح"
+
+msgid "Default"
+msgstr "افتراضي"
+
+msgid "Default WordPress post types are \"post\" and \"page.\""
+msgstr "أنواع المنشورات الافتراضية في ووردبريس هي \"مقالة\" و\"صفحة\"."
+
+msgid "Default redirect type"
+msgstr "نوع إعادة التوجيه الافتراضي"
+
+msgid "Delete the Debug File"
+msgstr "حذف ملف التصحيح"
+
+msgid "Destination"
+msgstr "الوجهة"
+
+msgid "Display Before/After each suggested page"
+msgstr "عرض قبل/بعد كل صفحة مقترحة"
+
+msgid "Display Before/After page suggestions"
+msgstr "عرض قبل/بعد اقتراحات الصفحات"
+
+msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
+msgstr "عرض إشعار مدير ووردبريس عندما يتجاوز عدد الروابط الملتقطة هذا الرقم"
+
+msgid "Display if no suggestion results"
+msgstr "عرض إذا لم توجد نتائج اقتراحات"
+
+msgid "Display the closest matching pages by using the shortcode <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
+msgstr "عرض الصفحات الأكثر تطابقاً باستخدام الكود المختصر <span style=\"font-weight: bold;\">[abj404_solution_page_suggestions]</span>."
+
+msgid "Displayed 404 Page"
+msgstr "صفحة 404 المعروضة"
+
+msgid "Earliest log date"
+msgstr "أقدم تاريخ في السجل"
+
+msgid "Edit Redirect"
+msgstr "تعديل إعادة التوجيه"
+
+msgid "Edit Redirect Details"
+msgstr "تعديل تفاصيل إعادة التوجيه"
+
+msgid "Empty Trash"
+msgstr "إفراغ سلة المهملات"
+
+msgid "Error: An invalid purge type was selected. Exiting."
+msgstr "خطأ: تم اختيار نوع تطهير غير صالح. جارٍ الخروج."
+
+msgid "Error: Auto match score value must be a number between 0 and 99"
+msgstr "خطأ: يجب أن تكون قيمة نقاط المطابقة التلقائية رقماً بين 0 و99"
+
+msgid "Error: Bad %s operation specified."
+msgstr "خطأ: تم تحديد عملية %s غير صالحة."
+
+msgid "Error: Bad data passed for update redirect request."
+msgstr "خطأ: تم تمرير بيانات غير صالحة لطلب تحديث إعادة التوجيه."
+
+msgid "Error: Bad trash operation specified."
+msgstr "خطأ: تم تحديد عملية سلة مهملات غير صالحة."
+
+msgid "Error: Data not formatted properly."
+msgstr "خطأ: البيانات غير منسقة بشكل صحيح."
+
+msgid "Error: External URL doesn't contain ://"
+msgstr "خطأ: الرابط الخارجي لا يحتوي على ://"
+
+msgid "Error: External URL is too short."
+msgstr "خطأ: الرابط الخارجي قصير جداً."
+
+msgid "Error: External redirect URL failed validation."
+msgstr "خطأ: فشل التحقق من رابط إعادة التوجيه الخارجي."
+
+msgid "Error: External URL must use http:// or https:// protocol only."
+msgstr "خطأ: يجب أن يستخدم الرابط الخارجي بروتوكول http:// أو https:// فقط."
+
+msgid "Error: Invalid theme selected"
+msgstr "خطأ: تم اختيار سمة غير صالحة"
+
+msgid "Error: Invalid value specified for default redirect type"
+msgstr "خطأ: تم تحديد قيمة غير صالحة لنوع إعادة التوجيه الافتراضي"
+
+msgid "Error: Maximum number of suggest value must be a number greater than or equal to 1"
+msgstr "خطأ: يجب أن يكون الحد الأقصى لعدد الاقتراحات رقماً أكبر من أو يساوي 1"
+
+msgid "Error: No ID(s) found for edit request."
+msgstr "خطأ: لم يتم العثور على معرف(ات) لطلب التعديل."
+
+msgid "Error: No ID(s) specified for bulk action. (%s)"
+msgstr "خطأ: لم يتم تحديد معرف(ات) للإجراء الجماعي. (%s)"
+
+msgid "Error: No records were imported. SQL result: %s"
+msgstr "خطأ: لم يتم استيراد أي سجلات. نتيجة SQL: %s"
+
+msgid "Error: No redirect types were selected. No purges will be done."
+msgstr "خطأ: لم يتم اختيار أنواع إعادة التوجيه. لن يتم إجراء أي تطهير."
+
+msgid "Error: No valid redirect types were selected. Exiting."
+msgstr "خطأ: لم يتم اختيار أنواع إعادة توجيه صالحة. جارٍ الخروج."
+
+msgid "Error: Suggestion minimum score value must be a number between 1 and 99"
+msgstr "خطأ: يجب أن تكون قيمة الحد الأدنى لنقاط الاقتراح رقماً بين 1 و99"
+
+msgid "Error: Template redirect priority value must be a number between 0 and 999"
+msgstr "خطأ: يجب أن تكون قيمة أولوية إعادة توجيه القالب رقماً بين 0 و999"
+
+msgid "Error: URL is a required field."
+msgstr "خطأ: الرابط حقل مطلوب."
+
+msgid "Error: URL must start with /"
+msgstr "خطأ: يجب أن يبدأ الرابط بـ /"
+
+msgid "Error: Redirect destination is required."
+msgstr "خطأ: وجهة إعادة التوجيه مطلوبة."
+
+msgid "Error: Unable to move redirect from trash."
+msgstr "خطأ: تعذر نقل إعادة التوجيه من سلة المهملات."
+
+msgid "Error: Unable to move redirect to trash."
+msgstr "خطأ: تعذر نقل إعادة التوجيه إلى سلة المهملات."
+
+msgid "Error: Unable to update redirect data."
+msgstr "خطأ: تعذر تحديث بيانات إعادة التوجيه."
+
+msgid "Error: Unknown Database Error!"
+msgstr "خطأ: خطأ غير معروف في قاعدة البيانات!"
+
+msgid "Error: Unrecognized bulk action. (%s)"
+msgstr "خطأ: إجراء جماعي غير معروف. (%s)"
+
+msgid "Error: You didn't check the I understand checkbox. No importing for you!"
+msgstr "خطأ: لم تحدد خانة \"أفهم\". لن يتم الاستيراد!"
+
+msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
+msgstr "خطأ: لم تحدد خانة \"أفهم\". لن يتم تطهير السجلات!"
+
+msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
+msgstr "خطأ: يجب أن يكون وقت الانتظار قبل التحديث التلقائي رقماً بين 0 وحوالي %d."
+
+msgid "Error: You selected external URL but did not enter a URL."
+msgstr "خطأ: اخترت رابط خارجي لكنك لم تدخل رابطاً."
+
+msgid "Error: unable to add new redirect."
+msgstr "خطأ: تعذر إضافة إعادة توجيه جديدة."
+
+msgid "Error: unable to mark URL as %s"
+msgstr "خطأ: تعذر وضع علامة على الرابط كـ %s"
+
+msgid "Error: unable to remove URL from %s list"
+msgstr "خطأ: تعذر إزالة الرابط من قائمة %s"
+
+msgid "Etcetera"
+msgstr "وغيرها"
+
+msgid "Even if more pages could be suggested, show at most this many (default: 5)"
+msgstr "حتى لو كان يمكن اقتراح المزيد من الصفحات، اعرض هذا العدد كحد أقصى (الافتراضي: 5)"
+
+msgid "Example"
+msgstr "مثال"
+
+msgid "Examples:"
+msgstr "أمثلة:"
+
+msgid "Exclude Specific Pages, Posts, Categories, Etc"
+msgstr "استبعاد صفحات ومقالات وتصنيفات محددة، إلخ"
+
+msgid "Exclude Suggestion URLs (Regex)"
+msgstr "استبعاد روابط الاقتراحات (Regex)"
+
+msgid "Exclude potential suggestions if their final URL matches one of these patterns."
+msgstr "استبعاد الاقتراحات المحتملة إذا كان رابطها النهائي يطابق أحد هذه الأنماط."
+
+msgid "Export"
+msgstr "تصدير"
+
+msgid "External"
+msgstr "خارجي"
+
+msgid "External Page"
+msgstr "صفحة خارجية"
+
+msgid "External User Agents - Do Not Log"
+msgstr "وكلاء المستخدم الخارجيين - لا تسجل"
+
+msgid "Files and Folders Ignore Strings - Do Not Process"
+msgstr "سلاسل تجاهل الملفات والمجلدات - لا تعالج"
+
+msgid "Files and folders listed here will be ignored."
+msgstr "سيتم تجاهل الملفات والمجلدات المدرجة هنا."
+
+msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
+msgstr "أولاً، يتم التحقق من جميع روابط \"المطابقة التامة\" العادية، ثم يتم التحقق من جميع روابط التعبيرات النمطية."
+
+msgid "General"
+msgstr "عام"
+
+msgid "General Settings"
+msgstr "الإعدادات العامة"
+
+msgid "Go to first page"
+msgstr "الانتقال إلى الصفحة الأولى"
+
+msgid "Go to last page"
+msgstr "الانتقال إلى الصفحة الأخيرة"
+
+msgid "Go to next page"
+msgstr "الانتقال إلى الصفحة التالية"
+
+msgid "Go to previous page"
+msgstr "الانتقال إلى الصفحة السابقة"
+
+msgid "Help the developer by sending error logs"
+msgstr "ساعد المطور بإرسال سجلات الأخطاء"
+
+msgid "Here are some other great pages"
+msgstr "إليك بعض الصفحات الرائعة الأخرى"
+
+msgid "Hide %s"
+msgstr "إخفاء %s"
+
+msgid "Hits"
+msgstr "الزيارات"
+
+msgid "Hits Redirected"
+msgstr "الزيارات المعاد توجيهها"
+
+msgid "Home Page"
+msgstr "الصفحة الرئيسية"
+
+msgid "Home Page:"
+msgstr "الصفحة الرئيسية:"
+
+msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
+msgstr "أفهم البيان أعلاه، أعرف ما أفعله... إلخ إلخ إلخ. فقط احذف السجلات!"
+
+msgid "I understand the above statement."
+msgstr "أفهم البيان أعلاه."
+
+msgid "IP Address"
+msgstr "عنوان IP"
+
+msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
+msgstr "إذا لم تحقق أي صفحة الحد الأدنى من نقاط المطابقة، فسيتم عرض هذا النص.  (الافتراضي: &lt;p&gt;لا توجد اقتراحات. :/ &lt;/p&gt;)"
+
+msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
+msgstr "إذا أنشأت أنواع منشورات مخصصة وترغب في إعادة توجيه المستخدمين إليها، يجب إدخالها هنا."
+
+msgid "If you've created custom taxonomies and would like to redirect users to them, you'll have to enter them here."
+msgstr "إذا أنشأت تصنيفات مخصصة وترغب في إعادة توجيه المستخدمين إليها، يجب إدخالها هنا."
+
+msgid "Ignore 404 Error"
+msgstr "تجاهل خطأ 404"
+
+msgid "Ignored 404 URLs"
+msgstr "روابط 404 المتجاهلة"
+
+msgid "Ignored URLs"
+msgstr "الروابط المتجاهلة"
+
+msgid "Import"
+msgstr "استيراد"
+
+msgid "Import 404 Redirected Data"
+msgstr "استيراد بيانات 404 المعاد توجيهها"
+
+msgid "Import a CSV file with the redirects and captured 404s."
+msgstr "استيراد ملف CSV مع إعادة التوجيه وأخطاء 404 الملتقطة."
+
+msgid "Including breaking the site by creating bad redirects, entering a bad regular expression, deleting existing redirects, and giving other users admin access to the plugin."
+msgstr "بما في ذلك تعطيل الموقع بإنشاء إعادة توجيه سيئة، أو إدخال تعبير نمطي سيء، أو حذف إعادة التوجيه الموجودة، أو منح مستخدمين آخرين صلاحيات المدير للإضافة."
+
+msgid "Internal Process User Agents - Do Not Log"
+msgstr "وكلاء مستخدم العمليات الداخلية - لا تسجل"
+
+msgid "Issue deleting debug file. (%s)"
+msgstr "مشكلة في حذف ملف التصحيح. (%s)"
+
+msgid "JAPANESE_FLASHCARDS_URL"
+msgstr "JAPANESE_FLASHCARDS_URL"
+
+msgid "Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit."
+msgstr "يحتفظ بأحدث السجلات (ويحذف الأقدم) عندما يصل استخدام القرص إلى هذا الحد."
+
+msgid "LINK_FIRST_PAGE"
+msgstr "LINK_FIRST_PAGE"
+
+msgid "LINK_LAST_PAGE"
+msgstr "LINK_LAST_PAGE"
+
+msgid "LINK_NEXT_PAGE"
+msgstr "LINK_NEXT_PAGE"
+
+msgid "LINK_PREVIOUS_PAGE"
+msgstr "LINK_PREVIOUS_PAGE"
+
+msgid "Last Used"
+msgstr "آخر استخدام"
+
+msgid "List one user name per line."
+msgstr "أدرج اسم مستخدم واحد لكل سطر."
+
+msgid "Log files are checked daily when maintenance is run."
+msgstr "يتم فحص ملفات السجل يومياً عند تشغيل الصيانة."
+
+msgid "Log raw IPs"
+msgstr "تسجيل عناوين IP الخام"
+
+msgid "Logging raw IP addresses may not meet the EU General Data Protection Regulation (GDPR) guidelines."
+msgstr "قد لا يتوافق تسجيل عناوين IP الخام مع إرشادات اللائحة العامة لحماية البيانات (GDPR) في الاتحاد الأوروبي."
+
+msgid "Logs"
+msgstr "السجلات"
+
+msgid "MB"
+msgstr "ميجابايت"
+
+msgid "Maintenance"
+msgstr "الصيانة"
+
+msgid "Major version auto update delay"
+msgstr "تأخير التحديث التلقائي للإصدار الرئيسي"
+
+msgid "Man"
+msgstr "يدوي"
+
+msgid "Manual 301 Redirects"
+msgstr "إعادة التوجيه اليدوية 301"
+
+msgid "Manual 302 Redirects"
+msgstr "إعادة التوجيه اليدوية 302"
+
+msgid "Manual Redirects"
+msgstr "إعادة التوجيه اليدوية"
+
+msgid "Delete manual redirects after"
+msgstr "حذف إعادة التوجيه اليدوية بعد"
+
+msgid "Manually created"
+msgstr "تم إنشاؤها يدوياً"
+
+msgid "Maximum log disk usage (MB)"
+msgstr "الحد الأقصى لاستخدام قرص السجل (ميجابايت)"
+
+msgid "Maximum number of suggestions to display"
+msgstr "الحد الأقصى لعدد الاقتراحات المعروضة"
+
+msgid "Minimum match score"
+msgstr "الحد الأدنى لنقاط المطابقة"
+
+msgid "Minimum score of suggestions to display"
+msgstr "الحد الأدنى لنقاط الاقتراحات المعروضة"
+
+msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
+msgstr "يمكن فصل عناوين البريد المتعددة بفواصل (,). عنوان البريد \"من\" هو دائماً بريد مدير ووردبريس الافتراضي:"
+
+msgid "Never Used"
+msgstr "لم يُستخدم أبداً"
+
+msgid "New Redirect Added Successfully!"
+msgstr "تمت إضافة إعادة التوجيه الجديدة بنجاح!"
+
+msgid "New major version => wait this many days. New minor version => automatically update about 3 days after the release date."
+msgstr "إصدار رئيسي جديد => انتظر هذا العدد من الأيام. إصدار فرعي جديد => تحديث تلقائي بعد حوالي 3 أيام من تاريخ الإصدار."
+
+msgid "No Captured 404 Records To Display"
+msgstr "لا توجد سجلات 404 ملتقطة للعرض"
+
+msgid "No Redirect Records To Display"
+msgstr "لا توجد سجلات إعادة توجيه للعرض"
+
+msgid "No Results To Display"
+msgstr "لا توجد نتائج للعرض"
+
+msgid "No suggestions. :/"
+msgstr "لا توجد اقتراحات. :/"
+
+msgid "No suggestions. :/ "
+msgstr "لا توجد اقتراحات. :/ "
+
+msgid "Note that including a bad regular expression or one that takes too long will break your website."
+msgstr "لاحظ أن تضمين تعبير نمطي سيء أو تعبير يستغرق وقتاً طويلاً سيعطل موقعك."
+
+msgid "Note: Do not include the parenthesis or explanations shown in the examples above."
+msgstr "ملاحظة: لا تضمن الأقواس أو الشروحات الموضحة في الأمثلة أعلاه."
+
+msgid "Note: Here is a list of all post types in the database:"
+msgstr "ملاحظة: إليك قائمة بجميع أنواع المنشورات في قاعدة البيانات:"
+
+msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the page links are only displayed for admin users."
+msgstr "ملاحظة: \"النقاط\" التي تظهر بصيغة \"(75.7576)\" بعد روابط الصفحات تُعرض فقط لمستخدمي الإدارة."
+
+msgid "OPTION_MIN_AUTO_SCORE"
+msgstr "OPTION_MIN_AUTO_SCORE"
+
+msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
+msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
+
+msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
+msgstr "سيتم إرسال بريد واحد يومياً (عند تشغيل الصيانة) حتى ينخفض عدد أخطاء 404 الملتقطة عن الرقم المحدد في إعدادات التنبيه."
+
+msgid "Only create an automatic redirect if the suggested page has a score above the specified number (default 90)"
+msgstr "أنشئ إعادة توجيه تلقائية فقط إذا كانت الصفحة المقترحة لديها نقاط أعلى من الرقم المحدد (الافتراضي 90)"
+
+msgid "Options"
+msgstr "الخيارات"
+
+msgid "Options Saved Successfully!"
+msgstr "تم حفظ الخيارات بنجاح!"
+
+msgid "Organize Later"
+msgstr "تنظيم لاحقاً"
+
+msgid "Page"
+msgstr "صفحة"
+
+msgid "Page Not Found Displayed"
+msgstr "تم عرض صفحة غير موجودة"
+
+msgid "Page Redirects"
+msgstr "إعادة توجيه الصفحات"
+
+msgid "Page suggestions title"
+msgstr "عنوان اقتراحات الصفحات"
+
+msgid "Pages listed here will not be redirected to"
+msgstr "لن يتم إعادة التوجيه إلى الصفحات المدرجة هنا"
+
+msgid "Permanent 301"
+msgstr "دائم 301"
+
+msgid "Plugin Admin Users"
+msgstr "مستخدمو إدارة الإضافة"
+
+msgid "Plugin version"
+msgstr "إصدار الإضافة"
+
+msgid "Purge Entries!"
+msgstr "تطهير الإدخالات!"
+
+msgid "Purge Options"
+msgstr "خيارات التطهير"
+
+msgid "Purge Type"
+msgstr "نوع التطهير"
+
+msgid "REDIRECT_TO_USER_FIELD_WARNING"
+msgstr "REDIRECT_TO_USER_FIELD_WARNING"
+
+msgid "Recognized Post Types"
+msgstr "أنواع المنشورات المعترف بها"
+
+msgid "Records imported: %s"
+msgstr "السجلات المستوردة: %s"
+
+msgid "Redirect"
+msgstr "إعادة توجيه"
+
+msgid "Redirect & Capture Logs"
+msgstr "سجلات إعادة التوجيه والالتقاط"
+
+msgid "Redirect Details"
+msgstr "تفاصيل إعادة التوجيه"
+
+msgid "Redirect Information Updated Successfully!"
+msgstr "تم تحديث معلومات إعادة التوجيه بنجاح!"
+
+msgid "Redirect Removed Successfully!"
+msgstr "تمت إزالة إعادة التوجيه بنجاح!"
+
+msgid "Redirect Type"
+msgstr "نوع إعادة التوجيه"
+
+msgid "Redirect Types"
+msgstr "أنواع إعادة التوجيه"
+
+msgid "Redirect all requests"
+msgstr "إعادة توجيه جميع الطلبات"
+
+msgid "Redirect all unhandled 404s to"
+msgstr "إعادة توجيه جميع أخطاء 404 غير المعالجة إلى"
+
+msgid "Redirect moved to trash successfully!"
+msgstr "تم نقل إعادة التوجيه إلى سلة المهملات بنجاح!"
+
+msgid "Redirect restored from trash successfully!"
+msgstr "تمت استعادة إعادة التوجيه من سلة المهملات بنجاح!"
+
+msgid "Redirect to"
+msgstr "إعادة التوجيه إلى"
+
+msgid "Redirected to"
+msgstr "تمت إعادة التوجيه إلى"
+
+msgid "Redirects"
+msgstr "إعادة التوجيه"
+
+msgid "Referrer"
+msgstr "المُحيل"
+
+msgid "RegEx"
+msgstr "RegEx"
+
+msgid "Regular Expression (Manually Created)"
+msgstr "تعبير نمطي (تم إنشاؤه يدوياً)"
+
+msgid "Remove Ignore Status"
+msgstr "إزالة حالة التجاهل"
+
+msgid "Remove Later Status"
+msgstr "إزالة حالة لاحقاً"
+
+msgid "Remove redirect upon matching permalink"
+msgstr "إزالة إعادة التوجيه عند مطابقة الرابط الثابت"
+
+msgid "Removed 404 URL from %s list successfully!"
+msgstr "تمت إزالة رابط 404 من قائمة %s بنجاح!"
+
+msgid "Removes automatically created redirects if they haven't been used for the specified amount of time. Does not affect manually created redirects."
+msgstr "يزيل إعادة التوجيه المنشأة تلقائياً إذا لم يتم استخدامها للفترة الزمنية المحددة. لا يؤثر على إعادة التوجيه المنشأة يدوياً."
+
+msgid "Required"
+msgstr "مطلوب"
+
+msgid "Restore"
+msgstr "استعادة"
+
+msgid "Rows per page:"
+msgstr "صفوف لكل صفحة:"
+
+msgid "Run Maintenance"
+msgstr "تشغيل الصيانة"
+
+msgid "Run maintenance to delete old data (etc).&nbsp;&nbsp;It is not necessary to run this manually, as it's done automatically on a daily basis."
+msgstr "شغّل الصيانة لحذف البيانات القديمة (إلخ).&nbsp;&nbsp;ليس من الضروري تشغيل هذا يدوياً، حيث يتم ذلك تلقائياً بشكل يومي."
+
+msgid "SELECTED_SUGGEST_CATS"
+msgstr "SELECTED_SUGGEST_CATS"
+
+msgid "SELECTED_SUGGEST_TAGS"
+msgstr "SELECTED_SUGGEST_TAGS"
+
+msgid "SELECTED_SUGGEST_URL"
+msgstr "SELECTED_SUGGEST_URL"
+
+msgid "SUGGEST_MAX_SUGGESTIONS"
+msgstr "SUGGEST_MAX_SUGGESTIONS"
+
+msgid "SUGGEST_MIN_SCORE"
+msgstr "SUGGEST_MIN_SCORE"
+
+msgid "SUGGEST_USER_AFTER"
+msgstr "SUGGEST_USER_AFTER"
+
+msgid "SUGGEST_USER_BEFORE"
+msgstr "SUGGEST_USER_BEFORE"
+
+msgid "SUGGEST_USER_ENTRY_AFTER"
+msgstr "SUGGEST_USER_ENTRY_AFTER"
+
+msgid "SUGGEST_USER_ENTRY_BEFORE"
+msgstr "SUGGEST_USER_ENTRY_BEFORE"
+
+msgid "SUGGEST_USER_NO_RESULTS"
+msgstr "SUGGEST_USER_NO_RESULTS"
+
+msgid "SUGGEST_USER_TITLE"
+msgstr "SUGGEST_USER_TITLE"
+
+msgid "Sanity Check"
+msgstr "فحص السلامة"
+
+msgid "Save Settings"
+msgstr "حفظ الإعدادات"
+
+msgid "Saving settings..."
+msgstr "جارٍ حفظ الإعدادات..."
+
+msgid "Section filters"
+msgstr "فلاتر الأقسام"
+
+msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
+msgstr "يجب ألا توضع وكلاء مستخدم محركات البحث هنا حتى يتم إعادة توجيهها عند تغيير بنية الرابط المختصر."
+
+msgid "Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "بما أنه يتم استخدام مجموعة التقاط، يمكنك استخدام استبدال $1 في سلسلة وجهة الرابط الخارجي."
+
+msgid "So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
+msgstr "لذا يرجى توخي الحذر واختبارها في مكان آخر قبل تجربتها هنا. إذا كنت لا تعرف ما تفعله، يرجى عدم استخدام هذا الخيار (لأنه ليس ضرورياً لعمل الإضافة)."
+
+msgid "Some options were not saved successfully."
+msgstr "لم يتم حفظ بعض الخيارات بنجاح."
+
+msgid "Special"
+msgstr "خاص"
+
+msgid "Stats"
+msgstr "الإحصائيات"
+
+msgid "Status"
+msgstr "الحالة"
+
+msgid "Suggestions"
+msgstr "الاقتراحات"
+
+msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
+msgstr "التنسيقات المدعومة هي: <B>from_url,status,type,to_url,wp_type</B>"
+
+msgid "TEXT_BEFORE_LINKS"
+msgstr "TEXT_BEFORE_LINKS"
+
+msgid "TEXT_CURRENT_PAGE"
+msgstr "TEXT_CURRENT_PAGE"
+
+msgid "TEXT_SHOW_ROWS"
+msgstr "TEXT_SHOW_ROWS"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
+msgstr "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_EMPTY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMPTY"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_EMTPY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMTPY"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_PAGE"
+msgstr "TOOLTIP_POPUP_EXPLANATION_PAGE"
+
+msgid "TOOLTIP_POPUP_EXPLANATION_URL"
+msgstr "TOOLTIP_POPUP_EXPLANATION_URL"
+
+msgid "Tag"
+msgstr "وسم"
+
+msgid "Tag:"
+msgstr "الوسم:"
+
+msgid "Tags"
+msgstr "الوسوم"
+
+msgid "Template Redirect Priority"
+msgstr "أولوية إعادة توجيه القالب"
+
+msgid "Temporary 302"
+msgstr "مؤقت 302"
+
+msgid "The \"product\" type is for WooCommerce users."
+msgstr "نوع \"product\" مخصص لمستخدمي WooCommerce."
+
+msgid "The 404 Solution menu should appear"
+msgstr "يجب أن تظهر قائمة 404 Solution"
+
+msgid "The file seems to have loaded okay. Please check the redirects page."
+msgstr "يبدو أن الملف تم تحميله بنجاح. يرجى التحقق من صفحة إعادة التوجيه."
+
+msgid "The plugin will only redirect the post types specified here."
+msgstr "ستعيد الإضافة توجيه أنواع المنشورات المحددة هنا فقط."
+
+msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
+msgstr "ستعيد الإضافة التوجيه إلى التصنيفات العادية (التصنيفات والوسوم) والتصنيفات المدرجة هنا."
+
+msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
+msgstr "يجب أن تحقق الصفحة المقترحة \"نقاط\" على الأقل هذا القدر لتظهر كاقتراح (الحد الأدنى: 10، الحد الأقصى: 90، الافتراضي: 25)"
+
+msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
+msgstr "لم يتم العثور على صفحة 404 المحددة من المستخدم. يرجى تحديث صفحة 404 المحددة من المستخدم في صفحة الخيارات."
+
+msgid "This cannot be undone. All redirects for URLs that do not already exist will be imported."
+msgstr "لا يمكن التراجع عن هذا. سيتم استيراد جميع عمليات إعادة التوجيه للروابط غير الموجودة بالفعل."
+
+msgid "This creates the list. For example, use &lt;ol style=\"list-style-type: none;\"&gt; to hide the numbers in the list. (defaults: &lt;ol&gt; / &lt;/ol&gt;)"
+msgstr "هذا ينشئ القائمة. على سبيل المثال، استخدم &lt;ol style=\"list-style-type: none;\"&gt; لإخفاء الأرقام في القائمة. (الافتراضي: &lt;ol&gt; / &lt;/ol&gt;)"
+
+msgid "This is best for internal processes that don't need to be redirected when the slug structure changes."
+msgstr "هذا الأفضل للعمليات الداخلية التي لا تحتاج إلى إعادة التوجيه عند تغيير بنية الرابط المختصر."
+
+msgid "This is best for search engine bots that do need to be redirected when the slug structure changes."
+msgstr "هذا الأفضل لروبوتات محركات البحث التي تحتاج إلى إعادة التوجيه عند تغيير بنية الرابط المختصر."
+
+msgid "This is for a domain name change."
+msgstr "هذا لتغيير اسم النطاق."
+
+msgid "This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
+msgstr "هذا عندما يطلب المستخدم صفحة غير موجودة ولا يتم إعادة توجيهه تلقائياً إلى صفحة مطابقة."
+
+msgid "This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin."
+msgstr "هذا ليس مطلوباً لعمل الإضافة، لكنه مفيد للمطور ولإصدارات الإضافة المستقبلية."
+
+msgid "This only affects the list of potential matches shown to the user on a custom 404 page."
+msgstr "هذا يؤثر فقط على قائمة المطابقات المحتملة المعروضة للمستخدم في صفحة 404 مخصصة."
+
+msgid "This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported)."
+msgstr "هذا يكشف: كل شيء في سجل التصحيح، عنوان بريد المدير، إضافات PHP المثبتة، الإضافات النشطة، إصدار PHP، إصدار ووردبريس، إصدار MySQL، إجمالي الصفحات والمقالات المنشورة، إلخ. (كل ما يُطلب عند الإبلاغ عن مشكلة)."
+
+msgid "This sets how early in the process a 404 is handled by this plugin. If there are multiple plugins that should handle a 404, then set this higher (999) so that this plugin gets the 404 last. (default 9)"
+msgstr "هذا يحدد مدى مبكرية معالجة هذه الإضافة لخطأ 404. إذا كانت هناك إضافات متعددة يجب أن تعالج خطأ 404، فاضبط هذا أعلى (999) حتى تحصل هذه الإضافة على خطأ 404 أخيراً. (الافتراضي 9)"
+
+msgid "This shortcode can be used on the 404 page and will display a list of suggested pages."
+msgstr "يمكن استخدام هذا الكود المختصر في صفحة 404 وسيعرض قائمة بالصفحات المقترحة."
+
+msgid "This surrounds each item in the list. (defaults: &lt;li&gt; / &lt;/li&gt;)"
+msgstr "هذا يحيط بكل عنصر في القائمة. (الافتراضي: &lt;li&gt; / &lt;/li&gt;)"
+
+msgid "This text will appear before the list of suggestions (default: &lt;h3&gt;Here are some other great pages&lt;/h3&gt;)"
+msgstr "سيظهر هذا النص قبل قائمة الاقتراحات (الافتراضي: &lt;h3&gt;إليك بعض الصفحات الرائعة الأخرى&lt;/h3&gt;)"
+
+msgid "This will break your website."
+msgstr "هذا سيعطل موقعك."
+
+msgid "This will not change the URL if the destination 404 page is set to (Default 404 Page) or Home Page."
+msgstr "لن يتغير الرابط إذا تم تعيين صفحة 404 الوجهة إلى (صفحة 404 الافتراضية) أو الصفحة الرئيسية."
+
+msgid "Tools"
+msgstr "الأدوات"
+
+msgid "Total Redirects"
+msgstr "إجمالي إعادة التوجيه"
+
+msgid "Total URLs"
+msgstr "إجمالي الروابط"
+
+msgid "Trash"
+msgstr "سلة المهملات"
+
+msgid "Trash Redirected URL"
+msgstr "حذف الرابط المعاد توجيهه"
+
+msgid "Trashed Redirects"
+msgstr "إعادة التوجيه المحذوفة"
+
+msgid "Trashed URLs"
+msgstr "الروابط المحذوفة"
+
+msgid "Treat this URL as a regular expression"
+msgstr "معاملة هذا الرابط كتعبير نمطي"
+
+msgid "Type"
+msgstr "النوع"
+
+msgid "Type a page name here and select it to add it to the exlusion list"
+msgstr "اكتب اسم صفحة هنا واخترها لإضافتها إلى قائمة الاستبعاد"
+
+msgid "URL"
+msgstr "الرابط"
+
+msgid "URL(s) deleted"
+msgstr "تم حذف الرابط(الروابط)"
+
+msgid "URL(s) marked as Captured."
+msgstr "تم وضع علامة على الرابط(الروابط) كملتقط."
+
+msgid "URL(s) marked as Ignored."
+msgstr "تم وضع علامة على الرابط(الروابط) كمتجاهل."
+
+msgid "URL(s) marked as Later."
+msgstr "تم وضع علامة على الرابط(الروابط) كلاحقاً."
+
+msgid "URL(s) moved to trash"
+msgstr "تم نقل الرابط(الروابط) إلى سلة المهملات"
+
+msgid "URL(s) restored."
+msgstr "تمت استعادة الرابط(الروابط)."
+
+msgid "URLs"
+msgstr "الروابط"
+
+msgid "Under the Settings menu"
+msgstr "تحت قائمة الإعدادات"
+
+msgid "Unique Page Not Found Referrers"
+msgstr "المُحيلين الفريدين لصفحة غير موجودة"
+
+msgid "Unique Page Not Found URLs"
+msgstr "روابط صفحة غير موجودة الفريدة"
+
+msgid "Unique Page Not Found Visitors"
+msgstr "الزوار الفريدين لصفحة غير موجودة"
+
+msgid "Unique Redirected Referrers"
+msgstr "المُحيلين الفريدين المعاد توجيههم"
+
+msgid "Unique Redirected Visitors"
+msgstr "الزوار الفريدين المعاد توجيههم"
+
+msgid "Unique URLs Redirected"
+msgstr "الروابط الفريدة المعاد توجيهها"
+
+msgid "Unknown"
+msgstr "غير معروف"
+
+msgid "Update Redirect"
+msgstr "تحديث إعادة التوجيه"
+
+msgid "Update the URL bar"
+msgstr "تحديث شريط الرابط"
+
+msgid "Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
+msgstr "استخدم سطراً واحداً لكل وكيل مستخدم. إذا تم العثور على النص في أي مكان في سلسلة وكيل المستخدم فإنه ينطبق."
+
+msgid "User"
+msgstr "المستخدم"
+
+msgid "User names listed here will be able to do everything an admin can do with the plugin."
+msgstr "ستتمكن أسماء المستخدمين المدرجة هنا من فعل كل ما يمكن للمدير فعله مع الإضافة."
+
+msgid "Using the purge options will move all selected redirects to the trash. You must then empty the trash to delete them."
+msgstr "استخدام خيارات التطهير سينقل جميع عمليات إعادة التوجيه المحددة إلى سلة المهملات. يجب عليك بعد ذلك إفراغ سلة المهملات لحذفها."
+
+msgid "View logs for"
+msgstr "عرض السجلات لـ"
+
+msgid "Visit"
+msgstr "زيارة"
+
+msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
+msgstr "تحذير: عند الاستخدام الخاطئ سيعطل هذا موقعك. استخدم على مسؤوليتك الخاصة. من فضلك، اترك هذا فارغاً إذا كنت لا تعرف ما تفعله."
+
+msgid "When an error is detected by the plugin, email the entire log file to the developer."
+msgstr "عند اكتشاف خطأ بواسطة الإضافة، أرسل ملف السجل الكامل بالبريد الإلكتروني إلى المطور."
+
+msgid "When checked the URL will be changed from the custom 404 page URL to the URL originally requested (after the page headers load)."
+msgstr "عند التحديد، سيتم تغيير الرابط من رابط صفحة 404 المخصصة إلى الرابط المطلوب أصلاً (بعد تحميل ترويسات الصفحة)."
+
+msgid "When checked, the text is treated as a regular expression."
+msgstr "عند التحديد، يُعامل النص كتعبير نمطي."
+
+msgid "When selected, ALL REQUESTS (even for pages that exist, even for non-404s) will be treated like a 404."
+msgstr "عند التحديد، سيتم معاملة جميع الطلبات (حتى للصفحات الموجودة، حتى لغير أخطاء 404) كخطأ 404."
+
+msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here."
+msgstr "عندما يتسبب عدد أخطاء 404 الملتقطة في إشعار المدير، سيتم إرسال بريد إلكتروني إلى العناوين المحددة هنا."
+
+msgid "You can see which are recognized by looking at the default 404 destination option."
+msgstr "يمكنك معرفة أيها معترف به بالنظر إلى خيار وجهة 404 الافتراضية."
+
+msgid "You can see which post types are recognized by looking at the default 404 destination option, which has a list of pages, posts, products, etc."
+msgstr "يمكنك معرفة أنواع المنشورات المعترف بها بالنظر إلى خيار وجهة 404 الافتراضية، الذي يحتوي على قائمة بالصفحات والمقالات والمنتجات، إلخ."
+
+msgid "add-exclude-page-data-url"
+msgstr "add-exclude-page-data-url"
+
+msgid "addManualRedirectAction"
+msgstr "addManualRedirectAction"
+
+msgid "ajaxTrashLink"
+msgstr "ajaxTrashLink"
+
+msgid "and <B>from_url,to_url</B>"
+msgstr "و <B>from_url,to_url</B>"
+
+msgid "and redirect to the specified page."
+msgstr "وإعادة التوجيه إلى الصفحة المحددة."
+
+msgid "bulkOptions"
+msgstr "bulkOptions"
+
+msgid "data-pagination-ajax-url"
+msgstr "data-pagination-ajax-url"
+
+msgid "data-url"
+msgstr "data-url"
+
+msgid "days (0 means immediately, default 30)"
+msgstr "أيام (0 تعني فوراً، الافتراضي 30)"
+
+msgid "deletePermanentlyHTML"
+msgstr "deletePermanentlyHTML"
+
+msgid "destination-does-not-exist"
+msgstr "destination-does-not-exist"
+
+msgid "destination-exists"
+msgstr "destination-exists"
+
+msgid "disallow-redirect-all-requests"
+msgstr "disallow-redirect-all-requests"
+
+msgid "earliestLogDate"
+msgstr "earliestLogDate"
+
+msgid "editLink"
+msgstr "editLink"
+
+msgid "editlinkHTML"
+msgstr "editlinkHTML"
+
+msgid "filterText"
+msgstr "filterText"
+
+msgid "is maintained by"
+msgstr "تتم صيانته بواسطة"
+
+msgid "loaded-excluded-pages"
+msgstr "loaded-excluded-pages"
+
+msgid "logCurrentRowCount"
+msgstr "logCurrentRowCount"
+
+msgid "logCurrentSizeDiskUsage"
+msgstr "logCurrentSizeDiskUsage"
+
+msgid "logslinkHTML"
+msgstr "logslinkHTML"
+
+msgid "of"
+msgstr "من"
+
+msgid "pageIDAndType"
+msgstr "pageIDAndType"
+
+msgid "postedURL"
+msgstr "postedURL"
+
+msgid "redirectPageTitle"
+msgstr "redirectPageTitle"
+
+msgid "rowActions"
+msgstr "rowActions"
+
+msgid "rowClass"
+msgstr "rowClass"
+
+msgid "rowCode"
+msgstr "rowCode"
+
+msgid "rowURL"
+msgstr "rowURL"
+
+msgid "selecteSsettingsLevel"
+msgstr "selecteSsettingsLevel"
+
+msgid "selectedAutoCats"
+msgstr "selectedAutoCats"
+
+msgid "selectedAutoRedirects"
+msgstr "selectedAutoRedirects"
+
+msgid "selectedAutoTags"
+msgstr "selectedAutoTags"
+
+msgid "selectedCapture404"
+msgstr "selectedCapture404"
+
+msgid "selectedDefaultRedirect301"
+msgstr "selectedDefaultRedirect301"
+
+msgid "selectedDefaultRedirect302"
+msgstr "selectedDefaultRedirect302"
+
+msgid "selectedRemoveMatches"
+msgstr "selectedRemoveMatches"
+
+msgid "selectedSendErrorLogs"
+msgstr "selectedSendErrorLogs"
+
+msgid "selectedThemeCalm"
+msgstr "selectedThemeCalm"
+
+msgid "selectedThemeMono"
+msgstr "selectedThemeMono"
+
+msgid "selectedThemeNeon"
+msgstr "selectedThemeNeon"
+
+msgid "selectedThemeObsidian"
+msgstr "selectedThemeObsidian"
+
+msgid "selectedUnderSettings"
+msgstr "selectedUnderSettings"
+
+msgid "showSearchFilter"
+msgstr "showSearchFilter"
+
+msgid "statusTitle"
+msgstr "statusTitle"
+
+msgid "toolsExportRedirectsLink"
+msgstr "toolsExportRedirectsLink"
+
+msgid "toolsImportFormActionLink"
+msgstr "toolsImportFormActionLink"
+
+msgid "toolsImportRedirectsLink"
+msgstr "toolsImportRedirectsLink"
+
+msgid "toolsMaintenanceFormActionLink"
+msgstr "toolsMaintenanceFormActionLink"
+
+msgid "toolsPurgeFormActionLink"
+msgstr "toolsPurgeFormActionLink"
+
+msgid "urlPlaceholder"
+msgstr "urlPlaceholder"
+
+msgid "will match any URL that begins with"
+msgstr "سيطابق أي رابط يبدأ بـ"
+
+#. Plural form with HTML
+#: includes/View.php
+msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
+msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
+msgstr[0] "لا توجد <a>روابط 404 ملتقطة</a> للمعالجة."
+msgstr[1] "يوجد <a>رابط 404 ملتقط واحد (%s)</a> يحتاج للمعالجة."
+msgstr[2] "يوجد <a>رابطان 404 ملتقطان (%s)</a> يحتاجان للمعالجة."
+msgstr[3] "توجد <a>%s روابط 404 ملتقطة</a> تحتاج للمعالجة."
+msgstr[4] "يوجد <a>%s رابط 404 ملتقط</a> يحتاج للمعالجة."
+msgstr[5] "يوجد <a>%s رابط 404 ملتقط</a> يحتاج للمعالجة."
+
+#. Plural form with %s
+#: includes/DataAccess.php
+msgid "%s redirect entry was moved to the trash."
+msgid_plural "%s redirect entries were moved to the trash."
+msgstr[0] "لم يتم نقل أي إدخال إعادة توجيه إلى سلة المهملات."
+msgstr[1] "تم نقل إدخال إعادة توجيه واحد (%s) إلى سلة المهملات."
+msgstr[2] "تم نقل إدخالي إعادة توجيه (%s) إلى سلة المهملات."
+msgstr[3] "تم نقل %s إدخالات إعادة توجيه إلى سلة المهملات."
+msgstr[4] "تم نقل %s إدخال إعادة توجيه إلى سلة المهملات."
+msgstr[5] "تم نقل %s إدخال إعادة توجيه إلى سلة المهملات."
+
+
+#: includes/DatabaseUpgradesEtc.php:119
+msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
+msgstr "404 Solution: يتم بناء ذاكرة التدقيق الإملائي N-gram في الخلفية لتحسين الأداء. قد يستغرق هذا بضع دقائق على المواقع الكبيرة."
+
+#: includes/DatabaseUpgradesEtc.php:125
+msgid "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."
+msgstr "404 Solution: يتم بناء ذاكرة التدقيق الإملائي N-gram في الخلفية%s لتحسين الأداء. قد يستغرق هذا بضع دقائق على المواقع الكبيرة."
+
+#: includes/DatabaseUpgradesEtc.php:123
+msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
+msgstr "404 Solution: تم بناء ذاكرة N-gram لـ %d صفحة لتحسين أداء التدقيق الإملائي."
+
+#: includes/DatabaseUpgradesEtc.php:140
+msgid "Before deactivating:"
+msgstr "قبل إلغاء التفعيل:"
+
+msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
+msgstr "اختر ما يجب أن يحدث لبياناتك. سيتم حفظ هذه التفضيلات لاحقاً إذا قررت حذف الإضافة."
+
+msgid "What should happen to your data?"
+msgstr "ماذا يجب أن يحدث لبياناتك؟"
+
+msgid "Keep my redirects (%d redirects)"
+msgstr "الاحتفاظ بإعادة التوجيه الخاصة بي (%d إعادة توجيه)"
+
+msgid "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
+msgstr "حدد هذا إذا كنت تخطط لإعادة تثبيت الإضافة لاحقاً. سيتم الاحتفاظ بإعدادات إعادة التوجيه الخاصة بك."
+
+msgid "Keep 404 logs"
+msgstr "الاحتفاظ بسجلات 404"
+
+msgid "Historical 404 data and logs will be preserved if checked."
+msgstr "سيتم الاحتفاظ ببيانات 404 التاريخية والسجلات إذا تم التحديد."
+
+msgid "Note: Cache tables will always be deleted as they can be rebuilt."
+msgstr "ملاحظة: سيتم حذف جداول الذاكرة المؤقتة دائماً لأنه يمكن إعادة بنائها."
+
+msgid "Why are you deactivating? (Optional)"
+msgstr "لماذا تلغي التفعيل؟ (اختياري)"
+
+msgid "Temporary deactivation for debugging"
+msgstr "إلغاء تفعيل مؤقت للتصحيح"
+
+msgid "The plugin is not working as expected"
+msgstr "الإضافة لا تعمل كما هو متوقع"
+
+msgid "I found a better plugin"
+msgstr "وجدت إضافة أفضل"
+
+msgid "I no longer need this functionality"
+msgstr "لم أعد بحاجة لهذه الوظيفة"
+
+msgid "Too complicated to configure"
+msgstr "معقدة جداً للتكوين"
+
+msgid "Performance issues"
+msgstr "مشاكل في الأداء"
+
+msgid "Other reason"
+msgstr "سبب آخر"
+
+msgid "Help us improve (Optional)"
+msgstr "ساعدنا على التحسين (اختياري)"
+
+msgid "Help improve the plugin (Optional)"
+msgstr "ساعد في تحسين الإضافة (اختياري)"
+
+msgid "Share why you're deactivating. Your feedback helps us improve."
+msgstr "شارك سبب إلغاء التفعيل. ملاحظاتك تساعدنا على التحسين."
+
+
+msgid "Email Feedback & Deactivate"
+msgstr "إرسال الملاحظات وإلغاء التفعيل"
+
+msgid "Send feedback to help improve the plugin"
+msgstr "إرسال ملاحظات للمساعدة في تحسين الإضافة"
+
+msgid "Your email (optional):"
+msgstr "بريدك الإلكتروني (اختياري):"
+
+msgid "your@email.com (optional)"
+msgstr "your@email.com (اختياري)"
+
+msgid "Additional details:"
+msgstr "تفاصيل إضافية:"
+
+msgid "Please share any additional feedback..."
+msgstr "يرجى مشاركة أي ملاحظات إضافية..."
+
+msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
+msgstr "ملاحظاتك تساعدنا على التحسين. نحن نحترم خصوصيتك ولن نشارك معلوماتك."
+
+msgid "Insufficient permissions"
+msgstr "صلاحيات غير كافية"
+
+msgid "Could not save preferences. Your choices may not be preserved."
+msgstr "تعذر حفظ التفضيلات. قد لا يتم الاحتفاظ باختياراتك."
+
+msgid "Preferences saved successfully"
+msgstr "تم حفظ التفضيلات بنجاح"
+
+msgid "Failed to save preferences"
+msgstr "فشل حفظ التفضيلات"
+
+msgid "N-gram cache rebuild is already in progress. Please wait for it to complete."
+msgstr "إعادة بناء ذاكرة N-gram قيد التقدم بالفعل. يرجى الانتظار حتى الاكتمال."
+
+msgid "Error rebuilding N-gram cache: %s"
+msgstr "خطأ في إعادة بناء ذاكرة N-gram: %s"
+
+msgid "N-gram cache rebuilt successfully: %d total entries processed (%d posts/pages, %d categories, %d tags), %d successful, %d failed."
+msgstr "تمت إعادة بناء ذاكرة N-gram بنجاح: تمت معالجة %d إدخال إجمالي (%d مقالة/صفحة، %d تصنيف، %d وسم)، %d ناجح، %d فاشل."
+
+msgid "Spelling cache cleared successfully."
+msgstr "تم مسح ذاكرة التدقيق الإملائي بنجاح."
+
+msgid "Cache Management"
+msgstr "إدارة الذاكرة المؤقتة"
+
+msgid "N-gram Cache"
+msgstr "ذاكرة N-gram"
+
+msgid "Rebuild the N-gram spell checker cache. This optimizes 404 URL matching performance. May take several minutes on large sites."
+msgstr "إعادة بناء ذاكرة المدقق الإملائي N-gram. هذا يحسن أداء مطابقة روابط 404. قد يستغرق عدة دقائق على المواقع الكبيرة."
+
+msgid "Rebuild N-gram Cache"
+msgstr "إعادة بناء ذاكرة N-gram"
+
+msgid "Spelling Cache"
+msgstr "ذاكرة التدقيق الإملائي"
+
+msgid "Clear the spelling cache to force recalculation of URL matches. Useful after making significant content changes."
+msgstr "مسح ذاكرة التدقيق الإملائي لإجبار إعادة حساب مطابقات الروابط. مفيد بعد إجراء تغييرات كبيرة على المحتوى."
+
+msgid "Clear Spelling Cache"
+msgstr "مسح ذاكرة التدقيق الإملائي"
+
+msgid "Disable automatic dark mode detection"
+msgstr "تعطيل الكشف التلقائي عن الوضع الداكن"
+
+msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
+msgstr "عندما يكون غير محدد والسمة مضبوطة على \"افتراضي\"، ستتحول الإضافة تلقائياً إلى السمة الداكنة إذا كان نظام ألوان مدير ووردبريس داكناً (Midnight، Ectoplasm، Coffee)، أو إذا كان لديك إضافة وضع داكن مفعلة، أو إذا كان متصفحك/نظامك يفضل الوضع الداكن."
+
+msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
+msgstr "ملاحظاتك تساعدنا على التحسين. سيتم تضمين معلومات النظام (إصدار ووردبريس، إصدار PHP، الإضافات المثبتة). نحن نحترم خصوصيتك ولن نشارك معلوماتك."
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
+msgstr "إعادة بناء ذاكرة N-gram مجدولة بالفعل أو قيد التقدم. يرجى الانتظار حتى الاكتمال."
+
+#: includes/PluginLogic.php
+msgid "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
+msgstr "تمت جدولة إعادة بناء ذاكرة N-gram وستعمل في الخلفية. قد يستغرق هذا عدة دقائق على المواقع الكبيرة. يمكنك الاستمرار في استخدام الإضافة بشكل طبيعي."
+
+#: includes/PluginLogic.php
+msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
+msgstr "فشلت جدولة إعادة بناء ذاكرة N-gram. يرجى المحاولة مرة أخرى أو التحقق من تكوين cron في ووردبريس."
+
+msgid "Plugin Language Override"
+msgstr "تجاوز لغة الإضافة"
+
+msgid "Use WordPress Default"
+msgstr "استخدام افتراضي ووردبريس"
+
+msgid "Override the language used for this plugin's admin interface. Leave on \"Use WordPress Default\" to respect WordPress and user language settings."
+msgstr "تجاوز اللغة المستخدمة لواجهة إدارة هذه الإضافة. اترك على \"استخدام افتراضي ووردبريس\" لاحترام إعدادات لغة ووردبريس والمستخدم."
+
+#: includes/PluginLogic.php
+msgid "Error: Invalid language selected"
+msgstr "خطأ: تم اختيار لغة غير صالحة"
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When an error is detected by the plugin, email the entire log file to the developer. This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). Log files are checked daily when maintenance is run."
+msgstr "عند اكتشاف خطأ بواسطة الإضافة، أرسل ملف السجل الكامل بالبريد الإلكتروني إلى المطور. هذا ليس مطلوباً لعمل الإضافة، لكنه مفيد للمطور ولإصدارات الإضافة المستقبلية. هذا يكشف: كل شيء في سجل التصحيح، عنوان بريد المدير، إضافات PHP المثبتة، الإضافات النشطة، إصدار PHP، إصدار ووردبريس، إصدار MySQL، إجمالي الصفحات والمقالات المنشورة، إلخ. (كل ما يُطلب عند الإبلاغ عن مشكلة). يتم فحص ملفات السجل يومياً عند تشغيل الصيانة."
+
+#: includes/html/viewSuggestions.html
+msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
+msgstr "عرض الصفحات الأكثر تطابقاً باستخدام الكود المختصر [abj404_solution_page_suggestions]."
+
+#: includes/html/viewSuggestions.html
+msgid "This shortcode can be used on the 404 page and will display a list of suggested pages. This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
+msgstr "يمكن استخدام هذا الكود المختصر في صفحة 404 وسيعرض قائمة بالصفحات المقترحة. هذا عندما يطلب المستخدم صفحة غير موجودة ولا يتم إعادة توجيهه تلقائياً إلى صفحة مطابقة."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for search engine bots that do need to be redirected when the slug structure changes. Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
+msgstr "هذا الأفضل لروبوتات محركات البحث التي تحتاج إلى إعادة التوجيه عند تغيير بنية الرابط المختصر. استخدم سطراً واحداً لكل وكيل مستخدم. إذا تم العثور على النص في أي مكان في سلسلة وكيل المستخدم فإنه ينطبق."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
+msgid "This is best for internal processes that don't need to be redirected when the slug structure changes. Search engine user agents should not go here so that they will be redirected when the slug structure changes."
+msgstr "هذا الأفضل للعمليات الداخلية التي لا تحتاج إلى إعادة التوجيه عند تغيير بنية الرابط المختصر. يجب ألا توضع وكلاء مستخدم محركات البحث هنا حتى يتم إعادة توجيهها عند تغيير بنية الرابط المختصر."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedContent.html
+msgid "Pages listed here will not be redirected to (unless a redirect to the page already exists)."
+msgstr "لن يتم إعادة التوجيه إلى الصفحات المدرجة هنا (ما لم تكن إعادة التوجيه إلى الصفحة موجودة بالفعل)."
+
+#: includes/html/settingsAdvanced.html
+msgid "The plugin will only redirect the post types specified here. Default WordPress post types are \"post\" and \"page.\" The \"product\" type is for WooCommerce users."
+msgstr "ستعيد الإضافة توجيه أنواع المنشورات المحددة هنا فقط. أنواع المنشورات الافتراضية في ووردبريس هي \"مقالة\" و\"صفحة\". نوع \"product\" مخصص لمستخدمي WooCommerce."
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
+msgstr "عندما يتسبب عدد أخطاء 404 الملتقطة في إشعار المدير، سيتم إرسال بريد إلكتروني إلى العناوين المحددة هنا. يمكن فصل عناوين البريد المتعددة بفواصل (,). عنوان البريد \"من\" هو دائماً بريد مدير ووردبريس الافتراضي:"
+
+#: includes/UninstallModal.php
+msgid "Deactivate without feedback"
+msgstr "إلغاء التفعيل بدون ملاحظات"
+
+#: includes/UninstallModal.php
+msgid "Processing..."
+msgstr "جارٍ المعالجة..."
+
+#: includes/UninstallModal.php
+msgid "Before deactivating, choose what happens to your data:"
+msgstr "قبل إلغاء التفعيل، اختر ما يحدث لبياناتك:"
+
+#: includes/UninstallModal.php
+msgid "Keep my redirects (%d)"
+msgstr "الاحتفاظ بإعادة التوجيه الخاصة بي (%d)"
+
+#: includes/UninstallModal.php
+msgid "— saves them for later if you reinstall"
+msgstr "— يحفظها لاحقاً إذا أعدت التثبيت"
+
+#: includes/UninstallModal.php
+msgid "— historical data preserved"
+msgstr "— يتم الاحتفاظ بالبيانات التاريخية"
+
+#: includes/UninstallModal.php
+msgid "Cache tables are always deleted (can be rebuilt)"
+msgstr "يتم حذف جداول الذاكرة المؤقتة دائماً (يمكن إعادة بنائها)"
+
+#: includes/UninstallModal.php
+msgid "What specifically isn't working?"
+msgstr "ما الذي لا يعمل تحديداً؟"
+
+#: includes/UninstallModal.php
+msgid "Redirects not triggering/working"
+msgstr "إعادة التوجيه لا تعمل"
+
+#: includes/UninstallModal.php
+msgid "Settings not saving"
+msgstr "الإعدادات لا تُحفظ"
+
+#: includes/UninstallModal.php
+msgid "Admin pages showing errors"
+msgstr "صفحات الإدارة تظهر أخطاء"
+
+#: includes/UninstallModal.php
+msgid "Suggestions not appearing"
+msgstr "الاقتراحات لا تظهر"
+
+#: includes/UninstallModal.php
+msgid "Conflicts with other plugins"
+msgstr "تعارضات مع إضافات أخرى"
+
+#: includes/UninstallModal.php
+msgid "Other issue (please specify below)"
+msgstr "مشكلة أخرى (يرجى التحديد أدناه)"
+
+#: includes/UninstallModal.php
+msgid "What type of performance issue?"
+msgstr "ما نوع مشكلة الأداء؟"
+
+#: includes/UninstallModal.php
+msgid "Slow admin dashboard"
+msgstr "لوحة تحكم بطيئة"
+
+#: includes/UninstallModal.php
+msgid "Slow frontend page loads"
+msgstr "تحميل بطيء للصفحات الأمامية"
+
+#: includes/UninstallModal.php
+msgid "High database usage"
+msgstr "استخدام عالٍ لقاعدة البيانات"
+
+#: includes/UninstallModal.php
+msgid "Memory issues"
+msgstr "مشاكل في الذاكرة"
+
+#: includes/UninstallModal.php
+msgid "Other (please specify below)"
+msgstr "أخرى (يرجى التحديد أدناه)"
+
+#: includes/UninstallModal.php
+msgid "What was confusing?"
+msgstr "ما الذي كان مربكاً؟"
+
+#: includes/UninstallModal.php
+msgid "Settings are confusing"
+msgstr "الإعدادات مربكة"
+
+#: includes/UninstallModal.php
+msgid "Too many options"
+msgstr "خيارات كثيرة جداً"
+
+#: includes/UninstallModal.php
+msgid "Unclear documentation"
+msgstr "توثيق غير واضح"
+
+#: includes/UninstallModal.php
+msgid "Which plugin are you switching to?"
+msgstr "إلى أي إضافة تنتقل؟"
+
+#: includes/UninstallModal.php
+msgid "Plugin name (optional)"
+msgstr "اسم الإضافة (اختياري)"
+
+#: includes/UninstallModal.php
+msgid "Please tell us more (optional):"
+msgstr "يرجى إخبارنا المزيد (اختياري):"
+
+#: includes/UninstallModal.php
+msgid "What's your reason for deactivating?"
+msgstr "ما سبب إلغاء التفعيل؟"
+
+#: includes/UninstallModal.php
+msgid "Additional details (optional):"
+msgstr "تفاصيل إضافية (اختياري):"
+
+#: includes/UninstallModal.php
+msgid "Any other information about the issue..."
+msgstr "أي معلومات أخرى حول المشكلة..."
+
+#: includes/UninstallModal.php
+msgid "For follow-up if needed"
+msgstr "للمتابعة إذا لزم الأمر"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (system info + sanitized log excerpt) to help diagnose the issue"
+msgstr "تضمين التفاصيل التقنية (معلومات النظام + مقتطف سجل معقم) للمساعدة في تشخيص المشكلة"
+
+#: includes/UninstallModal.php
+msgid "Feedback could not be sent."
+msgstr "تعذر إرسال الملاحظات."
+
+msgid "Collect incoming 404 URLs"
+msgstr "جمع روابط 404 الواردة"
+
+msgid "Calm Ops (Light)"
+msgstr "عمليات هادئة (فاتح)"
+
+msgid "Monochrome Minimal (Light)"
+msgstr "أحادي اللون بسيط (فاتح)"
+
+msgid "Neon Slate (Dark)"
+msgstr "نيون رمادي (داكن)"
+
+msgid "Obsidian Blue (Dark)"
+msgstr "أزرق سبج (داكن)"
+
+#: includes/ajax/SettingsModeToggle.php
+msgid "Invalid security token"
+msgstr "رمز أمان غير صالح"
+
+msgid "Unauthorized"
+msgstr "غير مصرح"
+
+msgid "Invalid mode"
+msgstr "وضع غير صالح"
+
+msgid "Settings mode updated"
+msgstr "تم تحديث وضع الإعدادات"
+
+msgid "Failed to update settings mode"
+msgstr "فشل تحديث وضع الإعدادات"
+#: includes/View.php - Simple/Advanced Mode Toggle
+msgid "Simple Mode"
+msgstr "الوضع البسيط"
+
+msgid "Advanced Mode"
+msgstr "الوضع المتقدم"
+
+msgid "Simple Mode shows essential options only. Switch to Advanced Mode for full configuration."
+msgstr "الوضع البسيط يعرض الخيارات الأساسية فقط. انتقل إلى الوضع المتقدم للتكوين الكامل."
+
+msgid "Advanced Mode shows all options. Switch to Simple Mode for a streamlined view."
+msgstr "الوضع المتقدم يعرض جميع الخيارات. انتقل إلى الوضع البسيط لعرض مبسط."
+
+msgid "Default (Follows WordPress)"
+msgstr "افتراضي (يتبع ووردبريس)"
+
+msgid "Core Settings"
+msgstr "الإعدادات الأساسية"
+
+msgid "404 Capture"
+msgstr "التقاط 404"
+
+msgid "Default 404 destination"
+msgstr "وجهة 404 الافتراضية"
+
+msgid "Where to send visitors when a 404 error occurs"
+msgstr "أين ترسل الزوار عند حدوث خطأ 404"
+
+msgid "Automatically redirect 404s to similar pages when a good match is found"
+msgstr "إعادة توجيه أخطاء 404 تلقائياً إلى صفحات مشابهة عند العثور على تطابق جيد"
+
+msgid "Redirect type"
+msgstr "نوع إعادة التوجيه"
+
+msgid "301 for SEO, 302 for temporary changes"
+msgstr "301 لـ SEO، 302 للتغييرات المؤقتة"
+
+msgid "Log 404 errors so you can review and fix them"
+msgstr "تسجيل أخطاء 404 حتى تتمكن من مراجعتها وإصلاحها"
+
+msgid "Delete captured URLs after"
+msgstr "حذف الروابط الملتقطة بعد"
+
+msgid "days"
+msgstr "أيام"
+
+msgid "Auto-remove old 404 records (0 to keep forever)"
+msgstr "إزالة سجلات 404 القديمة تلقائياً (0 للاحتفاظ للأبد)"
+
+msgid "Notify me when captured URLs exceed"
+msgstr "أعلمني عندما تتجاوز الروابط الملتقطة"
+
+msgid "Show admin notice when 404 count gets high (0 to disable)"
+msgstr "إظهار إشعار المدير عندما يرتفع عدد 404 (0 للتعطيل)"
+
+msgid "Maximum log storage"
+msgstr "الحد الأقصى لتخزين السجل"
+
+msgid "Oldest logs are deleted when this limit is reached"
+msgstr "يتم حذف أقدم السجلات عند الوصول لهذا الحد"
+
+msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
+msgstr "تحتاج المزيد من التحكم؟ انتقل إلى الوضع المتقدم للحصول على 30+ خيار إضافي."
+
+msgid "Need more control?"
+msgstr "تحتاج المزيد من التحكم؟"
+
+msgid "Switch to Advanced Mode"
+msgstr "التبديل إلى الوضع المتقدم"
+
+msgid "for 30+ additional options."
+msgstr "للحصول على 30+ خيار إضافي."
+
+msgid "Statistics"
+msgstr "الإحصائيات"
+
+msgid "Example:"
+msgstr "مثال:"
+
+msgid "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "/events/(.+) سيطابق أي رابط يبدأ بـ /events/ ويعيد التوجيه إلى الصفحة المحددة. بما أنه يتم استخدام مجموعة التقاط، يمكنك استخدام استبدال $1 في سلسلة وجهة الرابط الخارجي."
+
+msgid "URLs to redirect"
+msgstr "روابط لإعادة التوجيه"
+
+msgid "Captured"
+msgstr "ملتقط"
+
+msgid "Ignored"
+msgstr "متجاهل"
+
+msgid "Later"
+msgstr "لاحقاً"
+
+msgid "Type to filter URLs... (press Enter)"
+msgstr "اكتب لتصفية الروابط... (اضغط Enter)"
+
+msgid "Are you sure you want to permanently delete all items in trash?"
+msgstr "هل أنت متأكد من أنك تريد حذف جميع العناصر في سلة المهملات نهائياً؟"
+
+msgid "selected"
+msgstr "محدد"
+
+msgid "Mark Captured"
+msgstr "وضع علامة ملتقط"
+
+msgid "Mark Ignored"
+msgstr "وضع علامة متجاهل"
+
+msgid "Move to Trash"
+msgstr "نقل إلى سلة المهملات"
+
+msgid "Create Redirect"
+msgstr "إنشاء إعادة توجيه"
+
+msgid "Clear"
+msgstr "مسح"
+
+msgid "Never"
+msgstr "أبداً"
+
+msgid "Captured 404 URL"
+msgstr "رابط 404 ملتقط"
+
+msgid "Ignored URL - will not be suggested"
+msgstr "رابط متجاهل - لن يتم اقتراحه"
+
+msgid "Edit"
+msgstr "تعديل"
+
+msgid "View Logs"
+msgstr "عرض السجلات"
+
+msgid "Delete Permanently"
+msgstr "حذف نهائياً"
+
+msgid "Are you sure you want to permanently delete this item?"
+msgstr "هل أنت متأكد من أنك تريد حذف هذا العنصر نهائياً؟"
+
+msgid "Delete"
+msgstr "حذف"
+
+msgid "Ignore"
+msgstr "تجاهل"
+
+msgid "Manual"
+msgstr "يدوي"
+
+msgid "Automatic"
+msgstr "تلقائي"
+
+msgid "Type to filter redirects... (press Enter)"
+msgstr "اكتب لتصفية إعادة التوجيه... (اضغط Enter)"
+
+msgid "redirects selected"
+msgstr "إعادة توجيه محددة"
+
+msgid "Bulk Actions"
+msgstr "إجراءات جماعية"
+
+msgid "Edit Redirects"
+msgstr "تعديل إعادة التوجيه"
+
+msgid "Restore Redirects"
+msgstr "استعادة إعادة التوجيه"
+
+msgid "Clear Selection"
+msgstr "مسح التحديد"
+
+msgid "Are you sure you want to permanently delete all items in the trash?"
+msgstr "هل أنت متأكد من أنك تريد حذف جميع العناصر في سلة المهملات نهائياً؟"
+
+msgid "Add Manual Redirect"
+msgstr "إضافة إعادة توجيه يدوية"
+
+msgid "The URL path that should be redirected (without domain)"
+msgstr "مسار الرابط الذي يجب إعادة توجيهه (بدون النطاق)"
+
+msgid "Permanent Redirect (Recommended for SEO)"
+msgstr "إعادة توجيه دائمة (موصى بها لـ SEO)"
+
+msgid "Temporary Redirect"
+msgstr "إعادة توجيه مؤقتة"
+
+msgid "logs"
+msgstr "سجلات"
+
+msgid "redirects"
+msgstr "إعادة توجيه"
+
+msgid "Showing %1$d-%2$d of %3$d %4$s"
+msgstr "عرض %1$d-%2$d من %3$d %4$s"
+
+msgid "Redirects will appear here once created."
+msgstr "ستظهر إعادة التوجيه هنا بمجرد إنشائها."
+
+msgid "Redirect Logs"
+msgstr "سجلات إعادة التوجيه"
+
+msgid "Action"
+msgstr "إجراء"
+
+msgid "404"
+msgstr "404"
+
+msgid "Today's Stats"
+msgstr "إحصائيات اليوم"
+
+msgid "This Month"
+msgstr "هذا الشهر"
+
+msgid "This Year"
+msgstr "هذه السنة"
+
+msgid "All Stats"
+msgstr "جميع الإحصائيات"
+
+msgid "Visit URL"
+msgstr "زيارة الرابط"
+
+msgid "This page doesn't exist or is not published so the redirect won't work."
+msgstr "هذه الصفحة غير موجودة أو غير منشورة لذا لن تعمل إعادة التوجيه."
+
+#: includes/DataAccess.php
+msgid "Just now"
+msgstr "الآن"
+
+#: includes/View.php
+msgid "Data may not be immediately updated. Refresh to see latest changes."
+msgstr "قد لا يتم تحديث البيانات فوراً. قم بالتحديث لرؤية أحدث التغييرات."
+
+#: includes/View.php
+msgid "Last updated: %s"
+msgstr "آخر تحديث: %s"
+
+#: includes/WordPress_Connector.php
+msgid "second"
+msgstr "ثانية"
+
+#: includes/WordPress_Connector.php
+msgid "seconds"
+msgstr "ثوانٍ"
+
+#: includes/WordPress_Connector.php
+msgid "minute"
+msgstr "دقيقة"
+
+#: includes/WordPress_Connector.php
+msgid "minutes"
+msgstr "دقائق"
+
+#: includes/WordPress_Connector.php
+msgid "hour"
+msgstr "ساعة"
+
+#: includes/WordPress_Connector.php
+msgid "hours"
+msgstr "ساعات"
+
+#: includes/WordPress_Connector.php
+msgid "day"
+msgstr "يوم"
+
+#: includes/WordPress_Connector.php
+msgid "ago"
+msgstr "منذ"
+
+#: includes/SetupWizard.php
+msgid "Security check failed. Please try again."
+msgstr "فشل فحص الأمان. يرجى المحاولة مرة أخرى."
+
+#: includes/SetupWizard.php
+msgid "Error"
+msgstr "خطأ"
+
+#: includes/SetupWizard.php
+msgid "You do not have permission to access this page."
+msgstr "ليس لديك صلاحية للوصول إلى هذه الصفحة."
+
+#: includes/SetupWizard.php
+msgid "Welcome to 404 Solution"
+msgstr "مرحباً بك في 404 Solution"
+
+#: includes/SetupWizard.php
+msgid "Close"
+msgstr "إغلاق"
+
+#: includes/SetupWizard.php
+msgid "404 Solution helps you automatically handle 404 errors and broken links on your site."
+msgstr "404 Solution يساعدك على معالجة أخطاء 404 والروابط المعطلة تلقائياً على موقعك."
+
+#: includes/SetupWizard.php
+msgid "Let's configure how it handles missing pages. You can always change these settings later."
+msgstr "دعنا نضبط كيفية التعامل مع الصفحات المفقودة. يمكنك دائماً تغيير هذه الإعدادات لاحقاً."
+
+#: includes/SetupWizard.php
+msgid "When a page is not found, what should happen?"
+msgstr "عندما لا يتم العثور على صفحة، ماذا يجب أن يحدث؟"
+
+#: includes/SetupWizard.php
+msgid "Automatically redirect to similar page (recommended)"
+msgstr "إعادة التوجيه تلقائياً إلى صفحة مشابهة (موصى به)"
+
+#: includes/SetupWizard.php
+msgid "When a match is found, redirect visitors automatically"
+msgstr "عند العثور على تطابق، أعد توجيه الزوار تلقائياً"
+
+#: includes/SetupWizard.php
+msgid "Just show the default 404 page"
+msgstr "فقط اعرض صفحة 404 الافتراضية"
+
+#: includes/SetupWizard.php
+msgid "Use WordPress's standard \"Page not found\" screen. Manual redirects still work."
+msgstr "استخدم شاشة \"الصفحة غير موجودة\" القياسية في ووردبريس. إعادة التوجيه اليدوية لا تزال تعمل."
+
+#: includes/SetupWizard.php
+msgid "Log 404 errors for review?"
+msgstr "تسجيل أخطاء 404 للمراجعة؟"
+
+#: includes/SetupWizard.php
+msgid "Yes, log 404 errors"
+msgstr "نعم، سجل أخطاء 404"
+
+#: includes/SetupWizard.php
+msgid "Track missing pages so you can create redirects later"
+msgstr "تتبع الصفحات المفقودة حتى تتمكن من إنشاء إعادة توجيه لاحقاً"
+
+#: includes/SetupWizard.php
+msgid "No, don't log 404s"
+msgstr "لا، لا تسجل أخطاء 404"
+
+#: includes/SetupWizard.php
+msgid "Only handle manually created redirects"
+msgstr "التعامل فقط مع إعادة التوجيه المنشأة يدوياً"
+
+#: includes/SetupWizard.php
+msgid "Skip Setup"
+msgstr "تخطي الإعداد"
+
+#: includes/SetupWizard.php
+msgid "Save & Get Started"
+msgstr "حفظ والبدء"
+
+#: includes/html/tableRowPageRedirects.html
+msgid "url-is-normal"
+msgstr "url-is-normal"
+
+#: includes/html/tableRowPageRedirects.html
+msgid "url-looks-like-regex"
+msgstr "url-looks-like-regex"
+
+#: includes/html/tableRowPageRedirects.html
+msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+msgstr "يبدو هذا الرابط كتعبير نمطي لكنه غير معلّم كذلك. عدّل إعادة التوجيه وحدد \"معاملة هذا الرابط كتعبير نمطي\"."

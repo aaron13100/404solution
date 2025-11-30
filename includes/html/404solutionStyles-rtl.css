@@ -1,0 +1,326 @@
+/**
+ * 404 Solution RTL (Right-to-Left) Styles
+ *
+ * This file provides RTL layout support for Arabic, Hebrew, and other RTL languages.
+ * It overrides directional CSS properties from 404solutionStyles.css.
+ *
+ * Loaded automatically when WordPress is_rtl() returns true.
+ */
+
+/* ===== General RTL Direction ===== */
+body.rtl .abj404-wrap,
+[dir="rtl"] .abj404-wrap {
+    direction: rtl;
+    text-align: right;
+}
+
+/* ===== Status Message Borders ===== */
+/* Swap left border to right border for status messages */
+body.rtl .abj404-status-warning,
+[dir="rtl"] .abj404-status-warning {
+    border-left: none;
+    border-right: 4px solid var(--abj404-warning-border, #f0b429);
+}
+
+body.rtl .abj404-status-error,
+[dir="rtl"] .abj404-status-error {
+    border-left: none;
+    border-right: 4px solid var(--abj404-danger-border, #d63638);
+}
+
+body.rtl .abj404-error-log-entry,
+[dir="rtl"] .abj404-error-log-entry {
+    border-left: none;
+    border-right: 4px solid #d63638;
+}
+
+/* ===== Notice and Alert Borders ===== */
+body.rtl .abj404-notice,
+[dir="rtl"] .abj404-notice {
+    border-left: none;
+    border-right: 3px solid var(--abj404-accent, #2271b1);
+}
+
+body.rtl .abj404-highlight,
+[dir="rtl"] .abj404-highlight {
+    border-left: none;
+    border-right: 4px solid var(--abj404-primary, #2271b1);
+}
+
+body.rtl .abj404-danger-highlight,
+[dir="rtl"] .abj404-danger-highlight {
+    border-left: none !important;
+    border-right: 4px solid var(--abj404-danger-text, #d63638) !important;
+}
+
+body.rtl .abj404-info-box,
+[dir="rtl"] .abj404-info-box {
+    border-left: none;
+    border-right: 4px solid var(--abj404-primary, #2271b1);
+}
+
+/* ===== Margins - Swap Left/Right ===== */
+body.rtl .abj404-btn-icon,
+[dir="rtl"] .abj404-btn-icon {
+    margin-left: 0;
+    margin-right: 8px;
+}
+
+body.rtl .abj404-icon,
+[dir="rtl"] .abj404-icon {
+    margin-right: 0;
+    margin-left: 8px;
+}
+
+body.rtl .abj404-action-icon,
+[dir="rtl"] .abj404-action-icon {
+    margin-right: 0;
+    margin-left: 10px;
+}
+
+body.rtl .abj404-checkbox-label,
+[dir="rtl"] .abj404-checkbox-label {
+    margin-left: 0;
+    margin-right: 4px;
+}
+
+body.rtl .abj404-bulk-actions-icon,
+[dir="rtl"] .abj404-bulk-actions-icon {
+    margin-right: 0 !important;
+    margin-left: 8px !important;
+}
+
+/* ===== Text Alignment ===== */
+body.rtl .abj404-text-right,
+[dir="rtl"] .abj404-text-right {
+    text-align: left;
+}
+
+body.rtl .abj404-text-left,
+[dir="rtl"] .abj404-text-left {
+    text-align: right;
+}
+
+body.rtl .abj404-table th,
+body.rtl .abj404-table td,
+[dir="rtl"] .abj404-table th,
+[dir="rtl"] .abj404-table td {
+    text-align: right;
+}
+
+body.rtl .abj404-pagination,
+[dir="rtl"] .abj404-pagination {
+    text-align: left;
+}
+
+/* ===== Tree Indentation - Swap padding-left to padding-right ===== */
+body.rtl .abj404-tree-level-0,
+[dir="rtl"] .abj404-tree-level-0 {
+    padding-left: 0;
+    padding-right: 10px;
+}
+
+body.rtl .abj404-tree-level-1,
+[dir="rtl"] .abj404-tree-level-1 {
+    padding-left: 0;
+    padding-right: 10px;
+}
+
+body.rtl .abj404-tree-level-2,
+[dir="rtl"] .abj404-tree-level-2 {
+    padding-left: 0;
+    padding-right: 20px;
+}
+
+body.rtl .abj404-tree-level-3,
+[dir="rtl"] .abj404-tree-level-3 {
+    padding-left: 0;
+    padding-right: 30px;
+}
+
+body.rtl .abj404-tree-level-4,
+[dir="rtl"] .abj404-tree-level-4 {
+    padding-left: 0;
+    padding-right: 40px;
+}
+
+body.rtl .abj404-tree-level-5,
+[dir="rtl"] .abj404-tree-level-5 {
+    padding-left: 0;
+    padding-right: 50px;
+}
+
+body.rtl .abj404-tree-level-6,
+[dir="rtl"] .abj404-tree-level-6 {
+    padding-left: 0;
+    padding-right: 60px;
+}
+
+body.rtl .abj404-tree-level-7,
+[dir="rtl"] .abj404-tree-level-7 {
+    padding-left: 0;
+    padding-right: 70px;
+}
+
+body.rtl .abj404-tree-level-8,
+[dir="rtl"] .abj404-tree-level-8 {
+    padding-left: 0;
+    padding-right: 80px;
+}
+
+body.rtl .abj404-tree-level-9,
+[dir="rtl"] .abj404-tree-level-9 {
+    padding-left: 0;
+    padding-right: 90px;
+}
+
+body.rtl .abj404-tree-level-10,
+[dir="rtl"] .abj404-tree-level-10 {
+    padding-left: 0;
+    padding-right: 100px;
+}
+
+/* ===== Sidebar and Layout ===== */
+body.rtl .abj404-sidebar,
+[dir="rtl"] .abj404-sidebar {
+    border-right: none;
+    border-left: 1px solid var(--abj404-border-light, #e0e0e0);
+}
+
+body.rtl .abj404-sidebar:last-child,
+[dir="rtl"] .abj404-sidebar:last-child {
+    border-left: none;
+}
+
+body.rtl .abj404-content-with-sidebar,
+[dir="rtl"] .abj404-content-with-sidebar {
+    padding-left: 0;
+    padding-right: 288px;
+}
+
+/* ===== Form Elements ===== */
+body.rtl .abj404-input-with-icon,
+[dir="rtl"] .abj404-input-with-icon {
+    padding-right: 8px;
+    padding-left: 36px;
+}
+
+body.rtl .abj404-search-input,
+[dir="rtl"] .abj404-search-input {
+    padding-right: 8px !important;
+    padding-left: 32px !important;
+}
+
+body.rtl .abj404-autocomplete-input,
+[dir="rtl"] .abj404-autocomplete-input {
+    padding-right: 8px;
+    padding-left: 36px;
+}
+
+/* ===== Auto-Margins - Keep centered elements centered ===== */
+body.rtl .abj404-center-auto,
+[dir="rtl"] .abj404-center-auto {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ===== Navigation Tabs ===== */
+body.rtl .abj404-nav-tab-wrapper,
+[dir="rtl"] .abj404-nav-tab-wrapper {
+    direction: rtl;
+}
+
+body.rtl .abj404-nav-tab,
+[dir="rtl"] .abj404-nav-tab {
+    float: right;
+}
+
+/* ===== Buttons and Actions ===== */
+body.rtl .abj404-actions,
+[dir="rtl"] .abj404-actions {
+    text-align: left;
+}
+
+body.rtl .abj404-btn-group,
+[dir="rtl"] .abj404-btn-group {
+    direction: rtl;
+}
+
+/* ===== Tables ===== */
+body.rtl .abj404-table,
+[dir="rtl"] .abj404-table {
+    direction: rtl;
+}
+
+body.rtl .wp-list-table,
+[dir="rtl"] .wp-list-table {
+    direction: rtl;
+}
+
+/* ===== Chips Navigation ===== */
+body.rtl .abj404-chips-nav,
+[dir="rtl"] .abj404-chips-nav {
+    direction: rtl;
+}
+
+/* ===== Cards ===== */
+body.rtl .abj404-card,
+[dir="rtl"] .abj404-card {
+    text-align: right;
+}
+
+body.rtl .abj404-card-content,
+[dir="rtl"] .abj404-card-content {
+    padding-left: 16px;
+    padding-right: 20px;
+}
+
+/* ===== Responsive Adjustments ===== */
+@media screen and (max-width: 782px) {
+    body.rtl .abj404-content-with-sidebar,
+    [dir="rtl"] .abj404-content-with-sidebar {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+/* ===== Dropdown Menus ===== */
+body.rtl .abj404-dropdown-menu,
+[dir="rtl"] .abj404-dropdown-menu {
+    left: auto;
+    right: 0;
+    text-align: right;
+}
+
+/* ===== Inline Lists ===== */
+body.rtl .abj404-inline-list li,
+[dir="rtl"] .abj404-inline-list li {
+    float: right;
+}
+
+/* ===== Checkbox/Radio Label Spacing ===== */
+body.rtl input[type="checkbox"] + label,
+body.rtl input[type="radio"] + label,
+[dir="rtl"] input[type="checkbox"] + label,
+[dir="rtl"] input[type="radio"] + label {
+    margin-left: 0;
+    margin-right: 4px;
+}
+
+/* ===== Filter Buttons ===== */
+body.rtl .abj404-filter-btn,
+[dir="rtl"] .abj404-filter-btn {
+    margin-left: 0;
+    margin-right: -5px;
+}
+
+/* ===== Content Tabs ===== */
+body.rtl .abj404-content-tabs,
+[dir="rtl"] .abj404-content-tabs {
+    direction: rtl;
+}
+
+body.rtl .abj404-content-tab,
+[dir="rtl"] .abj404-content-tab {
+    float: right;
+}

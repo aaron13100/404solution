@@ -192,6 +192,12 @@ class ABJ_404_Solution_WordPress_Connector {
                 null);
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-themes', ABJ404_URL . 'includes/html/adminThemes.css',
                 null);
+
+        // Load RTL styles for Arabic, Hebrew, and other right-to-left languages
+        if (is_rtl()) {
+            ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-rtl', ABJ404_URL . 'includes/html/404solutionStyles-rtl.css',
+                    array('abj404solution-styles'));
+        }
     }
 
     /** Detect if dark mode is enabled from various sources.
