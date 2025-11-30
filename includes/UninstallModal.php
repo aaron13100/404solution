@@ -498,6 +498,76 @@ class ABJ_404_Solution_UninstallModal {
     }
 
     /**
+     * Get counts of categories, tags, pages, and posts for diagnostics.
+     * These counts help identify if memory issues are caused by large content volume.
+     *
+     * @return array Array with 'categories', 'tags', 'pages', 'posts' keys
+     */
+    private static function getContentCounts() {
+        $counts = array(
+            'categories' => 0,
+            'tags' => 0,
+            'pages' => 0,
+            'posts' => 0,
+        );
+
+        // Guard for test environment where WordPress functions may not be available
+        if (!function_exists('wp_count_terms') || !function_exists('wp_count_posts')) {
+            return $counts;
+        }
+
+        // Count categories (includes product_cat for WooCommerce)
+        $category_count = wp_count_terms(array('taxonomy' => 'category', 'hide_empty' => false));
+        if (!is_wp_error($category_count)) {
+            $counts['categories'] = intval($category_count);
+        }
+
+        // Also count WooCommerce product categories if they exist
+        if (function_exists('taxonomy_exists') && taxonomy_exists('product_cat')) {
+            $product_cat_count = wp_count_terms(array('taxonomy' => 'product_cat', 'hide_empty' => false));
+            if (!is_wp_error($product_cat_count)) {
+                $counts['categories'] += intval($product_cat_count);
+            }
+        }
+
+        // Count tags (includes product_tag for WooCommerce)
+        $tag_count = wp_count_terms(array('taxonomy' => 'post_tag', 'hide_empty' => false));
+        if (!is_wp_error($tag_count)) {
+            $counts['tags'] = intval($tag_count);
+        }
+
+        // Also count WooCommerce product tags if they exist
+        if (function_exists('taxonomy_exists') && taxonomy_exists('product_tag')) {
+            $product_tag_count = wp_count_terms(array('taxonomy' => 'product_tag', 'hide_empty' => false));
+            if (!is_wp_error($product_tag_count)) {
+                $counts['tags'] += intval($product_tag_count);
+            }
+        }
+
+        // Count pages
+        $page_counts = wp_count_posts('page');
+        if ($page_counts && isset($page_counts->publish)) {
+            $counts['pages'] = intval($page_counts->publish);
+        }
+
+        // Count posts
+        $post_counts = wp_count_posts('post');
+        if ($post_counts && isset($post_counts->publish)) {
+            $counts['posts'] = intval($post_counts->publish);
+        }
+
+        // Also count WooCommerce products if they exist
+        if (function_exists('post_type_exists') && post_type_exists('product')) {
+            $product_counts = wp_count_posts('product');
+            if ($product_counts && isset($product_counts->publish)) {
+                $counts['posts'] += intval($product_counts->publish);
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
      * Send feedback email to plugin author
      *
      * @param array $preferences User preferences including feedback
@@ -515,6 +585,7 @@ class ABJ_404_Solution_UninstallModal {
 
         // Gather system information (excluding site URL for privacy)
         $db_info = self::getDatabaseInfo();
+        $content_counts = self::getContentCounts();
         $system_info = array(
             'WordPress Version' => $wp_version,
             'PHP Version' => phpversion(),
@@ -524,7 +595,11 @@ class ABJ_404_Solution_UninstallModal {
             'DB Collation' => $db_info['collation'],
             'Multisite' => is_multisite() ? 'Yes' : 'No',
             'Active Plugins' => self::getActivePluginsList(),
-            'Redirect Count' => $redirect_count
+            'Redirect Count' => $redirect_count,
+            'Category Count' => $content_counts['categories'],
+            'Tag Count' => $content_counts['tags'],
+            'Total Pages' => $content_counts['pages'],
+            'Total Posts' => $content_counts['posts'],
         );
 
         // Build email subject
