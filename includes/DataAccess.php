@@ -1180,10 +1180,12 @@ class ABJ_404_Solution_DataAccess {
 
         // Handle race condition: logs_hits table may have been dropped between existence check and query
         // (fixes bug: "Table 'xxx.wp_abj404_logs_hits' doesn't exist" error during shutdown)
+        $usedFallbackForLogsHits = false;
         if (!empty($results['last_error']) && strpos($results['last_error'], 'logs_hits') !== false) {
             $this->logger->debugMessage("logs_hits table unavailable, retrying without JOIN: " . $results['last_error']);
             // Retry with queryAllRowsAtOnce = false to skip logs_hits JOIN
             // (The query builder only adds the JOIN when queryAllRowsAtOnce is true)
+            $usedFallbackForLogsHits = true;
             $queryAllRowsAtOnce = false;
             $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false,
                 $limitStart, $limitEnd, false);
@@ -1192,10 +1194,26 @@ class ABJ_404_Solution_DataAccess {
 
         $rows = $results['rows'];
         $foundRowsBeforeLogsData = count($rows);
-        
+
         // populate the logs data if we need to
         if (!$queryAllRowsAtOnce) {
             $rows = $this->populateLogsData($rows);
+
+            // If fallback was used and user wanted to sort by logshits/last_used,
+            // we need to sort in PHP since the DB query sorted on NULL placeholders
+            if ($usedFallbackForLogsHits && !empty($rows) &&
+                ($tableOptions['orderby'] == 'logshits' || $tableOptions['orderby'] == 'last_used')) {
+                $orderBy = $tableOptions['orderby'];
+                $orderDir = strtoupper($tableOptions['order'] ?? 'DESC');
+                usort($rows, function($a, $b) use ($orderBy, $orderDir) {
+                    $valA = isset($a[$orderBy]) ? $a[$orderBy] : 0;
+                    $valB = isset($b[$orderBy]) ? $b[$orderBy] : 0;
+                    // For last_used (timestamp), compare as integers
+                    // For logshits (count), compare as integers
+                    $cmp = $valA <=> $valB;
+                    return $orderDir === 'DESC' ? -$cmp : $cmp;
+                });
+            }
         }
         $this->logger->debugMessage("Found " . $foundRowsBeforeLogsData . 
         	" rows to display before log data and " . count($rows) . 
@@ -2578,15 +2596,23 @@ class ABJ_404_Solution_DataAccess {
             // (fixes bug: URLs like %9F%9F%9F%9F-%9F%9F%9F-1.png cause "invalid data" errors)
             $slug = $this->f->sanitizeInvalidUTF8($slug);
 
-            // Check if database supports utf8mb4 collation
+            // Check if the post_name column supports utf8mb4 collation
             // (fixes bug: Arabic sites on latin1 databases get "invalid data" errors)
-            $dbCollation = $wpdb->get_var("SELECT @@collation_database");
-            if ($dbCollation !== null && strpos($dbCollation, 'utf8mb4') !== false) {
-                // Database supports utf8mb4 - use CAST for proper Unicode comparison
+            // Note: Check actual column collation, not database default - on mixed setups
+            // the database may be latin1 but wp_posts.post_name is utf8mb4
+            $columnCollation = $wpdb->get_var($wpdb->prepare(
+                "SELECT COLLATION_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                 AND TABLE_NAME = %s
+                 AND COLUMN_NAME = 'post_name'",
+                $wpdb->posts
+            ));
+            if ($columnCollation !== null && strpos($columnCollation, 'utf8mb4') !== false) {
+                // Column supports utf8mb4 - use CAST for proper Unicode comparison
                 $specifiedSlug = " */\n and CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = "
                         . "'" . esc_sql($slug) . "' \n ";
             } else {
-                // Legacy database (latin1, utf8, etc.) - use simple comparison
+                // Legacy column (latin1, utf8, etc.) - use simple comparison
                 $specifiedSlug = " */\n and wp_posts.post_name = "
                         . "'" . esc_sql($slug) . "' \n ";
             }
