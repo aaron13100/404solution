@@ -678,7 +678,8 @@ msgstr "Jag förstår ovanstående uttalande."
 msgid "IP Address"
 msgstr "IP-adress"
 
-msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
+#, fuzzy
+msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "Om inga sidor uppfyller minsta matchningspoäng, kommer denna text att visas. (standard: &lt;p&gt;Inga förslag. :/ &lt;/p&gt;)"
 
 msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
@@ -786,8 +787,8 @@ msgstr "Maximalt antal förslag att visa"
 msgid "Minimum match score"
 msgstr "Minsta matchningspoäng"
 
-msgid "Minimum score of suggestions to display"
-msgstr "Minsta poäng för förslag att visa"
+#~ msgid "Minimum score of suggestions to display"
+#~ msgstr "Minsta poäng för förslag att visa"
 
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Flera e-postadresser kan separeras med kommatecken (,). Avsändarens e-postadress är alltid standard WordPress admin-e-post:"
@@ -1098,8 +1099,8 @@ msgstr "Plugin:et kommer endast att omdirigera de inläggstyper som anges här."
 msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
 msgstr "Plugin:et kommer att omdirigera till normala taxonomier (kategorier och taggar) och de som listas här."
 
-msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "Den föreslagna sidan måste \"poängsätta\" minst så här mycket för att visas som ett förslag (min: 10, max: 90, standard: 25)"
+#~ msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
+#~ msgstr "Den föreslagna sidan måste \"poängsätta\" minst så här mycket för att visas som ett förslag (min: 10, max: 90, standard: 25)"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
 msgstr "Den användarspecificerade 404-sidan hittades inte. Vänligen uppdatera den användarspecificerade 404-sidan på alternativsidan."

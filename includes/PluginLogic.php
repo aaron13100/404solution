@@ -774,7 +774,6 @@ class ABJ_404_Solution_PluginLogic {
             'log_deletion' => '365',
             'admin_notification' => '0',
             'remove_matches' => '1',
-            'suggest_minscore' => '25',
             'suggest_max' => '5',
             'suggest_title' => '<h3>{suggest_title_text}</h3>',
             'suggest_before' => '<ol>',
@@ -2452,14 +2451,6 @@ class ABJ_404_Solution_PluginLogic {
      */
     private function updateSuggestionSettings(&$options, $postData) {
         $message = "";
-
-        if (isset($postData['suggest_minscore'])) {
-            if (is_numeric($postData['suggest_minscore']) && $postData['suggest_minscore'] >= 0 && $postData['suggest_minscore'] <= 99) {
-                $options['suggest_minscore'] = min(max(absint($postData['suggest_minscore']), 10), 90);
-            } else {
-                $message .= __('Error: Suggestion minimum score value must be a number between 1 and 99', '404-solution') . ".<BR/>";
-            }
-        }
 
         if (isset($postData['suggest_max'])) {
             if (is_numeric($postData['suggest_max']) && $postData['suggest_max'] >= 1) {

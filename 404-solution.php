@@ -34,6 +34,7 @@
 define('ABJ404_PP', 'abj404_solution');
 define('ABJ404_FILE', __FILE__);
 define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
+define('ABJ404_SHORTCODE_NAME', 'abj404_solution_page_suggestions');
 $GLOBALS['abj404_display_errors'] = false;
 
 // Debug whitelist - only includes localhost/development environments by default
@@ -132,7 +133,7 @@ add_action('doing_it_wrong_run', function($function_name, $message, $version) {
 }, 10, 3);
 
 // shortcode
-add_shortcode('abj404_solution_page_suggestions', 'abj404_shortCodeListener');
+add_shortcode(ABJ404_SHORTCODE_NAME, 'abj404_shortCodeListener');
 function abj404_shortCodeListener($atts) {
     require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     return ABJ_404_Solution_ShortCode::shortcodePageSuggestions($atts);

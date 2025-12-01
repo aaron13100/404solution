@@ -679,7 +679,8 @@ msgstr "Я понимаю вышеизложенное."
 msgid "IP Address"
 msgstr "IP-адрес"
 
-msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
+#, fuzzy
+msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "Если ни одна страница не соответствует минимальной оценке совпадения, будет отображен этот текст.  (по умолчанию: &lt;p&gt;Нет предложений. :/ &lt;/p&gt;)"
 
 msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
@@ -787,8 +788,8 @@ msgstr "Максимальное количество отображаемых �
 msgid "Minimum match score"
 msgstr "Минимальная оценка совпадения"
 
-msgid "Minimum score of suggestions to display"
-msgstr "Минимальная оценка отображаемых предложений"
+#~ msgid "Minimum score of suggestions to display"
+#~ msgstr "Минимальная оценка отображаемых предложений"
 
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Несколько адресов электронной почты можно разделить запятыми (,). Адрес \"от\" всегда является адресом электронной почты администратора WordPress по умолчанию:"
@@ -1101,8 +1102,8 @@ msgstr "Плагин будет перенаправлять только тип
 msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
 msgstr "Плагин будет перенаправлять на обычные таксономии (категории и метки) и те, что перечислены здесь."
 
-msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "Предложенная страница должна \"набрать\" как минимум такую оценку, чтобы быть показанной в качестве предложения (мин: 10, макс: 90, по умолчанию: 25)"
+#~ msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
+#~ msgstr "Предложенная страница должна \"набрать\" как минимум такую оценку, чтобы быть показанной в качестве предложения (мин: 10, макс: 90, по умолчанию: 25)"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
 msgstr "Указанная пользователем страница 404 не найдена. Пожалуйста, обновите указанную пользователем страницу 404 на странице настроек."

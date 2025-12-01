@@ -713,6 +713,44 @@ class ABJ_404_Solution_WordPress_Connector {
         // (fixes: manual redirects to custom 404 pages not showing suggestions)
         $this->logic->setCookieWithPreviousRequest();
 
+        // Check if destination is the custom 404 page or has the shortcode
+        // If so, set the _STATUS_404 cookie so WordPress treats it as a 404 page
+        $isRedirectToCustom404Page = false;
+
+        if ($redirect['type'] == ABJ404_TYPE_POST) {
+            $options = $this->logic->getOptions();
+            $dest404page = isset($options['dest404page']) ? $options['dest404page'] : null;
+
+            // Check if destination matches the global custom 404 page
+            if ($dest404page !== null && $this->logic->thereIsAUserSpecified404Page($dest404page)) {
+                $dest404Parts = explode('|', $dest404page);
+                $custom404Id = isset($dest404Parts[0]) ? (int)$dest404Parts[0] : 0;
+                if ($custom404Id > 0 && $redirect['final_dest'] == $custom404Id) {
+                    $isRedirectToCustom404Page = true;
+                }
+            }
+
+            // Also check if destination page has the shortcode
+            if (!$isRedirectToCustom404Page) {
+                $destPage = get_post($redirect['final_dest']);
+                if ($destPage && has_shortcode($destPage->post_content, ABJ404_SHORTCODE_NAME)) {
+                    $isRedirectToCustom404Page = true;
+                }
+            }
+        }
+
+        // Set the 404 status cookie if redirecting to a 404-style page
+        if ($isRedirectToCustom404Page) {
+            setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
+
+            // Pre-compute suggestions before redirect (stores to DB cache)
+            // This ensures findMatchingPosts() is called even for existing redirects
+            $urlSlugOnly = $this->logic->removeHomeDirectory($requestedURL);
+            $spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
+            $spellChecker->findMatchingPosts($urlSlugOnly,
+                @$options['suggest_cats'], @$options['suggest_tags']);
+        }
+
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
         	$this->dao->logRedirectHit($redirect['url'], $redirect['final_dest'], 'external');
             $this->logic->forceRedirect($redirect['final_dest'], esc_html($redirect['code']));
@@ -728,9 +766,19 @@ class ABJ_404_Solution_WordPress_Connector {
         if (array_key_exists('path', $urlParts)) {
         	$redirectedTo = $urlParts['path'];
         }
-            
+
+        // If redirecting to a 404-style page, add original URL as query param
+        // (fixes: cookies from 301 redirects aren't stored by browsers)
+        $finalLink = $permalink['link'];
+        if ($isRedirectToCustom404Page) {
+            // Strip query string from requestedURL since forceRedirect adds it separately
+            $refUrl = preg_replace('/\?.*/', '', $requestedURL);
+            $separator = (strpos($finalLink, '?') === false) ? '?' : '&';
+            $finalLink .= $separator . ABJ404_PP . '_ref=' . urlencode($refUrl);
+        }
+
         $this->dao->logRedirectHit($redirect['url'], $redirectedTo, $matchReason);
-        $sendTo404Page = $this->logic->forceRedirect($permalink['link'], esc_html($redirect['code']));
+        $sendTo404Page = $this->logic->forceRedirect($finalLink, esc_html($redirect['code']));
         
         if ($sendTo404Page) {
         	return;

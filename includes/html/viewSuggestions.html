@@ -22,12 +22,6 @@
         <input type="checkbox" name="suggest_tags" id="suggest_tags" value="1" {SELECTED_SUGGEST_TAGS}>
     </p>
     <p>
-        <label for="suggest_minscore">{Minimum score of suggestions to display}:</label>
-        <input type="text" name="suggest_minscore" id="suggest_minscore" value="{SUGGEST_MIN_SCORE}" style="width: 50px;">
-        <BR/>&nbsp;&nbsp;&nbsp;{The suggested page must "score" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)}
-        
-    </p>
-    <p>
         <label for="suggest_max">{Maximum number of suggestions to display}:</label>
         <input type="text" name="suggest_max" id="suggest_max" value="{SUGGEST_MAX_SUGGESTIONS}" style="width: 50px;">
         <BR/>&nbsp;&nbsp;&nbsp;{Even if more pages could be suggested, show at most this many (default: 5)}
@@ -52,5 +46,5 @@
     <p>
         <label for="suggest_noresults">{Display if no suggestion results}:</label>
         <input type="text" name="suggest_noresults" id="suggest_noresults" value="{SUGGEST_USER_NO_RESULTS}" style="width: 400px;">
-        <BR/>&nbsp;&nbsp;&nbsp;{If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)}
+        <BR/>&nbsp;&nbsp;&nbsp;{If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)}
     </p>

@@ -679,7 +679,8 @@ msgstr "Eu entendo a declaração acima."
 msgid "IP Address"
 msgstr "Endereço IP"
 
-msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
+#, fuzzy
+msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "Se nenhuma página atender à pontuação mínima de correspondência, então este texto será exibido.  (padrão: &lt;p&gt;Nenhuma sugestão. :/ &lt;/p&gt;)"
 
 msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
@@ -787,8 +788,8 @@ msgstr "Número máximo de sugestões a exibir"
 msgid "Minimum match score"
 msgstr "Pontuação mínima de compatibilidade"
 
-msgid "Minimum score of suggestions to display"
-msgstr "Pontuação mínima de sugestões a exibir"
+#~ msgid "Minimum score of suggestions to display"
+#~ msgstr "Pontuação mínima de sugestões a exibir"
 
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Vários endereços de e-mail podem ser separados por vírgulas (,). O endereço de e-mail \"de\" é sempre o e-mail de administrador padrão do WordPress:"
@@ -1101,8 +1102,8 @@ msgstr "O plugin só redirecionará os tipos de post especificados aqui."
 msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
 msgstr "O plugin redirecionará para taxonomias normais (categorias e tags) e as listadas aqui."
 
-msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "A página sugerida deve \"pontuar\" pelo menos isso para ser mostrada como uma sugestão (mín: 10, máx: 90, padrão: 25)"
+#~ msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
+#~ msgstr "A página sugerida deve \"pontuar\" pelo menos isso para ser mostrada como uma sugestão (mín: 10, máx: 90, padrão: 25)"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
 msgstr "A página 404 especificada pelo usuário não foi encontrada. Por favor, atualize a página 404 especificada pelo usuário na página de Opções."

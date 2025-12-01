@@ -679,7 +679,8 @@ msgstr "Saya mengerti pernyataan di atas."
 msgid "IP Address"
 msgstr "Alamat IP"
 
-msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
+#, fuzzy
+msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "Jika tidak ada halaman yang memenuhi skor pencocokan minimum, maka teks ini akan ditampilkan.  (default: &lt;p&gt;Tidak ada saran. :/ &lt;/p&gt;)"
 
 msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
@@ -787,8 +788,8 @@ msgstr "Jumlah maksimum saran yang ditampilkan"
 msgid "Minimum match score"
 msgstr "Skor pencocokan minimum"
 
-msgid "Minimum score of suggestions to display"
-msgstr "Skor minimum saran yang ditampilkan"
+#~ msgid "Minimum score of suggestions to display"
+#~ msgstr "Skor minimum saran yang ditampilkan"
 
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Beberapa alamat email dapat dipisahkan dengan koma (,). Alamat email \"dari\" selalu merupakan email admin WordPress default:"
@@ -1101,8 +1102,8 @@ msgstr "Plugin hanya akan mengalihkan jenis post yang ditentukan di sini."
 msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
 msgstr "Plugin akan mengalihkan ke taksonomi normal (kategori dan tag) dan yang tercantum di sini."
 
-msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "Halaman yang disarankan harus \"mencetak skor\" setidaknya sebanyak ini untuk ditampilkan sebagai saran (min: 10, maks: 90, default: 25)"
+#~ msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
+#~ msgstr "Halaman yang disarankan harus \"mencetak skor\" setidaknya sebanyak ini untuk ditampilkan sebagai saran (min: 10, maks: 90, default: 25)"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
 msgstr "Halaman 404 yang ditentukan pengguna tidak ditemukan. Silakan perbarui halaman 404 yang ditentukan pengguna di halaman Opsi."

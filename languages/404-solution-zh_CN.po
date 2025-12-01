@@ -684,7 +684,8 @@ msgstr "我理解上述声明。"
 msgid "IP Address"
 msgstr "IP 地址"
 
-msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
+#, fuzzy
+msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "如果没有页面达到最低匹配分数，则将显示此文本。（默认：&lt;p&gt;暂无建议。:/ &lt;/p&gt;）"
 
 msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
@@ -792,8 +793,8 @@ msgstr "显示的最大建议数"
 msgid "Minimum match score"
 msgstr "最低匹配分数"
 
-msgid "Minimum score of suggestions to display"
-msgstr "显示建议的最低分数"
+#~ msgid "Minimum score of suggestions to display"
+#~ msgstr "显示建议的最低分数"
 
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "多个电子邮件地址可以用逗号 (,) 分隔。\"发件人\" 电子邮件地址始终为默认的 WordPress 管理员邮箱："
@@ -1107,8 +1108,8 @@ msgstr "插件将仅重定向此处指定的文章类型。"
 msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
 msgstr "插件将重定向到常规分类法（分类和标签）以及此处列出的分类法。"
 
-msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "匹配度必须达到此分数才能显示为建议（最小：10，最大：90，默认：25）"
+#~ msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
+#~ msgstr "匹配度必须达到此分数才能显示为建议（最小：10，最大：90，默认：25）"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
 msgstr "未找到用户指定的 404 页面。请在选项页面上更新用户指定的 404 页面。"

@@ -679,7 +679,8 @@ msgstr "Ich verstehe die obige Aussage."
 msgid "IP Address"
 msgstr "IP-Adresse"
 
-msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
+#, fuzzy
+msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "Wenn keine Seiten die minimale Übereinstimmungsbewertung erreichen, wird dieser Text angezeigt.  (Standard: &lt;p&gt;Keine Vorschläge. :/ &lt;/p&gt;)"
 
 msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
@@ -787,8 +788,8 @@ msgstr "Maximale Anzahl anzuzeigender Vorschläge"
 msgid "Minimum match score"
 msgstr "Minimale Übereinstimmungsbewertung"
 
-msgid "Minimum score of suggestions to display"
-msgstr "Minimalbewertung der anzuzeigenden Vorschläge"
+#~ msgid "Minimum score of suggestions to display"
+#~ msgstr "Minimalbewertung der anzuzeigenden Vorschläge"
 
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "Mehrere E-Mail-Adressen können durch Kommas (,) getrennt werden. Die \"Von\"-E-Mail-Adresse ist immer die Standard-WordPress-Admin-E-Mail:"
@@ -1101,8 +1102,8 @@ msgstr "Das Plugin leitet nur die hier angegebenen Beitragstypen weiter."
 msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
 msgstr "Das Plugin leitet zu normalen Taxonomien (Kategorien und Tags) und den hier aufgelisteten weiter."
 
-msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "Die vorgeschlagene Seite muss mindestens diese Punktzahl \"erreichen\", um als Vorschlag angezeigt zu werden (min: 10, max: 90, Standard: 25)"
+#~ msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
+#~ msgstr "Die vorgeschlagene Seite muss mindestens diese Punktzahl \"erreichen\", um als Vorschlag angezeigt zu werden (min: 10, max: 90, Standard: 25)"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
 msgstr "Die vom Benutzer angegebene 404-Seite wurde nicht gefunden. Bitte aktualisieren Sie die vom Benutzer angegebene 404-Seite auf der Optionsseite."

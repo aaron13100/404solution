@@ -681,7 +681,8 @@ msgstr "上記の記述を理解しました。"
 msgid "IP Address"
 msgstr "IPアドレス"
 
-msgid "If no pages meet the minimum match score, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
+#, fuzzy
+msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "最小一致スコアを満たすページがない場合、このテキストが表示されます。（デフォルト：&lt;p&gt;No suggestions. :/ &lt;/p&gt;）"
 
 msgid "If you've created custom post types and would like to redirect users to them, you'll have to enter them here."
@@ -790,8 +791,8 @@ msgstr "表示する提案の最大数"
 msgid "Minimum match score"
 msgstr "最小一致スコア"
 
-msgid "Minimum score of suggestions to display"
-msgstr "表示する提案の最小スコア"
+#~ msgid "Minimum score of suggestions to display"
+#~ msgstr "表示する提案の最小スコア"
 
 msgid "Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
 msgstr "複数のメールアドレスはカンマ（,）で区切ることができます。「送信元」メールアドレスは常にデフォルトのWordPress管理者メールです："
@@ -1104,8 +1105,8 @@ msgstr "プラグインはここで指定された投稿タイプのみをリダ
 msgid "The plugin will redirect to normal taxonomies (categories and tags) and the ones listed here."
 msgstr "プラグインは通常のタクソノミー（カテゴリーとタグ）とここにリストされているものにリダイレクトします。"
 
-msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
-msgstr "提案ページとして表示されるには、少なくともこれだけの「スコア」が必要です（最小：10、最大：90、デフォルト：25）"
+#~ msgid "The suggested page must \"score\" at least this much to be shown as a suggestion (min: 10, max: 90, default: 25)"
+#~ msgstr "提案ページとして表示されるには、少なくともこれだけの「スコア」が必要です（最小：10、最大：90、デフォルト：25）"
 
 msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
 msgstr "ユーザー指定の404ページが見つかりませんでした。オプションページでユーザー指定の404ページを更新してください。"

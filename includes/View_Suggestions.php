@@ -51,7 +51,6 @@ class ABJ_404_Solution_View_Suggestions {
         $html = $this->f->str_replace('{SELECTED_SUGGEST_CATS}', $selectedSuggestCats, $html);
         $html = $this->f->str_replace('{SELECTED_SUGGEST_TAGS}', $selectedSuggestTags, $html);
         $html = $this->f->str_replace('{SELECTED_SUGGEST_URL}', $selectedSuggestURL, $html);
-        $html = $this->f->str_replace('{SUGGEST_MIN_SCORE}', esc_attr($options['suggest_minscore']), $html);
         $html = $this->f->str_replace('{SUGGEST_MAX_SUGGESTIONS}', esc_attr($options['suggest_max']), $html);
         $html = $this->f->str_replace('{SUGGEST_USER_TITLE}', esc_attr($options['suggest_title']), $html);
         $html = $this->f->str_replace('{SUGGEST_USER_BEFORE}', esc_attr($options['suggest_before']), $html);

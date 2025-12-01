@@ -458,10 +458,6 @@ msgstr ""
 msgid "Allow tag suggestions"
 msgstr ""
 
-#: includes/admin.php:1412
-msgid "Minimum score of suggestions to display"
-msgstr ""
-
 #: includes/admin.php:1414
 msgid "Maximum number of suggestions to display"
 msgstr ""
