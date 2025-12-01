@@ -182,11 +182,21 @@ function abj404_404listener() {
     	 * suggestions then update the URL displayed to the user. */
     	$cookieName = ABJ404_PP . '_REQUEST_URI';
     	$cookieName .= '_UPDATE_URL';
+    	$queryParamName = ABJ404_PP . '_ref';
+
+    	// Check cookie first, then query param fallback (for 301 redirects where cookies don't survive)
+    	$originalURL = null;
     	if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
+    		$originalURL = $_COOKIE[$cookieName];
+    	} elseif (isset($_GET[$queryParamName]) && !empty($_GET[$queryParamName])) {
+    		$originalURL = urldecode($_GET[$queryParamName]);
+    	}
+
+    	if ($originalURL !== null) {
 
     		$cookieName404 = ABJ404_PP . '_STATUS_404';
-    		
-    		if (array_key_exists($cookieName404, $_COOKIE) && 
+
+    		if (array_key_exists($cookieName404, $_COOKIE) &&
     			$_COOKIE[$cookieName404] == 'true') {
 
    				// clear the cookie
@@ -194,15 +204,15 @@ function abj404_404listener() {
     			// we're going to a custom 404 page so se the status to 404.
 	    		status_header(404);
     		}
-    		
+
 	    	if (array_key_exists('update_suggest_url', $options) &&
     			isset($options['update_suggest_url']) &&
     			$options['update_suggest_url'] == 1) {
-    				
+
     			// clear the cookie - sanitize before writing to $_REQUEST
-   				$_REQUEST[$cookieName] = sanitize_text_field($_COOKIE[$cookieName]);
+   				$_REQUEST[$cookieName] = sanitize_text_field($originalURL);
     			setcookie($cookieName, '', time() - 5, "/");
-    				
+
     			require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     			add_action('wp_head', 'ABJ_404_Solution_ShortCode::updateURLbarIfNecessary');
     		}

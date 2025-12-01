@@ -43,25 +43,35 @@ class ABJ_404_Solution_ShortCode {
 		$dest404page = (isset($options['dest404page']) ?
 			$options['dest404page'] :
 			ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
-		
+
+		// Check if this is a manual redirect (has query param) - these bypass global 404 page check
+		$queryParamName = ABJ404_PP . '_ref';
+		$isManualRedirect = isset($_GET[$queryParamName]) && !empty($_GET[$queryParamName]);
+
 		// if we're not currently loading the custom 404 page then don't change the URL.
-		if ($abj404logic->thereIsAUserSpecified404Page($dest404page)) {
-			
+		// Exception: manual redirects to custom 404 pages should always allow URL restoration
+		if ($isManualRedirect) {
+			// Manual redirect - we know we're on a custom 404 page, allow URL restoration
+			$debugMessage .= "ok to update (manual redirect to custom 404 page), ";
+		} else if ($abj404logic->thereIsAUserSpecified404Page($dest404page)) {
+
 			// get the user specified 404 page.
 			$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0,
 				null, $options);
-			
+
 			// if the last part of the URL does not match the custom 404 page then
 			// don't update the URL.
-			if (!$f->endsWithCaseSensitive($permalink['link'], $_SERVER['REQUEST_URI']) &&
+			// Strip query string from REQUEST_URI for comparison (query params like abj404_solution_ref)
+			$requestUriPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+			if (!$f->endsWithCaseSensitive($permalink['link'], $requestUriPath) &&
 					$permalink['status'] != 'trash') {
-						
+
 				$shouldUpdateURL = false;
 				$debugMessage .= "do not update (not on custom 404 page (" .
 					$permalink['link'] . ")), ";
-				
+
 			} else {
-				$debugMessage .= "ok to update (displaying custom 404 page (" . 
+				$debugMessage .= "ok to update (displaying custom 404 page (" .
 					$permalink['link'] . ")), ";
 			}
 		} else {
@@ -393,4 +403,3 @@ class ABJ_404_Solution_ShortCode {
     }
 
 }
-add_shortcode(ABJ404_SHORTCODE_NAME, 'ABJ_404_Solution_ShortCode::shortcodePageSuggestions');
