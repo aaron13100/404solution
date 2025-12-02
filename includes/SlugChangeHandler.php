@@ -5,6 +5,13 @@ class ABJ_404_Solution_SlugChangeHandler {
     private static $instance = null;
 
     /**
+     * Track post IDs already processed within the current request.
+     * WordPress fires save_post multiple times per save; this prevents duplicate redirects.
+     * @var array
+     */
+    private static $processedPosts = [];
+
+    /**
      * Get singleton instance
      * @return ABJ_404_Solution_SlugChangeHandler
      */
@@ -31,6 +38,14 @@ class ABJ_404_Solution_SlugChangeHandler {
      */
     function save_postHandler($post_id, $post, $update) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
+
+        // Prevent duplicate processing within same request
+        // WordPress fires save_post multiple times per save operation
+        if (isset(self::$processedPosts[$post_id])) {
+            $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
+                ": Already processed post ID " . $post_id . " in this request (skipped).");
+            return;
+        }
 
         // Validate $post parameter
         if (!is_object($post) || !isset($post->post_name)) {
@@ -112,6 +127,9 @@ class ABJ_404_Solution_SlugChangeHandler {
 
                 return;
         }
+
+        // Mark as processed before creating redirect to prevent duplicates
+        self::$processedPosts[$post_id] = true;
 
         // create a redirect from the old to the new.
         $abj404dao->setupRedirect($oldSlug, ABJ404_STATUS_AUTO, ABJ404_TYPE_POST,
