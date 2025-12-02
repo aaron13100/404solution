@@ -1450,26 +1450,33 @@ class ABJ_404_Solution_SpellChecker {
 	 * @return bool True if computation was triggered, false if already pending/complete
 	 */
 	public function triggerAsyncSuggestionComputation($requestedURL) {
-		$urlKey = md5($requestedURL);
+		$f = ABJ_404_Solution_Functions::getInstance();
+
+		// Normalize URL to match how ShortCode.php processes the cookie value:
+		// 1. Strip query string (regex '\?.*')
+		// 2. Apply esc_url for consistency
+		$normalizedURL = esc_url($f->regexReplace('\?.*', '', $requestedURL));
+
+		$urlKey = md5($normalizedURL);
 		$transientKey = 'abj404_suggest_' . $urlKey;
 
 		// Check if already computing or complete - prevent duplicate work
 		$existing = get_transient($transientKey);
 		if ($existing !== false) {
 			$this->logger->debugMessage("Async suggestions: skipping, transient already exists for " .
-				esc_html($requestedURL) . " (status: " . esc_html($existing['status']) . ")");
+				esc_html($normalizedURL) . " (status: " . esc_html($existing['status']) . ")");
 			return false;
 		}
 
 		// Mark as pending BEFORE firing request (race condition protection)
 		set_transient($transientKey, array(
 			'status' => 'pending',
-			'url' => $requestedURL,
+			'url' => $normalizedURL,
 			'started' => time()
 		), 300); // 5 minute TTL
 
 		$this->logger->debugMessage("Async suggestions: triggering background computation for " .
-			esc_html($requestedURL));
+			esc_html($normalizedURL) . " (key: " . $urlKey . ")");
 
 		// Fire non-blocking request to compute suggestions
 		wp_remote_post(admin_url('admin-ajax.php'), array(
@@ -1478,7 +1485,7 @@ class ABJ_404_Solution_SpellChecker {
 			'sslverify' => apply_filters('https_local_ssl_verify', false),
 			'body'      => array(
 				'action'   => 'abj404_compute_suggestions',
-				'url'      => $requestedURL,
+				'url'      => $normalizedURL,
 				'url_key'  => $urlKey
 			)
 		));
