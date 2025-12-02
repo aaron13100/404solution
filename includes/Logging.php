@@ -272,11 +272,35 @@ class ABJ_404_Solution_Logging {
             $zip->close();
         }
         
+        // Get WordPress content counts
         $count_posts = wp_count_posts();
         $published_posts = $count_posts->publish;
         $count_pages = wp_count_posts('page');
         $published_pages = $count_pages->publish;
-        
+
+        // Get category and tag counts
+        $category_count = wp_count_terms('category');
+        $tag_count = wp_count_terms('post_tag');
+        // Handle WP_Error for categories/tags
+        if (is_wp_error($category_count)) {
+            $category_count = 0;
+        }
+        if (is_wp_error($tag_count)) {
+            $tag_count = 0;
+        }
+
+        // Get plugin-specific counts
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $redirectCounts = $abj404dao->getRedirectStatusCounts(true);
+        $capturedCounts = $abj404dao->getCapturedStatusCounts(true);
+        $totalLogsInDB = $abj404dao->getLogsCount(0);
+
+        // Get storage sizes
+        $logTableSizeBytes = $abj404dao->getLogDiskUsage();
+        $logTableSizeMB = round($logTableSizeBytes / (1024 * 1024), 2);
+        $debugFileSize = file_exists($this->getDebugFilePath()) ? filesize($this->getDebugFilePath()) : 0;
+        $debugFileSizeMB = round($debugFileSize / (1024 * 1024), 2);
+
         $attachments = array();
         $attachments[] = $logFileZip;
         $to = ABJ404_AUTHOR_EMAIL;
@@ -297,9 +321,30 @@ class ABJ_404_Solution_Logging {
         }
         $bodyLines[] = "WP_MEMORY_LIMIT: " . WP_MEMORY_LIMIT;
         $bodyLines[] = "Extensions: " . implode(", ", get_loaded_extensions());
-        $bodyLines[] = "Published posts: " . $published_posts . ", published pages: " . $published_pages;
-        $bodyLines[] = "Total error count: " . $totalErrorCount;
+        $bodyLines[] = " ";
+        $bodyLines[] = "--- WordPress Content Counts ---";
+        $bodyLines[] = "Published posts: " . $published_posts;
+        $bodyLines[] = "Published pages: " . $published_pages;
+        $bodyLines[] = "Categories: " . $category_count;
+        $bodyLines[] = "Tags: " . $tag_count;
+        $bodyLines[] = " ";
+        $bodyLines[] = "--- 404 Solution Counts ---";
+        $bodyLines[] = "Total redirects (active): " . $redirectCounts['all'];
+        $bodyLines[] = "  - Manual redirects: " . $redirectCounts['manual'];
+        $bodyLines[] = "  - Automatic redirects: " . $redirectCounts['auto'];
+        $bodyLines[] = "  - Regex redirects: " . $redirectCounts['regex'];
+        $bodyLines[] = "  - Trashed redirects: " . $redirectCounts['trash'];
+        $bodyLines[] = "Captured 404s (active): " . $capturedCounts['all'];
+        $bodyLines[] = "  - Captured (new): " . $capturedCounts['captured'];
+        $bodyLines[] = "  - Ignored: " . $capturedCounts['ignored'];
+        $bodyLines[] = "  - Later: " . $capturedCounts['later'];
+        $bodyLines[] = "  - Trashed: " . $capturedCounts['trash'];
+        $bodyLines[] = "Log entries in database: " . $totalLogsInDB;
+        $bodyLines[] = "Log table size: " . $logTableSizeMB . " MB";
+        $bodyLines[] = " ";
+        $bodyLines[] = "Total error count in log file: " . $totalErrorCount;
         $bodyLines[] = "Debug file name: " . $this->getDebugFilename();
+        $bodyLines[] = "Debug file size: " . $debugFileSizeMB . " MB";
         $bodyLines[] = "Active plugins: <pre>" .
           json_encode(get_option('active_plugins'), JSON_PRETTY_PRINT) . "</pre>";
           

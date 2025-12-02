@@ -498,6 +498,74 @@ class ABJ_404_Solution_UninstallModal {
     }
 
     /**
+     * Get comprehensive plugin statistics for diagnostics.
+     * Includes redirect counts by type, captured 404s, log entries, and storage sizes.
+     *
+     * @return array Array with detailed plugin statistics
+     */
+    private static function getPluginStatistics() {
+        $stats = array(
+            'redirects' => array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0),
+            'captured' => array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0),
+            'log_count' => 0,
+            'log_table_size_mb' => 0,
+            'debug_file_size_mb' => 0,
+        );
+
+        // Guard for test environment where DataAccess class may not be loaded
+        if (!class_exists('ABJ_404_Solution_DataAccess')) {
+            return $stats;
+        }
+
+        // Additional guard: check if wpdb has the required methods (test environments may use mocks)
+        global $wpdb;
+        if (!isset($wpdb) || !method_exists($wpdb, 'get_results')) {
+            return $stats;
+        }
+
+        try {
+            $dao = ABJ_404_Solution_DataAccess::getInstance();
+
+            // Get redirect counts by status
+            $redirectCounts = $dao->getRedirectStatusCounts(true);
+            if (is_array($redirectCounts)) {
+                $stats['redirects'] = $redirectCounts;
+            }
+
+            // Get captured 404s counts by status
+            $capturedCounts = $dao->getCapturedStatusCounts(true);
+            if (is_array($capturedCounts)) {
+                $stats['captured'] = $capturedCounts;
+            }
+
+            // Get log entry count
+            $stats['log_count'] = $dao->getLogsCount(0);
+
+            // Get log table size
+            $logTableSizeBytes = $dao->getLogDiskUsage();
+            if ($logTableSizeBytes > 0) {
+                $stats['log_table_size_mb'] = round($logTableSizeBytes / (1024 * 1024), 2);
+            }
+
+            // Get debug file size
+            if (class_exists('ABJ_404_Solution_Logging')) {
+                $logger = ABJ_404_Solution_Logging::getInstance();
+                $debugFilePath = $logger->getDebugFilePath();
+                if (file_exists($debugFilePath)) {
+                    $debugFileSize = filesize($debugFilePath);
+                    $stats['debug_file_size_mb'] = round($debugFileSize / (1024 * 1024), 2);
+                }
+            }
+        } catch (Exception $e) {
+            // Return defaults if there's any error
+        } catch (Error $e) {
+            // Also catch PHP Error for method not found, etc.
+        }
+
+        return $stats;
+    }
+
+    /**
      * Get counts of categories, tags, pages, and posts for diagnostics.
      * These counts help identify if memory issues are caused by large content volume.
      *
@@ -581,7 +649,7 @@ class ABJ_404_Solution_UninstallModal {
         $admin_email = get_option('admin_email');
 
         // Get plugin information
-        $redirect_count = self::getRedirectCount();
+        $plugin_stats = self::getPluginStatistics();
 
         // Gather system information (excluding site URL for privacy)
         $db_info = self::getDatabaseInfo();
@@ -595,11 +663,26 @@ class ABJ_404_Solution_UninstallModal {
             'DB Collation' => $db_info['collation'],
             'Multisite' => is_multisite() ? 'Yes' : 'No',
             'Active Plugins' => self::getActivePluginsList(),
-            'Redirect Count' => $redirect_count,
             'Category Count' => $content_counts['categories'],
             'Tag Count' => $content_counts['tags'],
             'Total Pages' => $content_counts['pages'],
             'Total Posts' => $content_counts['posts'],
+            // Redirect counts
+            'Redirects (active)' => $plugin_stats['redirects']['all'],
+            '  - Manual' => $plugin_stats['redirects']['manual'],
+            '  - Automatic' => $plugin_stats['redirects']['auto'],
+            '  - Regex' => $plugin_stats['redirects']['regex'],
+            '  - Trashed' => $plugin_stats['redirects']['trash'],
+            // Captured 404s
+            'Captured 404s (active)' => $plugin_stats['captured']['all'],
+            '  - New' => $plugin_stats['captured']['captured'],
+            '  - Ignored' => $plugin_stats['captured']['ignored'],
+            '  - Later' => $plugin_stats['captured']['later'],
+            '  - Trash' => $plugin_stats['captured']['trash'],
+            // Database stats
+            'Log Entries in DB' => $plugin_stats['log_count'],
+            'Log Table Size' => $plugin_stats['log_table_size_mb'] . ' MB',
+            'Debug File Size' => $plugin_stats['debug_file_size_mb'] . ' MB',
         );
 
         // Build email subject
