@@ -389,6 +389,9 @@ msgstr "作成してダウンロード"
 msgid "Create automatic redirects"
 msgstr "自動リダイレクトを作成"
 
+msgid "Create redirects on slug change"
+msgstr "スラッグ変更時にリダイレクトを作成"
+
 msgid "Create automatic redirects for categories"
 msgstr "カテゴリーの自動リダイレクトを作成"
 
@@ -2177,3 +2180,12 @@ msgstr "url-looks-like-regex"
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
 msgstr "このURLは正規表現のように見えますが、正規表現としてマークされていません。リダイレクトを編集し、「このURLを正規表現として扱う」にチェックを入れてください。"
+
+msgid "Create redirect from old URL to new URL"
+msgstr "古いURLから新しいURLへのリダイレクトを作成"
+
+msgid "If you change the permalink/slug, a redirect will be created from the old URL to the new one."
+msgstr "パーマリンク/スラッグを変更すると、古いURLから新しいURLへのリダイレクトが作成されます。"
+
+msgid "Redirect options are available after the post is published."
+msgstr "リダイレクトオプションは投稿の公開後に利用可能になります。"

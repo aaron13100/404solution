@@ -2502,11 +2502,13 @@ class ABJ_404_Solution_View {
         // -----------------------------------------------
         // Load auto redirects options template
         $selectedAutoRedirects = $this->getCheckedAttr($options, 'auto_redirects');
+        $selectedAutoSlugs = $this->getCheckedAttr($options, 'auto_slugs');
         $selectedAutoCats = $this->getCheckedAttr($options, 'auto_cats');
         $selectedAutoTags = $this->getCheckedAttr($options, 'auto_tags');
 
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsAutoRedirects.html");
         $html = $this->f->str_replace('{selectedAutoRedirects}', $selectedAutoRedirects, $html);
+        $html = $this->f->str_replace('{selectedAutoSlugs}', $selectedAutoSlugs, $html);
         $html = $this->f->str_replace('{selectedAutoCats}', $selectedAutoCats, $html);
         $html = $this->f->str_replace('{selectedAutoTags}', $selectedAutoTags, $html);
         $html = $this->f->str_replace('{auto_deletion}', esc_attr($options['auto_deletion']), $html);

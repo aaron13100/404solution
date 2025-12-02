@@ -388,6 +388,9 @@ msgstr "Создать и скачать"
 msgid "Create automatic redirects"
 msgstr "Создавать автоматические перенаправления"
 
+msgid "Create redirects on slug change"
+msgstr "Создавать перенаправления при изменении слага"
+
 msgid "Create automatic redirects for categories"
 msgstr "Создавать автоматические перенаправления для категорий"
 
@@ -2173,3 +2176,12 @@ msgstr "url-looks-like-regex"
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
 msgstr "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+
+msgid "Create redirect from old URL to new URL"
+msgstr "Создать перенаправление со старого URL на новый URL"
+
+msgid "If you change the permalink/slug, a redirect will be created from the old URL to the new one."
+msgstr "Если вы измените постоянную ссылку/slug, будет создано перенаправление со старого URL на новый."
+
+msgid "Redirect options are available after the post is published."
+msgstr "Параметры перенаправления доступны после публикации записи."

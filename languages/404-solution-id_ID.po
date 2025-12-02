@@ -388,6 +388,9 @@ msgstr "Buat dan Unduh"
 msgid "Create automatic redirects"
 msgstr "Buat pengalihan otomatis"
 
+msgid "Create redirects on slug change"
+msgstr "Buat pengalihan saat slug berubah"
+
 msgid "Create automatic redirects for categories"
 msgstr "Buat pengalihan otomatis untuk kategori"
 
@@ -2169,3 +2172,12 @@ msgstr "url-looks-like-regex"
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
 msgstr "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+
+msgid "Create redirect from old URL to new URL"
+msgstr "Buat pengalihan dari URL lama ke URL baru"
+
+msgid "If you change the permalink/slug, a redirect will be created from the old URL to the new one."
+msgstr "Jika Anda mengubah permalink/slug, pengalihan akan dibuat dari URL lama ke yang baru."
+
+msgid "Redirect options are available after the post is published."
+msgstr "Opsi pengalihan tersedia setelah pos dipublikasikan."

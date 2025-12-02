@@ -785,6 +785,7 @@ class ABJ_404_Solution_PluginLogic {
             'suggest_tags' => '1',
             'update_suggest_url' => '0',
             'auto_redirects' => '1',
+            'auto_slugs' => '1',
             'auto_score' => '90',
             'template_redirect_priority' => '9',
             'auto_deletion' => '1095',
@@ -2494,7 +2495,7 @@ class ABJ_404_Solution_PluginLogic {
 
         // All boolean options that could be in forms
         $allBooleanOptions = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags',
-            'auto_redirects', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips',
+            'auto_redirects', 'auto_slugs', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips',
         	'redirect_all_requests', 'update_suggest_url'
         );
 

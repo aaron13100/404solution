@@ -389,6 +389,9 @@ msgstr "创建并下载"
 msgid "Create automatic redirects"
 msgstr "创建自动重定向"
 
+msgid "Create redirects on slug change"
+msgstr "在别名更改时创建重定向"
+
 msgid "Create automatic redirects for categories"
 msgstr "为分类创建自动重定向"
 
@@ -2181,3 +2184,12 @@ msgstr "url-looks-like-regex"
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
 msgstr "此URL看起来像正则表达式，但未标记为正则表达式。编辑重定向并勾选\"将此URL视为正则表达式\"。"
+
+msgid "Create redirect from old URL to new URL"
+msgstr "创建从旧URL到新URL的重定向"
+
+msgid "If you change the permalink/slug, a redirect will be created from the old URL to the new one."
+msgstr "如果您更改固定链接/别名，将从旧URL创建重定向到新URL。"
+
+msgid "Redirect options are available after the post is published."
+msgstr "文章发布后可使用重定向选项。"

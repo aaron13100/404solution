@@ -60,12 +60,21 @@ class ABJ_404_Solution_SlugChangeHandler {
             return;
         }
 
-        // only automatically create redirects if we're supposed to.
+        // Check if we should create a redirect (respects per-post override from editor)
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $options = $abj404logic->getOptions();
-        if ($options['auto_redirects'] != '1') {
-            $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . ": Auto-redirects off " .
-                "(skipped) (post ID " . $post_id . ").");
+
+        // Check for per-post override from Quick Edit, Classic Editor, or Gutenberg
+        if (class_exists('ABJ_404_Solution_PostEditorIntegration')) {
+            $shouldCreate = ABJ_404_Solution_PostEditorIntegration::shouldCreateRedirect($post_id, $options);
+        } else {
+            // Fallback to global setting if PostEditorIntegration not loaded
+            $shouldCreate = @$options['auto_slugs'] == '1';
+        }
+
+        if (!$shouldCreate) {
+            $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . ": Auto slug redirects off " .
+                "or disabled for this post (skipped) (post ID " . $post_id . ").");
             return;
         }
 

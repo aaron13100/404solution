@@ -388,6 +388,9 @@ msgstr "Erstellen und Herunterladen"
 msgid "Create automatic redirects"
 msgstr "Automatische Weiterleitungen erstellen"
 
+msgid "Create redirects on slug change"
+msgstr "Weiterleitungen bei Slug-Änderung erstellen"
+
 msgid "Create automatic redirects for categories"
 msgstr "Automatische Weiterleitungen für Kategorien erstellen"
 
@@ -2172,3 +2175,12 @@ msgstr "url-looks-like-regex"
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
 msgstr "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+
+msgid "Create redirect from old URL to new URL"
+msgstr "Weiterleitung von alter URL zur neuen URL erstellen"
+
+msgid "If you change the permalink/slug, a redirect will be created from the old URL to the new one."
+msgstr "Wenn Sie den Permalink/Slug ändern, wird eine Weiterleitung von der alten URL zur neuen erstellt."
+
+msgid "Redirect options are available after the post is published."
+msgstr "Weiterleitungsoptionen sind nach der Veröffentlichung des Beitrags verfügbar."

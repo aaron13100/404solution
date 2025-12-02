@@ -387,6 +387,9 @@ msgstr "Skapa och hämta"
 msgid "Create automatic redirects"
 msgstr "Skapa automatiska omdirigeringar"
 
+msgid "Create redirects on slug change"
+msgstr "Skapa omdirigeringar vid sluggändring"
+
 msgid "Create automatic redirects for categories"
 msgstr "Skapa automatiska omdirigeringar för kategorier"
 
@@ -2169,3 +2172,12 @@ msgstr "url-looks-like-regex"
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
 msgstr "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+
+msgid "Create redirect from old URL to new URL"
+msgstr "Skapa omdirigering från gammal URL till ny URL"
+
+msgid "If you change the permalink/slug, a redirect will be created from the old URL to the new one."
+msgstr "Om du ändrar permalänk/slug kommer en omdirigering att skapas från den gamla URL:en till den nya."
+
+msgid "Redirect options are available after the post is published."
+msgstr "Omdirigeringsalternativ är tillgängliga efter att inlägget publicerats."

@@ -382,6 +382,9 @@ msgstr "إنشاء وتنزيل"
 msgid "Create automatic redirects"
 msgstr "إنشاء إعادة توجيه تلقائية"
 
+msgid "Create redirects on slug change"
+msgstr "إنشاء إعادة توجيه عند تغيير الرابط"
+
 msgid "Create automatic redirects for categories"
 msgstr "إنشاء إعادة توجيه تلقائية للتصنيفات"
 
@@ -2172,3 +2175,12 @@ msgstr "url-looks-like-regex"
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
 msgstr "يبدو هذا الرابط كتعبير نمطي لكنه غير معلّم كذلك. عدّل إعادة التوجيه وحدد \"معاملة هذا الرابط كتعبير نمطي\"."
+
+msgid "Create redirect from old URL to new URL"
+msgstr "إنشاء إعادة توجيه من الرابط القديم إلى الرابط الجديد"
+
+msgid "If you change the permalink/slug, a redirect will be created from the old URL to the new one."
+msgstr "إذا قمت بتغيير الرابط الدائم/الاسم المستعار، سيتم إنشاء إعادة توجيه من الرابط القديم إلى الجديد."
+
+msgid "Redirect options are available after the post is published."
+msgstr "خيارات إعادة التوجيه متاحة بعد نشر المقالة."
