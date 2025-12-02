@@ -2183,3 +2183,9 @@ msgstr "Als je de permalink/slug wijzigt, wordt er een doorverwijzing gemaakt va
 
 msgid "Redirect options are available after the post is published."
 msgstr "Doorverwijzingsopties zijn beschikbaar na publicatie van het bericht."
+
+msgid "404 Solution"
+msgstr "404 Oplossing"
+
+msgid "Slug changed:"
+msgstr "Slug gewijzigd:"

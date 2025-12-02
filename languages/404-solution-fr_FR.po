@@ -2176,3 +2176,9 @@ msgstr "Si vous modifiez le permalien/slug, une redirection sera créée de l'an
 
 msgid "Redirect options are available after the post is published."
 msgstr "Les options de redirection sont disponibles après la publication de l'article."
+
+msgid "404 Solution"
+msgstr "Solution 404"
+
+msgid "Slug changed:"
+msgstr "Slug modifié :"

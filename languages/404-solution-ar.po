@@ -2184,3 +2184,9 @@ msgstr "إذا قمت بتغيير الرابط الدائم/الاسم المس
 
 msgid "Redirect options are available after the post is published."
 msgstr "خيارات إعادة التوجيه متاحة بعد نشر المقالة."
+
+msgid "404 Solution"
+msgstr "حل 404"
+
+msgid "Slug changed:"
+msgstr "تغير الرابط:"

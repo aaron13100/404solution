@@ -2181,3 +2181,9 @@ msgstr "Om du ändrar permalänk/slug kommer en omdirigering att skapas från de
 
 msgid "Redirect options are available after the post is published."
 msgstr "Omdirigeringsalternativ är tillgängliga efter att inlägget publicerats."
+
+msgid "404 Solution"
+msgstr "404 Lösning"
+
+msgid "Slug changed:"
+msgstr "Slug ändrad:"

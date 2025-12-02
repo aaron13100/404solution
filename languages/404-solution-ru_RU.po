@@ -2185,3 +2185,9 @@ msgstr "Если вы измените постоянную ссылку/slug, �
 
 msgid "Redirect options are available after the post is published."
 msgstr "Параметры перенаправления доступны после публикации записи."
+
+msgid "404 Solution"
+msgstr "Решение 404"
+
+msgid "Slug changed:"
+msgstr "Slug изменён:"

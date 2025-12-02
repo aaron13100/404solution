@@ -2193,3 +2193,9 @@ msgstr "如果您更改固定链接/别名，将从旧URL创建重定向到新UR
 
 msgid "Redirect options are available after the post is published."
 msgstr "文章发布后可使用重定向选项。"
+
+msgid "404 Solution"
+msgstr "404解决方案"
+
+msgid "Slug changed:"
+msgstr "别名已更改："

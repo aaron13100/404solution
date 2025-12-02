@@ -2183,3 +2183,9 @@ msgstr "Se você alterar o permalink/slug, um redirecionamento será criado da U
 
 msgid "Redirect options are available after the post is published."
 msgstr "As opções de redirecionamento estão disponíveis após a publicação do post."
+
+msgid "404 Solution"
+msgstr "Solução 404"
+
+msgid "Slug changed:"
+msgstr "Slug alterado:"

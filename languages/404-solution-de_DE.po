@@ -2184,3 +2184,9 @@ msgstr "Wenn Sie den Permalink/Slug ändern, wird eine Weiterleitung von der alt
 
 msgid "Redirect options are available after the post is published."
 msgstr "Weiterleitungsoptionen sind nach der Veröffentlichung des Beitrags verfügbar."
+
+msgid "404 Solution"
+msgstr "404 Lösung"
+
+msgid "Slug changed:"
+msgstr "Slug geändert:"

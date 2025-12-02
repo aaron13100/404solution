@@ -2181,3 +2181,9 @@ msgstr "Jika Anda mengubah permalink/slug, pengalihan akan dibuat dari URL lama 
 
 msgid "Redirect options are available after the post is published."
 msgstr "Opsi pengalihan tersedia setelah pos dipublikasikan."
+
+msgid "404 Solution"
+msgstr "Solusi 404"
+
+msgid "Slug changed:"
+msgstr "Slug berubah:"

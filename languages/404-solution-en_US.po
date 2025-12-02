@@ -2176,3 +2176,9 @@ msgstr "If you change the permalink/slug, a redirect will be created from the ol
 
 msgid "Redirect options are available after the post is published."
 msgstr "Redirect options are available after the post is published."
+
+msgid "404 Solution"
+msgstr "404 Solution"
+
+msgid "Slug changed:"
+msgstr "Slug changed:"

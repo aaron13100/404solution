@@ -2189,3 +2189,9 @@ msgstr "パーマリンク/スラッグを変更すると、古いURLから新�
 
 msgid "Redirect options are available after the post is published."
 msgstr "リダイレクトオプションは投稿の公開後に利用可能になります。"
+
+msgid "404 Solution"
+msgstr "404ソリューション"
+
+msgid "Slug changed:"
+msgstr "スラッグ変更:"
