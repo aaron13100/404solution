@@ -444,6 +444,9 @@ class ABJ_404_Solution_ShortCode {
         $permalinkSuggestions = isset($suggestionsPacket[0]) ? (array)$suggestionsPacket[0] : [];
         $rowType = isset($suggestionsPacket[1]) ? $suggestionsPacket[1] : 'pages';
 
+        // Check if user is plugin admin to show scores
+        $showExtraAdminData = (is_user_logged_in() && $abj404logic->userIsPluginAdmin());
+
         $content = '<div class="suggest-404s">' . "\n";
         $content .= wp_kses_post(
             str_replace('{suggest_title_text}', __('Here are some other great pages', '404-solution'),
@@ -478,6 +481,11 @@ class ABJ_404_Solution_ShortCode {
             $content .= "<a href=\"" . esc_url($permalink['link']) . $commentPartAndQueryPart .
                 "\" title=\"" . esc_attr($permalink['title']) . "\">" .
                 esc_attr($permalink['title']) . "</a>";
+
+            // Display the score after the page link (admin only)
+            if ($showExtraAdminData) {
+                $content .= ' (' . number_format($permalink['score'], 4) . ')';
+            }
 
             // </li>
             $content .= wp_kses_post(@$options['suggest_entryafter']) . "\n";
