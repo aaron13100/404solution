@@ -3,7 +3,7 @@
    ============================================ */
 
 .abj404-container {
-    max-width: 1200px;
+    max-width: none;
     margin: 0;
     background: var(--abj404-surface, #fff);
     border-radius: 8px;
