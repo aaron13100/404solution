@@ -1442,4 +1442,77 @@ class ABJ_404_Solution_SpellChecker {
 		return $v0[$RowLen];
 	}
 
+	/**
+	 * Trigger asynchronous suggestion computation via non-blocking HTTP request.
+	 * Uses the requested URL (MD5 hashed) as the transient key.
+	 *
+	 * @param string $requestedURL The full requested URL that caused the 404
+	 * @return bool True if computation was triggered, false if already pending/complete
+	 */
+	public function triggerAsyncSuggestionComputation($requestedURL) {
+		$urlKey = md5($requestedURL);
+		$transientKey = 'abj404_suggest_' . $urlKey;
+
+		// Check if already computing or complete - prevent duplicate work
+		$existing = get_transient($transientKey);
+		if ($existing !== false) {
+			$this->logger->debugMessage("Async suggestions: skipping, transient already exists for " .
+				esc_html($requestedURL) . " (status: " . esc_html($existing['status']) . ")");
+			return false;
+		}
+
+		// Mark as pending BEFORE firing request (race condition protection)
+		set_transient($transientKey, array(
+			'status' => 'pending',
+			'url' => $requestedURL,
+			'started' => time()
+		), 300); // 5 minute TTL
+
+		$this->logger->debugMessage("Async suggestions: triggering background computation for " .
+			esc_html($requestedURL));
+
+		// Fire non-blocking request to compute suggestions
+		wp_remote_post(admin_url('admin-ajax.php'), array(
+			'blocking'  => false,
+			'timeout'   => 0.01,
+			'sslverify' => apply_filters('https_local_ssl_verify', false),
+			'body'      => array(
+				'action'   => 'abj404_compute_suggestions',
+				'url'      => $requestedURL,
+				'url_key'  => $urlKey
+			)
+		));
+
+		return true;
+	}
+
+	/**
+	 * Check if the configured 404 page contains the suggestions shortcode.
+	 *
+	 * @return bool True if 404 page has the shortcode
+	 */
+	public function does404PageHaveSuggestionsShortcode() {
+		$options = $this->logic->getOptions();
+		$dest404page = isset($options['dest404page']) ? $options['dest404page'] : null;
+
+		if (!$this->logic->thereIsAUserSpecified404Page($dest404page)) {
+			return false;
+		}
+
+		// Extract page ID from dest404page (format: "123|1")
+		$parts = explode('|', $dest404page);
+		$page404Id = isset($parts[0]) ? intval($parts[0]) : 0;
+
+		if ($page404Id <= 0) {
+			return false;
+		}
+
+		$page = get_post($page404Id);
+		if (!$page) {
+			return false;
+		}
+
+		return has_shortcode($page->post_content, ABJ404_SHORTCODE_NAME);
+	}
+
 }

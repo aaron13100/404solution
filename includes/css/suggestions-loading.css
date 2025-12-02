@@ -1,0 +1,60 @@
+/**
+ * Loading skeleton animation for async 404 suggestions.
+ * Displays placeholder animation while suggestions are being computed.
+ */
+
+/* Container for loading state */
+.abj404-loading {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Individual skeleton item */
+.abj404-skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: abj404-shimmer 1.5s infinite;
+    height: 20px;
+    margin: 10px 0;
+    border-radius: 4px;
+    list-style: none;
+}
+
+/* Vary widths for more natural look */
+.abj404-skeleton:nth-child(1) { width: 85%; }
+.abj404-skeleton:nth-child(2) { width: 70%; }
+.abj404-skeleton:nth-child(3) { width: 90%; }
+.abj404-skeleton:nth-child(4) { width: 75%; }
+.abj404-skeleton:nth-child(5) { width: 80%; }
+.abj404-skeleton:nth-child(n+6) { width: 78%; }
+
+/* Shimmer animation */
+@keyframes abj404-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* No suggestions fallback message */
+.abj404-no-suggestions {
+    color: #666;
+    font-style: italic;
+    list-style: none;
+    padding: 10px 0;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .abj404-skeleton {
+        background: linear-gradient(90deg, #2a2a2a 25%, #333333 50%, #2a2a2a 75%);
+        background-size: 200% 100%;
+    }
+
+    .abj404-no-suggestions {
+        color: #aaa;
+    }
+}

@@ -94,6 +94,15 @@ class ABJ_404_Solution_WordPress_Connector {
             ABJ_404_Solution_SetupWizard::init();
         }
 
+        // Async suggestion computation and polling - must work for both logged-in and non-logged-in users
+        // These are registered outside is_admin() because:
+        // 1. Background worker (wp_remote_post) may not have admin context
+        // 2. Frontend users polling from 404 page may not be logged in
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_compute_suggestions', 'ABJ_404_Solution_Ajax_SuggestionCompute::computeSuggestions');
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_nopriv_abj404_compute_suggestions', 'ABJ_404_Solution_Ajax_SuggestionCompute::computeSuggestions');
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_poll_suggestions', 'ABJ_404_Solution_Ajax_SuggestionPolling::pollSuggestions');
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_nopriv_abj404_poll_suggestions', 'ABJ_404_Solution_Ajax_SuggestionPolling::pollSuggestions');
+
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
     }
 
@@ -563,6 +572,8 @@ class ABJ_404_Solution_WordPress_Connector {
             }
 
             if (!$autoRedirectsAreOn) {
+            	// Trigger async suggestion computation if 404 page has shortcode
+            	$this->triggerAsyncSuggestionsIfNeeded($requestedURL);
             	$this->logic->sendTo404Page($requestedURL,
             		'Do not create redirects per the options.');
             	return;
@@ -635,11 +646,27 @@ class ABJ_404_Solution_WordPress_Connector {
             }
         }
 
-        // this is for requests like website.com/?p=123            
+        // this is for requests like website.com/?p=123
         $this->logic->tryNormalPostQuery($options);
-        
+
         $this->dao->logRedirectHit($requestedURL, '404', 'gave up.');
+
+        // Trigger async suggestion computation if 404 page has shortcode
+        $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
         $this->logic->sendTo404Page($requestedURL, '');
+    }
+
+    /**
+     * Trigger async suggestion computation if the 404 page has the shortcode.
+     * Fires a non-blocking HTTP request to compute suggestions in the background.
+     *
+     * @param string $requestedURL The URL that caused the 404
+     */
+    private function triggerAsyncSuggestionsIfNeeded($requestedURL) {
+        // Check if 404 page has the suggestions shortcode
+        if ($this->spellChecker->does404PageHaveSuggestionsShortcode()) {
+            $this->spellChecker->triggerAsyncSuggestionComputation($requestedURL);
+        }
     }
     
     /** 

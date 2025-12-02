@@ -186,7 +186,32 @@ class ABJ_404_Solution_ShortCode {
             // if no 404 was detected then we don't offer any suggestions
             return "<!-- " . ABJ404_PP . " - No 404 was detected. No suggestions to offer. -->\n";
         }
-        
+
+        // Check for async suggestion computation (transient-based)
+        $urlKey = md5($urlRequest);
+        $transientKey = 'abj404_suggest_' . $urlKey;
+        $asyncData = get_transient($transientKey);
+
+        if ($asyncData !== false) {
+            if (isset($asyncData['status']) && $asyncData['status'] === 'complete') {
+                // Suggestions ready - use cached data from async computation
+                $content .= self::renderSuggestionsHTML(
+                    isset($asyncData['suggestions']) ? $asyncData['suggestions'] : array(),
+                    $urlRequest
+                );
+                $content .= "\n<!-- " . ABJ404_PP . " - End 404 suggestions (async complete) -->\n";
+                return $content;
+
+            } elseif (isset($asyncData['status']) && $asyncData['status'] === 'pending') {
+                // Still computing - show loading placeholder
+                self::enqueueAsyncPollingScript($urlRequest);
+                $content .= self::renderAsyncPlaceholder($urlRequest, $options);
+                $content .= "\n<!-- " . ABJ404_PP . " - Suggestions loading asynchronously -->\n";
+                return $content;
+            }
+        }
+
+        // No async data - fall back to synchronous computation
         $urlSlugOnly = $abj404logic->removeHomeDirectory($urlRequest);
 
         // Try cache first (populated by processRedirect() for existing redirects)
@@ -368,7 +393,7 @@ class ABJ_404_Solution_ShortCode {
             $content .= "    textArea.style.width = '100%';\n";
             $content .= "    textArea.style.height = '300px';\n";
             $content .= "    textArea.style.marginBottom = '10px';\n";
-            $content .= "    // Set value safely using textContent\n"; 
+            $content .= "    // Set value safely using textContent\n";
             $content .= "    textArea.value = debugText;\n";
             $content .= "    textArea.readOnly = true;\n";
             $content .= "    \n";
@@ -395,11 +420,150 @@ class ABJ_404_Solution_ShortCode {
             $content .= "    document.body.appendChild(modalOverlay);\n";
             $content .= "}\n";
             $content .= "</script>\n";
-        }        
+        }
 
         $content .= "\n<!-- " . ABJ404_PP . " - End 404 suggestions for slug " . esc_html($urlSlugOnly) . " -->\n";
 
         return $content;
+    }
+
+    /**
+     * Render suggestions HTML from pre-computed data (for AJAX polling response).
+     * This method is called by Ajax_SuggestionPolling when suggestions are ready.
+     *
+     * @param array $suggestionsPacket The suggestions data from findMatchingPosts()
+     * @param string $requestedURL The original 404 URL (for debugging)
+     * @return string HTML content for suggestions
+     */
+    public static function renderSuggestionsHTML($suggestionsPacket, $requestedURL = '') {
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $options = $abj404logic->getOptions();
+
+        // Ensure suggestions is an array (cache may return stdClass from json_decode)
+        $permalinkSuggestions = isset($suggestionsPacket[0]) ? (array)$suggestionsPacket[0] : [];
+        $rowType = isset($suggestionsPacket[1]) ? $suggestionsPacket[1] : 'pages';
+
+        $content = '<div class="suggest-404s">' . "\n";
+        $content .= wp_kses_post(
+            str_replace('{suggest_title_text}', __('Here are some other great pages', '404-solution'),
+                $options['suggest_title'] )) . "\n";
+
+        $currentSlug = '';
+        if (isset($_SERVER['REQUEST_URI'])) {
+            $currentSlug = $abj404logic->removeHomeDirectory(
+                $f->regexReplace('\?.*', '', urldecode($_SERVER['REQUEST_URI'])));
+        }
+
+        $displayed = 0;
+        $commentPartAndQueryPart = $abj404logic->getCommentPartAndQueryPartOfRequest();
+
+        foreach ($permalinkSuggestions as $idAndType => $linkScore) {
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore,
+                $rowType, $options);
+
+            // Skip if we're currently on the page we're about to suggest
+            if ($currentSlug !== '' && basename($permalink['link']) == $currentSlug) {
+                continue;
+            }
+
+            if ($displayed == 0) {
+                // <ol>
+                $content .= wp_kses_post($options['suggest_before']);
+            }
+
+            // <li>
+            $content .= wp_kses_post($options['suggest_entrybefore']);
+
+            $content .= "<a href=\"" . esc_url($permalink['link']) . $commentPartAndQueryPart .
+                "\" title=\"" . esc_attr($permalink['title']) . "\">" .
+                esc_attr($permalink['title']) . "</a>";
+
+            // </li>
+            $content .= wp_kses_post(@$options['suggest_entryafter']) . "\n";
+            $displayed++;
+            if ($displayed >= $options['suggest_max']) {
+                break;
+            }
+        }
+
+        if ($displayed >= 1) {
+            // </ol>
+            $content .= wp_kses_post($options['suggest_after']) . "\n";
+        } else {
+            $content .= wp_kses_post(
+                str_replace('{suggest_noresults_text}', __('No suggestions. :/ ', '404-solution'),
+                    $options['suggest_noresults'] ));
+        }
+
+        $content .= "\n</div>";
+
+        return $content;
+    }
+
+    /**
+     * Render a loading placeholder for async suggestions.
+     * Shows skeleton loading animation while suggestions are being computed.
+     *
+     * @param string $requestedURL The 404 URL being looked up
+     * @param array $options Plugin options
+     * @return string HTML placeholder with loading state
+     */
+    public static function renderAsyncPlaceholder($requestedURL, $options) {
+        $suggestMax = isset($options['suggest_max']) ? intval($options['suggest_max']) : 5;
+
+        // Generate skeleton items based on suggest_max
+        $skeletons = '';
+        for ($i = 0; $i < $suggestMax; $i++) {
+            $skeletons .= '<li class="abj404-skeleton"></li>' . "\n";
+        }
+
+        $content = '<div id="abj404-suggestions-placeholder" class="suggest-404s" ' .
+            'data-requested-url="' . esc_attr($requestedURL) . '">' . "\n";
+        $content .= wp_kses_post(
+            str_replace('{suggest_title_text}', __('Here are some other great pages', '404-solution'),
+                $options['suggest_title'] )) . "\n";
+        $content .= wp_kses_post($options['suggest_before']);
+        $content .= '<div class="abj404-loading">' . "\n";
+        $content .= $skeletons;
+        $content .= '</div>' . "\n";
+        $content .= wp_kses_post($options['suggest_after']) . "\n";
+        $content .= '</div>';
+
+        return $content;
+    }
+
+    /**
+     * Enqueue the async suggestion polling JavaScript.
+     *
+     * @param string $requestedURL The 404 URL for polling
+     */
+    public static function enqueueAsyncPollingScript($requestedURL) {
+        // Enqueue jQuery dependency
+        wp_enqueue_script('jquery');
+
+        // Enqueue polling script
+        wp_enqueue_script(
+            'abj404-suggestion-polling',
+            plugin_dir_url(__FILE__) . 'ajax/SuggestionPolling.js',
+            array('jquery'),
+            ABJ404_VERSION,
+            true // Load in footer
+        );
+
+        // Pass AJAX URL and localized strings to JavaScript
+        wp_localize_script('abj404-suggestion-polling', 'abj404_suggestions', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'no_suggestions_text' => __('No suggestions. :/ ', '404-solution')
+        ));
+
+        // Enqueue loading CSS
+        wp_enqueue_style(
+            'abj404-suggestions-loading',
+            plugin_dir_url(__FILE__) . 'css/suggestions-loading.css',
+            array(),
+            ABJ404_VERSION
+        );
     }
 
 }
