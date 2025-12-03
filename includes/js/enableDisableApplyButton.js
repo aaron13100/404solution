@@ -24,14 +24,11 @@ function enableDisableApplyButton() {
     button.disabled = !shouldBeEnabled;
     selector.disabled = !shouldBeEnabled;
     if (shouldBeEnabled) {
-        button.setAttribute("alt", '');
         button.setAttribute("title", '');
-        selector.setAttribute("alt", '');
+        button.removeAttribute("aria-describedby");
         selector.setAttribute("title", '');
     } else {
-        button.setAttribute("alt", "{altText}");
         button.setAttribute("title", "{altText}");
-        selector.setAttribute("alt", "{altText}");
         selector.setAttribute("title", "{altText}");
     }
 }

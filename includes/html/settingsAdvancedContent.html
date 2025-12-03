@@ -2,9 +2,18 @@
     .closeLI {
         margin-bottom: initial;
     }
+    .abj404-settings-table {
+        border: 1px solid var(--abj404-border, #c3c4c7);
+        border-collapse: collapse;
+    }
+    .abj404-settings-table td {
+        border: 1px solid var(--abj404-border, #c3c4c7);
+        vertical-align: top;
+        padding: 12px;
+    }
 </style>
-<table border=1>
-    <tr><td valign="top">
+<table class="abj404-settings-table">
+    <tr><td>
             <label for="recognized_post_types">{Recognized Post Types}
                 <BR/><BR/>
 
@@ -27,7 +36,7 @@
     </td></tr>
 
     <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-    <tr><td valign="top">
+    <tr><td>
             <label for="recognized_categories">{Custom Taxonomies}
                 <BR/><BR/>
 
@@ -46,7 +55,7 @@
 
     </td></tr>
     <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-    <tr><td valign="top">
+    <tr><td>
             <label for="folders_files_ignore">{Files and Folders Ignore Strings - Do Not Process}
                 <BR/><BR/>
 
@@ -95,7 +104,7 @@
 
 
     <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-    <tr><td valign="top">
+    <tr><td>
         <label for="suggest_regex_exclusions">{Exclude Suggestion URLs (Regex)}
             <BR/><BR/>
 
@@ -143,7 +152,7 @@
     </tr>
 
     <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-    <tr><td valign="top">
+    <tr><td>
             <label for="exlclude_pages_list">{Exclude Specific Pages, Posts, Categories, Etc}
                 <BR/><BR/>
             {Pages listed here will not be redirected to (unless a redirect to the page already exists).}
