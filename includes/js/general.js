@@ -124,7 +124,40 @@ function showSaveOverlay() {
         if (message) {
             message.textContent = abj404General.savingSettings;
         }
+
+        // Announce to screen readers
+        abj404AnnounceToScreenReader(abj404General.savingSettings);
     }
+}
+
+/**
+ * Announce a message to screen readers using a live region
+ * @param {string} message The message to announce
+ * @param {string} priority 'polite' or 'assertive' (default: 'polite')
+ */
+function abj404AnnounceToScreenReader(message, priority) {
+    priority = priority || 'polite';
+
+    // Create or get the live region
+    var liveRegion = document.getElementById('abj404-live-region');
+    if (!liveRegion) {
+        liveRegion = document.createElement('div');
+        liveRegion.id = 'abj404-live-region';
+        liveRegion.className = 'abj404-live-region';
+        liveRegion.setAttribute('aria-live', priority);
+        liveRegion.setAttribute('aria-atomic', 'true');
+        liveRegion.setAttribute('role', 'status');
+        document.body.appendChild(liveRegion);
+    }
+
+    // Update priority if needed
+    liveRegion.setAttribute('aria-live', priority);
+
+    // Clear and set the message (clearing first ensures re-announcement)
+    liveRegion.textContent = '';
+    setTimeout(function() {
+        liveRegion.textContent = message;
+    }, 100);
 }
 
 function showSaveError(errorMessage) {
@@ -136,6 +169,9 @@ function showSaveError(errorMessage) {
         if (message) {
             message.textContent = errorMessage;
         }
+
+        // Announce error to screen readers with assertive priority
+        abj404AnnounceToScreenReader(errorMessage, 'assertive');
 
         // Hide overlay after 5 seconds
         setTimeout(function() {

@@ -109,12 +109,42 @@
         var $modal = $('.abj404-modal');
         if (!$modal.length) return;
 
+        // Add ARIA attributes to modals
+        $modal.each(function() {
+            var $m = $(this);
+            $m.attr('role', 'dialog');
+            $m.attr('aria-modal', 'true');
+
+            // Find the modal title for aria-labelledby
+            var $title = $m.find('.abj404-modal-header h2');
+            if ($title.length) {
+                var titleId = $m.attr('id') + '-title';
+                $title.attr('id', titleId);
+                $m.attr('aria-labelledby', titleId);
+            }
+        });
+
         // Open modal
         $(document).on('click', '[data-modal-open]', function(e) {
             e.preventDefault();
-            var modalId = $(this).data('modal-open');
-            $('#' + modalId).addClass('active');
+            var $trigger = $(this);
+            var modalId = $trigger.data('modal-open');
+            var $targetModal = $('#' + modalId);
+
+            // Store the trigger element to return focus on close
+            $targetModal.data('trigger', $trigger);
+
+            $targetModal.addClass('active');
             $('body').css('overflow', 'hidden');
+
+            // Focus the first focusable element in the modal
+            var $focusable = $targetModal.find('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])').filter(':visible');
+            if ($focusable.length) {
+                $focusable.first().focus();
+            }
+
+            // Trap focus within modal
+            trapFocus($targetModal);
         });
 
         // Close modal - close button
@@ -141,11 +171,47 @@
     }
 
     /**
+     * Trap focus within modal for accessibility
+     */
+    function trapFocus($modal) {
+        $modal.on('keydown.trapFocus', function(e) {
+            if (e.key !== 'Tab') return;
+
+            var $focusable = $modal.find('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])').filter(':visible');
+            var $first = $focusable.first();
+            var $last = $focusable.last();
+
+            if (e.shiftKey) {
+                // Shift+Tab: if on first element, go to last
+                if (document.activeElement === $first[0]) {
+                    e.preventDefault();
+                    $last.focus();
+                }
+            } else {
+                // Tab: if on last element, go to first
+                if (document.activeElement === $last[0]) {
+                    e.preventDefault();
+                    $first.focus();
+                }
+            }
+        });
+    }
+
+    /**
      * Close a modal
      */
     function closeModal($modal) {
         $modal.removeClass('active');
         $('body').css('overflow', '');
+
+        // Remove focus trap
+        $modal.off('keydown.trapFocus');
+
+        // Return focus to trigger element
+        var $trigger = $modal.data('trigger');
+        if ($trigger && $trigger.length) {
+            $trigger.focus();
+        }
     }
 
     /**

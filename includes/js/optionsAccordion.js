@@ -142,6 +142,14 @@ function abj404ShowToast(message, type) {
     }
 
     /**
+     * Check if user prefers reduced motion
+     * @returns {boolean}
+     */
+    function prefersReducedMotion() {
+        return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    /**
      * Toggle a section open/closed
      * @param {jQuery} $section The section to toggle
      */
@@ -150,15 +158,16 @@ function abj404ShowToast(message, type) {
         var $content = $section.find('.abj404-accordion-content');
         var $toggle = $header.find('.abj404-accordion-toggle');
         var isExpanded = $header.attr('aria-expanded') === 'true';
+        var duration = prefersReducedMotion() ? 0 : 300;
 
         if (isExpanded) {
             // Collapse
-            $content.slideUp(300);
+            $content.slideUp(duration);
             $header.attr('aria-expanded', 'false');
             $toggle.text('▼');
         } else {
             // Expand
-            $content.slideDown(300);
+            $content.slideDown(duration);
             $header.attr('aria-expanded', 'true');
             $toggle.text('▲');
         }
@@ -201,6 +210,8 @@ function abj404ShowToast(message, type) {
      * Expand all accordion sections and cards
      */
     function expandAllSections() {
+        var duration = prefersReducedMotion() ? 0 : 300;
+
         // Legacy accordion sections
         $('.abj404-accordion-section').each(function() {
             var $section = $(this);
@@ -208,7 +219,7 @@ function abj404ShowToast(message, type) {
             var $content = $section.find('.abj404-accordion-content');
             var $toggle = $header.find('.abj404-accordion-toggle');
 
-            $content.slideDown(300);
+            $content.slideDown(duration);
             $header.attr('aria-expanded', 'true');
             $toggle.text('▲');
         });
@@ -227,6 +238,8 @@ function abj404ShowToast(message, type) {
      * Collapse all accordion sections and cards
      */
     function collapseAllSections() {
+        var duration = prefersReducedMotion() ? 0 : 300;
+
         // Legacy accordion sections
         $('.abj404-accordion-section').each(function() {
             var $section = $(this);
@@ -234,7 +247,7 @@ function abj404ShowToast(message, type) {
             var $content = $section.find('.abj404-accordion-content');
             var $toggle = $header.find('.abj404-accordion-toggle');
 
-            $content.slideUp(300);
+            $content.slideUp(duration);
             $header.attr('aria-expanded', 'false');
             $toggle.text('▼');
         });

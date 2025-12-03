@@ -3076,3 +3076,173 @@ html[data-theme="obsidian"] .abj404-accordion-content select {
     background: var(--abj404-primary, #2271b1) !important;
     color: #fff !important;
 }
+
+/* ============================================
+   Accessibility: Link-styled Buttons
+   ============================================ */
+
+.abj404-link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: var(--abj404-accent, #2271b1);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.abj404-link-button:hover {
+    text-decoration: underline;
+    color: var(--abj404-accent-hover, #135e96);
+}
+
+.abj404-link-button:focus {
+    outline: 2px solid var(--abj404-accent, #2271b1);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* ============================================
+   Accessibility: Focus Indicators
+   ============================================ */
+
+/* Visible focus indicators for all interactive elements */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible,
+.abj404-tab:focus-visible,
+.abj404-content-tab:focus-visible,
+.abj404-page-btn:focus-visible,
+.abj404-btn:focus-visible,
+.abj404-action-link:focus-visible {
+    outline: 2px solid var(--abj404-accent, #2271b1);
+    outline-offset: 2px;
+}
+
+/* Remove focus outline removal for tabs - they should have visible focus */
+.abj404-tab:focus {
+    outline: 2px solid var(--abj404-accent, #2271b1);
+    outline-offset: -2px;
+    box-shadow: none;
+}
+
+/* Ensure checkboxes have visible focus */
+input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--abj404-accent, #2271b1);
+    outline-offset: 2px;
+}
+
+/* Table header links focus */
+.abj404-table th a:focus-visible {
+    outline: 2px solid var(--abj404-accent, #2271b1);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Modal close button focus */
+.abj404-modal-close:focus-visible {
+    outline: 2px solid var(--abj404-accent, #2271b1);
+    outline-offset: 2px;
+}
+
+/* ============================================
+   Accessibility: Screen Reader Utilities
+   ============================================ */
+
+/* Visually hidden but accessible to screen readers */
+.screen-reader-text,
+.abj404-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Skip link styles - visible when focused */
+.abj404-skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--abj404-accent, #2271b1);
+    color: #fff;
+    padding: 8px 16px;
+    z-index: 100001;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.abj404-skip-link:focus {
+    top: 0;
+}
+
+/* Live region for announcements */
+.abj404-live-region {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ============================================
+   Accessibility: Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    /* Disable specific animations */
+    .abj404-toast,
+    .abj404-modal-content,
+    .abj404-spinner,
+    .abj404-collapse-icon,
+    .abj404-accordion-toggle {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    /* jQuery slideUp/slideDown alternatives - instant show/hide */
+    .abj404-accordion-content {
+        transition: none !important;
+    }
+}
+
+/* ============================================
+   Accessibility: High Contrast Mode Support
+   ============================================ */
+
+@media (forced-colors: active) {
+    .abj404-badge,
+    .abj404-type-badge {
+        border: 1px solid currentColor;
+    }
+
+    .abj404-btn,
+    .abj404-page-btn {
+        border: 2px solid currentColor;
+    }
+
+    .abj404-table th,
+    .abj404-table td {
+        border: 1px solid currentColor;
+    }
+}

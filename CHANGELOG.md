@@ -6,6 +6,7 @@
 * Feature: Add Arabic language and RTL layout support.
 * Improvement: Add detailed statistics to debug log and deactivation feedback emails.
 * Improvement: Optimize category/tag queries for better performance.
+* Improvement: Accessibility - WCAG 2.1 AA compliance with proper table headers, focus indicators, ARIA labels, modal focus trapping, and reduced motion support.
 * FIX: Prevent duplicate redirects when WordPress fires save_post multiple times.
 * FIX: Show shortcode suggestions for manual redirects to custom 404 pages.
 * FIX: Options page now uses full available width.

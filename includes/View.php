@@ -1580,7 +1580,7 @@ class ABJ_404_Solution_View {
 
         $html = '<table class="abj404-table">';
         $html .= '<thead><tr>';
-        $html .= '<th><input type="checkbox" id="select-all-captured"></th>';
+        $html .= '<th scope="col"><input type="checkbox" id="select-all-captured" aria-label="' . esc_attr__('Select all', '404-solution') . '"></th>';
 
         // Generate sortable column headers
         foreach ($columns as $key => $col) {
@@ -1617,7 +1617,7 @@ class ABJ_404_Solution_View {
                 $tooltipHtml = '<span class="lefty-tooltiptext">' . esc_html($col['title_attr']) . '</span>';
             }
 
-            $html .= '<th' . $classAttr . '>' . $tooltipHtml . '<a href="' . esc_url($sortUrl) . '">' . esc_html($col['title']) . $sortIndicator . '</a></th>';
+            $html .= '<th scope="col"' . $classAttr . '>' . $tooltipHtml . '<a href="' . esc_url($sortUrl) . '">' . esc_html($col['title']) . $sortIndicator . '</a></th>';
         }
 
         $html .= '</tr></thead>';
@@ -2965,7 +2965,7 @@ class ABJ_404_Solution_View {
                 $sortIndicator = $tableOptions['order'] == 'ASC' ? ' ↑' : ' ↓';
             }
 
-            $html .= '<th' . $sortClass . '><a href="' . esc_url($sortUrl) . '">' . esc_html($col['title']) . $sortIndicator . '</a></th>';
+            $html .= '<th scope="col"' . $sortClass . '><a href="' . esc_url($sortUrl) . '">' . esc_html($col['title']) . $sortIndicator . '</a></th>';
         }
 
         $html .= '</tr></thead>';
@@ -3051,9 +3051,9 @@ class ABJ_404_Solution_View {
         }
         $cbinfo = $this->f->str_replace('{cb-info-style}', $cbinfoStyle, $cbinfo);
         
-        $html .= "<th " . $cbinfo . ">";
+        $html .= "<th scope=\"col\" " . $cbinfo . ">";
         if ($sub != 'abj404_logs') {
-            $html .= "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" >";
+            $html .= "<input type=\"checkbox\" name=\"bulkSelectorCheckbox\" onchange=\"enableDisableApplyButton();\" aria-label=\"" . esc_attr__('Select all', '404-solution') . "\">";
         }
         $html .= "</th>";
 
@@ -3124,7 +3124,7 @@ class ABJ_404_Solution_View {
                 $thClass .= ' ' . esc_attr($column['class']);
             }
 
-            $html .= "<th " . $style . " class=\"manage-column column-title" . $thClass . "\"> \n";
+            $html .= "<th scope=\"col\" " . $style . " class=\"manage-column column-title" . $thClass . "\"> \n";
             $html .= $cssTooltip;
 
             $title = isset($column['title']) ? $column['title'] : '';
