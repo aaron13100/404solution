@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.0.8
+Stable tag: 3.0.9
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -236,6 +236,17 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.0.9 (Dec 3, 2025) =
+* Feature: Async 404 page suggestions - Custom 404 pages load instantly while suggestions compute in the background.
+* Feature: Per-post redirect toggle - Control automatic slug-change redirects on individual posts/pages in Classic Editor, Gutenberg, and Quick Edit.
+* Feature: Add Arabic language and RTL layout support.
+* Improvement: Add detailed statistics to debug log and deactivation feedback emails.
+* Improvement: Optimize category/tag queries for better performance.
+* FIX: Prevent duplicate redirects when WordPress fires save_post multiple times.
+* FIX: Show shortcode suggestions for manual redirects to custom 404 pages.
+* FIX: Options page now uses full available width.
+* FIX: Handle corrupted database records gracefully without PHP warnings.
 
 = Version 3.0.8 (Nov 29, 2025) =
 * Improvement: Feedback emails now include database collation info even on locked-down hosts (fallback chain for information_schema restrictions).

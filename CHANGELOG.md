@@ -1,5 +1,16 @@
 # Changelog #
 
+## Version 3.0.9 (Dec 3, 2025) ##
+* Feature: Async 404 page suggestions - Custom 404 pages load instantly while suggestions compute in the background.
+* Feature: Per-post redirect toggle - Control automatic slug-change redirects on individual posts/pages in Classic Editor, Gutenberg, and Quick Edit.
+* Feature: Add Arabic language and RTL layout support.
+* Improvement: Add detailed statistics to debug log and deactivation feedback emails.
+* Improvement: Optimize category/tag queries for better performance.
+* FIX: Prevent duplicate redirects when WordPress fires save_post multiple times.
+* FIX: Show shortcode suggestions for manual redirects to custom 404 pages.
+* FIX: Options page now uses full available width.
+* FIX: Handle corrupted database records gracefully without PHP warnings.
+
 ## Version 3.0.8 (Nov 29, 2025) ##
 * Improvement: Feedback emails now include database collation info even on locked-down hosts (fallback chain for information_schema restrictions).
 * FIX: Tooltip z-index issue where destination tooltips appeared behind sticky table header.
