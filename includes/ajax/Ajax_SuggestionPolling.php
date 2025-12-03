@@ -11,6 +11,12 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
      * Returns JSON with status and optionally HTML content.
      */
     public static function pollSuggestions() {
+        // Verify nonce for CSRF protection
+        if (!check_ajax_referer('abj404_poll_suggestions', '_ajax_nonce', false)) {
+            wp_send_json(array('status' => 'error', 'message' => 'Security check failed'));
+            return;
+        }
+
         // Sanitize input
         $requestedURL = isset($_POST['url']) ? sanitize_text_field($_POST['url']) : '';
 

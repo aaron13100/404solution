@@ -34,7 +34,8 @@
             type: 'POST',
             data: {
                 action: 'abj404_poll_suggestions',
-                url: requestedURL
+                url: requestedURL,
+                _ajax_nonce: abj404_suggestions.nonce
             },
             success: function(response) {
                 if (response.status === 'complete') {

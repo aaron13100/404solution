@@ -140,7 +140,9 @@ class ABJ_404_Solution_ShortCode {
         $urlRequest = '';
         $cookieName = ABJ404_PP . '_REQUEST_URI';
         if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
-            $urlRequest = esc_url($f->regexReplace('\?.*', '', esc_url($_COOKIE[$cookieName])));
+            // Normalize URL: strip query string, then sanitize
+            // Note: single esc_url() at the end for consistency with SpellChecker
+            $urlRequest = esc_url($f->regexReplace('\?.*', '', $_COOKIE[$cookieName]));
             // delete the cookie because the request was a one-time thing.
             // we use javascript to delete the cookie because the headers have already been sent.
             $content .= "<script> \n" .
@@ -159,7 +161,9 @@ class ABJ_404_Solution_ShortCode {
         	// Use UPDATE_URL cookie as fallback if primary cookie wasn't set
         	// (fixes: manual redirects to custom 404 pages not showing suggestions)
         	if ($urlRequest == '') {
-        		$urlRequest = esc_url($f->regexReplace('\?.*', '', esc_url($_COOKIE[$updateURLCookieName])));
+        		// Normalize URL: strip query string, then sanitize
+        		// Note: single esc_url() at the end for consistency with SpellChecker
+        		$urlRequest = esc_url($f->regexReplace('\?.*', '', $_COOKIE[$updateURLCookieName]));
         	}
         	// delete the cookie since we're done with it. it's a one-time use thing.
         	$content .= "<script> \n" .
@@ -179,7 +183,9 @@ class ABJ_404_Solution_ShortCode {
         // (fixes: cookies from 301 redirects aren't stored by browsers)
         $queryParamName = ABJ404_PP . '_ref';
         if ($urlRequest == '' && isset($_GET[$queryParamName]) && !empty($_GET[$queryParamName])) {
-            $urlRequest = esc_url($f->regexReplace('\?.*', '', esc_url(urldecode($_GET[$queryParamName]))));
+            // Normalize URL: decode, strip query string, then sanitize
+            // Note: single esc_url() at the end for consistency with SpellChecker
+            $urlRequest = esc_url($f->regexReplace('\?.*', '', urldecode($_GET[$queryParamName])));
         }
 
         if ($urlRequest == '') {
@@ -559,9 +565,10 @@ class ABJ_404_Solution_ShortCode {
             true // Load in footer
         );
 
-        // Pass AJAX URL and localized strings to JavaScript
+        // Pass AJAX URL, nonce, and localized strings to JavaScript
         wp_localize_script('abj404-suggestion-polling', 'abj404_suggestions', array(
             'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('abj404_poll_suggestions'),
             'no_suggestions_text' => __('No suggestions. :/ ', '404-solution')
         ));
 
