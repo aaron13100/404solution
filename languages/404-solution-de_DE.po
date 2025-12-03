@@ -2193,20 +2193,20 @@ msgstr "Slug geändert:"
 
 #: includes/html/paginationLinks.html
 msgid "Filter results"
-msgstr "Filter results"
+msgstr "Ergebnisse filtern"
 
 #: includes/html/paginationLinks.html
 msgid "Press Enter to search"
-msgstr "Press Enter to search"
+msgstr "Enter drücken zum Suchen"
 
 #: includes/html/paginationLinks.html
 msgid "Pagination"
-msgstr "Pagination"
+msgstr "Seitennavigation"
 
 #: includes/View.php
 msgid "Select all"
-msgstr "Select all"
+msgstr "Alle auswählen"
 
 #: includes/html/settingsModeToggle.html
 msgid "Settings mode"
-msgstr "Settings mode"
+msgstr "Einstellungsmodus"

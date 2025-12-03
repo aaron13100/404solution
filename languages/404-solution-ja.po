@@ -2198,20 +2198,20 @@ msgstr "スラッグ変更:"
 
 #: includes/html/paginationLinks.html
 msgid "Filter results"
-msgstr "Filter results"
+msgstr "結果を絞り込む"
 
 #: includes/html/paginationLinks.html
 msgid "Press Enter to search"
-msgstr "Press Enter to search"
+msgstr "Enterキーで検索"
 
 #: includes/html/paginationLinks.html
 msgid "Pagination"
-msgstr "Pagination"
+msgstr "ページネーション"
 
 #: includes/View.php
 msgid "Select all"
-msgstr "Select all"
+msgstr "すべて選択"
 
 #: includes/html/settingsModeToggle.html
 msgid "Settings mode"
-msgstr "Settings mode"
+msgstr "設定モード"
