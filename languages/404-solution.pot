@@ -905,6 +905,14 @@ msgstr ""
 msgid "This shortcode can be used on the 404 page and will display a list of suggested pages. This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
 msgstr ""
 
+#: includes/html/viewSuggestions.html
+msgid "Require minimum match quality"
+msgstr ""
+
+#: includes/html/viewSuggestions.html
+msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
+msgstr ""
+
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
 msgid "This is best for search engine bots that do need to be redirected when the slug structure changes. Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
 msgstr ""

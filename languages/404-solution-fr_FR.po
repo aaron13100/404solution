@@ -2202,3 +2202,11 @@ msgstr "Tout sélectionner"
 #: includes/html/settingsModeToggle.html
 msgid "Settings mode"
 msgstr "Mode paramètres"
+
+#: includes/html/viewSuggestions.html
+msgid "Require minimum match quality"
+msgstr "Exiger une qualité de correspondance minimale"
+
+#: includes/html/viewSuggestions.html
+msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
+msgstr "N'afficher que les suggestions qui correspondent étroitement à l'URL demandée. Cela filtre les correspondances faibles qui pourraient dérouter les visiteurs."

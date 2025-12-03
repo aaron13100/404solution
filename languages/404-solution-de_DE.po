@@ -2210,3 +2210,11 @@ msgstr "Alle auswählen"
 #: includes/html/settingsModeToggle.html
 msgid "Settings mode"
 msgstr "Einstellungsmodus"
+
+#: includes/html/viewSuggestions.html
+msgid "Require minimum match quality"
+msgstr "Mindestübereinstimmungsqualität erfordern"
+
+#: includes/html/viewSuggestions.html
+msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
+msgstr "Nur Vorschläge anzeigen, die gut zur angeforderten URL passen. Dies filtert schwache Übereinstimmungen heraus, die Besucher verwirren könnten."

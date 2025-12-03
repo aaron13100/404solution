@@ -754,6 +754,18 @@ class ABJ_404_Solution_PluginLogic {
             $this->logger->infoMessage('Marked setup wizard as completed for existing user.');
         }
 
+        // Since 3.0.9: Migrate suggest_minscore to suggest_minscore_enabled checkbox
+        // If user had suggest_minscore set from an older version, enable the checkbox to preserve their behavior
+        if (!isset($options['suggest_minscore_enabled'])) {
+            if (isset($options['suggest_minscore']) && intval($options['suggest_minscore']) >= 25) {
+                $options['suggest_minscore_enabled'] = '1';
+                $this->logger->infoMessage('Enabled minimum score filtering based on existing suggest_minscore setting.');
+            } else {
+                $options['suggest_minscore_enabled'] = '0';
+            }
+            $this->updateOptions($options);
+        }
+
         $options = $this->doUpdateDBVersionOption($options);
         $this->logger->infoMessage(self::$uniqID . ": Updating database version to " . 
         	ABJ404_VERSION . " (end).");
@@ -783,6 +795,8 @@ class ABJ_404_Solution_PluginLogic {
             'suggest_noresults' => '<p>{suggest_noresults_text}</p>',
             'suggest_cats' => '1',
             'suggest_tags' => '1',
+            'suggest_minscore' => '25',
+            'suggest_minscore_enabled' => '0',
             'update_suggest_url' => '0',
             'auto_redirects' => '1',
             'auto_slugs' => '1',
@@ -2496,7 +2510,7 @@ class ABJ_404_Solution_PluginLogic {
         // All boolean options that could be in forms
         $allBooleanOptions = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags',
             'auto_redirects', 'auto_slugs', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips',
-        	'redirect_all_requests', 'update_suggest_url'
+        	'redirect_all_requests', 'update_suggest_url', 'suggest_minscore_enabled'
         );
 
         // Options that appear in Simple Mode form

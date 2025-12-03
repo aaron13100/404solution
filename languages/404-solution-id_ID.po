@@ -2207,3 +2207,11 @@ msgstr "Pilih semua"
 #: includes/html/settingsModeToggle.html
 msgid "Settings mode"
 msgstr "Mode pengaturan"
+
+#: includes/html/viewSuggestions.html
+msgid "Require minimum match quality"
+msgstr "Memerlukan kualitas kecocokan minimum"
+
+#: includes/html/viewSuggestions.html
+msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
+msgstr "Hanya tampilkan saran yang sangat cocok dengan URL yang diminta. Ini menyaring kecocokan lemah yang mungkin membingungkan pengunjung."

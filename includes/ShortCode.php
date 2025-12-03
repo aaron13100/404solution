@@ -270,12 +270,21 @@ class ABJ_404_Solution_ShortCode {
         $displayed = 0;
         $commentPartAndQueryPart = $abj404logic->getCommentPartAndQueryPartOfRequest();
 
+        // Check if minimum score filtering is enabled
+        $minScoreEnabled = isset($options['suggest_minscore_enabled']) && $options['suggest_minscore_enabled'] == '1';
+        $minScore = $minScoreEnabled ? (isset($options['suggest_minscore']) ? intval($options['suggest_minscore']) : 25) : 0;
+
         foreach ($permalinkSuggestions as $idAndType => $linkScore) {
             $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore,
             	$rowType, $options);
 
             // Skip if we're currently on the page we're about to suggest
             if (basename($permalink['link']) == $currentSlug) {
+                continue;
+            }
+
+            // Skip if minimum score filtering is enabled and score is below threshold
+            if ($minScoreEnabled && $permalink['score'] < $minScore) {
                 continue;
             }
 
@@ -469,12 +478,21 @@ class ABJ_404_Solution_ShortCode {
         $displayed = 0;
         $commentPartAndQueryPart = $abj404logic->getCommentPartAndQueryPartOfRequest();
 
+        // Check if minimum score filtering is enabled
+        $minScoreEnabled = isset($options['suggest_minscore_enabled']) && $options['suggest_minscore_enabled'] == '1';
+        $minScore = $minScoreEnabled ? (isset($options['suggest_minscore']) ? intval($options['suggest_minscore']) : 25) : 0;
+
         foreach ($permalinkSuggestions as $idAndType => $linkScore) {
             $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore,
                 $rowType, $options);
 
             // Skip if we're currently on the page we're about to suggest
             if ($currentSlug !== '' && basename($permalink['link']) == $currentSlug) {
+                continue;
+            }
+
+            // Skip if minimum score filtering is enabled and score is below threshold
+            if ($minScoreEnabled && $permalink['score'] < $minScore) {
                 continue;
             }
 

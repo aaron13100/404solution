@@ -2207,3 +2207,11 @@ msgstr "Välj alla"
 #: includes/html/settingsModeToggle.html
 msgid "Settings mode"
 msgstr "Inställningsläge"
+
+#: includes/html/viewSuggestions.html
+msgid "Require minimum match quality"
+msgstr "Kräv minsta matchningskvalitet"
+
+#: includes/html/viewSuggestions.html
+msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
+msgstr "Visa endast förslag som nära matchar den begärda URL:en. Detta filtrerar bort svaga matchningar som kan förvirra besökare."

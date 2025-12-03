@@ -22,6 +22,12 @@
         <input type="checkbox" name="suggest_tags" id="suggest_tags" value="1" {SELECTED_SUGGEST_TAGS}>
     </p>
     <p>
+        <label for="suggest_minscore_enabled">{Require minimum match quality}:</label>
+        <input type="checkbox" name="suggest_minscore_enabled" id="suggest_minscore_enabled" value="1" {SELECTED_SUGGEST_MINSCORE_ENABLED}>
+        <BR/>&nbsp;&nbsp;&nbsp;
+        {Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors.}
+    </p>
+    <p>
         <label for="suggest_max">{Maximum number of suggestions to display}:</label>
         <input type="text" name="suggest_max" id="suggest_max" value="{SUGGEST_MAX_SUGGESTIONS}" style="width: 50px;">
         <BR/>&nbsp;&nbsp;&nbsp;{Even if more pages could be suggested, show at most this many (default: 5)}
