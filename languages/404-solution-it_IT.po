@@ -2189,3 +2189,23 @@ msgstr "Soluzione 404"
 
 msgid "Slug changed:"
 msgstr "Slug modificato:"
+
+#: includes/html/paginationLinks.html
+msgid "Filter results"
+msgstr "Filter results"
+
+#: includes/html/paginationLinks.html
+msgid "Press Enter to search"
+msgstr "Press Enter to search"
+
+#: includes/html/paginationLinks.html
+msgid "Pagination"
+msgstr "Pagination"
+
+#: includes/View.php
+msgid "Select all"
+msgstr "Select all"
+
+#: includes/html/settingsModeToggle.html
+msgid "Settings mode"
+msgstr "Settings mode"
