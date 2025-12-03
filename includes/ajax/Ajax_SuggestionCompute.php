@@ -24,10 +24,28 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         $urlKey = md5($requestedURL);
         $transientKey = 'abj404_suggest_' . $urlKey;
 
-        // Double-check we should compute (might already be done by another request)
+        // Double-check we should compute (might already be done or in progress)
         $existing = get_transient($transientKey);
-        if ($existing && isset($existing['status']) && $existing['status'] === 'complete') {
+
+        // Get provided token from request
+        $providedToken = isset($_POST['token']) ? sanitize_text_field($_POST['token']) : '';
+
+        // Security: Require a valid token for ALL computation requests
+        // This prevents DoS attacks via direct calls to admin-ajax.php
+        if (empty($existing) || !isset($existing['token'])) {
+            // No transient or no token stored - this is an unauthorized direct call
+            wp_die('Unauthorized');
+        }
+
+        $storedToken = $existing['token'];
+
+        if ($existing['status'] === 'complete') {
             wp_die(); // Already done, nothing to do
+        }
+
+        // Verify token matches - blocks both parallel workers and unauthorized calls
+        if (empty($providedToken) || $providedToken !== $storedToken) {
+            wp_die('Invalid token'); // Another worker is already computing, or invalid token
         }
 
         // Get dependencies

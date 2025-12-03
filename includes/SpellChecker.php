@@ -1508,11 +1508,16 @@ class ABJ_404_Solution_SpellChecker {
 			return false;
 		}
 
+		// Generate a unique token for this computation request
+		// This prevents unauthorized direct calls to the AJAX endpoint (DoS protection)
+		$token = wp_generate_password(32, false);
+
 		// Mark as pending BEFORE firing request (race condition protection)
 		set_transient($transientKey, array(
 			'status' => 'pending',
 			'url' => $normalizedURL,
-			'started' => time()
+			'started' => time(),
+			'token' => $token
 		), 300); // 5 minute TTL
 
 		$this->logger->debugMessage("Async suggestions: triggering background computation for " .
@@ -1525,7 +1530,8 @@ class ABJ_404_Solution_SpellChecker {
 			'sslverify' => apply_filters('https_local_ssl_verify', false),
 			'body'      => array(
 				'action'   => 'abj404_compute_suggestions',
-				'url'      => $normalizedURL
+				'url'      => $normalizedURL,
+				'token'    => $token
 			)
 		));
 
