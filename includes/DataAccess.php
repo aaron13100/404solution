@@ -1181,14 +1181,26 @@ class ABJ_404_Solution_DataAccess {
         // Handle race condition: logs_hits table may have been dropped between existence check and query
         // (fixes bug: "Table 'xxx.wp_abj404_logs_hits' doesn't exist" error during shutdown)
         $usedFallbackForLogsHits = false;
+        $needsPhpSortAndLimit = false;
         if (!empty($results['last_error']) && strpos($results['last_error'], 'logs_hits') !== false) {
             $this->logger->debugMessage("logs_hits table unavailable, retrying without JOIN: " . $results['last_error']);
             // Retry with queryAllRowsAtOnce = false to skip logs_hits JOIN
             // (The query builder only adds the JOIN when queryAllRowsAtOnce is true)
             $usedFallbackForLogsHits = true;
             $queryAllRowsAtOnce = false;
-            $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false,
-                $limitStart, $limitEnd, false);
+
+            // If sorting by logshits/last_used, we must query ALL rows first,
+            // then sort in PHP, then apply limit - otherwise we get wrong results
+            if ($tableOptions['orderby'] == 'logshits' || $tableOptions['orderby'] == 'last_used') {
+                $needsPhpSortAndLimit = true;
+                // Query all rows (no limit) so we can sort properly in PHP
+                $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false,
+                    0, PHP_INT_MAX, false);
+            } else {
+                // Other sort columns work fine with normal limit
+                $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false,
+                    $limitStart, $limitEnd, false);
+            }
             $results = $this->queryAndGetResults($query);
         }
 
@@ -1200,9 +1212,9 @@ class ABJ_404_Solution_DataAccess {
             $rows = $this->populateLogsData($rows);
 
             // If fallback was used and user wanted to sort by logshits/last_used,
-            // we need to sort in PHP since the DB query sorted on NULL placeholders
-            if ($usedFallbackForLogsHits && !empty($rows) &&
-                ($tableOptions['orderby'] == 'logshits' || $tableOptions['orderby'] == 'last_used')) {
+            // we need to sort in PHP since the DB query sorted on NULL placeholders,
+            // then apply the limit that was skipped in the query
+            if ($needsPhpSortAndLimit && !empty($rows)) {
                 $orderBy = $tableOptions['orderby'];
                 $orderDir = strtoupper($tableOptions['order'] ?? 'DESC');
                 usort($rows, function($a, $b) use ($orderBy, $orderDir) {
@@ -1213,6 +1225,8 @@ class ABJ_404_Solution_DataAccess {
                     $cmp = $valA <=> $valB;
                     return $orderDir === 'DESC' ? -$cmp : $cmp;
                 });
+                // Now apply the limit that was skipped in the query
+                $rows = array_slice($rows, $limitStart, $limitEnd);
             }
         }
         $this->logger->debugMessage("Found " . $foundRowsBeforeLogsData . 

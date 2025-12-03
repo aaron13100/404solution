@@ -68,13 +68,15 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             isset($options['suggest_tags']) ? $options['suggest_tags'] : ''
         );
 
-        // Store results in transient
+        // Store results in transient (preserve token for audit trail)
+        // TTL of 60 seconds: enough time for polling to retrieve results
         set_transient($transientKey, array(
             'status' => 'complete',
             'suggestions' => $suggestionsPacket,
             'url' => $requestedURL,
-            'completed' => time()
-        ), 300); // 5 minute TTL
+            'completed' => time(),
+            'token' => $storedToken  // Preserve token for debugging/audit
+        ), 60); // 1 minute TTL (matches pending TTL)
 
         $suggestionCount = isset($suggestionsPacket[0]) ? count((array)$suggestionsPacket[0]) : 0;
         $logger->debugMessage("Ajax_SuggestionCompute: Completed computation for " .

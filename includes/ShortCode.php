@@ -176,7 +176,9 @@ class ABJ_404_Solution_ShortCode {
 
         if (isset($_REQUEST[ABJ404_PP]) &&
                 isset($_REQUEST[ABJ404_PP][$cookieName])) {
-            $urlRequest = $_REQUEST[ABJ404_PP][$cookieName];
+            // Normalize URL: strip query string, then sanitize
+            // Note: single esc_url() at the end for consistency with SpellChecker
+            $urlRequest = esc_url($f->regexReplace('\?.*', '', $_REQUEST[ABJ404_PP][$cookieName]));
         }
 
         // Fallback: check for URL passed via query parameter

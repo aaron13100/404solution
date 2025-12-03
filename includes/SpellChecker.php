@@ -1513,12 +1513,14 @@ class ABJ_404_Solution_SpellChecker {
 		$token = wp_generate_password(32, false);
 
 		// Mark as pending BEFORE firing request (race condition protection)
+		// TTL of 60 seconds: enough time for computation, but minimizes stale transient impact
+		// if wp_remote_post fails (since blocking=>false means we can't detect failures)
 		set_transient($transientKey, array(
 			'status' => 'pending',
 			'url' => $normalizedURL,
 			'started' => time(),
 			'token' => $token
-		), 300); // 5 minute TTL
+		), 60); // 1 minute TTL (reduced from 5 min to minimize stale transient impact)
 
 		$this->logger->debugMessage("Async suggestions: triggering background computation for " .
 			esc_html($normalizedURL));
