@@ -438,17 +438,18 @@ class ABJ_404_Solution_SpellChecker {
 	 * Use spell checking to find the correct link. Return the permalink (map) if there is one, otherwise return null.
 	 * @global type $abj404spellChecker
 	 * @global type $abj404logic
-	 * @param string $requestedURL
+	 * @param string $requestedURL The URL slug to check for spelling matches
+	 * @param string|null $fullRequestedURL Optional full URL path for caching results (e.g., '/site/bad-url')
 	 * @return array|null
 	 */
-	function getPermalinkUsingSpelling($requestedURL) {
+	function getPermalinkUsingSpelling($requestedURL, $fullRequestedURL = null) {
 		$abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
 
 		$options = $this->logic->getOptions();
 
 		if (@$options['auto_redirects'] == '1') {
 			// Site owner wants automatic redirects.
-            $permalinksPacket = $abj404spellChecker->findMatchingPosts($requestedURL, 
+            $permalinksPacket = $abj404spellChecker->findMatchingPosts($requestedURL,
                     $options['auto_cats'], $options['auto_tags']);
 
 			$permalinks = $permalinksPacket[0];
@@ -460,7 +461,7 @@ class ABJ_404_Solution_SpellChecker {
 			// we only use the first element of the array;
 			$linkScore = reset($permalinks);
 			$idAndType = key($permalinks);
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore, 
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, $linkScore,
             	$rowType, $options);
 
 			if ($permalink['score'] >= $minScore) {
@@ -470,14 +471,53 @@ class ABJ_404_Solution_SpellChecker {
 					return $permalink;
 
 				} else {
-                    $this->logger->errorMessage("Unhandled permalink type: " . 
+                    $this->logger->errorMessage("Unhandled permalink type: " .
                             wp_kses_post(json_encode($permalink)));
 					return null;
 				}
 			}
+
+			// No match met the auto-redirect threshold - cache results for shortcode
+			// This avoids recomputing suggestions when the 404 page renders
+			if ($fullRequestedURL !== null && !empty($permalinks)) {
+				$this->cacheComputedSuggestionsForShortcode($fullRequestedURL, $permalinksPacket);
+			}
 		}
 
 		return null;
+	}
+
+	/**
+	 * Cache computed suggestions in a transient for the shortcode to use.
+	 * This avoids duplicate computation when getPermalinkUsingSpelling() runs
+	 * but doesn't find a match above the auto-redirect threshold.
+	 *
+	 * @param string $fullRequestedURL The full URL path (e.g., '/site/bad-url')
+	 * @param array $permalinksPacket The computed suggestions [permalinks, rowType]
+	 */
+	private function cacheComputedSuggestionsForShortcode($fullRequestedURL, $permalinksPacket) {
+		// Normalize URL to match how ShortCode.php processes the cookie value
+		$normalizedURL = esc_url($this->f->regexReplace('\?.*', '', $fullRequestedURL));
+
+		$urlKey = md5($normalizedURL);
+		$transientKey = 'abj404_suggest_' . $urlKey;
+
+		// Don't overwrite if already set (e.g., by async trigger)
+		$existing = get_transient($transientKey);
+		if ($existing !== false) {
+			return;
+		}
+
+		// Store as 'complete' so shortcode renders immediately
+		set_transient($transientKey, array(
+			'status' => 'complete',
+			'suggestions' => $permalinksPacket,
+			'url' => $normalizedURL,
+			'completed' => time()
+		), 300); // 5 minute TTL
+
+		$this->logger->debugMessage("Cached spell-check suggestions for shortcode: " .
+			esc_html($normalizedURL));
 	}
 
 	/**
@@ -1476,7 +1516,7 @@ class ABJ_404_Solution_SpellChecker {
 		), 300); // 5 minute TTL
 
 		$this->logger->debugMessage("Async suggestions: triggering background computation for " .
-			esc_html($normalizedURL) . " (key: " . $urlKey . ")");
+			esc_html($normalizedURL));
 
 		// Fire non-blocking request to compute suggestions
 		wp_remote_post(admin_url('admin-ajax.php'), array(
@@ -1485,8 +1525,7 @@ class ABJ_404_Solution_SpellChecker {
 			'sslverify' => apply_filters('https_local_ssl_verify', false),
 			'body'      => array(
 				'action'   => 'abj404_compute_suggestions',
-				'url'      => $normalizedURL,
-				'url_key'  => $urlKey
+				'url'      => $normalizedURL
 			)
 		));
 

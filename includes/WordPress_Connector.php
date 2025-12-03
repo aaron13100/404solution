@@ -581,7 +581,8 @@ class ABJ_404_Solution_WordPress_Connector {
             
             // --------------------------------------------------------------
             // try spell checking.
-            $permalink = $this->spellChecker->getPermalinkUsingSpelling($urlSlugOnly);
+            // Pass full URL so results can be cached for shortcode if no auto-redirect
+            $permalink = $this->spellChecker->getPermalinkUsingSpelling($urlSlugOnly, $requestedURL);
             if (!empty($permalink)) {
                 $redirectType = $permalink['type'];
                 $this->dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $permalink['id'], $options['default_redirect'], 0);

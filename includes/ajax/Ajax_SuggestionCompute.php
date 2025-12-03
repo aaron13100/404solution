@@ -14,18 +14,14 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
     public static function computeSuggestions() {
         // Sanitize inputs
         $requestedURL = isset($_POST['url']) ? sanitize_text_field($_POST['url']) : '';
-        $urlKey = isset($_POST['url_key']) ? sanitize_text_field($_POST['url_key']) : '';
 
         // Validate inputs
-        if (empty($requestedURL) || empty($urlKey)) {
+        if (empty($requestedURL)) {
             wp_die('Missing required parameters');
         }
 
-        // Verify URL key matches (basic integrity check)
-        if ($urlKey !== md5($requestedURL)) {
-            wp_die('Invalid request - URL key mismatch');
-        }
-
+        // Compute transient key from URL
+        $urlKey = md5($requestedURL);
         $transientKey = 'abj404_suggest_' . $urlKey;
 
         // Double-check we should compute (might already be done by another request)
