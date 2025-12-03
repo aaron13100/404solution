@@ -3043,20 +3043,25 @@ class ABJ_404_Solution_PluginLogic {
 
         $meta = explode("|", $idAndType);
         $id = $meta[0];
-        $type = $meta[1];
-        
+        // Handle malformed data that doesn't contain a pipe separator
+        $type = isset($meta[1]) ? $meta[1] : '';
+
+        // Use strict comparison to avoid null/false == 0 issues with type coercion
+        // Cast to int for comparison since ABJ404_TYPE_* constants are integers
+        $typeInt = is_numeric($type) ? (int)$type : -1;
+
         if ($idAndType == ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) {
             return __('(Default 404 Page)', '404-solution');
         } else if ($idAndType == ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME) {
             return __('(Home Page)', '404-solution');
-        } else if ($type == ABJ404_TYPE_EXTERNAL) {
+        } else if ($typeInt === ABJ404_TYPE_EXTERNAL) {
             return $externalLinkURL;
         }
-        
-        if ($type == ABJ404_TYPE_POST) {
+
+        if ($typeInt === ABJ404_TYPE_POST) {
             return get_the_title($id);
-            
-        } else if ($type == ABJ404_TYPE_CAT) {
+
+        } else if ($typeInt === ABJ404_TYPE_CAT) {
             $rows = $this->dao->getPublishedCategories($id);
             if (empty($rows)) {
                 $this->logger->debugMessage('No TERM (category) found with ID: ' . $id);
@@ -3064,13 +3069,13 @@ class ABJ_404_Solution_PluginLogic {
             }
             $firstRow = $rows[0];
             return $firstRow->name;
-            
-        } else if ($type == ABJ404_TYPE_TAG) {
+
+        } else if ($typeInt === ABJ404_TYPE_TAG) {
             $tag = get_tag($id);
             return $tag == '' ? '' : $tag->name;
         }
-        
-        $this->logger->errorMessage("Couldn't get page title. No matching type found for type: " . $type);
+
+        $this->logger->errorMessage("Couldn't get page title. No matching type found for type: " . esc_html($type));
         return '';
     }
 }

@@ -351,12 +351,17 @@ abstract class ABJ_404_Solution_Functions {
         $meta = explode("|", $idAndType);
 
         $permalink['id'] = $meta[0];
-        $permalink['type'] = $meta[1];
+        // Handle malformed data that doesn't contain a pipe separator
+        $permalink['type'] = isset($meta[1]) ? $meta[1] : '';
         $permalink['score'] = $linkScore;
         $permalink['status'] = 'unknown';
         $permalink['link'] = 'dunno';
 
-        if ($permalink['type'] == ABJ404_TYPE_POST) {
+        // Use strict comparison to avoid null/false == 0 issues with type coercion
+        // Cast to int for comparison since ABJ404_TYPE_* constants are integers
+        $typeInt = is_numeric($permalink['type']) ? (int)$permalink['type'] : -1;
+
+        if ($typeInt === ABJ404_TYPE_POST) {
             if ($rowType == 'image') {
                 $imageURL = wp_get_attachment_image_src($permalink['id'], "attached-image");
                 $permalink['link'] = $imageURL[0];
@@ -366,7 +371,7 @@ abstract class ABJ_404_Solution_Functions {
             $permalink['title'] = get_the_title($permalink['id']);
             $permalink['status'] = get_post_status($permalink['id']);
             
-        } else if ($permalink['type'] == ABJ404_TYPE_TAG) {
+        } else if ($typeInt === ABJ404_TYPE_TAG) {
             $permalink['link'] = get_tag_link($permalink['id']);
             $tag = get_term($permalink['id'], 'post_tag');
             if ($tag != null) {
@@ -380,7 +385,7 @@ abstract class ABJ_404_Solution_Functions {
             	$permalink['status'] = 'published';
             }
             
-        } else if ($permalink['type'] == ABJ404_TYPE_CAT) {
+        } else if ($typeInt === ABJ404_TYPE_CAT) {
             $permalink['link'] = get_category_link($permalink['id']);
             $cat = get_term($permalink['id'], 'category');
             if ($cat != null) {
@@ -394,12 +399,12 @@ abstract class ABJ_404_Solution_Functions {
             	$permalink['status'] = 'published';
             }
             
-        } else if ($permalink['type'] == ABJ404_TYPE_HOME) {
+        } else if ($typeInt === ABJ404_TYPE_HOME) {
             $permalink['link'] = get_home_url();
             $permalink['title'] = get_bloginfo('name');
             $permalink['status'] = 'published';
             
-        } else if ($permalink['type'] == ABJ404_TYPE_EXTERNAL) {
+        } else if ($typeInt === ABJ404_TYPE_EXTERNAL) {
         	$permalink['link'] = $permalink['id'];
         	if ($permalink['link'] == ABJ404_TYPE_EXTERNAL) {
 	        	if ($options == null) {
@@ -413,7 +418,7 @@ abstract class ABJ_404_Solution_Functions {
         	}
         	$permalink['status'] = 'published';
         	
-        } else if ($permalink['type'] == ABJ404_TYPE_404_DISPLAYED) {
+        } else if ($typeInt === ABJ404_TYPE_404_DISPLAYED) {
         	$permalink['link'] = '404';
         	$permalink['status'] = 'published';
         	
