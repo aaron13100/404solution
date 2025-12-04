@@ -318,10 +318,17 @@ class ABJ_404_Solution_ShortCode {
                 $idParts = explode('|', $idAndType);
                 $currentId = isset($idParts[0]) ? $idParts[0] : null;
 
+                // Merge extra data if available (post may have been deleted since suggestions were cached)
                 if ($typeCode == '1') { // It's a Post
-                    $currentSuggestionData = $currentSuggestionData + $extraDataById['post_id_' . $currentId];
+                    $extraKey = 'post_id_' . $currentId;
+                    if (isset($extraDataById[$extraKey])) {
+                        $currentSuggestionData = $currentSuggestionData + $extraDataById[$extraKey];
+                    }
                 } else { // It's a Term
-                    $currentSuggestionData = $currentSuggestionData + $extraDataById['term_id_' . $currentId];
+                    $extraKey = 'term_id_' . $currentId;
+                    if (isset($extraDataById[$extraKey])) {
+                        $currentSuggestionData = $currentSuggestionData + $extraDataById[$extraKey];
+                    }
                 }
 
                 // Add this suggestion's data to the array for JS
