@@ -1513,8 +1513,7 @@ class ABJ_404_Solution_SpellChecker {
 		$token = wp_generate_password(32, false);
 
 		// Mark as pending BEFORE firing request (race condition protection)
-		// TTL of 60 seconds: enough time for computation, but minimizes stale transient impact
-		// if wp_remote_post fails (since blocking=>false means we can't detect failures)
+		// TTL of 120 seconds: gives slow hosts enough time to start the worker
 		// Note: started=0 means no worker has claimed the work yet. The first worker
 		// will set started=time() when it claims the work. This prevents the bug where
 		// the first worker skips itself thinking another worker is already computing.
@@ -1523,7 +1522,7 @@ class ABJ_404_Solution_SpellChecker {
 			'url' => $normalizedURL,
 			'started' => 0,  // 0 = no worker has claimed yet; worker sets time() when claiming
 			'token' => $token
-		), 60); // 1 minute TTL (reduced from 5 min to minimize stale transient impact)
+		), 120); // 2 minute TTL (allows slow wp_remote_post)
 
 		$this->logger->debugMessage("Async suggestions: triggering background computation for " .
 			esc_html($normalizedURL));
