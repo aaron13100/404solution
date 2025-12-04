@@ -793,18 +793,18 @@ class ABJ_404_Solution_WordPress_Connector {
         	$redirectedTo = $urlParts['path'];
         }
 
-        // If redirecting to a 404-style page, add original URL as query param
-        // (fixes: cookies from 301 redirects aren't stored by browsers)
         $finalLink = $permalink['link'];
-        if ($isRedirectToCustom404Page) {
-            // Strip query string from requestedURL since forceRedirect adds it separately
-            $refUrl = preg_replace('/\?.*/', '', $requestedURL);
-            $separator = (strpos($finalLink, '?') === false) ? '?' : '&';
-            $finalLink .= $separator . ABJ404_PP . '_ref=' . urlencode($refUrl);
-        }
 
         $this->dao->logRedirectHit($redirect['url'], $redirectedTo, $matchReason);
-        $sendTo404Page = $this->logic->forceRedirect($finalLink, esc_html($redirect['code']));
+        // Pass $isRedirectToCustom404Page so forceRedirect can append _ref at the end
+        // (appending last prevents user override via query string injection)
+        $sendTo404Page = $this->logic->forceRedirect(
+            $finalLink,
+            esc_html($redirect['code']),
+            -1,
+            $requestedURL,
+            $isRedirectToCustom404Page
+        );
         
         if ($sendTo404Page) {
         	return;

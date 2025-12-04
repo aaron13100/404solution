@@ -2699,13 +2699,21 @@ class ABJ_404_Solution_PluginLogic {
      * @param string $requestedURL
      * @return boolean true if the user is sent to the default 404 page.
      */
-    function forceRedirect($location, $status = 302, $type = -1, $requestedURL = '') {
-    	
+    function forceRedirect($location, $status = 302, $type = -1, $requestedURL = '', $isCustom404 = false) {
+
         $commentPartAndQueryPart = $this->getCommentPartAndQueryPartOfRequest();
         // Sanitize and encode the base location and query parts
         $sanitizedLocation = esc_url_raw($location); // Ensure the base URL is safe
         $sanitizedQueryPart = esc_html($commentPartAndQueryPart); // Encode the query part for safe output
         $finalDestination = $sanitizedLocation . $sanitizedQueryPart;
+
+        // Append _ref LAST for custom 404 redirects (prevents user override via query string)
+        // This is a fallback for when cookies don't survive 301 redirects
+        if ($isCustom404 && !empty($requestedURL)) {
+            $refUrl = preg_replace('/\?.*/', '', $requestedURL); // Strip query string from ref
+            $separator = (strpos($finalDestination, '?') === false) ? '?' : '&';
+            $finalDestination .= $separator . ABJ404_PP . '_ref=' . urlencode($refUrl);
+        }
 
     	$previousRequest = $this->readCookieWithPreviousRqeuestShort();
     	$finalDestNoHome = $this->f->substr($finalDestination, $this->f->strpos($finalDestination, '://') + 3);

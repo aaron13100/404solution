@@ -1529,9 +1529,11 @@ class ABJ_404_Solution_SpellChecker {
 			esc_html($normalizedURL));
 
 		// Fire non-blocking request to compute suggestions
-		wp_remote_post(admin_url('admin-ajax.php'), array(
+		// Note: timeout of 5s is needed for connection establishment (TLS handshake, etc.)
+		// even with blocking=false, a too-short timeout can prevent the request from being sent
+		$response = wp_remote_post(admin_url('admin-ajax.php'), array(
 			'blocking'  => false,
-			'timeout'   => 0.01,
+			'timeout'   => 5,  // 5 seconds for connection establishment
 			'sslverify' => apply_filters('https_local_ssl_verify', false),
 			'body'      => array(
 				'action'   => 'abj404_compute_suggestions',
@@ -1539,6 +1541,14 @@ class ABJ_404_Solution_SpellChecker {
 				'token'    => $token
 			)
 		));
+
+		// If dispatch failed, delete the pending transient so caller can compute synchronously
+		if (is_wp_error($response)) {
+			$this->logger->debugMessage("Async suggestions: dispatch failed for " .
+				esc_html($normalizedURL) . " - " . $response->get_error_message());
+			delete_transient($transientKey);
+			return false;
+		}
 
 		return true;
 	}
