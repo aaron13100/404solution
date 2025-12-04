@@ -1515,10 +1515,13 @@ class ABJ_404_Solution_SpellChecker {
 		// Mark as pending BEFORE firing request (race condition protection)
 		// TTL of 60 seconds: enough time for computation, but minimizes stale transient impact
 		// if wp_remote_post fails (since blocking=>false means we can't detect failures)
+		// Note: started=0 means no worker has claimed the work yet. The first worker
+		// will set started=time() when it claims the work. This prevents the bug where
+		// the first worker skips itself thinking another worker is already computing.
 		set_transient($transientKey, array(
 			'status' => 'pending',
 			'url' => $normalizedURL,
-			'started' => time(),
+			'started' => 0,  // 0 = no worker has claimed yet; worker sets time() when claiming
 			'token' => $token
 		), 60); // 1 minute TTL (reduced from 5 min to minimize stale transient impact)
 

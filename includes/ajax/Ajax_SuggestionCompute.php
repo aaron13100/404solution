@@ -43,25 +43,31 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             wp_die(); // Already done, nothing to do
         }
 
-        // Check if another worker is already computing (prevents duplicate work)
-        // This handles race conditions from wp_remote_post retries or concurrent requests
-        if ($existing['status'] === 'pending') {
-            // Only proceed if this is the FIRST worker (token must match AND we're claiming the work)
-            // If token matches but we're already pending, another worker started - let it finish
-            if ($providedToken === $storedToken) {
-                // Check if the pending work started recently (within 30 seconds)
-                // If older, the worker may have died - allow retry
-                $startedAt = isset($existing['started']) ? (int)$existing['started'] : 0;
-                if ($startedAt > 0 && (time() - $startedAt) < 30) {
-                    wp_die(); // Another worker is actively computing, skip duplicate work
-                }
-                // Else: pending but stale (>30s), proceed with computation as recovery
-            }
-        }
-
         // Verify token matches - authenticates that request came from legitimate trigger
         if (empty($providedToken) || $providedToken !== $storedToken) {
             wp_die('Invalid token');
+        }
+
+        // Check if we should compute or skip (handles duplicate workers)
+        // started=0 means no worker has claimed yet (trigger sets this)
+        // started>0 means a worker has claimed the work
+        if ($existing['status'] === 'pending') {
+            $startedAt = isset($existing['started']) ? (int)$existing['started'] : 0;
+
+            if ($startedAt === 0) {
+                // First worker - claim the work by setting started=time()
+                set_transient($transientKey, array(
+                    'status' => 'pending',
+                    'url' => $existing['url'],
+                    'started' => time(),  // Claim the work
+                    'token' => $storedToken
+                ), 60);
+                // Proceed to compute
+            } elseif ((time() - $startedAt) < 30) {
+                // Another worker claimed recently and is still computing - skip
+                wp_die();
+            }
+            // Else: started > 30s ago, worker may have died - proceed as recovery
         }
 
         // Get dependencies
