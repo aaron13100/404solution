@@ -2752,7 +2752,7 @@ class ABJ_404_Solution_PluginLogic {
         // This javascript redirect will only appear if the header redirect did not work for some reason.
         // Use wp_json_encode to safely encode URL for JavaScript to prevent XSS
         $c = '<script>' . 'function doRedirect() {' . "\n" .
-                '   window.location.replace(' . wp_json_encode($sanitizedLocation) . ');' . "\n" .
+                '   window.location.replace(' . wp_json_encode($finalDestination) . ');' . "\n" .
                 '}' . "\n" .
                 'setTimeout(doRedirect, 1);' . "\n" .
                 '</script>' . "\n" .
