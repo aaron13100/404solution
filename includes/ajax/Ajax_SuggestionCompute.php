@@ -43,9 +43,25 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             wp_die(); // Already done, nothing to do
         }
 
-        // Verify token matches - blocks both parallel workers and unauthorized calls
+        // Check if another worker is already computing (prevents duplicate work)
+        // This handles race conditions from wp_remote_post retries or concurrent requests
+        if ($existing['status'] === 'pending') {
+            // Only proceed if this is the FIRST worker (token must match AND we're claiming the work)
+            // If token matches but we're already pending, another worker started - let it finish
+            if ($providedToken === $storedToken) {
+                // Check if the pending work started recently (within 30 seconds)
+                // If older, the worker may have died - allow retry
+                $startedAt = isset($existing['started']) ? (int)$existing['started'] : 0;
+                if ($startedAt > 0 && (time() - $startedAt) < 30) {
+                    wp_die(); // Another worker is actively computing, skip duplicate work
+                }
+                // Else: pending but stale (>30s), proceed with computation as recovery
+            }
+        }
+
+        // Verify token matches - authenticates that request came from legitimate trigger
         if (empty($providedToken) || $providedToken !== $storedToken) {
-            wp_die('Invalid token'); // Another worker is already computing, or invalid token
+            wp_die('Invalid token');
         }
 
         // Get dependencies

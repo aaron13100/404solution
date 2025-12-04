@@ -437,12 +437,18 @@ class ABJ_404_Solution_PluginLogic {
     	return '';
     }
     
-    /** Set a cookie with the requested URL. */
+    /** Set a cookie with the requested URL (path only, no query string).
+     * Security: Query strings may contain sensitive data (tokens, auth codes, etc.)
+     * so we only store the path portion of the URL.
+     */
     function setCookieWithPreviousRequest() {
-    	
+
         $requested_url = urldecode($_SERVER['REQUEST_URI']);
         // remove ridiculous non-printable characters
-        $requested_url = preg_replace('/[^\x20-\x7E]/', '', $requested_url); // Remove non-printable ASCII characters
+        $requested_url = preg_replace('/[^\x20-\x7E]/', '', $requested_url);
+
+        // Security: Strip query string to avoid storing sensitive params (tokens, auth codes, etc.)
+        $requested_url = preg_replace('/\?.*$/', '', $requested_url);
 
     	// this may be used later when displaying suggestions.
     	$cookieName = ABJ404_PP . '_REQUEST_URI';
@@ -450,27 +456,29 @@ class ABJ_404_Solution_PluginLogic {
     	try {
     		setcookie($cookieName, $requested_url, time() + (60 * 4), "/");
     		setcookie($cookieNameShort, $requested_url, time() + (5), "/");
-    		
+
     		// only set the update_URL if it's not already set.
     		// this is because multiple redirects might happen and we want to store
     		// only the user's original requested page.
-    		if (!isset($_COOKIE[$cookieName . '_UPDATE_URL']) || 
+    		if (!isset($_COOKIE[$cookieName . '_UPDATE_URL']) ||
     				empty($_COOKIE[$cookieName . '_UPDATE_URL'])) {
-    			setcookie($cookieName . '_UPDATE_URL', urldecode($_SERVER['REQUEST_URI']), 
+    			// Also strip query string from UPDATE_URL for consistency
+    			$update_url = preg_replace('/\?.*$/', '', urldecode($_SERVER['REQUEST_URI']));
+    			setcookie($cookieName . '_UPDATE_URL', $update_url,
     				time() + (60 * 4), "/");
     		}
-    		
+
     	} catch (Exception $e) {
     		$this->logger->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
     		// This javascript redirect will only appear if the header redirect did not work for some reason.
     		// document.cookie = "username=John Doe; expires=Thu, 18 Dec 2013 12:00:00 UTC";
     		$expireTime = date("D, d M Y H:i:s T", time() + (60 * 4));
     		$c = "\n" . '<script>document.cookie = "' . $cookieName . '=' .
-     		urldecode($_SERVER['REQUEST_URI']) .
+     		esc_js($requested_url) .
      		'; expires=' . $expireTime . '";</script>' . "\n";
      		echo $c;
     	}
-    	
+
     	$_REQUEST[ABJ404_PP][$cookieName] = $requested_url;
     }
     

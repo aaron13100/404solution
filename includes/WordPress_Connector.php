@@ -737,10 +737,6 @@ class ABJ_404_Solution_WordPress_Connector {
                     wp_kses_post(print_r($redirect, true)));
         }
 
-        // Set cookie with original URL so shortcode can display suggestions on destination page
-        // (fixes: manual redirects to custom 404 pages not showing suggestions)
-        $this->logic->setCookieWithPreviousRequest();
-
         // Check if destination is the custom 404 page or has the shortcode
         // If so, set the _STATUS_404 cookie so WordPress treats it as a 404 page
         $isRedirectToCustom404Page = false;
@@ -767,8 +763,10 @@ class ABJ_404_Solution_WordPress_Connector {
             }
         }
 
-        // Set the 404 status cookie if redirecting to a 404-style page
+        // Set cookies and pre-compute suggestions only when redirecting to a 404-style page
+        // (Security fix: don't set cookies for regular redirects - query strings may contain tokens)
         if ($isRedirectToCustom404Page) {
+            $this->logic->setCookieWithPreviousRequest();
             setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
 
             // Pre-compute suggestions before redirect (stores to DB cache)
