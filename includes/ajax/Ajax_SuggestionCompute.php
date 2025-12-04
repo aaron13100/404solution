@@ -56,18 +56,19 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
 
             if ($startedAt === 0) {
                 // First worker - claim the work by setting started=time()
+                // TTL of 120s gives slow hosts enough time to complete computation
                 set_transient($transientKey, array(
                     'status' => 'pending',
                     'url' => $existing['url'],
                     'started' => time(),  // Claim the work
                     'token' => $storedToken
-                ), 60);
+                ), 120);
                 // Proceed to compute
-            } elseif ((time() - $startedAt) < 30) {
+            } elseif ((time() - $startedAt) < 90) {
                 // Another worker claimed recently and is still computing - skip
                 wp_die();
             }
-            // Else: started > 30s ago, worker may have died - proceed as recovery
+            // Else: started > 90s ago, worker may have died - proceed as recovery
         }
 
         // Get dependencies
@@ -91,14 +92,14 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         );
 
         // Store results in transient (preserve token for audit trail)
-        // TTL of 60 seconds: enough time for polling to retrieve results
+        // TTL of 120 seconds: enough time for polling to retrieve results on slow hosts
         set_transient($transientKey, array(
             'status' => 'complete',
             'suggestions' => $suggestionsPacket,
             'url' => $requestedURL,
             'completed' => time(),
             'token' => $storedToken  // Preserve token for debugging/audit
-        ), 60); // 1 minute TTL (matches pending TTL)
+        ), 120); // 2 minute TTL
 
         $suggestionCount = isset($suggestionsPacket[0]) ? count((array)$suggestionsPacket[0]) : 0;
         $logger->debugMessage("Ajax_SuggestionCompute: Completed computation for " .

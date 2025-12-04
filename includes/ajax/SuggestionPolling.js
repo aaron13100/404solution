@@ -14,7 +14,7 @@
 
     var requestedURL = $placeholder.data('requested-url');
     var pollInterval = 1000; // 1 second
-    var maxAttempts = 30;    // 30 seconds max
+    var maxAttempts = 90;    // 90 seconds max (handles slow hosts)
     var attempts = 0;
 
     // Exit if no URL provided
