@@ -251,6 +251,13 @@ class ABJ_404_Solution_PostEditorIntegration {
             }
         }
 
+        // Check for unchecked checkbox in Quick Edit (checkbox not in POST = unchecked)
+        if (isset($_POST['abj404_quick_edit_nonce']) &&
+            wp_verify_nonce($_POST['abj404_quick_edit_nonce'], 'abj404_quick_edit') &&
+            !isset($_POST['abj404_create_redirect'])) {
+            return false;
+        }
+
         // Check for unchecked checkbox in Classic Editor (checkbox not in POST = unchecked)
         if (isset($_POST['abj404_meta_box_nonce']) &&
             wp_verify_nonce($_POST['abj404_meta_box_nonce'], 'abj404_meta_box') &&
