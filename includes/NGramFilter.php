@@ -69,25 +69,25 @@ class ABJ_404_Solution_NGramFilter {
     /**
      * Check if the N-gram cache is initialized (multisite-aware).
      *
-     * Uses get_site_option() on multisite with network activation,
-     * get_option() otherwise. This matches how DatabaseUpgradesEtc
-     * stores the initialization flag.
+     * On multisite, checks both get_site_option() (network activation) and
+     * get_option() (per-site activation) since we can't reliably determine
+     * activation mode on frontend requests where is_plugin_active_for_network()
+     * isn't available.
      *
      * @return bool True if cache is initialized
      */
     public function isCacheInitialized() {
         $optionName = 'abj404_ngram_cache_initialized';
 
-        // Check for multisite network activation
-        if (is_multisite() && function_exists('is_plugin_active_for_network')) {
-            $pluginBasename = 'abj404_solution/abj404_solution.php';
-            // Also check common alternate basename
-            $altBasename = '404-solution/abj404_solution.php';
-
-            if (is_plugin_active_for_network($pluginBasename)
-                || is_plugin_active_for_network($altBasename)) {
-                return get_site_option($optionName) === '1';
+        if (is_multisite()) {
+            // Check site option first (network activation stores here)
+            // Then fall back to per-site option (per-site activation stores here)
+            // This handles both activation modes without requiring admin functions
+            $siteValue = get_site_option($optionName);
+            if ($siteValue === '1') {
+                return true;
             }
+            // Fall through to check per-site option
         }
 
         return get_option($optionName) === '1';
