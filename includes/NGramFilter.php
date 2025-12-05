@@ -23,6 +23,10 @@ class ABJ_404_Solution_NGramFilter {
      * Prevents per-request COUNT(*) queries on large sites under 404 bursts. */
     const COVERAGE_RATIO_CACHE_TTL = 300; // 5 minutes
 
+    /** TTL for coverage version transient (seconds).
+     * Version persists across ratio TTL cycles; 1 day is sufficient. */
+    const COVERAGE_VERSION_TTL = 86400; // 1 day
+
     /** Transient key for coverage ratio cache version.
      * Version is bumped on invalidation; cached ratios with mismatched versions are stale. */
     const COVERAGE_VERSION_KEY = 'abj404_ngram_coverage_version';
@@ -56,7 +60,7 @@ class ABJ_404_Solution_NGramFilter {
         // Bump version to invalidate any cached ratios (cheap scalar increment)
         // Readers will detect version mismatch and recompute
         $currentVersion = (int)get_transient(self::COVERAGE_VERSION_KEY);
-        set_transient(self::COVERAGE_VERSION_KEY, $currentVersion + 1, 0); // No expiry
+        set_transient(self::COVERAGE_VERSION_KEY, $currentVersion + 1, self::COVERAGE_VERSION_TTL);
 
         // Also delete the ratio transient to force immediate recompute
         delete_transient('abj404_ngram_coverage_ratio');
@@ -434,7 +438,7 @@ class ABJ_404_Solution_NGramFilter {
         );
         $resultsAbove = $wpdb->get_results($queryAbove, ARRAY_A) ?: [];
 
-        // If above side also underdelivered and below hit its limit, fetch additional from below
+        // If we didn't get enough results, fetch additional from whichever side hit its limit
         $aboveCount = count($resultsAbove);
         $totalFetched = $belowCount + $aboveCount;
 
@@ -454,20 +458,50 @@ class ABJ_404_Solution_NGramFilter {
             );
             $extraBelow = $wpdb->get_results($queryBelowExtra, ARRAY_A) ?: [];
             $resultsBelow = array_merge($resultsBelow, $extraBelow);
+            $totalFetched = count($resultsBelow) + $aboveCount;
+        }
+
+        if ($totalFetched < $limit && $aboveCount === $aboveLimit) {
+            // Above hit its limit, might have more rows - fetch additional
+            $additionalNeeded = $limit - $totalFetched;
+            $queryAboveExtra = $wpdb->prepare(
+                "SELECT id, url, url_normalized, ngrams, ngram_count
+                 FROM {$table}
+                 WHERE ngram_count > %d AND ngram_count <= %d
+                 ORDER BY ngram_count ASC
+                 LIMIT %d OFFSET %d",
+                $orderTarget,
+                $maxNgramCount,
+                $additionalNeeded,
+                $aboveCount
+            );
+            $extraAbove = $wpdb->get_results($queryAboveExtra, ARRAY_A) ?: [];
+            $resultsAbove = array_merge($resultsAbove, $extraAbove);
         }
 
         // Merge results by proximity to target
         $merged = $this->mergeByProximity($resultsBelow, $resultsAbove, $orderTarget, $limit);
 
-        // Decode JSON for each entry
-        foreach ($merged as &$row) {
+        // Decode JSON for each entry, filtering out corrupt entries
+        $validResults = [];
+        foreach ($merged as $row) {
             if (is_object($row)) {
                 $row = (array) $row;
             }
-            $row['ngrams'] = json_decode($row['ngrams'], true);
+            $decoded = json_decode($row['ngrams'], true);
+            if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+                $this->logger->errorMessage(sprintf(
+                    "Corrupt N-gram JSON for page ID %d: %s",
+                    $row['id'] ?? 0,
+                    json_last_error_msg()
+                ));
+                continue; // Skip corrupt entry
+            }
+            $row['ngrams'] = $decoded;
+            $validResults[] = $row;
         }
 
-        return $merged;
+        return $validResults;
     }
 
     /**
