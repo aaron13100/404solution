@@ -25,7 +25,13 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
             return;
         }
 
-        $urlKey = md5($requestedURL);
+        // Normalize URL to match SpellChecker and ShortCode:
+        // 1. Strip query string (matches regexReplace('\?.*', '', $url))
+        // 2. Apply esc_url for consistency
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $normalizedURL = esc_url($f->regexReplace('\?.*', '', $requestedURL));
+
+        $urlKey = md5($normalizedURL);
         $transientKey = 'abj404_suggest_' . $urlKey;
 
         // Check transient for status
@@ -50,9 +56,10 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
 
         if ($data['status'] === 'complete') {
             // Suggestions ready - render HTML and return
+            // Use normalized URL to match how ShortCode processes URLs
             $html = ABJ_404_Solution_ShortCode::renderSuggestionsHTML(
                 isset($data['suggestions']) ? $data['suggestions'] : array(),
-                $requestedURL
+                $normalizedURL
             );
             wp_send_json(array('status' => 'complete', 'html' => $html));
             return;
