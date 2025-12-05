@@ -14,6 +14,12 @@ class ABJ_404_Solution_SpellChecker {
 
 	const MAX_DIST = 2083;
 
+	/** Similarity threshold for N-gram prefiltering (lower = more candidates, slower but safer). */
+	const NGRAM_PREFILTER_THRESHOLD = 0.3;
+
+	/** Maximum candidates to retrieve during N-gram prefiltering. */
+	const NGRAM_PREFILTER_MAX_CANDIDATES = 500;
+
 	private static $instance = null;
 
 	// Performance counters (for testing efficiency - disabled by default)
@@ -1122,8 +1128,8 @@ class ABJ_404_Solution_SpellChecker {
 			// Get candidate IDs using N-gram similarity (fast: ~50-100ms for 20k posts)
 			$similarPages = $this->ngramFilter->findSimilarPages(
 				$requestedURLCleaned,
-				0.3,  // Lower threshold for prefiltering (we'll refine later)
-				500   // Get more candidates for prefiltering
+				self::NGRAM_PREFILTER_THRESHOLD,
+				self::NGRAM_PREFILTER_MAX_CANDIDATES
 			);
 
 			if (!empty($similarPages)) {

@@ -15,6 +15,10 @@
  */
 class ABJ_404_Solution_NGramFilter {
 
+    /** Maximum entries to load from N-gram cache to prevent memory exhaustion.
+     * JSON decode of N-gram data is memory-intensive; 1000 entries is safe for 128MB limit. */
+    const CACHE_LOAD_LIMIT = 1000;
+
     private static $instance = null;
 
     /** @var ABJ_404_Solution_DataAccess */
@@ -570,10 +574,9 @@ class ABJ_404_Solution_NGramFilter {
         $maxCount = (int)($queryCombinedCount * 2.5);
 
         // Use efficient database-side filtering for large caches
-        // Limit to 1000 entries to prevent memory exhaustion (JSON decode is memory-intensive)
-        if ($totalCount > 1000) {
+        if ($totalCount > self::CACHE_LOAD_LIMIT) {
             $this->logger->debugMessage("Using database-side filtering for {$totalCount} entries");
-            $cachedPages = $this->getCachedNGramsFiltered($minCount, $maxCount, 1000);
+            $cachedPages = $this->getCachedNGramsFiltered($minCount, $maxCount, self::CACHE_LOAD_LIMIT);
         } else {
             // For small caches, load all (legacy behavior)
             $cachedPages = $this->getAllCachedNGrams();
