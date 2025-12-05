@@ -182,9 +182,11 @@ class ABJ_404_Solution_NGramFilter {
      * @param string $url Original URL
      * @param string $urlNormalized Normalized URL for matching
      * @param array $ngrams N-gram data (format: ['bi' => [...], 'tri' => [...]])
+     * @param string $type Entity type: 'post', 'page', 'category', 'tag' (default: 'post')
+     * @param bool $skipInvalidation Skip cache invalidation (for bulk operations)
      * @return bool Success status
      */
-    public function storeNGrams($pageId, $url, $urlNormalized, $ngrams, $type = 'post') {
+    public function storeNGrams($pageId, $url, $urlNormalized, $ngrams, $type = 'post', $skipInvalidation = false) {
         // Input validation
         if (!is_numeric($pageId) || $pageId <= 0) {
             $this->logger->errorMessage("Invalid page ID for N-gram storage: " . var_export($pageId, true));
@@ -254,7 +256,10 @@ class ABJ_404_Solution_NGramFilter {
         }
 
         // Invalidate coverage ratio caches since N-gram count changed
-        $this->invalidateCoverageCaches();
+        // (skip during bulk operations for efficiency)
+        if (!$skipInvalidation) {
+            $this->invalidateCoverageCaches();
+        }
 
         return true;
     }
@@ -602,8 +607,8 @@ class ABJ_404_Solution_NGramFilter {
             // Extract N-grams
             $ngrams = $this->extractNGrams($urlNormalized);
 
-            // Store in database
-            $success = $this->storeNGrams($pageId, $url, $urlNormalized, $ngrams);
+            // Store in database (skip per-item invalidation for bulk efficiency)
+            $success = $this->storeNGrams($pageId, $url, $urlNormalized, $ngrams, 'post', true);
 
             $stats['processed']++;
             if ($success) {
@@ -611,6 +616,11 @@ class ABJ_404_Solution_NGramFilter {
             } else {
                 $stats['failed']++;
             }
+        }
+
+        // Invalidate coverage caches once at end of batch (not per-item)
+        if ($stats['success'] > 0) {
+            $this->invalidateCoverageCaches();
         }
 
         // Log only every 1000 pages to reduce log verbosity
@@ -662,9 +672,8 @@ class ABJ_404_Solution_NGramFilter {
             return [];
         }
 
-        // Check cache size to determine strategy
-        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
-        $totalCount = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+        // Check cache size to determine strategy (use memoized count)
+        $totalCount = $this->getCacheCount();
 
         if ($totalCount == 0) {
             $this->logger->debugMessage("N-gram cache is empty.");
