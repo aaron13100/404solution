@@ -20,6 +20,14 @@ class ABJ_404_Solution_SpellChecker {
 	/** Maximum candidates to retrieve during N-gram prefiltering. */
 	const NGRAM_PREFILTER_MAX_CANDIDATES = 500;
 
+	/** Minimum N-gram cache entries required to enable prefiltering.
+	 * Small sites don't need prefiltering; this also prevents use during partial cache builds. */
+	const NGRAM_MIN_CACHE_ENTRIES = 50;
+
+	/** Minimum results from N-gram filter to use as whitelist.
+	 * Prevents over-restriction when cache is incomplete or query has poor matches. */
+	const NGRAM_MIN_PREFILTER_RESULTS = 10;
+
 	private static $instance = null;
 
 	// Performance counters (for testing efficiency - disabled by default)
@@ -1125,22 +1133,44 @@ class ABJ_404_Solution_SpellChecker {
 		// This prevents timeout/memory issues on sites with many posts
 		$ngramPrefilterApplied = false;
 		if ($rowType == 'pages' && $rows === null && $this->ngramFilter->isCachePopulated()) {
-			// Get candidate IDs using N-gram similarity (fast: ~50-100ms for 20k posts)
-			$similarPages = $this->ngramFilter->findSimilarPages(
-				$requestedURLCleaned,
-				self::NGRAM_PREFILTER_THRESHOLD,
-				self::NGRAM_PREFILTER_MAX_CANDIDATES
-			);
+			// Safety check: Ensure cache has enough entries before using as whitelist
+			// This prevents issues during partial cache rebuilds
+			$cacheStats = $this->ngramFilter->getCacheStats();
+			$cacheCount = (int)$cacheStats['total_entries'];
 
-			if (!empty($similarPages)) {
-				$candidateIds = array_keys($similarPages);
-				$this->publishedPostsProvider->resetBatch();
-				$this->publishedPostsProvider->restrictToIds($candidateIds);
-				$ngramPrefilterApplied = true;
+			if ($cacheCount >= self::NGRAM_MIN_CACHE_ENTRIES) {
+				// Get candidate IDs using N-gram similarity (fast: ~50-100ms for 20k posts)
+				$similarPages = $this->ngramFilter->findSimilarPages(
+					$requestedURLCleaned,
+					self::NGRAM_PREFILTER_THRESHOLD,
+					self::NGRAM_PREFILTER_MAX_CANDIDATES
+				);
 
+				// Only use prefiltering if we got enough results
+				// Too few results may indicate incomplete cache or poor URL match
+				if (count($similarPages) >= self::NGRAM_MIN_PREFILTER_RESULTS) {
+					$candidateIds = array_keys($similarPages);
+					$this->publishedPostsProvider->resetBatch();
+					$this->publishedPostsProvider->restrictToIds($candidateIds);
+					$ngramPrefilterApplied = true;
+
+					$this->logger->debugMessage(sprintf(
+						"N-gram prefilter: Restricted to %d candidates (cache has %d entries)",
+						count($candidateIds),
+						$cacheCount
+					));
+				} else {
+					$this->logger->debugMessage(sprintf(
+						"N-gram prefilter skipped: Only %d results (need %d minimum)",
+						count($similarPages),
+						self::NGRAM_MIN_PREFILTER_RESULTS
+					));
+				}
+			} else {
 				$this->logger->debugMessage(sprintf(
-					"N-gram prefilter: Restricted to %d candidates (from full dataset)",
-					count($candidateIds)
+					"N-gram prefilter skipped: Cache has %d entries (need %d minimum)",
+					$cacheCount,
+					self::NGRAM_MIN_CACHE_ENTRIES
 				));
 			}
 		}

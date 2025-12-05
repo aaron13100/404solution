@@ -323,14 +323,20 @@ class ABJ_404_Solution_NGramFilter {
 
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
-        // Database-side filtering by ngram_count range
+        // Calculate midpoint for ordering by proximity to target ngram_count
+        // This ensures LIMIT returns the most relevant entries, not arbitrary ones
+        $midpoint = (int)(($minNgramCount + $maxNgramCount) / 2);
+
+        // Database-side filtering by ngram_count range, ordered by proximity to target
         $query = $wpdb->prepare(
             "SELECT id, url, url_normalized, ngrams, ngram_count
              FROM {$table}
              WHERE ngram_count BETWEEN %d AND %d
+             ORDER BY ABS(ngram_count - %d) ASC
              LIMIT %d",
             $minNgramCount,
             $maxNgramCount,
+            $midpoint,
             $limit
         );
 
