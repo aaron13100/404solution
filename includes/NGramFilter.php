@@ -926,7 +926,9 @@ class ABJ_404_Solution_NGramFilter {
         $this->ngramCountMemo = $ngramCount;
 
         if ($permalinkCount === 0) {
-            $ratio = 1.0; // Empty site, consider fully covered
+            // Empty permalink cache with existing N-grams = stale state (during rebuild)
+            // Return 0.0 to skip prefiltering until both caches are populated
+            $ratio = ($ngramCount === 0) ? 1.0 : 0.0;
         } else {
             $ratio = $ngramCount / $permalinkCount;
         }

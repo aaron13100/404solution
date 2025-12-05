@@ -85,7 +85,12 @@ class ABJ_404_Solution_PermalinkCache {
         // insert the new rows.
         $results = $this->dao->updatePermalinkCache();
         $rowsInserted = $results['rows_affected'];
-        
+
+        // Invalidate coverage ratio if rows were inserted (new permalinks may lack N-grams)
+        if ($rowsInserted > 0) {
+            ABJ_404_Solution_NGramFilter::getInstance()->invalidateCoverageCaches();
+        }
+
         // now we have to update the the pages that have parents to include the parent
         // part of the URL.
         // wherever the post_parent != 0, prepend the parent ID URL onto the current URL
