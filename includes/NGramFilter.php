@@ -316,16 +316,20 @@ class ABJ_404_Solution_NGramFilter {
      * @param int $minNgramCount Minimum N-gram count (for filtering dissimilar pages)
      * @param int $maxNgramCount Maximum N-gram count
      * @param int $limit Maximum number of results to return
+     * @param int $targetNgramCount The query's actual N-gram count for proximity ordering
      * @return array Array of cached entries
      */
-    public function getCachedNGramsFiltered($minNgramCount, $maxNgramCount, $limit = 1000) {
+    public function getCachedNGramsFiltered($minNgramCount, $maxNgramCount, $limit = 1000, $targetNgramCount = null) {
         global $wpdb;
 
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
-        // Calculate midpoint for ordering by proximity to target ngram_count
-        // This ensures LIMIT returns the most relevant entries, not arbitrary ones
-        $midpoint = (int)(($minNgramCount + $maxNgramCount) / 2);
+        // Use the actual query's ngram count for ordering, not the range midpoint.
+        // This ensures pages with similar URL lengths are prioritized.
+        // Fall back to range midpoint only if target not provided (legacy compatibility).
+        $orderTarget = ($targetNgramCount !== null)
+            ? (int)$targetNgramCount
+            : (int)(($minNgramCount + $maxNgramCount) / 2);
 
         // Database-side filtering by ngram_count range, ordered by proximity to target
         $query = $wpdb->prepare(
@@ -336,7 +340,7 @@ class ABJ_404_Solution_NGramFilter {
              LIMIT %d",
             $minNgramCount,
             $maxNgramCount,
-            $midpoint,
+            $orderTarget,
             $limit
         );
 
@@ -582,7 +586,7 @@ class ABJ_404_Solution_NGramFilter {
         // Use efficient database-side filtering for large caches
         if ($totalCount > self::CACHE_LOAD_LIMIT) {
             $this->logger->debugMessage("Using database-side filtering for {$totalCount} entries");
-            $cachedPages = $this->getCachedNGramsFiltered($minCount, $maxCount, self::CACHE_LOAD_LIMIT);
+            $cachedPages = $this->getCachedNGramsFiltered($minCount, $maxCount, self::CACHE_LOAD_LIMIT, $queryCombinedCount);
         } else {
             // For small caches, load all (legacy behavior)
             $cachedPages = $this->getAllCachedNGrams();
@@ -658,6 +662,21 @@ class ABJ_404_Solution_NGramFilter {
         $count = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
 
         return $count > 0;
+    }
+
+    /**
+     * Get cache entry count (lightweight single query).
+     *
+     * Use this instead of getCacheStats() when only the count is needed,
+     * especially in hot code paths like 404 request handling.
+     *
+     * @return int Number of entries in the N-gram cache
+     */
+    public function getCacheCount() {
+        global $wpdb;
+
+        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+        return (int)$wpdb->get_var("SELECT COUNT(*) FROM {$table}");
     }
 
     /**

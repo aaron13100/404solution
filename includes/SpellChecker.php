@@ -24,10 +24,6 @@ class ABJ_404_Solution_SpellChecker {
 	 * Small sites don't need prefiltering; this also prevents use during partial cache builds. */
 	const NGRAM_MIN_CACHE_ENTRIES = 50;
 
-	/** Minimum results from N-gram filter to use as whitelist.
-	 * Prevents over-restriction when cache is incomplete or query has poor matches. */
-	const NGRAM_MIN_PREFILTER_RESULTS = 10;
-
 	private static $instance = null;
 
 	// Performance counters (for testing efficiency - disabled by default)
@@ -1132,11 +1128,9 @@ class ABJ_404_Solution_SpellChecker {
 		// Apply N-gram filtering BEFORE the main loop to reduce 20k posts to ~200 candidates
 		// This prevents timeout/memory issues on sites with many posts
 		$ngramPrefilterApplied = false;
-		if ($rowType == 'pages' && $rows === null && $this->ngramFilter->isCachePopulated()) {
-			// Safety check: Ensure cache has enough entries before using as whitelist
-			// This prevents issues during partial cache rebuilds
-			$cacheStats = $this->ngramFilter->getCacheStats();
-			$cacheCount = (int)$cacheStats['total_entries'];
+		if ($rowType == 'pages' && $rows === null) {
+			// Use lightweight single query instead of getCacheStats() (which runs 5 queries)
+			$cacheCount = $this->ngramFilter->getCacheCount();
 
 			if ($cacheCount >= self::NGRAM_MIN_CACHE_ENTRIES) {
 				// Get candidate IDs using N-gram similarity (fast: ~50-100ms for 20k posts)
@@ -1146,9 +1140,10 @@ class ABJ_404_Solution_SpellChecker {
 					self::NGRAM_PREFILTER_MAX_CANDIDATES
 				);
 
-				// Only use prefiltering if we got enough results
-				// Too few results may indicate incomplete cache or poor URL match
-				if (count($similarPages) >= self::NGRAM_MIN_PREFILTER_RESULTS) {
+				// Trust the N-gram filter results if cache is well-populated.
+				// Even if only a few candidates match, those ARE the relevant candidates -
+				// falling back to full scan would defeat the prefilter's purpose.
+				if (!empty($similarPages)) {
 					$candidateIds = array_keys($similarPages);
 					$this->publishedPostsProvider->resetBatch();
 					$this->publishedPostsProvider->restrictToIds($candidateIds);
@@ -1160,11 +1155,12 @@ class ABJ_404_Solution_SpellChecker {
 						$cacheCount
 					));
 				} else {
-					$this->logger->debugMessage(sprintf(
-						"N-gram prefilter skipped: Only %d results (need %d minimum)",
-						count($similarPages),
-						self::NGRAM_MIN_PREFILTER_RESULTS
-					));
+					// Zero results from N-gram filter on a populated cache means
+					// no pages are similar enough. Skip prefiltering for this edge case
+					// to allow Levenshtein a chance (N-gram might have missed borderline matches).
+					$this->logger->debugMessage(
+						"N-gram prefilter skipped: Zero results (allowing fallback to full scan)"
+					);
 				}
 			} else {
 				$this->logger->debugMessage(sprintf(
