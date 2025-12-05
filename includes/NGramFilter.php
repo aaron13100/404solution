@@ -42,9 +42,10 @@ class ABJ_404_Solution_NGramFilter {
 
     /**
      * Invalidate coverage ratio caches (transient and per-request memos).
-     * Call this whenever N-gram or permalink counts change.
+     * Call this whenever N-gram or permalink counts change, including after
+     * TRUNCATE operations during cache rebuilds.
      */
-    private function invalidateCoverageCaches() {
+    public function invalidateCoverageCaches() {
         delete_transient('abj404_ngram_coverage_ratio');
         $this->ngramCountMemo = null;
         $this->coverageRatioMemo = null;
@@ -822,19 +823,23 @@ class ABJ_404_Solution_NGramFilter {
         global $wpdb;
         $permalinkTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
 
-        // Check transient first (no DB query yet)
+        // Check transient first
         $cached = get_transient('abj404_ngram_coverage_ratio');
         if ($cached !== false && is_array($cached) && isset($cached['ratio'], $cached['permalink_count'], $cached['ngram_count'])) {
-            // Transient exists - validate against current permalink count
+            // Transient exists - validate against BOTH current counts
+            // This prevents stale data after TRUNCATE (ngram changes) or content updates (permalink changes)
+            $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
             $currentPermalinkCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkTable}");
+            $currentNgramCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$ngramTable}");
 
-            if ($currentPermalinkCount === (int)$cached['permalink_count']) {
-                // Valid: counts match, use cached ratio
+            if ($currentPermalinkCount === (int)$cached['permalink_count']
+                && $currentNgramCount === (int)$cached['ngram_count']) {
+                // Valid: both counts match, use cached ratio
                 $this->coverageRatioMemo = $cached;
-                $this->ngramCountMemo = (int)$cached['ngram_count'];
+                $this->ngramCountMemo = $currentNgramCount;
                 return (float)$cached['ratio'];
             }
-            // Invalid: permalink count changed, fall through to recompute
+            // Invalid: one or both counts changed, fall through to recompute
         }
 
         // Transient miss or invalid - compute fresh ratio

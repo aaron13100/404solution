@@ -1759,6 +1759,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 1, 'error' => $wpdb->last_error];
             }
 
+            // Invalidate coverage ratio caches immediately after truncate
+            // This prevents stale transient data from making SpellChecker believe
+            // the cache is populated when it's actually empty
+            $this->ngramFilter->invalidateCoverageCaches();
+
             // Get total page count from permalink cache
             $totalPages = $wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
 
