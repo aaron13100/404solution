@@ -800,34 +800,42 @@ class ABJ_404_Solution_NGramFilter {
      * some permalink entries are not in the N-gram cache.
      *
      * Results are memoized per-request and cached in a transient for 5 minutes.
-     * Transient is checked BEFORE any COUNT queries to avoid DB hits on cache hits.
+     * Transient is validated against current permalink count to detect new content.
      *
      * @return float Coverage ratio (0.0 to 1.0+), or 1.0 if permalink cache is empty
      */
     public function getCacheCoverageRatio() {
-        // Fast path: return memoized value if available
+        // Fast path: return memoized value if available (already validated this request)
         if ($this->coverageRatioMemo !== null) {
             return (float)$this->coverageRatioMemo['ratio'];
         }
 
-        // Check transient BEFORE any COUNT queries
+        global $wpdb;
+        $permalinkTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
+
+        // Check transient first (no DB query yet)
         $cached = get_transient('abj404_ngram_coverage_ratio');
         if ($cached !== false && is_array($cached) && isset($cached['ratio'], $cached['permalink_count'], $cached['ngram_count'])) {
-            // Memoize for subsequent calls this request
-            $this->coverageRatioMemo = $cached;
-            $this->ngramCountMemo = (int)$cached['ngram_count'];
-            return (float)$cached['ratio'];
+            // Transient exists - validate against current permalink count
+            $currentPermalinkCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkTable}");
+
+            if ($currentPermalinkCount === (int)$cached['permalink_count']) {
+                // Valid: counts match, use cached ratio
+                $this->coverageRatioMemo = $cached;
+                $this->ngramCountMemo = (int)$cached['ngram_count'];
+                return (float)$cached['ratio'];
+            }
+            // Invalid: permalink count changed, fall through to recompute
         }
 
-        // Transient miss or incomplete - need to compute fresh
-        global $wpdb;
-
+        // Transient miss or invalid - compute fresh ratio
         // Get N-gram count (reuse memoized if available)
         $ngramCount = $this->getCacheCount();
 
-        // Get permalink count
-        $permalinkTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
-        $currentPermalinkCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkTable}");
+        // Get permalink count (may already have it from validation above)
+        if (!isset($currentPermalinkCount)) {
+            $currentPermalinkCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkTable}");
+        }
 
         if ($currentPermalinkCount === 0) {
             $ratio = 1.0; // Empty site, consider fully covered
