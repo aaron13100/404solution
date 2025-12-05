@@ -60,6 +60,13 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
             return;
         }
 
+        if ($data['status'] === 'error') {
+            // Computation crashed - return error immediately with generic message
+            // Detailed error info is logged server-side, not exposed to frontend
+            wp_send_json(array('status' => 'error', 'message' => 'Suggestion computation failed'));
+            return;
+        }
+
         if ($data['status'] === 'complete') {
             // Suggestions ready - render HTML and return
             // Use normalized URL to match how ShortCode processes URLs

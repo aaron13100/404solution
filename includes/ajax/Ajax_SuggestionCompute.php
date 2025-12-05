@@ -71,6 +71,15 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             // Else: started > 90s ago, worker may have died - proceed as recovery
         }
 
+        // Register crash detection handler BEFORE expensive computation
+        // This detects fatal errors (memory exhaustion, etc.) and marks transient as 'error'
+        register_shutdown_function(
+            array(__CLASS__, 'handleComputationCrash'),
+            $transientKey,
+            $storedToken,
+            $requestedURL
+        );
+
         // Get dependencies
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
@@ -106,5 +115,72 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             esc_html($requestedURL) . " - found " . $suggestionCount . " suggestions");
 
         wp_die(); // End AJAX request cleanly
+    }
+
+    /**
+     * Shutdown handler to detect fatal errors during computation.
+     * Updates transient to 'error' status so polling can respond immediately.
+     *
+     * Safe with concurrent requests:
+     * - Only fires on fatal errors (not normal completion)
+     * - If recovery worker succeeds later, it overwrites with 'complete'
+     * - Token preserved for audit trail
+     *
+     * Safe with other shutdown handlers:
+     * - register_shutdown_function() is additive (queued, not replaced)
+     * - Existing ErrorHandler::FatalErrorHandler still runs
+     * - This handler only acts on fatal errors, does nothing on success
+     *
+     * @param string $transientKey The transient key for this computation
+     * @param string $token The security token for this computation
+     * @param string $requestedURL The URL being processed (for logging)
+     */
+    public static function handleComputationCrash($transientKey, $token, $requestedURL, $error = null) {
+        // Use provided error for testing, otherwise get from PHP
+        if ($error === null) {
+            $error = error_get_last();
+        }
+
+        // Only handle fatal error types - do nothing on normal shutdown
+        // Include E_USER_ERROR and E_RECOVERABLE_ERROR which are fatal in many environments
+        $fatalTypes = E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR | E_RECOVERABLE_ERROR;
+        if (!$error || !($error['type'] & $fatalTypes)) {
+            return; // Normal exit or non-fatal error - let completion handler update transient
+        }
+
+        // Check current transient state - don't overwrite if already complete
+        $existing = get_transient($transientKey);
+        if ($existing && isset($existing['status']) && $existing['status'] === 'complete') {
+            return; // Another worker completed successfully - don't mark as error
+        }
+
+        // Mark as error with generic user-facing message (don't leak implementation details)
+        set_transient($transientKey, array(
+            'status' => 'error',
+            'token' => $token
+        ), 120);
+
+        // Log detailed error info for debugging (not exposed to frontend)
+        $logMessage = sprintf(
+            "Async suggestion computation crashed for URL '%s' (transient: %s): %s in %s on line %d",
+            $requestedURL,
+            $transientKey,
+            $error['message'],
+            basename($error['file']),
+            $error['line']
+        );
+
+        // Use plugin's logging if available, fallback to error_log
+        if (class_exists('ABJ_404_Solution_Logging')) {
+            try {
+                $logger = ABJ_404_Solution_Logging::getInstance();
+                $logger->errorMessage($logMessage);
+            } catch (Exception $e) {
+                // Logging failed during shutdown - use error_log as fallback
+                @error_log("404 Solution: " . $logMessage);
+            }
+        } else {
+            @error_log("404 Solution: " . $logMessage);
+        }
     }
 }
