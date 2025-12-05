@@ -19,6 +19,10 @@ class ABJ_404_Solution_NGramFilter {
      * JSON decode of N-gram data is memory-intensive; 1000 entries is safe for 128MB limit. */
     const CACHE_LOAD_LIMIT = 1000;
 
+    /** Cache TTL for coverage ratio transient (seconds).
+     * Prevents per-request COUNT(*) queries on large sites under 404 bursts. */
+    const COVERAGE_RATIO_CACHE_TTL = 300; // 5 minutes
+
     private static $instance = null;
 
     /** @var ABJ_404_Solution_DataAccess */
@@ -233,6 +237,9 @@ class ABJ_404_Solution_NGramFilter {
             return false;
         }
 
+        // Invalidate coverage ratio cache since N-gram count changed
+        delete_transient('abj404_ngram_coverage_ratio');
+
         return true;
     }
 
@@ -330,7 +337,6 @@ class ABJ_404_Solution_NGramFilter {
             ? max($minNgramCount, min($maxNgramCount, (int)$targetNgramCount))
             : (int)(($minNgramCount + $maxNgramCount) / 2);
 
-        // Each query fetches ceil(limit/2) to ensure we have enough candidates
         $halfLimit = (int)ceil($limit / 2);
 
         // Query 1: ngram_count <= target, ORDER BY ngram_count DESC
@@ -345,9 +351,13 @@ class ABJ_404_Solution_NGramFilter {
             $orderTarget,
             $halfLimit
         );
+        $resultsBelow = $wpdb->get_results($queryBelow, ARRAY_A) ?: [];
 
-        // Query 2: ngram_count > target, ORDER BY ngram_count ASC
-        // Uses idx_ngram_count for both range scan and sort (no filesort)
+        // Query 2: above target - adjust limit based on below results to handle skewed distributions
+        // If below side returned fewer than halfLimit, give the remainder to above side
+        $belowCount = count($resultsBelow);
+        $aboveLimit = $limit - $belowCount;
+
         $queryAbove = $wpdb->prepare(
             "SELECT id, url, url_normalized, ngrams, ngram_count
              FROM {$table}
@@ -356,18 +366,30 @@ class ABJ_404_Solution_NGramFilter {
              LIMIT %d",
             $orderTarget,
             $maxNgramCount,
-            $halfLimit
+            $aboveLimit
         );
+        $resultsAbove = $wpdb->get_results($queryAbove, ARRAY_A) ?: [];
 
-        $resultsBelow = $wpdb->get_results($queryBelow, ARRAY_A);
-        $resultsAbove = $wpdb->get_results($queryAbove, ARRAY_A);
+        // If above side also underdelivered and below hit its limit, fetch additional from below
+        $aboveCount = count($resultsAbove);
+        $totalFetched = $belowCount + $aboveCount;
 
-        // Handle query failures
-        if (!is_array($resultsBelow)) {
-            $resultsBelow = [];
-        }
-        if (!is_array($resultsAbove)) {
-            $resultsAbove = [];
+        if ($totalFetched < $limit && $belowCount === $halfLimit) {
+            // Below hit its limit, might have more rows - fetch additional
+            $additionalNeeded = $limit - $totalFetched;
+            $queryBelowExtra = $wpdb->prepare(
+                "SELECT id, url, url_normalized, ngrams, ngram_count
+                 FROM {$table}
+                 WHERE ngram_count >= %d AND ngram_count <= %d
+                 ORDER BY ngram_count DESC
+                 LIMIT %d OFFSET %d",
+                $minNgramCount,
+                $orderTarget,
+                $additionalNeeded,
+                $belowCount
+            );
+            $extraBelow = $wpdb->get_results($queryBelowExtra, ARRAY_A) ?: [];
+            $resultsBelow = array_merge($resultsBelow, $extraBelow);
         }
 
         // Merge results by proximity to target
@@ -439,6 +461,11 @@ class ABJ_404_Solution_NGramFilter {
 
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
         $result = $wpdb->delete($table, ['id' => $pageId, 'type' => $type], ['%d', '%s']);
+
+        if ($result !== false) {
+            // Invalidate coverage ratio cache since N-gram count changed
+            delete_transient('abj404_ngram_coverage_ratio');
+        }
 
         return $result !== false;
     }
@@ -745,9 +772,18 @@ class ABJ_404_Solution_NGramFilter {
      * Used to detect stale or incomplete caches. A ratio < 1.0 indicates
      * some permalink entries are not in the N-gram cache.
      *
+     * Results are cached in a transient for 5 minutes to avoid per-request
+     * COUNT(*) queries on large sites under 404 bursts.
+     *
      * @return float Coverage ratio (0.0 to 1.0+), or 1.0 if permalink cache is empty
      */
     public function getCacheCoverageRatio() {
+        // Check transient cache first to avoid per-request COUNT(*) queries
+        $cached = get_transient('abj404_ngram_coverage_ratio');
+        if ($cached !== false) {
+            return (float)$cached;
+        }
+
         global $wpdb;
 
         $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
@@ -757,10 +793,15 @@ class ABJ_404_Solution_NGramFilter {
         $permalinkCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkTable}");
 
         if ($permalinkCount === 0) {
-            return 1.0; // Empty site, consider fully covered
+            $ratio = 1.0; // Empty site, consider fully covered
+        } else {
+            $ratio = $ngramCount / $permalinkCount;
         }
 
-        return $ngramCount / $permalinkCount;
+        // Cache for 5 minutes
+        set_transient('abj404_ngram_coverage_ratio', $ratio, self::COVERAGE_RATIO_CACHE_TTL);
+
+        return $ratio;
     }
 
     /**
