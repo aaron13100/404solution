@@ -34,6 +34,22 @@ class ABJ_404_Solution_NGramFilter {
     /** @var ABJ_404_Solution_Functions */
     private $f;
 
+    /** @var int|null Per-request memoized N-gram cache count */
+    private $ngramCountMemo = null;
+
+    /** @var array|null Per-request memoized coverage ratio data ['ratio' => float, 'ngram_count' => int, 'permalink_count' => int] */
+    private $coverageRatioMemo = null;
+
+    /**
+     * Invalidate coverage ratio caches (transient and per-request memos).
+     * Call this whenever N-gram or permalink counts change.
+     */
+    private function invalidateCoverageCaches() {
+        delete_transient('abj404_ngram_coverage_ratio');
+        $this->ngramCountMemo = null;
+        $this->coverageRatioMemo = null;
+    }
+
     /**
      * Constructor with dependency injection.
      *
@@ -237,8 +253,8 @@ class ABJ_404_Solution_NGramFilter {
             return false;
         }
 
-        // Invalidate coverage ratio cache since N-gram count changed
-        delete_transient('abj404_ngram_coverage_ratio');
+        // Invalidate coverage ratio caches since N-gram count changed
+        $this->invalidateCoverageCaches();
 
         return true;
     }
@@ -463,8 +479,8 @@ class ABJ_404_Solution_NGramFilter {
         $result = $wpdb->delete($table, ['id' => $pageId, 'type' => $type], ['%d', '%s']);
 
         if ($result !== false) {
-            // Invalidate coverage ratio cache since N-gram count changed
-            delete_transient('abj404_ngram_coverage_ratio');
+            // Invalidate coverage ratio caches since N-gram count changed
+            $this->invalidateCoverageCaches();
         }
 
         return $result !== false;
@@ -752,7 +768,7 @@ class ABJ_404_Solution_NGramFilter {
     }
 
     /**
-     * Get cache entry count (lightweight single query).
+     * Get cache entry count (memoized per-request).
      *
      * Use this instead of getCacheStats() when only the count is needed,
      * especially in hot code paths like 404 request handling.
@@ -760,10 +776,21 @@ class ABJ_404_Solution_NGramFilter {
      * @return int Number of entries in the N-gram cache
      */
     public function getCacheCount() {
-        global $wpdb;
+        // Return memoized value if available
+        if ($this->ngramCountMemo !== null) {
+            return $this->ngramCountMemo;
+        }
 
+        // Check if coverage ratio memo has the count
+        if ($this->coverageRatioMemo !== null && isset($this->coverageRatioMemo['ngram_count'])) {
+            $this->ngramCountMemo = $this->coverageRatioMemo['ngram_count'];
+            return $this->ngramCountMemo;
+        }
+
+        global $wpdb;
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
-        return (int)$wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+        $this->ngramCountMemo = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+        return $this->ngramCountMemo;
     }
 
     /**
@@ -772,33 +799,35 @@ class ABJ_404_Solution_NGramFilter {
      * Used to detect stale or incomplete caches. A ratio < 1.0 indicates
      * some permalink entries are not in the N-gram cache.
      *
-     * Results are cached in a transient for 5 minutes. The cache is self-validating:
-     * it stores the permalink count alongside the ratio and recomputes if the
-     * permalink count has increased (new content added).
+     * Results are memoized per-request and cached in a transient for 5 minutes.
+     * Transient is checked BEFORE any COUNT queries to avoid DB hits on cache hits.
      *
      * @return float Coverage ratio (0.0 to 1.0+), or 1.0 if permalink cache is empty
      */
     public function getCacheCoverageRatio() {
-        global $wpdb;
-
-        $permalinkTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
-
-        // Always fetch current permalink count (needed for cache validation)
-        $currentPermalinkCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkTable}");
-
-        // Check transient cache with validation
-        $cached = get_transient('abj404_ngram_coverage_ratio');
-        if ($cached !== false && is_array($cached)) {
-            // Validate: if permalink count increased, cache is stale (new content added)
-            if (isset($cached['permalink_count']) && $currentPermalinkCount <= $cached['permalink_count']) {
-                return (float)$cached['ratio'];
-            }
-            // Permalink count increased - fall through to recompute
+        // Fast path: return memoized value if available
+        if ($this->coverageRatioMemo !== null) {
+            return (float)$this->coverageRatioMemo['ratio'];
         }
 
-        // Compute fresh ratio
-        $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
-        $ngramCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$ngramTable}");
+        // Check transient BEFORE any COUNT queries
+        $cached = get_transient('abj404_ngram_coverage_ratio');
+        if ($cached !== false && is_array($cached) && isset($cached['ratio'], $cached['permalink_count'], $cached['ngram_count'])) {
+            // Memoize for subsequent calls this request
+            $this->coverageRatioMemo = $cached;
+            $this->ngramCountMemo = (int)$cached['ngram_count'];
+            return (float)$cached['ratio'];
+        }
+
+        // Transient miss or incomplete - need to compute fresh
+        global $wpdb;
+
+        // Get N-gram count (reuse memoized if available)
+        $ngramCount = $this->getCacheCount();
+
+        // Get permalink count
+        $permalinkTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
+        $currentPermalinkCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkTable}");
 
         if ($currentPermalinkCount === 0) {
             $ratio = 1.0; // Empty site, consider fully covered
@@ -806,11 +835,15 @@ class ABJ_404_Solution_NGramFilter {
             $ratio = $ngramCount / $currentPermalinkCount;
         }
 
-        // Cache ratio WITH permalink count for validation on next read
-        set_transient('abj404_ngram_coverage_ratio', [
+        // Memoize for this request
+        $this->coverageRatioMemo = [
             'ratio' => $ratio,
+            'ngram_count' => $ngramCount,
             'permalink_count' => $currentPermalinkCount
-        ], self::COVERAGE_RATIO_CACHE_TTL);
+        ];
+
+        // Cache in transient for subsequent requests
+        set_transient('abj404_ngram_coverage_ratio', $this->coverageRatioMemo, self::COVERAGE_RATIO_CACHE_TTL);
 
         return $ratio;
     }

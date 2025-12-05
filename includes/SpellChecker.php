@@ -35,6 +35,10 @@ class ABJ_404_Solution_SpellChecker {
 	 * 0.8 = require at least 80% of permalink cache entries to be in N-gram cache. */
 	const NGRAM_MIN_COVERAGE_RATIO = 0.8;
 
+	/** Minimum candidate count to trigger secondary N-gram filtering.
+	 * Below this threshold, Levenshtein on all candidates is fast enough. */
+	const NGRAM_SECONDARY_MIN_CANDIDATES = 50;
+
 	private static $instance = null;
 
 	// Performance counters (for testing efficiency - disabled by default)
@@ -1387,7 +1391,14 @@ class ABJ_404_Solution_SpellChecker {
 		// This path handles tags, categories, and fallback cases
 		$beforeNGramCount = count($listOfIDsToReturn);
 		$cacheCountForSecondary = $this->ngramFilter->getCacheCount();
-		if (!$ngramPrefilterApplied && $beforeNGramCount > 50 && $cacheCountForSecondary >= self::NGRAM_MIN_CACHE_ENTRIES) {
+		$isInitializedForSecondary = get_option('abj404_ngram_cache_initialized') === '1';
+		$coverageRatioForSecondary = $isInitializedForSecondary ? $this->ngramFilter->getCacheCoverageRatio() : 0.0;
+
+		if (!$ngramPrefilterApplied
+			&& $beforeNGramCount > self::NGRAM_SECONDARY_MIN_CANDIDATES
+			&& $cacheCountForSecondary >= self::NGRAM_MIN_CACHE_ENTRIES
+			&& $isInitializedForSecondary
+			&& $coverageRatioForSecondary >= self::NGRAM_MIN_COVERAGE_RATIO) {
 			// Use N-gram filter to get similarity scores for all pages
 			$similarPages = $this->ngramFilter->findSimilarPages(
 				$requestedURLCleaned,
