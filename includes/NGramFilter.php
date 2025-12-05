@@ -772,34 +772,45 @@ class ABJ_404_Solution_NGramFilter {
      * Used to detect stale or incomplete caches. A ratio < 1.0 indicates
      * some permalink entries are not in the N-gram cache.
      *
-     * Results are cached in a transient for 5 minutes to avoid per-request
-     * COUNT(*) queries on large sites under 404 bursts.
+     * Results are cached in a transient for 5 minutes. The cache is self-validating:
+     * it stores the permalink count alongside the ratio and recomputes if the
+     * permalink count has increased (new content added).
      *
      * @return float Coverage ratio (0.0 to 1.0+), or 1.0 if permalink cache is empty
      */
     public function getCacheCoverageRatio() {
-        // Check transient cache first to avoid per-request COUNT(*) queries
-        $cached = get_transient('abj404_ngram_coverage_ratio');
-        if ($cached !== false) {
-            return (float)$cached;
-        }
-
         global $wpdb;
 
-        $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
         $permalinkTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
 
-        $ngramCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$ngramTable}");
-        $permalinkCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkTable}");
+        // Always fetch current permalink count (needed for cache validation)
+        $currentPermalinkCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkTable}");
 
-        if ($permalinkCount === 0) {
-            $ratio = 1.0; // Empty site, consider fully covered
-        } else {
-            $ratio = $ngramCount / $permalinkCount;
+        // Check transient cache with validation
+        $cached = get_transient('abj404_ngram_coverage_ratio');
+        if ($cached !== false && is_array($cached)) {
+            // Validate: if permalink count increased, cache is stale (new content added)
+            if (isset($cached['permalink_count']) && $currentPermalinkCount <= $cached['permalink_count']) {
+                return (float)$cached['ratio'];
+            }
+            // Permalink count increased - fall through to recompute
         }
 
-        // Cache for 5 minutes
-        set_transient('abj404_ngram_coverage_ratio', $ratio, self::COVERAGE_RATIO_CACHE_TTL);
+        // Compute fresh ratio
+        $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+        $ngramCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$ngramTable}");
+
+        if ($currentPermalinkCount === 0) {
+            $ratio = 1.0; // Empty site, consider fully covered
+        } else {
+            $ratio = $ngramCount / $currentPermalinkCount;
+        }
+
+        // Cache ratio WITH permalink count for validation on next read
+        set_transient('abj404_ngram_coverage_ratio', [
+            'ratio' => $ratio,
+            'permalink_count' => $currentPermalinkCount
+        ], self::COVERAGE_RATIO_CACHE_TTL);
 
         return $ratio;
     }
