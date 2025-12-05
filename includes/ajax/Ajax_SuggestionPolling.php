@@ -25,11 +25,9 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
             return;
         }
 
-        // Normalize URL to match SpellChecker and ShortCode:
-        // 1. Strip query string (matches regexReplace('\?.*', '', $url))
-        // 2. Apply esc_url for consistency
+        // Normalize URL using centralized function for consistency
         $f = ABJ_404_Solution_Functions::getInstance();
-        $normalizedURL = esc_url($f->regexReplace('\?.*', '', $requestedURL));
+        $normalizedURL = $f->normalizeURLForCacheKey($requestedURL);
 
         $urlKey = md5($normalizedURL);
         $transientKey = 'abj404_suggest_' . $urlKey;

@@ -496,8 +496,8 @@ class ABJ_404_Solution_SpellChecker {
 	 * @param array $permalinksPacket The computed suggestions [permalinks, rowType]
 	 */
 	private function cacheComputedSuggestionsForShortcode($fullRequestedURL, $permalinksPacket) {
-		// Normalize URL to match how ShortCode.php processes the cookie value
-		$normalizedURL = esc_url($this->f->regexReplace('\?.*', '', $fullRequestedURL));
+		// Normalize URL using centralized function for consistency
+		$normalizedURL = $this->f->normalizeURLForCacheKey($fullRequestedURL);
 
 		$urlKey = md5($normalizedURL);
 		$transientKey = 'abj404_suggest_' . $urlKey;
@@ -1492,10 +1492,8 @@ class ABJ_404_Solution_SpellChecker {
 	public function triggerAsyncSuggestionComputation($requestedURL) {
 		$f = ABJ_404_Solution_Functions::getInstance();
 
-		// Normalize URL to match how ShortCode.php processes the cookie value:
-		// 1. Strip query string (regex '\?.*')
-		// 2. Apply esc_url for consistency
-		$normalizedURL = esc_url($f->regexReplace('\?.*', '', $requestedURL));
+		// Normalize URL using centralized function for consistency
+		$normalizedURL = $f->normalizeURLForCacheKey($requestedURL);
 
 		$urlKey = md5($normalizedURL);
 		$transientKey = 'abj404_suggest_' . $urlKey;

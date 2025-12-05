@@ -104,7 +104,29 @@ abstract class ABJ_404_Solution_Functions {
         
         return $value;
     }
-        
+
+    /**
+     * Normalize a URL for use as a cache/transient key.
+     *
+     * This function ensures consistent URL normalization across the codebase:
+     * - Strips query strings (removes everything after '?')
+     * - Applies esc_url for security and consistency
+     *
+     * IMPORTANT: All code that computes cache keys or transient keys from URLs
+     * should use this function to ensure keys match across different code paths.
+     *
+     * Used by: SpellChecker, ShortCode, Ajax_SuggestionPolling, PluginLogic
+     *
+     * @param string $url The URL to normalize
+     * @return string The normalized URL (query string stripped, esc_url applied)
+     */
+    function normalizeURLForCacheKey($url) {
+        // Strip query string (everything after '?')
+        $normalized = $this->regexReplace('\?.*', '', $url);
+        // Apply esc_url for security and consistency
+        return esc_url($normalized);
+    }
+
     /** Only URL encode emojis from a string.  
      * @param string $url
      * @return string

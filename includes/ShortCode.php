@@ -140,9 +140,8 @@ class ABJ_404_Solution_ShortCode {
         $urlRequest = '';
         $cookieName = ABJ404_PP . '_REQUEST_URI';
         if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
-            // Normalize URL: strip query string, then sanitize
-            // Note: single esc_url() at the end for consistency with SpellChecker
-            $urlRequest = esc_url($f->regexReplace('\?.*', '', $_COOKIE[$cookieName]));
+            // Normalize URL using centralized function for consistency
+            $urlRequest = $f->normalizeURLForCacheKey($_COOKIE[$cookieName]);
             // delete the cookie because the request was a one-time thing.
             // we use javascript to delete the cookie because the headers have already been sent.
             $content .= "<script> \n" .
@@ -161,9 +160,8 @@ class ABJ_404_Solution_ShortCode {
         	// Use UPDATE_URL cookie as fallback if primary cookie wasn't set
         	// (fixes: manual redirects to custom 404 pages not showing suggestions)
         	if ($urlRequest == '') {
-        		// Normalize URL: strip query string, then sanitize
-        		// Note: single esc_url() at the end for consistency with SpellChecker
-        		$urlRequest = esc_url($f->regexReplace('\?.*', '', $_COOKIE[$updateURLCookieName]));
+        		// Normalize URL using centralized function for consistency
+        		$urlRequest = $f->normalizeURLForCacheKey($_COOKIE[$updateURLCookieName]);
         	}
         	// delete the cookie since we're done with it. it's a one-time use thing.
         	$content .= "<script> \n" .
@@ -176,18 +174,16 @@ class ABJ_404_Solution_ShortCode {
 
         if (isset($_REQUEST[ABJ404_PP]) &&
                 isset($_REQUEST[ABJ404_PP][$cookieName])) {
-            // Normalize URL: strip query string, then sanitize
-            // Note: single esc_url() at the end for consistency with SpellChecker
-            $urlRequest = esc_url($f->regexReplace('\?.*', '', $_REQUEST[ABJ404_PP][$cookieName]));
+            // Normalize URL using centralized function for consistency
+            $urlRequest = $f->normalizeURLForCacheKey($_REQUEST[ABJ404_PP][$cookieName]);
         }
 
         // Fallback: check for URL passed via query parameter
         // (fixes: cookies from 301 redirects aren't stored by browsers)
         $queryParamName = ABJ404_PP . '_ref';
         if ($urlRequest == '' && isset($_GET[$queryParamName]) && !empty($_GET[$queryParamName])) {
-            // Normalize URL: decode, strip query string, then sanitize
-            // Note: single esc_url() at the end for consistency with SpellChecker
-            $urlRequest = esc_url($f->regexReplace('\?.*', '', urldecode($_GET[$queryParamName])));
+            // Normalize URL using centralized function for consistency
+            $urlRequest = $f->normalizeURLForCacheKey(urldecode($_GET[$queryParamName]));
         }
 
         if ($urlRequest == '') {
