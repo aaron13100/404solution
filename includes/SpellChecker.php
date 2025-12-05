@@ -24,6 +24,13 @@ class ABJ_404_Solution_SpellChecker {
 	 * Small sites don't need prefiltering; this also prevents use during partial cache builds. */
 	const NGRAM_MIN_CACHE_ENTRIES = 50;
 
+	/** Similarity threshold for secondary N-gram filtering (higher = stricter, fewer candidates).
+	 * More conservative than prefilter since we're refining an already-filtered list. */
+	const NGRAM_SECONDARY_THRESHOLD = 0.4;
+
+	/** Maximum candidates for secondary N-gram filtering. */
+	const NGRAM_SECONDARY_MAX_CANDIDATES = 100;
+
 	private static $instance = null;
 
 	// Performance counters (for testing efficiency - disabled by default)
@@ -1363,12 +1370,13 @@ class ABJ_404_Solution_SpellChecker {
 		// Skip if early prefiltering already applied - avoids calling findSimilarPages twice
 		// This path handles tags, categories, and fallback cases
 		$beforeNGramCount = count($listOfIDsToReturn);
-		if (!$ngramPrefilterApplied && $beforeNGramCount > 50 && $this->ngramFilter->isCachePopulated()) {
+		$cacheCountForSecondary = $this->ngramFilter->getCacheCount();
+		if (!$ngramPrefilterApplied && $beforeNGramCount > 50 && $cacheCountForSecondary >= self::NGRAM_MIN_CACHE_ENTRIES) {
 			// Use N-gram filter to get similarity scores for all pages
 			$similarPages = $this->ngramFilter->findSimilarPages(
 				$requestedURLCleaned,
-				0.4,  // Conservative threshold (recommended start)
-				min($beforeNGramCount, 100)  // Limit to reasonable number
+				self::NGRAM_SECONDARY_THRESHOLD,
+				min($beforeNGramCount, self::NGRAM_SECONDARY_MAX_CANDIDATES)
 			);
 
 			// Filter listOfIDsToReturn to only include pages with good N-gram similarity

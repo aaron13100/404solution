@@ -656,12 +656,7 @@ class ABJ_404_Solution_NGramFilter {
      * @return bool True if cache has entries, false otherwise
      */
     public function isCachePopulated() {
-        global $wpdb;
-
-        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
-        $count = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
-
-        return $count > 0;
+        return $this->getCacheCount() > 0;
     }
 
     /**
