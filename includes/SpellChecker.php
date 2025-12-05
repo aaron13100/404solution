@@ -1108,15 +1108,40 @@ class ABJ_404_Solution_SpellChecker {
 	 * @return array
 	 */
 	function getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rowType, $rows = null) {
-		
+
 		$options = $this->logic->getOptions();
 		// we get more than we need because the algorithm we actually use
 		// is not based solely on the Levenshtein distance.
 		$onlyNeedThisManyPages = min(5 * absint($options['suggest_max']), 100);
 
+		// EARLY N-GRAM PREFILTERING (Critical optimization for large sites)
+		// Apply N-gram filtering BEFORE the main loop to reduce 20k posts to ~200 candidates
+		// This prevents timeout/memory issues on sites with many posts
+		$ngramPrefilterApplied = false;
+		if ($rowType == 'pages' && $rows === null && $this->ngramFilter->isCachePopulated()) {
+			// Get candidate IDs using N-gram similarity (fast: ~50-100ms for 20k posts)
+			$similarPages = $this->ngramFilter->findSimilarPages(
+				$requestedURLCleaned,
+				0.3,  // Lower threshold for prefiltering (we'll refine later)
+				500   // Get more candidates for prefiltering
+			);
+
+			if (!empty($similarPages)) {
+				$candidateIds = array_keys($similarPages);
+				$this->publishedPostsProvider->resetBatch();
+				$this->publishedPostsProvider->restrictToIds($candidateIds);
+				$ngramPrefilterApplied = true;
+
+				$this->logger->debugMessage(sprintf(
+					"N-gram prefilter: Restricted to %d candidates (from full dataset)",
+					count($candidateIds)
+				));
+			}
+		}
+
 		// create a list sorted by min levenshstein distance and max levelshtein distance.
-        /* 1) Get a list of minumum and maximum levenshtein distances - two lists, one ordered by the min 
-         * distance and one ordered by the max distance. */
+		/* 1) Get a list of minumum and maximum levenshtein distances - two lists, one ordered by the min
+		 * distance and one ordered by the max distance. */
 		$minDistances = array();
 		$maxDistances = array();
 		for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_DIST; $currentDistanceIndex++) {
@@ -1133,7 +1158,10 @@ class ABJ_404_Solution_SpellChecker {
 		$idToPermalink = array();
 
 		// get the next X pages in batches until enough matches are found.
-		$this->publishedPostsProvider->resetBatch();
+		// Note: resetBatch is only called here if N-gram prefiltering wasn't applied
+		if (!$ngramPrefilterApplied) {
+			$this->publishedPostsProvider->resetBatch();
+		}
 		if ($rows != null) {
 			$this->publishedPostsProvider->useThisData($rows);
 		}
@@ -1299,12 +1327,11 @@ class ABJ_404_Solution_SpellChecker {
 		$idsWithoutWords = array_diff($listOfIDsToReturn, $idsWithWordsInCommon);
 		$listOfIDsToReturn = array_merge($idsWithWords, $idsWithoutWords);
 
-		// OPTIMIZATION 5: N-gram filtering
-		// Use N-gram similarity to further reduce candidates before Levenshtein
-		// This reduces candidates by 80-90% while maintaining match quality
-		// Apply BEFORE the > 300 check to maximize efficiency gains
+		// OPTIMIZATION 5: Secondary N-gram filtering (only if prefiltering wasn't applied)
+		// Skip if early prefiltering already applied - avoids calling findSimilarPages twice
+		// This path handles tags, categories, and fallback cases
 		$beforeNGramCount = count($listOfIDsToReturn);
-		if ($beforeNGramCount > 50 && $this->ngramFilter->isCachePopulated()) {
+		if (!$ngramPrefilterApplied && $beforeNGramCount > 50 && $this->ngramFilter->isCachePopulated()) {
 			// Use N-gram filter to get similarity scores for all pages
 			$similarPages = $this->ngramFilter->findSimilarPages(
 				$requestedURLCleaned,
@@ -1325,7 +1352,7 @@ class ABJ_404_Solution_SpellChecker {
 				});
 
 				$this->logger->debugMessage(sprintf(
-					"N-gram filter: %d → %d candidates (%.1f%% reduction)",
+					"N-gram filter (secondary): %d → %d candidates (%.1f%% reduction)",
 					$beforeNGramCount,
 					count($listOfIDsToReturn),
 					100 * (1 - count($listOfIDsToReturn) / $beforeNGramCount)

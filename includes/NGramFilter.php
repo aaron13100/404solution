@@ -570,9 +570,10 @@ class ABJ_404_Solution_NGramFilter {
         $maxCount = (int)($queryCombinedCount * 2.5);
 
         // Use efficient database-side filtering for large caches
+        // Limit to 1000 entries to prevent memory exhaustion (JSON decode is memory-intensive)
         if ($totalCount > 1000) {
             $this->logger->debugMessage("Using database-side filtering for {$totalCount} entries");
-            $cachedPages = $this->getCachedNGramsFiltered($minCount, $maxCount, 5000);
+            $cachedPages = $this->getCachedNGramsFiltered($minCount, $maxCount, 1000);
         } else {
             // For small caches, load all (legacy behavior)
             $cachedPages = $this->getAllCachedNGrams();
