@@ -1149,14 +1149,14 @@ class ABJ_404_Solution_SpellChecker {
 			// Gate 1: Minimum entry count (checked first to short-circuit cheaply)
 			if ($cacheCount < self::NGRAM_MIN_CACHE_ENTRIES) {
 				$this->logger->debugMessage(sprintf(
-					"N-gram prefilter skipped: count=%d (need %d)",
+					"N-gram prefilter skipped (gate 1: min entries): count=%d (need %d)",
 					$cacheCount,
 					self::NGRAM_MIN_CACHE_ENTRIES
 				));
 			// Gate 2: Cache must be initialized (not mid-rebuild)
 			} elseif (!$this->ngramFilter->isCacheInitialized()) {
 				$this->logger->debugMessage(sprintf(
-					"N-gram prefilter skipped: cache not initialized (count=%d)",
+					"N-gram prefilter skipped (gate 2: not initialized): count=%d",
 					$cacheCount
 				));
 			// Gate 3: Coverage ratio must be sufficient (not stale)
@@ -1164,7 +1164,7 @@ class ABJ_404_Solution_SpellChecker {
 				$coverageRatio = $this->ngramFilter->getCacheCoverageRatio();
 				if ($coverageRatio < self::NGRAM_MIN_COVERAGE_RATIO) {
 					$this->logger->debugMessage(sprintf(
-						"N-gram prefilter skipped: coverage=%.2f (need %.2f)",
+						"N-gram prefilter skipped (gate 3: low coverage): ratio=%.2f (need %.2f)",
 						$coverageRatio,
 						self::NGRAM_MIN_COVERAGE_RATIO
 					));
@@ -1196,7 +1196,7 @@ class ABJ_404_Solution_SpellChecker {
 						// no pages are similar enough. Skip prefiltering for this edge case
 						// to allow Levenshtein a chance (N-gram might have missed borderline matches).
 						$this->logger->debugMessage(
-							"N-gram prefilter skipped: Zero results (allowing fallback to full scan)"
+							"N-gram prefilter skipped (gate 4: zero results): allowing fallback to full scan"
 						);
 					}
 				}

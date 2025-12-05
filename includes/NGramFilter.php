@@ -28,8 +28,11 @@ class ABJ_404_Solution_NGramFilter {
     const COVERAGE_VERSION_TTL = 86400; // 1 day
 
     /** Transient key for coverage ratio cache version.
-     * Version is bumped on invalidation; cached ratios with mismatched versions are stale. */
+     * Version is a timestamp; cached ratios with older timestamps are stale. */
     const COVERAGE_VERSION_KEY = 'abj404_ngram_coverage_version';
+
+    /** Transient key for coverage ratio cache data. */
+    const COVERAGE_RATIO_KEY = 'abj404_ngram_coverage_ratio';
 
     private static $instance = null;
 
@@ -53,17 +56,17 @@ class ABJ_404_Solution_NGramFilter {
      * Call this whenever N-gram or permalink counts change, including after
      * TRUNCATE operations during cache rebuilds.
      *
-     * Uses version bumping instead of transient deletion so that stale cached
-     * ratios are detected without expensive COUNT(*) queries on every request.
+     * Uses timestamp-based versioning: sets version to current time().
+     * Cached ratios with older timestamps are stale. This approach is:
+     * - Overflow-safe: no accumulating counter
+     * - Race-safe: concurrent invalidations both write current time
      */
     public function invalidateCoverageCaches() {
-        // Bump version to invalidate any cached ratios (cheap scalar increment)
-        // Readers will detect version mismatch and recompute
-        $currentVersion = (int)get_transient(self::COVERAGE_VERSION_KEY);
-        set_transient(self::COVERAGE_VERSION_KEY, $currentVersion + 1, self::COVERAGE_VERSION_TTL);
+        // Set version to current timestamp (race-safe: concurrent writes both invalidate)
+        set_transient(self::COVERAGE_VERSION_KEY, time(), self::COVERAGE_VERSION_TTL);
 
         // Also delete the ratio transient to force immediate recompute
-        delete_transient('abj404_ngram_coverage_ratio');
+        delete_transient(self::COVERAGE_RATIO_KEY);
 
         // Clear per-request memos
         $this->ngramCountMemo = null;
@@ -901,7 +904,7 @@ class ABJ_404_Solution_NGramFilter {
         $currentVersion = (int)get_transient(self::COVERAGE_VERSION_KEY);
 
         // Check transient with version-based validation
-        $cached = get_transient('abj404_ngram_coverage_ratio');
+        $cached = get_transient(self::COVERAGE_RATIO_KEY);
         if ($cached !== false && is_array($cached)
             && isset($cached['ratio'], $cached['version'])
             && (int)$cached['version'] === $currentVersion) {
@@ -942,7 +945,7 @@ class ABJ_404_Solution_NGramFilter {
         ];
 
         // Cache in transient for subsequent requests
-        set_transient('abj404_ngram_coverage_ratio', $this->coverageRatioMemo, self::COVERAGE_RATIO_CACHE_TTL);
+        set_transient(self::COVERAGE_RATIO_KEY, $this->coverageRatioMemo, self::COVERAGE_RATIO_CACHE_TTL);
 
         return $ratio;
     }
