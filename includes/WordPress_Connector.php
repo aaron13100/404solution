@@ -775,6 +775,10 @@ class ABJ_404_Solution_WordPress_Connector {
             $spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
             $spellChecker->findMatchingPosts($urlSlugOnly,
                 @$options['suggest_cats'], @$options['suggest_tags']);
+
+            // Trigger async suggestion computation for transient-based polling
+            // (We already verified destination has shortcode, so call directly)
+            $spellChecker->triggerAsyncSuggestionComputation($requestedURL);
         }
 
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
