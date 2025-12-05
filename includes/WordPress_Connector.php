@@ -737,6 +737,15 @@ class ABJ_404_Solution_WordPress_Connector {
                     wp_kses_post(print_r($redirect, true)));
         }
 
+        // Handle ABJ404_TYPE_404_DISPLAYED: send to 404 page directly, don't redirect
+        if ($redirect['type'] == ABJ404_TYPE_404_DISPLAYED) {
+            $this->dao->logRedirectHit($redirect['url'], '404', $matchReason);
+            // Trigger async suggestions if the 404 page has the shortcode
+            $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
+            $this->logic->sendTo404Page($requestedURL, $matchReason);
+            return true;
+        }
+
         // Check if destination is the custom 404 page or has the shortcode
         // If so, set the _STATUS_404 cookie so WordPress treats it as a 404 page
         $isRedirectToCustom404Page = false;

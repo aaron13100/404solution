@@ -47,7 +47,15 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         }
 
         if ($data['status'] === 'pending') {
-            // Still computing
+            // Check if computation has been running too long (indicates worker crash)
+            // Worker claims work by setting started=time(), if still pending after 60s, it likely crashed
+            $startedAt = isset($data['started']) ? (int)$data['started'] : 0;
+            if ($startedAt > 0 && (time() - $startedAt) > 60) {
+                // Computation started but hasn't completed in 60 seconds - worker likely crashed
+                wp_send_json(array('status' => 'timeout', 'message' => 'Computation timed out'));
+                return;
+            }
+            // Still computing normally
             wp_send_json(array('status' => 'pending'));
             return;
         }
