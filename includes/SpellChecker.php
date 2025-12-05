@@ -1146,55 +1146,60 @@ class ABJ_404_Solution_SpellChecker {
 		if ($rowType == 'pages' && $rows === null) {
 			$cacheCount = $this->ngramFilter->getCacheCount();
 
-			// Gate 1: Minimum entry count
+			// Gate 1: Minimum entry count (checked first to short-circuit cheaply)
+			if ($cacheCount < self::NGRAM_MIN_CACHE_ENTRIES) {
+				$this->logger->debugMessage(sprintf(
+					"N-gram prefilter skipped: count=%d (need %d)",
+					$cacheCount,
+					self::NGRAM_MIN_CACHE_ENTRIES
+				));
 			// Gate 2: Cache must be initialized (not mid-rebuild)
+			} elseif (!$this->ngramFilter->isCacheInitialized()) {
+				$this->logger->debugMessage(sprintf(
+					"N-gram prefilter skipped: cache not initialized (count=%d)",
+					$cacheCount
+				));
 			// Gate 3: Coverage ratio must be sufficient (not stale)
-			$isInitialized = get_option('abj404_ngram_cache_initialized') === '1';
-			$coverageRatio = $isInitialized ? $this->ngramFilter->getCacheCoverageRatio() : 0.0;
-
-			if ($cacheCount >= self::NGRAM_MIN_CACHE_ENTRIES
-				&& $isInitialized
-				&& $coverageRatio >= self::NGRAM_MIN_COVERAGE_RATIO) {
-
-				// Get candidate IDs using N-gram similarity (fast: ~50-100ms for 20k posts)
-				$similarPages = $this->ngramFilter->findSimilarPages(
-					$requestedURLCleaned,
-					self::NGRAM_PREFILTER_THRESHOLD,
-					self::NGRAM_PREFILTER_MAX_CANDIDATES
-				);
-
-				// Trust the N-gram filter results if cache is well-populated.
-				// Even if only a few candidates match, those ARE the relevant candidates -
-				// falling back to full scan would defeat the prefilter's purpose.
-				if (!empty($similarPages)) {
-					$candidateIds = array_keys($similarPages);
-					$this->publishedPostsProvider->resetBatch();
-					$this->publishedPostsProvider->restrictToIds($candidateIds);
-					$ngramPrefilterApplied = true;
-
+			} else {
+				$coverageRatio = $this->ngramFilter->getCacheCoverageRatio();
+				if ($coverageRatio < self::NGRAM_MIN_COVERAGE_RATIO) {
 					$this->logger->debugMessage(sprintf(
-						"N-gram prefilter: Restricted to %d candidates (cache has %d entries, coverage=%.2f)",
-						count($candidateIds),
-						$cacheCount,
-						$coverageRatio
+						"N-gram prefilter skipped: coverage=%.2f (need %.2f)",
+						$coverageRatio,
+						self::NGRAM_MIN_COVERAGE_RATIO
 					));
 				} else {
-					// Zero results from N-gram filter on a populated cache means
-					// no pages are similar enough. Skip prefiltering for this edge case
-					// to allow Levenshtein a chance (N-gram might have missed borderline matches).
-					$this->logger->debugMessage(
-						"N-gram prefilter skipped: Zero results (allowing fallback to full scan)"
+					// All gates passed - use N-gram prefiltering
+					$similarPages = $this->ngramFilter->findSimilarPages(
+						$requestedURLCleaned,
+						self::NGRAM_PREFILTER_THRESHOLD,
+						self::NGRAM_PREFILTER_MAX_CANDIDATES
 					);
+
+					// Trust the N-gram filter results if cache is well-populated.
+					// Even if only a few candidates match, those ARE the relevant candidates -
+					// falling back to full scan would defeat the prefilter's purpose.
+					if (!empty($similarPages)) {
+						$candidateIds = array_keys($similarPages);
+						$this->publishedPostsProvider->resetBatch();
+						$this->publishedPostsProvider->restrictToIds($candidateIds);
+						$ngramPrefilterApplied = true;
+
+						$this->logger->debugMessage(sprintf(
+							"N-gram prefilter: Restricted to %d candidates (cache has %d entries, coverage=%.2f)",
+							count($candidateIds),
+							$cacheCount,
+							$coverageRatio
+						));
+					} else {
+						// Zero results from N-gram filter on a populated cache means
+						// no pages are similar enough. Skip prefiltering for this edge case
+						// to allow Levenshtein a chance (N-gram might have missed borderline matches).
+						$this->logger->debugMessage(
+							"N-gram prefilter skipped: Zero results (allowing fallback to full scan)"
+						);
+					}
 				}
-			} else {
-				$this->logger->debugMessage(sprintf(
-					"N-gram prefilter skipped: count=%d (need %d), initialized=%s, coverage=%.2f (need %.2f)",
-					$cacheCount,
-					self::NGRAM_MIN_CACHE_ENTRIES,
-					$isInitialized ? 'yes' : 'no',
-					$coverageRatio,
-					self::NGRAM_MIN_COVERAGE_RATIO
-				));
 			}
 		}
 
@@ -1390,15 +1395,13 @@ class ABJ_404_Solution_SpellChecker {
 		// Skip if early prefiltering already applied - avoids calling findSimilarPages twice
 		// This path handles tags, categories, and fallback cases
 		$beforeNGramCount = count($listOfIDsToReturn);
-		$cacheCountForSecondary = $this->ngramFilter->getCacheCount();
-		$isInitializedForSecondary = get_option('abj404_ngram_cache_initialized') === '1';
-		$coverageRatioForSecondary = $isInitializedForSecondary ? $this->ngramFilter->getCacheCoverageRatio() : 0.0;
 
+		// Use short-circuit evaluation: check cheap conditions first
 		if (!$ngramPrefilterApplied
 			&& $beforeNGramCount > self::NGRAM_SECONDARY_MIN_CANDIDATES
-			&& $cacheCountForSecondary >= self::NGRAM_MIN_CACHE_ENTRIES
-			&& $isInitializedForSecondary
-			&& $coverageRatioForSecondary >= self::NGRAM_MIN_COVERAGE_RATIO) {
+			&& $this->ngramFilter->getCacheCount() >= self::NGRAM_MIN_CACHE_ENTRIES
+			&& $this->ngramFilter->isCacheInitialized()
+			&& $this->ngramFilter->getCacheCoverageRatio() >= self::NGRAM_MIN_COVERAGE_RATIO) {
 			// Use N-gram filter to get similarity scores for all pages
 			$similarPages = $this->ngramFilter->findSimilarPages(
 				$requestedURLCleaned,
