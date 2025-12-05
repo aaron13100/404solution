@@ -31,6 +31,10 @@ class ABJ_404_Solution_SpellChecker {
 	/** Maximum candidates for secondary N-gram filtering. */
 	const NGRAM_SECONDARY_MAX_CANDIDATES = 100;
 
+	/** Minimum cache coverage ratio (ngram entries / permalink entries) to trust prefiltering.
+	 * 0.8 = require at least 80% of permalink cache entries to be in N-gram cache. */
+	const NGRAM_MIN_COVERAGE_RATIO = 0.8;
+
 	private static $instance = null;
 
 	// Performance counters (for testing efficiency - disabled by default)
@@ -1136,10 +1140,18 @@ class ABJ_404_Solution_SpellChecker {
 		// This prevents timeout/memory issues on sites with many posts
 		$ngramPrefilterApplied = false;
 		if ($rowType == 'pages' && $rows === null) {
-			// Use lightweight single query instead of getCacheStats() (which runs 5 queries)
 			$cacheCount = $this->ngramFilter->getCacheCount();
 
-			if ($cacheCount >= self::NGRAM_MIN_CACHE_ENTRIES) {
+			// Gate 1: Minimum entry count
+			// Gate 2: Cache must be initialized (not mid-rebuild)
+			// Gate 3: Coverage ratio must be sufficient (not stale)
+			$isInitialized = get_option('abj404_ngram_cache_initialized') === '1';
+			$coverageRatio = $isInitialized ? $this->ngramFilter->getCacheCoverageRatio() : 0.0;
+
+			if ($cacheCount >= self::NGRAM_MIN_CACHE_ENTRIES
+				&& $isInitialized
+				&& $coverageRatio >= self::NGRAM_MIN_COVERAGE_RATIO) {
+
 				// Get candidate IDs using N-gram similarity (fast: ~50-100ms for 20k posts)
 				$similarPages = $this->ngramFilter->findSimilarPages(
 					$requestedURLCleaned,
@@ -1157,9 +1169,10 @@ class ABJ_404_Solution_SpellChecker {
 					$ngramPrefilterApplied = true;
 
 					$this->logger->debugMessage(sprintf(
-						"N-gram prefilter: Restricted to %d candidates (cache has %d entries)",
+						"N-gram prefilter: Restricted to %d candidates (cache has %d entries, coverage=%.2f)",
 						count($candidateIds),
-						$cacheCount
+						$cacheCount,
+						$coverageRatio
 					));
 				} else {
 					// Zero results from N-gram filter on a populated cache means
@@ -1171,9 +1184,12 @@ class ABJ_404_Solution_SpellChecker {
 				}
 			} else {
 				$this->logger->debugMessage(sprintf(
-					"N-gram prefilter skipped: Cache has %d entries (need %d minimum)",
+					"N-gram prefilter skipped: count=%d (need %d), initialized=%s, coverage=%.2f (need %.2f)",
 					$cacheCount,
-					self::NGRAM_MIN_CACHE_ENTRIES
+					self::NGRAM_MIN_CACHE_ENTRIES,
+					$isInitialized ? 'yes' : 'no',
+					$coverageRatio,
+					self::NGRAM_MIN_COVERAGE_RATIO
 				));
 			}
 		}

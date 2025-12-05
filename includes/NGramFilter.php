@@ -310,8 +310,9 @@ class ABJ_404_Solution_NGramFilter {
     /**
      * Get cached N-grams efficiently with database-side filtering.
      *
-     * This method filters candidates in the database before loading into memory,
-     * drastically reducing memory usage for large sites.
+     * Uses two-range query strategy to avoid filesort from ORDER BY ABS().
+     * Splits query into below-target (DESC) and above-target (ASC), then merges
+     * results by proximity to target in PHP.
      *
      * @param int $minNgramCount Minimum N-gram count (for filtering dissimilar pages)
      * @param int $maxNgramCount Maximum N-gram count
@@ -324,41 +325,105 @@ class ABJ_404_Solution_NGramFilter {
 
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
-        // Use the actual query's ngram count for ordering, not the range midpoint.
-        // This ensures pages with similar URL lengths are prioritized.
-        // Fall back to range midpoint only if target not provided (legacy compatibility).
+        // Clamp target to valid range; fall back to midpoint if not provided
         $orderTarget = ($targetNgramCount !== null)
-            ? (int)$targetNgramCount
+            ? max($minNgramCount, min($maxNgramCount, (int)$targetNgramCount))
             : (int)(($minNgramCount + $maxNgramCount) / 2);
 
-        // Database-side filtering by ngram_count range, ordered by proximity to target
-        $query = $wpdb->prepare(
+        // Each query fetches ceil(limit/2) to ensure we have enough candidates
+        $halfLimit = (int)ceil($limit / 2);
+
+        // Query 1: ngram_count <= target, ORDER BY ngram_count DESC
+        // Uses idx_ngram_count for both range scan and sort (no filesort)
+        $queryBelow = $wpdb->prepare(
             "SELECT id, url, url_normalized, ngrams, ngram_count
              FROM {$table}
-             WHERE ngram_count BETWEEN %d AND %d
-             ORDER BY ABS(ngram_count - %d) ASC
+             WHERE ngram_count >= %d AND ngram_count <= %d
+             ORDER BY ngram_count DESC
              LIMIT %d",
             $minNgramCount,
-            $maxNgramCount,
             $orderTarget,
-            $limit
+            $halfLimit
         );
 
-        $results = $wpdb->get_results($query, ARRAY_A);
+        // Query 2: ngram_count > target, ORDER BY ngram_count ASC
+        // Uses idx_ngram_count for both range scan and sort (no filesort)
+        $queryAbove = $wpdb->prepare(
+            "SELECT id, url, url_normalized, ngrams, ngram_count
+             FROM {$table}
+             WHERE ngram_count > %d AND ngram_count <= %d
+             ORDER BY ngram_count ASC
+             LIMIT %d",
+            $orderTarget,
+            $maxNgramCount,
+            $halfLimit
+        );
 
-        if (!is_array($results)) {
-            return [];
+        $resultsBelow = $wpdb->get_results($queryBelow, ARRAY_A);
+        $resultsAbove = $wpdb->get_results($queryAbove, ARRAY_A);
+
+        // Handle query failures
+        if (!is_array($resultsBelow)) {
+            $resultsBelow = [];
+        }
+        if (!is_array($resultsAbove)) {
+            $resultsAbove = [];
         }
 
+        // Merge results by proximity to target
+        $merged = $this->mergeByProximity($resultsBelow, $resultsAbove, $orderTarget, $limit);
+
         // Decode JSON for each entry
-        foreach ($results as &$row) {
+        foreach ($merged as &$row) {
             if (is_object($row)) {
                 $row = (array) $row;
             }
             $row['ngrams'] = json_decode($row['ngrams'], true);
         }
 
-        return $results;
+        return $merged;
+    }
+
+    /**
+     * Merge two arrays sorted by proximity to target, interleaving results.
+     *
+     * Both input arrays must be pre-sorted by proximity to the target:
+     * - $below: ngram_count <= target, ordered DESC by ngram_count (closest first)
+     * - $above: ngram_count > target, ordered ASC by ngram_count (closest first)
+     *
+     * @param array $below Results with ngram_count <= target
+     * @param array $above Results with ngram_count > target
+     * @param int $targetNgramCount The target N-gram count
+     * @param int $limit Maximum results to return
+     * @return array Merged results ordered by proximity to target
+     */
+    private function mergeByProximity($below, $above, $targetNgramCount, $limit) {
+        $result = [];
+        $i = 0;
+        $j = 0;
+        $belowCount = count($below);
+        $aboveCount = count($above);
+
+        while (count($result) < $limit && ($i < $belowCount || $j < $aboveCount)) {
+            // Calculate distances (use PHP_INT_MAX as sentinel for exhausted arrays)
+            $distBelow = ($i < $belowCount)
+                ? abs($below[$i]['ngram_count'] - $targetNgramCount)
+                : PHP_INT_MAX;
+            $distAbove = ($j < $aboveCount)
+                ? abs($above[$j]['ngram_count'] - $targetNgramCount)
+                : PHP_INT_MAX;
+
+            // Pick the entry closer to target; prefer below on tie (includes exact matches)
+            if ($distBelow <= $distAbove) {
+                $result[] = $below[$i];
+                $i++;
+            } else {
+                $result[] = $above[$j];
+                $j++;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -672,6 +737,30 @@ class ABJ_404_Solution_NGramFilter {
 
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
         return (int)$wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+    }
+
+    /**
+     * Get cache coverage ratio (ngram entries / permalink entries).
+     *
+     * Used to detect stale or incomplete caches. A ratio < 1.0 indicates
+     * some permalink entries are not in the N-gram cache.
+     *
+     * @return float Coverage ratio (0.0 to 1.0+), or 1.0 if permalink cache is empty
+     */
+    public function getCacheCoverageRatio() {
+        global $wpdb;
+
+        $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+        $permalinkTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
+
+        $ngramCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$ngramTable}");
+        $permalinkCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkTable}");
+
+        if ($permalinkCount === 0) {
+            return 1.0; // Empty site, consider fully covered
+        }
+
+        return $ngramCount / $permalinkCount;
     }
 
     /**
