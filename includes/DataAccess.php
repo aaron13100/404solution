@@ -610,16 +610,22 @@ class ABJ_404_Solution_DataAccess {
     
     function truncatePermalinkCacheTable() {
         global $wpdb;
-       
+
         $query = "truncate table {wp_abj404_permalink_cache}";
         $this->queryAndGetResults($query);
+
+        // Invalidate coverage ratio since permalink count changed
+        ABJ_404_Solution_NGramFilter::getInstance()->invalidateCoverageCaches();
     }
     
     function removeFromPermalinkCache($post_id) {
         global $wpdb;
-       
+
         $query = "delete from {wp_abj404_permalink_cache} where id = %d";
         $this->queryAndGetResults($query, array('query_params' => array($post_id)));
+
+        // Invalidate coverage ratio since permalink count changed
+        ABJ_404_Solution_NGramFilter::getInstance()->invalidateCoverageCaches();
     }
     
     function getIDsNeededForPermalinkCache() {
