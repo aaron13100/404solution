@@ -1534,7 +1534,8 @@ class ABJ_404_Solution_PluginLogic {
     
     function splitCsvLine($line) {
         // Split the CSV line into an array
-        $data = array_map('trim', str_getcsv($line));  // Trim each value in the array
+        // Specify delimiter/enclosure/escape explicitly to avoid PHP 8.4 deprecation about default escape.
+        $data = array_map('trim', str_getcsv($line, ',', '"', '\\'));  // Trim each value in the array
         
         // Check the format based on the number of columns
         if (count($data) === 5) {
