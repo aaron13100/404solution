@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.1.0
+Stable tag: 3.1.1
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -236,6 +236,12 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.1.1 (Dec 11, 2025) =
+* FIX: Make index creation idempotent for `idx_requested_url_timestamp` (skip existing index, use IF NOT EXISTS when supported) to stop duplicate-key errors during upgrades.
+* FIX: Harden log queue flushing with validation/sanitization, duplicate-tolerant inserts, and better error reporting to avoid lost 404 log entries.
+* Compatibility: Explicit `str_getcsv` escape parameter for PHP 8.4+ to silence deprecation notices.
+* Security: Escaped `filterText` SQL path in ajax pagination to block the reported SQL injection vector (only exploitable by authenticated admin users).
 
 = Version 3.1.0 (Dec 6, 2025) =
 * Feature: Async 404 page suggestions - Custom 404 pages sometimes load instantly while suggestions compute in the background.
