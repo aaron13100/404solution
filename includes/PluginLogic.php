@@ -2084,7 +2084,8 @@ class ABJ_404_Solution_PluginLogic {
         }
         
         $tableOptions['filterText'] = trim($this->dao->getPostOrGetSanitize("filterText", ""));
-        $tableOptions['filterText'] = $this->f->str_replace('*/', '', $tableOptions['filterText']);
+        // Remove comment markers early to prevent filterText from breaking SQL comments.
+        $tableOptions['filterText'] = $this->f->str_replace(array('*', '/', '$'), '', $tableOptions['filterText']);
 
         $orderbyInput = $this->dao->getPostOrGetSanitize('orderby', "");
         if ($orderbyInput != "" && in_array($orderbyInput, self::$allowedOrderbyColumns, true)) {

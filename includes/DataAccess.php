@@ -1275,6 +1275,7 @@ class ABJ_404_Solution_DataAccess {
     	$limitStart, $limitEnd, $selectCountOnly) {
         global $abj404_redirect_types;
         global $abj404_captured_types;
+        global $wpdb;
 
         $logsTableColumns = '';
         $logsTableJoin = '';
@@ -1360,16 +1361,27 @@ class ABJ_404_Solution_DataAccess {
         $filterText = '';
         if ($tableOptions['filterText'] != '') {
             if ($sub == 'abj404_redirects') {
-                $searchFilterForRedirectsExists = ' filtering on text: ' . esc_sql($tableOptions['filterText'] . ' */');
+                // Close the comment without including user input to avoid comment breakout.
+                $searchFilterForRedirectsExists = ' filter text enabled */';
                 
             } else if ($sub == 'abj404_captured') {
-                $searchFilterForCapturedExists = ' filtering on text: ' . esc_sql($tableOptions['filterText'] . ' */');
+                // Close the comment without including user input to avoid comment breakout.
+                $searchFilterForCapturedExists = ' filter text enabled */';
                 
             } else {
                 throw new Exception("Unrecognized page for filter text request.");
             }
         }
-        $filterText = preg_replace('/[^a-zA-Z\d_=\/\-\(\)\*\.]/', '', $tableOptions['filterText']);
+
+        // Sanitize filter text for use inside LIKE; strip comment markers and escape for SQL LIKE.
+        $filterTextRaw = $tableOptions['filterText'];
+        $filterTextRaw = str_replace(array('*', '/', '$'), '', $filterTextRaw);
+        if (isset($wpdb) && method_exists($wpdb, 'esc_like')) {
+            $filterTextRaw = $wpdb->esc_like($filterTextRaw);
+        } else {
+            $filterTextRaw = addcslashes($filterTextRaw, '_%\\');
+        }
+        $filterText = esc_sql($filterTextRaw);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
         $query = $this->f->str_replace('{selecting-for-count-true-false}', $selectCountReplacement, $query);
