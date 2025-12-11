@@ -233,6 +233,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		global $wpdb;
     		$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
     		$this->dao->queryAndGetResults($query);
+            // Ensure composite index exists after backfilling min_log_id.
+            $this->ensureLogsCompositeIndex($tableName);
     	}
     	if (strpos($tableName, 'abj404_permalink_cache') !== false && $colName == 'url_length') {
     		// clear the permalink cache so that the url length column will be populated.
@@ -269,6 +271,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
         $this->dao->queryAndGetResults($query);
         $this->verifyColumns($logsTable, $query);
+        $this->ensureLogsCompositeIndex($logsTable);
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
         $this->dao->queryAndGetResults($query);
@@ -592,6 +595,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$matches = null;
     		preg_match('/\w+?\s+?\(?`(\w+?)`/', $indexDDL, $matches);
     		$colName = $matches[1];
+            // Skip if the index is already present (idempotent).
+            if ($this->indexExists($tableName, $colName)) {
+                $this->logger->infoMessage("Index {$colName} already exists on {$tableName}, skipping create.");
+                continue;
+            }
     		$query = "alter table " . $tableName . " drop index " . $colName;
     		// drop the index in case it already exists.
     		$results = $this->dao->queryAndGetResults($query, 
@@ -612,10 +620,51 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		}
     		
     		// create the index.
-    		$addStatement = "alter table " . $tableName . " add " . $indexDDL;
+    		$addStatement = $this->buildAddIndexStatement($tableName, $indexDDL);
     		$this->dao->queryAndGetResults($addStatement);
     		$this->logger->infoMessage("I added an index: " . $addStatement);
     	}
+    }
+
+    private function indexExists($tableName, $indexName) {
+        global $wpdb;
+        $sql = $wpdb->prepare("SHOW INDEX FROM {$tableName} WHERE Key_name = %s", $indexName);
+        $results = $wpdb->get_results($sql, ARRAY_A);
+        return !empty($results);
+    }
+
+    private function buildAddIndexStatement($tableName, $indexDDL) {
+        global $wpdb;
+        $serverVersion = method_exists($wpdb, 'db_version') ? $wpdb->db_version() : '';
+        $serverInfo = property_exists($wpdb, 'db_server_info') ? $wpdb->db_server_info() : '';
+
+        $isMaria = stripos($serverInfo, 'mariadb') !== false || stripos($serverVersion, 'maria') !== false;
+        $supportsIfNotExists = false;
+        if ($isMaria && version_compare(preg_replace('/[^\d\.]/', '', $serverVersion), '10.5', '>=')) {
+            $supportsIfNotExists = true;
+        } else if (!$isMaria && version_compare(preg_replace('/[^\d\.]/', '', $serverVersion), '8.0', '>=')) {
+            $supportsIfNotExists = true;
+        }
+
+        if ($supportsIfNotExists) {
+            return "alter table " . $tableName . " add index if not exists " . $indexDDL;
+        }
+        return "alter table " . $tableName . " add " . $indexDDL;
+    }
+
+    private function ensureLogsCompositeIndex($logsTable) {
+        $indexName = 'idx_requested_url_timestamp';
+        $indexDDL = "`{$indexName}` (`requested_url`(190), `timestamp`)";
+        if ($this->indexExists($logsTable, $indexName)) {
+            return;
+        }
+        $query = $this->buildAddIndexStatement($logsTable, $indexDDL);
+        $results = $this->dao->queryAndGetResults($query);
+        if (!empty($results['last_error'])) {
+            $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: " . $results['last_error']);
+        } else {
+            $this->logger->infoMessage("Added {$indexName} to {$logsTable} using query: {$query}");
+        }
     }
     
     function verifyColumns($tableName, $createTableStatementGoal) {

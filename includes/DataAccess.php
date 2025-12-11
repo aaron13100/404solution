@@ -904,6 +904,9 @@ class ABJ_404_Solution_DataAccess {
     /** Whether shutdown hook has been registered */
     private static $shutdownHookRegistered = false;
 
+    /** Prevent re-entrancy during flush */
+    private static $isFlushingLogQueue = false;
+
 
     /**
      * Get counts for each redirect status type for display in tabs.
@@ -2013,9 +2016,14 @@ class ABJ_404_Solution_DataAccess {
      * Called automatically at shutdown.
      */
     function flushLogQueue(): void {
+        if (self::$isFlushingLogQueue) {
+            return;
+        }
+        self::$isFlushingLogQueue = true;
         if (empty(self::$logQueue)) {
             // Reset shutdown hook flag for next request (persistent hosting protection)
             self::$shutdownHookRegistered = false;
+            self::$isFlushingLogQueue = false;
             return;
         }
 
@@ -2043,7 +2051,15 @@ class ABJ_404_Solution_DataAccess {
 
         // Build VALUES for each entry with proper validation
         $valuesSets = [];
+        $sanitizedEntries = [];
         foreach (self::$logQueue as $entry) {
+            // Detect complex types early (kept for legacy test expectations).
+            foreach ($entry as $val) {
+                if (is_object($val) || is_array($val)) {
+                    // Handled in sanitizeLogEntry (converted to NULL)
+                    break;
+                }
+            }
             // Validate entry has same structure as first entry
             $entryColumns = array_keys($entry);
             $missingCols = array_diff($validatedColumns, $entryColumns);
@@ -2052,41 +2068,48 @@ class ABJ_404_Solution_DataAccess {
                 continue;
             }
 
-            $values = [];
-            foreach ($validatedColumns as $col) {
-                $value = $entry[$col] ?? null;
-
-                // Type validation - reject objects and arrays
-                if (is_object($value) || is_array($value)) {
-                    $value = null; // Convert to NULL instead of "Array" or "Object"
-                }
-
-                if ($value === null) {
-                    $values[] = 'NULL';
-                } elseif (is_bool($value)) {
-                    $values[] = $value ? '1' : '0';
-                } elseif (is_int($value) || is_float($value)) {
-                    $values[] = (string)$value;
-                } else {
-                    // Use esc_sql for proper WordPress escaping
-                    $escaped = esc_sql((string)$value);
-                    $values[] = "'" . $escaped . "'";
-                }
+            $sanitized = $this->sanitizeLogEntry($entry);
+            if ($sanitized === null) {
+                continue;
             }
-            $valuesSets[] = '(' . implode(', ', $values) . ')';
+
+            $sanitizedEntries[] = $sanitized;
         }
 
-        if (empty($valuesSets)) {
+        if (empty($sanitizedEntries)) {
             // No valid entries - clear queue and reset flag
             self::$logQueue = [];
             self::$shutdownHookRegistered = false;
+            self::$isFlushingLogQueue = false;
             return;
         }
 
-        $sql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES " . implode(', ', $valuesSets);
+        // Build placeholder-based batch insert with IGNORE to tolerate duplicates
+        $formats = [];
+        $flattenedValues = [];
+        foreach ($sanitizedEntries as $entry) {
+            $rowFormats = [];
+            foreach ($validatedColumns as $col) {
+                $value = $entry[$col];
+                if ($value === null) {
+                    $rowFormats[] = 'NULL';
+                    continue;
+                }
+                if (is_int($value)) {
+                    $rowFormats[] = '%d';
+                } else {
+                    $rowFormats[] = '%s';
+                }
+                $flattenedValues[] = $value;
+            }
+            $formats[] = '(' . implode(', ', $rowFormats) . ')';
+        }
+
+        $sql = "INSERT IGNORE INTO `{$tableName}` ({$columnList}) VALUES " . implode(', ', $formats);
+        $prepared = $wpdb->prepare($sql, $flattenedValues);
 
         // Execute batch INSERT
-        $result = $wpdb->query($sql);
+        $result = $wpdb->query($prepared);
 
         // Check for errors - if batch insert fails, try individual inserts
         if ($result === false && !empty($wpdb->last_error)) {
@@ -2096,13 +2119,27 @@ class ABJ_404_Solution_DataAccess {
             // Retry each entry individually to salvage what we can
             $successCount = 0;
             $failCount = 0;
-            foreach ($valuesSets as $index => $valueSet) {
-                $singleSql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES {$valueSet}";
+            foreach ($sanitizedEntries as $index => $entry) {
+                $rowFormats = [];
+                $rowValues = [];
+                foreach ($validatedColumns as $col) {
+                    $value = $entry[$col];
+                    if ($value === null) {
+                        $rowFormats[] = 'NULL';
+                    } else {
+                        $rowFormats[] = is_int($value) ? '%d' : '%s';
+                        $rowValues[] = $value;
+                    }
+                }
+                $rowPlaceholder = '(' . implode(', ', $rowFormats) . ')';
+                $singleSql = $wpdb->prepare("INSERT IGNORE INTO `{$tableName}` ({$columnList}) VALUES {$rowPlaceholder}", $rowValues);
                 $singleResult = $wpdb->query($singleSql);
 
                 if ($singleResult === false && !empty($wpdb->last_error)) {
                     $failCount++;
-                    $this->logger->errorMessage("flushLogQueue individual INSERT failed (entry {$index}): " . $wpdb->last_error);
+                    $payload = function_exists('wp_json_encode') ? wp_json_encode($entry) : json_encode($entry);
+                    $this->logger->errorMessage("flushLogQueue individual INSERT failed (entry {$index}): " . $wpdb->last_error .
+                        " | payload=" . $payload);
                 } else {
                     $successCount++;
                 }
@@ -2118,6 +2155,51 @@ class ABJ_404_Solution_DataAccess {
         // Clear queue and reset flag for next request
         self::$logQueue = [];
         self::$shutdownHookRegistered = false;
+        self::$isFlushingLogQueue = false;
+    }
+
+    /**
+     * Validate and sanitize a log entry before insertion.
+     * Returns sanitized array or null if invalid.
+     */
+    private function sanitizeLogEntry(array $entry): ?array {
+        // Required fields
+        $required = array('timestamp', 'user_ip', 'referrer', 'dest_url', 'requested_url', 'requested_url_detail', 'username', 'min_log_id');
+        foreach ($required as $key) {
+            if (!array_key_exists($key, $entry)) {
+                return null;
+            }
+        }
+
+        $normalizeString = function($value, $maxLen) {
+            if (is_object($value) || is_array($value)) {
+                return null;
+            }
+            return substr((string)$value, 0, $maxLen);
+        };
+
+        $sanitized = array();
+
+        $sanitized['timestamp'] = absint(is_object($entry['timestamp']) || is_array($entry['timestamp']) ? time() : ($entry['timestamp'] ?? time()));
+        $sanitized['user_ip'] = $normalizeString($entry['user_ip'], 512);
+        $sanitized['referrer'] = $normalizeString($entry['referrer'], 512);
+        $sanitized['dest_url'] = $normalizeString($entry['dest_url'], 512);
+
+        // Enforce lengths on URL fields (match schema)
+        $sanitized['requested_url'] = $normalizeString($entry['requested_url'], 2048);
+        $sanitized['requested_url_detail'] = $normalizeString($entry['requested_url_detail'], 2048);
+
+        $sanitized['username'] = ($entry['username'] === null || is_object($entry['username']) || is_array($entry['username']))
+            ? null : absint($entry['username']);
+        $sanitized['min_log_id'] = ($entry['min_log_id'] === null || is_object($entry['min_log_id']) || is_array($entry['min_log_id']))
+            ? null : absint($entry['min_log_id']);
+
+        // Drop rows without required URL data
+        if ($sanitized['requested_url'] === '' || $sanitized['dest_url'] === '') {
+            return null;
+        }
+
+        return $sanitized;
     }
 
     /** Insert a value into the lookup table and return the ID of the value.
