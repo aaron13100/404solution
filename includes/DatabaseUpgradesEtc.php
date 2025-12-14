@@ -569,62 +569,70 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$createTableStatementGoal = substr($createTableStatementGoal, 0, $commentLoc);
     	}
     	
-    	// get the indexes.
-    	// Pattern matches lines starting with "key" - handles composite indexes with commas inside parens
-    	$existingTableMatches = null;
-    	$goalTableMatches = null;
-    	preg_match_all('/^\s*(key\s+.+?)\s*,?\s*$/im', $existingTableSQL, $existingTableMatches);
-    	preg_match_all('/^\s*(key\s+.+?)\s*,?\s*$/im', $createTableStatementGoal, $goalTableMatches);
-    	
-    	// create missing columns
-    	$goalTableMatchesColumnDDL = $goalTableMatches[1];
-    	$existingTableMatchesColumnDDL = $existingTableMatches[1];
-    	$createTheseIndexes = array_diff($goalTableMatchesColumnDDL,
-    		$existingTableMatchesColumnDDL);
-    	
-    	// say why we're doing what we're doing.
-    	if (count($createTheseIndexes) > 0) {
-    		$this->logger->infoMessage(self::$uniqID . ": On " . $tableName . 
-    			" I'm adding/updating various indexes because we want: \n`" .
-    			print_r($goalTableMatchesColumnDDL, true) . "\n but we have: \n" .
-    			print_r($existingTableMatchesColumnDDL, true));
-    	}
-    	
-    	foreach ($createTheseIndexes as $indexDDL) {
-    		// get the key name
-    		$matches = null;
-    		preg_match('/\w+?\s+?\(?`(\w+?)`/', $indexDDL, $matches);
-    		$colName = $matches[1];
-            // Skip if the index is already present (idempotent).
-            if ($this->indexExists($tableName, $colName)) {
-                $this->logger->infoMessage("Index {$colName} already exists on {$tableName}, skipping create.");
-                continue;
-            }
-    		$query = "alter table " . $tableName . " drop index " . $colName;
-    		// drop the index in case it already exists.
-    		$results = $this->dao->queryAndGetResults($query, 
-    			array('ignore_errors' => array("check that column/key exists",
-    			"check that it exists")));
-    		if ($results['last_error'] == null || $results['last_error'] == '') {
-    			$this->logger->infoMessage("Successfully dropped index: " . $query);
-    		} else {
-    			$this->logger->infoMessage("Failed to drop index with query: " . $query . 
-    				";;; because: " . $results['last_error']);
-    		}
-    		
-    		// if we're adding a unique key then remove the duplicates.
-    		// this was causing issues for some people.
-    		$spellingCacheTableName = $this->dao->doTableNameReplacements('{wp_abj404_spelling_cache}');
-    		if (strtolower($tableName) == $spellingCacheTableName) {
-    			$this->dao->deleteSpellingCache();
-    		}
-    		
-    		// create the index.
-    		$addStatement = $this->buildAddIndexStatement($tableName, $indexDDL);
-    		$this->dao->queryAndGetResults($addStatement);
-    		$this->logger->infoMessage("I added an index: " . $addStatement);
-    	}
-    }
+	    	// get the indexes.
+	    	// Pattern matches lines starting with "KEY" / "UNIQUE KEY" - handles composite indexes with commas inside parens
+	    	$existingTableMatches = null;
+	    	$goalTableMatches = null;
+	    	preg_match_all('/^\s*((?:unique\s+)?key\s+.+?)\s*,?\s*$/im', $existingTableSQL, $existingTableMatches);
+	    	preg_match_all('/^\s*((?:unique\s+)?key\s+.+?)\s*,?\s*$/im', $createTableStatementGoal, $goalTableMatches);
+	    	
+	    	$extractIndexName = function($indexDDL) {
+	    		$matches = null;
+	    		// Matches: KEY `name` (...) or UNIQUE KEY `name` (...)
+	    		preg_match('/\bkey\b\s+`([^`]+)`/i', $indexDDL, $matches);
+	    		return $matches[1] ?? null;
+	    	};
+	    	
+	    	$goalTableMatchesColumnDDL = $goalTableMatches[1] ?? [];
+	    	$existingTableMatchesColumnDDL = $existingTableMatches[1] ?? [];
+	    	
+	    	$goalIndexesByName = [];
+	    	foreach ($goalTableMatchesColumnDDL as $indexDDL) {
+	    		$indexName = $extractIndexName($indexDDL);
+	    		if (!empty($indexName)) {
+	    			$goalIndexesByName[$indexName] = $indexDDL;
+	    		}
+	    	}
+	    	
+	    	$existingIndexNames = [];
+	    	foreach ($existingTableMatchesColumnDDL as $indexDDL) {
+	    		$indexName = $extractIndexName($indexDDL);
+	    		if (!empty($indexName)) {
+	    			$existingIndexNames[$indexName] = true;
+	    		}
+	    	}
+	    	
+	    	// Compare by index name to avoid false positives from harmless formatting differences (e.g., "USING BTREE").
+	    	$missingIndexNames = array_diff(array_keys($goalIndexesByName), array_keys($existingIndexNames));
+	    	
+	    	// say why we're doing what we're doing.
+	    	if (count($missingIndexNames) > 0) {
+	    		$this->logger->infoMessage(self::$uniqID . ": On {$tableName} I'm adding missing indexes: " . implode(', ', $missingIndexNames));
+	    	}
+	    	
+	    	foreach ($missingIndexNames as $indexName) {
+	    		$indexDDL = $goalIndexesByName[$indexName] ?? null;
+	    		if (empty($indexDDL)) {
+	    			continue;
+	    		}
+	    		// Skip if the index is already present (idempotent / concurrent creation).
+	    		if ($this->indexExists($tableName, $indexName)) {
+	    			continue;
+	    		}
+	    		
+	    		// If we're adding a unique key then remove the duplicates.
+	    		// This was causing issues for some people.
+	    		$spellingCacheTableName = $this->dao->doTableNameReplacements('{wp_abj404_spelling_cache}');
+	    		if (strtolower($tableName) == $spellingCacheTableName) {
+	    			$this->dao->deleteSpellingCache();
+	    		}
+	    		
+	    		// Create the index.
+	    		$addStatement = $this->buildAddIndexStatement($tableName, $indexDDL);
+	    		$this->dao->queryAndGetResults($addStatement);
+	    		$this->logger->infoMessage("I added an index: " . $addStatement);
+	    	}
+	    }
 
     private function indexExists($tableName, $indexName) {
         global $wpdb;

@@ -1892,8 +1892,17 @@ class ABJ_404_Solution_DataAccess {
         }
         $requested_url = $abj404logic->normalizeToRelativePath($requested_url);
 
-        // if the database can't handle utf8 characters then convert them to latin1.
+        // If the database can't store utf8 URLs then URL-encode before saving (avoid insert errors).
         try {
+            static $requestedUrlCharsetCached = null;
+
+            if ($requestedUrlCharsetCached === null && function_exists('get_transient')) {
+                $requestedUrlCharsetCached = get_transient('abj404_logs_requested_url_charset');
+                if ($requestedUrlCharsetCached === false) {
+                    $requestedUrlCharsetCached = null;
+                }
+            }
+
             $getCharsetQuery = $wpdb->prepare("SELECT character_set_name as charset_name \n " .
                 "FROM information_schema.columns \n " .
                 "WHERE lower(table_schema) = lower(%s) \n " .
@@ -1901,14 +1910,31 @@ class ABJ_404_Solution_DataAccess {
                 "AND lower(column_name) = lower(%s) ",
                 DB_NAME, $logTableName, 'requested_url');
 
-            $resultArray = $wpdb->get_results($getCharsetQuery, ARRAY_A);
-            if (!empty($resultArray)) {
-                $charsetFromDB = $resultArray[0]['charset_name'] ?? $resultArray[0]['CHARSET_NAME'];
-
-                if (strpos(strtolower($charsetFromDB), 'utf8') === false) {
-                    $requested_url = $this->f->selectivelyURLEncode($requested_url);
-                    $this->logger->warn("The logs table is inconsistent because your character encoding doesn't support utf8mb4 characters.");
+            if ($requestedUrlCharsetCached === null) {
+                $resultArray = $wpdb->get_results($getCharsetQuery, ARRAY_A);
+                if (!empty($resultArray)) {
+                    $requestedUrlCharsetCached = $resultArray[0]['charset_name'] ?? $resultArray[0]['CHARSET_NAME'];
+                    if (function_exists('set_transient')) {
+                        $ttl = defined('WEEK_IN_SECONDS') ? WEEK_IN_SECONDS : 604800;
+                        set_transient('abj404_logs_requested_url_charset', $requestedUrlCharsetCached, $ttl);
+                    }
                 }
+            }
+
+            if (!empty($requestedUrlCharsetCached) && strpos(strtolower($requestedUrlCharsetCached), 'utf8') === false) {
+                    $requested_url = $this->f->selectivelyURLEncode($requested_url);
+
+                    // Avoid spamming logs on every redirect hit.
+                    if (function_exists('get_transient') && function_exists('set_transient')) {
+                        $warnKey = 'abj404_warned_logs_charset_mismatch';
+                        $warnVal = $logTableName . '|' . strtolower($requestedUrlCharsetCached);
+                        $already = get_transient($warnKey);
+                        if ($already !== $warnVal) {
+                            $ttl = defined('WEEK_IN_SECONDS') ? WEEK_IN_SECONDS : 604800;
+                            set_transient($warnKey, $warnVal, $ttl);
+                            $this->logger->warn("Logs table column charset is '{$requestedUrlCharsetCached}' for {$logTableName}. URL-encoding stored requested URLs to avoid charset issues.");
+                        }
+                    }
             }
         } catch (Exception $e) {
             // not so important.
@@ -2044,6 +2070,7 @@ class ABJ_404_Solution_DataAccess {
             // No valid columns - clear queue and reset flag
             self::$logQueue = [];
             self::$shutdownHookRegistered = false;
+            self::$isFlushingLogQueue = false;
             return;
         }
 
@@ -2109,16 +2136,33 @@ class ABJ_404_Solution_DataAccess {
         $prepared = $wpdb->prepare($sql, $flattenedValues);
 
         // Execute batch INSERT
+        $wpdb->flush();
         $result = $wpdb->query($prepared);
 
         // Check for errors - if batch insert fails, try individual inserts
         if ($result === false && !empty($wpdb->last_error)) {
             $batchError = $wpdb->last_error;
-            $this->logger->errorMessage("flushLogQueue batch INSERT failed: " . $batchError . ". Retrying individual inserts...");
+
+            // Attempt a one-time recovery for known connection-state issues (e.g., "Commands out of sync").
+            if ($this->isCommandsOutOfSyncError($batchError)) {
+                $recovery = $this->attemptRecoverWpdbConnection();
+                $wpdb->flush();
+                $retryResult = $wpdb->query($prepared);
+                if ($retryResult !== false) {
+                    // Clear queue and reset flag for next request
+                    self::$logQueue = [];
+                    self::$shutdownHookRegistered = false;
+                    self::$isFlushingLogQueue = false;
+                    $this->logger->infoMessage("flushLogQueue batch INSERT succeeded after recovery attempt ({$recovery}).");
+                    return;
+                }
+                $batchError .= " | recovery_attempt=" . $recovery . " | retry_error=" . ($wpdb->last_error ?? '');
+            }
 
             // Retry each entry individually to salvage what we can
             $successCount = 0;
             $failCount = 0;
+            $failureDetails = [];
             foreach ($sanitizedEntries as $index => $entry) {
                 $rowFormats = [];
                 $rowValues = [];
@@ -2133,22 +2177,59 @@ class ABJ_404_Solution_DataAccess {
                 }
                 $rowPlaceholder = '(' . implode(', ', $rowFormats) . ')';
                 $singleSql = $wpdb->prepare("INSERT IGNORE INTO `{$tableName}` ({$columnList}) VALUES {$rowPlaceholder}", $rowValues);
+                $wpdb->flush();
                 $singleResult = $wpdb->query($singleSql);
 
                 if ($singleResult === false && !empty($wpdb->last_error)) {
+                    $lastError = $wpdb->last_error;
+
+                    // One retry on known connection-state errors.
+                    if ($this->isCommandsOutOfSyncError($wpdb->last_error)) {
+                        $recovery = $this->attemptRecoverWpdbConnection();
+                        $wpdb->flush();
+                        $singleResult = $wpdb->query($singleSql);
+                        if ($singleResult !== false) {
+                            $successCount++;
+                            continue;
+                        }
+                        $lastError = ($wpdb->last_error ?? $lastError) . " | recovery_attempt=" . $recovery;
+                    }
+
                     $failCount++;
                     $payload = function_exists('wp_json_encode') ? wp_json_encode($entry) : json_encode($entry);
-                    $this->logger->errorMessage("flushLogQueue individual INSERT failed (entry {$index}): " . $wpdb->last_error .
-                        " | payload=" . $payload);
+                    if (is_string($payload) && strlen($payload) > 1024) {
+                        $payload = substr($payload, 0, 1024) . '...';
+                    }
+                    $failureDetails[] = [
+                        'index' => $index,
+                        'error' => $lastError,
+                        'payload' => $payload,
+                    ];
                 } else {
                     $successCount++;
                 }
             }
 
             if ($failCount > 0) {
-                $this->logger->errorMessage("flushLogQueue recovery complete: {$successCount} inserted, {$failCount} failed.");
+                $detailsParts = [];
+                $maxDetails = 3;
+                foreach (array_slice($failureDetails, 0, $maxDetails) as $detail) {
+                    $detailsParts[] = "entry {$detail['index']}: {$detail['error']} | payload={$detail['payload']}";
+                }
+                $detailsSuffix = '';
+                if (count($failureDetails) > $maxDetails) {
+                    $detailsSuffix = ' | (additional failures omitted)';
+                }
+
+                // Use a single ERROR line so email summaries include the actual DB error(s).
+                $this->logger->errorMessage(
+                    "flushLogQueue recovery incomplete: {$successCount} inserted, {$failCount} failed." .
+                    " | batch_error=" . $batchError .
+                    " | failures=" . implode(' || ', $detailsParts) . $detailsSuffix
+                );
             } else {
-                $this->logger->infoMessage("flushLogQueue recovery complete: all {$successCount} entries inserted individually.");
+                // Batch insert failure was recovered; don't escalate as an error.
+                $this->logger->warn("flushLogQueue batch INSERT failed but recovered: all {$successCount} entries inserted individually. | batch_error=" . $batchError);
             }
         }
 
@@ -2156,6 +2237,65 @@ class ABJ_404_Solution_DataAccess {
         self::$logQueue = [];
         self::$shutdownHookRegistered = false;
         self::$isFlushingLogQueue = false;
+    }
+
+    private function isCommandsOutOfSyncError(string $error): bool {
+        return stripos($error, 'commands out of sync') !== false;
+    }
+
+    /**
+     * Best-effort recovery when the mysqli connection is in a bad state.
+     * This is most commonly triggered by other code leaving an unconsumed result set.
+     */
+    private function attemptRecoverWpdbConnection(): string {
+        global $wpdb;
+        $actions = [];
+
+        if (!isset($wpdb) || !is_object($wpdb)) {
+            return 'no_wpdb';
+        }
+
+        if (method_exists($wpdb, 'flush')) {
+            $wpdb->flush();
+            $actions[] = 'wpdb_flush';
+        }
+
+        // Drain pending multi-query results if any (helps some "commands out of sync" cases).
+        $dbh = $wpdb->dbh ?? null;
+        try {
+            if (is_object($dbh) && method_exists($dbh, 'more_results') && method_exists($dbh, 'next_result')) {
+                $drained = 0;
+                while ($dbh->more_results()) {
+                    $dbh->next_result();
+                    if (method_exists($dbh, 'store_result')) {
+                        $res = $dbh->store_result();
+                        if (is_object($res) && method_exists($res, 'free')) {
+                            $res->free();
+                        }
+                    }
+                    $drained++;
+                    if ($drained > 25) {
+                        break;
+                    }
+                }
+                if ($drained > 0) {
+                    $actions[] = 'mysqli_next_result:' . $drained;
+                }
+            }
+        } catch (Throwable $t) {
+            $actions[] = 'mysqli_drain_failed';
+        }
+
+        // Reconnect as a last resort.
+        if (method_exists($wpdb, 'db_connect')) {
+            $wpdb->db_connect();
+            $actions[] = 'wpdb_db_connect';
+        }
+
+        if (empty($actions)) {
+            return 'no_actions';
+        }
+        return implode(',', $actions);
     }
 
     /**
