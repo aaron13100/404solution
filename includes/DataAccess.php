@@ -27,12 +27,6 @@ class ABJ_404_Solution_DataAccess {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    /** @var bool */
-    private static $queryOriginTraceInstalled = false;
-
-    /** @var array<int, array{t: float, component: string}> */
-    private static $recentQueryOrigins = [];
-
     /**
      * Constructor with dependency injection.
      * Dependencies are now explicit and visible.
@@ -44,7 +38,6 @@ class ABJ_404_Solution_DataAccess {
         // Use injected dependencies or fall back to getInstance() for backward compatibility
         $this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
         $this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
-        $this->maybeInstallQueryOriginTracing();
     }
 
     public static function getInstance() {
@@ -2153,8 +2146,6 @@ class ABJ_404_Solution_DataAccess {
 
             // Attempt a one-time recovery for known connection-state issues (e.g., "Commands out of sync").
             if ($this->isCommandsOutOfSyncError($batchError)) {
-                $this->enableQueryOriginTracing();
-
                 $isolated = $this->getIsolatedWpdb();
                 if ($isolated !== null) {
                     $isolated->flush();
@@ -2165,10 +2156,9 @@ class ABJ_404_Solution_DataAccess {
                         self::$logQueue = [];
                         self::$shutdownHookRegistered = false;
                         self::$isFlushingLogQueue = false;
-                        $this->logger->warn(
-                            "flushLogQueue batch INSERT succeeded using isolated DB connection (commands out of sync on shared connection)." .
-                            " | suspected_origins=" . $this->getRecentQueryOriginSummary()
-                        );
+                        $context = $this->getWpdbRecentQueryContextForLogs();
+                        $suffix = ($context !== '') ? " | savequeries_context={$context}" : '';
+                        $this->logger->warn("flushLogQueue batch INSERT succeeded using isolated DB connection (commands out of sync on shared connection).{$suffix}");
                         return;
                     }
                     $batchError .= " | isolated_error=" . ($isolated->last_error ?? '');
@@ -2204,8 +2194,6 @@ class ABJ_404_Solution_DataAccess {
 
                     // One retry on known connection-state errors.
                     if ($this->isCommandsOutOfSyncError($wpdb->last_error)) {
-                        $this->enableQueryOriginTracing();
-
                         $isolated = $this->getIsolatedWpdb();
                         if ($isolated !== null) {
                             $isolated->flush();
@@ -2248,11 +2236,13 @@ class ABJ_404_Solution_DataAccess {
                 }
 
                 // Use a single ERROR line so email summaries include the actual DB error(s).
+                $context = $this->getWpdbRecentQueryContextForLogs();
+                $contextSuffix = ($context !== '') ? (" | savequeries_context=" . $context) : '';
                 $this->logger->errorMessage(
                     "flushLogQueue recovery incomplete: {$successCount} inserted, {$failCount} failed." .
                     " | batch_error=" . $batchError .
                     " | failures=" . implode(' || ', $detailsParts) . $detailsSuffix .
-                    " | suspected_origins=" . $this->getRecentQueryOriginSummary()
+                    $contextSuffix
                 );
             } else {
                 // Batch insert failure was recovered; don't escalate as an error.
@@ -2295,98 +2285,64 @@ class ABJ_404_Solution_DataAccess {
         return $isolated;
     }
 
-    private function enableQueryOriginTracing(): void {
-        if (!function_exists('set_transient')) {
-            return;
+    /**
+     * If WordPress query recording is already enabled (SAVEQUERIES), return a safe summary
+     * of recent DB callers to help identify the component that poisoned the shared connection.
+     *
+     * Returns empty string when SAVEQUERIES isn't enabled.
+     */
+    private function getWpdbRecentQueryContextForLogs(): string {
+        global $wpdb;
+        if (!isset($wpdb) || !is_object($wpdb)) {
+            return '';
         }
-        // Enable for a short window so a repeat occurrence will include more context without ongoing overhead.
-        set_transient('abj404_trace_db_query_origins', '1', 3600);
-        $this->maybeInstallQueryOriginTracing();
-    }
+        if (!defined('SAVEQUERIES') || SAVEQUERIES !== true) {
+            return '';
+        }
+        if (empty($wpdb->queries) || !is_array($wpdb->queries)) {
+            return '';
+        }
 
-    private function maybeInstallQueryOriginTracing(): void {
-        if (self::$queryOriginTraceInstalled) {
-            return;
-        }
-        if (!function_exists('add_filter') || !function_exists('get_transient')) {
-            return;
-        }
-        if (get_transient('abj404_trace_db_query_origins') !== '1') {
-            return;
-        }
-        self::$queryOriginTraceInstalled = true;
-        add_filter('query', [$this, 'captureQueryOrigin'], 9999, 1);
-    }
-
-    public function captureQueryOrigin($query) {
-        $component = $this->getWpComponentFromBacktrace();
-        if ($component !== '') {
-            self::$recentQueryOrigins[] = ['t' => microtime(true), 'component' => $component];
-            $max = 25;
-            if (count(self::$recentQueryOrigins) > $max) {
-                self::$recentQueryOrigins = array_slice(self::$recentQueryOrigins, -1 * $max);
-            }
-        }
-        return $query;
-    }
-
-    private function getRecentQueryOriginSummary(): string {
-        if (empty(self::$recentQueryOrigins)) {
-            return 'n/a';
-        }
-        $counts = [];
-        foreach (self::$recentQueryOrigins as $item) {
-            $key = $item['component'] ?? '';
-            if ($key === '') {
-                continue;
-            }
-            $counts[$key] = ($counts[$key] ?? 0) + 1;
-        }
-        if (empty($counts)) {
-            return 'n/a';
-        }
-        arsort($counts);
+        $recent = array_slice($wpdb->queries, -5);
         $parts = [];
-        foreach (array_slice($counts, 0, 8, true) as $component => $count) {
-            $parts[] = "{$component}({$count})";
+        foreach ($recent as $q) {
+            $sql = $q[0] ?? '';
+            $time = $q[1] ?? null;
+            $caller = $q[2] ?? '';
+            $hash = is_string($sql) ? substr(sha1($sql), 0, 10) : 'n/a';
+            $who = $this->extractWpComponentFromString(is_string($caller) ? $caller : '');
+            $t = is_numeric($time) ? round((float)$time, 3) : 'n/a';
+            $parts[] = "{$who}:{$hash}@{$t}";
         }
         return implode(', ', $parts);
     }
 
-    private function getWpComponentFromBacktrace(): string {
-        if (!function_exists('debug_backtrace')) {
-            return '';
+    private function extractWpComponentFromString(string $text): string {
+        $normalized = str_replace('\\', '/', $text);
+
+        $pos = strpos($normalized, '/wp-content/mu-plugins/');
+        if ($pos !== false) {
+            $rest = substr($normalized, $pos + strlen('/wp-content/mu-plugins/'));
+            $name = explode('/', ltrim($rest, '/'))[0] ?? '';
+            return $name !== '' ? "mu-plugin:{$name}" : 'mu-plugin:unknown';
         }
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 12);
-        foreach ($trace as $frame) {
-            $file = $frame['file'] ?? '';
-            if ($file === '') {
-                continue;
-            }
-            $normalized = str_replace('\\', '/', $file);
 
-            $pos = strpos($normalized, '/wp-content/mu-plugins/');
-            if ($pos !== false) {
-                $rest = substr($normalized, $pos + strlen('/wp-content/mu-plugins/'));
-                $name = explode('/', ltrim($rest, '/'))[0] ?? '';
-                return $name !== '' ? "mu-plugin:{$name}" : 'mu-plugin:unknown';
-            }
-
-            $pos = strpos($normalized, '/wp-content/plugins/');
-            if ($pos !== false) {
-                $rest = substr($normalized, $pos + strlen('/wp-content/plugins/'));
-                $name = explode('/', ltrim($rest, '/'))[0] ?? '';
-                return $name !== '' ? "plugin:{$name}" : 'plugin:unknown';
-            }
-
-            $pos = strpos($normalized, '/wp-content/themes/');
-            if ($pos !== false) {
-                $rest = substr($normalized, $pos + strlen('/wp-content/themes/'));
-                $name = explode('/', ltrim($rest, '/'))[0] ?? '';
-                return $name !== '' ? "theme:{$name}" : 'theme:unknown';
-            }
+        $pos = strpos($normalized, '/wp-content/plugins/');
+        if ($pos !== false) {
+            $rest = substr($normalized, $pos + strlen('/wp-content/plugins/'));
+            $name = explode('/', ltrim($rest, '/'))[0] ?? '';
+            return $name !== '' ? "plugin:{$name}" : 'plugin:unknown';
         }
-        return 'core/unknown';
+
+        $pos = strpos($normalized, '/wp-content/themes/');
+        if ($pos !== false) {
+            $rest = substr($normalized, $pos + strlen('/wp-content/themes/'));
+            $name = explode('/', ltrim($rest, '/'))[0] ?? '';
+            return $name !== '' ? "theme:{$name}" : 'theme:unknown';
+        }
+
+        // Caller strings are often like "require_once('...')" or "SomeClass->method", so we keep it generic.
+        return 'unknown';
     }
 
     /**
