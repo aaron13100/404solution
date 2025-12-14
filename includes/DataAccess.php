@@ -27,6 +27,12 @@ class ABJ_404_Solution_DataAccess {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
+    /** @var bool */
+    private static $queryOriginTraceInstalled = false;
+
+    /** @var array<int, array{t: float, component: string}> */
+    private static $recentQueryOrigins = [];
+
     /**
      * Constructor with dependency injection.
      * Dependencies are now explicit and visible.
@@ -38,6 +44,7 @@ class ABJ_404_Solution_DataAccess {
         // Use injected dependencies or fall back to getInstance() for backward compatibility
         $this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
         $this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
+        $this->maybeInstallQueryOriginTracing();
     }
 
     public static function getInstance() {
@@ -2033,7 +2040,8 @@ class ABJ_404_Solution_DataAccess {
         // Register shutdown hook on first entry only
         if (!self::$shutdownHookRegistered) {
             self::$shutdownHookRegistered = true;
-            add_action('shutdown', [$this, 'flushLogQueue']);
+            // Slightly earlier than default (10) to reduce chance other shutdown handlers poison the DB connection.
+            add_action('shutdown', [$this, 'flushLogQueue'], 9);
         }
     }
 
@@ -2145,18 +2153,28 @@ class ABJ_404_Solution_DataAccess {
 
             // Attempt a one-time recovery for known connection-state issues (e.g., "Commands out of sync").
             if ($this->isCommandsOutOfSyncError($batchError)) {
-                $recovery = $this->attemptRecoverWpdbConnection();
-                $wpdb->flush();
-                $retryResult = $wpdb->query($prepared);
-                if ($retryResult !== false) {
-                    // Clear queue and reset flag for next request
-                    self::$logQueue = [];
-                    self::$shutdownHookRegistered = false;
-                    self::$isFlushingLogQueue = false;
-                    $this->logger->infoMessage("flushLogQueue batch INSERT succeeded after recovery attempt ({$recovery}).");
-                    return;
+                $this->enableQueryOriginTracing();
+
+                $isolated = $this->getIsolatedWpdb();
+                if ($isolated !== null) {
+                    $isolated->flush();
+                    $isolatedPrepared = $isolated->prepare($sql, $flattenedValues);
+                    $isolatedResult = $isolated->query($isolatedPrepared);
+                    if ($isolatedResult !== false) {
+                        // Clear queue and reset flag for next request
+                        self::$logQueue = [];
+                        self::$shutdownHookRegistered = false;
+                        self::$isFlushingLogQueue = false;
+                        $this->logger->warn(
+                            "flushLogQueue batch INSERT succeeded using isolated DB connection (commands out of sync on shared connection)." .
+                            " | suspected_origins=" . $this->getRecentQueryOriginSummary()
+                        );
+                        return;
+                    }
+                    $batchError .= " | isolated_error=" . ($isolated->last_error ?? '');
+                } else {
+                    $batchError .= " | isolated_error=no_isolated_connection";
                 }
-                $batchError .= " | recovery_attempt=" . $recovery . " | retry_error=" . ($wpdb->last_error ?? '');
             }
 
             // Retry each entry individually to salvage what we can
@@ -2176,7 +2194,8 @@ class ABJ_404_Solution_DataAccess {
                     }
                 }
                 $rowPlaceholder = '(' . implode(', ', $rowFormats) . ')';
-                $singleSql = $wpdb->prepare("INSERT IGNORE INTO `{$tableName}` ({$columnList}) VALUES {$rowPlaceholder}", $rowValues);
+                $singleSqlTemplate = "INSERT IGNORE INTO `{$tableName}` ({$columnList}) VALUES {$rowPlaceholder}";
+                $singleSql = $wpdb->prepare($singleSqlTemplate, $rowValues);
                 $wpdb->flush();
                 $singleResult = $wpdb->query($singleSql);
 
@@ -2185,14 +2204,21 @@ class ABJ_404_Solution_DataAccess {
 
                     // One retry on known connection-state errors.
                     if ($this->isCommandsOutOfSyncError($wpdb->last_error)) {
-                        $recovery = $this->attemptRecoverWpdbConnection();
-                        $wpdb->flush();
-                        $singleResult = $wpdb->query($singleSql);
-                        if ($singleResult !== false) {
-                            $successCount++;
-                            continue;
+                        $this->enableQueryOriginTracing();
+
+                        $isolated = $this->getIsolatedWpdb();
+                        if ($isolated !== null) {
+                            $isolated->flush();
+                            $isolatedSingleSql = $isolated->prepare($singleSqlTemplate, $rowValues);
+                            $isolatedSingleResult = $isolated->query($isolatedSingleSql);
+                            if ($isolatedSingleResult !== false) {
+                                $successCount++;
+                                continue;
+                            }
+                            $lastError = ($lastError ?? '') . " | isolated_error=" . ($isolated->last_error ?? '');
+                        } else {
+                            $lastError = ($lastError ?? '') . " | isolated_error=no_isolated_connection";
                         }
-                        $lastError = ($wpdb->last_error ?? $lastError) . " | recovery_attempt=" . $recovery;
                     }
 
                     $failCount++;
@@ -2225,7 +2251,8 @@ class ABJ_404_Solution_DataAccess {
                 $this->logger->errorMessage(
                     "flushLogQueue recovery incomplete: {$successCount} inserted, {$failCount} failed." .
                     " | batch_error=" . $batchError .
-                    " | failures=" . implode(' || ', $detailsParts) . $detailsSuffix
+                    " | failures=" . implode(' || ', $detailsParts) . $detailsSuffix .
+                    " | suspected_origins=" . $this->getRecentQueryOriginSummary()
                 );
             } else {
                 // Batch insert failure was recovered; don't escalate as an error.
@@ -2244,58 +2271,122 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /**
-     * Best-effort recovery when the mysqli connection is in a bad state.
-     * This is most commonly triggered by other code leaving an unconsumed result set.
+     * Create an isolated DB connection (separate from the shared $wpdb connection).
+     * This avoids failures caused by other code leaving the shared mysqli connection in a bad state.
      */
-    private function attemptRecoverWpdbConnection(): string {
-        global $wpdb;
-        $actions = [];
+    private function getIsolatedWpdb(): ?wpdb {
+        static $isolated = null;
 
-        if (!isset($wpdb) || !is_object($wpdb)) {
-            return 'no_wpdb';
+        if ($isolated !== null) {
+            return $isolated;
+        }
+        if (!class_exists('wpdb')) {
+            return null;
+        }
+        if (!defined('DB_USER') || !defined('DB_PASSWORD') || !defined('DB_NAME') || !defined('DB_HOST')) {
+            return null;
         }
 
-        if (method_exists($wpdb, 'flush')) {
-            $wpdb->flush();
-            $actions[] = 'wpdb_flush';
-        }
+        // phpcs:ignore WordPress.DB.RestrictedClasses.mysql__wpdb
+        $isolated = new wpdb(DB_USER, DB_PASSWORD, DB_NAME, DB_HOST);
+        $isolated->show_errors(false);
+        $isolated->suppress_errors(true);
 
-        // Drain pending multi-query results if any (helps some "commands out of sync" cases).
-        $dbh = $wpdb->dbh ?? null;
-        try {
-            if (is_object($dbh) && method_exists($dbh, 'more_results') && method_exists($dbh, 'next_result')) {
-                $drained = 0;
-                while ($dbh->more_results()) {
-                    $dbh->next_result();
-                    if (method_exists($dbh, 'store_result')) {
-                        $res = $dbh->store_result();
-                        if (is_object($res) && method_exists($res, 'free')) {
-                            $res->free();
-                        }
-                    }
-                    $drained++;
-                    if ($drained > 25) {
-                        break;
-                    }
-                }
-                if ($drained > 0) {
-                    $actions[] = 'mysqli_next_result:' . $drained;
-                }
+        return $isolated;
+    }
+
+    private function enableQueryOriginTracing(): void {
+        if (!function_exists('set_transient')) {
+            return;
+        }
+        // Enable for a short window so a repeat occurrence will include more context without ongoing overhead.
+        set_transient('abj404_trace_db_query_origins', '1', 3600);
+        $this->maybeInstallQueryOriginTracing();
+    }
+
+    private function maybeInstallQueryOriginTracing(): void {
+        if (self::$queryOriginTraceInstalled) {
+            return;
+        }
+        if (!function_exists('add_filter') || !function_exists('get_transient')) {
+            return;
+        }
+        if (get_transient('abj404_trace_db_query_origins') !== '1') {
+            return;
+        }
+        self::$queryOriginTraceInstalled = true;
+        add_filter('query', [$this, 'captureQueryOrigin'], 9999, 1);
+    }
+
+    public function captureQueryOrigin($query) {
+        $component = $this->getWpComponentFromBacktrace();
+        if ($component !== '') {
+            self::$recentQueryOrigins[] = ['t' => microtime(true), 'component' => $component];
+            $max = 25;
+            if (count(self::$recentQueryOrigins) > $max) {
+                self::$recentQueryOrigins = array_slice(self::$recentQueryOrigins, -1 * $max);
             }
-        } catch (Throwable $t) {
-            $actions[] = 'mysqli_drain_failed';
         }
+        return $query;
+    }
 
-        // Reconnect as a last resort.
-        if (method_exists($wpdb, 'db_connect')) {
-            $wpdb->db_connect();
-            $actions[] = 'wpdb_db_connect';
+    private function getRecentQueryOriginSummary(): string {
+        if (empty(self::$recentQueryOrigins)) {
+            return 'n/a';
         }
+        $counts = [];
+        foreach (self::$recentQueryOrigins as $item) {
+            $key = $item['component'] ?? '';
+            if ($key === '') {
+                continue;
+            }
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
+        if (empty($counts)) {
+            return 'n/a';
+        }
+        arsort($counts);
+        $parts = [];
+        foreach (array_slice($counts, 0, 8, true) as $component => $count) {
+            $parts[] = "{$component}({$count})";
+        }
+        return implode(', ', $parts);
+    }
 
-        if (empty($actions)) {
-            return 'no_actions';
+    private function getWpComponentFromBacktrace(): string {
+        if (!function_exists('debug_backtrace')) {
+            return '';
         }
-        return implode(',', $actions);
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 12);
+        foreach ($trace as $frame) {
+            $file = $frame['file'] ?? '';
+            if ($file === '') {
+                continue;
+            }
+            $normalized = str_replace('\\', '/', $file);
+
+            $pos = strpos($normalized, '/wp-content/mu-plugins/');
+            if ($pos !== false) {
+                $rest = substr($normalized, $pos + strlen('/wp-content/mu-plugins/'));
+                $name = explode('/', ltrim($rest, '/'))[0] ?? '';
+                return $name !== '' ? "mu-plugin:{$name}" : 'mu-plugin:unknown';
+            }
+
+            $pos = strpos($normalized, '/wp-content/plugins/');
+            if ($pos !== false) {
+                $rest = substr($normalized, $pos + strlen('/wp-content/plugins/'));
+                $name = explode('/', ltrim($rest, '/'))[0] ?? '';
+                return $name !== '' ? "plugin:{$name}" : 'plugin:unknown';
+            }
+
+            $pos = strpos($normalized, '/wp-content/themes/');
+            if ($pos !== false) {
+                $rest = substr($normalized, $pos + strlen('/wp-content/themes/'));
+                $name = explode('/', ltrim($rest, '/'))[0] ?? '';
+                return $name !== '' ? "theme:{$name}" : 'theme:unknown';
+            }
+        }
+        return 'core/unknown';
     }
 
     /**

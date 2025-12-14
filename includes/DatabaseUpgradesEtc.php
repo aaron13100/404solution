@@ -243,40 +243,65 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	}
     }
     
-    function runInitialCreateTables() {
-    	global $wpdb;
-    	$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
-    	$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
-    	$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
-    	$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
-    	$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
-    	$ngramCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_ngram_cache}");
+	    function runInitialCreateTables() {
+	    	global $wpdb;
+	    	$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
+	    	$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
+	    	$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
+	    	$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
+	    	$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
+	    	$ngramCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_ngram_cache}");
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
-        $this->dao->queryAndGetResults($query);
-        $this->verifyColumns($permalinkCacheTable, $query);
+	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
+	        $query = $this->applyPluginTableCharsetCollate($query);
+	        $this->dao->queryAndGetResults($query);
+	        $this->verifyColumns($permalinkCacheTable, $query);
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
-        $this->dao->queryAndGetResults($query);
-        $this->verifyColumns($spellingCacheTable, $query);
+	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
+	        $query = $this->applyPluginTableCharsetCollate($query);
+	        $this->dao->queryAndGetResults($query);
+	        $this->verifyColumns($spellingCacheTable, $query);
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createNGramCacheTable.sql");
-        $this->dao->queryAndGetResults($query);
-        $this->verifyColumns($ngramCacheTable, $query);
+	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createNGramCacheTable.sql");
+	        $query = $this->applyPluginTableCharsetCollate($query);
+	        $this->dao->queryAndGetResults($query);
+	        $this->verifyColumns($ngramCacheTable, $query);
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
-        $this->dao->queryAndGetResults($query);
-        $this->verifyColumns($redirectsTable, $query);
+	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
+	        $query = $this->applyPluginTableCharsetCollate($query);
+	        $this->dao->queryAndGetResults($query);
+	        $this->verifyColumns($redirectsTable, $query);
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
-        $this->dao->queryAndGetResults($query);
-        $this->verifyColumns($logsTable, $query);
-        $this->ensureLogsCompositeIndex($logsTable);
+	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
+	        $query = $this->applyPluginTableCharsetCollate($query);
+	        $this->dao->queryAndGetResults($query);
+	        $this->verifyColumns($logsTable, $query);
+	        $this->ensureLogsCompositeIndex($logsTable);
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
-        $this->dao->queryAndGetResults($query);
-        $this->verifyColumns($lookupTable, $query);
-    }
+	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
+	        $query = $this->applyPluginTableCharsetCollate($query);
+	        $this->dao->queryAndGetResults($query);
+	        $this->verifyColumns($lookupTable, $query);
+	    }
+
+	    private function applyPluginTableCharsetCollate($createTableSql) {
+	    	global $wpdb;
+	    	if (!is_string($createTableSql) || $createTableSql === '') {
+	    		return $createTableSql;
+	    	}
+	    	// If the statement already specifies charset/collation, don't override.
+	    	if (preg_match('/\b(?:default\s+)?(?:character\s+set|charset|collate)\b/i', $createTableSql)) {
+	    		return $createTableSql;
+	    	}
+	    	
+	    	// Always prefer utf8mb4 for plugin tables, regardless of site defaults.
+	    	$collate = 'utf8mb4_unicode_ci';
+	    	if (!empty($wpdb->collate) && stripos($wpdb->collate, 'utf8mb4') !== false) {
+	    		$collate = $wpdb->collate;
+	    	}
+	    	
+	    	return rtrim($createTableSql) . " DEFAULT CHARACTER SET utf8mb4 COLLATE {$collate}";
+	    }
 
     /**
      * Schedule background multisite activation to process remaining sites via WP-Cron.
@@ -1033,88 +1058,69 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		return $defaults[$charsetLower] ?? null;
 	}
 	
-	/** Make the collations of our tables match the WP_POSTS table collation. */
-	function correctCollations() {
-		global $wpdb;
-		
-		$collationNeedsUpdating = false;
-		
-		$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
-		$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
-		$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
-		$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
-		$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
-		$postsTable = $wpdb->prefix . 'posts';
-		
-		$abjTableNames = array($redirectsTable, $logsTable, $lookupTable, $permalinkCacheTable, $spellingCacheTable);
-	
-		// Get collation and charset for wp_posts
-		$postsTableData = $this->getTableCollation($postsTable);
-	
-		if ($postsTableData === null) {
-			$this->logger->warn("Failed to retrieve collation/charset for $postsTable. Aborting collation checks.");
-			return;
-		}
-	
-		[$postsTableCollation, $postsTableCharset] = $postsTableData;
-		
-		// Check our own tables to see if they match.
-		foreach ($abjTableNames as $tableName) {
-			$abjTableData = $this->getTableCollation($tableName);
-	
-			if ($abjTableData === null) {
-				$this->logger->warn("Failed to retrieve collation for $tableName.");
-				continue;  // Skip this table if collation can't be determined
-			}
-	
-			[$abjTableCollation, $abjTableCharset] = $abjTableData;
-	
-			// Compare collations
-			if ($abjTableCollation != $postsTableCollation) {
-				$collationNeedsUpdating = true;
-				break;  // Exit early if update is needed
-			}
-		}
-		
-        // if they match then we're done.
-		if (!$collationNeedsUpdating) {
-			return;
-		}
-		
-		// if they don't match then update our tables to match the target tables.
-		$this->logger->infoMessage("Updating collation from $abjTableCollation to $postsTableCollation");
-	
-		foreach ($abjTableNames as $tableName) {
-			// Update the collation
-			$query = "ALTER TABLE {table_name} CONVERT TO CHARSET " . $postsTableCharset . 
-					 " COLLATE " . $postsTableCollation;
-			$query = str_replace('{table_name}', $tableName, $query);
-			$results = $this->dao->queryAndGetResults($query, 
-				array('ignore_errors' => array("Index column size too large")));
-	
-			if ($results['last_error'] != null && $results['last_error'] != '' && 
-				strpos($results['last_error'], "Index column size too large") !== false) {
-				
-				$this->logger->warn("Collation change for $tableName failed: Index column size too large. Deleting indexes and retrying...");
-	
-				// delete indexes and try again.
-				$this->deleteIndexes($tableName);
-				
-				$retryResults = $this->dao->queryAndGetResults($query);
-				if (!empty($retryResults['last_error'])) {
-					$this->logger->warn("Collation retry for $tableName failed: " . $retryResults['last_error']);
-				} else {
-					$this->logger->infoMessage("Successfully changed collation of $tableName after retry.");
-				}
+		/** Ensure our tables use utf8mb4 (do not alter WordPress core tables). */
+		function correctCollations() {
+			global $wpdb;
+			
+			$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
+			$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
+			$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
+			$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
+			$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
+			
+			$abjTableNames = array($redirectsTable, $logsTable, $lookupTable, $permalinkCacheTable, $spellingCacheTable);
 
-			} else if ($results['last_error'] == null || $results['last_error'] == '') {
-				$this->logger->infoMessage("Successfully changed collation of $tableName to $postsTableCollation");
-			} else {
-				// Log other ALTER errors that aren't the known "Index column size" issue
-				$this->logger->warn("Collation change for $tableName failed: " . $results['last_error']);
+			$targetCharset = 'utf8mb4';
+			$targetCollation = 'utf8mb4_unicode_ci';
+			if (!empty($wpdb->collate) && stripos($wpdb->collate, 'utf8mb4') !== false) {
+				$targetCollation = $wpdb->collate;
+			}
+			
+			foreach ($abjTableNames as $tableName) {
+				$abjTableData = $this->getTableCollation($tableName);
+		
+				if ($abjTableData === null) {
+					$this->logger->warn("Failed to retrieve collation for $tableName.");
+					continue;  // Skip this table if collation can't be determined
+				}
+		
+				[$abjTableCollation, $abjTableCharset] = $abjTableData;
+		
+				// Compare collations/charset.
+				if ($abjTableCharset === $targetCharset && $abjTableCollation === $targetCollation) {
+					continue;
+				}
+				
+				$this->logger->infoMessage("Updating charset/collation on {$tableName} from {$abjTableCharset}/{$abjTableCollation} to {$targetCharset}/{$targetCollation}");
+
+				$query = "ALTER TABLE {table_name} CONVERT TO CHARSET " . $targetCharset .
+						 " COLLATE " . $targetCollation;
+				$query = str_replace('{table_name}', $tableName, $query);
+				$results = $this->dao->queryAndGetResults($query,
+					array('ignore_errors' => array("Index column size too large")));
+
+				if (!empty($results['last_error']) &&
+					strpos($results['last_error'], "Index column size too large") !== false) {
+
+					$this->logger->warn("Charset/collation change for $tableName failed: Index column size too large. Deleting indexes and retrying...");
+
+					// delete indexes and try again.
+					$this->deleteIndexes($tableName);
+
+					$retryResults = $this->dao->queryAndGetResults($query);
+					if (!empty($retryResults['last_error'])) {
+						$this->logger->warn("Charset/collation retry for $tableName failed: " . $retryResults['last_error']);
+					} else {
+						$this->logger->infoMessage("Successfully changed charset/collation of $tableName after retry.");
+					}
+
+				} else if (empty($results['last_error'])) {
+					$this->logger->infoMessage("Successfully changed charset/collation of $tableName to {$targetCharset}/{$targetCollation}");
+				} else {
+					$this->logger->warn("Charset/collation change for $tableName failed: " . $results['last_error']);
+				}
 			}
 		}
-	}
     
     /** Delete all non-primary indexes from a table.
      * @param string $tableName */
