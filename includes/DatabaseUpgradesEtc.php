@@ -666,24 +666,37 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         return !empty($results);
     }
 
-    private function buildAddIndexStatement($tableName, $indexDDL) {
-        global $wpdb;
-        $serverVersion = method_exists($wpdb, 'db_version') ? $wpdb->db_version() : '';
-        $serverInfo = property_exists($wpdb, 'db_server_info') ? $wpdb->db_server_info() : '';
+	    private function buildAddIndexStatement($tableName, $indexDDL) {
+	        global $wpdb;
+	        $serverVersion = method_exists($wpdb, 'db_version') ? $wpdb->db_version() : '';
+	        $serverInfo = property_exists($wpdb, 'db_server_info') ? $wpdb->db_server_info : '';
 
-        $isMaria = stripos($serverInfo, 'mariadb') !== false || stripos($serverVersion, 'maria') !== false;
-        $supportsIfNotExists = false;
-        if ($isMaria && version_compare(preg_replace('/[^\d\.]/', '', $serverVersion), '10.5', '>=')) {
-            $supportsIfNotExists = true;
-        } else if (!$isMaria && version_compare(preg_replace('/[^\d\.]/', '', $serverVersion), '8.0', '>=')) {
-            $supportsIfNotExists = true;
-        }
+	        $isMaria = stripos($serverInfo, 'mariadb') !== false || stripos($serverVersion, 'maria') !== false;
+	        $supportsIfNotExists = $isMaria && version_compare(preg_replace('/[^\d\.]/', '', $serverVersion), '10.5', '>=');
 
-        if ($supportsIfNotExists) {
-            return "alter table " . $tableName . " add index if not exists " . $indexDDL;
-        }
-        return "alter table " . $tableName . " add " . $indexDDL;
-    }
+	        $indexDDL = trim($indexDDL);
+
+	        // Normalize "KEY `name` (...)" / "UNIQUE KEY `name` (...)" into a form usable with "IF NOT EXISTS".
+	        // MariaDB supports: ADD [UNIQUE] INDEX IF NOT EXISTS `name` (...)
+	        if ($supportsIfNotExists) {
+	            $matches = [];
+	            if (preg_match('/^(unique\\s+)?key\\s+`([^`]+)`\\s*(\\(.+\\))\\s*$/i', $indexDDL, $matches)) {
+	                $unique = !empty($matches[1]);
+	                $name = $matches[2];
+	                $cols = $matches[3];
+	                $type = $unique ? 'unique index' : 'index';
+	                return "alter table " . $tableName . " add " . $type . " if not exists `" . $name . "` " . $cols;
+	            }
+	            if (preg_match('/^`([^`]+)`\\s*(\\(.+\\))\\s*$/', $indexDDL, $matches)) {
+	                $name = $matches[1];
+	                $cols = $matches[2];
+	                return "alter table " . $tableName . " add index if not exists `" . $name . "` " . $cols;
+	            }
+	        }
+
+	        // Fallback: use the DDL as-is (already contains KEY/UNIQUE KEY).
+	        return "alter table " . $tableName . " add " . $indexDDL;
+	    }
 
     private function ensureLogsCompositeIndex($logsTable) {
         $indexName = 'idx_requested_url_timestamp';
