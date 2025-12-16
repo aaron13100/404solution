@@ -97,44 +97,80 @@ class ABJ_404_Solution_PluginLogic {
     		return false;
     	}
     	
-    	// begin function.
     	ABJ_404_Solution_PluginLogic::$checkingIsAdmin = true;
-    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-    	$options = $abj404logic->getOptions();
-    	$f = $abj404logic->f;
-    	global $current_user;
-    	
-    	// admins have access
-    	$isPluginAdmin = current_user_can('administrator');
-    	
-    	// check extra admins.
-    	$extraAdmins = $options['plugin_admin_users'];
-    	$current_user_name = null;
-    	if (isset($current_user)) {
-    		$current_user_name = $current_user->user_login;
+    	try {
+    		// Capability checks should not trigger DB upgrade checks (which can throw and lock users out).
+    		$options = $this->getOptions(true);
+    		$f = $this->f;
+    		global $current_user;
+
+    		// Baseline: admins have access. Prefer capability checks over role-name checks.
+    		$isPluginAdmin = current_user_can('manage_options') || current_user_can('administrator');
+    		if (function_exists('is_multisite') && is_multisite() && function_exists('is_super_admin') && is_super_admin()) {
+    			$isPluginAdmin = true;
+    		}
+
+    		// check extra admins.
+    		$extraAdmins = $options['plugin_admin_users'] ?? array();
+    		$current_user_name = null;
+    		if (isset($current_user)) {
+    			$current_user_name = $current_user->user_login;
+    		}
+    		if ($current_user_name != null && $current_user_name != false) {
+    			$check = false;
+    			if (is_array($extraAdmins)) {
+    				$extraAdmins = array_filter($extraAdmins,
+    					array($f, 'removeEmptyCustom'));
+    				$check = true;
+    			} else if (is_string($extraAdmins)) {
+    			    $extraAdmins = $this->f->explodeNewline($extraAdmins);
+    				$check = true;
+    			}
+    			if ($check && in_array($current_user_name, $extraAdmins)) {
+    				$isPluginAdmin = true;
+    			}
+    		}
+
+    		// do the filter in case someone wants to add one
+    		return apply_filters('abj404_userIsPluginAdmin', $isPluginAdmin);
+    	} finally {
+    		ABJ_404_Solution_PluginLogic::$checkingIsAdmin = false;
     	}
-    	if ($current_user_name != null && $current_user_name != false) {
-	    	$check = false;
-	    	if (is_array($extraAdmins)) {
-	    		$extraAdmins = array_filter($extraAdmins,
-	    			array($f, 'removeEmptyCustom'));
-	    		$check = true;
-	    	} else if (is_string($extraAdmins)) {
-	    	    $extraAdmins = $this->f->explodeNewline($extraAdmins);
-	    		$check = true;
-	    	}
-	    	if ($check && in_array($current_user_name, $extraAdmins)) {
-	    		$isPluginAdmin = true;
-	    	}
-    	}
-    	
-    	// do the filter in case someone wants to add one
-    	$isPluginAdmin = apply_filters('abj404_userIsPluginAdmin', $isPluginAdmin);
-    	
-    	// allow calling the function again.
-    	ABJ_404_Solution_PluginLogic::$checkingIsAdmin = false;
-    	
-    	return $isPluginAdmin;
+    }
+
+    /**
+     * Verify a nonce for admin-link actions, without depending on the browser's Referer header.
+     *
+     * WordPress core's check_admin_referer() can fail in environments that strip referrers; in that
+     * case we fall back to wp_verify_nonce() using the same nonce value.
+     *
+     * @param string $action Nonce action string used in wp_nonce_url()
+     * @param string $queryArg Nonce query arg name (default '_wpnonce')
+     * @return bool
+     */
+    private function verifyLinkNonce($action, $queryArg = '_wpnonce') {
+        // Prefer check_admin_referer when available, but don't die on failure.
+        if (function_exists('check_admin_referer')) {
+            $ok = check_admin_referer($action, $queryArg, false);
+            if ($ok) {
+                return true;
+            }
+        }
+
+        if (!function_exists('wp_verify_nonce')) {
+            return false;
+        }
+
+        if (!isset($_REQUEST[$queryArg])) {
+            return false;
+        }
+
+        $nonce = sanitize_text_field(wp_unslash($_REQUEST[$queryArg]));
+        if ($nonce === '') {
+            return false;
+        }
+
+        return wp_verify_nonce($nonce, $action) !== false;
     }
 
     /**
@@ -1294,7 +1330,7 @@ class ABJ_404_Solution_PluginLogic {
         $message = "";
         // Handle Trash Functionality
         if (isset($_GET['trash'])) {
-            if (check_admin_referer('abj404_trashRedirect') && is_admin()) {
+            if (is_admin() && $this->verifyLinkNonce('abj404_trashRedirect')) {
                 $trash = "";
                 if ($_GET['trash'] == 0) {
                     $trash = 0;
@@ -1307,8 +1343,15 @@ class ABJ_404_Solution_PluginLogic {
                     return $message;
                 }
                 
-                $message = $this->dao->moveRedirectsToTrash(absint($_GET['id']), $trash);
+                $id = absint($_GET['id']);
+                $message = $this->dao->moveRedirectsToTrash($id, $trash);
                 if ($message == "") {
+                    // Captured URLs: restoring from the Captured->Trash view should return to Captured (not Ignored/Later).
+                    $subpage = isset($_GET['subpage']) ? sanitize_text_field(wp_unslash($_GET['subpage'])) : '';
+                    $filter = isset($_GET['filter']) ? intval($_GET['filter']) : 0;
+                    if ($trash == 0 && $subpage === 'abj404_captured' && $filter === ABJ404_TRASH_FILTER) {
+                        $this->dao->updateRedirectTypeStatus($id, ABJ404_STATUS_CAPTURED);
+                    }
                     if ($trash == 1) {
                         $message = __('Redirect moved to trash successfully!', '404-solution');
                     } else {
@@ -1613,7 +1656,7 @@ class ABJ_404_Solution_PluginLogic {
         
         //Handle Delete Functionality
         if (array_key_exists('remove', $_GET) && @$_GET['remove'] == 1) {
-            if (check_admin_referer('abj404_removeRedirect') && is_admin()) {
+            if (is_admin() && $this->verifyLinkNonce('abj404_removeRedirect')) {
                 if ($this->f->regexMatch('[0-9]+', $_GET['id'])) {
                     $this->dao->deleteRedirect(absint($_GET['id']));
                     $message = __('Redirect Removed Successfully!', '404-solution');
@@ -1639,7 +1682,7 @@ class ABJ_404_Solution_PluginLogic {
         $message = "";
 
         if (isset($_GET[$paramName])) {
-            if (check_admin_referer($nonceAction) && is_admin()) {
+            if (is_admin() && $this->verifyLinkNonce($nonceAction)) {
                 if ($_GET[$paramName] != 0 && $_GET[$paramName] != 1) {
                     $this->logger->debugMessage("Unexpected {$errorActionName} operation: " .
                             esc_html($_GET[$paramName]));
@@ -1703,7 +1746,7 @@ class ABJ_404_Solution_PluginLogic {
             $id = $this->dao->getPostOrGetSanitize('id');
             $ids = $this->dao->getPostOrGetSanitize('ids_multiple');
             if (!($id === null && $ids === null) && ($this->f->regexMatch('[0-9]+', '' . $id) || $this->f->regexMatch('[0-9]+', '' . $ids))) {
-                if (check_admin_referer('abj404editRedirect') && is_admin()) {
+                if (is_admin() && $this->verifyLinkNonce('abj404editRedirect')) {
                     $message = $this->updateRedirectData();
                     if ($message == "") {
                         // Return user to the page they came from instead of always going to redirects page

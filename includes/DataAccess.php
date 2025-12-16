@@ -3246,6 +3246,11 @@ class ABJ_404_Solution_DataAccess {
      */
     function getPostOrGetSanitize($name, $defaultValue = null) {
         $returnValue = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);
+        // Back-compat: some UI flows submit actions under 'abj404action' instead of 'action'.
+        // Treat it as an alias so handlers that look for 'action' still run.
+        if ($returnValue === null && $name === 'action') {
+            $returnValue = isset($_GET['abj404action']) ? $_GET['abj404action'] : (isset($_POST['abj404action']) ? $_POST['abj404action'] : null);
+        }
         if ($returnValue !== null) {
             if (is_array($returnValue)) {
                 $returnValue = array_map('sanitize_text_field', $returnValue);

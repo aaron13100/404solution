@@ -170,7 +170,7 @@ class ABJ_404_Solution_View {
 
 				if ($isCapturedPage) {
 					$result['ignorelink'] .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
-					// Note: laterlink intentionally does NOT get orderby/order (this is the bug/quirk)
+					$result['laterlink'] .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
 				}
 			}
 		}

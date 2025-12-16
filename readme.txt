@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.1.1
+Stable tag: 3.1.2
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -236,6 +236,12 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.1.2 (Dec 16, 2025) =
+* FIX: Captured 404 actions (Ignore/Trash/Restore) now work reliably even when hosts/browsers strip the Referer header.
+* FIX: Restoring a captured URL from Trash returns it to Captured status (not Ignored).
+* Improvement: "Later" action now preserves current table sorting (orderby/order) when clicked.
+* Improvement: Backend treats `abj404action` as an alias for `action` for consistent bulk/action handling.
 
 = Version 3.1.1 (Dec 11, 2025) =
 * FIX: Make index creation idempotent for `idx_requested_url_timestamp` (skip existing index, use IF NOT EXISTS when supported) to stop duplicate-key errors during upgrades.

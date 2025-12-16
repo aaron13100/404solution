@@ -9,8 +9,13 @@ class ABJ_404_Solution_Ajax_TrashLink {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         global $abj404view;
 
-        if (!check_admin_referer('abj404_ajaxTrash') || !is_admin()) {
-        	return json_encode("fail: old referrer? try reloading the page.");
+        $nonceOk = function_exists('check_ajax_referer')
+            ? check_ajax_referer('abj404_ajaxTrash', '_wpnonce', false)
+            : (function_exists('check_admin_referer') ? check_admin_referer('abj404_ajaxTrash', '_wpnonce', false) : false);
+
+        if (!$nonceOk || !is_admin()) {
+            echo json_encode(array('result' => 'fail', 'message' => 'Invalid nonce. Please reload the page.'));
+            exit();
         }
 
         // Verify user has appropriate capabilities (respects plugin admin users)
