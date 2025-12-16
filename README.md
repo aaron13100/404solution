@@ -80,12 +80,10 @@ Other stuff is here.
 
 ## Changelog ##
 
-## Version 3.1.3 (Dec 16, 2025) ##
-* FIX: MariaDB index creation no longer fails with a SQL syntax error when adding missing indexes (correct `ADD INDEX IF NOT EXISTS` DDL generation).
-
 ## Version 3.1.2 (Dec 16, 2025) ##
-* FIX: Captured 404 actions (Ignore/Trash/Restore) now work reliably even when hosts/browsers strip the Referer header.
+* FIX: Captured 404 actions (Ignore/Trash/Restore) now work reliably even when hosts/browsers strip the Referer header (thanks to Larry K for reporting this).
 * FIX: Restoring a captured URL from Trash returns it to Captured status (not Ignored).
+* FIX: MariaDB index creation no longer fails with a SQL syntax error when adding missing indexes (correct `ADD INDEX IF NOT EXISTS` DDL generation).
 * Improvement: "Later" action now preserves current table sorting (orderby/order) when clicked.
 * Improvement: Backend treats `abj404action` as an alias for `action` for consistent bulk/action handling.
 
