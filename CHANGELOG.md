@@ -1,5 +1,10 @@
 # Changelog #
 
+## Version 3.1.3 (Dec 17, 2025) ##
+* FIX: Logs tab dropdown search now returns matching log URLs (instead of always reporting no matches).
+* FIX: Page Redirects / Captured 404s table search (press Enter) no longer fails on some environments due to admin-ajax URL/action handling.
+* Improvement: When a table AJAX refresh fails, the alert now includes HTTP status + response preview and logs full details to the browser console for easier debugging.
+
 ## Version 3.1.2 (Dec 16, 2025) ##
 * FIX: Captured 404 actions (Ignore/Trash/Restore) now work reliably even when hosts/browsers strip the Referer header (thanks to Larry K for reporting this).
 * FIX: Restoring a captured URL from Trash returns it to Captured status (not Ignored).
