@@ -88,24 +88,32 @@ function paginationLinksChange(triggerItem) {
     // Only show loading on the table itself, not the filter bar or pagination
     var tableSelector = jQuery('.abj404-table').length > 0 ? '.abj404-table' : '.wp-list-table';
 
-    // get the URL from the html page - check multiple possible locations
-    var url = jQuery(".abj404-pagination-right").attr("data-pagination-ajax-url");
-    if (!url) {
-        url = jQuery(".abj404-filter-bar").attr("data-pagination-ajax-url");
+    // Get AJAX config from the page (supports both new data-attrs and legacy URL-with-query).
+    var $ajaxConfigEl = jQuery(".abj404-pagination-right").first();
+    if ($ajaxConfigEl.length === 0) {
+        $ajaxConfigEl = jQuery(".abj404-filter-bar").first();
     }
-    if (!url) {
-        url = jQuery("[data-pagination-ajax-url]").first().attr("data-pagination-ajax-url");
+    if ($ajaxConfigEl.length === 0) {
+        $ajaxConfigEl = jQuery("[data-pagination-ajax-url]").first();
     }
+    var url = $ajaxConfigEl.attr("data-pagination-ajax-url") || window.ajaxurl;
     if (!url) {
         console.warn('404 Solution: data-pagination-ajax-url attribute not found');
         return;
     }
-    var subpage = getURLParameter('subpage');
+    var action = $ajaxConfigEl.attr("data-pagination-ajax-action") || 'ajaxUpdatePaginationLinks';
+    var subpage = $ajaxConfigEl.attr("data-pagination-ajax-subpage") || getURLParameter('subpage');
     var trashFilter = getURLParameter('filter');
 
-    // Extract nonce from the AJAX URL
-    var nonceMatch = url.match(/[?&]nonce=([^&]+)/);
-    var nonce = nonceMatch ? nonceMatch[1] : '';
+    // Prefer nonce from attribute; fall back to legacy parsing from URL.
+    var nonce = $ajaxConfigEl.attr("data-pagination-ajax-nonce") || '';
+    if (!nonce) {
+        var nonceMatch = url.match(/[?&]nonce=([^&]+)/);
+        nonce = nonceMatch ? nonceMatch[1] : '';
+    }
+
+    // Use a clean admin-ajax base URL; always send 'action' in the payload for compatibility with security plugins.
+    var baseUrl = url.split('?')[0];
 
     // Show loading overlay on the table
     var $table = jQuery(tableSelector);
@@ -121,10 +129,11 @@ function paginationLinksChange(triggerItem) {
 
     // do an ajax call to update the data
     jQuery.ajax({
-        url: url,
+        url: baseUrl,
         type: 'POST',
         dataType: "json",
         data: {
+            action: action,
             rowsPerPage: rowsPerPage,
             filterText: filterText,
             filter: trashFilter,
@@ -167,9 +176,37 @@ function paginationLinksChange(triggerItem) {
         error: function (jqXHR, textStatus, errorThrown) {
             // Remove the loading overlay on error
             jQuery('.abj404-loading-overlay').remove();
-            alert("Ajax error. Result: " + JSON.stringify(textStatus, null, 2) +
-                    ", error: " + JSON.stringify(errorThrown, null, 2));
+            var status = jqXHR && jqXHR.status ? jqXHR.status : '';
+            var responseText = jqXHR && jqXHR.responseText ? String(jqXHR.responseText) : '';
+            var responsePreview = responseText;
+            if (responsePreview.length > 2000) {
+                responsePreview = responsePreview.slice(0, 2000) + "\n…(truncated)…";
+            }
+
+            // Always log full details to the console for easier debugging.
+            if (window && window.console && window.console.error) {
+                window.console.error('404 Solution AJAX error', {
+                    context: 'Updating table',
+                    status: status,
+                    textStatus: textStatus,
+                    errorThrown: errorThrown,
+                    url: baseUrl,
+                    action: action,
+                    subpage: subpage,
+                    responseText: responseText
+                });
+            }
+
+            alert(
+                "404 Solution: Ajax error while updating the table.\n\n" +
+                "HTTP status: " + status + "\n" +
+                "textStatus: " + textStatus + "\n" +
+                "errorThrown: " + errorThrown + "\n" +
+                "action: " + action + "\n" +
+                "subpage: " + subpage + "\n" +
+                "url: " + baseUrl + "\n\n" +
+                "Response (preview):\n" + responsePreview
+            );
         }
     });
 }
-

@@ -1300,6 +1300,15 @@ msgstr "bulkOptions"
 msgid "data-pagination-ajax-url"
 msgstr "data-pagination-ajax-url"
 
+msgid "data-pagination-ajax-action"
+msgstr "data-pagination-ajax-action"
+
+msgid "data-pagination-ajax-subpage"
+msgstr "data-pagination-ajax-subpage"
+
+msgid "data-pagination-ajax-nonce"
+msgstr "data-pagination-ajax-nonce"
+
 msgid "data-url"
 msgstr "data-url"
 

@@ -111,7 +111,8 @@ class ABJ_404_Solution_Ajax_Php {
         $specialSuggestion = array();
         $specialSuggestion[] = $suggestion;
         
-        $rows = $abj404dao->getLogsIDandURLLike('%' . $term . '%', ABJ404_MAX_AJAX_DROPDOWN_SIZE);
+        // Pass the raw term; getLogsIDandURLLike() builds the LIKE pattern safely.
+        $rows = $abj404dao->getLogsIDandURLLike($term, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         $results = $abj404AjaxPhp->formatLogResults($rows);
         
         // limit search results

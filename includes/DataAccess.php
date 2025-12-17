@@ -1806,8 +1806,10 @@ class ABJ_404_Solution_DataAccess {
     	$whereClause = '';
         if ($specificURL != '') {
             // Escape user input to prevent SQL injection
-            // Use esc_like for LIKE queries, then esc_sql for the full string
-            $escapedURL = esc_sql($wpdb->esc_like($specificURL));
+            // Use esc_like for LIKE queries, then add wildcards, then esc_sql for the full string.
+            // esc_like escapes '%' and '_' so callers must pass the raw search term (no wildcards).
+            $likePattern = '%' . $wpdb->esc_like($specificURL) . '%';
+            $escapedURL = esc_sql($likePattern);
             $whereClause = "where lower(requested_url) like lower('" . $escapedURL . "')\n";
             $whereClause .= "and min_log_id = true";
         }
