@@ -80,6 +80,11 @@ Other stuff is here.
 
 ## Changelog ##
 
+## Version 3.1.4 (Dec 18, 2025) ##
+* FIX: Page Redirects search AJAX errors now return actionable diagnostics to plugin admins (including PHP fatal/exception details) instead of only a generic WordPress "critical error" message.
+* Improvement: AJAX failures are always written to the 404 Solution debug log (with a safe fallback log file if the normal debug log cannot be written).
+* Improvement: When a fatal is triggered by another plugin/theme during the 404 Solution table AJAX call, details are captured only when the request originated from the 404 Solution admin screens (reduces unrelated log noise).
+
 ## Version 3.1.3 (Dec 17, 2025) ##
 * FIX: Logs tab dropdown search now returns matching log URLs (instead of always reporting no matches).
 * FIX: Page Redirects / Captured 404s table search (press Enter) no longer fails on some environments due to admin-ajax URL/action handling.

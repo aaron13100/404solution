@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.1.3
+Stable tag: 3.1.4
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -236,6 +236,11 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.1.4 (Dec 18, 2025) =
+* FIX: Page Redirects search AJAX errors now return actionable diagnostics to plugin admins (including PHP fatal/exception details) instead of only a generic WordPress "critical error" message.
+* Improvement: AJAX failures are always written to the 404 Solution debug log (with a safe fallback log file if the normal debug log cannot be written).
+* Improvement: When a fatal is triggered by another plugin/theme during the 404 Solution table AJAX call, details are captured only when the request originated from the 404 Solution admin screens (reduces unrelated log noise).
 
 = Version 3.1.3 (Dec 17, 2025) =
 * FIX: Logs tab dropdown search now returns matching log URLs (instead of always reporting no matches).

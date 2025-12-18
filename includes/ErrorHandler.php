@@ -106,17 +106,168 @@ class ABJ_404_Solution_ErrorHandler {
     }
 
     static function FatalErrorHandler() {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
-        
         $lasterror = error_get_last();
-        
-        if ($lasterror == null || !is_array($lasterror) || !array_key_exists('type', $lasterror) || 
-        	!array_key_exists('file', $lasterror)) {
-        	
-        	return false;
+        return self::processFatalError($lasterror);
+    }
+
+    private static function safeJsonEncode($value) {
+        $encoded = json_encode($value, JSON_PARTIAL_OUTPUT_ON_ERROR);
+        if ($encoded === false) {
+            return '(json_encode failed) ' . print_r($value, true);
+        }
+        return $encoded;
+    }
+
+    private static function safeWriteLine($line) {
+        try {
+            $logger = ABJ_404_Solution_Logging::getInstance();
+            if (is_object($logger) && method_exists($logger, 'writeLineToDebugFile')) {
+                $logger->writeLineToDebugFile($line);
+                return true;
+            }
+        } catch (Throwable $e) {
+            // fall back below
+        }
+        try {
+            $logger = ABJ_404_Solution_Logging::getInstance();
+            if (is_object($logger) && method_exists($logger, 'sanitizeLogLine')) {
+                $line = $logger->sanitizeLogLine($line);
+            }
+        } catch (Throwable $e) {
+            // ignore; still write the best-effort line below
+        }
+        @file_put_contents(ABJ404_PATH . 'abj404_debug_fallback.txt', $line . "\n", FILE_APPEND);
+        return false;
+    }
+
+    private static function isFatalType($type) {
+        $fatalTypes = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
+        return in_array($type, $fatalTypes, true);
+    }
+
+    private static function emitJsonAndExit($payload, $httpStatus) {
+        if (!headers_sent()) {
+            header('Content-type: application/json; charset=UTF-8');
+            if (function_exists('status_header')) {
+                status_header($httpStatus);
+            } else if (function_exists('http_response_code')) {
+                http_response_code($httpStatus);
+            }
+        }
+        echo json_encode($payload);
+        if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
+            return true;
+        }
+        exit;
+    }
+
+    /**
+     * Process a fatal error (shutdown handler).
+     * Public for unit tests (allows injecting a fake last error).
+     */
+    public static function processFatalError($lasterror) {
+        $f = ABJ_404_Solution_Functions::getInstance();
+
+        if ($lasterror == null || !is_array($lasterror) || !array_key_exists('type', $lasterror) ||
+            !array_key_exists('file', $lasterror)) {
+            return false;
+        }
+        if (!self::isFatalType($lasterror['type'])) {
+            return false;
         }
 
+        $ctx = isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])
+            ? $GLOBALS['abj404_ajax_context'] : null;
+
+        $isAjaxContext = is_array($ctx) &&
+            !empty($ctx['ajax_expected_json']) &&
+            empty($ctx['response_sent']) &&
+            array_key_exists('action', $ctx) &&
+            $ctx['action'] === 'ajaxUpdatePaginationLinks';
+
+        // -------------------------
+        // AJAX context: always log (even if fatal is from another plugin/theme/core),
+        // and emit JSON for admins so WordPress's generic "critical error" page doesn't hide details.
+        if ($isAjaxContext) {
+            // Only handle fatals for this endpoint when the context was created by our handler.
+            // This avoids logging unrelated admin-ajax fatals while still capturing "foreign" plugin/theme fatals
+            // that break our AJAX response.
+            $contextSourceOk = array_key_exists('abj404_context_source', $ctx) &&
+                $ctx['abj404_context_source'] === 'ViewUpdater::getPaginationLinks';
+            if (!$contextSourceOk) {
+                return false;
+            }
+
+            $bufferedOutput = '';
+            if (!(defined('ABJ404_TEST_DISABLE_OB') && ABJ404_TEST_DISABLE_OB)) {
+                if (ob_get_level() > 0) {
+                    $bufferedOutput = (string)ob_get_contents();
+                }
+                $minLevel = array_key_exists('ob_level_before', $ctx) ? intval($ctx['ob_level_before']) : 0;
+                while (ob_get_level() > $minLevel) {
+                    @ob_end_clean();
+                }
+            }
+
+            $details = array(
+                'fatal_error' => $lasterror,
+                'context' => $ctx,
+            );
+            if ($bufferedOutput !== '') {
+                $details['buffered_output'] = substr($bufferedOutput, 0, 8000);
+            }
+
+            $line = date('c') . ' (ERROR): AJAX fatal error in ajaxUpdatePaginationLinks. Details: ' . self::safeJsonEncode($details);
+            self::safeWriteLine($line);
+
+            $isPluginAdmin = array_key_exists('is_plugin_admin', $ctx) ? (bool)$ctx['is_plugin_admin'] : null;
+            // Only try to compute admin status if it wasn't already determined earlier in the request.
+            if ($isPluginAdmin === null) {
+                try {
+                    $logic = ABJ_404_Solution_PluginLogic::getInstance();
+                    if (is_object($logic) && method_exists($logic, 'userIsPluginAdmin')) {
+                        $isPluginAdmin = $logic->userIsPluginAdmin();
+                    }
+                } catch (Throwable $e) {
+                    $isPluginAdmin = null;
+                }
+            }
+            if ($isPluginAdmin === null) {
+                // Best-effort fallback: show details to real WordPress admins if PluginLogic is broken.
+                try {
+                    if (function_exists('wp_get_current_user')) {
+                        $user = wp_get_current_user();
+                        if (is_object($user) && property_exists($user, 'roles') && is_array($user->roles)) {
+                            $isPluginAdmin = in_array('administrator', $user->roles, true);
+                        }
+                    }
+                    if ($isPluginAdmin !== true && function_exists('is_super_admin') && is_super_admin()) {
+                        $isPluginAdmin = true;
+                    }
+                } catch (Throwable $e) {
+                    // ignore
+                }
+            }
+            if ($isPluginAdmin === null) {
+                $isPluginAdmin = false;
+            }
+
+            $payload = array(
+                'success' => false,
+                'data' => array(
+                    'message' => 'Server error while updating the table.',
+                ),
+            );
+            if ($isPluginAdmin) {
+                $payload['data']['details'] = $details;
+            }
+
+            $GLOBALS['abj404_ajax_context']['response_sent'] = true;
+            return self::emitJsonAndExit($payload, 500);
+        }
+
+        // -------------------------
+        // Default behavior: only log plugin-scope fatals (avoid noise from other plugins/themes).
         try {
             $errno = $lasterror['type'];
             $errfile = $lasterror['file'];
@@ -126,16 +277,17 @@ class ABJ_404_Solution_ErrorHandler {
             if ($f->strpos($errfile, $pluginFolder) === false) {
                 return false;
             }
-            
+
             $extraInfo = "(none)";
             if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('debug_info', $_REQUEST[ABJ404_PP])) {
                 $extraInfo = stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
             }
-            $errmsg = "ABJ404-SOLUTION Fatal error handler: " . 
+            $errmsg = "ABJ404-SOLUTION Fatal error handler: " .
                 stripcslashes(wp_kses_post(json_encode($lasterror))) .
-                ", \nAdditional info: " . $extraInfo . ", mbstring: " . 
-                    (extension_loaded('mbstring') ? 'true' : 'false');
+                ", \nAdditional info: " . $extraInfo . ", mbstring: " .
+                (extension_loaded('mbstring') ? 'true' : 'false');
 
+            $abj404logging = ABJ_404_Solution_Logging::getInstance();
             if ($abj404logging != null) {
                 switch ($errno) {
                     case E_NOTICE:
@@ -155,5 +307,7 @@ class ABJ_404_Solution_ErrorHandler {
         } catch (Exception $ex) {
             // ignored
         }
+
+        return false;
     }
 }

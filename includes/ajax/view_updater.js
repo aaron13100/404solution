@@ -103,6 +103,7 @@ function paginationLinksChange(triggerItem) {
     }
     var action = $ajaxConfigEl.attr("data-pagination-ajax-action") || 'ajaxUpdatePaginationLinks';
     var subpage = $ajaxConfigEl.attr("data-pagination-ajax-subpage") || getURLParameter('subpage');
+    var page = getURLParameter('page');
     var trashFilter = getURLParameter('filter');
 
     // Prefer nonce from attribute; fall back to legacy parsing from URL.
@@ -134,6 +135,7 @@ function paginationLinksChange(triggerItem) {
         dataType: "json",
         data: {
             action: action,
+            page: page,
             rowsPerPage: rowsPerPage,
             filterText: filterText,
             filter: trashFilter,
@@ -178,6 +180,7 @@ function paginationLinksChange(triggerItem) {
             jQuery('.abj404-loading-overlay').remove();
             var status = jqXHR && jqXHR.status ? jqXHR.status : '';
             var responseText = jqXHR && jqXHR.responseText ? String(jqXHR.responseText) : '';
+            var responseJson = jqXHR && jqXHR.responseJSON ? jqXHR.responseJSON : null;
             var responsePreview = responseText;
             if (responsePreview.length > 2000) {
                 responsePreview = responsePreview.slice(0, 2000) + "\n…(truncated)…";
@@ -193,8 +196,24 @@ function paginationLinksChange(triggerItem) {
                     url: baseUrl,
                     action: action,
                     subpage: subpage,
+                    responseJson: responseJson,
                     responseText: responseText
                 });
+            }
+
+            var messageFromServer = '';
+            var detailsFromServer = '';
+            if (responseJson && responseJson.data) {
+                if (responseJson.data.message) {
+                    messageFromServer = String(responseJson.data.message);
+                }
+                if (responseJson.data.details) {
+                    try {
+                        detailsFromServer = JSON.stringify(responseJson.data.details, null, 2);
+                    } catch (e) {
+                        detailsFromServer = String(responseJson.data.details);
+                    }
+                }
             }
 
             alert(
@@ -205,6 +224,8 @@ function paginationLinksChange(triggerItem) {
                 "action: " + action + "\n" +
                 "subpage: " + subpage + "\n" +
                 "url: " + baseUrl + "\n\n" +
+                (messageFromServer ? ("Server message:\n" + messageFromServer + "\n\n") : "") +
+                (detailsFromServer ? ("Server details (admin only):\n" + detailsFromServer + "\n\n") : "") +
                 "Response (preview):\n" + responsePreview
             );
         }
