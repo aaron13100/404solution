@@ -41,6 +41,17 @@ class ABJ_404_Solution_ViewUpdater {
 
     public static function sendJsonResponseAndExit($payload, $httpStatus = 200) {
         if (!headers_sent()) {
+            // Marker headers help support quickly identify that this response came from our AJAX endpoint.
+            // These are safe to expose (no sensitive values).
+            if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
+                $ctx = $GLOBALS['abj404_ajax_context'];
+                if (array_key_exists('action', $ctx) && is_string($ctx['action'])) {
+                    header('X-ABJ404-Ajax: ' . preg_replace('/[\r\n]+/', '', $ctx['action']));
+                }
+                if (array_key_exists('subpage', $ctx) && is_string($ctx['subpage']) && $ctx['subpage'] !== '') {
+                    header('X-ABJ404-Subpage: ' . preg_replace('/[\r\n]+/', '', $ctx['subpage']));
+                }
+            }
             header('Content-type: application/json; charset=UTF-8');
             if (function_exists('status_header')) {
                 status_header($httpStatus);
@@ -158,6 +169,14 @@ class ABJ_404_Solution_ViewUpdater {
 
         // Prevent WordPress's "critical error" HTML page from masking details for AJAX calls.
         if (!headers_sent()) {
+            // Marker headers help support quickly identify that this response came from our AJAX endpoint.
+            // These are safe to expose (no sensitive values).
+            if (array_key_exists('action', $context) && is_string($context['action'])) {
+                header('X-ABJ404-Ajax: ' . preg_replace('/[\r\n]+/', '', $context['action']));
+            }
+            if (array_key_exists('subpage', $context) && is_string($context['subpage']) && $context['subpage'] !== '') {
+                header('X-ABJ404-Subpage: ' . preg_replace('/[\r\n]+/', '', $context['subpage']));
+            }
             @ini_set('display_errors', '0');
         }
         if (!(defined('ABJ404_TEST_DISABLE_OB') && ABJ404_TEST_DISABLE_OB)) {

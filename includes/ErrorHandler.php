@@ -145,13 +145,24 @@ class ABJ_404_Solution_ErrorHandler {
         return in_array($type, $fatalTypes, true);
     }
 
-    private static function emitJsonAndExit($payload, $httpStatus) {
-        if (!headers_sent()) {
-            header('Content-type: application/json; charset=UTF-8');
-            if (function_exists('status_header')) {
-                status_header($httpStatus);
-            } else if (function_exists('http_response_code')) {
-                http_response_code($httpStatus);
+	    private static function emitJsonAndExit($payload, $httpStatus) {
+	        if (!headers_sent()) {
+	            // Marker headers help support quickly identify that this response came from our AJAX endpoint.
+	            // These are safe to expose (no sensitive values).
+	            if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
+	                $ctx = $GLOBALS['abj404_ajax_context'];
+	                if (array_key_exists('action', $ctx) && is_string($ctx['action'])) {
+	                    header('X-ABJ404-Ajax: ' . preg_replace('/[\r\n]+/', '', $ctx['action']));
+	                }
+	                if (array_key_exists('subpage', $ctx) && is_string($ctx['subpage']) && $ctx['subpage'] !== '') {
+	                    header('X-ABJ404-Subpage: ' . preg_replace('/[\r\n]+/', '', $ctx['subpage']));
+	                }
+	            }
+	            header('Content-type: application/json; charset=UTF-8');
+	            if (function_exists('status_header')) {
+	                status_header($httpStatus);
+	            } else if (function_exists('http_response_code')) {
+	                http_response_code($httpStatus);
             }
         }
         echo json_encode($payload);
