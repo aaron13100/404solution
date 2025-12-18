@@ -1099,8 +1099,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		
 				[$abjTableCollation, $abjTableCharset] = $abjTableData;
 		
-				// Compare collations/charset.
-				if ($abjTableCharset === $targetCharset && $abjTableCollation === $targetCollation) {
+				$needsUpdate = !($abjTableCharset === $targetCharset && $abjTableCollation === $targetCollation);
+				if (!$needsUpdate) {
+					// Table default matches, but individual columns can still drift (e.g., some columns left as *_bin).
+					$columnMismatch = $this->tableHasMismatchedCharacterColumnCollation($tableName, $targetCharset, $targetCollation);
+					if ($columnMismatch === true) {
+						$needsUpdate = true;
+						$this->logger->infoMessage("Detected column-level collation mismatch on {$tableName}; normalizing to {$targetCharset}/{$targetCollation}");
+					} else if ($columnMismatch === null) {
+						$this->logger->warn("Could not verify column collations for {$tableName}; skipping collation normalization.");
+						continue;
+					}
+				}
+				if (!$needsUpdate) {
 					continue;
 				}
 				
@@ -1133,6 +1144,58 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 					$this->logger->warn("Charset/collation change for $tableName failed: " . $results['last_error']);
 				}
 			}
+		}
+
+		/**
+		 * Detect character column collation drift on a table.
+		 *
+		 * Some environments can end up with per-column collations that differ from the table default
+		 * (e.g., `utf8mb4_bin` on one VARCHAR column while the table default is `utf8mb4_unicode_520_ci`).
+		 * This causes MySQL errors in string operations (REPLACE/LOWER) that mix collations.
+		 *
+		 * @param string $tableName Fully qualified table name (with prefix)
+		 * @param string $targetCharset Expected charset (e.g., utf8mb4)
+		 * @param string $targetCollation Expected collation (e.g., utf8mb4_unicode_ci)
+		 * @return bool|null True if mismatch found, false if all match, null if query failed
+		 */
+		private function tableHasMismatchedCharacterColumnCollation($tableName, $targetCharset, $targetCollation) {
+			$results = $this->dao->queryAndGetResults("SHOW FULL COLUMNS FROM " . $tableName);
+			if (!empty($results['last_error'])) {
+				$this->logger->warn("Failed to read columns for {$tableName}: " . $results['last_error']);
+				return null;
+			}
+			$rows = $results['rows'];
+			if (empty($rows)) {
+				return false;
+			}
+
+			$collationKey = null;
+			$firstRow = $rows[0];
+			foreach (array_keys($firstRow) as $key) {
+				if ($this->f->strtolower($key) === 'collation') {
+					$collationKey = $key;
+					break;
+				}
+			}
+			if ($collationKey === null) {
+				$this->logger->warn("SHOW FULL COLUMNS returned no Collation column for {$tableName}");
+				return null;
+			}
+
+			foreach ($rows as $row) {
+				$colCollation = $row[$collationKey] ?? null;
+				if ($colCollation === null || trim((string)$colCollation) === '') {
+					continue; // Non-character columns
+				}
+				$colCollation = trim((string)$colCollation);
+				$colCharset = explode('_', $colCollation)[0] ?? '';
+
+				if ($colCharset !== $targetCharset || $colCollation !== $targetCollation) {
+					return true;
+				}
+			}
+
+			return false;
 		}
     
     /** Delete all non-primary indexes from a table.
@@ -2232,9 +2295,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
             $this->logger->infoMessage("Table repair complete for site " . get_current_blog_id());
         } else {
-            // Tables exist - verify indexes are up to date
-            // This ensures new composite indexes are added even if upgrade didn't run
-            // createIndexes() is idempotent and only adds missing indexes
+            // Tables exist - insurance: verify/correct collations and ensure indexes exist.
+            // This catches collation drift (including column-level drift) and missed index additions.
+            $this->correctCollations();
             $this->createIndexes();
         }
     }

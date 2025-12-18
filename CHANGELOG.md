@@ -1,5 +1,8 @@
 # Changelog #
 
+## Version 3.1.6 (Dec 18, 2025) ##
+* Improvement: Daily maintenance insurance now verifies and repairs plugin table collations (including detecting column-level collation drift) and ensures required indexes exist.
+
 ## Version 3.1.5 (Dec 18, 2025) ##
 * FIX: Resolve Page Redirects / Captured 404s table search failing on some databases with "Illegal mix of collations ... for operation 'replace'".
 
