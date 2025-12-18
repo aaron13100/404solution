@@ -74,12 +74,40 @@ class ABJ_404_Solution_ViewUpdater {
         throw new Exception('ABJ404 view service not initialized (abj404view is null).');
     }
 
-    private static function safeJsonEncode($value) {
-        $encoded = json_encode($value, JSON_PARTIAL_OUTPUT_ON_ERROR);
-        if ($encoded === false) {
-            return '(json_encode failed) ' . print_r($value, true);
+	    private static function safeJsonEncode($value) {
+	        $encoded = json_encode($value, JSON_PARTIAL_OUTPUT_ON_ERROR);
+	        if ($encoded === false) {
+	            return '(json_encode failed) ' . print_r($value, true);
+	        }
+	        return $encoded;
+	    }
+
+    private static function redactSqlShape($sql) {
+        if (!is_string($sql) || $sql === '') {
+            return '';
         }
-        return $encoded;
+
+        $out = $sql;
+
+        // Replace quoted strings (single and double quotes) with placeholders.
+        // Note: $wpdb->last_query is a final SQL string and may contain user input values.
+        $out = preg_replace("~'(?:\\\\'|''|[^'])*'~", "?", $out);
+        $out = preg_replace('~"(?:\\\\"|""|[^"])*"~', "?", $out);
+
+        // Replace hex literals and numbers.
+        $out = preg_replace('~\\b0x[0-9A-Fa-f]+\\b~', '?', $out);
+        $out = preg_replace('~\\b\\d+(?:\\.\\d+)?\\b~', '?', $out);
+
+        // Collapse long IN (...) / value lists to a single placeholder.
+        $out = preg_replace('~\\(\\s*\\?\\s*(?:,\\s*\\?\\s*)+\\)~', '(?)', $out);
+        $out = preg_replace('~\\bIN\\s*\\(\\?\\)\\b~i', 'IN (?)', $out);
+
+        // Normalize whitespace and cap length (shape only).
+        $out = preg_replace('~\\s+~', ' ', trim($out));
+        if (strlen($out) > 4000) {
+            $out = substr($out, 0, 4000) . '…';
+        }
+        return $out;
     }
 
     private static function safeLogAjaxFailure($summary, $details = null, $throwable = null) {
@@ -308,9 +336,11 @@ class ABJ_404_Solution_ViewUpdater {
                 'context' => $context,
             );
             if (isset($GLOBALS['wpdb']) && is_object($GLOBALS['wpdb'])) {
+                $lastQuery = $GLOBALS['wpdb']->last_query ?? '';
                 $details['wpdb'] = array(
                     'last_error' => $GLOBALS['wpdb']->last_error ?? '',
-                    'last_query' => $GLOBALS['wpdb']->last_query ?? '',
+                    'last_query_redacted' => self::redactSqlShape($lastQuery),
+                    'last_query_length' => is_string($lastQuery) ? strlen($lastQuery) : 0,
                 );
             }
 
