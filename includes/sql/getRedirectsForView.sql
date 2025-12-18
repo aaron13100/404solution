@@ -102,7 +102,7 @@ and replace(lower(CONVERT(CONCAT(wp_abj404_redirects.url, '////',
           else '? Dest Type'
         end), '////',
         wp_abj404_redirects.code)
- ) USING utf8mb4)) COLLATE {wpdb_collate}, ' ', '')
+ USING utf8mb4)) COLLATE {wpdb_collate}, ' ', '')
 like replace(lower(CONVERT('%{filterText}%' USING utf8mb4)) COLLATE {wpdb_collate}, ' ', '')
 /* */
 
