@@ -1387,6 +1387,15 @@ class ABJ_404_Solution_DataAccess {
         $filterText = esc_sql($filterTextRaw);
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
+        // Ensure consistent collation for string operations (e.g., REPLACE/LOWER) to avoid
+        // "Illegal mix of collations" errors when plugin tables use *_bin collations.
+        $wpdbCollate = 'utf8mb4_unicode_ci';
+        if (isset($wpdb) && isset($wpdb->collate) && !empty($wpdb->collate)) {
+            $wpdbCollate = preg_replace('/[^A-Za-z0-9_]/', '', $wpdb->collate);
+        }
+        if ($wpdbCollate === '') {
+            $wpdbCollate = 'utf8mb4_unicode_ci';
+        }
         $query = $this->f->str_replace('{selecting-for-count-true-false}', $selectCountReplacement, $query);
         $query = $this->f->str_replace('{statusTypes}', $statusTypes, $query);
         $query = $this->f->str_replace('{orderByString}', $orderByString, $query);
@@ -1395,6 +1404,7 @@ class ABJ_404_Solution_DataAccess {
         $query = $this->f->str_replace('{searchFilterForRedirectsExists}', $searchFilterForRedirectsExists, $query);
         $query = $this->f->str_replace('{searchFilterForCapturedExists}', $searchFilterForCapturedExists, $query);
         $query = $this->f->str_replace('{filterText}', $filterText, $query);
+        $query = $this->f->str_replace('{wpdb_collate}', $wpdbCollate, $query);
         $query = $this->f->str_replace('{logsTableColumns}', $logsTableColumns, $query);
         $query = $this->f->str_replace('{logsTableJoin}', $logsTableJoin, $query);
         $query = $this->f->str_replace('{trashValue}', $trashValue, $query);

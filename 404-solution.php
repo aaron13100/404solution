@@ -7,7 +7,7 @@
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 3.1.4
+	Version: 3.1.5
 	Requires at least: 5.0
 	Requires PHP: 7.4
 
