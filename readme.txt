@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.1.6
+Stable tag: 3.1.5
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -237,11 +237,9 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Changelog ==
 
-= Version 3.1.6 (Dec 18, 2025) =
-* Improvement: Daily maintenance insurance now verifies and repairs plugin table collations (including detecting column-level collation drift) and ensures required indexes exist.
-
 = Version 3.1.5 (Dec 18, 2025) =
 * FIX: Resolve Page Redirects / Captured 404s table search failing on some databases with "Illegal mix of collations ... for operation 'replace'".
+* Improvement: Daily maintenance insurance now verifies and repairs plugin table collations (including detecting column-level collation drift) and ensures required indexes exist.
 
 = Version 3.1.4 (Dec 18, 2025) =
 * FIX: Page Redirects search AJAX errors now return actionable diagnostics to plugin admins (including PHP fatal/exception details) instead of only a generic WordPress "critical error" message.
