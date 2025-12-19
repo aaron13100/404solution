@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 3.1.7 (Dec 19, 2025) ##
+* FIX: Prevent invalid SQL during missing-index creation by parsing index definitions from the plugin SQL templates and emitting structured `ALTER TABLE ... ADD INDEX ...` statements.
+* Test: Add regression coverage for parsing log table composite index definitions and for missing index definitions in SQL templates.
+
 ## Version 3.1.6 (Dec 18, 2025) ##
 * FIX: Redirects table pagination/search no longer fails on some MariaDB versions with a SQL syntax error while updating the table.
 * Test: Added SQL template lint and a MariaDB integration test to prevent regressions.

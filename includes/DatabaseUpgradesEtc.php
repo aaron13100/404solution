@@ -596,64 +596,33 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
 	    	// get the indexes.
 	    	// Pattern matches lines starting with "KEY" / "UNIQUE KEY" - handles composite indexes with commas inside parens
-	    	$existingTableMatches = null;
-	    	$goalTableMatches = null;
-	    	preg_match_all('/^\s*((?:unique\s+)?key\s+.+?)\s*,?\s*$/im', $existingTableSQL, $existingTableMatches);
-	    	preg_match_all('/^\s*((?:unique\s+)?key\s+.+?)\s*,?\s*$/im', $createTableStatementGoal, $goalTableMatches);
-	    	
-	    	$extractIndexName = function($indexDDL) {
-	    		$matches = null;
-	    		// Matches: KEY `name` (...) or UNIQUE KEY `name` (...)
-	    		preg_match('/\bkey\b\s+`([^`]+)`/i', $indexDDL, $matches);
-	    		return $matches[1] ?? null;
-	    	};
-	    	
-	    	$goalTableMatchesColumnDDL = $goalTableMatches[1] ?? [];
-	    	$existingTableMatchesColumnDDL = $existingTableMatches[1] ?? [];
-	    	
-	    	$goalIndexesByName = [];
-	    	foreach ($goalTableMatchesColumnDDL as $indexDDL) {
-	    		$indexName = $extractIndexName($indexDDL);
-	    		if (!empty($indexName)) {
-	    			$goalIndexesByName[$indexName] = $indexDDL;
+	    	// Indexes: treat the CREATE TABLE SQL as source of truth, and treat the database as truth
+	    	// for what exists (SHOW INDEX). Avoid parsing SHOW CREATE TABLE output, which is vendor/format dependent.
+	    	$goalSpecsByName = $this->parseIndexSpecsFromCreateTableSql($createTableStatementGoal);
+
+	    	$missingIndexNames = [];
+	    	foreach (array_keys($goalSpecsByName) as $indexName) {
+	    		if (!$this->indexExists($tableName, $indexName)) {
+	    			$missingIndexNames[] = $indexName;
 	    		}
 	    	}
-	    	
-	    	$existingIndexNames = [];
-	    	foreach ($existingTableMatchesColumnDDL as $indexDDL) {
-	    		$indexName = $extractIndexName($indexDDL);
-	    		if (!empty($indexName)) {
-	    			$existingIndexNames[$indexName] = true;
-	    		}
-	    	}
-	    	
-	    	// Compare by index name to avoid false positives from harmless formatting differences (e.g., "USING BTREE").
-	    	$missingIndexNames = array_diff(array_keys($goalIndexesByName), array_keys($existingIndexNames));
-	    	
-	    	// say why we're doing what we're doing.
+
 	    	if (count($missingIndexNames) > 0) {
 	    		$this->logger->infoMessage(self::$uniqID . ": On {$tableName} I'm adding missing indexes: " . implode(', ', $missingIndexNames));
 	    	}
-	    	
+
 	    	foreach ($missingIndexNames as $indexName) {
-	    		$indexDDL = $goalIndexesByName[$indexName] ?? null;
-	    		if (empty($indexDDL)) {
+	    		$spec = $goalSpecsByName[$indexName] ?? null;
+	    		if (empty($spec)) {
 	    			continue;
 	    		}
-	    		// Skip if the index is already present (idempotent / concurrent creation).
-	    		if ($this->indexExists($tableName, $indexName)) {
-	    			continue;
-	    		}
-	    		
-	    		// If we're adding a unique key then remove the duplicates.
-	    		// This was causing issues for some people.
+
 	    		$spellingCacheTableName = $this->dao->doTableNameReplacements('{wp_abj404_spelling_cache}');
-	    		if (strtolower($tableName) == $spellingCacheTableName) {
+	    		if (strtolower($tableName) == $spellingCacheTableName && !empty($spec['unique'])) {
 	    			$this->dao->deleteSpellingCache();
 	    		}
-	    		
-	    		// Create the index.
-	    		$addStatement = $this->buildAddIndexStatement($tableName, $indexDDL);
+
+	    		$addStatement = $this->buildAddIndexStatementFromParts($tableName, $spec['name'], $spec['columns'], $spec['unique']);
 	    		$this->dao->queryAndGetResults($addStatement);
 	    		$this->logger->infoMessage("I added an index: " . $addStatement);
 	    	}
@@ -678,36 +647,132 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
 	        // Normalize "KEY `name` (...)" / "UNIQUE KEY `name` (...)" into a form usable with "IF NOT EXISTS".
 	        // MariaDB supports: ADD [UNIQUE] INDEX IF NOT EXISTS `name` (...)
-	        if ($supportsIfNotExists) {
-	            $matches = [];
-	            if (preg_match('/^(unique\\s+)?key\\s+`([^`]+)`\\s*(\\(.+\\))\\s*$/i', $indexDDL, $matches)) {
-	                $unique = !empty($matches[1]);
-	                $name = $matches[2];
-	                $cols = $matches[3];
-	                $type = $unique ? 'unique index' : 'index';
-	                return "alter table " . $tableName . " add " . $type . " if not exists `" . $name . "` " . $cols;
-	            }
-	            if (preg_match('/^`([^`]+)`\\s*(\\(.+\\))\\s*$/', $indexDDL, $matches)) {
-	                $name = $matches[1];
-	                $cols = $matches[2];
-	                return "alter table " . $tableName . " add index if not exists `" . $name . "` " . $cols;
-	            }
+		        if ($supportsIfNotExists) {
+		            $matches = [];
+		            if (preg_match('/^(unique\\s+)?key\\s+`([^`]+)`\\s*(\\(.+\\))\\s*$/i', $indexDDL, $matches)) {
+		                $unique = !empty($matches[1]);
+		                $name = $matches[2];
+		                $cols = $matches[3];
+		                $type = $unique ? 'unique index' : 'index';
+		                return "alter table " . $tableName . " add " . $type . " if not exists `" . $name . "` " . $cols;
+		            }
+		            if (preg_match('/^`([^`]+)`\\s*(\\(.+\\))\\s*$/', $indexDDL, $matches)) {
+		                $name = $matches[1];
+		                $cols = $matches[2];
+		                return "alter table " . $tableName . " add index if not exists `" . $name . "` " . $cols;
+		            }
+		        }
+
+		        // If we were given a bare index DDL like "`name` (...)", make it valid for MySQL too.
+		        if (preg_match('/^`[^`]+`\\s*\\(.+\\)\\s*$/', $indexDDL)) {
+		            return "alter table " . $tableName . " add index " . $indexDDL;
+		        }
+
+		        // If we were given a bare index DDL like "name (...)", make it valid too.
+		        if (preg_match('/^([A-Za-z0-9_]+)\\s*(\\(.+\\))\\s*$/', $indexDDL, $matches)) {
+		            $name = $matches[1];
+		            $cols = $matches[2];
+		            return "alter table " . $tableName . " add index `" . $name . "` " . $cols;
+		        }
+
+		        // Fallback: use the DDL as-is (already contains KEY/UNIQUE KEY).
+		        return "alter table " . $tableName . " add " . $indexDDL;
+		    }
+
+	    /**
+	     * Parse an index DDL line from our CREATE TABLE SQL into a structured spec.
+	     *
+	     * Accepts forms like:
+	     * - KEY `name` (`col`(190), `other`)
+	     * - UNIQUE KEY `name` (`col`)
+	     * - KEY `name` (`col`) USING BTREE
+	     *
+	     * Returns null if the line doesn't look like a KEY/UNIQUE KEY definition.
+	     *
+	     * @param string $indexDDL
+	     * @return array|null {name:string, columns:string, unique:bool}
+	     */
+	    private function parseIndexDDLToSpec($indexDDL) {
+	        $indexDDL = trim($indexDDL);
+	        $matches = [];
+	        if (!preg_match('/^(unique\\s+)?key\\s+`?([^`\\s]+)`?\\s*(\\(.+\\))\\s*(?:using\\s+\\w+)?\\s*$/i', $indexDDL, $matches)) {
+	            return null;
 	        }
 
-	        // Fallback: use the DDL as-is (already contains KEY/UNIQUE KEY).
-	        return "alter table " . $tableName . " add " . $indexDDL;
+	        return [
+	            'name' => $matches[2],
+	            'columns' => $matches[3],
+	            'unique' => !empty($matches[1]),
+	        ];
 	    }
 
-    private function ensureLogsCompositeIndex($logsTable) {
-        $indexName = 'idx_requested_url_timestamp';
-        $indexDDL = "`{$indexName}` (`requested_url`(190), `timestamp`)";
-        if ($this->indexExists($logsTable, $indexName)) {
-            return;
-        }
-        $query = $this->buildAddIndexStatement($logsTable, $indexDDL);
-        $results = $this->dao->queryAndGetResults($query);
+	    /**
+	     * Extract index specs from a CREATE TABLE statement (plugin SQL templates).
+	     *
+	     * @param string $createTableSql
+	     * @return array<string, array{name:string, columns:string, unique:bool}> keyed by index name
+	     */
+	    private function parseIndexSpecsFromCreateTableSql($createTableSql) {
+	        if (!is_string($createTableSql) || $createTableSql === '') {
+	            return [];
+	        }
+
+	        $matches = [];
+	        preg_match_all('/^\\s*(?:unique\\s+)?key\\s+.+?\\s*$/im', $createTableSql, $matches);
+	        $lines = $matches[0] ?? [];
+
+	        $specsByName = [];
+	        foreach ($lines as $line) {
+	            $spec = $this->parseIndexDDLToSpec($line);
+	            if (empty($spec) || empty($spec['name'])) {
+	                continue;
+	            }
+	            $specsByName[$spec['name']] = $spec;
+	        }
+
+	        return $specsByName;
+	    }
+
+	    /**
+	     * Build a valid ALTER TABLE ... ADD INDEX statement from structured parts.
+	     *
+	     * @param string $tableName
+	     * @param string $indexName
+	     * @param string $columnsSql Must include surrounding parentheses, e.g. "(`a`, `b`(190))"
+	     * @param bool $unique
+	     * @return string
+	     */
+	    private function buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique) {
+	        global $wpdb;
+	        $serverVersion = method_exists($wpdb, 'db_version') ? $wpdb->db_version() : '';
+	        $serverInfo = property_exists($wpdb, 'db_server_info') ? $wpdb->db_server_info : '';
+
+	        $isMaria = stripos($serverInfo, 'mariadb') !== false || stripos($serverVersion, 'maria') !== false;
+	        $supportsIfNotExists = $isMaria && version_compare(preg_replace('/[^\d\.]/', '', $serverVersion), '10.5', '>=');
+
+	        $indexType = $unique ? 'unique index' : 'index';
+	        $ifNotExists = $supportsIfNotExists ? ' if not exists' : '';
+
+	        return "alter table " . $tableName . " add " . $indexType . $ifNotExists . " `" . $indexName . "` " . trim($columnsSql);
+	    }
+
+	    private function ensureLogsCompositeIndex($logsTable, $createSqlOverride = null) {
+	        $indexName = 'idx_requested_url_timestamp';
+	        $createSql = is_string($createSqlOverride) ? $createSqlOverride : ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
+	        $specsByName = $this->parseIndexSpecsFromCreateTableSql($createSql);
+	        $spec = $specsByName[$indexName] ?? null;
+	        if (empty($spec)) {
+	            $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: index definition not found in createLogTable.sql");
+	            return;
+	        }
+
+	        if ($this->indexExists($logsTable, $indexName)) {
+	            return;
+	        }
+	        $query = $this->buildAddIndexStatementFromParts($logsTable, $spec['name'], $spec['columns'], $spec['unique']);
+	        $results = $this->dao->queryAndGetResults($query);
         if (!empty($results['last_error'])) {
-            $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: " . $results['last_error']);
+            $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: " . $results['last_error'] . " (query: {$query})");
         } else {
             $this->logger->infoMessage("Added {$indexName} to {$logsTable} using query: {$query}");
         }

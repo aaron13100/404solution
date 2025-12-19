@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.1.6
+Stable tag: 3.1.7
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -236,6 +236,10 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.1.7 (Dec 19, 2025) =
+* FIX: Prevent invalid SQL during missing-index creation by parsing index definitions from the plugin SQL templates and emitting structured `ALTER TABLE ... ADD INDEX ...` statements.
+* Test: Add regression coverage for parsing log table composite index definitions and for missing index definitions in SQL templates.
 
 = Version 3.1.6 (Dec 18, 2025) =
 * FIX: Redirects table pagination/search no longer fails on some MariaDB versions with a SQL syntax error while updating the table.
