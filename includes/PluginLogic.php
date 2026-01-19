@@ -351,6 +351,129 @@ class ABJ_404_Solution_PluginLogic {
 
         return $relativePath;
     }
+
+    /**
+     * Translate a redirect destination URL to the current language when possible.
+     *
+     * @param string $location Full URL or path to redirect to.
+     * @param string $requestedURL Original requested path/URL that triggered the 404.
+     * @return string URL to use for redirect.
+     */
+    function maybeTranslateRedirectUrl($location, $requestedURL = '') {
+        if (!is_string($location) || $location === '') {
+            return $location;
+        }
+
+        $translated = $this->translatePressRedirectUrl($location, $requestedURL);
+        if ($translated !== null && $translated !== '') {
+            $location = $translated;
+        }
+
+        // Allow other multilingual plugins/themes to override redirect destinations.
+        return apply_filters('abj404_translate_redirect_url', $location, $requestedURL);
+    }
+
+    private function translatePressRedirectUrl($location, $requestedURL) {
+        if (!$this->translatePressIntegrationAvailable()) {
+            return null;
+        }
+
+        if (!$this->isLocalUrl($location)) {
+            return null;
+        }
+
+        $language = $this->getTranslatePressLanguageFromRequest($requestedURL);
+        if ($language === '') {
+            return null;
+        }
+
+        $translated = $this->translatePressTranslateUrl($location, $language);
+        if (!is_string($translated) || $translated === '' || $translated === $location) {
+            return null;
+        }
+
+        if (!$this->isLocalUrl($translated)) {
+            return null;
+        }
+
+        return $translated;
+    }
+
+    private function translatePressIntegrationAvailable() {
+        return function_exists('trp_get_language_from_url') ||
+            function_exists('trp_get_current_language') ||
+            function_exists('trp_get_url_for_language') ||
+            function_exists('trp_translate_url') ||
+            has_filter('trp_translate_url');
+    }
+
+    private function translatePressTranslateUrl($url, $language) {
+        if (function_exists('trp_get_url_for_language')) {
+            return trp_get_url_for_language($language, $url);
+        }
+
+        if (function_exists('trp_translate_url')) {
+            return trp_translate_url($url, $language);
+        }
+
+        return apply_filters('trp_translate_url', $url, $language);
+    }
+
+    private function getTranslatePressLanguageFromRequest($requestedURL) {
+        $fullRequestedUrl = $this->buildFullUrlFromRequest($requestedURL);
+
+        if (function_exists('trp_get_language_from_url')) {
+            $language = trp_get_language_from_url($fullRequestedUrl);
+            if (is_string($language) && $language !== '') {
+                return $language;
+            }
+        }
+
+        if (function_exists('trp_get_current_language')) {
+            $language = trp_get_current_language();
+            if (is_string($language) && $language !== '') {
+                return $language;
+            }
+        }
+
+        return '';
+    }
+
+    private function buildFullUrlFromRequest($requestedURL) {
+        $path = $requestedURL;
+        if ($path === '' || $path === null) {
+            $userRequest = ABJ_404_Solution_UserRequest::getInstance();
+            $path = $userRequest->getPathWithSortedQueryString();
+        }
+
+        if ($path === '' || $path === null) {
+            return home_url('/');
+        }
+
+        if (preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+
+        return home_url($path);
+    }
+
+    private function isLocalUrl($url) {
+        if (!is_string($url) || $url === '') {
+            return false;
+        }
+
+        $parsedUrl = function_exists('wp_parse_url') ? wp_parse_url($url) : parse_url($url);
+        if (!is_array($parsedUrl) || !isset($parsedUrl['host'])) {
+            // Relative URLs are treated as local.
+            return true;
+        }
+
+        $siteUrl = home_url();
+        $parsedSite = function_exists('wp_parse_url') ? wp_parse_url($siteUrl) : parse_url($siteUrl);
+        $siteHost = is_array($parsedSite) && isset($parsedSite['host']) ? strtolower($parsedSite['host']) : '';
+
+        return $siteHost !== '' && strtolower($parsedUrl['host']) === $siteHost;
+    }
     /** Forward to a real page for queries like ?p=10
      * @global type $wp_query
      * @param array $options
@@ -2060,7 +2183,10 @@ class ABJ_404_Solution_PluginLogic {
             return $message;
         }
 
-        $manualURL = isset($_POST['manual_redirect_url']) ? $_POST['manual_redirect_url'] : '';
+        $manualURL = isset($_POST['manual_redirect_url']) ? wp_unslash($_POST['manual_redirect_url']) : '';
+        $manualURL = $this->f->sanitizeInvalidUTF8($manualURL);
+        $manualURL = sanitize_text_field($manualURL);
+        $manualURL = trim($manualURL);
         if ($this->f->substr($manualURL, 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
             return $message;
@@ -2083,7 +2209,7 @@ class ABJ_404_Solution_PluginLogic {
             
             $code = isset($_POST['code']) && !empty($_POST['code']) ? $_POST['code'] : ABJ404_STATUS_MANUAL;
 
-            $this->dao->setupRedirect(esc_url($_POST['manual_redirect_url']), $statusType,
+            $this->dao->setupRedirect($manualURL, $statusType,
                     $typeAndDest['type'], $typeAndDest['dest'],
                     sanitize_text_field($code), 0);
             
@@ -2745,6 +2871,8 @@ class ABJ_404_Solution_PluginLogic {
      * @return boolean true if the user is sent to the default 404 page.
      */
     function forceRedirect($location, $status = 302, $type = -1, $requestedURL = '', $isCustom404 = false) {
+        // Translate redirect destination for multilingual sites (TranslatePress, etc.)
+        $location = $this->maybeTranslateRedirectUrl($location, $requestedURL);
 
         $commentPartAndQueryPart = $this->getCommentPartAndQueryPartOfRequest();
         // Sanitize and encode the base location and query parts

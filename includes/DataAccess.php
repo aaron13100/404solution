@@ -2782,10 +2782,8 @@ class ABJ_404_Solution_DataAccess {
      * @return array
      */
     function getActiveRedirectForURL($url) {
-        $redirect = array();
-
-        // remove ridiculous non-printable characters
-        $url = preg_replace('/[^\x20-\x7E]/', '', $url); // Remove non-printable ASCII characters
+        // Strip invalid UTF-8/control bytes but keep valid unicode for multilingual slugs.
+        $url = $this->f->sanitizeInvalidUTF8($url);
 
         // Normalize to relative path before querying (Issue #24)
         // Fix HIGH #1 (5th review): Abort operation if normalization fails
@@ -2798,36 +2796,20 @@ class ABJ_404_Solution_DataAccess {
         }
         $url = $abj404logic->normalizeToRelativePath($url);
 
-        // we look for two URLs that might match. one with a trailing slash and one without.
-        // the one the user entered takes priority in case the admin added separate redirects for
-        // cases with and without the slash (and for backward compatibility).
-        $url1 = $url;
-        $url2 = $url;
-        if (substr($url, -1) === '/') {
-            $url2 = rtrim($url, '/');
-        } else {
-            $url2 = $url2 . '/';
+        $redirect = $this->getActiveRedirectForNormalizedUrl($url);
+        if ($redirect['id'] !== 0) {
+            return $redirect;
         }
-        
-        // join to the wp_posts table to make sure the post exists.
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPermalinkFromURL.sql");
-        // Fix HIGH #2 (5th review): Use prepared statements instead of manual escaping
-        $query = $this->prepare_query_wp($query, array("url1" => $url1, "url2" => $url2));
-        $query = $this->doTableNameReplacements($query);
-        $query = $this->f->doNormalReplacements($query);
-        $results = $this->queryAndGetResults($query);
-        $rows = $results['rows'];
 
-        if (is_array($rows)) {
-	        if (empty($rows)) {
-	            $redirect['id'] = 0;
-	            
-	        } else {
-	            foreach ($rows[0] as $key => $value) {
-	                $redirect[$key] = $value;
-	            }
-	        }
+        if (strpos($url, '%') !== false) {
+            $decodedUrl = rawurldecode($url);
+            if ($decodedUrl !== $url) {
+                $decodedUrl = $this->f->sanitizeInvalidUTF8($decodedUrl);
+                $decodedUrl = $abj404logic->normalizeToRelativePath($decodedUrl);
+                $redirect = $this->getActiveRedirectForNormalizedUrl($decodedUrl);
+            }
         }
+
         return $redirect;
     }
 
@@ -2836,10 +2818,8 @@ class ABJ_404_Solution_DataAccess {
      * @return array
      */
     function getExistingRedirectForURL($url) {
-        $redirect = array();
-
-        // remove ridiculous non-printable characters
-        $url = preg_replace('/[^\x20-\x7E]/', '', $url); // Remove non-printable ASCII characters
+        // Strip invalid UTF-8/control bytes but keep valid unicode for multilingual slugs.
+        $url = $this->f->sanitizeInvalidUTF8($url);
 
         // Normalize to relative path before querying (Issue #24)
         // Fix HIGH #1 (5th review): Abort operation if normalization fails
@@ -2852,22 +2832,86 @@ class ABJ_404_Solution_DataAccess {
         }
         $url = $abj404logic->normalizeToRelativePath($url);
 
+        $redirect = $this->getExistingRedirectForNormalizedUrl($url);
+        if ($redirect['id'] !== 0) {
+            return $redirect;
+        }
+
+        if (strpos($url, '%') !== false) {
+            $decodedUrl = rawurldecode($url);
+            if ($decodedUrl !== $url) {
+                $decodedUrl = $this->f->sanitizeInvalidUTF8($decodedUrl);
+                $decodedUrl = $abj404logic->normalizeToRelativePath($decodedUrl);
+                $redirect = $this->getExistingRedirectForNormalizedUrl($decodedUrl);
+            }
+        }
+
+        return $redirect;
+    }
+
+    private function getActiveRedirectForNormalizedUrl($url) {
+        $redirect = array();
+
+        // we look for two URLs that might match. one with a trailing slash and one without.
+        // the one the user entered takes priority in case the admin added separate redirects for
+        // cases with and without the slash (and for backward compatibility).
+        $url1 = $url;
+        $url2 = $url;
+        if (substr($url, -1) === '/') {
+            $url2 = rtrim($url, '/');
+        } else {
+            $url2 = $url2 . '/';
+        }
+
+        // join to the wp_posts table to make sure the post exists.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPermalinkFromURL.sql");
+        // Fix HIGH #2 (5th review): Use prepared statements instead of manual escaping
+        $query = $this->prepare_query_wp($query, array("url1" => $url1, "url2" => $url2));
+        $query = $this->doTableNameReplacements($query);
+        $query = $this->f->doNormalReplacements($query);
+        $results = $this->queryAndGetResults($query);
+        $rows = $results['rows'];
+
+        if (is_array($rows)) {
+            if (empty($rows)) {
+                $redirect['id'] = 0;
+            } else {
+                foreach ($rows[0] as $key => $value) {
+                    $redirect[$key] = $value;
+                }
+            }
+        }
+
+        if (!isset($redirect['id'])) {
+            $redirect['id'] = 0;
+        }
+
+        return $redirect;
+    }
+
+    private function getExistingRedirectForNormalizedUrl($url) {
+        $redirect = array();
+
         // a disabled value of '1' means in the trash.
-        $query = $this->prepare_query_wp('select * from {wp_abj404_redirects} where BINARY url = BINARY {url} ' . 
+        $query = $this->prepare_query_wp('select * from {wp_abj404_redirects} where BINARY url = BINARY {url} ' .
             " and disabled = 0 ", array("url" => $url));
         $results = $this->queryAndGetResults($query);
         $rows = $results['rows'];
 
         if (is_array($rows)) {
-	        if (empty($rows)) {
-	            $redirect['id'] = 0;
-	            
-	        } else {
-	            foreach ($rows[0] as $key => $value) {
-	                $redirect[$key] = $value;
-	            }
-	        }
+            if (empty($rows)) {
+                $redirect['id'] = 0;
+            } else {
+                foreach ($rows[0] as $key => $value) {
+                    $redirect[$key] = $value;
+                }
+            }
         }
+
+        if (!isset($redirect['id'])) {
+            $redirect['id'] = 0;
+        }
+
         return $redirect;
     }
     
