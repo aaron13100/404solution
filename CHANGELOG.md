@@ -1,5 +1,10 @@
 # Changelog #
 
+## Version 3.1.9 (Jan 20, 2026) ##
+* FIX: Manual and external redirects now store and match Unicode paths consistently.
+* Improvement: URL normalization is now unified across redirects, suggestions, and logs.
+* Improvement: Row action hover links stay clickable without resizing rows.
+
 ## Version 3.1.8 (Jan 19, 2026) ##
 * FIX: Preserve Unicode slugs during redirect lookups and allow manual redirect source paths with non-ASCII characters.
 * FIX: TranslatePress-aware redirect translation for localized paths with a filter hook for other multilingual plugins.

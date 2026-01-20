@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.1.8
+Stable tag: 3.1.9
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -236,6 +236,11 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.1.9 (Jan 20, 2026) =
+* FIX: Manual and external redirects now store and match Unicode paths consistently.
+* Improvement: URL normalization is now unified across redirects, suggestions, and logs.
+* Improvement: Row action hover links stay clickable without resizing rows.
 
 = Version 3.1.8 (Jan 19, 2026) =
 * FIX: Preserve Unicode slugs during redirect lookups and allow manual redirect source paths with non-ASCII characters.
