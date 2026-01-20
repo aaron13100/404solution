@@ -1607,6 +1607,7 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     padding: 12px 8px;
     font-size: 13px;
     vertical-align: middle;
+    overflow: visible;
 }
 
 .abj404-table td input[type="checkbox"] {
@@ -1620,6 +1621,22 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     color: var(--abj404-accent, #2271b1);
     word-break: break-word;
+    position: relative;
+}
+
+.abj404-url-cell::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 100%;
+    width: 100%;
+    height: 28px;
+    display: none;
+}
+
+.abj404-url-cell:hover::after,
+.abj404-url-cell:focus-within::after {
+    display: block;
 }
 
 .abj404-url-cell a {
@@ -1743,19 +1760,54 @@ html[data-theme="obsidian"] .abj404-tab-branding {
 
 .abj404-row-actions {
     display: none;
-    margin-top: 4px;
+    position: absolute;
+    left: 0;
+    top: calc(100% - 18px);
+    margin-top: 0;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--abj404-border, #dcdcde);
+    background: var(--abj404-card-bg, #ffffff);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     font-size: 12px;
     color: var(--abj404-text-muted, #646970);
+    white-space: nowrap;
+    z-index: 2;
+    pointer-events: auto;
 }
 
-.abj404-table tbody tr:hover .abj404-row-actions {
+.abj404-table tbody tr:hover .abj404-row-actions,
+.abj404-url-cell:hover .abj404-row-actions,
+.abj404-url-cell:focus-within .abj404-row-actions,
+.abj404-row-actions:hover,
+.abj404-row-actions:focus-within {
     display: block;
+}
+
+.abj404-table tbody tr:focus-within .abj404-row-actions {
+    display: block;
+}
+
+.abj404-table tbody tr {
+    position: relative;
+    z-index: 0;
+}
+
+.abj404-table tbody tr:hover,
+.abj404-table tbody tr:focus-within {
+    z-index: 1;
 }
 
 /* Always show actions on touch devices */
 @media (hover: none) {
     .abj404-row-actions {
         display: block;
+        position: static;
+        margin-top: 4px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
     }
 }
 
