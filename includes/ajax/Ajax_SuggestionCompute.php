@@ -13,7 +13,13 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
      */
     public static function computeSuggestions() {
         // Sanitize inputs
-        $requestedURL = isset($_POST['url']) ? sanitize_text_field($_POST['url']) : '';
+        $f = ABJ_404_Solution_Functions::getInstance();
+        if (isset($_POST['url'])) {
+            $rawUrl = function_exists('wp_unslash') ? wp_unslash($_POST['url']) : $_POST['url'];
+            $requestedURL = $f->normalizeUrlString($rawUrl);
+        } else {
+            $requestedURL = '';
+        }
 
         // Validate inputs
         if (empty($requestedURL)) {

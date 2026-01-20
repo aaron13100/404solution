@@ -353,6 +353,57 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /**
+     * Normalize a user-provided path for storage/matching.
+     * Decodes percent-encoded octets and strips invalid UTF-8/control bytes.
+     *
+     * @param string|null $url
+     * @return string
+     */
+    private function normalizeUserProvidedPath($url) {
+        $url = $this->f->normalizeUrlString($url);
+        if ($url === '') {
+            return '';
+        }
+
+        return $this->normalizeToRelativePath($url);
+    }
+
+    /**
+     * Normalize an external destination URL for storage.
+     * Decodes percent-encoded octets and strips invalid UTF-8/control bytes.
+     *
+     * @param string|null $url
+     * @return string
+     */
+    private function normalizeExternalDestinationUrl($url) {
+        return $this->f->normalizeUrlString($url);
+    }
+
+    /**
+     * Generate normalized lookup variants for URL matching.
+     * Includes decoded form and a legacy encoded fallback.
+     *
+     * @param string|null $url
+     * @return array
+     */
+    function getNormalizedUrlCandidates($url) {
+        $decoded = $this->normalizeUserProvidedPath($url);
+        if ($decoded === '') {
+            return array();
+        }
+
+        $candidates = array($decoded);
+
+        // Legacy fallback for stored percent-encoded slugs.
+        $encoded = $this->normalizeToRelativePath($this->f->encodeUrlForLegacyMatch($decoded));
+        if ($encoded !== $decoded) {
+            $candidates[] = $encoded;
+        }
+
+        return array_values(array_unique($candidates));
+    }
+
+    /**
      * Translate a redirect destination URL to the current language when possible.
      *
      * @param string $location Full URL or path to redirect to.
@@ -2121,7 +2172,9 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
-            $userEnteredURL = esc_url($this->dao->getPostOrGetSanitize('redirect_to_user_field'), array('http', 'https'));
+            $rawEnteredURL = $this->dao->getPostOrGetSanitizeUrl('redirect_to_user_field');
+            $userEnteredURL = $this->normalizeExternalDestinationUrl($rawEnteredURL);
+            $userEnteredURL = esc_url($userEnteredURL, array('http', 'https'));
             if ($userEnteredURL == "") {
                 $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<BR/>";
 
@@ -2184,9 +2237,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         $manualURL = isset($_POST['manual_redirect_url']) ? wp_unslash($_POST['manual_redirect_url']) : '';
-        $manualURL = $this->f->sanitizeInvalidUTF8($manualURL);
-        $manualURL = sanitize_text_field($manualURL);
-        $manualURL = trim($manualURL);
+        $manualURL = $this->normalizeUserProvidedPath($manualURL);
         if ($this->f->substr($manualURL, 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
             return $message;

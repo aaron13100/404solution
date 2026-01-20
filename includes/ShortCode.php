@@ -183,7 +183,7 @@ class ABJ_404_Solution_ShortCode {
         $queryParamName = ABJ404_PP . '_ref';
         if ($urlRequest == '' && isset($_GET[$queryParamName]) && !empty($_GET[$queryParamName])) {
             // Normalize URL using centralized function for consistency
-            $urlRequest = $f->normalizeURLForCacheKey(urldecode($_GET[$queryParamName]));
+            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($_GET[$queryParamName]));
         }
 
         if ($urlRequest == '') {
@@ -262,7 +262,7 @@ class ABJ_404_Solution_ShortCode {
                 $options['suggest_title'] )) . "\n";
         
         $currentSlug = $abj404logic->removeHomeDirectory(
-                $f->regexReplace('\?.*', '', urldecode($_SERVER['REQUEST_URI'])));
+                $f->regexReplace('\?.*', '', $f->normalizeUrlString($_SERVER['REQUEST_URI'])));
         $displayed = 0;
         $commentPartAndQueryPart = $abj404logic->getCommentPartAndQueryPartOfRequest();
 
@@ -475,7 +475,7 @@ class ABJ_404_Solution_ShortCode {
         $currentSlug = '';
         if (isset($_SERVER['REQUEST_URI'])) {
             $currentSlug = $abj404logic->removeHomeDirectory(
-                $f->regexReplace('\?.*', '', urldecode($_SERVER['REQUEST_URI'])));
+                $f->regexReplace('\?.*', '', $f->normalizeUrlString($_SERVER['REQUEST_URI'])));
         }
 
         $displayed = 0;

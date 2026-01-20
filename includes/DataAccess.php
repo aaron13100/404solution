@@ -2011,7 +2011,7 @@ class ABJ_404_Solution_DataAccess {
        		$permalinksKept = $_REQUEST[ABJ404_PP]['permalinks_kept'];
         }
         $this->logger->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
-        		" | Current user: " . $current_user_name . " | From: " . urldecode($_SERVER['REQUEST_URI']) . 
+        		" | Current user: " . $current_user_name . " | From: " . $helperFunctions->normalizeUrlString($_SERVER['REQUEST_URI']) . 
                 esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . 
                 $reasonMessage . ', Execution time: ' . round($helperFunctions->getExecutionTime(), 2) . 
         	' seconds, permalinks found: ' . $permalinksKept);
@@ -2794,23 +2794,15 @@ class ABJ_404_Solution_DataAccess {
             $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in getActiveRedirectForURL()! Cannot normalize URL, aborting: " . $url);
             return array('id' => 0);  // Return empty result - no redirect found
         }
-        $url = $abj404logic->normalizeToRelativePath($url);
-
-        $redirect = $this->getActiveRedirectForNormalizedUrl($url);
-        if ($redirect['id'] !== 0) {
-            return $redirect;
-        }
-
-        if (strpos($url, '%') !== false) {
-            $decodedUrl = rawurldecode($url);
-            if ($decodedUrl !== $url) {
-                $decodedUrl = $this->f->sanitizeInvalidUTF8($decodedUrl);
-                $decodedUrl = $abj404logic->normalizeToRelativePath($decodedUrl);
-                $redirect = $this->getActiveRedirectForNormalizedUrl($decodedUrl);
+        $candidates = $abj404logic->getNormalizedUrlCandidates($url);
+        foreach ($candidates as $candidate) {
+            $redirect = $this->getActiveRedirectForNormalizedUrl($candidate);
+            if ($redirect['id'] !== 0) {
+                return $redirect;
             }
         }
 
-        return $redirect;
+        return array('id' => 0);
     }
 
     /** Get the redirect for the URL. 
@@ -2830,23 +2822,15 @@ class ABJ_404_Solution_DataAccess {
             $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in getExistingRedirectForURL()! Cannot normalize URL, aborting: " . $url);
             return array('id' => 0);  // Return empty result - no redirect found
         }
-        $url = $abj404logic->normalizeToRelativePath($url);
-
-        $redirect = $this->getExistingRedirectForNormalizedUrl($url);
-        if ($redirect['id'] !== 0) {
-            return $redirect;
-        }
-
-        if (strpos($url, '%') !== false) {
-            $decodedUrl = rawurldecode($url);
-            if ($decodedUrl !== $url) {
-                $decodedUrl = $this->f->sanitizeInvalidUTF8($decodedUrl);
-                $decodedUrl = $abj404logic->normalizeToRelativePath($decodedUrl);
-                $redirect = $this->getExistingRedirectForNormalizedUrl($decodedUrl);
+        $candidates = $abj404logic->getNormalizedUrlCandidates($url);
+        foreach ($candidates as $candidate) {
+            $redirect = $this->getExistingRedirectForNormalizedUrl($candidate);
+            if ($redirect['id'] !== 0) {
+                return $redirect;
             }
         }
 
-        return $redirect;
+        return array('id' => 0);
     }
 
     private function getActiveRedirectForNormalizedUrl($url) {
@@ -3315,6 +3299,34 @@ class ABJ_404_Solution_DataAccess {
             }
         }
         return $returnValue ?? $defaultValue;
+    }
+
+    /** Look at $_POST and $_GET for the specified URL option and return the default value if it's not set.
+     * URL inputs should not use sanitize_text_field because it strips percent-encoded octets.
+     * @param string $name The key to retrieve the value for.
+     * @param string $defaultValue The value to return if the value is not set.
+     * @return string The normalized URL value.
+     */
+    function getPostOrGetSanitizeUrl($name, $defaultValue = null) {
+        $returnValue = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);
+        if ($returnValue === null) {
+            return $defaultValue;
+        }
+
+        $f = ABJ_404_Solution_Functions::getInstance();
+        $unslash = function($value) {
+            return function_exists('wp_unslash') ? wp_unslash($value) : $value;
+        };
+
+        if (is_array($returnValue)) {
+            return array_map(function($value) use ($f, $unslash) {
+                $value = $unslash($value);
+                return $f->normalizeUrlString($value);
+            }, $returnValue);
+        }
+
+        $returnValue = $unslash($returnValue);
+        return $f->normalizeUrlString($returnValue);
     }
 
     /** 

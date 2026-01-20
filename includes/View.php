@@ -1007,7 +1007,8 @@ class ABJ_404_Solution_View {
         $settingsMode = $this->logic->getSettingsMode();
 
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
-        $urlParts = parse_url(urldecode($_SERVER['REQUEST_URI']));
+        $helperFunctions = ABJ_404_Solution_Functions::getInstance();
+        $urlParts = parse_url($helperFunctions->normalizeUrlString($_SERVER['REQUEST_URI']));
         $currentURL = $urlParts['path'];
         if (is_array($options) && isset($options['menuLocation']) &&
                 $options['menuLocation'] == 'settingsLevel') {

@@ -106,6 +106,89 @@ abstract class ABJ_404_Solution_Functions {
     }
 
     /**
+     * Normalize a URL string for storage or matching.
+     * - Optionally decode percent-encoded octets
+     * - Strip invalid UTF-8/control bytes
+     *
+     * @param string|null $url
+     * @param array $options Supported keys: decode (bool)
+     * @return string
+     */
+    function normalizeUrlString($url, $options = array()) {
+        $options = array_merge(array('decode' => true), $options);
+
+        if ($url === null || $url === '') {
+            return '';
+        }
+
+        if (!is_string($url)) {
+            $url = strval($url);
+        }
+
+        $url = trim($url);
+        if ($options['decode']) {
+            $url = rawurldecode($url);
+        }
+
+        $url = $this->sanitizeInvalidUTF8($url);
+        // Remove remaining control characters (keep whitespace)
+        $url = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $url);
+
+        return $url;
+    }
+
+    /**
+     * Sanitize URL components without stripping reserved characters.
+     * Keeps characters like ()[]{} for matching but removes invalid UTF-8/control bytes.
+     *
+     * @param mixed $value
+     * @return mixed
+     */
+    function sanitizeUrlComponent($value) {
+        if (is_array($value)) {
+            return array_map([$this, 'sanitizeUrlComponent'], $value);
+        }
+
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        if (!is_string($value)) {
+            $value = strval($value);
+        }
+
+        $value = $this->sanitizeInvalidUTF8($value);
+        $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value);
+
+        return $value;
+    }
+
+    /**
+     * Encode a URL for legacy matching while preserving URL delimiters.
+     *
+     * @param string|null $url
+     * @return string
+     */
+    function encodeUrlForLegacyMatch($url) {
+        if ($url === null || $url === '') {
+            return '';
+        }
+
+        if (!is_string($url)) {
+            $url = strval($url);
+        }
+
+        $encoded = rawurlencode($url);
+        $encoded = str_replace(
+            array('%2F', '%3F', '%26', '%3D', '%23', '%3A', '%40'),
+            array('/', '?', '&', '=', '#', ':', '@'),
+            $encoded
+        );
+
+        return $encoded;
+    }
+
+    /**
      * Normalize a URL for use as a cache/transient key.
      *
      * This function ensures consistent URL normalization across the codebase:
@@ -769,4 +852,3 @@ abstract class ABJ_404_Solution_Functions {
     }
 
 }
-

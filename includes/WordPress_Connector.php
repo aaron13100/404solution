@@ -713,7 +713,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $httpUserAgent . ', REMOTE_ADDR: ' . 
-                $remoteAddress . ', REQUEST_URI: ' . urldecode($_SERVER['REQUEST_URI']));
+                $remoteAddress . ', REQUEST_URI: ' . $this->f->normalizeUrlString($_SERVER['REQUEST_URI']));
         $this->logger->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
                 wp_kses_post(json_encode($redirect)) . " | is_single(): " . is_single() . " | " . "is_page(): " . is_page() .
                 " | is_feed(): " . is_feed() . " | is_trackback(): " . is_trackback() . " | is_preview(): " .

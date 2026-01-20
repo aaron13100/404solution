@@ -38,7 +38,7 @@ class ABJ_404_Solution_UserRequest {
         $f = ABJ_404_Solution_Functions::getInstance();
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         
-        $urlToParse = urldecode($_SERVER['REQUEST_URI']);
+        $urlToParse = $f->normalizeUrlString($_SERVER['REQUEST_URI']);
       	
         // if the user somehow requested an invalid URL that's too long then fix it.
         if ($f->strlen($urlToParse) > ABJ404_MAX_URL_LENGTH) {
@@ -78,19 +78,14 @@ class ABJ_404_Solution_UserRequest {
         }
         // make things work with foreign languages while avoiding XSS issues.
         foreach ($urlParts as $key => $value) {
-            // Decode only if necessary, then sanitize and encode output
             if ($key === 'query') {
-                // For query strings, sanitize each key-value pair
+                // For query strings, preserve reserved characters while removing invalid bytes.
                 parse_str($value, $queryArray);
-                $safeQueryArray = array_map([$f, 'escapeForXSS'], $queryArray);
-                $safeQueryArray = array_map([$f, 'selectivelyURLEncode'], $safeQueryArray);
-                $safeQueryArray = $f->sanitize_text_field_recursive($safeQueryArray);
-
+                $safeQueryArray = $f->sanitizeUrlComponent($queryArray);
                 $urlParts[$key] = http_build_query($safeQueryArray);
             } else {
-                // Sanitize text parts like paths
-                $urlParts[$key] = $f->escapeForXSS($value);
-                $urlParts[$key] = $f->selectivelyURLEncode($value);
+                // Sanitize path/host/etc. without stripping reserved URL characters.
+                $urlParts[$key] = $f->sanitizeUrlComponent($value);
             }
         }
 
