@@ -141,7 +141,7 @@ class ABJ_404_Solution_ShortCode {
         $cookieName = ABJ404_PP . '_REQUEST_URI';
         if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
             // Normalize URL using centralized function for consistency
-            $urlRequest = $f->normalizeURLForCacheKey($_COOKIE[$cookieName]);
+            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($_COOKIE[$cookieName]));
             // delete the cookie because the request was a one-time thing.
             // we use javascript to delete the cookie because the headers have already been sent.
             $content .= "<script> \n" .
@@ -161,7 +161,7 @@ class ABJ_404_Solution_ShortCode {
         	// (fixes: manual redirects to custom 404 pages not showing suggestions)
         	if ($urlRequest == '') {
         		// Normalize URL using centralized function for consistency
-        		$urlRequest = $f->normalizeURLForCacheKey($_COOKIE[$updateURLCookieName]);
+        		$urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($_COOKIE[$updateURLCookieName]));
         	}
         	// delete the cookie since we're done with it. it's a one-time use thing.
         	$content .= "<script> \n" .
@@ -175,7 +175,7 @@ class ABJ_404_Solution_ShortCode {
         if (isset($_REQUEST[ABJ404_PP]) &&
                 isset($_REQUEST[ABJ404_PP][$cookieName])) {
             // Normalize URL using centralized function for consistency
-            $urlRequest = $f->normalizeURLForCacheKey($_REQUEST[ABJ404_PP][$cookieName]);
+            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($_REQUEST[ABJ404_PP][$cookieName]));
         }
 
         // Fallback: check for URL passed via query parameter

@@ -18,7 +18,13 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         }
 
         // Sanitize input
-        $requestedURL = isset($_POST['url']) ? sanitize_text_field($_POST['url']) : '';
+        $f = ABJ_404_Solution_Functions::getInstance();
+        if (isset($_POST['url'])) {
+            $rawUrl = function_exists('wp_unslash') ? wp_unslash($_POST['url']) : $_POST['url'];
+            $requestedURL = $f->normalizeUrlString($rawUrl);
+        } else {
+            $requestedURL = '';
+        }
 
         if (empty($requestedURL)) {
             wp_send_json(array('status' => 'error', 'message' => 'Missing URL parameter'));
@@ -26,7 +32,6 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         }
 
         // Normalize URL using centralized function for consistency
-        $f = ABJ_404_Solution_Functions::getInstance();
         $normalizedURL = $f->normalizeURLForCacheKey($requestedURL);
 
         $urlKey = md5($normalizedURL);

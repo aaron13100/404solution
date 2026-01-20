@@ -72,7 +72,7 @@ class ABJ_404_Solution_UserRequest {
         $urlParts = parse_url($urlToParse);
         if (!is_array($urlParts)) {
             $abj404logging->errorMessage('parse_url returned a non-array value. REQUEST_URI: "' . 
-                    urldecode($_SERVER['REQUEST_URI']) . '", parse_url result: "' . json_encode($urlParts) . '", ' .
+                    $f->normalizeUrlString($_SERVER['REQUEST_URI']) . '", parse_url result: "' . json_encode($urlParts) . '", ' .
                     'urlToParse result: ' . $urlToParse);
             return false;
         }

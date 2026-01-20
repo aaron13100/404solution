@@ -1094,20 +1094,20 @@ class ABJ_404_Solution_SpellChecker {
 			if ($link == null || trim($link) == '') {
 				$link = get_the_permalink($id);
 			}
-			return urldecode($link);
+			return $this->f->normalizeUrlString($link);
 
 		} else if ($rowType == 'tags') {
-			return urldecode(get_tag_link($id));
+			return $this->f->normalizeUrlString(get_tag_link($id));
 
 		} else if ($rowType == 'categories') {
-			return urldecode(get_category_link($id));
+			return $this->f->normalizeUrlString(get_category_link($id));
 
 		} else if ($rowType == 'image') {
 			$src = wp_get_attachment_image_src($id, "attached-image");
 			if ($src == false || !is_array($src)) {
 				return null;
 			}
-			return urldecode($src[0]);
+			return $this->f->normalizeUrlString($src[0]);
 
 		} else {
 			throw new \Exception("Unknown row type ...");
@@ -1261,7 +1261,7 @@ class ABJ_404_Solution_SpellChecker {
 
 			if (array_key_exists('url', $row)) {
 			    $the_permalink = isset($row['url']) ? $row['url'] : '';
-			    $the_permalink = urldecode($the_permalink);
+			    $the_permalink = $this->f->normalizeUrlString($the_permalink);
 			    $urlParts = parse_url($the_permalink);
 			    
 			    if (is_bool($urlParts)) {
@@ -1271,7 +1271,7 @@ class ABJ_404_Solution_SpellChecker {
 			if (!array_key_exists('url', $row) || (isset($urlParts) && is_bool($urlParts))) {
 			    $wasntReadyCount++;
 			    $the_permalink = $this->getPermalink($id, $rowType);
-			    $the_permalink = urldecode($the_permalink);
+			    $the_permalink = $this->f->normalizeUrlString($the_permalink);
 			    $urlParts = parse_url($the_permalink);
 			}
 			

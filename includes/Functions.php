@@ -204,6 +204,7 @@ abstract class ABJ_404_Solution_Functions {
      * @return string The normalized URL (query string stripped, esc_url applied)
      */
     function normalizeURLForCacheKey($url) {
+        $url = $this->normalizeUrlString($url);
         // Strip query string (everything after '?')
         $normalized = $this->regexReplace('\?.*', '', $url);
         // Apply esc_url for security and consistency
@@ -536,11 +537,13 @@ abstract class ABJ_404_Solution_Functions {
         	$permalink['status'] = 'trash';
         }
         
-        // decode anything that might be encoded to support utf8 characters
+        // Decode anything that might be encoded to support utf8 characters
         if (array_key_exists('link', $permalink)) {
-        	$permalink['link'] = urldecode($permalink['link']);
+        	$f = ABJ_404_Solution_Functions::getInstance();
+        	$permalink['link'] = $f->normalizeUrlString($permalink['link']);
         }
-        $permalink['title'] = array_key_exists('title', $permalink) ? urldecode($permalink['title']) : '';
+        $permalink['title'] = array_key_exists('title', $permalink) ?
+            ABJ_404_Solution_Functions::getInstance()->normalizeUrlString($permalink['title']) : '';
         
         return $permalink;
     }
@@ -786,8 +789,11 @@ abstract class ABJ_404_Solution_Functions {
         
         // sort the parts
         ksort($queryParts);
-        
-        return urldecode(http_build_query($queryParts));
+
+        $queryParts = $this->sanitizeUrlComponent($queryParts);
+        $built = http_build_query($queryParts, '', '&', PHP_QUERY_RFC3986);
+        $decoded = rawurldecode($built);
+        return $this->normalizeUrlString($decoded, array('decode' => false));
     }
     
     /** We have to remove any 'p=##' because it will cause a 404 otherwise.
@@ -805,7 +811,10 @@ abstract class ABJ_404_Solution_Functions {
         }
 
         // rebuild the string.
-        return urldecode(http_build_query($queryParts));
+        $queryParts = $this->sanitizeUrlComponent($queryParts);
+        $built = http_build_query($queryParts, '', '&', PHP_QUERY_RFC3986);
+        $decoded = rawurldecode($built);
+        return $this->normalizeUrlString($decoded, array('decode' => false));
     }
 
     /**

@@ -62,17 +62,17 @@ class ABJ_404_Solution_PluginLogic {
     	$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
     	$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
 
-    	$urlPath = parse_url(get_home_url(), PHP_URL_PATH);
-    	// Fix MEDIUM #1 (5th review): Distinguish between parse failure (false) and no path (null)
-    	if ($urlPath === false) {
-    		$this->logger->warn("Malformed home URL detected: " . get_home_url());
-    		$urlPath = '';
+        $urlPath = parse_url(get_home_url(), PHP_URL_PATH);
+        // Fix MEDIUM #1 (5th review): Distinguish between parse failure (false) and no path (null)
+        if ($urlPath === false) {
+            $this->logger->warn("Malformed home URL detected: " . get_home_url());
+            $urlPath = '';
     	} else if ($urlPath === null) {
     		$urlPath = '';
     	}
 
     	// Fix HIGH #2 (4th review): Decode subdirectory for consistency with runtime processing
-    	$decodedPath = rawurldecode(rtrim($urlPath, '/'));
+        $decodedPath = $this->f->normalizeUrlString(rtrim($urlPath, '/'));
     	// Fix HIGH #3 (4th review): Remove null bytes and control characters for security
     	$this->urlHomeDirectory = preg_replace('/[\x00-\x1F\x7F]/', '', $decodedPath);
     	$this->urlHomeDirectoryLength = $this->f->strlen($this->urlHomeDirectory);
@@ -540,7 +540,7 @@ class ABJ_404_Solution_PluginLogic {
         }
         $pageid = $query['p'];
         if (!empty($pageid)) {
-            $permalink = urldecode(get_permalink($pageid));
+            $permalink = $this->f->normalizeUrlString(get_permalink($pageid));
             $status = get_post_status($pageid);
             if (($permalink != false) && 
             	(in_array($status, array('publish', 'published')))) {
@@ -653,9 +653,7 @@ class ABJ_404_Solution_PluginLogic {
      */
     function setCookieWithPreviousRequest() {
 
-        $requested_url = urldecode($_SERVER['REQUEST_URI']);
-        // remove ridiculous non-printable characters
-        $requested_url = preg_replace('/[^\x20-\x7E]/', '', $requested_url);
+        $requested_url = $this->f->normalizeUrlString($_SERVER['REQUEST_URI']);
 
         // Security: Strip query string to avoid storing sensitive params (tokens, auth codes, etc.)
         $requested_url = preg_replace('/\?.*$/', '', $requested_url);
@@ -673,7 +671,7 @@ class ABJ_404_Solution_PluginLogic {
     		if (!isset($_COOKIE[$cookieName . '_UPDATE_URL']) ||
     				empty($_COOKIE[$cookieName . '_UPDATE_URL'])) {
     			// Also strip query string from UPDATE_URL for consistency
-    			$update_url = preg_replace('/\?.*$/', '', urldecode($_SERVER['REQUEST_URI']));
+    			$update_url = preg_replace('/\?.*$/', '', $this->f->normalizeUrlString($_SERVER['REQUEST_URI']));
     			setcookie($cookieName . '_UPDATE_URL', $update_url,
     				time() + (60 * 4), "/");
     		}

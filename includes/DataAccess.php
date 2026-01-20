@@ -1934,7 +1934,7 @@ class ABJ_404_Solution_DataAccess {
             }
 
             if (!empty($requestedUrlCharsetCached) && strpos(strtolower($requestedUrlCharsetCached), 'utf8') === false) {
-                    $requested_url = $this->f->selectivelyURLEncode($requested_url);
+                    $requested_url = $this->f->encodeUrlForLegacyMatch($requested_url);
 
                     // Avoid spamming logs on every redirect hit.
                     if (function_exists('get_transient') && function_exists('set_transient')) {
