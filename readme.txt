@@ -37,6 +37,7 @@ When a visitor hits a broken link like `/prodcut/awesome-item` (typo), most plug
 * **Regular expression support** for advanced redirect patterns
 * **Debug logging** to troubleshoot redirect behavior
 * **Performance optimized** for sites with 10,000+ pages
+* **Multilingual-friendly redirects** (TranslatePress, WPML, Polylang) to keep redirects in the request language
 
 = How It Works =
 
@@ -109,6 +110,10 @@ No, 404 Solution is highly optimized and has minimal performance impact for most
 * Efficient database queries with proper caching
 
 **Important:** For very high-traffic sites with thousands of simultaneous users, disable "Create automatic redirects" and don't use the shortcode to ensure optimal performance.
+
+= Does it work with WPML or Polylang? =
+
+Yes. 404 Solution keeps redirects in the same language as the request when WPML or Polylang is active. TranslatePress is also supported. Language is detected using the multilingual plugin’s URL/language APIs, and the matched redirect destination is translated to that language without changing the matching logic.
 
 = Does it work with WooCommerce? =
 
@@ -239,7 +244,6 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 = Version 3.1.10 (Jan 21, 2026) =
 * Improvement: Add WPML and Polylang-aware redirect translation based on the request language.
-* Test: Add WPML/Polylang integration coverage for language-aware redirects and edge cases.
 
 = Version 3.1.9 (Jan 20, 2026) =
 * FIX: Manual and external redirects now store and match Unicode paths consistently.
