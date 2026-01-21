@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 3.1.10 (Jan 21, 2026) ##
+* Improvement: Add WPML and Polylang-aware redirect translation based on the request language.
+* Test: Add WPML/Polylang integration coverage for language-aware redirects and edge cases.
+
 ## Version 3.1.9 (Jan 20, 2026) ##
 * FIX: Manual and external redirects now store and match Unicode paths consistently.
 * Improvement: URL normalization is now unified across redirects, suggestions, and logs.

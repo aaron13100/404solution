@@ -420,6 +420,20 @@ class ABJ_404_Solution_PluginLogic {
             $location = $translated;
         }
 
+        if ($translated === null || $translated === '') {
+            $translated = $this->wpmlRedirectUrl($location, $requestedURL);
+            if ($translated !== null && $translated !== '') {
+                $location = $translated;
+            }
+        }
+
+        if ($translated === null || $translated === '') {
+            $translated = $this->polylangRedirectUrl($location, $requestedURL);
+            if ($translated !== null && $translated !== '') {
+                $location = $translated;
+            }
+        }
+
         // Allow other multilingual plugins/themes to override redirect destinations.
         return apply_filters('abj404_translate_redirect_url', $location, $requestedURL);
     }
@@ -482,6 +496,124 @@ class ABJ_404_Solution_PluginLogic {
 
         if (function_exists('trp_get_current_language')) {
             $language = trp_get_current_language();
+            if (is_string($language) && $language !== '') {
+                return $language;
+            }
+        }
+
+        return '';
+    }
+
+    private function wpmlRedirectUrl($location, $requestedURL) {
+        if (!$this->wpmlIntegrationAvailable()) {
+            return null;
+        }
+
+        if (!$this->isLocalUrl($location)) {
+            return null;
+        }
+
+        $language = $this->getWpmlLanguageFromRequest($requestedURL);
+        if ($language === '') {
+            return null;
+        }
+
+        $translated = $this->wpmlTranslateUrl($location, $language);
+        if (!is_string($translated) || $translated === '' || $translated === $location) {
+            return null;
+        }
+
+        if (!$this->isLocalUrl($translated)) {
+            return null;
+        }
+
+        return $translated;
+    }
+
+    private function wpmlIntegrationAvailable() {
+        return function_exists('wpml_current_language') ||
+            has_filter('wpml_current_language') ||
+            has_filter('wpml_language_from_url') ||
+            has_filter('wpml_permalink');
+    }
+
+    private function wpmlTranslateUrl($url, $language) {
+        if (has_filter('wpml_permalink')) {
+            return apply_filters('wpml_permalink', $url, $language);
+        }
+
+        return null;
+    }
+
+    private function getWpmlLanguageFromRequest($requestedURL) {
+        $fullRequestedUrl = $this->buildFullUrlFromRequest($requestedURL);
+
+        if (has_filter('wpml_language_from_url')) {
+            $language = apply_filters('wpml_language_from_url', '', $fullRequestedUrl);
+            if (is_string($language) && $language !== '') {
+                return $language;
+            }
+        }
+
+        if (function_exists('wpml_current_language')) {
+            $language = wpml_current_language();
+            if (is_string($language) && $language !== '') {
+                return $language;
+            }
+        }
+
+        if (has_filter('wpml_current_language')) {
+            $language = apply_filters('wpml_current_language', null);
+            if (is_string($language) && $language !== '') {
+                return $language;
+            }
+        }
+
+        return '';
+    }
+
+    private function polylangRedirectUrl($location, $requestedURL) {
+        if (!$this->polylangIntegrationAvailable()) {
+            return null;
+        }
+
+        if (!$this->isLocalUrl($location)) {
+            return null;
+        }
+
+        $language = $this->getPolylangLanguageFromRequest($requestedURL);
+        if ($language === '') {
+            return null;
+        }
+
+        $translated = $this->polylangTranslateUrl($location, $language);
+        if (!is_string($translated) || $translated === '' || $translated === $location) {
+            return null;
+        }
+
+        if (!$this->isLocalUrl($translated)) {
+            return null;
+        }
+
+        return $translated;
+    }
+
+    private function polylangIntegrationAvailable() {
+        return function_exists('pll_current_language') ||
+            function_exists('pll_translate_url');
+    }
+
+    private function polylangTranslateUrl($url, $language) {
+        if (function_exists('pll_translate_url')) {
+            return pll_translate_url($url, $language);
+        }
+
+        return null;
+    }
+
+    private function getPolylangLanguageFromRequest($requestedURL) {
+        if (function_exists('pll_current_language')) {
+            $language = pll_current_language();
             if (is_string($language) && $language !== '') {
                 return $language;
             }

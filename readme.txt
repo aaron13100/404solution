@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.1.9
+Stable tag: 3.1.10
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -236,6 +236,10 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.1.10 (Jan 21, 2026) =
+* Improvement: Add WPML and Polylang-aware redirect translation based on the request language.
+* Test: Add WPML/Polylang integration coverage for language-aware redirects and edge cases.
 
 = Version 3.1.9 (Jan 20, 2026) =
 * FIX: Manual and external redirects now store and match Unicode paths consistently.
