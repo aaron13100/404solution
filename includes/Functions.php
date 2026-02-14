@@ -1,11 +1,33 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Static functions that can be used from anywhere.  */
 abstract class ABJ_404_Solution_Functions {
     
     private static $instance = null;
     
     public static function getInstance() {
+        if (self::$instance !== null) {
+            return self::$instance;
+        }
+
+        // If the DI container is initialized, prefer it.
+        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+            try {
+                $c = ABJ_404_Solution_ServiceContainer::getInstance();
+                if (is_object($c) && method_exists($c, 'has') && $c->has('functions')) {
+                    self::$instance = $c->get('functions');
+                    return self::$instance;
+                }
+            } catch (Throwable $e) {
+                // fall back to legacy singleton below
+            }
+        }
+
         if (self::$instance == null) {
             if (extension_loaded('mbstring')) { 
                 self::$instance = new ABJ_404_Solution_FunctionsMBString();

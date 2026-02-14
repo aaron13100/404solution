@@ -39,6 +39,27 @@ msgstr "Saving..."
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
 msgstr "Could not save settings - missing security token. The wizard may appear again on next visit."
 
+msgid "404 Solution Logs"
+msgstr "404 Solution Logs"
+
+msgid "Timestamp"
+msgstr "Timestamp"
+
+msgid "Requested URL"
+msgstr "Requested URL"
+
+msgid "Destination URL"
+msgstr "Destination URL"
+
+msgid "Some items could not be anonymized."
+msgstr "Some items could not be anonymized."
+
+msgid "Rate limit exceeded. Please try again later."
+msgstr "Rate limit exceeded. Please try again later."
+
+msgid "Invalid nonce. Please reload the page."
+msgstr "Invalid nonce. Please reload the page."
+
 msgid "Could not save dismissal. The wizard may appear again on next visit."
 msgstr "Could not save dismissal. The wizard may appear again on next visit."
 

@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
  * everything $wpdb related.
@@ -41,6 +46,23 @@ class ABJ_404_Solution_DataAccess {
     }
 
     public static function getInstance() {
+        if (self::$instance !== null) {
+            return self::$instance;
+        }
+
+        // If the DI container is initialized, prefer it.
+        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+            try {
+                $c = ABJ_404_Solution_ServiceContainer::getInstance();
+                if (is_object($c) && method_exists($c, 'has') && $c->has('data_access')) {
+                    self::$instance = $c->get('data_access');
+                    return self::$instance;
+                }
+            } catch (Throwable $e) {
+                // fall back to legacy singleton below
+            }
+        }
+
         if (self::$instance == null) {
             // For backward compatibility, create with no arguments
             // The constructor will use getInstance() for dependencies
@@ -125,12 +147,22 @@ class ABJ_404_Solution_DataAccess {
     }
 
     function getLatestPluginVersion() {
+        // Cache version info to avoid repeated slow wordpress.org API calls.
+        $cacheKey = 'abj404_latest_plugin_version_info';
+        if (function_exists('get_transient')) {
+            $cached = get_transient($cacheKey);
+            if (is_array($cached) && isset($cached['version'])) {
+                return $cached;
+            }
+        }
+
         if (!function_exists('plugins_api')) {
               require_once(ABSPATH . 'wp-admin/includes/plugin-install.php');
         }
         if (!function_exists('plugins_api')) {
             $this->logger->infoMessage("I couldn't find the plugins_api function to check for the latest version.");
-            return ABJ404_VERSION;
+            $fallback = array('version' => ABJ404_VERSION, 'last_updated' => null);
+            return $fallback;
         }
 
         $pluginSlug = dirname(ABJ404_NAME);
@@ -153,10 +185,16 @@ class ABJ_404_Solution_DataAccess {
             $this->logger->infoMessage("There was an API issue checking the latest plugin version ("
                     . $api_error . ")");
 
-            return array('version' => ABJ404_VERSION, 'last_updated' => null);
+            $fallback = array('version' => ABJ404_VERSION, 'last_updated' => null);
+            return $fallback;
         }
 
-        return array('version' => $call_api->version, 'last_updated' => $call_api->last_updated);
+        $result = array('version' => $call_api->version, 'last_updated' => $call_api->last_updated);
+        if (function_exists('set_transient')) {
+            $ttl = defined('DAY_IN_SECONDS') ? DAY_IN_SECONDS : 86400;
+            set_transient($cacheKey, $result, $ttl);
+        }
+        return $result;
     }
     
     /** Check wordpress.org for the latest version of this plugin. Return true if the latest version is installed, 
@@ -229,11 +267,13 @@ class ABJ_404_Solution_DataAccess {
         global $wpdb;
         
         $replacements = array();
-        foreach ($wpdb->tables as $tableName) {
+        $tables = (isset($wpdb->tables) && is_array($wpdb->tables)) ? $wpdb->tables : array();
+        foreach ($tables as $tableName) {
             $replacements['{wp_' . $tableName . '}'] = $wpdb->prefix . $tableName;
         }
-        $replacements['{wp_users}'] = $wpdb->users;
-        $replacements['{wp_prefix}'] = $wpdb->prefix;
+        // wpdb properties are not guaranteed on mocks; provide safe fallbacks.
+        $replacements['{wp_users}'] = $wpdb->users ?? ($wpdb->prefix . 'users');
+        $replacements['{wp_prefix}'] = $wpdb->prefix ?? 'wp_';
         $replacements['{wp_prefix_lower}'] = $this->getLowercasePrefix();
         
         // wp database table replacements
@@ -257,7 +297,7 @@ class ABJ_404_Solution_DataAccess {
      */
     public function getLowercasePrefix() {
         global $wpdb;
-        return $this->f->strtolower($wpdb->prefix);
+        return $this->f->strtolower($wpdb->prefix ?? 'wp_');
     }
 
     /**
@@ -339,11 +379,11 @@ class ABJ_404_Solution_DataAccess {
        	$result['rows'] = $wpdb->get_results($query, ARRAY_A);
         
         $result['elapsed_time'] = $timer->stop();
-        $result['last_error'] = $wpdb->last_error;
-        $result['last_result'] = $wpdb->last_result;
-        $result['rows_affected'] = $wpdb->rows_affected;
+        $result['last_error'] = $wpdb->last_error ?? '';
+        $result['last_result'] = $wpdb->last_result ?? array();
+        $result['rows_affected'] = $wpdb->rows_affected ?? 0;
         
-        if ($wpdb->dbh != null) {
+        if (isset($wpdb->dbh) && $wpdb->dbh != null && isset($wpdb->rows_affected)) {
 	        try {
 	            $result['rows_affected'] = $wpdb->rows_affected;
 	        } catch (Exception $ex) {
@@ -351,7 +391,7 @@ class ABJ_404_Solution_DataAccess {
 	    	}
         }
         
-        $result['insert_id'] = $wpdb->insert_id;
+        $result['insert_id'] = $wpdb->insert_id ?? 0;
         
         if (!is_array($result['rows'])) {
             // In production (WP_DEBUG off), only log SQL filename to avoid PII exposure
@@ -1875,6 +1915,116 @@ class ABJ_404_Solution_DataAccess {
 
         $results = $this->queryAndGetResults($query);
         return $results['rows'];
+    }
+
+    /**
+     * Privacy exporter/eraser support: fetch logsv2 IDs for a given lookup value (usually a username).
+     *
+     * @param string $lkupValue
+     * @param int $page 1-based page
+     * @param int $perPage
+     * @return int[]
+     */
+    public function getLogsv2IdsForLookupValue($lkupValue, $page = 1, $perPage = 100) {
+        global $wpdb;
+
+        $lkupValue = is_string($lkupValue) ? trim($lkupValue) : '';
+        if ($lkupValue === '') {
+            return array();
+        }
+
+        $page = max(1, absint($page));
+        $perPage = max(1, min(500, absint($perPage)));
+        $offset = ($page - 1) * $perPage;
+
+        $logsTable = $this->doTableNameReplacements("{wp_abj404_logsv2}");
+        $lookupTable = $this->doTableNameReplacements("{wp_abj404_lookup}");
+
+        $sql = "SELECT l.id
+            FROM `{$logsTable}` l
+            INNER JOIN `{$lookupTable}` u ON l.username = u.id
+            WHERE u.lkup_value = %s
+            ORDER BY l.id DESC
+            LIMIT %d OFFSET %d";
+
+        $prepared = $wpdb->prepare($sql, $lkupValue, $perPage, $offset);
+        $rows = $wpdb->get_results($prepared, ARRAY_A);
+
+        $ids = array();
+        foreach ((array)$rows as $row) {
+            if (isset($row['id'])) {
+                $ids[] = absint($row['id']);
+            }
+        }
+        return array_values(array_filter($ids));
+    }
+
+    /**
+     * Privacy exporter support: fetch logsv2 rows for a given lookup value (usually a username).
+     *
+     * @param string $lkupValue
+     * @param int $page
+     * @param int $perPage
+     * @return array
+     */
+    public function getLogsv2RowsForLookupValue($lkupValue, $page = 1, $perPage = 50) {
+        global $wpdb;
+
+        $ids = $this->getLogsv2IdsForLookupValue($lkupValue, $page, $perPage);
+        if (empty($ids)) {
+            return array();
+        }
+
+        $logsTable = $this->doTableNameReplacements("{wp_abj404_logsv2}");
+
+        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+        $sql = "SELECT id, timestamp, user_ip, referrer, requested_url, requested_url_detail, dest_url
+            FROM `{$logsTable}`
+            WHERE id IN ({$placeholders})
+            ORDER BY id DESC";
+
+        // WPDB::prepare historically varies in how it accepts arrays; use varargs for compatibility.
+        $prepared = call_user_func_array(array($wpdb, 'prepare'), array_merge(array($sql), $ids));
+        return (array)$wpdb->get_results($prepared, ARRAY_A);
+    }
+
+    /**
+     * Privacy eraser support: anonymize a set of logsv2 rows by IDs.
+     *
+     * We preserve non-user-identifying fields so site owners can still debug patterns,
+     * while removing IP/username/referrer detail.
+     *
+     * @param int[] $ids
+     * @return bool
+     */
+    public function anonymizeLogsv2RowsByIds($ids) {
+        global $wpdb;
+
+        if (!is_array($ids) || empty($ids)) {
+            return true;
+        }
+
+        $ids = array_values(array_filter(array_map('absint', $ids)));
+        if (empty($ids)) {
+            return true;
+        }
+
+        $logsTable = $this->doTableNameReplacements("{wp_abj404_logsv2}");
+        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+
+        $sql = "UPDATE `{$logsTable}`
+            SET user_ip = %s,
+                referrer = NULL,
+                requested_url_detail = NULL,
+                username = NULL
+            WHERE id IN ({$placeholders})";
+
+        $params = array_merge(array('(Anonymized)'), $ids);
+        $prepared = call_user_func_array(array($wpdb, 'prepare'), array_merge(array($sql), $params));
+        $result = $wpdb->query($prepared);
+
+        // wpdb::query returns false on error.
+        return ($result !== false);
     }
     
     /** 

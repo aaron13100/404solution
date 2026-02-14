@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 class ABJ_404_Solution_SynchronizationUtils {
 	
 	/** A prefix for keys used for synchronization methods.

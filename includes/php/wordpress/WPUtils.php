@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 class ABJ_404_Solution_WPUtils {
 	
 	/** @var array */
@@ -208,12 +213,16 @@ class ABJ_404_Solution_WPUtils {
 			
 			// get the local file path by changing the URL.
 			$correctedFilePath = str_replace(ABJ404_URL, ABJ404_PATH, $src);
-			// get the modified date. as the version.
-			$ver = date('Y-m-d_H:i:s', filemtime($correctedFilePath));
+			// get the modified date as the version (guard missing files in tests/odd installs).
+			if (is_string($correctedFilePath) && is_file($correctedFilePath)) {
+				$mtime = @filemtime($correctedFilePath);
+				if ($mtime !== false) {
+					$ver = date('Y-m-d_H:i:s', $mtime);
+				}
+			}
 		}
 			
 		return $ver;
 	}
 	
 }
-

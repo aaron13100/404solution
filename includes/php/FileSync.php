@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 class ABJ_404_Solution_FileSync {
 	
 	private static $instance = null;

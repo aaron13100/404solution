@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Finds similar pages. 
  * Finds search suggestions. */
 
@@ -97,6 +102,23 @@ class ABJ_404_Solution_SpellChecker {
 	}
 
 	public static function getInstance() {
+		if (self::$instance !== null) {
+			return self::$instance;
+		}
+
+		// If the DI container is initialized, prefer it.
+		if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+			try {
+				$c = ABJ_404_Solution_ServiceContainer::getInstance();
+				if (is_object($c) && method_exists($c, 'has') && $c->has('spell_checker')) {
+					self::$instance = $c->get('spell_checker');
+					return self::$instance;
+				}
+			} catch (Throwable $e) {
+				// fall back
+			}
+		}
+
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_SpellChecker();
 		}
@@ -184,9 +206,15 @@ class ABJ_404_Solution_SpellChecker {
 
 	function savePostHandler($post_id, $post, $update, $saveOrDelete) {
 		$options = $this->logic->getOptions();
+		// Defensive: some callers/tests may pass null; WordPress normally provides a WP_Post.
+		if (!is_object($post) || !isset($post->post_type) || !isset($post->post_status) || !isset($post->post_name)) {
+			$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
+				": Invalid post object for ID: " . $post_id . " (skipped).");
+			return;
+		}
 		$postType = $post->post_type;
 
-		$acceptedPostTypes = $this->f->explodeNewline($options['recognized_post_types']);
+		$acceptedPostTypes = $this->f->explodeNewline($options['recognized_post_types'] ?? '');
 
 		// 3 options: save a new page, save an existing page (update), delete a page.
 		$deleteSpellingCache = false;

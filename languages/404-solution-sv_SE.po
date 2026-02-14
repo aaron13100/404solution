@@ -2224,3 +2224,25 @@ msgstr "Kräv minsta matchningskvalitet"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Visa endast förslag som nära matchar den begärda URL:en. Detta filtrerar bort svaga matchningar som kan förvirra besökare."
+
+
+msgid "404 Solution Logs"
+msgstr "404 Solution-loggar"
+
+msgid "Timestamp"
+msgstr "Tidsstampel"
+
+msgid "Requested URL"
+msgstr "Begard URL"
+
+msgid "Destination URL"
+msgstr "Destinations-URL"
+
+msgid "Some items could not be anonymized."
+msgstr "Vissa objekt kunde inte anonymiseras."
+
+msgid "Rate limit exceeded. Please try again later."
+msgstr "Hastighetsgransen har uppnatts. Forsok igen senare."
+
+msgid "Invalid nonce. Please reload the page."
+msgstr "Ogiltig nonce. Ladda om sidan."

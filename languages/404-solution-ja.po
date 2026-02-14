@@ -2232,3 +2232,25 @@ msgstr "最小一致品質を要求する"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "リクエストされたURLに近い提案のみを表示します。これにより、訪問者を混乱させる可能性のある弱い一致がフィルタリングされます。"
+
+
+msgid "404 Solution Logs"
+msgstr "404 Solution ログ"
+
+msgid "Timestamp"
+msgstr "タイムスタンプ"
+
+msgid "Requested URL"
+msgstr "要求されたURL"
+
+msgid "Destination URL"
+msgstr "転送先URL"
+
+msgid "Some items could not be anonymized."
+msgstr "一部の項目を匿名化できませんでした。"
+
+msgid "Rate limit exceeded. Please try again later."
+msgstr "レート制限を超えました。しばらくしてからもう一度お試しください。"
+
+msgid "Invalid nonce. Please reload the page."
+msgstr "無効なnonceです。ページを再読み込みしてください。"

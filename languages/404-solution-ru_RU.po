@@ -2228,3 +2228,25 @@ msgstr "Требовать минимальное качество совпад�
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Показывать только предложения, которые точно соответствуют запрошенному URL. Это отфильтровывает слабые совпадения, которые могут запутать посетителей."
+
+
+msgid "404 Solution Logs"
+msgstr "Журналы 404 Solution"
+
+msgid "Timestamp"
+msgstr "Метка времени"
+
+msgid "Requested URL"
+msgstr "Запрошенный URL"
+
+msgid "Destination URL"
+msgstr "URL назначения"
+
+msgid "Some items could not be anonymized."
+msgstr "Некоторые элементы не удалось анонимизировать."
+
+msgid "Rate limit exceeded. Please try again later."
+msgstr "Превышен лимит запросов. Попробуйте позже."
+
+msgid "Invalid nonce. Please reload the page."
+msgstr "Недопустимый nonce. Перезагрузите страницу."

@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Turns data into an html display and vice versa.
  * Houses all displayed pages. Logs, options page, captured 404s, stats, etc. */
 
@@ -37,6 +42,23 @@ class ABJ_404_Solution_View {
 	}
 
 	public static function getInstance() {
+		if (self::$instance !== null) {
+			return self::$instance;
+		}
+
+		// If the DI container is initialized, prefer it.
+		if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+			try {
+				$c = ABJ_404_Solution_ServiceContainer::getInstance();
+				if (is_object($c) && method_exists($c, 'has') && $c->has('view')) {
+					self::$instance = $c->get('view');
+					return self::$instance;
+				}
+			} catch (Throwable $e) {
+				// fall back
+			}
+		}
+
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_View();
 		}
@@ -51,6 +73,80 @@ class ABJ_404_Solution_View {
 	 */
 	private function getCheckedAttr($options, $key) {
 		return (array_key_exists($key, $options) && $options[$key] == '1') ? " checked" : "";
+	}
+
+	private function getFallbackOptionDefaults() {
+		return array(
+			'default_redirect' => '301',
+			'DB_VERSION' => defined('ABJ404_VERSION') ? ABJ404_VERSION : '',
+			'menuLocation' => 'optionsLevel',
+			'admin_theme' => 'default',
+			'capture_deletion' => '0',
+			'admin_notification' => '0',
+			'maximum_log_disk_usage' => '0',
+			'admin_notification_email' => '',
+			'suggest_cats' => '0',
+			'suggest_tags' => '0',
+			'update_suggest_url' => '0',
+			'suggest_max' => '5',
+			'suggest_title' => '',
+			'suggest_before' => '',
+			'suggest_after' => '',
+			'suggest_entrybefore' => '',
+			'suggest_entryafter' => '',
+			'suggest_noresults' => '',
+			'ignore_doprocess' => '',
+			'ignore_dontprocess' => '',
+			'recognized_post_types' => 'page',
+			'recognized_categories' => '',
+			'folders_files_ignore' => '',
+			'suggest_regex_exclusions' => '',
+			'plugin_admin_users' => '',
+			'auto_score' => '0',
+			'template_redirect_priority' => '9',
+			'days_wait_before_major_update' => '0',
+			'excludePages[]' => '',
+			// These are used by other option cards; harmless defaults.
+			'auto_deletion' => '0',
+			'manual_deletion' => '0',
+		);
+	}
+
+	private function normalizeOptionsForView($options) {
+		$options = is_array($options) ? $options : array();
+		return array_merge($this->getFallbackOptionDefaults(), $options);
+	}
+
+	/**
+	 * Get plugin options merged with defaults.
+	 *
+	 * Some tests use partial/mocked PluginLogic instances; this method must not
+	 * assume getDefaultOptions() is available or safe to call.
+	 *
+	 * @return array
+	 */
+	private function getOptionsWithDefaults() {
+		$options = $this->logic->getOptions();
+		if (!is_array($options)) {
+			$options = array();
+		}
+
+		$defaults = array();
+		if (is_object($this->logic) && method_exists($this->logic, 'getDefaultOptions')) {
+			try {
+				$defaults = $this->logic->getDefaultOptions();
+			} catch (Throwable $e) {
+				$defaults = array();
+			}
+		}
+
+		$defaults = is_array($defaults) && !empty($defaults)
+			? array_merge($this->getFallbackOptionDefaults(), $defaults)
+			: $this->getFallbackOptionDefaults();
+
+		$options = array_merge($defaults, $options);
+
+		return $options;
 	}
 
 	/**
@@ -90,16 +186,16 @@ class ABJ_404_Solution_View {
 		// Sanitize $sub for safe use in URLs (prevents XSS via quote injection)
 		$sub = rawurlencode($sub);
 
-		// ID handling differs between pages
-		if ($isCapturedPage) {
-			// Captured page uses raw ID for most links
-			$id = $row['id'];
-			$logsId = $row['logsid'];
-		} else {
-			// Redirects page uses absint for all IDs
-			$id = absint($row['id']);
-			$logsId = absint($row['logsid']);
-		}
+			// ID handling differs between pages
+			if ($isCapturedPage) {
+				// Captured page uses raw ID for most links
+				$id = $row['id'] ?? 0;
+				$logsId = $row['logsid'] ?? 0;
+			} else {
+				// Redirects page uses absint for all IDs
+				$id = absint($row['id'] ?? 0);
+				$logsId = absint($row['logsid'] ?? 0);
+			}
 
 		// Build base links
 		$result['editlink'] = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $id . "&source_page=" . $sub;
@@ -109,8 +205,8 @@ class ABJ_404_Solution_View {
 			// Captured page - use the dynamic $sub parameter only once
 			$result['trashlink'] = "?page=" . ABJ404_PP . "&id=" . $id .
 				"&subpage=" . $sub;
-			$result['ajaxTrashLink'] = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id']) .
-				"&subpage=" . $sub;
+				$result['ajaxTrashLink'] = "admin-ajax.php?action=trashLink" . "&id=" . absint($row['id'] ?? 0) .
+					"&subpage=" . $sub;
 			$result['deletelink'] = "?page=" . ABJ404_PP . "&remove=1&id=" . $id .
 				"&subpage=" . $sub;
 		} else {
@@ -881,16 +977,16 @@ class ABJ_404_Solution_View {
         		echo "</div>";
         	}
             
-        } else {
-        	echo "Non-admin request to view debug file.";
-        	$current_user = wp_get_current_user();
-        	$userInfo = "Login: " . $current_user->user_login . ", display name: " . 
-         		$current_user->display_name . ", Email: " . $current_user->user_email . 
-         		", UserID: " . $current_user->ID;
-            $this->logger->infoMessage("Non-admin request to view debug file. User info: " .
-            	$userInfo);
-        }
-    }
+	        } else {
+	        	echo "Non-admin request to view debug file.";
+	        	$current_user = wp_get_current_user();
+	        	$userInfo = "Login: " . ($current_user->user_login ?? '') . ", display name: " .
+	         		($current_user->display_name ?? '') . ", Email: " . ($current_user->user_email ?? '') .
+	         		", UserID: " . ($current_user->ID ?? '');
+	            $this->logger->infoMessage("Non-admin request to view debug file. User info: " .
+	            	$userInfo);
+	        }
+	    }
     
     function echoFileContents($fileName) {
 
@@ -998,18 +1094,15 @@ class ABJ_404_Solution_View {
             $abj404view = $this;
         }
 
-        $options = $this->logic->getOptions();
-        if (!is_array($options)) {
-            $options = [];
-        }
+        $options = $this->getOptionsWithDefaults();
 
         // Get the current user's settings mode preference
         $settingsMode = $this->logic->getSettingsMode();
 
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
         $helperFunctions = ABJ_404_Solution_Functions::getInstance();
-        $urlParts = parse_url($helperFunctions->normalizeUrlString($_SERVER['REQUEST_URI']));
-        $currentURL = $urlParts['path'];
+        $urlParts = parse_url($helperFunctions->normalizeUrlString($_SERVER['REQUEST_URI'] ?? ''));
+        $currentURL = (is_array($urlParts) && isset($urlParts['path'])) ? $urlParts['path'] : '';
         if (is_array($options) && isset($options['menuLocation']) &&
                 $options['menuLocation'] == 'settingsLevel') {
             if ($this->f->strpos($currentURL, 'options-general.php') !== false) {
@@ -1145,7 +1238,7 @@ class ABJ_404_Solution_View {
      */
     function echoAdminEditRedirectPage() {
 
-        $options = $this->logic->getOptions();
+        $options = $this->getOptionsWithDefaults();
 
         // Modern page container
         echo '<div class="abj404-edit-page">';
@@ -1187,6 +1280,7 @@ class ABJ_404_Solution_View {
         }
 
         $recnum = null;
+        $recnums_multiple = null;
         if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {
             $this->logger->debugMessage("Edit redirect page. GET ID: " .
                     wp_kses_post(json_encode($_GET['id'])));
@@ -1277,33 +1371,36 @@ class ABJ_404_Solution_View {
             $redirect = reset($redirects_multiple);
             
         } else {
-            echo "Error: Invalid ID Number(s) specified! (id: " . $recnum . ", ids: " . $recnums_multiple . ")";
-            $this->logger->debugMessage("Error: Invalid ID Number(s) specified! (id: " . $recnum . 
-                    ", ids: " . $recnums_multiple . ")");
+            $idsText = is_array($recnums_multiple) ? implode(',', $recnums_multiple) : (string)$recnums_multiple;
+            echo "Error: Invalid ID Number(s) specified! (id: " . esc_html((string)$recnum) . ", ids: " . esc_html($idsText) . ")";
+            $this->logger->debugMessage("Error: Invalid ID Number(s) specified! (id: " . esc_html((string)$recnum) .
+                    ", ids: " . esc_html($idsText) . ")");
             return;
         }
         
         $final = "";
         $pageIDAndType = "";
-        if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
-            $final = $redirect['final_dest'];
+        $redirectType = $redirect['type'] ?? null;
+        $redirectFinalDest = $redirect['final_dest'] ?? 0;
+        if ($redirectType == ABJ404_TYPE_EXTERNAL) {
+            $final = $redirectFinalDest;
             $pageIDAndType = ABJ404_TYPE_EXTERNAL . "|" . ABJ404_TYPE_EXTERNAL;
             
-        } else if ($redirect['final_dest'] != 0) {
+        } else if ($redirectFinalDest != 0) {
             // if a destination has been specified then let's fill it in.
-            $pageIDAndType = $redirect['final_dest'] . "|" . $redirect['type'];
+            $pageIDAndType = $redirectFinalDest . "|" . $redirectType;
             
-        } else if ($redirect['type'] == ABJ404_TYPE_404_DISPLAYED) {
+        } else if ($redirectType == ABJ404_TYPE_404_DISPLAYED) {
         	$pageIDAndType = ABJ404_TYPE_404_DISPLAYED . "|" . ABJ404_TYPE_404_DISPLAYED;
         }
         
-        if ($redirect['code'] == "") {
-            $codeSelected = $options['default_redirect'];
+        if (($redirect['code'] ?? '') == "") {
+            $codeSelected = $options['default_redirect'] ?? '301';
         } else {
-            $codeSelected = $redirect['code'];
+            $codeSelected = $redirect['code'] ?? '';
         }
         
-        $pageTitle = $this->logic->getPageTitleFromIDAndType($pageIDAndType, $redirect['final_dest']);
+        $pageTitle = $this->logic->getPageTitleFromIDAndType($pageIDAndType, $redirectFinalDest);
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
                 "/html/addManualRedirectPageSearchDropdown.html");
         $html = $this->f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
@@ -1368,7 +1465,8 @@ class ABJ_404_Solution_View {
             $content[] = ">";
             
             // insert some spaces for child pages.
-            for ($i = 0; $i < $row->depth; $i++) {
+            $depth = isset($row->depth) ? intval($row->depth) : 0;
+            for ($i = 0; $i < $depth; $i++) {
                 $content[] = "&nbsp;&nbsp;&nbsp;";
             }
             
@@ -1482,19 +1580,19 @@ class ABJ_404_Solution_View {
         // Content tabs (Captured, Ignored, Later, Trash)
         echo '<div class="abj404-content-tabs">';
         $baseUrl = "?page=" . ABJ404_PP . "&subpage=abj404_captured";
-        $baseUrl .= "&orderby=" . sanitize_text_field($tableOptions['orderby']);
-        $baseUrl .= "&order=" . sanitize_text_field($tableOptions['order']);
+        $baseUrl .= "&orderby=" . sanitize_text_field($tableOptions['orderby'] ?? 'url');
+        $baseUrl .= "&order=" . sanitize_text_field($tableOptions['order'] ?? 'ASC');
 
         // All tab
-        $this->echoContentTab('abj404_captured', 0, __('All', '404-solution'), $counts['all'], $tableOptions);
+        $this->echoContentTab('abj404_captured', 0, __('All', '404-solution'), $counts['all'] ?? 0, $tableOptions);
         // Captured tab
-        $this->echoContentTab('abj404_captured', ABJ404_STATUS_CAPTURED, __('Captured', '404-solution'), $counts['captured'], $tableOptions);
+        $this->echoContentTab('abj404_captured', ABJ404_STATUS_CAPTURED, __('Captured', '404-solution'), $counts['captured'] ?? 0, $tableOptions);
         // Ignored tab
-        $this->echoContentTab('abj404_captured', ABJ404_STATUS_IGNORED, __('Ignored', '404-solution'), $counts['ignored'], $tableOptions);
+        $this->echoContentTab('abj404_captured', ABJ404_STATUS_IGNORED, __('Ignored', '404-solution'), $counts['ignored'] ?? 0, $tableOptions);
         // Organize Later tab
-        $this->echoContentTab('abj404_captured', ABJ404_STATUS_LATER, __('Later', '404-solution'), $counts['later'], $tableOptions);
+        $this->echoContentTab('abj404_captured', ABJ404_STATUS_LATER, __('Later', '404-solution'), $counts['later'] ?? 0, $tableOptions);
         // Trash tab
-        $this->echoContentTab('abj404_captured', ABJ404_TRASH_FILTER, __('Trash', '404-solution'), $counts['trash'], $tableOptions);
+        $this->echoContentTab('abj404_captured', ABJ404_TRASH_FILTER, __('Trash', '404-solution'), $counts['trash'] ?? 0, $tableOptions);
         echo '</div>';
 
         // Filter bar with server-side search
@@ -1522,7 +1620,8 @@ class ABJ_404_Solution_View {
         echo '</div>';
 
         // Empty trash button
-        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+        $currentFilter = $tableOptions['filter'] ?? 0;
+        if ($currentFilter == ABJ404_TRASH_FILTER) {
             $eturl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ABJ404_TRASH_FILTER;
             $eturl = wp_nonce_url($eturl, 'abj404_bulkProcess');
             echo '<a href="' . esc_url($eturl) . '&abj404action=emptyCapturedTrash" class="button abj404-empty-trash-btn" onclick="return confirm(\'' . esc_js(__('Are you sure you want to permanently delete all items in trash?', '404-solution')) . '\');">';
@@ -1538,16 +1637,16 @@ class ABJ_404_Solution_View {
         echo '<div class="abj404-bulk-buttons">';
 
         // Bulk action buttons based on current filter
-        if ($tableOptions['filter'] != ABJ404_STATUS_CAPTURED) {
+        if ($currentFilter != ABJ404_STATUS_CAPTURED) {
             echo '<button type="submit" name="abj404action" value="bulkcaptured" form="bulk-action-form" class="button">' . __('Mark Captured', '404-solution') . '</button>';
         }
-        if ($tableOptions['filter'] != ABJ404_STATUS_IGNORED) {
+        if ($currentFilter != ABJ404_STATUS_IGNORED) {
             echo '<button type="submit" name="abj404action" value="bulkignore" form="bulk-action-form" class="button">' . __('Mark Ignored', '404-solution') . '</button>';
         }
-        if ($tableOptions['filter'] != ABJ404_STATUS_LATER) {
+        if ($currentFilter != ABJ404_STATUS_LATER) {
             echo '<button type="submit" name="abj404action" value="bulklater" form="bulk-action-form" class="button">' . __('Organize Later', '404-solution') . '</button>';
         }
-        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+        if ($currentFilter != ABJ404_TRASH_FILTER) {
             echo '<button type="submit" name="abj404action" value="bulktrash" form="bulk-action-form" class="button">' . __('Move to Trash', '404-solution') . '</button>';
         }
         echo '<button type="submit" name="abj404action" value="editRedirect" form="bulk-action-form" class="button">' . __('Create Redirect', '404-solution') . '</button>';
@@ -1590,17 +1689,19 @@ class ABJ_404_Solution_View {
 
         // Generate sortable column headers
         foreach ($columns as $key => $col) {
-            $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . $tableOptions['filter'];
+            $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ($tableOptions['filter'] ?? 0);
             $sortUrl .= "&orderby=" . $col['orderby'];
-            $newOrder = ($tableOptions['orderby'] == $col['orderby'] && $tableOptions['order'] == 'ASC') ? 'DESC' : 'ASC';
+            $currentOrderby = $tableOptions['orderby'] ?? 'url';
+            $currentOrder = $tableOptions['order'] ?? 'ASC';
+            $newOrder = ($currentOrderby == $col['orderby'] && $currentOrder == 'ASC') ? 'DESC' : 'ASC';
             $sortUrl .= "&order=" . $newOrder;
 
             $sortClass = '';
             $sortIndicator = '';
             $extraClass = isset($col['class']) ? ' ' . esc_attr($col['class']) : '';
-            if ($tableOptions['orderby'] == $col['orderby']) {
-                $sortClass = 'sorted ' . strtolower($tableOptions['order']) . $extraClass;
-                $sortIndicator = $tableOptions['order'] == 'ASC' ? ' ↑' : ' ↓';
+            if ($currentOrderby == $col['orderby']) {
+                $sortClass = 'sorted ' . strtolower($currentOrder) . $extraClass;
+                $sortIndicator = $currentOrder == 'ASC' ? ' ↑' : ' ↓';
             } else {
                 $sortClass = trim($extraClass);
             }
@@ -1635,9 +1736,9 @@ class ABJ_404_Solution_View {
         foreach ($rows as $row) {
             $displayed++;
 
-            $hits = $row['logshits'];
+            $hits = $row['logshits'] ?? 0;
 
-            $last_used = $row['last_used'];
+            $last_used = $row['last_used'] ?? 0;
             $lastUsedClass = '';
             if ($last_used != 0) {
                 $last = date("Y/m/d h:i:s A", abs(intval($last_used)));
@@ -1673,25 +1774,26 @@ class ABJ_404_Solution_View {
             $ignoreBtnHTML = '';
             $laterBtnHTML = '';
 
-            if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+            $currentFilter = $tableOptions['filter'] ?? 0;
+            if ($currentFilter != ABJ404_TRASH_FILTER) {
                 $editBtnHTML = '<a href="' . esc_url($editlink) . '" class="abj404-action-link" title="' . esc_attr__('Edit', '404-solution') . '">'
                     . '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg> '
                     . esc_html__('Edit', '404-solution') . '</a>';
             }
 
-            if ($row['logsid'] > 0) {
+            if (($row['logsid'] ?? 0) > 0) {
                 $logsBtnHTML = '<a href="' . esc_url($logslink) . '" class="abj404-action-link" title="' . esc_attr__('View Logs', '404-solution') . '">'
                     . '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg> '
                     . esc_html__('Logs', '404-solution') . '</a>';
             }
 
-            if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+            if ($currentFilter != ABJ404_TRASH_FILTER) {
                 $trashBtnHTML = '<a href="' . esc_url($trashlink) . '" class="abj404-action-link danger" title="' . esc_attr($trashtitle) . '">'
                     . '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg> '
                     . esc_html__('Trash', '404-solution') . '</a>';
             }
 
-            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+            if ($currentFilter == ABJ404_TRASH_FILTER) {
                 // Show Restore button
                 $trashBtnHTML = '<a href="' . esc_url($trashlink) . '" class="abj404-action-link" title="' . esc_attr__('Restore', '404-solution') . '">'
                     . '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg> '
@@ -1726,7 +1828,7 @@ class ABJ_404_Solution_View {
             $tempHtml = $this->f->str_replace('{status}', $statusText, $tempHtml);
             $tempHtml = $this->f->str_replace('{hits}', esc_html($hits), $tempHtml);
             $tempHtml = $this->f->str_replace('{created_date}',
-                    esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $tempHtml);
+                    esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'] ?? 0)))), $tempHtml);
             $tempHtml = $this->f->str_replace('{last_used_date}', esc_html($last), $tempHtml);
             $tempHtml = $this->f->str_replace('{lastUsedClass}', $lastUsedClass, $tempHtml);
             $tempHtml = $this->f->str_replace('{editBtnHTML}', $editBtnHTML, $tempHtml);
@@ -1761,6 +1863,7 @@ class ABJ_404_Solution_View {
 
         // Sanitizing unchecked table options
         $tableOptions = $this->logic->sanitizePostData($tableOptions);
+        $currentFilter = $tableOptions['filter'] ?? 0;
 
         $timezone = get_option('timezone_string');
         if ('' == $timezone) {
@@ -1777,7 +1880,7 @@ class ABJ_404_Solution_View {
         // Page header with Add Redirect button
         echo '<div class="abj404-table-header">';
         echo '<h1>' . esc_html__('Page Redirects', '404-solution') . '</h1>';
-        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+        if ($currentFilter != ABJ404_TRASH_FILTER) {
             echo '<button type="button" class="abj404-btn abj404-btn-primary" data-modal-open="abj404-add-redirect-modal">';
             echo '+ ' . esc_html__('Add Redirect', '404-solution');
             echo '</button>';
@@ -1829,13 +1932,13 @@ class ABJ_404_Solution_View {
         echo '<span class="abj404-selection-info"><strong>0</strong> ' . esc_html__('redirects selected', '404-solution') . '</span>';
         echo '<select class="abj404-filter-select" name="abj404action">';
         echo '<option value="">' . esc_html__('Bulk Actions', '404-solution') . '</option>';
-        if ($tableOptions['filter'] != ABJ404_STATUS_AUTO) {
+        if ($currentFilter != ABJ404_STATUS_AUTO) {
             echo '<option value="editRedirect">' . esc_html__('Edit Redirects', '404-solution') . '</option>';
         }
-        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+        if ($currentFilter != ABJ404_TRASH_FILTER) {
             echo '<option value="bulktrash">' . esc_html__('Move to Trash', '404-solution') . '</option>';
         }
-        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+        if ($currentFilter == ABJ404_TRASH_FILTER) {
             echo '<option value="bulk_trash_restore">' . esc_html__('Restore Redirects', '404-solution') . '</option>';
             echo '<option value="bulk_trash_delete_permanently">' . esc_html__('Delete Permanently', '404-solution') . '</option>';
         }
@@ -1855,7 +1958,7 @@ class ABJ_404_Solution_View {
         echo '</form>';
 
         // Empty trash button (within page container but outside form)
-        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+        if ($currentFilter == ABJ404_TRASH_FILTER) {
             $eturl = "?page=" . ABJ404_PP . "&filter=" . ABJ404_TRASH_FILTER . "&subpage=" . $sub;
             $eturl = wp_nonce_url($eturl, "abj404_bulkProcess");
             echo '<div style="padding: 0 32px 20px;">';
@@ -1871,7 +1974,7 @@ class ABJ_404_Solution_View {
         echo '</div>'; // end abj404-table-page
 
         // Add redirect modal (outside the main container)
-        if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+        if (($tableOptions['filter'] ?? 0) != ABJ404_TRASH_FILTER) {
             $this->echoAddRedirectModal($tableOptions);
         }
     }
@@ -1880,7 +1983,8 @@ class ABJ_404_Solution_View {
      * Echo a content tab for the table pages
      */
     function echoContentTab($sub, $filter, $label, $count, $tableOptions) {
-        $isActive = ($tableOptions['filter'] == $filter) ? 'active' : '';
+        $currentFilter = $tableOptions['filter'] ?? 0;
+        $isActive = ($currentFilter == $filter) ? 'active' : '';
         $url = "?page=" . ABJ404_PP . "&subpage=" . $sub;
         if ($filter != 0) {
             $url .= "&filter=" . $filter;
@@ -1895,13 +1999,16 @@ class ABJ_404_Solution_View {
      * Echo the modern Add Redirect modal
      */
     function echoAddRedirectModal($tableOptions) {
-        $options = $this->logic->getOptions();
+        $options = $this->getOptionsWithDefaults();
         $url = "?page=" . ABJ404_PP;
-        if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-            $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
+        $orderby = $tableOptions['orderby'] ?? 'url';
+        $order = $tableOptions['order'] ?? 'ASC';
+        if (!($orderby == "url" && $order == "ASC")) {
+            $url .= "&orderby=" . sanitize_text_field($orderby) . "&order=" . sanitize_text_field($order);
         }
-        if ($tableOptions['filter'] != 0) {
-            $url .= "&filter=" . $tableOptions['filter'];
+        $filter = $tableOptions['filter'] ?? 0;
+        if ($filter != 0) {
+            $url .= "&filter=" . $filter;
         }
         $link = wp_nonce_url($url, "abj404addRedirect");
         $urlPlaceholder = parse_url(get_home_url(), PHP_URL_PATH) . "/example";
@@ -1982,16 +2089,22 @@ class ABJ_404_Solution_View {
         echo '</div>';
     }
 
-    /**
-     * Get modern pagination HTML
-     */
-    function getModernPagination($sub, $tableOptions) {
-        // Use appropriate count method based on sub type
-        if ($sub == 'abj404_logs') {
-            $totalRows = $this->dao->getLogsCount($tableOptions['logsid']);
-        } else {
-            $totalRows = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
-        }
+	    /**
+	     * Get modern pagination HTML
+	     */
+	    function getModernPagination($sub, $tableOptions) {
+	        $tableOptions = is_array($tableOptions) ? $tableOptions : array();
+	        $logsid = isset($tableOptions['logsid']) ? intval($tableOptions['logsid']) : 0;
+	        $filter = isset($tableOptions['filter']) ? intval($tableOptions['filter']) : 0;
+	        $orderby = isset($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url';
+	        $order = isset($tableOptions['order']) ? $tableOptions['order'] : 'ASC';
+
+	        // Use appropriate count method based on sub type
+	        if ($sub == 'abj404_logs') {
+	            $totalRows = $this->dao->getLogsCount($logsid);
+	        } else {
+	            $totalRows = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
+	        }
         $perPage = isset($tableOptions['perpage']) ? intval($tableOptions['perpage']) : 25;
         $currentPage = isset($tableOptions['paged']) ? intval($tableOptions['paged']) : 1;
         $totalPages = ceil($totalRows / $perPage);
@@ -2004,16 +2117,16 @@ class ABJ_404_Solution_View {
         $endItem = min($currentPage * $perPage, $totalRows);
 
         $baseUrl = "?page=" . ABJ404_PP . "&subpage=" . $sub;
-        // Include logsid for logs pagination
-        if ($sub == 'abj404_logs' && isset($tableOptions['logsid'])) {
-            $baseUrl .= "&id=" . $tableOptions['logsid'];
-        }
-        if ($tableOptions['filter'] != 0) {
-            $baseUrl .= "&filter=" . $tableOptions['filter'];
-        }
-        if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-            $baseUrl .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
-        }
+	        // Include logsid for logs pagination
+	        if ($sub == 'abj404_logs' && isset($tableOptions['logsid'])) {
+	            $baseUrl .= "&id=" . $tableOptions['logsid'];
+	        }
+	        if ($filter != 0) {
+	            $baseUrl .= "&filter=" . $filter;
+	        }
+	        if (!( $orderby == "url" && $order == "ASC" )) {
+	            $baseUrl .= "&orderby=" . sanitize_text_field($orderby) . "&order=" . sanitize_text_field($order);
+	        }
 
         // Different label for logs vs redirects
         $itemLabel = ($sub == 'abj404_logs') ? __('logs', '404-solution') : __('redirects', '404-solution');
@@ -2064,11 +2177,14 @@ class ABJ_404_Solution_View {
     
     function getBulkOperationsFormURL($sub, $tableOptions) {
         $url = "?page=" . ABJ404_PP . "&subpage=" . $sub;
-        if ($tableOptions['filter'] != 0) {
-            $url .= "&filter=" . $tableOptions['filter'];
+        $filter = $tableOptions['filter'] ?? 0;
+        if ($filter != 0) {
+            $url .= "&filter=" . $filter;
         }
-        if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-            $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
+        $orderby = $tableOptions['orderby'] ?? 'url';
+        $order = $tableOptions['order'] ?? 'ASC';
+        if (!($orderby == "url" && $order == "ASC")) {
+            $url .= "&orderby=" . sanitize_text_field($orderby) . "&order=" . sanitize_text_field($order);
         }
         $url = wp_nonce_url($url, 'abj404_bulkProcess');
         return $url;
@@ -2117,12 +2233,15 @@ class ABJ_404_Solution_View {
         $y = 1;
         foreach ($rows as $row) {
             $displayed++;
+            $rowType = $row['type'] ?? 0;
+            $rowStatus = $row['status'] ?? 0;
+            $rowFinalDest = $row['final_dest'] ?? '';
             $statusTitle = '';
-            if ($row['status'] == ABJ404_STATUS_MANUAL) {
+            if ($rowStatus == ABJ404_STATUS_MANUAL) {
                 $statusTitle = __('Manually created', '404-solution');
-            } else if ($row['status'] == ABJ404_STATUS_AUTO) {
+            } else if ($rowStatus == ABJ404_STATUS_AUTO) {
                 $statusTitle = __('Automatically created', '404-solution');
-            } else if ($row['status'] == ABJ404_STATUS_REGEX) {
+            } else if ($rowStatus == ABJ404_STATUS_REGEX) {
                 $statusTitle = __('Regular Expression (Manually Created)', '404-solution');
             } else {
                 $statusTitle = __('Unknown', '404-solution');
@@ -2130,48 +2249,48 @@ class ABJ_404_Solution_View {
 
             $link = "";
             $title = __('Visit', '404-solution') . " ";
-            if ($row['type'] == ABJ404_TYPE_EXTERNAL) {
-                $link = $row['final_dest'];
-                $title .= $row['final_dest'];
-            } else if ($row['type'] == ABJ404_TYPE_CAT) {
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_CAT, 0);
+            if ($rowType == ABJ404_TYPE_EXTERNAL) {
+                $link = $rowFinalDest;
+                $title .= $rowFinalDest;
+            } else if ($rowType == ABJ404_TYPE_CAT) {
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_CAT, 0);
                 $link = $permalink['link'];
                 $title .= __('Category:', '404-solution') . " " . $permalink['title'];
-            } else if ($row['type'] == ABJ404_TYPE_TAG) {
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_TAG, 0);
+            } else if ($rowType == ABJ404_TYPE_TAG) {
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_TAG, 0);
                 $link = $permalink['link'];
                 $title .= __('Tag:', '404-solution') . " " . $permalink['title'];
-            } else if ($row['type'] == ABJ404_TYPE_HOME) {
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_HOME, 0);
+            } else if ($rowType == ABJ404_TYPE_HOME) {
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_HOME, 0);
                 $link = $permalink['link'];
                 $title .= __('Home Page:', '404-solution') . " " . $permalink['title'];
-            } else if ($row['type'] == ABJ404_TYPE_POST) {
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_POST, 0);
+            } else if ($rowType == ABJ404_TYPE_POST) {
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_POST, 0);
                 $link = $permalink['link'];
                 $title .= $permalink['title'];
                 
-            } else if ($row['type'] == ABJ404_TYPE_404_DISPLAYED) {
-            	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($row['final_dest'] . "|" . ABJ404_TYPE_404_DISPLAYED, 0);
+            } else if ($rowType == ABJ404_TYPE_404_DISPLAYED) {
+            	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_404_DISPLAYED, 0);
             	// for custom 404 page use the link
             	$link = $permalink['link'];
             	$title .= $permalink['title'];
             	
             	// for the normal 404 page just use #
-            	if ($row['final_dest'] == '0') {
+            	if ($rowFinalDest == '0') {
             	    $link = '';
             	}
             	
             } else {
-                $this->logger->errorMessage("Unexpected row type while displaying table: " . $row['type']);
+                $this->logger->errorMessage("Unexpected row type while displaying table: " . $rowType);
             }
             
             if ($link != '') {
                 $link = "href='$link'";
             }
 
-            $hits = $row['logshits'];
+            $hits = $row['logshits'] ?? 0;
             
-            $last_used = $row['last_used'];
+            $last_used = $row['last_used'] ?? 0;
             if ($last_used != 0) {
                 $last = date("Y/m/d h:i:s A", abs(intval($last_used)));
             } else {
@@ -2215,7 +2334,8 @@ class ABJ_404_Solution_View {
             $trashBtnHTML = '';
             $deleteBtnHTML = '';
 
-            if ($tableOptions['filter'] != ABJ404_TRASH_FILTER) {
+            $currentFilter = $tableOptions['filter'] ?? 0;
+            if ($currentFilter != ABJ404_TRASH_FILTER) {
                 $editBtnHTML = '<a href="' . esc_url($editlink) . '" class="abj404-action-link" title="{Edit Redirect Details}">'
                     . '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg> '
                     . '{Edit}</a>';
@@ -2223,12 +2343,12 @@ class ABJ_404_Solution_View {
                     . '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg> '
                     . '{Trash}</a>';
             }
-            if ($row['logsid'] > 0) {
+            if (($row['logsid'] ?? 0) > 0) {
                 $logsBtnHTML = '<a href="{logsLink}" class="abj404-action-link" title="{View Redirect Logs}">'
                     . '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg> '
                     . '{Logs}</a>';
             }
-            if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+            if ($currentFilter == ABJ404_TRASH_FILTER) {
                 $trashBtnHTML = '<a href="{trashLink}" class="abj404-action-link" title="{Restore}">'
                     . '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg> '
                     . '{Restore}</a>';
@@ -2298,15 +2418,15 @@ class ABJ_404_Solution_View {
             $htmlTemp = $this->f->str_replace('{codeBadgeClass}', $codeBadgeClass, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{lastUsedClass}', $lastUsedClass, $htmlTemp);
 
-            $htmlTemp = $this->f->str_replace('{link}', $link, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{title}', $title, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{dest}', $row['dest_for_view'], $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{destination-exists}', $destinationExists, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{destination-does-not-exist}', $destinationDoesNotExist, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{status}', $row['status_for_view'], $htmlTemp);
+	            $htmlTemp = $this->f->str_replace('{link}', $link, $htmlTemp);
+	            $htmlTemp = $this->f->str_replace('{title}', $title, $htmlTemp);
+	            $htmlTemp = $this->f->str_replace('{dest}', $row['dest_for_view'] ?? '', $htmlTemp);
+	            $htmlTemp = $this->f->str_replace('{destination-exists}', $destinationExists, $htmlTemp);
+	            $htmlTemp = $this->f->str_replace('{destination-does-not-exist}', $destinationDoesNotExist, $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{status}', $row['status_for_view'] ?? '', $htmlTemp);
             $htmlTemp = $this->f->str_replace('{statusTitle}', $statusTitle, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{type}', $row['type_for_view'], $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{rowCode}', $row['code'], $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{type}', $row['type_for_view'] ?? '', $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{rowCode}', $row['code'] ?? '', $htmlTemp);
             $htmlTemp = $this->f->str_replace('{hits}', esc_html($hits), $htmlTemp);
             $htmlTemp = $this->f->str_replace('{logsLink}', $logslink, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{trashLink}', $trashlink, $htmlTemp);
@@ -2314,7 +2434,7 @@ class ABJ_404_Solution_View {
             $htmlTemp = $this->f->str_replace('{trashtitle}', $trashtitle, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{deletelink}', $deletelink, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{created_date}',
-                    esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'])))), $htmlTemp);
+                    esc_html(date("Y/m/d h:i:s A", abs(intval($row['timestamp'] ?? 0)))), $htmlTemp);
             $htmlTemp = $this->f->str_replace('{last_used_date}', esc_html($last), $htmlTemp);
 
             $htmlTemp = $this->f->doNormalReplacements($htmlTemp);
@@ -2335,14 +2455,17 @@ class ABJ_404_Solution_View {
     
     function echoAddManualRedirect($tableOptions) {
 
-        $options = $this->logic->getOptions();
+        $options = $this->getOptionsWithDefaults();
         
         $url = "?page=" . ABJ404_PP;
-        if (!( $tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC" )) {
-            $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']);
+        $orderby = $tableOptions['orderby'] ?? 'url';
+        $order = $tableOptions['order'] ?? 'ASC';
+        if (!($orderby == "url" && $order == "ASC")) {
+            $url .= "&orderby=" . sanitize_text_field($orderby) . "&order=" . sanitize_text_field($order);
         }
-        if ($tableOptions['filter'] != 0) {
-            $url .= "&filter=" . $tableOptions['filter'];
+        $filter = $tableOptions['filter'] ?? 0;
+        if ($filter != 0) {
+            $url .= "&filter=" . $filter;
         }
         $link = wp_nonce_url($url, "abj404addRedirect");
 
@@ -2470,6 +2593,8 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageAutoRedirects($options) {
+        $options = is_array($options) ? $options : array();
+        $options = $this->normalizeOptionsForView($options);
         
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         $content = "";
@@ -2530,7 +2655,8 @@ class ABJ_404_Solution_View {
         return $content;
     }
 
-    function getAdminOptionsPageAdvancedSettings($options) {
+	    function getAdminOptionsPageAdvancedSettings($options) {
+	        $options = $this->normalizeOptionsForView($options);
 
         // Only allow redirecting all requests on trusted sites because someone will break
         // their website and complain to me about it and I don't want to hear that because I have
@@ -2629,6 +2755,8 @@ class ABJ_404_Solution_View {
      * @return string
      */
     function getAdminOptionsPageAdvancedContent($options) {
+        $options = is_array($options) ? $options : array();
+        $options = $this->normalizeOptionsForView($options);
         $allPostTypesTemp = $this->dao->getAllPostTypes();
         // Ensure we have an array before imploding
         $allPostTypes = is_array($allPostTypesTemp) ? esc_html(implode(', ', $allPostTypesTemp)) : '';
@@ -2671,9 +2799,10 @@ class ABJ_404_Solution_View {
      * @param array $options
      * @return string
      */
-    function getAdminOptionsPageAdvancedLogging($options) {
-        $selectedLogRawIPs = $this->getCheckedAttr($options, 'log_raw_ips');
-        $selectedDebugLogging = $this->getCheckedAttr($options, 'debug_mode');
+	    function getAdminOptionsPageAdvancedLogging($options) {
+	        $options = $this->normalizeOptionsForView($options);
+	        $selectedLogRawIPs = $this->getCheckedAttr($options, 'log_raw_ips');
+	        $selectedDebugLogging = $this->getCheckedAttr($options, 'debug_mode');
 
         $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
         $debugLogLink = $this->logic->getDebugLogFileLink();
@@ -2711,8 +2840,9 @@ class ABJ_404_Solution_View {
      * @param array $options
      * @return string
      */
-    function getAdminOptionsPageAdvancedSystem($options) {
-        $selectedRedirectAllRequests = $this->getCheckedAttr($options, 'redirect_all_requests');
+	    function getAdminOptionsPageAdvancedSystem($options) {
+	        $options = $this->normalizeOptionsForView($options);
+	        $selectedRedirectAllRequests = $this->getCheckedAttr($options, 'redirect_all_requests');
 
         $hideRedirectAllRequests = "false";
         if (array_key_exists('disallow-redirect-all-requests', $options)
@@ -2749,9 +2879,10 @@ class ABJ_404_Solution_View {
      * @param array $options
      * @return string
      */
-    function getAdminOptionsPageGeneralSettings($options) {
-        
-        $selectedDefaultRedirect301 = "";
+	    function getAdminOptionsPageGeneralSettings($options) {
+	        $options = $this->normalizeOptionsForView($options);
+	        
+	        $selectedDefaultRedirect301 = "";
         if ($options['default_redirect'] == '301') {
             $selectedDefaultRedirect301 = " selected";
         }
@@ -2926,9 +3057,12 @@ class ABJ_404_Solution_View {
         echo '<select onchange="window.location.href=this.value">';
         $perPageOptions = array(10, 25, 50, 100, 250);
         foreach ($perPageOptions as $opt) {
-            $selected = ($tableOptions['perpage'] == $opt) ? ' selected' : '';
+            $perpage = $tableOptions['perpage'] ?? 25;
+            $orderby = $tableOptions['orderby'] ?? 'timestamp';
+            $order = $tableOptions['order'] ?? 'DESC';
+            $selected = ($perpage == $opt) ? ' selected' : '';
             $url = "?page=" . ABJ404_PP . "&subpage=abj404_logs" .
-                   "&orderby=" . sanitize_text_field($tableOptions['orderby']) . "&order=" . sanitize_text_field($tableOptions['order']) . "&perpage=" . $opt;
+                   "&orderby=" . sanitize_text_field($orderby) . "&order=" . sanitize_text_field($order) . "&perpage=" . $opt;
             echo '<option value="' . esc_url($url) . '"' . $selected . '>' . $opt . '</option>';
         }
         echo '</select>';
@@ -2962,18 +3096,21 @@ class ABJ_404_Solution_View {
         $html = '<table class="abj404-table abj404-logs-table">';
         $html .= '<thead><tr>';
 
+        $currentOrderby = $tableOptions['orderby'] ?? 'timestamp';
+        $currentOrder = $tableOptions['order'] ?? 'DESC';
+
         // Generate sortable column headers
         foreach ($columns as $key => $col) {
             $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_logs";
             $sortUrl .= "&orderby=" . $col['orderby'];
-            $newOrder = ($tableOptions['orderby'] == $col['orderby'] && $tableOptions['order'] == 'ASC') ? 'DESC' : 'ASC';
+            $newOrder = ($currentOrderby == $col['orderby'] && $currentOrder == 'ASC') ? 'DESC' : 'ASC';
             $sortUrl .= "&order=" . $newOrder;
 
             $sortClass = '';
             $sortIndicator = '';
-            if ($tableOptions['orderby'] == $col['orderby']) {
-                $sortClass = ' class="sorted ' . strtolower($tableOptions['order']) . '"';
-                $sortIndicator = $tableOptions['order'] == 'ASC' ? ' ↑' : ' ↓';
+            if ($currentOrderby == $col['orderby']) {
+                $sortClass = ' class="sorted ' . strtolower($currentOrder) . '"';
+                $sortIndicator = $currentOrder == 'ASC' ? ' ↑' : ' ↓';
             }
 
             $html .= '<th scope="col"' . $sortClass . '><a href="' . esc_url($sortUrl) . '">' . esc_html($col['title']) . $sortIndicator . '</a></th>';
@@ -2985,41 +3122,45 @@ class ABJ_404_Solution_View {
         $rows = $this->dao->getLogRecords($tableOptions);
         $logRecordsDisplayed = 0;
 
-        foreach ($rows as $row) {
-            $html .= '<tr>';
+	        foreach ($rows as $row) {
+	            $html .= '<tr>';
 
-            // URL column
-            $urlDisplay = esc_html($row['url']);
-            if ($row['url_detail'] != null && trim($row['url_detail']) != '') {
-                $urlDisplay .= ' <span class="abj404-url-detail">(' . esc_html(trim($row['url_detail'])) . ')</span>';
-            }
-            $html .= '<td class="abj404-url-cell" title="' . esc_attr($row['url']) . '">' . $urlDisplay . '</td>';
+	            // URL column
+	            $url = (string)($row['url'] ?? '');
+	            $urlDetail = (string)($row['url_detail'] ?? '');
+	            $urlDisplay = esc_html($url);
+	            if ($urlDetail !== '' && trim($urlDetail) !== '') {
+	                $urlDisplay .= ' <span class="abj404-url-detail">(' . esc_html(trim($urlDetail)) . ')</span>';
+	            }
+	            $html .= '<td class="abj404-url-cell" title="' . esc_attr($url) . '">' . $urlDisplay . '</td>';
 
-            // IP Address
-            $html .= '<td class="abj404-ip-cell">' . esc_html($row['remote_host']) . '</td>';
+	            // IP Address
+	            $html .= '<td class="abj404-ip-cell">' . esc_html((string)($row['remote_host'] ?? '')) . '</td>';
 
-            // Referrer
-            $html .= '<td class="abj404-url-cell">';
-            if ($row['referrer'] != "") {
-                $html .= '<a href="' . esc_url($row['referrer']) . '" title="' . esc_attr($row['referrer']) . '" target="_blank">' . esc_html($row['referrer']) . '</a>';
-            } else {
-                $html .= '<span class="abj404-text-muted">-</span>';
-            }
-            $html .= '</td>';
+	            // Referrer
+	            $referrer = (string)($row['referrer'] ?? '');
+	            $html .= '<td class="abj404-url-cell">';
+	            if ($referrer != "") {
+	                $html .= '<a href="' . esc_url($referrer) . '" title="' . esc_attr($referrer) . '" target="_blank">' . esc_html($referrer) . '</a>';
+	            } else {
+	                $html .= '<span class="abj404-text-muted">-</span>';
+	            }
+	            $html .= '</td>';
 
-            // Action Taken
-            $html .= '<td>';
-            if (trim($row['action']) == "404" || trim($row['action']) == "http://404") {
-                $html .= '<span class="abj404-badge abj404-badge-404">' . __('404', '404-solution') . '</span>';
-            } else {
-                $html .= '<span class="abj404-badge abj404-badge-redirect">' . __('Redirect', '404-solution') . '</span><br>';
-                $html .= '<a href="' . esc_url($row['action']) . '" title="' . esc_attr($row['action']) . '" target="_blank" class="abj404-action-url">' . esc_html($row['action']) . '</a>';
-            }
-            $html .= '</td>';
+	            // Action Taken
+	            $action = trim((string)($row['action'] ?? ''));
+	            $html .= '<td>';
+	            if ($action === '' || $action == "404" || $action == "http://404") {
+	                $html .= '<span class="abj404-badge abj404-badge-404">' . __('404', '404-solution') . '</span>';
+	            } else {
+	                $html .= '<span class="abj404-badge abj404-badge-redirect">' . __('Redirect', '404-solution') . '</span><br>';
+	                $html .= '<a href="' . esc_url($action) . '" title="' . esc_attr($action) . '" target="_blank" class="abj404-action-url">' . esc_html($action) . '</a>';
+	            }
+	            $html .= '</td>';
 
-            // Date
-            $timeToDisplay = abs(intval($row['timestamp']));
-            $html .= '<td class="abj404-date-cell">' . date('Y/m/d', $timeToDisplay) . '<br>' . date('h:i:s A', $timeToDisplay) . '</td>';
+	            // Date
+	            $timeToDisplay = abs(intval($row['timestamp'] ?? 0));
+	            $html .= '<td class="abj404-date-cell">' . date('Y/m/d', $timeToDisplay) . '<br>' . date('h:i:s A', $timeToDisplay) . '</td>';
 
             // User
             $html .= '<td>';
@@ -3081,9 +3222,9 @@ class ABJ_404_Solution_View {
             $nolink = 0;
             $sortorder = "";
             $orderby = isset($column['orderby']) ? $column['orderby'] : '';
-            if ($tableOptions['orderby'] == $orderby) {
+            if (($tableOptions['orderby'] ?? '') == $orderby) {
                 $thClass = " sorted";
-                if ($tableOptions['order'] == "ASC") {
+                if (($tableOptions['order'] ?? 'ASC') == "ASC") {
                     $thClass .= " asc";
                     $sortorder = "DESC";
                 } else {
@@ -3112,10 +3253,10 @@ class ABJ_404_Solution_View {
             if ($sub == 'abj404_captured') {
                 $url .= "&subpage=abj404_captured";
             } else if ($sub == 'abj404_logs') {
-                $url .= "&subpage=abj404_logs&id=" . $tableOptions['logsid'];
+                $url .= "&subpage=abj404_logs&id=" . ($tableOptions['logsid'] ?? 0);
             }
-            if ($tableOptions['filter'] != 0) {
-                $url .= "&filter=" . $tableOptions['filter'];
+            if (($tableOptions['filter'] ?? 0) != 0) {
+                $url .= "&filter=" . ($tableOptions['filter'] ?? 0);
             }
             $url .= "&orderby=" . $orderby . "&order=" . $sortorder;
 
@@ -3160,26 +3301,30 @@ class ABJ_404_Solution_View {
      * @param string $sub
      * @param array $tableOptions
      */
-    function getPaginationLinks($sub, $showSearchFilter = true) {
-        
-        $tableOptions = $this->logic->getTableOptions($sub);
+	    function getPaginationLinks($sub, $showSearchFilter = true) {
+	        
+	        $tableOptions = $this->logic->getTableOptions($sub);
+	        $logsid = $tableOptions['logsid'] ?? 0;
+	        $orderby = $tableOptions['orderby'] ?? 'url';
+	        $order = $tableOptions['order'] ?? 'ASC';
+	        $filter = $tableOptions['filter'] ?? 0;
 
-        $url = "?page=" . ABJ404_PP;
-        if ($sub == 'abj404_captured') {
-            $url .= "&subpage=abj404_captured";
-        } else if ($sub == 'abj404_logs') {
-            $url .= "&subpage=abj404_logs&id=" . $tableOptions['logsid'];
-        }
+	        $url = "?page=" . ABJ404_PP;
+	        if ($sub == 'abj404_captured') {
+	            $url .= "&subpage=abj404_captured";
+	        } else if ($sub == 'abj404_logs') {
+	            $url .= "&subpage=abj404_logs&id=" . $logsid;
+	        }
 
-        $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']);
-        $url .= "&order=" . sanitize_text_field($tableOptions['order']);
-        $url .= "&filter=" . absint($tableOptions['filter']);
+	        $url .= "&orderby=" . sanitize_text_field($orderby);
+	        $url .= "&order=" . sanitize_text_field($order);
+	        $url .= "&filter=" . absint($filter);
 
-        if ($sub == 'abj404_logs') {
-            $num_records = $this->dao->getLogsCount($tableOptions['logsid']);
-        } else {
-            $num_records = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
-        }
+	        if ($sub == 'abj404_logs') {
+	            $num_records = $this->dao->getLogsCount($logsid);
+	        } else {
+	            $num_records = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
+	        }
 
         // Ensure perpage is never 0 to prevent division by zero
         $perpage = isset($tableOptions['perpage']) ? absint($tableOptions['perpage']) : ABJ404_OPTION_MIN_PERPAGE;
@@ -3248,18 +3393,20 @@ class ABJ_404_Solution_View {
             $searchFilterControl = '<!--';
         }
         
-        if ($tableOptions['filterText'] != '') {
-            $nexturl .= '&filterText=' . $tableOptions['filterText'];
-            $prevurl .= '&filterText=' . $tableOptions['filterText'];
-            $firsturl .= '&filterText=' . $tableOptions['filterText'];
-            $lasturl .= '&filterText=' . $tableOptions['filterText'];
+        $filterText = $tableOptions['filterText'] ?? '';
+        if ($filterText != '') {
+            $nexturl .= '&filterText=' . $filterText;
+            $prevurl .= '&filterText=' . $filterText;
+            $firsturl .= '&filterText=' . $filterText;
+            $lasturl .= '&filterText=' . $filterText;
         }
 
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinks.html");
         // do special replacements
-        $html = $this->f->str_replace(' value="' . $tableOptions['perpage'] . '"', 
-                ' value="' . $tableOptions['perpage'] . '" selected', 
+        $perpage = $tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE;
+        $html = $this->f->str_replace(' value="' . $perpage . '"',
+                ' value="' . $perpage . '" selected',
                 $html);
         $html = $this->f->str_replace('{changeItemsPerPage}', $showRowsLink, $html);
         $html = $this->f->str_replace('{showSearchFilter}', $searchFilterControl, $html);
@@ -3270,7 +3417,7 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{TEXT_CURRENT_PAGE}', $currentPageText, $html);
         $html = $this->f->str_replace('{LINK_NEXT_PAGE}', esc_url($nexturl), $html);
         $html = $this->f->str_replace('{LINK_LAST_PAGE}', esc_url($lasturl), $html);
-        $html = $this->f->str_replace('{filterText}', esc_attr($tableOptions['filterText']), $html);
+        $html = $this->f->str_replace('{filterText}', esc_attr($filterText), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-url}', esc_attr(admin_url('admin-ajax.php')), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-action}', esc_attr($ajaxAction), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-subpage}', esc_attr($sub), $html);
@@ -3302,13 +3449,16 @@ class ABJ_404_Solution_View {
         return $html;
     }
     
-    function getSubSubSub($sub) {
-        global $abj404_redirect_types;
-        global $abj404_captured_types;
-        
-        $tableOptions = $this->logic->getTableOptions($sub);
-        
-        $url = "?page=" . ABJ404_PP;
+	    function getSubSubSub($sub) {
+	        global $abj404_redirect_types;
+	        global $abj404_captured_types;
+	        
+	        $tableOptions = $this->logic->getTableOptions($sub);
+	        $filter = isset($tableOptions['filter']) ? intval($tableOptions['filter']) : 0;
+	        $orderby = isset($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url';
+	        $order = isset($tableOptions['order']) ? $tableOptions['order'] : 'ASC';
+	        
+	        $url = "?page=" . ABJ404_PP;
         if ($sub == 'abj404_captured') {
             $url .= "&subpage=abj404_captured";
         } else if ($sub == 'abj404_redirects') {
@@ -3317,8 +3467,8 @@ class ABJ_404_Solution_View {
             $this->logger->errorMessage("Unexpected sub page: " . $sub);
         }
 
-        $url .= "&orderby=" . sanitize_text_field($tableOptions['orderby']);
-        $url .= "&order=" . sanitize_text_field($tableOptions['order']);
+	        $url .= "&orderby=" . sanitize_text_field($orderby);
+	        $url .= "&order=" . sanitize_text_field($order);
 
         if ($sub == 'abj404_redirects') {
             $types = $abj404_redirect_types;
@@ -3329,10 +3479,10 @@ class ABJ_404_Solution_View {
             $types = $abj404_captured_types;
         }
 
-        $class = "";
-        if ($tableOptions['filter'] == 0) {
-            $class = " class=\"current\"";
-        }
+	        $class = "";
+	        if ($filter == 0) {
+	            $class = " class=\"current\"";
+	        }
         
         $html = '<ul class="subsubsub" >';
         if ($sub != 'abj404_captured') {
@@ -3343,14 +3493,15 @@ class ABJ_404_Solution_View {
             $html .= "</li>";
         }
         foreach ($types as $type) {
-            $thisurl = $url . "&filter=" . $type;
+	            $thisurl = $url . "&filter=" . $type;
 
-            $class = "";
-            if ($tableOptions['filter'] == $type) {
-                $class = " class=\"current\"";
-            }
+	            $class = "";
+	            if ($filter == $type) {
+	                $class = " class=\"current\"";
+	            }
 
             $recordCount = 0;
+            $title = __('Unknown', '404-solution');
             if ($type == ABJ404_STATUS_MANUAL) {
                 $title = __('Manual Redirects', '404-solution');
                 $recordCount = $this->dao->getRecordCount(array($type, ABJ404_STATUS_REGEX));
@@ -3386,7 +3537,7 @@ class ABJ_404_Solution_View {
 
         $trashurl = $url . "&filter=" . ABJ404_TRASH_FILTER;
         $class = "";
-        if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+        if (($tableOptions['filter'] ?? 0) == ABJ404_TRASH_FILTER) {
             $class = " class=\"current\"";
         }
         $html .= "<li> | ";

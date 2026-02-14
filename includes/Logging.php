@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Static functions that can be used from anywhere.  */
 
 class ABJ_404_Solution_Logging {
@@ -14,8 +19,50 @@ class ABJ_404_Solution_Logging {
     const DEBUG_FILE_KEY = 'debug_file_key';
     
     private static $instance = null;
-    
+
+    /**
+     * Factory for the DI container.
+     *
+     * This avoids recursion when the container's 'logging' service is defined in terms of getInstance().
+     *
+     * @return ABJ_404_Solution_Logging
+     */
+    public static function createForContainer() {
+        // Create a fresh instance without consulting the container.
+        $logger = new ABJ_404_Solution_Logging();
+
+        // Flush any pending errors captured before the logger existed.
+        if (isset($GLOBALS['abj404_pending_errors']) && is_array($GLOBALS['abj404_pending_errors'])) {
+            foreach ($GLOBALS['abj404_pending_errors'] as $message) {
+                $logger->errorMessage($message);
+            }
+            unset($GLOBALS['abj404_pending_errors']); // Clear after flushing
+        }
+
+        // Also sync singleton for legacy callers.
+        self::$instance = $logger;
+
+        return $logger;
+    }
+
     public static function getInstance() {
+        if (self::$instance !== null) {
+            return self::$instance;
+        }
+
+        // If the DI container is initialized, prefer it.
+        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+            try {
+                $c = ABJ_404_Solution_ServiceContainer::getInstance();
+                if (is_object($c) && method_exists($c, 'has') && $c->has('logging')) {
+                    self::$instance = $c->get('logging');
+                    return self::$instance;
+                }
+            } catch (Throwable $e) {
+                // fall back to legacy singleton below
+            }
+        }
+
         if (self::$instance == null) {
             self::$instance = new ABJ_404_Solution_Logging();
 
@@ -900,4 +947,3 @@ class ABJ_404_Solution_Logging {
     }
     
 }
-

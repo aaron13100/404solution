@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * N-Gram based filtering for spell checker optimization.
  *

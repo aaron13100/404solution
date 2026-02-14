@@ -2226,3 +2226,25 @@ msgstr "Minimale overeenkomstkwaliteit vereisen"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Toon alleen suggesties die nauw overeenkomen met de gevraagde URL. Dit filtert zwakke overeenkomsten uit die bezoekers kunnen verwarren."
+
+
+msgid "404 Solution Logs"
+msgstr "404 Solution-logboeken"
+
+msgid "Timestamp"
+msgstr "Tijdstempel"
+
+msgid "Requested URL"
+msgstr "Aangevraagde URL"
+
+msgid "Destination URL"
+msgstr "Doel-URL"
+
+msgid "Some items could not be anonymized."
+msgstr "Sommige items konden niet worden geanonimiseerd."
+
+msgid "Rate limit exceeded. Please try again later."
+msgstr "Limiet overschreden. Probeer het later opnieuw."
+
+msgid "Invalid nonce. Please reload the page."
+msgstr "Ongeldige nonce. Laad de pagina opnieuw."

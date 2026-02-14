@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Funtcions supporting Ajax stuff.  */
 
 class ABJ_404_Solution_Ajax_Php {
@@ -26,7 +31,8 @@ class ABJ_404_Solution_Ajax_Php {
 		if ($user_id) {
 			$identifier = 'user_' . $user_id;
 		} else {
-			$identifier = 'ip_' . md5($_SERVER['REMOTE_ADDR']);
+			$remote = isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : 'unknown';
+			$identifier = 'ip_' . md5($remote);
 		}
 
 		$transient_key = 'abj404_rate_limit_' . $action . '_' . $identifier;
@@ -46,9 +52,25 @@ class ABJ_404_Solution_Ajax_Php {
 		}
 	}
 
+	private static function getServiceIfAvailable($serviceName) {
+		if (!function_exists('abj_service') || !class_exists('ABJ_404_Solution_ServiceContainer')) {
+			return null;
+		}
+		try {
+			$c = ABJ_404_Solution_ServiceContainer::getInstance();
+			if (is_object($c) && method_exists($c, 'has') && $c->has($serviceName)) {
+				return $c->get($serviceName);
+			}
+		} catch (Throwable $e) {
+			// fall through
+		}
+		return null;
+	}
+
 	/** Update plugin options via AJAX. */
 	static function updateOptions() {
-		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+		$logic = self::getServiceIfAvailable('plugin_logic');
+		$abj404logic = $logic !== null ? $logic : ABJ_404_Solution_PluginLogic::getInstance();
 
 		// Verify user has appropriate capabilities (respects plugin admin users)
 		if (!$abj404logic->userIsPluginAdmin()) {
@@ -73,30 +95,81 @@ class ABJ_404_Solution_Ajax_Php {
 
 		$abj404logic->updateOptionsFromPOST();
 	}
+
+	/**
+	 * Consistent JSON response helper for endpoints that previously echoed JSON and exited.
+	 *
+	 * In production, wp_send_json() terminates the request.
+	 * In unit tests, callers can stub wp_send_json() or define ABJ404_TEST_NO_EXIT.
+	 *
+	 * @param mixed $payload
+	 * @param int $status
+	 * @return void
+	 */
+	private static function sendJson($payload, $status = 200) {
+		if (function_exists('wp_send_json')) {
+			wp_send_json($payload, $status);
+			if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
+				return;
+			}
+			// wp_send_json() calls wp_die(); this is a safety net for environments that stub it.
+			exit;
+		}
+
+		// Fallback for unusual environments (should not happen in WordPress).
+		if (!headers_sent()) {
+			header('Content-type: application/json; charset=UTF-8');
+			if (function_exists('status_header')) {
+				status_header($status);
+			} elseif (function_exists('http_response_code')) {
+				http_response_code($status);
+			}
+		}
+		echo json_encode($payload);
+		if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
+			return;
+		}
+		exit;
+	}
+
+	private static function buildAutocompleteErrorItem($message) {
+		return array(
+			array(
+				'label' => '',
+				'category' => (string)$message,
+				'value' => '',
+				'data_overflow_item' => 'true',
+			),
+		);
+	}
 	
     /** Find logs to display. */
     static function echoViewLogsFor() {
     	$abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();;
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $dao = self::getServiceIfAvailable('data_access');
+        $abj404dao = $dao !== null ? $dao : ABJ_404_Solution_DataAccess::getInstance();
+        $funcs = self::getServiceIfAvailable('functions');
+        $f = $funcs !== null ? $funcs : ABJ_404_Solution_Functions::getInstance();
 
         // Verify nonce for CSRF protection
         if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'abj404_ajax')) {
-            echo json_encode(array('error' => 'Invalid security token'));
-            exit();
+            // Keep HTTP 200 for jQuery UI autocomplete (it does not process non-2xx JSON well).
+            self::sendJson(self::buildAutocompleteErrorItem(__('Invalid security token', '404-solution')), 200);
+            return;
         }
 
         // Verify user has appropriate capabilities (respects plugin admin users)
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $logic = self::getServiceIfAvailable('plugin_logic');
+        $abj404logic = $logic !== null ? $logic : ABJ_404_Solution_PluginLogic::getInstance();
         if (!$abj404logic->userIsPluginAdmin()) {
-            echo json_encode(array('error' => 'Unauthorized'));
-            exit();
+            self::sendJson(self::buildAutocompleteErrorItem(__('Unauthorized', '404-solution')), 200);
+            return;
         }
 
         // Rate limiting to prevent abuse (100 requests per minute)
         if (self::checkRateLimit('view_logs', 100, 60)) {
-            echo json_encode(array('error' => 'Rate limit exceeded. Please try again later.'));
-            exit();
+            self::sendJson(self::buildAutocompleteErrorItem(__('Rate limit exceeded. Please try again later.', '404-solution')), 200);
+            return;
         }
 
         // Limit search term length to prevent DoS
@@ -120,34 +193,36 @@ class ABJ_404_Solution_Ajax_Php {
         
         $suggestions = array_merge($specialSuggestion, $suggestions);
                 
-        echo json_encode($suggestions);
-        
-    	exit();
+        self::sendJson($suggestions, 200);
+        return;
     }
     
     /** Find pages to redirect to that match a search term, then echo the results in a json format. */
     static function echoRedirectToPages() {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $logic = self::getServiceIfAvailable('plugin_logic');
+        $abj404logic = $logic !== null ? $logic : ABJ_404_Solution_PluginLogic::getInstance();
         $abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $dao = self::getServiceIfAvailable('data_access');
+        $abj404dao = $dao !== null ? $dao : ABJ_404_Solution_DataAccess::getInstance();
+        $funcs = self::getServiceIfAvailable('functions');
+        $f = $funcs !== null ? $funcs : ABJ_404_Solution_Functions::getInstance();
 
         // Verify nonce for CSRF protection
         if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'abj404_ajax')) {
-            echo json_encode(array('error' => 'Invalid security token'));
-            exit();
+            self::sendJson(self::buildAutocompleteErrorItem(__('Invalid security token', '404-solution')), 200);
+            return;
         }
 
         // Verify user has appropriate capabilities (respects plugin admin users)
         if (!$abj404logic->userIsPluginAdmin()) {
-            echo json_encode(array('error' => 'Unauthorized'));
-            exit();
+            self::sendJson(self::buildAutocompleteErrorItem(__('Unauthorized', '404-solution')), 200);
+            return;
         }
 
         // Rate limiting to prevent abuse (100 requests per minute)
         if (self::checkRateLimit('redirect_pages', 100, 60)) {
-            echo json_encode(array('error' => 'Rate limit exceeded. Please try again later.'));
-            exit();
+            self::sendJson(self::buildAutocompleteErrorItem(__('Rate limit exceeded. Please try again later.', '404-solution')), 200);
+            return;
         }
 
         // Limit search term length to prevent DoS
@@ -191,9 +266,8 @@ class ABJ_404_Solution_Ajax_Php {
         // limit search results
         $suggestions = $abj404AjaxPhp->provideSearchFeedback($suggestions, $term);
 
-        echo json_encode($suggestions);
-
-    	exit();
+        self::sendJson($suggestions, 200);
+        return;
     }
 
     /** Add a message about whether there are too many results or none at all.

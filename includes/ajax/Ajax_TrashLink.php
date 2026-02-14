@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Funtcions supporting Ajax stuff.  */
 class ABJ_404_Solution_Ajax_TrashLink {
 
@@ -7,6 +12,22 @@ class ABJ_404_Solution_Ajax_TrashLink {
     static function trashAction() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+
+        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+            try {
+                $c = ABJ_404_Solution_ServiceContainer::getInstance();
+                if (is_object($c) && method_exists($c, 'has')) {
+                    if ($c->has('data_access')) {
+                        $abj404dao = $c->get('data_access');
+                    }
+                    if ($c->has('plugin_logic')) {
+                        $abj404logic = $c->get('plugin_logic');
+                    }
+                }
+            } catch (Throwable $e) {
+                // fall back to singletons above
+            }
+        }
         global $abj404view;
 
         $nonceOk = function_exists('check_ajax_referer')
@@ -14,14 +35,21 @@ class ABJ_404_Solution_Ajax_TrashLink {
             : (function_exists('check_admin_referer') ? check_admin_referer('abj404_ajaxTrash', '_wpnonce', false) : false);
 
         if (!$nonceOk || !is_admin()) {
-            echo json_encode(array('result' => 'fail', 'message' => 'Invalid nonce. Please reload the page.'));
-            exit();
+            // Keep HTTP 200 so the JS success handler can display the message consistently.
+            wp_send_json(array('result' => 'fail', 'message' => __('Invalid nonce. Please reload the page.', '404-solution')), 200);
+            if (!(defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT)) {
+                exit;
+            }
+            return;
         }
 
         // Verify user has appropriate capabilities (respects plugin admin users)
         if (!$abj404logic->userIsPluginAdmin()) {
-            echo json_encode(array('result' => 'fail', 'message' => 'Unauthorized'));
-            exit();
+            wp_send_json(array('result' => 'fail', 'message' => __('Unauthorized', '404-solution')), 200);
+            if (!(defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT)) {
+                exit;
+            }
+            return;
         }
         
         $idToTrash = $abj404dao->getPostOrGetSanitize('id');
@@ -40,8 +68,11 @@ class ABJ_404_Solution_Ajax_TrashLink {
             $data['result'] = "fail";
         }
         
-        echo json_encode($data, JSON_PRETTY_PRINT);
-    	exit();
+        wp_send_json($data, 200);
+        if (!(defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT)) {
+            exit;
+        }
+        return;
     }
     
 }

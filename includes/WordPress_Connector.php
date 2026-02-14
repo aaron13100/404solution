@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 
 class ABJ_404_Solution_WordPress_Connector {
@@ -40,6 +45,23 @@ class ABJ_404_Solution_WordPress_Connector {
 	}
 
 	public static function getInstance() {
+		if (self::$instance !== null) {
+			return self::$instance;
+		}
+
+		// If the DI container is initialized, prefer it.
+		if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+			try {
+				$c = ABJ_404_Solution_ServiceContainer::getInstance();
+				if (is_object($c) && method_exists($c, 'has') && $c->has('wordpress_connector')) {
+					self::$instance = $c->get('wordpress_connector');
+					return self::$instance;
+				}
+			} catch (Throwable $e) {
+				// fall back
+			}
+		}
+
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_WordPress_Connector();
 		}
@@ -92,6 +114,11 @@ class ABJ_404_Solution_WordPress_Connector {
 
             // Initialize setup wizard (shows on first visit to plugin pages)
             ABJ_404_Solution_SetupWizard::init();
+
+            // Privacy policy content + export/erase integration.
+            if (class_exists('ABJ_404_Solution_Privacy')) {
+                ABJ_404_Solution_Privacy::init();
+            }
         }
 
         // Async suggestion computation and polling - must work for both logged-in and non-logged-in users

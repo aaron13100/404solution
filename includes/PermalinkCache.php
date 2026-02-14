@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 
 class ABJ_404_Solution_PermalinkCache {
@@ -84,7 +89,7 @@ class ABJ_404_Solution_PermalinkCache {
 
         // insert the new rows.
         $results = $this->dao->updatePermalinkCache();
-        $rowsInserted = $results['rows_affected'];
+        $rowsInserted = (is_array($results) && isset($results['rows_affected'])) ? $results['rows_affected'] : 0;
 
         // Invalidate coverage ratio if rows were inserted (new permalinks may lack N-grams)
         if ($rowsInserted > 0) {

@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * Handles plugin uninstallation
  * Completely separate from existing plugin code
@@ -17,6 +22,8 @@ class ABJ_404_Solution_Uninstaller {
     public static function uninstall($preferences) {
         global $wpdb;
 
+        $preferences = is_array($preferences) ? $preferences : array();
+
         // 1. Delete database tables based on user preferences
         self::deleteTables($wpdb, $preferences);
 
@@ -27,7 +34,7 @@ class ABJ_404_Solution_Uninstaller {
         self::cleanupCronJobs();
 
         // 4. Send feedback via email if requested
-        if ($preferences['send_feedback'] && !empty($preferences['uninstall_reason'])) {
+        if (($preferences['send_feedback'] ?? false) && !empty($preferences['uninstall_reason'] ?? '')) {
             self::sendFeedbackEmail($preferences);
         }
     }
@@ -76,18 +83,18 @@ class ABJ_404_Solution_Uninstaller {
         $prefix = strtolower($wpdb->prefix);
 
         // Delete redirect table if user chose to
-        if ($preferences['delete_redirects']) {
+        if ($preferences['delete_redirects'] ?? false) {
             self::deleteTable($prefix . 'abj404_redirects');
         }
 
         // Delete log tables if user chose to
-        if ($preferences['delete_logs']) {
+        if ($preferences['delete_logs'] ?? false) {
             self::deleteTable($prefix . 'abj404_logsv2');
             self::deleteTable($prefix . 'abj404_lookup');
         }
 
         // Always delete cache tables (can be rebuilt)
-        if ($preferences['delete_cache']) {
+        if ($preferences['delete_cache'] ?? false) {
             self::deleteTable($prefix . 'abj404_permalink_cache');
             self::deleteTable($prefix . 'abj404_ngram_cache');
             self::deleteTable($prefix . 'abj404_spelling_cache');
@@ -116,6 +123,9 @@ class ABJ_404_Solution_Uninstaller {
     public static function deleteAllOptions() {
         global $wpdb;
 
+        $optionsTable = $wpdb->options ?? (($wpdb->prefix ?? 'wp_') . 'options');
+        $sitemetaTable = $wpdb->sitemeta ?? (($wpdb->prefix ?? 'wp_') . 'sitemeta');
+
         // List of all plugin options
         $options = array(
             'abj404_settings',
@@ -136,7 +146,7 @@ class ABJ_404_Solution_Uninstaller {
         // Delete dynamic sync options (using LIKE pattern)
         $wpdb->query(
             $wpdb->prepare(
-                "DELETE FROM $wpdb->options WHERE option_name LIKE %s",
+                "DELETE FROM {$optionsTable} WHERE option_name LIKE %s",
                 $wpdb->esc_like('abj404_sync_') . '%'
             )
         );
@@ -145,7 +155,7 @@ class ABJ_404_Solution_Uninstaller {
         if (is_multisite()) {
             $wpdb->query(
                 $wpdb->prepare(
-                    "DELETE FROM $wpdb->sitemeta WHERE meta_key LIKE %s",
+                    "DELETE FROM {$sitemetaTable} WHERE meta_key LIKE %s",
                     $wpdb->esc_like('abj404_sync_') . '%'
                 )
             );

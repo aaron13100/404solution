@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* the glue that holds it together / everything else. */
 
 class ABJ_404_Solution_PluginLogic {
@@ -36,6 +41,23 @@ class ABJ_404_Solution_PluginLogic {
 
     /** @return ABJ_404_Solution_PluginLogic The singleton instance of the class. */
     public static function getInstance() {
+        if (self::$instance !== null) {
+            return self::$instance;
+        }
+
+        // If the DI container is initialized, prefer it.
+        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+            try {
+                $c = ABJ_404_Solution_ServiceContainer::getInstance();
+                if (is_object($c) && method_exists($c, 'has') && $c->has('plugin_logic')) {
+                    self::$instance = $c->get('plugin_logic');
+                    return self::$instance;
+                }
+            } catch (Throwable $e) {
+                // fall back
+            }
+        }
+
     	if (self::$instance == null) {
     		self::$instance = new ABJ_404_Solution_PluginLogic();
     		self::$uniqID = uniqid("", true);
@@ -987,6 +1009,12 @@ class ABJ_404_Solution_PluginLogic {
      */
     function updateToNewVersionAction($options) {
     	global $wpdb;
+
+        if (!is_array($options)) {
+            $options = array();
+        }
+        // Ensure all expected keys exist even when called with partial settings (tests/migrations).
+        $options = array_merge($this->getDefaultOptions(), $options);
 
         $currentDBVersion = "(unknown)";
         if (array_key_exists('DB_VERSION', $options)) {
@@ -1994,14 +2022,15 @@ class ABJ_404_Solution_PluginLogic {
                     return $message;
                 }
 
-                if ($this->f->regexMatch('[0-9]+', $_GET['id'])) {
+                $id = $_GET['id'] ?? '';
+                if ($id !== '' && $this->f->regexMatch('[0-9]+', $id)) {
                     if ($_GET[$paramName] == 1) {
                         $newstatus = $activeStatus;
                     } else {
                         $newstatus = ABJ404_STATUS_CAPTURED;
                     }
 
-                    $message = $this->dao->updateRedirectTypeStatus(absint($_GET['id']), $newstatus);
+                    $message = $this->dao->updateRedirectTypeStatus(absint($id), $newstatus);
                     if ($message == "") {
                         if ($newstatus == ABJ404_STATUS_CAPTURED) {
                             $message = sprintf(__('Removed 404 URL from %s list successfully!', '404-solution'), $successActionName);
@@ -3052,22 +3081,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return boolean true if the user is sent to the default 404 page.
      */
     function forceRedirect($location, $status = 302, $type = -1, $requestedURL = '', $isCustom404 = false) {
-        // Translate redirect destination for multilingual sites (TranslatePress, etc.)
-        $location = $this->maybeTranslateRedirectUrl($location, $requestedURL);
-
-        $commentPartAndQueryPart = $this->getCommentPartAndQueryPartOfRequest();
-        // Sanitize and encode the base location and query parts
-        $sanitizedLocation = esc_url_raw($location); // Ensure the base URL is safe
-        $sanitizedQueryPart = esc_html($commentPartAndQueryPart); // Encode the query part for safe output
-        $finalDestination = $sanitizedLocation . $sanitizedQueryPart;
-
-        // Append _ref LAST for custom 404 redirects (prevents user override via query string)
-        // This is a fallback for when cookies don't survive 301 redirects
-        if ($isCustom404 && !empty($requestedURL)) {
-            $refUrl = preg_replace('/\?.*/', '', $requestedURL); // Strip query string from ref
-            $separator = (strpos($finalDestination, '?') === false) ? '?' : '&';
-            $finalDestination .= $separator . ABJ404_PP . '_ref=' . urlencode($refUrl);
-        }
+        $finalDestination = $this->buildFinalRedirectDestination($location, $requestedURL, $isCustom404);
 
     	$previousRequest = $this->readCookieWithPreviousRqeuestShort();
     	$finalDestNoHome = $this->f->substr($finalDestination, $this->f->strpos($finalDestination, '://') + 3);
@@ -3098,22 +3112,93 @@ class ABJ_404_Solution_PluginLogic {
     	
     	// try a normal redirect using a header.
     	$this->setCookieWithPreviousRequest();
-        wp_redirect($finalDestination, $status, ABJ404_NAME);
+        // If headers can be sent, do a normal header redirect and exit immediately.
+        // Only fall back to JS redirect when headers are already sent.
+        if (!headers_sent()) {
+            // Prefer wp_safe_redirect for same-host redirects to avoid header-injection edge cases,
+            // but allow external redirects (plugin supports external redirect destinations).
+            $useSafe = false;
+            if (function_exists('wp_safe_redirect')) {
+                $destHost = parse_url($finalDestination, PHP_URL_HOST);
+                if ($destHost === null || $destHost === false || $destHost === '') {
+                    $useSafe = true; // relative URL
+                } else {
+                    $homeHost = parse_url(home_url(), PHP_URL_HOST);
+                    if (is_string($homeHost) && $homeHost !== '' && strtolower($homeHost) === strtolower($destHost)) {
+                        $useSafe = true;
+                    }
+                }
+            }
 
-        // TODO add an ajax request here that fires after 5 seconds.
-        // upon getting the request the server will log the error. the plugin could then notify an admin.
+            if ($useSafe) {
+                wp_safe_redirect($finalDestination, $status, ABJ404_NAME);
+            } else {
+                wp_redirect($finalDestination, $status, ABJ404_NAME);
+            }
+            if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
+                return false;
+            }
+            exit;
+        }
 
-        // This javascript redirect will only appear if the header redirect did not work for some reason.
-        // Use wp_json_encode to safely encode URL for JavaScript to prevent XSS
+        // JS fallback redirect for the rare case some other plugin/theme already output content.
+        // Use wp_json_encode to safely encode URL for JavaScript to prevent XSS.
         $c = '<script>' . 'function doRedirect() {' . "\n" .
                 '   window.location.replace(' . wp_json_encode($finalDestination) . ');' . "\n" .
                 '}' . "\n" .
                 'setTimeout(doRedirect, 1);' . "\n" .
                 '</script>' . "\n" .
                 'Page moved: <a href="' . esc_url($finalDestination) . '">' .
-        			esc_html($location) . '</a>';
+                    esc_html($finalDestination) . '</a>';
         echo $c;
+        if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
+            return false;
+        }
         exit;
+    }
+
+    /**
+     * Build the final redirect destination URL.
+     *
+     * This is separated for testability and to avoid mixing HTML escaping with redirect URL construction.
+     *
+     * @param string $location Base redirect destination.
+     * @param string $requestedURL Original requested URL (used for custom 404 ref tracking).
+     * @param bool $isCustom404 Whether we are redirecting to a custom 404 page.
+     * @return string Redirect destination suitable for wp_redirect().
+     */
+    public function buildFinalRedirectDestination($location, $requestedURL = '', $isCustom404 = false) {
+        // Translate redirect destination for multilingual sites (TranslatePress, etc.)
+        $location = $this->maybeTranslateRedirectUrl($location, $requestedURL);
+
+        // Preserve comment pagination and query string from the original request.
+        $commentPartAndQueryPart = (string)$this->getCommentPartAndQueryPartOfRequest();
+        $finalDestination = (string)$location . $commentPartAndQueryPart;
+
+        // Append _ref LAST for custom 404 redirects (prevents user override via query string).
+        // This is a fallback for when cookies don't survive 301 redirects.
+        if ($isCustom404 && is_string($requestedURL) && $requestedURL !== '') {
+            $refUrl = preg_replace('/\?.*/', '', $requestedURL); // Strip query string from ref
+            $refParam = ABJ404_PP . '_ref';
+            if (function_exists('remove_query_arg')) {
+                $finalDestination = remove_query_arg($refParam, $finalDestination);
+            }
+            if (function_exists('add_query_arg')) {
+                $finalDestination = add_query_arg($refParam, rawurlencode($refUrl), $finalDestination);
+            } else {
+                $separator = (strpos($finalDestination, '?') === false) ? '?' : '&';
+                $finalDestination .= $separator . $refParam . '=' . rawurlencode($refUrl);
+            }
+        }
+
+        // Sanitize for redirect header context (NOT HTML context).
+        if (function_exists('wp_sanitize_redirect')) {
+            $finalDestination = wp_sanitize_redirect($finalDestination);
+        } elseif (function_exists('esc_url_raw')) {
+            $finalDestination = esc_url_raw($finalDestination);
+        }
+
+        return (string)$finalDestination;
     }
 
     /** Order pages and set the page depth for child pages.

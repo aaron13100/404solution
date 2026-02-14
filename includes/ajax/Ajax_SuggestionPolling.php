@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * AJAX handler for polling suggestion computation status.
  * Called by JavaScript on the 404 page to check if suggestions are ready.
@@ -17,8 +22,26 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
             return;
         }
 
+        // Rate limit polling to avoid admin-ajax.php abuse on high-traffic 404 pages.
+        // Uses the same transient-based limiter as other AJAX endpoints (user ID or IP).
+        if (class_exists('ABJ_404_Solution_Ajax_Php') &&
+            ABJ_404_Solution_Ajax_Php::checkRateLimit('poll_suggestions', 120, 60)) {
+            wp_send_json(array('status' => 'error', 'message' => 'Rate limit exceeded. Please try again later.'));
+            return;
+        }
+
         // Sanitize input
         $f = ABJ_404_Solution_Functions::getInstance();
+        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+            try {
+                $c = ABJ_404_Solution_ServiceContainer::getInstance();
+                if (is_object($c) && method_exists($c, 'has') && $c->has('functions')) {
+                    $f = $c->get('functions');
+                }
+            } catch (Throwable $e) {
+                // fall back
+            }
+        }
         if (isset($_POST['url'])) {
             $rawUrl = function_exists('wp_unslash') ? wp_unslash($_POST['url']) : $_POST['url'];
             $requestedURL = $f->normalizeUrlString($rawUrl);

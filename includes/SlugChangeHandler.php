@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 class ABJ_404_Solution_SlugChangeHandler {
 
     private static $instance = null;
@@ -142,7 +147,7 @@ class ABJ_404_Solution_SlugChangeHandler {
 
         // create a redirect from the old to the new.
         $abj404dao->setupRedirect($oldSlug, ABJ404_STATUS_AUTO, ABJ404_TYPE_POST,
-                $post_id, $options['default_redirect'], 0);
+                $post_id, $options['default_redirect'] ?? '301', 0);
         $abj404logging->infoMessage("Added automatic redirect after slug change from " .
             $oldURL . ' to ' . $newURL . " for post ID " . $post_id);
     }

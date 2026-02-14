@@ -2236,3 +2236,25 @@ msgstr "要求最低匹配质量"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "仅显示与请求的URL紧密匹配的建议。这将过滤掉可能使访问者困惑的弱匹配。"
+
+
+msgid "404 Solution Logs"
+msgstr "404 Solution 日志"
+
+msgid "Timestamp"
+msgstr "时间戳"
+
+msgid "Requested URL"
+msgstr "请求的 URL"
+
+msgid "Destination URL"
+msgstr "目标 URL"
+
+msgid "Some items could not be anonymized."
+msgstr "部分项目无法匿名化。"
+
+msgid "Rate limit exceeded. Please try again later."
+msgstr "超过速率限制。请稍后再试。"
+
+msgid "Invalid nonce. Please reload the page."
+msgstr "Nonce 无效。请刷新页面。"

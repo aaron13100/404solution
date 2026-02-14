@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * Setup Wizard for first-time plugin configuration
  * Shows a welcome modal on first visit to 404 Solution admin pages

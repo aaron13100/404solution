@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
 
@@ -125,7 +130,8 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
         // Try iconv first (if available, it's very efficient)
         if (function_exists('iconv')) {
             // iconv with //IGNORE will skip invalid UTF-8 sequences
-            $sanitized = iconv('UTF-8', 'UTF-8//IGNORE', $string);
+            // iconv can emit notices on malformed input; we treat those as expected and fall back.
+            $sanitized = @iconv('UTF-8', 'UTF-8//IGNORE', $string);
 
             // iconv returns false on error, fall through to preg approach
             if ($sanitized !== false) {
@@ -165,4 +171,3 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
     }
 
 }
-

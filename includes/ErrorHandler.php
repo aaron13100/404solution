@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 
 class ABJ_404_Solution_ErrorHandler {

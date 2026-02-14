@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /*
 	Plugin Name: 404 Solution
 	Plugin URI:  https://www.ajexperience.com/404-solution/
@@ -31,11 +36,22 @@
 	Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-define('ABJ404_PP', 'abj404_solution');
-define('ABJ404_FILE', __FILE__);
-define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
-define('ABJ404_SHORTCODE_NAME', 'abj404_solution_page_suggestions');
-$GLOBALS['abj404_display_errors'] = false;
+// Guard constant definitions so unit tests (and unusual loaders) can define them first.
+if (!defined('ABJ404_PP')) {
+	define('ABJ404_PP', 'abj404_solution');
+}
+if (!defined('ABJ404_FILE')) {
+	define('ABJ404_FILE', __FILE__);
+}
+if (!defined('ABJ404_PATH')) {
+	define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
+}
+if (!defined('ABJ404_SHORTCODE_NAME')) {
+	define('ABJ404_SHORTCODE_NAME', 'abj404_solution_page_suggestions');
+}
+if (!isset($GLOBALS['abj404_display_errors'])) {
+	$GLOBALS['abj404_display_errors'] = false;
+}
 
 // Debug whitelist - only includes localhost/development environments by default
 // WARNING: Only add trusted domains to this list. External domains could be a security risk.
@@ -48,7 +64,6 @@ if (has_filter('abj404_debug_whitelist')) {
     $GLOBALS['abj404_whitelist'] = apply_filters('abj404_debug_whitelist', $GLOBALS['abj404_whitelist']);
 }
 
-$abj404_autoLoaderClassMap = array();
 function abj404_autoloader($class) {
 	// some people were having issues with possibly parent classes not being loaded before their children.
 	$childParentMap = [
@@ -57,35 +72,30 @@ function abj404_autoloader($class) {
 	];
 
 	// only pay attention if it's for us. don't bother for other things.
-	if (substr($class, 0, 16) == 'ABJ_404_Solution') {
-		global $abj404_autoLoaderClassMap;
-		if (empty($abj404_autoLoaderClassMap)) {
-			foreach (array('includes/php/objs', 'includes/php/wordpress', 'includes/php', 'includes/php',
-					'includes/ajax', 'includes') as $dir) {
-					
-					$globInput = ABJ404_PATH . $dir . DIRECTORY_SEPARATOR . '*.php';
-					$files = glob($globInput);
-					foreach ($files as $file) {
-						// /Users/user..../php/Study.php becomes ABJ_FC\Study
-						$pathParts = pathinfo($file);
-						$classNameWhenLoading = 'ABJ_404_Solution_' . $pathParts['filename'];
-						$abj404_autoLoaderClassMap[$classNameWhenLoading] = $file;
-					}
-			}
-		}
+	if (substr($class, 0, 16) !== 'ABJ_404_Solution') {
+		return;
+	}
 
-		if (array_key_exists($class, $abj404_autoLoaderClassMap)) {
-			// Ensure the parent class is loaded first
-			if (array_key_exists($class, $childParentMap)) {
-				$parentClass = $childParentMap[$class];
-				if (!class_exists($parentClass)) {
-					require_once $abj404_autoLoaderClassMap[$parentClass];
-				}
-			}
+	// Use a deterministic classmap to avoid runtime glob() scans on real sites.
+	static $abj404_autoLoaderClassMap = null;
+	if ($abj404_autoLoaderClassMap === null) {
+		$mapFile = __DIR__ . '/includes/classmap.php';
+		$abj404_autoLoaderClassMap = file_exists($mapFile) ? require $mapFile : array();
+	}
 
-			require_once $abj404_autoLoaderClassMap[$class];
+	if (!array_key_exists($class, $abj404_autoLoaderClassMap)) {
+		return;
+	}
+
+	// Ensure the parent class is loaded first.
+	if (array_key_exists($class, $childParentMap)) {
+		$parentClass = $childParentMap[$class];
+		if (!class_exists($parentClass, false) && array_key_exists($parentClass, $abj404_autoLoaderClassMap)) {
+			require_once $abj404_autoLoaderClassMap[$parentClass];
 		}
 	}
+
+	require_once $abj404_autoLoaderClassMap[$class];
 }
 spl_autoload_register('abj404_autoloader');
 
@@ -134,9 +144,11 @@ add_action('doing_it_wrong_run', function($function_name, $message, $version) {
 
 // shortcode
 add_shortcode(ABJ404_SHORTCODE_NAME, 'abj404_shortCodeListener');
-function abj404_shortCodeListener($atts) {
-    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-    return ABJ_404_Solution_ShortCode::shortcodePageSuggestions($atts);
+if (!function_exists('abj404_shortCodeListener')) {
+	function abj404_shortCodeListener($atts) {
+	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+	    return ABJ_404_Solution_ShortCode::shortcodePageSuggestions($atts);
+	}
 }
 
 // admin
@@ -158,20 +170,21 @@ unset($__abj404_template_redirect_priority);
 // ---
 
 // 404
+if (!function_exists('abj404_404listener')) {
 function abj404_404listener() {
 	// always ignore admin screens and login requests.
-	$isLoginScreen = (false !== stripos(wp_login_url(), $_SERVER['SCRIPT_NAME']));
+	// $_SERVER['SCRIPT_NAME'] is not guaranteed (CLI, some test runners, some proxies).
+	$isLoginScreen = (false !== stripos(wp_login_url(), $_SERVER['SCRIPT_NAME'] ?? ''));
 	$isCurrentlyViewingAnAdminPage = is_admin();
 	if ($isCurrentlyViewingAnAdminPage || $isLoginScreen) {
         return;
     }
     
+	$options = get_option('abj404_settings');
+
     if (!is_404()) {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        // if we should redirect all requests then don't return.
-    	$options = get_option('abj404_settings');
-    	$arrayKeyExists = is_array($options) && array_key_exists('redirect_all_requests', $options);
-    	if ($arrayKeyExists && $options['redirect_all_requests'] == 1) {
+        // Performance: do NOT load the whole plugin on every frontend request unless we must.
+    	if (abj404_is_redirect_all_requests_enabled($options)) {
     		require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     		$connector = ABJ_404_Solution_WordPress_Connector::getInstance();
     		$connector->processRedirectAllRequests();
@@ -205,7 +218,7 @@ function abj404_404listener() {
 	    		status_header(404);
     		}
 
-	    	if (array_key_exists('update_suggest_url', $options) &&
+	    	if (is_array($options) && array_key_exists('update_suggest_url', $options) &&
     			isset($options['update_suggest_url']) &&
     			$options['update_suggest_url'] == 1) {
 
@@ -226,7 +239,23 @@ function abj404_404listener() {
     $connector = ABJ_404_Solution_WordPress_Connector::getInstance();
     return $connector->process404();
 }
+}
 
+if (!function_exists('abj404_is_redirect_all_requests_enabled')) {
+	/**
+	 * Small helper for testability and to keep option-parsing logic consistent.
+	 *
+	 * @param mixed $options Value returned by get_option('abj404_settings')
+	 * @return bool
+	 */
+	function abj404_is_redirect_all_requests_enabled($options) {
+		return is_array($options) &&
+			array_key_exists('redirect_all_requests', $options) &&
+			(string)$options['redirect_all_requests'] === '1';
+	}
+}
+
+if (!function_exists('abj404_dailyMaintenanceCronJobListener')) {
 function abj404_dailyMaintenanceCronJobListener() {
     require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -235,29 +264,40 @@ function abj404_dailyMaintenanceCronJobListener() {
     $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
     $dbUpgrades->runDatabaseMaintenanceTasks();
 }
+}
+if (!function_exists('abj404_updateLogsHitsTableListener')) {
 function abj404_updateLogsHitsTableListener() {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 	$abj404dao->createRedirectsForViewHitsTable();
 }
+}
+if (!function_exists('abj404_updatePermalinkCacheListener')) {
 function abj404_updatePermalinkCacheListener($maxExecutionTime, $executionCount = 1) {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	$permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
 	$permalinkCache->updatePermalinkCache($maxExecutionTime, $executionCount);
 }
+}
+if (!function_exists('abj404_rebuildNGramCacheListener')) {
 function abj404_rebuildNGramCacheListener($offset = 0) {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	$dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
 	$dbUpgrades->rebuildNGramCacheAsync($offset);
 }
+}
+if (!function_exists('abj404_networkActivationListener')) {
 function abj404_networkActivationListener() {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	ABJ_404_Solution_PluginLogic::networkActivationCronHandler();
 }
+}
+if (!function_exists('abj404_networkActivationBackgroundListener')) {
 function abj404_networkActivationBackgroundListener() {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	$upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
 	$upgradesEtc->processMultisiteActivationBatch();
+}
 }
 add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
 add_action('abj404_updateLogsHitsTableAction', 'abj404_updateLogsHitsTableListener');
@@ -266,12 +306,14 @@ add_action('abj404_rebuild_ngram_cache_hook', 'abj404_rebuildNGramCacheListener'
 add_action('abj404_network_activation_hook', 'abj404_networkActivationListener');
 add_action('abj404_network_activation_background', 'abj404_networkActivationBackgroundListener');
 
+if (!function_exists('abj404_getUploadsDir')) {
 function abj404_getUploadsDir() {
 	// figure out the temp directory location.
 	$uploadsDirArray = wp_upload_dir(null, false);
 	$uploadsDir = $uploadsDirArray['basedir'];
 	$uploadsDir .= DIRECTORY_SEPARATOR . 'temp_' . ABJ404_PP . DIRECTORY_SEPARATOR;
 	return $uploadsDir;
+}
 }
 
 /**
@@ -283,6 +325,7 @@ function abj404_getUploadsDir() {
  * @param string $domain The text domain.
  * @return string The locale to use for translation loading.
  */
+if (!function_exists('abj404_override_plugin_locale')) {
 function abj404_override_plugin_locale($locale, $domain) {
 	// Only override for our plugin's text domain
 	if ($domain === '404-solution') {
@@ -295,9 +338,11 @@ function abj404_override_plugin_locale($locale, $domain) {
 	}
 	return $locale;
 }
+}
 add_filter('plugin_locale', 'abj404_override_plugin_locale', 999, 2);
 
 /** This only runs after WordPress is done enqueuing scripts. */
+if (!function_exists('abj404_loadSomethingWhenWordPressIsReady')) {
 function abj404_loadSomethingWhenWordPressIsReady() {
 	/** Load the text domain for translation of the plugin. */
 	$options = get_option('abj404_settings');
@@ -334,5 +379,6 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$abj404logic->handleActionExport();
 	}
+}
 }
 add_action('init', 'abj404_loadSomethingWhenWordPressIsReady');

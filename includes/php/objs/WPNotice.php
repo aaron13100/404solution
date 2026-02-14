@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /** Stores a message and its importance. */
 class ABJ_404_Solution_WPNotice {
     

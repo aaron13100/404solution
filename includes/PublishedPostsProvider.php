@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /** Return some of the published pages when requested. */
 class ABJ_404_Solution_PublishedPostsProvider {
     

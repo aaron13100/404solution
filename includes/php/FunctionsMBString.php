@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
 

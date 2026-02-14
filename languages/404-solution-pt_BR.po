@@ -2226,3 +2226,25 @@ msgstr "Exigir qualidade mínima de correspondência"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Mostrar apenas sugestões que correspondam de perto à URL solicitada. Isso filtra correspondências fracas que podem confundir os visitantes."
+
+
+msgid "404 Solution Logs"
+msgstr "Registros do 404 Solution"
+
+msgid "Timestamp"
+msgstr "Carimbo de data/hora"
+
+msgid "Requested URL"
+msgstr "URL solicitada"
+
+msgid "Destination URL"
+msgstr "URL de destino"
+
+msgid "Some items could not be anonymized."
+msgstr "Alguns itens nao puderam ser anonimizados."
+
+msgid "Rate limit exceeded. Please try again later."
+msgstr "Limite de taxa excedido. Tente novamente mais tarde."
+
+msgid "Invalid nonce. Please reload the page."
+msgstr "Nonce invalido. Recarregue a pagina."

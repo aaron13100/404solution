@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Funtcions supporting Ajax stuff.  */
 
 class ABJ_404_Solution_ViewUpdater {

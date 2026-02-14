@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
     class ABJ_404_Solution_WPDBExtension_PHP7 extends wpdb {
         public function public_strip_invalid_text_from_query($query) {

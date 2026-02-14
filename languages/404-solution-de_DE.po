@@ -2227,3 +2227,25 @@ msgstr "Mindestübereinstimmungsqualität erfordern"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Nur Vorschläge anzeigen, die gut zur angeforderten URL passen. Dies filtert schwache Übereinstimmungen heraus, die Besucher verwirren könnten."
+
+
+msgid "404 Solution Logs"
+msgstr "404 Solution-Protokolle"
+
+msgid "Timestamp"
+msgstr "Zeitstempel"
+
+msgid "Requested URL"
+msgstr "Angeforderte URL"
+
+msgid "Destination URL"
+msgstr "Ziel-URL"
+
+msgid "Some items could not be anonymized."
+msgstr "Einige Elemente konnten nicht anonymisiert werden."
+
+msgid "Rate limit exceeded. Please try again later."
+msgstr "Ratenlimit ueberschritten. Bitte spaeter erneut versuchen."
+
+msgid "Invalid nonce. Please reload the page."
+msgstr "Ungueltiger Nonce. Bitte die Seite neu laden."

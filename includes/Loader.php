@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 // Constants
 define( 'ABJ404_AUTHOR_EMAIL', '404solution@ajexperience.com' );
 /* plugin_dir_url( __FILE__ ) */

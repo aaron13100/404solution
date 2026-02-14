@@ -2224,3 +2224,25 @@ msgstr "Memerlukan kualitas kecocokan minimum"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Hanya tampilkan saran yang sangat cocok dengan URL yang diminta. Ini menyaring kecocokan lemah yang mungkin membingungkan pengunjung."
+
+
+msgid "404 Solution Logs"
+msgstr "Log 404 Solution"
+
+msgid "Timestamp"
+msgstr "Cap waktu"
+
+msgid "Requested URL"
+msgstr "URL yang diminta"
+
+msgid "Destination URL"
+msgstr "URL tujuan"
+
+msgid "Some items could not be anonymized."
+msgstr "Beberapa item tidak dapat dianonimkan."
+
+msgid "Rate limit exceeded. Please try again later."
+msgstr "Batas laju terlampaui. Silakan coba lagi nanti."
+
+msgid "Invalid nonce. Please reload the page."
+msgstr "Nonce tidak valid. Muat ulang halaman."

@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
  * everything $wpdb related.
@@ -183,14 +188,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
     /** Makes all plugin table names lowercase, in case someone thought it was funny to use
 	 * the lower_case_table_names=0 setting. */
-	function renameAbj404TablesToLowerCase() {
-		global $wpdb;
-		// Fetch all tables starting with "abj404", case-insensitive
-		$dbName = esc_sql($wpdb->dbname);
-		$query = "SELECT table_name 
-			FROM information_schema.tables 
-			WHERE table_schema = '{$dbName}' 
-			AND LOWER(table_name) LIKE '%abj404%'";
+		function renameAbj404TablesToLowerCase() {
+			global $wpdb;
+			// Fetch all tables starting with "abj404", case-insensitive
+			$dbNameRaw = $wpdb->dbname ?? '';
+			if ($dbNameRaw === '') {
+				$this->logger->warn("Could not determine database name for lowercase rename.");
+				return;
+			}
+			$dbName = esc_sql($dbNameRaw);
+			$query = "SELECT table_name 
+				FROM information_schema.tables 
+				WHERE table_schema = '{$dbName}' 
+				AND LOWER(table_name) LIKE '%abj404%'";
 		$results = $this->dao->queryAndGetResults($query);
 
 		if (!is_array($results['rows'])) {

@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 class ABJ_404_Solution_View_Suggestions {
 
 	private static $instance = null;
@@ -29,6 +34,19 @@ class ABJ_404_Solution_View_Suggestions {
      * @return string
      */
     function getAdminOptionsPage404Suggestions($options) {
+        $options = is_array($options) ? $options : array();
+        $options = array_merge(array(
+            'suggest_cats' => '0',
+            'suggest_tags' => '0',
+            'update_suggest_url' => '0',
+            'suggest_max' => '5',
+            'suggest_title' => '',
+            'suggest_before' => '',
+            'suggest_after' => '',
+            'suggest_entrybefore' => '',
+            'suggest_entryafter' => '',
+            'suggest_noresults' => '',
+        ), $options);
         
         // Suggested Alternatives Options
         $selectedSuggestCats = "";

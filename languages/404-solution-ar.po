@@ -2227,3 +2227,25 @@ msgstr "طلب الحد الأدنى من جودة المطابقة"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "عرض الاقتراحات التي تتطابق بشكل وثيق مع عنوان URL المطلوب فقط. هذا يُصفّي المطابقات الضعيفة التي قد تُربك الزوار."
+
+
+msgid "404 Solution Logs"
+msgstr "سجلات 404 Solution"
+
+msgid "Timestamp"
+msgstr "الطابع الزمني"
+
+msgid "Requested URL"
+msgstr "عنوان URL المطلوب"
+
+msgid "Destination URL"
+msgstr "عنوان URL الوجهة"
+
+msgid "Some items could not be anonymized."
+msgstr "تعذر إخفاء هوية بعض العناصر."
+
+msgid "Rate limit exceeded. Please try again later."
+msgstr "تم تجاوز حد المعدل. يرجى المحاولة لاحقًا."
+
+msgid "Invalid nonce. Please reload the page."
+msgstr "رمز nonce غير صالح. يرجى إعادة تحميل الصفحة."

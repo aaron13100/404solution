@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * AJAX handler for toggling between Simple and Advanced settings modes.
  */

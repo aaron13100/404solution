@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * AJAX handler for background suggestion computation.
  * Called via non-blocking wp_remote_post from SpellChecker::triggerAsyncSuggestionComputation().
@@ -14,6 +19,16 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
     public static function computeSuggestions() {
         // Sanitize inputs
         $f = ABJ_404_Solution_Functions::getInstance();
+        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+            try {
+                $c = ABJ_404_Solution_ServiceContainer::getInstance();
+                if (is_object($c) && method_exists($c, 'has') && $c->has('functions')) {
+                    $f = $c->get('functions');
+                }
+            } catch (Throwable $e) {
+                // fall back to singleton
+            }
+        }
         if (isset($_POST['url'])) {
             $rawUrl = function_exists('wp_unslash') ? wp_unslash($_POST['url']) : $_POST['url'];
             $requestedURL = $f->normalizeUrlString($rawUrl);
@@ -90,6 +105,19 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
         $logger = ABJ_404_Solution_Logging::getInstance();
+
+        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+            try {
+                $c = ABJ_404_Solution_ServiceContainer::getInstance();
+                if (is_object($c) && method_exists($c, 'has')) {
+                    if ($c->has('plugin_logic')) { $abj404logic = $c->get('plugin_logic'); }
+                    if ($c->has('spell_checker')) { $spellChecker = $c->get('spell_checker'); }
+                    if ($c->has('logging')) { $logger = $c->get('logging'); }
+                }
+            } catch (Throwable $e) {
+                // fall back to singletons
+            }
+        }
 
         $logger->debugMessage("Ajax_SuggestionCompute: Starting computation for " . esc_html($requestedURL));
 

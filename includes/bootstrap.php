@@ -1,5 +1,10 @@
 <?php
 
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * Bootstrap file for initializing the service container and registering services.
  *
@@ -37,14 +42,15 @@ function abj_404_solution_init_services() {
      * Logging service - handles debug logging and error reporting.
      */
     $container->set('logging', function($c) {
-        return ABJ_404_Solution_Logging::getInstance();
+        return ABJ_404_Solution_Logging::createForContainer();
     });
 
     /**
      * Error handler service - manages error handling and reporting.
      */
     $container->set('error_handler', function($c) {
-        return ABJ_404_Solution_ErrorHandler::getInstance();
+        // Error handler is static; return class name for callers that want a handle.
+        return 'ABJ_404_Solution_ErrorHandler';
     });
 
     // =========================================================================
@@ -224,7 +230,7 @@ function abj_get_instance($className) {
         'ABJ_404_Solution_View' => 'view',
         'ABJ_404_Solution_SpellChecker' => 'spell_checker',
         'ABJ_404_Solution_WordPress_Connector' => 'wordpress_connector',
-        'ABJ_404_Solution_ErrorHandler' => 'error_handler',
+        // Error handler is static; no instance.
         'ABJ_404_Solution_DatabaseUpgradesEtc' => 'database_upgrades',
         'ABJ_404_Solution_PermalinkCache' => 'permalink_cache',
         'ABJ_404_Solution_NGramFilter' => 'ngram_filter',
