@@ -238,11 +238,15 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @param string $tableName
      * @param string $colName
      */
-    function handleSpecificCases($tableName, $colName) {
-    	if (strpos($tableName, 'abj404_logsv2') !== false && $colName == 'min_log_id') {
-    		global $wpdb;
-    		$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
-    		$this->dao->queryAndGetResults($query);
+	    function handleSpecificCases($tableName, $colName) {
+	    	if (empty($tableName) || !is_string($tableName)) {
+	    		return;
+	    	}
+
+	    	if (strpos($tableName, 'abj404_logsv2') !== false && $colName == 'min_log_id') {
+	    		global $wpdb;
+	    		$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
+	    		$this->dao->queryAndGetResults($query);
             // Ensure composite index exists after backfilling min_log_id.
             $this->ensureLogsCompositeIndex($tableName);
     	}
@@ -627,10 +631,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    			continue;
 	    		}
 
-	    		$spellingCacheTableName = $this->dao->doTableNameReplacements('{wp_abj404_spelling_cache}');
-	    		if (strtolower($tableName) == $spellingCacheTableName && !empty($spec['unique'])) {
-	    			$this->dao->deleteSpellingCache();
-	    		}
+		    		$spellingCacheTableName = $this->dao->doTableNameReplacements('{wp_abj404_spelling_cache}');
+		    		$tableNameLower = is_string($tableName) ? strtolower($tableName) : '';
+		    		if ($tableNameLower == $spellingCacheTableName && !empty($spec['unique'])) {
+		    			$this->dao->deleteSpellingCache();
+		    		}
 
 	    		$addStatement = $this->buildAddIndexStatementFromParts($tableName, $spec['name'], $spec['columns'], $spec['unique']);
 	    		$this->dao->queryAndGetResults($addStatement);
@@ -949,9 +954,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     /** Create table DDL is returned without comments on any columns.
      * @param string $existingTableSQL
      */
-    function removeCommentsFromColumns($createTableDDL) {
-    	return preg_replace('/ (?:COMMENT.+?,[\r\n])/', ",\n", $createTableDDL);
-    }
+	    function removeCommentsFromColumns($createTableDDL) {
+	    	if ($createTableDDL === null) {
+	    		return '';
+	    	}
+	    	return preg_replace('/ (?:COMMENT.+?,[\r\n])/', ",\n", (string) $createTableDDL);
+	    }
 
     function updateTableEngineToInnoDB() {
     	// get a list of all tables.

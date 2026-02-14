@@ -988,12 +988,16 @@ class ABJ_404_Solution_View {
 	        }
 	    }
     
-    function echoFileContents($fileName) {
+	    function echoFileContents($fileName) {
 
-    	if (file_exists($fileName)) {
-    		$linesRead = 0;
-    		$handle = null;
-    		try {
+	    	if (!is_string($fileName)) {
+	    		$fileName = '';
+	    	}
+
+	    	if (file_exists($fileName)) {
+	    		$linesRead = 0;
+	    		$handle = null;
+	    		try {
     			if ($handle = fopen($fileName, "r")) {
     				// read the file one line at a time.
     				while (($line = fgets($handle)) !== false) {
@@ -3484,20 +3488,21 @@ class ABJ_404_Solution_View {
 	            $class = " class=\"current\"";
 	        }
         
-        $html = '<ul class="subsubsub" >';
-        if ($sub != 'abj404_captured') {
-            $html .= "<li>";
-            $html .= "<a href=\"" . esc_url($url) . "\"" . $class . ">" . __('All', '404-solution');
-            $html .= " <span class=\"count\">(" . esc_html($this->dao->getRecordCount($types)) . ")</span>";
-            $html .= "</a>";
-            $html .= "</li>";
-        }
-        foreach ($types as $type) {
-	            $thisurl = $url . "&filter=" . $type;
+	        $html = '<ul class="subsubsub" >';
+	        if ($sub != 'abj404_captured') {
+	            $html .= "<li>";
+	            $html .= "<a href=\"" . esc_url($url) . "\"" . $class . ">" . __('All', '404-solution');
+	            $html .= " <span class=\"count\">(" . esc_html($this->dao->getRecordCount($types)) . ")</span>";
+	            $html .= "</a>";
+	            $html .= "</li>";
+	        }
+	        $types = is_array($types) ? $types : array();
+	        foreach ($types as $type) {
+		            $thisurl = $url . "&filter=" . $type;
 
-	            $class = "";
-	            if ($filter == $type) {
-	                $class = " class=\"current\"";
+		            $class = "";
+		            if ($filter == $type) {
+		                $class = " class=\"current\"";
 	            }
 
             $recordCount = 0;

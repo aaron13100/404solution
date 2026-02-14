@@ -93,10 +93,13 @@ class ABJ_404_Solution_PluginLogic {
     		$urlPath = '';
     	}
 
-    	// Fix HIGH #2 (4th review): Decode subdirectory for consistency with runtime processing
-        $decodedPath = $this->f->normalizeUrlString(rtrim($urlPath, '/'));
-    	// Fix HIGH #3 (4th review): Remove null bytes and control characters for security
-    	$this->urlHomeDirectory = preg_replace('/[\x00-\x1F\x7F]/', '', $decodedPath);
+	    	// Fix HIGH #2 (4th review): Decode subdirectory for consistency with runtime processing
+	        $decodedPath = $this->f->normalizeUrlString(rtrim($urlPath, '/'));
+	        if (!is_string($decodedPath)) {
+	        	$decodedPath = '';
+	        }
+	    	// Fix HIGH #3 (4th review): Remove null bytes and control characters for security
+	    	$this->urlHomeDirectory = preg_replace('/[\x00-\x1F\x7F]/', '', $decodedPath);
     	$this->urlHomeDirectoryLength = $this->f->strlen($this->urlHomeDirectory);
     }
     
@@ -1907,10 +1910,16 @@ class ABJ_404_Solution_PluginLogic {
         return $anyIssuesToNote;
     }
     
-    function splitCsvLine($line) {
-        // Split the CSV line into an array
-        // Specify delimiter/enclosure/escape explicitly to avoid PHP 8.4 deprecation about default escape.
-        $data = array_map('trim', str_getcsv($line, ',', '"', '\\'));  // Trim each value in the array
+	    function splitCsvLine($line) {
+	    	if (!is_string($line)) {
+	    		$line = (string) $line;
+	    	}
+
+	        // Split the CSV line into an array
+	        // Specify delimiter/enclosure/escape explicitly to avoid PHP 8.4 deprecation about default escape.
+	        $data = array_map(function($v) {
+	        	return trim((string) $v);
+	        }, str_getcsv($line, ',', '"', '\\'));  // Trim each value in the array
         
         // Check the format based on the number of columns
         if (count($data) === 5) {
