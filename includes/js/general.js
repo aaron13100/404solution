@@ -78,12 +78,35 @@ function submitOptions(e) {
         dataType :'json',
         success: function (data) {
             clearTimeout(timeoutId);
-            var message = striphtml(JSON.stringify(data, null, 2));
+            // Support both legacy payloads ({ newURL, message, error }) and WP-shaped responses
+            // ({ success: true|false, data: { ... } }).
+            var payload = data;
+            if (data && typeof data === 'object' && typeof data.success === 'boolean' && data.data !== undefined) {
+                if (data.success === false) {
+                    var serverMsg = '';
+                    if (typeof data.data === 'string') {
+                        serverMsg = data.data;
+                    } else if (data.data && data.data.message) {
+                        serverMsg = data.data.message;
+                    }
+                    showSaveError(serverMsg || "Error saving settings. Please try again.");
+                    return;
+                }
+                payload = data.data;
+            }
+
+            // Safety: if we don't have the redirect URL, treat as failure.
+            if (!payload || payload['newURL'] === undefined) {
+                showSaveError("Error saving settings. Please try again.");
+                return;
+            }
+
+            var message = striphtml(JSON.stringify(payload, null, 2));
             console.log("saved options: " + message);
 
             // redirect and post a message (overlay will disappear on page reload)
-            var form = jQuery('<form action="' + data['newURL'] + '" method="post">' +
-            		  '<input type="text" name="display-this-message" value="' + data['message'] + '" />' +
+            var form = jQuery('<form action="' + payload['newURL'] + '" method="post">' +
+            		  '<input type="text" name="display-this-message" value="' + payload['message'] + '" />' +
             		  '</form>');
             jQuery('body').append(form);
             form.submit();

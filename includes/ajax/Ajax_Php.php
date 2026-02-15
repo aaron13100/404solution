@@ -93,7 +93,21 @@ class ABJ_404_Solution_Ajax_Php {
 			return;
 		}
 
-		$abj404logic->updateOptionsFromPOST();
+		$result = $abj404logic->updateOptionsFromPOST();
+		if (!is_array($result) || !array_key_exists('success', $result)) {
+			wp_send_json_error(array('message' => 'Server error'), 500);
+			return;
+		}
+
+		if (!$result['success']) {
+			$status = array_key_exists('status', $result) ? intval($result['status']) : 400;
+			$message = array_key_exists('message', $result) ? (string)$result['message'] : 'Server error';
+			wp_send_json_error(array('message' => $message), $status);
+			return;
+		}
+
+		$data = array_key_exists('data', $result) ? $result['data'] : array();
+		wp_send_json_success($data, 200);
 	}
 
 	/**

@@ -355,7 +355,11 @@ class ABJ_404_Solution_UninstallModal {
      */
     public static function handleAjaxSavePreferences() {
         // Security: Verify nonce
-        check_ajax_referer('abj404_uninstall_nonce', 'nonce');
+        $nonceOk = check_ajax_referer('abj404_uninstall_nonce', 'nonce', false);
+        if (!$nonceOk) {
+            wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
+            return;
+        }
 
         // Security: Check user capabilities
         if (!current_user_can('activate_plugins')) {

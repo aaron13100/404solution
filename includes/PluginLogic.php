@@ -2596,82 +2596,100 @@ class ABJ_404_Solution_PluginLogic {
      * @return string
      */
     function updateOptionsFromPOST() {
-
         $message = "";
         $options = $this->getOptions();
-
-        // get the submitted settings
-        if (!isset($_POST['encodedData'])) {
-            $this->logger->errorMessage('Missing encodedData in POST');
-            return;
-        }
-        $encodedData = $_POST['encodedData'];
-        $postData = $this->f->decodeComplicatedData($encodedData);
 
         // to return after handling the ajax call.
         $returnData = array();
         $returnData['newURL'] = admin_url() . "options-general.php?page=" . ABJ404_PP . '&subpage=abj404_options';
 
-        // verify nonce
-        if (!wp_verify_nonce($postData['nonce'], 'abj404UpdateOptions') || !is_admin()) {
-        	$returnData['message'] = 'Task failed successfully.';
-        	echo json_encode($returnData);
-        	exit(1);
+        // get the submitted settings
+        if (!isset($_POST['encodedData'])) {
+            $this->logger->errorMessage('Missing encodedData in POST');
+            return array(
+                'success' => false,
+                'status' => 400,
+                'message' => 'Missing form data',
+            );
+        }
+
+        $encodedData = $_POST['encodedData'];
+        $postData = $this->f->decodeComplicatedData($encodedData);
+        if (!is_array($postData)) {
+            $this->logger->errorMessage('Invalid JSON encodedData in POST');
+            return array(
+                'success' => false,
+                'status' => 400,
+                'message' => 'Missing form data',
+            );
+        }
+
+        // verify nonce (defense-in-depth; Ajax_Php already verifies for admin-ajax calls)
+        $nonce = isset($postData['nonce']) ? $postData['nonce'] : '';
+        if (!wp_verify_nonce($nonce, 'abj404UpdateOptions') || !is_admin()) {
+            return array(
+                'success' => false,
+                'status' => 403,
+                'message' => 'Invalid security token',
+            );
         }
 
         $_POST = $postData;
 
         // delete the debug file if requested.
         if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile'] == true) {
-        	$sub = '';
-        	$returnData['error'] = '';
-        	$returnData['message'] = $this->handlePluginAction('updateOptions', $sub);
+            $sub = '';
+            $returnData['error'] = '';
+            $returnData['message'] = $this->handlePluginAction('updateOptions', $sub);
 
         } else {
-        	// save all options - grouped by related functionality
-	        $message .= $this->updateRedirectSettings($options, $_POST);
-	        $message .= $this->updateWordPressSettings($options, $_POST);
-	        $message .= $this->updateNotificationSettings($options, $_POST);
-	        $message .= $this->updateDeletionSettings($options, $_POST);
-	        $message .= $this->updateSuggestionSettings($options, $_POST);
-	        $message .= $this->updateBooleanToggles($options, $_POST);
-	        $message .= $this->updateSuggestionHTMLOptions($options, $_POST);
-	        $message .= $this->updateRegexPatternSettings($options, $_POST);
-	        $message .= $this->updateAdminUsers($options, $_POST);
-	        $message .= $this->updateExcludedPages($options, $_POST);
+            // save all options - grouped by related functionality
+            $message .= $this->updateRedirectSettings($options, $_POST);
+            $message .= $this->updateWordPressSettings($options, $_POST);
+            $message .= $this->updateNotificationSettings($options, $_POST);
+            $message .= $this->updateDeletionSettings($options, $_POST);
+            $message .= $this->updateSuggestionSettings($options, $_POST);
+            $message .= $this->updateBooleanToggles($options, $_POST);
+            $message .= $this->updateSuggestionHTMLOptions($options, $_POST);
+            $message .= $this->updateRegexPatternSettings($options, $_POST);
+            $message .= $this->updateAdminUsers($options, $_POST);
+            $message .= $this->updateExcludedPages($options, $_POST);
 
-	        // save this for later to sanitize it ourselves.
-	        $excludedPages = $options['excludePages[]'];
+            // save this for later to sanitize it ourselves.
+            $excludedPages = $options['excludePages[]'];
 
-	        /** Sanitize all data. */
-	        $new_options = array();
-	        // when sanitizing data we keep the newlines (\n) because some data
-	        // is entered that way and it shouldn't allow any kind of sql
-	        // injection or any other security issues that I foresee at this point.
-	        $new_options = $this->sanitizePostData($options, true);
+            /** Sanitize all data. */
+            $new_options = array();
+            // when sanitizing data we keep the newlines (\n) because some data
+            // is entered that way and it shouldn't allow any kind of sql
+            // injection or any other security issues that I foresee at this point.
+            $new_options = $this->sanitizePostData($options, true);
 
-	        // only some characters in the string.
-	        $excludedPages = $excludedPages == null ? '' : trim($excludedPages);
-	        $excludedPages = preg_replace('/[^\[\",\]a-zA-Z\d\|\\\\ ]/', '', $excludedPages);
+            // only some characters in the string.
+            $excludedPages = $excludedPages == null ? '' : trim($excludedPages);
+            $excludedPages = preg_replace('/[^\[\",\]a-zA-Z\d\|\\\\ ]/', '', $excludedPages);
             $new_options['excludePages[]'] = $excludedPages;
 
-	        $this->updateOptions($new_options);
+            $this->updateOptions($new_options);
 
-	        // update the permalink cache because the post types included may have changed.
-	        $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
-	        $permalinkCache->updatePermalinkCache(2);
+            // update the permalink cache because the post types included may have changed.
+            $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
+            $permalinkCache->updatePermalinkCache(2);
 
-	        $returnData['error'] = $message;
-	        if ($message == "") {
-	        	$returnData['message'] = __('Options Saved Successfully!', '404-solution');
-	        } else {
-	        	$returnData['message'] = __('Some options were not saved successfully.', '404-solution') .
-	        		'		' . $message;
-	        }
+            $returnData['error'] = $message;
+            if ($message == "") {
+                $returnData['message'] = __('Options Saved Successfully!', '404-solution');
+            } else {
+                $returnData['message'] = __('Some options were not saved successfully.', '404-solution') .
+                    '		' . $message;
+            }
         }
 
-        echo json_encode($returnData);
-        exit();
+        return array(
+            'success' => true,
+            'status' => 200,
+            'data' => $returnData,
+        );
     }
 
     /** Update redirect-related settings.
