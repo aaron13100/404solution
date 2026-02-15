@@ -95,6 +95,13 @@ function submitOptions(e) {
             // Try to get a more specific error message
             if (request.responseJSON && request.responseJSON.message) {
                 errMsg = request.responseJSON.message;
+            } else if (request.responseJSON && request.responseJSON.data) {
+                // wp_send_json_error() format: { success: false, data: ... }
+                if (typeof request.responseJSON.data === 'string') {
+                    errMsg = request.responseJSON.data;
+                } else if (request.responseJSON.data.message) {
+                    errMsg = request.responseJSON.data.message;
+                }
             } else if (request.statusText && request.statusText !== 'error') {
                 errMsg = "Error: " + request.statusText;
             }

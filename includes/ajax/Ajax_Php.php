@@ -74,7 +74,7 @@ class ABJ_404_Solution_Ajax_Php {
 
 		// Verify user has appropriate capabilities (respects plugin admin users)
 		if (!$abj404logic->userIsPluginAdmin()) {
-			wp_send_json_error(array('message' => 'Unauthorized'));
+			wp_send_json_error(array('message' => 'Unauthorized'), 403);
 			return;
 		}
 
@@ -85,11 +85,11 @@ class ABJ_404_Solution_Ajax_Php {
 			$postData = $f->decodeComplicatedData($_POST['encodedData']);
 			$nonce = isset($postData['nonce']) ? $postData['nonce'] : '';
 			if (!wp_verify_nonce($nonce, 'abj404UpdateOptions')) {
-				wp_send_json_error(array('message' => 'Invalid security token'));
+				wp_send_json_error(array('message' => 'Invalid security token'), 403);
 				return;
 			}
 		} else {
-			wp_send_json_error(array('message' => 'Missing form data'));
+			wp_send_json_error(array('message' => 'Missing form data'), 400);
 			return;
 		}
 
