@@ -173,7 +173,8 @@ class ABJ_404_Solution_Ajax_Php {
         }
 
         // Limit search term length to prevent DoS
-        $term = $f->strtolower(sanitize_text_field($_GET['term']));
+        $termRaw = array_key_exists('term', $_GET) ? $_GET['term'] : '';
+        $term = $f->strtolower(sanitize_text_field($termRaw));
         $term = substr($term, 0, 100);
         $suggestions = array();
 
@@ -226,9 +227,11 @@ class ABJ_404_Solution_Ajax_Php {
         }
 
         // Limit search term length to prevent DoS
-        $term = $f->strtolower(sanitize_text_field($_GET['term']));
+        $termRaw = array_key_exists('term', $_GET) ? $_GET['term'] : '';
+        $term = $f->strtolower(sanitize_text_field($termRaw));
         $term = substr($term, 0, 100);
-        $includeDefault404Page = $_GET['includeDefault404Page'] == "true";
+        $includeDefault404PageRaw = array_key_exists('includeDefault404Page', $_GET) ? $_GET['includeDefault404Page'] : 'false';
+        $includeDefault404Page = $includeDefault404PageRaw == "true";
         $includeSpecial = array_key_exists('includeSpecial', $_GET) &&
         	$_GET['includeSpecial'] == "true";
         $suggestions = array();
