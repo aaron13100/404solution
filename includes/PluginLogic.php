@@ -3201,6 +3201,9 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         // Sanitize for redirect header context (NOT HTML context).
+        // Harden against CRLF header injection even when WP helpers are not available.
+        $finalDestination = preg_replace("/[\\r\\n]+/", '', (string)$finalDestination);
+
         if (function_exists('wp_sanitize_redirect')) {
             $finalDestination = wp_sanitize_redirect($finalDestination);
         } elseif (function_exists('esc_url_raw')) {
