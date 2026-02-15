@@ -65,8 +65,24 @@
                         $btn.removeClass('loading');
                     }
                 },
-                error: function() {
-                    alert('An error occurred while updating settings mode');
+                error: function(jqXHR) {
+                    var errMsg = 'An error occurred while updating settings mode';
+                    try {
+                        if (jqXHR && jqXHR.responseJSON) {
+                            if (jqXHR.responseJSON.message) {
+                                errMsg = jqXHR.responseJSON.message;
+                            } else if (jqXHR.responseJSON.data) {
+                                if (typeof jqXHR.responseJSON.data === 'string') {
+                                    errMsg = jqXHR.responseJSON.data;
+                                } else if (jqXHR.responseJSON.data.message) {
+                                    errMsg = jqXHR.responseJSON.data.message;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // ignore and use generic msg
+                    }
+                    alert(errMsg);
                     $buttons.prop('disabled', false);
                     $btn.removeClass('loading');
                 }

@@ -42,20 +42,21 @@ class ABJ_404_Solution_SetupWizard {
     public static function handleAjaxDismiss() {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'abj404_setup_wizard')) {
-            wp_send_json_error('Invalid nonce');
+            wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
             return;
         }
 
         // Verify user capabilities
         if (!current_user_can('manage_options')) {
-            wp_send_json_error('Insufficient permissions');
+            wp_send_json_error(array('message' => __('Insufficient permissions', '404-solution')), 403);
             return;
         }
 
         // Mark setup as complete
         update_option(self::OPTION_NAME, gmdate('Y-m-d'));
 
-        wp_send_json_success();
+        // Response is intentionally minimal; the UI uses a fire-and-forget request.
+        wp_send_json_success(array('message' => ''));
     }
 
     /**
