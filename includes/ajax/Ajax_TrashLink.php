@@ -41,8 +41,7 @@ class ABJ_404_Solution_Ajax_TrashLink {
             : (function_exists('check_admin_referer') ? check_admin_referer('abj404_ajaxTrash', '_wpnonce', false) : false);
 
         if (!$nonceOk || !is_admin()) {
-            // Keep HTTP 200 so the JS success handler can display the message consistently.
-            wp_send_json(array('result' => 'fail', 'message' => __('Invalid nonce. Please reload the page.', '404-solution')), 200);
+            wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
             if (!(defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT)) {
                 exit;
             }
@@ -51,7 +50,7 @@ class ABJ_404_Solution_Ajax_TrashLink {
 
         // Verify user has appropriate capabilities (respects plugin admin users)
         if (!$abj404logic->userIsPluginAdmin()) {
-            wp_send_json(array('result' => 'fail', 'message' => __('Unauthorized', '404-solution')), 200);
+            wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
             if (!(defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT)) {
                 exit;
             }
@@ -75,8 +74,18 @@ class ABJ_404_Solution_Ajax_TrashLink {
         } else {
             $data['result'] = "fail";
         }
-        
-        wp_send_json($data, 200);
+
+        if ($data['result'] === 'success') {
+            wp_send_json_success($data, 200);
+	        } else {
+	            // Keep the same fields for UI, but indicate failure via WP-shaped error response.
+	            wp_send_json_error(array(
+	                'message' => __('Error: Unable to move redirect to trash.', '404-solution'),
+	                'resultset' => $data['resultset'],
+	                'subsubsub' => $data['subsubsub'],
+	                'result' => 'fail',
+	            ), 500);
+	        }
         if (!(defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT)) {
             exit;
         }
