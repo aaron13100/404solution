@@ -46,12 +46,23 @@ if (!defined('ABJ404_FILE')) {
 if (!defined('ABJ404_PATH')) {
 	define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
 }
-if (!defined('ABJ404_SHORTCODE_NAME')) {
-	define('ABJ404_SHORTCODE_NAME', 'abj404_solution_page_suggestions');
-}
-if (!isset($GLOBALS['abj404_display_errors'])) {
-	$GLOBALS['abj404_display_errors'] = false;
-}
+	if (!defined('ABJ404_SHORTCODE_NAME')) {
+		define('ABJ404_SHORTCODE_NAME', 'abj404_solution_page_suggestions');
+	}
+	if (!isset($GLOBALS['abj404_display_errors'])) {
+		$GLOBALS['abj404_display_errors'] = false;
+	}
+
+	// Used by multiple classes during early admin initialization (e.g. upgrade/migration paths).
+	// This must be defined before any Loader.php initialization that might touch Logging/SynchronizationUtils.
+	if (!function_exists('abj404_getUploadsDir')) {
+		function abj404_getUploadsDir() {
+			$uploadsDirArray = wp_upload_dir(null, false);
+			$uploadsDir = $uploadsDirArray['basedir'] ?? '';
+			$uploadsDir .= DIRECTORY_SEPARATOR . 'temp_' . ABJ404_PP . DIRECTORY_SEPARATOR;
+			return $uploadsDir;
+		}
+	}
 
 // Debug whitelist - only includes localhost/development environments by default
 // WARNING: Only add trusted domains to this list. External domains could be a security risk.
@@ -302,23 +313,13 @@ function abj404_networkActivationBackgroundListener() {
 add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
 add_action('abj404_updateLogsHitsTableAction', 'abj404_updateLogsHitsTableListener');
 add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheListener', 10, 2);
-add_action('abj404_rebuild_ngram_cache_hook', 'abj404_rebuildNGramCacheListener', 10, 1);
-add_action('abj404_network_activation_hook', 'abj404_networkActivationListener');
-add_action('abj404_network_activation_background', 'abj404_networkActivationBackgroundListener');
+	add_action('abj404_rebuild_ngram_cache_hook', 'abj404_rebuildNGramCacheListener', 10, 1);
+	add_action('abj404_network_activation_hook', 'abj404_networkActivationListener');
+	add_action('abj404_network_activation_background', 'abj404_networkActivationBackgroundListener');
 
-if (!function_exists('abj404_getUploadsDir')) {
-function abj404_getUploadsDir() {
-	// figure out the temp directory location.
-	$uploadsDirArray = wp_upload_dir(null, false);
-	$uploadsDir = $uploadsDirArray['basedir'];
-	$uploadsDir .= DIRECTORY_SEPARATOR . 'temp_' . ABJ404_PP . DIRECTORY_SEPARATOR;
-	return $uploadsDir;
-}
-}
-
-/**
- * Override the locale for this plugin if user has configured a language override.
- * This allows users to use a different language for the 404 Solution plugin
+	/**
+	 * Override the locale for this plugin if user has configured a language override.
+	 * This allows users to use a different language for the 404 Solution plugin
  * than their WordPress site language or user language preference.
  *
  * @param string $locale The current locale.
