@@ -3453,16 +3453,16 @@ class ABJ_404_Solution_View {
         return $html;
     }
     
-	    function getSubSubSub($sub) {
-	        global $abj404_redirect_types;
-	        global $abj404_captured_types;
-	        
-	        $tableOptions = $this->logic->getTableOptions($sub);
-	        $filter = isset($tableOptions['filter']) ? intval($tableOptions['filter']) : 0;
-	        $orderby = isset($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url';
-	        $order = isset($tableOptions['order']) ? $tableOptions['order'] : 'ASC';
-	        
-	        $url = "?page=" . ABJ404_PP;
+		    function getSubSubSub($sub) {
+		        global $abj404_redirect_types;
+		        global $abj404_captured_types;
+		        
+		        $tableOptions = $this->logic->getTableOptions($sub);
+		        $filter = isset($tableOptions['filter']) ? intval($tableOptions['filter']) : 0;
+		        $orderby = isset($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url';
+		        $order = isset($tableOptions['order']) ? $tableOptions['order'] : 'ASC';
+		        
+		        $url = "?page=" . ABJ404_PP;
         if ($sub == 'abj404_captured') {
             $url .= "&subpage=abj404_captured";
         } else if ($sub == 'abj404_redirects') {
@@ -3474,30 +3474,60 @@ class ABJ_404_Solution_View {
 	        $url .= "&orderby=" . sanitize_text_field($orderby);
 	        $url .= "&order=" . sanitize_text_field($order);
 
-        if ($sub == 'abj404_redirects') {
-            $types = $abj404_redirect_types;
-        } else if ($sub == 'abj404_captured') {
-            $types = $abj404_captured_types;
-        } else {
-            $this->logger->debugMessage("Unexpected sub type for tab filter: " . $sub);
-            $types = $abj404_captured_types;
-        }
+	        if ($sub == 'abj404_redirects') {
+	            $types = array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO, ABJ404_STATUS_REGEX);
+	            if (isset($abj404_redirect_types) && is_array($abj404_redirect_types)) {
+	                // Some tests/plugins may set this global to a label map; only accept a numeric status list.
+	                $candidate = array_values($abj404_redirect_types);
+	                $isNumericList = true;
+	                foreach ($candidate as $v) {
+	                    if (!is_int($v) && !(is_string($v) && ctype_digit($v))) {
+	                        $isNumericList = false;
+	                        break;
+	                    }
+	                }
+	                if ($isNumericList && !empty($candidate)) {
+	                    $types = array_map('intval', $candidate);
+	                }
+	            }
+	            $counts = $this->dao->getRedirectStatusCounts();
+	        } else if ($sub == 'abj404_captured') {
+	            $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
+	            if (isset($abj404_captured_types) && is_array($abj404_captured_types)) {
+	                $candidate = array_values($abj404_captured_types);
+	                $isNumericList = true;
+	                foreach ($candidate as $v) {
+	                    if (!is_int($v) && !(is_string($v) && ctype_digit($v))) {
+	                        $isNumericList = false;
+	                        break;
+	                    }
+	                }
+	                if ($isNumericList && !empty($candidate)) {
+	                    $types = array_map('intval', $candidate);
+	                }
+	            }
+	            $counts = $this->dao->getCapturedStatusCounts();
+	        } else {
+	            $this->logger->debugMessage("Unexpected sub type for tab filter: " . $sub);
+	            $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
+	            $counts = array();
+	        }
 
 	        $class = "";
 	        if ($filter == 0) {
 	            $class = " class=\"current\"";
 	        }
         
-	        $html = '<ul class="subsubsub" >';
-	        if ($sub != 'abj404_captured') {
-	            $html .= "<li>";
-	            $html .= "<a href=\"" . esc_url($url) . "\"" . $class . ">" . __('All', '404-solution');
-	            $html .= " <span class=\"count\">(" . esc_html($this->dao->getRecordCount($types)) . ")</span>";
-	            $html .= "</a>";
-	            $html .= "</li>";
-	        }
-	        $types = is_array($types) ? $types : array();
-	        foreach ($types as $type) {
+		        $html = '<ul class="subsubsub" >';
+		        if ($sub != 'abj404_captured') {
+		            $html .= "<li>";
+		            $html .= "<a href=\"" . esc_url($url) . "\"" . $class . ">" . __('All', '404-solution');
+		            $html .= " <span class=\"count\">(" . esc_html($counts['all'] ?? 0) . ")</span>";
+		            $html .= "</a>";
+		            $html .= "</li>";
+		        }
+		        $types = is_array($types) ? $types : array();
+		        foreach ($types as $type) {
 		            $thisurl = $url . "&filter=" . $type;
 
 		            $class = "";
@@ -3505,29 +3535,29 @@ class ABJ_404_Solution_View {
 		                $class = " class=\"current\"";
 	            }
 
-            $recordCount = 0;
-            $title = __('Unknown', '404-solution');
-            if ($type == ABJ404_STATUS_MANUAL) {
-                $title = __('Manual Redirects', '404-solution');
-                $recordCount = $this->dao->getRecordCount(array($type, ABJ404_STATUS_REGEX));
-            } else if ($type == ABJ404_STATUS_AUTO) {
-                $title = __('Automatic Redirects', '404-solution');
-                $recordCount = $this->dao->getRecordCount(array($type));
-            } else if ($type == ABJ404_STATUS_CAPTURED) {
-                $title = "Captured URLs";
-                $recordCount = $this->dao->getRecordCount(array($type));
-            } else if ($type == ABJ404_STATUS_IGNORED) {
-                $title = "Ignored 404s";
-                $recordCount = $this->dao->getRecordCount(array($type));
-            } else if ($type == ABJ404_STATUS_LATER) {
-                $title = "Organize Later";
-                $recordCount = $this->dao->getRecordCount(array($type));
-            } else if ($type == ABJ404_STATUS_REGEX) {
-                // don't include a tab here because these are included in the manual redirects.
-                continue;
-            } else {
-                $this->logger->errorMessage("Unrecognized redirect type in View: " . esc_html($type));
-            }
+	            $recordCount = 0;
+	            $title = __('Unknown', '404-solution');
+	            if ($type == ABJ404_STATUS_MANUAL) {
+	                $title = __('Manual Redirects', '404-solution');
+	                $recordCount = intval($counts['manual'] ?? 0) + intval($counts['regex'] ?? 0);
+	            } else if ($type == ABJ404_STATUS_AUTO) {
+	                $title = __('Automatic Redirects', '404-solution');
+	                $recordCount = intval($counts['auto'] ?? 0);
+	            } else if ($type == ABJ404_STATUS_CAPTURED) {
+	                $title = "Captured URLs";
+	                $recordCount = intval($counts['captured'] ?? 0);
+	            } else if ($type == ABJ404_STATUS_IGNORED) {
+	                $title = "Ignored 404s";
+	                $recordCount = intval($counts['ignored'] ?? 0);
+	            } else if ($type == ABJ404_STATUS_LATER) {
+	                $title = "Organize Later";
+	                $recordCount = intval($counts['later'] ?? 0);
+	            } else if ($type == ABJ404_STATUS_REGEX) {
+	                // don't include a tab here because these are included in the manual redirects.
+	                continue;
+	            } else {
+	                $this->logger->errorMessage("Unrecognized redirect type in View: " . esc_html($type));
+	            }
 
             $html .= "<li>";
             if ($sub != 'abj404_captured' || $type != ABJ404_STATUS_CAPTURED) {
@@ -3540,18 +3570,18 @@ class ABJ_404_Solution_View {
         }
 
 
-        $trashurl = $url . "&filter=" . ABJ404_TRASH_FILTER;
-        $class = "";
-        if (($tableOptions['filter'] ?? 0) == ABJ404_TRASH_FILTER) {
-            $class = " class=\"current\"";
-        }
-        $html .= "<li> | ";
-        $html .= "<a href=\"" . esc_url($trashurl) . "\"" . $class . ">" . __('Trash', '404-solution');
-        $html .= " <span class=\"count\">(" . esc_html($this->dao->getRecordCount($types, 1)) . ")</span>";
-        $html .= "</a>";
-        $html .= "</li>";
-        $html .= "</ul>";
-        $html .= "\n\n<!-- page-form big outer form could go here -->\n\n";
+	        $trashurl = $url . "&filter=" . ABJ404_TRASH_FILTER;
+	        $class = "";
+	        if (($tableOptions['filter'] ?? 0) == ABJ404_TRASH_FILTER) {
+	            $class = " class=\"current\"";
+	        }
+	        $html .= "<li> | ";
+	        $html .= "<a href=\"" . esc_url($trashurl) . "\"" . $class . ">" . __('Trash', '404-solution');
+	        $html .= " <span class=\"count\">(" . esc_html($counts['trash'] ?? 0) . ")</span>";
+	        $html .= "</a>";
+	        $html .= "</li>";
+	        $html .= "</ul>";
+	        $html .= "\n\n<!-- page-form big outer form could go here -->\n\n";
         
         $oneBigFormActionURL = $this->getBulkOperationsFormURL($sub, $tableOptions);
         $html .= '<form method="POST" name="bulk-operations-form" action="' . $oneBigFormActionURL . '">';

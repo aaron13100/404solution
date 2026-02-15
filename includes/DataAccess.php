@@ -963,14 +963,17 @@ class ABJ_404_Solution_DataAccess {
             }
         }
 
+        // IMPORTANT: The redirects table also stores captured/ignored/later rows.
+        // The Redirects page "All/Manual/Auto/Trash" tabs should only count actual redirects
+        // (manual/auto/regex), not captured URLs.
         $query = "SELECT
-            COUNT(*) as total,
             SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active,
             SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_MANUAL . " THEN 1 ELSE 0 END) as manual,
             SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_AUTO . " THEN 1 ELSE 0 END) as auto,
             SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_REGEX . " THEN 1 ELSE 0 END) as regex,
             SUM(CASE WHEN disabled = 1 THEN 1 ELSE 0 END) as trash
-            FROM {wp_abj404_redirects}";
+            FROM {wp_abj404_redirects}
+            WHERE status IN (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ", " . ABJ404_STATUS_REGEX . ")";
         $query = $this->doTableNameReplacements($query);
 
         $result = $this->queryAndGetResults($query);

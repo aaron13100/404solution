@@ -21,7 +21,7 @@ class ABJ_404_Solution_WPUtils {
 	 *                                  and functions with the same priority are executed
 	 *                                  in the order in which they were added to the action.
 	 * @param int      $accepted_args   Optional. The number of arguments the function accepts. Default 1.
-	 * @return
+	 * @return mixed Whatever add_action() returns.
 	 */
 	static function safeAddAction($tag, $function_to_add, $priority = 10, $accepted_args = 1) {
 		global $wp_filter;

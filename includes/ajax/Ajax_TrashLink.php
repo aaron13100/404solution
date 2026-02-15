@@ -12,6 +12,7 @@ class ABJ_404_Solution_Ajax_TrashLink {
     static function trashAction() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404view = $GLOBALS['abj404view'] ?? null;
 
         if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
             try {
@@ -23,12 +24,17 @@ class ABJ_404_Solution_Ajax_TrashLink {
                     if ($c->has('plugin_logic')) {
                         $abj404logic = $c->get('plugin_logic');
                     }
+                    if ($c->has('view')) {
+                        $abj404view = $c->get('view');
+                    }
                 }
             } catch (Throwable $e) {
                 // fall back to singletons above
             }
         }
-        global $abj404view;
+        if ($abj404view === null && class_exists('ABJ_404_Solution_View')) {
+            $abj404view = ABJ_404_Solution_View::getInstance();
+        }
 
         $nonceOk = function_exists('check_ajax_referer')
             ? check_ajax_referer('abj404_ajaxTrash', '_wpnonce', false)
@@ -58,7 +64,9 @@ class ABJ_404_Solution_Ajax_TrashLink {
         
         $data = array();
         $data['resultset'] = $abj404dao->moveRedirectsToTrash($idToTrash, $trashAction);
-        $data['subsubsub'] = $abj404view->getSubSubSub($subpage);        
+        $data['subsubsub'] = is_object($abj404view) && method_exists($abj404view, 'getSubSubSub')
+            ? $abj404view->getSubSubSub($subpage)
+            : '';
         
         
         if (empty($data['resultset'])) {

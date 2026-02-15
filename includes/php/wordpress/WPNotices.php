@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_WPNotices {
     
-    /** @var array<WPNotice> */
+    /** @var array<ABJ_404_Solution_WPNotice> */
     private static $adminNotices = array();
     
     /** Display a message with the specified importance level.
@@ -38,7 +38,7 @@ class ABJ_404_Solution_WPNotices {
     	
     	$allHTML = '';
     	if (!$abj404logic->userIsPluginAdmin()) {
-            return;
+            return '';
         }
         
         foreach (self::$adminNotices as $oneNotice) {
@@ -51,7 +51,7 @@ class ABJ_404_Solution_WPNotices {
         
         echo $allHTML;
         
-        return;
+        return $allHTML;
     }
 
 }
