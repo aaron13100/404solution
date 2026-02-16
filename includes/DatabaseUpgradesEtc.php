@@ -1140,7 +1140,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 * @param string $charset
 	 * @return string|null Default collation or null if unknown.
 	 */
-	function getDefaultCollationForCharset($charset) {
+		function getDefaultCollationForCharset($charset) {
 		// Common charset to default collation mappings
 		$defaults = [
 			'utf8mb4' => 'utf8mb4_general_ci',
@@ -1150,13 +1150,80 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			'ascii' => 'ascii_general_ci',
 		];
 
-		$charsetLower = strtolower($charset);
-		return $defaults[$charsetLower] ?? null;
-	}
-	
-		/** Ensure our tables use utf8mb4 (do not alter WordPress core tables). */
-		function correctCollations() {
+			$charsetLower = strtolower($charset);
+			return $defaults[$charsetLower] ?? null;
+		}
+
+		/**
+		 * Keep collation identifiers SQL-safe.
+		 *
+		 * @param string $collation
+		 * @return string
+		 */
+		private function sanitizeCollationIdentifier($collation) {
+			if (!is_string($collation) || $collation === '') {
+				return '';
+			}
+			return preg_replace('/[^A-Za-z0-9_]/', '', $collation);
+		}
+
+		/**
+		 * Resolve the utf8mb4 collation target for plugin-table normalization.
+		 *
+		 * Priority:
+		 * 1) Active wpdb connection collation if utf8mb4
+		 * 2) Most common existing utf8mb4 plugin-table collation
+		 * 3) Database default collation variable if utf8mb4
+		 * 4) Safe fallback (utf8mb4_unicode_ci)
+		 *
+		 * @param array $tableNames
+		 * @param array $tableCollations Optional map: table => [collation, charset]
+		 * @return string
+		 */
+		private function resolveTargetUtf8mb4Collation($tableNames, $tableCollations = []) {
 			global $wpdb;
+
+			if (!empty($wpdb->collate)) {
+				$wpdbCollation = $this->sanitizeCollationIdentifier((string)$wpdb->collate);
+				if ($wpdbCollation !== '' && stripos($wpdbCollation, 'utf8mb4') !== false) {
+					return $wpdbCollation;
+				}
+			}
+
+			$counts = [];
+			foreach ($tableNames as $tableName) {
+				$row = $tableCollations[$tableName] ?? $this->getTableCollation($tableName);
+				if (!is_array($row) || count($row) < 2) {
+					continue;
+				}
+				$collation = $this->sanitizeCollationIdentifier((string)$row[0]);
+				$charset = strtolower((string)$row[1]);
+				if ($collation !== '' && $charset === 'utf8mb4' && stripos($collation, 'utf8mb4') !== false) {
+					$counts[$collation] = ($counts[$collation] ?? 0) + 1;
+				}
+			}
+			if (!empty($counts)) {
+				arsort($counts);
+				return array_key_first($counts);
+			}
+
+			$vars = $this->dao->queryAndGetResults("SHOW VARIABLES LIKE 'collation_database'");
+			$rows = $vars['rows'] ?? [];
+			if (!empty($rows)) {
+				$row = $rows[0];
+				$value = $row['Value'] ?? ($row['value'] ?? '');
+				$value = $this->sanitizeCollationIdentifier((string)$value);
+				if ($value !== '' && stripos($value, 'utf8mb4') !== false) {
+					return $value;
+				}
+			}
+
+			return 'utf8mb4_unicode_ci';
+		}
+		
+			/** Ensure our tables use utf8mb4 (do not alter WordPress core tables). */
+			function correctCollations() {
+				global $wpdb;
 			
 			$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
 			$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
@@ -1166,17 +1233,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			
 			$abjTableNames = array($redirectsTable, $logsTable, $lookupTable, $permalinkCacheTable, $spellingCacheTable);
 
-			$targetCharset = 'utf8mb4';
-			$targetCollation = 'utf8mb4_unicode_ci';
-			if (!empty($wpdb->collate) && stripos($wpdb->collate, 'utf8mb4') !== false) {
-				$targetCollation = $wpdb->collate;
-			}
+				$tableCollations = [];
+				foreach ($abjTableNames as $tableName) {
+					$tableCollations[$tableName] = $this->getTableCollation($tableName);
+				}
+
+				$targetCharset = 'utf8mb4';
+				$targetCollation = $this->resolveTargetUtf8mb4Collation($abjTableNames, $tableCollations);
+				
+				foreach ($abjTableNames as $tableName) {
+					$abjTableData = $tableCollations[$tableName] ?? null;
 			
-			foreach ($abjTableNames as $tableName) {
-				$abjTableData = $this->getTableCollation($tableName);
-		
-				if ($abjTableData === null) {
-					$this->logger->warn("Failed to retrieve collation for $tableName.");
+					if ($abjTableData === null) {
+						$this->logger->warn("Failed to retrieve collation for $tableName.");
 					continue;  // Skip this table if collation can't be determined
 				}
 		

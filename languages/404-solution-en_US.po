@@ -2324,3 +2324,51 @@ msgstr "Enabled"
 #: includes/View.php
 msgid "Disabled"
 msgstr "Disabled"
+
+#: includes/html/paginationLinks.html
+msgid "data-pagination-auto-refresh"
+msgstr "data-pagination-auto-refresh"
+
+#: includes/html/paginationLinks.html
+msgid "data-pagination-refresh-started-text"
+msgstr "data-pagination-refresh-started-text"
+
+#: includes/html/paginationLinks.html
+msgid "data-pagination-refresh-finished-text"
+msgstr "data-pagination-refresh-finished-text"
+
+#: includes/View.php
+msgid "250ms"
+msgstr "250ms"
+
+#: includes/View.php
+msgid "500ms"
+msgstr "500ms"
+
+#: includes/View.php
+msgid "900ms"
+msgstr "900ms"
+
+#: includes/View.php
+msgid "Disable"
+msgstr "Disable"
+
+#: includes/View.php
+msgid "Simulated DB Latency"
+msgstr "Simulated DB Latency"
+
+#: includes/View.php
+msgid "ON (%d ms per plugin query)"
+msgstr "ON (%d ms per plugin query)"
+
+#: includes/View.php
+msgid "OFF"
+msgstr "OFF"
+
+#: includes/View.php
+msgid "Refreshing data in background…"
+msgstr "Refreshing data in background…"
+
+#: includes/View.php
+msgid "Data refreshed"
+msgstr "Data refreshed"

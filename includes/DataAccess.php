@@ -39,6 +39,8 @@ class ABJ_404_Solution_DataAccess {
     private static $hitsTableRebuildScheduled = false;
     /** @var bool Prevent recursive auto-repair attempts on SQL errors. */
     private static $tableRepairInProgress = false;
+    /** @var bool Prevent recursive invalid-data retry attempts. */
+    private static $invalidDataRetryInProgress = false;
     /** @var bool Ensure view cache table DDL runs at most once per request. */
     private static $viewSnapshotTableEnsured = false;
 
@@ -539,6 +541,90 @@ class ABJ_404_Solution_DataAccess {
         return 'inline-query';
     }
 
+    /**
+     * Sanitize SQL identifier-like collation names.
+     *
+     * @param string $collation
+     * @return string
+     */
+    private function sanitizeCollationIdentifier($collation) {
+        if (!is_string($collation) || $collation === '') {
+            return '';
+        }
+        return preg_replace('/[^A-Za-z0-9_]/', '', $collation);
+    }
+
+    /**
+     * Resolve an appropriate utf8mb4 collation for CAST/COLLATE comparisons.
+     *
+     * Prefer wpdb connection collation when it's utf8mb4, otherwise fall back
+     * to a safe default.
+     *
+     * @return string
+     */
+    private function getPreferredUtf8mb4Collation() {
+        global $wpdb;
+
+        if (isset($wpdb) && isset($wpdb->collate) && !empty($wpdb->collate)) {
+            $wpdbCollation = $this->sanitizeCollationIdentifier((string)$wpdb->collate);
+            if ($wpdbCollation !== '' && stripos($wpdbCollation, 'utf8mb4') !== false) {
+                return $wpdbCollation;
+            }
+        }
+        return 'utf8mb4_unicode_ci';
+    }
+
+    /**
+     * Determine whether an error indicates invalid text/charset payload.
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    private function isInvalidDataError($errorText) {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        return (
+            $this->f->strpos($lower, 'contains invalid data') !== false ||
+            $this->f->strpos($lower, 'incorrect string value') !== false ||
+            $this->f->strpos($lower, 'invalid utf8') !== false
+        );
+    }
+
+    /**
+     * Attempt one retry for invalid-data errors using wpdb's stripped query helper.
+     *
+     * @param string $query
+     * @param array $result
+     * @return void
+     */
+    private function attemptInvalidDataRetry($query, &$result) {
+        if (self::$invalidDataRetryInProgress) {
+            return;
+        }
+
+        self::$invalidDataRetryInProgress = true;
+        try {
+            $retryQuery = $this->get_stripped_query_result($query);
+            if (!is_string($retryQuery) || trim($retryQuery) === '' || $retryQuery === $query) {
+                return;
+            }
+
+            global $wpdb;
+            $wpdb->flush();
+            $result['rows'] = $wpdb->get_results($retryQuery, ARRAY_A);
+            $result['last_error'] = $wpdb->last_error ?? '';
+            $result['last_result'] = $wpdb->last_result ?? array();
+            $result['rows_affected'] = $wpdb->rows_affected ?? 0;
+            $result['insert_id'] = $wpdb->insert_id ?? 0;
+        } catch (Throwable $e) {
+            $this->logger->warn("Invalid-data retry failed: " . $e->getMessage());
+        } finally {
+            self::$invalidDataRetryInProgress = false;
+        }
+    }
+
     private function applyDiagnosticLatencyIfConfigured() {
         if (!function_exists('abj404_get_simulated_db_latency_ms')) {
             return;
@@ -575,7 +661,17 @@ class ABJ_404_Solution_DataAccess {
         $query = $this->doTableNameReplacements($query);
 
         if (!empty($queryParameters)) {
-            $query = $wpdb->prepare($query, $queryParameters);
+            if (is_array($queryParameters)) {
+                // WPDB::prepare array support varies across versions/mocks.
+                // Prefer varargs, but fall back to array-as-single-arg for older/custom mocks.
+                try {
+                    $query = call_user_func_array(array($wpdb, 'prepare'), array_merge(array($query), $queryParameters));
+                } catch (Throwable $t) {
+                    $query = $wpdb->prepare($query, $queryParameters);
+                }
+            } else {
+                $query = $wpdb->prepare($query, $queryParameters);
+            }
         }
 
         $this->applyDiagnosticLatencyIfConfigured();
@@ -622,6 +718,10 @@ class ABJ_404_Solution_DataAccess {
             $this->attemptMissingTableRepairAndRetry($query, $result);
         }
 
+        if ($result['last_error'] !== '' && $this->isInvalidDataError($result['last_error'])) {
+            $this->attemptInvalidDataRetry($query, $result);
+        }
+
         if ($result['last_error'] !== '') {
             $this->noteDatabaseIssueFromError($result['last_error']);
         }
@@ -648,8 +748,7 @@ class ABJ_404_Solution_DataAccess {
             
             if ($reportError) {
                 $stripped_query = 'n/a';
-                if ($this->f->strpos($result['last_error'],
-                    "WordPress database error: Could not perform query because it contains invalid data") !== false) {
+                if ($this->isInvalidDataError($result['last_error'])) {
                     $stripped_query = $this->get_stripped_query_result($query);
                 }
                 
@@ -2712,45 +2811,66 @@ class ABJ_404_Solution_DataAccess {
 
         // If the database can't store utf8 URLs then URL-encode before saving (avoid insert errors).
         try {
-            static $requestedUrlCharsetCached = null;
+            static $requestedUrlColumnMeta = null;
 
-            if ($requestedUrlCharsetCached === null && function_exists('get_transient')) {
-                $requestedUrlCharsetCached = get_transient('abj404_logs_requested_url_charset');
-                if ($requestedUrlCharsetCached === false) {
-                    $requestedUrlCharsetCached = null;
+            if ($requestedUrlColumnMeta === null && function_exists('get_transient')) {
+                $requestedUrlColumnMeta = get_transient('abj404_logs_requested_url_column_meta');
+                if ($requestedUrlColumnMeta === false) {
+                    $requestedUrlColumnMeta = null;
                 }
             }
 
-            $getCharsetQuery = $wpdb->prepare("SELECT character_set_name as charset_name \n " .
+            // Backward compatibility: if only legacy charset transient exists, keep using it.
+            if ($requestedUrlColumnMeta === null && function_exists('get_transient')) {
+                $legacyCharset = get_transient('abj404_logs_requested_url_charset');
+                if (is_string($legacyCharset) && $legacyCharset !== '') {
+                    $requestedUrlColumnMeta = array(
+                        'charset_name' => $legacyCharset,
+                        'collation_name' => null,
+                    );
+                }
+            }
+
+            $getCharsetQuery = $wpdb->prepare("SELECT character_set_name as charset_name, collation_name as collation_name \n " .
                 "FROM information_schema.columns \n " .
                 "WHERE lower(table_schema) = lower(%s) \n " .
                 "AND lower(table_name) = lower(%s) \n " .
                 "AND lower(column_name) = lower(%s) ",
                 DB_NAME, $logTableName, 'requested_url');
 
-            if ($requestedUrlCharsetCached === null) {
+            if ($requestedUrlColumnMeta === null) {
                 $resultArray = $wpdb->get_results($getCharsetQuery, ARRAY_A);
                 if (!empty($resultArray)) {
-                    $requestedUrlCharsetCached = $resultArray[0]['charset_name'] ?? $resultArray[0]['CHARSET_NAME'];
+                    $requestedUrlColumnMeta = array(
+                        'charset_name' => $resultArray[0]['charset_name'] ?? $resultArray[0]['CHARSET_NAME'] ?? null,
+                        'collation_name' => $resultArray[0]['collation_name'] ?? $resultArray[0]['COLLATION_NAME'] ?? null,
+                    );
                     if (function_exists('set_transient')) {
                         $ttl = defined('WEEK_IN_SECONDS') ? WEEK_IN_SECONDS : 604800;
-                        set_transient('abj404_logs_requested_url_charset', $requestedUrlCharsetCached, $ttl);
+                        set_transient('abj404_logs_requested_url_column_meta', $requestedUrlColumnMeta, $ttl);
+                        // Keep legacy key in sync for older code paths.
+                        if (!empty($requestedUrlColumnMeta['charset_name'])) {
+                            set_transient('abj404_logs_requested_url_charset', $requestedUrlColumnMeta['charset_name'], $ttl);
+                        }
                     }
                 }
             }
 
-            if (!empty($requestedUrlCharsetCached) && strpos(strtolower($requestedUrlCharsetCached), 'utf8') === false) {
+            $requestedUrlCharset = is_array($requestedUrlColumnMeta) ? ($requestedUrlColumnMeta['charset_name'] ?? null) : null;
+            $requestedUrlCollation = is_array($requestedUrlColumnMeta) ? ($requestedUrlColumnMeta['collation_name'] ?? null) : null;
+
+            if (!empty($requestedUrlCharset) && strpos(strtolower($requestedUrlCharset), 'utf8') === false) {
                     $requested_url = $this->f->encodeUrlForLegacyMatch($requested_url);
 
                     // Avoid spamming logs on every redirect hit.
                     if (function_exists('get_transient') && function_exists('set_transient')) {
                         $warnKey = 'abj404_warned_logs_charset_mismatch';
-                        $warnVal = $logTableName . '|' . strtolower($requestedUrlCharsetCached);
+                        $warnVal = $logTableName . '|' . strtolower($requestedUrlCharset);
                         $already = get_transient($warnKey);
                         if ($already !== $warnVal) {
                             $ttl = defined('WEEK_IN_SECONDS') ? WEEK_IN_SECONDS : 604800;
                             set_transient($warnKey, $warnVal, $ttl);
-                            $this->logger->warn("Logs table column charset is '{$requestedUrlCharsetCached}' for {$logTableName}. URL-encoding stored requested URLs to avoid charset issues.");
+                            $this->logger->warn("Logs table column charset is '{$requestedUrlCharset}' for {$logTableName}. URL-encoding stored requested URLs to avoid charset issues.");
                         }
                     }
             }
@@ -2791,10 +2911,29 @@ class ABJ_404_Solution_DataAccess {
         
         // we have to know what to set for the $minLogID value
         $minLogID = false;
-        $checkMinIDQuery = $wpdb->prepare("SELECT id FROM `" . $logTableName . "` \n " .
-            "WHERE CAST(requested_url AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = %s \n " .
-            "LIMIT 1", $requested_url);
+        $comparisonCollation = $this->sanitizeCollationIdentifier(isset($requestedUrlCollation) ? (string)$requestedUrlCollation : '');
+        if ($comparisonCollation === '' || stripos($comparisonCollation, 'utf8mb4') === false) {
+            $comparisonCollation = $this->getPreferredUtf8mb4Collation();
+        }
+        $requestedUrlCharsetLower = isset($requestedUrlCharset) ? strtolower((string)$requestedUrlCharset) : '';
+        $canUseUtf8Cast = ($requestedUrlCharsetLower === '' || strpos($requestedUrlCharsetLower, 'utf8') !== false);
+        if ($canUseUtf8Cast) {
+            $checkMinIDQuery = $wpdb->prepare("SELECT id FROM `" . $logTableName . "` \n " .
+                "WHERE CAST(requested_url AS CHAR CHARACTER SET utf8mb4) COLLATE " . $comparisonCollation . " = %s \n " .
+                "LIMIT 1", $requested_url);
+        } else {
+            $checkMinIDQuery = $wpdb->prepare("SELECT id FROM `" . $logTableName . "` \n " .
+                "WHERE requested_url = %s \n " .
+                "LIMIT 1", $requested_url);
+        }
         $checkMinIDQueryResults = $wpdb->get_results($checkMinIDQuery, ARRAY_A);
+        if (!empty($wpdb->last_error) && $this->isInvalidDataError($wpdb->last_error) && $canUseUtf8Cast) {
+            $fallbackResult = $this->queryAndGetResults(
+                "SELECT id FROM `" . $logTableName . "` \n WHERE requested_url = %s \n LIMIT 1",
+                array('query_params' => array($requested_url), 'log_errors' => false)
+            );
+            $checkMinIDQueryResults = $fallbackResult['rows'] ?? array();
+        }
     
         if (empty($checkMinIDQueryResults)) {
             $minLogID = true;
@@ -3754,10 +3893,15 @@ class ABJ_404_Solution_DataAccess {
                  AND COLUMN_NAME = 'post_name'",
                 $wpdb->posts
             ));
-            if ($columnCollation !== null && strpos($columnCollation, 'utf8mb4') !== false) {
+            if ($columnCollation !== null && strpos(strtolower($columnCollation), 'utf8mb4') !== false) {
                 // Column supports utf8mb4 - use CAST for proper Unicode comparison
+                $resolvedCollation = $this->sanitizeCollationIdentifier($columnCollation);
+                if ($resolvedCollation === '') {
+                    $resolvedCollation = $this->getPreferredUtf8mb4Collation();
+                }
                 $specifiedSlug = " */\n and CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = "
                         . "'" . esc_sql($slug) . "' \n ";
+                $specifiedSlug = str_replace('utf8mb4_unicode_ci', $resolvedCollation, $specifiedSlug);
             } else {
                 // Legacy column (latin1, utf8, etc.) - use simple comparison
                 $specifiedSlug = " */\n and wp_posts.post_name = "
@@ -3796,6 +3940,24 @@ class ABJ_404_Solution_DataAccess {
         $query = $this->f->str_replace('{order-results}', $orderResults, $query);
         
         $rows = $wpdb->get_results($query);
+        if (!empty($wpdb->last_error) && $this->isInvalidDataError($wpdb->last_error) &&
+                $slug != "" && strpos($query, 'CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4)') !== false) {
+            // Compatibility fallback: retry once without CAST/COLLATE for environments
+            // where mixed encodings still reject utf8mb4 coercion.
+            $fallbackSpecifiedSlug = " */\n and wp_posts.post_name = '" . esc_sql($slug) . "' \n ";
+            $fallbackQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
+            $fallbackQuery = $this->doTableNameReplacements($fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{specifiedSlug}', $fallbackSpecifiedSlug, $fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{searchTerm}', $searchTerm, $fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{extraWhereClause}', $extraWhereClause, $fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{limit-results}', $limitResults, $fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{order-results}', $orderResults, $fallbackQuery);
+            $fallbackResult = $this->queryAndGetResults($fallbackQuery, array('log_errors' => false));
+            $rows = array_map(function($row) {
+                return (object)$row;
+            }, $fallbackResult['rows'] ?? array());
+        }
 
         // check for errors
         if ($wpdb->last_error) {
