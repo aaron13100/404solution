@@ -51,7 +51,7 @@ function triggerBackgroundTableRefreshIfEnabled() {
     var startedAt = Date.now();
     var startedText = $config.attr('data-pagination-refresh-started-text') || 'Refreshing data in background...';
     setRefreshStatus($config, startedText);
-    showRefreshToast(startedText);
+    showRefreshToastStart(startedText);
 
     var perpageElements = document.querySelectorAll('.perpage');
     if (perpageElements == null || perpageElements.length === 0) {
@@ -70,7 +70,7 @@ function triggerBackgroundTableRefreshIfEnabled() {
                 var minimumStartedMs = 850;
                 var showFinished = function() {
                     setRefreshStatus($latestConfig, finishedText);
-                    showRefreshToast(finishedText);
+                    showRefreshToastComplete(finishedText);
                     window.setTimeout(function() { clearRefreshStatus($latestConfig); }, 3500);
                     window.setTimeout(hideRefreshToast, 3500);
                 };
@@ -119,7 +119,33 @@ function clearRefreshStatus($config) {
     setRefreshStatus($config, '');
 }
 
-function showRefreshToast(message) {
+function ensureRefreshToastStyles() {
+    if (document.getElementById('abj404-refresh-toast-styles')) {
+        return;
+    }
+    var style = document.createElement('style');
+    style.id = 'abj404-refresh-toast-styles';
+    style.textContent =
+        '#abj404-background-refresh-toast{' +
+        'position:fixed;right:16px;bottom:16px;z-index:99999;padding:8px 10px;' +
+        'background:rgba(30,32,35,.90);color:#fff;border-radius:18px;font-size:12px;' +
+        'box-shadow:0 4px 14px rgba(0,0,0,.22);max-width:360px;display:flex;align-items:center;gap:8px;' +
+        'cursor:default;transition:all .2s ease;}' +
+        '#abj404-background-refresh-toast .abj404-refresh-spinner{' +
+        'width:12px;height:12px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;' +
+        'border-radius:50%;flex:0 0 auto;animation:abj404-refresh-spin .8s linear infinite;}' +
+        '#abj404-background-refresh-toast .abj404-refresh-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
+        '#abj404-background-refresh-toast.abj404-refresh-collapsed{padding:8px;width:28px;max-width:28px;overflow:hidden;}' +
+        '#abj404-background-refresh-toast.abj404-refresh-collapsed .abj404-refresh-label{display:none;}' +
+        '#abj404-background-refresh-toast.abj404-refresh-collapsed:hover{max-width:340px;width:auto;padding:8px 10px;}' +
+        '#abj404-background-refresh-toast.abj404-refresh-collapsed:hover .abj404-refresh-label{display:inline;}' +
+        '#abj404-background-refresh-toast.abj404-refresh-complete .abj404-refresh-spinner{animation:none;border-color:rgba(255,255,255,.45);border-top-color:rgba(255,255,255,.45);}' +
+        '@keyframes abj404-refresh-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+}
+
+function ensureRefreshToast() {
+    ensureRefreshToastStyles();
     var id = 'abj404-background-refresh-toast';
     var toast = document.getElementById(id);
     if (!toast) {
@@ -127,26 +153,46 @@ function showRefreshToast(message) {
         toast.id = id;
         toast.setAttribute('role', 'status');
         toast.setAttribute('aria-live', 'polite');
-        toast.style.position = 'fixed';
-        toast.style.right = '16px';
-        toast.style.bottom = '16px';
-        toast.style.zIndex = '99999';
-        toast.style.padding = '10px 14px';
-        toast.style.background = 'rgba(30, 32, 35, 0.95)';
-        toast.style.color = '#fff';
-        toast.style.borderRadius = '6px';
-        toast.style.fontSize = '13px';
-        toast.style.boxShadow = '0 4px 14px rgba(0,0,0,0.25)';
-        toast.style.maxWidth = '340px';
+        toast.innerHTML = '<span class="abj404-refresh-spinner" aria-hidden="true"></span><span class="abj404-refresh-label"></span>';
         document.body.appendChild(toast);
     }
-    toast.textContent = message || '';
-    toast.style.display = 'block';
+    return toast;
+}
+
+function setRefreshToastMessage(message) {
+    var toast = ensureRefreshToast();
+    var label = toast.querySelector('.abj404-refresh-label');
+    if (label) {
+        label.textContent = message || '';
+    }
+    toast.setAttribute('title', message || '');
+    return toast;
+}
+
+function showRefreshToastStart(message) {
+    var toast = setRefreshToastMessage(message);
+    toast.classList.remove('abj404-refresh-complete');
+    toast.classList.remove('abj404-refresh-collapsed');
+    toast.style.display = 'flex';
+    window.setTimeout(function() {
+        if (toast.style.display !== 'none' && !toast.classList.contains('abj404-refresh-complete')) {
+            toast.classList.add('abj404-refresh-collapsed');
+        }
+    }, 2000);
+}
+
+function showRefreshToastComplete(message) {
+    var toast = setRefreshToastMessage(message);
+    toast.classList.remove('abj404-refresh-collapsed');
+    toast.classList.add('abj404-refresh-complete');
+    toast.style.display = 'flex';
 }
 
 function hideRefreshToast() {
     var toast = document.getElementById('abj404-background-refresh-toast');
     if (toast) {
+        toast.classList.remove('abj404-refresh-collapsed');
+        toast.classList.remove('abj404-refresh-complete');
         toast.style.display = 'none';
     }
 }
