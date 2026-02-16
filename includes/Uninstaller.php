@@ -98,6 +98,7 @@ class ABJ_404_Solution_Uninstaller {
             self::deleteTable($prefix . 'abj404_permalink_cache');
             self::deleteTable($prefix . 'abj404_ngram_cache');
             self::deleteTable($prefix . 'abj404_spelling_cache');
+            self::deleteTable($prefix . 'abj404_view_cache');
         }
 
         // Always delete temporary tables
@@ -293,7 +294,8 @@ class ABJ_404_Solution_Uninstaller {
             'abj404_logs_hits_temp',
             'abj404_permalink_cache',
             'abj404_ngram_cache',
-            'abj404_spelling_cache'
+            'abj404_spelling_cache',
+            'abj404_view_cache'
         );
     }
 }

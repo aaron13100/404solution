@@ -1467,6 +1467,7 @@ class ABJ_404_Solution_PluginLogic {
             $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_permalink_cache");
             $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_ngram_cache");
             $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_spelling_cache");
+            $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_view_cache");
 
             // Temporary tables
             $wpdb->query("DROP TABLE IF EXISTS {$prefix}abj404_logs_hits_temp");
