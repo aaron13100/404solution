@@ -18,6 +18,9 @@ class ABJ_404_Solution_PluginLogic {
 	/** @var ABJ_404_Solution_Logging */
 	private $logger = null;
 
+	/** @var ABJ_404_Solution_ImportExportService|null */
+	private $importExportService = null;
+
 	private $urlHomeDirectory = null;
 
 	private $urlHomeDirectoryLength = null;
@@ -101,6 +104,20 @@ class ABJ_404_Solution_PluginLogic {
 	    	// Fix HIGH #3 (4th review): Remove null bytes and control characters for security
 	    	$this->urlHomeDirectory = preg_replace('/[\x00-\x1F\x7F]/', '', $decodedPath);
     	$this->urlHomeDirectoryLength = $this->f->strlen($this->urlHomeDirectory);
+    }
+
+    /** @return ABJ_404_Solution_ImportExportService */
+    private function getImportExportService() {
+        if ($this->importExportService !== null) {
+            return $this->importExportService;
+        }
+
+        if (!class_exists('ABJ_404_Solution_ImportExportService')) {
+            require_once dirname(__FILE__) . '/ImportExportService.php';
+        }
+
+        $this->importExportService = new ABJ_404_Solution_ImportExportService($this->dao, $this->logger);
+        return $this->importExportService;
     }
     
     /** This replaces the current_user_can('administrator') function.
@@ -1732,43 +1749,11 @@ class ABJ_404_Solution_PluginLogic {
     }
     
     function getExportFilename($format = 'native') {
-        if ($format === 'redirection') {
-            return abj404_getUploadsDir() . 'export-redirection.csv';
-        }
-        $tempFile = abj404_getUploadsDir() . 'export.csv';
-        return $tempFile;
+        return $this->getImportExportService()->getExportFilename($format);
     }
     
     function doExport() {
-        $format = isset($_REQUEST['export_format']) ? sanitize_text_field((string)$_REQUEST['export_format']) : 'native';
-        $tempFile = $this->getExportFilename($format);
-
-        if ($format === 'redirection') {
-            $nativeExportFile = $this->getExportFilename('native');
-            $this->dao->doRedirectsExport($nativeExportFile);
-            $error = $this->convertExportCsvToRedirectionFormat($nativeExportFile, $tempFile);
-            if ($error !== '') {
-                $this->logger->warn($error);
-                return;
-            }
-        } else {
-            $this->dao->doRedirectsExport($tempFile);
-        }
-    	
-    	if (file_exists($tempFile)) {
-		    	header('Content-Description: File Transfer');
-		    	header('Content-Disposition: attachment; filename=' . basename($tempFile));
-	    	header('Expires: 0');
-	    	header('Cache-Control: must-revalidate');
-		    	header('Pragma: public');
-		    	header('Content-Length: ' . filesize($tempFile));
-		    	header("Content-Type: text/csv; charset=utf-8");
-		    	readfile($tempFile);
-            exit(); // avoid headers already sent error. avoid other things executing afterwards.
-		    	
-    	} else {
-    		$this->logger->infoMessage("I don't see any data to export.");
-    	}
+        $this->getImportExportService()->doExport();
     }
 
     /**
@@ -1779,44 +1764,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return string Empty string on success, error message otherwise.
      */
     function convertExportCsvToRedirectionFormat($sourceFile, $destinationFile) {
-        if (!file_exists($sourceFile)) {
-            return 'Error: Native export file does not exist.';
-        }
-
-        $in = fopen($sourceFile, 'r');
-        if ($in === false) {
-            return 'Error: Could not read native export file.';
-        }
-
-        $out = fopen($destinationFile, 'w');
-        if ($out === false) {
-            fclose($in);
-            return 'Error: Could not create Redirection export file.';
-        }
-
-        // Redirection import commonly uses source/target/regex/code columns.
-        fputcsv($out, array('source', 'target', 'regex', 'code'), ',', '"', '\\');
-
-        // Read and ignore native header row.
-        fgetcsv($in, 0, ',', '"', '\\');
-        while (($row = fgetcsv($in, 0, ',', '"', '\\')) !== false) {
-            if (!is_array($row) || count($row) < 4) {
-                continue;
-            }
-            $from = trim((string)$row[0]);
-            $status = trim((string)$row[1]);
-            $to = trim((string)$row[3]);
-            if ($from === '' || $to === '') {
-                continue;
-            }
-
-            $regexFlag = (strtolower($status) === 'regex') ? '1' : '0';
-            fputcsv($out, array($from, $to, $regexFlag, '301'), ',', '"', '\\');
-        }
-
-        fclose($in);
-        fclose($out);
-        return '';
+        return $this->getImportExportService()->convertExportCsvToRedirectionFormat($sourceFile, $destinationFile);
     }
     
     /** Expected formats are 
@@ -1824,238 +1772,15 @@ class ABJ_404_Solution_PluginLogic {
      * from_url,to_url 
      */
     function doImportFile() {
-        $anyIssuesToNote = array();
-        if (isset($_FILES['import_file']) && $_FILES['import_file']['error'] == UPLOAD_ERR_OK) {
-            $dryRun = isset($_POST['dry_run']) && sanitize_text_field((string)$_POST['dry_run']) === '1';
-            $processedRows = 0;
-            $validRows = 0;
-            $invalidRows = 0;
-            // Validate file extension to prevent malicious file uploads
-            $allowed_extensions = array('csv', 'txt');
-            $file_ext = strtolower(pathinfo($_FILES['import_file']['name'], PATHINFO_EXTENSION));
-            if (!in_array($file_ext, $allowed_extensions)) {
-                return "Error: Invalid file type. Only CSV/TXT files are allowed.";
-            }
-
-            // Validate file size (max 5MB to prevent DoS)
-            $max_file_size = 5 * 1024 * 1024; // 5MB in bytes
-            if ($_FILES['import_file']['size'] > $max_file_size) {
-                return "Error: File too large. Maximum size is 5MB.";
-            }
-
-            // Validate MIME type
-            $allowed_mime_types = array('text/csv', 'text/plain', 'application/csv', 'text/comma-separated-values', 'application/vnd.ms-excel');
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mime_type = finfo_file($finfo, $_FILES['import_file']['tmp_name']);
-            finfo_close($finfo);
-            if (!in_array($mime_type, $allowed_mime_types)) {
-                return "Error: Invalid file type. Only CSV files are allowed.";
-            }
-
-            // Open the uploaded file for reading
-            $file_handle = fopen($_FILES['import_file']['tmp_name'], 'r');
-            if (!$file_handle) {
-                return "Error opening the file.";
-            }
-
-            $headerColumns = null;
-            while (($row = fgetcsv($file_handle, 0, ',', '"', '\\')) !== false) {
-                $data = array_map(function($v) {
-                    return trim((string)$v);
-                }, $row);
-
-                // Skip blank lines
-                if (count($data) === 1 && $data[0] === '') {
-                    continue;
-                }
-
-                // Support competitor CSV exports with descriptive headers.
-                if ($headerColumns === null && $this->isCompatibleImportHeaderRow($data)) {
-                    $headerColumns = $this->normalizeImportHeaders($data);
-                    continue;
-                }
-
-                if ($headerColumns !== null) {
-                    $dataArray = $this->mapImportRowByHeaders($data, $headerColumns);
-                } else {
-                    $line = implode(',', $data);
-                    $dataArray = $this->splitCsvLine($line);
-                }
-
-                if (isset($dataArray['error'])) {
-                    return $dataArray['error'];
-                }
-                
-                // Skip header rows for backward compatibility with legacy format handling.
-                if (isset($dataArray['from_url']) &&
-                        ($dataArray['from_url'] === 'from_url' || $dataArray['from_url'] === 'request')) {
-                    continue;
-                }
-
-                $processedRows++;
-                $issues = $this->loadDataArrayFromFile($dataArray, $dryRun);
-                if (count($issues) > 0) {
-                    $invalidRows++;
-                } else {
-                    $validRows++;
-                }
-                $anyIssuesToNote = array_merge($anyIssuesToNote, $issues);
-            }
-            fclose($file_handle);
-            
-        } else {
-            return "File upload error.";
-        }
-        
-        if ($dryRun) {
-            $msg = sprintf(
-                'Dry run complete. Valid redirects: %d. Invalid rows: %d. Total rows processed: %d.',
-                $validRows,
-                $invalidRows,
-                $processedRows
-            );
-            if (count($anyIssuesToNote) > 0) {
-                $msg .= ' Preview issues: ' .
-                    implode(", <BR/>\n", array_slice($anyIssuesToNote, 0, 20));
-            }
-            return $msg;
-        }
-
-        if (count($anyIssuesToNote) > 0) {
-            return 'Error: ' . implode(", <BR/>\n", $anyIssuesToNote);
-        }
-
-        $msg = __("The file seems to have loaded okay. Please check the redirects page.", 
-            '404-solution');
-        return $msg;
+        return $this->getImportExportService()->doImportFile();
     }
 
     function loadDataArrayFromFile($dataArray, $dryRun = false) {
-        if ($dataArray['from_url'] == 'from_url' || $dataArray['from_url'] == 'request') {
-            return array();
-        }
-        
-        $fromURL = $dataArray['from_url'];
-        $status = ABJ404_STATUS_MANUAL;
-        $final_dest = $dataArray['to_url'];
-        $anyIssuesToNote = array();
-        
-        // avoid duplicates - verify that the from URL doesn't already exist as a redirect.
-        $maybeExisting2 = $this->dao->getExistingRedirectForURL($fromURL);
-        
-        if ((count($maybeExisting2) > 0 && $maybeExisting2['id'] != 0)) {
-            $msg = "Ignored importing redirect because a redirect with the same " .
-                "from URL already exists. URL: " . $fromURL;
-            $this->logger->warn($msg);
-            array_push($anyIssuesToNote, $msg);
-            return $anyIssuesToNote;
-        }
-        
-        // Determine $type based on $final_dest
-        if (empty($final_dest)) {
-            $type = ABJ404_TYPE_404_DISPLAYED; // "404"
-        } else if ($final_dest == '5') {
-            $type = ABJ404_TYPE_HOME; // "homepage"
-        } else if (strpos($final_dest, 'http') !== false) {
-            $type = ABJ404_TYPE_EXTERNAL; // "external"
-            
-            // if there's any kind of regular expression character that is NOT a valid
-            // URL character then we'll assume it's a regular expression.
-            $urlPattern = '/[!#$&\'()*+,;=]/';
-            if (preg_match($urlPattern, $fromURL)) {
-                $status = ABJ404_STATUS_REGEX;
-            }
-            
-            
-        } else if (strpos($final_dest, '/') === 0) {
-            $type = ABJ404_TYPE_POST; // Initially set to "page/post"
-        } else {
-            // Some default or error handling in case $final_dest does not match any expected format
-            $msg = "Unrecognized destination type while importing file. " .
-                "Destination: " . $final_dest;
-            $this->logger->warn($msg);
-            array_push($anyIssuesToNote, $msg);
-            return $anyIssuesToNote;
-        }
-        
-        // If the type is set to ABJ404_TYPE_404_DISPLAYED
-        if ($type == ABJ404_TYPE_404_DISPLAYED) {
-            $final_dest = ABJ404_TYPE_404_DISPLAYED;
-        } else if (strpos($final_dest, 'http') !== false) {
-            // Check if $final_dest contains "http"
-            $type = ABJ404_TYPE_EXTERNAL;
-            // $final_dest remains unchanged
-        } else if ($type == ABJ404_TYPE_HOME) {
-            // If the type is set to ABJ404_TYPE_HOME
-            $final_dest = ABJ404_TYPE_HOME;
-        } else {
-            // If the type is post, further refine the type and set the ID
-            // Trim slashes for slug compatibility
-            $slug = trim($final_dest, '/');
-            
-            // Check if slug corresponds to a post
-            $postsFromSlugRows = $this->dao->getPublishedPagesAndPostsIDs($slug);
-            $postsFromCategoryRows = $this->dao->getPublishedCategories(null, $slug);
-            $postsFromTagRows = $this->dao->getPublishedTags($slug);
-            
-            $postFromSlug = isset($postsFromSlugRows[0]) ? $postsFromSlugRows[0] : null;
-            $postFromCategory = isset($postsFromCategoryRows[0]) ? $postsFromCategoryRows[0] : null;
-            $postFromTag = isset($postsFromTagRows[0]) ? $postsFromTagRows[0] : null;
-            
-            if ($postFromSlug) {
-                $type = ABJ404_TYPE_POST;
-                $final_dest = $postFromSlug->id; // Set to post ID
-            } else if ($postFromCategory) {
-                // Check if slug corresponds to a category
-                $type = ABJ404_TYPE_CAT;
-                $final_dest = $postFromCategory->term_id; // Set to category ID
-            } else if ($postFromTag) {
-                // Check if slug corresponds to a tag
-                $type = ABJ404_TYPE_TAG;
-                $final_dest = $postFromTag->term_id; // Set to tag ID
-            } else {
-                $this->logger->warn("Couldn't find post from slug. slug: " .
-                    $slug);
-            }
-        }
-        if (!$dryRun) {
-            $this->dao->setupRedirect($fromURL, $status, $type, $final_dest, 301);
-        }
-        
-        return $anyIssuesToNote;
+        return $this->getImportExportService()->loadDataArrayFromFile($dataArray, $dryRun);
     }
     
 	    function splitCsvLine($line) {
-	    	if (!is_string($line)) {
-	    		$line = (string) $line;
-	    	}
-
-	        // Split the CSV line into an array
-	        // Specify delimiter/enclosure/escape explicitly to avoid PHP 8.4 deprecation about default escape.
-	        $data = array_map(function($v) {
-	        	return trim((string) $v);
-	        }, str_getcsv($line, ',', '"', '\\'));  // Trim each value in the array
-        
-        // Check the format based on the number of columns
-        if (count($data) === 5) {
-            // Format: from_url,status,type,to_url,wp_type
-            return [
-                'from_url' => $data[0],
-                'status'   => $data[1],
-                'type'     => $data[2],
-                'to_url'   => $data[3],
-                'wp_type'  => $data[4]
-            ];
-	        } else if (count($data) === 2) {
-            // Format: from_url,to_url
-            return [
-                'from_url' => $data[0],
-                'to_url'   => $data[1]
-            ];
-	        } else {
-	            // Invalid format or unexpected number of columns
-	            return ["error" => "Invalid CSV format. " . count($data) . " found but 2 or 5 expected."];
-	        }
+	        return $this->getImportExportService()->splitCsvLine($line);
 	    }
 
     /**
@@ -2065,10 +1790,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return bool
      */
     function isCompatibleImportHeaderRow($columns) {
-        $normalized = $this->normalizeImportHeaders($columns);
-        $fromIndex = $this->findImportHeaderIndex($normalized, array('from_url', 'request', 'source', 'url', 'match_url'));
-        $toIndex = $this->findImportHeaderIndex($normalized, array('to_url', 'target', 'destination', 'action_data', 'redirect_to', 'url_to'));
-        return ($fromIndex !== -1 && $toIndex !== -1);
+        return $this->getImportExportService()->isCompatibleImportHeaderRow($columns);
     }
 
     /**
@@ -2078,10 +1800,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return array
      */
     function normalizeImportHeaders($columns) {
-        return array_map(function($value) {
-            $value = trim(strtolower((string)$value));
-            return preg_replace('/[^a-z0-9_]/', '', str_replace(' ', '_', $value));
-        }, $columns);
+        return $this->getImportExportService()->normalizeImportHeaders($columns);
     }
 
     /**
@@ -2092,41 +1811,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return array
      */
     function mapImportRowByHeaders($row, $normalizedHeaders) {
-        $fromIndex = $this->findImportHeaderIndex($normalizedHeaders, array('from_url', 'request', 'source', 'url', 'match_url'));
-        $toIndex = $this->findImportHeaderIndex($normalizedHeaders, array('to_url', 'target', 'destination', 'action_data', 'redirect_to', 'url_to'));
-
-        if ($fromIndex === -1 || $toIndex === -1) {
-            return array('error' => 'Invalid CSV format. Could not map source/destination columns.');
-        }
-
-        $from = array_key_exists($fromIndex, $row) ? trim((string)$row[$fromIndex]) : '';
-        $to = array_key_exists($toIndex, $row) ? trim((string)$row[$toIndex]) : '';
-
-        if ($from === '' && $to === '') {
-            return array('from_url' => '', 'to_url' => '');
-        }
-
-        return array(
-            'from_url' => $from,
-            'to_url' => $to,
-        );
-    }
-
-    /**
-     * Find first matching header index from a list of candidates.
-     *
-     * @param array $headers
-     * @param array $candidates
-     * @return int
-     */
-    private function findImportHeaderIndex($headers, $candidates) {
-        foreach ($candidates as $candidate) {
-            $idx = array_search($candidate, $headers, true);
-            if ($idx !== false) {
-                return (int)$idx;
-            }
-        }
-        return -1;
+        return $this->getImportExportService()->mapImportRowByHeaders($row, $normalizedHeaders);
     }
     
     function updatePerPageOption($rows) {

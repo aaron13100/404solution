@@ -21,6 +21,7 @@ return array(
     'ABJ_404_Solution_Functions' => $base . 'includes/Functions.php',
     'ABJ_404_Solution_FunctionsMBString' => $base . 'includes/php/FunctionsMBString.php',
     'ABJ_404_Solution_FunctionsPreg' => $base . 'includes/php/FunctionsPreg.php',
+    'ABJ_404_Solution_ImportExportService' => $base . 'includes/ImportExportService.php',
     'ABJ_404_Solution_Logging' => $base . 'includes/Logging.php',
     'ABJ_404_Solution_NGramFilter' => $base . 'includes/NGramFilter.php',
     'ABJ_404_Solution_PermalinkCache' => $base . 'includes/PermalinkCache.php',
