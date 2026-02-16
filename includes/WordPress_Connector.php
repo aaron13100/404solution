@@ -170,6 +170,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         $isOptionsPage = ($subpage === 'abj404_options');
+        $isCardAccordionPage = in_array($subpage, array('abj404_options', 'abj404_tools', 'abj404_stats'), true);
         $isLogsPage = ($subpage === 'abj404_logs');
         $isListPage = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_logs'), true);
         $needsDestinationAutocomplete = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_options'), true);
@@ -249,6 +250,13 @@ class ABJ_404_Solution_WordPress_Connector {
 
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-theme-preview', plugin_dir_url(__FILE__) . 'js/themePreview.js',
                 array('jquery'));
+
+            // Settings mode toggle (Simple/Advanced)
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-settings-mode-toggle', plugin_dir_url(__FILE__) . 'ajax/SettingsModeToggle.js',
+                array('jquery'));
+        }
+
+        if ($isCardAccordionPage) {
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-options-accordion', plugin_dir_url(__FILE__) . 'js/optionsAccordion.js',
                 array('jquery'));
 
@@ -257,10 +265,6 @@ class ABJ_404_Solution_WordPress_Connector {
                 'expandAll' => __('Expand All', '404-solution'),
                 'collapseAll' => __('Collapse All', '404-solution'),
             ));
-
-            // Settings mode toggle (Simple/Advanced)
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-settings-mode-toggle', plugin_dir_url(__FILE__) . 'ajax/SettingsModeToggle.js',
-                array('jquery'));
         }
 
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',

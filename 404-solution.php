@@ -431,12 +431,25 @@ if (!function_exists('abj404_get_simulated_db_latency_ms')) {
 	function abj404_is_local_debug_host() {
 		$serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '');
 		$serverName = strtolower(trim((string)$serverName));
-		$serverName = preg_replace('/:\d+$/', '', $serverName);
-		$whitelist = $GLOBALS['abj404_whitelist'] ?? array();
-		$whitelist = array_map(function($item) {
-			return strtolower(trim((string)$item));
-		}, is_array($whitelist) ? $whitelist : array());
-		return in_array($serverName, $whitelist, true);
+		if ($serverName === '') {
+			return false;
+		}
+
+		$normalizedHost = $serverName;
+		if (strpos($normalizedHost, '[') === 0) {
+			$endBracket = strpos($normalizedHost, ']');
+			if ($endBracket !== false) {
+				$normalizedHost = substr($normalizedHost, 1, $endBracket - 1);
+			}
+		} else {
+			$colonCount = substr_count($normalizedHost, ':');
+			if ($colonCount === 1 && preg_match('/:\d+$/', $normalizedHost)) {
+				$normalizedHost = preg_replace('/:\d+$/', '', $normalizedHost);
+			}
+		}
+
+		$normalizedHost = rtrim((string)$normalizedHost, '.');
+		return in_array($normalizedHost, array('127.0.0.1', '::1', 'localhost'), true);
 	}
 
 	function abj404_get_simulated_db_latency_ms() {
@@ -453,37 +466,11 @@ if (!function_exists('abj404_get_simulated_db_latency_ms')) {
 
 if (!function_exists('abj404_show_diagnostic_latency_notice')) {
 	function abj404_show_diagnostic_latency_notice() {
-		if (!is_admin() || !current_user_can('manage_options')) {
-			return;
-		}
-		if (!abj404_is_local_debug_host()) {
-			return;
-		}
-		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
-		if ($page !== ABJ404_PP) {
-			return;
-		}
-		$currentMs = abj404_get_simulated_db_latency_ms();
-		$setSlowUrl = wp_nonce_url(
-			admin_url('options-general.php?page=' . ABJ404_PP . '&abj404_set_sim_db_ms=900'),
-			'abj404_set_sim_db_ms'
-		);
-		$disableUrl = wp_nonce_url(
-			admin_url('options-general.php?page=' . ABJ404_PP . '&abj404_set_sim_db_ms=0'),
-			'abj404_set_sim_db_ms'
-		);
-		if ($currentMs > 0) {
-			echo '<div class="notice notice-info"><p><strong>404 Solution Diagnostics:</strong> ';
-			echo esc_html(sprintf(__('Simulated DB latency is ON (%d ms per plugin query).', '404-solution'), $currentMs));
-			echo ' <a href="' . esc_url($disableUrl) . '">' . esc_html(__('Disable', '404-solution')) . '</a></p></div>';
-		} else {
-			echo '<div class="notice notice-info"><p><strong>404 Solution Diagnostics:</strong> ';
-			echo esc_html(__('Simulated DB latency is OFF.', '404-solution'));
-			echo ' <a href="' . esc_url($setSlowUrl) . '">' . esc_html(__('Enable 900ms simulation', '404-solution')) . '</a></p></div>';
-		}
+		// Intentionally no-op. Simulated latency status is shown in the plugin's
+		// Tools > Diagnostics card to avoid intrusive floating/global notices.
+		return;
 	}
 }
-add_action('admin_notices', 'abj404_show_diagnostic_latency_notice');
 
 /** This only runs after WordPress is done enqueuing scripts. */
 if (!function_exists('abj404_loadSomethingWhenWordPressIsReady')) {

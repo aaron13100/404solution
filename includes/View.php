@@ -1108,13 +1108,18 @@ class ABJ_404_Solution_View {
         foreach ($rows as $row) {
             $label = array_key_exists('label', $row) ? $row['label'] : '';
             $value = array_key_exists('value', $row) ? $row['value'] : '';
+            $valueHtml = array_key_exists('value_html', $row) ? $row['value_html'] : '';
             $status = array_key_exists('status', $row) ? $row['status'] : 'info';
             $statusLabel = ($status === 'ok') ? __('OK', '404-solution') : (($status === 'warn') ? __('Warning', '404-solution') : __('Info', '404-solution'));
             $statusClass = ($status === 'ok') ? 'abj404-pill-success' : (($status === 'warn') ? 'abj404-pill-warning' : 'abj404-pill-info');
 
             $html .= '<tr>';
             $html .= '<td><strong>' . esc_html($label) . '</strong></td>';
-            $html .= '<td>' . esc_html($value) . '</td>';
+            if ($valueHtml !== '') {
+                $html .= '<td>' . wp_kses_post($valueHtml) . '</td>';
+            } else {
+                $html .= '<td>' . esc_html($value) . '</td>';
+            }
             $html .= '<td><span class="abj404-status-pill ' . esc_attr($statusClass) . '">' . esc_html($statusLabel) . '</span></td>';
             $html .= '</tr>';
         }
@@ -1173,6 +1178,30 @@ class ABJ_404_Solution_View {
             'value' => (defined('WP_DEBUG') && WP_DEBUG) ? __('Enabled', '404-solution') : __('Disabled', '404-solution'),
             'status' => 'info',
         );
+        if (function_exists('abj404_is_local_debug_host') && function_exists('abj404_get_simulated_db_latency_ms') &&
+                abj404_is_local_debug_host()) {
+            $latencyMs = absint(abj404_get_simulated_db_latency_ms());
+            $latencyUrls = array(
+                250 => wp_nonce_url(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&abj404_set_sim_db_ms=250'), 'abj404_set_sim_db_ms'),
+                500 => wp_nonce_url(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&abj404_set_sim_db_ms=500'), 'abj404_set_sim_db_ms'),
+                900 => wp_nonce_url(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&abj404_set_sim_db_ms=900'), 'abj404_set_sim_db_ms'),
+                0   => wp_nonce_url(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&abj404_set_sim_db_ms=0'), 'abj404_set_sim_db_ms'),
+            );
+            $controls = '<a href="' . esc_url($latencyUrls[250]) . '">' . esc_html(__('250ms', '404-solution')) . '</a>'
+                . ' | <a href="' . esc_url($latencyUrls[500]) . '">' . esc_html(__('500ms', '404-solution')) . '</a>'
+                . ' | <a href="' . esc_url($latencyUrls[900]) . '">' . esc_html(__('900ms', '404-solution')) . '</a>'
+                . ' | <a href="' . esc_url($latencyUrls[0]) . '">' . esc_html(__('Disable', '404-solution')) . '</a>';
+            $rows[] = array(
+                'label' => __('Simulated DB Latency', '404-solution'),
+                'value' => ($latencyMs > 0)
+                    ? sprintf(__('ON (%d ms per plugin query)', '404-solution'), $latencyMs)
+                    : __('OFF', '404-solution'),
+                'value_html' => '<div>' . esc_html(($latencyMs > 0)
+                    ? sprintf(__('ON (%d ms per plugin query)', '404-solution'), $latencyMs)
+                    : __('OFF', '404-solution')) . '</div><div>' . $controls . '</div>',
+                'status' => ($latencyMs > 0) ? 'warn' : 'info',
+            );
+        }
 
         return $rows;
     }
@@ -1692,7 +1721,7 @@ class ABJ_404_Solution_View {
         $perPage = isset($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
-        $autoRefresh = (($sub === 'abj404_redirects' || $sub === 'abj404_captured') ? '1' : '0');
+        $autoRefresh = (($sub === 'abj404_redirects' || $sub === 'abj404_captured' || $sub === 'abj404_logs') ? '1' : '0');
         echo '<div class="abj404-filter-bar tablenav"'
                 . ' data-pagination-ajax-url="' . esc_attr(admin_url('admin-ajax.php')) . '"'
                 . ' data-pagination-ajax-action="ajaxUpdatePaginationLinks"'
@@ -1997,7 +2026,7 @@ class ABJ_404_Solution_View {
         $perPage = isset($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
-        $autoRefresh = (($sub === 'abj404_redirects' || $sub === 'abj404_captured') ? '1' : '0');
+        $autoRefresh = (($sub === 'abj404_redirects' || $sub === 'abj404_captured' || $sub === 'abj404_logs') ? '1' : '0');
         echo '<div class="abj404-filter-bar tablenav"'
                 . ' data-pagination-ajax-url="' . esc_attr(admin_url('admin-ajax.php')) . '"'
                 . ' data-pagination-ajax-action="ajaxUpdatePaginationLinks"'
@@ -3175,8 +3204,8 @@ class ABJ_404_Solution_View {
         // Table
         echo $this->getAdminLogsPageTable($sub);
 
-        // Pagination
-        echo $this->getModernPagination($sub, $tableOptions);
+        // Pagination (AJAX-capable, includes background refresh config)
+        echo $this->getPaginationLinks($sub, false);
 
         echo '</div><!-- .abj404-table-page -->';
     }
@@ -3524,7 +3553,7 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{data-pagination-ajax-action}', esc_attr($ajaxAction), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-subpage}', esc_attr($sub), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-nonce}', esc_attr($ajaxNonce), $html);
-        $autoRefresh = (($sub === 'abj404_redirects' || $sub === 'abj404_captured') ? '1' : '0');
+        $autoRefresh = (($sub === 'abj404_redirects' || $sub === 'abj404_captured' || $sub === 'abj404_logs') ? '1' : '0');
         $html = $this->f->str_replace('{data-pagination-auto-refresh}', esc_attr($autoRefresh), $html);
         $html = $this->f->str_replace('{data-pagination-refresh-started-text}', esc_attr(__('Refreshing data in background…', '404-solution')), $html);
         $html = $this->f->str_replace('{data-pagination-refresh-finished-text}', esc_attr(__('Data refreshed', '404-solution')), $html);
