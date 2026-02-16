@@ -191,9 +191,11 @@ function abj404_404listener() {
         return;
     }
     
-	$options = get_option('abj404_settings');
+    $is404 = is_404();
+    $options = null;
 
-    if (!is_404()) {
+    if (!$is404) {
+        $options = get_option('abj404_settings');
         // Performance: do NOT load the whole plugin on every frontend request unless we must.
     	if (abj404_is_redirect_all_requests_enabled($options)) {
     		require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
@@ -242,7 +244,7 @@ function abj404_404listener() {
     		}
     	}
     }
-    if (!is_404() || is_admin()) {
+    if (!$is404 || is_admin()) {
     	return;
     }
 
@@ -366,7 +368,8 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 	$serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
 	$serverNameIsInTheWhiteList = in_array($serverName, $GLOBALS['abj404_whitelist']);
 	
-	if ($serverNameIsInTheWhiteList && function_exists('wp_get_current_user')) {
+	// Keep localhost debug helper on admin screens only; frontend requests should stay lean.
+	if (is_admin() && $serverNameIsInTheWhiteList && function_exists('wp_get_current_user')) {
 	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		if ($abj404logic->userIsPluginAdmin()) {
