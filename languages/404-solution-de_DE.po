@@ -2249,3 +2249,87 @@ msgstr "Ratenlimit ueberschritten. Bitte spaeter erneut versuchen."
 
 msgid "Invalid nonce. Please reload the page."
 msgstr "Ungueltiger Nonce. Bitte die Seite neu laden."
+
+#: includes/View.php
+msgid "Diagnostics"
+msgstr "[TODO] Diagnostics"
+
+#: includes/View.php
+msgid "Quick environment checks for troubleshooting and support."
+msgstr "[TODO] Quick environment checks for troubleshooting and support."
+
+#: includes/View.php
+msgid "OK"
+msgstr "[TODO] OK"
+
+#: includes/View.php
+msgid "Warning"
+msgstr "[TODO] Warning"
+
+#: includes/View.php
+msgid "Info"
+msgstr "[TODO] Info"
+
+#: includes/View.php
+msgid "Plugin Version"
+msgstr "[TODO] Plugin Version"
+
+#: includes/View.php
+msgid "WordPress Version"
+msgstr "[TODO] WordPress Version"
+
+#: includes/View.php
+msgid "PHP Version"
+msgstr "[TODO] PHP Version"
+
+#: includes/View.php
+msgid "Uploads Directory"
+msgstr "[TODO] Uploads Directory"
+
+#: includes/View.php
+msgid "Not available"
+msgstr "[TODO] Not available"
+
+#: includes/View.php
+msgid "Uploads Writable"
+msgstr "[TODO] Uploads Writable"
+
+#: includes/View.php
+msgid "Yes"
+msgstr "[TODO] Yes"
+
+#: includes/View.php
+msgid "No"
+msgstr "[TODO] No"
+
+#: includes/View.php
+msgid "mbstring Extension"
+msgstr "[TODO] mbstring Extension"
+
+#: includes/View.php
+msgid "Loaded"
+msgstr "[TODO] Loaded"
+
+#: includes/View.php
+msgid "Missing"
+msgstr "[TODO] Missing"
+
+#: includes/View.php
+msgid "ZipArchive Support"
+msgstr "[TODO] ZipArchive Support"
+
+#: includes/View.php
+msgid "Available"
+msgstr "[TODO] Available"
+
+#: includes/View.php
+msgid "WP_DEBUG"
+msgstr "[TODO] WP_DEBUG"
+
+#: includes/View.php
+msgid "Enabled"
+msgstr "[TODO] Enabled"
+
+#: includes/View.php
+msgid "Disabled"
+msgstr "[TODO] Disabled"

@@ -2240,3 +2240,87 @@ msgstr "Require minimum match quality"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
+
+#: includes/View.php
+msgid "Diagnostics"
+msgstr "Diagnostics"
+
+#: includes/View.php
+msgid "Quick environment checks for troubleshooting and support."
+msgstr "Quick environment checks for troubleshooting and support."
+
+#: includes/View.php
+msgid "OK"
+msgstr "OK"
+
+#: includes/View.php
+msgid "Warning"
+msgstr "Warning"
+
+#: includes/View.php
+msgid "Info"
+msgstr "Info"
+
+#: includes/View.php
+msgid "Plugin Version"
+msgstr "Plugin Version"
+
+#: includes/View.php
+msgid "WordPress Version"
+msgstr "WordPress Version"
+
+#: includes/View.php
+msgid "PHP Version"
+msgstr "PHP Version"
+
+#: includes/View.php
+msgid "Uploads Directory"
+msgstr "Uploads Directory"
+
+#: includes/View.php
+msgid "Not available"
+msgstr "Not available"
+
+#: includes/View.php
+msgid "Uploads Writable"
+msgstr "Uploads Writable"
+
+#: includes/View.php
+msgid "Yes"
+msgstr "Yes"
+
+#: includes/View.php
+msgid "No"
+msgstr "No"
+
+#: includes/View.php
+msgid "mbstring Extension"
+msgstr "mbstring Extension"
+
+#: includes/View.php
+msgid "Loaded"
+msgstr "Loaded"
+
+#: includes/View.php
+msgid "Missing"
+msgstr "Missing"
+
+#: includes/View.php
+msgid "ZipArchive Support"
+msgstr "ZipArchive Support"
+
+#: includes/View.php
+msgid "Available"
+msgstr "Available"
+
+#: includes/View.php
+msgid "WP_DEBUG"
+msgstr "WP_DEBUG"
+
+#: includes/View.php
+msgid "Enabled"
+msgstr "Enabled"
+
+#: includes/View.php
+msgid "Disabled"
+msgstr "Disabled"

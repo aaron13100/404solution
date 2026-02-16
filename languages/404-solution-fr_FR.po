@@ -2241,3 +2241,87 @@ msgstr "Limite de taux depassee. Veuillez reessayer plus tard."
 
 msgid "Invalid nonce. Please reload the page."
 msgstr "Nonce invalide. Veuillez recharger la page."
+
+#: includes/View.php
+msgid "Diagnostics"
+msgstr "Diagnostic"
+
+#: includes/View.php
+msgid "Quick environment checks for troubleshooting and support."
+msgstr "Verifications rapides de l'environnement pour le depannage et le support."
+
+#: includes/View.php
+msgid "OK"
+msgstr "OK"
+
+#: includes/View.php
+msgid "Warning"
+msgstr "Avertissement"
+
+#: includes/View.php
+msgid "Info"
+msgstr "Info"
+
+#: includes/View.php
+msgid "Plugin Version"
+msgstr "Version de l'extension"
+
+#: includes/View.php
+msgid "WordPress Version"
+msgstr "Version de WordPress"
+
+#: includes/View.php
+msgid "PHP Version"
+msgstr "Version de PHP"
+
+#: includes/View.php
+msgid "Uploads Directory"
+msgstr "Repertoire de televersement"
+
+#: includes/View.php
+msgid "Not available"
+msgstr "Non disponible"
+
+#: includes/View.php
+msgid "Uploads Writable"
+msgstr "Televersement inscriptible"
+
+#: includes/View.php
+msgid "Yes"
+msgstr "Oui"
+
+#: includes/View.php
+msgid "No"
+msgstr "Non"
+
+#: includes/View.php
+msgid "mbstring Extension"
+msgstr "Extension mbstring"
+
+#: includes/View.php
+msgid "Loaded"
+msgstr "Chargee"
+
+#: includes/View.php
+msgid "Missing"
+msgstr "Manquante"
+
+#: includes/View.php
+msgid "ZipArchive Support"
+msgstr "Prise en charge ZipArchive"
+
+#: includes/View.php
+msgid "Available"
+msgstr "Disponible"
+
+#: includes/View.php
+msgid "WP_DEBUG"
+msgstr "WP_DEBUG"
+
+#: includes/View.php
+msgid "Enabled"
+msgstr "Active"
+
+#: includes/View.php
+msgid "Disabled"
+msgstr "Desactive"

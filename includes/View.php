@@ -1077,6 +1077,10 @@ class ABJ_404_Solution_View {
         $html = $this->f->doNormalReplacements($html);
         $abj404view->echoOptionsSection('tools-cache', 'abj404-cacheTools', __('Cache Management', '404-solution'), $html, false, $abj404view->getCardIcon('database'));
 
+        // Diagnostics Card
+        $html = $this->getToolsDiagnosticsMarkup();
+        $abj404view->echoOptionsSection('tools-diagnostics', 'abj404-diagnosticsTools', __('Diagnostics', '404-solution'), $html, false, $abj404view->getCardIcon('warning'));
+
         // Etcetera Card
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_runMaintenance");
         $link .= '&manually_fired=true';
@@ -1087,6 +1091,90 @@ class ABJ_404_Solution_View {
 
         echo "</div>";
         echo "</div>";
+    }
+
+    /**
+     * Build compact diagnostics markup for the Tools page.
+     * This is intentionally read-only and lightweight.
+     *
+     * @return string
+     */
+    private function getToolsDiagnosticsMarkup() {
+        $rows = $this->getToolsDiagnosticsRows();
+        $html = '<div class="abj404-diagnostics-summary">';
+        $html .= '<p>' . esc_html__('Quick environment checks for troubleshooting and support.', '404-solution') . '</p>';
+        $html .= '<table class="widefat striped"><tbody>';
+
+        foreach ($rows as $row) {
+            $label = array_key_exists('label', $row) ? $row['label'] : '';
+            $value = array_key_exists('value', $row) ? $row['value'] : '';
+            $status = array_key_exists('status', $row) ? $row['status'] : 'info';
+            $statusLabel = ($status === 'ok') ? __('OK', '404-solution') : (($status === 'warn') ? __('Warning', '404-solution') : __('Info', '404-solution'));
+            $statusClass = ($status === 'ok') ? 'abj404-pill-success' : (($status === 'warn') ? 'abj404-pill-warning' : 'abj404-pill-info');
+
+            $html .= '<tr>';
+            $html .= '<td><strong>' . esc_html($label) . '</strong></td>';
+            $html .= '<td>' . esc_html($value) . '</td>';
+            $html .= '<td><span class="abj404-status-pill ' . esc_attr($statusClass) . '">' . esc_html($statusLabel) . '</span></td>';
+            $html .= '</tr>';
+        }
+
+        $html .= '</tbody></table>';
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    /**
+     * Collect diagnostics fields displayed on the Tools page.
+     *
+     * @return array<int, array<string, string>>
+     */
+    private function getToolsDiagnosticsRows() {
+        $wpVersion = get_bloginfo('version');
+        if (!is_string($wpVersion) || trim($wpVersion) === '') {
+            $wpVersion = __('Unknown', '404-solution');
+        }
+
+        $uploadDir = '';
+        if (function_exists('abj404_getUploadsDir')) {
+            $uploadDir = (string)abj404_getUploadsDir();
+        }
+        $uploadDirReadable = ($uploadDir !== '' && is_dir($uploadDir));
+        $uploadDirWritable = ($uploadDir !== '' && is_writable($uploadDir));
+
+        $rows = array();
+        $pluginVersion = defined('ABJ404_VERSION') ? ABJ404_VERSION : __('Unknown', '404-solution');
+        $rows[] = array('label' => __('Plugin Version', '404-solution'), 'value' => $pluginVersion, 'status' => 'info');
+        $rows[] = array('label' => __('WordPress Version', '404-solution'), 'value' => $wpVersion, 'status' => 'info');
+        $rows[] = array('label' => __('PHP Version', '404-solution'), 'value' => PHP_VERSION, 'status' => 'info');
+        $rows[] = array(
+            'label' => __('Uploads Directory', '404-solution'),
+            'value' => ($uploadDir !== '') ? $uploadDir : __('Not available', '404-solution'),
+            'status' => $uploadDirReadable ? 'ok' : 'warn',
+        );
+        $rows[] = array(
+            'label' => __('Uploads Writable', '404-solution'),
+            'value' => $uploadDirWritable ? __('Yes', '404-solution') : __('No', '404-solution'),
+            'status' => $uploadDirWritable ? 'ok' : 'warn',
+        );
+        $rows[] = array(
+            'label' => __('mbstring Extension', '404-solution'),
+            'value' => extension_loaded('mbstring') ? __('Loaded', '404-solution') : __('Missing', '404-solution'),
+            'status' => extension_loaded('mbstring') ? 'ok' : 'warn',
+        );
+        $rows[] = array(
+            'label' => __('ZipArchive Support', '404-solution'),
+            'value' => class_exists('ZipArchive') ? __('Available', '404-solution') : __('Missing', '404-solution'),
+            'status' => class_exists('ZipArchive') ? 'ok' : 'warn',
+        );
+        $rows[] = array(
+            'label' => __('WP_DEBUG', '404-solution'),
+            'value' => (defined('WP_DEBUG') && WP_DEBUG) ? __('Enabled', '404-solution') : __('Disabled', '404-solution'),
+            'status' => 'info',
+        );
+
+        return $rows;
     }
     
     function echoAdminOptionsPage() {

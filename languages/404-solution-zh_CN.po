@@ -2258,3 +2258,87 @@ msgstr "超过速率限制。请稍后再试。"
 
 msgid "Invalid nonce. Please reload the page."
 msgstr "Nonce 无效。请刷新页面。"
+
+#: includes/View.php
+msgid "Diagnostics"
+msgstr "[TODO] Diagnostics"
+
+#: includes/View.php
+msgid "Quick environment checks for troubleshooting and support."
+msgstr "用于故障排查和支持的快速环境检查。"
+
+#: includes/View.php
+msgid "OK"
+msgstr "[TODO] OK"
+
+#: includes/View.php
+msgid "Warning"
+msgstr "[TODO] Warning"
+
+#: includes/View.php
+msgid "Info"
+msgstr "[TODO] Info"
+
+#: includes/View.php
+msgid "Plugin Version"
+msgstr "插件版本"
+
+#: includes/View.php
+msgid "WordPress Version"
+msgstr "站点程序版本"
+
+#: includes/View.php
+msgid "PHP Version"
+msgstr "[TODO] PHP Version"
+
+#: includes/View.php
+msgid "Uploads Directory"
+msgstr "上传目录"
+
+#: includes/View.php
+msgid "Not available"
+msgstr "[TODO] Not available"
+
+#: includes/View.php
+msgid "Uploads Writable"
+msgstr "上传目录可写"
+
+#: includes/View.php
+msgid "Yes"
+msgstr "[TODO] Yes"
+
+#: includes/View.php
+msgid "No"
+msgstr "[TODO] No"
+
+#: includes/View.php
+msgid "mbstring Extension"
+msgstr "多字节字符串扩展"
+
+#: includes/View.php
+msgid "Loaded"
+msgstr "[TODO] Loaded"
+
+#: includes/View.php
+msgid "Missing"
+msgstr "[TODO] Missing"
+
+#: includes/View.php
+msgid "ZipArchive Support"
+msgstr "压缩归档支持"
+
+#: includes/View.php
+msgid "Available"
+msgstr "[TODO] Available"
+
+#: includes/View.php
+msgid "WP_DEBUG"
+msgstr "[TODO] WP_DEBUG"
+
+#: includes/View.php
+msgid "Enabled"
+msgstr "[TODO] Enabled"
+
+#: includes/View.php
+msgid "Disabled"
+msgstr "[TODO] Disabled"

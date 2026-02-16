@@ -3298,3 +3298,35 @@ input[type="checkbox"]:focus-visible {
         border: 1px solid currentColor;
     }
 }
+
+/* ============================================
+   Tools Diagnostics
+   ============================================ */
+
+.abj404-diagnostics-summary table td {
+    vertical-align: middle;
+}
+
+.abj404-status-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.abj404-pill-success {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.abj404-pill-warning {
+    background: #fff3cd;
+    color: #664d03;
+}
+
+.abj404-pill-info {
+    background: #cff4fc;
+    color: #055160;
+}
