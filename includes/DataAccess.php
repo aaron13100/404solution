@@ -24,6 +24,10 @@ class ABJ_404_Solution_DataAccess {
     const VIEW_SNAPSHOT_CACHE_TTL_SECONDS = 120;
     /** Cross-request lock timeout for logs-hits rebuild jobs. */
     const HITS_TABLE_REBUILD_LOCK_TTL_SECONDS = 180;
+    /** Cooldown when DB query quota is exceeded. */
+    const DB_QUOTA_COOLDOWN_SECONDS = 900;
+    /** Cooldown when DB is read-only or storage is full. */
+    const DB_WRITE_BLOCK_COOLDOWN_SECONDS = 900;
 
     private static $instance = null;
 
@@ -444,6 +448,10 @@ class ABJ_404_Solution_DataAccess {
             $this->attemptMissingTableRepairAndRetry($query, $result);
         }
 
+        if ($result['last_error'] !== '') {
+            $this->noteDatabaseIssueFromError($result['last_error']);
+        }
+
         if ($options['log_errors'] && $result['last_error'] != '') {
             if ($this->f->strpos($result['last_error'], 
                     " is marked as crashed ") !== false) {
@@ -531,6 +539,131 @@ class ABJ_404_Solution_DataAccess {
             }
         }
         return false;
+    }
+
+    private function isQuotaLimitError($errorText) {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        return ($this->f->strpos($lower, 'max_questions') !== false ||
+            $this->f->strpos($lower, 'resource') !== false && $this->f->strpos($lower, 'question') !== false);
+    }
+
+    private function isDiskFullError($errorText) {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        return ($this->f->strpos($lower, 'error 28') !== false ||
+            $this->f->strpos($lower, 'no space left on device') !== false ||
+            $this->f->strpos($lower, 'table is full') !== false);
+    }
+
+    private function isReadOnlyError($errorText) {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        return ($this->f->strpos($lower, 'read only') !== false ||
+            $this->f->strpos($lower, 'read-only') !== false ||
+            $this->f->strpos($lower, 'super_read_only') !== false);
+    }
+
+    private function isCollationError($errorText) {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        return ($this->f->strpos($lower, 'illegal mix of collations') !== false ||
+            $this->f->strpos($lower, 'unknown collation') !== false ||
+            $this->f->strpos($lower, 'collation') !== false && $this->f->strpos($lower, 'not valid') !== false);
+    }
+
+    private function isDeadlockOrLockTimeoutError($errorText) {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        return ($this->f->strpos($lower, 'deadlock found') !== false ||
+            $this->f->strpos($lower, 'lock wait timeout exceeded') !== false ||
+            $this->f->strpos($lower, 'error 1213') !== false ||
+            $this->f->strpos($lower, 'error 1205') !== false);
+    }
+
+    private function setRuntimeFlag($key, $value, $ttlSeconds) {
+        if (function_exists('set_transient')) {
+            set_transient($key, $value, $ttlSeconds);
+            return;
+        }
+        if (function_exists('update_option')) {
+            update_option($key, $value, false);
+        }
+    }
+
+    private function getRuntimeFlag($key) {
+        if (function_exists('get_transient')) {
+            return get_transient($key);
+        }
+        if (function_exists('get_option')) {
+            return get_option($key, false);
+        }
+        return false;
+    }
+
+    private function setPluginDbNotice($type, $message) {
+        $payload = array(
+            'type' => $type,
+            'message' => $message,
+            'timestamp' => time(),
+        );
+        $this->setRuntimeFlag('abj404_plugin_db_notice', $payload, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
+    }
+
+    private function localizeOrDefault($text) {
+        if (function_exists('__')) {
+            return __($text, '404-solution');
+        }
+        return $text;
+    }
+
+    private function noteDatabaseIssueFromError($errorText) {
+        if (!is_string($errorText) || trim($errorText) === '') {
+            return;
+        }
+        if ($this->isDiskFullError($errorText)) {
+            $this->setRuntimeFlag('abj404_db_disk_full_until', time() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
+            $this->setPluginDbNotice('disk_full', $this->localizeOrDefault('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.'));
+            return;
+        }
+        if ($this->isQuotaLimitError($errorText)) {
+            $this->setRuntimeFlag('abj404_db_quota_cooldown_until', time() + self::DB_QUOTA_COOLDOWN_SECONDS, self::DB_QUOTA_COOLDOWN_SECONDS);
+            $this->setPluginDbNotice('query_quota', $this->localizeOrDefault('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.'));
+            return;
+        }
+        if ($this->isReadOnlyError($errorText)) {
+            $this->setRuntimeFlag('abj404_db_read_only_until', time() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
+            $this->setPluginDbNotice('read_only', $this->localizeOrDefault('Database appears to be in read-only mode. Plugin write operations are temporarily paused.'));
+            return;
+        }
+        if ($this->isCollationError($errorText)) {
+            $this->setPluginDbNotice('collation', $this->localizeOrDefault('Database collation mismatch was detected. A compatibility fallback was used where possible.'));
+        }
+    }
+
+    private function isQuotaCooldownActive() {
+        $until = (int)$this->getRuntimeFlag('abj404_db_quota_cooldown_until');
+        return ($until > time());
+    }
+
+    private function isWriteBlockActive() {
+        $diskUntil = (int)$this->getRuntimeFlag('abj404_db_disk_full_until');
+        $readOnlyUntil = (int)$this->getRuntimeFlag('abj404_db_read_only_until');
+        return ($diskUntil > time() || $readOnlyUntil > time());
+    }
+
+    private function shouldSkipNonEssentialDbWrites() {
+        return ($this->isQuotaCooldownActive() || $this->isWriteBlockActive());
     }
 
     private function isMissingPluginTableError($errorText) {
@@ -700,37 +833,53 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function executeAsTransaction($statementArray) {
-        $exception = null;
-        $allIsWell = true;
-
         global $wpdb;
+        $maxAttempts = 3;
+        $lastException = null;
+        $lastError = '';
 
-        try {
-            $wpdb->query('START TRANSACTION');
-
-            foreach ($statementArray as $statement) {
-                $wpdb->query($statement);
-                if ($wpdb->last_error != null) {
-                    $allIsWell = false;
-                    $this->logger->errorMessage("Error executing SQL transaction: " . $wpdb->last_error);
-                    $this->logger->errorMessage("SQL causing the transaction error: " . $statement);
-                    break;
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $allIsWell = true;
+            $lastError = '';
+            $lastException = null;
+            try {
+                $wpdb->query('START TRANSACTION');
+                foreach ($statementArray as $statement) {
+                    $wpdb->query($statement);
+                    if ($wpdb->last_error != null && trim((string)$wpdb->last_error) !== '') {
+                        $allIsWell = false;
+                        $lastError = (string)$wpdb->last_error;
+                        $this->logger->errorMessage("Error executing SQL transaction: " . $lastError);
+                        $this->logger->errorMessage("SQL causing the transaction error: " . $statement);
+                        break;
+                    }
                 }
+            } catch (Throwable $ex) {  // Fixed: Catch Throwable (Exception + Error) for PHP 7+ compatibility
+                $allIsWell = false;
+                $lastException = $ex;
+                $lastError = $ex->getMessage();
             }
-        } catch (Throwable $ex) {  // Fixed: Catch Throwable (Exception + Error) for PHP 7+ compatibility
-            $allIsWell = false;
-            $exception = $ex;
-        }
 
-        if ($allIsWell && $exception == null) {
-            $wpdb->query('commit');
+            if ($allIsWell && $lastException == null) {
+                $wpdb->query('commit');
+                return;
+            }
 
-        } else {
             $wpdb->query('rollback');
+            $retryable = $this->isDeadlockOrLockTimeoutError($lastError);
+            if (!$retryable || $attempt >= $maxAttempts) {
+                break;
+            }
+            // Small jitter prevents immediate lock re-collision.
+            $sleepMicros = 100000 + random_int(0, 200000);
+            usleep($sleepMicros);
         }
 
-        if ($exception != null) {
-            throw $exception;
+        if ($lastException != null) {
+            throw $lastException;
+        }
+        if ($lastError !== '') {
+            throw new Exception($lastError);
         }
     }
     
@@ -1350,6 +1499,14 @@ class ABJ_404_Solution_DataAccess {
         $this->queryAndGetResults("set session sql_big_selects = 1", $ignoreErrorsOoptions);
         $results = $this->queryAndGetResults($query);
 
+        if (!empty($results['last_error']) && $this->isCollationError($results['last_error'])) {
+            $retryOptions = $tableOptions;
+            $retryOptions['forceCollate'] = 'utf8mb4_general_ci';
+            $query = $this->getRedirectsForViewQuery($sub, $retryOptions, $queryAllRowsAtOnce,
+                $limitStart, $limitEnd, false);
+            $results = $this->queryAndGetResults($query);
+        }
+
         // Handle race condition: logs_hits table may have been dropped between existence check and query
         // (fixes bug: "Table 'xxx.wp_abj404_logs_hits' doesn't exist" error during shutdown)
         $usedFallbackForLogsHits = false;
@@ -1441,6 +1598,12 @@ class ABJ_404_Solution_DataAccess {
         	$ignoreErrorsOoptions);
         $this->queryAndGetResults("set session sql_big_selects = 1", $ignoreErrorsOoptions);
         $results = $this->queryAndGetResults($query);
+        if (!empty($results['last_error']) && $this->isCollationError($results['last_error'])) {
+            $retryOptions = $tableOptions;
+            $retryOptions['forceCollate'] = 'utf8mb4_general_ci';
+            $retryQuery = $this->getRedirectsForViewQuery($sub, $retryOptions, false, 0, PHP_INT_MAX, true);
+            $results = $this->queryAndGetResults($retryQuery);
+        }
         
         if ($results['last_error'] != null && trim($results['last_error']) != '') {
         	throw new \Exception("Error getting redirect count: " . esc_html($results['last_error']));
@@ -1574,7 +1737,15 @@ class ABJ_404_Solution_DataAccess {
         // Ensure consistent collation for string operations (e.g., REPLACE/LOWER) to avoid
         // "Illegal mix of collations" errors when plugin tables use *_bin collations.
         $wpdbCollate = 'utf8mb4_unicode_ci';
-        if (isset($wpdb) && isset($wpdb->collate) && !empty($wpdb->collate)) {
+        $hasForcedCollate = false;
+        if (!empty($tableOptions['forceCollate'])) {
+            $forced = preg_replace('/[^A-Za-z0-9_]/', '', (string)$tableOptions['forceCollate']);
+            if ($forced !== '') {
+                $wpdbCollate = $forced;
+                $hasForcedCollate = true;
+            }
+        }
+        if (!$hasForcedCollate && isset($wpdb) && isset($wpdb->collate) && !empty($wpdb->collate)) {
             $wpdbCollate = preg_replace('/[^A-Za-z0-9_]/', '', $wpdb->collate);
         }
         if ($wpdbCollate === '') {
@@ -1663,6 +1834,10 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function maybeUpdateRedirectsForViewHitsTable() {
+        if ($this->shouldSkipNonEssentialDbWrites()) {
+            $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown.");
+            return;
+        }
 
         // Check if the table exists
         if (!$this->logsHitsTableExists()) {
@@ -1692,6 +1867,10 @@ class ABJ_404_Solution_DataAccess {
      * immediately with existing data, and fresh data is available on next load.
      */
     function scheduleHitsTableRebuild() {
+        if ($this->shouldSkipNonEssentialDbWrites()) {
+            $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown.");
+            return;
+        }
         if (!self::$hitsTableRebuildScheduled) {
             if ($this->isHitsTableRebuildLocked()) {
                 $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling because another rebuild is already running.");
@@ -1965,6 +2144,10 @@ class ABJ_404_Solution_DataAccess {
     }
 
     function createRedirectsForViewHitsTable() {
+        if ($this->shouldSkipNonEssentialDbWrites()) {
+            $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown.");
+            return;
+        }
         if (!$this->acquireHitsTableRebuildLock()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild lock is already held.");
             return;

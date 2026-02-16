@@ -409,6 +409,24 @@ if (!function_exists('abj404_show_runtime_integrity_notice')) {
 }
 add_action('admin_notices', 'abj404_show_runtime_integrity_notice');
 
+if (!function_exists('abj404_show_plugin_db_notice')) {
+	function abj404_show_plugin_db_notice() {
+		if (!is_admin() || !current_user_can('manage_options')) {
+			return;
+		}
+		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+		if ($page !== ABJ404_PP) {
+			return;
+		}
+		$notice = get_transient('abj404_plugin_db_notice');
+		if (!is_array($notice) || empty($notice['message'])) {
+			return;
+		}
+		echo '<div class="notice notice-warning"><p><strong>404 Solution:</strong> ' . esc_html($notice['message']) . '</p></div>';
+	}
+}
+add_action('admin_notices', 'abj404_show_plugin_db_notice');
+
 /** This only runs after WordPress is done enqueuing scripts. */
 if (!function_exists('abj404_loadSomethingWhenWordPressIsReady')) {
 function abj404_loadSomethingWhenWordPressIsReady() {

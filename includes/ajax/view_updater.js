@@ -37,6 +37,15 @@ function triggerBackgroundTableRefreshIfEnabled() {
         enabled: true,
         startedAt: Date.now(),
         finishedAt: null,
+        difference: null,
+        durationMs: null,
+        requestCount: 0,
+        lastStatusCode: null,
+        lastResponseBytes: null,
+        lastSubpage: null,
+        lastAction: null,
+        lastRowsPerPage: null,
+        lastFilterTextLength: 0,
         lastError: null
     };
     var startedAt = Date.now();
@@ -210,6 +219,17 @@ function paginationLinksChange(triggerItem, options) {
 
     // Use a clean admin-ajax base URL; always send 'action' in the payload for compatibility with security plugins.
     var baseUrl = url.split('?')[0];
+    var requestStartedAt = Date.now();
+    if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
+        window.abj404BackgroundRefreshState.requestCount = (window.abj404BackgroundRefreshState.requestCount || 0) + 1;
+        window.abj404BackgroundRefreshState.lastSubpage = subpage;
+        window.abj404BackgroundRefreshState.lastAction = action;
+        window.abj404BackgroundRefreshState.lastRowsPerPage = parseInt(rowsPerPage, 10) || 0;
+        window.abj404BackgroundRefreshState.lastFilterTextLength = (filterText || '').length;
+        window.abj404BackgroundRefreshState.lastError = null;
+        window.abj404BackgroundRefreshState.lastStatusCode = null;
+        window.abj404BackgroundRefreshState.lastResponseBytes = null;
+    }
 
     if (!isBackgroundRefresh) {
         // Show loading overlay on the table for explicit user actions only.
@@ -271,6 +291,22 @@ function paginationLinksChange(triggerItem, options) {
             if (typeof options.onComplete === 'function') {
                 options.onComplete();
             }
+            if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
+                var durationMs = Date.now() - requestStartedAt;
+                var resultSize = 0;
+                if (result) {
+                    try {
+                        resultSize = JSON.stringify(result).length;
+                    } catch (e) {
+                        resultSize = 0;
+                    }
+                }
+                window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                window.abj404BackgroundRefreshState.durationMs = durationMs;
+                window.abj404BackgroundRefreshState.difference = durationMs;
+                window.abj404BackgroundRefreshState.lastStatusCode = 200;
+                window.abj404BackgroundRefreshState.lastResponseBytes = resultSize;
+            }
         },
         error: function (jqXHR, textStatus, errorThrown) {
             // Remove the loading overlay on error
@@ -329,6 +365,15 @@ function paginationLinksChange(triggerItem, options) {
             }
             if (typeof options.onError === 'function') {
                 options.onError();
+            }
+            if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
+                var durationMs = Date.now() - requestStartedAt;
+                window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                window.abj404BackgroundRefreshState.durationMs = durationMs;
+                window.abj404BackgroundRefreshState.difference = durationMs;
+                window.abj404BackgroundRefreshState.lastStatusCode = status || null;
+                window.abj404BackgroundRefreshState.lastError = textStatus || errorThrown || 'ajax-error';
+                window.abj404BackgroundRefreshState.lastResponseBytes = responseText ? responseText.length : 0;
             }
         }
     });
