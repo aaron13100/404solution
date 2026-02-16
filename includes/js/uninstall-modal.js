@@ -157,12 +157,6 @@
         function handleDeactivation(deactivateUrl, sendFeedback) {
             var uninstallReason = $('input[name="abj404-reason"]:checked').val() || '';
             var followupDetails = ($('#abj404-followup-details-text').val() || '').trim();
-            var requiresDetails = (uninstallReason === 'performance' || uninstallReason === 'not-working' || uninstallReason === 'other');
-            if (sendFeedback && requiresDetails && followupDetails.length < 10) {
-                alert('Please add a short detail (at least 10 characters) so we can diagnose this issue.');
-                $('#abj404-followup-details-text').focus();
-                return;
-            }
 
             // Collect selected issue checkboxes
             var selectedIssues = [];

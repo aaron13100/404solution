@@ -29,6 +29,7 @@ function triggerBackgroundTableRefreshIfEnabled() {
 
     var perpageElements = document.querySelectorAll('.perpage');
     if (perpageElements == null || perpageElements.length === 0) {
+        clearRefreshStatus($config);
         return;
     }
 
@@ -37,11 +38,14 @@ function triggerBackgroundTableRefreshIfEnabled() {
         paginationLinksChange(perpageElements[0], {
             backgroundRefresh: true,
             onComplete: function() {
-                setRefreshStatus($config, $config.attr('data-pagination-refresh-finished-text') || 'Data refreshed');
-                window.setTimeout(function() { clearRefreshStatus($config); }, 2000);
+                var $latestConfig = jQuery('.abj404-pagination-right').first();
+                var finishedText = $latestConfig.attr('data-pagination-refresh-finished-text') || 'Data refreshed';
+                setRefreshStatus($latestConfig, finishedText);
+                window.setTimeout(function() { clearRefreshStatus($latestConfig); }, 3500);
             },
             onError: function() {
-                clearRefreshStatus($config);
+                var $latestConfig = jQuery('.abj404-pagination-right').first();
+                clearRefreshStatus($latestConfig.length > 0 ? $latestConfig : $config);
             }
         });
     };
