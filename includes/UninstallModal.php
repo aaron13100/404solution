@@ -363,7 +363,7 @@ class ABJ_404_Solution_UninstallModal {
 
         // Security: Check user capabilities
         if (!current_user_can('activate_plugins')) {
-            wp_send_json_error(array('message' => __('Insufficient permissions', '404-solution')));
+            wp_send_json_error(array('message' => __('Insufficient permissions', '404-solution')), 403);
             return;
         }
 
@@ -418,7 +418,7 @@ class ABJ_404_Solution_UninstallModal {
             if ($saved_value !== $preferences) {
                 wp_send_json_error(array(
                     'message' => __('Could not save preferences. Your choices may not be preserved.', '404-solution')
-                ));
+                ), 500);
                 return;
             }
             // If values match, the false return was just because value was unchanged (which is OK)
