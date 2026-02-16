@@ -565,7 +565,10 @@ class ABJ_404_Solution_WordPress_Connector {
         }
         
         $requestedURL = $userRequest->getPathWithSortedQueryString();
-        $requestedURLWithoutComments = $userRequest->getRequestURIWithoutCommentsPage();
+        $requestedURLWithoutComments = $requestedURL;
+        if ($this->f->strpos($requestedURL, '/comment-page-') !== false) {
+            $requestedURLWithoutComments = $userRequest->getRequestURIWithoutCommentsPage();
+        }
         
         // Get URL data if it's already in our database
         $redirect = $this->dao->getActiveRedirectForURL($requestedURL);
@@ -744,7 +747,10 @@ class ABJ_404_Solution_WordPress_Connector {
 	 * @param options
 	 */
     function logAReallyLongDebugMessage($options, $requestedURL, $redirect) {
-	 	
+        if (!$this->logger->isDebug()) {
+            return;
+        }
+		 	
         $debugOptionsMsg = esc_html('auto_redirects: ' . $options['auto_redirects'] . ', auto_score: ' . 
                 $options['auto_score'] . ', template_redirect_priority: ' . $options['template_redirect_priority'] .
                 ', auto_cats: ' . $options['auto_cats'] . ', auto_tags: ' .

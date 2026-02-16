@@ -1731,31 +1731,92 @@ class ABJ_404_Solution_PluginLogic {
         }
     }
     
-    function getExportFilename() {
-    	$tempFile = abj404_getUploadsDir() . 'export.csv';
-    	return $tempFile;
+    function getExportFilename($format = 'native') {
+        if ($format === 'redirection') {
+            return abj404_getUploadsDir() . 'export-redirection.csv';
+        }
+        $tempFile = abj404_getUploadsDir() . 'export.csv';
+        return $tempFile;
     }
     
     function doExport() {
-    	
-    	$tempFile = $this->getExportFilename();
-    	
-    	$this->dao->doRedirectsExport($tempFile);
+        $format = isset($_REQUEST['export_format']) ? sanitize_text_field((string)$_REQUEST['export_format']) : 'native';
+        $tempFile = $this->getExportFilename($format);
+
+        if ($format === 'redirection') {
+            $nativeExportFile = $this->getExportFilename('native');
+            $this->dao->doRedirectsExport($nativeExportFile);
+            $error = $this->convertExportCsvToRedirectionFormat($nativeExportFile, $tempFile);
+            if ($error !== '') {
+                $this->logger->warn($error);
+                return;
+            }
+        } else {
+            $this->dao->doRedirectsExport($tempFile);
+        }
     	
     	if (file_exists($tempFile)) {
-	    	header('Content-Description: File Transfer');
-	    	header('Content-Disposition: attachment; filename=' . basename($tempFile));
+		    	header('Content-Description: File Transfer');
+		    	header('Content-Disposition: attachment; filename=' . basename($tempFile));
 	    	header('Expires: 0');
 	    	header('Cache-Control: must-revalidate');
-	    	header('Pragma: public');
-	    	header('Content-Length: ' . filesize($tempFile));
-	    	header("Content-Type: text/plain");
-	    	readfile($tempFile);
+		    	header('Pragma: public');
+		    	header('Content-Length: ' . filesize($tempFile));
+		    	header("Content-Type: text/csv; charset=utf-8");
+		    	readfile($tempFile);
             exit(); // avoid headers already sent error. avoid other things executing afterwards.
-	    	
+		    	
     	} else {
     		$this->logger->infoMessage("I don't see any data to export.");
     	}
+    }
+
+    /**
+     * Convert native export format to a Redirection-compatible CSV shape.
+     *
+     * @param string $sourceFile Native export file path.
+     * @param string $destinationFile Output file path.
+     * @return string Empty string on success, error message otherwise.
+     */
+    function convertExportCsvToRedirectionFormat($sourceFile, $destinationFile) {
+        if (!file_exists($sourceFile)) {
+            return 'Error: Native export file does not exist.';
+        }
+
+        $in = fopen($sourceFile, 'r');
+        if ($in === false) {
+            return 'Error: Could not read native export file.';
+        }
+
+        $out = fopen($destinationFile, 'w');
+        if ($out === false) {
+            fclose($in);
+            return 'Error: Could not create Redirection export file.';
+        }
+
+        // Redirection import commonly uses source/target/regex/code columns.
+        fputcsv($out, array('source', 'target', 'regex', 'code'), ',', '"', '\\');
+
+        // Read and ignore native header row.
+        fgetcsv($in, 0, ',', '"', '\\');
+        while (($row = fgetcsv($in, 0, ',', '"', '\\')) !== false) {
+            if (!is_array($row) || count($row) < 4) {
+                continue;
+            }
+            $from = trim((string)$row[0]);
+            $status = trim((string)$row[1]);
+            $to = trim((string)$row[3]);
+            if ($from === '' || $to === '') {
+                continue;
+            }
+
+            $regexFlag = (strtolower($status) === 'regex') ? '1' : '0';
+            fputcsv($out, array($from, $to, $regexFlag, '301'), ',', '"', '\\');
+        }
+
+        fclose($in);
+        fclose($out);
+        return '';
     }
     
     /** Expected formats are 
@@ -1765,6 +1826,10 @@ class ABJ_404_Solution_PluginLogic {
     function doImportFile() {
         $anyIssuesToNote = array();
         if (isset($_FILES['import_file']) && $_FILES['import_file']['error'] == UPLOAD_ERR_OK) {
+            $dryRun = isset($_POST['dry_run']) && sanitize_text_field((string)$_POST['dry_run']) === '1';
+            $processedRows = 0;
+            $validRows = 0;
+            $invalidRows = 0;
             // Validate file extension to prevent malicious file uploads
             $allowed_extensions = array('csv', 'txt');
             $file_ext = strtolower(pathinfo($_FILES['import_file']['name'], PATHINFO_EXTENSION));
@@ -1821,8 +1886,20 @@ class ABJ_404_Solution_PluginLogic {
                     return $dataArray['error'];
                 }
                 
-                $anyIssuesToNote = array_merge($anyIssuesToNote, 
-                    $this->loadDataArrayFromFile($dataArray));
+                // Skip header rows for backward compatibility with legacy format handling.
+                if (isset($dataArray['from_url']) &&
+                        ($dataArray['from_url'] === 'from_url' || $dataArray['from_url'] === 'request')) {
+                    continue;
+                }
+
+                $processedRows++;
+                $issues = $this->loadDataArrayFromFile($dataArray, $dryRun);
+                if (count($issues) > 0) {
+                    $invalidRows++;
+                } else {
+                    $validRows++;
+                }
+                $anyIssuesToNote = array_merge($anyIssuesToNote, $issues);
             }
             fclose($file_handle);
             
@@ -1830,6 +1907,20 @@ class ABJ_404_Solution_PluginLogic {
             return "File upload error.";
         }
         
+        if ($dryRun) {
+            $msg = sprintf(
+                'Dry run complete. Valid redirects: %d. Invalid rows: %d. Total rows processed: %d.',
+                $validRows,
+                $invalidRows,
+                $processedRows
+            );
+            if (count($anyIssuesToNote) > 0) {
+                $msg .= ' Preview issues: ' .
+                    implode(", <BR/>\n", array_slice($anyIssuesToNote, 0, 20));
+            }
+            return $msg;
+        }
+
         if (count($anyIssuesToNote) > 0) {
             return 'Error: ' . implode(", <BR/>\n", $anyIssuesToNote);
         }
@@ -1839,7 +1930,7 @@ class ABJ_404_Solution_PluginLogic {
         return $msg;
     }
 
-    function loadDataArrayFromFile($dataArray) {
+    function loadDataArrayFromFile($dataArray, $dryRun = false) {
         if ($dataArray['from_url'] == 'from_url' || $dataArray['from_url'] == 'request') {
             return array();
         }
@@ -1927,7 +2018,9 @@ class ABJ_404_Solution_PluginLogic {
                     $slug);
             }
         }
-        $this->dao->setupRedirect($fromURL, $status, $type, $final_dest, 301);
+        if (!$dryRun) {
+            $this->dao->setupRedirect($fromURL, $status, $type, $final_dest, 301);
+        }
         
         return $anyIssuesToNote;
     }
