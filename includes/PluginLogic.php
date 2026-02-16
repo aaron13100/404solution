@@ -2592,8 +2592,8 @@ class ABJ_404_Solution_PluginLogic {
         return $result;
     }
     
-    /** 
-     * @return string
+    /**
+     * @return array<string, mixed>
      */
     function updateOptionsFromPOST() {
         $message = "";
