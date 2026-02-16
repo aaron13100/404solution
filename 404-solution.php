@@ -64,6 +64,18 @@ if (!defined('ABJ404_PATH')) {
 		}
 	}
 
+	if (!function_exists('abj404_get_settings_options')) {
+		/**
+		 * Centralized settings read so call sites don't repeat option-shape checks.
+		 *
+		 * @return array
+		 */
+		function abj404_get_settings_options() {
+			$options = get_option('abj404_settings');
+			return is_array($options) ? $options : array();
+		}
+	}
+
 // Debug whitelist - only includes localhost/development environments by default
 // WARNING: Only add trusted domains to this list. External domains could be a security risk.
 // This list is used to enable detailed error logging for debugging purposes.
@@ -171,7 +183,7 @@ if (is_admin()) {
 
 // ----
 // get the plugin priority to use before adding the template_redirect action.
-$__abj404_options = get_option('abj404_settings');
+$__abj404_options = abj404_get_settings_options();
 $__abj404_template_redirect_priority = absint($__abj404_options['template_redirect_priority'] ?? 9);
 
 add_action('template_redirect', 'abj404_404listener', $__abj404_template_redirect_priority);
@@ -195,7 +207,7 @@ function abj404_404listener() {
     $options = null;
 
     if (!$is404) {
-        $options = get_option('abj404_settings');
+        $options = abj404_get_settings_options();
         // Performance: do NOT load the whole plugin on every frontend request unless we must.
     	if (abj404_is_redirect_all_requests_enabled($options)) {
     		require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
@@ -278,6 +290,7 @@ function abj404_dailyMaintenanceCronJobListener() {
     $dbUpgrades->runDatabaseMaintenanceTasks();
 }
 }
+
 if (!function_exists('abj404_updateLogsHitsTableListener')) {
 function abj404_updateLogsHitsTableListener() {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
@@ -332,7 +345,7 @@ if (!function_exists('abj404_override_plugin_locale')) {
 function abj404_override_plugin_locale($locale, $domain) {
 	// Only override for our plugin's text domain
 	if ($domain === '404-solution') {
-		$options = get_option('abj404_settings');
+		$options = abj404_get_settings_options();
 
 		// Check if language override is set and not empty
 		if (is_array($options) && !empty($options['plugin_language_override'])) {
@@ -348,7 +361,7 @@ add_filter('plugin_locale', 'abj404_override_plugin_locale', 999, 2);
 if (!function_exists('abj404_loadSomethingWhenWordPressIsReady')) {
 function abj404_loadSomethingWhenWordPressIsReady() {
 	/** Load the text domain for translation of the plugin. */
-	$options = get_option('abj404_settings');
+	$options = abj404_get_settings_options();
 	$override_locale = (is_array($options) && !empty($options['plugin_language_override']))
 		? $options['plugin_language_override'] : '';
 
