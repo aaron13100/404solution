@@ -22,6 +22,10 @@ class ABJ_404_Solution_DataAccess {
     const HITS_TABLE_MAX_AGE_SECONDS = 300; // 5 minutes
     /** Short-lived cache for admin list snapshots (fast first paint). */
     const VIEW_SNAPSHOT_CACHE_TTL_SECONDS = 120;
+    /** Minimum interval between expensive refreshes for the same view key. */
+    const VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS = 30;
+    /** Safety cap: avoid storing extremely large payloads in cache. */
+    const VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES = 2097152; // 2 MiB
     /** Cross-request lock timeout for logs-hits rebuild jobs. */
     const HITS_TABLE_REBUILD_LOCK_TTL_SECONDS = 180;
     /** Cooldown when DB query quota is exceeded. */
@@ -35,6 +39,8 @@ class ABJ_404_Solution_DataAccess {
     private static $hitsTableRebuildScheduled = false;
     /** @var bool Prevent recursive auto-repair attempts on SQL errors. */
     private static $tableRepairInProgress = false;
+    /** @var bool Ensure view cache table DDL runs at most once per request. */
+    private static $viewSnapshotTableEnsured = false;
 
     /** @var ABJ_404_Solution_Functions */
     private $f;
@@ -319,6 +325,160 @@ class ABJ_404_Solution_DataAccess {
         );
         $encoded = function_exists('wp_json_encode') ? wp_json_encode($cacheShape) : json_encode($cacheShape);
         return $prefix . '_' . md5((string)$encoded);
+    }
+
+    private function ensureViewSnapshotTableExists() {
+        if (self::$viewSnapshotTableEnsured) {
+            return;
+        }
+        self::$viewSnapshotTableEnsured = true;
+        $create = "CREATE TABLE IF NOT EXISTS {wp_abj404_view_cache} (
+            id bigint(20) NOT NULL auto_increment,
+            cache_key varchar(64) NOT NULL,
+            subpage varchar(64) NOT NULL default '',
+            payload longtext NOT NULL,
+            payload_bytes int(10) unsigned NOT NULL default 0,
+            refreshed_at bigint(20) NOT NULL default 0,
+            expires_at bigint(20) NOT NULL default 0,
+            updated_at bigint(20) NOT NULL default 0,
+            PRIMARY KEY (id),
+            UNIQUE KEY cache_key (cache_key),
+            KEY expires_at (expires_at),
+            KEY refreshed_at (refreshed_at)
+        ) COMMENT='404 Solution View Snapshot Cache Table'";
+        $this->queryAndGetResults($create, array('log_errors' => false));
+    }
+
+    private function getViewSnapshotLockOptionName($cacheKey) {
+        return $this->getLowercasePrefix() . 'abj404_view_cache_lock_' . md5((string)$cacheKey);
+    }
+
+    private function isViewSnapshotRefreshLocked($cacheKey) {
+        if (!function_exists('get_option')) {
+            return false;
+        }
+        $lockKey = $this->getViewSnapshotLockOptionName($cacheKey);
+        $lockValue = get_option($lockKey, false);
+        if ($lockValue === false || $lockValue === '' || $lockValue === null) {
+            return false;
+        }
+        $lockTs = is_numeric($lockValue) ? (int)$lockValue : 0;
+        if ($lockTs > 0 && (time() - $lockTs) > self::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS) {
+            if (function_exists('delete_option')) {
+                delete_option($lockKey);
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private function acquireViewSnapshotRefreshLock($cacheKey) {
+        if (!function_exists('add_option')) {
+            return true;
+        }
+        if ($this->isViewSnapshotRefreshLocked($cacheKey)) {
+            return false;
+        }
+        $lockKey = $this->getViewSnapshotLockOptionName($cacheKey);
+        return (bool)add_option($lockKey, time(), '', 'no');
+    }
+
+    private function releaseViewSnapshotRefreshLock($cacheKey) {
+        if (function_exists('delete_option')) {
+            delete_option($this->getViewSnapshotLockOptionName($cacheKey));
+        }
+    }
+
+    private function decodeSnapshotPayload($payload) {
+        if (!is_string($payload) || $payload === '') {
+            return null;
+        }
+        $decoded = json_decode($payload, true);
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    private function getViewRowsSnapshotFromTable($cacheKey, $allowExpired = false, $respectCooldown = false) {
+        $this->ensureViewSnapshotTableExists();
+        $query = "SELECT payload, refreshed_at, expires_at
+            FROM {wp_abj404_view_cache}
+            WHERE cache_key = %s LIMIT 1";
+        $result = $this->queryAndGetResults($query, array('query_params' => array($cacheKey), 'log_errors' => false));
+        if (empty($result['rows']) || !is_array($result['rows'][0])) {
+            return null;
+        }
+        $row = $result['rows'][0];
+        $expiresAt = intval($row['expires_at'] ?? 0);
+        $refreshedAt = intval($row['refreshed_at'] ?? 0);
+        $now = time();
+        $isFresh = ($expiresAt > $now);
+        $recentEnough = ($refreshedAt > 0 && ($now - $refreshedAt) <= self::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS);
+        if (!$allowExpired && !$isFresh) {
+            return null;
+        }
+        if ($respectCooldown && !$isFresh && !$recentEnough) {
+            return null;
+        }
+        return $this->decodeSnapshotPayload((string)($row['payload'] ?? ''));
+    }
+
+    private function setViewRowsSnapshotToTable($cacheKey, $sub, $rows, $ttlSeconds) {
+        if (!is_array($rows)) {
+            return;
+        }
+        $this->ensureViewSnapshotTableExists();
+        $encoded = function_exists('wp_json_encode') ? wp_json_encode($rows) : json_encode($rows);
+        if (!is_string($encoded) || $encoded === '') {
+            return;
+        }
+        $bytes = strlen($encoded);
+        if ($bytes > self::VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES) {
+            return;
+        }
+        $now = time();
+        $expiresAt = $now + max(1, intval($ttlSeconds));
+        $query = "INSERT INTO {wp_abj404_view_cache}
+            (cache_key, subpage, payload, payload_bytes, refreshed_at, expires_at, updated_at)
+            VALUES (%s, %s, %s, %d, %d, %d, %d)
+            ON DUPLICATE KEY UPDATE
+                subpage = VALUES(subpage),
+                payload = VALUES(payload),
+                payload_bytes = VALUES(payload_bytes),
+                refreshed_at = VALUES(refreshed_at),
+                expires_at = VALUES(expires_at),
+                updated_at = VALUES(updated_at)";
+        $this->queryAndGetResults($query, array(
+            'query_params' => array($cacheKey, (string)$sub, $encoded, $bytes, $now, $expiresAt, $now),
+            'log_errors' => false,
+        ));
+        $this->cleanupExpiredViewSnapshotRowsIfNeeded();
+    }
+
+    private function waitForViewRowsSnapshotFromTable($cacheKey, $timeoutMs = 4000) {
+        $deadline = microtime(true) + (max(100, intval($timeoutMs)) / 1000);
+        while (microtime(true) < $deadline) {
+            $rows = $this->getViewRowsSnapshotFromTable($cacheKey, false, false);
+            if (is_array($rows)) {
+                return $rows;
+            }
+            usleep(100000);
+        }
+        return null;
+    }
+
+    private function cleanupExpiredViewSnapshotRowsIfNeeded() {
+        if (!function_exists('get_transient') || !function_exists('set_transient')) {
+            return;
+        }
+        $marker = get_transient('abj404_view_cache_cleanup_marker');
+        if ($marker !== false) {
+            return;
+        }
+        set_transient('abj404_view_cache_cleanup_marker', time(), 1800);
+        $query = "DELETE FROM {wp_abj404_view_cache} WHERE expires_at < %d";
+        $this->queryAndGetResults($query, array(
+            'query_params' => array(time() - self::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS),
+            'log_errors' => false,
+        ));
     }
 
     /**
@@ -1483,15 +1643,46 @@ class ABJ_404_Solution_DataAccess {
     function getRedirectsForView($sub, $tableOptions) {
         $orderByForSnapshot = strtolower((string)($tableOptions['orderby'] ?? ''));
         $isLogsMaintenanceSort = ($orderByForSnapshot === 'logshits' || $orderByForSnapshot === 'last_used');
-        $canUseSnapshotCache = function_exists('get_transient')
-            && absint($tableOptions['perpage'] ?? 0) <= 200
+        $canUseSnapshotCache = absint($tableOptions['perpage'] ?? 0) <= 200
             && !$isLogsMaintenanceSort;
         $snapshotCacheKey = '';
+        $refreshLockHeld = false;
         if ($canUseSnapshotCache) {
             $snapshotCacheKey = $this->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
-            $cachedRows = get_transient($snapshotCacheKey);
-            if (is_array($cachedRows)) {
-                return $cachedRows;
+            $cachedRowsFromTable = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, false, false);
+            if (is_array($cachedRowsFromTable)) {
+                return $cachedRowsFromTable;
+            }
+            if (function_exists('get_transient')) {
+                $cachedRows = get_transient($snapshotCacheKey);
+                if (is_array($cachedRows)) {
+                    return $cachedRows;
+                }
+            }
+
+            // Server-side dedupe: don't run the same refresh concurrently.
+            if ($this->isViewSnapshotRefreshLocked($snapshotCacheKey)) {
+                $staleRowsFromTable = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, true, true);
+                if (is_array($staleRowsFromTable)) {
+                    return $staleRowsFromTable;
+                }
+                $waitedRows = $this->waitForViewRowsSnapshotFromTable($snapshotCacheKey, 4000);
+                if (is_array($waitedRows)) {
+                    return $waitedRows;
+                }
+                if (function_exists('get_transient')) {
+                    $waitedTransientRows = get_transient($snapshotCacheKey);
+                    if (is_array($waitedTransientRows)) {
+                        return $waitedTransientRows;
+                    }
+                }
+            } else {
+                // At most once per 30s per cache key: if stale-but-recent snapshot exists, serve it.
+                $recentRowsFromTable = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, true, true);
+                if (is_array($recentRowsFromTable)) {
+                    return $recentRowsFromTable;
+                }
+                $refreshLockHeld = $this->acquireViewSnapshotRefreshLock($snapshotCacheKey);
             }
         }
     	
@@ -1577,7 +1768,13 @@ class ABJ_404_Solution_DataAccess {
         	" rows to display after log data for page: ". $sub);
 
         if ($canUseSnapshotCache && $snapshotCacheKey !== '' && is_array($rows)) {
-            set_transient($snapshotCacheKey, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
+            $this->setViewRowsSnapshotToTable($snapshotCacheKey, $sub, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
+            if (function_exists('set_transient')) {
+                set_transient($snapshotCacheKey, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
+            }
+        }
+        if ($refreshLockHeld && $snapshotCacheKey !== '') {
+            $this->releaseViewSnapshotRefreshLock($snapshotCacheKey);
         }
         
         return $rows;
