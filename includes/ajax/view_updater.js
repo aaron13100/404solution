@@ -10,7 +10,32 @@ if (typeof(getURLParameter) !== "function") {
 // when the user presses enter on the filter text input then update the table
 jQuery(document).ready(function($) {
     bindSearchFieldListeners();
+    triggerBackgroundTableRefreshIfEnabled();
 });
+
+function triggerBackgroundTableRefreshIfEnabled() {
+    var $config = jQuery('.abj404-pagination-right').first();
+    if ($config.length === 0) {
+        return;
+    }
+    if ($config.attr('data-pagination-auto-refresh') !== '1') {
+        return;
+    }
+    if (window.abj404InitialTableRefreshTriggered) {
+        return;
+    }
+    window.abj404InitialTableRefreshTriggered = true;
+
+    var perpageElements = document.querySelectorAll('.perpage');
+    if (perpageElements == null || perpageElements.length === 0) {
+        return;
+    }
+
+    // Show cached snapshot immediately, then refresh in the background.
+    setTimeout(function() {
+        paginationLinksChange(perpageElements[0]);
+    }, 200);
+}
 
 function bindSearchFieldListeners() {
     var filters = jQuery('input[name=searchFilter]');

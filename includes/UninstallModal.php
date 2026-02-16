@@ -385,6 +385,15 @@ class ABJ_404_Solution_UninstallModal {
             'include_diagnostics' => isset($_POST['include_diagnostics']) ? filter_var($_POST['include_diagnostics'], FILTER_VALIDATE_BOOLEAN) : false
         );
 
+        $reasonNeedsDetail = in_array($preferences['uninstall_reason'], array('performance', 'not-working', 'other'), true);
+        $detailText = trim((string)$preferences['followup_details']);
+        if ($preferences['send_feedback'] && $reasonNeedsDetail && strlen($detailText) < 10) {
+            wp_send_json_error(array(
+                'message' => __('Please include a short detail (at least 10 characters) for this feedback reason.', '404-solution')
+            ), 400);
+            return;
+        }
+
         // Debug logging (only in debug mode to avoid logging PII like email/feedback in production)
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('404 Solution: AJAX handler received deactivation preferences');

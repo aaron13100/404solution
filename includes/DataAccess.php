@@ -20,11 +20,15 @@ class ABJ_404_Solution_DataAccess {
 
     /** @var int Maximum age in seconds before hits table is considered stale */
     const HITS_TABLE_MAX_AGE_SECONDS = 300; // 5 minutes
+    /** Short-lived cache for admin list snapshots (fast first paint). */
+    const VIEW_SNAPSHOT_CACHE_TTL_SECONDS = 120;
 
     private static $instance = null;
 
     /** @var bool Whether the hits table rebuild has been scheduled for this request */
     private static $hitsTableRebuildScheduled = false;
+    /** @var bool Prevent recursive auto-repair attempts on SQL errors. */
+    private static $tableRepairInProgress = false;
 
     /** @var ABJ_404_Solution_Functions */
     private $f;
@@ -289,6 +293,29 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /**
+     * Build a stable cache key for admin list data/count snapshots.
+     *
+     * @param string $prefix
+     * @param string $sub
+     * @param array $tableOptions
+     * @return string
+     */
+    private function getViewSnapshotCacheKey($prefix, $sub, $tableOptions) {
+        $cacheShape = array(
+            'sub' => (string)$sub,
+            'filter' => (int)($tableOptions['filter'] ?? 0),
+            'orderby' => (string)($tableOptions['orderby'] ?? 'url'),
+            'order' => (string)($tableOptions['order'] ?? 'ASC'),
+            'paged' => (int)($tableOptions['paged'] ?? 1),
+            'perpage' => (int)($tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE),
+            'filterText' => (string)($tableOptions['filterText'] ?? ''),
+            'blog' => function_exists('get_current_blog_id') ? (int)get_current_blog_id() : 1,
+        );
+        $encoded = function_exists('wp_json_encode') ? wp_json_encode($cacheShape) : json_encode($cacheShape);
+        return $prefix . '_' . md5((string)$encoded);
+    }
+
+    /**
      * Get the normalized (lowercase) prefix used for all plugin tables.
      * This avoids case-sensitive MySQL filesystems from treating mixed-case
      * prefixes as distinct tables.
@@ -376,7 +403,7 @@ class ABJ_404_Solution_DataAccess {
         $timer = new ABJ_404_Solution_Timer();
         
         $result = array();
-       	$result['rows'] = $wpdb->get_results($query, ARRAY_A);
+        $result['rows'] = $wpdb->get_results($query, ARRAY_A);
         
         $result['elapsed_time'] = $timer->stop();
         $result['last_error'] = $wpdb->last_error ?? '';
@@ -400,6 +427,21 @@ class ABJ_404_Solution_DataAccess {
         			new Exception("Query result is not an array."));
         }
         
+        if ($result['last_error'] !== '' && $this->f->strpos(strtolower($result['last_error']), 'server has gone away') !== false) {
+            // Retry once after reconnect for transient connection drops.
+            $this->ensureConnection();
+            $wpdb->flush();
+            $result['rows'] = $wpdb->get_results($query, ARRAY_A);
+            $result['last_error'] = $wpdb->last_error ?? '';
+            $result['last_result'] = $wpdb->last_result ?? array();
+            $result['rows_affected'] = $wpdb->rows_affected ?? 0;
+            $result['insert_id'] = $wpdb->insert_id ?? 0;
+        }
+
+        if ($result['last_error'] !== '' && $this->isMissingPluginTableError($result['last_error'])) {
+            $this->attemptMissingTableRepairAndRetry($query, $result);
+        }
+
         if ($options['log_errors'] && $result['last_error'] != '') {
             if ($this->f->strpos($result['last_error'], 
                     " is marked as crashed ") !== false) {
@@ -467,6 +509,49 @@ class ABJ_404_Solution_DataAccess {
         }
         
         return $result;
+    }
+
+    private function isMissingPluginTableError($errorText) {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        if ($this->f->strpos($lower, '_abj404_logs_hits') !== false) {
+            return false;
+        }
+        return ($this->f->strpos($lower, "doesn't exist") !== false &&
+            $this->f->strpos($lower, '_abj404_') !== false);
+    }
+
+    /**
+     * Attempt one auto-repair pass for missing plugin tables, then retry query once.
+     *
+     * @param string $query
+     * @param array $result
+     * @return void
+     */
+    private function attemptMissingTableRepairAndRetry($query, &$result) {
+        if (self::$tableRepairInProgress) {
+            return;
+        }
+
+        self::$tableRepairInProgress = true;
+        try {
+            $upgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+            $upgrades->createDatabaseTables(false);
+
+            global $wpdb;
+            $wpdb->flush();
+            $result['rows'] = $wpdb->get_results($query, ARRAY_A);
+            $result['last_error'] = $wpdb->last_error ?? '';
+            $result['last_result'] = $wpdb->last_result ?? array();
+            $result['rows_affected'] = $wpdb->rows_affected ?? 0;
+            $result['insert_id'] = $wpdb->insert_id ?? 0;
+        } catch (Throwable $e) {
+            $this->logger->warn("Missing-table auto-repair failed: " . $e->getMessage());
+        } finally {
+            self::$tableRepairInProgress = false;
+        }
     }
     
     /** Try to call strip_invalid_text_from_query and return the result. 
@@ -967,11 +1052,11 @@ class ABJ_404_Solution_DataAccess {
         // The Redirects page "All/Manual/Auto/Trash" tabs should only count actual redirects
         // (manual/auto/regex), not captured URLs.
         $query = "SELECT
-            SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active,
-            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_MANUAL . " THEN 1 ELSE 0 END) as manual,
-            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_AUTO . " THEN 1 ELSE 0 END) as auto,
-            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_REGEX . " THEN 1 ELSE 0 END) as regex,
-            SUM(CASE WHEN disabled = 1 THEN 1 ELSE 0 END) as trash
+            SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active_count,
+            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_MANUAL . " THEN 1 ELSE 0 END) as manual_count,
+            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_AUTO . " THEN 1 ELSE 0 END) as auto_count,
+            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_REGEX . " THEN 1 ELSE 0 END) as regex_count,
+            SUM(CASE WHEN disabled = 1 THEN 1 ELSE 0 END) as trash_count
             FROM {wp_abj404_redirects}
             WHERE status IN (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ", " . ABJ404_STATUS_REGEX . ")";
         $query = $this->doTableNameReplacements($query);
@@ -983,11 +1068,11 @@ class ABJ_404_Solution_DataAccess {
         if (!empty($rows)) {
             $row = $rows[0];
             $counts = array(
-                'all' => intval($row['active']),
-                'manual' => intval($row['manual']),
-                'auto' => intval($row['auto']),
-                'regex' => intval($row['regex']),
-                'trash' => intval($row['trash'])
+                'all' => intval($row['active_count']),
+                'manual' => intval($row['manual_count']),
+                'auto' => intval($row['auto_count']),
+                'regex' => intval($row['regex_count']),
+                'trash' => intval($row['trash_count'])
             );
         }
 
@@ -1211,6 +1296,19 @@ class ABJ_404_Solution_DataAccess {
      * @return array rows from the redirects table.
      */
     function getRedirectsForView($sub, $tableOptions) {
+        $orderByForSnapshot = strtolower((string)($tableOptions['orderby'] ?? ''));
+        $isLogsMaintenanceSort = ($orderByForSnapshot === 'logshits' || $orderByForSnapshot === 'last_used');
+        $canUseSnapshotCache = function_exists('get_transient')
+            && absint($tableOptions['perpage'] ?? 0) <= 200
+            && !$isLogsMaintenanceSort;
+        $snapshotCacheKey = '';
+        if ($canUseSnapshotCache) {
+            $snapshotCacheKey = $this->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
+            $cachedRows = get_transient($snapshotCacheKey);
+            if (is_array($cachedRows)) {
+                return $cachedRows;
+            }
+        }
     	
     	// for normal page views we limit the rows returned based on user preferences for paginaiton.
         $limitStart = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
@@ -1284,11 +1382,29 @@ class ABJ_404_Solution_DataAccess {
         $this->logger->debugMessage("Found " . $foundRowsBeforeLogsData . 
         	" rows to display before log data and " . count($rows) . 
         	" rows to display after log data for page: ". $sub);
+
+        if ($canUseSnapshotCache && $snapshotCacheKey !== '' && is_array($rows)) {
+            set_transient($snapshotCacheKey, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
+        }
         
         return $rows;
     }
     
     function getRedirectsForViewCount($sub, $tableOptions) {
+        $orderByForSnapshot = strtolower((string)($tableOptions['orderby'] ?? ''));
+        $isLogsMaintenanceSort = ($orderByForSnapshot === 'logshits' || $orderByForSnapshot === 'last_used');
+        $canUseSnapshotCache = function_exists('get_transient')
+            && absint($tableOptions['perpage'] ?? 0) <= 200
+            && !$isLogsMaintenanceSort;
+        $countCacheKey = '';
+        if ($canUseSnapshotCache) {
+            $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
+            $cachedCount = get_transient($countCacheKey);
+            if ($cachedCount !== false) {
+                return intval($cachedCount);
+            }
+        }
+
     	if (array_key_exists(self::KEY_REDIRECTS_FOR_VIEW_COUNT, $_REQUEST) && 
     		isset($_REQUEST[self::KEY_REDIRECTS_FOR_VIEW_COUNT])) {
     			
@@ -1314,6 +1430,9 @@ class ABJ_404_Solution_DataAccess {
         $row = $rows[0];
         
         $_REQUEST[self::KEY_REDIRECTS_FOR_VIEW_COUNT] = $row['count'];
+        if ($canUseSnapshotCache && $countCacheKey !== '') {
+            set_transient($countCacheKey, intval($row['count']), self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
+        }
         return $row['count'];
     }
     

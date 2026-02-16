@@ -155,6 +155,15 @@
          * @param {boolean} sendFeedback Whether to send feedback email
          */
         function handleDeactivation(deactivateUrl, sendFeedback) {
+            var uninstallReason = $('input[name="abj404-reason"]:checked').val() || '';
+            var followupDetails = ($('#abj404-followup-details-text').val() || '').trim();
+            var requiresDetails = (uninstallReason === 'performance' || uninstallReason === 'not-working' || uninstallReason === 'other');
+            if (sendFeedback && requiresDetails && followupDetails.length < 10) {
+                alert('Please add a short detail (at least 10 characters) so we can diagnose this issue.');
+                $('#abj404-followup-details-text').focus();
+                return;
+            }
+
             // Collect selected issue checkboxes
             var selectedIssues = [];
             $('.abj404-issue-checkbox:checked').each(function() {
@@ -170,9 +179,9 @@
                 delete_logs: !$('#abj404-keep-logs').is(':checked') ? 'true' : 'false',
                 delete_cache: 'true', // Always delete cache
                 send_feedback: sendFeedback ? 'true' : 'false',
-                uninstall_reason: $('input[name="abj404-reason"]:checked').val() || '',
+                uninstall_reason: uninstallReason,
                 selected_issues: selectedIssues.join(','),
-                followup_details: $('#abj404-followup-details-text').val(),
+                followup_details: followupDetails,
                 better_plugin_name: $('#abj404-better-plugin-name').val(),
                 other_reason_text: $('#abj404-other-reason-text').val(),
                 feedback_email: $('#abj404-feedback-email').val(),
