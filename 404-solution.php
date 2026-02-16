@@ -427,6 +427,47 @@ if (!function_exists('abj404_show_plugin_db_notice')) {
 }
 add_action('admin_notices', 'abj404_show_plugin_db_notice');
 
+if (!function_exists('abj404_get_simulated_db_latency_ms')) {
+	function abj404_get_simulated_db_latency_ms() {
+		if (defined('ABJ404_SIMULATED_DB_LATENCY_MS')) {
+			return max(0, min(5000, absint(ABJ404_SIMULATED_DB_LATENCY_MS)));
+		}
+		$value = get_option('abj404_simulated_db_latency_ms', 0);
+		return max(0, min(5000, absint($value)));
+	}
+}
+
+if (!function_exists('abj404_show_diagnostic_latency_notice')) {
+	function abj404_show_diagnostic_latency_notice() {
+		if (!is_admin() || !current_user_can('manage_options')) {
+			return;
+		}
+		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+		if ($page !== ABJ404_PP) {
+			return;
+		}
+		$currentMs = abj404_get_simulated_db_latency_ms();
+		$setSlowUrl = wp_nonce_url(
+			admin_url('options-general.php?page=' . ABJ404_PP . '&abj404_set_sim_db_ms=900'),
+			'abj404_set_sim_db_ms'
+		);
+		$disableUrl = wp_nonce_url(
+			admin_url('options-general.php?page=' . ABJ404_PP . '&abj404_set_sim_db_ms=0'),
+			'abj404_set_sim_db_ms'
+		);
+		if ($currentMs > 0) {
+			echo '<div class="notice notice-info"><p><strong>404 Solution Diagnostics:</strong> ';
+			echo esc_html(sprintf(__('Simulated DB latency is ON (%d ms per plugin query).', '404-solution'), $currentMs));
+			echo ' <a href="' . esc_url($disableUrl) . '">' . esc_html(__('Disable', '404-solution')) . '</a></p></div>';
+		} else {
+			echo '<div class="notice notice-info"><p><strong>404 Solution Diagnostics:</strong> ';
+			echo esc_html(__('Simulated DB latency is OFF.', '404-solution'));
+			echo ' <a href="' . esc_url($setSlowUrl) . '">' . esc_html(__('Enable 900ms simulation', '404-solution')) . '</a></p></div>';
+		}
+	}
+}
+add_action('admin_notices', 'abj404_show_diagnostic_latency_notice');
+
 /** This only runs after WordPress is done enqueuing scripts. */
 if (!function_exists('abj404_loadSomethingWhenWordPressIsReady')) {
 function abj404_loadSomethingWhenWordPressIsReady() {
@@ -461,6 +502,13 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 	}
 
 	$action = isset($_GET['action']) ? sanitize_text_field($_GET['action']) : (isset($_POST['action']) ? sanitize_text_field($_POST['action']) : null);
+	if (is_admin() && current_user_can('manage_options') && isset($_GET['abj404_set_sim_db_ms'])) {
+		$nonceOk = isset($_GET['_wpnonce']) ? wp_verify_nonce($_GET['_wpnonce'], 'abj404_set_sim_db_ms') : false;
+		if ($nonceOk) {
+			$newMs = max(0, min(5000, absint($_GET['abj404_set_sim_db_ms'])));
+			update_option('abj404_simulated_db_latency_ms', $newMs, false);
+		}
+	}
 
 	$missingRuntimeFiles = abj404_verify_runtime_integrity();
 	if (count($missingRuntimeFiles) > 0) {

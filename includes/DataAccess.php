@@ -379,6 +379,18 @@ class ABJ_404_Solution_DataAccess {
         return 'inline-query';
     }
 
+    private function applyDiagnosticLatencyIfConfigured() {
+        if (!function_exists('abj404_get_simulated_db_latency_ms')) {
+            return;
+        }
+        $delayMs = absint(abj404_get_simulated_db_latency_ms());
+        if ($delayMs <= 0) {
+            return;
+        }
+        $delayMs = min(5000, $delayMs);
+        usleep($delayMs * 1000);
+    }
+
     /** Return the results of the query in a variable.
      * @param string $query
      * @param array $options
@@ -405,6 +417,8 @@ class ABJ_404_Solution_DataAccess {
         if (!empty($queryParameters)) {
             $query = $wpdb->prepare($query, $queryParameters);
         }
+
+        $this->applyDiagnosticLatencyIfConfigured();
         
         $timer = new ABJ_404_Solution_Timer();
         
