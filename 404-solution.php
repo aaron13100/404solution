@@ -428,7 +428,21 @@ if (!function_exists('abj404_show_plugin_db_notice')) {
 add_action('admin_notices', 'abj404_show_plugin_db_notice');
 
 if (!function_exists('abj404_get_simulated_db_latency_ms')) {
+	function abj404_is_local_debug_host() {
+		$serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '');
+		$serverName = strtolower(trim((string)$serverName));
+		$serverName = preg_replace('/:\d+$/', '', $serverName);
+		$whitelist = $GLOBALS['abj404_whitelist'] ?? array();
+		$whitelist = array_map(function($item) {
+			return strtolower(trim((string)$item));
+		}, is_array($whitelist) ? $whitelist : array());
+		return in_array($serverName, $whitelist, true);
+	}
+
 	function abj404_get_simulated_db_latency_ms() {
+		if (!abj404_is_local_debug_host()) {
+			return 0;
+		}
 		if (defined('ABJ404_SIMULATED_DB_LATENCY_MS')) {
 			return max(0, min(5000, absint(ABJ404_SIMULATED_DB_LATENCY_MS)));
 		}
@@ -440,6 +454,9 @@ if (!function_exists('abj404_get_simulated_db_latency_ms')) {
 if (!function_exists('abj404_show_diagnostic_latency_notice')) {
 	function abj404_show_diagnostic_latency_notice() {
 		if (!is_admin() || !current_user_can('manage_options')) {
+			return;
+		}
+		if (!abj404_is_local_debug_host()) {
 			return;
 		}
 		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
@@ -502,7 +519,7 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 	}
 
 	$action = isset($_GET['action']) ? sanitize_text_field($_GET['action']) : (isset($_POST['action']) ? sanitize_text_field($_POST['action']) : null);
-	if (is_admin() && current_user_can('manage_options') && isset($_GET['abj404_set_sim_db_ms'])) {
+	if (is_admin() && abj404_is_local_debug_host() && current_user_can('manage_options') && isset($_GET['abj404_set_sim_db_ms'])) {
 		$nonceOk = isset($_GET['_wpnonce']) ? wp_verify_nonce($_GET['_wpnonce'], 'abj404_set_sim_db_ms') : false;
 		if ($nonceOk) {
 			$newMs = max(0, min(5000, absint($_GET['abj404_set_sim_db_ms'])));

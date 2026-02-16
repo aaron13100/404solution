@@ -49,7 +49,9 @@ function triggerBackgroundTableRefreshIfEnabled() {
         lastError: null
     };
     var startedAt = Date.now();
-    setRefreshStatus($config, $config.attr('data-pagination-refresh-started-text') || 'Refreshing data in background...');
+    var startedText = $config.attr('data-pagination-refresh-started-text') || 'Refreshing data in background...';
+    setRefreshStatus($config, startedText);
+    showRefreshToast(startedText);
 
     var perpageElements = document.querySelectorAll('.perpage');
     if (perpageElements == null || perpageElements.length === 0) {
@@ -68,7 +70,9 @@ function triggerBackgroundTableRefreshIfEnabled() {
                 var minimumStartedMs = 850;
                 var showFinished = function() {
                     setRefreshStatus($latestConfig, finishedText);
+                    showRefreshToast(finishedText);
                     window.setTimeout(function() { clearRefreshStatus($latestConfig); }, 3500);
+                    window.setTimeout(hideRefreshToast, 3500);
                 };
                 if (elapsed < minimumStartedMs) {
                     window.setTimeout(showFinished, minimumStartedMs - elapsed);
@@ -82,6 +86,7 @@ function triggerBackgroundTableRefreshIfEnabled() {
             onError: function() {
                 var $latestConfig = getRefreshStatusHost();
                 clearRefreshStatus($latestConfig.length > 0 ? $latestConfig : $config);
+                hideRefreshToast();
                 if (window.abj404BackgroundRefreshState) {
                     window.abj404BackgroundRefreshState.lastError = 'background-refresh-failed';
                     window.abj404BackgroundRefreshState.finishedAt = Date.now();
@@ -112,6 +117,38 @@ function setRefreshStatus($config, message) {
 
 function clearRefreshStatus($config) {
     setRefreshStatus($config, '');
+}
+
+function showRefreshToast(message) {
+    var id = 'abj404-background-refresh-toast';
+    var toast = document.getElementById(id);
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = id;
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+        toast.style.position = 'fixed';
+        toast.style.right = '16px';
+        toast.style.bottom = '16px';
+        toast.style.zIndex = '99999';
+        toast.style.padding = '10px 14px';
+        toast.style.background = 'rgba(30, 32, 35, 0.95)';
+        toast.style.color = '#fff';
+        toast.style.borderRadius = '6px';
+        toast.style.fontSize = '13px';
+        toast.style.boxShadow = '0 4px 14px rgba(0,0,0,0.25)';
+        toast.style.maxWidth = '340px';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message || '';
+    toast.style.display = 'block';
+}
+
+function hideRefreshToast() {
+    var toast = document.getElementById('abj404-background-refresh-toast');
+    if (toast) {
+        toast.style.display = 'none';
+    }
 }
 
 function bindSearchFieldListeners() {
