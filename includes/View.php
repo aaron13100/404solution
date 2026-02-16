@@ -1692,11 +1692,15 @@ class ABJ_404_Solution_View {
         $perPage = isset($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
+        $autoRefresh = (($sub === 'abj404_redirects' || $sub === 'abj404_captured') ? '1' : '0');
         echo '<div class="abj404-filter-bar tablenav"'
                 . ' data-pagination-ajax-url="' . esc_attr(admin_url('admin-ajax.php')) . '"'
                 . ' data-pagination-ajax-action="ajaxUpdatePaginationLinks"'
                 . ' data-pagination-ajax-subpage="' . esc_attr($sub) . '"'
-                . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '">';
+                . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '"'
+                . ' data-pagination-auto-refresh="' . esc_attr($autoRefresh) . '"'
+                . ' data-pagination-refresh-started-text="' . esc_attr(__('Refreshing data in background…', '404-solution')) . '"'
+                . ' data-pagination-refresh-finished-text="' . esc_attr(__('Data refreshed', '404-solution')) . '">';
         echo '<div class="abj404-search-box">';
         echo '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>';
         echo '<input type="search" name="searchFilter" placeholder="' . esc_attr__('Type to filter URLs... (press Enter)', '404-solution') . '" value="' . esc_attr($filterText) . '" data-lpignore="true">';
@@ -1720,6 +1724,7 @@ class ABJ_404_Solution_View {
             echo esc_html__('Empty Trash', '404-solution');
             echo '</a>';
         }
+        echo '<span class="abj404-refresh-status" aria-live="polite"></span>';
         echo '</div>';
 
         // Bulk actions bar
@@ -1992,11 +1997,15 @@ class ABJ_404_Solution_View {
         $perPage = isset($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
+        $autoRefresh = (($sub === 'abj404_redirects' || $sub === 'abj404_captured') ? '1' : '0');
         echo '<div class="abj404-filter-bar tablenav"'
                 . ' data-pagination-ajax-url="' . esc_attr(admin_url('admin-ajax.php')) . '"'
                 . ' data-pagination-ajax-action="ajaxUpdatePaginationLinks"'
                 . ' data-pagination-ajax-subpage="' . esc_attr($sub) . '"'
-                . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '">';
+                . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '"'
+                . ' data-pagination-auto-refresh="' . esc_attr($autoRefresh) . '"'
+                . ' data-pagination-refresh-started-text="' . esc_attr(__('Refreshing data in background…', '404-solution')) . '"'
+                . ' data-pagination-refresh-finished-text="' . esc_attr(__('Data refreshed', '404-solution')) . '">';
         echo '<div class="abj404-search-box">';
         echo '<svg class="abj404-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">';
         echo '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>';
@@ -2012,6 +2021,7 @@ class ABJ_404_Solution_View {
         }
         echo '</select>';
         echo '</div>';
+        echo '<span class="abj404-refresh-status" aria-live="polite"></span>';
         echo '</div>';
 
         // Bulk actions bar (hidden by default, shown when items selected)

@@ -16,6 +16,9 @@ jQuery(document).ready(function($) {
 function triggerBackgroundTableRefreshIfEnabled() {
     var $config = jQuery('.abj404-pagination-right').first();
     if ($config.length === 0) {
+        $config = jQuery('.abj404-filter-bar').first();
+    }
+    if ($config.length === 0) {
         return;
     }
     if ($config.attr('data-pagination-auto-refresh') !== '1') {
@@ -61,6 +64,10 @@ function setRefreshStatus($config, message) {
         return;
     }
     var $status = $config.find('.abj404-refresh-status').first();
+    if ($status.length === 0) {
+        $status = jQuery('<span class="abj404-refresh-status" aria-live="polite"></span>');
+        $config.append($status);
+    }
     if ($status.length > 0) {
         $status.text(message || '');
     }
