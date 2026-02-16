@@ -13,11 +13,16 @@ jQuery(document).ready(function($) {
     triggerBackgroundTableRefreshIfEnabled();
 });
 
-function triggerBackgroundTableRefreshIfEnabled() {
-    var $config = jQuery('.abj404-pagination-right').first();
-    if ($config.length === 0) {
-        $config = jQuery('.abj404-filter-bar').first();
+function getRefreshStatusHost() {
+    var $host = jQuery('.abj404-pagination-right').first();
+    if ($host.length === 0) {
+        $host = jQuery('.abj404-filter-bar').first();
     }
+    return $host;
+}
+
+function triggerBackgroundTableRefreshIfEnabled() {
+    var $config = getRefreshStatusHost();
     if ($config.length === 0) {
         return;
     }
@@ -28,6 +33,13 @@ function triggerBackgroundTableRefreshIfEnabled() {
         return;
     }
     window.abj404InitialTableRefreshTriggered = true;
+    window.abj404BackgroundRefreshState = {
+        enabled: true,
+        startedAt: Date.now(),
+        finishedAt: null,
+        lastError: null
+    };
+    var startedAt = Date.now();
     setRefreshStatus($config, $config.attr('data-pagination-refresh-started-text') || 'Refreshing data in background...');
 
     var perpageElements = document.querySelectorAll('.perpage');
@@ -41,14 +53,30 @@ function triggerBackgroundTableRefreshIfEnabled() {
         paginationLinksChange(perpageElements[0], {
             backgroundRefresh: true,
             onComplete: function() {
-                var $latestConfig = jQuery('.abj404-pagination-right').first();
+                var $latestConfig = getRefreshStatusHost();
                 var finishedText = $latestConfig.attr('data-pagination-refresh-finished-text') || 'Data refreshed';
-                setRefreshStatus($latestConfig, finishedText);
-                window.setTimeout(function() { clearRefreshStatus($latestConfig); }, 3500);
+                var elapsed = Date.now() - startedAt;
+                var minimumStartedMs = 850;
+                var showFinished = function() {
+                    setRefreshStatus($latestConfig, finishedText);
+                    window.setTimeout(function() { clearRefreshStatus($latestConfig); }, 3500);
+                };
+                if (elapsed < minimumStartedMs) {
+                    window.setTimeout(showFinished, minimumStartedMs - elapsed);
+                } else {
+                    showFinished();
+                }
+                if (window.abj404BackgroundRefreshState) {
+                    window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                }
             },
             onError: function() {
-                var $latestConfig = jQuery('.abj404-pagination-right').first();
+                var $latestConfig = getRefreshStatusHost();
                 clearRefreshStatus($latestConfig.length > 0 ? $latestConfig : $config);
+                if (window.abj404BackgroundRefreshState) {
+                    window.abj404BackgroundRefreshState.lastError = 'background-refresh-failed';
+                    window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                }
             }
         });
     };
