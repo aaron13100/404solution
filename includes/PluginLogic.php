@@ -1792,9 +1792,31 @@ class ABJ_404_Solution_PluginLogic {
             if (!$file_handle) {
                 return "Error opening the file.";
             }
-            
-            while (($line = fgets($file_handle)) !== false) {
-                $dataArray = $this->splitCsvLine($line);
+
+            $headerColumns = null;
+            while (($row = fgetcsv($file_handle, 0, ',', '"', '\\')) !== false) {
+                $data = array_map(function($v) {
+                    return trim((string)$v);
+                }, $row);
+
+                // Skip blank lines
+                if (count($data) === 1 && $data[0] === '') {
+                    continue;
+                }
+
+                // Support competitor CSV exports with descriptive headers.
+                if ($headerColumns === null && $this->isCompatibleImportHeaderRow($data)) {
+                    $headerColumns = $this->normalizeImportHeaders($data);
+                    continue;
+                }
+
+                if ($headerColumns !== null) {
+                    $dataArray = $this->mapImportRowByHeaders($data, $headerColumns);
+                } else {
+                    $line = implode(',', $data);
+                    $dataArray = $this->splitCsvLine($line);
+                }
+
                 if (isset($dataArray['error'])) {
                     return $dataArray['error'];
                 }
@@ -1931,16 +1953,87 @@ class ABJ_404_Solution_PluginLogic {
                 'to_url'   => $data[3],
                 'wp_type'  => $data[4]
             ];
-        } else if (count($data) === 2) {
+	        } else if (count($data) === 2) {
             // Format: from_url,to_url
             return [
                 'from_url' => $data[0],
                 'to_url'   => $data[1]
             ];
-        } else {
-            // Invalid format or unexpected number of columns
-            return ["error" => "Invalid CSV format. " . count($data) . " found but 2 or 5 expected."];
+	        } else {
+	            // Invalid format or unexpected number of columns
+	            return ["error" => "Invalid CSV format. " . count($data) . " found but 2 or 5 expected."];
+	        }
+	    }
+
+    /**
+     * Detect whether this row appears to be a compatible competitor header row.
+     *
+     * @param array $columns
+     * @return bool
+     */
+    function isCompatibleImportHeaderRow($columns) {
+        $normalized = $this->normalizeImportHeaders($columns);
+        $fromIndex = $this->findImportHeaderIndex($normalized, array('from_url', 'request', 'source', 'url', 'match_url'));
+        $toIndex = $this->findImportHeaderIndex($normalized, array('to_url', 'target', 'destination', 'action_data', 'redirect_to', 'url_to'));
+        return ($fromIndex !== -1 && $toIndex !== -1);
+    }
+
+    /**
+     * Normalize import headers for matching.
+     *
+     * @param array $columns
+     * @return array
+     */
+    function normalizeImportHeaders($columns) {
+        return array_map(function($value) {
+            $value = trim(strtolower((string)$value));
+            return preg_replace('/[^a-z0-9_]/', '', str_replace(' ', '_', $value));
+        }, $columns);
+    }
+
+    /**
+     * Map CSV row values into from_url/to_url using known competitor headers.
+     *
+     * @param array $row
+     * @param array $normalizedHeaders
+     * @return array
+     */
+    function mapImportRowByHeaders($row, $normalizedHeaders) {
+        $fromIndex = $this->findImportHeaderIndex($normalizedHeaders, array('from_url', 'request', 'source', 'url', 'match_url'));
+        $toIndex = $this->findImportHeaderIndex($normalizedHeaders, array('to_url', 'target', 'destination', 'action_data', 'redirect_to', 'url_to'));
+
+        if ($fromIndex === -1 || $toIndex === -1) {
+            return array('error' => 'Invalid CSV format. Could not map source/destination columns.');
         }
+
+        $from = array_key_exists($fromIndex, $row) ? trim((string)$row[$fromIndex]) : '';
+        $to = array_key_exists($toIndex, $row) ? trim((string)$row[$toIndex]) : '';
+
+        if ($from === '' && $to === '') {
+            return array('from_url' => '', 'to_url' => '');
+        }
+
+        return array(
+            'from_url' => $from,
+            'to_url' => $to,
+        );
+    }
+
+    /**
+     * Find first matching header index from a list of candidates.
+     *
+     * @param array $headers
+     * @param array $candidates
+     * @return int
+     */
+    private function findImportHeaderIndex($headers, $candidates) {
+        foreach ($candidates as $candidate) {
+            $idx = array_search($candidate, $headers, true);
+            if ($idx !== false) {
+                return (int)$idx;
+            }
+        }
+        return -1;
     }
     
     function updatePerPageOption($rows) {
