@@ -18,7 +18,7 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
     public static function pollSuggestions() {
         // Verify nonce for CSRF protection
         if (!check_ajax_referer('abj404_poll_suggestions', '_ajax_nonce', false)) {
-            wp_send_json(array('status' => 'error', 'message' => 'Security check failed'));
+            wp_send_json(array('status' => 'error', 'message' => 'Security check failed'), 403);
             return;
         }
 
@@ -26,7 +26,7 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         // Uses the same transient-based limiter as other AJAX endpoints (user ID or IP).
         if (class_exists('ABJ_404_Solution_Ajax_Php') &&
             ABJ_404_Solution_Ajax_Php::checkRateLimit('poll_suggestions', 120, 60)) {
-            wp_send_json(array('status' => 'error', 'message' => 'Rate limit exceeded. Please try again later.'));
+            wp_send_json(array('status' => 'error', 'message' => 'Rate limit exceeded. Please try again later.'), 429);
             return;
         }
 
@@ -50,7 +50,7 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         }
 
         if (empty($requestedURL)) {
-            wp_send_json(array('status' => 'error', 'message' => 'Missing URL parameter'));
+            wp_send_json(array('status' => 'error', 'message' => 'Missing URL parameter'), 400);
             return;
         }
 
@@ -70,7 +70,7 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         }
 
         if (!isset($data['status'])) {
-            wp_send_json(array('status' => 'error', 'message' => 'Invalid transient data'));
+            wp_send_json(array('status' => 'error', 'message' => 'Invalid transient data'), 500);
             return;
         }
 
@@ -81,7 +81,7 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
             $startedAt = isset($data['started']) ? (int)$data['started'] : 0;
             if ($startedAt > 0 && (time() - $startedAt) > 90) {
                 // Computation started but hasn't completed in 90 seconds - worker likely crashed
-                wp_send_json(array('status' => 'timeout', 'message' => 'Computation timed out'));
+                wp_send_json(array('status' => 'timeout', 'message' => 'Computation timed out'), 504);
                 return;
             }
             // Still computing normally
@@ -92,7 +92,7 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         if ($data['status'] === 'error') {
             // Computation crashed - return error immediately with generic message
             // Detailed error info is logged server-side, not exposed to frontend
-            wp_send_json(array('status' => 'error', 'message' => 'Suggestion computation failed'));
+            wp_send_json(array('status' => 'error', 'message' => 'Suggestion computation failed'), 500);
             return;
         }
 
@@ -108,6 +108,6 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         }
 
         // Unknown status
-        wp_send_json(array('status' => 'error', 'message' => 'Unknown status: ' . esc_html($data['status'])));
+        wp_send_json(array('status' => 'error', 'message' => 'Unknown status: ' . esc_html($data['status'])), 500);
     }
 }
