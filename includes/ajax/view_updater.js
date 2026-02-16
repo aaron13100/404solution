@@ -25,16 +25,45 @@ function triggerBackgroundTableRefreshIfEnabled() {
         return;
     }
     window.abj404InitialTableRefreshTriggered = true;
+    setRefreshStatus($config, $config.attr('data-pagination-refresh-started-text') || 'Refreshing data in background...');
 
     var perpageElements = document.querySelectorAll('.perpage');
     if (perpageElements == null || perpageElements.length === 0) {
         return;
     }
 
-    // Show cached snapshot immediately, then refresh in the background.
-    setTimeout(function() {
-        paginationLinksChange(perpageElements[0]);
-    }, 200);
+    // Show cached snapshot immediately, then refresh in the background during idle time.
+    var runRefresh = function() {
+        paginationLinksChange(perpageElements[0], {
+            backgroundRefresh: true,
+            onComplete: function() {
+                setRefreshStatus($config, $config.attr('data-pagination-refresh-finished-text') || 'Data refreshed');
+                window.setTimeout(function() { clearRefreshStatus($config); }, 2000);
+            },
+            onError: function() {
+                clearRefreshStatus($config);
+            }
+        });
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(runRefresh, {timeout: 2000});
+    } else {
+        setTimeout(runRefresh, 900);
+    }
+}
+
+function setRefreshStatus($config, message) {
+    if (!$config || $config.length === 0) {
+        return;
+    }
+    var $status = $config.find('.abj404-refresh-status').first();
+    if ($status.length > 0) {
+        $status.text(message || '');
+    }
+}
+
+function clearRefreshStatus($config) {
+    setRefreshStatus($config, '');
 }
 
 function bindSearchFieldListeners() {
@@ -105,7 +134,9 @@ function isElementFullyVisible(el) {
     return isVisible;
 }
 
-function paginationLinksChange(triggerItem) {
+function paginationLinksChange(triggerItem, options) {
+    options = options || {};
+    var isBackgroundRefresh = options.backgroundRefresh === true;
     var rowThatChanged = jQuery(triggerItem).parentsUntil('.tablenav').parent();
     var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
     var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();
@@ -141,17 +172,16 @@ function paginationLinksChange(triggerItem) {
     // Use a clean admin-ajax base URL; always send 'action' in the payload for compatibility with security plugins.
     var baseUrl = url.split('?')[0];
 
-    // Show loading overlay on the table
-    var $table = jQuery(tableSelector);
-    // Wrap table if not already wrapped, and add overlay
-    if (!$table.parent().hasClass('abj404-table-wrapper')) {
-        $table.wrap('<div class="abj404-table-wrapper"></div>');
+    if (!isBackgroundRefresh) {
+        // Show loading overlay on the table for explicit user actions only.
+        var $table = jQuery(tableSelector);
+        if (!$table.parent().hasClass('abj404-table-wrapper')) {
+            $table.wrap('<div class="abj404-table-wrapper"></div>');
+        }
+        var $wrapper = $table.parent();
+        $wrapper.find('.abj404-loading-overlay').remove();
+        $wrapper.append('<div class="abj404-loading-overlay"><div class="abj404-spinner-container"><div class="abj404-spinner"></div></div></div>');
     }
-    var $wrapper = $table.parent();
-    // Remove any existing overlay first
-    $wrapper.find('.abj404-loading-overlay').remove();
-    // Add the loading overlay with spinner (spinner-container uses sticky positioning to stay visible)
-    $wrapper.append('<div class="abj404-loading-overlay"><div class="abj404-spinner-container"><div class="abj404-spinner"></div></div></div>');
 
     // do an ajax call to update the data
     jQuery.ajax({
@@ -199,6 +229,9 @@ function paginationLinksChange(triggerItem) {
             });
 
             bindTrashLinkListeners();
+            if (typeof options.onComplete === 'function') {
+                options.onComplete();
+            }
         },
         error: function (jqXHR, textStatus, errorThrown) {
             // Remove the loading overlay on error
@@ -241,18 +274,23 @@ function paginationLinksChange(triggerItem) {
                 }
             }
 
-            alert(
-                "404 Solution: Ajax error while updating the table.\n\n" +
-                "HTTP status: " + status + "\n" +
-                "textStatus: " + textStatus + "\n" +
-                "errorThrown: " + errorThrown + "\n" +
-                "action: " + action + "\n" +
-                "subpage: " + subpage + "\n" +
-                "url: " + baseUrl + "\n\n" +
-                (messageFromServer ? ("Server message:\n" + messageFromServer + "\n\n") : "") +
-                (detailsFromServer ? ("Server details (admin only):\n" + detailsFromServer + "\n\n") : "") +
-                "Response (preview):\n" + responsePreview
-            );
+            if (!isBackgroundRefresh) {
+                alert(
+                    "404 Solution: Ajax error while updating the table.\n\n" +
+                    "HTTP status: " + status + "\n" +
+                    "textStatus: " + textStatus + "\n" +
+                    "errorThrown: " + errorThrown + "\n" +
+                    "action: " + action + "\n" +
+                    "subpage: " + subpage + "\n" +
+                    "url: " + baseUrl + "\n\n" +
+                    (messageFromServer ? ("Server message:\n" + messageFromServer + "\n\n") : "") +
+                    (detailsFromServer ? ("Server details (admin only):\n" + detailsFromServer + "\n\n") : "") +
+                    "Response (preview):\n" + responsePreview
+                );
+            }
+            if (typeof options.onError === 'function') {
+                options.onError();
+            }
         }
     });
 }

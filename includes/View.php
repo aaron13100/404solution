@@ -3516,6 +3516,8 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{data-pagination-ajax-nonce}', esc_attr($ajaxNonce), $html);
         $autoRefresh = (($sub === 'abj404_redirects' || $sub === 'abj404_captured') ? '1' : '0');
         $html = $this->f->str_replace('{data-pagination-auto-refresh}', esc_attr($autoRefresh), $html);
+        $html = $this->f->str_replace('{data-pagination-refresh-started-text}', esc_attr(__('Refreshing data in background…', '404-solution')), $html);
+        $html = $this->f->str_replace('{data-pagination-refresh-finished-text}', esc_attr(__('Data refreshed', '404-solution')), $html);
         // constants and translations.
         $html = $this->f->doNormalReplacements($html);
         

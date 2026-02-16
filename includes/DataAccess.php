@@ -22,6 +22,8 @@ class ABJ_404_Solution_DataAccess {
     const HITS_TABLE_MAX_AGE_SECONDS = 300; // 5 minutes
     /** Short-lived cache for admin list snapshots (fast first paint). */
     const VIEW_SNAPSHOT_CACHE_TTL_SECONDS = 120;
+    /** Cross-request lock timeout for logs-hits rebuild jobs. */
+    const HITS_TABLE_REBUILD_LOCK_TTL_SECONDS = 180;
 
     private static $instance = null;
 
@@ -427,7 +429,7 @@ class ABJ_404_Solution_DataAccess {
         			new Exception("Query result is not an array."));
         }
         
-        if ($result['last_error'] !== '' && $this->f->strpos(strtolower($result['last_error']), 'server has gone away') !== false) {
+        if ($result['last_error'] !== '' && $this->isTransientConnectionError($result['last_error'])) {
             // Retry once after reconnect for transient connection drops.
             $this->ensureConnection();
             $wpdb->flush();
@@ -509,6 +511,26 @@ class ABJ_404_Solution_DataAccess {
         }
         
         return $result;
+    }
+
+    private function isTransientConnectionError($errorText) {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        $transientMarkers = array(
+            'server has gone away',
+            'lost connection to mysql server during query',
+            'error while sending query packet',
+            'packets out of order',
+            'connection was killed',
+        );
+        foreach ($transientMarkers as $marker) {
+            if ($this->f->strpos($lower, $marker) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function isMissingPluginTableError($errorText) {
@@ -1671,10 +1693,76 @@ class ABJ_404_Solution_DataAccess {
      */
     function scheduleHitsTableRebuild() {
         if (!self::$hitsTableRebuildScheduled) {
+            if ($this->isHitsTableRebuildLocked()) {
+                $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling because another rebuild is already running.");
+                return;
+            }
             self::$hitsTableRebuildScheduled = true;
             $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild for shutdown hook.");
             add_action('shutdown', [$this, 'createRedirectsForViewHitsTable']);
         }
+    }
+
+    private function getHitsTableRebuildLockOptionName() {
+        return $this->getLowercasePrefix() . 'abj404_logs_hits_rebuild_lock';
+    }
+
+    private function isHitsTableRebuildLocked() {
+        if (!function_exists('get_option')) {
+            return false;
+        }
+        $lockValue = get_option($this->getHitsTableRebuildLockOptionName(), false);
+        if ($lockValue === false || $lockValue === null || $lockValue === '') {
+            return false;
+        }
+        $lockTimestamp = is_numeric($lockValue) ? (int)$lockValue : 0;
+        if ($lockTimestamp > 0 && (time() - $lockTimestamp) > self::HITS_TABLE_REBUILD_LOCK_TTL_SECONDS) {
+            if (function_exists('delete_option')) {
+                delete_option($this->getHitsTableRebuildLockOptionName());
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private function acquireHitsTableRebuildLock() {
+        if (!function_exists('add_option')) {
+            return true;
+        }
+        if ($this->isHitsTableRebuildLocked()) {
+            return false;
+        }
+        return (bool)add_option(
+            $this->getHitsTableRebuildLockOptionName(),
+            time(),
+            '',
+            'no'
+        );
+    }
+
+    private function releaseHitsTableRebuildLock() {
+        if (function_exists('delete_option')) {
+            delete_option($this->getHitsTableRebuildLockOptionName());
+        }
+    }
+
+    private function logsHitsTableExistsViaShowTables() {
+        global $wpdb;
+        if (!isset($wpdb) || !method_exists($wpdb, 'prepare')) {
+            return false;
+        }
+        $tableName = $this->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $showTablesQuery = $wpdb->prepare("SHOW TABLES LIKE %s", $tableName);
+        $fallback = $this->queryAndGetResults($showTablesQuery, array('log_errors' => false));
+        if (empty($fallback['rows'])) {
+            return false;
+        }
+        $firstRow = $fallback['rows'][0];
+        if (!is_array($firstRow)) {
+            return false;
+        }
+        $value = reset($firstRow);
+        return ((string)$value === (string)$tableName);
     }
 
     /**
@@ -1686,7 +1774,14 @@ class ABJ_404_Solution_DataAccess {
         $query = "SELECT 1 FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}' AND table_schema = DATABASE() LIMIT 1";
         $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
-        return ($results['rows'] != null && !empty($results['rows']));
+        if ($results['rows'] != null && !empty($results['rows'])) {
+            return true;
+        }
+        if (!empty($results['last_error'])) {
+            // Some hosts restrict information_schema access; fall back to SHOW TABLES.
+            return $this->logsHitsTableExistsViaShowTables();
+        }
+        return false;
     }
 
     /**
@@ -1725,6 +1820,16 @@ class ABJ_404_Solution_DataAccess {
         $results = $this->queryAndGetResults($query);
 
         if ($results['rows'] == null || empty($results['rows'])) {
+            if (!empty($results['last_error'])) {
+                $statusRow = $this->getLogsHitsTableStatusRow();
+                $commentFromStatus = is_array($statusRow) ? ($statusRow['comment'] ?? '') : '';
+                if ($commentFromStatus !== '') {
+                    $parts = explode('|', $commentFromStatus);
+                    if (count($parts) >= 2) {
+                        return (int)$parts[1];
+                    }
+                }
+            }
             return 0;
         }
 
@@ -1789,6 +1894,19 @@ class ABJ_404_Solution_DataAccess {
         $results = $this->queryAndGetResults($query);
 
         if ($results['rows'] == null || empty($results['rows'])) {
+            if (!empty($results['last_error'])) {
+                $statusRow = $this->getLogsHitsTableStatusRow();
+                $dateValue = '';
+                if (is_array($statusRow)) {
+                    $dateValue = $statusRow['update_time'] ?? ($statusRow['create_time'] ?? '');
+                }
+                if ($dateValue !== '') {
+                    $fallbackTimestamp = strtotime((string)$dateValue);
+                    if ($fallbackTimestamp !== false) {
+                        return $fallbackTimestamp;
+                    }
+                }
+            }
             return null;
         }
 
@@ -1802,6 +1920,20 @@ class ABJ_404_Solution_DataAccess {
 
         // Convert MySQL datetime to Unix timestamp
         return strtotime($createTime);
+    }
+
+    private function getLogsHitsTableStatusRow() {
+        global $wpdb;
+        if (!isset($wpdb) || !method_exists($wpdb, 'prepare')) {
+            return array();
+        }
+        $tableName = $this->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $query = $wpdb->prepare("SHOW TABLE STATUS LIKE %s", $tableName);
+        $results = $this->queryAndGetResults($query, array('log_errors' => false));
+        if (empty($results['rows']) || !is_array($results['rows'][0])) {
+            return array();
+        }
+        return array_change_key_case($results['rows'][0], CASE_LOWER);
     }
 
     /**
@@ -1833,6 +1965,11 @@ class ABJ_404_Solution_DataAccess {
     }
 
     function createRedirectsForViewHitsTable() {
+        if (!$this->acquireHitsTableRebuildLock()) {
+            $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild lock is already held.");
+            return;
+        }
+        try {
         
         $finalDestTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}");
         $tempDestTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}_temp");
@@ -1872,6 +2009,9 @@ class ABJ_404_Solution_DataAccess {
         
         $this->logger->debugMessage(__FUNCTION__ . " refreshed " . $finalDestTable . " in " . $elapsedTime . 
                 " seconds.");
+        } finally {
+            $this->releaseHitsTableRebuildLock();
+        }
     }
     
     /**

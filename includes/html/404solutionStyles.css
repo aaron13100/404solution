@@ -1877,6 +1877,12 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     font-size: 14px;
 }
 
+.abj404-refresh-status {
+    color: var(--abj404-text-muted, #646970);
+    font-size: 12px;
+    min-height: 16px;
+}
+
 .abj404-pagination-controls {
     display: flex;
     gap: 8px;
