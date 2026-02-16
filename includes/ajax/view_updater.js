@@ -29,6 +29,9 @@ function triggerBackgroundTableRefreshIfEnabled() {
     if ($config.attr('data-pagination-auto-refresh') !== '1') {
         return;
     }
+    if (!shouldRunAutoRefreshNow($config)) {
+        return;
+    }
     if (window.abj404InitialTableRefreshTriggered) {
         return;
     }
@@ -82,6 +85,7 @@ function triggerBackgroundTableRefreshIfEnabled() {
                 if (window.abj404BackgroundRefreshState) {
                     window.abj404BackgroundRefreshState.finishedAt = Date.now();
                 }
+                markAutoRefreshCompleted($latestConfig);
             },
             onError: function() {
                 var $latestConfig = getRefreshStatusHost();
@@ -119,6 +123,41 @@ function clearRefreshStatus($config) {
     setRefreshStatus($config, '');
 }
 
+function getAutoRefreshCacheKey($config) {
+    var page = getURLParameter('page') || '';
+    var subpage = ($config && $config.attr) ? ($config.attr('data-pagination-ajax-subpage') || '') : '';
+    var filter = getURLParameter('filter') || '0';
+    var orderby = getURLParameter('orderby') || '';
+    var order = getURLParameter('order') || '';
+    return 'abj404:auto_refresh:' + [page, subpage, filter, orderby, order].join(':');
+}
+
+function shouldRunAutoRefreshNow($config) {
+    try {
+        if (!window.localStorage) {
+            return true;
+        }
+        var key = getAutoRefreshCacheKey($config);
+        var lastTs = parseInt(localStorage.getItem(key) || '0', 10);
+        var cooldownMs = 30000; // 30s throttle per tab/sort/filter key
+        return !(lastTs > 0 && (Date.now() - lastTs) < cooldownMs);
+    } catch (e) {
+        return true;
+    }
+}
+
+function markAutoRefreshCompleted($config) {
+    try {
+        if (!window.localStorage) {
+            return;
+        }
+        var key = getAutoRefreshCacheKey($config);
+        localStorage.setItem(key, String(Date.now()));
+    } catch (e) {
+        // ignore storage failures
+    }
+}
+
 function ensureRefreshToastStyles() {
     if (document.getElementById('abj404-refresh-toast-styles')) {
         return;
@@ -138,7 +177,7 @@ function ensureRefreshToastStyles() {
         '#abj404-background-refresh-toast.abj404-refresh-collapsed{padding:8px;width:28px;max-width:28px;overflow:hidden;}' +
         '#abj404-background-refresh-toast.abj404-refresh-collapsed{height:28px;min-height:28px;gap:0;justify-content:center;border-radius:50%;}' +
         '#abj404-background-refresh-toast.abj404-refresh-collapsed .abj404-refresh-label{display:none;}' +
-        '#abj404-background-refresh-toast.abj404-refresh-collapsed:hover{max-width:340px;width:auto;padding:8px 10px;}' +
+        '#abj404-background-refresh-toast.abj404-refresh-collapsed:hover{max-width:340px;width:auto;padding:8px 10px;height:auto;min-height:0;gap:8px;border-radius:18px;}' +
         '#abj404-background-refresh-toast.abj404-refresh-collapsed:hover .abj404-refresh-label{display:inline;}' +
         '#abj404-background-refresh-toast.abj404-refresh-complete .abj404-refresh-spinner{animation:none;border-color:rgba(255,255,255,.45);border-top-color:rgba(255,255,255,.45);}' +
         '@keyframes abj404-refresh-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}';
@@ -166,7 +205,6 @@ function setRefreshToastMessage(message) {
     if (label) {
         label.textContent = message || '';
     }
-    toast.setAttribute('title', message || '');
     return toast;
 }
 
