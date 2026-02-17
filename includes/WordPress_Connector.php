@@ -657,7 +657,10 @@ class ABJ_404_Solution_WordPress_Connector {
 
         // Handle user responses to qualification question
         if (isset($_GET['abj404_review_response'])) {
-            if (!wp_verify_nonce($_GET['_wpnonce'], 'abj404_review_response')) {
+            $rawResponseNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
+            $rawResponseNonce = self::safeWpUnslash($rawResponseNonce);
+            $responseNonce = sanitize_text_field($rawResponseNonce);
+            if ($responseNonce === '' || !wp_verify_nonce($responseNonce, 'abj404_review_response')) {
                 return;
             }
 
@@ -693,7 +696,10 @@ class ABJ_404_Solution_WordPress_Connector {
 
         // Handle "Going to review now" button click - PERMANENT dismissal
         if (isset($_GET['abj404_leaving_review'])) {
-            if (wp_verify_nonce($_GET['_wpnonce'], 'abj404_leaving_review')) {
+            $rawLeavingReviewNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
+            $rawLeavingReviewNonce = self::safeWpUnslash($rawLeavingReviewNonce);
+            $leavingReviewNonce = sanitize_text_field($rawLeavingReviewNonce);
+            if ($leavingReviewNonce !== '' && wp_verify_nonce($leavingReviewNonce, 'abj404_leaving_review')) {
                 update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
                 delete_user_meta(get_current_user_id(), 'abj404_review_step');
                 delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
@@ -709,8 +715,12 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         // Handle feedback submission - PERMANENT dismissal
+        $rawFeedbackNonce = isset($_POST['abj404_feedback_nonce']) ? $_POST['abj404_feedback_nonce'] : '';
+        $rawFeedbackNonce = self::safeWpUnslash($rawFeedbackNonce);
+        $feedbackNonce = sanitize_text_field($rawFeedbackNonce);
         if (isset($_POST['abj404_submit_feedback']) &&
-            wp_verify_nonce($_POST['abj404_feedback_nonce'], 'abj404_submit_feedback')) {
+            $feedbackNonce !== '' &&
+            wp_verify_nonce($feedbackNonce, 'abj404_submit_feedback')) {
 
             // Get selected issues (checkboxes)
             $issues = isset($_POST['feedback_issues']) ? array_map('sanitize_text_field', $_POST['feedback_issues']) : array();
@@ -871,6 +881,25 @@ class ABJ_404_Solution_WordPress_Connector {
         $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
         $html = $f->str_replace('{close_url}', esc_attr($close_url), $html);
         echo $html;
+    }
+
+    /**
+     * Safely unslash request data when wp_unslash exists and is callable.
+     * Some test environments report wp_unslash as existing but throw when called.
+     *
+     * @param mixed $value
+     * @return mixed
+     */
+    private static function safeWpUnslash($value) {
+        if (!function_exists('wp_unslash')) {
+            return $value;
+        }
+
+        try {
+            return wp_unslash($value);
+        } catch (Throwable $e) {
+            return $value;
+        }
     }
 
     /** Adds a link under the "Settings" link to the plugin page.
