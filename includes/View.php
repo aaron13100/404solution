@@ -2131,7 +2131,7 @@ class ABJ_404_Solution_View {
      */
     function echoAddRedirectModal($tableOptions) {
         $options = $this->getOptionsWithDefaults();
-        $url = "?page=" . ABJ404_PP;
+        $url = "?page=" . ABJ404_PP . "&subpage=abj404_redirects";
         $orderby = $tableOptions['orderby'] ?? 'url';
         $order = $tableOptions['order'] ?? 'ASC';
         if (!($orderby == "url" && $order == "ASC")) {
@@ -2615,7 +2615,7 @@ class ABJ_404_Solution_View {
 
         $options = $this->getOptionsWithDefaults();
         
-        $url = "?page=" . ABJ404_PP;
+        $url = "?page=" . ABJ404_PP . "&subpage=abj404_redirects";
         $orderby = $tableOptions['orderby'] ?? 'url';
         $order = $tableOptions['order'] ?? 'ASC';
         if (!($orderby == "url" && $order == "ASC")) {
@@ -3408,10 +3408,11 @@ class ABJ_404_Solution_View {
             }
 
             $url = "?page=" . ABJ404_PP;
-            if ($sub == 'abj404_captured') {
-                $url .= "&subpage=abj404_captured";
-            } else if ($sub == 'abj404_logs') {
-                $url .= "&subpage=abj404_logs&id=" . ($tableOptions['logsid'] ?? 0);
+            if ($sub !== '') {
+                $url .= "&subpage=" . rawurlencode((string)$sub);
+            }
+            if ($sub == 'abj404_logs') {
+                $url .= "&id=" . ($tableOptions['logsid'] ?? 0);
             }
             if (($tableOptions['filter'] ?? 0) != 0) {
                 $url .= "&filter=" . ($tableOptions['filter'] ?? 0);
@@ -3468,10 +3469,11 @@ class ABJ_404_Solution_View {
 	        $filter = $tableOptions['filter'] ?? 0;
 
 	        $url = "?page=" . ABJ404_PP;
-	        if ($sub == 'abj404_captured') {
-	            $url .= "&subpage=abj404_captured";
-	        } else if ($sub == 'abj404_logs') {
-	            $url .= "&subpage=abj404_logs&id=" . $logsid;
+	        if ($sub !== '') {
+	            $url .= "&subpage=" . rawurlencode((string)$sub);
+	        }
+	        if ($sub == 'abj404_logs') {
+	            $url .= "&id=" . $logsid;
 	        }
 
 	        $url .= "&orderby=" . sanitize_text_field($orderby);
