@@ -302,7 +302,9 @@ if (!function_exists('abj404_shortCodeListener')) {
 	}
 
 	abj404_benchmark_bootstrap_start();
-	add_action('send_headers', 'abj404_benchmark_emit_headers', PHP_INT_MAX);
+	if (abj404_is_benchmark_request()) {
+		add_action('send_headers', 'abj404_benchmark_emit_headers', PHP_INT_MAX);
+	}
 }
 
 // admin

@@ -26,6 +26,8 @@ class ABJ_404_Solution_PluginLogic {
 	private $urlHomeDirectoryLength = null;
 
 	private $options = null;
+	private $resolvedOptionsSkipDbCheck = null;
+	private $resolvedOptionsWithDbCheck = null;
 
 	/** Track whether we're already in the method that updates the database that may be called recursively.
 	 * @var bool */
@@ -943,6 +945,19 @@ class ABJ_404_Solution_PluginLogic {
      * @return array
      */
     function getOptions($skip_db_check = false) {
+        if (!$skip_db_check && is_array($this->resolvedOptionsWithDbCheck)) {
+            return $this->resolvedOptionsWithDbCheck;
+        }
+        if ($skip_db_check) {
+            if (is_array($this->resolvedOptionsSkipDbCheck)) {
+                return $this->resolvedOptionsSkipDbCheck;
+            }
+            // A full checked set is safe to reuse for skip-db-check callers.
+            if (is_array($this->resolvedOptionsWithDbCheck)) {
+                return $this->resolvedOptionsWithDbCheck;
+            }
+        }
+
     	if ($this->options == null) {
         	$this->options = get_option('abj404_settings');
     	}
@@ -974,6 +989,12 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
 
+        if ($skip_db_check) {
+            $this->resolvedOptionsSkipDbCheck = $options;
+        } else {
+            $this->resolvedOptionsWithDbCheck = $options;
+        }
+
         return $options;
     }
     
@@ -981,6 +1002,9 @@ class ABJ_404_Solution_PluginLogic {
     	$old_options = $this->options;
     	update_option('abj404_settings', $options);
     	$this->options = $options;
+        // The persistent options changed, so invalidate per-request resolved caches.
+        $this->resolvedOptionsSkipDbCheck = null;
+        $this->resolvedOptionsWithDbCheck = null;
     }
 
     /** Do any maintenance when upgrading to a new version.
