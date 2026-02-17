@@ -867,10 +867,10 @@ class ABJ_404_Solution_PluginLogic {
     /** The passed in reason will be appended to the automatically generated reason.
      * @param string $reason
      */
-    function sendTo404Page($requestedURL, $reason = '', $useUserSpecified404 = true) {
+    function sendTo404Page($requestedURL, $reason = '', $useUserSpecified404 = true, $optionsOverride = null) {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        
-        $options = $abj404logic->getOptions();
+
+        $options = (is_array($optionsOverride) ? $optionsOverride : $abj404logic->getOptions());
         
         // ---------------------------------------
         // if there's a default 404 page specified then use that.

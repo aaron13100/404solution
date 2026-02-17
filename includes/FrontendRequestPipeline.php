@@ -158,18 +158,20 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             if (!$autoRedirectsAreOn) {
                 $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
                 $this->emitBenchmarkHeadersIfEnabled();
-                $this->logic->sendTo404Page($requestedURL, 'Do not create redirects per the options.');
+                $this->logic->sendTo404Page($requestedURL, 'Do not create redirects per the options.', true, $options);
                 return;
             }
 
-            $permalink = $this->spellChecker->getPermalinkUsingSpelling($urlSlugOnly, $requestedURL);
-            if (!empty($permalink)) {
-                $redirectType = $permalink['type'];
-                $this->dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $permalink['id'], $options['default_redirect'], 0);
+            if (!$this->shouldSkipSpellingLookup($urlSlugOnly)) {
+                $permalink = $this->spellChecker->getPermalinkUsingSpelling($urlSlugOnly, $requestedURL);
+                if (!empty($permalink)) {
+                    $redirectType = $permalink['type'];
+                    $this->dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $permalink['id'], $options['default_redirect'], 0);
 
-                $this->dao->logRedirectHit($requestedURL, $permalink['link'], 'spell check');
-                $this->logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
-                exit;
+                    $this->dao->logRedirectHit($requestedURL, $permalink['link'], 'spell check');
+                    $this->logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
+                    exit;
+                }
             }
         } else {
             if ($this->callWpFunction('is_single', array(), false) || $this->callWpFunction('is_page', array(), false)) {
@@ -226,7 +228,43 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->dao->logRedirectHit($requestedURL, '404', 'gave up.');
         $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
         $this->emitBenchmarkHeadersIfEnabled();
-        $this->logic->sendTo404Page($requestedURL, '');
+        $this->logic->sendTo404Page($requestedURL, '', true, $options);
+    }
+
+    /**
+     * Skip expensive spelling lookup for URL shapes that are very unlikely to be useful typo-corrections.
+     *
+     * @param string $urlSlugOnly
+     * @return bool
+     */
+    private function shouldSkipSpellingLookup($urlSlugOnly) {
+        if (!is_string($urlSlugOnly) || $urlSlugOnly === '') {
+            return true;
+        }
+
+        $segments = array_values(array_filter(explode('/', $urlSlugOnly)));
+        if (count($segments) === 0) {
+            return true;
+        }
+
+        $lastSegment = (string)end($segments);
+        $segmentLength = strlen($lastSegment);
+
+        // Long tokenized slugs with many separators/numeric chunks are usually tracking or synthetic IDs.
+        if ($segmentLength > 80) {
+            return true;
+        }
+        if (substr_count($lastSegment, '-') >= 6) {
+            return true;
+        }
+        if (preg_match('/\d{4,}/', $lastSegment)) {
+            return true;
+        }
+        if (!preg_match('/[a-zA-Z]/', $lastSegment)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

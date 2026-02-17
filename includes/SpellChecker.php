@@ -53,6 +53,9 @@ class ABJ_404_Solution_SpellChecker {
 
 	private $custom404PageID = null;
 
+	/** Prepared regex pattern cache for the current request lifecycle. */
+	private $preparedRegexPatternCache = array();
+
 	/** @var ABJ_404_Solution_Functions */
 	private $f;
 
@@ -411,7 +414,7 @@ class ABJ_404_Solution_SpellChecker {
 
             $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying custom regex "' . $regexURL . '" to URL: ' .
                     $requestedURL;
-			$preparedURL = $this->f->str_replace('/', '\/', $regexURL);
+				$preparedURL = $this->getPreparedRegexPattern($regexURL);
 			if ($this->f->regexMatch($preparedURL, $requestedURL)) {
 				$_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
 				$idAndType = $row['final_dest'] . '|' . $row['type'];
@@ -446,7 +449,24 @@ class ABJ_404_Solution_SpellChecker {
 
 			$_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
 		}
+
 		return null;
+	}
+
+	/**
+	 * Normalize and cache regex patterns for reuse within this request.
+	 *
+	 * @param string $regexURL
+	 * @return string
+	 */
+	private function getPreparedRegexPattern($regexURL) {
+		if (isset($this->preparedRegexPatternCache[$regexURL])) {
+			return $this->preparedRegexPatternCache[$regexURL];
+		}
+
+		$prepared = $this->f->str_replace('/', '\/', $regexURL);
+		$this->preparedRegexPatternCache[$regexURL] = $prepared;
+		return $prepared;
 	}
 
     /** Find a match using the an exact slug match.    

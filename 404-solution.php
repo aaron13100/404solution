@@ -336,7 +336,13 @@ if (!function_exists('abj404_404listener')) {
 function abj404_404listener() {
 	// always ignore admin screens and login requests.
 	// $_SERVER['SCRIPT_NAME'] is not guaranteed (CLI, some test runners, some proxies).
-	$isLoginScreen = (false !== stripos(wp_login_url(), $_SERVER['SCRIPT_NAME'] ?? ''));
+	// Use a direct script-name check to avoid invoking wp_login_url() filters on every frontend request.
+	$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+	$requestUri = $_SERVER['REQUEST_URI'] ?? '';
+	$isLoginScreen = (
+		($scriptName !== '' && stripos($scriptName, 'wp-login.php') !== false) ||
+		($requestUri !== '' && stripos($requestUri, 'wp-login.php') !== false)
+	);
 	$isCurrentlyViewingAnAdminPage = is_admin();
 	if ($isCurrentlyViewingAnAdminPage || $isLoginScreen) {
         return;
@@ -351,47 +357,57 @@ function abj404_404listener() {
     		$connector->processRedirectAllRequests();
     		return;
     	}
-    	
+
+		$updateSuggestEnabled = !empty($GLOBALS['abj404_frontend_runtime_flags']['update_suggest_url']);
+		$cookieName404 = ABJ404_PP . '_STATUS_404';
+		$has404StatusCookie = (isset($_COOKIE[$cookieName404]) && $_COOKIE[$cookieName404] == 'true');
+
+		// Fast path: if none of the non-404 features are active, bail immediately.
+		if (!$updateSuggestEnabled && !$has404StatusCookie) {
+			return;
+		}
+
     	/** If we're currently redirecting to a custom 404 page and we are about to show page
     	 * suggestions then update the URL displayed to the user. */
-    	$cookieName = ABJ404_PP . '_REQUEST_URI';
-    	$cookieName .= '_UPDATE_URL';
+    	$cookieName = ABJ404_PP . '_REQUEST_URI_UPDATE_URL';
     	$queryParamName = ABJ404_PP . '_ref';
+
+    	$hasUpdateCookie = !empty($_COOKIE[$cookieName]);
+    	$hasUpdateParam = !empty($_GET[$queryParamName]);
+
+    	// Fast path: nothing pending from prior plugin-driven redirects.
+    	if (!$hasUpdateCookie && !$hasUpdateParam && !$has404StatusCookie) {
+    		return;
+    	}
+
+    	if ($has404StatusCookie) {
+   			// clear the cookie
+    		setcookie($cookieName404, 'false', time() - 5, "/");
+    		// we're going to a custom 404 page so set the status to 404.
+	    	status_header(404);
+    	}
+
+    	if (!$updateSuggestEnabled) {
+    		return;
+    	}
 
     	// Check cookie first, then query param fallback (for 301 redirects where cookies don't survive)
     	$originalURL = null;
-    	if (isset($_COOKIE[$cookieName]) && !empty($_COOKIE[$cookieName])) {
+    	if ($hasUpdateCookie) {
     		$originalURL = $_COOKIE[$cookieName];
-    	} elseif (isset($_GET[$queryParamName]) && !empty($_GET[$queryParamName])) {
+    	} elseif ($hasUpdateParam) {
     		$originalURL = urldecode($_GET[$queryParamName]);
     	}
 
     	if ($originalURL !== null) {
+			// clear the cookie - sanitize before writing to $_REQUEST
+			$_REQUEST[ABJ404_PP . '_REQUEST_URI'] = sanitize_text_field($originalURL);
+			setcookie($cookieName, '', time() - 5, "/");
 
-    		$cookieName404 = ABJ404_PP . '_STATUS_404';
-
-    		if (array_key_exists($cookieName404, $_COOKIE) &&
-    			$_COOKIE[$cookieName404] == 'true') {
-
-   				// clear the cookie
-    			setcookie($cookieName404, 'false', time() - 5, "/");
-    			// we're going to a custom 404 page so se the status to 404.
-	    		status_header(404);
-    		}
-
-	    	if (!empty($GLOBALS['abj404_frontend_runtime_flags']['update_suggest_url'])) {
-
-    			// clear the cookie - sanitize before writing to $_REQUEST
-   				$_REQUEST[$cookieName] = sanitize_text_field($originalURL);
-    			setcookie($cookieName, '', time() - 5, "/");
-
-    			require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-    			add_action('wp_head', 'ABJ_404_Solution_ShortCode::updateURLbarIfNecessary');
-    		}
+			require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+			add_action('wp_head', 'ABJ_404_Solution_ShortCode::updateURLbarIfNecessary');
     	}
-    }
-    if (!$is404 || is_admin()) {
-    	return;
+		return;
     }
 
     require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
