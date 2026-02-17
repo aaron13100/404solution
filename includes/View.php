@@ -2449,8 +2449,13 @@ class ABJ_404_Solution_View {
                 $y = 0;
                 $class = "normal-non-alternate";
             }
-            // make the entire row red if the destination doesn't exist or is unpublished.
+            // make the entire row red if the destination is missing, doesn't exist, or is unpublished.
             $destinationDoesNotExistClass = '';
+            $destinationIsMissing = false;
+            if ($rowType != ABJ404_TYPE_404_DISPLAYED && trim((string)$rowFinalDest) === '') {
+                $destinationIsMissing = true;
+                $destinationDoesNotExistClass = ' destination-does-not-exist';
+            }
             if (array_key_exists('published_status', $row)) {
                 if ($row['published_status'] == '0') {
                     $destinationDoesNotExistClass = ' destination-does-not-exist';
@@ -2519,6 +2524,15 @@ class ABJ_404_Solution_View {
             
             $destinationExists = '';
             $destinationDoesNotExist = 'display: none;';
+            $destinationWarningText = __("This page doesn't exist or is not published so the redirect won't work.", '404-solution');
+            if ($destinationIsMissing) {
+                $destinationExists = 'display: none;';
+                $destinationDoesNotExist = '';
+                $destinationWarningText = __('Destination missing. Edit this redirect and choose a destination.', '404-solution');
+                if ($destForView === '') {
+                    $destForView = __('(Destination missing)', '404-solution');
+                }
+            }
             if (array_key_exists('published_status', $row)) {
                 if ($row['published_status'] == '0') {
                     $destinationExists = 'display: none;';
@@ -2563,9 +2577,10 @@ class ABJ_404_Solution_View {
 
 	            $htmlTemp = $this->f->str_replace('{link}', $link, $htmlTemp);
 	            $htmlTemp = $this->f->str_replace('{title}', $title, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{dest}', $destForView, $htmlTemp);
+	            $htmlTemp = $this->f->str_replace('{dest}', $destForView, $htmlTemp);
 	            $htmlTemp = $this->f->str_replace('{destination-exists}', $destinationExists, $htmlTemp);
 	            $htmlTemp = $this->f->str_replace('{destination-does-not-exist}', $destinationDoesNotExist, $htmlTemp);
+                $htmlTemp = $this->f->str_replace('{destination-warning-text}', $destinationWarningText, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{status}', $row['status_for_view'] ?? '', $htmlTemp);
             $htmlTemp = $this->f->str_replace('{statusTitle}', $statusTitle, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{type}', $row['type_for_view'] ?? '', $htmlTemp);
