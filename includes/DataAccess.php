@@ -2521,11 +2521,15 @@ class ABJ_404_Solution_DataAccess {
             return $rows;
         }
 
-        // Extract all non-empty URLs from rows
+        // Extract all non-empty URLs from rows.
+        // Keep lookup variants so legacy rows (e.g. missing leading slash) still map.
         $urls = array();
         foreach ($rows as $row) {
             if ($row['url'] != null && !empty($row['url'])) {
-                $urls[] = $row['url'];
+                $variants = $this->buildHitsLookupUrlVariants($row['url']);
+                foreach ($variants as $variant) {
+                    $urls[] = $variant;
+                }
             }
         }
 
@@ -2559,17 +2563,37 @@ class ABJ_404_Solution_DataAccess {
             return $rows;
         }
 
-        // Index logs data by URL for fast lookup
+        // Index logs data by canonical URL for fast lookup
         $logsDataByUrl = array();
         foreach ($logsResults as $logRow) {
-            $logsDataByUrl[$logRow['requested_url']] = $logRow;
+            $canonicalUrl = $this->canonicalizeUrlForHitsMatch($logRow['requested_url'] ?? '');
+            if ($canonicalUrl === '') {
+                continue;
+            }
+            if (!isset($logsDataByUrl[$canonicalUrl])) {
+                $logsDataByUrl[$canonicalUrl] = array(
+                    'logsid' => (int)($logRow['logsid'] ?? 0),
+                    'logshits' => (int)($logRow['logshits'] ?? 0),
+                    'last_used' => (int)($logRow['last_used'] ?? 0),
+                );
+                continue;
+            }
+            $existing = $logsDataByUrl[$canonicalUrl];
+            $currentLogsid = (int)($logRow['logsid'] ?? 0);
+            $existingLogsid = (int)($existing['logsid'] ?? 0);
+            $logsDataByUrl[$canonicalUrl]['logsid'] = ($existingLogsid > 0 && $currentLogsid > 0)
+                ? min($existingLogsid, $currentLogsid)
+                : max($existingLogsid, $currentLogsid);
+            $logsDataByUrl[$canonicalUrl]['logshits'] = (int)$existing['logshits'] + (int)($logRow['logshits'] ?? 0);
+            $logsDataByUrl[$canonicalUrl]['last_used'] = max((int)($existing['last_used'] ?? 0), (int)($logRow['last_used'] ?? 0));
         }
 
         // Populate rows with logs data using indexed lookup
         foreach ($rows as &$row) {
             if ($row['url'] != null && !empty($row['url'])) {
-                if (isset($logsDataByUrl[$row['url']])) {
-                    $logData = $logsDataByUrl[$row['url']];
+                $canonicalUrl = $this->canonicalizeUrlForHitsMatch($row['url']);
+                if (isset($logsDataByUrl[$canonicalUrl])) {
+                    $logData = $logsDataByUrl[$canonicalUrl];
                     $row['logsid'] = $logData['logsid'];
                     $row['logshits'] = $logData['logshits'];
                     $row['last_used'] = $logData['last_used'];
@@ -2578,6 +2602,66 @@ class ABJ_404_Solution_DataAccess {
         }
 
         return $rows;
+    }
+
+    private function canonicalizeUrlForHitsMatch($url) {
+        if (!is_string($url)) {
+            return '';
+        }
+
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+
+        $fragment = '';
+        $fragmentPos = strpos($url, '#');
+        if ($fragmentPos !== false) {
+            $fragment = substr($url, $fragmentPos);
+            $url = substr($url, 0, $fragmentPos);
+        }
+
+        $query = '';
+        $queryPos = strpos($url, '?');
+        if ($queryPos !== false) {
+            $query = substr($url, $queryPos);
+            $url = substr($url, 0, $queryPos);
+        }
+
+        $path = trim($url, '/');
+        $normalizedPath = ($path === '') ? '/' : '/' . $path;
+
+        return $normalizedPath . $query . $fragment;
+    }
+
+    private function buildHitsLookupUrlVariants($url) {
+        $variants = array();
+        if (!is_string($url)) {
+            return $variants;
+        }
+
+        $raw = trim($url);
+        if ($raw !== '') {
+            $variants[] = $raw;
+        }
+
+        $canonical = $this->canonicalizeUrlForHitsMatch($url);
+        if ($canonical !== '') {
+            $variants[] = $canonical;
+
+            $noLeading = ltrim($canonical, '/');
+            if ($noLeading !== '') {
+                $variants[] = $noLeading;
+            }
+
+            if ($canonical !== '/' && substr($canonical, -1) === '/') {
+                $variants[] = rtrim($canonical, '/');
+            } elseif ($canonical !== '/' && substr($canonical, -1) !== '/') {
+                $variants[] = $canonical . '/';
+            }
+        }
+
+        return array_values(array_unique($variants));
     }
 
     /**

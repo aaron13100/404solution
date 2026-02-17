@@ -2367,6 +2367,7 @@ class ABJ_404_Solution_View {
             $rowType = $row['type'] ?? 0;
             $rowStatus = $row['status'] ?? 0;
             $rowFinalDest = $row['final_dest'] ?? '';
+            $destForView = trim((string)($row['dest_for_view'] ?? ''));
             $statusTitle = '';
             if ($rowStatus == ABJ404_STATUS_MANUAL) {
                 $statusTitle = __('Manually created', '404-solution');
@@ -2381,24 +2382,32 @@ class ABJ_404_Solution_View {
             $link = "";
             $title = __('Visit', '404-solution') . " ";
             if ($rowType == ABJ404_TYPE_EXTERNAL) {
-                $link = $rowFinalDest;
-                $title .= $rowFinalDest;
+                if ($rowFinalDest !== '') {
+                    $link = $rowFinalDest;
+                    $title .= $rowFinalDest;
+                }
             } else if ($rowType == ABJ404_TYPE_CAT) {
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_CAT, 0);
-                $link = $permalink['link'];
-                $title .= __('Category:', '404-solution') . " " . $permalink['title'];
+                if ($rowFinalDest !== '') {
+                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_CAT, 0);
+                    $link = $permalink['link'];
+                    $title .= __('Category:', '404-solution') . " " . $permalink['title'];
+                }
             } else if ($rowType == ABJ404_TYPE_TAG) {
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_TAG, 0);
-                $link = $permalink['link'];
-                $title .= __('Tag:', '404-solution') . " " . $permalink['title'];
+                if ($rowFinalDest !== '') {
+                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_TAG, 0);
+                    $link = $permalink['link'];
+                    $title .= __('Tag:', '404-solution') . " " . $permalink['title'];
+                }
             } else if ($rowType == ABJ404_TYPE_HOME) {
                 $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_HOME, 0);
                 $link = $permalink['link'];
                 $title .= __('Home Page:', '404-solution') . " " . $permalink['title'];
             } else if ($rowType == ABJ404_TYPE_POST) {
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_POST, 0);
-                $link = $permalink['link'];
-                $title .= $permalink['title'];
+                if ($rowFinalDest !== '') {
+                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_POST, 0);
+                    $link = $permalink['link'];
+                    $title .= $permalink['title'];
+                }
                 
             } else if ($rowType == ABJ404_TYPE_404_DISPLAYED) {
             	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_404_DISPLAYED, 0);
@@ -2514,6 +2523,9 @@ class ABJ_404_Solution_View {
                 if ($row['published_status'] == '0') {
                     $destinationExists = 'display: none;';
                     $destinationDoesNotExist = '';
+                    if ($destForView === '') {
+                        $destForView = __('(Destination unavailable)', '404-solution');
+                    }
                 }
             }
 
@@ -2551,7 +2563,7 @@ class ABJ_404_Solution_View {
 
 	            $htmlTemp = $this->f->str_replace('{link}', $link, $htmlTemp);
 	            $htmlTemp = $this->f->str_replace('{title}', $title, $htmlTemp);
-	            $htmlTemp = $this->f->str_replace('{dest}', $row['dest_for_view'] ?? '', $htmlTemp);
+            $htmlTemp = $this->f->str_replace('{dest}', $destForView, $htmlTemp);
 	            $htmlTemp = $this->f->str_replace('{destination-exists}', $destinationExists, $htmlTemp);
 	            $htmlTemp = $this->f->str_replace('{destination-does-not-exist}', $destinationDoesNotExist, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{status}', $row['status_for_view'] ?? '', $htmlTemp);

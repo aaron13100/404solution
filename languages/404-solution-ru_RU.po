@@ -2382,3 +2382,6 @@ msgstr "Обновление данных в фоновом режиме…"
 #: includes/View.php
 msgid "Data refreshed"
 msgstr "Данные обновлены"
+
+msgid "(Destination unavailable)"
+msgstr "(Назначение недоступно)"

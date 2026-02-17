@@ -2380,3 +2380,6 @@ msgstr "Gegevens op de achtergrond vernieuwen…"
 #: includes/View.php
 msgid "Data refreshed"
 msgstr "Gegevens vernieuwd"
+
+msgid "(Destination unavailable)"
+msgstr "(Bestemming niet beschikbaar)"

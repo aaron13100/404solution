@@ -10,6 +10,9 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_WordPress_Connector {
 
 	private static $instance = null;
+    private const REVIEW_INITIAL_DELAY_DAYS = 30;
+    private const REVIEW_ASK_LATER_DELAY_DAYS = 7;
+    private const REVIEW_CLOSE_X_SNOOZE_DAYS = 14;
 
 	/** @var ABJ_404_Solution_PluginLogic */
 	private $logic;
@@ -607,7 +610,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
     }
 
-    /** Display a review request notification after 14 days of plugin use.
+    /** Display a review request notification after a sustained period of plugin use.
      * Uses a qualification question to ensure only satisfied users are directed to leave reviews.
      * Unhappy users are directed to provide feedback instead.
      *
@@ -616,6 +619,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * - Never shows again after user clicks review link button
      * - Never shows again after user submits feedback
      * - Shows again in 7 days after "Ask again later"
+     * - Shows again in 14 days after close "X"
      */
     static function maybeShowReviewRequest() {
         // Only show on 404 Solution plugin pages
@@ -645,9 +649,9 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
 
-        // Show review request after 14 days (1209600 seconds)
+        // Show review request after enough real usage time has passed.
         $days_installed = (time() - $installed_time) / 86400;
-        if ($days_installed < 14) {
+        if ($days_installed < self::REVIEW_INITIAL_DELAY_DAYS) {
             return;
         }
 
@@ -669,7 +673,11 @@ class ABJ_404_Solution_WordPress_Connector {
                 delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
             } elseif ($response === 'ask_later') {
                 // User wants to be reminded in 7 days
-                update_user_meta(get_current_user_id(), 'abj404_review_remind_later', time() + (7 * 86400));
+                update_user_meta(get_current_user_id(), 'abj404_review_remind_later', time() + (self::REVIEW_ASK_LATER_DELAY_DAYS * 86400));
+                delete_user_meta(get_current_user_id(), 'abj404_review_step');
+            } elseif ($response === 'close_x') {
+                // Close button snoozes this prompt for at least two weeks.
+                update_user_meta(get_current_user_id(), 'abj404_review_remind_later', time() + (self::REVIEW_CLOSE_X_SNOOZE_DAYS * 86400));
                 delete_user_meta(get_current_user_id(), 'abj404_review_step');
             } elseif ($response === 'never') {
                 // User never wants to see this - PERMANENT dismissal
@@ -801,6 +809,10 @@ class ABJ_404_Solution_WordPress_Connector {
             add_query_arg('abj404_review_response', 'never'),
             'abj404_review_response'
         );
+        $close_url = wp_nonce_url(
+            add_query_arg('abj404_review_response', 'close_x'),
+            'abj404_review_response'
+        );
 
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/reviewQualificationQuestion.html");
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -808,6 +820,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $html = $f->str_replace('{not_yet_url}', esc_attr($not_yet_url), $html);
         $html = $f->str_replace('{ask_later_url}', esc_attr($ask_later_url), $html);
         $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
+        $html = $f->str_replace('{close_url}', esc_attr($close_url), $html);
         echo $html;
     }
 
@@ -823,11 +836,16 @@ class ABJ_404_Solution_WordPress_Connector {
             add_query_arg('abj404_review_response', 'never'),
             'abj404_review_response'
         );
+        $close_url = wp_nonce_url(
+            add_query_arg('abj404_review_response', 'close_x'),
+            'abj404_review_response'
+        );
 
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/reviewLinkNotice.html");
         $f = ABJ_404_Solution_Functions::getInstance();
         $html = $f->str_replace('{review_link_url}', esc_attr($review_link_url), $html);
         $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
+        $html = $f->str_replace('{close_url}', esc_attr($close_url), $html);
         echo $html;
     }
 
@@ -835,6 +853,10 @@ class ABJ_404_Solution_WordPress_Connector {
     private static function showFeedbackFormNotice() {
         $never_url = wp_nonce_url(
             add_query_arg('abj404_review_response', 'never'),
+            'abj404_review_response'
+        );
+        $close_url = wp_nonce_url(
+            add_query_arg('abj404_review_response', 'close_x'),
             'abj404_review_response'
         );
 
@@ -847,6 +869,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $f = ABJ_404_Solution_Functions::getInstance();
         $html = $f->str_replace('{nonce_field}', $nonce_field, $html);
         $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
+        $html = $f->str_replace('{close_url}', esc_attr($close_url), $html);
         echo $html;
     }
 

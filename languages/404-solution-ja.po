@@ -2386,3 +2386,6 @@ msgstr "バックグラウンドでデータを更新しています…"
 #: includes/View.php
 msgid "Data refreshed"
 msgstr "データを更新しました"
+
+msgid "(Destination unavailable)"
+msgstr "（リンク先を利用できません）"

@@ -383,16 +383,36 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             exit;
         }
 
+        // Guard against broken redirects with missing/invalid destinations.
+        $finalDestRaw = isset($redirect['final_dest']) ? trim((string)$redirect['final_dest']) : '';
+        if ($finalDestRaw === '' && (int)$redirect['type'] !== ABJ404_TYPE_HOME && (int)$redirect['type'] !== ABJ404_TYPE_404_DISPLAYED) {
+            $this->logger->warn("Redirect destination missing. Sending request to 404 page instead. Redirect ID: " . ($redirect['id'] ?? 'unknown'));
+            $this->dao->logRedirectHit($redirect['url'], '404', $matchReason . ' (missing destination)');
+            $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
+            $this->emitBenchmarkHeadersIfEnabled();
+            $this->logic->sendTo404Page($requestedURL, 'missing redirect destination');
+            return true;
+        }
+
         $key = $redirect['final_dest'] . "|" . $redirect['type'];
         $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($key, 0);
 
-        $redirectedTo = esc_url($permalink['link']);
+        $finalLink = $permalink['link'];
+        if (!is_string($finalLink) || trim($finalLink) === '' || $finalLink === 'dunno') {
+            $this->logger->warn("Resolved permalink is empty/invalid. Sending request to 404 page instead. Redirect ID: " . ($redirect['id'] ?? 'unknown'));
+            $this->dao->logRedirectHit($redirect['url'], '404', $matchReason . ' (invalid destination)');
+            $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
+            $this->emitBenchmarkHeadersIfEnabled();
+            $this->logic->sendTo404Page($requestedURL, 'invalid redirect destination');
+            return true;
+        }
+
+        $redirectedTo = esc_url($finalLink);
         $urlParts = parse_url($redirectedTo);
-        if (array_key_exists('path', $urlParts)) {
+        if (is_array($urlParts) && array_key_exists('path', $urlParts)) {
             $redirectedTo = $urlParts['path'];
         }
 
-        $finalLink = $permalink['link'];
         $this->dao->logRedirectHit($redirect['url'], $redirectedTo, $matchReason);
 
         $sendTo404Page = $this->logic->forceRedirect(

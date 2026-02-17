@@ -2380,3 +2380,6 @@ msgstr "Atualizando dados em segundo plano…"
 #: includes/View.php
 msgid "Data refreshed"
 msgstr "Dados atualizados"
+
+msgid "(Destination unavailable)"
+msgstr "(Destino indisponível)"

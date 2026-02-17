@@ -2381,3 +2381,6 @@ msgstr "يتم تحديث البيانات في الخلفية…"
 #: includes/View.php
 msgid "Data refreshed"
 msgstr "تم تحديث البيانات"
+
+msgid "(Destination unavailable)"
+msgstr "(الوجهة غير متاحة)"

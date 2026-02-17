@@ -7,6 +7,7 @@ SELECT  requested_url,
 FROM    {wp_abj404_logsv2}
 
         inner join {wp_abj404_redirects}
-        on {wp_abj404_logsv2}.requested_url = {wp_abj404_redirects}.url 
+        on concat('/', trim(both '/' from {wp_abj404_logsv2}.requested_url)) =
+           concat('/', trim(both '/' from {wp_abj404_redirects}.url))
 
 group by requested_url 

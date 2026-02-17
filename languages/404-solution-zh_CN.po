@@ -2390,3 +2390,6 @@ msgstr "正在后台刷新数据…"
 #: includes/View.php
 msgid "Data refreshed"
 msgstr "数据已刷新"
+
+msgid "(Destination unavailable)"
+msgstr "（目标不可用）"

@@ -140,6 +140,9 @@ msgstr "(The log file does not exist.)"
 msgid "(The specified page doesn't exist. Please update this setting.)"
 msgstr "(The specified page doesn't exist. Please update this setting.)"
 
+msgid "(Destination unavailable)"
+msgstr "(Destination unavailable)"
+
 msgid "(Type a page name or an external URL)"
 msgstr "(Type a page name or an external URL)"
 

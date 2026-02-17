@@ -2378,3 +2378,6 @@ msgstr "Uppdaterar data i bakgrunden…"
 #: includes/View.php
 msgid "Data refreshed"
 msgstr "Data uppdaterad"
+
+msgid "(Destination unavailable)"
+msgstr "(Mål inte tillgängligt)"

@@ -432,6 +432,36 @@
     margin: 8px 0 0 0;
 }
 
+/* Review notice in plugin header areas */
+.abj404-review-notice {
+    box-sizing: border-box;
+    position: relative;
+    width: 100%;
+    margin: 8px 0 0 0;
+    padding-right: 40px;
+}
+
+.abj404-review-notice p {
+    margin-right: 4px;
+}
+
+.abj404-review-notice-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    line-height: 1;
+    font-size: 18px;
+    font-weight: 700;
+    color: #6b7280;
+    text-decoration: none;
+}
+
+.abj404-review-notice-close:hover,
+.abj404-review-notice-close:focus {
+    color: #111827;
+    text-decoration: none;
+}
+
 .abj404-header-controls #abj404-expand-collapse-all {
     white-space: nowrap;
 }

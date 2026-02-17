@@ -124,6 +124,9 @@ msgstr "(Le fichier journal n'existe pas.)"
 msgid "(The specified page doesn't exist. Please update this setting.)"
 msgstr "(La page spécifiée n'existe pas. Veuillez mettre à jour ce paramètre.)"
 
+msgid "(Destination unavailable)"
+msgstr "(Destination indisponible)"
+
 msgid "(Type a page name or an external URL)"
 msgstr "(Saisir un nom de page ou une URL externe)"
 
