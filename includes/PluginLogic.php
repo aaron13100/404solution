@@ -2998,6 +2998,15 @@ class ABJ_404_Solution_PluginLogic {
     /** Get the "/commentpage" and the "?query=part" of the URL. 
      * @return string */
     function getCommentPartAndQueryPartOfRequest() {
+        // Fast path for common redirects: no query string and no comment-page segment.
+        // This avoids UserRequest initialization/parsing for simple URLs.
+        $requestUri = isset($_SERVER['REQUEST_URI']) ? (string)$_SERVER['REQUEST_URI'] : '';
+        if ($requestUri !== '' &&
+                strpos($requestUri, '?') === false &&
+                strpos($requestUri, '/comment-page-') === false) {
+            return '';
+        }
+
     	$userRequest = ABJ_404_Solution_UserRequest::getInstance();
     	$queryParts = $this->f->removePageIDFromQueryString($userRequest->getQueryString());
     	$queryParts = ($queryParts == '') ? '' : '?' . $queryParts;
