@@ -424,9 +424,22 @@ class ABJ_404_Solution_SpellChecker {
 				if ($isDebug) {
 					$_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
 				}
-				$idAndType = $row['final_dest'] . '|' . $row['type'];
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, '0', 
-                	null, $options);
+				$rowType = isset($row['type']) ? (int)$row['type'] : 0;
+				$rowDest = isset($row['final_dest']) ? (string)$row['final_dest'] : '';
+				if ($rowType === (int)ABJ404_TYPE_EXTERNAL) {
+					// Fast path: external redirects already have a concrete target URL.
+					$permalink = array(
+						'id' => 0,
+						'type' => ABJ404_TYPE_EXTERNAL,
+						'link' => $rowDest,
+						'title' => '',
+						'score' => 100,
+					);
+				} else {
+					$idAndType = $rowDest . '|' . $row['type'];
+					$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, '0',
+						null, $options);
+				}
 				$permalink['matching_regex'] = $regexURL;
 				$originalPermalink = $isDebug ? $permalink : null;
 
