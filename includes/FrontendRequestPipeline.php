@@ -163,7 +163,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             }
 
             if (!$this->shouldSkipSpellingLookup($urlSlugOnly)) {
-                $permalink = $this->spellChecker->getPermalinkUsingSpelling($urlSlugOnly, $requestedURL);
+                $permalink = $this->spellChecker->getPermalinkUsingSpelling($urlSlugOnly, $requestedURL, $options);
                 if (!empty($permalink)) {
                     $redirectType = $permalink['type'];
                     $this->dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $permalink['id'], $options['default_redirect'], 0);
@@ -272,7 +272,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
      */
     function tryRegexRedirect($options, $requestedURL) {
         $lookupStart = microtime(true);
-        $regexPermalink = $this->spellChecker->getPermalinkUsingRegEx($requestedURL);
+        $regexPermalink = $this->spellChecker->getPermalinkUsingRegEx($requestedURL, $options);
         $this->recordRedirectLookupTiming($lookupStart);
         if (!empty($regexPermalink)) {
             $this->dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match', $requestedURL);

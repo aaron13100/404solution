@@ -334,22 +334,8 @@ abj404_benchmark_mark_bootstrap_done();
 // 404
 if (!function_exists('abj404_404listener')) {
 function abj404_404listener() {
-	// always ignore admin screens and login requests.
-	// $_SERVER['SCRIPT_NAME'] is not guaranteed (CLI, some test runners, some proxies).
-	// Use a direct script-name check to avoid invoking wp_login_url() filters on every frontend request.
-	$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-	$requestUri = $_SERVER['REQUEST_URI'] ?? '';
-	$isLoginScreen = (
-		($scriptName !== '' && stripos($scriptName, 'wp-login.php') !== false) ||
-		($requestUri !== '' && stripos($requestUri, 'wp-login.php') !== false)
-	);
-	$isCurrentlyViewingAnAdminPage = is_admin();
-	if ($isCurrentlyViewingAnAdminPage || $isLoginScreen) {
-        return;
-    }
-    
-    $is404 = is_404();
-    if (!$is404) {
+	$is404 = is_404();
+	if (!$is404) {
         // Performance: do NOT load the whole plugin on every frontend request unless we must.
     	if (!empty($GLOBALS['abj404_frontend_runtime_flags']['redirect_all_requests'])) {
     		require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
@@ -409,6 +395,19 @@ function abj404_404listener() {
     	}
 		return;
     }
+
+	// ignore admin screens and login requests on 404 processing path.
+	// $_SERVER['SCRIPT_NAME'] is not guaranteed (CLI, some test runners, some proxies).
+	// Use a direct script-name check to avoid invoking wp_login_url() filters.
+	$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+	$requestUri = $_SERVER['REQUEST_URI'] ?? '';
+	$isLoginScreen = (
+		($scriptName !== '' && stripos($scriptName, 'wp-login.php') !== false) ||
+		($requestUri !== '' && stripos($requestUri, 'wp-login.php') !== false)
+	);
+	if (is_admin() || $isLoginScreen) {
+		return;
+	}
 
     require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     $connector = ABJ_404_Solution_WordPress_Connector::getInstance();

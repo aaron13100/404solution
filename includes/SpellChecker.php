@@ -404,30 +404,36 @@ class ABJ_404_Solution_SpellChecker {
 	 * @param string $requestedURL
 	 * @return array
 	 */
-	function getPermalinkUsingRegEx($requestedURL) {
-		$options = $this->logic->getOptions();
+	function getPermalinkUsingRegEx($requestedURL, $options = null) {
+		if (!is_array($options)) {
+			$options = $this->logic->getOptions();
+		}
+		$isDebug = $this->logger->isDebug();
 
 		$regexURLsRows = $this->dao->getRedirectsWithRegEx();
 
 		foreach ($regexURLsRows as $row) {
 			$regexURL = $row['url'];
 
-            $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying custom regex "' . $regexURL . '" to URL: ' .
-                    $requestedURL;
-				$preparedURL = $this->getPreparedRegexPattern($regexURL);
+			if ($isDebug) {
+				$_REQUEST[ABJ404_PP]['debug_info'] = 'Applying custom regex "' . $regexURL . '" to URL: ' .
+					$requestedURL;
+			}
+			$preparedURL = $this->getPreparedRegexPattern($regexURL);
 			if ($this->f->regexMatch($preparedURL, $requestedURL)) {
-				$_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
+				if ($isDebug) {
+					$_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
+				}
 				$idAndType = $row['final_dest'] . '|' . $row['type'];
                 $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, '0', 
                 	null, $options);
 				$permalink['matching_regex'] = $regexURL;
-				$originalPermalink = $permalink;
+				$originalPermalink = $isDebug ? $permalink : null;
 
-				// if the matching regex contains a group and the destination contains a replacement,
-				// then use them
-				$regexMatchResult = $this->f->regexMatch("\.*\(.+\).*", $regexURL);
-				$replacementStrPosResult = $this->f->strpos($permalink['link'], '$');
-				if (($regexMatchResult != 0) && ($replacementStrPosResult !== FALSE)) {
+				// If regex has capture groups and destination has replacement markers, resolve them.
+				$hasCaptureGroup = ($this->f->strpos($regexURL, '(') !== FALSE);
+				$hasReplacementToken = ($this->f->strpos($permalink['link'], '$') !== FALSE);
+				if ($hasCaptureGroup && $hasReplacementToken) {
 					$results = array();
 					$this->f->regexMatch($regexURL, $requestedURL, $results);
 
@@ -440,14 +446,18 @@ class ABJ_404_Solution_SpellChecker {
 					$permalink['link'] = $final;
 				}
 				
-				$this->logger->debugMessage("Found matching regex. Original permalink" . 
-				    json_encode($originalPermalink) . ", final: " . 
-				    json_encode($permalink));
+				if ($isDebug) {
+					$this->logger->debugMessage("Found matching regex. Original permalink" .
+						json_encode($originalPermalink) . ", final: " .
+						json_encode($permalink));
+				}
 
 				return $permalink;
 			}
 
-			$_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
+			if ($isDebug) {
+				$_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex.';
+			}
 		}
 
 		return null;
@@ -515,10 +525,10 @@ class ABJ_404_Solution_SpellChecker {
 	 * @param string|null $fullRequestedURL Optional full URL path for caching results (e.g., '/site/bad-url')
 	 * @return array|null
 	 */
-	function getPermalinkUsingSpelling($requestedURL, $fullRequestedURL = null) {
+	function getPermalinkUsingSpelling($requestedURL, $fullRequestedURL = null, $optionsOverride = null) {
 		$abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
 
-		$options = $this->logic->getOptions();
+		$options = is_array($optionsOverride) ? $optionsOverride : $this->logic->getOptions();
 
 		if (@$options['auto_redirects'] == '1') {
 			// Site owner wants automatic redirects.
