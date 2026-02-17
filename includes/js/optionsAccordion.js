@@ -115,6 +115,9 @@ function abj404ShowToast(message, type) {
 
         // Initialize card keyboard navigation
         initCardKeyboardNav();
+
+        // Tools import format hint (competitor migration UX)
+        initImportFormatHint();
     });
 
     /**
@@ -260,6 +263,77 @@ function abj404ShowToast(message, type) {
 
         // Save card state
         abj404SaveCardState();
+    }
+
+    /**
+     * Detect import CSV format from first row and show a small hint on Tools > Import.
+     */
+    function initImportFormatHint() {
+        var input = document.getElementById('abj404-import-file-input');
+        var hint = document.getElementById('abj404-import-format-hint');
+        if (!input || !hint || !window.FileReader) {
+            return;
+        }
+
+        input.addEventListener('change', function() {
+            hint.textContent = '';
+
+            var file = input.files && input.files[0] ? input.files[0] : null;
+            if (!file) {
+                return;
+            }
+
+            var reader = new FileReader();
+            reader.onload = function(evt) {
+                var text = (evt && evt.target && typeof evt.target.result === 'string') ? evt.target.result : '';
+                if (!text) {
+                    return;
+                }
+
+                var firstLine = text.split(/\r?\n/).find(function(line) {
+                    return line && line.trim() !== '';
+                }) || '';
+                if (!firstLine) {
+                    return;
+                }
+
+                var delimiter = ',';
+                var commaCount = firstLine.split(',').length;
+                var semicolonCount = firstLine.split(';').length;
+                var tabCount = firstLine.split('\t').length;
+                if (semicolonCount > commaCount && semicolonCount >= tabCount) {
+                    delimiter = ';';
+                } else if (tabCount > commaCount && tabCount > semicolonCount) {
+                    delimiter = '\t';
+                }
+
+                var headers = firstLine.split(delimiter).map(function(h) {
+                    return h
+                        .replace(/^\uFEFF/, '')
+                        .toLowerCase()
+                        .trim()
+                        .replace(/\s+/g, '_')
+                        .replace(/[^a-z0-9_]/g, '');
+                });
+
+                var has = function(name) { return headers.indexOf(name) !== -1; };
+                var detected = 'Custom CSV format';
+                if (has('source') && has('target') && has('regex')) {
+                    detected = 'Detected format: Redirection CSV';
+                } else if (has('redirect_from') && has('redirect_to')) {
+                    detected = 'Detected format: Safe Redirect Manager CSV';
+                } else if (has('request') && has('destination')) {
+                    detected = 'Detected format: Simple 301 Redirects CSV';
+                } else if (has('from_url') && has('to_url')) {
+                    detected = 'Detected format: 404 Solution CSV';
+                }
+
+                hint.textContent = detected;
+            };
+
+            // Read a small slice only; we just need headers.
+            reader.readAsText(file.slice(0, 8192));
+        });
     }
 
     /**

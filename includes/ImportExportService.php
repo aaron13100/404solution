@@ -145,8 +145,11 @@ class ABJ_404_Solution_ImportExportService {
             return 'Error opening the file.';
         }
 
+        $delimiter = $this->detectCsvDelimiterFromFile($file_handle);
+        rewind($file_handle);
+
         $headerColumns = null;
-        while (($row = fgetcsv($file_handle, 0, ',', '"', '\\')) !== false) {
+        while (($row = fgetcsv($file_handle, 0, $delimiter, '"', '\\')) !== false) {
             $data = array_map(function($v) {
                 return trim((string)$v);
             }, $row);
@@ -163,8 +166,7 @@ class ABJ_404_Solution_ImportExportService {
             if ($headerColumns !== null) {
                 $dataArray = $this->mapImportRowByHeaders($data, $headerColumns);
             } else {
-                $line = implode(',', $data);
-                $dataArray = $this->splitCsvLine($line);
+                $dataArray = $this->mapImportRowWithoutHeaders($data);
             }
 
             if (isset($dataArray['error'])) {
@@ -323,9 +325,47 @@ class ABJ_404_Solution_ImportExportService {
 
     function normalizeImportHeaders($columns) {
         return array_map(function($value) {
+            $value = preg_replace('/^\xEF\xBB\xBF/', '', (string)$value);
             $value = trim(strtolower((string)$value));
             return preg_replace('/[^a-z0-9_]/', '', str_replace(' ', '_', $value));
         }, $columns);
+    }
+
+    /**
+     * Best-effort format detection for import UX and diagnostics.
+     *
+     * @param array $columns Raw header row.
+     * @return string One of: native, redirection, safe_redirect_manager, simple_301, unknown.
+     */
+    function detectImportFormatFromHeaders($columns) {
+        $normalized = $this->normalizeImportHeaders($columns);
+
+        if (in_array('source', $normalized, true) &&
+                in_array('target', $normalized, true) &&
+                in_array('regex', $normalized, true)) {
+            return 'redirection';
+        }
+
+        if (in_array('redirect_from', $normalized, true) &&
+                in_array('redirect_to', $normalized, true)) {
+            return 'safe_redirect_manager';
+        }
+
+        if (in_array('request', $normalized, true) &&
+                in_array('destination', $normalized, true)) {
+            return 'simple_301';
+        }
+
+        if ((in_array('from_url', $normalized, true) &&
+                in_array('to_url', $normalized, true)) ||
+                (in_array('from_url', $normalized, true) &&
+                in_array('status', $normalized, true) &&
+                in_array('type', $normalized, true) &&
+                in_array('to_url', $normalized, true))) {
+            return 'native';
+        }
+
+        return 'unknown';
     }
 
     function mapImportRowByHeaders($row, $normalizedHeaders) {
@@ -362,5 +402,55 @@ class ABJ_404_Solution_ImportExportService {
             }
         }
         return -1;
+    }
+
+    /**
+     * @param array $columns Already parsed CSV columns for one row.
+     * @return array
+     */
+    private function mapImportRowWithoutHeaders($columns) {
+        $columns = array_values($columns);
+        if (count($columns) === 5) {
+            return array(
+                'from_url' => trim((string)$columns[0]),
+                'status'   => trim((string)$columns[1]),
+                'type'     => trim((string)$columns[2]),
+                'to_url'   => trim((string)$columns[3]),
+                'wp_type'  => trim((string)$columns[4]),
+            );
+        }
+        if (count($columns) === 2) {
+            return array(
+                'from_url' => trim((string)$columns[0]),
+                'to_url'   => trim((string)$columns[1]),
+            );
+        }
+        return array('error' => 'Invalid CSV format. ' . count($columns) . ' found but 2 or 5 expected.');
+    }
+
+    /**
+     * Detect delimiter by inspecting the first non-empty line.
+     *
+     * @param resource $fileHandle
+     * @return string
+     */
+    private function detectCsvDelimiterFromFile($fileHandle) {
+        while (($line = fgets($fileHandle)) !== false) {
+            if (trim($line) === '') {
+                continue;
+            }
+            $comma = count(str_getcsv($line, ',', '"', '\\'));
+            $semicolon = count(str_getcsv($line, ';', '"', '\\'));
+            $tab = count(str_getcsv($line, "\t", '"', '\\'));
+
+            if ($semicolon > $comma && $semicolon >= $tab) {
+                return ';';
+            }
+            if ($tab > $comma && $tab > $semicolon) {
+                return "\t";
+            }
+            return ',';
+        }
+        return ',';
     }
 }

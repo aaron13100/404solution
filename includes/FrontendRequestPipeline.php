@@ -46,6 +46,29 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         return defined('ABJ404_TYPE_POST') ? constant('ABJ404_TYPE_POST') : 1;
     }
 
+    /**
+     * Emit benchmark header immediately for paths that may not reach WordPress send_headers.
+     *
+     * @return void
+     */
+    private function emitBenchmarkHeadersIfEnabled() {
+        if (function_exists('abj404_benchmark_emit_headers')) {
+            abj404_benchmark_emit_headers();
+        }
+    }
+
+    /**
+     * @param float $startTime
+     * @return void
+     */
+    private function recordRedirectLookupTiming($startTime) {
+        if (!function_exists('abj404_benchmark_record_redirect_lookup')) {
+            return;
+        }
+        $elapsedMs = (microtime(true) - (float)$startTime) * 1000.0;
+        abj404_benchmark_record_redirect_lookup($elapsedMs);
+    }
+
     function processRedirectAllRequests() {
         $options = $this->logic->getOptions();
 
@@ -80,6 +103,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
         if ($_REQUEST[ABJ404_PP]['ignore_donotprocess']) {
             $this->dao->logRedirectHit($pathOnly, '404', 'ignore_donotprocess');
+            $this->emitBenchmarkHeadersIfEnabled();
             return;
         }
 
@@ -89,7 +113,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $requestedURLWithoutComments = $userRequest->getRequestURIWithoutCommentsPage();
         }
 
+        $lookupStart = microtime(true);
         $redirect = $this->dao->getActiveRedirectForURL($requestedURL);
+        $this->recordRedirectLookupTiming($lookupStart);
         $options = $this->logic->getOptions();
         $this->logAReallyLongDebugMessage($options, $requestedURL, $redirect);
 
@@ -100,11 +126,19 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             }
 
             if ($requestedURLWithoutComments != $requestedURL) {
+                $lookupStart = microtime(true);
                 $redirect = $this->dao->getActiveRedirectForURL($requestedURLWithoutComments);
+                $this->recordRedirectLookupTiming($lookupStart);
                 if ($redirect['id'] != '0' && $redirect['final_dest'] != '0') {
                     $this->processRedirect($requestedURL, $redirect, 'existing');
                     exit;
                 }
+            }
+
+            $sentTo404Page = $this->tryRegexRedirect($options, $requestedURL);
+            if ($sentTo404Page) {
+                $this->emitBenchmarkHeadersIfEnabled();
+                return;
             }
 
             $autoRedirectsAreOn = !array_key_exists('auto_redirects', $options) || $options['auto_redirects'] == '1';
@@ -121,13 +155,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 }
             }
 
-            $sentTo404Page = $this->tryRegexRedirect($options, $requestedURL);
-            if ($sentTo404Page) {
-                return;
-            }
-
             if (!$autoRedirectsAreOn) {
                 $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
+                $this->emitBenchmarkHeadersIfEnabled();
                 $this->logic->sendTo404Page($requestedURL, 'Do not create redirects per the options.');
                 return;
             }
@@ -195,6 +225,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->logic->tryNormalPostQuery($options);
         $this->dao->logRedirectHit($requestedURL, '404', 'gave up.');
         $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
+        $this->emitBenchmarkHeadersIfEnabled();
         $this->logic->sendTo404Page($requestedURL, '');
     }
 
@@ -202,7 +233,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
      * @return bool True if sent to configured default 404 page.
      */
     function tryRegexRedirect($options, $requestedURL) {
+        $lookupStart = microtime(true);
         $regexPermalink = $this->spellChecker->getPermalinkUsingRegEx($requestedURL);
+        $this->recordRedirectLookupTiming($lookupStart);
         if (!empty($regexPermalink)) {
             $this->dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match', $requestedURL);
             $sentTo404Page = $this->logic->forceRedirect(
@@ -266,6 +299,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         if ($redirect['type'] == ABJ404_TYPE_404_DISPLAYED) {
             $this->dao->logRedirectHit($redirect['url'], '404', $matchReason);
             $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
+            $this->emitBenchmarkHeadersIfEnabled();
             $this->logic->sendTo404Page($requestedURL, $matchReason);
             return true;
         }

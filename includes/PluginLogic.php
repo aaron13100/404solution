@@ -1814,6 +1814,16 @@ class ABJ_404_Solution_PluginLogic {
     function mapImportRowByHeaders($row, $normalizedHeaders) {
         return $this->getImportExportService()->mapImportRowByHeaders($row, $normalizedHeaders);
     }
+
+    /**
+     * Detect import format by CSV header row.
+     *
+     * @param array $columns
+     * @return string
+     */
+    function detectImportFormatFromHeaders($columns) {
+        return $this->getImportExportService()->detectImportFormatFromHeaders($columns);
+    }
     
     function updatePerPageOption($rows) {
         $showRows = max($rows, ABJ404_OPTION_MIN_PERPAGE);
@@ -3014,6 +3024,9 @@ class ABJ_404_Solution_PluginLogic {
         // If headers can be sent, do a normal header redirect and exit immediately.
         // Only fall back to JS redirect when headers are already sent.
         if (!headers_sent()) {
+            if (function_exists('abj404_benchmark_emit_headers')) {
+                abj404_benchmark_emit_headers();
+            }
             // Prefer wp_safe_redirect for same-host redirects to avoid header-injection edge cases,
             // but allow external redirects (plugin supports external redirect destinations).
             $useSafe = false;
@@ -3042,6 +3055,9 @@ class ABJ_404_Solution_PluginLogic {
 
         // JS fallback redirect for the rare case some other plugin/theme already output content.
         // Use wp_json_encode to safely encode URL for JavaScript to prevent XSS.
+        if (function_exists('abj404_benchmark_emit_headers')) {
+            abj404_benchmark_emit_headers();
+        }
         $c = '<script>' . 'function doRedirect() {' . "\n" .
                 '   window.location.replace(' . wp_json_encode($finalDestination) . ');' . "\n" .
                 '}' . "\n" .

@@ -208,6 +208,100 @@ if (!function_exists('abj404_shortCodeListener')) {
 			return $missing;
 		}
 	}
+
+	if (!function_exists('abj404_is_benchmark_request')) {
+		/**
+		 * Benchmark instrumentation is disabled by default and only enabled per-request.
+		 *
+		 * @return bool
+		 */
+		function abj404_is_benchmark_request() {
+			return isset($_GET['abj404_bench']) && (string)$_GET['abj404_bench'] === '1';
+		}
+	}
+
+	if (!function_exists('abj404_benchmark_bootstrap_start')) {
+		function abj404_benchmark_bootstrap_start() {
+			if (!abj404_is_benchmark_request()) {
+				return;
+			}
+			if (!isset($GLOBALS['abj404_benchmark_state']) || !is_array($GLOBALS['abj404_benchmark_state'])) {
+				$GLOBALS['abj404_benchmark_state'] = array(
+					'start' => microtime(true),
+					'bootstrap_done' => 0.0,
+					'db_query_count' => 0,
+					'db_query_ms' => 0.0,
+					'redirect_lookup_ms' => 0.0,
+				);
+			}
+		}
+	}
+
+	if (!function_exists('abj404_benchmark_mark_bootstrap_done')) {
+		function abj404_benchmark_mark_bootstrap_done() {
+			if (!abj404_is_benchmark_request() || !isset($GLOBALS['abj404_benchmark_state'])) {
+				return;
+			}
+			$GLOBALS['abj404_benchmark_state']['bootstrap_done'] = microtime(true);
+		}
+	}
+
+	if (!function_exists('abj404_benchmark_record_db_query')) {
+		/**
+		 * @param float $elapsedMs
+		 * @return void
+		 */
+		function abj404_benchmark_record_db_query($elapsedMs) {
+			if (!abj404_is_benchmark_request() || !isset($GLOBALS['abj404_benchmark_state'])) {
+				return;
+			}
+			$elapsedMs = max(0.0, (float)$elapsedMs);
+			$GLOBALS['abj404_benchmark_state']['db_query_count']++;
+			$GLOBALS['abj404_benchmark_state']['db_query_ms'] += $elapsedMs;
+		}
+	}
+
+	if (!function_exists('abj404_benchmark_record_redirect_lookup')) {
+		/**
+		 * @param float $elapsedMs
+		 * @return void
+		 */
+		function abj404_benchmark_record_redirect_lookup($elapsedMs) {
+			if (!abj404_is_benchmark_request() || !isset($GLOBALS['abj404_benchmark_state'])) {
+				return;
+			}
+			$GLOBALS['abj404_benchmark_state']['redirect_lookup_ms'] += max(0.0, (float)$elapsedMs);
+		}
+	}
+
+	if (!function_exists('abj404_benchmark_emit_headers')) {
+		function abj404_benchmark_emit_headers() {
+			if (!abj404_is_benchmark_request() || headers_sent() || !isset($GLOBALS['abj404_benchmark_state'])) {
+				return;
+			}
+			$state = $GLOBALS['abj404_benchmark_state'];
+			$start = isset($state['start']) ? (float)$state['start'] : 0.0;
+			$bootstrapDone = isset($state['bootstrap_done']) ? (float)$state['bootstrap_done'] : 0.0;
+			$now = microtime(true);
+			$totalMs = ($start > 0.0) ? (($now - $start) * 1000.0) : 0.0;
+			$bootstrapMs = ($start > 0.0 && $bootstrapDone > 0.0) ? (($bootstrapDone - $start) * 1000.0) : 0.0;
+			$dbQueryCount = isset($state['db_query_count']) ? (int)$state['db_query_count'] : 0;
+			$dbQueryMs = isset($state['db_query_ms']) ? (float)$state['db_query_ms'] : 0.0;
+			$redirectLookupMs = isset($state['redirect_lookup_ms']) ? (float)$state['redirect_lookup_ms'] : 0.0;
+
+			header(
+				'X-ABJ404-Benchmark: ' .
+				'total_ms=' . round($totalMs, 3) . ';' .
+				'bootstrap_ms=' . round($bootstrapMs, 3) . ';' .
+				'db_query_count=' . $dbQueryCount . ';' .
+				'db_query_ms=' . round($dbQueryMs, 3) . ';' .
+				'redirect_lookup_ms=' . round($redirectLookupMs, 3)
+			);
+		}
+	}
+
+	abj404_benchmark_bootstrap_start();
+	add_action('send_headers', 'abj404_benchmark_emit_headers', PHP_INT_MAX);
 }
 
 // admin
@@ -221,11 +315,20 @@ if (is_admin()) {
 // get the plugin priority to use before adding the template_redirect action.
 $__abj404_options = abj404_get_settings_options();
 $__abj404_template_redirect_priority = absint($__abj404_options['template_redirect_priority'] ?? 9);
+$GLOBALS['abj404_frontend_runtime_flags'] = array(
+	'redirect_all_requests' => (is_array($__abj404_options) &&
+		array_key_exists('redirect_all_requests', $__abj404_options) &&
+		(string)$__abj404_options['redirect_all_requests'] === '1'),
+	'update_suggest_url' => (is_array($__abj404_options) &&
+		array_key_exists('update_suggest_url', $__abj404_options) &&
+		(string)$__abj404_options['update_suggest_url'] === '1'),
+);
 
 add_action('template_redirect', 'abj404_404listener', $__abj404_template_redirect_priority);
 
 unset($__abj404_options);
 unset($__abj404_template_redirect_priority);
+abj404_benchmark_mark_bootstrap_done();
 // ---
 
 // 404
@@ -240,12 +343,9 @@ function abj404_404listener() {
     }
     
     $is404 = is_404();
-    $options = null;
-
     if (!$is404) {
-        $options = abj404_get_settings_options();
         // Performance: do NOT load the whole plugin on every frontend request unless we must.
-    	if (abj404_is_redirect_all_requests_enabled($options)) {
+    	if (!empty($GLOBALS['abj404_frontend_runtime_flags']['redirect_all_requests'])) {
     		require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     		$connector = ABJ_404_Solution_WordPress_Connector::getInstance();
     		$connector->processRedirectAllRequests();
@@ -279,9 +379,7 @@ function abj404_404listener() {
 	    		status_header(404);
     		}
 
-	    	if (is_array($options) && array_key_exists('update_suggest_url', $options) &&
-    			isset($options['update_suggest_url']) &&
-    			$options['update_suggest_url'] == 1) {
+	    	if (!empty($GLOBALS['abj404_frontend_runtime_flags']['update_suggest_url'])) {
 
     			// clear the cookie - sanitize before writing to $_REQUEST
    				$_REQUEST[$cookieName] = sanitize_text_field($originalURL);

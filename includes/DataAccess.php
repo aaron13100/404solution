@@ -682,6 +682,9 @@ class ABJ_404_Solution_DataAccess {
         $result['rows'] = $wpdb->get_results($query, ARRAY_A);
         
         $result['elapsed_time'] = $timer->stop();
+        if (function_exists('abj404_benchmark_record_db_query')) {
+            abj404_benchmark_record_db_query(((float)$result['elapsed_time']) * 1000.0);
+        }
         $result['last_error'] = $wpdb->last_error ?? '';
         $result['last_result'] = $wpdb->last_result ?? array();
         $result['rows_affected'] = $wpdb->rows_affected ?? 0;
