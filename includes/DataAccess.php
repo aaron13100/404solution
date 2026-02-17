@@ -1789,8 +1789,16 @@ class ABJ_404_Solution_DataAccess {
         }
     	
     	// for normal page views we limit the rows returned based on user preferences for paginaiton.
-        $limitStart = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
-        $limitEnd = absint(sanitize_text_field($tableOptions['perpage']));
+        $paged = absint($tableOptions['paged'] ?? 1);
+        if ($paged < 1) {
+            $paged = 1;
+        }
+        $perpage = absint($tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE);
+        if ($perpage < 1) {
+            $perpage = ABJ404_OPTION_DEFAULT_PERPAGE;
+        }
+        $limitStart = ($paged - 1) * $perpage;
+        $limitEnd = $perpage;
         
         $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits')
                 || ($tableOptions['orderby'] == 'last_used');
@@ -2782,8 +2790,15 @@ class ABJ_404_Solution_DataAccess {
             $order = 'DESC'; // Safe default
         }
 
-        $start = ( absint(sanitize_text_field($tableOptions['paged']) - 1)) * absint(sanitize_text_field($tableOptions['perpage']));
-        $perpage = absint(sanitize_text_field($tableOptions['perpage']));
+        $paged = absint($tableOptions['paged'] ?? 1);
+        if ($paged < 1) {
+            $paged = 1;
+        }
+        $perpage = absint($tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE);
+        if ($perpage < 1) {
+            $perpage = ABJ404_OPTION_DEFAULT_PERPAGE;
+        }
+        $start = ($paged - 1) * $perpage;
         
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogRecords.sql");
         $query = $this->f->str_replace('{logsid_included}', $logsid_included, $query);
