@@ -39,7 +39,23 @@ class ABJ_404_Solution_PluginLogic {
     private static $checkingIsAdmin = false;
 
     /** Allowed column names for orderby parameter. */
-    private static $allowedOrderbyColumns = ['url', 'status', 'type', 'dest', 'code', 'timestamp', 'created', 'lastused'];
+    private static $allowedOrderbyColumns = [
+        'url',
+        'status',
+        'type',
+        'dest',
+        'final_dest',
+        'code',
+        'timestamp',
+        'created',
+        'lastused',
+        'last_used',
+        'logshits',
+        'remote_host',
+        'referrer',
+        'action',
+        'username'
+    ];
 
     /** Allowed values for order parameter. */
     private static $allowedOrderValues = ['ASC', 'DESC'];
@@ -2441,13 +2457,15 @@ class ABJ_404_Solution_PluginLogic {
 
         $tableOptions['logsid'] = 0;
         if ($this->dao->getPostOrGetSanitize('subpage') == "abj404_logs") {
-            if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {                
-                $tableOptions['logsid'] = absint($_GET['id']);
-                
-            } else if (array_key_exists('redirect_to_data_field_id', $_GET) && 
-                    isset($_GET['redirect_to_data_field_id']) && 
-                    $this->f->regexMatch('[0-9]+', $_GET['redirect_to_data_field_id'])) {
-                $tableOptions['logsid'] = absint($_GET['redirect_to_data_field_id']);
+            $logId = (string)$this->dao->getPostOrGetSanitize('id', '');
+            if ($this->f->regexMatch('[0-9]+', $logId)) {
+                $tableOptions['logsid'] = absint($logId);
+
+            } else {
+                $redirectToDataFieldId = (string)$this->dao->getPostOrGetSanitize('redirect_to_data_field_id', '');
+                if ($this->f->regexMatch('[0-9]+', $redirectToDataFieldId)) {
+                    $tableOptions['logsid'] = absint($redirectToDataFieldId);
+                }
             }
         }
 

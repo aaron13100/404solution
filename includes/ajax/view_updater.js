@@ -333,6 +333,10 @@ function paginationLinksChange(triggerItem, options) {
     var subpage = $ajaxConfigEl.attr("data-pagination-ajax-subpage") || getURLParameter('subpage');
     var page = getURLParameter('page');
     var trashFilter = getURLParameter('filter');
+    var orderby = getURLParameter('orderby');
+    var order = getURLParameter('order');
+    var paged = getURLParameter('paged');
+    var id = getURLParameter('id');
 
     // Prefer nonce from attribute; fall back to legacy parsing from URL.
     var nonce = $ajaxConfigEl.attr("data-pagination-ajax-nonce") || '';
@@ -378,7 +382,11 @@ function paginationLinksChange(triggerItem, options) {
             filterText: filterText,
             filter: trashFilter,
             subpage: subpage,
-            nonce: nonce
+            nonce: nonce,
+            orderby: orderby,
+            order: order,
+            paged: paged,
+            id: id
         },
         success: function (result) {
             // get the current text value
