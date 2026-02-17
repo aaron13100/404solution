@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.1.10
+Stable tag: 3.2.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -241,6 +241,14 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.2.0 (Feb 17, 2026) =
+* Improvement: Faster loading on key admin pages, especially for larger sites.
+* Improvement: Clearer in-page status messages while data refreshes, so admins know what is happening.
+* FIX: Better handling of database charset/collation differences to reduce SQL errors on some hosts.
+* FIX: Improved resilience when database limits or transient DB issues occur, with safer fallback behavior.
+* Improvement: Broader CSV import compatibility with common redirect export formats.
+* Improvement: General backend and coding maintenance improvements.
 
 = Version 3.1.10 (Jan 21, 2026) =
 * Improvement: Add WPML and Polylang-aware redirect translation based on the request language.
