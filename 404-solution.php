@@ -169,6 +169,7 @@ add_action('doing_it_wrong_run', function($function_name, $message, $version) {
 add_shortcode(ABJ404_SHORTCODE_NAME, 'abj404_shortCodeListener');
 if (!function_exists('abj404_shortCodeListener')) {
 	function abj404_shortCodeListener($atts) {
+		abj404_load_textdomain_if_needed();
 	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	    return ABJ_404_Solution_ShortCode::shortcodePageSuggestions($atts);
 	}
@@ -323,6 +324,10 @@ $GLOBALS['abj404_frontend_runtime_flags'] = array(
 		array_key_exists('update_suggest_url', $__abj404_options) &&
 		(string)$__abj404_options['update_suggest_url'] === '1'),
 );
+$GLOBALS['abj404_plugin_language_override'] = (
+	is_array($__abj404_options) &&
+	!empty($__abj404_options['plugin_language_override'])
+) ? (string)$__abj404_options['plugin_language_override'] : '';
 
 add_action('template_redirect', 'abj404_404listener', $__abj404_template_redirect_priority);
 
@@ -585,41 +590,97 @@ if (!function_exists('abj404_show_diagnostic_latency_notice')) {
 	}
 }
 
+if (!function_exists('abj404_load_textdomain_if_needed')) {
+	/**
+	 * Load plugin translations once, lazily.
+	 *
+	 * @return void
+	 */
+	function abj404_load_textdomain_if_needed() {
+		static $loaded = false;
+		if ($loaded) {
+			return;
+		}
+
+		$override_locale = '';
+		if (!empty($GLOBALS['abj404_plugin_language_override'])) {
+			$override_locale = (string)$GLOBALS['abj404_plugin_language_override'];
+		} else {
+			$options = abj404_get_settings_options();
+			$override_locale = (is_array($options) && !empty($options['plugin_language_override']))
+				? $options['plugin_language_override'] : '';
+		}
+
+		if (!empty($override_locale)) {
+			$mo_file = ABJ404_PATH . 'languages/404-solution-' . $override_locale . '.mo';
+			if (file_exists($mo_file)) {
+				load_textdomain('404-solution', $mo_file);
+			}
+		} else {
+			$lang_dir = dirname(plugin_basename(ABJ404_FILE)) . '/languages';
+			load_plugin_textdomain('404-solution', false, $lang_dir);
+		}
+
+		$loaded = true;
+	}
+}
+
+if (!function_exists('abj404_maybe_refresh_runtime_integrity_cache')) {
+	/**
+	 * Refresh runtime integrity cache at most once per TTL window.
+	 *
+	 * @param int $ttlSeconds
+	 * @return void
+	 */
+	function abj404_maybe_refresh_runtime_integrity_cache($ttlSeconds = 43200) {
+		if (!is_admin()) {
+			return;
+		}
+
+		$checkedRecently = get_transient('abj404_runtime_integrity_checked');
+		if ($checkedRecently) {
+			return;
+		}
+
+		$missingRuntimeFiles = abj404_verify_runtime_integrity();
+		if (count($missingRuntimeFiles) > 0) {
+			set_transient('abj404_runtime_missing_files', $missingRuntimeFiles, $ttlSeconds);
+		} else {
+			delete_transient('abj404_runtime_missing_files');
+		}
+
+		set_transient('abj404_runtime_integrity_checked', 1, $ttlSeconds);
+	}
+}
+
 /** This only runs after WordPress is done enqueuing scripts. */
 if (!function_exists('abj404_loadSomethingWhenWordPressIsReady')) {
 function abj404_loadSomethingWhenWordPressIsReady() {
-	/** Load the text domain for translation of the plugin. */
-	$options = abj404_get_settings_options();
-	$override_locale = (is_array($options) && !empty($options['plugin_language_override']))
-		? $options['plugin_language_override'] : '';
-
-	if (!empty($override_locale)) {
-		// Directly load the specific .mo file for the override locale
-		$mo_file = ABJ404_PATH . 'languages/404-solution-' . $override_locale . '.mo';
-		if (file_exists($mo_file)) {
-			load_textdomain('404-solution', $mo_file);
-		}
-	} else {
-		// Use normal WordPress translation loading
-		$lang_dir = dirname(plugin_basename(ABJ404_FILE)) . '/languages';
-		load_plugin_textdomain('404-solution', false, $lang_dir);
+	$isAdminRequest = is_admin();
+	if ($isAdminRequest) {
+		abj404_load_textdomain_if_needed();
 	}
 
 	// make debugging easier on localhost etc	
-	$serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
-	$serverNameIsInTheWhiteList = in_array($serverName, $GLOBALS['abj404_whitelist']);
-	
-	// Keep localhost debug helper on admin screens only; frontend requests should stay lean.
-	if (is_admin() && $serverNameIsInTheWhiteList && function_exists('wp_get_current_user')) {
+	if ($isAdminRequest) {
+		$serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
+		$serverNameIsInTheWhiteList = in_array($serverName, $GLOBALS['abj404_whitelist']);
+
+		// Keep localhost debug helper on admin screens only; frontend requests stay lean.
+		if ($serverNameIsInTheWhiteList && function_exists('wp_get_current_user')) {
 	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		if ($abj404logic->userIsPluginAdmin()) {
 			$GLOBALS['abj404_display_errors'] = true;
 		}
 	}
+	}
 
-	$action = isset($_GET['action']) ? sanitize_text_field($_GET['action']) : (isset($_POST['action']) ? sanitize_text_field($_POST['action']) : null);
-	if (is_admin() && abj404_is_local_debug_host() && current_user_can('manage_options') && isset($_GET['abj404_set_sim_db_ms'])) {
+	$action = null;
+	if ($isAdminRequest) {
+		$action = isset($_GET['action']) ? sanitize_text_field($_GET['action']) : (isset($_POST['action']) ? sanitize_text_field($_POST['action']) : null);
+	}
+	if ($isAdminRequest && abj404_is_local_debug_host() && current_user_can('manage_options') && isset($_GET['abj404_set_sim_db_ms'])) {
 		$nonceOk = isset($_GET['_wpnonce']) ? wp_verify_nonce($_GET['_wpnonce'], 'abj404_set_sim_db_ms') : false;
 		if ($nonceOk) {
 			$newMs = max(0, min(5000, absint($_GET['abj404_set_sim_db_ms'])));
@@ -627,18 +688,14 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 		}
 	}
 
-	$missingRuntimeFiles = abj404_verify_runtime_integrity();
-	if (count($missingRuntimeFiles) > 0) {
-		$ttl = defined('HOUR_IN_SECONDS') ? (12 * HOUR_IN_SECONDS) : 43200;
-		set_transient('abj404_runtime_missing_files', $missingRuntimeFiles, $ttl);
-	} else {
-		delete_transient('abj404_runtime_missing_files');
-	}
-	if ($action === 'exportRedirects') {
+	$ttl = defined('HOUR_IN_SECONDS') ? (12 * HOUR_IN_SECONDS) : 43200;
+	abj404_maybe_refresh_runtime_integrity_cache($ttl);
+
+	if ($isAdminRequest && $action === 'exportRedirects') {
 	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$abj404logic->handleActionExport();
 	}
 }
 }
-add_action('init', 'abj404_loadSomethingWhenWordPressIsReady');
+add_action('admin_init', 'abj404_loadSomethingWhenWordPressIsReady');
