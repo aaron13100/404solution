@@ -38,23 +38,23 @@ msgstr "Salvataggio..."
 
 #, fuzzy
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
-msgstr "Could not save settings - missing security token. The wizard may appear again on next visit."
+msgstr "Impossibile salvare le impostazioni: token di sicurezza mancante. La procedura guidata potrebbe apparire nuovamente alla visita successiva."
 
 #, fuzzy
 msgid "Could not save dismissal. The wizard may appear again on next visit."
-msgstr "Could not save dismissal. The wizard may appear again on next visit."
+msgstr "Impossibile salvare il licenziamento. La procedura guidata potrebbe apparire nuovamente alla visita successiva."
 
 #, fuzzy
 msgid "Could not save dismissal: "
-msgstr "Could not save dismissal: "
+msgstr "Impossibile salvare il licenziamento:"
 
 #, fuzzy
 msgid " The wizard may appear again on next visit."
-msgstr " The wizard may appear again on next visit."
+msgstr "La procedura guidata potrebbe apparire nuovamente alla visita successiva."
 
 #, fuzzy
 msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
-msgstr "Network error - could not save dismissal. The wizard may appear again on next visit."
+msgstr "Errore di rete: impossibile salvare il licenziamento. La procedura guidata potrebbe apparire nuovamente alla visita successiva."
 
 msgid "Settings"
 msgstr "Impostazioni"
@@ -250,7 +250,7 @@ msgid "Documentation"
 msgstr "Documentazione"
 
 msgid "Plugin v%s"
-msgstr "Plugin v%s"
+msgstr "Plug-in v%s"
 
 msgid "Settings saved successfully!"
 msgstr "Impostazioni salvate con successo!"
@@ -307,7 +307,7 @@ msgid "At the same level as the Settings and Tools menu"
 msgstr "Allo stesso livello del menu Impostazioni e Strumenti"
 
 msgid "Auto"
-msgstr "Auto"
+msgstr "Auto *"
 
 msgid "Delete automatic redirects after"
 msgstr "Elimina redirect automatici dopo"
@@ -413,7 +413,7 @@ msgid "Custom Taxonomies"
 msgstr "Tassonomie personalizzate"
 
 msgid "DATABASE_VERSION"
-msgstr "DATABASE_VERSION"
+msgstr "DATABASE_VERSIONE"
 
 msgid "DB version"
 msgstr "Versione DB"
@@ -443,7 +443,7 @@ msgid "Debug logging"
 msgstr "Registrazione debug"
 
 msgid "Default"
-msgstr "Default"
+msgstr "Predefinito"
 
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "I tipi di post predefiniti di WordPress sono \"post\" e \"page.\""
@@ -720,22 +720,22 @@ msgid "Issue deleting debug file. (%s)"
 msgstr "Problema nell'eliminazione del file di debug. (%s)"
 
 msgid "JAPANESE_FLASHCARDS_URL"
-msgstr "JAPANESE_FLASHCARDS_URL"
+msgstr "GIAPPONESE_FLASHCARDS_URL"
 
 msgid "Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit."
 msgstr "Mantiene i record di log più recenti (ed elimina i più vecchi) quando l'utilizzo del disco raggiunge questo limite."
 
 msgid "LINK_FIRST_PAGE"
-msgstr "LINK_FIRST_PAGE"
+msgstr "LINK_FIRST_PAGE *"
 
 msgid "LINK_LAST_PAGE"
-msgstr "LINK_LAST_PAGE"
+msgstr "LINK_LAST_PAGE *"
 
 msgid "LINK_NEXT_PAGE"
-msgstr "LINK_NEXT_PAGE"
+msgstr "LINK_NEXT_PAGE *"
 
 msgid "LINK_PREVIOUS_PAGE"
-msgstr "LINK_PREVIOUS_PAGE"
+msgstr "LINK_PREVIOUS_PAGE *"
 
 msgid "Last Used"
 msgstr "Ultimo utilizzo"
@@ -756,7 +756,7 @@ msgid "Logs"
 msgstr "Log"
 
 msgid "MB"
-msgstr "MB"
+msgstr "MB *"
 
 msgid "Maintenance"
 msgstr "Manutenzione"
@@ -765,7 +765,7 @@ msgid "Major version auto update delay"
 msgstr "Ritardo aggiornamento automatico versione principale"
 
 msgid "Man"
-msgstr "Man"
+msgstr "Uomo"
 
 msgid "Manual 301 Redirects"
 msgstr "Redirect 301 manuali"
@@ -834,10 +834,10 @@ msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the
 msgstr "Nota: i \"punteggi\" che appaiono nel formato \"(75.7576)\" dopo i link delle pagine vengono mostrati solo per gli utenti amministratori."
 
 msgid "OPTION_MIN_AUTO_SCORE"
-msgstr "OPTION_MIN_AUTO_SCORE"
+msgstr "OPZIONE_MIN_AUTO_SCORE"
 
 msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
-msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
+msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY *"
 
 msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
 msgstr "Verrà inviata un'email al giorno (quando viene eseguita la manutenzione) fino a quando il numero di 404 acquisiti scende al di sotto del numero specificato nelle impostazioni di avviso."
@@ -888,7 +888,7 @@ msgid "Purge Type"
 msgstr "Tipo di eliminazione"
 
 msgid "REDIRECT_TO_USER_FIELD_WARNING"
-msgstr "REDIRECT_TO_USER_FIELD_WARNING"
+msgstr "REDIRECT_TO_USER_FIELD_WARNING *"
 
 msgid "Recognized Post Types"
 msgstr "Tipi di post riconosciuti"
@@ -897,7 +897,7 @@ msgid "Records imported: %s"
 msgstr "Record importati: %s"
 
 msgid "Redirect"
-msgstr "Redirect"
+msgstr "Reindirizzamento"
 
 msgid "Redirect & Capture Logs"
 msgstr "Log di redirect e acquisizione"
@@ -939,10 +939,10 @@ msgid "Redirects"
 msgstr "Redirect"
 
 msgid "Referrer"
-msgstr "Referrer"
+msgstr "Referente"
 
 msgid "RegEx"
-msgstr "RegEx"
+msgstr "RegEx *"
 
 msgid "Regular Expression (Manually Created)"
 msgstr "Espressione regolare (creata manualmente)"
@@ -978,37 +978,37 @@ msgid "Run maintenance to delete old data (etc).&nbsp;&nbsp;It is not necessary 
 msgstr "Esegui la manutenzione per eliminare i dati vecchi (ecc.).&nbsp;&nbsp;Non è necessario eseguirla manualmente, poiché viene eseguita automaticamente su base giornaliera."
 
 msgid "SELECTED_SUGGEST_CATS"
-msgstr "SELECTED_SUGGEST_CATS"
+msgstr "SELECTED_SUGGEST_CATS *"
 
 msgid "SELECTED_SUGGEST_TAGS"
-msgstr "SELECTED_SUGGEST_TAGS"
+msgstr "SELECTED_SUGGEST_TAGS *"
 
 msgid "SELECTED_SUGGEST_URL"
-msgstr "SELECTED_SUGGEST_URL"
+msgstr "SELECTED_SUGGEST_URL *"
 
 msgid "SUGGEST_MAX_SUGGESTIONS"
-msgstr "SUGGEST_MAX_SUGGESTIONS"
+msgstr "SUGGEST_MAX_SUGGESTIONS *"
 
 msgid "SUGGEST_MIN_SCORE"
-msgstr "SUGGEST_MIN_SCORE"
+msgstr "SUGGEST_MIN_SCORE *"
 
 msgid "SUGGEST_USER_AFTER"
-msgstr "SUGGEST_USER_AFTER"
+msgstr "SUGGEST_USER_AFTER *"
 
 msgid "SUGGEST_USER_BEFORE"
-msgstr "SUGGEST_USER_BEFORE"
+msgstr "SUGGEST_USER_BEFORE *"
 
 msgid "SUGGEST_USER_ENTRY_AFTER"
-msgstr "SUGGEST_USER_ENTRY_AFTER"
+msgstr "SUGGEST_USER_ENTRY_AFTER *"
 
 msgid "SUGGEST_USER_ENTRY_BEFORE"
-msgstr "SUGGEST_USER_ENTRY_BEFORE"
+msgstr "SUGGEST_USER_ENTRY_BEFORE *"
 
 msgid "SUGGEST_USER_NO_RESULTS"
-msgstr "SUGGEST_USER_NO_RESULTS"
+msgstr "SUGGEST_USER_NO_RESULTS *"
 
 msgid "SUGGEST_USER_TITLE"
-msgstr "SUGGEST_USER_TITLE"
+msgstr "SUGGEST_USER_TITLE *"
 
 msgid "Sanity Check"
 msgstr "Controllo di integrità"
@@ -1052,34 +1052,34 @@ msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "I formati supportati sono: <B>from_url,status,type,to_url,wp_type</B>"
 
 msgid "TEXT_BEFORE_LINKS"
-msgstr "TEXT_BEFORE_LINKS"
+msgstr "TEXT_BEFORE_LINKS *"
 
 msgid "TEXT_CURRENT_PAGE"
-msgstr "TEXT_CURRENT_PAGE"
+msgstr "TEXT_CURRENT_PAGE *"
 
 msgid "TEXT_SHOW_ROWS"
-msgstr "TEXT_SHOW_ROWS"
+msgstr "TEXT_MOSTRA_ROWS"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
-msgstr "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
+msgstr "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING *"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_EMPTY"
-msgstr "TOOLTIP_POPUP_EXPLANATION_EMPTY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMPTY *"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_EMTPY"
-msgstr "TOOLTIP_POPUP_EXPLANATION_EMTPY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMTPY *"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_PAGE"
-msgstr "TOOLTIP_POPUP_EXPLANATION_PAGE"
+msgstr "TOOLTIP_POPUP_EXPLANATION_PAGE *"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_URL"
-msgstr "TOOLTIP_POPUP_EXPLANATION_URL"
+msgstr "TOOLTIP_POPUP_EXPLANATION_URL *"
 
 msgid "Tag"
-msgstr "Tag"
+msgstr "Etichetta"
 
 msgid "Tag:"
-msgstr "Tag:"
+msgstr "Etichetta:"
 
 msgid "Tags"
 msgstr "Tag"
@@ -1187,7 +1187,7 @@ msgid "Type a page name here and select it to add it to the exlusion list"
 msgstr "Digita qui il nome di una pagina e selezionala per aggiungerla all'elenco di esclusione"
 
 msgid "URL"
-msgstr "URL"
+msgstr "URL *"
 
 msgid "URL(s) deleted"
 msgstr "URL eliminato/i"
@@ -1283,13 +1283,13 @@ msgid "You can see which post types are recognized by looking at the default 404
 msgstr "Puoi vedere quali tipi di post vengono riconosciuti guardando l'opzione di destinazione 404 predefinita, che ha un elenco di pagine, post, prodotti, ecc."
 
 msgid "add-exclude-page-data-url"
-msgstr "add-exclude-page-data-url"
+msgstr "aggiungi-escludi-URL-dati-della-pagina"
 
 msgid "addManualRedirectAction"
-msgstr "addManualRedirectAction"
+msgstr "addManualRedirectAction *"
 
 msgid "ajaxTrashLink"
-msgstr "ajaxTrashLink"
+msgstr "ajaxTrashLink *"
 
 msgid "and <B>from_url,to_url</B>"
 msgstr "e <B>from_url,to_url</B>"
@@ -1298,154 +1298,154 @@ msgid "and redirect to the specified page."
 msgstr "e reindirizza alla pagina specificata."
 
 msgid "bulkOptions"
-msgstr "bulkOptions"
+msgstr "bulkOptions *"
 
 msgid "data-pagination-ajax-url"
-msgstr "data-pagination-ajax-url"
+msgstr "data-pagination-ajax-url *"
 
 msgid "data-pagination-ajax-action"
-msgstr "data-pagination-ajax-action"
+msgstr "data-impaginazione-ajax-azione"
 
 msgid "data-pagination-ajax-subpage"
-msgstr "data-pagination-ajax-subpage"
+msgstr "data-pagination-ajax-sottopagina"
 
 msgid "data-pagination-ajax-nonce"
-msgstr "data-pagination-ajax-nonce"
+msgstr "data-pagination-ajax-nonce *"
 
 msgid "data-url"
-msgstr "data-url"
+msgstr "URL-dati"
 
 msgid "days (0 means immediately, default 30)"
 msgstr "giorni (0 significa immediatamente, predefinito 30)"
 
 msgid "deletePermanentlyHTML"
-msgstr "deletePermanentlyHTML"
+msgstr "deletePermanentlyHTML *"
 
 msgid "destination-does-not-exist"
-msgstr "destination-does-not-exist"
+msgstr "la destinazione-non-esiste"
 
 msgid "destination-exists"
-msgstr "destination-exists"
+msgstr "la destinazione-esiste"
 
 msgid "disallow-redirect-all-requests"
-msgstr "disallow-redirect-all-requests"
+msgstr "non consentire il reindirizzamento di tutte le richieste"
 
 msgid "earliestLogDate"
-msgstr "earliestLogDate"
+msgstr "primoLogDate"
 
 msgid "editLink"
-msgstr "editLink"
+msgstr "modificaLink"
 
 msgid "editlinkHTML"
-msgstr "editlinkHTML"
+msgstr "modificalinkHTML"
 
 msgid "filterText"
-msgstr "filterText"
+msgstr "filterText *"
 
 msgid "is maintained by"
 msgstr "è mantenuto da"
 
 msgid "loaded-excluded-pages"
-msgstr "loaded-excluded-pages"
+msgstr "pagine-escluse-caricate"
 
 msgid "logCurrentRowCount"
-msgstr "logCurrentRowCount"
+msgstr "logCurrentRowCount *"
 
 msgid "logCurrentSizeDiskUsage"
-msgstr "logCurrentSizeDiskUsage"
+msgstr "logCurrentSizeDiskUsage *"
 
 msgid "logslinkHTML"
-msgstr "logslinkHTML"
+msgstr "logslinkHTML *"
 
 msgid "of"
 msgstr "di"
 
 msgid "pageIDAndType"
-msgstr "pageIDAndType"
+msgstr "pageIDAndType *"
 
 msgid "postedURL"
-msgstr "postedURL"
+msgstr "URL pubblicato"
 
 msgid "redirectPageTitle"
-msgstr "redirectPageTitle"
+msgstr "reindirizzarePageTitle"
 
 msgid "rowActions"
-msgstr "rowActions"
+msgstr "rigaAzioni"
 
 msgid "rowClass"
-msgstr "rowClass"
+msgstr "rowClass *"
 
 msgid "rowCode"
-msgstr "rowCode"
+msgstr "rowCode *"
 
 msgid "rowURL"
-msgstr "rowURL"
+msgstr "rigaURL"
 
 msgid "selecteSsettingsLevel"
-msgstr "selecteSsettingsLevel"
+msgstr "selezionareLivelloImpostazioni"
 
 msgid "selectedAutoCats"
-msgstr "selectedAutoCats"
+msgstr "selezionatoAutoCats"
 
 msgid "selectedAutoRedirects"
-msgstr "selectedAutoRedirects"
+msgstr "reindirizzamenti automatici selezionati"
 
 msgid "selectedAutoTags"
-msgstr "selectedAutoTags"
+msgstr "tag automatici selezionati"
 
 msgid "selectedCapture404"
-msgstr "selectedCapture404"
+msgstr "selezionatoCapture404"
 
 msgid "selectedDefaultRedirect301"
-msgstr "selectedDefaultRedirect301"
+msgstr "selezionatoDefaultRedirect301"
 
 msgid "selectedDefaultRedirect302"
-msgstr "selectedDefaultRedirect302"
+msgstr "selezionatoDefaultRedirect302"
 
 msgid "selectedRemoveMatches"
-msgstr "selectedRemoveMatches"
+msgstr "selezionatoRimuovicorrispondenze"
 
 msgid "selectedSendErrorLogs"
-msgstr "selectedSendErrorLogs"
+msgstr "selezionatoSendErrorLogs"
 
 msgid "selectedThemeCalm"
-msgstr "selectedThemeCalm"
+msgstr "selezionatoTemaCalma"
 
 msgid "selectedThemeMono"
-msgstr "selectedThemeMono"
+msgstr "selezionatoTemaMono"
 
 msgid "selectedThemeNeon"
-msgstr "selectedThemeNeon"
+msgstr "selezionatoTemaNeon"
 
 msgid "selectedThemeObsidian"
-msgstr "selectedThemeObsidian"
+msgstr "tema selezionatoOssidiana"
 
 msgid "selectedUnderSettings"
-msgstr "selectedUnderSettings"
+msgstr "selezionato in Impostazioni"
 
 msgid "showSearchFilter"
-msgstr "showSearchFilter"
+msgstr "mostraFiltroRicerca"
 
 msgid "statusTitle"
-msgstr "statusTitle"
+msgstr "statoTitolo"
 
 msgid "toolsExportRedirectsLink"
-msgstr "toolsExportRedirectsLink"
+msgstr "toolsExportRedirectsLink *"
 
 msgid "toolsImportFormActionLink"
-msgstr "toolsImportFormActionLink"
+msgstr "strumentiImportFormActionLink"
 
 msgid "toolsImportRedirectsLink"
-msgstr "toolsImportRedirectsLink"
+msgstr "strumentiImportRedirectLink"
 
 msgid "toolsMaintenanceFormActionLink"
-msgstr "toolsMaintenanceFormActionLink"
+msgstr "strumentiMaintenanceFormActionLink"
 
 msgid "toolsPurgeFormActionLink"
-msgstr "toolsPurgeFormActionLink"
+msgstr "toolsPurgeFormActionLink *"
 
 msgid "urlPlaceholder"
-msgstr "urlPlaceholder"
+msgstr "urlSegnaposto"
 
 msgid "will match any URL that begins with"
 msgstr "corrisponderà a qualsiasi URL che inizia con"
@@ -1893,208 +1893,208 @@ msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
 msgstr "Hai bisogno di più controllo? Passa alla modalità avanzata per oltre 30 opzioni aggiuntive."
 
 msgid "Need more control?"
-msgstr "Need more control?"
+msgstr "Hai bisogno di più controllo?"
 
 msgid "Switch to Advanced Mode"
-msgstr "Switch to Advanced Mode"
+msgstr "Passa alla modalità avanzata"
 
 msgid "for 30+ additional options."
-msgstr "for 30+ additional options."
+msgstr "per oltre 30 opzioni aggiuntive."
 
 msgid "Statistics"
-msgstr "Statistics"
+msgstr "Statistiche"
 
 msgid "Example:"
-msgstr "Example:"
+msgstr "Esempio:"
 
 msgid "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
-msgstr "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "/events/(.+) corrisponderà a qualsiasi URL che inizia con /events/ e reindirizzerà alla pagina specificata. Poiché viene utilizzato un gruppo di acquisizione, puoi utilizzare una sostituzione $1 nella stringa di destinazione di un URL esterno."
 
 msgid "URLs to redirect"
-msgstr "URLs to redirect"
+msgstr "URL da reindirizzare"
 
 msgid "Captured"
-msgstr "Captured"
+msgstr "Catturato"
 
 msgid "Ignored"
-msgstr "Ignored"
+msgstr "Ignorato"
 
 msgid "Later"
-msgstr "Later"
+msgstr "Dopo"
 
 msgid "Type to filter URLs... (press Enter)"
-msgstr "Type to filter URLs... (press Enter)"
+msgstr "Digita per filtrare gli URL... (premi Invio)"
 
 msgid "Are you sure you want to permanently delete all items in trash?"
-msgstr "Are you sure you want to permanently delete all items in trash?"
+msgstr "Sei sicuro di voler eliminare definitivamente tutti gli elementi nel cestino?"
 
 msgid "selected"
-msgstr "selected"
+msgstr "selezionato"
 
 msgid "Mark Captured"
-msgstr "Mark Captured"
+msgstr "Marco catturato"
 
 msgid "Mark Ignored"
-msgstr "Mark Ignored"
+msgstr "Marco ignorato"
 
 msgid "Move to Trash"
-msgstr "Move to Trash"
+msgstr "Sposta nel cestino"
 
 msgid "Create Redirect"
-msgstr "Create Redirect"
+msgstr "Crea reindirizzamento"
 
 msgid "Clear"
-msgstr "Clear"
+msgstr "Chiaro"
 
 msgid "Never"
-msgstr "Never"
+msgstr "Mai"
 
 msgid "Captured 404 URL"
-msgstr "Captured 404 URL"
+msgstr "URL 404 catturato"
 
 msgid "Ignored URL - will not be suggested"
-msgstr "Ignored URL - will not be suggested"
+msgstr "URL ignorato: non verrà suggerito"
 
 msgid "Edit"
-msgstr "Edit"
+msgstr "Modificare"
 
 msgid "View Logs"
-msgstr "View Logs"
+msgstr "Visualizza registri"
 
 msgid "Delete Permanently"
-msgstr "Delete Permanently"
+msgstr "Elimina definitivamente"
 
 msgid "Are you sure you want to permanently delete this item?"
-msgstr "Are you sure you want to permanently delete this item?"
+msgstr "Sei sicuro di voler eliminare definitivamente questo elemento?"
 
 msgid "Delete"
-msgstr "Delete"
+msgstr "Eliminare"
 
 msgid "Ignore"
-msgstr "Ignore"
+msgstr "Ignorare"
 
 msgid "Manual"
-msgstr "Manual"
+msgstr "Manuale"
 
 msgid "Automatic"
-msgstr "Automatic"
+msgstr "Automatico"
 
 msgid "Type to filter redirects... (press Enter)"
-msgstr "Type to filter redirects... (press Enter)"
+msgstr "Digita per filtrare i reindirizzamenti... (premi Invio)"
 
 msgid "redirects selected"
-msgstr "redirects selected"
+msgstr "reindirizzamenti selezionati"
 
 msgid "Bulk Actions"
-msgstr "Bulk Actions"
+msgstr "Azioni collettive"
 
 msgid "Edit Redirects"
-msgstr "Edit Redirects"
+msgstr "Modifica reindirizzamenti"
 
 msgid "Restore Redirects"
-msgstr "Restore Redirects"
+msgstr "Ripristina reindirizzamenti"
 
 msgid "Clear Selection"
-msgstr "Clear Selection"
+msgstr "Cancella selezione"
 
 msgid "Are you sure you want to permanently delete all items in the trash?"
-msgstr "Are you sure you want to permanently delete all items in the trash?"
+msgstr "Sei sicuro di voler eliminare definitivamente tutti gli elementi nel cestino?"
 
 msgid "Add Manual Redirect"
-msgstr "Add Manual Redirect"
+msgstr "Aggiungi reindirizzamento manuale"
 
 msgid "The URL path that should be redirected (without domain)"
-msgstr "The URL path that should be redirected (without domain)"
+msgstr "Il percorso dell'URL che dovrebbe essere reindirizzato (senza dominio)"
 
 msgid "Permanent Redirect (Recommended for SEO)"
-msgstr "Permanent Redirect (Recommended for SEO)"
+msgstr "Reindirizzamento permanente (consigliato per SEO)"
 
 msgid "Temporary Redirect"
-msgstr "Temporary Redirect"
+msgstr "Reindirizzamento temporaneo"
 
 msgid "logs"
-msgstr "logs"
+msgstr "registri"
 
 msgid "redirects"
-msgstr "redirects"
+msgstr "reindirizzamenti"
 
 msgid "Showing %1$d-%2$d of %3$d %4$s"
-msgstr "Showing %1$d-%2$d of %3$d %4$s"
+msgstr "Visualizzazione di %1$d-%2$d di %3$d %4$s"
 
 msgid "Redirects will appear here once created."
-msgstr "Redirects will appear here once created."
+msgstr "I reindirizzamenti verranno visualizzati qui una volta creati."
 
 msgid "Redirect Logs"
-msgstr "Redirect Logs"
+msgstr "Reindirizzare i log"
 
 msgid "Action"
-msgstr "Action"
+msgstr "Azione"
 
 msgid "404"
 msgstr "404"
 
 msgid "Today's Stats"
-msgstr "Today's Stats"
+msgstr "Le statistiche di oggi"
 
 msgid "This Month"
-msgstr "This Month"
+msgstr "Questo mese"
 
 msgid "This Year"
-msgstr "This Year"
+msgstr "Quest'anno"
 
 msgid "All Stats"
-msgstr "All Stats"
+msgstr "Tutte le statistiche"
 
 msgid "Visit URL"
-msgstr "Visit URL"
+msgstr "Visita l'URL"
 
 msgid "This page doesn't exist or is not published so the redirect won't work."
-msgstr "This page doesn't exist or is not published so the redirect won't work."
+msgstr "Questa pagina non esiste o non è pubblicata, quindi il reindirizzamento non funzionerà."
 
 
 #: includes/DataAccess.php
 msgid "Just now"
-msgstr "Just now"
+msgstr "Proprio adesso"
 
 #: includes/View.php
 msgid "Data may not be immediately updated. Refresh to see latest changes."
-msgstr "Data may not be immediately updated. Refresh to see latest changes."
+msgstr "I dati potrebbero non essere aggiornati immediatamente. Aggiorna per vedere le ultime modifiche."
 
 #: includes/View.php
 msgid "Last updated: %s"
-msgstr "Last updated: %s"
+msgstr "Ultimo aggiornamento: %s"
 
 #: includes/WordPress_Connector.php
 msgid "second"
-msgstr "second"
+msgstr "secondo"
 
 #: includes/WordPress_Connector.php
 msgid "seconds"
-msgstr "seconds"
+msgstr "secondi"
 
 #: includes/WordPress_Connector.php
 msgid "minute"
-msgstr "minute"
+msgstr "minuto"
 
 #: includes/WordPress_Connector.php
 msgid "minutes"
-msgstr "minutes"
+msgstr "minuti"
 
 #: includes/WordPress_Connector.php
 msgid "hour"
-msgstr "hour"
+msgstr "ora"
 
 #: includes/WordPress_Connector.php
 msgid "hours"
-msgstr "hours"
+msgstr "ore"
 
 #: includes/WordPress_Connector.php
 msgid "day"
-msgstr "day"
+msgstr "giorno"
 
 #: includes/WordPress_Connector.php
 msgid "ago"
-msgstr "ago"
+msgstr "fa"
 
 #: includes/SetupWizard.php
 msgid "Security check failed. Please try again."
@@ -2174,15 +2174,15 @@ msgstr "Salva e inizia"
 
 #: includes/html/tableRowPageRedirects.html
 msgid "url-is-normal"
-msgstr "url-is-normal"
+msgstr "l'URL è normale"
 
 #: includes/html/tableRowPageRedirects.html
 msgid "url-looks-like-regex"
-msgstr "url-looks-like-regex"
+msgstr "l'URL-sembra-regex"
 
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
-msgstr "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+msgstr "Questo URL sembra un'espressione regolare ma non è contrassegnato come tale. Modifica il reindirizzamento e seleziona \"Considera questo URL come un'espressione regolare\"."
 
 msgid "Create redirect from old URL to new URL"
 msgstr "Crea reindirizzamento dal vecchio URL al nuovo URL"
@@ -2251,132 +2251,132 @@ msgstr "Nonce non valido. Ricarica la pagina."
 
 #: includes/View.php
 msgid "Diagnostics"
-msgstr "[TODO] Diagnostics"
+msgstr "Diagnostica"
 
 #: includes/View.php
 msgid "Quick environment checks for troubleshooting and support."
-msgstr "[TODO] Quick environment checks for troubleshooting and support."
+msgstr "Controlli rapidi dell'ambiente per la risoluzione dei problemi e il supporto."
 
 #: includes/View.php
 msgid "OK"
-msgstr "[TODO] OK"
+msgstr "OK *"
 
 #: includes/View.php
 msgid "Warning"
-msgstr "[TODO] Warning"
+msgstr "Avvertimento"
 
 #: includes/View.php
 msgid "Info"
-msgstr "[TODO] Info"
+msgstr "Informazioni"
 
 #: includes/View.php
 msgid "Plugin Version"
-msgstr "[TODO] Plugin Version"
+msgstr "Versione plug-in"
 
 #: includes/View.php
 msgid "WordPress Version"
-msgstr "[TODO] WordPress Version"
+msgstr "Versione WordPress"
 
 #: includes/View.php
 msgid "PHP Version"
-msgstr "[TODO] PHP Version"
+msgstr "Versione PHP"
 
 #: includes/View.php
 msgid "Uploads Directory"
-msgstr "[TODO] Uploads Directory"
+msgstr "Directory dei caricamenti"
 
 #: includes/View.php
 msgid "Not available"
-msgstr "[TODO] Not available"
+msgstr "Non disponibile"
 
 #: includes/View.php
 msgid "Uploads Writable"
-msgstr "[TODO] Uploads Writable"
+msgstr "Caricamenti scrivibili"
 
 #: includes/View.php
 msgid "Yes"
-msgstr "[TODO] Yes"
+msgstr "SÌ"
 
 #: includes/View.php
 msgid "No"
-msgstr "[TODO] No"
+msgstr "NO"
 
 #: includes/View.php
 msgid "mbstring Extension"
-msgstr "[TODO] mbstring Extension"
+msgstr "mbstring Estensione"
 
 #: includes/View.php
 msgid "Loaded"
-msgstr "[TODO] Loaded"
+msgstr "Caricato"
 
 #: includes/View.php
 msgid "Missing"
-msgstr "[TODO] Missing"
+msgstr "Mancante"
 
 #: includes/View.php
 msgid "ZipArchive Support"
-msgstr "[TODO] ZipArchive Support"
+msgstr "ZipArchive Supporto"
 
 #: includes/View.php
 msgid "Available"
-msgstr "[TODO] Available"
+msgstr "Disponibile"
 
 #: includes/View.php
 msgid "WP_DEBUG"
-msgstr "[TODO] WP_DEBUG"
+msgstr "WP_DEBUG *"
 
 #: includes/View.php
 msgid "Enabled"
-msgstr "[TODO] Enabled"
+msgstr "Abilitato"
 
 #: includes/View.php
 msgid "Disabled"
-msgstr "[TODO] Disabled"
+msgstr "Disabilitato"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-auto-refresh"
-msgstr "[TODO] data-pagination-auto-refresh"
+msgstr "__DATI_AUTO__"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-refresh-started-text"
-msgstr "[TODO] data-pagination-refresh-started-text"
+msgstr "__DATI_START__"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-refresh-finished-text"
-msgstr "[TODO] data-pagination-refresh-finished-text"
+msgstr "__CHIAVE_FINITA__"
 
 #: includes/View.php
 msgid "250ms"
-msgstr "[TODO] 250ms"
+msgstr "250 ms"
 
 #: includes/View.php
 msgid "500ms"
-msgstr "[TODO] 500ms"
+msgstr "500 ms"
 
 #: includes/View.php
 msgid "900ms"
-msgstr "[TODO] 900ms"
+msgstr "900 ms"
 
 #: includes/View.php
 msgid "Disable"
-msgstr "[TODO] Disable"
+msgstr "Disabilita"
 
 #: includes/View.php
 msgid "Simulated DB Latency"
-msgstr "[TODO] Simulated DB Latency"
+msgstr "Latenza DB simulata"
 
 #: includes/View.php
 msgid "ON (%d ms per plugin query)"
-msgstr "[TODO] ON (%d ms per plugin query)"
+msgstr "ON (%d ms per query plugin)"
 
 #: includes/View.php
 msgid "OFF"
-msgstr "[TODO] OFF"
+msgstr "SPENTO"
 
 #: includes/View.php
 msgid "Refreshing data in background…"
-msgstr "[TODO] Refreshing data in background…"
+msgstr "Aggiornamento dei dati in background…"
 
 #: includes/View.php
 msgid "Data refreshed"
-msgstr "[TODO] Data refreshed"
+msgstr "Dati aggiornati"

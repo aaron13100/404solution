@@ -39,23 +39,23 @@ msgstr "保存中..."
 
 #, fuzzy
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
-msgstr "Could not save settings - missing security token. The wizard may appear again on next visit."
+msgstr "設定を保存できませんでした-セキュリティトークンがありません。ウィザードは次回の訪問時に再び表示される可能性があります。"
 
 #, fuzzy
 msgid "Could not save dismissal. The wizard may appear again on next visit."
-msgstr "Could not save dismissal. The wizard may appear again on next visit."
+msgstr "却下を保存できませんでした。ウィザードは次回の訪問時に再び表示される可能性があります。"
 
 #, fuzzy
 msgid "Could not save dismissal: "
-msgstr "Could not save dismissal: "
+msgstr "却下を保存できませんでした："
 
 #, fuzzy
 msgid " The wizard may appear again on next visit."
-msgstr " The wizard may appear again on next visit."
+msgstr "ウィザードは次回の訪問時に再び表示される可能性があります。"
 
 #, fuzzy
 msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
-msgstr "Network error - could not save dismissal. The wizard may appear again on next visit."
+msgstr "ネットワークエラー-却下を保存できませんでした。ウィザードは次回の訪問時に再び表示される可能性があります。"
 
 msgid "Settings"
 msgstr "設定"
@@ -414,7 +414,7 @@ msgid "Custom Taxonomies"
 msgstr "カスタムタクソノミー"
 
 msgid "DATABASE_VERSION"
-msgstr "DATABASE_VERSION"
+msgstr "データベースバージョン"
 
 msgid "DB version"
 msgstr "DBバージョン"
@@ -444,7 +444,7 @@ msgid "Debug logging"
 msgstr "デバッグログの記録"
 
 msgid "Default"
-msgstr "Default"
+msgstr "デフォルト"
 
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "デフォルトのWordPress投稿タイプは「post」と「page」です。"
@@ -1331,7 +1331,7 @@ msgid "destination-does-not-exist"
 msgstr "destination-does-not-exist"
 
 msgid "destination-exists"
-msgstr "destination-exists"
+msgstr "行き先のファイルは存在します"
 
 msgid "disallow-redirect-all-requests"
 msgstr "disallow-redirect-all-requests"
@@ -2257,7 +2257,7 @@ msgstr "無効なnonceです。ページを再読み込みしてください。"
 
 #: includes/View.php
 msgid "Diagnostics"
-msgstr "[TODO] Diagnostics"
+msgstr "診断"
 
 #: includes/View.php
 msgid "Quick environment checks for troubleshooting and support."
@@ -2265,15 +2265,15 @@ msgstr "トラブルシューティングとサポートのための環境をす
 
 #: includes/View.php
 msgid "OK"
-msgstr "[TODO] OK"
+msgstr "わかりました"
 
 #: includes/View.php
 msgid "Warning"
-msgstr "[TODO] Warning"
+msgstr "警告"
 
 #: includes/View.php
 msgid "Info"
-msgstr "[TODO] Info"
+msgstr "情報"
 
 #: includes/View.php
 msgid "Plugin Version"
@@ -2285,7 +2285,7 @@ msgstr "ワードプレスのバージョン"
 
 #: includes/View.php
 msgid "PHP Version"
-msgstr "[TODO] PHP Version"
+msgstr "PHPのバージョン"
 
 #: includes/View.php
 msgid "Uploads Directory"
@@ -2293,7 +2293,7 @@ msgstr "アップロードディレクトリ"
 
 #: includes/View.php
 msgid "Not available"
-msgstr "[TODO] Not available"
+msgstr "利用不可"
 
 #: includes/View.php
 msgid "Uploads Writable"
@@ -2301,11 +2301,11 @@ msgstr "アップロード先が書き込み可能"
 
 #: includes/View.php
 msgid "Yes"
-msgstr "[TODO] Yes"
+msgstr "はい"
 
 #: includes/View.php
 msgid "No"
-msgstr "[TODO] No"
+msgstr "いいえ"
 
 #: includes/View.php
 msgid "mbstring Extension"
@@ -2313,11 +2313,11 @@ msgstr "多バイト文字列拡張"
 
 #: includes/View.php
 msgid "Loaded"
-msgstr "[TODO] Loaded"
+msgstr "ロード済み"
 
 #: includes/View.php
 msgid "Missing"
-msgstr "[TODO] Missing"
+msgstr "ない"
 
 #: includes/View.php
 msgid "ZipArchive Support"
@@ -2325,19 +2325,19 @@ msgstr "圧縮アーカイブサポート"
 
 #: includes/View.php
 msgid "Available"
-msgstr "[TODO] Available"
+msgstr "利用可能"
 
 #: includes/View.php
 msgid "WP_DEBUG"
-msgstr "[TODO] WP_DEBUG"
+msgstr "WP_DEBUG"
 
 #: includes/View.php
 msgid "Enabled"
-msgstr "[TODO] Enabled"
+msgstr "有効"
 
 #: includes/View.php
 msgid "Disabled"
-msgstr "[TODO] Disabled"
+msgstr "無効"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-auto-refresh"
@@ -2353,19 +2353,19 @@ msgstr "データを更新しました"
 
 #: includes/View.php
 msgid "250ms"
-msgstr "[TODO] 250ms"
+msgstr "250ミリ秒"
 
 #: includes/View.php
 msgid "500ms"
-msgstr "[TODO] 500ms"
+msgstr "500ミリ秒"
 
 #: includes/View.php
 msgid "900ms"
-msgstr "[TODO] 900ms"
+msgstr "900ミリ秒"
 
 #: includes/View.php
 msgid "Disable"
-msgstr "[TODO] Disable"
+msgstr "無効にする"
 
 #: includes/View.php
 msgid "Simulated DB Latency"
@@ -2377,7 +2377,7 @@ msgstr "オン（プラグインクエリごとに %d ms）"
 
 #: includes/View.php
 msgid "OFF"
-msgstr "[TODO] OFF"
+msgstr "オフ"
 
 #: includes/View.php
 msgid "Refreshing data in background…"

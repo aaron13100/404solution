@@ -2252,7 +2252,7 @@ msgstr "رمز nonce غير صالح. يرجى إعادة تحميل الصفح�
 
 #: includes/View.php
 msgid "Diagnostics"
-msgstr "[TODO] Diagnostics"
+msgstr "التشخيص"
 
 #: includes/View.php
 msgid "Quick environment checks for troubleshooting and support."
@@ -2260,15 +2260,15 @@ msgstr "فحوصات سريعة للبيئة لأغراض استكشاف الأ�
 
 #: includes/View.php
 msgid "OK"
-msgstr "[TODO] OK"
+msgstr "حسنًا"
 
 #: includes/View.php
 msgid "Warning"
-msgstr "[TODO] Warning"
+msgstr "تحذير"
 
 #: includes/View.php
 msgid "Info"
-msgstr "[TODO] Info"
+msgstr "معلومات"
 
 #: includes/View.php
 msgid "Plugin Version"
@@ -2280,7 +2280,7 @@ msgstr "إصدار ووردبريس"
 
 #: includes/View.php
 msgid "PHP Version"
-msgstr "[TODO] PHP Version"
+msgstr "إصدار PHP"
 
 #: includes/View.php
 msgid "Uploads Directory"
@@ -2288,7 +2288,7 @@ msgstr "مجلد الرفع"
 
 #: includes/View.php
 msgid "Not available"
-msgstr "[TODO] Not available"
+msgstr "غير متاح"
 
 #: includes/View.php
 msgid "Uploads Writable"
@@ -2296,11 +2296,11 @@ msgstr "مجلد الرفع قابل للكتابة"
 
 #: includes/View.php
 msgid "Yes"
-msgstr "[TODO] Yes"
+msgstr "نعم"
 
 #: includes/View.php
 msgid "No"
-msgstr "[TODO] No"
+msgstr "لا"
 
 #: includes/View.php
 msgid "mbstring Extension"
@@ -2308,11 +2308,11 @@ msgstr "إضافة السلاسل متعددة البايت"
 
 #: includes/View.php
 msgid "Loaded"
-msgstr "[TODO] Loaded"
+msgstr "محمّل"
 
 #: includes/View.php
 msgid "Missing"
-msgstr "[TODO] Missing"
+msgstr "مفقود"
 
 #: includes/View.php
 msgid "ZipArchive Support"
@@ -2320,19 +2320,19 @@ msgstr "دعم الأرشفة المضغوطة"
 
 #: includes/View.php
 msgid "Available"
-msgstr "[TODO] Available"
+msgstr "متاح"
 
 #: includes/View.php
 msgid "WP_DEBUG"
-msgstr "[TODO] WP_DEBUG"
+msgstr "WP_DEBUG"
 
 #: includes/View.php
 msgid "Enabled"
-msgstr "[TODO] Enabled"
+msgstr "مُفعّل"
 
 #: includes/View.php
 msgid "Disabled"
-msgstr "[TODO] Disabled"
+msgstr "مُعطّل"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-auto-refresh"
@@ -2348,19 +2348,19 @@ msgstr "تم تحديث البيانات"
 
 #: includes/View.php
 msgid "250ms"
-msgstr "[TODO] 250ms"
+msgstr "250 مللي ثانية"
 
 #: includes/View.php
 msgid "500ms"
-msgstr "[TODO] 500ms"
+msgstr "500 مللي ثانية"
 
 #: includes/View.php
 msgid "900ms"
-msgstr "[TODO] 900ms"
+msgstr "900 مللي ثانية"
 
 #: includes/View.php
 msgid "Disable"
-msgstr "[TODO] Disable"
+msgstr "تعطيل"
 
 #: includes/View.php
 msgid "Simulated DB Latency"
@@ -2372,7 +2372,7 @@ msgstr "تشغيل (‏%d مللي ثانية لكل استعلام إضافي)"
 
 #: includes/View.php
 msgid "OFF"
-msgstr "[TODO] OFF"
+msgstr "إيقاف"
 
 #: includes/View.php
 msgid "Refreshing data in background…"

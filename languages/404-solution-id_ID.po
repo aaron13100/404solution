@@ -38,23 +38,23 @@ msgstr "Menyimpan..."
 
 #, fuzzy
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
-msgstr "Could not save settings - missing security token. The wizard may appear again on next visit."
+msgstr "Tidak dapat menyimpan pengaturan - token keamanan tidak ada. Wizard mungkin muncul lagi pada kunjungan berikutnya."
 
 #, fuzzy
 msgid "Could not save dismissal. The wizard may appear again on next visit."
-msgstr "Could not save dismissal. The wizard may appear again on next visit."
+msgstr "Tidak dapat menyimpan pemecatan. Wizard mungkin muncul lagi pada kunjungan berikutnya."
 
 #, fuzzy
 msgid "Could not save dismissal: "
-msgstr "Could not save dismissal: "
+msgstr "Tidak dapat menyimpan pemecatan:"
 
 #, fuzzy
 msgid " The wizard may appear again on next visit."
-msgstr " The wizard may appear again on next visit."
+msgstr "Wizard mungkin muncul lagi pada kunjungan berikutnya."
 
 #, fuzzy
 msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
-msgstr "Network error - could not save dismissal. The wizard may appear again on next visit."
+msgstr "Kesalahan jaringan - tidak dapat menyimpan pemecatan. Wizard mungkin muncul lagi pada kunjungan berikutnya."
 
 msgid "Settings"
 msgstr "Pengaturan"
@@ -250,7 +250,7 @@ msgid "Documentation"
 msgstr "Dokumentasi"
 
 msgid "Plugin v%s"
-msgstr "Plugin v%s"
+msgstr "Plugin v%s *"
 
 msgid "Settings saved successfully!"
 msgstr "Pengaturan berhasil disimpan!"
@@ -307,7 +307,7 @@ msgid "At the same level as the Settings and Tools menu"
 msgstr "Pada level yang sama dengan menu Pengaturan dan Alat"
 
 msgid "Auto"
-msgstr "Auto"
+msgstr "Mobil"
 
 msgid "Delete automatic redirects after"
 msgstr "Hapus pengalihan otomatis setelah"
@@ -413,7 +413,7 @@ msgid "Custom Taxonomies"
 msgstr "Taksonomi Kustom"
 
 msgid "DATABASE_VERSION"
-msgstr "DATABASE_VERSION"
+msgstr "DATABASE_VERSION *"
 
 msgid "DB version"
 msgstr "Versi DB"
@@ -443,7 +443,7 @@ msgid "Debug logging"
 msgstr "Pencatatan debug"
 
 msgid "Default"
-msgstr "Default"
+msgstr "Bawaan"
 
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "Tipe post WordPress default adalah \"post\" dan \"page.\""
@@ -720,22 +720,22 @@ msgid "Issue deleting debug file. (%s)"
 msgstr "Masalah saat menghapus file debug. (%s)"
 
 msgid "JAPANESE_FLASHCARDS_URL"
-msgstr "JAPANESE_FLASHCARDS_URL"
+msgstr "JAPANESE_FLASHCARDS_URL *"
 
 msgid "Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit."
 msgstr "Menyimpan catatan log terbaru (dan menghapus yang terlama) saat penggunaan disk mencapai batas ini."
 
 msgid "LINK_FIRST_PAGE"
-msgstr "LINK_FIRST_PAGE"
+msgstr "LINK_FIRST_PAGE *"
 
 msgid "LINK_LAST_PAGE"
-msgstr "LINK_LAST_PAGE"
+msgstr "LINK_LAST_PAGE *"
 
 msgid "LINK_NEXT_PAGE"
-msgstr "LINK_NEXT_PAGE"
+msgstr "LINK_NEXT_PAGE *"
 
 msgid "LINK_PREVIOUS_PAGE"
-msgstr "LINK_PREVIOUS_PAGE"
+msgstr "LINK_PREVIOUS_PAGE *"
 
 msgid "Last Used"
 msgstr "Terakhir Digunakan"
@@ -756,7 +756,7 @@ msgid "Logs"
 msgstr "Log"
 
 msgid "MB"
-msgstr "MB"
+msgstr "MB *"
 
 msgid "Maintenance"
 msgstr "Pemeliharaan"
@@ -765,7 +765,7 @@ msgid "Major version auto update delay"
 msgstr "Penundaan pembaruan otomatis versi utama"
 
 msgid "Man"
-msgstr "Man"
+msgstr "Pria"
 
 msgid "Manual 301 Redirects"
 msgstr "Pengalihan 301 Manual"
@@ -834,10 +834,10 @@ msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the
 msgstr "Catatan: \"Skor\" yang muncul dalam format \"(75.7576)\" setelah link halaman hanya ditampilkan untuk pengguna admin."
 
 msgid "OPTION_MIN_AUTO_SCORE"
-msgstr "OPTION_MIN_AUTO_SCORE"
+msgstr "OPTION_MIN_AUTO_SCORE *"
 
 msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
-msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
+msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY *"
 
 msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
 msgstr "Satu email akan dikirim per hari (ketika pemeliharaan dijalankan) hingga jumlah 404 yang tercatat turun di bawah angka yang ditentukan dalam pengaturan peringatan."
@@ -888,7 +888,7 @@ msgid "Purge Type"
 msgstr "Tipe Pembersihan"
 
 msgid "REDIRECT_TO_USER_FIELD_WARNING"
-msgstr "REDIRECT_TO_USER_FIELD_WARNING"
+msgstr "REDIRECT_TO_USER_FIELD_WARNING *"
 
 msgid "Recognized Post Types"
 msgstr "Tipe Post yang Dikenali"
@@ -942,7 +942,7 @@ msgid "Referrer"
 msgstr "Perujuk"
 
 msgid "RegEx"
-msgstr "RegEx"
+msgstr "RegEx *"
 
 msgid "Regular Expression (Manually Created)"
 msgstr "Regular Expression (Dibuat Secara Manual)"
@@ -978,37 +978,37 @@ msgid "Run maintenance to delete old data (etc).&nbsp;&nbsp;It is not necessary 
 msgstr "Jalankan pemeliharaan untuk menghapus data lama (dll).&nbsp;&nbsp;Tidak perlu menjalankan ini secara manual, karena dilakukan secara otomatis setiap hari."
 
 msgid "SELECTED_SUGGEST_CATS"
-msgstr "SELECTED_SUGGEST_CATS"
+msgstr "SELECTED_SUGGEST_CATS *"
 
 msgid "SELECTED_SUGGEST_TAGS"
-msgstr "SELECTED_SUGGEST_TAGS"
+msgstr "SELECTED_SUGGEST_TAGS *"
 
 msgid "SELECTED_SUGGEST_URL"
-msgstr "SELECTED_SUGGEST_URL"
+msgstr "SELECTED_SUGGEST_URL *"
 
 msgid "SUGGEST_MAX_SUGGESTIONS"
-msgstr "SUGGEST_MAX_SUGGESTIONS"
+msgstr "SUGGEST_MAX_SUGGESTIONS *"
 
 msgid "SUGGEST_MIN_SCORE"
-msgstr "SUGGEST_MIN_SCORE"
+msgstr "SUGGEST_MIN_SCORE *"
 
 msgid "SUGGEST_USER_AFTER"
-msgstr "SUGGEST_USER_AFTER"
+msgstr "SUGGEST_USER_AFTER *"
 
 msgid "SUGGEST_USER_BEFORE"
-msgstr "SUGGEST_USER_BEFORE"
+msgstr "SUGGEST_USER_BEFORE *"
 
 msgid "SUGGEST_USER_ENTRY_AFTER"
-msgstr "SUGGEST_USER_ENTRY_AFTER"
+msgstr "SUGGEST_USER_ENTRY_AFTER *"
 
 msgid "SUGGEST_USER_ENTRY_BEFORE"
-msgstr "SUGGEST_USER_ENTRY_BEFORE"
+msgstr "SUGGEST_USER_ENTRY_BEFORE *"
 
 msgid "SUGGEST_USER_NO_RESULTS"
-msgstr "SUGGEST_USER_NO_RESULTS"
+msgstr "SUGGEST_USER_NO_RESULTS *"
 
 msgid "SUGGEST_USER_TITLE"
-msgstr "SUGGEST_USER_TITLE"
+msgstr "SUGGEST_USER_TITLE *"
 
 msgid "Sanity Check"
 msgstr "Pemeriksaan Validitas"
@@ -1042,7 +1042,7 @@ msgid "Stats"
 msgstr "Statistik"
 
 msgid "Status"
-msgstr "Status"
+msgstr "Status *"
 
 msgid "Suggestions"
 msgstr "Saran"
@@ -1052,34 +1052,34 @@ msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "Format yang didukung adalah: <B>from_url,status,type,to_url,wp_type</B>"
 
 msgid "TEXT_BEFORE_LINKS"
-msgstr "TEXT_BEFORE_LINKS"
+msgstr "TEXT_BEFORE_LINKS *"
 
 msgid "TEXT_CURRENT_PAGE"
-msgstr "TEXT_CURRENT_PAGE"
+msgstr "TEXT_CURRENT_PAGE *"
 
 msgid "TEXT_SHOW_ROWS"
-msgstr "TEXT_SHOW_ROWS"
+msgstr "TEXT_SHOW_ROWS *"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
-msgstr "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
+msgstr "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING *"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_EMPTY"
-msgstr "TOOLTIP_POPUP_EXPLANATION_EMPTY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMPTY *"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_EMTPY"
-msgstr "TOOLTIP_POPUP_EXPLANATION_EMTPY"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMTPY *"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_PAGE"
-msgstr "TOOLTIP_POPUP_EXPLANATION_PAGE"
+msgstr "TOOLTIP_POPUP_EXPLANATION_PAGE *"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_URL"
-msgstr "TOOLTIP_POPUP_EXPLANATION_URL"
+msgstr "TOOLTIP_POPUP_EXPLANATION_URL *"
 
 msgid "Tag"
-msgstr "Tag"
+msgstr "Menandai"
 
 msgid "Tag:"
-msgstr "Tag:"
+msgstr "Menandai:"
 
 msgid "Tags"
 msgstr "Tag"
@@ -1187,7 +1187,7 @@ msgid "Type a page name here and select it to add it to the exlusion list"
 msgstr "Ketik nama halaman di sini dan pilih untuk menambahkannya ke daftar pengecualian"
 
 msgid "URL"
-msgstr "URL"
+msgstr "URL *"
 
 msgid "URL(s) deleted"
 msgstr "URL dihapus"
@@ -1283,13 +1283,13 @@ msgid "You can see which post types are recognized by looking at the default 404
 msgstr "Anda dapat melihat tipe post mana yang dikenali dengan melihat opsi tujuan 404 default, yang memiliki daftar halaman, post, produk, dll."
 
 msgid "add-exclude-page-data-url"
-msgstr "add-exclude-page-data-url"
+msgstr "tambahkan-kecualikan-halaman-data-url"
 
 msgid "addManualRedirectAction"
-msgstr "addManualRedirectAction"
+msgstr "tambahkanManualRedirectAction"
 
 msgid "ajaxTrashLink"
-msgstr "ajaxTrashLink"
+msgstr "ajaxTrashLink *"
 
 msgid "and <B>from_url,to_url</B>"
 msgstr "dan <B>from_url,to_url</B>"
@@ -1298,154 +1298,154 @@ msgid "and redirect to the specified page."
 msgstr "dan alihkan ke halaman yang ditentukan."
 
 msgid "bulkOptions"
-msgstr "bulkOptions"
+msgstr "Opsi massal"
 
 msgid "data-pagination-ajax-url"
-msgstr "data-pagination-ajax-url"
+msgstr "data-pagination-ajax-url *"
 
 msgid "data-pagination-ajax-action"
-msgstr "data-pagination-ajax-action"
+msgstr "data-pagination-ajax-action *"
 
 msgid "data-pagination-ajax-subpage"
-msgstr "data-pagination-ajax-subpage"
+msgstr "data-pagination-ajax-subhalaman"
 
 msgid "data-pagination-ajax-nonce"
-msgstr "data-pagination-ajax-nonce"
+msgstr "data-pagination-ajax-nonce *"
 
 msgid "data-url"
-msgstr "data-url"
+msgstr "data-url *"
 
 msgid "days (0 means immediately, default 30)"
 msgstr "hari (0 berarti segera, default 30)"
 
 msgid "deletePermanentlyHTML"
-msgstr "deletePermanentlyHTML"
+msgstr "deletePermanentlyHTML *"
 
 msgid "destination-does-not-exist"
-msgstr "destination-does-not-exist"
+msgstr "tujuan-tidak-ada"
 
 msgid "destination-exists"
-msgstr "destination-exists"
+msgstr "tujuan-ada"
 
 msgid "disallow-redirect-all-requests"
-msgstr "disallow-redirect-all-requests"
+msgstr "larang-redirect-semua-permintaan"
 
 msgid "earliestLogDate"
-msgstr "earliestLogDate"
+msgstr "TanggalLog paling awal"
 
 msgid "editLink"
-msgstr "editLink"
+msgstr "sunting Tautan"
 
 msgid "editlinkHTML"
-msgstr "editlinkHTML"
+msgstr "sunting tautanHTML"
 
 msgid "filterText"
-msgstr "filterText"
+msgstr "filterTeks"
 
 msgid "is maintained by"
 msgstr "dipelihara oleh"
 
 msgid "loaded-excluded-pages"
-msgstr "loaded-excluded-pages"
+msgstr "halaman yang dimuat-dikecualikan"
 
 msgid "logCurrentRowCount"
-msgstr "logCurrentRowCount"
+msgstr "logCurrentRowCount *"
 
 msgid "logCurrentSizeDiskUsage"
-msgstr "logCurrentSizeDiskUsage"
+msgstr "logCurrentSizeDiskUsage *"
 
 msgid "logslinkHTML"
-msgstr "logslinkHTML"
+msgstr "tautan logHTML"
 
 msgid "of"
 msgstr "dari"
 
 msgid "pageIDAndType"
-msgstr "pageIDAndType"
+msgstr "halamanIDDanJenis"
 
 msgid "postedURL"
-msgstr "postedURL"
+msgstr "dipostingURL"
 
 msgid "redirectPageTitle"
-msgstr "redirectPageTitle"
+msgstr "redirectPageTitle *"
 
 msgid "rowActions"
-msgstr "rowActions"
+msgstr "barisAksi"
 
 msgid "rowClass"
-msgstr "rowClass"
+msgstr "kelas baris"
 
 msgid "rowCode"
-msgstr "rowCode"
+msgstr "kode baris"
 
 msgid "rowURL"
-msgstr "rowURL"
+msgstr "URL baris"
 
 msgid "selecteSsettingsLevel"
-msgstr "selecteSsettingsLevel"
+msgstr "piliheSsettingsLevel"
 
 msgid "selectedAutoCats"
-msgstr "selectedAutoCats"
+msgstr "AutoCats yang dipilih"
 
 msgid "selectedAutoRedirects"
-msgstr "selectedAutoRedirects"
+msgstr "Pengalihan Otomatis yang dipilih"
 
 msgid "selectedAutoTags"
-msgstr "selectedAutoTags"
+msgstr "TagOtomatis yang dipilih"
 
 msgid "selectedCapture404"
-msgstr "selectedCapture404"
+msgstr "SelectCapture404"
 
 msgid "selectedDefaultRedirect301"
-msgstr "selectedDefaultRedirect301"
+msgstr "dipilihDefaultRedirect301"
 
 msgid "selectedDefaultRedirect302"
-msgstr "selectedDefaultRedirect302"
+msgstr "dipilihDefaultRedirect302"
 
 msgid "selectedRemoveMatches"
-msgstr "selectedRemoveMatches"
+msgstr "dipilihRemoveMatches"
 
 msgid "selectedSendErrorLogs"
-msgstr "selectedSendErrorLogs"
+msgstr "dipilihSendErrorLogs"
 
 msgid "selectedThemeCalm"
-msgstr "selectedThemeCalm"
+msgstr "dipilihTemaTenang"
 
 msgid "selectedThemeMono"
-msgstr "selectedThemeMono"
+msgstr "TemaMono yang dipilih"
 
 msgid "selectedThemeNeon"
-msgstr "selectedThemeNeon"
+msgstr "TemaNeon yang dipilih"
 
 msgid "selectedThemeObsidian"
-msgstr "selectedThemeObsidian"
+msgstr "TemaObsidian yang dipilih"
 
 msgid "selectedUnderSettings"
-msgstr "selectedUnderSettings"
+msgstr "dipilihDi BawahPengaturan"
 
 msgid "showSearchFilter"
-msgstr "showSearchFilter"
+msgstr "tampilkanFilter Pencarian"
 
 msgid "statusTitle"
-msgstr "statusTitle"
+msgstr "statusJudul"
 
 msgid "toolsExportRedirectsLink"
-msgstr "toolsExportRedirectsLink"
+msgstr "alatExportRedirectsLink"
 
 msgid "toolsImportFormActionLink"
-msgstr "toolsImportFormActionLink"
+msgstr "alatImportFormActionLink"
 
 msgid "toolsImportRedirectsLink"
-msgstr "toolsImportRedirectsLink"
+msgstr "alatImportRedirectsLink"
 
 msgid "toolsMaintenanceFormActionLink"
-msgstr "toolsMaintenanceFormActionLink"
+msgstr "alatMaintenanceFormActionLink"
 
 msgid "toolsPurgeFormActionLink"
-msgstr "toolsPurgeFormActionLink"
+msgstr "alatPurgeFormActionLink"
 
 msgid "urlPlaceholder"
-msgstr "urlPlaceholder"
+msgstr "urlPlaceholder *"
 
 msgid "will match any URL that begins with"
 msgstr "akan cocok dengan URL apa pun yang dimulai dengan"
@@ -1891,208 +1891,208 @@ msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
 msgstr "Butuh lebih banyak kontrol? Beralih ke mode lanjutan untuk 30+ opsi tambahan."
 
 msgid "Need more control?"
-msgstr "Need more control?"
+msgstr "Perlu lebih banyak kontrol?"
 
 msgid "Switch to Advanced Mode"
-msgstr "Switch to Advanced Mode"
+msgstr "Beralih ke Mode Lanjutan"
 
 msgid "for 30+ additional options."
-msgstr "for 30+ additional options."
+msgstr "untuk 30+ opsi tambahan."
 
 msgid "Statistics"
-msgstr "Statistics"
+msgstr "Statistik"
 
 msgid "Example:"
-msgstr "Example:"
+msgstr "Contoh:"
 
 msgid "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
-msgstr "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "/events/(.+) akan cocok dengan URL apa pun yang dimulai dengan /events/ dan dialihkan ke halaman yang ditentukan. Karena grup tangkapan digunakan, Anda dapat menggunakan pengganti $1 di string tujuan URL eksternal."
 
 msgid "URLs to redirect"
-msgstr "URLs to redirect"
+msgstr "URL untuk dialihkan"
 
 msgid "Captured"
-msgstr "Captured"
+msgstr "Ditangkap"
 
 msgid "Ignored"
-msgstr "Ignored"
+msgstr "Diabaikan"
 
 msgid "Later"
-msgstr "Later"
+msgstr "Nanti"
 
 msgid "Type to filter URLs... (press Enter)"
-msgstr "Type to filter URLs... (press Enter)"
+msgstr "Ketik untuk memfilter URL... (tekan Enter)"
 
 msgid "Are you sure you want to permanently delete all items in trash?"
-msgstr "Are you sure you want to permanently delete all items in trash?"
+msgstr "Apakah Anda yakin ingin menghapus semua item di sampah secara permanen?"
 
 msgid "selected"
-msgstr "selected"
+msgstr "terpilih"
 
 msgid "Mark Captured"
-msgstr "Mark Captured"
+msgstr "Tandai Ditangkap"
 
 msgid "Mark Ignored"
-msgstr "Mark Ignored"
+msgstr "Tandai Diabaikan"
 
 msgid "Move to Trash"
-msgstr "Move to Trash"
+msgstr "Pindah ke Sampah"
 
 msgid "Create Redirect"
-msgstr "Create Redirect"
+msgstr "Buat Pengalihan"
 
 msgid "Clear"
-msgstr "Clear"
+msgstr "Jernih"
 
 msgid "Never"
-msgstr "Never"
+msgstr "Tidak pernah"
 
 msgid "Captured 404 URL"
-msgstr "Captured 404 URL"
+msgstr "Mengambil 404 URL"
 
 msgid "Ignored URL - will not be suggested"
-msgstr "Ignored URL - will not be suggested"
+msgstr "URL yang diabaikan - tidak akan disarankan"
 
 msgid "Edit"
-msgstr "Edit"
+msgstr "Sunting"
 
 msgid "View Logs"
-msgstr "View Logs"
+msgstr "Lihat Log"
 
 msgid "Delete Permanently"
-msgstr "Delete Permanently"
+msgstr "Hapus Secara Permanen"
 
 msgid "Are you sure you want to permanently delete this item?"
-msgstr "Are you sure you want to permanently delete this item?"
+msgstr "Apakah Anda yakin ingin menghapus item ini secara permanen?"
 
 msgid "Delete"
-msgstr "Delete"
+msgstr "Menghapus"
 
 msgid "Ignore"
-msgstr "Ignore"
+msgstr "Mengabaikan"
 
 msgid "Manual"
-msgstr "Manual"
+msgstr "petunjuk"
 
 msgid "Automatic"
-msgstr "Automatic"
+msgstr "Otomatis"
 
 msgid "Type to filter redirects... (press Enter)"
-msgstr "Type to filter redirects... (press Enter)"
+msgstr "Ketik untuk memfilter pengalihan... (tekan Enter)"
 
 msgid "redirects selected"
-msgstr "redirects selected"
+msgstr "pengalihan dipilih"
 
 msgid "Bulk Actions"
-msgstr "Bulk Actions"
+msgstr "Tindakan Massal"
 
 msgid "Edit Redirects"
-msgstr "Edit Redirects"
+msgstr "Edit Pengalihan"
 
 msgid "Restore Redirects"
-msgstr "Restore Redirects"
+msgstr "Pulihkan Pengalihan"
 
 msgid "Clear Selection"
-msgstr "Clear Selection"
+msgstr "Hapus Pilihan"
 
 msgid "Are you sure you want to permanently delete all items in the trash?"
-msgstr "Are you sure you want to permanently delete all items in the trash?"
+msgstr "Apakah Anda yakin ingin menghapus semua item di sampah secara permanen?"
 
 msgid "Add Manual Redirect"
-msgstr "Add Manual Redirect"
+msgstr "Tambahkan Pengalihan Manual"
 
 msgid "The URL path that should be redirected (without domain)"
-msgstr "The URL path that should be redirected (without domain)"
+msgstr "Jalur URL yang harus dialihkan (tanpa domain)"
 
 msgid "Permanent Redirect (Recommended for SEO)"
-msgstr "Permanent Redirect (Recommended for SEO)"
+msgstr "Pengalihan Permanen (Direkomendasikan untuk SEO)"
 
 msgid "Temporary Redirect"
-msgstr "Temporary Redirect"
+msgstr "Pengalihan Sementara"
 
 msgid "logs"
-msgstr "logs"
+msgstr "log"
 
 msgid "redirects"
-msgstr "redirects"
+msgstr "pengalihan"
 
 msgid "Showing %1$d-%2$d of %3$d %4$s"
-msgstr "Showing %1$d-%2$d of %3$d %4$s"
+msgstr "Menampilkan %1$d-%2$d dari %3$d %4$s"
 
 msgid "Redirects will appear here once created."
-msgstr "Redirects will appear here once created."
+msgstr "Pengalihan akan muncul di sini setelah dibuat."
 
 msgid "Redirect Logs"
-msgstr "Redirect Logs"
+msgstr "Log Pengalihan"
 
 msgid "Action"
-msgstr "Action"
+msgstr "Tindakan"
 
 msgid "404"
 msgstr "404"
 
 msgid "Today's Stats"
-msgstr "Today's Stats"
+msgstr "Statistik hari ini"
 
 msgid "This Month"
-msgstr "This Month"
+msgstr "Bulan ini"
 
 msgid "This Year"
-msgstr "This Year"
+msgstr "Tahun ini"
 
 msgid "All Stats"
-msgstr "All Stats"
+msgstr "Semua Statistik"
 
 msgid "Visit URL"
-msgstr "Visit URL"
+msgstr "Kunjungi URL"
 
 msgid "This page doesn't exist or is not published so the redirect won't work."
-msgstr "This page doesn't exist or is not published so the redirect won't work."
+msgstr "Halaman ini tidak ada atau tidak dipublikasikan sehingga pengalihan tidak berfungsi."
 
 
 #: includes/DataAccess.php
 msgid "Just now"
-msgstr "Just now"
+msgstr "Baru saja"
 
 #: includes/View.php
 msgid "Data may not be immediately updated. Refresh to see latest changes."
-msgstr "Data may not be immediately updated. Refresh to see latest changes."
+msgstr "Data mungkin tidak segera diperbarui. Segarkan untuk melihat perubahan terbaru."
 
 #: includes/View.php
 msgid "Last updated: %s"
-msgstr "Last updated: %s"
+msgstr "Terakhir diperbarui: %s"
 
 #: includes/WordPress_Connector.php
 msgid "second"
-msgstr "second"
+msgstr "Kedua"
 
 #: includes/WordPress_Connector.php
 msgid "seconds"
-msgstr "seconds"
+msgstr "detik"
 
 #: includes/WordPress_Connector.php
 msgid "minute"
-msgstr "minute"
+msgstr "menit"
 
 #: includes/WordPress_Connector.php
 msgid "minutes"
-msgstr "minutes"
+msgstr "menit"
 
 #: includes/WordPress_Connector.php
 msgid "hour"
-msgstr "hour"
+msgstr "jam"
 
 #: includes/WordPress_Connector.php
 msgid "hours"
-msgstr "hours"
+msgstr "jam"
 
 #: includes/WordPress_Connector.php
 msgid "day"
-msgstr "day"
+msgstr "hari"
 
 #: includes/WordPress_Connector.php
 msgid "ago"
-msgstr "ago"
+msgstr "yang lalu"
 
 #: includes/SetupWizard.php
 msgid "Security check failed. Please try again."
@@ -2172,15 +2172,15 @@ msgstr "Simpan dan Mulai"
 
 #: includes/html/tableRowPageRedirects.html
 msgid "url-is-normal"
-msgstr "url-is-normal"
+msgstr "url-is-normal *"
 
 #: includes/html/tableRowPageRedirects.html
 msgid "url-looks-like-regex"
-msgstr "url-looks-like-regex"
+msgstr "url-terlihat-seperti-regex"
 
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
-msgstr "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+msgstr "URL ini terlihat seperti ekspresi reguler tetapi tidak ditandai sebagai ekspresi reguler. Edit pengalihan dan centang \"Perlakukan URL ini sebagai ekspresi reguler\"."
 
 msgid "Create redirect from old URL to new URL"
 msgstr "Buat pengalihan dari URL lama ke URL baru"
@@ -2249,132 +2249,132 @@ msgstr "Nonce tidak valid. Muat ulang halaman."
 
 #: includes/View.php
 msgid "Diagnostics"
-msgstr "[TODO] Diagnostics"
+msgstr "Diagnostik"
 
 #: includes/View.php
 msgid "Quick environment checks for troubleshooting and support."
-msgstr "[TODO] Quick environment checks for troubleshooting and support."
+msgstr "Pemeriksaan lingkungan cepat untuk pemecahan masalah dan dukungan."
 
 #: includes/View.php
 msgid "OK"
-msgstr "[TODO] OK"
+msgstr "OKE"
 
 #: includes/View.php
 msgid "Warning"
-msgstr "[TODO] Warning"
+msgstr "Peringatan"
 
 #: includes/View.php
 msgid "Info"
-msgstr "[TODO] Info"
+msgstr "Informasi"
 
 #: includes/View.php
 msgid "Plugin Version"
-msgstr "[TODO] Plugin Version"
+msgstr "Versi Plugin"
 
 #: includes/View.php
 msgid "WordPress Version"
-msgstr "[TODO] WordPress Version"
+msgstr "Versi WordPress"
 
 #: includes/View.php
 msgid "PHP Version"
-msgstr "[TODO] PHP Version"
+msgstr "Versi PHP"
 
 #: includes/View.php
 msgid "Uploads Directory"
-msgstr "[TODO] Uploads Directory"
+msgstr "Direktori Unggah"
 
 #: includes/View.php
 msgid "Not available"
-msgstr "[TODO] Not available"
+msgstr "Tidak tersedia"
 
 #: includes/View.php
 msgid "Uploads Writable"
-msgstr "[TODO] Uploads Writable"
+msgstr "Unggahan Dapat Ditulis"
 
 #: includes/View.php
 msgid "Yes"
-msgstr "[TODO] Yes"
+msgstr "Ya"
 
 #: includes/View.php
 msgid "No"
-msgstr "[TODO] No"
+msgstr "TIDAK"
 
 #: includes/View.php
 msgid "mbstring Extension"
-msgstr "[TODO] mbstring Extension"
+msgstr "mbstring Ekstensi"
 
 #: includes/View.php
 msgid "Loaded"
-msgstr "[TODO] Loaded"
+msgstr "Sarat"
 
 #: includes/View.php
 msgid "Missing"
-msgstr "[TODO] Missing"
+msgstr "Hilang"
 
 #: includes/View.php
 msgid "ZipArchive Support"
-msgstr "[TODO] ZipArchive Support"
+msgstr "ZipArchive Dukungan"
 
 #: includes/View.php
 msgid "Available"
-msgstr "[TODO] Available"
+msgstr "Tersedia"
 
 #: includes/View.php
 msgid "WP_DEBUG"
-msgstr "[TODO] WP_DEBUG"
+msgstr "WP_DEBUG *"
 
 #: includes/View.php
 msgid "Enabled"
-msgstr "[TODO] Enabled"
+msgstr "Diaktifkan"
 
 #: includes/View.php
 msgid "Disabled"
-msgstr "[TODO] Disabled"
+msgstr "Dengan disabilitas"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-auto-refresh"
-msgstr "[TODO] data-pagination-auto-refresh"
+msgstr "data-pagination-auto-refresh *"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-refresh-started-text"
-msgstr "[TODO] data-pagination-refresh-started-text"
+msgstr "__KUNCI_MULAI__"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-refresh-finished-text"
-msgstr "[TODO] data-pagination-refresh-finished-text"
+msgstr "__KUNCI_SELESAI__"
 
 #: includes/View.php
 msgid "250ms"
-msgstr "[TODO] 250ms"
+msgstr "250 md"
 
 #: includes/View.php
 msgid "500ms"
-msgstr "[TODO] 500ms"
+msgstr "500 md"
 
 #: includes/View.php
 msgid "900ms"
-msgstr "[TODO] 900ms"
+msgstr "900 md"
 
 #: includes/View.php
 msgid "Disable"
-msgstr "[TODO] Disable"
+msgstr "Cacat"
 
 #: includes/View.php
 msgid "Simulated DB Latency"
-msgstr "[TODO] Simulated DB Latency"
+msgstr "Simulasi Latensi DB"
 
 #: includes/View.php
 msgid "ON (%d ms per plugin query)"
-msgstr "[TODO] ON (%d ms per plugin query)"
+msgstr "AKTIF (%d ms per permintaan plugin)"
 
 #: includes/View.php
 msgid "OFF"
-msgstr "[TODO] OFF"
+msgstr "MATI"
 
 #: includes/View.php
 msgid "Refreshing data in background…"
-msgstr "[TODO] Refreshing data in background…"
+msgstr "Menyegarkan data di latar belakang…"
 
 #: includes/View.php
 msgid "Data refreshed"
-msgstr "[TODO] Data refreshed"
+msgstr "Data disegarkan"
