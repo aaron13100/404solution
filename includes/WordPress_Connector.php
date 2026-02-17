@@ -165,7 +165,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         $subpage = '';
         if (array_key_exists('subpage', $_GET)) {
-            $subpage = sanitize_text_field((string)$_GET['subpage']);
+            $subpage = sanitize_text_field(self::normalizeRequestScalar($_GET['subpage']));
         }
         // Default plugin landing is redirects when subpage is not specified.
         if ($subpage === '') {
@@ -658,13 +658,16 @@ class ABJ_404_Solution_WordPress_Connector {
         // Handle user responses to qualification question
         if (isset($_GET['abj404_review_response'])) {
             $rawResponseNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
-            $rawResponseNonce = self::safeWpUnslash($rawResponseNonce);
-            $responseNonce = sanitize_text_field($rawResponseNonce);
+            $responseNonce = sanitize_text_field(self::normalizeRequestScalar($rawResponseNonce));
             if ($responseNonce === '' || !wp_verify_nonce($responseNonce, 'abj404_review_response')) {
                 return;
             }
 
-            $response = sanitize_text_field($_GET['abj404_review_response']);
+            $response = sanitize_text_field(self::normalizeRequestScalar($_GET['abj404_review_response']));
+            $allowedResponses = array('yes', 'not_yet', 'ask_later', 'close_x', 'never');
+            if (!in_array($response, $allowedResponses, true)) {
+                return;
+            }
 
             if ($response === 'yes') {
                 // User thinks it deserves 5 stars - show review link
@@ -697,8 +700,7 @@ class ABJ_404_Solution_WordPress_Connector {
         // Handle "Going to review now" button click - PERMANENT dismissal
         if (isset($_GET['abj404_leaving_review'])) {
             $rawLeavingReviewNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
-            $rawLeavingReviewNonce = self::safeWpUnslash($rawLeavingReviewNonce);
-            $leavingReviewNonce = sanitize_text_field($rawLeavingReviewNonce);
+            $leavingReviewNonce = sanitize_text_field(self::normalizeRequestScalar($rawLeavingReviewNonce));
             if ($leavingReviewNonce !== '' && wp_verify_nonce($leavingReviewNonce, 'abj404_leaving_review')) {
                 update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
                 delete_user_meta(get_current_user_id(), 'abj404_review_step');
@@ -716,15 +718,17 @@ class ABJ_404_Solution_WordPress_Connector {
 
         // Handle feedback submission - PERMANENT dismissal
         $rawFeedbackNonce = isset($_POST['abj404_feedback_nonce']) ? $_POST['abj404_feedback_nonce'] : '';
-        $rawFeedbackNonce = self::safeWpUnslash($rawFeedbackNonce);
-        $feedbackNonce = sanitize_text_field($rawFeedbackNonce);
+        $feedbackNonce = sanitize_text_field(self::normalizeRequestScalar($rawFeedbackNonce));
         if (isset($_POST['abj404_submit_feedback']) &&
             $feedbackNonce !== '' &&
             wp_verify_nonce($feedbackNonce, 'abj404_submit_feedback')) {
 
-            // Get selected issues (checkboxes)
-            $issues = isset($_POST['feedback_issues']) ? array_map('sanitize_text_field', $_POST['feedback_issues']) : array();
-            $feedback_details = sanitize_textarea_field($_POST['feedback_details']);
+            // Get selected issues (checkboxes) and normalize malformed inputs safely.
+            $issuesRaw = isset($_POST['feedback_issues']) ? $_POST['feedback_issues'] : array();
+            $issues = self::sanitizeFeedbackIssues($issuesRaw);
+
+            $feedbackDetailsRaw = isset($_POST['feedback_details']) ? $_POST['feedback_details'] : '';
+            $feedback_details = sanitize_textarea_field(self::normalizeRequestScalar($feedbackDetailsRaw));
 
             // Prepare feedback data
             $feedback_data = array(
@@ -900,6 +904,45 @@ class ABJ_404_Solution_WordPress_Connector {
         } catch (Throwable $e) {
             return $value;
         }
+    }
+
+    /**
+     * Normalize request input to a scalar string to avoid warnings when arrays/objects are passed.
+     *
+     * @param mixed $value
+     * @return string
+     */
+    private static function normalizeRequestScalar($value) {
+        $value = self::safeWpUnslash($value);
+        if (is_array($value) || is_object($value)) {
+            return '';
+        }
+        return (string)$value;
+    }
+
+    /**
+     * Normalize and sanitize feedback issue selections from request data.
+     *
+     * @param mixed $issuesRaw
+     * @return array<int, string>
+     */
+    private static function sanitizeFeedbackIssues($issuesRaw) {
+        $issuesRaw = self::safeWpUnslash($issuesRaw);
+        if (!is_array($issuesRaw)) {
+            $issuesRaw = array($issuesRaw);
+        }
+
+        $issues = array();
+        foreach ($issuesRaw as $issue) {
+            if (is_array($issue) || is_object($issue)) {
+                continue;
+            }
+            $clean = sanitize_text_field((string)$issue);
+            if ($clean !== '') {
+                $issues[] = $clean;
+            }
+        }
+        return $issues;
     }
 
     /** Adds a link under the "Settings" link to the plugin page.

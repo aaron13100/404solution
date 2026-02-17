@@ -2648,20 +2648,58 @@ class ABJ_404_Solution_DataAccess {
         $canonical = $this->canonicalizeUrlForHitsMatch($url);
         if ($canonical !== '') {
             $variants[] = $canonical;
+            $parts = $this->splitCanonicalHitsUrl($canonical);
+            $pathPart = $parts['path'];
+            $suffixPart = $parts['suffix'];
 
-            $noLeading = ltrim($canonical, '/');
-            if ($noLeading !== '') {
-                $variants[] = $noLeading;
+            $pathVariants = array($pathPart);
+            $noLeadingPath = ltrim($pathPart, '/');
+            if ($noLeadingPath !== '') {
+                $pathVariants[] = $noLeadingPath;
             }
 
-            if ($canonical !== '/' && substr($canonical, -1) === '/') {
-                $variants[] = rtrim($canonical, '/');
-            } elseif ($canonical !== '/' && substr($canonical, -1) !== '/') {
-                $variants[] = $canonical . '/';
+            if ($pathPart !== '/') {
+                if (substr($pathPart, -1) === '/') {
+                    $toggleTrailingPath = rtrim($pathPart, '/');
+                } else {
+                    $toggleTrailingPath = $pathPart . '/';
+                }
+                $pathVariants[] = $toggleTrailingPath;
+                $toggleNoLeadingPath = ltrim($toggleTrailingPath, '/');
+                if ($toggleNoLeadingPath !== '') {
+                    $pathVariants[] = $toggleNoLeadingPath;
+                }
+            }
+
+            foreach (array_unique($pathVariants) as $pathVariant) {
+                $variants[] = $pathVariant . $suffixPart;
             }
         }
 
         return array_values(array_unique($variants));
+    }
+
+    private function splitCanonicalHitsUrl($canonicalUrl) {
+        $canonicalUrl = (string)$canonicalUrl;
+        $firstQueryPos = strpos($canonicalUrl, '?');
+        $firstFragmentPos = strpos($canonicalUrl, '#');
+
+        if ($firstQueryPos === false && $firstFragmentPos === false) {
+            return array('path' => $canonicalUrl, 'suffix' => '');
+        }
+
+        if ($firstQueryPos === false) {
+            $splitPos = $firstFragmentPos;
+        } elseif ($firstFragmentPos === false) {
+            $splitPos = $firstQueryPos;
+        } else {
+            $splitPos = min($firstQueryPos, $firstFragmentPos);
+        }
+
+        return array(
+            'path' => substr($canonicalUrl, 0, $splitPos),
+            'suffix' => substr($canonicalUrl, $splitPos),
+        );
     }
 
     /**

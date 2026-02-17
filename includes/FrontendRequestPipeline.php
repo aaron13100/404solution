@@ -397,7 +397,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $key = $redirect['final_dest'] . "|" . $redirect['type'];
         $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($key, 0);
 
-        $finalLink = $permalink['link'];
+        $finalLink = (is_array($permalink) && array_key_exists('link', $permalink))
+            ? $permalink['link']
+            : '';
         if (!is_string($finalLink) || trim($finalLink) === '' || $finalLink === 'dunno') {
             $this->logger->warn("Resolved permalink is empty/invalid. Sending request to 404 page instead. Redirect ID: " . ($redirect['id'] ?? 'unknown'));
             $this->dao->logRedirectHit($redirect['url'], '404', $matchReason . ' (invalid destination)');
