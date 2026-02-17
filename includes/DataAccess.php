@@ -2778,7 +2778,20 @@ class ABJ_404_Solution_DataAccess {
         }
 
         // Whitelist allowed columns for orderby to prevent SQL injection
-        $allowedOrderbyColumns = array('timestamp', 'requested_url', 'dest_url', 'id', 'referrer', 'min_log_id', 'logshits', 'action');
+        $allowedOrderbyColumns = array(
+            'timestamp',
+            'requested_url',
+            'url',
+            'dest_url',
+            'id',
+            'referrer',
+            'min_log_id',
+            'logshits',
+            'action',
+            'remote_host',
+            'user_ip',
+            'username',
+        );
         $orderby = sanitize_text_field($abj404logic->sanitizeForSQL($tableOptions['orderby']));
         if (!in_array($orderby, $allowedOrderbyColumns, true)) {
             $orderby = 'timestamp'; // Safe default

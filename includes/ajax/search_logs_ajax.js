@@ -4,7 +4,8 @@ jQuery(document).ready(function($) {
     // get the URL from the html page.
     var url = $("#logs_ajax_search_field").attr("data-url");
     var cache = {};
-    $("#logs_ajax_search_field").catcomplete({
+    var autocompleteMethod = ($.fn && typeof $.fn.catcomplete === "function") ? "catcomplete" : "autocomplete";
+    $("#logs_ajax_search_field")[autocompleteMethod]({
         source: function( request, response ) {
                     var term = request.term;
                     if ( term in cache ) {
@@ -34,4 +35,3 @@ jQuery(document).ready(function($) {
     });
     
 });
-
