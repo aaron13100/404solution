@@ -1321,3 +1321,22 @@ msgstr ""
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
 msgstr ""
+
+#: includes/View.php
+msgid "Refresh available"
+msgstr ""
+
+msgid "More info"
+msgstr ""
+
+msgid "Destination missing. Edit this redirect and choose a destination."
+msgstr ""
+
+msgid "(Destination missing)"
+msgstr ""
+
+msgid "data-pagination-refresh-available-text"
+msgstr ""
+
+msgid "destination-warning-text"
+msgstr ""

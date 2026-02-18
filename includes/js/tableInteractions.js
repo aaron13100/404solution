@@ -12,6 +12,7 @@
     var selectedCount = 0;
     var allCheckboxes = [];
     var selectAllCheckbox = null;
+    var timeAgoIntervalHandle = null;
 
     $(document).ready(function() {
         window.abj404InitTableInteractions();
@@ -344,10 +345,16 @@
 
         // Update immediately and then every N seconds
         updateTimeAgo($timeElements);
-        setInterval(function() {
-            updateTimeAgo($timeElements);
+        if (timeAgoIntervalHandle !== null) {
+            return;
+        }
+        timeAgoIntervalHandle = setInterval(function() {
+            updateTimeAgo($('.abj404-time-ago[data-timestamp]'));
         }, 10000);
     }
+
+    // Expose re-init hook for AJAX table replacements.
+    window.abj404InitTimeAgo = initTimeAgo;
 
     /**
      * Update time-ago text for all matching elements

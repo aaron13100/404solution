@@ -2385,3 +2385,22 @@ msgstr "Данные обновлены"
 
 msgid "(Destination unavailable)"
 msgstr "(Назначение недоступно)"
+
+#: includes/View.php
+msgid "Refresh available"
+msgstr "Доступно обновление"
+
+msgid "More info"
+msgstr "More info"
+
+msgid "Destination missing. Edit this redirect and choose a destination."
+msgstr "Destination missing. Edit this redirect and choose a destination."
+
+msgid "(Destination missing)"
+msgstr "(Destination missing)"
+
+msgid "data-pagination-refresh-available-text"
+msgstr "data-pagination-refresh-available-text"
+
+msgid "destination-warning-text"
+msgstr "destination-warning-text"

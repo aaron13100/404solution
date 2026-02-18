@@ -905,6 +905,36 @@ ul .ui-autocomplete-category.data-overflow-category {
     cursor: help;
 }
 
+.abj404-header-tooltip.lefty-tooltip {
+    border-bottom: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    border: 1px solid var(--abj404-border, #dcdcde);
+    border-radius: 999px;
+    color: var(--abj404-text-muted, #646970);
+    background: #fff;
+    vertical-align: middle;
+}
+
+.abj404-header-tooltip-icon {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.abj404-header-tooltip.lefty-tooltip:hover {
+    color: var(--abj404-accent, #2271b1);
+    border-color: var(--abj404-accent, #2271b1);
+}
+
+.abj404-header-tooltip .lefty-tooltiptext {
+    top: calc(100% + 6px);
+}
+
 .lefty-tooltip .lefty-tooltiptext {
     visibility: hidden;
     opacity: 0;
@@ -1600,14 +1630,35 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     color: var(--abj404-accent, #2271b1);
 }
 
+.abj404-table th .sorting-indicator,
 .abj404-table th .sort-indicator {
     display: inline-block;
     margin-left: 4px;
     opacity: 0.5;
+    min-width: 0.8em;
+    text-align: center;
 }
 
+.abj404-table th .sorting-indicator::before,
+.abj404-table th .sort-indicator::before {
+    content: "↕";
+    font-size: 12px;
+    line-height: 1;
+}
+
+.abj404-table th.sorted .sorting-indicator,
 .abj404-table th.sorted .sort-indicator {
     opacity: 1;
+}
+
+.abj404-table th.sorted.asc .sorting-indicator::before,
+.abj404-table th.sorted.asc .sort-indicator::before {
+    content: "↑";
+}
+
+.abj404-table th.sorted.desc .sorting-indicator::before,
+.abj404-table th.sorted.desc .sort-indicator::before {
+    content: "↓";
 }
 
 .abj404-table th input[type="checkbox"] {
@@ -1631,6 +1682,21 @@ html[data-theme="obsidian"] .abj404-tab-branding {
 
 .abj404-table tbody tr:nth-child(even):hover {
     background: #f5f5f5;
+}
+
+.abj404-table tbody tr.destination-does-not-exist,
+.abj404-table tbody tr.destination-does-not-exist:nth-child(even) {
+    background: #ffe7e7;
+}
+
+.abj404-table tbody tr.destination-does-not-exist:hover,
+.abj404-table tbody tr.destination-does-not-exist:nth-child(even):hover {
+    background: #ffd8d8;
+}
+
+.abj404-table tbody tr.destination-does-not-exist .abj404-dest-warning {
+    color: #a02222;
+    font-weight: 600;
 }
 
 .abj404-table td {
