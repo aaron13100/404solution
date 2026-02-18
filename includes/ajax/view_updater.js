@@ -245,9 +245,17 @@ function normalizeHtmlForBackgroundComparison(html) {
         return '';
     }
     return String(html)
+            .replace(/<!--[\s\S]*?-->/g, '')
             .replace(/<span class="abj404-refresh-status"[^>]*>[\s\S]*?<\/span>/g, '')
+            .replace(/(<span class="abj404-time-ago"[^>]*>)[\s\S]*?(<\/span>)/g, '$1$2')
+            .replace(/\sdata-previous-value="[^"]*"/g, '')
+            // Search input is initially rendered disabled and then enabled client-side;
+            // ignore this client-only attribute drift for no-change detection.
+            .replace(/\sdisabled(?:=(?:"disabled"|""))?/gi, '')
             .replace(/data-pagination-ajax-nonce="[^"]*"/g, 'data-pagination-ajax-nonce="nonce"')
-            .replace(/([?&](?:_wpnonce|nonce)=)[^&"'\s>]+/g, '$1nonce')
+            // URLs in attributes may encode "&" as "&amp;" or "&#038;".
+            // Normalize all nonce query params so nonce churn is not treated as data change.
+            .replace(/((?:\?|&|&amp;|&#038;)(?:_wpnonce|nonce)=)[^&"'\s>]+/gi, '$1nonce')
             .replace(/\s+/g, ' ')
             .trim();
 }
