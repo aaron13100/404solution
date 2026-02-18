@@ -1874,14 +1874,20 @@ class ABJ_404_Solution_DataAccess {
                     $valB = isset($b[$orderBy]) ? $b[$orderBy] : 0;
                     // For last_used (timestamp), compare as integers
                     // For logshits (count), compare as integers
-                    $cmp = $valA <=> $valB;
-                    if ($cmp === 0) {
-                        $cmp = strcmp((string)($a['url'] ?? ''), (string)($b['url'] ?? ''));
+                    $primaryCmp = $valA <=> $valB;
+                    if ($primaryCmp !== 0) {
+                        return $orderDir === 'DESC' ? -$primaryCmp : $primaryCmp;
                     }
-                    if ($cmp === 0) {
-                        $cmp = ((int)($a['id'] ?? 0)) <=> ((int)($b['id'] ?? 0));
+
+                    // Keep URL tie-break ASC to match SQL ordering.
+                    $urlCmp = strcmp((string)($a['url'] ?? ''), (string)($b['url'] ?? ''));
+                    if ($urlCmp !== 0) {
+                        return $urlCmp;
                     }
-                    return $orderDir === 'DESC' ? -$cmp : $cmp;
+
+                    // Final tie-break by id in the requested direction.
+                    $idCmp = ((int)($a['id'] ?? 0)) <=> ((int)($b['id'] ?? 0));
+                    return $orderDir === 'DESC' ? -$idCmp : $idCmp;
                 });
                 // Now apply the limit that was skipped in the query
                 $rows = array_slice($rows, $limitStart, $limitEnd);
