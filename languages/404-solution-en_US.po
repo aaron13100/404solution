@@ -2081,6 +2081,22 @@ msgstr "Data may not be immediately updated. Refresh to see latest changes."
 msgid "Last updated: %s"
 msgstr "Last updated: %s"
 
+#: includes/View.php
+msgid "Last checked: %s"
+msgstr "Last checked: %s"
+
+#: includes/View.php
+msgid "Refresh scheduled"
+msgstr "Refresh scheduled"
+
+#: includes/View.php
+msgid "Refresh running"
+msgstr "Refresh running"
+
+#: includes/View.php
+msgid "Refresh paused"
+msgstr "Refresh paused"
+
 #: includes/WordPress_Connector.php
 msgid "second"
 msgstr "second"
@@ -2227,6 +2243,30 @@ msgstr "Press Enter to search"
 #: includes/html/paginationLinks.html
 msgid "Pagination"
 msgstr "Pagination"
+
+#: includes/html/paginationLinks.html
+msgid "data-pagination-current-signature"
+msgstr "data-pagination-current-signature"
+
+#: includes/html/paginationLinks.html
+msgid "data-pagination-current-orderby"
+msgstr "data-pagination-current-orderby"
+
+#: includes/html/paginationLinks.html
+msgid "data-pagination-current-order"
+msgstr "data-pagination-current-order"
+
+#: includes/html/paginationLinks.html
+msgid "data-pagination-current-filter"
+msgstr "data-pagination-current-filter"
+
+#: includes/html/paginationLinks.html
+msgid "data-pagination-current-paged"
+msgstr "data-pagination-current-paged"
+
+#: includes/html/paginationLinks.html
+msgid "data-pagination-current-logsid"
+msgstr "data-pagination-current-logsid"
 
 #: includes/View.php
 msgid "Select all"

@@ -295,14 +295,61 @@ class ABJ_404_Solution_View {
 			return '';
 		}
 
-		$timestamp = $this->dao->getLogsHitsTableLastUpdated();
-		if ($timestamp === null) {
-			return '';
+		// Ensure the "last checked"/"refresh scheduled" tooltip state is computed for this request.
+		// This runs cheap checks and (when needed) schedules the expensive rebuild for shutdown.
+		if (is_object($this->dao) && method_exists($this->dao, 'maybeUpdateRedirectsForViewHitsTable')) {
+			$this->dao->maybeUpdateRedirectsForViewHitsTable();
 		}
 
-		$lastUpdated = $this->dao->getLogsHitsTableLastUpdatedHuman();
-		$timeHtml = '<span class="abj404-time-ago" data-timestamp="' . esc_attr($timestamp) . '">' . esc_html($lastUpdated) . '</span>';
-		return sprintf(__('Last updated: %s', '404-solution'), $timeHtml);
+		$timestamp = $this->dao->getLogsHitsTableLastUpdated();
+		$lines = array();
+		if ($timestamp !== null) {
+			$lastUpdated = $this->dao->getLogsHitsTableLastUpdatedHuman();
+			$timeHtml = '<span class="abj404-time-ago" data-timestamp="' . esc_attr($timestamp) . '">' . esc_html($lastUpdated) . '</span>';
+			$lines[] = sprintf(__('Last updated: %s', '404-solution'), $timeHtml);
+		}
+
+		$checkedAt = $this->dao->getLogsHitsTableLastCheckedAt();
+		if ($checkedAt !== null) {
+			$checkedHtml = '<span class="abj404-time-ago" data-timestamp="' . esc_attr($checkedAt) . '">' . esc_html($this->formatTimeAgo($checkedAt)) . '</span>';
+			$lines[] = sprintf(__('Last checked: %s', '404-solution'), $checkedHtml);
+		}
+
+			$decision = $this->dao->getLogsHitsTableLastDecision();
+			// Treat "cooldown" as "scheduled recently" from a user perspective.
+			if ($decision === 'scheduled' || $decision === 'cooldown') {
+				$lines[] = __('Refresh scheduled', '404-solution');
+			} else if ($decision === 'running') {
+				$lines[] = __('Refresh running', '404-solution');
+			} else if ($decision === 'paused') {
+				$lines[] = __('Refresh paused', '404-solution');
+			}
+
+		return implode('<br>', array_filter($lines));
+	}
+
+	/**
+	 * Small, dependency-free time-ago formatter for tooltip use.
+	 * (We don't want to rely on WP human_time_diff() in unit tests.)
+	 *
+	 * @param int $timestamp
+	 * @return string
+	 */
+	private function formatTimeAgo($timestamp) {
+		$diff = time() - absint($timestamp);
+		if ($diff < 60) {
+			return __('Just now', '404-solution');
+		}
+		if ($diff < 3600) {
+			$minutes = (int)floor($diff / 60);
+			return sprintf(_n('%d minute ago', '%d minutes ago', $minutes, '404-solution'), $minutes);
+		}
+		if ($diff < 86400) {
+			$hours = (int)floor($diff / 3600);
+			return sprintf(_n('%d hour ago', '%d hours ago', $hours, '404-solution'), $hours);
+		}
+		$days = (int)floor($diff / 86400);
+		return sprintf(_n('%d day ago', '%d days ago', $days, '404-solution'), $days);
 	}
 
 	/**

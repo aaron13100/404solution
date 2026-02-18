@@ -20,6 +20,8 @@ class ABJ_404_Solution_DataAccess {
 
     /** @var int Maximum age in seconds before hits table is considered stale */
     const HITS_TABLE_MAX_AGE_SECONDS = 300; // 5 minutes
+    /** Minimum interval between hits-table rebuild schedules (server-side dedupe). */
+    const HITS_TABLE_SCHEDULE_COOLDOWN_SECONDS = 30;
     /** Short-lived cache for admin list snapshots (fast first paint). */
     const VIEW_SNAPSHOT_CACHE_TTL_SECONDS = 120;
     /** Minimum interval between expensive refreshes for the same view key. */
@@ -40,6 +42,13 @@ class ABJ_404_Solution_DataAccess {
     const DB_QUOTA_COOLDOWN_SECONDS = 900;
     /** Cooldown when DB is read-only or storage is full. */
     const DB_WRITE_BLOCK_COOLDOWN_SECONDS = 900;
+
+    /** Runtime flag: last time we checked whether logs-hits needs rebuild (Unix timestamp). */
+    const HITS_TABLE_LAST_CHECKED_FLAG = 'abj404_logs_hits_last_checked_at';
+    /** Runtime flag: last time we scheduled a rebuild (Unix timestamp). */
+    const HITS_TABLE_LAST_SCHEDULED_FLAG = 'abj404_logs_hits_last_scheduled_at';
+    /** Runtime flag: last schedule decision ('scheduled','running','cooldown','paused','not_needed'). */
+    const HITS_TABLE_LAST_DECISION_FLAG = 'abj404_logs_hits_last_decision';
 
     private static $instance = null;
 
@@ -2179,8 +2188,12 @@ class ABJ_404_Solution_DataAccess {
     }
     
     function maybeUpdateRedirectsForViewHitsTable() {
+        // Record that we checked during this request (used for admin tooltip UX).
+        $this->setRuntimeFlag(self::HITS_TABLE_LAST_CHECKED_FLAG, time(), 86400);
+
         if ($this->shouldSkipNonEssentialDbWrites()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown.");
+            $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
             return;
         }
 
@@ -2189,12 +2202,14 @@ class ABJ_404_Solution_DataAccess {
             // First-time creation: table must exist before query runs, so create synchronously
             $this->logger->debugMessage(__FUNCTION__ . " creating now because the table doesn't exist (first time).");
             $this->createRedirectsForViewHitsTable();
+            $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'scheduled', 86400);
             return;
         }
 
         // Check if rebuild is needed (logs have changed since last build)
         if (!$this->hitsTableNeedsRebuild()) {
             // No new log entries - skip rebuild to reduce server load
+            $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'not_needed', 86400);
             return;
         }
 
@@ -2214,15 +2229,27 @@ class ABJ_404_Solution_DataAccess {
     function scheduleHitsTableRebuild() {
         if ($this->shouldSkipNonEssentialDbWrites()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown.");
+            $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
             return;
         }
         if (!self::$hitsTableRebuildScheduled) {
             if ($this->isHitsTableRebuildLocked()) {
                 $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling because another rebuild is already running.");
+                $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'running', 86400);
                 return;
             }
+
+            $lastScheduled = (int)$this->getRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG);
+            if ($lastScheduled > 0 && (time() - $lastScheduled) < self::HITS_TABLE_SCHEDULE_COOLDOWN_SECONDS) {
+                $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling due to cooldown.");
+                $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'cooldown', 86400);
+                return;
+            }
+
             self::$hitsTableRebuildScheduled = true;
             $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild for shutdown hook.");
+            $this->setRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG, time(), 86400);
+            $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'scheduled', 86400);
             add_action('shutdown', [$this, 'createRedirectsForViewHitsTable']);
         }
     }
@@ -2239,6 +2266,13 @@ class ABJ_404_Solution_DataAccess {
         if ($lockValue === false || $lockValue === null || $lockValue === '') {
             return false;
         }
+        // Defensive: if lock is corrupted (non-numeric), clear it so rebuilds can resume.
+        if (!is_numeric($lockValue)) {
+            if (function_exists('delete_option')) {
+                delete_option($this->getHitsTableRebuildLockOptionName());
+            }
+            return false;
+        }
         $lockTimestamp = is_numeric($lockValue) ? (int)$lockValue : 0;
         if ($lockTimestamp > 0 && (time() - $lockTimestamp) > self::HITS_TABLE_REBUILD_LOCK_TTL_SECONDS) {
             if (function_exists('delete_option')) {
@@ -2247,6 +2281,21 @@ class ABJ_404_Solution_DataAccess {
             return false;
         }
         return true;
+    }
+
+    function getLogsHitsTableLastCheckedAt() {
+        $ts = (int)$this->getRuntimeFlag(self::HITS_TABLE_LAST_CHECKED_FLAG);
+        return $ts > 0 ? $ts : null;
+    }
+
+    function getLogsHitsTableLastScheduledAt() {
+        $ts = (int)$this->getRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG);
+        return $ts > 0 ? $ts : null;
+    }
+
+    function getLogsHitsTableLastDecision() {
+        $v = $this->getRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG);
+        return is_string($v) ? $v : '';
     }
 
     private function acquireHitsTableRebuildLock() {
