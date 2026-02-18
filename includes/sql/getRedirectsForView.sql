@@ -37,6 +37,8 @@ select
         
         (case
           when wp_abj404_redirects.type = {ABJ404_TYPE_EXTERNAL} then 1
+          when wp_abj404_redirects.type = {ABJ404_TYPE_POST} and
+            wp_posts.ID is null then 0
           when wp_abj404_redirects.type = {ABJ404_TYPE_POST} and 
           	lower(wp_posts.post_status) = 'publish' then 1
           when wp_abj404_redirects.type = {ABJ404_TYPE_POST} and 
@@ -47,7 +49,7 @@ select
           	terms.term_id is null then 0
           when wp_abj404_redirects.type = {ABJ404_TYPE_HOME} then 1
           when wp_abj404_redirects.type = {ABJ404_TYPE_404_DISPLAYED} then 1
-          else '? Dest Type'
+          else 0
         end) as published_status,
 
         wp_abj404_redirects.code,
@@ -70,7 +72,7 @@ from    {wp_abj404_redirects} wp_abj404_redirects
         left outer join {wp_terms} terms
         on binary wp_abj404_redirects.final_dest = binary terms.term_id
 
-        inner join {wp_options} wp_options
+        left outer join {wp_options} wp_options
         on binary wp_options.option_name = binary 'blogname'
 
 where 1 and (status in ({statusTypes})) and disabled = {trashValue}
