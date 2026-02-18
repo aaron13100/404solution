@@ -2560,10 +2560,12 @@ class ABJ_404_Solution_DataAccess {
         $wasRefreshed = false;
         if ($this->shouldSkipNonEssentialDbWrites()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown.");
+            $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
             return false;
         }
         if (!$this->acquireHitsTableRebuildLock()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild lock is already held.");
+            $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'running', 86400);
             return false;
         }
         try {
