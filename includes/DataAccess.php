@@ -32,6 +32,10 @@ class ABJ_404_Solution_DataAccess {
     const PERIODIC_STATS_CACHE_TTL_SECONDS = 300;
     /** Minimum interval before recalculating expensive stats aggregates. */
     const PERIODIC_STATS_REFRESH_COOLDOWN_SECONDS = 30;
+    /** Retention for dashboard stats snapshot payload (stale snapshot is acceptable for fast first paint). */
+    const STATS_DASHBOARD_CACHE_TTL_SECONDS = 86400;
+    /** Minimum time between full stats snapshot recomputes. */
+    const STATS_DASHBOARD_REFRESH_COOLDOWN_SECONDS = 30;
     /** Cooldown when DB query quota is exceeded. */
     const DB_QUOTA_COOLDOWN_SECONDS = 900;
     /** Cooldown when DB is read-only or storage is full. */
@@ -4575,6 +4579,215 @@ class ABJ_404_Solution_DataAccess {
                 $this->releaseViewSnapshotRefreshLock($lockKey);
             }
         }
+    }
+
+    /**
+     * Return a cached snapshot used by the Stats dashboard.
+     *
+     * For user experience, we intentionally prefer stale data over blocking
+     * the request. Fresh recomputation is done by a background AJAX refresh.
+     *
+     * @param bool $allowStale If true, return any cached snapshot immediately.
+     * @return array{refreshed_at:int,hash:string,data:array}
+     */
+    function getStatsDashboardSnapshot($allowStale = true) {
+        $cached = $this->getStatsDashboardSnapshotFromCache();
+        if (is_array($cached) && !empty($cached['data']) && $allowStale) {
+            return $cached;
+        }
+
+        if ($allowStale) {
+            $emptyData = $this->buildEmptyStatsDashboardSnapshotData();
+            $emptyPayload = array(
+                'refreshed_at' => 0,
+                'hash' => $this->hashStatsDashboardSnapshot($emptyData),
+                'data' => $emptyData,
+            );
+            if (function_exists('set_transient')) {
+                set_transient($this->getStatsDashboardSnapshotCacheKey(), $emptyPayload, self::STATS_DASHBOARD_CACHE_TTL_SECONDS);
+            }
+            return $emptyPayload;
+        }
+
+        return $this->refreshStatsDashboardSnapshot(false);
+    }
+
+    /**
+     * Recompute and store the stats dashboard snapshot.
+     *
+     * @param bool $force If true, bypass refresh cooldown checks.
+     * @return array{refreshed_at:int,hash:string,data:array}
+     */
+    function refreshStatsDashboardSnapshot($force = false) {
+        $cached = $this->getStatsDashboardSnapshotFromCache();
+        $hasCachedData = (is_array($cached) && !empty($cached['data']));
+        $cachedAge = $hasCachedData ? max(0, time() - intval($cached['refreshed_at'] ?? 0)) : PHP_INT_MAX;
+
+        if (!$force && $hasCachedData && $cachedAge < self::STATS_DASHBOARD_REFRESH_COOLDOWN_SECONDS) {
+            return $cached;
+        }
+
+        $lockKey = 'stats-dashboard:' . $this->getStatsDashboardSnapshotCacheKey();
+        $lockAcquired = $this->acquireViewSnapshotRefreshLock($lockKey);
+        if (!$lockAcquired && $hasCachedData) {
+            return $cached;
+        }
+
+        try {
+            $data = $this->buildStatsDashboardSnapshotData();
+            $payload = array(
+                'refreshed_at' => time(),
+                'hash' => $this->hashStatsDashboardSnapshot($data),
+                'data' => $data,
+            );
+            if (function_exists('set_transient')) {
+                set_transient($this->getStatsDashboardSnapshotCacheKey(), $payload, self::STATS_DASHBOARD_CACHE_TTL_SECONDS);
+            }
+            return $payload;
+        } catch (Throwable $e) {
+            if ($hasCachedData) {
+                $this->logger->debugMessage(__FUNCTION__ . ' failed to recompute stats snapshot; returning cached snapshot. Error: ' . $e->getMessage());
+                return $cached;
+            }
+            throw $e;
+        } finally {
+            if ($lockAcquired) {
+                $this->releaseViewSnapshotRefreshLock($lockKey);
+            }
+        }
+    }
+
+    private function getStatsDashboardSnapshotFromCache() {
+        if (!function_exists('get_transient')) {
+            return null;
+        }
+        $cached = get_transient($this->getStatsDashboardSnapshotCacheKey());
+        if (!is_array($cached)) {
+            return null;
+        }
+        if (!array_key_exists('data', $cached) || !is_array($cached['data'])) {
+            return null;
+        }
+        $cached['refreshed_at'] = intval($cached['refreshed_at'] ?? 0);
+        $cached['hash'] = is_string($cached['hash'] ?? null) ? $cached['hash'] : '';
+        return $cached;
+    }
+
+    private function getStatsDashboardSnapshotCacheKey() {
+        $blogId = 1;
+        if (function_exists('get_current_blog_id')) {
+            $blogId = absint(get_current_blog_id());
+            if ($blogId <= 0) {
+                $blogId = 1;
+            }
+        }
+        return 'abj404_stats_dashboard_snapshot_v1_' . $blogId;
+    }
+
+    private function hashStatsDashboardSnapshot($data) {
+        $encoded = function_exists('wp_json_encode') ? wp_json_encode($data) : json_encode($data);
+        if (!is_string($encoded)) {
+            $encoded = '';
+        }
+        return md5($encoded);
+    }
+
+    private function buildStatsDashboardSnapshotData() {
+        $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
+
+        $auto301 = $this->getStatsCount(
+            "select count(id) from $redirectsTable where disabled = 0 and code = 301 and status = %d",
+            array(ABJ404_STATUS_AUTO)
+        );
+        $auto302 = $this->getStatsCount(
+            "select count(id) from $redirectsTable where disabled = 0 and code = 302 and status = %d",
+            array(ABJ404_STATUS_AUTO)
+        );
+        $manual301 = $this->getStatsCount(
+            "select count(id) from $redirectsTable where disabled = 0 and code = 301 and status = %d",
+            array(ABJ404_STATUS_MANUAL)
+        );
+        $manual302 = $this->getStatsCount(
+            "select count(id) from $redirectsTable where disabled = 0 and code = 302 and status = %d",
+            array(ABJ404_STATUS_MANUAL)
+        );
+        $trashedRedirects = $this->getStatsCount(
+            "select count(id) from $redirectsTable where disabled = 1 and (status = %d or status = %d)",
+            array(ABJ404_STATUS_AUTO, ABJ404_STATUS_MANUAL)
+        );
+
+        $captured = $this->getStatsCount(
+            "select count(id) from $redirectsTable where disabled = 0 and status = %d",
+            array(ABJ404_STATUS_CAPTURED)
+        );
+        $ignored = $this->getStatsCount(
+            "select count(id) from $redirectsTable where disabled = 0 and status in (%d, %d)",
+            array(ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER)
+        );
+        $trashedCaptured = $this->getStatsCount(
+            "select count(id) from $redirectsTable where disabled = 1 and (status in (%d, %d, %d) )",
+            array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER)
+        );
+
+        $thresholds = array(
+            'today' => mktime(0, 0, 0, abs(intval(date('m'))), abs(intval(date('d'))), abs(intval(date('Y')))),
+            'month' => mktime(0, 0, 0, abs(intval(date('m'))), 1, abs(intval(date('Y')))),
+            'year' => mktime(0, 0, 0, 1, 1, abs(intval(date('Y')))),
+            'all' => 0,
+        );
+        $periods = array();
+        foreach ($thresholds as $periodKey => $ts) {
+            $periods[$periodKey] = $this->getPeriodicStatsSummary($ts, '404');
+        }
+
+        return array(
+            'redirects' => array(
+                'auto301' => intval($auto301),
+                'auto302' => intval($auto302),
+                'manual301' => intval($manual301),
+                'manual302' => intval($manual302),
+                'trashed' => intval($trashedRedirects),
+            ),
+            'captured' => array(
+                'captured' => intval($captured),
+                'ignored' => intval($ignored),
+                'trashed' => intval($trashedCaptured),
+            ),
+            'periods' => $periods,
+        );
+    }
+
+    private function buildEmptyStatsDashboardSnapshotData() {
+        $period = array(
+            'disp404' => 0,
+            'distinct404' => 0,
+            'visitors404' => 0,
+            'refer404' => 0,
+            'redirected' => 0,
+            'distinctredirected' => 0,
+            'distinctvisitors' => 0,
+            'distinctrefer' => 0,
+        );
+        return array(
+            'redirects' => array(
+                'auto301' => 0,
+                'auto302' => 0,
+                'manual301' => 0,
+                'manual302' => 0,
+                'trashed' => 0,
+            ),
+            'captured' => array(
+                'captured' => 0,
+                'ignored' => 0,
+                'trashed' => 0,
+            ),
+            'periods' => array(
+                'today' => $period,
+                'month' => $period,
+                'year' => $period,
+                'all' => $period,
+            ),
+        );
     }
 
     /** 

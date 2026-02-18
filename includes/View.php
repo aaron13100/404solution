@@ -876,10 +876,15 @@ class ABJ_404_Solution_View {
      * @global type $abj404dao
      */
     function outputAdminStatsPage() {
-        global $wpdb;
         global $abj404view;
 
-        $redirects = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
+        $statsSnapshot = $this->dao->getStatsDashboardSnapshot(true);
+        $statsData = (is_array($statsSnapshot) && isset($statsSnapshot['data']) && is_array($statsSnapshot['data']))
+            ? $statsSnapshot['data']
+            : array();
+        $statsHash = (is_array($statsSnapshot) && is_string($statsSnapshot['hash'] ?? null))
+            ? $statsSnapshot['hash']
+            : '';
 
         // Main container
         echo "<div class=\"abj404-container\">";
@@ -895,24 +900,26 @@ class ABJ_404_Solution_View {
         echo "</div>";
         echo "</div>";
 
+        // Config for stale-while-refresh stats snapshot updates (no visible table overwrite).
+        echo '<div class="abj404-stats-refresh-config" style="display:none"'
+            . ' data-stats-refresh-enabled="1"'
+            . ' data-stats-refresh-action="ajaxRefreshStatsDashboard"'
+            . ' data-stats-refresh-nonce="' . esc_attr(wp_create_nonce('abj404_refreshStatsDashboard')) . '"'
+            . ' data-stats-refresh-current-hash="' . esc_attr($statsHash) . '"'
+            . ' data-stats-refresh-available-text="' . esc_attr(__('Refresh available', '404-solution')) . '"></div>';
+
         // Flow layout for stats cards
         echo "<div class=\"abj404-flow-layout\">";
 
         // Redirects Statistics Card
-        $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d";
-        $auto301 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_AUTO));
-
-        $query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d";
-        $auto302 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_AUTO));
-
-        $query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = %d";
-        $manual301 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_MANUAL));
-
-        $query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = %d";
-        $manual302 = $this->dao->getStatsCount($query, array(ABJ404_STATUS_MANUAL));
-
-        $query = "select count(id) from $redirects where disabled = 1 and (status = %d or status = %d)";
-        $trashed = $this->dao->getStatsCount($query, array(ABJ404_STATUS_AUTO, ABJ404_STATUS_MANUAL));
+        $redirectStats = (is_array($statsData) && isset($statsData['redirects']) && is_array($statsData['redirects']))
+            ? $statsData['redirects']
+            : array();
+        $auto301 = intval($redirectStats['auto301'] ?? 0);
+        $auto302 = intval($redirectStats['auto302'] ?? 0);
+        $manual301 = intval($redirectStats['manual301'] ?? 0);
+        $manual302 = intval($redirectStats['manual302'] ?? 0);
+        $trashed = intval($redirectStats['trashed'] ?? 0);
 
         $total = $auto301 + $auto302 + $manual301 + $manual302 + $trashed;
 
@@ -927,14 +934,12 @@ class ABJ_404_Solution_View {
         $abj404view->echoOptionsSection('stats-redirects', 'abj404-redirectStats', __('Redirects', '404-solution'), $content, true, $abj404view->getCardIcon('chart'));
 
         // Captured URLs Statistics Card
-        $query = "select count(id) from $redirects where disabled = 0 and status = %d";
-        $captured = $this->dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED));
-
-        $query = "select count(id) from $redirects where disabled = 0 and status in (%d, %d)";
-        $ignored = $this->dao->getStatsCount($query, array(ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
-
-        $query = "select count(id) from $redirects where disabled = 1 and (status in (%d, %d, %d) )";
-        $trashed = $this->dao->getStatsCount($query, array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
+        $capturedStats = (is_array($statsData) && isset($statsData['captured']) && is_array($statsData['captured']))
+            ? $statsData['captured']
+            : array();
+        $captured = intval($capturedStats['captured'] ?? 0);
+        $ignored = intval($capturedStats['ignored'] ?? 0);
+        $trashed = intval($capturedStats['trashed'] ?? 0);
 
         $total = $captured + $ignored + $trashed;
 
@@ -947,7 +952,9 @@ class ABJ_404_Solution_View {
         $abj404view->echoOptionsSection('stats-captured', 'abj404-capturedStats', __('Captured URLs', '404-solution'), $content, true, $abj404view->getCardIcon('warning'));
 
         // Periodic Stats Cards
-        $periodicStats = $this->dao->getPeriodicStatsSummariesCached('404');
+        $periodicStats = (is_array($statsData) && isset($statsData['periods']) && is_array($statsData['periods']))
+            ? $statsData['periods']
+            : array();
         $periodMeta = array(
             array('title' => __("Today's Stats", '404-solution'), 'key' => 'today'),
             array('title' => __("This Month", '404-solution'), 'key' => 'month'),

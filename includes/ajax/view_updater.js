@@ -11,6 +11,7 @@ if (typeof(getURLParameter) !== "function") {
 jQuery(document).ready(function($) {
     bindSearchFieldListeners();
     triggerBackgroundTableRefreshIfEnabled();
+    triggerStatsBackgroundRefreshIfEnabled();
 });
 
 function getRefreshStatusHost() {
@@ -43,6 +44,7 @@ function triggerBackgroundTableRefreshIfEnabled() {
         difference: null,
         durationMs: null,
         requestCount: 0,
+        hasUpdateAvailable: false,
         lastStatusCode: null,
         lastResponseBytes: null,
         lastSubpage: null,
@@ -51,53 +53,168 @@ function triggerBackgroundTableRefreshIfEnabled() {
         lastFilterTextLength: 0,
         lastError: null
     };
-    var startedAt = Date.now();
-    var startedText = $config.attr('data-pagination-refresh-started-text') || 'Refreshing data in background...';
-    setRefreshStatus($config, startedText);
-    showRefreshToastStart(startedText);
 
     var perpageElements = document.querySelectorAll('.perpage');
     if (perpageElements == null || perpageElements.length === 0) {
-        clearRefreshStatus($config);
         return;
     }
 
-    // Show cached snapshot immediately, then refresh in the background during idle time.
+    // Run a detect-only check in the background. Never overwrite the visible table automatically.
     var runRefresh = function() {
         paginationLinksChange(perpageElements[0], {
             backgroundRefresh: true,
-            onComplete: function() {
+            detectOnly: true,
+            onComplete: function(meta) {
                 var $latestConfig = getRefreshStatusHost();
-                var finishedText = $latestConfig.attr('data-pagination-refresh-finished-text') || 'Data refreshed';
-                var elapsed = Date.now() - startedAt;
-                var minimumStartedMs = 850;
-                var showFinished = function() {
-                    setRefreshStatus($latestConfig, finishedText);
-                    showRefreshToastComplete(finishedText);
-                    window.setTimeout(function() { clearRefreshStatus($latestConfig); }, 3500);
-                    window.setTimeout(hideRefreshToast, 3500);
-                };
-                if (elapsed < minimumStartedMs) {
-                    window.setTimeout(showFinished, minimumStartedMs - elapsed);
-                } else {
-                    showFinished();
+                var hasUpdate = !!(meta && meta.hasUpdate);
+                if (hasUpdate) {
+                    var availableText = $latestConfig.attr('data-pagination-refresh-available-text') || 'Refresh available';
+                    showRefreshAvailablePill(availableText, 5000);
                 }
                 if (window.abj404BackgroundRefreshState) {
                     window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                    window.abj404BackgroundRefreshState.hasUpdateAvailable = hasUpdate;
                 }
                 markAutoRefreshCompleted($latestConfig);
             },
             onError: function() {
-                var $latestConfig = getRefreshStatusHost();
-                clearRefreshStatus($latestConfig.length > 0 ? $latestConfig : $config);
-                hideRefreshToast();
                 if (window.abj404BackgroundRefreshState) {
                     window.abj404BackgroundRefreshState.lastError = 'background-refresh-failed';
                     window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                    window.abj404BackgroundRefreshState.hasUpdateAvailable = false;
                 }
             }
         });
     };
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(runRefresh, {timeout: 2000});
+    } else {
+        setTimeout(runRefresh, 900);
+    }
+}
+
+function getStatsRefreshConfigHost() {
+    return jQuery('.abj404-stats-refresh-config').first();
+}
+
+function getStatsAutoRefreshCacheKey($config) {
+    var page = getURLParameter('page') || '';
+    var subpage = ($config && $config.attr) ? ($config.attr('data-stats-refresh-subpage') || getURLParameter('subpage') || 'abj404_stats') : (getURLParameter('subpage') || 'abj404_stats');
+    return 'abj404:stats_auto_refresh:' + [page, subpage].join(':');
+}
+
+function shouldRunStatsAutoRefreshNow($config) {
+    try {
+        if (!window.localStorage) {
+            return true;
+        }
+        var key = getStatsAutoRefreshCacheKey($config);
+        var lastTs = parseInt(localStorage.getItem(key) || '0', 10);
+        var cooldownMs = 30000; // at most once every 30s for this tab
+        return !(lastTs > 0 && (Date.now() - lastTs) < cooldownMs);
+    } catch (e) {
+        return true;
+    }
+}
+
+function markStatsAutoRefreshCompleted($config) {
+    try {
+        if (!window.localStorage) {
+            return;
+        }
+        var key = getStatsAutoRefreshCacheKey($config);
+        localStorage.setItem(key, String(Date.now()));
+    } catch (e) {
+        // ignore storage failures
+    }
+}
+
+function triggerStatsBackgroundRefreshIfEnabled() {
+    var $config = getStatsRefreshConfigHost();
+    if ($config.length === 0) {
+        return;
+    }
+    if ($config.attr('data-stats-refresh-enabled') !== '1') {
+        return;
+    }
+    if (!shouldRunStatsAutoRefreshNow($config)) {
+        return;
+    }
+    if (window.abj404StatsRefreshTriggered) {
+        return;
+    }
+    window.abj404StatsRefreshTriggered = true;
+
+    var nonce = $config.attr('data-stats-refresh-nonce') || '';
+    if (nonce === '') {
+        return;
+    }
+
+    window.abj404StatsBackgroundRefreshState = {
+        enabled: true,
+        startedAt: Date.now(),
+        finishedAt: null,
+        difference: null,
+        durationMs: null,
+        lastStatusCode: null,
+        hasUpdateAvailable: false,
+        lastError: null
+    };
+
+    var action = $config.attr('data-stats-refresh-action') || 'ajaxRefreshStatsDashboard';
+    var refreshAvailableText = $config.attr('data-stats-refresh-available-text') || 'Refresh available';
+    var currentHash = $config.attr('data-stats-refresh-current-hash') || '';
+
+    var runRefresh = function() {
+        var startMs = Date.now();
+        jQuery.ajax({
+            url: window.ajaxurl || 'admin-ajax.php',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: action,
+                page: getURLParameter('page') || '',
+                subpage: getURLParameter('subpage') || 'abj404_stats',
+                nonce: nonce,
+                currentHash: currentHash
+            },
+            success: function(result) {
+                var payload = result;
+                if (payload && payload.data && typeof payload.data === 'object' && payload.success === false) {
+                    payload = payload.data;
+                }
+                var hasUpdate = !!(payload && payload.hasUpdate);
+                if (hasUpdate) {
+                    showRefreshAvailablePill(refreshAvailableText, 5000);
+                }
+                if (payload && payload.hash) {
+                    $config.attr('data-stats-refresh-current-hash', payload.hash);
+                }
+                if (window.abj404StatsBackgroundRefreshState) {
+                    var duration = Date.now() - startMs;
+                    window.abj404StatsBackgroundRefreshState.finishedAt = Date.now();
+                    window.abj404StatsBackgroundRefreshState.durationMs = duration;
+                    window.abj404StatsBackgroundRefreshState.difference = duration;
+                    window.abj404StatsBackgroundRefreshState.lastStatusCode = 200;
+                    window.abj404StatsBackgroundRefreshState.hasUpdateAvailable = hasUpdate;
+                }
+                markStatsAutoRefreshCompleted($config);
+            },
+            error: function(xhr, textStatus, errorThrown) {
+                if (window.abj404StatsBackgroundRefreshState) {
+                    var duration = Date.now() - startMs;
+                    window.abj404StatsBackgroundRefreshState.finishedAt = Date.now();
+                    window.abj404StatsBackgroundRefreshState.durationMs = duration;
+                    window.abj404StatsBackgroundRefreshState.difference = duration;
+                    window.abj404StatsBackgroundRefreshState.lastStatusCode = xhr ? xhr.status : null;
+                    window.abj404StatsBackgroundRefreshState.lastError = textStatus || errorThrown || 'ajax-error';
+                    window.abj404StatsBackgroundRefreshState.hasUpdateAvailable = false;
+                }
+                markStatsAutoRefreshCompleted($config);
+            }
+        });
+    };
+
     if (typeof window.requestIdleCallback === 'function') {
         window.requestIdleCallback(runRefresh, {timeout: 2000});
     } else {
@@ -121,6 +238,44 @@ function setRefreshStatus($config, message) {
 
 function clearRefreshStatus($config) {
     setRefreshStatus($config, '');
+}
+
+function normalizeHtmlForBackgroundComparison(html) {
+    if (!html) {
+        return '';
+    }
+    return String(html)
+            .replace(/<span class="abj404-refresh-status"[^>]*>[\s\S]*?<\/span>/g, '')
+            .replace(/data-pagination-ajax-nonce="[^"]*"/g, 'data-pagination-ajax-nonce="nonce"')
+            .replace(/([?&](?:_wpnonce|nonce)=)[^&"'\s>]+/g, '$1nonce')
+            .replace(/\s+/g, ' ')
+            .trim();
+}
+
+function hasBackgroundRefreshUpdate(result) {
+    var currentTableHtml = '';
+    var incomingTableHtml = '';
+    var currentPaginationHtml = '';
+    var incomingPaginationHtml = '';
+
+    var currentTable = jQuery('.abj404-table, .wp-list-table').first();
+    if (currentTable.length > 0) {
+        currentTableHtml = currentTable.prop('outerHTML') || '';
+    }
+    if (result && typeof result.table === 'string') {
+        incomingTableHtml = result.table;
+    }
+
+    var currentPagination = jQuery('.abj404-pagination-right').first();
+    if (currentPagination.length > 0) {
+        currentPaginationHtml = currentPagination.prop('outerHTML') || '';
+    }
+    if (result && typeof result.paginationLinksTop === 'string') {
+        incomingPaginationHtml = result.paginationLinksTop;
+    }
+
+    return normalizeHtmlForBackgroundComparison(currentTableHtml) !== normalizeHtmlForBackgroundComparison(incomingTableHtml)
+            || normalizeHtmlForBackgroundComparison(currentPaginationHtml) !== normalizeHtmlForBackgroundComparison(incomingPaginationHtml);
 }
 
 function getAutoRefreshCacheKey($config) {
@@ -238,6 +393,55 @@ function hideRefreshToast() {
     }
 }
 
+function ensureRefreshAvailablePillStyles() {
+    if (document.getElementById('abj404-refresh-available-pill-styles')) {
+        return;
+    }
+    var style = document.createElement('style');
+    style.id = 'abj404-refresh-available-pill-styles';
+    style.textContent =
+        '#abj404-refresh-available-pill{' +
+        'position:fixed;right:16px;bottom:16px;z-index:99999;padding:8px 12px;' +
+        'background:var(--abj404-accent,#2271b1);color:#fff;border:1px solid rgba(0,0,0,.08);' +
+        'border-radius:999px;font-size:12px;font-weight:600;line-height:1.2;cursor:pointer;' +
+        'box-shadow:0 4px 14px rgba(0,0,0,.22);transition:opacity .15s ease,transform .15s ease;}' +
+        '#abj404-refresh-available-pill:hover{transform:translateY(-1px);background:var(--abj404-accent-hover,#135e96);}';
+    document.head.appendChild(style);
+}
+
+function hideRefreshAvailablePill() {
+    var pill = document.getElementById('abj404-refresh-available-pill');
+    if (pill && pill.parentNode) {
+        pill.parentNode.removeChild(pill);
+    }
+    if (window.abj404RefreshAvailableHideTimer) {
+        window.clearTimeout(window.abj404RefreshAvailableHideTimer);
+        window.abj404RefreshAvailableHideTimer = null;
+    }
+    window.abj404RefreshAvailableHiddenAt = Date.now();
+}
+
+function showRefreshAvailablePill(message, timeoutMs) {
+    ensureRefreshAvailablePillStyles();
+    hideRefreshAvailablePill();
+    var pill = document.createElement('button');
+    pill.type = 'button';
+    pill.id = 'abj404-refresh-available-pill';
+    pill.textContent = message || 'Refresh available';
+    pill.setAttribute('aria-live', 'polite');
+    pill.setAttribute('title', message || 'Refresh available');
+    pill.addEventListener('click', function() {
+        window.location.reload();
+    });
+    document.body.appendChild(pill);
+    window.abj404RefreshAvailableShownAt = Date.now();
+    window.abj404RefreshAvailableLastMessage = message || 'Refresh available';
+    var delay = Math.max(1000, parseInt(timeoutMs, 10) || 5000);
+    window.abj404RefreshAvailableHideTimer = window.setTimeout(function() {
+        hideRefreshAvailablePill();
+    }, delay);
+}
+
 function bindSearchFieldListeners() {
     var filters = jQuery('input[name=searchFilter]');
     if (filters === undefined || filters === null || filters.length === 0) {
@@ -309,6 +513,7 @@ function isElementFullyVisible(el) {
 function paginationLinksChange(triggerItem, options) {
     options = options || {};
     var isBackgroundRefresh = options.backgroundRefresh === true;
+    var detectOnly = options.detectOnly === true;
     var rowThatChanged = jQuery(triggerItem).parentsUntil('.tablenav').parent();
     var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
     var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();
@@ -357,9 +562,11 @@ function paginationLinksChange(triggerItem, options) {
         window.abj404BackgroundRefreshState.lastError = null;
         window.abj404BackgroundRefreshState.lastStatusCode = null;
         window.abj404BackgroundRefreshState.lastResponseBytes = null;
+        window.abj404BackgroundRefreshState.hasUpdateAvailable = false;
     }
 
     if (!isBackgroundRefresh) {
+        hideRefreshAvailablePill();
         // Show loading overlay on the table for explicit user actions only.
         var $table = jQuery(tableSelector);
         if (!$table.parent().hasClass('abj404-table-wrapper')) {
@@ -389,6 +596,31 @@ function paginationLinksChange(triggerItem, options) {
             id: id
         },
         success: function (result) {
+            if (isBackgroundRefresh && detectOnly) {
+                var hasUpdate = hasBackgroundRefreshUpdate(result);
+                if (typeof options.onComplete === 'function') {
+                    options.onComplete({hasUpdate: hasUpdate});
+                }
+                if (window.abj404BackgroundRefreshState) {
+                    var bgDurationMs = Date.now() - requestStartedAt;
+                    var bgResultSize = 0;
+                    if (result) {
+                        try {
+                            bgResultSize = JSON.stringify(result).length;
+                        } catch (e) {
+                            bgResultSize = 0;
+                        }
+                    }
+                    window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                    window.abj404BackgroundRefreshState.durationMs = bgDurationMs;
+                    window.abj404BackgroundRefreshState.difference = bgDurationMs;
+                    window.abj404BackgroundRefreshState.lastStatusCode = 200;
+                    window.abj404BackgroundRefreshState.lastResponseBytes = bgResultSize;
+                    window.abj404BackgroundRefreshState.hasUpdateAvailable = hasUpdate;
+                }
+                return;
+            }
+
             // get the current text value
             var currentFieldValue = jQuery('input[name=searchFilter]').val();
 
@@ -411,6 +643,9 @@ function paginationLinksChange(triggerItem, options) {
                 window.abj404InitTableInteractions();
             }
             bindSearchFieldListeners();
+            if (typeof window.abj404InitTimeAgo === 'function') {
+                window.abj404InitTimeAgo();
+            }
             jQuery('input[name=searchFilter]').val(currentFieldValue);
             jQuery('input[name=searchFilter]').attr("data-previous-value", currentFieldValue);
 

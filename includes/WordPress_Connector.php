@@ -173,6 +173,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         $isOptionsPage = ($subpage === 'abj404_options');
+        $isStatsPage = ($subpage === 'abj404_stats');
         $isCardAccordionPage = in_array($subpage, array('abj404_options', 'abj404_tools', 'abj404_stats'), true);
         $isLogsPage = ($subpage === 'abj404_logs');
         $isListPage = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_logs'), true);
@@ -216,8 +217,6 @@ class ABJ_404_Solution_WordPress_Connector {
         wp_localize_script('abj404-enable_disable_apply_button_js', 'abj404localization', $translation_array);
         if ($isListPage) {
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-enable_disable_apply_button_js');
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater', plugin_dir_url(__FILE__) . 'ajax/view_updater.js',
-                    array('jquery', 'jquery-ui-autocomplete'));
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-trash_link_ajax', plugin_dir_url(__FILE__) . 'ajax/trash_link_ajax.js',
                     array('jquery'));
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-table-interactions', plugin_dir_url(__FILE__) . 'js/tableInteractions.js',
@@ -235,6 +234,11 @@ class ABJ_404_Solution_WordPress_Connector {
                 'days'    => __('days', '404-solution'),
                 'ago'     => __('ago', '404-solution'),
             ));
+        }
+
+        if ($isListPage || $isStatsPage) {
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater', plugin_dir_url(__FILE__) . 'ajax/view_updater.js',
+                    array('jquery', 'jquery-ui-autocomplete'));
         }
 
         if ($isLogsPage) {

@@ -23,6 +23,8 @@ class ABJ_404_Solution_ViewUpdater {
         $me = ABJ_404_Solution_ViewUpdater::getInstance();
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxUpdatePaginationLinks',
                 array($me, 'getPaginationLinks'));
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxRefreshStatsDashboard',
+                array($me, 'refreshStatsDashboard'));
         // wp_ajax_nopriv_ is for normal users
     }
 
@@ -378,6 +380,104 @@ class ABJ_404_Solution_ViewUpdater {
             self::markAjaxResponseSent();
             $payload = self::buildAjaxErrorResponse(
                 'Server error while updating the table.',
+                $details,
+                $isPluginAdmin
+            );
+            self::sendJsonResponseAndExit($payload, 500);
+            return;
+        }
+    }
+
+    function refreshStatsDashboard() {
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+
+        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
+        $page = $abj404dao->getPostOrGetSanitize('page', '');
+        $subpage = $abj404dao->getPostOrGetSanitize('subpage', '');
+        $currentHash = $abj404dao->getPostOrGetSanitize('currentHash', '');
+
+        $isPluginAdmin = false;
+        $context = array(
+            'action' => 'ajaxRefreshStatsDashboard',
+            'page' => $page,
+            'subpage' => $subpage,
+            'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
+            'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
+        );
+        $context = self::startAjaxDebugContext($context);
+
+        try {
+            if (!wp_verify_nonce($nonce, 'abj404_refreshStatsDashboard')) {
+                self::safeLogAjaxFailure('AJAX invalid nonce in ajaxRefreshStatsDashboard.', $context);
+                self::markAjaxResponseSent();
+                $payload = self::buildAjaxErrorResponse('Invalid security token', null, false);
+                self::sendJsonResponseAndExit($payload, 403);
+                return;
+            }
+
+            $isPluginAdmin = $abj404logic->userIsPluginAdmin();
+            if (!$isPluginAdmin) {
+                self::safeLogAjaxFailure('AJAX unauthorized in ajaxRefreshStatsDashboard.', $context);
+                self::markAjaxResponseSent();
+                $payload = self::buildAjaxErrorResponse('Unauthorized', null, false);
+                self::sendJsonResponseAndExit($payload, 403);
+                return;
+            }
+
+            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('refresh_stats_dashboard', 30, 60)) {
+                self::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshStatsDashboard.', $context);
+                self::markAjaxResponseSent();
+                $payload = self::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+                self::sendJsonResponseAndExit($payload, 429);
+                return;
+            }
+
+            $snapshot = $abj404dao->refreshStatsDashboardSnapshot(false);
+            $newHash = is_array($snapshot) && is_string($snapshot['hash'] ?? null) ? $snapshot['hash'] : '';
+            $hasUpdate = ($currentHash !== '' && $newHash !== '' && $newHash !== $currentHash);
+
+            $response = array(
+                'hasUpdate' => $hasUpdate,
+                'hash' => $newHash,
+                'refreshedAt' => is_array($snapshot) ? intval($snapshot['refreshed_at'] ?? 0) : 0,
+            );
+
+            self::markAjaxResponseSent();
+            self::getAndClearAjaxBufferedOutput();
+            self::sendJsonResponseAndExit($response, 200);
+            return;
+
+        } catch (Throwable $e) {
+            if (!$isPluginAdmin) {
+                try {
+                    $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+                    if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
+                        $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
+                    }
+                } catch (Throwable $ignored) {
+                    // ignore and try fallback
+                }
+            }
+
+            $details = array(
+                'exception' => array(
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                ),
+                'context' => $context,
+            );
+            self::safeLogAjaxFailure('AJAX exception in ajaxRefreshStatsDashboard.', $details, $e);
+            $capturedOutput = self::getAndClearAjaxBufferedOutput();
+            if ($capturedOutput !== '') {
+                $details['buffered_output'] = substr($capturedOutput, 0, 8000);
+            }
+
+            self::markAjaxResponseSent();
+            $payload = self::buildAjaxErrorResponse(
+                'Server error while refreshing stats.',
                 $details,
                 $isPluginAdmin
             );
