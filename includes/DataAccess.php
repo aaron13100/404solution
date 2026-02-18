@@ -2589,6 +2589,11 @@ class ABJ_404_Solution_DataAccess {
         $this->queryAndGetResults($createTempTableQuery);
         $this->queryAndGetResults("truncate table " . $tempDestTable);
         
+        // Capture a pre-insert snapshot watermark.
+        // This keeps rebuild checks consistent with getMaxLogId() while avoiding
+        // claiming coverage for rows that may arrive during/after the insert.
+        $maxLogIdSnapshot = $this->getMaxLogId();
+
         // insert the data into the temp table (this may take time).
         $ttInsertQuery = "insert into " . $tempDestTable . " (requested_url, logsid, " .
         	"last_used, logshits) \n " . $ttSelectQuery;
@@ -2597,8 +2602,7 @@ class ABJ_404_Solution_DataAccess {
         // Store elapsed time and max log ID in comment for invalidation check
         // Format: "elapsed_time|max_log_id" (e.g., "0.35|12345")
         $elapsedTime = $results['elapsed_time'];
-        $maxLogId = $this->getMaxLogId();
-        $comment = $elapsedTime . '|' . $maxLogId;
+        $comment = $elapsedTime . '|' . $maxLogIdSnapshot;
         // Escape comment and truncate to MySQL's 2048 char limit for table comments
         $comment = substr(esc_sql($comment), 0, 2048);
         $addComment = "ALTER TABLE " . $tempDestTable . " COMMENT '" . $comment . "'";

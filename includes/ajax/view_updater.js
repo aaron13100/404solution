@@ -22,6 +22,14 @@ function getRefreshStatusHost() {
     return $host;
 }
 
+function isDetectOnlyRefreshInFlight() {
+    return window.abj404DetectOnlyRefreshInFlight === true;
+}
+
+function setDetectOnlyRefreshInFlight(isRunning) {
+    window.abj404DetectOnlyRefreshInFlight = !!isRunning;
+}
+
 function triggerBackgroundTableRefreshIfEnabled() {
     var $config = getRefreshStatusHost();
     if ($config.length === 0) {
@@ -61,6 +69,9 @@ function triggerBackgroundTableRefreshIfEnabled() {
 
     // Run a detect-only check in the background. Never overwrite the visible table automatically.
     var runRefresh = function() {
+        if (isDetectOnlyRefreshInFlight()) {
+            return;
+        }
         paginationLinksChange(perpageElements[0], {
             backgroundRefresh: true,
             detectOnly: true,
@@ -527,7 +538,7 @@ function bindSearchFieldListeners() {
     
     filters.prop('disabled', false);
     
-    field = jQuery(filters[0]);
+    var field = jQuery(filters[0]);
     var fieldLength = field.val().length;
     // only set the focus if the input box is visible. otherwise screen scrolls for no reason.
     if (isElementFullyVisible(filters[0])) {
@@ -537,11 +548,11 @@ function bindSearchFieldListeners() {
     filters[0].setSelectionRange(fieldLength, fieldLength);
     
     filters.on("search", function(event) {
-        field = jQuery(event.srcElement);
+        var field = jQuery(event.target || event.srcElement);
         var previousValue = field.attr("data-previous-value");
         var fieldLength = field.val() == null ? 0 : field.val().length;
         if (fieldLength === 0 && field.val() !== previousValue) {
-            paginationLinksChange(event.srcElement);
+            paginationLinksChange(event.target || event.srcElement || filters[0]);
             event.preventDefault();
         }
         field.attr("data-previous-value", field.val());
@@ -550,10 +561,11 @@ function bindSearchFieldListeners() {
     // update the page when the user presses enter.
     // store the typed value to restore once the page is reloaded.
     filters.keypress(function(event) {
+        var field = jQuery(event.target || event.srcElement);
         var keycode = (event.which ? event.which : event.keyCode);
         if (keycode === 13) {
             event.preventDefault();
-            var srcElement = event.srcElement;
+            var srcElement = event.target || event.srcElement;
             // prefer using the "perpage" element as the source element because when
             // the input box itself is used as a source element there's some kind of bug
             // and I don't care to figure out why at the moment, therefore this hack...
@@ -646,6 +658,7 @@ function paginationLinksChange(triggerItem, options) {
     var baseUrl = url.split('?')[0];
     var requestStartedAt = Date.now();
     var baselineComparison = null;
+    var isDetectOnlyBackground = (isBackgroundRefresh && detectOnly);
     if (isBackgroundRefresh && detectOnly) {
         var tableAtRequestStart = jQuery('.abj404-table, .wp-list-table').first();
         baselineComparison = {
@@ -654,6 +667,15 @@ function paginationLinksChange(triggerItem, options) {
             ),
             serverSignature: ($ajaxConfigEl.attr('data-pagination-current-signature') || '')
         };
+    }
+    if (isDetectOnlyBackground && isDetectOnlyRefreshInFlight()) {
+        if (typeof options.onComplete === 'function') {
+            options.onComplete({hasUpdate: false, skipped: true});
+        }
+        return;
+    }
+    if (isDetectOnlyBackground) {
+        setDetectOnlyRefreshInFlight(true);
     }
     if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
         window.abj404BackgroundRefreshState.requestCount = (window.abj404BackgroundRefreshState.requestCount || 0) + 1;
@@ -702,6 +724,7 @@ function paginationLinksChange(triggerItem, options) {
         },
         success: function (result) {
             if (isBackgroundRefresh && detectOnly) {
+                setDetectOnlyRefreshInFlight(false);
                 var hasUpdate;
                 if (result && typeof result.hasUpdate === 'boolean') {
                     hasUpdate = !!result.hasUpdate;
@@ -769,6 +792,15 @@ function paginationLinksChange(triggerItem, options) {
             if (typeof options.onComplete === 'function') {
                 options.onComplete();
             }
+            if (!isBackgroundRefresh && typeof triggerBackgroundTableRefreshIfEnabled === 'function') {
+                // Re-arm one detect-only refresh for the newly loaded table state.
+                // Without this, manual AJAX navigation can suppress update detection
+                // for the rest of the current page session.
+                window.abj404InitialTableRefreshTriggered = false;
+                window.setTimeout(function() {
+                    triggerBackgroundTableRefreshIfEnabled();
+                }, 0);
+            }
             if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
                 var durationMs = Date.now() - requestStartedAt;
                 var resultSize = 0;
@@ -787,6 +819,9 @@ function paginationLinksChange(triggerItem, options) {
             }
         },
         error: function (jqXHR, textStatus, errorThrown) {
+            if (isBackgroundRefresh && detectOnly) {
+                setDetectOnlyRefreshInFlight(false);
+            }
             // Remove the loading overlay on error
             jQuery('.abj404-loading-overlay').remove();
             var status = jqXHR && jqXHR.status ? jqXHR.status : '';
