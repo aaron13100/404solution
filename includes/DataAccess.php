@@ -2204,11 +2204,16 @@ class ABJ_404_Solution_DataAccess {
             // First-time creation: table must exist before query runs, so create synchronously
             $this->logger->debugMessage(__FUNCTION__ . " creating now because the table doesn't exist (first time).");
             $created = $this->createRedirectsForViewHitsTable();
-            $this->setRuntimeFlag(
-                self::HITS_TABLE_LAST_DECISION_FLAG,
-                $created ? 'not_needed' : 'paused',
-                86400
-            );
+            if ($created) {
+                $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'not_needed', 86400);
+            } else {
+                // Preserve a more specific state set by createRedirectsForViewHitsTable().
+                // For example, if another request already holds the lock we keep "running".
+                $decision = $this->getLogsHitsTableLastDecision();
+                if ($decision !== 'running') {
+                    $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
+                }
+            }
             return;
         }
 
