@@ -247,6 +247,9 @@ function normalizeHtmlForBackgroundComparison(html) {
     return String(html)
             .replace(/&#0*38;|&amp;/gi, '&')
             .replace(/<!--[\s\S]*?-->/g, '')
+            // Browser DOM serialization of SVG can differ from server-rendered HTML
+            // (e.g., <path .../> vs <path ...></path>) without any data change.
+            .replace(/<svg\b[\s\S]*?<\/svg>/gi, '')
             .replace(/<span class="abj404-refresh-status"[^>]*>[\s\S]*?<\/span>/g, '')
             .replace(/(<span class="abj404-time-ago"[^>]*>)[\s\S]*?(<\/span>)/g, '$1$2')
             // "time-ago" markers are freshness metadata; timestamp drift alone should not signal table-data change.
@@ -281,6 +284,44 @@ function getComparableTableHtml(html) {
     return raw;
 }
 
+function buildComparableTableSignature(html) {
+    var comparableHtml = getComparableTableHtml(html);
+    var normalizedHtml = normalizeHtmlForBackgroundComparison(comparableHtml);
+    if (!normalizedHtml) {
+        return '';
+    }
+
+    // Compare semantic row/cell text instead of raw markup so entity/quote/style
+    // serialization differences do not produce false positives.
+    if (typeof DOMParser !== 'function') {
+        return normalizedHtml;
+    }
+
+    try {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString('<table>' + normalizedHtml + '</table>', 'text/html');
+        var rows = doc.querySelectorAll('tbody tr');
+        if (!rows || rows.length === 0) {
+            return normalizedHtml;
+        }
+        var rowParts = [];
+        for (var i = 0; i < rows.length; i++) {
+            var cells = rows[i].querySelectorAll('td');
+            var cellParts = [];
+            for (var j = 0; j < cells.length; j++) {
+                var text = (cells[j].textContent || '').replace(/\s+/g, ' ').trim();
+                cellParts.push(text);
+            }
+            rowParts.push(cellParts.join('||'));
+        }
+        // Ignore non-deterministic row ordering for equal sort values.
+        rowParts.sort();
+        return rowParts.join('\n');
+    } catch (e) {
+        return normalizedHtml;
+    }
+}
+
 function hasBackgroundRefreshUpdateWithBaseline(result, baseline) {
     var currentTableHtml = '';
     var incomingTableHtml = '';
@@ -293,8 +334,8 @@ function hasBackgroundRefreshUpdateWithBaseline(result, baseline) {
         incomingTableHtml = result.table;
     }
 
-    var normalizedCurrentTable = normalizeHtmlForBackgroundComparison(getComparableTableHtml(currentTableHtml));
-    var normalizedIncomingTable = normalizeHtmlForBackgroundComparison(getComparableTableHtml(incomingTableHtml));
+    var normalizedCurrentTable = buildComparableTableSignature(currentTableHtml);
+    var normalizedIncomingTable = buildComparableTableSignature(incomingTableHtml);
 
     if (baseline && typeof baseline === 'object') {
         if (typeof baseline.table === 'string') {
@@ -584,8 +625,8 @@ function paginationLinksChange(triggerItem, options) {
     if (isBackgroundRefresh && detectOnly) {
         var tableAtRequestStart = jQuery('.abj404-table, .wp-list-table').first();
         baselineComparison = {
-            table: normalizeHtmlForBackgroundComparison(
-                getComparableTableHtml(tableAtRequestStart.length > 0 ? (tableAtRequestStart.prop('outerHTML') || '') : '')
+            table: buildComparableTableSignature(
+                tableAtRequestStart.length > 0 ? (tableAtRequestStart.prop('outerHTML') || '') : ''
             )
         };
     }
