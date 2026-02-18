@@ -2513,6 +2513,18 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     opacity: 1;
 }
 
+/* Keep top-row destination tooltips readable: show below the row instead of under sticky headers. */
+.abj404-table tbody tr:nth-child(-n+2) .abj404-dest-tooltip .abj404-tooltip-text {
+    top: 125%;
+    bottom: auto;
+}
+
+.abj404-table tbody tr:nth-child(-n+2) .abj404-dest-tooltip .abj404-tooltip-text::after {
+    top: auto;
+    bottom: 100%;
+    border-color: transparent transparent #1d2327 transparent;
+}
+
 /* ============================================
    URL with Regex Warning
    ============================================ */
