@@ -49,6 +49,8 @@ class ABJ_404_Solution_DataAccess {
     const HITS_TABLE_LAST_SCHEDULED_FLAG = 'abj404_logs_hits_last_scheduled_at';
     /** Runtime flag: last schedule decision ('scheduled','running','cooldown','paused','not_needed'). */
     const HITS_TABLE_LAST_DECISION_FLAG = 'abj404_logs_hits_last_decision';
+    /** Runtime flag: last successful hits-table rebuild completion (Unix timestamp). */
+    const HITS_TABLE_LAST_REFRESHED_FLAG = 'abj404_logs_hits_last_refreshed_at';
 
     private static $instance = null;
 
@@ -2462,6 +2464,9 @@ class ABJ_404_Solution_DataAccess {
      * @return int|null Unix timestamp of last update, or null if table doesn't exist
      */
     function getLogsHitsTableLastUpdated() {
+        $runtimeRefreshedAt = (int)$this->getRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG);
+        $runtimeRefreshedAt = $runtimeRefreshedAt > 0 ? $runtimeRefreshedAt : null;
+
         $query = "SELECT create_time FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}' AND table_schema = DATABASE()";
         $query = $this->doTableNameReplacements($query);
         $results = $this->queryAndGetResults($query);
@@ -2476,11 +2481,14 @@ class ABJ_404_Solution_DataAccess {
                 if ($dateValue !== '') {
                     $fallbackTimestamp = strtotime((string)$dateValue);
                     if ($fallbackTimestamp !== false) {
+                        if ($runtimeRefreshedAt !== null && $runtimeRefreshedAt > $fallbackTimestamp) {
+                            return $runtimeRefreshedAt;
+                        }
                         return $fallbackTimestamp;
                     }
                 }
             }
-            return null;
+            return $runtimeRefreshedAt;
         }
 
         $row = $results['rows'][0];
@@ -2488,11 +2496,18 @@ class ABJ_404_Solution_DataAccess {
         $createTime = $row['create_time'] ?? null;
 
         if ($createTime === null) {
-            return null;
+            return $runtimeRefreshedAt;
         }
 
         // Convert MySQL datetime to Unix timestamp
-        return strtotime($createTime);
+        $schemaTimestamp = strtotime($createTime);
+        if ($schemaTimestamp === false) {
+            return $runtimeRefreshedAt;
+        }
+        if ($runtimeRefreshedAt !== null && $runtimeRefreshedAt > $schemaTimestamp) {
+            return $runtimeRefreshedAt;
+        }
+        return $schemaTimestamp;
     }
 
     private function getLogsHitsTableStatusRow() {
@@ -2583,9 +2598,13 @@ class ABJ_404_Solution_DataAccess {
             "rename table " . $tempDestTable . ' to ' . $finalDestTable
         );
         $this->executeAsTransaction($statements);
+        $this->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, time(), 86400);
         
         $this->logger->debugMessage(__FUNCTION__ . " refreshed " . $finalDestTable . " in " . $elapsedTime . 
                 " seconds.");
+        } catch (Throwable $e) {
+            // Never break the admin request because a shutdown refresh fails.
+            $this->logger->errorMessage(__FUNCTION__ . " failed: " . $e->getMessage(), $e);
         } finally {
             $this->releaseHitsTableRebuildLock();
         }
