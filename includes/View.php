@@ -3747,10 +3747,11 @@ class ABJ_404_Solution_View {
         
         $filterText = $tableOptions['filterText'] ?? '';
         if ($filterText != '') {
-            $nexturl .= '&filterText=' . $filterText;
-            $prevurl .= '&filterText=' . $filterText;
-            $firsturl .= '&filterText=' . $filterText;
-            $lasturl .= '&filterText=' . $filterText;
+            $encodedFilterText = rawurlencode((string)$filterText);
+            $nexturl .= '&filterText=' . $encodedFilterText;
+            $prevurl .= '&filterText=' . $encodedFilterText;
+            $firsturl .= '&filterText=' . $encodedFilterText;
+            $lasturl .= '&filterText=' . $encodedFilterText;
         }
 
         // read the html content.
