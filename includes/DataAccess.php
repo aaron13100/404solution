@@ -28,6 +28,10 @@ class ABJ_404_Solution_DataAccess {
     const VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES = 2097152; // 2 MiB
     /** Cross-request lock timeout for logs-hits rebuild jobs. */
     const HITS_TABLE_REBUILD_LOCK_TTL_SECONDS = 180;
+    /** Max age for cached stats-periodic aggregates. */
+    const PERIODIC_STATS_CACHE_TTL_SECONDS = 300;
+    /** Minimum interval before recalculating expensive stats aggregates. */
+    const PERIODIC_STATS_REFRESH_COOLDOWN_SECONDS = 30;
     /** Cooldown when DB query quota is exceeded. */
     const DB_QUOTA_COOLDOWN_SECONDS = 900;
     /** Cooldown when DB is read-only or storage is full. */
@@ -4379,6 +4383,198 @@ class ABJ_404_Solution_DataAccess {
         }
         
         return intval($results[0]);
+    }
+
+    /**
+     * Get periodic log statistics in one query for a given time threshold.
+     *
+     * This replaces multiple per-metric count queries on the stats page and
+     * significantly reduces page-load query overhead.
+     *
+     * @param int $sinceTimestamp Include rows with timestamp >= this value.
+     * @param string $notFoundDest Destination value used for "404" events.
+     * @return array{
+     *   disp404:int,
+     *   distinct404:int,
+     *   visitors404:int,
+     *   refer404:int,
+     *   redirected:int,
+     *   distinctredirected:int,
+     *   distinctvisitors:int,
+     *   distinctrefer:int
+     * }
+     */
+    function getPeriodicStatsSummary($sinceTimestamp, $notFoundDest = '404') {
+        global $wpdb;
+
+        $sinceTimestamp = absint($sinceTimestamp);
+        $notFoundDest = sanitize_text_field((string)$notFoundDest);
+        if ($notFoundDest === '') {
+            $notFoundDest = '404';
+        }
+
+        $zero = array(
+            'disp404' => 0,
+            'distinct404' => 0,
+            'visitors404' => 0,
+            'refer404' => 0,
+            'redirected' => 0,
+            'distinctredirected' => 0,
+            'distinctvisitors' => 0,
+            'distinctrefer' => 0,
+        );
+
+        $logsTable = $this->doTableNameReplacements('{wp_abj404_logsv2}');
+        $sql = "SELECT
+                COUNT(CASE WHEN dest_url = %s THEN 1 END) AS disp404,
+                COUNT(DISTINCT CASE WHEN dest_url = %s THEN requested_url END) AS distinct404,
+                COUNT(DISTINCT CASE WHEN dest_url = %s THEN user_ip END) AS visitors404,
+                COUNT(DISTINCT CASE WHEN dest_url = %s THEN referrer END) AS refer404,
+                COUNT(CASE WHEN dest_url <> %s THEN 1 END) AS redirected,
+                COUNT(DISTINCT CASE WHEN dest_url <> %s THEN requested_url END) AS distinctredirected,
+                COUNT(DISTINCT CASE WHEN dest_url <> %s THEN user_ip END) AS distinctvisitors,
+                COUNT(DISTINCT CASE WHEN dest_url <> %s THEN referrer END) AS distinctrefer
+            FROM {$logsTable}
+            WHERE timestamp >= %d";
+
+        $prepared = $wpdb->prepare(
+            $sql,
+            $notFoundDest,
+            $notFoundDest,
+            $notFoundDest,
+            $notFoundDest,
+            $notFoundDest,
+            $notFoundDest,
+            $notFoundDest,
+            $notFoundDest,
+            $sinceTimestamp
+        );
+
+        $row = $wpdb->get_row($prepared, ARRAY_A);
+        if (!is_array($row)) {
+            return $zero;
+        }
+
+        foreach ($zero as $key => $unused) {
+            $zero[$key] = isset($row[$key]) ? intval($row[$key]) : 0;
+        }
+
+        return $zero;
+    }
+
+    /**
+     * Return periodic stats for today/month/year/all with short-lived cache.
+     *
+     * This avoids repeatedly running expensive DISTINCT aggregates each time the
+     * stats tab is opened while still keeping data reasonably fresh.
+     *
+     * @param string $notFoundDest Destination value used for "404" events.
+     * @return array{
+     *   today:array<string,int>,
+     *   month:array<string,int>,
+     *   year:array<string,int>,
+     *   all:array<string,int>
+     * }
+     */
+    function getPeriodicStatsSummariesCached($notFoundDest = '404') {
+        $today = mktime(0, 0, 0, abs(intval(date('m'))), abs(intval(date('d'))), abs(intval(date('Y'))));
+        $firstm = mktime(0, 0, 0, abs(intval(date('m'))), 1, abs(intval(date('Y'))));
+        $firsty = mktime(0, 0, 0, 1, 1, abs(intval(date('Y'))));
+
+        $thresholds = array(
+            'today' => intval($today),
+            'month' => intval($firstm),
+            'year' => intval($firsty),
+            'all' => 0,
+        );
+
+        $zero = array(
+            'disp404' => 0,
+            'distinct404' => 0,
+            'visitors404' => 0,
+            'refer404' => 0,
+            'redirected' => 0,
+            'distinctredirected' => 0,
+            'distinctvisitors' => 0,
+            'distinctrefer' => 0,
+        );
+        $emptyPayload = array(
+            'today' => $zero,
+            'month' => $zero,
+            'year' => $zero,
+            'all' => $zero,
+        );
+
+        $blogId = 1;
+        if (function_exists('get_current_blog_id')) {
+            $blogId = absint(get_current_blog_id());
+            if ($blogId <= 0) {
+                $blogId = 1;
+            }
+        }
+
+        $cacheKey = 'abj404_stats_periodic_v1_' . $blogId . '_' . md5(
+            $notFoundDest . '|' . $thresholds['today'] . '|' . $thresholds['month'] . '|' . $thresholds['year']
+        );
+        $cached = null;
+        if (function_exists('get_transient')) {
+            $cached = get_transient($cacheKey);
+        }
+
+        $isCachedValid = (is_array($cached) && isset($cached['periods']) && is_array($cached['periods']));
+        $currentMaxLogId = -1;
+        try {
+            $currentMaxLogId = intval($this->getMaxLogId());
+        } catch (Throwable $unused) {
+            $currentMaxLogId = -1;
+        }
+
+        if ($isCachedValid) {
+            $refreshedAt = intval($cached['refreshed_at'] ?? 0);
+            $ageSeconds = max(0, time() - $refreshedAt);
+            $cachedMaxLogId = intval($cached['max_log_id'] ?? -1);
+            if ($currentMaxLogId >= 0 && $cachedMaxLogId === $currentMaxLogId) {
+                $merged = array_merge($emptyPayload, $cached['periods']);
+                return $merged;
+            }
+            if ($ageSeconds < self::PERIODIC_STATS_REFRESH_COOLDOWN_SECONDS) {
+                $merged = array_merge($emptyPayload, $cached['periods']);
+                return $merged;
+            }
+        }
+
+        $lockKey = 'stats-periodic:' . $cacheKey;
+        $lockAcquired = $this->acquireViewSnapshotRefreshLock($lockKey);
+        if (!$lockAcquired && $isCachedValid) {
+            $merged = array_merge($emptyPayload, $cached['periods']);
+            return $merged;
+        }
+
+        try {
+            $periods = array();
+            foreach ($thresholds as $key => $ts) {
+                $periods[$key] = $this->getPeriodicStatsSummary($ts, $notFoundDest);
+            }
+            $result = array_merge($emptyPayload, $periods);
+
+            if (function_exists('set_transient')) {
+                set_transient(
+                    $cacheKey,
+                    array(
+                        'refreshed_at' => time(),
+                        'max_log_id' => $currentMaxLogId,
+                        'periods' => $result,
+                    ),
+                    self::PERIODIC_STATS_CACHE_TTL_SECONDS
+                );
+            }
+
+            return $result;
+        } finally {
+            if ($lockAcquired) {
+                $this->releaseViewSnapshotRefreshLock($lockKey);
+            }
+        }
     }
 
     /** 

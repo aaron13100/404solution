@@ -150,25 +150,70 @@ class ABJ_404_Solution_View {
 	}
 
 	/**
-	 * Get the tooltip HTML for the Hits and Last Used columns.
+	 * Get the tooltip HTML for Hits/Last Used columns when those values may lag.
 	 *
-	 * Includes warning that data may not be immediately updated, plus the last
-	 * update time with a data-timestamp attribute for JS to update dynamically.
+	 * We only show this for views sorted by hits/last_used because those modes may
+	 * rely on the aggregated logs-hits table. Other sorts use live per-row lookup,
+	 * so showing an aggregation timestamp there is misleading.
 	 *
+	 * @param array $tableOptions Current table options.
 	 * @return string Tooltip HTML (not escaped - contains data attributes)
 	 */
-	private function getHitsColumnTooltip() {
-		$tooltip = esc_html__('Data may not be immediately updated. Refresh to see latest changes.', '404-solution');
-
-		$timestamp = $this->dao->getLogsHitsTableLastUpdated();
-		if ($timestamp !== null) {
-			$lastUpdated = $this->dao->getLogsHitsTableLastUpdatedHuman();
-			// Wrap in span with data-timestamp for JS to update dynamically
-			$timeHtml = '<span class="abj404-time-ago" data-timestamp="' . esc_attr($timestamp) . '">' . esc_html($lastUpdated) . '</span>';
-			$tooltip .= ' ' . sprintf(__('Last updated: %s', '404-solution'), $timeHtml);
+	private function getHitsColumnTooltip($tableOptions = array()) {
+		$orderby = strtolower((string)($tableOptions['orderby'] ?? ''));
+		$isAggregatedMode = ($orderby === 'logshits' || $orderby === 'last_used');
+		if (!$isAggregatedMode) {
+			return '';
 		}
 
-		return $tooltip;
+		$timestamp = $this->dao->getLogsHitsTableLastUpdated();
+		if ($timestamp === null) {
+			return '';
+		}
+
+		$lastUpdated = $this->dao->getLogsHitsTableLastUpdatedHuman();
+		$timeHtml = '<span class="abj404-time-ago" data-timestamp="' . esc_attr($timestamp) . '">' . esc_html($lastUpdated) . '</span>';
+		return sprintf(__('Last updated: %s', '404-solution'), $timeHtml);
+	}
+
+	/**
+	 * Build shared sort state for table headers.
+	 *
+	 * @param array $tableOptions
+	 * @param string $orderby
+	 * @param bool $preferDescOnFirstClick
+	 * @return array{isSortable:bool,thClass:string,nextOrder:string,indicator:string}
+	 */
+	private function getHeaderSortState($tableOptions, $orderby, $preferDescOnFirstClick = false) {
+		$result = array(
+			'isSortable' => false,
+			'thClass' => '',
+			'nextOrder' => 'ASC',
+			'indicator' => '',
+		);
+
+		$orderby = (string)$orderby;
+		if ($orderby === '') {
+			return $result;
+		}
+
+		$result['isSortable'] = true;
+		$currentOrderby = (string)($tableOptions['orderby'] ?? '');
+		$currentOrder = strtoupper((string)($tableOptions['order'] ?? 'ASC'));
+		if ($currentOrder !== 'DESC') {
+			$currentOrder = 'ASC';
+		}
+
+		if ($currentOrderby === $orderby) {
+			$result['thClass'] = 'sorted ' . strtolower($currentOrder);
+			$result['nextOrder'] = ($currentOrder === 'ASC') ? 'DESC' : 'ASC';
+			$result['indicator'] = ($currentOrder === 'ASC') ? ' ↑' : ' ↓';
+			return $result;
+		}
+
+		$result['thClass'] = 'sortable ' . ($preferDescOnFirstClick ? 'asc' : 'desc');
+		$result['nextOrder'] = $preferDescOnFirstClick ? 'DESC' : 'ASC';
+		return $result;
 	}
 
 	/**
@@ -835,7 +880,6 @@ class ABJ_404_Solution_View {
         global $abj404view;
 
         $redirects = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
-        $logs = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
 
         // Main container
         echo "<div class=\"abj404-container\">";
@@ -903,48 +947,28 @@ class ABJ_404_Solution_View {
         $abj404view->echoOptionsSection('stats-captured', 'abj404-capturedStats', __('Captured URLs', '404-solution'), $content, true, $abj404view->getCardIcon('warning'));
 
         // Periodic Stats Cards
-        $today = mktime(0, 0, 0, abs(intval(date('m'))), abs(intval(date('d'))), abs(intval(date('Y'))));
-        $firstm = mktime(0, 0, 0, abs(intval(date('m'))), 1, abs(intval(date('Y'))));
-        $firsty = mktime(0, 0, 0, 1, 1, abs(intval(date('Y'))));
+        $periodicStats = $this->dao->getPeriodicStatsSummariesCached('404');
+        $periodMeta = array(
+            array('title' => __("Today's Stats", '404-solution'), 'key' => 'today'),
+            array('title' => __("This Month", '404-solution'), 'key' => 'month'),
+            array('title' => __("This Year", '404-solution'), 'key' => 'year'),
+            array('title' => __("All Stats", '404-solution'), 'key' => 'all'),
+        );
 
         for ($x = 0; $x <= 3; $x++) {
-            if ($x == 0) {
-                $title = __("Today's Stats", '404-solution');
-                $ts = $today;
-            } else if ($x == 1) {
-                $title = __("This Month", '404-solution');
-                $ts = $firstm;
-            } else if ($x == 2) {
-                $title = __("This Year", '404-solution');
-                $ts = $firsty;
-            } else if ($x == 3) {
-                $title = __("All Stats", '404-solution');
-                $ts = 0;
-            }
-
-            $query = "select count(id) from $logs where timestamp >= $ts and dest_url = %s";
-            $disp404 = $this->dao->getStatsCount($query, array("404"));
-
-            $query = "select count(distinct requested_url) from $logs where timestamp >= $ts and dest_url = %s";
-            $distinct404 = $this->dao->getStatsCount($query, array("404"));
-
-            $query = "select count(distinct user_ip) from $logs where timestamp >= $ts and dest_url = %s";
-            $visitors404 = $this->dao->getStatsCount($query, array("404"));
-
-            $query = "select count(distinct referrer) from $logs where timestamp >= $ts and dest_url = %s";
-            $refer404 = $this->dao->getStatsCount($query, array("404"));
-
-            $query = "select count(id) from $logs where timestamp >= $ts and dest_url != %s";
-            $redirected = $this->dao->getStatsCount($query, array("404"));
-
-            $query = "select count(distinct requested_url) from $logs where timestamp >= $ts and dest_url != %s";
-            $distinctredirected = $this->dao->getStatsCount($query, array("404"));
-
-            $query = "select count(distinct user_ip) from $logs where timestamp >= $ts and dest_url != %s";
-            $distinctvisitors = $this->dao->getStatsCount($query, array("404"));
-
-            $query = "select count(distinct referrer) from $logs where timestamp >= $ts and dest_url != %s";
-            $distinctrefer = $this->dao->getStatsCount($query, array("404"));
+            $title = $periodMeta[$x]['title'];
+            $periodKey = $periodMeta[$x]['key'];
+            $periodStats = (is_array($periodicStats) && isset($periodicStats[$periodKey]) && is_array($periodicStats[$periodKey]))
+                ? $periodicStats[$periodKey]
+                : array();
+            $disp404 = intval($periodStats['disp404'] ?? 0);
+            $distinct404 = intval($periodStats['distinct404'] ?? 0);
+            $visitors404 = intval($periodStats['visitors404'] ?? 0);
+            $refer404 = intval($periodStats['refer404'] ?? 0);
+            $redirected = intval($periodStats['redirected'] ?? 0);
+            $distinctredirected = intval($periodStats['distinctredirected'] ?? 0);
+            $distinctvisitors = intval($periodStats['distinctvisitors'] ?? 0);
+            $distinctrefer = intval($periodStats['distinctrefer'] ?? 0);
 
             $content = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/statsPeriodicBox.html");
             $content = $this->f->str_replace('{disp404}', esc_html($disp404), $content);
@@ -1729,7 +1753,8 @@ class ABJ_404_Solution_View {
                 . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '"'
                 . ' data-pagination-auto-refresh="' . esc_attr($autoRefresh) . '"'
                 . ' data-pagination-refresh-started-text="' . esc_attr(__('Refreshing data in background…', '404-solution')) . '"'
-                . ' data-pagination-refresh-finished-text="' . esc_attr(__('Data refreshed', '404-solution')) . '">';
+                . ' data-pagination-refresh-finished-text="' . esc_attr(__('Data refreshed', '404-solution')) . '"'
+                . ' data-pagination-refresh-available-text="' . esc_attr(__('Refresh available', '404-solution')) . '">';
         echo '<div class="abj404-search-box">';
         echo '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>';
         echo '<input type="search" name="searchFilter" placeholder="' . esc_attr__('Type to filter URLs... (press Enter)', '404-solution') . '" value="' . esc_attr($filterText) . '" data-lpignore="true">';
@@ -1800,7 +1825,7 @@ class ABJ_404_Solution_View {
         $tableOptions = $this->logic->getTableOptions($sub);
 
         // Build column headers with sorting
-        $hitsTooltip = $this->getHitsColumnTooltip();
+        $hitsTooltip = $this->getHitsColumnTooltip($tableOptions);
         $columns = array(
             'url' => array('title' => __('URL', '404-solution'), 'orderby' => 'url'),
             'status' => array('title' => __('Status', '404-solution'), 'orderby' => 'status'),
@@ -1817,40 +1842,33 @@ class ABJ_404_Solution_View {
         foreach ($columns as $key => $col) {
             $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ($tableOptions['filter'] ?? 0);
             $sortUrl .= "&orderby=" . $col['orderby'];
-            $currentOrderby = $tableOptions['orderby'] ?? 'url';
-            $currentOrder = $tableOptions['order'] ?? 'ASC';
-            $newOrder = ($currentOrderby == $col['orderby'] && $currentOrder == 'ASC') ? 'DESC' : 'ASC';
+            $sortState = $this->getHeaderSortState($tableOptions, (string)$col['orderby'], false);
+            $newOrder = $sortState['nextOrder'];
             $sortUrl .= "&order=" . $newOrder;
 
-            $sortClass = '';
-            $sortIndicator = '';
             $extraClass = isset($col['class']) ? ' ' . esc_attr($col['class']) : '';
-            if ($currentOrderby == $col['orderby']) {
-                $sortClass = 'sorted ' . strtolower($currentOrder) . $extraClass;
-                $sortIndicator = $currentOrder == 'ASC' ? ' ↑' : ' ↓';
-            } else {
-                $sortClass = trim($extraClass);
-            }
+            $sortClass = trim($sortState['thClass'] . $extraClass);
+            $sortIndicator = $sortState['indicator'];
 
-            // Add tooltip class if title_attr or title_attr_html exists
-            $hasTooltip = (isset($col['title_attr']) && !empty($col['title_attr'])) ||
-                          (isset($col['title_attr_html']) && !empty($col['title_attr_html']));
-            if ($hasTooltip) {
-                $sortClass .= ' lefty-tooltip';
-            }
             $classAttr = $sortClass ? ' class="' . trim($sortClass) . '"' : '';
 
             // Build tooltip HTML if present
             $tooltipHtml = '';
             if (isset($col['title_attr_html']) && !empty($col['title_attr_html'])) {
                 // Raw HTML (already escaped where needed)
-                $tooltipHtml = '<span class="lefty-tooltiptext">' . $col['title_attr_html'] . '</span>';
+                $tooltipHtml = '<span class="abj404-header-tooltip lefty-tooltip" aria-label="' . esc_attr__('More info', '404-solution') . '">' .
+                    '<span class="abj404-header-tooltip-icon" aria-hidden="true">?</span>' .
+                    '<span class="lefty-tooltiptext">' . $col['title_attr_html'] . '</span>' .
+                    '</span>';
             } elseif (isset($col['title_attr']) && !empty($col['title_attr'])) {
                 // Plain text - escape it
-                $tooltipHtml = '<span class="lefty-tooltiptext">' . esc_html($col['title_attr']) . '</span>';
+                $tooltipHtml = '<span class="abj404-header-tooltip lefty-tooltip" aria-label="' . esc_attr__('More info', '404-solution') . '">' .
+                    '<span class="abj404-header-tooltip-icon" aria-hidden="true">?</span>' .
+                    '<span class="lefty-tooltiptext">' . esc_html($col['title_attr']) . '</span>' .
+                    '</span>';
             }
 
-            $html .= '<th scope="col"' . $classAttr . '>' . $tooltipHtml . '<a href="' . esc_url($sortUrl) . '">' . esc_html($col['title']) . $sortIndicator . '</a></th>';
+            $html .= '<th scope="col"' . $classAttr . '><a href="' . esc_url($sortUrl) . '">' . esc_html($col['title']) . $sortIndicator . '</a>' . $tooltipHtml . '</th>';
         }
 
         $html .= '</tr></thead>';
@@ -2034,7 +2052,8 @@ class ABJ_404_Solution_View {
                 . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '"'
                 . ' data-pagination-auto-refresh="' . esc_attr($autoRefresh) . '"'
                 . ' data-pagination-refresh-started-text="' . esc_attr(__('Refreshing data in background…', '404-solution')) . '"'
-                . ' data-pagination-refresh-finished-text="' . esc_attr(__('Data refreshed', '404-solution')) . '">';
+                . ' data-pagination-refresh-finished-text="' . esc_attr(__('Data refreshed', '404-solution')) . '"'
+                . ' data-pagination-refresh-available-text="' . esc_attr(__('Refresh available', '404-solution')) . '">';
         echo '<div class="abj404-search-box">';
         echo '<svg class="abj404-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">';
         echo '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>';
@@ -2345,7 +2364,8 @@ class ABJ_404_Solution_View {
         $columns['hits']['title'] = __('Hits', '404-solution');
         $columns['hits']['orderby'] = "logshits";
         $columns['hits']['width'] = "7%";
-        $columns['hits']['title_attr_html'] = $this->getHitsColumnTooltip();
+        $hitsTooltip = $this->getHitsColumnTooltip($tableOptions);
+        $columns['hits']['title_attr_html'] = $hitsTooltip;
         $columns['timestamp']['title'] = __('Created', '404-solution');
         $columns['timestamp']['orderby'] = "timestamp";
         $columns['timestamp']['width'] = "10%";
@@ -2353,7 +2373,7 @@ class ABJ_404_Solution_View {
         $columns['last_used']['title'] = __('Last Used', '404-solution');
         $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "10%";
-        $columns['last_used']['title_attr_html'] = $this->getHitsColumnTooltip();
+        $columns['last_used']['title_attr_html'] = $hitsTooltip;
 
         $html = "<table class=\"abj404-table\"><thead>";
         $html .= $this->getTableColumns($sub, $columns);
@@ -2529,7 +2549,7 @@ class ABJ_404_Solution_View {
                 $destinationExists = 'display: none;';
                 $destinationDoesNotExist = '';
                 $destinationWarningText = __('Destination missing. Edit this redirect and choose a destination.', '404-solution');
-                if ($destForView === '') {
+                if (trim((string)$destForView) === '') {
                     $destForView = __('(Destination missing)', '404-solution');
                 }
             }
@@ -2537,7 +2557,7 @@ class ABJ_404_Solution_View {
                 if ($row['published_status'] == '0') {
                     $destinationExists = 'display: none;';
                     $destinationDoesNotExist = '';
-                    if ($destForView === '') {
+                    if (trim((string)$destForView) === '') {
                         $destForView = __('(Destination unavailable)', '404-solution');
                     }
                 }
@@ -3254,24 +3274,19 @@ class ABJ_404_Solution_View {
         $html = '<table class="abj404-table abj404-logs-table">';
         $html .= '<thead><tr>';
 
-        $currentOrderby = $tableOptions['orderby'] ?? 'timestamp';
-        $currentOrder = $tableOptions['order'] ?? 'DESC';
-
         // Generate sortable column headers
         foreach ($columns as $key => $col) {
             $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_logs";
             $sortUrl .= "&orderby=" . $col['orderby'];
-            $newOrder = ($currentOrderby == $col['orderby'] && $currentOrder == 'ASC') ? 'DESC' : 'ASC';
+            $sortState = $this->getHeaderSortState($tableOptions, (string)$col['orderby'], false);
+            $newOrder = $sortState['nextOrder'];
             $sortUrl .= "&order=" . $newOrder;
 
-            $sortClass = '';
-            $sortIndicator = '';
-            if ($currentOrderby == $col['orderby']) {
-                $sortClass = ' class="sorted ' . strtolower($currentOrder) . '"';
-                $sortIndicator = $currentOrder == 'ASC' ? ' ↑' : ' ↓';
-            }
+            $sortClass = trim($sortState['thClass']);
+            $sortClassAttr = ($sortClass !== '') ? ' class="' . $sortClass . '"' : '';
+            $sortIndicator = $sortState['indicator'];
 
-            $html .= '<th scope="col"' . $sortClass . '><a href="' . esc_url($sortUrl) . '">' . esc_html($col['title']) . $sortIndicator . '</a></th>';
+            $html .= '<th scope="col"' . $sortClassAttr . '><a href="' . esc_url($sortUrl) . '">' . esc_html($col['title']) . $sortIndicator . '</a></th>';
         }
 
         $html .= '</tr></thead>';
@@ -3379,32 +3394,19 @@ class ABJ_404_Solution_View {
             }
             $nolink = 0;
             $sortorder = "";
+            $sortIndicator = '';
             $orderby = isset($column['orderby']) ? $column['orderby'] : '';
-            if (($tableOptions['orderby'] ?? '') == $orderby) {
-                $thClass = " sorted";
-                if (($tableOptions['order'] ?? 'ASC') == "ASC") {
-                    $thClass .= " asc";
-                    $sortorder = "DESC";
-                } else {
-                    $thClass .= " desc";
-                    $sortorder = "ASC";
-                }
+            $preferDescOnFirstClick = ($orderby == "timestamp" ||
+                    $orderby == "last_used" ||
+                    $orderby == "logshits");
+            $sortState = $this->getHeaderSortState($tableOptions, (string)$orderby, $preferDescOnFirstClick);
+            if (!$sortState['isSortable']) {
+                $thClass = "";
+                $nolink = 1;
             } else {
-                if ($orderby != "") {
-                    $thClass = " sortable";
-                    if ($orderby == "timestamp" ||
-                            $orderby == "last_used" ||
-                            $orderby == "logshits") {
-                        $thClass .= " asc";
-                        $sortorder = "DESC";
-                    } else {
-                        $thClass .= " desc";
-                        $sortorder = "ASC";
-                    }
-                } else {
-                    $thClass = "";
-                    $nolink = 1;
-                }
+                $thClass = " " . $sortState['thClass'];
+                $sortorder = $sortState['nextOrder'];
+                $sortIndicator = $sortState['indicator'];
             }
 
             $url = "?page=" . ABJ404_PP;
@@ -3419,15 +3421,19 @@ class ABJ_404_Solution_View {
             }
             $url .= "&orderby=" . $orderby . "&order=" . $sortorder;
 
-            $cssTooltip = '';
+            $tooltipHtml = '';
             if (array_key_exists('title_attr_html', $column) && !empty($column['title_attr_html'])) {
                 // Raw HTML (already escaped where needed)
-                $cssTooltip = '<span class="lefty-tooltiptext">' . $column['title_attr_html'] . '</span>' . "\n";
-                $thClass .= ' lefty-tooltip';
+                $tooltipHtml = '<span class="abj404-header-tooltip lefty-tooltip" aria-label="' . esc_attr__('More info', '404-solution') . '">' .
+                        '<span class="abj404-header-tooltip-icon" aria-hidden="true">?</span>' .
+                        '<span class="lefty-tooltiptext">' . $column['title_attr_html'] . '</span>' .
+                        '</span>' . "\n";
             } elseif (array_key_exists('title_attr', $column) && !empty($column['title_attr'])) {
                 // Plain text - escape it
-                $cssTooltip = '<span class="lefty-tooltiptext">' . esc_html($column['title_attr']) . '</span>' . "\n";
-                $thClass .= ' lefty-tooltip';
+                $tooltipHtml = '<span class="abj404-header-tooltip lefty-tooltip" aria-label="' . esc_attr__('More info', '404-solution') . '">' .
+                        '<span class="abj404-header-tooltip-icon" aria-hidden="true">?</span>' .
+                        '<span class="lefty-tooltiptext">' . esc_html($column['title_attr']) . '</span>' .
+                        '</span>' . "\n";
             }
 
             // Support custom column classes (e.g., hide-on-tablet, hide-on-mobile)
@@ -3436,17 +3442,17 @@ class ABJ_404_Solution_View {
             }
 
             $html .= "<th scope=\"col\" " . $style . " class=\"manage-column column-title" . $thClass . "\"> \n";
-            $html .= $cssTooltip;
 
             $title = isset($column['title']) ? $column['title'] : '';
             if ($nolink == 1) {
                 $html .= $title;
+                $html .= $tooltipHtml;
             } else {
                 $html .= "<a href=\"" . esc_url($url) . "\">";
                 $html .= '<span class="table_header_' . $orderby . '">' .
-                        esc_html($title) . "</span>";
-                $html .= "<span class=\"sorting-indicator\"></span>";
+                        esc_html($title) . $sortIndicator . "</span>";
                 $html .= "</a>";
+                $html .= $tooltipHtml;
             }
             $html .= "</th>";
         }
@@ -3586,6 +3592,7 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{data-pagination-auto-refresh}', esc_attr($autoRefresh), $html);
         $html = $this->f->str_replace('{data-pagination-refresh-started-text}', esc_attr(__('Refreshing data in background…', '404-solution')), $html);
         $html = $this->f->str_replace('{data-pagination-refresh-finished-text}', esc_attr(__('Data refreshed', '404-solution')), $html);
+        $html = $this->f->str_replace('{data-pagination-refresh-available-text}', esc_attr(__('Refresh available', '404-solution')), $html);
         // constants and translations.
         $html = $this->f->doNormalReplacements($html);
         
