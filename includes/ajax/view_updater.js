@@ -349,9 +349,18 @@ function hasBackgroundRefreshUpdateWithBaseline(result, baseline) {
 function getAutoRefreshCacheKey($config) {
     var page = getURLParameter('page') || '';
     var subpage = ($config && $config.attr) ? ($config.attr('data-pagination-ajax-subpage') || '') : '';
-    var filter = getURLParameter('filter') || '0';
-    var orderby = getURLParameter('orderby') || '';
-    var order = getURLParameter('order') || '';
+    var filter = ($config && $config.attr) ? ($config.attr('data-pagination-current-filter') || '') : '';
+    if (filter === '') {
+        filter = getURLParameter('filter') || '0';
+    }
+    var orderby = ($config && $config.attr) ? ($config.attr('data-pagination-current-orderby') || '') : '';
+    if (orderby === '') {
+        orderby = getURLParameter('orderby') || '';
+    }
+    var order = ($config && $config.attr) ? ($config.attr('data-pagination-current-order') || '') : '';
+    if (order === '') {
+        order = getURLParameter('order') || '';
+    }
     return 'abj404:auto_refresh:' + [page, subpage, filter, orderby, order].join(':');
 }
 
@@ -605,11 +614,26 @@ function paginationLinksChange(triggerItem, options) {
     var action = $ajaxConfigEl.attr("data-pagination-ajax-action") || 'ajaxUpdatePaginationLinks';
     var subpage = $ajaxConfigEl.attr("data-pagination-ajax-subpage") || getURLParameter('subpage');
     var page = getURLParameter('page');
-    var trashFilter = getURLParameter('filter');
-    var orderby = getURLParameter('orderby');
-    var order = getURLParameter('order');
-    var paged = getURLParameter('paged');
-    var id = getURLParameter('id');
+    var trashFilter = $ajaxConfigEl.attr('data-pagination-current-filter');
+    if (typeof trashFilter === 'undefined' || trashFilter === null || trashFilter === '') {
+        trashFilter = getURLParameter('filter');
+    }
+    var orderby = $ajaxConfigEl.attr('data-pagination-current-orderby');
+    if (!orderby) {
+        orderby = getURLParameter('orderby');
+    }
+    var order = $ajaxConfigEl.attr('data-pagination-current-order');
+    if (!order) {
+        order = getURLParameter('order');
+    }
+    var paged = $ajaxConfigEl.attr('data-pagination-current-paged');
+    if (!paged) {
+        paged = getURLParameter('paged');
+    }
+    var id = $ajaxConfigEl.attr('data-pagination-current-logsid');
+    if (!id) {
+        id = getURLParameter('id');
+    }
 
     // Prefer nonce from attribute; fall back to legacy parsing from URL.
     var nonce = $ajaxConfigEl.attr("data-pagination-ajax-nonce") || '';
@@ -627,7 +651,8 @@ function paginationLinksChange(triggerItem, options) {
         baselineComparison = {
             table: buildComparableTableSignature(
                 tableAtRequestStart.length > 0 ? (tableAtRequestStart.prop('outerHTML') || '') : ''
-            )
+            ),
+            serverSignature: ($ajaxConfigEl.attr('data-pagination-current-signature') || '')
         };
     }
     if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
@@ -670,11 +695,20 @@ function paginationLinksChange(triggerItem, options) {
             orderby: orderby,
             order: order,
             paged: paged,
-            id: id
+            id: id,
+            detectOnly: detectOnly ? '1' : '0',
+            currentSignature: (detectOnly && baselineComparison && baselineComparison.serverSignature)
+                ? baselineComparison.serverSignature : ''
         },
         success: function (result) {
             if (isBackgroundRefresh && detectOnly) {
-                var hasUpdate = hasBackgroundRefreshUpdateWithBaseline(result, baselineComparison);
+                var hasUpdate;
+                if (result && typeof result.hasUpdate === 'boolean') {
+                    hasUpdate = !!result.hasUpdate;
+                } else {
+                    // Backward-compatible fallback for older server responses.
+                    hasUpdate = hasBackgroundRefreshUpdateWithBaseline(result, baselineComparison);
+                }
                 if (typeof options.onComplete === 'function') {
                     options.onComplete({hasUpdate: hasUpdate});
                 }

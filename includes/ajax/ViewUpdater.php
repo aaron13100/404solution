@@ -236,6 +236,11 @@ class ABJ_404_Solution_ViewUpdater {
         $page = $abj404dao->getPostOrGetSanitize('page', '');
         $filterText = $abj404dao->getPostOrGetSanitize('filterText', '');
         $filter = $abj404dao->getPostOrGetSanitize('filter', '');
+        $detectOnly = ((string)$abj404dao->getPostOrGetSanitize('detectOnly', '0') === '1');
+        $currentSignature = strtolower(trim((string)$abj404dao->getPostOrGetSanitize('currentSignature', '')));
+        if (strlen($currentSignature) > 128) {
+            $currentSignature = substr($currentSignature, 0, 128);
+        }
 
         $isPluginAdmin = false;
         $context = array(
@@ -245,6 +250,8 @@ class ABJ_404_Solution_ViewUpdater {
             'rowsPerPage' => $rowsPerPage,
             'filterText_length' => is_string($filterText) ? strlen($filterText) : 0,
             'filter' => $filter,
+            'detectOnly' => $detectOnly ? 1 : 0,
+            'currentSignature_length' => strlen($currentSignature),
             'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
         );
@@ -292,10 +299,6 @@ class ABJ_404_Solution_ViewUpdater {
             $view = self::resolveViewInstance($abj404view);
 
             $data = array();
-            $context['stage'] = 'paginationLinksTop';
-            $data['paginationLinksTop'] = $view->getPaginationLinks($subpage);
-            $context['stage'] = 'paginationLinksBottom';
-            $data['paginationLinksBottom'] = $view->getPaginationLinks($subpage, false);
             if ($subpage == 'abj404_redirects') {
                 $context['stage'] = 'table_redirects';
                 $data['table'] = $view->getAdminRedirectsPageTable($subpage);
@@ -311,6 +314,32 @@ class ABJ_404_Solution_ViewUpdater {
             } else {
                 $data['table'] = 'Error: Unexpected subpage requested.';
             }
+
+            $tableSignature = '';
+            if (is_object($view) && method_exists($view, 'getCurrentTableDataSignature')) {
+                $tableSignature = (string)$view->getCurrentTableDataSignature($subpage);
+            }
+            $data['tableSignature'] = $tableSignature;
+            if ($detectOnly) {
+                $signaturesMatch = false;
+                if ($currentSignature !== '' && $tableSignature !== '') {
+                    if (function_exists('hash_equals')) {
+                        $signaturesMatch = hash_equals($currentSignature, $tableSignature);
+                    } else {
+                        $signaturesMatch = ($currentSignature === $tableSignature);
+                    }
+                }
+                $data['hasUpdate'] = (
+                    $currentSignature !== '' &&
+                    $tableSignature !== '' &&
+                    !$signaturesMatch
+                );
+            }
+
+            $context['stage'] = 'paginationLinksTop';
+            $data['paginationLinksTop'] = $view->getPaginationLinks($subpage);
+            $context['stage'] = 'paginationLinksBottom';
+            $data['paginationLinksBottom'] = $view->getPaginationLinks($subpage, false);
 
             self::markAjaxResponseSent();
             self::getAndClearAjaxBufferedOutput();

@@ -24,6 +24,9 @@ class ABJ_404_Solution_View {
 	/** @var ABJ_404_Solution_Logging */
 	private $logger;
 
+	/** @var array<string,string> Latest table data signatures by subpage. */
+	private $tableDataSignatures = array();
+
 	/**
 	 * Constructor with dependency injection.
 	 * Dependencies are now explicit and visible.
@@ -115,6 +118,132 @@ class ABJ_404_Solution_View {
 	private function normalizeOptionsForView($options) {
 		$options = is_array($options) ? $options : array();
 		return array_merge($this->getFallbackOptionDefaults(), $options);
+	}
+
+	/**
+	 * Normalize a scalar value for table signature comparisons.
+	 *
+	 * @param mixed $value
+	 * @return string
+	 */
+	private function normalizeSignatureValue($value) {
+		if ($value === null) {
+			return '';
+		}
+		if (is_bool($value)) {
+			return $value ? '1' : '0';
+		}
+		if (is_int($value) || is_float($value)) {
+			return (string)$value;
+		}
+		if (is_array($value)) {
+			$value = implode(',', array_map(array($this, 'normalizeSignatureValue'), $value));
+		}
+		$text = (string)$value;
+		$text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		$text = preg_replace('/\s+/', ' ', $text);
+		return trim((string)$text);
+	}
+
+	/**
+	 * Build a deterministic row signature payload for a specific admin list subpage.
+	 *
+	 * @param string $sub
+	 * @param array $row
+	 * @return array<string,string>
+	 */
+	private function getSignatureFieldsForSubpage($sub, $row) {
+		$sub = (string)$sub;
+		$row = is_array($row) ? $row : array();
+
+		if ($sub === 'abj404_redirects') {
+			return array(
+				'id' => $this->normalizeSignatureValue($row['id'] ?? ''),
+				'url' => $this->normalizeSignatureValue($row['url'] ?? ''),
+				'status' => $this->normalizeSignatureValue($row['status'] ?? ''),
+				'type' => $this->normalizeSignatureValue($row['type'] ?? ''),
+				'final_dest' => $this->normalizeSignatureValue($row['final_dest'] ?? ''),
+				'dest_for_view' => $this->normalizeSignatureValue($row['dest_for_view'] ?? ''),
+				'code' => $this->normalizeSignatureValue($row['code'] ?? ''),
+				'logshits' => $this->normalizeSignatureValue($row['logshits'] ?? 0),
+				'timestamp' => $this->normalizeSignatureValue($row['timestamp'] ?? 0),
+				'last_used' => $this->normalizeSignatureValue($row['last_used'] ?? 0),
+			);
+		}
+
+		if ($sub === 'abj404_captured') {
+			$hits = array_key_exists('logshits', $row) ? $row['logshits'] : ($row['hit_count'] ?? 0);
+			$timestamp = array_key_exists('timestamp', $row) ? $row['timestamp'] : ($row['created'] ?? 0);
+			return array(
+				'id' => $this->normalizeSignatureValue($row['id'] ?? ''),
+				'url' => $this->normalizeSignatureValue($row['url'] ?? ''),
+				'status' => $this->normalizeSignatureValue($row['status'] ?? ''),
+				'logshits' => $this->normalizeSignatureValue($hits),
+				'timestamp' => $this->normalizeSignatureValue($timestamp),
+				'last_used' => $this->normalizeSignatureValue($row['last_used'] ?? 0),
+			);
+		}
+
+		if ($sub === 'abj404_logs') {
+			return array(
+				'id' => $this->normalizeSignatureValue($row['id'] ?? ''),
+				'url' => $this->normalizeSignatureValue($row['url'] ?? ''),
+				'url_detail' => $this->normalizeSignatureValue($row['url_detail'] ?? ''),
+				'remote_host' => $this->normalizeSignatureValue($row['remote_host'] ?? ''),
+				'referrer' => $this->normalizeSignatureValue($row['referrer'] ?? ''),
+				'action' => $this->normalizeSignatureValue($row['action'] ?? ''),
+				'timestamp' => $this->normalizeSignatureValue($row['timestamp'] ?? 0),
+				'username' => $this->normalizeSignatureValue($row['username'] ?? ''),
+			);
+		}
+
+		$normalized = array();
+		foreach ($row as $k => $v) {
+			if (is_scalar($v) || is_array($v) || $v === null) {
+				$normalized[(string)$k] = $this->normalizeSignatureValue($v);
+			}
+		}
+		ksort($normalized);
+		return $normalized;
+	}
+
+	/**
+	 * Compute and remember a deterministic table signature for detect-only refresh checks.
+	 *
+	 * @param string $sub
+	 * @param array $rows
+	 * @return void
+	 */
+	private function rememberTableDataSignature($sub, $rows) {
+		$sub = (string)$sub;
+		if (!is_array($rows)) {
+			$this->tableDataSignatures[$sub] = sha1($sub . '|0');
+			return;
+		}
+
+		$rowSignatures = array();
+		foreach ($rows as $row) {
+			$fields = $this->getSignatureFieldsForSubpage($sub, is_array($row) ? $row : array());
+			$parts = array();
+			foreach ($fields as $k => $v) {
+				$parts[] = $k . '=' . $v;
+			}
+			$rowSignatures[] = implode("\x1f", $parts);
+		}
+		sort($rowSignatures, SORT_STRING);
+		$payload = $sub . '|' . count($rowSignatures) . '|' . implode("\n", $rowSignatures);
+		$this->tableDataSignatures[$sub] = sha1($payload);
+	}
+
+	/**
+	 * Get the most recently computed table data signature for a subpage.
+	 *
+	 * @param string $sub
+	 * @return string
+	 */
+	public function getCurrentTableDataSignature($sub) {
+		$sub = (string)$sub;
+		return (string)($this->tableDataSignatures[$sub] ?? '');
 	}
 
 	/**
@@ -1882,6 +2011,7 @@ class ABJ_404_Solution_View {
         $html .= '<tbody id="the-list">';
 
         $rows = $this->dao->getRedirectsForView($sub, $tableOptions);
+        $this->rememberTableDataSignature($sub, $rows);
         $displayed = 0;
 
         foreach ($rows as $row) {
@@ -2387,6 +2517,7 @@ class ABJ_404_Solution_View {
         $html .= "</thead><tbody id=\"the-list\">";
         
         $rows = $this->dao->getRedirectsForView($sub, $tableOptions);
+        $this->rememberTableDataSignature($sub, $rows);
         $displayed = 0;
         $y = 1;
         foreach ($rows as $row) {
@@ -3300,6 +3431,7 @@ class ABJ_404_Solution_View {
         $html .= '<tbody id="the-list">';
 
         $rows = $this->dao->getLogRecords($tableOptions);
+        $this->rememberTableDataSignature($sub, $rows);
         $logRecordsDisplayed = 0;
 
 	        foreach ($rows as $row) {
@@ -3595,6 +3727,12 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{data-pagination-ajax-action}', esc_attr($ajaxAction), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-subpage}', esc_attr($sub), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-nonce}', esc_attr($ajaxNonce), $html);
+        $html = $this->f->str_replace('{data-pagination-current-signature}', esc_attr($this->getCurrentTableDataSignature($sub)), $html);
+        $html = $this->f->str_replace('{data-pagination-current-orderby}', esc_attr((string)$orderby), $html);
+        $html = $this->f->str_replace('{data-pagination-current-order}', esc_attr((string)$order), $html);
+        $html = $this->f->str_replace('{data-pagination-current-filter}', esc_attr((string)$filter), $html);
+        $html = $this->f->str_replace('{data-pagination-current-paged}', esc_attr((string)$paged), $html);
+        $html = $this->f->str_replace('{data-pagination-current-logsid}', esc_attr((string)$logsid), $html);
         $autoRefresh = (($sub === 'abj404_redirects' || $sub === 'abj404_captured' || $sub === 'abj404_logs') ? '1' : '0');
         $html = $this->f->str_replace('{data-pagination-auto-refresh}', esc_attr($autoRefresh), $html);
         $html = $this->f->str_replace('{data-pagination-refresh-started-text}', esc_attr(__('Refreshing data in background…', '404-solution')), $html);
