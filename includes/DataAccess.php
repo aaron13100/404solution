@@ -68,6 +68,8 @@ class ABJ_404_Solution_DataAccess {
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
+    /** @var array<string,int> Request-local cached counts for redirects list views. */
+    private $redirectsForViewCountRequestCache = array();
 
     /**
      * Constructor with dependency injection.
@@ -1927,6 +1929,7 @@ class ABJ_404_Solution_DataAccess {
         $canUseSnapshotCache = function_exists('get_transient')
             && absint($tableOptions['perpage'] ?? 0) <= 200
             && !$isLogsMaintenanceSort;
+        $requestCountCacheKey = (string)$sub . '|' . md5(serialize($tableOptions));
         $countCacheKey = '';
         if ($canUseSnapshotCache) {
             $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
@@ -1935,12 +1938,9 @@ class ABJ_404_Solution_DataAccess {
                 return intval($cachedCount);
             }
         }
-
-    	if (array_key_exists(self::KEY_REDIRECTS_FOR_VIEW_COUNT, $_REQUEST) && 
-    		isset($_REQUEST[self::KEY_REDIRECTS_FOR_VIEW_COUNT])) {
-    			
-   			return $_REQUEST[self::KEY_REDIRECTS_FOR_VIEW_COUNT];
-   		}
+        if (array_key_exists($requestCountCacheKey, $this->redirectsForViewCountRequestCache)) {
+            return intval($this->redirectsForViewCountRequestCache[$requestCountCacheKey]);
+        }
     	
         $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false, 0, PHP_INT_MAX,
         	true);
@@ -1962,15 +1962,16 @@ class ABJ_404_Solution_DataAccess {
         }
         $rows = $results['rows'];
         if (empty($rows)) {
+            $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = -1;
         	return -1;
         }
         $row = $rows[0];
-        
-        $_REQUEST[self::KEY_REDIRECTS_FOR_VIEW_COUNT] = $row['count'];
+        $countValue = intval($row['count']);
+        $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = $countValue;
         if ($canUseSnapshotCache && $countCacheKey !== '') {
-            set_transient($countCacheKey, intval($row['count']), self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
+            set_transient($countCacheKey, $countValue, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
         }
-        return $row['count'];
+        return $countValue;
     }
     
     function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, 

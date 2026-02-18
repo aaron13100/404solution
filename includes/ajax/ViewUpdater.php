@@ -464,7 +464,7 @@ class ABJ_404_Solution_ViewUpdater {
 
             $snapshot = $abj404dao->refreshStatsDashboardSnapshot(false);
             $newHash = is_array($snapshot) && is_string($snapshot['hash'] ?? null) ? $snapshot['hash'] : '';
-            $hasUpdate = ($currentHash !== '' && $newHash !== '' && $newHash !== $currentHash);
+            $hasUpdate = ($newHash !== '' && ($currentHash === '' || $newHash !== $currentHash));
 
             $response = array(
                 'hasUpdate' => $hasUpdate,
