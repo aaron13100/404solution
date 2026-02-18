@@ -245,9 +245,12 @@ function normalizeHtmlForBackgroundComparison(html) {
         return '';
     }
     return String(html)
+            .replace(/&#0*38;|&amp;/gi, '&')
             .replace(/<!--[\s\S]*?-->/g, '')
             .replace(/<span class="abj404-refresh-status"[^>]*>[\s\S]*?<\/span>/g, '')
             .replace(/(<span class="abj404-time-ago"[^>]*>)[\s\S]*?(<\/span>)/g, '$1$2')
+            // "time-ago" markers are freshness metadata; timestamp drift alone should not signal table-data change.
+            .replace(/\sdata-timestamp="[^"]*"/gi, '')
             .replace(/\sdata-previous-value="[^"]*"/g, '')
             // Search input is initially rendered disabled and then enabled client-side;
             // ignore this client-only attribute drift for no-change detection.
@@ -261,10 +264,26 @@ function normalizeHtmlForBackgroundComparison(html) {
 }
 
 function hasBackgroundRefreshUpdate(result) {
+    return hasBackgroundRefreshUpdateWithBaseline(result, null);
+}
+
+function getComparableTableHtml(html) {
+    if (!html) {
+        return '';
+    }
+    var raw = String(html);
+    // Compare rendered row data (tbody) only; header/pagination/link-encoding differences
+    // are presentation concerns and can trigger false positives.
+    var match = raw.match(/<tbody[^>]*>[\s\S]*<\/tbody>/i);
+    if (match && match.length > 0) {
+        return match[0];
+    }
+    return raw;
+}
+
+function hasBackgroundRefreshUpdateWithBaseline(result, baseline) {
     var currentTableHtml = '';
     var incomingTableHtml = '';
-    var currentPaginationHtml = '';
-    var incomingPaginationHtml = '';
 
     var currentTable = jQuery('.abj404-table, .wp-list-table').first();
     if (currentTable.length > 0) {
@@ -274,16 +293,16 @@ function hasBackgroundRefreshUpdate(result) {
         incomingTableHtml = result.table;
     }
 
-    var currentPagination = jQuery('.abj404-pagination-right').first();
-    if (currentPagination.length > 0) {
-        currentPaginationHtml = currentPagination.prop('outerHTML') || '';
-    }
-    if (result && typeof result.paginationLinksTop === 'string') {
-        incomingPaginationHtml = result.paginationLinksTop;
+    var normalizedCurrentTable = normalizeHtmlForBackgroundComparison(getComparableTableHtml(currentTableHtml));
+    var normalizedIncomingTable = normalizeHtmlForBackgroundComparison(getComparableTableHtml(incomingTableHtml));
+
+    if (baseline && typeof baseline === 'object') {
+        if (typeof baseline.table === 'string') {
+            normalizedCurrentTable = baseline.table;
+        }
     }
 
-    return normalizeHtmlForBackgroundComparison(currentTableHtml) !== normalizeHtmlForBackgroundComparison(incomingTableHtml)
-            || normalizeHtmlForBackgroundComparison(currentPaginationHtml) !== normalizeHtmlForBackgroundComparison(incomingPaginationHtml);
+    return normalizedCurrentTable !== normalizedIncomingTable;
 }
 
 function getAutoRefreshCacheKey($config) {
@@ -561,6 +580,15 @@ function paginationLinksChange(triggerItem, options) {
     // Use a clean admin-ajax base URL; always send 'action' in the payload for compatibility with security plugins.
     var baseUrl = url.split('?')[0];
     var requestStartedAt = Date.now();
+    var baselineComparison = null;
+    if (isBackgroundRefresh && detectOnly) {
+        var tableAtRequestStart = jQuery('.abj404-table, .wp-list-table').first();
+        baselineComparison = {
+            table: normalizeHtmlForBackgroundComparison(
+                getComparableTableHtml(tableAtRequestStart.length > 0 ? (tableAtRequestStart.prop('outerHTML') || '') : '')
+            )
+        };
+    }
     if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
         window.abj404BackgroundRefreshState.requestCount = (window.abj404BackgroundRefreshState.requestCount || 0) + 1;
         window.abj404BackgroundRefreshState.lastSubpage = subpage;
@@ -605,7 +633,7 @@ function paginationLinksChange(triggerItem, options) {
         },
         success: function (result) {
             if (isBackgroundRefresh && detectOnly) {
-                var hasUpdate = hasBackgroundRefreshUpdate(result);
+                var hasUpdate = hasBackgroundRefreshUpdateWithBaseline(result, baselineComparison);
                 if (typeof options.onComplete === 'function') {
                     options.onComplete({hasUpdate: hasUpdate});
                 }
