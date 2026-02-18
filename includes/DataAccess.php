@@ -2203,8 +2203,12 @@ class ABJ_404_Solution_DataAccess {
         if (!$this->logsHitsTableExists()) {
             // First-time creation: table must exist before query runs, so create synchronously
             $this->logger->debugMessage(__FUNCTION__ . " creating now because the table doesn't exist (first time).");
-            $this->createRedirectsForViewHitsTable();
-            $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'scheduled', 86400);
+            $created = $this->createRedirectsForViewHitsTable();
+            $this->setRuntimeFlag(
+                self::HITS_TABLE_LAST_DECISION_FLAG,
+                $created ? 'not_needed' : 'paused',
+                86400
+            );
             return;
         }
 
@@ -2553,13 +2557,14 @@ class ABJ_404_Solution_DataAccess {
     }
 
     function createRedirectsForViewHitsTable() {
+        $wasRefreshed = false;
         if ($this->shouldSkipNonEssentialDbWrites()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown.");
-            return;
+            return false;
         }
         if (!$this->acquireHitsTableRebuildLock()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild lock is already held.");
-            return;
+            return false;
         }
         try {
         
@@ -2599,15 +2604,18 @@ class ABJ_404_Solution_DataAccess {
         );
         $this->executeAsTransaction($statements);
         $this->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, time(), 86400);
+        $wasRefreshed = true;
         
         $this->logger->debugMessage(__FUNCTION__ . " refreshed " . $finalDestTable . " in " . $elapsedTime . 
                 " seconds.");
         } catch (Throwable $e) {
             // Never break the admin request because a shutdown refresh fails.
             $this->logger->errorMessage(__FUNCTION__ . " failed: " . $e->getMessage(), $e);
+            $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
         } finally {
             $this->releaseHitsTableRebuildLock();
         }
+        return $wasRefreshed;
     }
     
     /**
