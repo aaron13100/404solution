@@ -274,6 +274,12 @@ class ABJ_404_Solution_WordPress_Connector {
             ));
         }
 
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt(
+            'abj404-review-feedback',
+            plugin_dir_url(__FILE__) . 'js/reviewFeedback.js',
+            array()
+        );
+
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
                 null);
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-themes', ABJ404_URL . 'includes/html/adminThemes.css',

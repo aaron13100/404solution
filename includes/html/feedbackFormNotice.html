@@ -2,7 +2,7 @@
     <a href="{close_url}" class="abj404-review-notice-close" aria-label="Close review prompt" title="Hide this for now">×</a>
     <p><strong>We'd love to hear what we can improve</strong></p>
     <p>Your feedback is valuable! Please let us know what would make 404 Solution better for you.</p>
-    <form method="post" style="margin-top: 15px;">
+    <div class="abj404-review-feedback-form" style="margin-top: 15px;">
         {nonce_field}
         <p><strong>What needs improvement? (select all that apply)</strong></p>
         <p style="margin-left: 10px;">
@@ -18,8 +18,8 @@
         <p><strong>Please tell us more:</strong></p>
         <p><textarea name="feedback_details" rows="5" style="width: 100%; max-width: 600px;" placeholder="What specific improvements would you like to see? The more detail you provide, the better we can help."></textarea></p>
         <p>
-            <input type="submit" name="abj404_submit_feedback" class="button button-primary" value="Send Feedback" style="margin-right: 15px;">
+            <button type="button" class="button button-primary abj404-submit-feedback" style="margin-right: 15px;">Send Feedback</button>
             <a href="{never_url}" style="text-decoration: none; color: #999;">Never ask again</a>
         </p>
-    </form>
+    </div>
 </div>
