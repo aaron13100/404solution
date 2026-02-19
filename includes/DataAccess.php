@@ -3937,6 +3937,19 @@ class ABJ_404_Solution_DataAccess {
                     esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         }
 
+        $statusAsInt = is_numeric($status) ? absint($status) : -1;
+        $typeAsInt = is_numeric($type) ? absint($type) : -1;
+
+        // Guard: automatic redirects must point to a currently valid destination.
+        // This prevents persisting "auto" rows with missing/unpublished targets.
+        if ($statusAsInt === ABJ404_STATUS_AUTO &&
+                !$this->isValidAutomaticRedirectDestination($typeAsInt, $final_dest)) {
+            $this->logger->debugMessage("Skipping automatic redirect with invalid destination. " .
+                    "From: " . esc_url($fromURL) . ", Dest: " . esc_html((string)$final_dest) .
+                    ", Type: " . esc_html((string)$type) . ", Status: " . esc_html((string)$status));
+            return 0;
+        }
+
         // if we should not capture a 404 then don't.
         if (!array_key_exists(ABJ404_PP, $_REQUEST) ||
         		!array_key_exists('ignore_doprocess', $_REQUEST[ABJ404_PP]) ||
@@ -3984,6 +3997,66 @@ class ABJ_404_Solution_DataAccess {
         }
 
         return $wpdb->insert_id;
+    }
+
+    /**
+     * Automatic redirects are only valid for published posts or existing terms.
+     * If a destination is missing or unpublished, skip creating the auto redirect.
+     *
+     * @param int $type
+     * @param mixed $finalDest
+     * @return bool
+     */
+    private function isValidAutomaticRedirectDestination($type, $finalDest) {
+        $destId = absint($finalDest);
+
+        if ($type === ABJ404_TYPE_POST) {
+            if ($destId <= 0) {
+                return false;
+            }
+            if (!function_exists('get_post')) {
+                return true;
+            }
+
+            $post = get_post($destId);
+            if (!is_object($post)) {
+                return false;
+            }
+
+            $postStatus = '';
+            if (isset($post->post_status) && is_string($post->post_status)) {
+                $postStatus = strtolower($post->post_status);
+            } else if (function_exists('get_post_status')) {
+                $resolvedStatus = get_post_status($destId);
+                if (is_string($resolvedStatus)) {
+                    $postStatus = strtolower($resolvedStatus);
+                }
+            }
+
+            return in_array($postStatus, array('publish', 'published'), true);
+        }
+
+        if ($type === ABJ404_TYPE_CAT || $type === ABJ404_TYPE_TAG) {
+            if ($destId <= 0) {
+                return false;
+            }
+            if (!function_exists('get_term')) {
+                return true;
+            }
+
+            $taxonomy = ($type === ABJ404_TYPE_CAT) ? 'category' : 'post_tag';
+            $term = get_term($destId, $taxonomy);
+            if ($term === null || $term === false) {
+                return false;
+            }
+            if (function_exists('is_wp_error') && is_wp_error($term)) {
+                return false;
+            }
+            return is_object($term);
+        }
+
+        // Auto redirects should not target other types.
+        return false;
     }
 
     /** Get the redirect for the URL. 
