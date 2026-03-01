@@ -255,6 +255,22 @@ abstract class ABJ_404_Solution_Functions {
         return $url;
     }
     
+    /**
+     * Check whether a string contains any UTF-8 4-byte characters (codepoints > U+FFFF).
+     * These characters require utf8mb4 storage; they cannot exist in a utf8mb3 or latin1 column.
+     *
+     * @param string $string
+     * @return bool true if the string contains at least one 4-byte UTF-8 character
+     */
+    function containsUtf8mb4Characters($string) {
+        if ($string === null || $string === '' || !is_string($string)) {
+            return false;
+        }
+        // 4-byte UTF-8 sequences start with a byte in the range F0-F4
+        // followed by three continuation bytes (80-BF).
+        return (bool) preg_match('/[\xF0-\xF4][\x80-\xBF]{3}/', $string);
+    }
+
     /** Uses explode() to return an array.
      * @param string $string
      */

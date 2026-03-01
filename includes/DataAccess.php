@@ -769,7 +769,20 @@ class ABJ_404_Solution_DataAccess {
             		break;
             	}
             }
-            
+
+            // Disk-full, read-only, and quota errors are server-side issues, not
+            // plugin bugs.  They are already handled by noteDatabaseIssueFromError()
+            // (admin notice + write-block cooldown), so log as WARN instead of ERROR
+            // to avoid triggering dev email reports.
+            if ($reportError && (
+                $this->isDiskFullError($result['last_error']) ||
+                $this->isReadOnlyError($result['last_error']) ||
+                $this->isQuotaLimitError($result['last_error'])
+            )) {
+                $this->logger->warnMessage("Server-side DB issue (handled): " . $result['last_error']);
+                $reportError = false;
+            }
+
             if ($reportError) {
                 $stripped_query = 'n/a';
                 if ($this->isInvalidDataError($result['last_error'])) {
@@ -852,9 +865,21 @@ class ABJ_404_Solution_DataAccess {
             return false;
         }
         $lower = strtolower($errorText);
+        // "Got error 28 from storage engine" (ER_GET_ERRNO with POSIX ENOSPC)
+        // "errno: 28" / "Errcode: 28" (ER_DISK_FULL, ER_ERROR_ON_WRITE)
+        // "No space left on device" (OS strerror for ENOSPC, English only)
+        // "The table '...' is full" (ER_RECORD_FILE_FULL)
+        // "Disk full" (ER_DISK_FULL)
+        // Note: on servers with non-English lc_messages, the text around "28"
+        // may be translated (e.g. "erreur 28" in French), but the numeric 28
+        // always appears. The strpos checks cover all known English MySQL/MariaDB
+        // message formats; non-English servers are rare in WordPress hosting.
         return ($this->f->strpos($lower, 'error 28') !== false ||
+            $this->f->strpos($lower, 'errno: 28') !== false ||
+            $this->f->strpos($lower, 'errcode: 28') !== false ||
             $this->f->strpos($lower, 'no space left on device') !== false ||
-            $this->f->strpos($lower, 'table is full') !== false);
+            $this->f->strpos($lower, 'table is full') !== false ||
+            $this->f->strpos($lower, 'disk full') !== false);
     }
 
     private function isReadOnlyError($errorText) {
@@ -4241,9 +4266,16 @@ class ABJ_404_Solution_DataAccess {
                         . "'" . esc_sql($slug) . "' \n ";
                 $specifiedSlug = str_replace('utf8mb4_unicode_ci', $resolvedCollation, $specifiedSlug);
             } else {
-                // Legacy column (latin1, utf8, etc.) - use simple comparison
-                $specifiedSlug = " */\n and wp_posts.post_name = "
-                        . "'" . esc_sql($slug) . "' \n ";
+                // Legacy column (latin1, utf8, etc.) - use simple comparison.
+                // 4-byte UTF-8 characters (emoji, rare CJK, etc.) cannot exist in a
+                // utf8mb3/latin1 column, so skip the slug comparison entirely to avoid
+                // "Illegal mix of collations" errors.
+                if ($this->f->containsUtf8mb4Characters($slug)) {
+                    $specifiedSlug = '';
+                } else {
+                    $specifiedSlug = " */\n and wp_posts.post_name = "
+                            . "'" . esc_sql($slug) . "' \n ";
+                }
             }
         } else {
             $specifiedSlug = '';
