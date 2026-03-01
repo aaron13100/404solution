@@ -2452,3 +2452,42 @@ msgstr "data-pagination-refresh-available-text"
 
 msgid "destination-warning-text"
 msgstr "destination-warning-text"
+
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "%d 分钟前"
+
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "%d 小时前"
+
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "%d 天前"
+
+msgid "Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused."
+msgstr "数据库存储空间似乎已满（磁盘/引擎空间）。插件的写入密集型任务已暂时暂停。"
+
+msgid "Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused."
+msgstr "数据库查询配额已超出（例如 max_questions）。插件的非必要后台任务已暂时暂停。"
+
+msgid "Database appears to be in read-only mode. Plugin write operations are temporarily paused."
+msgstr "数据库似乎处于只读模式。插件的写入操作已暂时暂停。"
+
+msgid "Database collation mismatch was detected. A compatibility fallback was used where possible."
+msgstr "检测到数据库排序规则不匹配。已在可能的情况下使用兼容性回退。"
+
+msgid "Some required plugin files are missing. Please reinstall the plugin package."
+msgstr "缺少一些必需的插件文件。请重新安装插件包。"
+
+msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition — not necessarily a full disk."
+msgstr "请联系您的主机提供商。这通常是由数据库配额、表空间限制或 /tmp 分区已满引起的——不一定是整个磁盘已满。"
+
+msgid "Your database is currently in read-only mode. Contact your hosting provider."
+msgstr "您的数据库当前处于只读模式。请联系您的主机提供商。"
+
+msgid "Your database query quota was exceeded. This usually resets automatically."
+msgstr "您的数据库查询配额已超出。通常会自动重置。"
+
+msgid "Show database error details"
+msgstr "显示数据库错误详情"

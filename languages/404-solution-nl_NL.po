@@ -2442,3 +2442,45 @@ msgstr "data-pagination-refresh-available-text"
 
 msgid "destination-warning-text"
 msgstr "destination-warning-text"
+
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "%d minuut geleden"
+msgstr[1] "%d minuten geleden"
+
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "%d uur geleden"
+msgstr[1] "%d uur geleden"
+
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "%d dag geleden"
+msgstr[1] "%d dagen geleden"
+
+msgid "Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused."
+msgstr "De databaseopslag lijkt vol te zijn (schijf-/engineruimte). Schrijfintensieve plugintaken zijn tijdelijk gepauzeerd."
+
+msgid "Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused."
+msgstr "Het databasequeryquotum is overschreden (bijvoorbeeld max_questions). Niet-essentiële achtergrondtaken van de plugin zijn tijdelijk gepauzeerd."
+
+msgid "Database appears to be in read-only mode. Plugin write operations are temporarily paused."
+msgstr "De database lijkt in alleen-lezenmodus te staan. Schrijfbewerkingen van de plugin zijn tijdelijk gepauzeerd."
+
+msgid "Database collation mismatch was detected. A compatibility fallback was used where possible."
+msgstr "Er is een collatie-afwijking in de database gedetecteerd. Er is waar mogelijk een compatibiliteitsmodus gebruikt."
+
+msgid "Some required plugin files are missing. Please reinstall the plugin package."
+msgstr "Sommige vereiste pluginbestanden ontbreken. Installeer het pluginpakket opnieuw."
+
+msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition — not necessarily a full disk."
+msgstr "Neem contact op met uw hostingprovider. Dit wordt meestal veroorzaakt door een databasequotum, tablespace-limiet of een volle /tmp-partitie — niet noodzakelijk een volle schijf."
+
+msgid "Your database is currently in read-only mode. Contact your hosting provider."
+msgstr "Uw database staat momenteel in alleen-lezenmodus. Neem contact op met uw hostingprovider."
+
+msgid "Your database query quota was exceeded. This usually resets automatically."
+msgstr "Uw databasequeryquotum is overschreden. Dit wordt meestal automatisch hersteld."
+
+msgid "Show database error details"
+msgstr "Databasefoutdetails weergeven"

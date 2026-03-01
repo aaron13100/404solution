@@ -68,6 +68,10 @@ class ABJ_404_Solution_DataAccess {
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
+    /** @var bool Whether a server-side DB issue was noted this request (for auto-clear). */
+    private $serverSideIssueNoted = false;
+    /** @var bool Whether we already checked for a stale notice transient this request. */
+    private $serverSideIssueChecked = false;
     /** @var array<string,int> Request-local cached counts for redirects list views. */
     private $redirectsForViewCountRequestCache = array();
 
@@ -826,6 +830,26 @@ class ABJ_404_Solution_DataAccess {
                 $this->logger->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " .
                         $sqlInfo);
             }
+
+            // Auto-clear the admin notice once queries succeed and cooldowns have expired.
+            // Guard: only run when the query truly succeeded (this else branch also
+            // fires when log_errors is false, which can include failed queries).
+            if ($result['last_error'] === '') {
+                // serverSideIssueNoted is set when an error occurs in this request;
+                // also check once per request if a stale notice transient exists from
+                // a previous request (the flag resets per-process).
+                if (!$this->serverSideIssueNoted && !$this->serverSideIssueChecked) {
+                    $this->serverSideIssueChecked = true;
+                    $existing = $this->getRuntimeFlag('abj404_plugin_db_notice');
+                    if (is_array($existing) && !empty($existing['type'])
+                        && $existing['type'] !== 'collation') {
+                        $this->serverSideIssueNoted = true;
+                    }
+                }
+                if ($this->serverSideIssueNoted && !$this->isWriteBlockActive() && !$this->isQuotaCooldownActive()) {
+                    $this->clearServerSideDbNotice();
+                }
+            }
         }
         
         return $result;
@@ -868,7 +892,7 @@ class ABJ_404_Solution_DataAccess {
         // "Got error 28 from storage engine" (ER_GET_ERRNO with POSIX ENOSPC)
         // "errno: 28" / "Errcode: 28" (ER_DISK_FULL, ER_ERROR_ON_WRITE)
         // "No space left on device" (OS strerror for ENOSPC, English only)
-        // "The table '...' is full" (ER_RECORD_FILE_FULL)
+        // "The table '...' is full" (ER_RECORD_FILE_FULL / error 1114)
         // "Disk full" (ER_DISK_FULL)
         // Note: on servers with non-English lc_messages, the text around "28"
         // may be translated (e.g. "erreur 28" in French), but the numeric 28
@@ -878,6 +902,7 @@ class ABJ_404_Solution_DataAccess {
             $this->f->strpos($lower, 'errno: 28') !== false ||
             $this->f->strpos($lower, 'errcode: 28') !== false ||
             $this->f->strpos($lower, 'no space left on device') !== false ||
+            $this->f->strpos($lower, "' is full") !== false ||
             $this->f->strpos($lower, 'table is full') !== false ||
             $this->f->strpos($lower, 'disk full') !== false);
     }
@@ -933,13 +958,23 @@ class ABJ_404_Solution_DataAccess {
         return false;
     }
 
-    private function setPluginDbNotice($type, $message) {
+    private function setPluginDbNotice($type, $message, $errorString = '') {
         $payload = array(
             'type' => $type,
             'message' => $message,
             'timestamp' => time(),
+            'error_string' => $errorString,
         );
         $this->setRuntimeFlag('abj404_plugin_db_notice', $payload, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
+    }
+
+    private function clearServerSideDbNotice() {
+        if (function_exists('delete_transient')) {
+            delete_transient('abj404_plugin_db_notice');
+        } elseif (function_exists('delete_option')) {
+            delete_option('abj404_plugin_db_notice');
+        }
+        $this->serverSideIssueNoted = false;
     }
 
     private function localizeOrDefault($text) {
@@ -954,22 +989,25 @@ class ABJ_404_Solution_DataAccess {
             return;
         }
         if ($this->isDiskFullError($errorText)) {
+            $this->serverSideIssueNoted = true;
             $this->setRuntimeFlag('abj404_db_disk_full_until', time() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
-            $this->setPluginDbNotice('disk_full', $this->localizeOrDefault('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.'));
+            $this->setPluginDbNotice('disk_full', $this->localizeOrDefault('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.'), $errorText);
             return;
         }
         if ($this->isQuotaLimitError($errorText)) {
+            $this->serverSideIssueNoted = true;
             $this->setRuntimeFlag('abj404_db_quota_cooldown_until', time() + self::DB_QUOTA_COOLDOWN_SECONDS, self::DB_QUOTA_COOLDOWN_SECONDS);
-            $this->setPluginDbNotice('query_quota', $this->localizeOrDefault('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.'));
+            $this->setPluginDbNotice('query_quota', $this->localizeOrDefault('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.'), $errorText);
             return;
         }
         if ($this->isReadOnlyError($errorText)) {
+            $this->serverSideIssueNoted = true;
             $this->setRuntimeFlag('abj404_db_read_only_until', time() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
-            $this->setPluginDbNotice('read_only', $this->localizeOrDefault('Database appears to be in read-only mode. Plugin write operations are temporarily paused.'));
+            $this->setPluginDbNotice('read_only', $this->localizeOrDefault('Database appears to be in read-only mode. Plugin write operations are temporarily paused.'), $errorText);
             return;
         }
         if ($this->isCollationError($errorText)) {
-            $this->setPluginDbNotice('collation', $this->localizeOrDefault('Database collation mismatch was detected. A compatibility fallback was used where possible.'));
+            $this->setPluginDbNotice('collation', $this->localizeOrDefault('Database collation mismatch was detected. A compatibility fallback was used where possible.'), $errorText);
         }
     }
 

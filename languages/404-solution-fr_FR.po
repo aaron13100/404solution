@@ -2435,3 +2435,45 @@ msgstr "data-pagination-refresh-available-text"
 
 msgid "destination-warning-text"
 msgstr "destination-warning-text"
+
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "il y a %d minute"
+msgstr[1] "il y a %d minutes"
+
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "il y a %d heure"
+msgstr[1] "il y a %d heures"
+
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "il y a %d jour"
+msgstr[1] "il y a %d jours"
+
+msgid "Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused."
+msgstr "Le stockage de la base de données semble plein (espace disque/moteur). Les tâches d'écriture intensives du plugin sont temporairement suspendues."
+
+msgid "Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused."
+msgstr "Le quota de requêtes de la base de données a été dépassé (par exemple max_questions). Les tâches d'arrière-plan non essentielles du plugin sont temporairement suspendues."
+
+msgid "Database appears to be in read-only mode. Plugin write operations are temporarily paused."
+msgstr "La base de données semble être en mode lecture seule. Les opérations d'écriture du plugin sont temporairement suspendues."
+
+msgid "Database collation mismatch was detected. A compatibility fallback was used where possible."
+msgstr "Une incohérence de classement de la base de données a été détectée. Un mode de compatibilité a été utilisé lorsque possible."
+
+msgid "Some required plugin files are missing. Please reinstall the plugin package."
+msgstr "Certains fichiers requis du plugin sont manquants. Veuillez réinstaller le plugin."
+
+msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition — not necessarily a full disk."
+msgstr "Contactez votre hébergeur. Cela est généralement causé par un quota de base de données, une limite d'espace de table ou une partition /tmp pleine — pas nécessairement un disque plein."
+
+msgid "Your database is currently in read-only mode. Contact your hosting provider."
+msgstr "Votre base de données est actuellement en mode lecture seule. Contactez votre hébergeur."
+
+msgid "Your database query quota was exceeded. This usually resets automatically."
+msgstr "Le quota de requêtes de votre base de données a été dépassé. Il se réinitialise généralement automatiquement."
+
+msgid "Show database error details"
+msgstr "Afficher les détails de l'erreur de base de données"

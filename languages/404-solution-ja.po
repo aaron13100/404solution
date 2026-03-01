@@ -2448,3 +2448,42 @@ msgstr "data-pagination-refresh-available-text"
 
 msgid "destination-warning-text"
 msgstr "destination-warning-text"
+
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "%d 分前"
+
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "%d 時間前"
+
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "%d 日前"
+
+msgid "Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused."
+msgstr "データベースのストレージが満杯のようです（ディスク/エンジンの空き容量）。プラグインの書き込み負荷の高いタスクは一時的に停止されています。"
+
+msgid "Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused."
+msgstr "データベースのクエリクォータを超過しました（例：max_questions）。プラグインの必須でないバックグラウンドタスクは一時的に停止されています。"
+
+msgid "Database appears to be in read-only mode. Plugin write operations are temporarily paused."
+msgstr "データベースが読み取り専用モードのようです。プラグインの書き込み操作は一時的に停止されています。"
+
+msgid "Database collation mismatch was detected. A compatibility fallback was used where possible."
+msgstr "データベースの照合順序の不一致が検出されました。可能な場合は互換性フォールバックが使用されました。"
+
+msgid "Some required plugin files are missing. Please reinstall the plugin package."
+msgstr "一部の必要なプラグインファイルが見つかりません。プラグインパッケージを再インストールしてください。"
+
+msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition — not necessarily a full disk."
+msgstr "ホスティングプロバイダーにお問い合わせください。これは通常、データベースクォータ、テーブルスペースの制限、または/tmpパーティションの満杯が原因です — 必ずしもディスク全体が満杯ではありません。"
+
+msgid "Your database is currently in read-only mode. Contact your hosting provider."
+msgstr "データベースは現在読み取り専用モードです。ホスティングプロバイダーにお問い合わせください。"
+
+msgid "Your database query quota was exceeded. This usually resets automatically."
+msgstr "データベースのクエリクォータを超過しました。通常は自動的にリセットされます。"
+
+msgid "Show database error details"
+msgstr "データベースエラーの詳細を表示"

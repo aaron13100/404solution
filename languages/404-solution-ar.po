@@ -2443,3 +2443,57 @@ msgstr "data-pagination-refresh-available-text"
 
 msgid "destination-warning-text"
 msgstr "destination-warning-text"
+
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "منذ %d دقيقة"
+msgstr[1] "منذ دقيقة %d"
+msgstr[2] "منذ دقيقتين %d"
+msgstr[3] "منذ %d دقائق"
+msgstr[4] "منذ %d دقيقة"
+msgstr[5] "منذ %d دقيقة"
+
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "منذ %d ساعة"
+msgstr[1] "منذ ساعة %d"
+msgstr[2] "منذ ساعتين %d"
+msgstr[3] "منذ %d ساعات"
+msgstr[4] "منذ %d ساعة"
+msgstr[5] "منذ %d ساعة"
+
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "منذ %d يوم"
+msgstr[1] "منذ يوم %d"
+msgstr[2] "منذ يومين %d"
+msgstr[3] "منذ %d أيام"
+msgstr[4] "منذ %d يومًا"
+msgstr[5] "منذ %d يوم"
+
+msgid "Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused."
+msgstr "يبدو أن مساحة تخزين قاعدة البيانات ممتلئة (مساحة القرص/المحرك). تم إيقاف مهام الكتابة المكثفة للإضافة مؤقتًا."
+
+msgid "Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused."
+msgstr "تم تجاوز حصة استعلامات قاعدة البيانات (على سبيل المثال max_questions). تم إيقاف المهام الخلفية غير الأساسية للإضافة مؤقتًا."
+
+msgid "Database appears to be in read-only mode. Plugin write operations are temporarily paused."
+msgstr "يبدو أن قاعدة البيانات في وضع القراءة فقط. تم إيقاف عمليات الكتابة للإضافة مؤقتًا."
+
+msgid "Database collation mismatch was detected. A compatibility fallback was used where possible."
+msgstr "تم اكتشاف عدم تطابق في ترتيب قاعدة البيانات. تم استخدام وضع التوافق حيثما أمكن."
+
+msgid "Some required plugin files are missing. Please reinstall the plugin package."
+msgstr "بعض ملفات الإضافة المطلوبة مفقودة. يرجى إعادة تثبيت حزمة الإضافة."
+
+msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition — not necessarily a full disk."
+msgstr "اتصل بمزود الاستضافة الخاص بك. يحدث هذا عادةً بسبب حصة قاعدة البيانات أو حد مساحة الجداول أو امتلاء قسم /tmp — وليس بالضرورة امتلاء القرص بالكامل."
+
+msgid "Your database is currently in read-only mode. Contact your hosting provider."
+msgstr "قاعدة بياناتك حاليًا في وضع القراءة فقط. اتصل بمزود الاستضافة الخاص بك."
+
+msgid "Your database query quota was exceeded. This usually resets automatically."
+msgstr "تم تجاوز حصة استعلامات قاعدة بياناتك. عادةً ما تتم إعادة التعيين تلقائيًا."
+
+msgid "Show database error details"
+msgstr "عرض تفاصيل خطأ قاعدة البيانات"

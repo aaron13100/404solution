@@ -542,7 +542,28 @@ if (!function_exists('abj404_show_plugin_db_notice')) {
 		if (!is_array($notice) || empty($notice['message'])) {
 			return;
 		}
-		echo '<div class="notice notice-warning"><p><strong>404 Solution:</strong> ' . esc_html($notice['message']) . '</p></div>';
+		$type = isset($notice['type']) ? $notice['type'] : '';
+		// Collation issues are developer-level; don't show them to the user.
+		if ($type === 'collation') {
+			return;
+		}
+		$guidance = '';
+		if ($type === 'disk_full') {
+			$guidance = __('Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition — not necessarily a full disk.', '404-solution');
+		} elseif ($type === 'read_only') {
+			$guidance = __('Your database is currently in read-only mode. Contact your hosting provider.', '404-solution');
+		} elseif ($type === 'query_quota') {
+			$guidance = __('Your database query quota was exceeded. This usually resets automatically.', '404-solution');
+		}
+		echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ' . esc_html($notice['message']) . '</p>';
+		if ($guidance !== '') {
+			echo '<p>' . esc_html($guidance) . '</p>';
+		}
+		if (!empty($notice['error_string'])) {
+			echo '<details><summary>' . esc_html(__('Show database error details', '404-solution')) . '</summary>';
+			echo '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">' . esc_html($notice['error_string']) . '</pre></details>';
+		}
+		echo '</div>';
 	}
 }
 add_action('admin_notices', 'abj404_show_plugin_db_notice');

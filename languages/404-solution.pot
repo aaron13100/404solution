@@ -1382,3 +1382,53 @@ msgstr ""
 #: includes/html/paginationLinks.html
 msgid "data-pagination-current-logsid"
 msgstr ""
+
+#: 404-solution.php:548
+msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition — not necessarily a full disk."
+msgstr ""
+
+#: 404-solution.php:550
+msgid "Your database is currently in read-only mode. Contact your hosting provider."
+msgstr ""
+
+#: 404-solution.php:552
+msgid "Your database query quota was exceeded. This usually resets automatically."
+msgstr ""
+
+#: 404-solution.php:559
+msgid "Show database error details"
+msgstr ""
+
+#: includes/DataAccess.php:993
+msgid "Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused."
+msgstr ""
+
+#: includes/DataAccess.php:999
+msgid "Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused."
+msgstr ""
+
+#: includes/DataAccess.php:1005
+msgid "Database appears to be in read-only mode. Plugin write operations are temporarily paused."
+msgstr ""
+
+#: includes/DataAccess.php:1009
+msgid "Database collation mismatch was detected. A compatibility fallback was used where possible."
+msgstr ""
+
+#: includes/DataAccess.php includes/View.php
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/DataAccess.php includes/View.php
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/DataAccess.php includes/View.php
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] ""
+msgstr[1] ""
