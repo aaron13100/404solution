@@ -517,8 +517,8 @@ abstract class ABJ_404_Solution_Functions {
             
         } else if ($typeInt === ABJ404_TYPE_TAG) {
             $permalink['link'] = get_tag_link($permalink['id']);
-            $tag = get_term($permalink['id'], 'post_tag');
-            if ($tag != null) {
+            $tag = get_term($permalink['id']);
+            if ($tag != null && !is_wp_error($tag)) {
                 $permalink['title'] = $tag->name;
             } else {
                 $permalink['title'] = $permalink['link'];
@@ -528,13 +528,17 @@ abstract class ABJ_404_Solution_Functions {
             } else {
             	$permalink['status'] = 'published';
             }
-            
+
         } else if ($typeInt === ABJ404_TYPE_CAT) {
-            $permalink['link'] = get_category_link($permalink['id']);
-            $cat = get_term($permalink['id'], 'category');
-            if ($cat != null) {
-                $permalink['title'] = $cat->name;
+            // Use get_term_link() instead of get_category_link() to support
+            // custom taxonomies like WooCommerce product_cat.
+            $catTerm = get_term($permalink['id']);
+            if ($catTerm != null && !is_wp_error($catTerm)) {
+                $termLink = get_term_link($catTerm);
+                $permalink['link'] = is_wp_error($termLink) ? get_category_link($permalink['id']) : $termLink;
+                $permalink['title'] = $catTerm->name;
             } else {
+                $permalink['link'] = get_category_link($permalink['id']);
                 $permalink['title'] = $permalink['link'];
             }
             if ($permalink['title'] == null || $permalink['title'] == '') {
