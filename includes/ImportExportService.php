@@ -135,7 +135,6 @@ class ABJ_404_Solution_ImportExportService {
         $allowed_mime_types = array('text/csv', 'text/plain', 'application/csv', 'text/comma-separated-values', 'application/vnd.ms-excel');
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime_type = finfo_file($finfo, $_FILES['import_file']['tmp_name']);
-        finfo_close($finfo);
         if (!in_array($mime_type, $allowed_mime_types)) {
             return 'Error: Invalid file type. Only CSV files are allowed.';
         }

@@ -679,7 +679,6 @@ abstract class ABJ_404_Solution_Functions {
         curl_setopt($ch, CURLOPT_URL, 'file://' . $path);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $output = curl_exec($ch);
-        curl_close($ch);
         
         if ($output == null) {
             throw new Exception("Error: Can't read file, even with cURL: " . esc_html($path));
@@ -747,8 +746,7 @@ abstract class ABJ_404_Solution_Functions {
                 curl_setopt($ch, CURLOPT_FILE, $destinationFileWriteHandle); 
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
                 // get curl response
-                curl_exec($ch); 
-                curl_close($ch);
+                curl_exec($ch);
                 fclose($destinationFileWriteHandle);        
                 
                 if (file_exists($filePath) && filesize($filePath) > 0) {
