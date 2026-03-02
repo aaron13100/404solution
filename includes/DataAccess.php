@@ -783,7 +783,7 @@ class ABJ_404_Solution_DataAccess {
                 $this->isReadOnlyError($result['last_error']) ||
                 $this->isQuotaLimitError($result['last_error'])
             )) {
-                $this->logger->warnMessage("Server-side DB issue (handled): " . $result['last_error']);
+                $this->logger->warn("Server-side DB issue (handled): " . $result['last_error']);
                 $reportError = false;
             }
 
