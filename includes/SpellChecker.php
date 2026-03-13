@@ -19,6 +19,9 @@ class ABJ_404_Solution_SpellChecker {
 
 	const MAX_DIST = 2083;
 
+	/** Upper bound for the length-based distance buckets used to pre-filter candidates. */
+	const MAX_LIKELY_DISTANCE = 300;
+
 	/** Similarity threshold for N-gram prefiltering (lower = more candidates, slower but safer). */
 	const NGRAM_PREFILTER_THRESHOLD = 0.3;
 
@@ -311,7 +314,7 @@ class ABJ_404_Solution_SpellChecker {
 			try {
 				$this->dao->removeFromPermalinkCache($post_id);
 				// let's update some links.
-				$this->permalinkCache->updatePermalinkCache(0.1);
+				$this->permalinkCache->updatePermalinkCache(1);
 			} catch (Exception $e) {
 				$this->logger->errorMessage(__CLASS__ . "/" . __FUNCTION__ .
 					": Exception while updating permalink cache for post ID " . $post_id .
@@ -367,7 +370,7 @@ class ABJ_404_Solution_SpellChecker {
 			try {
 				// Ensure permalink cache is updated first (for new posts)
 				// This is lightweight and idempotent, so safe to call even if already updated
-				$this->permalinkCache->updatePermalinkCache(0.1);
+				$this->permalinkCache->updatePermalinkCache(1);
 
 				// Only update N-grams for this specific post (incremental)
 				$stats = $this->ngramFilter->updateNGramsForPages(array($post_id));
@@ -437,7 +440,7 @@ class ABJ_404_Solution_SpellChecker {
 					);
 				} else {
 					$idAndType = $rowDest . '|' . $row['type'];
-					$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, '0',
+					$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, 0,
 						null, $options);
 				}
 				$permalink['matching_regex'] = $regexURL;
@@ -674,14 +677,6 @@ class ABJ_404_Solution_SpellChecker {
 		// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on posts
         $permalinks = $this->matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, 
                 $fullURLspacesCleaned, $rowType);
-
-		// if we only need images then we're done.
-		if ($rowType == 'image') {
-			// This is sorted so that the link with the highest score will be first when iterating through.
-			arsort($permalinks);
-			$anArray = array($permalinks,$rowType);
-			return $anArray;
-		}
 
 		// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - match on tags
 		// search for a similar tag.
@@ -937,6 +932,9 @@ class ABJ_404_Solution_SpellChecker {
 			// use the levenshtein distance formula here.
 			$the_permalink = $this->getPermalink($id, 'categories');
 			$urlParts = parse_url($the_permalink);
+			if (!is_array($urlParts) || !isset($urlParts['path'])) {
+				continue;
+			}
 			$pathOnly = $this->logic->removeHomeDirectory($urlParts['path']);
 			$scoreBasis = $this->f->strlen($pathOnly);
 			if ($scoreBasis == 0) {
@@ -1008,6 +1006,9 @@ class ABJ_404_Solution_SpellChecker {
 			// use the levenshtein distance formula here.
 			$the_permalink = $this->getPermalink($id, 'tags');
 			$urlParts = parse_url($the_permalink);
+			if (!is_array($urlParts) || !isset($urlParts['path'])) {
+				continue;
+			}
 			$pathOnly = $this->logic->removeHomeDirectory($urlParts['path']);
 			$scoreBasis = $this->f->strlen($pathOnly);
 			if ($scoreBasis == 0) {
@@ -1076,6 +1077,9 @@ class ABJ_404_Solution_SpellChecker {
 			// use the levenshtein distance formula here.
 			$the_permalink = $likelyMatchIDsAndPermalinks[$id];
 			$urlParts = parse_url($the_permalink);
+			if (!is_array($urlParts) || !isset($urlParts['path'])) {
+				continue;
+			}
 			$existingPageURL = $this->logic->removeHomeDirectory($urlParts['path']);
 			$existingPageURLSpaces = $this->f->str_replace($this->separatingCharacters, " ", $existingPageURL);
 
@@ -1155,7 +1159,7 @@ class ABJ_404_Solution_SpellChecker {
 	 * Get the permalink for the passed in type (pages, tags, categories, image, etc.
 	 * @param int $id
 	 * @param string $rowType
-	 * @return string
+	 * @return string|null
 	 * @throws Exception
 	 */
 	function getPermalink($id, $rowType) {
@@ -1330,6 +1334,12 @@ class ABJ_404_Solution_SpellChecker {
 				throw new \Exception("Unknown row type ... " . esc_html($rowType));
 			}
 
+			if ($id === null) {
+				$row = array_pop($currentBatch);
+				continue;
+			}
+			assert($id !== null);
+
 			if (array_key_exists('url', $row)) {
 			    $the_permalink = isset($row['url']) ? $row['url'] : '';
 			    $the_permalink = $this->f->normalizeUrlString($the_permalink);
@@ -1350,7 +1360,7 @@ class ABJ_404_Solution_SpellChecker {
 				$the_permalink . ', $wasntReadyCount: ' . $wasntReadyCount;
 			$idToPermalink[$id] = $the_permalink;
 
-			if (!array_key_exists('path', $urlParts)) {
+			if (!is_array($urlParts) || !array_key_exists('path', $urlParts)) {
 				continue;
 			}
 			$existingPageURL = $this->logic->removeHomeDirectory($urlParts['path']);
@@ -1366,7 +1376,7 @@ class ABJ_404_Solution_SpellChecker {
 			// it shouldn't matter.
 			$minDist = abs($this->f->strlen($existingPageURLCleaned) - $requestedURLCleanedLength);
 			if ($fullURLspaces != '') {
-				$minDist = min($minDist, abs($this->f->strlen($fullURLspacesLength) - $requestedURLCleanedLength));
+				$minDist = min($minDist, abs($fullURLspacesLength - $requestedURLCleanedLength));
 			}
 			$maxDist = $this->f->strlen($existingPageURLCleaned);
 			if ($fullURLspaces != '') {
@@ -1388,20 +1398,21 @@ class ABJ_404_Solution_SpellChecker {
 			// -----------------
 
 			// add the ID to the list.
-			if (isset($minDistances[$minDist]) && is_array($minDistances[$minDist])) {
+			if (isset($minDistances[$minDist])) {
 			    array_push($minDistances[$minDist], $id);
 			} else {
 			    $minDistances[$minDist] = [$id];
 			}
 			
 			if ($maxDist < 0) {
-            	$this->logger->errorMessage("maxDist is less than 0 (" . $maxDist . 
+            	$this->logger->errorMessage("maxDist is less than 0 (" . $maxDist .
             			") for '" . $existingPageURLCleaned . "', wordsInCommon: " .
             			json_encode($wordsInCommon) . ", ");
-            	
+            	$maxDist = 0;
 			} else if ($maxDist > self::MAX_DIST) {
 				$maxDist = self::MAX_DIST;
 			}
+			assert($maxDist >= 0);
 
 			if (is_array($maxDistances[$maxDist])) {
 				array_push($maxDistances[$maxDist], $id);
@@ -1430,8 +1441,8 @@ class ABJ_404_Solution_SpellChecker {
          * list of suggestions on the 404 page. Note the highest max distance of the strings we're using here. */
 		$pagesSeenSoFar = 0;
 		$currentDistanceIndex = 0;
-		$maxDistFound = 300;
-		for ($currentDistanceIndex = 0; $currentDistanceIndex <= 300; $currentDistanceIndex++) {
+		$maxDistFound = self::MAX_LIKELY_DISTANCE;
+		for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_LIKELY_DISTANCE; $currentDistanceIndex++) {
 			$pagesSeenSoFar += sizeof($maxDistances[$currentDistanceIndex]);
 
 			// we only need the closest matching X pages. where X is the number of suggestions
@@ -1529,8 +1540,8 @@ class ABJ_404_Solution_SpellChecker {
 	function getMaxAcceptableDistance($maxDistances, $onlyNeedThisManyPages) {
 		$pagesSeenSoFar = 0;
 		$currentDistanceIndex = 0;
-		$maxDistFound = 300;
-		for ($currentDistanceIndex = 0; $currentDistanceIndex <= 300; $currentDistanceIndex++) {
+		$maxDistFound = self::MAX_LIKELY_DISTANCE;
+		for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_LIKELY_DISTANCE; $currentDistanceIndex++) {
 			$pagesSeenSoFar += sizeof($maxDistances[$currentDistanceIndex]);
 
 			// we only need the closest matching X pages. where X is the number of suggestions
@@ -1552,6 +1563,7 @@ class ABJ_404_Solution_SpellChecker {
 	 */
 	function getLastURLPart($url) {
 		$parts = explode("/", $url);
+		$lastPart = '';
 		for ($i = count($parts) - 1; $i >= 0; $i--) {
 			$lastPart = $parts[$i];
 			if (trim($lastPart) != "") {
@@ -1559,24 +1571,13 @@ class ABJ_404_Solution_SpellChecker {
 			}
 		}
 
+		assert(isset($lastPart));
+
 		if (trim($lastPart) == "") {
 			return $url;
 		}
 
 		return $lastPart;
-	}
-
-	/**
-	 * @param string $str
-	 * @return array
-	 */
-	private function multiByteStringToArray($str) {
-		$length = $this->f->strlen($str);
-		$array = array();
-		for ($i = 0; $i < $length; $i++) {
-			$array[$i] = $this->f->substr($str, $i, 1);
-		}
-		return $array;
 	}
 
     /** This custom levenshtein function has no 255 character limit.
