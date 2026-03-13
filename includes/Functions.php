@@ -8,8 +8,10 @@ if (!defined('ABSPATH')) {
 /* Static functions that can be used from anywhere.  */
 abstract class ABJ_404_Solution_Functions {
     
+    /** @var self|null */
     private static $instance = null;
     
+    /** @return self */
     public static function getInstance() {
         if (self::$instance !== null) {
             return self::$instance;
@@ -28,13 +30,11 @@ abstract class ABJ_404_Solution_Functions {
             }
         }
 
-        if (self::$instance == null) {
-            if (extension_loaded('mbstring')) { 
-                self::$instance = new ABJ_404_Solution_FunctionsMBString();
-                
-            } else {
-                self::$instance = new ABJ_404_Solution_FunctionsPreg();
-            }
+        if (extension_loaded('mbstring')) {
+            self::$instance = new ABJ_404_Solution_FunctionsMBString();
+
+        } else {
+            self::$instance = new ABJ_404_Solution_FunctionsPreg();
         }
         
         return self::$instance;
@@ -43,17 +43,17 @@ abstract class ABJ_404_Solution_Functions {
     /**
      * This function selectively urlencodes a string. Characters outside of the latin1
      * range (0-255) are urlencoded, while characters inside the range are kept as is.
-     * @param string $string The string to be selectively urlencoded.
-     * @return string The urlencoded string.
+     * @param string|array<int|string, mixed> $input The string to be selectively urlencoded.
+     * @return string|array<int|string, mixed> The urlencoded string or array of strings.
      */
     function selectivelyURLEncode($input) {
         $f = ABJ_404_Solution_Functions::getInstance();
-    
+
         // Handle array input
         if (is_array($input)) {
             return array_map([$f, 'selectivelyURLEncode'], $input);
         }
-    
+
         if (!is_string($input)) {
             $input = strval($input);
         }
@@ -93,10 +93,12 @@ abstract class ABJ_404_Solution_Functions {
         return $encodedString;
     }
 
-    /**Recursively applies `sanitize_text_field` to strings in an array or other data structure.
-     * @param mixed $data The data to sanitize. If an array, will recursively 
+    /**
+     * Recursively applies `sanitize_text_field` to strings in an array or other data structure.
+     * @param mixed $data The data to sanitize. If an array, will recursively
      * apply this function to all elements.
-     * @return mixed The sanitized data. */
+     * @return mixed The sanitized data.
+     */
     function sanitize_text_field_recursive($data) {
         if (is_array($data)) {
             // Recursively apply to each element
@@ -107,23 +109,18 @@ abstract class ABJ_404_Solution_Functions {
     }
 
     /** Escape a string to avoid Cross Site Scripting (XSS) attacks by encoding unsafe HTML characters.
-     * @param string $string The string to be escaped.
+     * @param string $value The string to be escaped.
      * @return string The escaped string.
      */
-    function escapeForXSS($value) {
-        if (is_array($value)) {
-            // Recursively sanitize each element in the array
-            return array_map([$this, 'escapeForXSS'], $value);
-        } elseif (!is_string($value)) {
-            // Convert non-string values to strings
-            $value = strval($value);
+    function escapeForXSS(?string $value): string {
+        if ($value === null) {
+            return '';
         }
-    
         // Remove control characters and other unsafe characters
-        $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value ?? '');
+        $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value) ?? '';
         // Remove any other characters you consider unsafe
-        $value = preg_replace('/[<>"\'`{}()]/u', '', $value ?? '');
-        
+        $value = preg_replace('/[<>"\'`{}()]/u', '', $value) ?? '';
+
         return $value;
     }
 
@@ -133,10 +130,10 @@ abstract class ABJ_404_Solution_Functions {
      * - Strip invalid UTF-8/control bytes
      *
      * @param string|null $url
-     * @param array $options Supported keys: decode (bool)
+     * @param array<string, bool> $options Supported keys: decode (bool)
      * @return string
      */
-    function normalizeUrlString($url, $options = array()) {
+    function normalizeUrlString($url, array $options = array()) {
         $options = array_merge(array('decode' => true), $options);
 
         if ($url === null || $url === '') {
@@ -262,8 +259,8 @@ abstract class ABJ_404_Solution_Functions {
      * @param string $string
      * @return bool true if the string contains at least one 4-byte UTF-8 character
      */
-    function containsUtf8mb4Characters($string) {
-        if ($string === null || $string === '' || !is_string($string)) {
+    function containsUtf8mb4Characters(string $string): bool {
+        if ($string === '') {
             return false;
         }
         // 4-byte UTF-8 sequences start with a byte in the range F0-F4
@@ -273,8 +270,9 @@ abstract class ABJ_404_Solution_Functions {
 
     /** Uses explode() to return an array.
      * @param string $string
+     * @return array<int, string>
      */
-    function explodeNewline($string) {
+    function explodeNewline(string $string): array {
         $normalized = str_replace("\r\n", "\n", $string);
         $normalized = str_replace('\n', "\n", $normalized);
         $result = array_filter(explode("\n", $this->strtolower($normalized)),
@@ -311,14 +309,28 @@ abstract class ABJ_404_Solution_Functions {
     	return $fixedData;
     }
     
-    function str_replace($needle, $replacement, $haystack) {
+    /**
+     * @param string|array<int, string> $needle
+     * @param string|array<int, mixed>|null $replacement
+     * @param string $haystack
+     * @return string
+     */
+    function str_replace($needle, $replacement, string $haystack): string {
     	if ($replacement === null) {
     		$replacement = '';
     	}
-    	return str_replace($needle, $replacement, $haystack);
+    	/** @var string $result */
+    	$result = str_replace($needle, $replacement, $haystack);
+    	return $result;
     }
-    
-    function single_str_replace($needle, $replacement, $haystack) {
+
+    /**
+     * @param string $needle
+     * @param string $replacement
+     * @param string $haystack
+     * @return string
+     */
+    function single_str_replace(string $needle, string $replacement, string $haystack): string {
     	if ($haystack == "" || $this->strlen($haystack) == 0) {
     		return "";
     		
@@ -361,35 +373,35 @@ abstract class ABJ_404_Solution_Functions {
     }
 
     /** @return int */
-    abstract function ord($char): int;
+    abstract function ord(string $char): int;
 
     /** @return string */
-    abstract function strtolower($string): string;
+    abstract function strtolower(string $string): string;
 
     /** @return int */
-    abstract function strlen($string): int;
+    abstract function strlen(string $string): int;
 
     /** @return int|false */
-    abstract function strpos($haystack, $needle, $offset = 0);
+    abstract function strpos(string $haystack, string $needle, int $offset = 0);
 
     /** @return string */
-    abstract function substr($str, $start, $length = null): string;
+    abstract function substr(string $str, int $start, ?int $length = null): string;
 
     /**
      * @param string $pattern
      * @param string $string
-     * @param array|null $regs
+     * @param array<int, string>|null $regs
      * @return bool|int
      */
-    abstract function regexMatch($pattern, $string, &$regs = null);
+    abstract function regexMatch(string $pattern, string $string, ?array &$regs = null);
 
     /**
      * @param string $pattern
      * @param string $string
-     * @param array|null $regs
+     * @param array<int, string>|null $regs
      * @return bool|int
      */
-    abstract function regexMatchi($pattern, $string, &$regs = null);
+    abstract function regexMatchi(string $pattern, string $string, ?array &$regs = null);
 
     /**
      * @param string $pattern
@@ -403,7 +415,7 @@ abstract class ABJ_404_Solution_Functions {
      * @param string|null $string
      * @return string
      */
-    abstract function sanitizeInvalidUTF8($string): string;
+    abstract function sanitizeInvalidUTF8(?string $string): string;
 
     /**  Used with array_filter()
      * @param string $value
@@ -416,6 +428,9 @@ abstract class ABJ_404_Solution_Functions {
         return trim($value) !== '';
     }
     
+    /**
+     * @return float|string
+     */
     function getExecutionTime() {
         if (array_key_exists(ABJ404_PP, $_REQUEST) && 
                 array_key_exists('process_start_time', $_REQUEST[ABJ404_PP])) {
@@ -507,8 +522,8 @@ abstract class ABJ_404_Solution_Functions {
      * @param string $idAndType e.g. 15|POST is a page ID of 15 and a type POST.
      * @param int $linkScore
      * @param string $rowType if this is "image" then wp_get_attachment_image_src() is used.
-     * @param array $options in case an external URL is used.
-     * @return array an array with id, type, score, link, and title.
+     * @param array<string, mixed>|null $options in case an external URL is used.
+     * @return array<string, mixed> an array with id, type, score, link, and title.
      */
     static function permalinkInfoToArray($idAndType, $linkScore, $rowType = null, $options = null) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -528,23 +543,26 @@ abstract class ABJ_404_Solution_Functions {
         $permalink['status'] = 'unknown';
         $permalink['link'] = 'dunno';
 
+        /** @var int $idInt */
+        $idInt = (int)$permalink['id'];
+
         // Use strict comparison to avoid null/false == 0 issues with type coercion
         // Cast to int for comparison since ABJ404_TYPE_* constants are integers
         $typeInt = is_numeric($permalink['type']) ? (int)$permalink['type'] : -1;
 
         if ($typeInt === ABJ404_TYPE_POST) {
             if ($rowType == 'image') {
-                $imageURL = wp_get_attachment_image_src($permalink['id'], "attached-image");
+                $imageURL = wp_get_attachment_image_src($idInt, "attached-image");
                 $permalink['link'] = $imageURL[0];
             } else {
-                $permalink['link'] = get_permalink($permalink['id']);
+                $permalink['link'] = get_permalink($idInt);
             }
-            $permalink['title'] = get_the_title($permalink['id']);
-            $permalink['status'] = get_post_status($permalink['id']);
-            
+            $permalink['title'] = get_the_title($idInt);
+            $permalink['status'] = get_post_status($idInt);
+
         } else if ($typeInt === ABJ404_TYPE_TAG) {
-            $permalink['link'] = get_tag_link($permalink['id']);
-            $tag = get_term($permalink['id']);
+            $permalink['link'] = get_tag_link($idInt);
+            $tag = get_term($idInt);
             if ($tag != null && !is_wp_error($tag)) {
                 $permalink['title'] = $tag->name;
             } else {
@@ -559,13 +577,13 @@ abstract class ABJ_404_Solution_Functions {
         } else if ($typeInt === ABJ404_TYPE_CAT) {
             // Use get_term_link() instead of get_category_link() to support
             // custom taxonomies like WooCommerce product_cat.
-            $catTerm = get_term($permalink['id']);
+            $catTerm = get_term($idInt);
             if ($catTerm != null && !is_wp_error($catTerm)) {
                 $termLink = get_term_link($catTerm);
-                $permalink['link'] = is_wp_error($termLink) ? get_category_link($permalink['id']) : $termLink;
+                $permalink['link'] = is_wp_error($termLink) ? get_category_link($idInt) : $termLink;
                 $permalink['title'] = $catTerm->name;
             } else {
-                $permalink['link'] = get_category_link($permalink['id']);
+                $permalink['link'] = get_category_link($idInt);
                 $permalink['title'] = $permalink['link'];
             }
             if ($permalink['title'] == null || $permalink['title'] == '') {
@@ -714,7 +732,12 @@ abstract class ABJ_404_Solution_Functions {
         return $dataSupplement['prefix'] . $output . $dataSupplement['suffix'];
     }
 
-    private static function getDataSupplement($filePath, $appendExtraData = true) {
+    /**
+     * @param string $filePath
+     * @param bool $appendExtraData
+     * @return array<string, string>
+     */
+    private static function getDataSupplement(string $filePath, bool $appendExtraData = true): array {
         $f = ABJ_404_Solution_Functions::getInstance();
         $path = strtolower($filePath);
         
@@ -753,8 +776,9 @@ abstract class ABJ_404_Solution_Functions {
     /** Deletes the existing file at $filePath and puts the URL contents in it's place.
      * @param string $url
      * @param string $filePath
+     * @return void
      */
-    function readURLtoFile($url, $filePath) {
+    function readURLtoFile(string $url, string $filePath): void {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
         
         ABJ_404_Solution_Functions::safeUnlink($filePath);
@@ -803,12 +827,12 @@ abstract class ABJ_404_Solution_Functions {
         }
     }
     
-    /** 
+    /**
      * @param string $haystack
      * @param string $needle
-     * @return string
+     * @return bool
      */
-    function endsWithCaseInsensitive($haystack, $needle) {
+    function endsWithCaseInsensitive(string $haystack, string $needle): bool {
         $f = ABJ_404_Solution_Functions::getInstance();
         $length = $f->strlen($needle);
         if ($f->strlen($haystack) < $length) {
@@ -824,9 +848,9 @@ abstract class ABJ_404_Solution_Functions {
     /**
      * @param string $haystack
      * @param string $needle
-     * @return string
+     * @return bool
      */
-    function endsWithCaseSensitive($haystack, $needle) {
+    function endsWithCaseSensitive(string $haystack, string $needle): bool {
     	$f = ABJ_404_Solution_Functions::getInstance();
     	$length = $f->strlen($needle);
     	if ($f->strlen($haystack) < $length) {
@@ -842,10 +866,10 @@ abstract class ABJ_404_Solution_Functions {
      * take into account the query part of the URL (?query=part) when looking for a page to redirect to. 
      * 
      * Here we sort the query parts so that the same request will always look the same.
-     * @param array $urlParts
+     * @param array<string, string> $urlParts
      * @return string
      */
-    function sortQueryString($urlParts) {
+    function sortQueryString(array $urlParts): string {
         if (!array_key_exists('query', $urlParts) || $urlParts['query'] == '') {
             return '';
         }

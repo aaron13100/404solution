@@ -419,7 +419,6 @@ class ABJ_404_Solution_UninstallModal {
                 wp_send_json_error(array(
                     'message' => __('Could not save preferences. Your choices may not be preserved.', '404-solution')
                 ), 500);
-                return;
             }
             // If values match, the false return was just because value was unchanged (which is OK)
         }
@@ -625,20 +624,20 @@ class ABJ_404_Solution_UninstallModal {
 
         // Count pages
         $page_counts = wp_count_posts('page');
-        if ($page_counts && isset($page_counts->publish)) {
+        if (isset($page_counts->publish)) {
             $counts['pages'] = intval($page_counts->publish);
         }
 
         // Count posts
         $post_counts = wp_count_posts('post');
-        if ($post_counts && isset($post_counts->publish)) {
+        if (isset($post_counts->publish)) {
             $counts['posts'] = intval($post_counts->publish);
         }
 
         // Also count WooCommerce products if they exist
         if (function_exists('post_type_exists') && post_type_exists('product')) {
             $product_counts = wp_count_posts('product');
-            if ($product_counts && isset($product_counts->publish)) {
+            if (isset($product_counts->publish)) {
                 $counts['posts'] += intval($product_counts->publish);
             }
         }
@@ -944,9 +943,8 @@ class ABJ_404_Solution_UninstallModal {
         $targetTable = $wpdb->prefix . 'posts';
         $targetInfo = self::getTableInfo($targetTable);
 
-        if ($targetInfo === null || isset($targetInfo['error'])) {
-            $errorMsg = isset($targetInfo['error']) ? $targetInfo['error'] : 'table not found';
-            $summaryLines[] = "Could not read collation for {$targetTable} (baseline): {$errorMsg}";
+        if (isset($targetInfo['error'])) {
+            $summaryLines[] = "Could not read collation for {$targetTable} (baseline): " . $targetInfo['error'];
             return implode("\n", $summaryLines);
         }
 
@@ -972,15 +970,6 @@ class ABJ_404_Solution_UninstallModal {
 
         foreach ($pluginTables as $label => $tableName) {
             $tableInfo = self::getTableInfo($tableName);
-
-            if ($tableInfo === null) {
-                $summaryLines[] = sprintf(
-                    "%s (%s) -> unavailable (table not found)",
-                    $label,
-                    $tableName
-                );
-                continue;
-            }
 
             if (isset($tableInfo['error'])) {
                 $summaryLines[] = sprintf(
@@ -1057,6 +1046,7 @@ class ABJ_404_Solution_UninstallModal {
      * @return array|null Array with 'charset', 'collation', 'engine' keys, or null/error array on failure
      */
     private static function tryInformationSchema($tableName) {
+        /** @var \wpdb $wpdb */
         global $wpdb;
 
         // Guard for test environment where wpdb may be a minimal mock
@@ -1119,6 +1109,7 @@ class ABJ_404_Solution_UninstallModal {
      * @return array|null Array with 'charset', 'collation', 'engine' keys, or null/error on failure
      */
     private static function tryShowTableStatus($tableName) {
+        /** @var \wpdb $wpdb */
         global $wpdb;
 
         if (!method_exists($wpdb, 'get_row')) {

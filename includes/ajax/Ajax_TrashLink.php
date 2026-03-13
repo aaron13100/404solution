@@ -38,22 +38,16 @@ class ABJ_404_Solution_Ajax_TrashLink {
 
         $nonceOk = function_exists('check_ajax_referer')
             ? check_ajax_referer('abj404_ajaxTrash', '_wpnonce', false)
-            : (function_exists('check_admin_referer') ? check_admin_referer('abj404_ajaxTrash', '_wpnonce', false) : false);
+            : (function_exists('check_admin_referer') ? check_admin_referer('abj404_ajaxTrash', '_wpnonce') : false);
 
         if (!$nonceOk || !is_admin()) {
             wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
-            if (!(defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT)) {
-                exit;
-            }
             return;
         }
 
         // Verify user has appropriate capabilities (respects plugin admin users)
         if (!$abj404logic->userIsPluginAdmin()) {
             wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
-            if (!(defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT)) {
-                exit;
-            }
             return;
         }
         
@@ -86,10 +80,6 @@ class ABJ_404_Solution_Ajax_TrashLink {
 	                'result' => 'fail',
 	            ), 500);
 	        }
-        if (!(defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT)) {
-            exit;
-        }
-        return;
     }
     
 }

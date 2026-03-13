@@ -123,11 +123,6 @@ class ABJ_404_Solution_Ajax_Php {
 	private static function sendJson($payload, $status = 200) {
 		if (function_exists('wp_send_json')) {
 			wp_send_json($payload, $status);
-			if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
-				return;
-			}
-			// wp_send_json() calls wp_die(); this is a safety net for environments that stub it.
-			exit;
 		}
 
 		// Fallback for unusual environments (should not happen in WordPress).
@@ -289,8 +284,8 @@ class ABJ_404_Solution_Ajax_Php {
 
     /** Add a message about whether there are too many results or none at all.
      * @param array $suggestions
-     * @param string $suggestions
-     * @return string
+     * @param string $term
+     * @return array
      */
     function provideSearchFeedback($suggestions, $term) {
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -360,7 +355,7 @@ class ABJ_404_Solution_Ajax_Php {
     }
     
     /** Create a "Home Page" destination.
-     * @return string
+     * @return array
      */
     function getDefaultRedirectDestinations($includeDefault404Page, $includeSpecial) {
         $arrayWrapper = array();
@@ -391,7 +386,7 @@ class ABJ_404_Solution_Ajax_Php {
     
     /** Prepare categories for json output.
      * @param array $rows
-     * @return string
+     * @return array
      */
     function formatCategoryDestinations($rows) {
         $suggestions = array();
@@ -416,7 +411,7 @@ class ABJ_404_Solution_Ajax_Php {
     
     /** Prepare tags for json output.
      * @param array $rows
-     * @return string
+     * @return array
      */
     function formatTagDestinations($rows) {
         $suggestions = array();
@@ -435,9 +430,9 @@ class ABJ_404_Solution_Ajax_Php {
         return $suggestions;
     }
     
-    /** Prepare custom categories for json output. 
+    /** Prepare custom categories for json output.
      * @param array $customCategoriesMap
-     * @return string
+     * @return array
      */
     function formatCustomCategoryDestinations($customCategoriesMap) {
         $suggestions = array();

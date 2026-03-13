@@ -8,41 +8,49 @@ if (!defined('ABSPATH')) {
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
 
-    function ord($char): int {
+    function ord(string $char): int {
         return mb_ord($char);
     }
 
-    function strtolower($string): string {
-    	if ($string == null) {
-    		return '';
-    	}
+    function strtolower(?string $string): string {
+        if ($string === null) {
+            return '';
+        }
         return mb_strtolower($string);
     }
 
-    function strlen($string): int {
+    function strlen(string $string): int {
         return mb_strlen($string);
     }
 
-    function strpos($haystack, $needle, $offset = 0) {
+    /** @return int|false */
+    function strpos(string $haystack, string $needle, int $offset = 0) {
         return mb_strpos($haystack, $needle, $offset);
     }
 
-    function substr($str, $start, $length = null): string {
-        // PHP 8.2+ doesn't accept null for string parameter
+    function substr(?string $str, int $start, ?int $length = null): string {
         if ($str === null) {
             return '';
         }
         return mb_substr($str, $start, $length);
     }
 
-    function regexMatch($pattern, $string, &$regs = null) {
+    /**
+     * @param array<int, string>|null $regs
+     * @return bool|int
+     */
+    function regexMatch(string $pattern, string $string, ?array &$regs = null) {
         return mb_ereg($pattern, $string, $regs);
     }
 
-    function regexMatchi($pattern, $string, &$regs = null) {
+    /**
+     * @param array<int, string>|null $regs
+     * @return bool|int
+     */
+    function regexMatchi(string $pattern, string $string, ?array &$regs = null) {
         return mb_eregi($pattern, $string, $regs);
     }
-    
+
     /**  Replace regular expression with multibyte support.
      * Scans string for matches to pattern, then replaces the matched text with replacement.
      * @param string $pattern The regular expression pattern.
@@ -66,7 +74,7 @@ class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
      * @param string|null $string The string to sanitize
      * @return string The sanitized string with only valid UTF-8 characters
      */
-    function sanitizeInvalidUTF8($string): string {
+    function sanitizeInvalidUTF8(?string $string): string {
         // Handle null and empty cases
         if ($string === null || $string === '') {
             return '';
@@ -89,4 +97,3 @@ class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
     }
 
 }
-
