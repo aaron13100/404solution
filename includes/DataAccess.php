@@ -2196,7 +2196,11 @@ class ABJ_404_Solution_DataAccess {
         return $query;
     }
 
-    function getExtraDataToPermalinkSuggestions($postIDs) {
+    /**
+     * @param array<int, string> $postIDs
+     * @return array<int, mixed>
+     */
+    function getExtraDataToPermalinkSuggestions(array $postIDs): array {
         // Sanitize all post IDs to prevent SQL injection
         $postIDs = array_map('absint', $postIDs);
         $postIDJoined = implode(", ", $postIDs);
@@ -2325,11 +2329,11 @@ class ABJ_404_Solution_DataAccess {
             $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild for shutdown hook.");
             $this->setRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG, time(), 86400);
             $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'scheduled', 86400);
-            add_action('shutdown', [$this, 'createRedirectsForViewHitsTable']);
+            add_action('shutdown', function(): void { $this->createRedirectsForViewHitsTable(); });
         }
     }
 
-    private function getHitsTableRebuildLockOptionName() {
+    private function getHitsTableRebuildLockOptionName(): string {
         return $this->getLowercasePrefix() . 'abj404_logs_hits_rebuild_lock';
     }
 
@@ -2348,7 +2352,7 @@ class ABJ_404_Solution_DataAccess {
             }
             return false;
         }
-        $lockTimestamp = is_numeric($lockValue) ? (int)$lockValue : 0;
+        $lockTimestamp = (int)$lockValue;
         if ($lockTimestamp > 0 && (time() - $lockTimestamp) > self::HITS_TABLE_REBUILD_LOCK_TTL_SECONDS) {
             if (function_exists('delete_option')) {
                 delete_option($this->getHitsTableRebuildLockOptionName());
@@ -2382,9 +2386,9 @@ class ABJ_404_Solution_DataAccess {
         }
         return (bool)add_option(
             $this->getHitsTableRebuildLockOptionName(),
-            time(),
+            (string)time(),
             '',
-            'no'
+            false
         );
     }
 
@@ -2614,13 +2618,13 @@ class ABJ_404_Solution_DataAccess {
         if ($diff < 60) {
             return __('Just now', '404-solution');
         } elseif ($diff < 3600) {
-            $minutes = floor($diff / 60);
+            $minutes = (int)floor($diff / 60);
             return sprintf(_n('%d minute ago', '%d minutes ago', $minutes, '404-solution'), $minutes);
         } elseif ($diff < 86400) {
-            $hours = floor($diff / 3600);
+            $hours = (int)floor($diff / 3600);
             return sprintf(_n('%d hour ago', '%d hours ago', $hours, '404-solution'), $hours);
         } else {
-            $days = floor($diff / 86400);
+            $days = (int)floor($diff / 86400);
             return sprintf(_n('%d day ago', '%d days ago', $days, '404-solution'), $days);
         }
     }
@@ -2685,7 +2689,7 @@ class ABJ_404_Solution_DataAccess {
                 " seconds.");
         } catch (Throwable $e) {
             // Never break the admin request because a shutdown refresh fails.
-            $this->logger->errorMessage(__FUNCTION__ . " failed: " . $e->getMessage(), $e);
+            $this->logger->errorMessage(__FUNCTION__ . " failed: " . $e->getMessage(), $e instanceof \Exception ? $e : null);
             $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
         } finally {
             $this->releaseHitsTableRebuildLock();
@@ -2763,12 +2767,12 @@ class ABJ_404_Solution_DataAccess {
             }
             $existing = $logsDataByUrl[$canonicalUrl];
             $currentLogsid = (int)($logRow['logsid'] ?? 0);
-            $existingLogsid = (int)($existing['logsid'] ?? 0);
+            $existingLogsid = (int)$existing['logsid'];
             $logsDataByUrl[$canonicalUrl]['logsid'] = ($existingLogsid > 0 && $currentLogsid > 0)
                 ? min($existingLogsid, $currentLogsid)
                 : max($existingLogsid, $currentLogsid);
             $logsDataByUrl[$canonicalUrl]['logshits'] = (int)$existing['logshits'] + (int)($logRow['logshits'] ?? 0);
-            $logsDataByUrl[$canonicalUrl]['last_used'] = max((int)($existing['last_used'] ?? 0), (int)($logRow['last_used'] ?? 0));
+            $logsDataByUrl[$canonicalUrl]['last_used'] = max((int)$existing['last_used'], (int)($logRow['last_used'] ?? 0));
         }
 
         // Populate rows with logs data using indexed lookup
@@ -2862,8 +2866,8 @@ class ABJ_404_Solution_DataAccess {
         return array_values(array_unique($variants));
     }
 
-    private function splitCanonicalHitsUrl($canonicalUrl) {
-        $canonicalUrl = (string)$canonicalUrl;
+    /** @return array{path: string, suffix: string} */
+    private function splitCanonicalHitsUrl(string $canonicalUrl): array {
         $firstQueryPos = strpos($canonicalUrl, '?');
         $firstFragmentPos = strpos($canonicalUrl, '#');
 
@@ -2993,8 +2997,8 @@ class ABJ_404_Solution_DataAccess {
         $query = $this->f->str_replace('{logsid}', $logsid, $query);
         $query = $this->f->str_replace('{orderby}', $orderby, $query);
         $query = $this->f->str_replace('{order}', $order, $query);
-        $query = $this->f->str_replace('{start}', $start, $query);
-        $query = $this->f->str_replace('{perpage}', $perpage, $query);
+        $query = $this->f->str_replace('{start}', (string)$start, $query);
+        $query = $this->f->str_replace('{perpage}', (string)$perpage, $query);
 
         $results = $this->queryAndGetResults($query);
         return $results['rows'];
@@ -3011,7 +3015,7 @@ class ABJ_404_Solution_DataAccess {
     public function getLogsv2IdsForLookupValue($lkupValue, $page = 1, $perPage = 100) {
         global $wpdb;
 
-        $lkupValue = is_string($lkupValue) ? trim($lkupValue) : '';
+        $lkupValue = trim($lkupValue);
         if ($lkupValue === '') {
             return array();
         }
@@ -3112,13 +3116,14 @@ class ABJ_404_Solution_DataAccess {
     
     /** 
      * Log that a redirect was done. Insert into the logs table.
-     * @param string $requestedURL
+     * @param string $requested_url
      * @param string $action
      * @param string $matchReason
-     * @param string $requestedURLDetail the exact URL that was requested, for cases when a regex URL was matched.
+     * @param string|null $requestedURLDetail the exact URL that was requested, for cases when a regex URL was matched.
      */
-    function logRedirectHit($requested_url, $action, $matchReason, $requestedURLDetail = null) {
+    function logRedirectHit(string $requested_url, string $action, string $matchReason, ?string $requestedURLDetail = null): void {
         global $wpdb;
+        /** @var ABJ_404_Solution_PluginLogic|null $abj404logic */
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $logTableName = $this->doTableNameReplacements("{wp_abj404_logsv2}");
 
@@ -3128,13 +3133,6 @@ class ABJ_404_Solution_DataAccess {
         $requested_url = preg_replace('/[^\x20-\x7E]/', '', $requested_url); // Remove non-printable ASCII characters
 
         // Normalize to relative path before storing (Issue #24)
-        // Fix HIGH #1 (5th review): Abort operation if normalization fails
-        // Storing un-normalized URLs causes permanent lookup failures
-        if ($abj404logic === null) {
-            $abj404logging = ABJ_404_Solution_Logging::getInstance();
-            $abj404logging->errorMessage("CRITICAL: PluginLogic singleton not initialized in logRedirectHit()! Cannot normalize URL, aborting: " . $requested_url);
-            return;  // Abort - don't log un-normalized URL
-        }
         $requested_url = $abj404logic->normalizeToRelativePath($requested_url);
 
         // If the database can't store utf8 URLs then URL-encode before saving (avoid insert errors).
@@ -3221,10 +3219,7 @@ class ABJ_404_Solution_DataAccess {
             $referer = '';
         }
         $current_user = wp_get_current_user();
-        $current_user_name = null;
-        if (isset($current_user)) {
-            $current_user_name = $current_user->user_login;
-        }
+        $current_user_name = $current_user->user_login;
         $ipAddressToSave = $_SERVER['REMOTE_ADDR'];
         $ipAddressToSave = filter_var($ipAddressToSave, FILTER_VALIDATE_IP) ? 
             esc_sql($ipAddressToSave) : '';
@@ -3470,6 +3465,7 @@ class ABJ_404_Solution_DataAccess {
                 }
                 $rowPlaceholder = '(' . implode(', ', $rowFormats) . ')';
                 $singleSqlTemplate = "INSERT IGNORE INTO `{$tableName}` ({$columnList}) VALUES {$rowPlaceholder}";
+                /** @var wpdb $wpdb */
                 $singleSql = $wpdb->prepare($singleSqlTemplate, $rowValues);
                 $wpdb->flush();
                 $singleResult = $wpdb->query($singleSql);
@@ -3479,6 +3475,7 @@ class ABJ_404_Solution_DataAccess {
 
                     // One retry on known connection-state errors.
                     if ($this->isCommandsOutOfSyncError($wpdb->last_error)) {
+                        /** @var wpdb|null $isolated */
                         $isolated = $this->getIsolatedWpdb();
                         if ($isolated !== null) {
                             $isolated->flush();
@@ -4109,10 +4106,7 @@ class ABJ_404_Solution_DataAccess {
 
             $taxonomy = ($type === ABJ404_TYPE_CAT) ? 'category' : 'post_tag';
             $term = get_term($destId, $taxonomy);
-            if ($term === null || $term === false) {
-                return false;
-            }
-            if (function_exists('is_wp_error') && is_wp_error($term)) {
+            if ($term === null || is_wp_error($term)) {
                 return false;
             }
             return is_object($term);
