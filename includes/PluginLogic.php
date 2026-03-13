@@ -2277,7 +2277,7 @@ class ABJ_404_Solution_PluginLogic {
             } else {
                 // Validate that URL uses safe protocol (http/https only)
                 $parsed_url = parse_url($userEnteredURL);
-                if (!isset($parsed_url['scheme']) || !in_array(strtolower($parsed_url['scheme']), array('http', 'https'))) {
+                if (!is_array($parsed_url) || !isset($parsed_url['scheme']) || !in_array(strtolower($parsed_url['scheme']), array('http', 'https'))) {
                     $response['message'] = __('Error: External URL must use http:// or https:// protocol only.', '404-solution') . "<BR/>";
                 }
 
@@ -3044,10 +3044,19 @@ class ABJ_404_Solution_PluginLogic {
         $finalDestination = $this->buildFinalRedirectDestination($location, $requestedURL, $isCustom404);
 
     	$previousRequest = $this->readCookieWithPreviousRqeuestShort();
-    	$finalDestNoHome = $this->f->substr($finalDestination, $this->f->strpos($finalDestination, '://') + 3);
-    	$finalDestNoHome = $this->f->substr($finalDestNoHome, $this->f->strpos($finalDestNoHome, '/'));
-    	$locationNoHome = $this->f->substr($location, $this->f->strpos($location, '://') + 3);
-    	$locationNoHome = $this->f->substr($locationNoHome, $this->f->strpos($locationNoHome, '/'));
+    	$schemePos = $this->f->strpos($finalDestination, '://');
+    	$finalDestNoHome = ($schemePos !== false)
+    		? $this->f->substr($finalDestination, $schemePos + 3) : $finalDestination;
+    	$slashPos = $this->f->strpos($finalDestNoHome, '/');
+    	$finalDestNoHome = ($slashPos !== false)
+    		? $this->f->substr($finalDestNoHome, $slashPos) : '/';
+
+    	$schemePos2 = $this->f->strpos($location, '://');
+    	$locationNoHome = ($schemePos2 !== false)
+    		? $this->f->substr($location, $schemePos2 + 3) : $location;
+    	$slashPos2 = $this->f->strpos($locationNoHome, '/');
+    	$locationNoHome = ($slashPos2 !== false)
+    		? $this->f->substr($locationNoHome, $slashPos2) : '/';
     	// maybe avoid infinite redirects.
     	if (!empty($previousRequest)) {
     		if ($previousRequest == $finalDestNoHome && $previousRequest != $locationNoHome) {

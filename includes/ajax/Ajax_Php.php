@@ -298,7 +298,7 @@ class ABJ_404_Solution_Ajax_Php {
         
         if (empty($suggestions)) {
             // tell the user if there are no resluts.
-            if (trim($f->strlen($term)) == 0) {
+            if ($f->strlen(trim($term)) == 0) {
                 $category = sprintf(__("(No matching results found.)", '404-solution'));
             } else {
                 $category = sprintf(__("(No matching results found for \"%s.\")", '404-solution'), $term);
@@ -307,14 +307,14 @@ class ABJ_404_Solution_Ajax_Php {
         } else if (count($suggestions) > ABJ404_MAX_AJAX_DROPDOWN_SIZE) {
             // limit the results if there are too many
             $suggestions = array_slice($suggestions, 0, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
-            if (trim($f->strlen($term)) == 0) {
+            if ($f->strlen(trim($term)) == 0) {
                 $category = sprintf(__("(Data truncated. Too many results!)", '404-solution'));
             } else {
                 $category = sprintf(__("(Data truncated. Too many results for \"%s!\".)", '404-solution'), $term);
             }
             
         } else {
-            if (trim($f->strlen($term)) == 0) {
+            if ($f->strlen(trim($term)) == 0) {
                 $category = sprintf(__("(All results displayed.)", '404-solution'));
             } else {
                 $category = sprintf(__("(All results displayed for \"%s.\")", '404-solution'), $term);

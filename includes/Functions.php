@@ -360,23 +360,50 @@ abstract class ABJ_404_Solution_Functions {
     	return $firstPart . $lastPart;
     }
 
-    abstract function ord($char);
-    
-    abstract function strtolower($string);
-    
-    abstract function strlen($string);
-    
-    abstract function strpos($haystack, $needle, $offset = 0);
-    
-    abstract function substr($str, $start, $length = null);
+    /** @return int */
+    abstract function ord($char): int;
 
+    /** @return string */
+    abstract function strtolower($string): string;
+
+    /** @return int */
+    abstract function strlen($string): int;
+
+    /** @return int|false */
+    abstract function strpos($haystack, $needle, $offset = 0);
+
+    /** @return string */
+    abstract function substr($str, $start, $length = null): string;
+
+    /**
+     * @param string $pattern
+     * @param string $string
+     * @param array|null $regs
+     * @return bool|int
+     */
     abstract function regexMatch($pattern, $string, &$regs = null);
-    
+
+    /**
+     * @param string $pattern
+     * @param string $string
+     * @param array|null $regs
+     * @return bool|int
+     */
     abstract function regexMatchi($pattern, $string, &$regs = null);
-    
+
+    /**
+     * @param string $pattern
+     * @param string $replacement
+     * @param string $string
+     * @return string|null
+     */
     abstract function regexReplace($pattern, $replacement, $string);
 
-    abstract function sanitizeInvalidUTF8($string);
+    /**
+     * @param string|null $string
+     * @return string
+     */
+    abstract function sanitizeInvalidUTF8($string): string;
 
     /**  Used with array_filter()
      * @param string $value

@@ -1168,8 +1168,8 @@ class ABJ_404_Solution_DataAccess {
     	
     	$this->f->regexMatch($reForID, $errorMessage, $matchesForID);
     	$this->f->regexMatch($reForTableName, $sqlThatWasRun, $matchesForTableName);
-    	if ($matchesForID != null && $this->f->strlen($matchesForID[1]) > 0 &&
-    			$matchesForTableName != null && $this->f->strlen($matchesForTableName[1]) > 0) {
+    	if (is_array($matchesForID) && isset($matchesForID[1]) && $this->f->strlen($matchesForID[1]) > 0 &&
+    			is_array($matchesForTableName) && isset($matchesForTableName[1]) && $this->f->strlen($matchesForTableName[1]) > 0) {
 
     		$idWithDuplicate = $matchesForID[1];
     		$tableName = $matchesForTableName[1];

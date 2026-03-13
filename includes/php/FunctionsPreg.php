@@ -22,26 +22,26 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
      * @var array */
     private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
 
-    function ord($char) {
+    function ord($char): int {
         return ord($char);
     }
-    
-    function strtolower($string) {
+
+    function strtolower($string): string {
         return strtolower($string);
     }
-    
-    function strlen($string) {
+
+    function strlen($string): int {
         return strlen($string);
     }
-    
+
     function strpos($haystack, $needle, $offset = 0) {
         if ($offset == 0) {
             return strpos($haystack, $needle);
         }
         return strpos($haystack, $needle, $offset);
     }
-    
-    function substr($str, $start, $length = null) {
+
+    function substr($str, $start, $length = null): string {
         if ($length == null) {
             return substr($str, $start);
         }
@@ -116,7 +116,7 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
      * @param string|null $string The string to sanitize
      * @return string The sanitized string with only valid UTF-8 characters
      */
-    function sanitizeInvalidUTF8($string) {
+    function sanitizeInvalidUTF8($string): string {
         // Handle null and empty cases
         if ($string === null || $string === '') {
             return '';

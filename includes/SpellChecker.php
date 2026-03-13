@@ -1166,7 +1166,7 @@ class ABJ_404_Solution_SpellChecker {
 		if ($rowType == 'pages') {
 			$link = $this->dao->getPermalinkFromCache($id);
 
-			if ($link == null || trim($link) == '') {
+			if ($link === null || trim((string)$link) === '') {
 				$link = get_the_permalink($id);
 			}
 			return $this->f->normalizeUrlString($link);

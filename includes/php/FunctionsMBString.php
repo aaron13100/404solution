@@ -8,26 +8,26 @@ if (!defined('ABSPATH')) {
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
 
-    function ord($char) {
+    function ord($char): int {
         return mb_ord($char);
     }
-    
-    function strtolower($string) {
+
+    function strtolower($string): string {
     	if ($string == null) {
     		return '';
     	}
         return mb_strtolower($string);
     }
-    
-    function strlen($string) {
+
+    function strlen($string): int {
         return mb_strlen($string);
     }
-    
+
     function strpos($haystack, $needle, $offset = 0) {
         return mb_strpos($haystack, $needle, $offset);
     }
-    
-    function substr($str, $start, $length = null) {
+
+    function substr($str, $start, $length = null): string {
         // PHP 8.2+ doesn't accept null for string parameter
         if ($str === null) {
             return '';
@@ -38,7 +38,7 @@ class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
     function regexMatch($pattern, $string, &$regs = null) {
         return mb_ereg($pattern, $string, $regs);
     }
-    
+
     function regexMatchi($pattern, $string, &$regs = null) {
         return mb_eregi($pattern, $string, $regs);
     }
@@ -66,7 +66,7 @@ class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
      * @param string|null $string The string to sanitize
      * @return string The sanitized string with only valid UTF-8 characters
      */
-    function sanitizeInvalidUTF8($string) {
+    function sanitizeInvalidUTF8($string): string {
         // Handle null and empty cases
         if ($string === null || $string === '') {
             return '';

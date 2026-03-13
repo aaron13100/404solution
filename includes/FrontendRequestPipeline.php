@@ -182,19 +182,22 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                     $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($theID . "|" . $this->wpTypePost(), 0, null, $options);
 
                     $urlParts = parse_url($permalink['link']);
+                    if (!is_array($urlParts) || !isset($urlParts['path'])) {
+                        return;
+                    }
                     $perma_link = $urlParts['path'];
 
                     $pageQueryVar = $this->callWpFunction('get_query_var', array('page'), false);
                     $paged = $pageQueryVar ? esc_html($pageQueryVar) : false;
                     if (!$paged === false) {
-                        if ($urlParts['query'] == "") {
+                        if (isset($urlParts['query']) && $urlParts['query'] != "") {
+                            $urlParts['query'] .= "&page=" . $paged;
+                        } else {
                             if ($this->f->substr($perma_link, -1) == "/") {
                                 $perma_link .= $paged . "/";
                             } else {
                                 $perma_link .= "/" . $paged;
                             }
-                        } else {
-                            $urlParts['query'] .= "&page=" . $paged;
                         }
                     }
 
