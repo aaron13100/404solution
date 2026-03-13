@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_View_Suggestions {
 
+	/** @var self|null */
 	private static $instance = null;
 
 	/** @var ABJ_404_Solution_Functions */
@@ -21,6 +22,7 @@ class ABJ_404_Solution_View_Suggestions {
 		$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
 	}
 
+	/** @return self */
 	public static function getInstance() {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_View_Suggestions();
@@ -30,11 +32,10 @@ class ABJ_404_Solution_View_Suggestions {
 	}
 
 	/**
-     * @param array $options
+     * @param array<string, mixed> $options
      * @return string
      */
     function getAdminOptionsPage404Suggestions($options) {
-        $options = is_array($options) ? $options : array();
         $options = array_merge(array(
             'suggest_cats' => '0',
             'suggest_tags' => '0',

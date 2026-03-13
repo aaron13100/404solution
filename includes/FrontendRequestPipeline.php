@@ -26,6 +26,13 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     /** @var ABJ_404_Solution_SpellChecker */
     private $spellChecker;
 
+    /**
+     * @param ABJ_404_Solution_PluginLogic $pluginLogic
+     * @param ABJ_404_Solution_DataAccess $dataAccess
+     * @param ABJ_404_Solution_Logging $logging
+     * @param ABJ_404_Solution_Functions $functions
+     * @param ABJ_404_Solution_SpellChecker $spellChecker
+     */
     function __construct($pluginLogic, $dataAccess, $logging, $functions, $spellChecker) {
         $this->logic = $pluginLogic;
         $this->dao = $dataAccess;
@@ -34,7 +41,12 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->spellChecker = $spellChecker;
     }
 
-    /** @return mixed */
+    /**
+     * @param string $name
+     * @param array<int, mixed> $args
+     * @param mixed $default
+     * @return mixed
+     */
     private function callWpFunction($name, $args = array(), $default = null) {
         if (!function_exists($name)) {
             return $default;
@@ -42,6 +54,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         return call_user_func_array($name, $args);
     }
 
+    /** @return int */
     private function wpTypePost() {
         return defined('ABJ404_TYPE_POST') ? constant('ABJ404_TYPE_POST') : 1;
     }
@@ -69,6 +82,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         abj404_benchmark_record_redirect_lookup($elapsedMs);
     }
 
+    /** @return void */
     function processRedirectAllRequests() {
         $options = $this->logic->getOptions();
 
@@ -88,6 +102,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
     /**
      * Process the 404 path.
+     * @return void
      */
     function process404() {
         if (!is_404() || is_admin()) {
@@ -147,10 +162,10 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 $slugPermalink = $this->spellChecker->getPermalinkUsingSlug($urlSlugOnly);
                 if (!empty($slugPermalink)) {
                     $redirectType = $slugPermalink['type'];
-                    $this->dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $slugPermalink['id'], $options['default_redirect'], 0);
+                    $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO, (string)$redirectType, $slugPermalink['id'], $options['default_redirect'], 0);
 
                     $this->dao->logRedirectHit($requestedURL, $slugPermalink['link'], 'exact slug');
-                    $this->logic->forceRedirect(esc_url($slugPermalink['link']), esc_html($options['default_redirect']));
+                    $this->logic->forceRedirect(esc_url($slugPermalink['link']), (int)$options['default_redirect']);
                     exit;
                 }
             }
@@ -166,10 +181,10 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 $permalink = $this->spellChecker->getPermalinkUsingSpelling($urlSlugOnly, $requestedURL, $options);
                 if (!empty($permalink)) {
                     $redirectType = $permalink['type'];
-                    $this->dao->setupRedirect($requestedURL, ABJ404_STATUS_AUTO, $redirectType, $permalink['id'], $options['default_redirect'], 0);
+                    $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO, (string)$redirectType, $permalink['id'], $options['default_redirect'], 0);
 
                     $this->dao->logRedirectHit($requestedURL, $permalink['link'], 'spell check');
-                    $this->logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
+                    $this->logic->forceRedirect(esc_url($permalink['link']), (int)$options['default_redirect']);
                     exit;
                 }
             }
@@ -208,9 +223,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                             if ($redirect['id'] != '0') {
                                 $this->processRedirect($requestedURL, $redirect, 'single page 3');
                             } else {
-                                $this->dao->setupRedirect(esc_url($requestedURL), ABJ404_STATUS_AUTO, $this->wpTypePost(), $permalink['id'], $options['default_redirect'], 0);
+                                $this->dao->setupRedirect(esc_url($requestedURL), (string)ABJ404_STATUS_AUTO, (string)$this->wpTypePost(), $permalink['id'], $options['default_redirect'], 0);
                                 $this->dao->logRedirectHit($requestedURL, $permalink['link'], 'single page');
-                                $this->logic->forceRedirect(esc_url($permalink['link']), esc_html($options['default_redirect']));
+                                $this->logic->forceRedirect(esc_url($permalink['link']), (int)$options['default_redirect']);
                                 exit;
                             }
                         }
@@ -271,6 +286,8 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     }
 
     /**
+     * @param array<string, mixed> $options
+     * @param string $requestedURL
      * @return bool True if sent to configured default 404 page.
      */
     function tryRegexRedirect($options, $requestedURL) {
@@ -281,7 +298,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $this->dao->logRedirectHit($regexPermalink['matching_regex'], $regexPermalink['link'], 'regex match', $requestedURL);
             $sentTo404Page = $this->logic->forceRedirect(
                 $regexPermalink['link'],
-                esc_html($options['default_redirect']),
+                (int)$options['default_redirect'],
                 $regexPermalink['type'],
                 $requestedURL
             );
@@ -293,6 +310,12 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         return false;
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @param string $requestedURL
+     * @param array<string, mixed> $redirect
+     * @return void
+     */
     function logAReallyLongDebugMessage($options, $requestedURL, $redirect) {
         if (!$this->logger->isDebug()) {
             return;
@@ -329,6 +352,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     /**
      * Redirect to destination.
      *
+     * @param string $requestedURL
+     * @param array<string, mixed> $redirect
+     * @param string $matchReason
      * @return bool true if user is sent to default 404 page.
      */
     function processRedirect($requestedURL, $redirect, $matchReason) {
@@ -382,7 +408,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
             $this->dao->logRedirectHit($redirect['url'], $redirect['final_dest'], 'external');
-            $this->logic->forceRedirect($redirect['final_dest'], esc_html($redirect['code']));
+            $this->logic->forceRedirect($redirect['final_dest'], (int)$redirect['code']);
             exit;
         }
 
@@ -422,7 +448,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
         $sendTo404Page = $this->logic->forceRedirect(
             $finalLink,
-            esc_html($redirect['code']),
+            (int)$redirect['code'],
             -1,
             $requestedURL,
             $isRedirectToCustom404Page
@@ -436,6 +462,8 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
     /**
      * Trigger async suggestion computation only when needed.
+     * @param string $requestedURL
+     * @return void
      */
     private function triggerAsyncSuggestionsIfNeeded($requestedURL) {
         if ($this->spellChecker->does404PageHaveSuggestionsShortcode()) {

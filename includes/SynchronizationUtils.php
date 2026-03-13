@@ -11,10 +11,13 @@ class ABJ_404_Solution_SynchronizationUtils {
 	 * @var string */
 	const SYNC_KEY_PREFIX = 'SYNC_';
 	
+	/** @var bool|null */
 	static $usingFileMode = null;
-	
+
+	/** @var self|null */
 	private static $instance = null;
-	
+
+	/** @return self */
 	public static function getInstance() {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_SynchronizationUtils();
@@ -23,14 +26,17 @@ class ABJ_404_Solution_SynchronizationUtils {
 		return self::$instance;
 	}
 	
+	/** @return string */
 	private function getFileModePath() {
 		return abj404_getUploadsDir() . 'sync_mode_file.txt';
 	}
 	
+	/** @return string */
 	private function getOptionsModePath() {
 		return abj404_getUploadsDir() . 'sync_mode_options.txt';
 	}
 	
+	/** @return bool */
 	private function isFileMode() {
 		if (self::$usingFileMode == null) {
 			$fileModePath = $this->getFileModePath();
@@ -83,6 +89,7 @@ class ABJ_404_Solution_SynchronizationUtils {
 		return self::$usingFileMode;
 	}
 	
+	/** @return void */
 	function switchToFileSyncMode() {
 		$f = ABJ_404_Solution_Functions::getInstance();
 		$fileUtils = ABJ_404_Solution_Functions::getInstance();
@@ -96,10 +103,18 @@ class ABJ_404_Solution_SynchronizationUtils {
 		touch($fileModePath);
 	}
     
+    /**
+     * @param string $keyFromUser
+     * @return string
+     */
     private function createInternalKey($keyFromUser) {
         return ABJ404_PP . "_" . self::SYNC_KEY_PREFIX . $keyFromUser;
     }
 
+    /**
+     * @param string $keyFromUser
+     * @return string
+     */
     private function createUniqueID($keyFromUser) {
         return microtime(true) . "_" . $keyFromUser . '_' . $this->uniqidReal() . uniqid('', true);
     }
@@ -136,6 +151,7 @@ class ABJ_404_Solution_SynchronizationUtils {
     
     /** Remove the lock if it's been in place for too long.
      * @param string $synchronizedKeyFromUser
+     * @return void
      */
     function fixAnUnforeseenIssue($synchronizedKeyFromUser) {
         $internalSynchronizedKey = $this->createInternalKey($synchronizedKeyFromUser);
@@ -216,6 +232,7 @@ class ABJ_404_Solution_SynchronizationUtils {
     /** Release the lock for a synchronized block. Should be done in a finally block.
      * @param string $uniqueID
      * @param string $synchronizedKeyFromUser
+     * @return void
      * @throws Exception
      */
     function synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser) {
@@ -235,6 +252,10 @@ class ABJ_404_Solution_SynchronizationUtils {
 		}
     }
     
+    /**
+     * @param string $key
+     * @return string
+     */
     function readOwner($key) {
     	$owner = '';
     	if ($this->isFileMode()) {
@@ -248,6 +269,11 @@ class ABJ_404_Solution_SynchronizationUtils {
 
     	return $owner;
     }
+    /**
+     * @param string $key
+     * @param string $owner
+     * @return void
+     */
     function writeOwner($key, $owner) {
     	if ($this->isFileMode()) {
     		$fileSync = ABJ_404_Solution_FileSync::getInstance();
@@ -257,6 +283,11 @@ class ABJ_404_Solution_SynchronizationUtils {
     		$this->updateNetworkAwareOption($key, $owner);
     	}
     }
+    /**
+     * @param string $owner
+     * @param string $key
+     * @return void
+     */
     function deleteOwner($owner, $key) {
     	if ($this->isFileMode()) {
     		$fileSync = ABJ_404_Solution_FileSync::getInstance();
@@ -364,11 +395,8 @@ class ABJ_404_Solution_SynchronizationUtils {
     	    } catch (Exception $e) {
     	      $bytes = null;
     	    }
-    	    if ($bytes === false) {
-    	        $bytes = null;
-    	    }
     	}
-    	
+
     	if ($bytes != null) {
     	    return bin2hex($bytes);
     	}

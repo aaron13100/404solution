@@ -17,8 +17,10 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_PostEditorIntegration {
 
+    /** @var self|null */
     private static $instance = null;
 
+    /** @return self */
     public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
@@ -29,6 +31,7 @@ class ABJ_404_Solution_PostEditorIntegration {
     /**
      * Initialize all editor integrations
      */
+    /** @return void */
     public static function init() {
         $me = self::getInstance();
 
@@ -51,6 +54,7 @@ class ABJ_404_Solution_PostEditorIntegration {
     /**
      * Get the default value for the redirect checkbox based on global settings
      */
+    /** @return bool */
     public function getDefaultRedirectSetting() {
         $options = ABJ_404_Solution_PluginLogic::getInstance()->getOptions();
         return @$options['auto_slugs'] == '1';
@@ -61,6 +65,11 @@ class ABJ_404_Solution_PostEditorIntegration {
     /**
      * Add a hidden column to store redirect default for Quick Edit JavaScript
      */
+    /**
+     * @param array<string, string> $columns
+     * @param string|null $post_type
+     * @return array<string, string>
+     */
     public function addRedirectColumn($columns, $post_type = null) {
         // Add our column (it will be hidden via CSS)
         $columns['abj404_redirect'] = '';
@@ -69,6 +78,11 @@ class ABJ_404_Solution_PostEditorIntegration {
 
     /**
      * Render the hidden column data (used by Quick Edit JavaScript)
+     */
+    /**
+     * @param string $column
+     * @param int $post_id
+     * @return void
      */
     public function renderRedirectColumn($column, $post_id) {
         if ($column === 'abj404_redirect') {
@@ -80,6 +94,11 @@ class ABJ_404_Solution_PostEditorIntegration {
 
     /**
      * Render the Quick Edit checkbox
+     */
+    /**
+     * @param string $column_name
+     * @param string $post_type
+     * @return void
      */
     public function renderQuickEditCheckbox($column_name, $post_type) {
         if ($column_name !== 'abj404_redirect') {
@@ -111,6 +130,10 @@ class ABJ_404_Solution_PostEditorIntegration {
     /**
      * Enqueue Quick Edit JavaScript on post list screens
      */
+    /**
+     * @param string $hook
+     * @return void
+     */
     public function enqueueQuickEditScript($hook) {
         if ($hook !== 'edit.php') {
             return;
@@ -134,6 +157,7 @@ class ABJ_404_Solution_PostEditorIntegration {
      * Add meta box to Classic Editor only (not Gutenberg)
      * Gutenberg has its own integration via gutenberg-redirect.js
      */
+    /** @return void */
     public function addMetaBox() {
         $post_types = get_post_types(array('public' => true), 'names');
 
@@ -158,6 +182,10 @@ class ABJ_404_Solution_PostEditorIntegration {
 
     /**
      * Render the Classic Editor meta box content
+     */
+    /**
+     * @param \WP_Post $post
+     * @return void
      */
     public function renderMetaBox($post) {
         // Only show for published posts (new posts have no old URL to redirect from)
@@ -188,6 +216,7 @@ class ABJ_404_Solution_PostEditorIntegration {
     /**
      * Register post meta for Gutenberg REST API access
      */
+    /** @return void */
     public function registerPostMeta() {
         register_post_meta('', '_abj404_create_redirect', array(
             'show_in_rest' => true,
@@ -206,6 +235,7 @@ class ABJ_404_Solution_PostEditorIntegration {
     /**
      * Enqueue Gutenberg sidebar script
      */
+    /** @return void */
     public function enqueueGutenbergScript() {
         // Only load on post edit screens
         $screen = get_current_screen();
@@ -238,7 +268,7 @@ class ABJ_404_Solution_PostEditorIntegration {
      * Called by SlugChangeHandler
      *
      * @param int $post_id Post ID
-     * @param array $options Plugin options
+     * @param array<string, mixed> $options Plugin options
      * @return bool Whether to create redirect
      */
     public static function shouldCreateRedirect($post_id, $options) {

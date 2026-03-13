@@ -20,8 +20,9 @@ class ABJ_404_Solution_SetupWizard {
 
     /**
      * Initialize the setup wizard functionality
+     * @return void
      */
-    public static function init() {
+    public static function init(): void {
         // Handle form submission immediately (must run before any output)
         // This is called early during plugin load, so we check and handle here
         if (is_admin() && isset($_POST['abj404_setup_wizard_action'])) {
@@ -38,18 +39,17 @@ class ABJ_404_Solution_SetupWizard {
 
     /**
      * Handle AJAX dismiss (skip/close) - no settings changed, just mark complete
+     * @return void
      */
-    public static function handleAjaxDismiss() {
+    public static function handleAjaxDismiss(): void {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'abj404_setup_wizard')) {
             wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
-            return;
         }
 
         // Verify user capabilities
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('Insufficient permissions', '404-solution')), 403);
-            return;
         }
 
         // Mark setup as complete
@@ -88,8 +88,9 @@ class ABJ_404_Solution_SetupWizard {
 
     /**
      * Handle form submission for setup wizard
+     * @return void
      */
-    public static function handleFormSubmission() {
+    public static function handleFormSubmission(): void {
         // Check if this is our form submission
         if (!isset($_POST['abj404_setup_wizard_action'])) {
             return;
@@ -137,16 +138,21 @@ class ABJ_404_Solution_SetupWizard {
         exit;
     }
 
-    /** Allowed values for Q1 (Bug #13 fix) */
+    /** Allowed values for Q1 (Bug #13 fix)
+     * @var array<int, string>
+     */
     private static $allowedQ1Values = ['redirect', 'default'];
 
-    /** Allowed values for Q2 (Bug #13 fix) */
+    /** Allowed values for Q2 (Bug #13 fix)
+     * @var array<int, string>
+     */
     private static $allowedQ2Values = ['yes', 'no'];
 
     /**
      * Apply settings from wizard form
+     * @return void
      */
-    private static function applySettings() {
+    private static function applySettings(): void {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $options = $abj404logic->getOptions();
 
@@ -187,8 +193,9 @@ class ABJ_404_Solution_SetupWizard {
      * Enqueue assets on 404 Solution admin pages
      *
      * @param string $hook Current admin page hook
+     * @return void
      */
-    public static function enqueueAssets($hook) {
+    public static function enqueueAssets(string $hook): void {
         // Only load on 404 Solution pages
         if (!self::isPluginPage()) {
             return;
@@ -216,8 +223,9 @@ class ABJ_404_Solution_SetupWizard {
 
     /**
      * Output modal CSS styles
+     * @return void
      */
-    public static function outputStyles() {
+    public static function outputStyles(): void {
         ?>
         <style>
             /* Overlay covers the entire plugin content area including fixed tabs */
@@ -606,8 +614,9 @@ class ABJ_404_Solution_SetupWizard {
 
     /**
      * Output the modal HTML structure
+     * @return void
      */
-    public static function outputModalHTML() {
+    public static function outputModalHTML(): void {
         ?>
         <div id="abj404-setup-wizard" class="abj404-setup-overlay">
             <div class="abj404-setup-modal">
@@ -686,8 +695,9 @@ class ABJ_404_Solution_SetupWizard {
 
     /**
      * Output JavaScript for dismiss and save functionality
+     * @return void
      */
-    public static function outputScript() {
+    public static function outputScript(): void {
         ?>
         <script>
             (function() {

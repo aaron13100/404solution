@@ -10,12 +10,14 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_SpellChecker {
 
-	private $separatingCharacters = array("-","_",".","~",'%20');
+	/** @var array<int, string> */
+	private array $separatingCharacters = array("-","_",".","~",'%20');
 
-    /** Same as above except without the period (.) because of the extension in the file name. */
-	private $separatingCharactersForImages = array("-","_","~",'%20');
+    /** Same as above except without the period (.) because of the extension in the file name.
+	 * @var array<int, string> */
+	private array $separatingCharactersForImages = array("-","_","~",'%20');
 
-	private $publishedPostsProvider = null;
+	private ?ABJ_404_Solution_PublishedPostsProvider $publishedPostsProvider = null;
 
 	const MAX_DIST = 2083;
 
@@ -47,17 +49,19 @@ class ABJ_404_Solution_SpellChecker {
 	 * Below this threshold, Levenshtein on all candidates is fast enough. */
 	const NGRAM_SECONDARY_MIN_CANDIDATES = 50;
 
-	private static $instance = null;
+	private static ?self $instance = null;
 
 	// Performance counters (for testing efficiency - disabled by default)
-	private $enablePerformanceCounters = false;
-	private $levenshteinCallCount = 0;
-	private $totalPagesConsidered = 0;
+	private bool $enablePerformanceCounters = false;
+	private int $levenshteinCallCount = 0;
+	private int $totalPagesConsidered = 0;
 
+	/** @var string|int|null */
 	private $custom404PageID = null;
 
-	/** Prepared regex pattern cache for the current request lifecycle. */
-	private $preparedRegexPatternCache = array();
+	/** Prepared regex pattern cache for the current request lifecycle.
+	 * @var array<string, string> */
+	private array $preparedRegexPatternCache = array();
 
 	/** @var ABJ_404_Solution_Functions */
 	private $f;
@@ -107,7 +111,7 @@ class ABJ_404_Solution_SpellChecker {
 		}
 	}
 
-	public static function getInstance() {
+	public static function getInstance(): self {
 		if (self::$instance !== null) {
 			return self::$instance;
 		}
@@ -125,9 +129,7 @@ class ABJ_404_Solution_SpellChecker {
 			}
 		}
 
-		if (self::$instance == null) {
-			self::$instance = new ABJ_404_Solution_SpellChecker();
-		}
+		self::$instance = new ABJ_404_Solution_SpellChecker();
 
 		return self::$instance;
 	}
@@ -135,7 +137,7 @@ class ABJ_404_Solution_SpellChecker {
 	/**
 	 * Enable performance counters for testing efficiency (disabled by default for production)
 	 */
-	public function enablePerformanceCounters($enable = true) {
+	public function enablePerformanceCounters(bool $enable = true): void {
 		$this->enablePerformanceCounters = $enable;
 		if ($enable) {
 			$this->resetPerformanceCounters();
@@ -145,16 +147,16 @@ class ABJ_404_Solution_SpellChecker {
 	/**
 	 * Reset performance counters to zero
 	 */
-	public function resetPerformanceCounters() {
+	public function resetPerformanceCounters(): void {
 		$this->levenshteinCallCount = 0;
 		$this->totalPagesConsidered = 0;
 	}
 
 	/**
 	 * Get current performance counter values
-	 * @return array ['levenshtein_calls' => int, 'pages_considered' => int, 'efficiency_percent' => float]
+	 * @return array{levenshtein_calls: int, pages_considered: int, efficiency_percent: float}
 	 */
-	public function getPerformanceCounters() {
+	public function getPerformanceCounters(): array {
 		$efficiency = 0;
 		if ($this->totalPagesConsidered > 0) {
 			$efficiency = ($this->levenshteinCallCount / $this->totalPagesConsidered) * 100;
@@ -174,7 +176,7 @@ class ABJ_404_Solution_SpellChecker {
 	 * @param string $requestedURL The 404 URL to find matches for
 	 * @param string $includeCats Whether to include categories (default '1')
 	 * @param bool $includeTags Whether to include tags (default true, converted to '1')
-	 * @return array Array of matching posts/pages
+	 * @return array<int, mixed> Array of matching posts/pages
 	 */
 	public function findSuggestionsForURLUsingSmartCache($requestedURL, $includeCats = '1', $includeTags = true) {
 		// Convert boolean to string for backward compatibility
@@ -182,7 +184,7 @@ class ABJ_404_Solution_SpellChecker {
 		return $this->findMatchingPosts($requestedURL, $includeCats, $includeTagsStr);
 	}
 
-	static function init() {
+	static function init(): void {
 		// any time a page is saved or updated, or the permalink structure changes, then we have to clear
 		// the spelling cache because the results may have changed.
 		$me = ABJ_404_Solution_SpellChecker::getInstance();
@@ -192,7 +194,12 @@ class ABJ_404_Solution_SpellChecker {
 		add_action('delete_post', array($me,'delete_postListener'), 10, 2);
 	}
 
-	function save_postListener($post_id, $post = null, $update = null) {
+	/**
+	 * @param int $post_id
+	 * @param \WP_Post|null $post
+	 * @param bool|null $update
+	 */
+	function save_postListener($post_id, $post = null, $update = null): void {
 		if ($post == null) {
 			$post = get_post($post_id);
 		}
@@ -202,7 +209,11 @@ class ABJ_404_Solution_SpellChecker {
 		
 		$this->savePostHandler($post_id, $post, $update, 'save');
     }
-    function delete_postListener($post_id, $post = null) {
+	/**
+	 * @param int $post_id
+	 * @param \WP_Post|null $post
+	 */
+    function delete_postListener($post_id, $post = null): void {
     	if ($post == null) {
     		$post = get_post($post_id);
     	}
@@ -210,7 +221,13 @@ class ABJ_404_Solution_SpellChecker {
         $this->savePostHandler($post_id, $post, true, 'delete');
     }
 
-	function savePostHandler($post_id, $post, $update, $saveOrDelete) {
+	/**
+	 * @param int $post_id
+	 * @param \WP_Post|mixed $post
+	 * @param bool $update
+	 * @param string $saveOrDelete
+	 */
+	function savePostHandler($post_id, $post, $update, $saveOrDelete): void {
 		$options = $this->logic->getOptions();
 		// Defensive: some callers/tests may pass null; WordPress normally provides a WP_Post.
 		if (!is_object($post) || !isset($post->post_type) || !isset($post->post_status) || !isset($post->post_name)) {
@@ -232,8 +249,8 @@ class ABJ_404_Solution_SpellChecker {
 		// from the permalink cache: slug, type, status.
 		// if any of the following changed then delete the entire spelling cache:
 		// slug, type, status.
-		$cacheRow = $this->dao->getPermalinkEtcFromCache($post_id);
-		$cacheRow = (isset($cacheRow)) ? $cacheRow : array();
+		/** @var array<string, mixed> $cacheRow */
+		$cacheRow = $this->dao->getPermalinkEtcFromCache($post_id) ?: array();
 		$oldSlug = (array_key_exists('url', $cacheRow)) ?
 			rtrim(ltrim($cacheRow['url'], '/'), '/') : '(not found)';
 		$newSlug = $post->post_name;
@@ -392,7 +409,11 @@ class ABJ_404_Solution_SpellChecker {
 		}
 	}
 
-	function permalinkStructureChanged($var1, $newStructure) {
+	/**
+	 * @param string $var1
+	 * @param mixed $newStructure
+	 */
+	function permalinkStructureChanged($var1, $newStructure): void {
 		if ($var1 != 'permalink_structure') {
 			return;
 		}
@@ -403,11 +424,11 @@ class ABJ_404_Solution_SpellChecker {
 	}
 
     /** Find a match using the user-defined regex patterns.
-	 * @global type $abj404dao
 	 * @param string $requestedURL
-	 * @return array
+	 * @param array<string, mixed>|null $options
+	 * @return array<string, mixed>|null
 	 */
-	function getPermalinkUsingRegEx($requestedURL, $options = null) {
+	function getPermalinkUsingRegEx(string $requestedURL, $options = null) {
 		if (!is_array($options)) {
 			$options = $this->logic->getOptions();
 		}
@@ -495,17 +516,16 @@ class ABJ_404_Solution_SpellChecker {
 		return $prepared;
 	}
 
-    /** Find a match using the an exact slug match.    
+    /** Find a match using an exact slug match.
 	 * If there is a post that has a slug that matches the user requested slug exactly,
 	 * then return the permalink for that post. Otherwise return null.
-	 * @global type $abj404dao
 	 * @param string $requestedURL
-	 * @return array|null
+	 * @return array<string, mixed>|null
 	 */
-	function getPermalinkUsingSlug($requestedURL) {
+	function getPermalinkUsingSlug(string $requestedURL) {
 
 		$exploded = array_filter(explode('/', $requestedURL));
-		if ($exploded == null || empty($exploded)) {
+		if (count($exploded) === 0) {
 			return null;
 		}
 		$postSlug = end($exploded);
@@ -533,15 +553,14 @@ class ABJ_404_Solution_SpellChecker {
 		return null;
 	}
 
-    /** Find a match using the an exact slug match.    
+    /** Find a match using spell checking.
 	 * Use spell checking to find the correct link. Return the permalink (map) if there is one, otherwise return null.
-	 * @global type $abj404spellChecker
-	 * @global type $abj404logic
 	 * @param string $requestedURL The URL slug to check for spelling matches
 	 * @param string|null $fullRequestedURL Optional full URL path for caching results (e.g., '/site/bad-url')
-	 * @return array|null
+	 * @param array<string, mixed>|null $optionsOverride
+	 * @return array<string, mixed>|null
 	 */
-	function getPermalinkUsingSpelling($requestedURL, $fullRequestedURL = null, $optionsOverride = null) {
+	function getPermalinkUsingSpelling(string $requestedURL, ?string $fullRequestedURL = null, $optionsOverride = null) {
 		$abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
 
 		$options = is_array($optionsOverride) ? $optionsOverride : $this->logic->getOptions();
@@ -592,9 +611,9 @@ class ABJ_404_Solution_SpellChecker {
 	 * but doesn't find a match above the auto-redirect threshold.
 	 *
 	 * @param string $fullRequestedURL The full URL path (e.g., '/site/bad-url')
-	 * @param array $permalinksPacket The computed suggestions [permalinks, rowType]
+	 * @param array<int, mixed> $permalinksPacket The computed suggestions [permalinks, rowType]
 	 */
-	private function cacheComputedSuggestionsForShortcode($fullRequestedURL, $permalinksPacket) {
+	private function cacheComputedSuggestionsForShortcode(string $fullRequestedURL, array $permalinksPacket): void {
 		// Normalize URL using centralized function for consistency
 		$normalizedURL = $this->f->normalizeURLForCacheKey($fullRequestedURL);
 
@@ -622,8 +641,9 @@ class ABJ_404_Solution_SpellChecker {
 	/**
 	 * Return true if the last characters of the URL represent an image extension (like jpg, gif, etc).
 	 * @param string $requestedURL
+	 * @return bool
 	 */
-	function requestIsForAnImage($requestedURL) {
+	function requestIsForAnImage(string $requestedURL): bool {
         $imageExtensions = array(".jpg", ".jpeg", ".gif", ".png", ".tif", ".tiff", ".bmp", ".pdf", 
             ".jif", ".jif", ".jp2", ".jpx", ".j2k", ".j2c", ".pcd");
 
@@ -639,14 +659,13 @@ class ABJ_404_Solution_SpellChecker {
 		return $returnVal;
 	}
 
-    /** Returns a list of 
-	 * @global type $wpdb
+    /** Returns a list of matching posts.
 	 * @param string $requestedURLRaw
 	 * @param string $includeCats
 	 * @param string $includeTags
-	 * @return array
+	 * @return array<int, mixed>
 	 */
-	function findMatchingPosts($requestedURLRaw, $includeCats = '1', $includeTags = '1') {
+	function findMatchingPosts(string $requestedURLRaw, string $includeCats = '1', string $includeTags = '1') {
 
 		$options = $this->logic->getOptions();
 		// the number of pages to cache is (max suggestions) + (the number of exlude pages).
@@ -709,7 +728,12 @@ class ABJ_404_Solution_SpellChecker {
 		return $returnValue;
 	}
 
-	function removeExcludedPages($options, $permalinks) {
+	/**
+	 * @param array<string, mixed> $options
+	 * @param array<string, string> $permalinks
+	 * @return array<string, string>
+	 */
+	function removeExcludedPages(array $options, array $permalinks): array {
 		$excludePagesJson = $options['excludePages[]'];
 		if (trim($excludePagesJson) == '' && $this->custom404PageID == null) {
 			return $permalinks;
@@ -744,17 +768,12 @@ class ABJ_404_Solution_SpellChecker {
 	/**
      * Removes permalink suggestions if their URL path matches exclusion regex patterns.
      *
-     * @param array $options    Plugin options containing 'suggest_regex_exclusions_usable'.
-     * @param array $permalinks An array where keys are "ID|TYPE_CONSTANT" and values are scores.
-     * Example: [ '1204|1' => '70.0000', '2194|1' => '68.3333' ]
-     * @return array The filtered $permalinks array.
+     * @param array<string, mixed> $options    Plugin options containing 'suggest_regex_exclusions_usable'.
+     * @param array<string, string> $permalinks An array where keys are "ID|TYPE_CONSTANT" and values are scores.
+     * @param int $maxCacheCount
+     * @return array<string, string> The filtered $permalinks array.
      */
-    function removeExcludedPagesWithRegex($options, $permalinks, $maxCacheCount) {
-        // Ensure permalinks is an array
-        if (!is_array($permalinks)) {
-            return $permalinks;
-        }
-
+    function removeExcludedPagesWithRegex(array $options, array $permalinks, int $maxCacheCount): array {
         // Check if usable regex patterns exist and are in an array format
         if (!isset($options['suggest_regex_exclusions_usable']) ||
             !is_array($options['suggest_regex_exclusions_usable']) ||
@@ -879,7 +898,11 @@ class ABJ_404_Solution_SpellChecker {
         }
     }
 
-	function getOnlyIDandTermID($rowsAsObject) {
+	/**
+	 * @param array<int, object> $rowsAsObject
+	 * @return array<int, array<string, mixed>>
+	 */
+	function getOnlyIDandTermID(array $rowsAsObject): array {
 		$rows = array();
 		$objectRow = array_pop($rowsAsObject);
 		while ($objectRow != null) {
@@ -894,7 +917,11 @@ class ABJ_404_Solution_SpellChecker {
 		return $rows;
 	}
 
-	function getFromPermalinkCache($requestedURL) {
+	/**
+	 * @param string $requestedURL
+	 * @return array<int|string, mixed>
+	 */
+	function getFromPermalinkCache(string $requestedURL): array {
 		// The request cache is used when the suggested pages shortcode is used.
         if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('permalinks_found', $_REQUEST[ABJ404_PP]) &&
                 !empty($_REQUEST[ABJ404_PP]['permalinks_found'])) {
@@ -911,7 +938,14 @@ class ABJ_404_Solution_SpellChecker {
 		return array();
 	}
 
-	function matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rowType) {
+	/**
+	 * @param array<string, string> $permalinks
+	 * @param string $requestedURLCleaned
+	 * @param string $fullURLspacesCleaned
+	 * @param string $rowType
+	 * @return array<string, string>
+	 */
+	function matchOnCats(array $permalinks, string $requestedURLCleaned, string $fullURLspacesCleaned, string $rowType): array {
 
 		$rows = $this->dao->getPublishedCategories();
 		$rows = $this->getOnlyIDandTermID($rows);
@@ -985,7 +1019,14 @@ class ABJ_404_Solution_SpellChecker {
 		return $permalinks;
 	}
 
-	function matchOnTags($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rowType) {
+	/**
+	 * @param array<string, string> $permalinks
+	 * @param string $requestedURLCleaned
+	 * @param string $fullURLspacesCleaned
+	 * @param string $rowType
+	 * @return array<string, string>
+	 */
+	function matchOnTags(array $permalinks, string $requestedURLCleaned, string $fullURLspacesCleaned, string $rowType): array {
 
 		$rows = $this->dao->getPublishedTags();
 		$rows = $this->getOnlyIDandTermID($rows);
@@ -1053,7 +1094,15 @@ class ABJ_404_Solution_SpellChecker {
 		return $permalinks;
 	}
 
-	function matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rowType) {
+	/**
+	 * @param array<string, string> $permalinks
+	 * @param string $requestedURLRaw
+	 * @param string $requestedURLCleaned
+	 * @param string $fullURLspacesCleaned
+	 * @param string $rowType
+	 * @return array<string, string>
+	 */
+	function matchOnPosts(array $permalinks, string $requestedURLRaw, string $requestedURLCleaned, string $fullURLspacesCleaned, string $rowType): array {
 
 		// pre-filter some pages based on the min and max possible levenshtein distances.
 		$likelyMatchIDsAndPermalinks = $this->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, $rowType);
@@ -1148,7 +1197,7 @@ class ABJ_404_Solution_SpellChecker {
 		return $permalinks;
 	}
 
-	function initializePublishedPostsProvider() {
+	function initializePublishedPostsProvider(): void {
 		if ($this->publishedPostsProvider == null) {
 			$this->publishedPostsProvider = ABJ_404_Solution_PublishedPostsProvider::getInstance();
 		}
@@ -1203,11 +1252,11 @@ class ABJ_404_Solution_SpellChecker {
 	 * *
 	 * @param string $requestedURLCleaned
 	 * @param string $fullURLspaces
-	 * @param array $publishedPages
 	 * @param string $rowType
-	 * @return array
+	 * @param array<int, array<string, mixed>>|null $rows
+	 * @return array<int|string, mixed>
 	 */
-	function getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rowType, $rows = null) {
+	function getLikelyMatchIDs(string $requestedURLCleaned, string $fullURLspaces, string $rowType, ?array $rows = null) {
 
 		$options = $this->logic->getOptions();
 		// we get more than we need because the algorithm we actually use
@@ -1412,7 +1461,6 @@ class ABJ_404_Solution_SpellChecker {
 			} else if ($maxDist > self::MAX_DIST) {
 				$maxDist = self::MAX_DIST;
 			}
-			assert($maxDist >= 0);
 
 			if (is_array($maxDistances[$maxDist])) {
 				array_push($maxDistances[$maxDist], $id);
@@ -1533,11 +1581,11 @@ class ABJ_404_Solution_SpellChecker {
 	}
 
 	/**
-	 * @param array $maxDistances
+	 * @param array<int, array<int, mixed>> $maxDistances
 	 * @param int $onlyNeedThisManyPages
 	 * @return int the maximum acceptable distance to use when searching for similar permalinks.
 	 */
-	function getMaxAcceptableDistance($maxDistances, $onlyNeedThisManyPages) {
+	function getMaxAcceptableDistance(array $maxDistances, int $onlyNeedThisManyPages): int {
 		$pagesSeenSoFar = 0;
 		$currentDistanceIndex = 0;
 		$maxDistFound = self::MAX_LIKELY_DISTANCE;
@@ -1570,8 +1618,6 @@ class ABJ_404_Solution_SpellChecker {
 				break;
 			}
 		}
-
-		assert(isset($lastPart));
 
 		if (trim($lastPart) == "") {
 			return $url;

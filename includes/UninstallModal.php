@@ -15,8 +15,9 @@ class ABJ_404_Solution_UninstallModal {
 
     /**
      * Initialize the deactivation modal functionality
+     * @return void
      */
-    public static function init() {
+    public static function init(): void {
         // Enqueue assets only on plugins.php page
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueueAssets'));
 
@@ -28,8 +29,9 @@ class ABJ_404_Solution_UninstallModal {
      * Enqueue modal assets (JavaScript, CSS) on plugins.php page
      *
      * @param string $hook Current admin page hook
+     * @return void
      */
-    public static function enqueueAssets($hook) {
+    public static function enqueueAssets(string $hook): void {
         // Only load on plugins.php page
         if ($hook !== 'plugins.php') {
             return;
@@ -143,8 +145,9 @@ class ABJ_404_Solution_UninstallModal {
 
     /**
      * Output the modal HTML structure
+     * @return void
      */
-    public static function outputModalHTML() {
+    public static function outputModalHTML(): void {
         $redirectCount = self::getRedirectCount();
 
         ?>
@@ -352,19 +355,20 @@ class ABJ_404_Solution_UninstallModal {
 
     /**
      * Handle AJAX request to save uninstall preferences
+     * @return void
      */
-    public static function handleAjaxSavePreferences() {
+    public static function handleAjaxSavePreferences(): void {
         // Security: Verify nonce
         $nonceOk = check_ajax_referer('abj404_uninstall_nonce', 'nonce', false);
         if (!$nonceOk) {
             wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
-            return;
+            return; // @phpstan-ignore deadCode.unreachable
         }
 
         // Security: Check user capabilities
         if (!current_user_can('activate_plugins')) {
             wp_send_json_error(array('message' => __('Insufficient permissions', '404-solution')), 403);
-            return;
+            return; // @phpstan-ignore deadCode.unreachable
         }
 
         // Get preferences from AJAX request
@@ -511,9 +515,9 @@ class ABJ_404_Solution_UninstallModal {
      * Get comprehensive plugin statistics for diagnostics.
      * Includes redirect counts by type, captured 404s, log entries, and storage sizes.
      *
-     * @return array Array with detailed plugin statistics
+     * @return array{redirects: array<string, int>, captured: array<string, int>, log_count: int, log_table_size_mb: float, debug_file_size_mb: float}
      */
-    private static function getPluginStatistics() {
+    private static function getPluginStatistics(): array {
         $stats = array(
             'redirects' => array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0),
             'captured' => array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0),
@@ -579,9 +583,9 @@ class ABJ_404_Solution_UninstallModal {
      * Get counts of categories, tags, pages, and posts for diagnostics.
      * These counts help identify if memory issues are caused by large content volume.
      *
-     * @return array Array with 'categories', 'tags', 'pages', 'posts' keys
+     * @return array{categories: int, tags: int, pages: int, posts: int}
      */
-    private static function getContentCounts() {
+    private static function getContentCounts(): array {
         $counts = array(
             'categories' => 0,
             'tags' => 0,
@@ -648,10 +652,10 @@ class ABJ_404_Solution_UninstallModal {
     /**
      * Send feedback email to plugin author
      *
-     * @param array $preferences User preferences including feedback
+     * @param array<string, mixed> $preferences User preferences including feedback
      * @return bool True if email sent successfully, false otherwise
      */
-    private static function sendFeedbackEmail($preferences) {
+    private static function sendFeedbackEmail(array $preferences): bool {
         // Get site information
         global $wp_version;
 
@@ -849,9 +853,9 @@ class ABJ_404_Solution_UninstallModal {
      * Get database version and charset info for diagnostics.
      * Uses fallback chain for locked-down hosts.
      *
-     * @return array Array with 'version', 'charset', and 'collation' keys
+     * @return array{version: string, charset: string, collation: string}
      */
-    private static function getDatabaseInfo() {
+    private static function getDatabaseInfo(): array {
         global $wpdb;
 
         $info = array(
@@ -1014,9 +1018,9 @@ class ABJ_404_Solution_UninstallModal {
      * 4. WordPress globals (connection-level defaults)
      *
      * @param string $tableName Table name to look up
-     * @return array Array with 'charset', 'collation', 'engine' keys
+     * @return array{charset?: string|null, collation?: string|null, engine?: string, error?: string, source?: string}
      */
-    private static function getTableInfo($tableName) {
+    private static function getTableInfo(string $tableName): array {
         // Try information_schema first (most complete data)
         $result = self::tryInformationSchema($tableName);
         if ($result !== null && !isset($result['error'])) {
@@ -1043,9 +1047,9 @@ class ABJ_404_Solution_UninstallModal {
      * Try to get table info from information_schema.
      *
      * @param string $tableName Table name to look up
-     * @return array|null Array with 'charset', 'collation', 'engine' keys, or null/error array on failure
+     * @return array{charset?: string|null, collation?: string|null, engine?: string, error?: string}|null
      */
-    private static function tryInformationSchema($tableName) {
+    private static function tryInformationSchema(string $tableName) {
         /** @var \wpdb $wpdb */
         global $wpdb;
 
@@ -1106,9 +1110,9 @@ class ABJ_404_Solution_UninstallModal {
      * Try to get table info using SHOW TABLE STATUS.
      *
      * @param string $tableName Table name to look up
-     * @return array|null Array with 'charset', 'collation', 'engine' keys, or null/error on failure
+     * @return array{charset?: string|null, collation?: string|null, engine?: string, error?: string}|null
      */
-    private static function tryShowTableStatus($tableName) {
+    private static function tryShowTableStatus(string $tableName) {
         /** @var \wpdb $wpdb */
         global $wpdb;
 
@@ -1149,9 +1153,9 @@ class ABJ_404_Solution_UninstallModal {
      * Try to get table info by parsing SHOW CREATE TABLE output.
      *
      * @param string $tableName Table name to look up
-     * @return array|null Array with 'charset', 'collation', 'engine' keys, or null on failure
+     * @return array{charset?: string|null, collation?: string|null, engine?: string, error?: string}|null
      */
-    private static function tryShowCreateTable($tableName) {
+    private static function tryShowCreateTable(string $tableName) {
         global $wpdb;
 
         if (!method_exists($wpdb, 'get_row')) {
@@ -1200,9 +1204,9 @@ class ABJ_404_Solution_UninstallModal {
     /**
      * Get WordPress connection-level charset/collation as final fallback.
      *
-     * @return array Array with 'charset', 'collation', 'engine', 'source' keys
+     * @return array{charset: string, collation: string, engine: string, source: string}
      */
-    private static function getWpdbDefaults() {
+    private static function getWpdbDefaults(): array {
         global $wpdb;
 
         $charset = 'utf8mb4';

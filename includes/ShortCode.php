@@ -9,9 +9,11 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_ShortCode {
     
+	/** @var self|null */
 	private static $instance = null;
-	
-	public static function getInstance() {
+
+	/** @return self */
+	public static function getInstance(): self {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_ShortCode();
 		}
@@ -20,8 +22,10 @@ class ABJ_404_Solution_ShortCode {
 	}
 	
 	/** If we're currently redirecting to a custom 404 page and we are about to show page
-	 * suggestions then update the URL displayed to the user. */
-	static function updateURLbarIfNecessary() {
+	 * suggestions then update the URL displayed to the user.
+	 * @return void
+	 */
+	static function updateURLbarIfNecessary(): void {
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 		$f = ABJ_404_Solution_Functions::getInstance();
 		$abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -121,10 +125,11 @@ class ABJ_404_Solution_ShortCode {
 		$abj404logging->debugMessage("updateURLbarIfNecessary: " . $debugMessage);
 	}
 	
-	/** 
-     * @param array $atts
+	/**
+     * @param array<string, mixed> $atts
+     * @return string
      */
-    static function shortcodePageSuggestions( $atts ) {
+    static function shortcodePageSuggestions( array $atts ): string {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -456,11 +461,11 @@ class ABJ_404_Solution_ShortCode {
      * Render suggestions HTML from pre-computed data (for AJAX polling response).
      * This method is called by Ajax_SuggestionPolling when suggestions are ready.
      *
-     * @param array $suggestionsPacket The suggestions data from findMatchingPosts()
+     * @param array<int, mixed> $suggestionsPacket The suggestions data from findMatchingPosts()
      * @param string $requestedURL The original 404 URL (for debugging)
      * @return string HTML content for suggestions
      */
-    public static function renderSuggestionsHTML($suggestionsPacket, $requestedURL = '') {
+    public static function renderSuggestionsHTML(array $suggestionsPacket, string $requestedURL = ''): string {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         // Rendering should be side-effect free (no upgrade/migration work triggered on frontend/AJAX).
@@ -549,10 +554,10 @@ class ABJ_404_Solution_ShortCode {
      * Shows skeleton loading animation while suggestions are being computed.
      *
      * @param string $requestedURL The 404 URL being looked up
-     * @param array $options Plugin options
+     * @param array<string, mixed> $options Plugin options
      * @return string HTML placeholder with loading state
      */
-    public static function renderAsyncPlaceholder($requestedURL, $options) {
+    public static function renderAsyncPlaceholder(string $requestedURL, array $options): string {
         $suggestMax = isset($options['suggest_max']) ? intval($options['suggest_max']) : 5;
 
         // Generate skeleton items based on suggest_max
@@ -580,8 +585,9 @@ class ABJ_404_Solution_ShortCode {
      * Enqueue the async suggestion polling JavaScript.
      *
      * @param string $requestedURL The 404 URL for polling
+     * @return void
      */
-    public static function enqueueAsyncPollingScript($requestedURL) {
+    public static function enqueueAsyncPollingScript(string $requestedURL): void {
         // Enqueue jQuery dependency
         wp_enqueue_script('jquery');
 

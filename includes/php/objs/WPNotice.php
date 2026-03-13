@@ -15,10 +15,14 @@ class ABJ_404_Solution_WPNotice {
     
     /** @var string */
     private $type = null;
-    
-    /** @var string */
+
+    /** @var mixed */
     private $message = '';
-    
+
+    /**
+     * @param mixed $type
+     * @param mixed $message
+     */
     public function __construct($type, $message) {
     	$this->type = self::INFO;
     	
@@ -43,10 +47,12 @@ class ABJ_404_Solution_WPNotice {
         $this->message = $message;
     }
     
-    function getType() {
+    /** @return string */
+    function getType(): string {
         return $this->type;
     }
 
+    /** @return mixed */
     function getMessage() {
         return $this->message;
     }

@@ -9,8 +9,10 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_ViewUpdater {
 
+	/** @var self|null */
 	private static $instance = null;
-	
+
+	/** @return self */
 	public static function getInstance() {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_ViewUpdater();
@@ -19,6 +21,7 @@ class ABJ_404_Solution_ViewUpdater {
 		return self::$instance;
 	}
 		
+    /** @return void */
     static function init() {
         $me = ABJ_404_Solution_ViewUpdater::getInstance();
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxUpdatePaginationLinks',
@@ -28,11 +31,21 @@ class ABJ_404_Solution_ViewUpdater {
         // wp_ajax_nopriv_ is for normal users
     }
 
+    /**
+     * @param int $type
+     * @return bool
+     */
     public static function isFatalErrorType($type) {
         $fatalTypes = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
         return in_array($type, $fatalTypes, true);
     }
 
+    /**
+     * @param string $message
+     * @param array<string, mixed>|null $details
+     * @param bool $isPluginAdmin
+     * @return array<string, mixed>
+     */
     public static function buildAjaxErrorResponse($message, $details, $isPluginAdmin) {
         $data = array(
             'message' => $message,
@@ -46,6 +59,11 @@ class ABJ_404_Solution_ViewUpdater {
         );
     }
 
+    /**
+     * @param mixed $payload
+     * @param int $httpStatus
+     * @return void
+     */
     public static function sendJsonResponseAndExit($payload, $httpStatus = 200) {
         if (!headers_sent()) {
             // Marker headers help support quickly identify that this response came from our AJAX endpoint.
@@ -74,6 +92,10 @@ class ABJ_404_Solution_ViewUpdater {
         exit;
     }
 
+    /**
+     * @param object|null $abj404view
+     * @return object
+     */
     private static function resolveViewInstance(&$abj404view) {
         if (is_object($abj404view)) {
             return $abj404view;
@@ -92,6 +114,10 @@ class ABJ_404_Solution_ViewUpdater {
         throw new Exception('ABJ404 view service not initialized (abj404view is null).');
     }
 
+	    /**
+	     * @param mixed $value
+	     * @return string
+	     */
 	    private static function safeJsonEncode($value) {
 	        $encoded = json_encode($value, JSON_PARTIAL_OUTPUT_ON_ERROR);
 	        if ($encoded === false) {
@@ -100,6 +126,10 @@ class ABJ_404_Solution_ViewUpdater {
 	        return $encoded;
 	    }
 
+    /**
+     * @param mixed $sql
+     * @return string
+     */
     private static function redactSqlShape($sql) {
         if (!is_string($sql) || $sql === '') {
             return '';
@@ -128,6 +158,12 @@ class ABJ_404_Solution_ViewUpdater {
         return $out;
     }
 
+    /**
+     * @param string $summary
+     * @param mixed $details
+     * @param \Throwable|null $throwable
+     * @return void
+     */
     private static function safeLogAjaxFailure($summary, $details = null, $throwable = null) {
         $line = date('c') . ' (ERROR): ' . $summary;
         if ($details !== null) {
@@ -162,6 +198,10 @@ class ABJ_404_Solution_ViewUpdater {
         @file_put_contents(ABJ404_PATH . 'abj404_debug_fallback.txt', $line . "\n", FILE_APPEND);
     }
 
+    /**
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
     private static function startAjaxDebugContext($context) {
         if (!is_array($context)) {
             $context = array();
@@ -194,12 +234,14 @@ class ABJ_404_Solution_ViewUpdater {
         return $context;
     }
 
+    /** @return void */
     private static function markAjaxResponseSent() {
         if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
             $GLOBALS['abj404_ajax_context']['response_sent'] = true;
         }
     }
 
+    /** @return string */
     private static function getAndClearAjaxBufferedOutput() {
         if (defined('ABJ404_TEST_DISABLE_OB') && ABJ404_TEST_DISABLE_OB) {
             return '';
@@ -225,6 +267,7 @@ class ABJ_404_Solution_ViewUpdater {
         return $out;
     }
     
+    /** @return void */
     function getPaginationLinks() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
@@ -248,7 +291,7 @@ class ABJ_404_Solution_ViewUpdater {
             'page' => $page,
             'subpage' => $subpage,
             'rowsPerPage' => $rowsPerPage,
-            'filterText_length' => is_string($filterText) ? strlen($filterText) : 0,
+            'filterText_length' => strlen((string)$filterText),
             'filter' => $filter,
             'detectOnly' => $detectOnly ? 1 : 0,
             'currentSignature_length' => strlen($currentSignature),
@@ -417,6 +460,7 @@ class ABJ_404_Solution_ViewUpdater {
         }
     }
 
+    /** @return void */
     function refreshStatsDashboard() {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
@@ -463,13 +507,13 @@ class ABJ_404_Solution_ViewUpdater {
             }
 
             $snapshot = $abj404dao->refreshStatsDashboardSnapshot(false);
-            $newHash = is_array($snapshot) && is_string($snapshot['hash'] ?? null) ? $snapshot['hash'] : '';
+            $newHash = $snapshot['hash'];
             $hasUpdate = ($newHash !== '' && ($currentHash === '' || $newHash !== $currentHash));
 
             $response = array(
                 'hasUpdate' => $hasUpdate,
                 'hash' => $newHash,
-                'refreshedAt' => is_array($snapshot) ? intval($snapshot['refreshed_at'] ?? 0) : 0,
+                'refreshedAt' => intval($snapshot['refreshed_at']),
             );
 
             self::markAjaxResponseSent();

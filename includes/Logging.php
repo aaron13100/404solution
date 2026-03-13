@@ -9,7 +9,9 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_Logging {
 
-    /** If an error happens then we will also output these. */
+    /** If an error happens then we will also output these.
+     * @var array<int, string>
+     */
     private static $storedDebugMessages = array();
 
     /** Used to store the last line sent from the debug file. */
@@ -18,6 +20,7 @@ class ABJ_404_Solution_Logging {
     /** Used to store the the debug filename. */
     const DEBUG_FILE_KEY = 'debug_file_key';
     
+    /** @var self|null */
     private static $instance = null;
 
     /**
@@ -45,6 +48,7 @@ class ABJ_404_Solution_Logging {
         return $logger;
     }
 
+    /** @return self */
     public static function getInstance() {
         if (self::$instance !== null) {
             return self::$instance;
@@ -63,16 +67,14 @@ class ABJ_404_Solution_Logging {
             }
         }
 
-        if (self::$instance == null) {
-            self::$instance = new ABJ_404_Solution_Logging();
+        self::$instance = new ABJ_404_Solution_Logging();
 
-            // log any errors that were stored before the logger existed.
-            if (isset($GLOBALS['abj404_pending_errors']) && is_array($GLOBALS['abj404_pending_errors'])) {
-                foreach ($GLOBALS['abj404_pending_errors'] as $message) {
-                    self::$instance->errorMessage($message);
-                }
-                unset($GLOBALS['abj404_pending_errors']); // Clear after flushing
+        // log any errors that were stored before the logger existed.
+        if (isset($GLOBALS['abj404_pending_errors']) && is_array($GLOBALS['abj404_pending_errors'])) {
+            foreach ($GLOBALS['abj404_pending_errors'] as $message) {
+                self::$instance->errorMessage($message);
             }
+            unset($GLOBALS['abj404_pending_errors']); // Clear after flushing
         }
 
         return self::$instance;
@@ -120,11 +122,13 @@ class ABJ_404_Solution_Logging {
         return $date->format('Y-m-d H:i:s T');
     }
     
-    /** Send a message to the log file if debug mode is on. 
+    /** Send a message to the log file if debug mode is on.
      * This goes to a file and is used by every other class so it goes here.
-     * @param string $message  
-     * @param \Exception $e If present then a stack trace is included. */
-    function debugMessage($message, $e = null) {
+     * @param string $message
+     * @param \Exception|null $e If present then a stack trace is included.
+     * @return void
+     */
+    function debugMessage(string $message, $e = null): void {
     	$stacktrace = "";
     	if ($e != null) {
     		$stacktrace = ", Stacktrace: " . $e->getTraceAsString();
@@ -141,26 +145,31 @@ class ABJ_404_Solution_Logging {
 
     /** Send a message to the log.
      * This goes to a file and is used by every other class so it goes here.
-     * @param string $message  */
-    function infoMessage($message) {
+     * @param string $message
+     * @return void
+     */
+    function infoMessage(string $message): void {
     	$timestamp = $this->getTimestamp() . ' (INFO): ';
     	$this->writeLineToDebugFile($timestamp . $message);
     }
     
-    /** Send a message to the log. 
+    /** Send a message to the log.
      * This goes to a file and is used by every other class so it goes here.
-     * @param string $message  */
-    function warn($message) {
+     * @param string $message
+     * @return void
+     */
+    function warn(string $message): void {
         $timestamp = $this->getTimestamp() . ' (WARN): ';
         $this->writeLineToDebugFile($timestamp . $message);
     }
 
-/** Always send a message to the error_log.
+    /** Always send a message to the error_log.
      * This goes to a file and is used by every other class so it goes here.
      * @param string $message
-     * @param Exception $e
+     * @param \Exception|null $e
+     * @return void
      */
-    function errorMessage($message, $e = null) {
+    function errorMessage(string $message, $e = null): void {
         if ($e == null) {
             $e = new Exception;
         }
@@ -185,9 +194,10 @@ class ABJ_404_Solution_Logging {
     }
     
     /** Log the user capabilities.
-     * @param string $msg 
+     * @param string $msg
+     * @return void
      */
-    function logUserCapabilities($msg) {
+    function logUserCapabilities(string $msg): void {
     	$f = ABJ_404_Solution_Functions::getInstance();
     	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
     	$user = wp_get_current_user();
@@ -235,8 +245,10 @@ class ABJ_404_Solution_Logging {
         return true;
     }
     
-    /** Email the log file to the plugin developer. */
-    function emailErrorLogIfNecessary() {
+    /** Email the log file to the plugin developer.
+     * @return bool
+     */
+    function emailErrorLogIfNecessary(): bool {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $options = $abj404logic->getOptions(true);
@@ -292,15 +304,19 @@ class ABJ_404_Solution_Logging {
         	return false;
         	
         } else {
-        	$this->emailLogFileToDeveloper($latestErrorLineFound['line'], 
+        	$this->emailLogFileToDeveloper($latestErrorLineFound['line'],
         		$latestErrorLineFound['total_error_count'], $sentLine);
         	return true;
         }
-        
-        return false;
     }
     
-    function emailLogFileToDeveloper($errorLineMessage, $totalErrorCount, $previouslySentLine) {
+    /**
+     * @param string $errorLineMessage
+     * @param int $totalErrorCount
+     * @param int $previouslySentLine
+     * @return void
+     */
+    function emailLogFileToDeveloper(string $errorLineMessage, int $totalErrorCount, int $previouslySentLine): void {
         global $wpdb;
         
         // email the log file.
@@ -326,8 +342,8 @@ class ABJ_404_Solution_Logging {
         $published_pages = $count_pages->publish;
 
         // Get category and tag counts
-        $category_count = wp_count_terms('category');
-        $tag_count = wp_count_terms('post_tag');
+        $category_count = wp_count_terms(array('taxonomy' => 'category'));
+        $tag_count = wp_count_terms(array('taxonomy' => 'post_tag'));
         // Handle WP_Error for categories/tags
         if (is_wp_error($category_count)) {
             $category_count = 0;
@@ -409,10 +425,10 @@ class ABJ_404_Solution_Logging {
         $this->debugMessage("Mail sent. Log zip file deleted.");
     }
     
-    /** 
-     * @return array
+    /**
+     * @return array{num: int, line: string|null, total_error_count: int}
      */
-    function getLatestErrorLine() {
+    function getLatestErrorLine(): array {
         $f = ABJ_404_Solution_Functions::getInstance();
         $latestErrorLineFound = array();
         $latestErrorLineFound['num'] = -1;
@@ -803,7 +819,8 @@ class ABJ_404_Solution_Logging {
         return $this->getFilePathAndMoveOldFile(abj404_getUploadsDir(), $debugFileName);
     }
     
-    function getDebugFilename() {
+    /** @return string */
+    function getDebugFilename(): string {
         // get the UUID here.
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $options = $abj404logic->getOptions(true);
@@ -828,7 +845,8 @@ class ABJ_404_Solution_Logging {
         return $debugFileName;
     }
     
-    function getDebugFilePathOld() {
+    /** @return string */
+    function getDebugFilePathOld(): string {
         return $this->getDebugFilePath() . "_old.txt";
     }
     
@@ -868,7 +886,8 @@ class ABJ_404_Solution_Logging {
         return $directory . $filename;
     }
     
-    function limitDebugFileSize() {
+    /** @return void */
+    function limitDebugFileSize(): void {
         // delete the sent_line file since it's now incorrect.
         if (file_exists($this->getDebugFilePathSentFile())) {
             ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathSentFile());
@@ -883,7 +902,8 @@ class ABJ_404_Solution_Logging {
         rename($this->getDebugFilePath(), $this->getDebugFilePathOld());
     }
     
-    function removeLastSentErrorLineFromDatabase() {
+    /** @return void */
+    function removeLastSentErrorLineFromDatabase(): void {
     	// update the last sent error line since the debug file will be deleted.
     	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
     	$options = $abj404logic->getOptions(true);

@@ -73,7 +73,7 @@ if (false === $preferences || !is_array($preferences)) {
 }
 
 // Delete the preferences (cleanup)
-if (is_multisite() && isset($is_network_active) && $is_network_active) {
+if (is_multisite() && $is_network_active) {
     delete_site_option($option_name);
 } else {
     delete_option($option_name);

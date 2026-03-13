@@ -14,7 +14,12 @@ class ABJ_404_Solution_WPNotices {
      * @param string $noticeLevel see ABJ_404_Solution_WPNotice for notice levels.
      * @param string $message
      */
-    public static function registerAdminMessage($noticeLevel, $message) {
+    /**
+     * @param string $noticeLevel
+     * @param string $message
+     * @return void
+     */
+    public static function registerAdminMessage(string $noticeLevel, string $message): void {
         $notice = new ABJ_404_Solution_WPNotice($noticeLevel, $message);
         
         self::registerAdminNotice($notice);
@@ -23,7 +28,11 @@ class ABJ_404_Solution_WPNotices {
     /** Display a message with the specified importance level.
      * @param ABJ_404_Solution_WPNotice $adminNotice
      */
-    public static function registerAdminNotice($adminNotice) {
+    /**
+     * @param ABJ_404_Solution_WPNotice $adminNotice
+     * @return void
+     */
+    public static function registerAdminNotice(ABJ_404_Solution_WPNotice $adminNotice): void {
         self::$adminNotices[] = $adminNotice;
         
         self::$adminNotices = array_unique(self::$adminNotices, SORT_REGULAR);

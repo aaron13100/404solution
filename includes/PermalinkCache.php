@@ -15,6 +15,7 @@ class ABJ_404_Solution_PermalinkCache {
     /** The maximum number of times in a row to run the hook. */
     const MAX_EXECUTIONS = 15;
 
+    /** @var self|null */
     private static $instance = null;
 
     /** @var ABJ_404_Solution_DataAccess */
@@ -40,7 +41,8 @@ class ABJ_404_Solution_PermalinkCache {
         $this->logic = $pluginLogic !== null ? $pluginLogic : ABJ_404_Solution_PluginLogic::getInstance();
     }
 
-    public static function getInstance() {
+    /** @return self */
+    public static function getInstance(): self {
     	if (self::$instance == null) {
     		self::$instance = new ABJ_404_Solution_PermalinkCache();
     	}
@@ -48,7 +50,8 @@ class ABJ_404_Solution_PermalinkCache {
     	return self::$instance;
     }
     
-    static function init() {
+    /** @return void */
+    static function init(): void {
         $me = ABJ_404_Solution_PermalinkCache::getInstance();
         
         add_action('updated_option', array($me, 'permalinkStructureChanged'), 10, 2);
@@ -59,7 +62,12 @@ class ABJ_404_Solution_PermalinkCache {
      * @param string $var1
      * @param string $newStructure
      */
-    function permalinkStructureChanged($var1, $newStructure) {
+    /**
+     * @param string $var1
+     * @param string $newStructure
+     * @return void
+     */
+    function permalinkStructureChanged($var1, $newStructure): void {
         if ($var1 != 'permalink_structure') {
             return;
         }
@@ -105,7 +113,11 @@ class ABJ_404_Solution_PermalinkCache {
         return $rowsInserted;
     }
     
-    function scheduleToRunAgain($executionCount) {
+    /**
+     * @param int $executionCount
+     * @return void
+     */
+    function scheduleToRunAgain(int $executionCount): void {
         $maxExecutionTime = (int)ini_get('max_execution_time') - 5;
         $maxExecutionTime = max($maxExecutionTime, 25);
         

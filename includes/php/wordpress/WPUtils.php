@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_WPUtils {
 	
-	/** @var array */
+	/** @var array<string, callable> */
 	static $actionsAlreadyAdded = array();
 	
 	/** Wrapper for the add_action function that throws an exception if the action already exists.
@@ -57,7 +57,12 @@ class ABJ_404_Solution_WPUtils {
 		return add_action($tag, $function_to_add, $priority, $accepted_args);
 	}
 
-	private static function compareAjaxActionArrays($a, $b) {
+	/**
+	 * @param mixed $a
+	 * @param mixed $b
+	 * @return int
+	 */
+	private static function compareAjaxActionArrays($a, $b): int {
 		$str1 = self::getValueOrObjectClass($a);
 		$str2 = self::getValueOrObjectClass($b);
 		
@@ -84,10 +89,6 @@ class ABJ_404_Solution_WPUtils {
 	 * @return string A string representation of the object.
 	 */
 	static function stringify_wp_error($error) {
-		if (!is_wp_error($error)) {
-			return 'Not a WP_Error object.';
-		}
-	
 		$output = "WP_Error object:\n";
 	
 		try {
@@ -172,14 +173,15 @@ class ABJ_404_Solution_WPUtils {
     }
 	
 	/** Set the version to the file date/time.
-	 * @param $handle
+	 * @param string $handle
 	 * @param string $src
-	 * @param array $deps
-	 * @param boolean $ver
-	 * @param boolean $in_footer
+	 * @param array<int, string> $deps
+	 * @param string|bool $ver
+	 * @param bool $in_footer
+	 * @return void
 	 */
-	static function my_wp_enq_scrpt($handle, $src = '', $deps = array(),
-		$ver = false, $in_footer = false) {
+	static function my_wp_enq_scrpt(string $handle, string $src = '', array $deps = array(),
+		$ver = false, bool $in_footer = false): void {
 			
 			$ver = ABJ_404_Solution_WPUtils::createUpdatedVersionNumber($src, $ver);
 			
@@ -187,13 +189,14 @@ class ABJ_404_Solution_WPUtils {
 	}
 	
 	/** Set the version to the file date/time.
-	 * @param $handle
+	 * @param string $handle
 	 * @param string $src
-	 * @param array $deps
-	 * @param boolean $ver
+	 * @param array<int, string> $deps
+	 * @param string|bool $ver
 	 * @param string $media
+	 * @return void
 	 */
-	static function my_wp_enq_style($handle, $src = '', $deps = array(), $ver = false, $media = 'all') {
+	static function my_wp_enq_style(string $handle, string $src = '', array $deps = array(), $ver = false, string $media = 'all'): void {
 		$ver = ABJ_404_Solution_WPUtils::createUpdatedVersionNumber($src, $ver);
 		
 		wp_enqueue_style($handle, $src, $deps, $ver, $media);
@@ -208,7 +211,7 @@ class ABJ_404_Solution_WPUtils {
 	 */
 	static function createUpdatedVersionNumber($src = '', $ver = false) {
 		// if there's no version number and the file is for our plugin
-		if (($ver === false || $ver == null) && ($src != null && $src != '' &&
+		if ($ver === false && ($src != null && $src != '' &&
 			strpos($src, ABJ404_URL) === 0)) {
 			
 			// get the local file path by changing the URL.

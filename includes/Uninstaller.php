@@ -17,12 +17,13 @@ class ABJ_404_Solution_Uninstaller {
      * Main uninstall method
      * Processes deletion based on user preferences
      *
-     * @param array $preferences User's uninstall preferences from modal
+     * @param array<string, mixed> $preferences User's uninstall preferences from modal
+     * @return void
      */
-    public static function uninstall($preferences) {
+    public static function uninstall(array $preferences): void {
         global $wpdb;
 
-        $preferences = is_array($preferences) ? $preferences : array();
+        /** @var array<string, mixed> $preferences */
 
         // 1. Delete database tables based on user preferences
         self::deleteTables($wpdb, $preferences);
@@ -44,9 +45,10 @@ class ABJ_404_Solution_Uninstaller {
      * Runs uninstall process for each site in the network
      * IMPORTANT: This should only be called when the plugin is network-activated
      *
-     * @param array $preferences User's uninstall preferences
+     * @param array<string, mixed> $preferences User's uninstall preferences
+     * @return void
      */
-    public static function multisite_uninstall($preferences) {
+    public static function multisite_uninstall(array $preferences): void {
         global $wpdb;
 
         // Safety check: Verify this is actually a network-wide uninstall
@@ -75,10 +77,11 @@ class ABJ_404_Solution_Uninstaller {
     /**
      * Delete database tables based on user preferences
      *
-     * @param wpdb  $wpdb        WordPress database object
-     * @param array $preferences User preferences
+     * @param object $wpdb        WordPress database object (wpdb or compatible)
+     * @param array<string, mixed> $preferences User preferences
+     * @return void
      */
-    private static function deleteTables($wpdb, $preferences) {
+    private static function deleteTables(object $wpdb, array $preferences): void {
         // Use wpdb prefix directly - Uninstaller must be standalone (no autoloader)
         $prefix = strtolower($wpdb->prefix);
 
@@ -109,8 +112,9 @@ class ABJ_404_Solution_Uninstaller {
      * Safely delete a database table
      *
      * @param string $table_name Full table name with prefix
+     * @return void
      */
-    private static function deleteTable($table_name) {
+    private static function deleteTable(string $table_name): void {
         global $wpdb;
 
         // Security: Use wpdb methods and prepare statement
@@ -120,8 +124,9 @@ class ABJ_404_Solution_Uninstaller {
 
     /**
      * Delete all plugin options from wp_options table
+     * @return void
      */
-    public static function deleteAllOptions() {
+    public static function deleteAllOptions(): void {
         global $wpdb;
 
         $optionsTable = $wpdb->options ?? (($wpdb->prefix ?? 'wp_') . 'options');
@@ -165,8 +170,9 @@ class ABJ_404_Solution_Uninstaller {
 
     /**
      * Clean up all scheduled cron jobs
+     * @return void
      */
-    public static function cleanupCronJobs() {
+    public static function cleanupCronJobs(): void {
         $cron_hooks = array(
             'abj404_cleanupCronAction',
             'abj404_updateLogsHitsTableAction',
@@ -192,9 +198,10 @@ class ABJ_404_Solution_Uninstaller {
     /**
      * Send feedback email to plugin author
      *
-     * @param array $preferences User preferences including feedback data
+     * @param array<string, mixed> $preferences User preferences including feedback data
+     * @return void
      */
-    private static function sendFeedbackEmail($preferences) {
+    private static function sendFeedbackEmail(array $preferences): void {
         // Plugin author email
         $to = '404solution@ajexperience.com';
 
@@ -284,9 +291,9 @@ class ABJ_404_Solution_Uninstaller {
     /**
      * Get list of all tables created by this plugin
      *
-     * @return array Array of table names (without prefix)
+     * @return array<int, string> Array of table names (without prefix)
      */
-    public static function getTableNames() {
+    public static function getTableNames(): array {
         return array(
             'abj404_redirects',
             'abj404_logsv2',

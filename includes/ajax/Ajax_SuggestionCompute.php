@@ -15,8 +15,9 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
     /**
      * Compute suggestions for a 404 URL and store results in transient.
      * This runs in a background HTTP request.
+     * @return void
      */
-    public static function computeSuggestions() {
+    public static function computeSuggestions(): void {
         // Sanitize inputs
         $f = ABJ_404_Solution_Functions::getInstance();
         if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
@@ -168,8 +169,10 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
      * @param string $transientKey The transient key for this computation
      * @param string $token The security token for this computation
      * @param string $requestedURL The URL being processed (for logging)
+     * @param array{type: int, message: string, file: string, line: int}|null $error
+     * @return void
      */
-    public static function handleComputationCrash($transientKey, $token, $requestedURL, $error = null) {
+    public static function handleComputationCrash(string $transientKey, string $token, string $requestedURL, $error = null): void {
         // Use provided error for testing, otherwise get from PHP
         if ($error === null) {
             $error = error_get_last();

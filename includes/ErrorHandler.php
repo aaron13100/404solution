@@ -9,13 +9,17 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_ErrorHandler {
 	
-	/** Keep a reference to the original error handler so we can use it later. */
+	/** Keep a reference to the original error handler so we can use it later.
+	 * @var callable|null
+	 */
 	static $originalErrorHandler = null;
 
-    /** Setup. */
-    static function init() {
+    /** Setup.
+     * @return void
+     */
+    static function init(): void {
     	// store the original error handler.
-    	self::$originalErrorHandler = set_error_handler(function(){});
+    	self::$originalErrorHandler = set_error_handler(function(int $errno, string $errstr, string $errfile = '', int $errline = 0): bool { return false; });
     	restore_error_handler();
     	
         // set to the user defined error handler
@@ -110,12 +114,17 @@ class ABJ_404_Solution_ErrorHandler {
         return false;
     }
 
-    static function FatalErrorHandler() {
+    /** @return bool */
+    static function FatalErrorHandler(): bool {
         $lasterror = error_get_last();
         return self::processFatalError($lasterror);
     }
 
-    private static function safeJsonEncode($value) {
+    /**
+     * @param mixed $value
+     * @return string
+     */
+    private static function safeJsonEncode($value): string {
         $encoded = json_encode($value, JSON_PARTIAL_OUTPUT_ON_ERROR);
         if ($encoded === false) {
             return '(json_encode failed) ' . print_r($value, true);
@@ -123,7 +132,11 @@ class ABJ_404_Solution_ErrorHandler {
         return $encoded;
     }
 
-    private static function safeWriteLine($line) {
+    /**
+     * @param string $line
+     * @return bool
+     */
+    private static function safeWriteLine(string $line): bool {
         try {
             $logger = ABJ_404_Solution_Logging::getInstance();
             if (is_object($logger) && method_exists($logger, 'writeLineToDebugFile')) {
@@ -145,12 +158,21 @@ class ABJ_404_Solution_ErrorHandler {
         return false;
     }
 
-    private static function isFatalType($type) {
+    /**
+     * @param int $type
+     * @return bool
+     */
+    private static function isFatalType(int $type): bool {
         $fatalTypes = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
         return in_array($type, $fatalTypes, true);
     }
 
-	    private static function emitJsonAndExit($payload, $httpStatus) {
+	    /**
+	     * @param array<string, mixed> $payload
+	     * @param int $httpStatus
+	     * @return bool
+	     */
+	    private static function emitJsonAndExit(array $payload, int $httpStatus): bool {
 	        if (!headers_sent()) {
 	            // Marker headers help support quickly identify that this response came from our AJAX endpoint.
 	            // These are safe to expose (no sensitive values).
@@ -181,7 +203,11 @@ class ABJ_404_Solution_ErrorHandler {
      * Process a fatal error (shutdown handler).
      * Public for unit tests (allows injecting a fake last error).
      */
-    public static function processFatalError($lasterror) {
+    /**
+     * @param array<string, mixed>|null $lasterror
+     * @return bool
+     */
+    public static function processFatalError($lasterror): bool {
         $f = ABJ_404_Solution_Functions::getInstance();
 
         if ($lasterror == null || !is_array($lasterror) || !array_key_exists('type', $lasterror) ||

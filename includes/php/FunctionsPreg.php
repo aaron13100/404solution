@@ -8,47 +8,53 @@ if (!defined('ABSPATH')) {
 /* Static functions that can be used from anywhere.  */
 class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
 
+	/** @var self|null */
 	private static $instance = null;
-	
-	public static function getInstance() {
+
+	public static function getInstance(): self {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_FunctionsPreg();
 		}
-		
+
 		return self::$instance;
 	}
-	
-	/** Use this to find a delimiter. 
-     * @var array */
+
+	/** Use this to find a delimiter.
+     * @var array<int, string> */
     private $delimiterChars = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
 
-    function ord($char): int {
+    function ord(string $char): int {
         return ord($char);
     }
 
-    function strtolower($string): string {
+    function strtolower(string $string): string {
         return strtolower($string);
     }
 
-    function strlen($string): int {
+    function strlen(string $string): int {
         return strlen($string);
     }
 
-    function strpos($haystack, $needle, $offset = 0) {
+    /** @return int|false */
+    function strpos(string $haystack, string $needle, int $offset = 0) {
         if ($offset == 0) {
             return strpos($haystack, $needle);
         }
         return strpos($haystack, $needle, $offset);
     }
 
-    function substr($str, $start, $length = null): string {
-        if ($length == null) {
+    function substr(string $str, int $start, ?int $length = null): string {
+        if ($length === null) {
             return substr($str, $start);
         }
         return substr($str, $start, $length);
     }
 
-    function regexMatch($pattern, $string, &$regs = null) {
+    /**
+     * @param array<int, string>|null $regs
+     * @return bool|int
+     */
+    function regexMatch(string $pattern, string $string, ?array &$regs = null) {
         // find a character to use for quotes
         $delimiterA = "{";
         $delimiterB = "}";
@@ -57,8 +63,12 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
         }
         return preg_match($delimiterA . $pattern . $delimiterB, $string, $regs);
     }
-    
-    function regexMatchi($pattern, $string, &$regs = null) {
+
+    /**
+     * @param array<int, string>|null $regs
+     * @return bool|int
+     */
+    function regexMatchi(string $pattern, string $string, ?array &$regs = null) {
         // find a character to use for quotes
         $delimiterA = "{";
         $delimiterB = "}";
@@ -67,7 +77,8 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
         }
         return preg_match($delimiterA . $pattern . $delimiterB . 'i', $string, $regs);
     }
-    
+
+    /** @return string|null */
     function regexReplace($pattern, $replacement, $string) {
         // find a character to use for quotes
         $delimiterA = "{";
@@ -79,12 +90,12 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
         $replacement = preg_replace($replacementDelimiter . '\\\\' . $replacementDelimiter, '\$', $replacement);
         return preg_replace($delimiterA . $pattern . $delimiterB, $replacement, $string);
     }
-    
-    function findADelimiter($pattern) {
+
+    function findADelimiter(string $pattern): string {
         if ($pattern == '') {
             return $this->delimiterChars[0];
         }
-        
+
         $charToUse = null;
         foreach ($this->delimiterChars as $char) {
             $anArray = explode($char, $pattern);
@@ -93,12 +104,12 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
                 break;
             }
         }
-        
+
         if ($charToUse == null) {
             throw new Exception("I can't find a valid delimiter character to use for the regular expression: "
                     . esc_html($pattern));
         }
-        
+
         return $charToUse;
     }
 
@@ -116,7 +127,7 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
      * @param string|null $string The string to sanitize
      * @return string The sanitized string with only valid UTF-8 characters
      */
-    function sanitizeInvalidUTF8($string): string {
+    function sanitizeInvalidUTF8(?string $string): string {
         // Handle null and empty cases
         if ($string === null || $string === '') {
             return '';

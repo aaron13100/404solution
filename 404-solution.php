@@ -56,9 +56,10 @@ if (!defined('ABJ404_PATH')) {
 	// Used by multiple classes during early admin initialization (e.g. upgrade/migration paths).
 	// This must be defined before any Loader.php initialization that might touch Logging/SynchronizationUtils.
 	if (!function_exists('abj404_getUploadsDir')) {
+		/** @return string */
 		function abj404_getUploadsDir() {
 			$uploadsDirArray = wp_upload_dir(null, false);
-			$uploadsDir = $uploadsDirArray['basedir'] ?? '';
+			$uploadsDir = $uploadsDirArray['basedir'];
 			$uploadsDir .= DIRECTORY_SEPARATOR . 'temp_' . ABJ404_PP . DIRECTORY_SEPARATOR;
 			return $uploadsDir;
 		}
@@ -68,7 +69,7 @@ if (!defined('ABJ404_PATH')) {
 		/**
 		 * Centralized settings read so call sites don't repeat option-shape checks.
 		 *
-		 * @return array
+		 * @return array<string, mixed>
 		 */
 		function abj404_get_settings_options() {
 			$options = get_option('abj404_settings');
@@ -87,6 +88,10 @@ if (has_filter('abj404_debug_whitelist')) {
     $GLOBALS['abj404_whitelist'] = apply_filters('abj404_debug_whitelist', $GLOBALS['abj404_whitelist']);
 }
 
+/**
+ * @param string $class
+ * @return void
+ */
 function abj404_autoloader($class) {
 	// some people were having issues with possibly parent classes not being loaded before their children.
 	$childParentMap = [
@@ -138,7 +143,7 @@ add_action('doing_it_wrong_run', function($function_name, $message, $version) {
             foreach ($backtrace as $index => $frame) {
                 $file = isset($frame['file']) ? $frame['file'] : '[internal function]';
                 $line = isset($frame['line']) ? $frame['line'] : '';
-                $func = isset($frame['function']) ? $frame['function'] : '[unknown function]';
+                $func = $frame['function'];
 
                 if (!$isOurPlugin && is_string($file) && strpos($file, $pluginPath) !== false) {
                     $isOurPlugin = true;
@@ -168,6 +173,10 @@ add_action('doing_it_wrong_run', function($function_name, $message, $version) {
 // shortcode
 add_shortcode(ABJ404_SHORTCODE_NAME, 'abj404_shortCodeListener');
 if (!function_exists('abj404_shortCodeListener')) {
+	/**
+	 * @param array<string, mixed>|string $atts
+	 * @return string
+	 */
 	function abj404_shortCodeListener($atts) {
 		abj404_load_textdomain_if_needed();
 	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
@@ -178,7 +187,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 		/**
 		 * Files required for a healthy runtime/plugin package.
 		 *
-		 * @return array
+		 * @return array<int, string>
 		 */
 		function abj404_get_required_runtime_files() {
 			return array(
@@ -197,7 +206,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 		/**
 		 * Validate that required plugin files are present.
 		 *
-		 * @return array Missing file paths.
+		 * @return array<int, string> Missing file paths.
 		 */
 		function abj404_verify_runtime_integrity() {
 			$missing = array();
@@ -222,6 +231,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 	}
 
 	if (!function_exists('abj404_benchmark_bootstrap_start')) {
+		/** @return void */
 		function abj404_benchmark_bootstrap_start() {
 			if (!abj404_is_benchmark_request()) {
 				return;
@@ -239,6 +249,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 	}
 
 	if (!function_exists('abj404_benchmark_mark_bootstrap_done')) {
+		/** @return void */
 		function abj404_benchmark_mark_bootstrap_done() {
 			if (!abj404_is_benchmark_request() || !isset($GLOBALS['abj404_benchmark_state'])) {
 				return;
@@ -276,6 +287,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 	}
 
 	if (!function_exists('abj404_benchmark_emit_headers')) {
+		/** @return void */
 		function abj404_benchmark_emit_headers() {
 			if (!abj404_is_benchmark_request() || headers_sent() || !isset($GLOBALS['abj404_benchmark_state'])) {
 				return;
@@ -340,6 +352,7 @@ abj404_benchmark_mark_bootstrap_done();
 
 // 404
 if (!function_exists('abj404_404listener')) {
+/** @return void */
 function abj404_404listener() {
 	$is404 = is_404();
 	if (!$is404) {
@@ -418,7 +431,7 @@ function abj404_404listener() {
 
     require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     $connector = ABJ_404_Solution_WordPress_Connector::getInstance();
-    return $connector->process404();
+    $connector->process404();
 }
 }
 
@@ -437,6 +450,7 @@ if (!function_exists('abj404_is_redirect_all_requests_enabled')) {
 }
 
 if (!function_exists('abj404_dailyMaintenanceCronJobListener')) {
+/** @return void */
 function abj404_dailyMaintenanceCronJobListener() {
     require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
     $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -448,6 +462,7 @@ function abj404_dailyMaintenanceCronJobListener() {
 }
 
 if (!function_exists('abj404_updateLogsHitsTableListener')) {
+/** @return void */
 function abj404_updateLogsHitsTableListener() {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
@@ -455,6 +470,11 @@ function abj404_updateLogsHitsTableListener() {
 }
 }
 if (!function_exists('abj404_updatePermalinkCacheListener')) {
+/**
+ * @param int $maxExecutionTime
+ * @param int $executionCount
+ * @return void
+ */
 function abj404_updatePermalinkCacheListener($maxExecutionTime, $executionCount = 1) {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	$permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
@@ -462,6 +482,10 @@ function abj404_updatePermalinkCacheListener($maxExecutionTime, $executionCount 
 }
 }
 if (!function_exists('abj404_rebuildNGramCacheListener')) {
+/**
+ * @param int $offset
+ * @return void
+ */
 function abj404_rebuildNGramCacheListener($offset = 0) {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	$dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
@@ -469,12 +493,14 @@ function abj404_rebuildNGramCacheListener($offset = 0) {
 }
 }
 if (!function_exists('abj404_networkActivationListener')) {
+/** @return void */
 function abj404_networkActivationListener() {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	ABJ_404_Solution_PluginLogic::networkActivationCronHandler();
 }
 }
 if (!function_exists('abj404_networkActivationBackgroundListener')) {
+/** @return void */
 function abj404_networkActivationBackgroundListener() {
 	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	$upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
@@ -498,6 +524,11 @@ add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheList
  * @return string The locale to use for translation loading.
  */
 if (!function_exists('abj404_override_plugin_locale')) {
+/**
+ * @param string $locale
+ * @param string $domain
+ * @return string
+ */
 function abj404_override_plugin_locale($locale, $domain) {
 	// Only override for our plugin's text domain
 	if ($domain === '404-solution') {
@@ -514,6 +545,7 @@ function abj404_override_plugin_locale($locale, $domain) {
 add_filter('plugin_locale', 'abj404_override_plugin_locale', 999, 2);
 
 if (!function_exists('abj404_show_runtime_integrity_notice')) {
+	/** @return void */
 	function abj404_show_runtime_integrity_notice() {
 		if (!is_admin() || !current_user_can('manage_options')) {
 			return;
@@ -530,6 +562,7 @@ if (!function_exists('abj404_show_runtime_integrity_notice')) {
 add_action('admin_notices', 'abj404_show_runtime_integrity_notice');
 
 if (!function_exists('abj404_show_plugin_db_notice')) {
+	/** @return void */
 	function abj404_show_plugin_db_notice() {
 		if (!is_admin() || !current_user_can('manage_options')) {
 			return;
@@ -569,6 +602,7 @@ if (!function_exists('abj404_show_plugin_db_notice')) {
 add_action('admin_notices', 'abj404_show_plugin_db_notice');
 
 if (!function_exists('abj404_get_simulated_db_latency_ms')) {
+	/** @return bool */
 	function abj404_is_local_debug_host() {
 		$serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '');
 		$serverName = strtolower(trim((string)$serverName));
@@ -593,6 +627,7 @@ if (!function_exists('abj404_get_simulated_db_latency_ms')) {
 		return in_array($normalizedHost, array('127.0.0.1', '::1', 'localhost'), true);
 	}
 
+	/** @return int */
 	function abj404_get_simulated_db_latency_ms() {
 		if (!abj404_is_local_debug_host()) {
 			return 0;
@@ -606,6 +641,7 @@ if (!function_exists('abj404_get_simulated_db_latency_ms')) {
 }
 
 if (!function_exists('abj404_show_diagnostic_latency_notice')) {
+	/** @return void */
 	function abj404_show_diagnostic_latency_notice() {
 		// Intentionally no-op. Simulated latency status is shown in the plugin's
 		// Tools > Diagnostics card to avoid intrusive floating/global notices.
@@ -678,6 +714,7 @@ if (!function_exists('abj404_maybe_refresh_runtime_integrity_cache')) {
 
 /** This only runs after WordPress is done enqueuing scripts. */
 if (!function_exists('abj404_loadSomethingWhenWordPressIsReady')) {
+/** @return void */
 function abj404_loadSomethingWhenWordPressIsReady() {
 	$isAdminRequest = is_admin();
 	if ($isAdminRequest) {

@@ -12,8 +12,8 @@ class ABJ_404_Solution_PublishedPostsProvider {
 	 * @var integer 	 */
 	private $currentLowRowNumber = 0;
 
-	/** WHen not null then use this data instead of querying the database.
-	 * @var array
+	/** When not null then use this data instead of querying the database.
+	 * @var array<int, mixed>|null
 	 */
 	private $dataToUse = null;
 
@@ -22,11 +22,13 @@ class ABJ_404_Solution_PublishedPostsProvider {
 	private $useDataMode = false;
 
 	/** When set, only return posts with these IDs (whitelist mode).
-	 * @var array|null */
+	 * @var array<int, int>|null */
 	private $restrictedIds = null;
 	
+	/** @var self|null */
 	private static $instance = null;
-	
+
+	/** @return self */
 	public static function getInstance() {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_PublishedPostsProvider();
@@ -36,9 +38,10 @@ class ABJ_404_Solution_PublishedPostsProvider {
 	}
 	
 	/** Use this data instead of querying the database.
-	 * @param array $data
+	 * @param array<int, mixed> $data
+	 * @return void
 	 */
-	function useThisData($data) {
+	function useThisData(array $data): void {
 		$this->dataToUse = $data;
 		$this->useDataMode = true;
 	}
@@ -47,9 +50,10 @@ class ABJ_404_Solution_PublishedPostsProvider {
 	 * Restrict results to only posts with the given IDs (whitelist mode).
 	 * This enables N-gram prefiltering to limit the dataset before expensive processing.
 	 *
-	 * @param array $ids Array of post IDs to include
+	 * @param array<int, int|string> $ids Array of post IDs to include
+	 * @return void
 	 */
-	function restrictToIds($ids) {
+	function restrictToIds(array $ids): void {
 		if (!empty($ids) && is_array($ids)) {
 			$this->restrictedIds = array_map('intval', $ids);
 		}
@@ -63,14 +67,14 @@ class ABJ_404_Solution_PublishedPostsProvider {
 		return !empty($this->restrictedIds);
 	}
 
-	/** 
-	 * @param int $permalinkLength Order by prioritizing things with a permalink 
+	/**
+	 * @param int $permalinkLength Order by prioritizing things with a permalink
 	 * close to this length.
-	 * @param int $batchSize The number of results to return. e.g. 100. 
-	 * @param int $maxAcceptableDistance
-	 * @return 
+	 * @param int $batchSize The number of results to return. e.g. 100.
+	 * @param int|null $maxAcceptableDistance
+	 * @return array<int, mixed>
 	 */
-    function getNextBatch($permalinkLength, $batchSize = 1000, $maxAcceptableDistance = null) {
+    function getNextBatch(int $permalinkLength, int $batchSize = 1000, $maxAcceptableDistance = null): array {
     	if ($this->useDataMode) {
     		return $this->getNextBatchFromLocalData($permalinkLength, $batchSize, $maxAcceptableDistance);
     	}
@@ -78,7 +82,13 @@ class ABJ_404_Solution_PublishedPostsProvider {
     	return $this->getNextBatchFromTheDatabase($permalinkLength, $batchSize, $maxAcceptableDistance);
     }
     
-    private function getNextBatchFromLocalData($permalinkLength, $batchSize, $maxAcceptableDistance) {
+    /**
+     * @param int $permalinkLength
+     * @param int $batchSize
+     * @param int|null $maxAcceptableDistance
+     * @return array<int, mixed>
+     */
+    private function getNextBatchFromLocalData(int $permalinkLength, int $batchSize, $maxAcceptableDistance): array {
     	// get the rows to return.
     	$rows = array_slice($this->dataToUse, 0, $batchSize);
     	
@@ -88,7 +98,13 @@ class ABJ_404_Solution_PublishedPostsProvider {
     	return $rows;
     }
     
-    private function getNextBatchFromTheDatabase($permalinkLength, $batchSize, $maxAcceptableDistance) {
+    /**
+     * @param int $permalinkLength
+     * @param int $batchSize
+     * @param int|null $maxAcceptableDistance
+     * @return array<int, mixed>
+     */
+    private function getNextBatchFromTheDatabase(int $permalinkLength, int $batchSize, $maxAcceptableDistance): array {
     	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
 
     	$orderBy = "abs(plc.url_length - " . $permalinkLength . "), wp_posts.id";
@@ -113,8 +129,10 @@ class ABJ_404_Solution_PublishedPostsProvider {
     	return $rows;
     }
     
-    /** Start over at 0 when getting the next batch. */
-    function resetBatch() {
+    /** Start over at 0 when getting the next batch.
+     * @return void
+     */
+    function resetBatch(): void {
     	$this->currentLowRowNumber = 0;
     	$this->dataToUse = null;
     	$this->useDataMode = false;

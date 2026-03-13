@@ -7,12 +7,13 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_SlugChangeHandler {
 
+    /** @var self|null */
     private static $instance = null;
 
     /**
      * Track post IDs already processed within the current request.
      * WordPress fires save_post multiple times per save; this prevents duplicate redirects.
-     * @var array
+     * @var array<int, bool>
      */
     private static $processedPosts = [];
 
@@ -29,6 +30,7 @@ class ABJ_404_Solution_SlugChangeHandler {
 
     /**
      * Initialize the handler and register WordPress hooks
+     * @return void
      */
     static function init() {
         $me = ABJ_404_Solution_SlugChangeHandler::getInstance();
@@ -36,10 +38,10 @@ class ABJ_404_Solution_SlugChangeHandler {
     }
 
     /** We'll just make sure the permalink gets updated in case it's changed.
-     * @global type $abj404dao
      * @param int $post_id The post ID.
-     * @param post $post The post object.
+     * @param \WP_Post $post The post object.
      * @param bool $update Whether this is an existing post being updated or not.
+     * @return void
      */
     function save_postHandler($post_id, $post, $update) {
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -52,8 +54,8 @@ class ABJ_404_Solution_SlugChangeHandler {
             return;
         }
 
-        // Validate $post parameter
-        if (!is_object($post) || !isset($post->post_name)) {
+        // Defensive: WordPress hook may pass unexpected types at runtime.
+        if (!is_object($post) || !property_exists($post, 'post_name')) {
             $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
                 ": Invalid post object or missing post_name property for post ID " . $post_id . ".");
             return;
@@ -84,7 +86,8 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // Use post_status from $post object instead of database query
-        $postStatus = isset($post->post_status) ? $post->post_status : get_post_status($post_id);
+        /** @var string|false $postStatus */
+        $postStatus = property_exists($post, 'post_status') ? $post->post_status : get_post_status($post_id);
         if (!in_array($postStatus, array('publish', 'published'))) {
             $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ . ": Post status: " .
                 $postStatus . " (skipped) (post ID " . $post_id . ").");
@@ -105,16 +108,17 @@ class ABJ_404_Solution_SlugChangeHandler {
 
         $newURL = get_permalink($post);
 
-        // Check if get_permalink returned an error
+        // Defensive: get_permalink may return WP_Error via filters in some environments.
+        // @phpstan-ignore-next-line
         if (is_wp_error($newURL)) {
             $abj404logging->debugMessage("Could not get permalink for post (WP_Error). ID: " .
                 $post_id . ", error: " . $newURL->get_error_message());
             return;
         }
 
-        if ($newURL === false || $newURL === null || $newURL === '') {
+        if ($newURL === false || $newURL === '') { // @phpstan-ignore-line
             $abj404logging->debugMessage("Could not get permalink for post (invalid return). ID: " .
-                $post_id . ", returned: " . var_export($newURL, true));
+                $post_id);
             return;
         }
 
@@ -146,8 +150,8 @@ class ABJ_404_Solution_SlugChangeHandler {
         self::$processedPosts[$post_id] = true;
 
         // create a redirect from the old to the new.
-        $abj404dao->setupRedirect($oldSlug, ABJ404_STATUS_AUTO, ABJ404_TYPE_POST,
-                $post_id, $options['default_redirect'] ?? '301', 0);
+        $abj404dao->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_POST,
+                (string)$post_id, $options['default_redirect'] ?? '301', 0);
         $abj404logging->infoMessage("Added automatic redirect after slug change from " .
             $oldURL . ' to ' . $newURL . " for post ID " . $post_id);
     }

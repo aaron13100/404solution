@@ -8,14 +8,16 @@ if (!defined('ABSPATH')) {
 /** Stores a message and its importance. */
 class ABJ_404_Solution_UserRequest {
     
+    /** @var self|null */
     private static $instance = null;
-    
+
+    /** @var string|null */
     private $requestURIWithoutCommentsPage = null;
     
     /** @var string */
     private $requestURI = null;
     
-    /** @var array */
+    /** @var array<string, int|string>|null */
     private $urlParts = null;
     
     /** @var string */
@@ -24,6 +26,7 @@ class ABJ_404_Solution_UserRequest {
     /** @var string */
     private $commentPagePart = null;
     
+    /** @return self|null */
     public static function getInstance() {
         if (self::$instance == null) {
             if (!self::initialize()) {
@@ -36,7 +39,8 @@ class ABJ_404_Solution_UserRequest {
         return self::$instance;
     }
     
-    public static function initialize() {
+    /** @return bool */
+    public static function initialize(): bool {
         global $wp_rewrite;
         
         $abj404logging = ABJ_404_Solution_Logging::getInstance();
@@ -138,7 +142,14 @@ class ABJ_404_Solution_UserRequest {
         return true;
     }
     
-    private function __construct($requestURI, $urlParts, $urlWithoutCommentPage, $commentPagePart, $queryString) {
+    /**
+     * @param string $requestURI
+     * @param array<string, int|string> $urlParts
+     * @param string $urlWithoutCommentPage
+     * @param string $commentPagePart
+     * @param string $queryString
+     */
+    private function __construct(string $requestURI, array $urlParts, string $urlWithoutCommentPage, string $commentPagePart, string $queryString) {
         $this->requestURI = $requestURI;
         $this->urlParts = $urlParts;
         $this->requestURIWithoutCommentsPage = $urlWithoutCommentPage;
@@ -147,10 +158,12 @@ class ABJ_404_Solution_UserRequest {
         $this->queryString = $queryString;
     }
  
+    /** @return string|null */
     function getRequestURI() {
         return $this->requestURI;
     }
     
+    /** @return string|null */
     function getRequestURIWithoutCommentsPage() {
         return $this->requestURIWithoutCommentsPage;
     }
@@ -165,10 +178,11 @@ class ABJ_404_Solution_UserRequest {
     		return '';
     	}
     	
-        return $this->urlParts['path'] ?? '';
+        return (string)($this->urlParts['path']);
     }
     
-    function getPathWithSortedQueryString() {
+    /** @return string */
+    function getPathWithSortedQueryString(): string {
         $f = ABJ_404_Solution_Functions::getInstance();
         $requestedURL = $this->getPath();
         $urlParts = $f->sortQueryString($this->getUrlParts());
@@ -179,7 +193,7 @@ class ABJ_404_Solution_UserRequest {
         // otherwise various queries break.
         $requestedURL = $f->urlencodeEmojis($requestedURL);
 
-        return $requestedURL ?? '';
+        return $requestedURL;
     }
     
     /**  http://s.com/404solution-site/hello-world/comment-page-2/#comment-26?query_info=true becomes
@@ -192,14 +206,17 @@ class ABJ_404_Solution_UserRequest {
         return $abj404logic->removeHomeDirectory($path);
     }
 
+    /** @return array<string, int|string>|null */
     function getUrlParts() {
         return $this->urlParts;
     }
 
+    /** @return string|null */
     function getQueryString() {
         return $this->queryString;
     }
 
+    /** @return string|null */
     function getCommentPagePart() {
         return $this->commentPagePart;
     }

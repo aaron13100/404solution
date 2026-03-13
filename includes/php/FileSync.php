@@ -7,9 +7,11 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_FileSync {
 	
+	/** @var self|null */
 	private static $instance = null;
-	
-	public static function getInstance() {
+
+	/** @return self */
+	public static function getInstance(): self {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_FileSync();
 		}
@@ -17,12 +19,20 @@ class ABJ_404_Solution_FileSync {
 		return self::$instance;
 	}
 	
-	function getSyncFilePath($key) {
+	/**
+	 * @param string $key
+	 * @return string
+	 */
+	function getSyncFilePath(string $key): string {
 		$filePath = abj404_getUploadsDir() . 'SYNC_FILE_' . $key . '.txt';
 		return $filePath;
 	}
     
-	function getOwnerFromFile($key) {
+	/**
+	 * @param string $key
+	 * @return string
+	 */
+	function getOwnerFromFile(string $key): string {
 		$filePath = $this->getSyncFilePath($key);
 		$fileUtils = ABJ_404_Solution_Functions::getInstance();
 
@@ -36,7 +46,12 @@ class ABJ_404_Solution_FileSync {
 		}
 	}
 	
-	function writeOwnerToFile($key, $uniqueID) {
+	/**
+	 * @param string $key
+	 * @param string $uniqueID
+	 * @return void
+	 */
+	function writeOwnerToFile(string $key, string $uniqueID): void {
 		$filePath = $this->getSyncFilePath($key);
 
 		// Fixed: Check return value to handle write failures (disk full, permissions, etc.)
@@ -47,7 +62,12 @@ class ABJ_404_Solution_FileSync {
 		}
 	}
 	
-	function releaseLock($uniqueID, $key) {
+	/**
+	 * @param string $uniqueID
+	 * @param string $key
+	 * @return void
+	 */
+	function releaseLock(string $uniqueID, string $key): void {
 		$filePath = $this->getSyncFilePath($key);
 		$fileUtils = ABJ_404_Solution_Functions::getInstance();
 		$fileUtils->safeUnlink($filePath);

@@ -23,14 +23,17 @@ class ABJ_404_Solution_Timer {
         $this->start();
     }
 
-    /** Also restart. */
-    function start() {
+    /** Also restart.
+     * @return void
+     */
+    function start(): void {
         $this->start = microtime(true);
         $this->elapsed = 0;
         $this->isRunning = true;
     }
 
-    function stop() {
+    /** @return float */
+    function stop(): float {
         $this->stop = microtime(true);
         $elapsedThisTime = $this->stop - $this->start;
         $this->elapsed += $elapsedThisTime;
@@ -39,7 +42,8 @@ class ABJ_404_Solution_Timer {
         return $this->getElapsedTime();
     }
     
-    function restartKeepElapsed() {
+    /** @return void */
+    function restartKeepElapsed(): void {
         $this->start = microtime(true);
         $this->isRunning = true;
     }
@@ -54,7 +58,8 @@ class ABJ_404_Solution_Timer {
         return $this->elapsed;
     }
     
-    function getStartTime() {
+    /** @return float */
+    function getStartTime(): float {
     	return $this->start;
     }
 

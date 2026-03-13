@@ -7,7 +7,11 @@ if (!defined('ABSPATH')) {
 
 if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
     class ABJ_404_Solution_WPDBExtension_PHP7 extends wpdb {
-        public function public_strip_invalid_text_from_query($query) {
+        /**
+         * @param string $query
+         * @return string|null
+         */
+        public function public_strip_invalid_text_from_query(string $query) {
             try {
                 return $this->strip_invalid_text_from_query($query);
             } catch (Exception $e) {
@@ -19,7 +23,11 @@ if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
     }
 } else {
     class ABJ_404_Solution_WPDBExtension_PHP5 extends wpdb {
-        public function public_strip_invalid_text_from_query($query) {
+        /**
+         * @param string $query
+         * @return string|null
+         */
+        public function public_strip_invalid_text_from_query(string $query) {
             try {
                 $result = $this->strip_invalid_text_from_query($query);
                 if (is_wp_error($result)) {

@@ -24,17 +24,18 @@ class ABJ_404_Solution_ServiceContainer {
      * Singleton instance of the container itself.
      * Note: The container is a singleton, but the services it manages can have any lifecycle.
      */
+    /** @var self|null */
     private static $instance = null;
 
     /**
      * Registered services and their factory functions.
-     * @var array
+     * @var array<string, callable>
      */
     private $services = array();
 
     /**
      * Instantiated service instances (for singleton services).
-     * @var array
+     * @var array<string, mixed>
      */
     private $instances = array();
 
