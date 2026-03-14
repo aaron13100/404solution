@@ -56,7 +56,7 @@ class ABJ_404_Solution_UserRequest {
         	if ($matches != null && $f->strlen($matches[0]) > 0) {
         		$instrPattern = $matches[0];
         		$truncateHere = $f->strpos($urlToParse, $instrPattern);
-        		$truncatedRequest = $f->substr($urlToParse, 0, $truncateHere);
+        		$truncatedRequest = $f->substr($urlToParse, 0, ($truncateHere !== false ? $truncateHere : null));
         		$urlToParse = $truncatedRequest;
         	}
         	
@@ -91,7 +91,7 @@ class ABJ_404_Solution_UserRequest {
                 // For query strings, preserve reserved characters while removing invalid bytes.
                 parse_str($value, $queryArray);
                 $safeQueryArray = $f->sanitizeUrlComponent($queryArray);
-                $urlParts[$key] = http_build_query($safeQueryArray);
+                $urlParts[$key] = http_build_query(is_array($safeQueryArray) ? $safeQueryArray : $queryArray);
             } else {
                 // Sanitize path/host/etc. without stripping reserved URL characters.
                 $urlParts[$key] = $f->sanitizeUrlComponent($value);
@@ -99,12 +99,13 @@ class ABJ_404_Solution_UserRequest {
         }
 
         // remove a pointless trailing /amp
-        if (isset($urlParts['path']) &&
-        	($f->endsWithCaseInsensitive($urlParts['path'], '/amp') ||
-        	 $f->endsWithCaseInsensitive($urlParts['path'], '/amp/')
+        $urlPath = isset($urlParts['path']) && is_string($urlParts['path']) ? $urlParts['path'] : '';
+        if ($urlPath !== '' &&
+        	($f->endsWithCaseInsensitive($urlPath, '/amp') ||
+        	 $f->endsWithCaseInsensitive($urlPath, '/amp/')
         	)
-        	&& $f->strlen($urlParts['path']) >= 6) {
-        	$urlParts['path'] = substr($urlParts['path'], 0, $f->strlen($urlParts['path']) - 4);
+        	&& $f->strlen($urlPath) >= 6) {
+        	$urlParts['path'] = substr($urlPath, 0, $f->strlen($urlPath) - 4);
         }
         
         // remove any "/comment-page-???/" if there is one.
@@ -115,7 +116,7 @@ class ABJ_404_Solution_UserRequest {
          * http://localhost:8888/404solution-site/2019/02/hello-world2/comment-page-2/?quer=true
          */
         // Fix for PHP 8.2: Handle URLs with no path component (e.g., http://example.com)
-        $urlWithoutCommentPage = isset($urlParts['path']) ? $urlParts['path'] : '/';
+        $urlWithoutCommentPage = (isset($urlParts['path']) && is_string($urlParts['path'])) ? $urlParts['path'] : '/';
         $commentPagePart = '';
         $results = array();
         if (isset($wp_rewrite) && isset($wp_rewrite->comments_pagination_base)) {
@@ -136,7 +137,9 @@ class ABJ_404_Solution_UserRequest {
             $queryString = $urlParts['query'];
         }
         
-        self::$instance = new ABJ_404_Solution_UserRequest($urlToParse, $urlParts, $urlWithoutCommentPage, 
+        /** @var array<string, int|string> $urlPartsSafe */
+        $urlPartsSafe = $urlParts;
+        self::$instance = new ABJ_404_Solution_UserRequest($urlToParse, $urlPartsSafe, $urlWithoutCommentPage,
                 $commentPagePart, $queryString);
             
         return true;
@@ -173,11 +176,11 @@ class ABJ_404_Solution_UserRequest {
      * @return string
      */
     function getPath() {
-    	if (!array_key_exists('path', $this->urlParts)) {
+    	if ($this->urlParts === null || !array_key_exists('path', $this->urlParts)) {
     		// this happens for a request with no path. like http://example.com
     		return '';
     	}
-    	
+
         return (string)($this->urlParts['path']);
     }
     
@@ -185,7 +188,9 @@ class ABJ_404_Solution_UserRequest {
     function getPathWithSortedQueryString(): string {
         $f = ABJ_404_Solution_Functions::getInstance();
         $requestedURL = $this->getPath();
-        $urlParts = $f->sortQueryString($this->getUrlParts());
+        /** @var array<string, string> $urlPartsForSort */
+        $urlPartsForSort = $this->getUrlParts() ?? array();
+        $urlParts = $f->sortQueryString($urlPartsForSort);
         if ($urlParts != null && trim($urlParts) != '') {
         	$requestedURL .= '?' . $urlParts;
         }

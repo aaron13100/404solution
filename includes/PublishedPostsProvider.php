@@ -89,11 +89,12 @@ class ABJ_404_Solution_PublishedPostsProvider {
      * @return array<int, mixed>
      */
     private function getNextBatchFromLocalData(int $permalinkLength, int $batchSize, $maxAcceptableDistance): array {
+    	$data = $this->dataToUse ?? array();
     	// get the rows to return.
-    	$rows = array_slice($this->dataToUse, 0, $batchSize);
-    	
+    	$rows = array_slice($data, 0, $batchSize);
+
     	// remove the rows we'll return.
-    	$this->dataToUse = array_slice($this->dataToUse, $batchSize);
+    	$this->dataToUse = array_slice($data, $batchSize);
     	
     	return $rows;
     }

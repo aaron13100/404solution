@@ -35,9 +35,12 @@ class ABJ_404_Solution_WPUtils {
 			$shouldError = true;
 			if (array_key_exists($tag, self::$actionsAlreadyAdded)) {
 				$functionAlreadyAdded = self::$actionsAlreadyAdded[$tag];
-				$differences = array_udiff($functionAlreadyAdded, $function_to_add,
+				// Callables stored here are always arrays ([class/object, method])
+				$existingArr = is_array($functionAlreadyAdded) ? $functionAlreadyAdded : array($functionAlreadyAdded);
+				$newArr = is_array($function_to_add) ? $function_to_add : array($function_to_add);
+				$differences = array_udiff($existingArr, $newArr,
 					array(self::class, 'compareAjaxActionArrays'));
-				
+
 				// any differences mean we accidentally registered the same action to do
 				// two different things. If the differences are 0 then we've accidentally registered
 				// the same action multiple times.
@@ -49,7 +52,7 @@ class ABJ_404_Solution_WPUtils {
 			if ($shouldError) {
 				throw new \Exception("I can't add the action " . $tag .
 					" because someone has already registered that tag. Here's what the existing action looks like: " .
-					json_encode($wp_filter[$tag], JSON_PRETTY_PRINT));
+					(string)json_encode($wp_filter[$tag], JSON_PRETTY_PRINT));
 			}
 		}
 		
@@ -151,7 +154,7 @@ class ABJ_404_Solution_WPUtils {
         } elseif (is_array($callable) && count($callable) === 2) {
             // Array callable: [object/class, method]
             $classOrObject = $callable[0];
-            $method = $callable[1];
+            $method = is_string($callable[1]) ? $callable[1] : '';
             if (is_object($classOrObject)) {
                 // Instance method: [new ClassName(), 'methodName']
                 return get_class($classOrObject) . '::' . trim($method);
@@ -206,14 +209,14 @@ class ABJ_404_Solution_WPUtils {
 	 * file. It gets the local file location by changing the URL, gets the modified
 	 * date, then returns that date as a string for the version number.
 	 * @param string $src
-	 * @param boolean $ver
-	 * @return string
+	 * @param string|bool $ver
+	 * @return string|false
 	 */
 	static function createUpdatedVersionNumber($src = '', $ver = false) {
 		// if there's no version number and the file is for our plugin
 		if ($ver === false && ($src != null && $src != '' &&
 			strpos($src, ABJ404_URL) === 0)) {
-			
+
 			// get the local file path by changing the URL.
 			$correctedFilePath = str_replace(ABJ404_URL, ABJ404_PATH, $src);
 			// get the modified date as the version (guard missing files in tests/odd installs).
@@ -224,8 +227,11 @@ class ABJ_404_Solution_WPUtils {
 				}
 			}
 		}
-			
-		return $ver;
+
+		if (is_string($ver)) {
+			return $ver;
+		}
+		return false;
 	}
 	
 }

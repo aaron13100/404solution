@@ -13,7 +13,8 @@ if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
          */
         public function public_strip_invalid_text_from_query(string $query) {
             try {
-                return $this->strip_invalid_text_from_query($query);
+                $result = $this->strip_invalid_text_from_query($query);
+                return is_string($result) ? $result : null;
             } catch (Exception $e) {
                 return null;
             } catch (Error $e) {
@@ -30,10 +31,12 @@ if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
         public function public_strip_invalid_text_from_query(string $query) {
             try {
                 $result = $this->strip_invalid_text_from_query($query);
-                if (is_wp_error($result)) {
-                    return 'WP_Error: ' . $result->get_error_message();
+                /** @var mixed $resultMixed */
+                $resultMixed = $result;
+                if (is_object($resultMixed) && method_exists($resultMixed, 'get_error_message')) {
+                    return 'WP_Error: ' . $resultMixed->get_error_message();
                 }
-                return $result;
+                return is_string($result) ? $result : null;
             } catch (Exception $e) {
                 return null;
             }

@@ -247,7 +247,9 @@ function abj_get_instance($className) {
 
     // Fallback to calling the class's getInstance() method
     if (method_exists($className, 'getInstance')) {
-        return call_user_func(array($className, 'getInstance'));
+        /** @var callable(): mixed $callback */
+        $callback = array($className, 'getInstance');
+        return call_user_func($callback);
     }
 
     throw new Exception("Cannot get instance of class: $className");

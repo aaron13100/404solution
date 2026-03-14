@@ -87,7 +87,7 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
             $delimiterA = $delimiterB = $this->findADelimiter($pattern);
         }
         $replacementDelimiter = $this->findADelimiter($replacement);
-        $replacement = preg_replace($replacementDelimiter . '\\\\' . $replacementDelimiter, '\$', $replacement);
+        $replacement = preg_replace($replacementDelimiter . '\\\\' . $replacementDelimiter, '\$', $replacement) ?? $replacement;
         return preg_replace($delimiterA . $pattern . $delimiterB, $replacement, $string);
     }
 
@@ -98,6 +98,7 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
 
         $charToUse = null;
         foreach ($this->delimiterChars as $char) {
+            if ($char === '') { continue; }
             $anArray = explode($char, $pattern);
             if (sizeof($anArray) == 1) {
                 $charToUse = $char;
@@ -147,7 +148,7 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
             // iconv returns false on error, fall through to preg approach
             if ($sanitized !== false) {
                 // Remove null bytes and problematic control characters
-                $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $sanitized);
+                $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $sanitized) ?? $sanitized;
                 return $sanitized;
             }
         }
@@ -163,20 +164,20 @@ class ABJ_404_Solution_FunctionsPreg extends ABJ_404_Solution_Functions {
             // - C0, C1 (overlong 2-byte sequences)
             // - F5-FF (invalid lead bytes beyond UTF-8 range)
             // Keep valid ranges: C2-DF (2-byte), E0-EF (3-byte), F0-F4 (4-byte)
-            $sanitized = preg_replace('/[\xC0\xC1\xF5-\xFF][\x80-\xBF]*/', '', $string);
+            $sanitized = preg_replace('/[\xC0\xC1\xF5-\xFF][\x80-\xBF]*/', '', $string) ?? $string;
 
             // Remove incomplete sequences (continuation bytes without lead byte)
-            $sanitized = preg_replace('/[\x80-\xBF]+/', '', $sanitized);
+            $sanitized = preg_replace('/[\x80-\xBF]+/', '', $sanitized) ?? $sanitized;
 
             // Verify the result is now valid UTF-8 by attempting a UTF-8 match
             if (@preg_match('//u', $sanitized) === false) {
                 // Still invalid - fall back to ASCII-only (safe but lossy)
-                $sanitized = preg_replace('/[^\x09\x0A\x0D\x20-\x7E]/', '', $string);
+                $sanitized = preg_replace('/[^\x09\x0A\x0D\x20-\x7E]/', '', $string) ?? '';
             }
         }
 
         // Remove null bytes and other problematic control characters
-        $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $sanitized);
+        $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $sanitized) ?? $sanitized;
 
         return $sanitized;
     }

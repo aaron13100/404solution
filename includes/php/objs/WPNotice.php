@@ -27,23 +27,24 @@ class ABJ_404_Solution_WPNotice {
     	$this->type = self::INFO;
     	
         $f = ABJ_404_Solution_Functions::getInstance();
+        $typeStr = is_string($type) ? $type : (is_scalar($type) ? (string)$type : '');
         $VALID_TYPES = array(self::ERROR, self::WARNING, self::SUCCESS, self::INFO);
-        if (!in_array($type, $VALID_TYPES)) {
-            if ($f->strtolower($type) == 'info') {
-                $type = self::INFO;
-            } else if ($f->strtolower($type) == 'warning') {
-                $type = self::WARNING;
-            } else if ($f->strtolower($type) == 'success') {
-                $type = self::SUCCESS;
-            } else if ($f->strtolower($type) == 'error') {
-                $type = self::ERROR;
+        if (!in_array($typeStr, $VALID_TYPES)) {
+            if ($f->strtolower($typeStr) == 'info') {
+                $typeStr = self::INFO;
+            } else if ($f->strtolower($typeStr) == 'warning') {
+                $typeStr = self::WARNING;
+            } else if ($f->strtolower($typeStr) == 'success') {
+                $typeStr = self::SUCCESS;
+            } else if ($f->strtolower($typeStr) == 'error') {
+                $typeStr = self::ERROR;
             } else {
-                throw new Exception("Invalid type passed to constructor (" . esc_html($type) . "). Expected: " . 
-                    json_encode($VALID_TYPES));
+                throw new Exception("Invalid type passed to constructor (" . esc_html($typeStr) . "). Expected: " .
+                    (string)json_encode($VALID_TYPES));
             }
         }
         
-        $this->type = $type;
+        $this->type = $typeStr;
         $this->message = $message;
     }
     

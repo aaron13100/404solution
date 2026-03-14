@@ -53,7 +53,8 @@ class ABJ_404_Solution_WPNotices {
         foreach (self::$adminNotices as $oneNotice) {
             $html = ABJ_404_Solution_Functions::readFileContents(ABJ404_PATH . "/includes/html/notice.html");
             $html = $f->str_replace('{class}', 'notice is-dismissable is-dismissible ' . $oneNotice->getType(), $html);
-            $html = $f->str_replace('{message}', esc_html($oneNotice->getMessage()), $html);
+            $msg = $oneNotice->getMessage();
+            $html = $f->str_replace('{message}', esc_html(is_string($msg) ? $msg : (is_scalar($msg) ? (string)$msg : '')), $html);
             
             $allHTML .= $html;
         }

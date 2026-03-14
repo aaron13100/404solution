@@ -59,7 +59,8 @@ class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
      * @return string The resultant string on success, or FALSE on error.
      */
     function regexReplace($pattern, $replacement, $string) {
-        return mb_ereg_replace($pattern, $replacement, $string);
+        $result = mb_ereg_replace($pattern, $replacement, $string);
+        return is_string($result) ? $result : $string;
     }
 
     /**
@@ -91,7 +92,7 @@ class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
 
         // Additional safety: remove null bytes and control characters that might cause issues
         // Keep only valid UTF-8 characters, removing C0 control characters except whitespace
-        $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $sanitized);
+        $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $sanitized) ?? $sanitized;
 
         return $sanitized;
     }

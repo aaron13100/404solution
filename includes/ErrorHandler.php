@@ -41,7 +41,8 @@ class ABJ_404_Solution_ErrorHandler {
         
         try {
         	// if the error file does not contain the name of our plugin then we ignore it.
-        	$pluginFolder = $f->substr(ABJ404_NAME, 0, $f->strpos(ABJ404_NAME, '/'));
+        	$slashPos = $f->strpos(ABJ404_NAME, '/');
+        	$pluginFolder = $f->substr(ABJ404_NAME, 0, ($slashPos !== false ? $slashPos : null));
         	if ($f->strpos($errfile, $pluginFolder) === false) {
         		// let the normal error handler handle it.
         		
@@ -71,12 +72,12 @@ class ABJ_404_Solution_ErrorHandler {
             
             $extraInfo = "(none)";
             if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('debug_info', $_REQUEST[ABJ404_PP])) {
-                $extraInfo = stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
+                $extraInfo = stripcslashes(wp_kses_post((string)json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
             }
             $errmsg = "ABJ404-SOLUTION Normal error handler error: errno: " .
-                        wp_kses_post(json_encode($errno)) . ", errstr: " . wp_kses_post(json_encode($errstr)) .
-                        ", \nerrfile: " . stripcslashes(wp_kses_post(json_encode($errfile))) .
-                        ", \nerrline: " . wp_kses_post(json_encode($errline)) .
+                        wp_kses_post((string)json_encode($errno)) . ", errstr: " . wp_kses_post((string)json_encode($errstr)) .
+                        ", \nerrfile: " . stripcslashes(wp_kses_post((string)json_encode($errfile))) .
+                        ", \nerrline: " . wp_kses_post((string)json_encode($errline)) .
                         ', \nAdditional info: ' . $extraInfo . ", mbstring: " . 
                     (extension_loaded('mbstring') ? 'true' : 'false');
             
@@ -214,7 +215,8 @@ class ABJ_404_Solution_ErrorHandler {
             !array_key_exists('file', $lasterror)) {
             return false;
         }
-        if (!self::isFatalType($lasterror['type'])) {
+        $errorType = $lasterror['type'];
+        if (!self::isFatalType(is_int($errorType) ? $errorType : (is_scalar($errorType) ? (int)$errorType : 0))) {
             return false;
         }
 
@@ -312,8 +314,9 @@ class ABJ_404_Solution_ErrorHandler {
         // Default behavior: only log plugin-scope fatals (avoid noise from other plugins/themes).
         try {
             $errno = $lasterror['type'];
-            $errfile = $lasterror['file'];
-            $pluginFolder = $f->substr(ABJ404_NAME, 0, $f->strpos(ABJ404_NAME, '/'));
+            $errfile = is_string($lasterror['file']) ? $lasterror['file'] : '';
+            $slashPos2 = $f->strpos(ABJ404_NAME, '/');
+            $pluginFolder = $f->substr(ABJ404_NAME, 0, ($slashPos2 !== false ? $slashPos2 : null));
 
             // if the error file does not contain the name of our plugin then we ignore it.
             if ($f->strpos($errfile, $pluginFolder) === false) {
@@ -322,10 +325,10 @@ class ABJ_404_Solution_ErrorHandler {
 
             $extraInfo = "(none)";
             if (array_key_exists(ABJ404_PP, $_REQUEST) && array_key_exists('debug_info', $_REQUEST[ABJ404_PP])) {
-                $extraInfo = stripcslashes(wp_kses_post(json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
+                $extraInfo = stripcslashes(wp_kses_post((string)json_encode($_REQUEST[ABJ404_PP]['debug_info'])));
             }
             $errmsg = "ABJ404-SOLUTION Fatal error handler: " .
-                stripcslashes(wp_kses_post(json_encode($lasterror))) .
+                stripcslashes(wp_kses_post((string)json_encode($lasterror))) .
                 ", \nAdditional info: " . $extraInfo . ", mbstring: " .
                 (extension_loaded('mbstring') ? 'true' : 'false');
 

@@ -145,6 +145,9 @@ class ABJ_404_Solution_ImportExportService {
 
         $allowed_mime_types = array('text/csv', 'text/plain', 'application/csv', 'text/comma-separated-values', 'application/vnd.ms-excel');
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo === false) {
+            return 'Error: Unable to determine file type.';
+        }
         $mime_type = finfo_file($finfo, $_FILES['import_file']['tmp_name']);
         if (!in_array($mime_type, $allowed_mime_types)) {
             return 'Error: Invalid file type. Only CSV files are allowed.';
@@ -227,13 +230,13 @@ class ABJ_404_Solution_ImportExportService {
      * @return array<int, string>
      */
     function loadDataArrayFromFile($dataArray, $dryRun = false) {
-        if ($dataArray['from_url'] == 'from_url' || $dataArray['from_url'] == 'request') {
+        $fromURL = isset($dataArray['from_url']) && is_string($dataArray['from_url']) ? $dataArray['from_url'] : '';
+        if ($fromURL === 'from_url' || $fromURL === 'request') {
             return array();
         }
 
-        $fromURL = $dataArray['from_url'];
         $status = ABJ404_STATUS_MANUAL;
-        $final_dest = $dataArray['to_url'];
+        $final_dest = isset($dataArray['to_url']) && is_string($dataArray['to_url']) ? $dataArray['to_url'] : '';
         $anyIssuesToNote = array();
 
         $maybeExisting2 = $this->dao->getExistingRedirectForURL($fromURL);
@@ -279,26 +282,29 @@ class ABJ_404_Solution_ImportExportService {
             $postsFromCategoryRows = $this->dao->getPublishedCategories(null, $slug);
             $postsFromTagRows = $this->dao->getPublishedTags($slug);
 
+            /** @var object{id?: int|string, term_id?: int|string}|null $postFromSlug */
             $postFromSlug = isset($postsFromSlugRows[0]) ? $postsFromSlugRows[0] : null;
+            /** @var object{term_id?: int|string}|null $postFromCategory */
             $postFromCategory = isset($postsFromCategoryRows[0]) ? $postsFromCategoryRows[0] : null;
+            /** @var object{term_id?: int|string}|null $postFromTag */
             $postFromTag = isset($postsFromTagRows[0]) ? $postsFromTagRows[0] : null;
 
-            if ($postFromSlug) {
+            if ($postFromSlug && isset($postFromSlug->id)) {
                 $type = $typePost;
-                $final_dest = $postFromSlug->id;
-            } else if ($postFromCategory) {
+                $final_dest = (string)$postFromSlug->id;
+            } else if ($postFromCategory && isset($postFromCategory->term_id)) {
                 $type = $typeCat;
-                $final_dest = $postFromCategory->term_id;
-            } else if ($postFromTag) {
+                $final_dest = (string)$postFromCategory->term_id;
+            } else if ($postFromTag && isset($postFromTag->term_id)) {
                 $type = $typeTag;
-                $final_dest = $postFromTag->term_id;
+                $final_dest = (string)$postFromTag->term_id;
             } else {
                 $this->logger->warn("Couldn't find post from slug. slug: " . $slug);
             }
         }
 
         if (!$dryRun) {
-            $this->dao->setupRedirect($fromURL, (string)$status, (string)$type, $final_dest, (string)301);
+            $this->dao->setupRedirect($fromURL, (string)$status, (string)$type, (string)$final_dest, (string)301);
         }
 
         return $anyIssuesToNote;
@@ -310,7 +316,7 @@ class ABJ_404_Solution_ImportExportService {
      */
     function splitCsvLine($line) {
         if (!is_string($line)) {
-            $line = (string)$line;
+            $line = is_scalar($line) ? (string)$line : '';
         }
 
         $data = array_map(function($v) {

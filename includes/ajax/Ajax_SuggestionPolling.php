@@ -37,7 +37,8 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
             try {
                 $c = ABJ_404_Solution_ServiceContainer::getInstance();
                 if (is_object($c) && method_exists($c, 'has') && $c->has('functions')) {
-                    $f = $c->get('functions');
+                    $svc = $c->get('functions');
+                    if ($svc instanceof ABJ_404_Solution_Functions) { $f = $svc; }
                 }
             } catch (Throwable $e) {
                 // fall back
@@ -62,13 +63,16 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         $transientKey = 'abj404_suggest_' . $urlKey;
 
         // Check transient for status
-        $data = get_transient($transientKey);
+        $dataRaw = get_transient($transientKey);
 
-        if ($data === false) {
+        if ($dataRaw === false) {
             // Transient not found - computation may not have started
             wp_send_json(array('status' => 'not_found'));
             return; // @phpstan-ignore deadCode.unreachable
         }
+
+        /** @var array<string, mixed> $data */
+        $data = is_array($dataRaw) ? $dataRaw : array();
 
         if (!isset($data['status'])) {
             wp_send_json(array('status' => 'error', 'message' => 'Invalid transient data'), 500);
@@ -79,7 +83,7 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
             // Check if computation has been running too long (indicates worker crash)
             // Worker claims work by setting started=time(), if still pending after 90s, it likely crashed
             // Matches the worker recovery threshold in Ajax_SuggestionCompute.php:67
-            $startedAt = isset($data['started']) ? (int)$data['started'] : 0;
+            $startedAt = (isset($data['started']) && is_scalar($data['started'])) ? (int)$data['started'] : 0;
             if ($startedAt > 0 && (time() - $startedAt) > 90) {
                 // Computation started but hasn't completed in 90 seconds - worker likely crashed
                 wp_send_json(array('status' => 'timeout', 'message' => 'Computation timed out'), 504);
@@ -100,8 +104,9 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         if ($data['status'] === 'complete') {
             // Suggestions ready - render HTML and return
             // Use normalized URL to match how ShortCode processes URLs
+            $suggestionsData = (isset($data['suggestions']) && is_array($data['suggestions'])) ? $data['suggestions'] : array();
             $html = ABJ_404_Solution_ShortCode::renderSuggestionsHTML(
-                isset($data['suggestions']) ? $data['suggestions'] : array(),
+                $suggestionsData,
                 $normalizedURL
             );
             wp_send_json(array('status' => 'complete', 'html' => $html));
@@ -109,6 +114,8 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         }
 
         // Unknown status
-        wp_send_json(array('status' => 'error', 'message' => 'Unknown status: ' . esc_html($data['status'])), 500);
+        $statusVal = $data['status'];
+        $statusStr = is_string($statusVal) ? $statusVal : (is_scalar($statusVal) ? (string)$statusVal : 'unknown');
+        wp_send_json(array('status' => 'error', 'message' => 'Unknown status: ' . esc_html($statusStr)), 500);
     }
 }

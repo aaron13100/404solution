@@ -82,8 +82,11 @@ class ABJ_404_Solution_WordPress_Connector {
 			try {
 				$c = ABJ_404_Solution_ServiceContainer::getInstance();
 				if (is_object($c) && method_exists($c, 'has') && $c->has('wordpress_connector')) {
-					self::$instance = $c->get('wordpress_connector');
-					return self::$instance;
+					$svc = $c->get('wordpress_connector');
+					if ($svc instanceof self) {
+						self::$instance = $svc;
+						return self::$instance;
+					}
 				}
 			} catch (Throwable $e) {
 				// fall back
@@ -367,7 +370,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         $logic = ABJ_404_Solution_PluginLogic::getInstance();
         $options = $logic->getOptions();
-        $theme = isset($options['admin_theme']) ? $options['admin_theme'] : 'default';
+        $theme = (isset($options['admin_theme']) && is_string($options['admin_theme'])) ? $options['admin_theme'] : 'default';
 
         // Check if auto dark mode detection is enabled (default: enabled)
         $auto_dark_mode = !isset($options['disable_auto_dark_mode']) || $options['disable_auto_dark_mode'] != '1';
@@ -491,10 +494,12 @@ class ABJ_404_Solution_WordPress_Connector {
         );
 
         // Output inline critical CSS if theme is selected
-        if (isset($themeVariables[$theme])) {
+        /** @var string $themeKey */
+        $themeKey = $theme;
+        if (isset($themeVariables[$themeKey])) {
             // Build CSS variables string
             $cssVars = '';
-            foreach ($themeVariables[$theme] as $var => $value) {
+            foreach ($themeVariables[$themeKey] as $var => $value) {
                 $cssVars .= esc_html($var) . ':' . esc_html($value) . ';';
             }
 
@@ -768,7 +773,8 @@ class ABJ_404_Solution_WordPress_Connector {
             );
 
             // Store feedback in database
-            $all_feedback = get_option('abj404_user_feedback', array());
+            $all_feedback_raw = get_option('abj404_user_feedback', array());
+            $all_feedback = is_array($all_feedback_raw) ? $all_feedback_raw : array();
             $all_feedback[] = $feedback_data;
             update_option('abj404_user_feedback', $all_feedback);
 
@@ -817,9 +823,11 @@ class ABJ_404_Solution_WordPress_Connector {
         $message .= "PHP Version: " . $feedback_data['php_version'] . "\n\n";
 
         $message .= "Issues Selected:\n";
-        if (!empty($feedback_data['issues'])) {
-            foreach ($feedback_data['issues'] as $issue) {
-                $message .= "  - " . ucfirst(str_replace('_', ' ', $issue)) . "\n";
+        $feedbackIssues = isset($feedback_data['issues']) && is_array($feedback_data['issues']) ? $feedback_data['issues'] : array();
+        if (!empty($feedbackIssues)) {
+            foreach ($feedbackIssues as $issue) {
+                $issueStr = is_string($issue) ? $issue : (string)$issue;
+                $message .= "  - " . ucfirst(str_replace('_', ' ', $issueStr)) . "\n";
             }
         } else {
             $message .= "  None selected\n";
@@ -912,6 +920,7 @@ class ABJ_404_Solution_WordPress_Connector {
         ob_start();
         wp_nonce_field('abj404_submit_feedback', 'abj404_feedback_nonce');
         $nonce_field = ob_get_clean();
+        if ($nonce_field === false) { $nonce_field = ''; }
 
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/feedbackFormNotice.html");
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -948,7 +957,7 @@ class ABJ_404_Solution_WordPress_Connector {
      */
     private static function normalizeRequestScalar($value) {
         $value = self::safeWpUnslash($value);
-        if (is_array($value) || is_object($value)) {
+        if (!is_scalar($value)) {
             return '';
         }
         return (string)$value;

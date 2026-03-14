@@ -264,7 +264,8 @@ class ABJ_404_Solution_SynchronizationUtils {
 
     	} else {
     		// MULTISITE: Use network-aware option for N-gram locks
-    		$owner = $this->getNetworkAwareOption($key);
+    		$ownerRaw = $this->getNetworkAwareOption($key);
+    		$owner = is_string($ownerRaw) ? $ownerRaw : '';
     	}
 
     	return $owner;
@@ -383,7 +384,7 @@ class ABJ_404_Solution_SynchronizationUtils {
         $bytes = null;
     	if (function_exists("random_bytes")) {
     	    try {
-    		  $bytes = random_bytes((int)ceil(13 / 2));
+    		  $bytes = random_bytes(max(1, (int)ceil(13 / 2)));
     	    } catch (Exception $e) {
     	        $bytes = null; // don't care.
     	    }

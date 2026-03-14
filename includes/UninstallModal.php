@@ -708,14 +708,16 @@ class ABJ_404_Solution_UninstallModal {
         $body .= "USER FEEDBACK\n";
         $body .= "═══════════════════════════════════════\n\n";
 
-        if (!empty($preferences['uninstall_reason'])) {
-            $body .= "Reason: " . ucfirst(str_replace('-', ' ', $preferences['uninstall_reason'])) . "\n\n";
+        $uninstallReason = isset($preferences['uninstall_reason']) && is_string($preferences['uninstall_reason']) ? $preferences['uninstall_reason'] : '';
+        if (!empty($uninstallReason)) {
+            $body .= "Reason: " . ucfirst(str_replace('-', ' ', $uninstallReason)) . "\n\n";
         }
 
         // Show selected issues (checkboxes)
-        if (!empty($preferences['selected_issues'])) {
+        $selectedIssues = isset($preferences['selected_issues']) && is_string($preferences['selected_issues']) ? $preferences['selected_issues'] : '';
+        if (!empty($selectedIssues)) {
             $body .= "Specific Issues:\n";
-            $issues = explode(',', $preferences['selected_issues']);
+            $issues = explode(',', $selectedIssues);
             foreach ($issues as $issue) {
                 $body .= "  ☑ " . ucfirst(str_replace('-', ' ', $issue)) . "\n";
             }
@@ -952,9 +954,9 @@ class ABJ_404_Solution_UninstallModal {
             return implode("\n", $summaryLines);
         }
 
-        $targetCollation = $targetInfo['collation'];
-        $targetCharset = $targetInfo['charset'];
-        $targetEngine = $targetInfo['engine'];
+        $targetCollation = isset($targetInfo['collation']) ? $targetInfo['collation'] : '';
+        $targetCharset = isset($targetInfo['charset']) ? $targetInfo['charset'] : '';
+        $targetEngine = isset($targetInfo['engine']) ? $targetInfo['engine'] : '';
 
         $summaryLines[] = sprintf(
             "%s -> %s / %s / %s (baseline)",
@@ -985,12 +987,12 @@ class ABJ_404_Solution_UninstallModal {
                 continue;
             }
 
-            $collation = $tableInfo['collation'];
-            $charset = $tableInfo['charset'];
-            $engine = $tableInfo['engine'];
+            $collation = isset($tableInfo['collation']) ? $tableInfo['collation'] : '';
+            $charset = isset($tableInfo['charset']) ? $tableInfo['charset'] : '';
+            $engine = isset($tableInfo['engine']) ? $tableInfo['engine'] : '';
 
             $matchesBaseline = ($collation === $targetCollation && $charset === $targetCharset);
-            $utf8mb4Note = (stripos($charset, 'utf8mb4') === false) ? ' [non-utf8mb4]' : '';
+            $utf8mb4Note = (is_string($charset) && stripos($charset, 'utf8mb4') === false) ? ' [non-utf8mb4]' : '';
             $matchNote = $matchesBaseline ? 'matches' : 'DIFFERS';
 
             $summaryLines[] = sprintf(
@@ -1086,9 +1088,9 @@ class ABJ_404_Solution_UninstallModal {
         // Handle case variations in column names
         $result = array_change_key_case($result, CASE_UPPER);
 
-        $collation = $result['TABLE_COLLATION'] ?? null;
-        $engine = $result['ENGINE'] ?? 'Unknown';
-        $charset = $result['TABLE_CHARSET'] ?? null;
+        $collation = isset($result['TABLE_COLLATION']) && is_string($result['TABLE_COLLATION']) ? $result['TABLE_COLLATION'] : null;
+        $engine = isset($result['ENGINE']) && is_string($result['ENGINE']) ? $result['ENGINE'] : 'Unknown';
+        $charset = isset($result['TABLE_CHARSET']) && is_string($result['TABLE_CHARSET']) ? $result['TABLE_CHARSET'] : null;
 
         // Fallback charset extraction from collation
         if (empty($charset) && !empty($collation)) {
@@ -1134,9 +1136,9 @@ class ABJ_404_Solution_UninstallModal {
             return null;
         }
 
-        $collation = $result['Collation'] ?? null;
-        $engine = $result['Engine'] ?? 'Unknown';
-        $charset = $collation ? explode('_', $collation)[0] : null;
+        $collation = isset($result['Collation']) && is_string($result['Collation']) ? $result['Collation'] : null;
+        $engine = isset($result['Engine']) && is_string($result['Engine']) ? $result['Engine'] : 'Unknown';
+        $charset = (is_string($collation) && $collation !== '') ? explode('_', $collation)[0] : null;
 
         if (empty($collation)) {
             return null;
@@ -1156,9 +1158,10 @@ class ABJ_404_Solution_UninstallModal {
      * @return array{charset?: string|null, collation?: string|null, engine?: string, error?: string}|null
      */
     private static function tryShowCreateTable(string $tableName) {
+        /** @var \wpdb $wpdb */
         global $wpdb;
 
-        if (!method_exists($wpdb, 'get_row')) {
+        if (!is_object($wpdb) || !method_exists($wpdb, 'get_row')) {
             return null;
         }
 
@@ -1169,7 +1172,7 @@ class ABJ_404_Solution_UninstallModal {
             return null;
         }
 
-        $ddl = $result[1];
+        $ddl = is_string($result[1]) ? $result[1] : '';
 
         // Match charset: CHARSET=utf8mb4, DEFAULT CHARSET=utf8mb4, CHARACTER SET utf8mb4
         preg_match('/(?:DEFAULT\s+)?(?:CHARSET|CHARACTER\s+SET)(?:\s*=\s*|\s+)([\w\d]+)/i', $ddl, $charsetMatch);

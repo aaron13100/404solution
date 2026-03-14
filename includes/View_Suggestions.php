@@ -75,13 +75,20 @@ class ABJ_404_Solution_View_Suggestions {
         $html = $this->f->str_replace('{SELECTED_SUGGEST_TAGS}', $selectedSuggestTags, $html);
         $html = $this->f->str_replace('{SELECTED_SUGGEST_MINSCORE_ENABLED}', $selectedSuggestMinscoreEnabled, $html);
         $html = $this->f->str_replace('{SELECTED_SUGGEST_URL}', $selectedSuggestURL, $html);
-        $html = $this->f->str_replace('{SUGGEST_MAX_SUGGESTIONS}', esc_attr($options['suggest_max']), $html);
-        $html = $this->f->str_replace('{SUGGEST_USER_TITLE}', esc_attr($options['suggest_title']), $html);
-        $html = $this->f->str_replace('{SUGGEST_USER_BEFORE}', esc_attr($options['suggest_before']), $html);
-        $html = $this->f->str_replace('{SUGGEST_USER_AFTER}', esc_attr($options['suggest_after']), $html);
-        $html = $this->f->str_replace('{SUGGEST_USER_ENTRY_BEFORE}', esc_attr($options['suggest_entrybefore']), $html);
-        $html = $this->f->str_replace('{SUGGEST_USER_ENTRY_AFTER}', esc_attr($options['suggest_entryafter']), $html);
-        $html = $this->f->str_replace('{SUGGEST_USER_NO_RESULTS}', esc_attr($options['suggest_noresults']), $html);
+        $sugMax = $options['suggest_max'];
+        $sugTitle = $options['suggest_title'];
+        $sugBefore = $options['suggest_before'];
+        $sugAfter = $options['suggest_after'];
+        $sugEntryBefore = $options['suggest_entrybefore'];
+        $sugEntryAfter = $options['suggest_entryafter'];
+        $sugNoResults = $options['suggest_noresults'];
+        $html = $this->f->str_replace('{SUGGEST_MAX_SUGGESTIONS}', esc_attr(is_scalar($sugMax) ? (string)$sugMax : ''), $html);
+        $html = $this->f->str_replace('{SUGGEST_USER_TITLE}', esc_attr(is_scalar($sugTitle) ? (string)$sugTitle : ''), $html);
+        $html = $this->f->str_replace('{SUGGEST_USER_BEFORE}', esc_attr(is_scalar($sugBefore) ? (string)$sugBefore : ''), $html);
+        $html = $this->f->str_replace('{SUGGEST_USER_AFTER}', esc_attr(is_scalar($sugAfter) ? (string)$sugAfter : ''), $html);
+        $html = $this->f->str_replace('{SUGGEST_USER_ENTRY_BEFORE}', esc_attr(is_scalar($sugEntryBefore) ? (string)$sugEntryBefore : ''), $html);
+        $html = $this->f->str_replace('{SUGGEST_USER_ENTRY_AFTER}', esc_attr(is_scalar($sugEntryAfter) ? (string)$sugEntryAfter : ''), $html);
+        $html = $this->f->str_replace('{SUGGEST_USER_NO_RESULTS}', esc_attr(is_scalar($sugNoResults) ? (string)$sugNoResults : ''), $html);
         // constants and translations.
         $html = $this->f->doNormalReplacements($html);
         

@@ -22,8 +22,11 @@ abstract class ABJ_404_Solution_Functions {
             try {
                 $c = ABJ_404_Solution_ServiceContainer::getInstance();
                 if (is_object($c) && method_exists($c, 'has') && $c->has('functions')) {
-                    self::$instance = $c->get('functions');
-                    return self::$instance;
+                    $service = $c->get('functions');
+                    if ($service instanceof self) {
+                        self::$instance = $service;
+                        return self::$instance;
+                    }
                 }
             } catch (Throwable $e) {
                 // fall back to legacy singleton below
@@ -51,7 +54,9 @@ abstract class ABJ_404_Solution_Functions {
 
         // Handle array input
         if (is_array($input)) {
-            return array_map([$f, 'selectivelyURLEncode'], $input);
+            /** @var callable(mixed): mixed $callback */
+            $callback = [$f, 'selectivelyURLEncode'];
+            return array_map($callback, $input);
         }
 
         if (!is_string($input)) {
@@ -105,7 +110,7 @@ abstract class ABJ_404_Solution_Functions {
             return array_map([$this, 'sanitize_text_field_recursive'], $data);
         }
 
-        return sanitize_text_field($data);
+        return sanitize_text_field(is_string($data) ? $data : (is_scalar($data) ? (string)$data : ''));
     }
 
     /** Escape a string to avoid Cross Site Scripting (XSS) attacks by encoding unsafe HTML characters.
@@ -151,7 +156,7 @@ abstract class ABJ_404_Solution_Functions {
 
         $url = $this->sanitizeInvalidUTF8($url);
         // Remove remaining control characters (keep whitespace)
-        $url = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $url);
+        $url = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $url) ?? $url;
 
         return $url;
     }
@@ -173,7 +178,7 @@ abstract class ABJ_404_Solution_Functions {
         }
 
         if (!is_string($value)) {
-            $value = strval($value);
+            $value = is_scalar($value) ? strval($value) : '';
         }
 
         $value = $this->sanitizeInvalidUTF8($value);
@@ -225,7 +230,7 @@ abstract class ABJ_404_Solution_Functions {
     function normalizeURLForCacheKey($url) {
         $url = $this->normalizeUrlString($url);
         // Strip query string (everything after '?')
-        $normalized = $this->regexReplace('\?.*', '', $url);
+        $normalized = $this->regexReplace('\?.*', '', $url) ?? $url;
         // Apply esc_url for security and consistency
         return esc_url($normalized);
     }
@@ -334,10 +339,10 @@ abstract class ABJ_404_Solution_Functions {
     	if ($haystack == "" || $this->strlen($haystack) == 0) {
     		return "";
     		
-    	} else if ($this->strpos($haystack, $needle) === false) {
+    	} else if ($needle === '' || $this->strpos($haystack, $needle) === false) {
     		return $haystack;
     	}
-    	
+
     	$splitResult = explode($needle, $haystack);
     	$implodeResult = implode($replacement, $splitResult);
     	
@@ -520,7 +525,7 @@ abstract class ABJ_404_Solution_Functions {
     /** Turns ID|TYPE, SCORE into an array with id, type, score, link, and title.
      *
      * @param string $idAndType e.g. 15|POST is a page ID of 15 and a type POST.
-     * @param int $linkScore
+     * @param int|float $linkScore
      * @param string $rowType if this is "image" then wp_get_attachment_image_src() is used.
      * @param array<string, mixed>|null $options in case an external URL is used.
      * @return array<string, mixed> an array with id, type, score, link, and title.
@@ -553,7 +558,7 @@ abstract class ABJ_404_Solution_Functions {
         if ($typeInt === ABJ404_TYPE_POST) {
             if ($rowType == 'image') {
                 $imageURL = wp_get_attachment_image_src($idInt, "attached-image");
-                $permalink['link'] = $imageURL[0];
+                $permalink['link'] = is_array($imageURL) ? $imageURL[0] : '';
             } else {
                 $permalink['link'] = get_permalink($idInt);
             }
@@ -616,8 +621,8 @@ abstract class ABJ_404_Solution_Functions {
         	$permalink['status'] = 'published';
         	
         } else {
-            $abj404logging->errorMessage("Unrecognized permalink type: " . 
-                    wp_kses_post(json_encode($permalink)));
+            $abj404logging->errorMessage("Unrecognized permalink type: " .
+                    wp_kses_post((string)json_encode($permalink)));
         }
         
         if ($permalink['status'] === false) {
@@ -627,10 +632,11 @@ abstract class ABJ_404_Solution_Functions {
         // Decode anything that might be encoded to support utf8 characters
         if (array_key_exists('link', $permalink)) {
         	$f = ABJ_404_Solution_Functions::getInstance();
-        	$permalink['link'] = $f->normalizeUrlString($permalink['link']);
+        	$linkVal = is_string($permalink['link']) ? $permalink['link'] : (is_scalar($permalink['link']) ? (string)$permalink['link'] : '');
+        	$permalink['link'] = $f->normalizeUrlString($linkVal);
         }
-        $permalink['title'] = array_key_exists('title', $permalink) ?
-            ABJ_404_Solution_Functions::getInstance()->normalizeUrlString($permalink['title']) : '';
+        $titleVal = (array_key_exists('title', $permalink) && is_string($permalink['title'])) ? $permalink['title'] : '';
+        $permalink['title'] = ABJ_404_Solution_Functions::getInstance()->normalizeUrlString($titleVal);
         
         return $permalink;
     }
@@ -680,6 +686,7 @@ abstract class ABJ_404_Solution_Functions {
     	
     	// get a list of all files (and directories) in the directory.
     	$items = scandir($dir);
+    	if (!is_array($items)) { $items = array(); }
     	foreach ($items as $item) {
     		if ($item == '.' || $item == '..') {
     			continue;
@@ -798,7 +805,9 @@ abstract class ABJ_404_Solution_Functions {
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
                 // get curl response
                 curl_exec($ch);
-                fclose($destinationFileWriteHandle);        
+                if (is_resource($destinationFileWriteHandle)) {
+                    fclose($destinationFileWriteHandle);
+                }
                 
                 if (file_exists($filePath) && filesize($filePath) > 0) {
                     return;
@@ -881,12 +890,13 @@ abstract class ABJ_404_Solution_Functions {
         // sort the parts
         ksort($queryParts);
 
-        $queryParts = $this->sanitizeUrlComponent($queryParts);
+        $sanitized = $this->sanitizeUrlComponent($queryParts);
+        $queryParts = is_array($sanitized) ? $sanitized : $queryParts;
         $built = http_build_query($queryParts, '', '&', PHP_QUERY_RFC3986);
         $decoded = rawurldecode($built);
         return $this->normalizeUrlString($decoded, array('decode' => false));
     }
-    
+
     /** We have to remove any 'p=##' because it will cause a 404 otherwise.
      * @param string $queryString
      * @return string
@@ -902,7 +912,8 @@ abstract class ABJ_404_Solution_Functions {
         }
 
         // rebuild the string.
-        $queryParts = $this->sanitizeUrlComponent($queryParts);
+        $sanitized = $this->sanitizeUrlComponent($queryParts);
+        $queryParts = is_array($sanitized) ? $sanitized : $queryParts;
         $built = http_build_query($queryParts, '', '&', PHP_QUERY_RFC3986);
         $decoded = rawurldecode($built);
         return $this->normalizeUrlString($decoded, array('decode' => false));

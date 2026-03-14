@@ -79,7 +79,10 @@ class ABJ_404_Solution_Privacy {
             try {
                 $c = ABJ_404_Solution_ServiceContainer::getInstance();
                 if (is_object($c) && method_exists($c, 'has') && $c->has('data_access')) {
-                    return $c->get('data_access');
+                    $svc = $c->get('data_access');
+                    if ($svc instanceof ABJ_404_Solution_DataAccess) {
+                        return $svc;
+                    }
                 }
             } catch (Throwable $e) {
                 // fall back
@@ -132,31 +135,38 @@ class ABJ_404_Solution_Privacy {
             : array();
 
         $data = array();
-        foreach ((array)$rows as $row) {
+        foreach ($rows as $row) {
+            $rowIdRaw = isset($row['id']) ? $row['id'] : null;
+            $rowId = (is_scalar($rowIdRaw) ? (string)$rowIdRaw : uniqid('', true));
+            $tsRaw = isset($row['timestamp']) ? $row['timestamp'] : '';
+            $urlRaw = isset($row['requested_url']) ? $row['requested_url'] : '';
+            $destRaw = isset($row['dest_url']) ? $row['dest_url'] : '';
+            $refRaw = isset($row['referrer']) ? $row['referrer'] : '';
+            $ipRaw = isset($row['user_ip']) ? $row['user_ip'] : '';
             $data[] = array(
                 'group_id' => 'abj404_solution_logs',
                 'group_label' => __('404 Solution Logs', '404-solution'),
-                'item_id' => 'abj404_log_' . (isset($row['id']) ? $row['id'] : uniqid('', true)),
+                'item_id' => 'abj404_log_' . $rowId,
                 'data' => array(
                     array(
                         'name' => __('Timestamp', '404-solution'),
-                        'value' => isset($row['timestamp']) ? (string)$row['timestamp'] : '',
+                        'value' => is_scalar($tsRaw) ? (string)$tsRaw : '',
                     ),
                     array(
                         'name' => __('Requested URL', '404-solution'),
-                        'value' => isset($row['requested_url']) ? (string)$row['requested_url'] : '',
+                        'value' => is_scalar($urlRaw) ? (string)$urlRaw : '',
                     ),
                     array(
                         'name' => __('Destination URL', '404-solution'),
-                        'value' => isset($row['dest_url']) ? (string)$row['dest_url'] : '',
+                        'value' => is_scalar($destRaw) ? (string)$destRaw : '',
                     ),
                     array(
                         'name' => __('Referrer', '404-solution'),
-                        'value' => isset($row['referrer']) ? (string)$row['referrer'] : '',
+                        'value' => is_scalar($refRaw) ? (string)$refRaw : '',
                     ),
                     array(
                         'name' => __('IP Address', '404-solution'),
-                        'value' => isset($row['user_ip']) ? (string)$row['user_ip'] : '',
+                        'value' => is_scalar($ipRaw) ? (string)$ipRaw : '',
                     ),
                 ),
             );

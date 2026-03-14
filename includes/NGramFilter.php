@@ -186,6 +186,7 @@ class ABJ_404_Solution_NGramFilter {
             $result[$key] = array_map('strval', array_keys($ngrams));
         }
 
+        /** @var array{bi: array<int, string>, tri: array<int, string>} $result */
         return $result;
     }
 
@@ -340,7 +341,12 @@ class ABJ_404_Solution_NGramFilter {
             return null;
         }
 
-        return json_decode($result, true);
+        $decoded = json_decode($result, true);
+        if (!is_array($decoded) || !isset($decoded['bi'], $decoded['tri'])) {
+            return null;
+        }
+        /** @var array{bi: array<int, string>, tri: array<int, string>} $decoded */
+        return $decoded;
     }
 
     /**
@@ -491,14 +497,13 @@ class ABJ_404_Solution_NGramFilter {
         // Decode JSON for each entry, filtering out corrupt entries
         $validResults = [];
         foreach ($merged as $row) {
-            if (is_object($row)) {
-                $row = (array) $row;
-            }
-            $decoded = json_decode($row['ngrams'], true);
+            $ngramsJson = isset($row['ngrams']) && is_string($row['ngrams']) ? $row['ngrams'] : '';
+            $decoded = json_decode($ngramsJson, true);
             if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+                $rowId = isset($row['id']) ? $row['id'] : 0;
                 $this->logger->errorMessage(sprintf(
-                    "Corrupt N-gram JSON for page ID %d: %s",
-                    $row['id'] ?? 0,
+                    "Corrupt N-gram JSON for page ID %s: %s",
+                    (is_scalar($rowId) ? (string)$rowId : '0'),
                     json_last_error_msg()
                 ));
                 continue; // Skip corrupt entry
@@ -517,11 +522,11 @@ class ABJ_404_Solution_NGramFilter {
      * - $below: ngram_count <= target, ordered DESC by ngram_count (closest first)
      * - $above: ngram_count > target, ordered ASC by ngram_count (closest first)
      *
-     * @param array<int, object|array<string, mixed>> $below Results with ngram_count <= target
-     * @param array<int, object|array<string, mixed>> $above Results with ngram_count > target
+     * @param array<int, array<string, mixed>> $below Results with ngram_count <= target
+     * @param array<int, array<string, mixed>> $above Results with ngram_count > target
      * @param int $targetNgramCount The target N-gram count
      * @param int $limit Maximum results to return
-     * @return array<int, object|array<string, mixed>> Merged results ordered by proximity to target
+     * @return array<int, array<string, mixed>> Merged results ordered by proximity to target
      */
     private function mergeByProximity($below, $above, $targetNgramCount, $limit) {
         $result = [];
@@ -532,11 +537,15 @@ class ABJ_404_Solution_NGramFilter {
 
         while (count($result) < $limit && ($i < $belowCount || $j < $aboveCount)) {
             // Calculate distances (use PHP_INT_MAX as sentinel for exhausted arrays)
+            $belowNgramRaw = ($i < $belowCount && isset($below[$i]['ngram_count'])) ? $below[$i]['ngram_count'] : 0;
+            $belowNgramCount = is_scalar($belowNgramRaw) ? (int)$belowNgramRaw : 0;
+            $aboveNgramRaw = ($j < $aboveCount && isset($above[$j]['ngram_count'])) ? $above[$j]['ngram_count'] : 0;
+            $aboveNgramCount = is_scalar($aboveNgramRaw) ? (int)$aboveNgramRaw : 0;
             $distBelow = ($i < $belowCount)
-                ? abs($below[$i]['ngram_count'] - $targetNgramCount)
+                ? abs($belowNgramCount - $targetNgramCount)
                 : PHP_INT_MAX;
             $distAbove = ($j < $aboveCount)
-                ? abs($above[$j]['ngram_count'] - $targetNgramCount)
+                ? abs($aboveNgramCount - $targetNgramCount)
                 : PHP_INT_MAX;
 
             // Pick the entry closer to target; prefer below on tie (includes exact matches)
@@ -800,23 +809,27 @@ class ABJ_404_Solution_NGramFilter {
         // Step 3: Compute similarity for each page
         $similarities = [];
         foreach ($cachedPages as $page) {
-            $pageId = $page['id'];
-            $pageNGrams = $page['ngrams'];
+            if (!is_array($page)) {
+                continue;
+            }
+            $pageId = isset($page['id']) ? $page['id'] : null;
+            $pageNGrams = isset($page['ngrams']) ? $page['ngrams'] : null;
 
             // Quick optimization: Skip if N-gram counts are too different
             // (This is redundant for filtered queries but kept for unfiltered path)
-            $pageCombinedCount = $page['ngram_count'];
+            $pageNgramCountRaw = isset($page['ngram_count']) ? $page['ngram_count'] : 0;
+            $pageCombinedCount = is_scalar($pageNgramCountRaw) ? (int)$pageNgramCountRaw : 0;
+            // $queryCombinedCount >= 1 (guarded above), so $denominator >= 1
             $denominator = max($queryCombinedCount, $pageCombinedCount);
-            if ($denominator == 0) {
-                continue; // Skip comparison when both have no n-grams
-            }
             $countRatio = min($queryCombinedCount, $pageCombinedCount) / $denominator;
             if ($countRatio < 0.4) {
                 continue;
             }
 
             // Compute Dice coefficient
-            $similarity = $this->diceCoefficient($queryNGrams, $pageNGrams);
+            /** @var array{bi?: array<int, string>, tri?: array<int, string>} $pageNGramsTyped */
+            $pageNGramsTyped = is_array($pageNGrams) ? $pageNGrams : array();
+            $similarity = $this->diceCoefficient($queryNGrams, $pageNGramsTyped);
 
             // Step 4: Filter by minimum similarity
             if ($similarity >= $minSimilarity) {
@@ -875,7 +888,8 @@ class ABJ_404_Solution_NGramFilter {
 
         // Check if coverage ratio memo has the count
         if ($this->coverageRatioMemo !== null && isset($this->coverageRatioMemo['ngram_count'])) {
-            $this->ngramCountMemo = $this->coverageRatioMemo['ngram_count'];
+            $ngramCountVal = $this->coverageRatioMemo['ngram_count'];
+            $this->ngramCountMemo = is_scalar($ngramCountVal) ? (int)$ngramCountVal : 0;
             return $this->ngramCountMemo;
         }
 
@@ -888,7 +902,8 @@ class ABJ_404_Solution_NGramFilter {
             return $this->ngramCountMemo;
         }
 
-        $this->ngramCountMemo = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+        $countResult = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+        $this->ngramCountMemo = is_scalar($countResult) ? (int)$countResult : 0;
         return $this->ngramCountMemo;
     }
 
@@ -907,11 +922,13 @@ class ABJ_404_Solution_NGramFilter {
     public function getCacheCoverageRatio() {
         // Fast path: return memoized value if available (already validated this request)
         if ($this->coverageRatioMemo !== null) {
-            return (float)$this->coverageRatioMemo['ratio'];
+            $ratioVal = isset($this->coverageRatioMemo['ratio']) ? $this->coverageRatioMemo['ratio'] : 0;
+            return is_scalar($ratioVal) ? (float)$ratioVal : 0.0;
         }
 
         // Get current version (cheap scalar read, no COUNT queries)
-        $currentVersion = (int)get_transient(self::COVERAGE_VERSION_KEY);
+        $versionTransient = get_transient(self::COVERAGE_VERSION_KEY);
+        $currentVersion = is_scalar($versionTransient) ? (int)$versionTransient : 0;
 
         // Check transient with version-based validation
         $cached = get_transient(self::COVERAGE_RATIO_KEY);
@@ -998,30 +1015,36 @@ class ABJ_404_Solution_NGramFilter {
      */
     private function trackNGramUsage($totalInCache, $examined, $candidates, $duration) {
         // Get current stats
-        $stats = get_option('abj404_ngram_usage_stats', [
+        $defaultStats = array(
             'total_queries' => 0,
             'total_entries_examined' => 0,
             'total_candidates_returned' => 0,
             'total_duration_ms' => 0,
             'avg_reduction_percent' => 0,
             'last_reset' => time()
-        ]);
+        );
+        $statsRaw = get_option('abj404_ngram_usage_stats', $defaultStats);
+        /** @var array<string, mixed> $stats */
+        $stats = is_array($statsRaw) ? $statsRaw : $defaultStats;
 
         // Update stats
-        $stats['total_queries']++;
-        $stats['total_entries_examined'] += $examined;
-        $stats['total_candidates_returned'] += $candidates;
-        $stats['total_duration_ms'] += $duration;
+        $stats['total_queries'] = (isset($stats['total_queries']) && is_numeric($stats['total_queries'])) ? (int)$stats['total_queries'] + 1 : 1;
+        $stats['total_entries_examined'] = (isset($stats['total_entries_examined']) && is_numeric($stats['total_entries_examined'])) ? (int)$stats['total_entries_examined'] + $examined : $examined;
+        $stats['total_candidates_returned'] = (isset($stats['total_candidates_returned']) && is_numeric($stats['total_candidates_returned'])) ? (int)$stats['total_candidates_returned'] + $candidates : $candidates;
+        $stats['total_duration_ms'] = (isset($stats['total_duration_ms']) && is_numeric($stats['total_duration_ms'])) ? (float)$stats['total_duration_ms'] + $duration : $duration;
 
         // Calculate average reduction (how much ngrams reduced the search space)
         if ($totalInCache > 0) {
             $reductionPercent = (($totalInCache - $examined) / $totalInCache) * 100;
-            $stats['avg_reduction_percent'] = (($stats['avg_reduction_percent'] * ($stats['total_queries'] - 1)) + $reductionPercent) / $stats['total_queries'];
+            $prevAvgReduction = (isset($stats['avg_reduction_percent']) && is_numeric($stats['avg_reduction_percent'])) ? (float)$stats['avg_reduction_percent'] : 0;
+            $totalQueries = (int)$stats['total_queries'];
+            $stats['avg_reduction_percent'] = (($prevAvgReduction * ($totalQueries - 1)) + $reductionPercent) / $totalQueries;
         }
 
         // Reset stats monthly to avoid unbounded growth
         $monthAgo = time() - (30 * 24 * 60 * 60);
-        if ($stats['last_reset'] < $monthAgo) {
+        $lastReset = (isset($stats['last_reset']) && is_numeric($stats['last_reset'])) ? (int)$stats['last_reset'] : 0;
+        if ($lastReset < $monthAgo) {
             $stats = [
                 'total_queries' => 1,
                 'total_entries_examined' => $examined,
@@ -1041,20 +1064,28 @@ class ABJ_404_Solution_NGramFilter {
      * @return array<string, mixed> Usage statistics
      */
     public function getUsageStats() {
-        $stats = get_option('abj404_ngram_usage_stats', [
+        $defaultStats = array(
             'total_queries' => 0,
             'total_entries_examined' => 0,
             'total_candidates_returned' => 0,
             'total_duration_ms' => 0,
             'avg_reduction_percent' => 0,
             'last_reset' => time()
-        ]);
+        );
+        $statsRaw = get_option('abj404_ngram_usage_stats', $defaultStats);
+        /** @var array<string, mixed> $stats */
+        $stats = is_array($statsRaw) ? $statsRaw : $defaultStats;
+
+        $totalQueries = (isset($stats['total_queries']) && is_numeric($stats['total_queries'])) ? (int)$stats['total_queries'] : 0;
+        $totalExamined = (isset($stats['total_entries_examined']) && is_numeric($stats['total_entries_examined'])) ? (float)$stats['total_entries_examined'] : 0;
+        $totalCandidates = (isset($stats['total_candidates_returned']) && is_numeric($stats['total_candidates_returned'])) ? (float)$stats['total_candidates_returned'] : 0;
+        $totalDuration = (isset($stats['total_duration_ms']) && is_numeric($stats['total_duration_ms'])) ? (float)$stats['total_duration_ms'] : 0;
 
         // Calculate averages
-        if ($stats['total_queries'] > 0) {
-            $stats['avg_examined_per_query'] = round($stats['total_entries_examined'] / $stats['total_queries'], 1);
-            $stats['avg_candidates_per_query'] = round($stats['total_candidates_returned'] / $stats['total_queries'], 1);
-            $stats['avg_duration_ms'] = round($stats['total_duration_ms'] / $stats['total_queries'], 2);
+        if ($totalQueries > 0) {
+            $stats['avg_examined_per_query'] = round($totalExamined / $totalQueries, 1);
+            $stats['avg_candidates_per_query'] = round($totalCandidates / $totalQueries, 1);
+            $stats['avg_duration_ms'] = round($totalDuration / $totalQueries, 2);
         } else {
             $stats['avg_examined_per_query'] = 0;
             $stats['avg_candidates_per_query'] = 0;

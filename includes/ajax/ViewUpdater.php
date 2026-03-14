@@ -139,19 +139,19 @@ class ABJ_404_Solution_ViewUpdater {
 
         // Replace quoted strings (single and double quotes) with placeholders.
         // Note: $wpdb->last_query is a final SQL string and may contain user input values.
-        $out = preg_replace("~'(?:\\\\'|''|[^'])*'~", "?", $out);
-        $out = preg_replace('~"(?:\\\\"|""|[^"])*"~', "?", $out);
+        $out = preg_replace("~'(?:\\\\'|''|[^'])*'~", "?", $out) ?? $out;
+        $out = preg_replace('~"(?:\\\\"|""|[^"])*"~', "?", $out) ?? $out;
 
         // Replace hex literals and numbers.
-        $out = preg_replace('~\\b0x[0-9A-Fa-f]+\\b~', '?', $out);
-        $out = preg_replace('~\\b\\d+(?:\\.\\d+)?\\b~', '?', $out);
+        $out = preg_replace('~\\b0x[0-9A-Fa-f]+\\b~', '?', $out) ?? $out;
+        $out = preg_replace('~\\b\\d+(?:\\.\\d+)?\\b~', '?', $out) ?? $out;
 
         // Collapse long IN (...) / value lists to a single placeholder.
-        $out = preg_replace('~\\(\\s*\\?\\s*(?:,\\s*\\?\\s*)+\\)~', '(?)', $out);
-        $out = preg_replace('~\\bIN\\s*\\(\\?\\)\\b~i', 'IN (?)', $out);
+        $out = preg_replace('~\\(\\s*\\?\\s*(?:,\\s*\\?\\s*)+\\)~', '(?)', $out) ?? $out;
+        $out = preg_replace('~\\bIN\\s*\\(\\?\\)\\b~i', 'IN (?)', $out) ?? $out;
 
         // Normalize whitespace and cap length (shape only).
-        $out = preg_replace('~\\s+~', ' ', trim($out));
+        $out = preg_replace('~\\s+~', ' ', trim($out)) ?? $out;
         if (strlen($out) > 4000) {
             $out = substr($out, 0, 4000) . '…';
         }
@@ -339,6 +339,7 @@ class ABJ_404_Solution_ViewUpdater {
                 $abj404logic->updatePerPageOption($rowsPerPage);
             }
 
+            /** @var ABJ_404_Solution_View $view */
             $view = self::resolveViewInstance($abj404view);
 
             $data = array();

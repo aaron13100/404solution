@@ -83,6 +83,7 @@ class ABJ_404_Solution_Uninstaller {
      */
     private static function deleteTables(object $wpdb, array $preferences): void {
         // Use wpdb prefix directly - Uninstaller must be standalone (no autoloader)
+        /** @var \wpdb $wpdb */
         $prefix = strtolower($wpdb->prefix);
 
         // Delete redirect table if user chose to
@@ -253,17 +254,21 @@ class ABJ_404_Solution_Uninstaller {
         }
 
         $all_plugins = get_plugins();
-        $active_plugins = get_option('active_plugins', array());
+        $active_plugins_raw = get_option('active_plugins', array());
+        $active_plugins = is_array($active_plugins_raw) ? $active_plugins_raw : array();
 
         // Add installed plugins list
         $message .= "\n--- Installed Plugins ---\n";
         if (!empty($all_plugins)) {
             foreach ($all_plugins as $plugin_path => $plugin_data) {
+                if (!is_array($plugin_data)) { continue; }
                 $is_active = in_array($plugin_path, $active_plugins) ? ' (Active)' : ' (Inactive)';
+                $pluginName = isset($plugin_data['Name']) && is_string($plugin_data['Name']) ? $plugin_data['Name'] : 'Unknown';
+                $pluginVersion = isset($plugin_data['Version']) && is_string($plugin_data['Version']) ? $plugin_data['Version'] : '';
                 $message .= sprintf(
                     "%s %s%s\n",
-                    $plugin_data['Name'],
-                    $plugin_data['Version'],
+                    $pluginName,
+                    $pluginVersion,
                     $is_active
                 );
             }
@@ -280,8 +285,9 @@ class ABJ_404_Solution_Uninstaller {
         $headers = array('Content-Type: text/plain; charset=UTF-8');
 
         // Add reply-to if user provided their email
-        if (!empty($preferences['feedback_email']) && is_email($preferences['feedback_email'])) {
-            $headers[] = 'Reply-To: ' . $preferences['feedback_email'];
+        $feedbackEmail = isset($preferences['feedback_email']) && is_string($preferences['feedback_email']) ? $preferences['feedback_email'] : '';
+        if ($feedbackEmail !== '' && is_email($feedbackEmail)) {
+            $headers[] = 'Reply-To: ' . $feedbackEmail;
         }
 
         // Send email (non-blocking, failures won't stop uninstall)

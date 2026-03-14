@@ -180,7 +180,9 @@ if (!function_exists('abj404_shortCodeListener')) {
 	function abj404_shortCodeListener($atts) {
 		abj404_load_textdomain_if_needed();
 	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-	    return ABJ_404_Solution_ShortCode::shortcodePageSuggestions($atts);
+	    /** @var array<string, mixed> $safeAtts */
+	    $safeAtts = is_array($atts) ? $atts : array();
+	    return ABJ_404_Solution_ShortCode::shortcodePageSuggestions($safeAtts);
 	}
 
 	if (!function_exists('abj404_get_required_runtime_files')) {
@@ -329,19 +331,16 @@ if (is_admin()) {
 // ----
 // get the plugin priority to use before adding the template_redirect action.
 $__abj404_options = abj404_get_settings_options();
-$__abj404_template_redirect_priority = absint($__abj404_options['template_redirect_priority'] ?? 9);
+$__abj404_redirect_priority_raw = isset($__abj404_options['template_redirect_priority']) && is_scalar($__abj404_options['template_redirect_priority']) ? $__abj404_options['template_redirect_priority'] : 9;
+$__abj404_template_redirect_priority = absint($__abj404_redirect_priority_raw);
+$__abj404_redirect_all = isset($__abj404_options['redirect_all_requests']) && is_scalar($__abj404_options['redirect_all_requests']) ? (string)$__abj404_options['redirect_all_requests'] : '';
+$__abj404_update_suggest = isset($__abj404_options['update_suggest_url']) && is_scalar($__abj404_options['update_suggest_url']) ? (string)$__abj404_options['update_suggest_url'] : '';
 $GLOBALS['abj404_frontend_runtime_flags'] = array(
-	'redirect_all_requests' => (is_array($__abj404_options) &&
-		array_key_exists('redirect_all_requests', $__abj404_options) &&
-		(string)$__abj404_options['redirect_all_requests'] === '1'),
-	'update_suggest_url' => (is_array($__abj404_options) &&
-		array_key_exists('update_suggest_url', $__abj404_options) &&
-		(string)$__abj404_options['update_suggest_url'] === '1'),
+	'redirect_all_requests' => ($__abj404_redirect_all === '1'),
+	'update_suggest_url' => ($__abj404_update_suggest === '1'),
 );
-$GLOBALS['abj404_plugin_language_override'] = (
-	is_array($__abj404_options) &&
-	!empty($__abj404_options['plugin_language_override'])
-) ? (string)$__abj404_options['plugin_language_override'] : '';
+$__abj404_lang_override = isset($__abj404_options['plugin_language_override']) && is_string($__abj404_options['plugin_language_override']) ? $__abj404_options['plugin_language_override'] : '';
+$GLOBALS['abj404_plugin_language_override'] = $__abj404_lang_override;
 
 add_action('template_redirect', 'abj404_404listener', $__abj404_template_redirect_priority);
 
@@ -535,7 +534,7 @@ function abj404_override_plugin_locale($locale, $domain) {
 		$options = abj404_get_settings_options();
 
 		// Check if language override is set and not empty
-		if (is_array($options) && !empty($options['plugin_language_override'])) {
+		if (is_array($options) && !empty($options['plugin_language_override']) && is_string($options['plugin_language_override'])) {
 			return $options['plugin_language_override'];
 		}
 	}
@@ -636,7 +635,7 @@ if (!function_exists('abj404_get_simulated_db_latency_ms')) {
 			return max(0, min(5000, absint(ABJ404_SIMULATED_DB_LATENCY_MS)));
 		}
 		$value = get_option('abj404_simulated_db_latency_ms', 0);
-		return max(0, min(5000, absint($value)));
+		return max(0, min(5000, absint(is_scalar($value) ? $value : 0)));
 	}
 }
 
