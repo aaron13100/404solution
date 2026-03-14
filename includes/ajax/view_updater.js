@@ -67,6 +67,10 @@ function triggerBackgroundTableRefreshIfEnabled() {
         return;
     }
 
+    var startedText = $config.attr('data-pagination-refresh-started-text') || 'Refreshing data in background\u2026';
+    showRefreshToastStart(startedText);
+    var refreshStartedAt = Date.now();
+
     // Run a detect-only check in the background. Never overwrite the visible table automatically.
     var runRefresh = function() {
         if (isDetectOnlyRefreshInFlight()) {
@@ -78,9 +82,21 @@ function triggerBackgroundTableRefreshIfEnabled() {
             onComplete: function(meta) {
                 var $latestConfig = getRefreshStatusHost();
                 var hasUpdate = !!(meta && meta.hasUpdate);
-                if (hasUpdate) {
-                    var availableText = $latestConfig.attr('data-pagination-refresh-available-text') || 'Refresh available';
-                    showRefreshAvailablePill(availableText, 5000);
+                var finishedText = $latestConfig.attr('data-pagination-refresh-finished-text') || 'Data refreshed';
+                var elapsed = Date.now() - refreshStartedAt;
+                var minimumVisibleMs = 850;
+                var showFinished = function() {
+                    if (hasUpdate) {
+                        var availableText = $latestConfig.attr('data-pagination-refresh-available-text') || 'Refresh available';
+                        showRefreshAvailablePill(availableText, 5000);
+                    }
+                    showRefreshToastComplete(finishedText);
+                    window.setTimeout(hideRefreshToast, 3500);
+                };
+                if (elapsed < minimumVisibleMs) {
+                    window.setTimeout(showFinished, minimumVisibleMs - elapsed);
+                } else {
+                    showFinished();
                 }
                 if (window.abj404BackgroundRefreshState) {
                     window.abj404BackgroundRefreshState.finishedAt = Date.now();
@@ -89,6 +105,7 @@ function triggerBackgroundTableRefreshIfEnabled() {
                 markAutoRefreshCompleted($latestConfig);
             },
             onError: function() {
+                hideRefreshToast();
                 if (window.abj404BackgroundRefreshState) {
                     window.abj404BackgroundRefreshState.lastError = 'background-refresh-failed';
                     window.abj404BackgroundRefreshState.finishedAt = Date.now();
