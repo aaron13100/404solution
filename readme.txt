@@ -5,7 +5,7 @@ Tags: 404, redirect, 301, 302
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.2.1
+Stable tag: 3.2.2
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -241,6 +241,12 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.2.2 (Mar 14, 2026) =
+* FIX: Spell-checker could produce inaccurate match scores on sites with many pages due to an internal data-type mismatch in the large-candidate optimization path.
+* FIX: Resolved PHP 8.5 deprecation warnings ("null as array offset") in the spell-checker matching pipeline.
+* FIX: Eliminated urlencode(null) deprecation warnings on PHP 8.5 when preserving table filter state during redirect edits.
+* Improvement: Comprehensive type-safety hardening across all plugin files to prevent null-related errors on PHP 8.5+ and future PHP 9.0.
 
 = Version 3.2.1 (Mar 2, 2026) =
 * FIX: 404 page suggestions now show category names instead of full URLs for WooCommerce product categories and other custom taxonomies.
