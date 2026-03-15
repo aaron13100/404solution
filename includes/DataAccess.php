@@ -3918,6 +3918,34 @@ class ABJ_404_Solution_DataAccess {
         }
     }
 
+    /**
+     * Remove auto-created redirects whose destination post no longer exists or is not published.
+     *
+     * @return int Number of orphaned redirects deleted.
+     */
+    public function cleanupOrphanedAutoRedirects(): int {
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getOrphanedAutoRedirects.sql");
+        $query = $this->f->doNormalReplacements($query);
+
+        $results = $this->queryAndGetResults($query);
+        $rows = is_array($results['rows']) ? $results['rows'] : [];
+        $deletedCount = 0;
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $id = isset($row['id']) && is_scalar($row['id']) ? (string)$row['id'] : '0';
+            $url = isset($row['url']) && is_string($row['url']) ? $row['url'] : '';
+            $this->logger->debugMessage('Orphaned auto redirect deleted: "' . $url . '" (dest post ' .
+                (isset($row['final_dest']) && is_scalar($row['final_dest']) ? (string)$row['final_dest'] : '?') . ' missing/unpublished).');
+            $this->deleteRedirect($id);
+            $deletedCount++;
+        }
+
+        return $deletedCount;
+    }
+
     /** Helper method to delete old redirects of a specific type.
      * Extracted common logic from deleteOldRedirectsCron() to eliminate duplication.
      *
@@ -4036,7 +4064,10 @@ class ABJ_404_Solution_DataAccess {
             $status_list = ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_REGEX;
             $manualRedirectsCount = $this->deleteOldRedirectsByType($options, $now, 'manual_deletion', $status_list, 'Manual redirect');
         }
-        
+
+        // Remove orphaned auto redirects (destination post deleted/unpublished)
+        $orphanedCount = $this->cleanupOrphanedAutoRedirects();
+
         //Clean up old logs. prepare the query. get the disk usage in bytes. compare to the max requested
         // disk usage (MB to bytes). delete 1k rows at a time until the size is acceptable.
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
@@ -4062,11 +4093,12 @@ class ABJ_404_Solution_DataAccess {
         $renamed = $abj404dao->limitDebugFileSize();
         $renamed = $renamed ? "true" : "false";
         
-        $message = "deleteOldRedirectsCron. Old captured URLs removed: " . 
+        $message = "deleteOldRedirectsCron. Old captured URLs removed: " .
                 $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
-                ", Old manual redirects removed: " . $manualRedirectsCount . 
-                ", Old log lines removed: " . $oldLogRowsDeleted . ", New log size: " . $logSizeMB . "MB" . 
-                ", Duplicate rows deleted: " . $duplicateRowsDeleted . ", Debug file size limited: " . 
+                ", Old manual redirects removed: " . $manualRedirectsCount .
+                ", Orphaned auto redirects removed: " . $orphanedCount .
+                ", Old log lines removed: " . $oldLogRowsDeleted . ", New log size: " . $logSizeMB . "MB" .
+                ", Duplicate rows deleted: " . $duplicateRowsDeleted . ", Debug file size limited: " .
                 $renamed;
         
         // only send a 404 notification email during daily maintenance.
