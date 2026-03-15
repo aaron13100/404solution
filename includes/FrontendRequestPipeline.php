@@ -290,6 +290,11 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                     continue;
                 }
 
+                if ($this->isExcluded($result, $request->getOptions())) {
+                    $this->logger->debugMessage('Match excluded: ' . $engine->getName() . ' id=' . $result->getId());
+                    continue;
+                }
+
                 $this->logger->debugMessage('Engine matched: ' . $engine->getName());
                 return $result;
             } catch (\Throwable $e) {
@@ -299,6 +304,75 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         }
 
         return null;
+    }
+
+    /**
+     * Check whether a match result should be excluded from redirect suggestions.
+     *
+     * Checks post meta (_abj404_exclude), term meta, and the legacy excludePages[] option.
+     * External and Home redirect types are never excluded.
+     *
+     * @param ABJ_404_Solution_MatchResult $result
+     * @param array<string, mixed> $options
+     * @return bool
+     */
+    private function isExcluded(ABJ_404_Solution_MatchResult $result, array $options): bool {
+        $type = $result->getType();
+        $id = $result->getId();
+
+        $typeInt = is_numeric($type) ? (int)$type : 0;
+        $typePost = defined('ABJ404_TYPE_POST') ? (int)ABJ404_TYPE_POST : 1;
+        $typeCat = defined('ABJ404_TYPE_CAT') ? (int)ABJ404_TYPE_CAT : 2;
+        $typeTag = defined('ABJ404_TYPE_TAG') ? (int)ABJ404_TYPE_TAG : 3;
+        $typeExternal = defined('ABJ404_TYPE_EXTERNAL') ? (int)ABJ404_TYPE_EXTERNAL : 4;
+        $typeHome = defined('ABJ404_TYPE_HOME') ? (int)ABJ404_TYPE_HOME : 5;
+
+        // External and Home types are never excluded.
+        if ($typeInt === $typeExternal || $typeInt === $typeHome) {
+            return false;
+        }
+
+        // Empty or non-numeric ID — nothing to check.
+        if ($id === '' || !is_numeric($id)) {
+            return false;
+        }
+
+        $idInt = (int)$id;
+
+        // Check per-item meta.
+        if ($typeInt === $typePost) {
+            $meta = $this->callWpFunction('get_post_meta', [$idInt, '_abj404_exclude', true], '');
+            if ($meta === '1') {
+                return true;
+            }
+        } elseif ($typeInt === $typeCat || $typeInt === $typeTag) {
+            $meta = $this->callWpFunction('get_term_meta', [$idInt, '_abj404_exclude', true], '');
+            if ($meta === '1') {
+                return true;
+            }
+        }
+
+        // Check legacy excludePages[] option (covers ALL engines, not just Spelling).
+        $excludePagesRaw = isset($options['excludePages[]']) ? $options['excludePages[]'] : '';
+        $excludePagesJson = is_string($excludePagesRaw) ? $excludePagesRaw : '';
+        if (trim($excludePagesJson) !== '') {
+            $excludePages = json_decode($excludePagesJson);
+            if (!is_array($excludePages)) {
+                $excludePages = [$excludePages];
+            }
+            $key = $id . '|' . $type;
+            foreach ($excludePages as $entry) {
+                if (!is_string($entry) && !is_scalar($entry)) {
+                    continue;
+                }
+                $parts = explode("|\\|", (string)$entry);
+                if ($parts[0] === $key) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -2497,3 +2497,12 @@ msgstr "تم تجاوز حصة استعلامات قاعدة بياناتك. ع�
 
 msgid "Show database error details"
 msgstr "عرض تفاصيل خطأ قاعدة البيانات"
+
+msgid "Exclude from 404 redirect suggestions"
+msgstr "استبعاد من اقتراحات إعادة التوجيه 404"
+
+msgid "When checked, this post will not be suggested as a redirect target for 404 errors."
+msgstr "عند التحديد، لن يتم اقتراح هذا المقال كوجهة إعادة توجيه لأخطاء 404."
+
+msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
+msgstr "عند التحديد، لن يتم اقتراح هذا المصطلح كوجهة إعادة توجيه لأخطاء 404."

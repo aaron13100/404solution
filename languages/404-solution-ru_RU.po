@@ -2489,3 +2489,12 @@ msgstr "Квота запросов к вашей базе данных была
 
 msgid "Show database error details"
 msgstr "Показать подробности ошибки базы данных"
+
+msgid "Exclude from 404 redirect suggestions"
+msgstr "Исключить из предложений перенаправления 404"
+
+msgid "When checked, this post will not be suggested as a redirect target for 404 errors."
+msgstr "Если отмечено, эта запись не будет предлагаться в качестве цели перенаправления для ошибок 404."
+
+msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
+msgstr "Если отмечено, этот термин не будет предлагаться в качестве цели перенаправления для ошибок 404."

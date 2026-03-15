@@ -2482,3 +2482,12 @@ msgstr "Din databasfrågekontot har överskridits. Det återställs vanligtvis a
 
 msgid "Show database error details"
 msgstr "Visa databasfeldetaljer"
+
+msgid "Exclude from 404 redirect suggestions"
+msgstr "Exkludera från 404-omdirigeringsförslag"
+
+msgid "When checked, this post will not be suggested as a redirect target for 404 errors."
+msgstr "Om markerad kommer detta inlägg inte att föreslås som omdirigeringsmål för 404-fel."
+
+msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
+msgstr "Om markerad kommer denna term inte att föreslås som omdirigeringsmål för 404-fel."

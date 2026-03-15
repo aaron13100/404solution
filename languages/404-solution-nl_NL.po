@@ -2484,3 +2484,12 @@ msgstr "Uw databasequeryquotum is overschreden. Dit wordt meestal automatisch he
 
 msgid "Show database error details"
 msgstr "Databasefoutdetails weergeven"
+
+msgid "Exclude from 404 redirect suggestions"
+msgstr "Uitsluiten van 404-omleidingssuggesties"
+
+msgid "When checked, this post will not be suggested as a redirect target for 404 errors."
+msgstr "Indien aangevinkt, wordt dit bericht niet voorgesteld als omleidingsdoel voor 404-fouten."
+
+msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
+msgstr "Indien aangevinkt, wordt deze term niet voorgesteld als omleidingsdoel voor 404-fouten."

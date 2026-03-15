@@ -2477,3 +2477,12 @@ msgstr "Le quota de requêtes de votre base de données a été dépassé. Il se
 
 msgid "Show database error details"
 msgstr "Afficher les détails de l'erreur de base de données"
+
+msgid "Exclude from 404 redirect suggestions"
+msgstr "Exclure des suggestions de redirection 404"
+
+msgid "When checked, this post will not be suggested as a redirect target for 404 errors."
+msgstr "Lorsque cette option est cochée, cet article ne sera pas suggéré comme cible de redirection pour les erreurs 404."
+
+msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
+msgstr "Lorsque cette option est cochée, ce terme ne sera pas suggéré comme cible de redirection pour les erreurs 404."

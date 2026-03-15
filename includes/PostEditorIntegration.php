@@ -45,10 +45,14 @@ class ABJ_404_Solution_PostEditorIntegration {
 
         // Classic Editor meta box
         add_action('add_meta_boxes', array($me, 'addMetaBox'));
+        add_action('save_post', array($me, 'saveExclusionMeta'));
 
         // Gutenberg sidebar panel
         add_action('init', array($me, 'registerPostMeta'));
         add_action('enqueue_block_editor_assets', array($me, 'enqueueGutenbergScript'));
+
+        // Term meta for exclusion on category/tag edit screens
+        add_action('init', array($me, 'registerTermMeta'));
     }
 
     /**
@@ -197,6 +201,9 @@ class ABJ_404_Solution_PostEditorIntegration {
         $default = $this->getDefaultRedirectSetting();
         $checked = $default ? 'checked' : '';
 
+        $excludeMeta = get_post_meta($post->ID, '_abj404_exclude', true);
+        $excludeChecked = ($excludeMeta === '1') ? 'checked' : '';
+
         wp_nonce_field('abj404_meta_box', 'abj404_meta_box_nonce');
         ?>
         <p>
@@ -207,6 +214,16 @@ class ABJ_404_Solution_PostEditorIntegration {
         </p>
         <p class="description">
             <?php echo esc_html__('If you change the permalink/slug, a redirect will be created from the old URL to the new one.', '404-solution'); ?>
+        </p>
+        <hr>
+        <p>
+            <label>
+                <input type="checkbox" name="abj404_exclude" value="1" <?php echo $excludeChecked; ?>>
+                <?php echo esc_html__('Exclude from 404 redirect suggestions', '404-solution'); ?>
+            </label>
+        </p>
+        <p class="description">
+            <?php echo esc_html__('When checked, this post will not be suggested as a redirect target for 404 errors.', '404-solution'); ?>
         </p>
         <?php
     }
@@ -230,6 +247,27 @@ class ABJ_404_Solution_PostEditorIntegration {
                 return $value === '1' ? '1' : ($value === '0' ? '0' : '');
             }
         ));
+
+        register_post_meta('', '_abj404_exclude', array(
+            'show_in_rest' => true,
+            'single' => true,
+            'type' => 'string',
+            'default' => '',
+            'auth_callback' => function() {
+                return current_user_can('edit_posts');
+            },
+            'sanitize_callback' => array(__CLASS__, 'sanitizeExclusionMeta'),
+        ));
+    }
+
+    /**
+     * Sanitize the exclusion meta value: only '1' is truthy, everything else becomes ''.
+     *
+     * @param mixed $value
+     * @return string
+     */
+    public static function sanitizeExclusionMeta($value) {
+        return $value === '1' ? '1' : '';
     }
 
     /**
@@ -257,8 +295,107 @@ class ABJ_404_Solution_PostEditorIntegration {
             'i18n' => array(
                 'checkboxLabel' => __('Create redirect from old URL to new URL', '404-solution'),
                 'slugChangedNotice' => __('Slug changed:', '404-solution'),
+                'excludeLabel' => __('Exclude from 404 redirect suggestions', '404-solution'),
+                'excludeHelp' => __('When checked, this post will not be suggested as a redirect target for 404 errors.', '404-solution'),
             )
         ));
+    }
+
+    // ==================== Post Exclusion Save ====================
+
+    /**
+     * Save _abj404_exclude post meta on post save.
+     *
+     * @param int $post_id
+     * @return void
+     */
+    public function saveExclusionMeta($post_id) {
+        if (!isset($_POST['abj404_meta_box_nonce'])) {
+            return;
+        }
+        if (!wp_verify_nonce($_POST['abj404_meta_box_nonce'], 'abj404_meta_box')) {
+            return;
+        }
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        $value = isset($_POST['abj404_exclude']) && $_POST['abj404_exclude'] === '1' ? '1' : '';
+        update_post_meta($post_id, '_abj404_exclude', $value);
+    }
+
+    // ==================== Term Meta Integration ====================
+
+    /**
+     * Register term meta and hook edit/save for all public taxonomies.
+     *
+     * @return void
+     */
+    public function registerTermMeta() {
+        $taxonomies = get_taxonomies(array('public' => true), 'names');
+        foreach ($taxonomies as $taxonomy) {
+            register_term_meta($taxonomy, '_abj404_exclude', array(
+                'show_in_rest' => true,
+                'single' => true,
+                'type' => 'string',
+                'default' => '',
+                'sanitize_callback' => array(__CLASS__, 'sanitizeExclusionMeta'),
+            ));
+
+            add_action("{$taxonomy}_edit_form_fields", array($this, 'renderTermExclusionField'), 10, 2);
+            add_action("edited_{$taxonomy}", array($this, 'saveTermExclusionMeta'));
+            add_action("created_{$taxonomy}", array($this, 'saveTermExclusionMeta'));
+        }
+    }
+
+    /**
+     * Render the exclusion checkbox on the term edit form.
+     *
+     * @param \WP_Term $term
+     * @param string $taxonomy
+     * @return void
+     */
+    public function renderTermExclusionField($term, $taxonomy = '') {
+        $value = get_term_meta($term->term_id, '_abj404_exclude', true);
+        $checked = ($value === '1') ? 'checked' : '';
+        wp_nonce_field('abj404_term_exclude', 'abj404_term_exclude_nonce');
+        ?>
+        <tr class="form-field">
+            <th scope="row">
+                <label for="abj404_exclude"><?php echo esc_html__('404 Solution', '404-solution'); ?></label>
+            </th>
+            <td>
+                <label>
+                    <input type="checkbox" name="abj404_exclude" id="abj404_exclude" value="1" <?php echo $checked; ?>>
+                    <?php echo esc_html__('Exclude from 404 redirect suggestions', '404-solution'); ?>
+                </label>
+                <p class="description">
+                    <?php echo esc_html__('When checked, this term will not be suggested as a redirect target for 404 errors.', '404-solution'); ?>
+                </p>
+            </td>
+        </tr>
+        <?php
+    }
+
+    /**
+     * Save term exclusion meta on term create/edit.
+     *
+     * @param int $term_id
+     * @return void
+     */
+    public function saveTermExclusionMeta($term_id) {
+        if (!isset($_POST['abj404_term_exclude_nonce'])) {
+            return;
+        }
+        if (!wp_verify_nonce($_POST['abj404_term_exclude_nonce'], 'abj404_term_exclude')) {
+            return;
+        }
+
+        $value = isset($_POST['abj404_exclude']) && $_POST['abj404_exclude'] === '1' ? '1' : '';
+        update_term_meta($term_id, '_abj404_exclude', $value);
     }
 
     // ==================== Save Handler Helper ====================

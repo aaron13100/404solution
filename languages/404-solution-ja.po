@@ -2487,3 +2487,12 @@ msgstr "データベースのクエリクォータを超過しました。通常
 
 msgid "Show database error details"
 msgstr "データベースエラーの詳細を表示"
+
+msgid "Exclude from 404 redirect suggestions"
+msgstr "404リダイレクト候補から除外する"
+
+msgid "When checked, this post will not be suggested as a redirect target for 404 errors."
+msgstr "チェックすると、この投稿は404エラーのリダイレクト先として提案されなくなります。"
+
+msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
+msgstr "チェックすると、このタームは404エラーのリダイレクト先として提案されなくなります。"

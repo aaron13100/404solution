@@ -2484,3 +2484,12 @@ msgstr "A cota de consultas do seu banco de dados foi excedida. Geralmente é re
 
 msgid "Show database error details"
 msgstr "Mostrar detalhes do erro do banco de dados"
+
+msgid "Exclude from 404 redirect suggestions"
+msgstr "Excluir das sugestões de redirecionamento 404"
+
+msgid "When checked, this post will not be suggested as a redirect target for 404 errors."
+msgstr "Quando marcado, este post não será sugerido como destino de redirecionamento para erros 404."
+
+msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
+msgstr "Quando marcado, este termo não será sugerido como destino de redirecionamento para erros 404."

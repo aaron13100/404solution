@@ -140,9 +140,68 @@
         );
     }
 
-    // Register the plugin
+    /**
+     * Exclusion toggle component - always visible on published posts.
+     * Allows excluding this post from 404 redirect suggestions.
+     */
+    function ABJ404ExclusionPanel() {
+        var postData = useSelect(function(select) {
+            var editor = select('core/editor');
+            return {
+                postStatus: editor.getEditedPostAttribute('status'),
+                meta: editor.getEditedPostAttribute('meta') || {},
+                isNewPost: editor.isEditedPostNew()
+            };
+        }, []);
+
+        var editPost = useDispatch('core/editor').editPost;
+
+        // Only show on published posts
+        if (postData.postStatus !== 'publish' || postData.isNewPost) {
+            return null;
+        }
+
+        var excludeValue = postData.meta._abj404_exclude;
+        var isExcluded = excludeValue === '1';
+
+        function onExclusionChange(newValue) {
+            editPost({
+                meta: { _abj404_exclude: newValue ? '1' : '' }
+            });
+        }
+
+        return el(
+            PluginPostStatusInfo,
+            {
+                className: 'abj404-exclusion-notice'
+            },
+            el('div', {
+                style: {
+                    width: '100%',
+                    padding: '8px 0',
+                    borderTop: '1px solid #ddd',
+                    marginTop: '4px'
+                }
+            },
+                el(CheckboxControl, {
+                    label: settings.i18n.excludeLabel || 'Exclude from 404 redirect suggestions',
+                    help: settings.i18n.excludeHelp || 'When checked, this post will not be suggested as a redirect target for 404 errors.',
+                    checked: isExcluded,
+                    onChange: onExclusionChange,
+                    __nextHasNoMarginBottom: true
+                })
+            )
+        );
+    }
+
+    // Register the plugins
     registerPlugin('abj404-redirect', {
         render: ABJ404RedirectPanel,
+        icon: null
+    });
+
+    registerPlugin('abj404-exclusion', {
+        render: ABJ404ExclusionPanel,
         icon: null
     });
 
