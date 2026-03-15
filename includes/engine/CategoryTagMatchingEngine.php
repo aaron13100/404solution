@@ -299,7 +299,7 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
      */
     private function extractKeywords(string $slug): array {
         $decoded = rawurldecode($slug);
-        $normalized = preg_replace('/[-_~.]+/', ' ', $decoded);
+        $normalized = preg_replace('/[-_~.\/]+/', ' ', $decoded);
         if (!is_string($normalized)) {
             return [];
         }
