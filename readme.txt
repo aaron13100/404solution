@@ -1,7 +1,7 @@
 === 404 Solution ===
 Contributors: aaron13100
 Website: https://www.ajexperience.com/404-solution/
-Tags: 404, redirect, 301, 302
+Tags: 404, redirect, auto redirect, broken links, similar post
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
@@ -30,10 +30,17 @@ When a visitor hits a broken link like `/prodcut/awesome-item` (typo), most plug
 = Core Features =
 
 * **Automatic intelligent redirects** based on the best possible match for the URL
+* **7-engine matching pipeline** — slug matching, URL typo correction, title keywords, category/tag path matching, content keywords, spelling, and archive fallback
+* **Title keyword matching** — finds posts whose title words appear in the broken URL
+* **Content keyword matching** — searches post body text for URL keywords
+* **Category/tag matching** with hierarchical path resolution (e.g. `/shop/electronics` maps to the right category)
+* **URL typo correction** — strips `.html`, `.php`, trailing numbers, and common suffixes to recover the real slug
+* **Post type archive fallback** — when nothing else matches, redirects to the appropriate archive page
+* **Per-engine score thresholds** — fine-tune how aggressive each matching strategy is
 * **404 error logging** with detailed visitor data and referrer information
 * **Manual redirect creation** for specific URLs to any existing page
 * **Page suggestions shortcode** to display matches on custom 404 pages
-* **Automatic cleanup** removes redirects when URLs match new pages or are no longer used
+* **Automatic cleanup** removes redirects when URLs match new pages, destinations are deleted, or redirects are no longer used
 * **Regular expression support** for advanced redirect patterns
 * **Debug logging** to troubleshoot redirect behavior
 * **Performance optimized** for sites with 10,000+ pages
@@ -42,8 +49,8 @@ When a visitor hits a broken link like `/prodcut/awesome-item` (typo), most plug
 = How It Works =
 
 1. Visitor hits a broken link (404 error)
-2. 404 Solution analyzes the URL and compares it to all your existing pages
-3. Intelligent matching finds the closest match using spell-checking algorithms
+2. 404 Solution analyzes the URL and runs it through a 7-engine matching pipeline: slug matching, URL typo fixing, title keywords, category/tag path matching, content keywords, spelling similarity, and archive fallback
+3. The first engine to find a confident match wins — each engine has its own tunable score threshold
 4. Visitor is automatically redirected to the correct page
 5. You can review all 404s and create custom redirects as needed
 
@@ -102,6 +109,12 @@ When a visitor hits a broken link like `/prodcut/awesome-item` (typo), most plug
 
 **404 to 301** is simpler but provides a worse user experience. **404 Solution** is smarter and keeps visitors engaged.
 
+= How is this different from WP 404 Auto Redirect to Similar Post? =
+
+**WP 404 Auto Redirect to Similar Post** uses a single matching approach. **404 Solution** runs a 7-engine pipeline — slug matching, URL typo correction, title keywords, category/tag paths, content keywords, spelling similarity, and archive fallback — so it finds the right page in more situations.
+
+404 Solution also gives you per-engine score thresholds, per-post/per-term exclusion controls, debug logging, and automatic cleanup of orphaned redirects.
+
 = Will this slow down my site? =
 
 No, 404 Solution is highly optimized and has minimal performance impact for most sites. The plugin uses:
@@ -127,14 +140,17 @@ When products are renamed or URLs change, 404 Solution automatically redirects o
 
 = How does the intelligent matching work? =
 
-404 Solution uses multiple algorithms to find the best match:
+404 Solution runs the broken URL through a 7-engine pipeline, in order:
 
-1. **Spell-checking** – Uses Levenshtein distance to find pages with similar spelling
-2. **N-gram similarity** – Compares character sequences to find similar URLs
-3. **Word matching** – Identifies pages with similar words in the URL
-4. **URL structure** – Considers the structure and length of URLs
+1. **Slug matching** – Looks for an existing page whose slug is an exact or near-exact match
+2. **URL typo correction** – Strips common suffixes (.html, .php, trailing numbers) and retries
+3. **Title keyword matching** – Finds posts whose title words appear in the broken URL
+4. **Category/tag matching** – Resolves hierarchical paths like `/shop/electronics` to the right taxonomy term
+5. **Content keyword matching** – Searches post body text for keywords from the URL
+6. **Spelling similarity** – Uses Levenshtein distance and N-gram scoring to find the closest URL
+7. **Archive fallback** – Redirects to the post type archive when no single-post match is found
 
-These algorithms work together to find the most likely page the visitor intended to reach.
+The first engine to find a match above its score threshold wins. Each engine threshold is independently tunable.
 
 = Will it redirect existing pages by mistake? =
 
