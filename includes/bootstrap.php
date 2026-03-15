@@ -139,6 +139,39 @@ function abj_404_solution_init_services() {
         );
     });
 
+    // =========================================================================
+    // Matching Engines
+    // =========================================================================
+
+    /**
+     * Slug matching engine - exact slug lookup via SpellChecker.
+     * Dependencies: spell_checker
+     */
+    $container->set('engine_slug', function($c) {
+        return new ABJ_404_Solution_SlugMatchingEngine($c->get('spell_checker'));
+    });
+
+    /**
+     * Spelling matching engine - Levenshtein/N-gram matching via SpellChecker.
+     * Dependencies: spell_checker
+     */
+    $container->set('engine_spelling', function($c) {
+        return new ABJ_404_Solution_SpellingMatchingEngine($c->get('spell_checker'));
+    });
+
+    /**
+     * Ordered list of matching engines for the frontend pipeline.
+     * Filterable via 'abj404_matching_engines' to add/remove/reorder engines.
+     */
+    $container->set('matching_engines', function($c) {
+        $engines = [$c->get('engine_slug'), $c->get('engine_spelling')];
+        if (function_exists('apply_filters')) {
+            $filtered = apply_filters('abj404_matching_engines', $engines);
+            $engines = is_array($filtered) ? $filtered : [];
+        }
+        return $engines;
+    });
+
     /**
      * WordPress connector - interfaces with WordPress core APIs.
      * Dependencies: plugin_logic, data_access, logging, functions, spell_checker

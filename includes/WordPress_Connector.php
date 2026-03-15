@@ -61,12 +61,28 @@ class ABJ_404_Solution_WordPress_Connector {
 			require_once dirname(__FILE__) . '/FrontendRequestPipeline.php';
 		}
 
+		$matchingEngines = [];
+		if (class_exists('ABJ_404_Solution_ServiceContainer')) {
+			try {
+				$container = ABJ_404_Solution_ServiceContainer::getInstance();
+				if ($container->has('matching_engines')) {
+					$engines = $container->get('matching_engines');
+					if (is_array($engines)) {
+						$matchingEngines = $engines;
+					}
+				}
+			} catch (\Throwable $e) {
+				// Fall back to empty engines; pipeline works without them.
+			}
+		}
+
 		$this->frontendPipeline = new ABJ_404_Solution_FrontendRequestPipeline(
 			$this->logic,
 			$this->dao,
 			$this->logger,
 			$this->f,
-			$this->spellChecker
+			$this->spellChecker,
+			$matchingEngines
 		);
 		return $this->frontendPipeline;
 	}

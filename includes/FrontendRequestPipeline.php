@@ -26,19 +26,24 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     /** @var ABJ_404_Solution_SpellChecker */
     private $spellChecker;
 
+    /** @var array<int, mixed> Engines from apply_filters — may contain non-engine items */
+    private $matchingEngines;
+
     /**
      * @param ABJ_404_Solution_PluginLogic $pluginLogic
      * @param ABJ_404_Solution_DataAccess $dataAccess
      * @param ABJ_404_Solution_Logging $logging
      * @param ABJ_404_Solution_Functions $functions
      * @param ABJ_404_Solution_SpellChecker $spellChecker
+     * @param array<int, mixed> $matchingEngines
      */
-    function __construct($pluginLogic, $dataAccess, $logging, $functions, $spellChecker) {
+    function __construct($pluginLogic, $dataAccess, $logging, $functions, $spellChecker, array $matchingEngines = []) {
         $this->logic = $pluginLogic;
         $this->dao = $dataAccess;
         $this->logger = $logging;
         $this->f = $functions;
         $this->spellChecker = $spellChecker;
+        $this->matchingEngines = $matchingEngines;
     }
 
     /**
@@ -168,16 +173,13 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $autoRedirectsAreOn = !array_key_exists('auto_redirects', $options) || $options['auto_redirects'] == '1';
 
             if ($autoRedirectsAreOn) {
-                $slugPermalink = $this->spellChecker->getPermalinkUsingSlug($urlSlugOnly);
-                if (!empty($slugPermalink)) {
-                    $slugRedirectType = isset($slugPermalink['type']) && is_scalar($slugPermalink['type']) ? (string)$slugPermalink['type'] : '';
-                    $finalDest = isset($slugPermalink['id']) && is_scalar($slugPermalink['id']) ? (string)$slugPermalink['id'] : '';
+                $matchRequest = new ABJ_404_Solution_MatchRequest($requestedURL, $urlSlugOnly, $options);
+                $matchResult = $this->runMatchingEngines($matchRequest);
+                if ($matchResult !== null) {
                     $defaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '';
-                    $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO, $slugRedirectType, $finalDest, $defaultRedirect, 0);
-
-                    $slugLink = isset($slugPermalink['link']) && is_string($slugPermalink['link']) ? $slugPermalink['link'] : '';
-                    $this->dao->logRedirectHit($requestedURL, $slugLink, 'exact slug');
-                    $this->logic->forceRedirect(esc_url($slugLink), (int)$defaultRedirect);
+                    $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO, $matchResult->getType(), $matchResult->getId(), $defaultRedirect, 0);
+                    $this->dao->logRedirectHit($requestedURL, $matchResult->getLink(), $matchResult->getEngineName());
+                    $this->logic->forceRedirect(esc_url($matchResult->getLink()), (int)$defaultRedirect);
                     exit;
                 }
             }
@@ -187,21 +189,6 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 $this->emitBenchmarkHeadersIfEnabled();
                 $this->logic->sendTo404Page($requestedURL, 'Do not create redirects per the options.', true, $options);
                 return;
-            }
-
-            if (!$this->shouldSkipSpellingLookup($urlSlugOnly)) {
-                $permalink = $this->spellChecker->getPermalinkUsingSpelling($urlSlugOnly, $requestedURL, $options);
-                if (!empty($permalink)) {
-                    $spellRedirectType = isset($permalink['type']) && is_scalar($permalink['type']) ? (string)$permalink['type'] : '';
-                    $permFinalDest = isset($permalink['id']) && is_scalar($permalink['id']) ? (string)$permalink['id'] : '';
-                    $permDefaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '';
-                    $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO, $spellRedirectType, $permFinalDest, $permDefaultRedirect, 0);
-
-                    $permLink = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
-                    $this->dao->logRedirectHit($requestedURL, $permLink, 'spell check');
-                    $this->logic->forceRedirect(esc_url($permLink), (int)$permDefaultRedirect);
-                    exit;
-                }
             }
         } else {
             if ($this->callWpFunction('is_single', array(), false) || $this->callWpFunction('is_page', array(), false)) {
@@ -272,39 +259,46 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     }
 
     /**
-     * Skip expensive spelling lookup for URL shapes that are very unlikely to be useful typo-corrections.
+     * Iterate registered matching engines in order. First non-null result wins.
      *
-     * @param string $urlSlugOnly
-     * @return bool
+     * @param ABJ_404_Solution_MatchRequest $request
+     * @return ABJ_404_Solution_MatchResult|null
      */
-    private function shouldSkipSpellingLookup($urlSlugOnly) {
-        if (!is_string($urlSlugOnly) || $urlSlugOnly === '') {
-            return true;
+    private function runMatchingEngines(ABJ_404_Solution_MatchRequest $request): ?ABJ_404_Solution_MatchResult {
+        foreach ($this->matchingEngines as $engine) {
+            if (!($engine instanceof ABJ_404_Solution_MatchingEngine)) {
+                $this->logger->warn('Matching engine is not an instance of ABJ_404_Solution_MatchingEngine: ' .
+                    (is_object($engine) ? get_class($engine) : gettype($engine)));
+                continue;
+            }
+
+            try {
+                if (!$engine->shouldRun($request)) {
+                    $this->logger->debugMessage('Engine skipped: ' . $engine->getName());
+                    continue;
+                }
+
+                $result = $engine->match($request);
+
+                if ($result === null) {
+                    $this->logger->debugMessage('Engine returned no match: ' . $engine->getName());
+                    continue;
+                }
+
+                if ($result->getLink() === '') {
+                    $this->logger->debugMessage('Engine returned empty link, skipping: ' . $engine->getName());
+                    continue;
+                }
+
+                $this->logger->debugMessage('Engine matched: ' . $engine->getName());
+                return $result;
+            } catch (\Throwable $e) {
+                $this->logger->warn('Matching engine error (' . $engine->getName() . '): ' . $e->getMessage());
+                continue;
+            }
         }
 
-        $segments = array_values(array_filter(explode('/', $urlSlugOnly)));
-        if (count($segments) === 0) {
-            return true;
-        }
-
-        $lastSegment = (string)end($segments);
-        $segmentLength = strlen($lastSegment);
-
-        // Long tokenized slugs with many separators/numeric chunks are usually tracking or synthetic IDs.
-        if ($segmentLength > 80) {
-            return true;
-        }
-        if (substr_count($lastSegment, '-') >= 6) {
-            return true;
-        }
-        if (preg_match('/\d{4,}/', $lastSegment)) {
-            return true;
-        }
-        if (!preg_match('/[a-zA-Z]/', $lastSegment)) {
-            return true;
-        }
-
-        return false;
+        return null;
     }
 
     /**
