@@ -20,7 +20,6 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
-
 msgid "404 Solution - Deactivation Options"
 msgstr "404 Solution - Deactiveringsopties"
 
@@ -314,7 +313,6 @@ msgstr "Automatische omleidingen verwijderen na"
 
 msgid "Auto Redirects"
 msgstr "Automatische omleidingen"
-
 
 msgid "Automatic 301 Redirects"
 msgstr "Automatische 301-omleidingen"
@@ -1022,7 +1020,6 @@ msgstr "Instellingen opslaan..."
 msgid "Section filters"
 msgstr "Sectiefilters"
 
-
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
 msgstr "Zoekmachine-user agents horen hier niet thuis, zodat ze worden omgeleid wanneer de slug-structuur verandert."
 
@@ -1041,13 +1038,8 @@ msgstr "Speciaal"
 msgid "Stats"
 msgstr "Statistieken"
 
-#: includes/html/debugInterstitial.html
-msgid "Status"
-msgstr "Status ·"
-
 msgid "Suggestions"
 msgstr "Suggesties"
-
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "Ondersteunde formaten zijn: <B>from_url,status,type,to_url,wp_type</B>"
@@ -1530,7 +1522,6 @@ msgstr "Help de plugin te verbeteren (Optioneel)"
 
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "Deel waarom u deactiveert. Uw feedback helpt ons te verbeteren."
-
 
 msgid "Email Feedback & Deactivate"
 msgstr "Feedback verzenden en deactiveren"
@@ -2052,7 +2043,6 @@ msgstr "Visit URL ·"
 msgid "This page doesn't exist or is not published so the redirect won't work."
 msgstr "This page doesn't exist or is not published so the redirect won't work. ·"
 
-
 #: includes/DataAccess.php
 msgid "Just now"
 msgstr "Just now ·"
@@ -2079,7 +2069,6 @@ msgstr "Vernieuwing bezig"
 #: includes/View.php
 msgid "Refresh paused"
 msgstr "Vernieuwing gepauzeerd"
-
 
 #: includes/WordPress_Connector.php
 msgid "second"
@@ -2251,7 +2240,6 @@ msgstr "data-pagination-current-paged"
 msgid "data-pagination-current-logsid"
 msgstr "data-pagination-current-logsid"
 
-
 #: includes/View.php
 msgid "Select all"
 msgstr "Alles selecteren"
@@ -2267,7 +2255,6 @@ msgstr "Minimale overeenkomstkwaliteit vereisen"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Toon alleen suggesties die nauw overeenkomen met de gevraagde URL. Dit filtert zwakke overeenkomsten uit die bezoekers kunnen verwarren."
-
 
 msgid "404 Solution Logs"
 msgstr "404 Solution-logboeken"
@@ -2522,27 +2509,3 @@ msgstr "Overschrijving voor de inhoudszoekmachine (leeg neemt de globale score h
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Fout: de scoredrempel per engine moet leeg zijn of een getal tussen 0 en 99"
-
-#: includes/html/debugInterstitial.html
-msgid "404 Debug Console"
-msgstr "404 Foutopsporingsconsole"
-
-#: includes/html/debugInterstitial.html
-msgid "Engine"
-msgstr "Zoekmachine"
-
-#: includes/html/debugInterstitial.html
-msgid "Score"
-msgstr "Resultaat"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Title"
-msgstr "Overeenkomsttitel"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Link"
-msgstr "Overeenkomstlink"
-
-#: includes/html/debugInterstitial.html
-msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
-msgstr "Deze pagina is alleen zichtbaar voor pluginbeheerders wanneer de debugmodus is ingeschakeld. Gewone bezoekers zien de normale omleiding."

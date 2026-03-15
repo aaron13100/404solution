@@ -20,7 +20,6 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
-
 msgid "404 Solution - Deactivation Options"
 msgstr "404 Solution - Opzioni di disattivazione"
 
@@ -314,7 +313,6 @@ msgstr "Elimina redirect automatici dopo"
 
 msgid "Auto Redirects"
 msgstr "Redirect automatici"
-
 
 msgid "Automatic 301 Redirects"
 msgstr "Redirect 301 automatici"
@@ -1022,7 +1020,6 @@ msgstr "Salvataggio delle impostazioni..."
 msgid "Section filters"
 msgstr "Filtri sezione"
 
-
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
 msgstr "Gli user agent dei motori di ricerca non dovrebbero essere inseriti qui in modo che vengano reindirizzati quando cambia la struttura degli slug."
 
@@ -1041,13 +1038,8 @@ msgstr "Speciale"
 msgid "Stats"
 msgstr "Statistiche"
 
-#: includes/html/debugInterstitial.html
-msgid "Status"
-msgstr "Stato"
-
 msgid "Suggestions"
 msgstr "Suggerimenti"
-
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "I formati supportati sono: <B>from_url,status,type,to_url,wp_type</B>"
@@ -1530,7 +1522,6 @@ msgstr "Aiutaci a migliorare il plugin (Opzionale)"
 
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "Condividi il motivo per cui stai disattivando. Il tuo feedback ci aiuta a migliorare."
-
 
 msgid "Email Feedback & Deactivate"
 msgstr "Invia feedback e disattiva"
@@ -2052,7 +2043,6 @@ msgstr "Visita l'URL"
 msgid "This page doesn't exist or is not published so the redirect won't work."
 msgstr "Questa pagina non esiste o non è pubblicata, quindi il reindirizzamento non funzionerà."
 
-
 #: includes/DataAccess.php
 msgid "Just now"
 msgstr "Proprio adesso"
@@ -2079,7 +2069,6 @@ msgstr "Aggiornamento in corso"
 #: includes/View.php
 msgid "Refresh paused"
 msgstr "Aggiornamento in pausa"
-
 
 #: includes/WordPress_Connector.php
 msgid "second"
@@ -2251,7 +2240,6 @@ msgstr "data-pagination-current-paged"
 msgid "data-pagination-current-logsid"
 msgstr "data-pagination-current-logsid"
 
-
 #: includes/View.php
 msgid "Select all"
 msgstr "Seleziona tutto"
@@ -2267,7 +2255,6 @@ msgstr "Richiedi qualità minima di corrispondenza"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Mostra solo suggerimenti che corrispondono strettamente all'URL richiesto. Questo filtra le corrispondenze deboli che potrebbero confondere i visitatori."
-
 
 msgid "404 Solution Logs"
 msgstr "Log di 404 Solution"
@@ -2522,27 +2509,3 @@ msgstr "Sostituzione per il motore contenuto (vuoto eredita il punteggio globale
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Errore: la soglia di punteggio per motore deve essere vuota o un numero tra 0 e 99"
-
-#: includes/html/debugInterstitial.html
-msgid "404 Debug Console"
-msgstr "Console di debug 404"
-
-#: includes/html/debugInterstitial.html
-msgid "Engine"
-msgstr "Motore"
-
-#: includes/html/debugInterstitial.html
-msgid "Score"
-msgstr "Punteggio"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Title"
-msgstr "Titolo della corrispondenza"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Link"
-msgstr "Link della corrispondenza"
-
-#: includes/html/debugInterstitial.html
-msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
-msgstr "Questa pagina è visibile solo agli amministratori del plugin quando la modalità debug è attivata. I visitatori normali vedono il reindirizzamento standard."

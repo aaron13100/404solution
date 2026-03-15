@@ -20,7 +20,6 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
-
 msgid "404 Solution - Deactivation Options"
 msgstr "404 Solution - Параметры деактивации"
 
@@ -314,7 +313,6 @@ msgstr "Удалить автоматические перенаправлени
 
 msgid "Auto Redirects"
 msgstr "Автоматические перенаправления"
-
 
 msgid "Automatic 301 Redirects"
 msgstr "Автоматические 301 перенаправления"
@@ -1022,7 +1020,6 @@ msgstr "Сохранение настроек..."
 msgid "Section filters"
 msgstr "Фильтры разделов"
 
-
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
 msgstr "Пользовательские агенты поисковых систем не должны быть здесь, чтобы они перенаправлялись при изменении структуры URL."
 
@@ -1041,13 +1038,8 @@ msgstr "Специальные"
 msgid "Stats"
 msgstr "Статистика"
 
-#: includes/html/debugInterstitial.html
-msgid "Status"
-msgstr "Статус"
-
 msgid "Suggestions"
 msgstr "Предложения"
-
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "Поддерживаемые форматы: <B>from_url,status,type,to_url,wp_type</B>"
@@ -1532,7 +1524,6 @@ msgstr "Помочь улучшить плагин (Необязательно)"
 
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "Поделитесь, почему вы деактивируете. Ваш отзыв помогает нам стать лучше."
-
 
 msgid "Email Feedback & Deactivate"
 msgstr "Отправить отзыв и деактивировать"
@@ -2054,7 +2045,6 @@ msgstr "Visit URL ·"
 msgid "This page doesn't exist or is not published so the redirect won't work."
 msgstr "This page doesn't exist or is not published so the redirect won't work. ·"
 
-
 #: includes/DataAccess.php
 msgid "Just now"
 msgstr "Just now ·"
@@ -2081,7 +2071,6 @@ msgstr "Обновление выполняется"
 #: includes/View.php
 msgid "Refresh paused"
 msgstr "Обновление приостановлено"
-
 
 #: includes/WordPress_Connector.php
 msgid "second"
@@ -2253,7 +2242,6 @@ msgstr "data-pagination-current-paged"
 msgid "data-pagination-current-logsid"
 msgstr "data-pagination-current-logsid"
 
-
 #: includes/View.php
 msgid "Select all"
 msgstr "Выбрать все"
@@ -2269,7 +2257,6 @@ msgstr "Требовать минимальное качество совпад�
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Показывать только предложения, которые точно соответствуют запрошенному URL. Это отфильтровывает слабые совпадения, которые могут запутать посетителей."
-
 
 msgid "404 Solution Logs"
 msgstr "Журналы 404 Solution"
@@ -2527,27 +2514,3 @@ msgstr "Переопределение для поиска по содержим
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Ошибка: порог оценки для движка должен быть пустым или числом от 0 до 99"
-
-#: includes/html/debugInterstitial.html
-msgid "404 Debug Console"
-msgstr "Консоль отладки 404"
-
-#: includes/html/debugInterstitial.html
-msgid "Engine"
-msgstr "Движок"
-
-#: includes/html/debugInterstitial.html
-msgid "Score"
-msgstr "Оценка"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Title"
-msgstr "Заголовок совпадения"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Link"
-msgstr "Ссылка совпадения"
-
-#: includes/html/debugInterstitial.html
-msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
-msgstr "Эта страница видна только администраторам плагина при включённом режиме отладки. Обычные посетители видят стандартное перенаправление."

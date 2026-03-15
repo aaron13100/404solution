@@ -20,7 +20,6 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
-
 msgid "404 Solution - Deactivation Options"
 msgstr "404 Solution - خيارات إلغاء التفعيل"
 
@@ -1034,10 +1033,6 @@ msgstr "خاص"
 msgid "Stats"
 msgstr "الإحصائيات"
 
-#: includes/html/debugInterstitial.html
-msgid "Status"
-msgstr "الحالة"
-
 msgid "Suggestions"
 msgstr "الاقتراحات"
 
@@ -1465,7 +1460,6 @@ msgstr[3] "تم نقل %s إدخالات إعادة توجيه إلى سلة ا�
 msgstr[4] "تم نقل %s إدخال إعادة توجيه إلى سلة المهملات."
 msgstr[5] "تم نقل %s إدخال إعادة توجيه إلى سلة المهملات."
 
-
 #: includes/DatabaseUpgradesEtc.php:119
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
 msgstr "404 Solution: يتم بناء ذاكرة التدقيق الإملائي N-gram في الخلفية لتحسين الأداء. قد يستغرق هذا بضع دقائق على المواقع الكبيرة."
@@ -1535,7 +1529,6 @@ msgstr "ساعد في تحسين الإضافة (اختياري)"
 
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "شارك سبب إلغاء التفعيل. ملاحظاتك تساعدنا على التحسين."
-
 
 msgid "Email Feedback & Deactivate"
 msgstr "إرسال الملاحظات وإلغاء التفعيل"
@@ -2081,7 +2074,6 @@ msgstr "التحديث قيد التشغيل"
 msgid "Refresh paused"
 msgstr "تم إيقاف التحديث مؤقتًا"
 
-
 #: includes/WordPress_Connector.php
 msgid "second"
 msgstr "ثانية"
@@ -2252,7 +2244,6 @@ msgstr "data-pagination-current-paged"
 msgid "data-pagination-current-logsid"
 msgstr "data-pagination-current-logsid"
 
-
 #: includes/View.php
 msgid "Select all"
 msgstr "تحديد الكل"
@@ -2268,7 +2259,6 @@ msgstr "طلب الحد الأدنى من جودة المطابقة"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "عرض الاقتراحات التي تتطابق بشكل وثيق مع عنوان URL المطلوب فقط. هذا يُصفّي المطابقات الضعيفة التي قد تُربك الزوار."
-
 
 msgid "404 Solution Logs"
 msgstr "سجلات 404 Solution"
@@ -2535,27 +2525,3 @@ msgstr "تجاوز لمحرك المحتوى (فارغ يرث النتيجة ا�
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "خطأ: يجب أن يكون حد الدرجة لكل محرك فارغاً أو رقماً بين 0 و99"
-
-#: includes/html/debugInterstitial.html
-msgid "404 Debug Console"
-msgstr "وحدة تحكم تصحيح أخطاء 404"
-
-#: includes/html/debugInterstitial.html
-msgid "Engine"
-msgstr "المحرك"
-
-#: includes/html/debugInterstitial.html
-msgid "Score"
-msgstr "النتيجة"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Title"
-msgstr "عنوان التطابق"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Link"
-msgstr "رابط التطابق"
-
-#: includes/html/debugInterstitial.html
-msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
-msgstr "هذه الصفحة مرئية فقط لمديري الإضافة عند تفعيل وضع التصحيح. يرى الزوار العاديون إعادة التوجيه العادية."

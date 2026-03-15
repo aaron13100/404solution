@@ -20,7 +20,6 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
-
 msgid "404 Solution - Deactivation Options"
 msgstr "404 Solution - Deactivation Options"
 
@@ -1058,10 +1057,6 @@ msgstr "Special"
 msgid "Stats"
 msgstr "Stats"
 
-#: includes/html/debugInterstitial.html
-msgid "Status"
-msgstr "Status"
-
 msgid "Suggestions"
 msgstr "Suggestions"
 
@@ -1481,7 +1476,6 @@ msgid_plural "%s redirect entries were moved to the trash."
 msgstr[0] "%s redirect entry was moved to the trash."
 msgstr[1] "%s redirect entries were moved to the trash."
 
-
 #: includes/DatabaseUpgradesEtc.php:119
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
 msgstr "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
@@ -1551,7 +1545,6 @@ msgstr "Help improve the plugin (Optional)"
 
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "Share why you're deactivating. Your feedback helps us improve."
-
 
 msgid "Email Feedback & Deactivate"
 msgstr "Email Feedback & Deactivate"
@@ -2514,27 +2507,3 @@ msgstr "Override for the content keyword engine (blank inherits the global score
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Error: Per-engine score override must be empty or a number between 0 and 99"
-
-#: includes/html/debugInterstitial.html
-msgid "404 Debug Console"
-msgstr "404 Debug Console"
-
-#: includes/html/debugInterstitial.html
-msgid "Engine"
-msgstr "Engine"
-
-#: includes/html/debugInterstitial.html
-msgid "Score"
-msgstr "Score"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Title"
-msgstr "Match Title"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Link"
-msgstr "Match Link"
-
-#: includes/html/debugInterstitial.html
-msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
-msgstr "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."

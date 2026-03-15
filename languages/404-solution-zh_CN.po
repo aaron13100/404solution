@@ -20,7 +20,6 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
-
 msgid "404 Solution - Deactivation Options"
 msgstr "404 Solution - 停用选项"
 
@@ -315,7 +314,6 @@ msgstr "自动删除自动重定向的时间"
 
 msgid "Auto Redirects"
 msgstr "自动重定向"
-
 
 msgid "Automatic 301 Redirects"
 msgstr "自动 301 重定向"
@@ -1027,7 +1025,6 @@ msgstr "正在保存设置..."
 msgid "Section filters"
 msgstr "部分过滤器"
 
-
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
 msgstr "搜索引擎用户代理不应放在此处，以便在别名结构更改时将它们重定向。"
 
@@ -1045,10 +1042,6 @@ msgstr "特殊"
 
 msgid "Stats"
 msgstr "统计"
-
-#: includes/html/debugInterstitial.html
-msgid "Status"
-msgstr "状态"
 
 msgid "Suggestions"
 msgstr "建议"
@@ -1539,7 +1532,6 @@ msgstr "帮助改进插件（可选）"
 
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "分享您停用的原因。您的反馈帮助我们改进。"
-
 
 msgid "Email Feedback & Deactivate"
 msgstr "提交反馈并停用"
@@ -2062,7 +2054,6 @@ msgstr "Visit URL"
 msgid "This page doesn't exist or is not published so the redirect won't work."
 msgstr "This page doesn't exist or is not published so the redirect won't work."
 
-
 #: includes/DataAccess.php
 msgid "Just now"
 msgstr "刚刚"
@@ -2089,7 +2080,6 @@ msgstr "正在刷新"
 #: includes/View.php
 msgid "Refresh paused"
 msgstr "刷新已暂停"
-
 
 #: includes/WordPress_Connector.php
 msgid "second"
@@ -2261,7 +2251,6 @@ msgstr "data-pagination-current-paged"
 msgid "data-pagination-current-logsid"
 msgstr "data-pagination-current-logsid"
 
-
 #: includes/View.php
 msgid "Select all"
 msgstr "全选"
@@ -2277,7 +2266,6 @@ msgstr "要求最低匹配质量"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "仅显示与请求的URL紧密匹配的建议。这将过滤掉可能使访问者困惑的弱匹配。"
-
 
 msgid "404 Solution Logs"
 msgstr "404 Solution 日志"
@@ -2529,27 +2517,3 @@ msgstr "内容引擎覆盖（留空则继承上方的全局分数）"
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "错误：每引擎分数阈值必须为空或0到99之间的数字"
-
-#: includes/html/debugInterstitial.html
-msgid "404 Debug Console"
-msgstr "404 调试控制台"
-
-#: includes/html/debugInterstitial.html
-msgid "Engine"
-msgstr "引擎"
-
-#: includes/html/debugInterstitial.html
-msgid "Score"
-msgstr "分数"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Title"
-msgstr "匹配标题"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Link"
-msgstr "匹配链接"
-
-#: includes/html/debugInterstitial.html
-msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
-msgstr "此页面仅在启用调试模式时对插件管理员可见。普通访客将看到正常的重定向。"

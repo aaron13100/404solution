@@ -80,6 +80,18 @@ Other stuff is here.
 
 ## Changelog ##
 
+## Version 3.3.0 (Mar 15, 2026) ##
+* NEW: 7-engine matching pipeline — slug matching, URL typo correction, title keywords, category/tag path matching, content keywords, spelling similarity, and archive fallback.
+* NEW: Title keyword matching engine — finds posts whose title words appear in the broken URL, with fuzzy Levenshtein scoring for near-matches.
+* NEW: Content keyword matching engine — searches post body text when title and slug matching fail.
+* NEW: Category/tag matching engine — resolves hierarchical paths like `/shop/electronics` to the right taxonomy term or finds posts within a category.
+* NEW: URL typo correction engine — strips `.html`, `.php`, `.asp` and other file extensions, plus trailing punctuation from copy-paste errors.
+* NEW: Post type archive fallback engine — redirects to archive pages when no single-post match is found.
+* NEW: Per-engine score thresholds — fine-tune how aggressive each matching strategy is (Advanced Settings).
+* NEW: Per-post and per-term exclusion — exclude individual posts, pages, or taxonomy terms from automatic redirects via edit screen checkbox.
+* NEW: Orphaned redirect cleanup — daily cron automatically removes auto-redirects whose destination post was deleted or unpublished.
+* Improvement: WordPress.org discoverability — updated plugin description, tags, and FAQ for better search visibility.
+
 ## Version 3.2.2 (Mar 14, 2026) ##
 * FIX: Spell-checker could produce inaccurate match scores on sites with many pages due to an internal data-type mismatch in the large-candidate optimization path.
 * FIX: Resolved PHP 8.5 deprecation warnings ("null as array offset") in the spell-checker matching pipeline.

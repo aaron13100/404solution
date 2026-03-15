@@ -20,7 +20,6 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
-
 msgid "404 Solution - Deactivation Options"
 msgstr "404 Solution - Options de désactivation"
 
@@ -1042,10 +1041,6 @@ msgstr "Spécial"
 msgid "Stats"
 msgstr "Statistiques"
 
-#: includes/html/debugInterstitial.html
-msgid "Status"
-msgstr "Statut"
-
 msgid "Suggestions"
 msgstr "Suggestions ·"
 
@@ -1534,7 +1529,6 @@ msgstr "Aider à améliorer l'extension (Facultatif)"
 
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "Partagez pourquoi vous désactivez. Votre retour nous aide à nous améliorer."
-
 
 msgid "Email Feedback & Deactivate"
 msgstr "Envoyer retour et désactiver"
@@ -2076,7 +2070,6 @@ msgstr "Actualisation en cours"
 msgid "Refresh paused"
 msgstr "Actualisation en pause"
 
-
 #: includes/WordPress_Connector.php
 msgid "second"
 msgstr "seconde"
@@ -2247,7 +2240,6 @@ msgstr "data-pagination-current-paged"
 msgid "data-pagination-current-logsid"
 msgstr "data-pagination-current-logsid"
 
-
 #: includes/View.php
 msgid "Select all"
 msgstr "Tout sélectionner"
@@ -2263,7 +2255,6 @@ msgstr "Exiger une qualité de correspondance minimale"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "N'afficher que les suggestions qui correspondent étroitement à l'URL demandée. Cela filtre les correspondances faibles qui pourraient dérouter les visiteurs."
-
 
 msgid "404 Solution Logs"
 msgstr "Journaux 404 Solution"
@@ -2515,27 +2506,3 @@ msgstr "Remplacement pour le moteur de contenu (vide hérite du score global ci-
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Erreur : le seuil de score par moteur doit être vide ou un nombre entre 0 et 99"
-
-#: includes/html/debugInterstitial.html
-msgid "404 Debug Console"
-msgstr "Console de débogage 404"
-
-#: includes/html/debugInterstitial.html
-msgid "Engine"
-msgstr "Moteur"
-
-#: includes/html/debugInterstitial.html
-msgid "Score"
-msgstr "Résultat"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Title"
-msgstr "Titre de la correspondance"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Link"
-msgstr "Lien de la correspondance"
-
-#: includes/html/debugInterstitial.html
-msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
-msgstr "Cette page est visible uniquement pour les administrateurs du plugin lorsque le mode débogage est activé. Les visiteurs normaux voient la redirection habituelle."

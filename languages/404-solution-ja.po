@@ -20,7 +20,6 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
-
 # translation-verified: Product name "404 Solution" intentionally in English
 msgid "404 Solution - Deactivation Options"
 msgstr "404 Solution - 無効化オプション"
@@ -315,7 +314,6 @@ msgstr "自動リダイレクトの削除期間"
 
 msgid "Auto Redirects"
 msgstr "自動リダイレクト"
-
 
 msgid "Automatic 301 Redirects"
 msgstr "自動301リダイレクト"
@@ -1025,7 +1023,6 @@ msgstr "設定を保存中..."
 msgid "Section filters"
 msgstr "セクションフィルター"
 
-
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
 msgstr "検索エンジンのユーザーエージェントは、スラッグ構造が変更されたときにリダイレクトされるように、ここには含めないでください。"
 
@@ -1043,10 +1040,6 @@ msgstr "特殊"
 
 msgid "Stats"
 msgstr "統計"
-
-#: includes/html/debugInterstitial.html
-msgid "Status"
-msgstr "ステータス"
 
 msgid "Suggestions"
 msgstr "提案"
@@ -1536,7 +1529,6 @@ msgstr "プラグインの改善にご協力ください（任意）"
 
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "無効化する理由を共有してください。お客様のフィードバックは改善に役立ちます。"
-
 
 msgid "Email Feedback & Deactivate"
 msgstr "フィードバックを送信して無効化"
@@ -2058,7 +2050,6 @@ msgstr "Visit URL"
 msgid "This page doesn't exist or is not published so the redirect won't work."
 msgstr "This page doesn't exist or is not published so the redirect won't work."
 
-
 #: includes/DataAccess.php
 msgid "Just now"
 msgstr "たった今"
@@ -2085,7 +2076,6 @@ msgstr "更新中"
 #: includes/View.php
 msgid "Refresh paused"
 msgstr "更新を一時停止"
-
 
 #: includes/WordPress_Connector.php
 msgid "second"
@@ -2257,7 +2247,6 @@ msgstr "data-pagination-current-paged"
 msgid "data-pagination-current-logsid"
 msgstr "data-pagination-current-logsid"
 
-
 #: includes/View.php
 msgid "Select all"
 msgstr "すべて選択"
@@ -2273,7 +2262,6 @@ msgstr "最小一致品質を要求する"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "リクエストされたURLに近い提案のみを表示します。これにより、訪問者を混乱させる可能性のある弱い一致がフィルタリングされます。"
-
 
 msgid "404 Solution Logs"
 msgstr "404 Solution ログ"
@@ -2525,27 +2513,3 @@ msgstr "コンテンツエンジンの上書き（空欄の場合は上のグロ
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "エラー：エンジン別スコアしきい値は空または0から99の数値である必要があります"
-
-#: includes/html/debugInterstitial.html
-msgid "404 Debug Console"
-msgstr "404 デバッグコンソール"
-
-#: includes/html/debugInterstitial.html
-msgid "Engine"
-msgstr "エンジン"
-
-#: includes/html/debugInterstitial.html
-msgid "Score"
-msgstr "スコア"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Title"
-msgstr "一致タイトル"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Link"
-msgstr "一致リンク"
-
-#: includes/html/debugInterstitial.html
-msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
-msgstr "このページはデバッグモードが有効な場合にプラグイン管理者にのみ表示されます。通常の訪問者には通常のリダイレクトが表示されます。"

@@ -20,7 +20,6 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
-
 msgid "404 Solution - Deactivation Options"
 msgstr "404 Solution - Opções de desativação"
 
@@ -314,7 +313,6 @@ msgstr "Excluir redirecionamentos automáticos após"
 
 msgid "Auto Redirects"
 msgstr "Redirecionamentos automáticos"
-
 
 msgid "Automatic 301 Redirects"
 msgstr "Redirecionamentos 301 Automáticos"
@@ -1022,7 +1020,6 @@ msgstr "Salvando configurações..."
 msgid "Section filters"
 msgstr "Filtros de seção"
 
-
 msgid "Search engine user agents should not go here so that they will be redirected when the slug structure changes."
 msgstr "User agents de mecanismos de busca não devem ir aqui para que sejam redirecionados quando a estrutura do slug mudar."
 
@@ -1041,13 +1038,8 @@ msgstr "Especial"
 msgid "Stats"
 msgstr "Estatísticas"
 
-#: includes/html/debugInterstitial.html
-msgid "Status"
-msgstr "Status *"
-
 msgid "Suggestions"
 msgstr "Sugestões"
-
 
 msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "Os formatos suportados são: <B>from_url,status,type,to_url,wp_type</B>"
@@ -1530,7 +1522,6 @@ msgstr "Ajudar a melhorar o plugin (Opcional)"
 
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "Compartilhe por que você está desativando. Seu feedback nos ajuda a melhorar."
-
 
 msgid "Email Feedback & Deactivate"
 msgstr "Enviar feedback e desativar"
@@ -2052,7 +2043,6 @@ msgstr "Visitar URL"
 msgid "This page doesn't exist or is not published so the redirect won't work."
 msgstr "Esta página não existe ou não está publicada, portanto o redirecionamento não funcionará."
 
-
 #: includes/DataAccess.php
 msgid "Just now"
 msgstr "Agora mesmo"
@@ -2079,7 +2069,6 @@ msgstr "Atualizacao em andamento"
 #: includes/View.php
 msgid "Refresh paused"
 msgstr "Atualizacao pausada"
-
 
 #: includes/WordPress_Connector.php
 msgid "second"
@@ -2251,7 +2240,6 @@ msgstr "data-pagination-current-paged"
 msgid "data-pagination-current-logsid"
 msgstr "data-pagination-current-logsid"
 
-
 #: includes/View.php
 msgid "Select all"
 msgstr "Selecionar tudo"
@@ -2267,7 +2255,6 @@ msgstr "Exigir qualidade mínima de correspondência"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Mostrar apenas sugestões que correspondam de perto à URL solicitada. Isso filtra correspondências fracas que podem confundir os visitantes."
-
 
 msgid "404 Solution Logs"
 msgstr "Registros do 404 Solution"
@@ -2522,27 +2509,3 @@ msgstr "Substituição para o motor de conteúdo (em branco herda a pontuação 
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Erro: o limiar de pontuação por motor deve estar vazio ou ser um número entre 0 e 99"
-
-#: includes/html/debugInterstitial.html
-msgid "404 Debug Console"
-msgstr "Console de depuração 404"
-
-#: includes/html/debugInterstitial.html
-msgid "Engine"
-msgstr "Motor"
-
-#: includes/html/debugInterstitial.html
-msgid "Score"
-msgstr "Pontuação"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Title"
-msgstr "Título da correspondência"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Link"
-msgstr "Link da correspondência"
-
-#: includes/html/debugInterstitial.html
-msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
-msgstr "Esta página é visível apenas para administradores do plugin quando o modo de depuração está ativado. Visitantes normais veem o redirecionamento padrão."

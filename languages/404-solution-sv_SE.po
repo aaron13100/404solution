@@ -20,7 +20,6 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
-
 msgid "404 Solution - Deactivation Options"
 msgstr "404 Solution - Avaktiveringsalternativ"
 
@@ -1039,10 +1038,6 @@ msgstr "Speciell"
 msgid "Stats"
 msgstr "Statistik"
 
-#: includes/html/debugInterstitial.html
-msgid "Status"
-msgstr "Status ·"
-
 msgid "Suggestions"
 msgstr "Förslag"
 
@@ -1462,7 +1457,6 @@ msgid_plural "%s redirect entries were moved to the trash."
 msgstr[0] "%s omdirigeringspost flyttades till papperskorgen."
 msgstr[1] "%s omdirigeringsposter flyttades till papperskorgen."
 
-
 #: includes/DatabaseUpgradesEtc.php:119
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
 msgstr "404 Solution: N-gram stavningskontrollcache byggs i bakgrunden för att optimera prestanda. Detta kan ta några minuter på stora webbplatser."
@@ -1532,7 +1526,6 @@ msgstr "Hjälp till att förbättra plugin:et (Valfritt)"
 
 msgid "Share why you're deactivating. Your feedback helps us improve."
 msgstr "Dela varför du avaktiverar. Din feedback hjälper oss att förbättra."
-
 
 msgid "Email Feedback & Deactivate"
 msgstr "Skicka feedback och avaktivera"
@@ -2050,7 +2043,6 @@ msgstr "Visit URL ·"
 msgid "This page doesn't exist or is not published so the redirect won't work."
 msgstr "This page doesn't exist or is not published so the redirect won't work. ·"
 
-
 #: includes/DataAccess.php
 msgid "Just now"
 msgstr "Just now ·"
@@ -2077,7 +2069,6 @@ msgstr "Uppdatering paagar"
 #: includes/View.php
 msgid "Refresh paused"
 msgstr "Uppdatering pausad"
-
 
 #: includes/WordPress_Connector.php
 msgid "second"
@@ -2249,7 +2240,6 @@ msgstr "data-pagination-current-paged"
 msgid "data-pagination-current-logsid"
 msgstr "data-pagination-current-logsid"
 
-
 #: includes/View.php
 msgid "Select all"
 msgstr "Välj alla"
@@ -2265,7 +2255,6 @@ msgstr "Kräv minsta matchningskvalitet"
 #: includes/html/viewSuggestions.html
 msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
 msgstr "Visa endast förslag som nära matchar den begärda URL:en. Detta filtrerar bort svaga matchningar som kan förvirra besökare."
-
 
 msgid "404 Solution Logs"
 msgstr "404 Solution-loggar"
@@ -2520,27 +2509,3 @@ msgstr "Åsidosättning för innehållssökmotorn (tomt ärver den globala poän
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Fel: poängtröskeln per motor måste vara tom eller ett tal mellan 0 och 99"
-
-#: includes/html/debugInterstitial.html
-msgid "404 Debug Console"
-msgstr "404 Felsökningskonsol"
-
-#: includes/html/debugInterstitial.html
-msgid "Engine"
-msgstr "Motor"
-
-#: includes/html/debugInterstitial.html
-msgid "Score"
-msgstr "Poäng"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Title"
-msgstr "Matchningstitel"
-
-#: includes/html/debugInterstitial.html
-msgid "Match Link"
-msgstr "Matchningslänk"
-
-#: includes/html/debugInterstitial.html
-msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
-msgstr "Den här sidan syns bara för pluginadministratörer när felsökningsläget är aktiverat. Vanliga besökare ser den normala omdirigeringen."
