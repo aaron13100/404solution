@@ -2496,3 +2496,31 @@ msgstr "チェックすると、この投稿は404エラーのリダイレクト
 
 msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
 msgstr "チェックすると、このタームは404エラーのリダイレクト先として提案されなくなります。"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Title engine score override"
+msgstr "タイトルエンジンのスコアしきい値"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the title keyword engine (leave empty to use global)"
+msgstr "タイトルキーワードエンジンの最低スコアを上書き（空欄でグローバル値を使用）"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Category/tag engine score override"
+msgstr "カテゴリー/タグエンジンのスコアしきい値"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
+msgstr "カテゴリー/タグキーワードエンジンの最低スコアを上書き（空欄でグローバル値を使用）"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Content engine score override"
+msgstr "コンテンツエンジンのスコアしきい値"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the content keyword engine (leave empty to use global)"
+msgstr "コンテンツキーワードエンジンの最低スコアを上書き（空欄でグローバル値を使用）"
+
+#: includes/PluginLogic.php
+msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
+msgstr "エラー：エンジン別スコアしきい値は空または0から99の数値である必要があります"

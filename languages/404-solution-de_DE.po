@@ -2494,3 +2494,31 @@ msgstr "Wenn aktiviert, wird dieser Beitrag nicht als Weiterleitungsziel für 40
 
 msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
 msgstr "Wenn aktiviert, wird dieser Begriff nicht als Weiterleitungsziel für 404-Fehler vorgeschlagen."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Title engine score override"
+msgstr "Bewertungsschwelle der Titel-Engine"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the title keyword engine (leave empty to use global)"
+msgstr "Mindestbewertung für die Titel-Schlüsselwort-Engine überschreiben (leer lassen für den globalen Wert)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Category/tag engine score override"
+msgstr "Bewertungsschwelle der Kategorie-/Schlagwort-Engine"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
+msgstr "Mindestbewertung für die Kategorie-/Schlagwort-Engine überschreiben (leer lassen für den globalen Wert)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Content engine score override"
+msgstr "Bewertungsschwelle der Inhalts-Engine"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the content keyword engine (leave empty to use global)"
+msgstr "Mindestbewertung für die Inhalts-Schlüsselwort-Engine überschreiben (leer lassen für den globalen Wert)"
+
+#: includes/PluginLogic.php
+msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
+msgstr "Fehler: Der Bewertungsschwellenwert pro Engine muss leer oder eine Zahl zwischen 0 und 99 sein"

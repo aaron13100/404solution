@@ -2493,3 +2493,31 @@ msgstr "Se selezionato, questo articolo non verrà suggerito come destinazione d
 
 msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
 msgstr "Se selezionato, questo termine non verrà suggerito come destinazione di reindirizzamento per errori 404."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Title engine score override"
+msgstr "Soglia di punteggio del motore titoli"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the title keyword engine (leave empty to use global)"
+msgstr "Sovrascrivere il punteggio minimo per il motore di parole chiave del titolo (lasciare vuoto per usare il globale)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Category/tag engine score override"
+msgstr "Soglia di punteggio del motore categorie/tag"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
+msgstr "Sovrascrivere il punteggio minimo per il motore di parole chiave di categoria/tag (lasciare vuoto per usare il globale)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Content engine score override"
+msgstr "Soglia di punteggio del motore contenuti"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the content keyword engine (leave empty to use global)"
+msgstr "Sovrascrivere il punteggio minimo per il motore di parole chiave del contenuto (lasciare vuoto per usare il globale)"
+
+#: includes/PluginLogic.php
+msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
+msgstr "Errore: la soglia di punteggio per motore deve essere vuota o un numero tra 0 e 99"

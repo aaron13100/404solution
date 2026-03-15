@@ -2488,3 +2488,31 @@ msgstr "Jika dicentang, pos ini tidak akan disarankan sebagai tujuan pengalihan 
 
 msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
 msgstr "Jika dicentang, istilah ini tidak akan disarankan sebagai tujuan pengalihan untuk kesalahan 404."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Title engine score override"
+msgstr "Ambang skor mesin judul"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the title keyword engine (leave empty to use global)"
+msgstr "Ganti skor minimum untuk mesin kata kunci judul (kosongkan untuk menggunakan nilai global)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Category/tag engine score override"
+msgstr "Ambang skor mesin kategori/tag"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
+msgstr "Ganti skor minimum untuk mesin kata kunci kategori/tag (kosongkan untuk menggunakan nilai global)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Content engine score override"
+msgstr "Ambang skor mesin konten"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the content keyword engine (leave empty to use global)"
+msgstr "Ganti skor minimum untuk mesin kata kunci konten (kosongkan untuk menggunakan nilai global)"
+
+#: includes/PluginLogic.php
+msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
+msgstr "Kesalahan: ambang skor per mesin harus kosong atau angka antara 0 dan 99"

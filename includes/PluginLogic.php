@@ -1291,6 +1291,9 @@ class ABJ_404_Solution_PluginLogic {
             'auto_redirects' => '1',
             'auto_slugs' => '1',
             'auto_score' => '90',
+            'auto_score_title' => '',
+            'auto_score_category_tag' => '',
+            'auto_score_content' => '',
             'template_redirect_priority' => '9',
             'auto_deletion' => '1095',
             'auto_cats' => '1',
@@ -2926,6 +2929,22 @@ class ABJ_404_Solution_PluginLogic {
                 $options['auto_score'] = absint($postData['auto_score']);
             } else {
                 $message .= __('Error: Auto match score value must be a number between 0 and 99', '404-solution') . ".<BR/>";
+            }
+        }
+
+        // Per-engine score overrides: accept empty string (use global) or numeric 0–99
+        $engineScoreKeys = ['auto_score_title', 'auto_score_category_tag', 'auto_score_content'];
+        foreach ($engineScoreKeys as $key) {
+            if (isset($postData[$key])) {
+                $raw = $postData[$key];
+                $val = is_string($raw) ? trim($raw) : (is_numeric($raw) ? trim(strval($raw)) : '');
+                if ($val === '') {
+                    $options[$key] = '';
+                } elseif (is_numeric($val) && $val >= 0 && $val <= 99) {
+                    $options[$key] = absint($val);
+                } else {
+                    $message .= __('Error: Per-engine score override must be empty or a number between 0 and 99', '404-solution') . ".<BR/>";
+                }
             }
         }
 

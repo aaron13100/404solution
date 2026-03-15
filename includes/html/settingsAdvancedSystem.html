@@ -6,6 +6,19 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
 <p><label for="auto_score">{Minimum match score}:</label> <input type="text" name="auto_score" id="auto_score" value="{OPTION_MIN_AUTO_SCORE}" style="width: 50px;"><BR/>
 &nbsp;&nbsp;&nbsp;{Only create an automatic redirect if the suggested page has a score above the specified number (default 90)}
 </p>
+
+<p style="margin-left: 20px;">
+<label for="auto_score_title">{Title engine score override}:</label> <input type="text" name="auto_score_title" id="auto_score_title" value="{OPTION_AUTO_SCORE_TITLE}" style="width: 50px;"><BR/>
+&nbsp;&nbsp;&nbsp;{Override minimum score for the title keyword engine (leave empty to use global)}
+</p>
+<p style="margin-left: 20px;">
+<label for="auto_score_category_tag">{Category/tag engine score override}:</label> <input type="text" name="auto_score_category_tag" id="auto_score_category_tag" value="{OPTION_AUTO_SCORE_CATEGORY_TAG}" style="width: 50px;"><BR/>
+&nbsp;&nbsp;&nbsp;{Override minimum score for the category/tag keyword engine (leave empty to use global)}
+</p>
+<p style="margin-left: 20px;">
+<label for="auto_score_content">{Content engine score override}:</label> <input type="text" name="auto_score_content" id="auto_score_content" value="{OPTION_AUTO_SCORE_CONTENT}" style="width: 50px;"><BR/>
+&nbsp;&nbsp;&nbsp;{Override minimum score for the content keyword engine (leave empty to use global)}
+</p>
 <!-- .............................. -->
 
 <p><label for="template_redirect_priority">{Template Redirect Priority}:</label> <input type="text" name="template_redirect_priority" id="template_redirect_priority" value="{OPTION_TEMPLATE_REDIRECT_PRIORITY}" style="width: 50px;"><BR/>

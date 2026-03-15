@@ -2493,3 +2493,31 @@ msgstr "Si se marca, esta entrada no se sugerirá como destino de redirección p
 
 msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
 msgstr "Si se marca, este término no se sugerirá como destino de redirección para errores 404."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Title engine score override"
+msgstr "Umbral de puntuación del motor de títulos"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the title keyword engine (leave empty to use global)"
+msgstr "Anular la puntuación mínima para el motor de palabras clave de título (dejar vacío para usar el global)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Category/tag engine score override"
+msgstr "Umbral de puntuación del motor de categorías/etiquetas"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
+msgstr "Anular la puntuación mínima para el motor de palabras clave de categoría/etiqueta (dejar vacío para usar el global)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Content engine score override"
+msgstr "Umbral de puntuación del motor de contenido"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the content keyword engine (leave empty to use global)"
+msgstr "Anular la puntuación mínima para el motor de palabras clave de contenido (dejar vacío para usar el global)"
+
+#: includes/PluginLogic.php
+msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
+msgstr "Error: el umbral de puntuación por motor debe estar vacío o ser un número entre 0 y 99"

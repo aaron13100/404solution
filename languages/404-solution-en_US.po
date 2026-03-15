@@ -2485,3 +2485,31 @@ msgstr "When checked, this post will not be suggested as a redirect target for 4
 
 msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
 msgstr "When checked, this term will not be suggested as a redirect target for 404 errors."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Title engine score override"
+msgstr "Title engine score override"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the title keyword engine (leave empty to use global)"
+msgstr "Override minimum score for the title keyword engine (leave empty to use global)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Category/tag engine score override"
+msgstr "Category/tag engine score override"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
+msgstr "Override minimum score for the category/tag keyword engine (leave empty to use global)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Content engine score override"
+msgstr "Content engine score override"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the content keyword engine (leave empty to use global)"
+msgstr "Override minimum score for the content keyword engine (leave empty to use global)"
+
+#: includes/PluginLogic.php
+msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
+msgstr "Error: Per-engine score override must be empty or a number between 0 and 99"

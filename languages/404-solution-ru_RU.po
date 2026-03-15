@@ -2498,3 +2498,31 @@ msgstr "Если отмечено, эта запись не будет пред�
 
 msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
 msgstr "Если отмечено, этот термин не будет предлагаться в качестве цели перенаправления для ошибок 404."
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Title engine score override"
+msgstr "Порог оценки для движка заголовков"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the title keyword engine (leave empty to use global)"
+msgstr "Переопределить минимальную оценку для движка ключевых слов заголовков (оставьте пустым для использования глобального значения)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Category/tag engine score override"
+msgstr "Порог оценки для движка категорий/меток"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
+msgstr "Переопределить минимальную оценку для движка ключевых слов категорий/меток (оставьте пустым для использования глобального значения)"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Content engine score override"
+msgstr "Порог оценки для движка контента"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the content keyword engine (leave empty to use global)"
+msgstr "Переопределить минимальную оценку для движка ключевых слов контента (оставьте пустым для использования глобального значения)"
+
+#: includes/PluginLogic.php
+msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
+msgstr "Ошибка: порог оценки для движка должен быть пустым или числом от 0 до 99"

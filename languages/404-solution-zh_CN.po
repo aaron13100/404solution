@@ -2500,3 +2500,31 @@ msgstr "勾选后，此文章将不会被建议作为404错误的重定向目标
 
 msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
 msgstr "勾选后，此术语将不会被建议作为404错误的重定向目标。"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Title engine score override"
+msgstr "标题引擎分数阈值"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the title keyword engine (leave empty to use global)"
+msgstr "覆盖标题关键词引擎的最低分数（留空使用全局值）"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Category/tag engine score override"
+msgstr "分类/标签引擎分数阈值"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
+msgstr "覆盖分类/标签关键词引擎的最低分数（留空使用全局值）"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Content engine score override"
+msgstr "内容引擎分数阈值"
+
+#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
+msgid "Override minimum score for the content keyword engine (leave empty to use global)"
+msgstr "覆盖内容关键词引擎的最低分数（留空使用全局值）"
+
+#: includes/PluginLogic.php
+msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
+msgstr "错误：每引擎分数阈值必须为空或0到99之间的数字"

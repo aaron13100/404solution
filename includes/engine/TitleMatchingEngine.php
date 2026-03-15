@@ -129,9 +129,7 @@ class ABJ_404_Solution_TitleMatchingEngine implements ABJ_404_Solution_MatchingE
             return null;
         }
 
-        $options = $request->getOptions();
-        $minScore = isset($options['auto_score']) && is_numeric($options['auto_score'])
-            ? (float)$options['auto_score'] : 0.0;
+        $minScore = $request->getMinScore('auto_score_title');
 
         if ($bestScore < $minScore) {
             $this->logger->debugMessage("Title engine: best score " . $bestScore .

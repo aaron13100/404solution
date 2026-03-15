@@ -106,8 +106,7 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
         $options = $request->getOptions();
         $autoCats = isset($options['auto_cats']) && is_string($options['auto_cats']) ? $options['auto_cats'] : '0';
         $autoTags = isset($options['auto_tags']) && is_string($options['auto_tags']) ? $options['auto_tags'] : '0';
-        $minScore = isset($options['auto_score']) && is_numeric($options['auto_score'])
-            ? (float)$options['auto_score'] : 0.0;
+        $minScore = $request->getMinScore('auto_score_category_tag');
 
         // Phase 1: Hierarchical path match
         $phase1Result = $this->matchHierarchical($request, $autoCats, $minScore);

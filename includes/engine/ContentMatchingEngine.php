@@ -130,9 +130,7 @@ class ABJ_404_Solution_ContentMatchingEngine implements ABJ_404_Solution_Matchin
             return null;
         }
 
-        $options = $request->getOptions();
-        $minScore = isset($options['auto_score']) && is_numeric($options['auto_score'])
-            ? (float)$options['auto_score'] : 0.0;
+        $minScore = $request->getMinScore('auto_score_content');
 
         if ($bestScore < $minScore) {
             $this->logger->debugMessage("Content engine: best score " . $bestScore .

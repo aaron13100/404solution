@@ -3244,10 +3244,13 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{plugin_admin_users}', wp_kses_post($pluginAdminUsers), $html);
         
         $html = $this->f->str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($this->optStr($options, 'auto_score')), $html);
+        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_TITLE}', esc_attr($this->optStr($options, 'auto_score_title')), $html);
+        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_CATEGORY_TAG}', esc_attr($this->optStr($options, 'auto_score_category_tag')), $html);
+        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_CONTENT}', esc_attr($this->optStr($options, 'auto_score_content')), $html);
         $html = $this->f->str_replace('{OPTION_TEMPLATE_REDIRECT_PRIORITY}', esc_attr($this->optStr($options, 'template_redirect_priority')), $html);
-        
+
         $html = $this->f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
-        
+
         $html = $this->f->str_replace('{add-exclude-page-data-url}',
         	"admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false&includeSpecial=false&nonce=" . wp_create_nonce('abj404_ajax'), $html);
         $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
@@ -3377,6 +3380,9 @@ class ABJ_404_Solution_View {
         $html = $this->f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
 
         $html = $this->f->str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($this->optStr($options, 'auto_score')), $html);
+        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_TITLE}', esc_attr($this->optStr($options, 'auto_score_title')), $html);
+        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_CATEGORY_TAG}', esc_attr($this->optStr($options, 'auto_score_category_tag')), $html);
+        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_CONTENT}', esc_attr($this->optStr($options, 'auto_score_content')), $html);
         $html = $this->f->str_replace('{OPTION_TEMPLATE_REDIRECT_PRIORITY}', esc_attr($this->optStr($options, 'template_redirect_priority')), $html);
         $html = $this->f->str_replace('{days_wait_before_major_update}', $this->optStr($options, 'days_wait_before_major_update'), $html);
 

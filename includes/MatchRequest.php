@@ -46,4 +46,19 @@ class ABJ_404_Solution_MatchRequest {
     public function getOptions(): array {
         return $this->options;
     }
+
+    /**
+     * Get the minimum score threshold for a specific engine, falling back to the global auto_score.
+     *
+     * @param string $engineKey Engine-specific option key (e.g. 'auto_score_title')
+     * @return float
+     */
+    public function getMinScore(string $engineKey): float {
+        $opts = $this->options;
+        if ($engineKey !== '' && isset($opts[$engineKey]) && $opts[$engineKey] !== '' && is_numeric($opts[$engineKey])) {
+            return (float)$opts[$engineKey];
+        }
+        return isset($opts['auto_score']) && is_numeric($opts['auto_score'])
+            ? (float)$opts['auto_score'] : 0.0;
+    }
 }
