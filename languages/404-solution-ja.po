@@ -2503,24 +2503,24 @@ msgid "Title engine score override"
 msgstr "タイトルエンジンのスコアしきい値"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the title keyword engine (leave empty to use global)"
-msgstr "タイトルキーワードエンジンの最低スコアを上書き（空欄でグローバル値を使用）"
+msgid "Override for the title keyword engine (blank inherits the global score above)"
+msgstr "タイトルエンジンの上書き（空欄の場合は上のグローバルスコアを継承）"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Category/tag engine score override"
 msgstr "カテゴリー/タグエンジンのスコアしきい値"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
-msgstr "カテゴリー/タグキーワードエンジンの最低スコアを上書き（空欄でグローバル値を使用）"
+msgid "Override for the category/tag keyword engine (blank inherits the global score above)"
+msgstr "カテゴリ/タグエンジンの上書き（空欄の場合は上のグローバルスコアを継承）"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Content engine score override"
 msgstr "コンテンツエンジンのスコアしきい値"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the content keyword engine (leave empty to use global)"
-msgstr "コンテンツキーワードエンジンの最低スコアを上書き（空欄でグローバル値を使用）"
+msgid "Override for the content keyword engine (blank inherits the global score above)"
+msgstr "コンテンツエンジンの上書き（空欄の場合は上のグローバルスコアを継承）"
 
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"

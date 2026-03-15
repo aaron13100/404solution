@@ -2500,24 +2500,24 @@ msgid "Title engine score override"
 msgstr "Limiar de pontuação do motor de títulos"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the title keyword engine (leave empty to use global)"
-msgstr "Substituir a pontuação mínima para o motor de palavras-chave de título (deixe vazio para usar o global)"
+msgid "Override for the title keyword engine (blank inherits the global score above)"
+msgstr "Substituição para o motor de título (em branco herda a pontuação global acima)"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Category/tag engine score override"
 msgstr "Limiar de pontuação do motor de categorias/tags"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
-msgstr "Substituir a pontuação mínima para o motor de palavras-chave de categoria/tag (deixe vazio para usar o global)"
+msgid "Override for the category/tag keyword engine (blank inherits the global score above)"
+msgstr "Substituição para o motor de categoria/tag (em branco herda a pontuação global acima)"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Content engine score override"
 msgstr "Limiar de pontuação do motor de conteúdo"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the content keyword engine (leave empty to use global)"
-msgstr "Substituir a pontuação mínima para o motor de palavras-chave de conteúdo (deixe vazio para usar o global)"
+msgid "Override for the content keyword engine (blank inherits the global score above)"
+msgstr "Substituição para o motor de conteúdo (em branco herda a pontuação global acima)"
 
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"

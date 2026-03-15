@@ -2500,24 +2500,24 @@ msgid "Title engine score override"
 msgstr "Umbral de puntuación del motor de títulos"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the title keyword engine (leave empty to use global)"
-msgstr "Anular la puntuación mínima para el motor de palabras clave de título (dejar vacío para usar el global)"
+msgid "Override for the title keyword engine (blank inherits the global score above)"
+msgstr "Anulación para el motor de título (en blanco hereda la puntuación global anterior)"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Category/tag engine score override"
 msgstr "Umbral de puntuación del motor de categorías/etiquetas"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
-msgstr "Anular la puntuación mínima para el motor de palabras clave de categoría/etiqueta (dejar vacío para usar el global)"
+msgid "Override for the category/tag keyword engine (blank inherits the global score above)"
+msgstr "Anulación para el motor de categoría/etiqueta (en blanco hereda la puntuación global anterior)"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Content engine score override"
 msgstr "Umbral de puntuación del motor de contenido"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the content keyword engine (leave empty to use global)"
-msgstr "Anular la puntuación mínima para el motor de palabras clave de contenido (dejar vacío para usar el global)"
+msgid "Override for the content keyword engine (blank inherits the global score above)"
+msgstr "Anulación para el motor de contenido (en blanco hereda la puntuación global anterior)"
 
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"

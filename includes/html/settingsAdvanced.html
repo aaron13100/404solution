@@ -14,17 +14,17 @@ WP Memory Limit: {WP_MEMORY_LIMIT}, mbstring Extension: {MBSTRING}</p>
 &nbsp;&nbsp;&nbsp;{Only create an automatic redirect if the suggested page has a score above the specified number (default 90)}
 </p>
 
-<p style="margin-left: 20px;">
-<label for="auto_score_title">{Title engine score override}:</label> <input type="text" name="auto_score_title" id="auto_score_title" value="{OPTION_AUTO_SCORE_TITLE}" style="width: 50px;"><BR/>
-&nbsp;&nbsp;&nbsp;{Override minimum score for the title keyword engine (leave empty to use global)}
+<p>
+<label for="auto_score_title">{Title engine score override}:</label> <input type="text" name="auto_score_title" id="auto_score_title" value="{OPTION_AUTO_SCORE_TITLE}" placeholder="{OPTION_MIN_AUTO_SCORE}" style="width: 50px;"><BR/>
+&nbsp;&nbsp;&nbsp;{Override for the title keyword engine (blank inherits the global score above)}
 </p>
-<p style="margin-left: 20px;">
-<label for="auto_score_category_tag">{Category/tag engine score override}:</label> <input type="text" name="auto_score_category_tag" id="auto_score_category_tag" value="{OPTION_AUTO_SCORE_CATEGORY_TAG}" style="width: 50px;"><BR/>
-&nbsp;&nbsp;&nbsp;{Override minimum score for the category/tag keyword engine (leave empty to use global)}
+<p>
+<label for="auto_score_category_tag">{Category/tag engine score override}:</label> <input type="text" name="auto_score_category_tag" id="auto_score_category_tag" value="{OPTION_AUTO_SCORE_CATEGORY_TAG}" placeholder="{OPTION_MIN_AUTO_SCORE}" style="width: 50px;"><BR/>
+&nbsp;&nbsp;&nbsp;{Override for the category/tag keyword engine (blank inherits the global score above)}
 </p>
-<p style="margin-left: 20px;">
-<label for="auto_score_content">{Content engine score override}:</label> <input type="text" name="auto_score_content" id="auto_score_content" value="{OPTION_AUTO_SCORE_CONTENT}" style="width: 50px;"><BR/>
-&nbsp;&nbsp;&nbsp;{Override minimum score for the content keyword engine (leave empty to use global)}
+<p>
+<label for="auto_score_content">{Content engine score override}:</label> <input type="text" name="auto_score_content" id="auto_score_content" value="{OPTION_AUTO_SCORE_CONTENT}" placeholder="{OPTION_MIN_AUTO_SCORE}" style="width: 50px;"><BR/>
+&nbsp;&nbsp;&nbsp;{Override for the content keyword engine (blank inherits the global score above)}
 </p>
 <!-- .............................. -->
 

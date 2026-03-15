@@ -1450,7 +1450,7 @@ msgid "Title engine score override"
 msgstr ""
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the title keyword engine (leave empty to use global)"
+msgid "Override for the title keyword engine (blank inherits the global score above)"
 msgstr ""
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
@@ -1458,7 +1458,7 @@ msgid "Category/tag engine score override"
 msgstr ""
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
+msgid "Override for the category/tag keyword engine (blank inherits the global score above)"
 msgstr ""
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
@@ -1466,7 +1466,7 @@ msgid "Content engine score override"
 msgstr ""
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the content keyword engine (leave empty to use global)"
+msgid "Override for the content keyword engine (blank inherits the global score above)"
 msgstr ""
 
 #: includes/PluginLogic.php

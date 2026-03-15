@@ -2500,24 +2500,24 @@ msgid "Title engine score override"
 msgstr "Scoredrempel voor de titelengine"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the title keyword engine (leave empty to use global)"
-msgstr "Overschrijf de minimumscore voor de titelzoekwoordengine (leeg laten om de globale waarde te gebruiken)"
+msgid "Override for the title keyword engine (blank inherits the global score above)"
+msgstr "Overschrijving voor de titelzoekmachine (leeg neemt de globale score hierboven over)"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Category/tag engine score override"
 msgstr "Scoredrempel voor de categorie-/tagengine"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
-msgstr "Overschrijf de minimumscore voor de categorie-/tagzoekwoordengine (leeg laten om de globale waarde te gebruiken)"
+msgid "Override for the category/tag keyword engine (blank inherits the global score above)"
+msgstr "Overschrijving voor de categorie/tag-zoekmachine (leeg neemt de globale score hierboven over)"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Content engine score override"
 msgstr "Scoredrempel voor de inhoudengine"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the content keyword engine (leave empty to use global)"
-msgstr "Overschrijf de minimumscore voor de inhoudzoekwoordengine (leeg laten om de globale waarde te gebruiken)"
+msgid "Override for the content keyword engine (blank inherits the global score above)"
+msgstr "Overschrijving voor de inhoudszoekmachine (leeg neemt de globale score hierboven over)"
 
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"

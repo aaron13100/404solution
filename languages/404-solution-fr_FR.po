@@ -2493,24 +2493,24 @@ msgid "Title engine score override"
 msgstr "Seuil de score du moteur de titre"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the title keyword engine (leave empty to use global)"
-msgstr "Remplacer le score minimum pour le moteur de mots-clés de titre (laisser vide pour utiliser le global)"
+msgid "Override for the title keyword engine (blank inherits the global score above)"
+msgstr "Remplacement pour le moteur de titre (vide hérite du score global ci-dessus)"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Category/tag engine score override"
 msgstr "Seuil de score du moteur de catégorie/étiquette"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
-msgstr "Remplacer le score minimum pour le moteur de mots-clés de catégorie/étiquette (laisser vide pour utiliser le global)"
+msgid "Override for the category/tag keyword engine (blank inherits the global score above)"
+msgstr "Remplacement pour le moteur catégorie/étiquette (vide hérite du score global ci-dessus)"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Content engine score override"
 msgstr "Seuil de score du moteur de contenu"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the content keyword engine (leave empty to use global)"
-msgstr "Remplacer le score minimum pour le moteur de mots-clés de contenu (laisser vide pour utiliser le global)"
+msgid "Override for the content keyword engine (blank inherits the global score above)"
+msgstr "Remplacement pour le moteur de contenu (vide hérite du score global ci-dessus)"
 
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"

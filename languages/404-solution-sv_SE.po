@@ -2498,24 +2498,24 @@ msgid "Title engine score override"
 msgstr "Poängtröskel för titelmotorn"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the title keyword engine (leave empty to use global)"
-msgstr "Åsidosätt lägsta poäng för titelnyckelordsmotorn (lämna tomt för att använda det globala värdet)"
+msgid "Override for the title keyword engine (blank inherits the global score above)"
+msgstr "Åsidosättning för titelsökmotorn (tomt ärver den globala poängen ovan)"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Category/tag engine score override"
 msgstr "Poängtröskel för kategori-/taggmotorn"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
-msgstr "Åsidosätt lägsta poäng för kategori-/taggnyckelordsmotorn (lämna tomt för att använda det globala värdet)"
+msgid "Override for the category/tag keyword engine (blank inherits the global score above)"
+msgstr "Åsidosättning för kategori/tagg-sökmotorn (tomt ärver den globala poängen ovan)"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Content engine score override"
 msgstr "Poängtröskel för innehållsmotorn"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the content keyword engine (leave empty to use global)"
-msgstr "Åsidosätt lägsta poäng för innehållsnyckelordsmotorn (lämna tomt för att använda det globala värdet)"
+msgid "Override for the content keyword engine (blank inherits the global score above)"
+msgstr "Åsidosättning för innehållssökmotorn (tomt ärver den globala poängen ovan)"
 
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"

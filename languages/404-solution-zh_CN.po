@@ -2507,24 +2507,24 @@ msgid "Title engine score override"
 msgstr "标题引擎分数阈值"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the title keyword engine (leave empty to use global)"
-msgstr "覆盖标题关键词引擎的最低分数（留空使用全局值）"
+msgid "Override for the title keyword engine (blank inherits the global score above)"
+msgstr "标题引擎覆盖（留空则继承上方的全局分数）"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Category/tag engine score override"
 msgstr "分类/标签引擎分数阈值"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the category/tag keyword engine (leave empty to use global)"
-msgstr "覆盖分类/标签关键词引擎的最低分数（留空使用全局值）"
+msgid "Override for the category/tag keyword engine (blank inherits the global score above)"
+msgstr "分类/标签引擎覆盖（留空则继承上方的全局分数）"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
 msgid "Content engine score override"
 msgstr "内容引擎分数阈值"
 
 #: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override minimum score for the content keyword engine (leave empty to use global)"
-msgstr "覆盖内容关键词引擎的最低分数（留空使用全局值）"
+msgid "Override for the content keyword engine (blank inherits the global score above)"
+msgstr "内容引擎覆盖（留空则继承上方的全局分数）"
 
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
