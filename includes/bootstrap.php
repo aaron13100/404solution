@@ -164,6 +164,18 @@ function abj_404_solution_init_services() {
     });
 
     /**
+     * Category/tag matching engine - hierarchical path resolution and taxonomy keyword matching.
+     * Dependencies: data_access, functions, logging
+     */
+    $container->set('engine_category_tag', function($c) {
+        return new ABJ_404_Solution_CategoryTagMatchingEngine(
+            $c->get('data_access'),
+            $c->get('functions'),
+            $c->get('logging')
+        );
+    });
+
+    /**
      * Spelling matching engine - Levenshtein/N-gram matching via SpellChecker.
      * Dependencies: spell_checker
      */
@@ -176,7 +188,7 @@ function abj_404_solution_init_services() {
      * Filterable via 'abj404_matching_engines' to add/remove/reorder engines.
      */
     $container->set('matching_engines', function($c) {
-        $engines = [$c->get('engine_slug'), $c->get('engine_title'), $c->get('engine_spelling')];
+        $engines = [$c->get('engine_slug'), $c->get('engine_title'), $c->get('engine_category_tag'), $c->get('engine_spelling')];
         if (function_exists('apply_filters')) {
             $filtered = apply_filters('abj404_matching_engines', $engines);
             $engines = is_array($filtered) ? $filtered : [];

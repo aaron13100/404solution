@@ -27,6 +27,7 @@ return array(
     'ABJ_404_Solution_MatchingEngine' => $base . 'includes/MatchingEngine.php',
     'ABJ_404_Solution_MatchRequest' => $base . 'includes/MatchRequest.php',
     'ABJ_404_Solution_MatchResult' => $base . 'includes/MatchResult.php',
+    'ABJ_404_Solution_CategoryTagMatchingEngine' => $base . 'includes/engine/CategoryTagMatchingEngine.php',
     'ABJ_404_Solution_SlugMatchingEngine' => $base . 'includes/engine/SlugMatchingEngine.php',
     'ABJ_404_Solution_SpellingMatchingEngine' => $base . 'includes/engine/SpellingMatchingEngine.php',
     'ABJ_404_Solution_TitleMatchingEngine' => $base . 'includes/engine/TitleMatchingEngine.php',
