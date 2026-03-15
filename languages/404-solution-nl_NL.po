@@ -1041,6 +1041,7 @@ msgstr "Speciaal"
 msgid "Stats"
 msgstr "Statistieken"
 
+#: includes/html/debugInterstitial.html
 msgid "Status"
 msgstr "Status ·"
 
@@ -2521,3 +2522,27 @@ msgstr "Overschrijf de minimumscore voor de inhoudzoekwoordengine (leeg laten om
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Fout: de scoredrempel per engine moet leeg zijn of een getal tussen 0 en 99"
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr "404 Foutopsporingsconsole"
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr "Zoekmachine"
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr "Resultaat"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr "Overeenkomsttitel"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr "Overeenkomstlink"
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr "Deze pagina is alleen zichtbaar voor pluginbeheerders wanneer de debugmodus is ingeschakeld. Gewone bezoekers zien de normale omleiding."

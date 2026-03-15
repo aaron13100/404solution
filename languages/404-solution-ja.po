@@ -1044,6 +1044,7 @@ msgstr "特殊"
 msgid "Stats"
 msgstr "統計"
 
+#: includes/html/debugInterstitial.html
 msgid "Status"
 msgstr "ステータス"
 
@@ -2524,3 +2525,27 @@ msgstr "コンテンツキーワードエンジンの最低スコアを上書き
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "エラー：エンジン別スコアしきい値は空または0から99の数値である必要があります"
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr "404 デバッグコンソール"
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr "エンジン"
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr "スコア"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr "一致タイトル"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr "一致リンク"
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr "このページはデバッグモードが有効な場合にプラグイン管理者にのみ表示されます。通常の訪問者には通常のリダイレクトが表示されます。"

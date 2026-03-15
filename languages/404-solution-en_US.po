@@ -1058,6 +1058,7 @@ msgstr "Special"
 msgid "Stats"
 msgstr "Stats"
 
+#: includes/html/debugInterstitial.html
 msgid "Status"
 msgstr "Status"
 
@@ -2513,3 +2514,27 @@ msgstr "Override minimum score for the content keyword engine (leave empty to us
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Error: Per-engine score override must be empty or a number between 0 and 99"
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr "404 Debug Console"
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr "Engine"
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr "Score"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr "Match Title"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr "Match Link"
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."

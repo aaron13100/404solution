@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{404 Debug Console}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,sans-serif;background:#f0f0f1;color:#1d2327;padding:20px;line-height:1.5}
+.debug-wrap{max-width:900px;margin:0 auto}
+h1{font-size:1.4em;margin-bottom:16px;color:#1d2327}
+.meta{background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:16px;margin-bottom:16px}
+.meta-label{font-weight:600;color:#50575e}
+.meta-value{word-break:break-all}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #c3c4c7;border-radius:4px;margin-bottom:16px}
+th{background:#f6f7f7;text-align:left;padding:10px 12px;border-bottom:2px solid #c3c4c7;font-size:.85em;color:#50575e}
+td{padding:8px 12px;border-bottom:1px solid #e0e0e0;font-size:.9em}
+tr:last-child td{border-bottom:none}
+.status-matched{color:#00a32a;font-weight:600}
+.status-skipped{color:#996800}
+.status-excluded{color:#d63638}
+.status-no-match{color:#787c82}
+.status-error{color:#d63638;font-style:italic}
+.winner-box{background:#fff;border:2px solid #00a32a;border-radius:4px;padding:16px;margin-bottom:16px}
+.winner-box.no-match{border-color:#d63638}
+.winner-label{font-weight:600;color:#00a32a;margin-bottom:8px;font-size:.95em}
+.winner-box.no-match .winner-label{color:#d63638}
+.actions{display:flex;gap:12px;margin-top:12px}
+.actions a{display:inline-block;padding:8px 16px;text-decoration:none;border-radius:4px;font-size:.9em}
+.btn-primary{background:#2271b1;color:#fff;border:1px solid #2271b1}
+.btn-primary:hover{background:#135e96}
+.btn-secondary{background:#f6f7f7;color:#2271b1;border:1px solid #2271b1}
+.btn-secondary:hover{background:#e9ecef}
+.note{font-size:.8em;color:#787c82;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="debug-wrap">
+    <h1>{404 Debug Console}</h1>
+
+    <div class="meta">
+        <span class="meta-label">{Requested URL}:</span>
+        <span class="meta-value">{REQUESTED_URL}</span>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>{Engine}</th>
+                <th>{Status}</th>
+                <th>{Score}</th>
+                <th>{Match Title}</th>
+                <th>{Match Link}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {ENGINE_ROWS}
+        </tbody>
+    </table>
+
+    <div class="winner-box {WINNER_CLASS}">
+        <div class="winner-label">{WINNER_LABEL}</div>
+        {WINNER_DETAILS}
+    </div>
+
+    <div class="actions">
+        {ACTION_LINKS}
+    </div>
+
+    <p class="note">{This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect.}</p>
+</div>
+</body>
+</html>

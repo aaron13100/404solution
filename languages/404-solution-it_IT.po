@@ -1041,6 +1041,7 @@ msgstr "Speciale"
 msgid "Stats"
 msgstr "Statistiche"
 
+#: includes/html/debugInterstitial.html
 msgid "Status"
 msgstr "Stato"
 
@@ -2521,3 +2522,27 @@ msgstr "Sovrascrivere il punteggio minimo per il motore di parole chiave del con
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Errore: la soglia di punteggio per motore deve essere vuota o un numero tra 0 e 99"
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr "Console di debug 404"
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr "Motore"
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr "Punteggio"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr "Titolo della corrispondenza"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr "Link della corrispondenza"
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr "Questa pagina è visibile solo agli amministratori del plugin quando la modalità debug è attivata. I visitatori normali vedono il reindirizzamento standard."

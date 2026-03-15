@@ -1472,3 +1472,31 @@ msgstr ""
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr ""
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr ""
+
+#: includes/html/debugInterstitial.html
+msgid "Status"
+msgstr ""
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr ""
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr ""
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr ""
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr ""
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr ""

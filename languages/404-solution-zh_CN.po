@@ -1046,6 +1046,7 @@ msgstr "特殊"
 msgid "Stats"
 msgstr "统计"
 
+#: includes/html/debugInterstitial.html
 msgid "Status"
 msgstr "状态"
 
@@ -2528,3 +2529,27 @@ msgstr "覆盖内容关键词引擎的最低分数（留空使用全局值）"
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "错误：每引擎分数阈值必须为空或0到99之间的数字"
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr "404 调试控制台"
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr "引擎"
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr "分数"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr "匹配标题"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr "匹配链接"
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr "此页面仅在启用调试模式时对插件管理员可见。普通访客将看到正常的重定向。"

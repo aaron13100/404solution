@@ -1042,6 +1042,7 @@ msgstr "Spécial"
 msgid "Stats"
 msgstr "Statistiques"
 
+#: includes/html/debugInterstitial.html
 msgid "Status"
 msgstr "Statut"
 
@@ -2514,3 +2515,27 @@ msgstr "Remplacer le score minimum pour le moteur de mots-clés de contenu (lais
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Erreur : le seuil de score par moteur doit être vide ou un nombre entre 0 et 99"
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr "Console de débogage 404"
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr "Moteur"
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr "Résultat"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr "Titre de la correspondance"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr "Lien de la correspondance"
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr "Cette page est visible uniquement pour les administrateurs du plugin lorsque le mode débogage est activé. Les visiteurs normaux voient la redirection habituelle."

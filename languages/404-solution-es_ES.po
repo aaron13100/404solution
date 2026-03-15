@@ -1041,6 +1041,7 @@ msgstr "Especial"
 msgid "Stats"
 msgstr "Estadísticas"
 
+#: includes/html/debugInterstitial.html
 msgid "Status"
 msgstr "Estado"
 
@@ -2521,3 +2522,27 @@ msgstr "Anular la puntuación mínima para el motor de palabras clave de conteni
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Error: el umbral de puntuación por motor debe estar vacío o ser un número entre 0 y 99"
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr "Consola de depuración 404"
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr "Motor"
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr "Puntuación"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr "Título de la coincidencia"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr "Enlace de la coincidencia"
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr "Esta página solo es visible para los administradores del plugin cuando el modo de depuración está activado. Los visitantes normales ven la redirección habitual."

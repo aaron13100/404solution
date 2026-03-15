@@ -1039,6 +1039,7 @@ msgstr "Speciell"
 msgid "Stats"
 msgstr "Statistik"
 
+#: includes/html/debugInterstitial.html
 msgid "Status"
 msgstr "Status ·"
 
@@ -2519,3 +2520,27 @@ msgstr "Åsidosätt lägsta poäng för innehållsnyckelordsmotorn (lämna tomt 
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Fel: poängtröskeln per motor måste vara tom eller ett tal mellan 0 och 99"
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr "404 Felsökningskonsol"
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr "Motor"
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr "Poäng"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr "Matchningstitel"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr "Matchningslänk"
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr "Den här sidan syns bara för pluginadministratörer när felsökningsläget är aktiverat. Vanliga besökare ser den normala omdirigeringen."

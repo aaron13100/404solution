@@ -1041,6 +1041,7 @@ msgstr "Специальные"
 msgid "Stats"
 msgstr "Статистика"
 
+#: includes/html/debugInterstitial.html
 msgid "Status"
 msgstr "Статус"
 
@@ -2526,3 +2527,27 @@ msgstr "Переопределить минимальную оценку для 
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Ошибка: порог оценки для движка должен быть пустым или числом от 0 до 99"
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr "Консоль отладки 404"
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr "Движок"
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr "Оценка"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr "Заголовок совпадения"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr "Ссылка совпадения"
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr "Эта страница видна только администраторам плагина при включённом режиме отладки. Обычные посетители видят стандартное перенаправление."

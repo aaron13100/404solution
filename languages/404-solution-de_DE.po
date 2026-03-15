@@ -1041,6 +1041,7 @@ msgstr "Spezial"
 msgid "Stats"
 msgstr "Statistiken"
 
+#: includes/html/debugInterstitial.html
 msgid "Status"
 msgstr "Status *"
 
@@ -2522,3 +2523,27 @@ msgstr "Mindestbewertung für die Inhalts-Schlüsselwort-Engine überschreiben (
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Fehler: Der Bewertungsschwellenwert pro Engine muss leer oder eine Zahl zwischen 0 und 99 sein"
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr "404 Debug-Konsole"
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr "Suchmodul"
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr "Punktzahl"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr "Trefferüberschrift"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr "Trefferlink"
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr "Diese Seite ist nur für Plugin-Administratoren sichtbar, wenn der Debug-Modus aktiviert ist. Normale Besucher sehen die reguläre Weiterleitung."

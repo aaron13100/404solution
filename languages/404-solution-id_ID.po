@@ -1041,6 +1041,7 @@ msgstr "Khusus"
 msgid "Stats"
 msgstr "Statistik"
 
+#: includes/html/debugInterstitial.html
 msgid "Status"
 msgstr "Status *"
 
@@ -2516,3 +2517,27 @@ msgstr "Ganti skor minimum untuk mesin kata kunci konten (kosongkan untuk menggu
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Kesalahan: ambang skor per mesin harus kosong atau angka antara 0 dan 99"
+
+#: includes/html/debugInterstitial.html
+msgid "404 Debug Console"
+msgstr "Konsol Debug 404"
+
+#: includes/html/debugInterstitial.html
+msgid "Engine"
+msgstr "Mesin"
+
+#: includes/html/debugInterstitial.html
+msgid "Score"
+msgstr "Skor"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Title"
+msgstr "Judul Kecocokan"
+
+#: includes/html/debugInterstitial.html
+msgid "Match Link"
+msgstr "Tautan Kecocokan"
+
+#: includes/html/debugInterstitial.html
+msgid "This page is only visible to plugin admins when debug mode is enabled. Regular visitors see the normal redirect."
+msgstr "Halaman ini hanya terlihat oleh administrator plugin saat mode debug diaktifkan. Pengunjung biasa melihat pengalihan normal."
