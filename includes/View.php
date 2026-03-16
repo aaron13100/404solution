@@ -2275,7 +2275,7 @@ class ABJ_404_Solution_View {
         }
 
         if ($displayed == 0) {
-            $html .= '<tr><td colspan="7" class="abj404-empty-message">' . __('No Captured 404 Records To Display', '404-solution') . '</td></tr>';
+            $html .= '<tr><td colspan="6" class="abj404-empty-message">' . __('No Captured 404 Records To Display', '404-solution') . '</td></tr>';
         }
 
         $html .= '</tbody></table>';

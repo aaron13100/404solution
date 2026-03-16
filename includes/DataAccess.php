@@ -1839,19 +1839,23 @@ class ABJ_404_Solution_DataAccess {
     	// everything in memory all at once.
     	$result = mysqli_query($wpdb->dbh, $query);
     	if ($result instanceof \mysqli_result) {
-    		// write the header
-    		$line = 'from_url,status,type,to_url,wp_type,engine';
-    		file_put_contents($tempFile, $line . "\n", FILE_APPEND);
+    		$fh = fopen($tempFile, 'w');
+    		if ($fh === false) {
+    			return;
+    		}
+    		fputcsv($fh, array('from_url', 'status', 'type', 'to_url', 'wp_type', 'engine'));
 
     		while (($row = mysqli_fetch_array($result, MYSQLI_ASSOC))) {
-    			$line = $row['from_url'] . ',' .
-     			$row['status'] . ',' .
-     			$row['type'] . ',' .
-     			$row['to_url'] . ', ' .
-    			$row['type_wp'] . ',' .
-    			(isset($row['engine']) ? $row['engine'] : '');
-     			file_put_contents($tempFile, $line . "\n", FILE_APPEND);
+    			fputcsv($fh, array(
+    				$row['from_url'],
+    				$row['status'],
+    				$row['type'],
+    				$row['to_url'],
+    				$row['type_wp'],
+    				isset($row['engine']) ? $row['engine'] : ''
+    			));
     		}
+    		fclose($fh);
     		mysqli_free_result($result);
     	}
     }
