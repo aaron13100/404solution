@@ -151,7 +151,7 @@ class ABJ_404_Solution_SlugChangeHandler {
 
         // create a redirect from the old to the new.
         $abj404dao->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_POST,
-                (string)$post_id, (isset($options['default_redirect']) && is_scalar($options['default_redirect'])) ? (string)$options['default_redirect'] : '301', 0);
+                (string)$post_id, (isset($options['default_redirect']) && is_scalar($options['default_redirect'])) ? (string)$options['default_redirect'] : '301', 0, 'slug change');
         $abj404logging->infoMessage("Added automatic redirect after slug change from " .
             $oldURL . ' to ' . $newURL . " for post ID " . $post_id);
     }

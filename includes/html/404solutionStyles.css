@@ -2755,6 +2755,17 @@ html[data-theme="obsidian"] .abj404-filter-bar {
     color: var(--abj404-text-muted, #646970);
 }
 
+.abj404-engine-label {
+    font-size: 11px;
+    color: var(--abj404-text-muted, #646970);
+    font-style: italic;
+}
+
+.abj404-username-label {
+    font-size: 11px;
+    color: var(--abj404-accent, #2271b1);
+}
+
 /* Empty trash button - use higher specificity to override WordPress .button */
 .button.abj404-empty-trash-btn,
 a.abj404-empty-trash-btn {

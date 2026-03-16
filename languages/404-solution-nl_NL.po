@@ -2509,3 +2509,9 @@ msgstr "Overschrijving voor de inhoudszoekmachine (leeg neemt de globale score h
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Fout: de scoredrempel per engine moet leeg zijn of een getal tussen 0 en 99"
+
+msgid "Engine"
+msgstr "Zoekmachine"
+
+msgid "Status"
+msgstr "Status"

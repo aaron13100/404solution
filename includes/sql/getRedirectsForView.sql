@@ -54,6 +54,7 @@ select
 
         wp_abj404_redirects.code,
         wp_abj404_redirects.timestamp,
+        COALESCE(wp_abj404_redirects.engine, '') AS engine,
         wp_posts.id as wp_post_id,
 
         {logsTableColumns}

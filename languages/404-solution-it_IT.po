@@ -2509,3 +2509,9 @@ msgstr "Sostituzione per il motore contenuto (vuoto eredita il punteggio globale
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Errore: la soglia di punteggio per motore deve essere vuota o un numero tra 0 e 99"
+
+msgid "Engine"
+msgstr "Motore"
+
+msgid "Status"
+msgstr "Stato"

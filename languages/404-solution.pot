@@ -20,6 +20,12 @@ msgstr ""
 msgid "Destination URL"
 msgstr ""
 
+msgid "Engine"
+msgstr ""
+
+msgid "Status"
+msgstr ""
+
 msgid "Some items could not be anonymized."
 msgstr ""
 

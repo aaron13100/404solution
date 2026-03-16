@@ -2513,3 +2513,9 @@ msgstr "コンテンツエンジンの上書き（空欄の場合は上のグロ
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "エラー：エンジン別スコアしきい値は空または0から99の数値である必要があります"
+
+msgid "Engine"
+msgstr "エンジン"
+
+msgid "Status"
+msgstr "ステータス"

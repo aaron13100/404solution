@@ -2517,3 +2517,9 @@ msgstr "内容引擎覆盖（留空则继承上方的全局分数）"
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "错误：每引擎分数阈值必须为空或0到99之间的数字"
+
+msgid "Engine"
+msgstr "引擎"
+
+msgid "Status"
+msgstr "状态"

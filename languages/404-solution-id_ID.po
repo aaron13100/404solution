@@ -2504,3 +2504,9 @@ msgstr "Penggantian untuk mesin konten (kosong mewarisi skor global di atas)"
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Kesalahan: ambang skor per mesin harus kosong atau angka antara 0 dan 99"
+
+msgid "Engine"
+msgstr "Mesin"
+
+msgid "Status"
+msgstr "Status"

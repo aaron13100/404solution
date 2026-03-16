@@ -2509,3 +2509,9 @@ msgstr "Åsidosättning för innehållssökmotorn (tomt ärver den globala poän
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Fel: poängtröskeln per motor måste vara tom eller ett tal mellan 0 och 99"
+
+msgid "Engine"
+msgstr "Motor"
+
+msgid "Status"
+msgstr "Status"

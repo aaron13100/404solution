@@ -304,7 +304,9 @@ class ABJ_404_Solution_ImportExportService {
         }
 
         if (!$dryRun) {
-            $this->dao->setupRedirect($fromURL, (string)$status, (string)$type, (string)$final_dest, (string)301);
+            $engine = isset($dataArray['engine']) && is_string($dataArray['engine']) && $dataArray['engine'] !== ''
+                ? $dataArray['engine'] : 'import';
+            $this->dao->setupRedirect($fromURL, (string)$status, (string)$type, (string)$final_dest, (string)301, 0, $engine);
         }
 
         return $anyIssuesToNote;
@@ -421,10 +423,17 @@ class ABJ_404_Solution_ImportExportService {
             return array('from_url' => '', 'to_url' => '');
         }
 
-        return array(
+        $result = array(
             'from_url' => $from,
             'to_url' => $to,
         );
+
+        $engineIndex = $this->findImportHeaderIndex($normalizedHeaders, array('engine'));
+        if ($engineIndex !== -1 && array_key_exists($engineIndex, $row)) {
+            $result['engine'] = trim((string)$row[$engineIndex]);
+        }
+
+        return $result;
     }
 
     /**
@@ -448,6 +457,16 @@ class ABJ_404_Solution_ImportExportService {
      */
     private function mapImportRowWithoutHeaders($columns) {
         $columns = array_values($columns);
+        if (count($columns) === 6) {
+            return array(
+                'from_url' => trim((string)$columns[0]),
+                'status'   => trim((string)$columns[1]),
+                'type'     => trim((string)$columns[2]),
+                'to_url'   => trim((string)$columns[3]),
+                'wp_type'  => trim((string)$columns[4]),
+                'engine'   => trim((string)$columns[5]),
+            );
+        }
         if (count($columns) === 5) {
             return array(
                 'from_url' => trim((string)$columns[0]),
@@ -463,7 +482,7 @@ class ABJ_404_Solution_ImportExportService {
                 'to_url'   => trim((string)$columns[1]),
             );
         }
-        return array('error' => 'Invalid CSV format. ' . count($columns) . ' found but 2 or 5 expected.');
+        return array('error' => 'Invalid CSV format. ' . count($columns) . ' found but 2, 5, or 6 expected.');
     }
 
     /**

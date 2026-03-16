@@ -2506,3 +2506,9 @@ msgstr "Remplacement pour le moteur de contenu (vide hérite du score global ci-
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Erreur : le seuil de score par moteur doit être vide ou un nombre entre 0 et 99"
+
+msgid "Engine"
+msgstr "Moteur"
+
+msgid "Status"
+msgstr "Statut"

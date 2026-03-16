@@ -5,7 +5,8 @@ select {wp_abj404_logsv2}.timestamp,
        {wp_abj404_logsv2}.dest_url as action,
        {wp_abj404_logsv2}.requested_url as url,
        COALESCE({wp_abj404_logsv2}.requested_url_detail, '') AS url_detail,
-       usernameLookup.lkup_value as username
+       usernameLookup.lkup_value as username,
+       COALESCE({wp_abj404_logsv2}.engine, '') AS engine
 
 from {wp_abj404_logsv2}
 

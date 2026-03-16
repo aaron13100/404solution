@@ -778,7 +778,7 @@ class ABJ_404_Solution_PluginLogic {
                 $defaultRedirect = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
                 if (!isset($redirect['id']) || $redirect['id'] == 0) {
                     $this->dao->setupRedirect($fromURL, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_POST,
-                            (string)$pageid, $defaultRedirect, 0);
+                            (string)$pageid, $defaultRedirect, 0, 'page ID');
                 }
                 $this->dao->logRedirectHit($fromURL, $permalink, 'page ID');
                 $this->forceRedirect($permalink, (int)$defaultRedirect);

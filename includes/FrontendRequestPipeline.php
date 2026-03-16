@@ -178,9 +178,22 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 $matchResult = $this->runMatchingEngines($matchRequest);
                 if ($matchResult !== null) {
                     $defaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '';
-                    $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO, $matchResult->getType(), $matchResult->getId(), $defaultRedirect, 0);
-                    $this->dao->logRedirectHit($requestedURL, $matchResult->getLink(), $matchResult->getEngineName());
-                    $this->logic->forceRedirect(esc_url($matchResult->getLink()), (int)$defaultRedirect);
+                    $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO, $matchResult->getType(), $matchResult->getId(), $defaultRedirect, 0, $matchResult->getEngineName());
+
+                    // Resolve link via WordPress API to ensure correct site prefix
+                    // (cached URLs from permalink_cache may omit subdirectory prefix)
+                    $resolvedLink = $matchResult->getLink();
+                    if ($matchResult->getId() !== '' && $matchResult->getId() !== '0') {
+                        $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray(
+                            $matchResult->getId() . '|' . $matchResult->getType(), 0
+                        );
+                        if (is_array($permalink) && !empty($permalink['link']) && is_string($permalink['link']) && $permalink['link'] !== 'dunno') {
+                            $resolvedLink = $permalink['link'];
+                        }
+                    }
+
+                    $this->dao->logRedirectHit($requestedURL, $resolvedLink, $matchResult->getEngineName());
+                    $this->logic->forceRedirect(esc_url($resolvedLink), (int)$defaultRedirect);
                     exit;
                 }
             }
@@ -231,7 +244,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                             } else {
                                 $spFinalDest = isset($permalink['id']) && is_scalar($permalink['id']) ? (string)$permalink['id'] : '';
                                 $spDefaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '';
-                                $this->dao->setupRedirect(esc_url($requestedURL), (string)ABJ404_STATUS_AUTO, (string)$this->wpTypePost(), $spFinalDest, $spDefaultRedirect, 0);
+                                $this->dao->setupRedirect(esc_url($requestedURL), (string)ABJ404_STATUS_AUTO, (string)$this->wpTypePost(), $spFinalDest, $spDefaultRedirect, 0, 'single page');
                                 $spLink = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
                                 $this->dao->logRedirectHit($requestedURL, $spLink, 'single page');
                                 $this->logic->forceRedirect(esc_url($spLink), (int)$spDefaultRedirect);

@@ -2509,3 +2509,9 @@ msgstr "Anulación para el motor de contenido (en blanco hereda la puntuación g
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Error: el umbral de puntuación por motor debe estar vacío o ser un número entre 0 y 99"
+
+msgid "Engine"
+msgstr "Motor"
+
+msgid "Status"
+msgstr "Estado"

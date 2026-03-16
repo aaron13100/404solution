@@ -23,8 +23,9 @@ SELECT r.url as from_url,
             when r.final_dest = '0' then null
             else r.final_dest
        end as to_url,
-       wpp.post_type as type_wp
-       
+       wpp.post_type as type_wp,
+       COALESCE(r.engine, '') as engine
+
        /* ,
        r.final_dest,
        pc.url,

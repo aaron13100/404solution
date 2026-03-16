@@ -2525,3 +2525,9 @@ msgstr "تجاوز لمحرك المحتوى (فارغ يرث النتيجة ا�
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "خطأ: يجب أن يكون حد الدرجة لكل محرك فارغاً أو رقماً بين 0 و99"
+
+msgid "Engine"
+msgstr "محرك"
+
+msgid "Status"
+msgstr "الحالة"

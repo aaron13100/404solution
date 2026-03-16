@@ -1840,15 +1840,16 @@ class ABJ_404_Solution_DataAccess {
     	$result = mysqli_query($wpdb->dbh, $query);
     	if ($result instanceof \mysqli_result) {
     		// write the header
-    		$line = 'from_url,status,type,to_url,wp_type';
+    		$line = 'from_url,status,type,to_url,wp_type,engine';
     		file_put_contents($tempFile, $line . "\n", FILE_APPEND);
-    		
+
     		while (($row = mysqli_fetch_array($result, MYSQLI_ASSOC))) {
     			$line = $row['from_url'] . ',' .
      			$row['status'] . ',' .
      			$row['type'] . ',' .
      			$row['to_url'] . ', ' .
-    			$row['type_wp'];
+    			$row['type_wp'] . ',' .
+    			(isset($row['engine']) ? $row['engine'] : '');
      			file_put_contents($tempFile, $line . "\n", FILE_APPEND);
     		}
     		mysqli_free_result($result);
@@ -3142,6 +3143,7 @@ class ABJ_404_Solution_DataAccess {
             'remote_host',
             'user_ip',
             'username',
+            'engine',
         );
         $rawOrderByVal = $tableOptions['orderby'];
         $orderby = sanitize_text_field($abj404logic->sanitizeForSQL(is_string($rawOrderByVal) ? $rawOrderByVal : ''));
@@ -3476,6 +3478,7 @@ class ABJ_404_Solution_DataAccess {
             'requested_url_detail' => $requestedURLDetail,
             'username' => $usernameLookupID,
             'min_log_id' => $minLogID,
+            'engine' => substr($matchReason, 0, 64),
         ]);
     }
 
@@ -3816,7 +3819,7 @@ class ABJ_404_Solution_DataAccess {
      */
     private function sanitizeLogEntry(array $entry): ?array {
         // Required fields
-        $required = array('timestamp', 'user_ip', 'referrer', 'dest_url', 'requested_url', 'requested_url_detail', 'username', 'min_log_id');
+        $required = array('timestamp', 'user_ip', 'referrer', 'dest_url', 'requested_url', 'requested_url_detail', 'username', 'min_log_id', 'engine');
         foreach ($required as $key) {
             if (!array_key_exists($key, $entry)) {
                 return null;
@@ -3848,6 +3851,7 @@ class ABJ_404_Solution_DataAccess {
         $minLogIdVal = $entry['min_log_id'] ?? null;
         $sanitized['min_log_id'] = ($minLogIdVal === null || !is_scalar($minLogIdVal))
             ? null : absint($minLogIdVal);
+        $sanitized['engine'] = $normalizeString($entry['engine'], 64);
 
         // Drop rows without required URL data
         if ($sanitized['requested_url'] === '' || $sanitized['dest_url'] === '') {
@@ -4210,9 +4214,10 @@ class ABJ_404_Solution_DataAccess {
      * @param string $final_dest
      * @param string $code
      * @param int $disabled
+     * @param string|null $engine  The matching engine that created this redirect (null for manual/unknown)
      * @return int
      */
-    function setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled = 0) {
+    function setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled = 0, $engine = null) {
         global $wpdb;
 
         // nonce is verified outside of this method. We can't verify here because 
@@ -4253,24 +4258,21 @@ class ABJ_404_Solution_DataAccess {
             $fromURL = $abj404logic->normalizeToRelativePath($fromURL);
 
             // Fix HIGH #1 (3rd review): Remove esc_sql() - wpdb->insert handles escaping
-            $wpdb->insert($redirectsTable, array(
+            $insertData = array(
                 'url' => $fromURL,
                 'status' => $status,
                 'type' => $type,
                 'final_dest' => $final_dest,
                 'code' => $code,
                 'disabled' => $disabled,
-                'timestamp' => $now
-                    ), array(
-                '%s',
-                '%d',
-                '%d',
-                '%s',
-                '%d',
-                '%d',
-                '%d'
-                    )
+                'timestamp' => $now,
             );
+            $insertFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d');
+            if ($engine !== null) {
+                $insertData['engine'] = substr((string)$engine, 0, 64);
+                $insertFormats[] = '%s';
+            }
+            $wpdb->insert($redirectsTable, $insertData, $insertFormats);
 
             // Invalidate caches
             $this->invalidateStatusCountsCache();
@@ -5353,7 +5355,7 @@ class ABJ_404_Solution_DataAccess {
         $validids = array_map('absint', $ids);
         $multipleIds = implode(',', $validids);
     
-        $query = "select id, url, type, status, final_dest, code from {wp_abj404_redirects} " .
+        $query = "select id, url, type, status, final_dest, code, COALESCE(engine, '') as engine from {wp_abj404_redirects} " .
                 "where id in (" . $multipleIds . ")";
         $query = $this->doTableNameReplacements($query);
         $rows = $wpdb->get_results($query, ARRAY_A);

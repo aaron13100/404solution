@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     `code` bigint(20) NOT NULL,
     `disabled` int(10) NOT NULL default 0,
     `timestamp` bigint(30) NOT NULL,
+    `engine` varchar(64) DEFAULT NULL,
     PRIMARY KEY  (`id`),
     KEY `status` (`status`),
     KEY `type` (`type`),

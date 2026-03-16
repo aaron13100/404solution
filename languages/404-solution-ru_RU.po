@@ -2514,3 +2514,9 @@ msgstr "Переопределение для поиска по содержим
 #: includes/PluginLogic.php
 msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
 msgstr "Ошибка: порог оценки для движка должен быть пустым или числом от 0 до 99"
+
+msgid "Engine"
+msgstr "Движок"
+
+msgid "Status"
+msgstr "Статус"
