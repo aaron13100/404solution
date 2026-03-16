@@ -379,8 +379,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 if (!is_string($entry) && !is_scalar($entry)) {
                     continue;
                 }
-                $parts = explode("|\\|", (string)$entry);
-                if ($parts[0] === $key) {
+                if ((string)$entry === $key) {
                     return true;
                 }
             }

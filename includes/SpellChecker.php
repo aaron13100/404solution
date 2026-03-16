@@ -693,7 +693,7 @@ class ABJ_404_Solution_SpellChecker {
 		// (if either of these numbers increases then we need to clear the spelling cache.)
 		$excluePagesCount = 0;
 		$excludePagesRaw = isset($options['excludePages[]']) && is_string($options['excludePages[]']) ? $options['excludePages[]'] : '';
-		if (!trim($excludePagesRaw) == '') {
+		if (trim($excludePagesRaw) !== '') {
 			$jsonResult = json_decode($excludePagesRaw);
 			if (!is_array($jsonResult)) {
 				$jsonResult = array($jsonResult);
@@ -779,11 +779,9 @@ class ABJ_404_Solution_SpellChecker {
 			if ($excludePage == null || trim($excludePage) == '') {
 				continue;
 			}
-			$items = explode("|\\|", $excludePage);
-			$idAndTypeToExclude = $items[0];
-
 			// remove it from the results list.
-			unset($permalinks[$idAndTypeToExclude]);
+			// Entry format matches permalink key format: "id|type" (e.g. "42|1").
+			unset($permalinks[(string)$excludePage]);
 		}
 
 		return $permalinks;
