@@ -8,12 +8,12 @@ function escapeHtml(text) {
 }
 
 jQuery(document).ready(function($) {
-    var field = jQuery('#add_exlude_page_field');
+    var field = jQuery('#add_exclude_page_field');
     field.keyup(function() {
-        jQuery('#add_exlude_page_field').css('background-color', '');
+        jQuery('#add_exclude_page_field').css('background-color', '');
     });
     field.focusout(function() {
-        jQuery('#add_exlude_page_field').css('background-color', '');
+        jQuery('#add_exclude_page_field').css('background-color', '');
     });
     
     var closeableULs = document.getElementsByClassName('closeable-ul');
@@ -25,9 +25,9 @@ jQuery(document).ready(function($) {
     });
     
     // get the URL from the html page.
-    var url = jQuery("#add_exlude_page_field").attr("data-url");
+    var url = jQuery("#add_exclude_page_field").attr("data-url");
     var cache = {};
-    jQuery("#add_exlude_page_field").catcomplete({
+    jQuery("#add_exclude_page_field").catcomplete({
         source: function( request, response ) {
                 var term = request.term;
 				if (term in cache) {
@@ -54,13 +54,13 @@ jQuery(document).ready(function($) {
     
     // prevent/disable the enter key from submitting the form for the search box.
     // maybe the user pressed enter after entering an external URL.
-    jQuery('#add_exlude_page_field').keypress(function(event) {
+    jQuery('#add_exclude_page_field').keypress(function(event) {
         if (event.keyCode === 13) {
             // don't submit the form.
             event.preventDefault();
             
             // close the menu if it's open.
-            jQuery('#add_exlude_page_field').catcomplete("close");
+            jQuery('#add_exclude_page_field').catcomplete("close");
         }
     });
     
@@ -131,7 +131,7 @@ function handleClosedULItemAction(e) {
 
 function addPageToExcludeToList(item) {
 	// clear the autocomplete box because we're done with it
-	document.getElementById('add_exlude_page_field').value = '';
+	document.getElementById('add_exclude_page_field').value = '';
 	
 	// get the existing values from the ul
     var ulToAddTo = document.getElementsByClassName('exclude-pages-ul')[0];

@@ -3061,7 +3061,7 @@ html[data-theme="obsidian"] .abj404-accordion-content select {
 }
 
 .abj404-accordion-content label.add_a_redirect_label,
-.abj404-accordion-content label.add_exlude_page_field_label {
+.abj404-accordion-content label.add_exclude_page_field_label {
     display: block;
     font-weight: 600;
     color: var(--abj404-text, #2c3338);
@@ -3070,7 +3070,7 @@ html[data-theme="obsidian"] .abj404-accordion-content select {
 }
 
 .abj404-accordion-content #redirect_to_user_field,
-.abj404-accordion-content input#add_exlude_page_field {
+.abj404-accordion-content input#add_exclude_page_field {
     padding: 8px 12px;
     border: 1px solid var(--abj404-border, #8c8f94);
     border-radius: 4px;
@@ -3080,7 +3080,7 @@ html[data-theme="obsidian"] .abj404-accordion-content select {
 }
 
 .abj404-accordion-content #redirect_to_user_field:focus,
-.abj404-accordion-content input#add_exlude_page_field:focus {
+.abj404-accordion-content input#add_exclude_page_field:focus {
     border-color: var(--abj404-primary, #2271b1);
     box-shadow: 0 0 0 1px var(--abj404-primary, #2271b1);
     outline: none;

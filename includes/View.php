@@ -2499,8 +2499,6 @@ class ABJ_404_Solution_View {
         $redirectHtml = $this->f->str_replace('{redirect_to_label}', '', $redirectHtml);
         $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
             __('(Type a page name or an external URL)', '404-solution'), $redirectHtml);
-        $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMTPY}',
-            __('(Type a page name or an external URL)', '404-solution'), $redirectHtml);
         $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
             __('(A page has been selected.)', '404-solution'), $redirectHtml);
         $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
