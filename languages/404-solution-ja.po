@@ -1182,7 +1182,7 @@ msgstr "このURLを正規表現として扱う"
 msgid "Type"
 msgstr "タイプ"
 
-msgid "Type a page name here and select it to add it to the exlusion list"
+msgid "Type a page name here and select it to add it to the exclusion list"
 msgstr "ここにページ名を入力して選択すると、除外リストに追加されます"
 
 msgid "URL"

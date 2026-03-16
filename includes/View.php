@@ -2956,7 +2956,7 @@ class ABJ_404_Solution_View {
         }
         if ($displayed == 0) {
             $html .= "<tr>\n" .
-                "<td colspan=\"10\" class=\"abj404-empty-state\">" .
+                "<td colspan=\"9\" class=\"abj404-empty-state\">" .
                 "<div class=\"abj404-empty-state-icon\">📋</div>" .
                 "<h3>" . __('No Redirect Records To Display', '404-solution') . "</h3>" .
                 "<p>" . __('Redirects will appear here once created.', '404-solution') . "</p>" .

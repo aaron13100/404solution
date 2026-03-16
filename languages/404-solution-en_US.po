@@ -1195,8 +1195,8 @@ msgstr "Treat this URL as a regular expression"
 msgid "Type"
 msgstr "Type"
 
-msgid "Type a page name here and select it to add it to the exlusion list"
-msgstr "Type a page name here and select it to add it to the exlusion list"
+msgid "Type a page name here and select it to add it to the exclusion list"
+msgstr "Type a page name here and select it to add it to the exclusion list"
 
 msgid "URL"
 msgstr "URL"

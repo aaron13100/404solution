@@ -1176,7 +1176,7 @@ msgstr "Обрабатывать этот URL как регулярное выр
 msgid "Type"
 msgstr "Тип"
 
-msgid "Type a page name here and select it to add it to the exlusion list"
+msgid "Type a page name here and select it to add it to the exclusion list"
 msgstr "Введите название страницы здесь и выберите его, чтобы добавить в список исключений"
 
 msgid "URL"

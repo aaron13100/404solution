@@ -1185,7 +1185,7 @@ msgstr "将此 URL 视为正则表达式"
 msgid "Type"
 msgstr "类型"
 
-msgid "Type a page name here and select it to add it to the exlusion list"
+msgid "Type a page name here and select it to add it to the exclusion list"
 msgstr "在此处输入页面名称并选择它以将其添加到排除列表"
 
 msgid "URL"

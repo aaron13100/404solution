@@ -1171,7 +1171,7 @@ msgstr "معاملة هذا الرابط كتعبير نمطي"
 msgid "Type"
 msgstr "النوع"
 
-msgid "Type a page name here and select it to add it to the exlusion list"
+msgid "Type a page name here and select it to add it to the exclusion list"
 msgstr "اكتب اسم صفحة هنا واخترها لإضافتها إلى قائمة الاستبعاد"
 
 msgid "URL"

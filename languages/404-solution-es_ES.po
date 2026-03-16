@@ -1176,7 +1176,7 @@ msgstr "Tratar esta URL como una expresión regular"
 msgid "Type"
 msgstr "Tipo"
 
-msgid "Type a page name here and select it to add it to the exlusion list"
+msgid "Type a page name here and select it to add it to the exclusion list"
 msgstr "Escriba un nombre de página aquí y selecciónelo para añadirlo a la lista de exclusión"
 
 msgid "URL"

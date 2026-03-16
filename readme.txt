@@ -302,7 +302,6 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * NEW: Post type archive fallback engine — redirects to archive pages when no single-post match is found.
 * NEW: Per-engine score thresholds — fine-tune how aggressive each matching strategy is (Advanced Settings).
 * NEW: Per-post and per-term exclusion — exclude individual posts, pages, or taxonomy terms from automatic redirects via edit screen checkbox.
-* NEW: Debug console — admin-only interstitial page shows which engines ran, their scores, and why a redirect was chosen (requires debug mode).
 * NEW: Orphaned redirect cleanup — daily cron automatically removes auto-redirects whose destination post was deleted or unpublished.
 * Improvement: WordPress.org discoverability — updated plugin description, tags, and FAQ for better search visibility.
 
