@@ -257,17 +257,6 @@ Two ways:
 
 Category and tag terms can also be excluded via term meta on the edit screen.
 
-= What is the debug console and how do I use it? =
-
-The debug console is an admin-only diagnostic tool. When **Debug logging** is enabled in Advanced Settings, instead of redirecting you to the matched page, 404 Solution shows an interstitial page displaying:
-
-* Which of the 7 matching engines ran
-* Each engine's score and result
-* Why the winning match was chosen
-* A link to proceed with the redirect or go back
-
-This is visible only to plugin admins — regular visitors still get normal redirects.
-
 = Does 404 Solution work after a site migration? =
 
 Yes! 404 Solution is ideal for site migrations. It handles:
