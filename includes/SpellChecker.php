@@ -689,19 +689,19 @@ class ABJ_404_Solution_SpellChecker {
 	function findMatchingPosts(string $requestedURLRaw, string $includeCats = '1', string $includeTags = '1') {
 
 		$options = $this->logic->getOptions();
-		// the number of pages to cache is (max suggestions) + (the number of exlude pages).
+		// the number of pages to cache is (max suggestions) + (the number of exclude pages).
 		// (if either of these numbers increases then we need to clear the spelling cache.)
-		$excluePagesCount = 0;
+		$excludePagesCount = 0;
 		$excludePagesRaw = isset($options['excludePages[]']) && is_string($options['excludePages[]']) ? $options['excludePages[]'] : '';
 		if (trim($excludePagesRaw) !== '') {
 			$jsonResult = json_decode($excludePagesRaw);
 			if (!is_array($jsonResult)) {
 				$jsonResult = array($jsonResult);
 			}
-			$excluePagesCount = count($jsonResult);
+			$excludePagesCount = count($jsonResult);
 		}
 		$suggestMaxRaw = isset($options['suggest_max']) && is_scalar($options['suggest_max']) ? $options['suggest_max'] : 5;
-		$maxCacheCount = absint($suggestMaxRaw) + $excluePagesCount;
+		$maxCacheCount = absint($suggestMaxRaw) + $excludePagesCount;
 
 		$requestedURLSpaces = $this->f->str_replace($this->separatingCharacters, " ", $requestedURLRaw);
 		$requestedURLCleaned = $this->getLastURLPart($requestedURLSpaces);
@@ -1349,12 +1349,13 @@ class ABJ_404_Solution_SpellChecker {
 							$coverageRatio
 						));
 					} else {
-						// Zero results from N-gram filter on a populated cache means
-						// no pages are similar enough. Skip prefiltering for this edge case
-						// to allow Levenshtein a chance (N-gram might have missed borderline matches).
+						// Zero results at Dice >= 0.3 means every page differs by >70%
+						// of its n-grams. Any Levenshtein match would score below
+						// auto_score (60) — scanning all pages is wasted work.
 						$this->logger->debugMessage(
-							"N-gram prefilter skipped (gate 4: zero results): allowing fallback to full scan"
+							"N-gram prefilter: zero candidates at Dice >= 0.3 — no similar pages exist, returning early"
 						);
+						return array();
 					}
 				}
 			}

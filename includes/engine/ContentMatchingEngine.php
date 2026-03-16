@@ -33,8 +33,8 @@ class ABJ_404_Solution_ContentMatchingEngine implements ABJ_404_Solution_Matchin
     /** Weight assigned to a fuzzy (non-exact) keyword match (0.0–1.0). */
     const FUZZY_MATCH_WEIGHT = 0.75;
 
-    /** @var array<int, string> Common English stop words filtered from URL slugs. */
-    private static $stopWords = [
+    /** @var array<int, string> Common English stop words filtered from URL slugs and post content. */
+    public static $stopWords = [
         'the', 'and', 'for', 'with', 'this', 'that', 'from', 'your', 'have',
         'will', 'been', 'they', 'their', 'what', 'when', 'where', 'which',
         'there', 'about', 'would', 'could', 'should', 'into', 'than',
@@ -196,9 +196,14 @@ class ABJ_404_Solution_ContentMatchingEngine implements ABJ_404_Solution_Matchin
     }
 
     /**
-     * Build a SQL WHERE clause that matches any keyword in the post content.
+     * Build a SQL WHERE clause that matches any keyword in the cached content keywords.
      *
-     * Produces: and (lower(wp_posts.post_content) LIKE '%kw1%' OR lower(wp_posts.post_content) LIKE '%kw2%' ...)
+     * Uses the pre-extracted content_keywords column from the permalink cache table
+     * instead of searching the full post_content. Keywords are stored lowercase,
+     * so no lower() wrapping needed.
+     *
+     * When content_keywords is NULL (cache not yet populated), NULL LIKE '%x%'
+     * evaluates to NULL (falsy), so no rows match — graceful degradation.
      *
      * @param array<int, string> $keywords
      * @return string
@@ -207,7 +212,7 @@ class ABJ_404_Solution_ContentMatchingEngine implements ABJ_404_Solution_Matchin
         $conditions = [];
         foreach ($keywords as $kw) {
             $escaped = esc_sql($this->f->strtolower($kw));
-            $conditions[] = "lower(wp_posts.post_content) LIKE '%" . $escaped . "%'";
+            $conditions[] = "plc.content_keywords LIKE '%" . $escaped . "%'";
         }
 
         return ' and (' . implode(' OR ', $conditions) . ')';

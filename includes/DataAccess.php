@@ -5505,5 +5505,54 @@ class ABJ_404_Solution_DataAccess {
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         return $abj404dao->getRecordCount(array(ABJ404_STATUS_CAPTURED));
     }
-    
+
+    /**
+     * Get posts whose permalink cache rows have NULL content_keywords.
+     *
+     * @param int $limit Maximum rows to return.
+     * @return array<int, object> Each object has ->id and ->post_content.
+     */
+    function getPostsNeedingContentKeywords(int $limit = 500): array {
+        global $wpdb;
+
+        $limitResults = " */\n  limit " . absint($limit);
+
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPostsNeedingContentKeywords.sql");
+        $query = $this->doTableNameReplacements($query);
+        $query = $this->f->str_replace('{limit-results}', $limitResults, $query);
+
+        $rows = $wpdb->get_results($query);
+
+        if ($wpdb->last_error) {
+            $this->logger->errorMessage("Error fetching posts for content keywords: " . $wpdb->last_error);
+            return array();
+        }
+
+        return is_array($rows) ? $rows : array();
+    }
+
+    /**
+     * Store extracted content keywords for a permalink cache entry.
+     *
+     * @param int    $id       The post ID (permalink cache primary key).
+     * @param string $keywords Space-separated lowercase keywords.
+     * @return void
+     */
+    function updateContentKeywordsForId(int $id, string $keywords): void {
+        global $wpdb;
+
+        $table = $this->doTableNameReplacements('{wp_abj404_permalink_cache}');
+        $wpdb->update(
+            $table,
+            array('content_keywords' => $keywords),
+            array('id' => $id),
+            array('%s'),
+            array('%d')
+        );
+
+        if ($wpdb->last_error) {
+            $this->logger->errorMessage("Error updating content_keywords for id $id: " . $wpdb->last_error);
+        }
+    }
+
 }

@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `{wp_abj404_permalink_cache}` (
     `meta` tinytext NOT NULL COMMENT 'e.g. {t:"post",s:"published"}',
     `url_length` smallint(6) default null,
     `post_parent` bigint(20) NOT NULL COMMENT 'wp_posts.post_parent. helps us add parent page URLs to the URL',
+    `content_keywords` text DEFAULT NULL COMMENT 'Space-separated keywords extracted from post_content',
 	PRIMARY KEY (`id`),
 	key `url_length` (`url_length`)
 ) COMMENT='404 Solution Plugin Permalinks Cache Table'

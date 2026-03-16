@@ -110,6 +110,8 @@ class ABJ_404_Solution_PermalinkCache {
         // and update the post_parent to be the parent ID of the parent.
         $this->dao->updatePermalinkCacheParentPages();
 
+        $this->populateContentKeywords();
+
         return $rowsInserted;
     }
     
@@ -120,9 +122,120 @@ class ABJ_404_Solution_PermalinkCache {
     function scheduleToRunAgain(int $executionCount): void {
         $maxExecutionTime = (int)ini_get('max_execution_time') - 5;
         $maxExecutionTime = max($maxExecutionTime, 25);
-        
+
         wp_schedule_single_event(1, ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
                 array($maxExecutionTime, $executionCount));
     }
-    
+
+    /** Maximum unique keywords to store per post. */
+    const MAX_CONTENT_KEYWORDS = 30;
+
+    /** Minimum word length to keep during keyword extraction. */
+    const MIN_KEYWORD_LENGTH = 3;
+
+    /**
+     * Populate content_keywords for permalink cache rows that have NULL.
+     *
+     * Reads post_content, strips HTML/shortcodes, filters stop words,
+     * keeps top keywords by frequency. Runs in batches to stay within
+     * PHP time limits.
+     *
+     * @param int $batchSize Maximum posts to process per call.
+     * @return int Number of rows updated.
+     */
+    function populateContentKeywords(int $batchSize = 500): int {
+        $rows = $this->dao->getPostsNeedingContentKeywords($batchSize);
+
+        if (empty($rows)) {
+            return 0;
+        }
+
+        $updated = 0;
+        foreach ($rows as $row) {
+            $id = isset($row->id) ? (int)$row->id : 0;
+            $content = isset($row->post_content) && is_string($row->post_content) ? $row->post_content : '';
+
+            $keywords = self::extractContentKeywords($content);
+            $this->dao->updateContentKeywordsForId($id, $keywords);
+            $updated++;
+        }
+
+        return $updated;
+    }
+
+    /**
+     * Extract significant keywords from HTML post content.
+     *
+     * 1. Strip shortcodes ([shortcode attr=val]...[/shortcode] and [self-closing])
+     * 2. Strip HTML tags
+     * 3. Decode HTML entities
+     * 4. Split on whitespace, lowercase, strip non-alpha
+     * 5. Filter: length < MIN_KEYWORD_LENGTH, stop words
+     * 6. Count frequency, take top MAX_CONTENT_KEYWORDS unique words
+     * 7. Return space-joined string
+     *
+     * @param string $htmlContent Raw post_content (may contain HTML and shortcodes).
+     * @return string Space-separated lowercase keywords.
+     */
+    public static function extractContentKeywords(string $htmlContent): string {
+        if (trim($htmlContent) === '') {
+            return '';
+        }
+
+        // Strip shortcodes: [tag attr="val"]content[/tag] and [self-closing /]
+        $text = preg_replace('/\[\/?\w+[^\]]*\]/', '', $htmlContent);
+        if (!is_string($text)) {
+            $text = $htmlContent;
+        }
+
+        // Strip HTML tags
+        $text = strip_tags($text);
+
+        // Decode HTML entities
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Lowercase
+        $text = strtolower($text);
+
+        // Replace non-alpha characters with spaces (keeps Unicode letters via \p{L})
+        $text = preg_replace('/[^\p{L}]+/u', ' ', $text);
+        if (!is_string($text)) {
+            return '';
+        }
+
+        // Split on whitespace
+        $words = preg_split('/\s+/', trim($text));
+        if (!is_array($words)) {
+            return '';
+        }
+
+        $stopLookup = array_flip(ABJ_404_Solution_ContentMatchingEngine::$stopWords);
+        $freq = [];
+
+        foreach ($words as $word) {
+            if (!is_string($word) || strlen($word) < self::MIN_KEYWORD_LENGTH) {
+                continue;
+            }
+            if (isset($stopLookup[$word])) {
+                continue;
+            }
+            if (!isset($freq[$word])) {
+                $freq[$word] = 0;
+            }
+            $freq[$word]++;
+        }
+
+        if (empty($freq)) {
+            return '';
+        }
+
+        // Sort by frequency descending
+        arsort($freq);
+
+        // Take top N unique words
+        $top = array_slice(array_keys($freq), 0, self::MAX_CONTENT_KEYWORDS);
+
+        return implode(' ', $top);
+    }
+
 }
