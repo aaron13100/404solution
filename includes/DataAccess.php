@@ -1795,6 +1795,7 @@ class ABJ_404_Solution_DataAccess {
         // we delete by prefix from wp_options directly.
         global $wpdb;
         if (isset($wpdb->options) && method_exists($wpdb, 'query')) {
+            /** @var string $optionsTable */
             $optionsTable = esc_sql($wpdb->options);
             $wpdb->query(
                 "DELETE FROM `{$optionsTable}` WHERE option_name LIKE '_transient_abj404_view_%'"
