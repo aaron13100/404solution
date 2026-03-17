@@ -133,6 +133,10 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         // Get options for suggestion settings
         $options = $abj404logic->getOptions();
 
+        // Async worker: disable the N-gram gate 4 early return so the full
+        // Levenshtein scan runs — the extra time is acceptable in background.
+        $spellChecker->setSkipNgramGate4(true);
+
         // Perform the expensive computation
         $suggestCatsRaw = isset($options['suggest_cats']) ? $options['suggest_cats'] : '';
         $suggestTagsRaw = isset($options['suggest_tags']) ? $options['suggest_tags'] : '';

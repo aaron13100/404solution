@@ -53,6 +53,11 @@ class ABJ_404_Solution_SpellChecker {
 
 	// Performance counters (for testing efficiency - disabled by default)
 	private bool $enablePerformanceCounters = false;
+
+	// When true, skip the N-gram gate 4 early return so the full Levenshtein
+	// scan runs.  The async page-suggestions worker sets this because the
+	// 5-second scan is acceptable in a background process.
+	private bool $skipNgramGate4 = false;
 	private int $levenshteinCallCount = 0;
 	private int $totalPagesConsidered = 0;
 
@@ -146,6 +151,14 @@ class ABJ_404_Solution_SpellChecker {
 		if ($enable) {
 			$this->resetPerformanceCounters();
 		}
+	}
+
+	/**
+	 * Skip the N-gram gate 4 early return so the full Levenshtein scan runs.
+	 * Used by the async page-suggestions worker where the scan time is acceptable.
+	 */
+	public function setSkipNgramGate4(bool $skip = true): void {
+		$this->skipNgramGate4 = $skip;
 	}
 
 	/**
@@ -1349,13 +1362,19 @@ class ABJ_404_Solution_SpellChecker {
 							$coverageRatio
 						));
 					} else {
-						// Zero results at Dice >= 0.3 means every page differs by >70%
-						// of its n-grams. Any Levenshtein match would score below
-						// auto_score (60) — scanning all pages is wasted work.
-						$this->logger->debugMessage(
-							"N-gram prefilter: zero candidates at Dice >= 0.3 — no similar pages exist, returning early"
-						);
-						return array();
+						if ($this->skipNgramGate4) {
+							// Async path (page suggestions worker): skip gate 4 and
+							// fall through to the full Levenshtein scan.
+							$this->logger->debugMessage(
+								"N-gram prefilter: zero candidates at Dice >= 0.3 — skipNgramGate4 is set, falling through to full scan"
+							);
+						} else {
+							// Synchronous 404 handling: return early to avoid a ~5s scan.
+							$this->logger->debugMessage(
+								"N-gram prefilter: zero candidates at Dice >= 0.3 — no similar pages exist, returning early"
+							);
+							return array();
+						}
 					}
 				}
 			}
