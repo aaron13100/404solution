@@ -1769,6 +1769,38 @@ class ABJ_404_Solution_DataAccess {
     function invalidateStatusCountsCache(): void {
         delete_transient(self::CACHE_KEY_REDIRECT_STATUS);
         delete_transient(self::CACHE_KEY_CAPTURED_STATUS);
+        $this->invalidateViewSnapshotCache();
+    }
+
+    /**
+     * Clear the view snapshot cache so the admin redirect/captured tables
+     * reflect newly created, updated, trashed, or deleted redirects immediately.
+     *
+     * This clears both the custom wp_abj404_view_cache table and the
+     * WordPress transients used as a secondary cache layer.
+     *
+     * @return void
+     */
+    function invalidateViewSnapshotCache(): void {
+        try {
+            // Clear all rows from the view cache table.
+            $query = "DELETE FROM {wp_abj404_view_cache} WHERE 1=1";
+            $this->queryAndGetResults($query, array('log_errors' => false));
+        } catch (\Throwable $e) {
+            // Best-effort: cache will expire naturally via TTL if this fails.
+        }
+
+        // Clear WordPress transients for view row and count snapshots.
+        // The transient keys are hashed (e.g. abj404_view_rows_<md5>), so
+        // we delete by prefix from wp_options directly.
+        global $wpdb;
+        if (isset($wpdb->options) && method_exists($wpdb, 'query')) {
+            $optionsTable = esc_sql($wpdb->options);
+            $wpdb->query(
+                "DELETE FROM `{$optionsTable}` WHERE option_name LIKE '_transient_abj404_view_%'"
+                . " OR option_name LIKE '_transient_timeout_abj404_view_%'"
+            );
+        }
     }
 
     /**
@@ -4832,8 +4864,12 @@ class ABJ_404_Solution_DataAccess {
             $query = "update {wp_abj404_redirects} set disabled = 1 where status in (" . $typesForSQL . ")";
             $query = $this->doTableNameReplacements($query);
             $redirectCount = $wpdb->query($query);
-            
-            $message .= sprintf( _n( '%s redirect entry was moved to the trash.', 
+
+            // Invalidate caches so the admin table reflects the purge immediately
+            $this->invalidateStatusCountsCache();
+            $this->clearRegexRedirectsCache();
+
+            $message .= sprintf( _n( '%s redirect entry was moved to the trash.',
                     '%s redirect entries were moved to the trash.', $redirectCount, '404-solution'), $redirectCount);
         }
 
