@@ -39,6 +39,14 @@
     }
 }
 
+/* Loading text message */
+.abj404-loading-text {
+    color: #666;
+    font-style: italic;
+    margin: 5px 0 10px;
+    font-size: 0.95em;
+}
+
 /* No suggestions fallback message */
 .abj404-no-suggestions {
     color: #666;
@@ -52,6 +60,10 @@
     .abj404-skeleton {
         background: linear-gradient(90deg, #2a2a2a 25%, #333333 50%, #2a2a2a 75%);
         background-size: 200% 100%;
+    }
+
+    .abj404-loading-text {
+        color: #aaa;
     }
 
     .abj404-no-suggestions {

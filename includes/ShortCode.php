@@ -638,6 +638,7 @@ class ABJ_404_Solution_ShortCode {
                 $pSuggestTitle )) . "\n";
         $content .= wp_kses_post($pSuggestBefore);
         $content .= '<div class="abj404-loading">' . "\n";
+        $content .= '<p class="abj404-loading-text">' . esc_html__('Loading page suggestions...', '404-solution') . '</p>' . "\n";
         $content .= $skeletons;
         $content .= '</div>' . "\n";
         $content .= wp_kses_post($pSuggestAfter) . "\n";

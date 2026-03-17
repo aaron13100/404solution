@@ -2611,3 +2611,7 @@ msgstr "Format CSV tidak valid. Tidak dapat memetakan kolom sumber/tujuan."
 #, php-format
 msgid "Invalid CSV format. %d columns found but 2, 5, or 6 expected."
 msgstr "Format CSV tidak valid. %d kolom ditemukan, tetapi 2, 5, atau 6 yang diharapkan."
+
+#: includes/ShortCode.php
+msgid "Loading page suggestions..."
+msgstr "Memuat saran halaman..."

@@ -84,11 +84,22 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
             // Worker claims work by setting started=time(), if still pending after 90s, it likely crashed
             // Matches the worker recovery threshold in Ajax_SuggestionCompute.php:67
             $startedAt = (isset($data['started']) && is_scalar($data['started'])) ? (int)$data['started'] : 0;
+            $createdAt = (isset($data['created']) && is_scalar($data['created'])) ? (int)$data['created'] : 0;
+
             if ($startedAt > 0 && (time() - $startedAt) > 90) {
                 // Computation started but hasn't completed in 90 seconds - worker likely crashed
-                wp_send_json(array('status' => 'timeout', 'message' => 'Computation timed out'), 504);
+                // Return 200 so the JS success handler catches it immediately (not error retry loop)
+                wp_send_json(array('status' => 'timeout', 'message' => 'Computation timed out'));
                 return; // @phpstan-ignore deadCode.unreachable
             }
+
+            if ($startedAt === 0 && $createdAt > 0 && (time() - $createdAt) > 15) {
+                // No worker has claimed work in 15 seconds - background dispatch likely failed
+                // (common on single-threaded servers where wp_remote_post loopback fails)
+                wp_send_json(array('status' => 'timeout', 'message' => 'Worker failed to start'));
+                return; // @phpstan-ignore deadCode.unreachable
+            }
+
             // Still computing normally
             wp_send_json(array('status' => 'pending'));
             return; // @phpstan-ignore deadCode.unreachable

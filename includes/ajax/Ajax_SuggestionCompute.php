@@ -84,10 +84,12 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
                 // First worker - claim the work by setting started=time()
                 // TTL of 120s gives slow hosts enough time to complete computation
                 $existingUrl = isset($existing['url']) ? $existing['url'] : '';
+                $existingCreated = (isset($existing['created']) && is_scalar($existing['created'])) ? (int)$existing['created'] : time();
                 set_transient($transientKey, array(
                     'status' => 'pending',
                     'url' => $existingUrl,
                     'started' => time(),  // Claim the work
+                    'created' => $existingCreated,  // Preserve creation timestamp
                     'token' => $storedToken
                 ), 120);
                 // Proceed to compute

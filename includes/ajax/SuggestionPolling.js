@@ -14,7 +14,7 @@
 
     var requestedURL = $placeholder.data('requested-url');
     var pollInterval = 1000; // 1 second
-    var maxAttempts = 90;    // 90 seconds max (handles slow hosts)
+    var maxAttempts = 45;    // 45 seconds max (server detects worker no-show at ~15s)
     var attempts = 0;
 
     // Exit if no URL provided

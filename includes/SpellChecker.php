@@ -1800,6 +1800,7 @@ class ABJ_404_Solution_SpellChecker {
 			'status' => 'pending',
 			'url' => $normalizedURL,
 			'started' => 0,  // 0 = no worker has claimed yet; worker sets time() when claiming
+			'created' => time(),  // track creation time to detect worker no-show
 			'token' => $token
 		), 120); // 2 minute TTL (allows slow wp_remote_post)
 
