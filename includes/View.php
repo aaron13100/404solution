@@ -1632,7 +1632,7 @@ class ABJ_404_Solution_View {
 
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_edit", "abj404editRedirect");
 
-        echo '<form method="POST" name="admin-edit-redirect" action="' . esc_attr($link) . '">';
+        echo '<form method="POST" name="admin-edit-redirect" action="' . esc_attr($link) . '" onsubmit="return validateAddManualRedirectForm(event);">';
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
 
         // Capture source page and table options to return user to the same place after saving

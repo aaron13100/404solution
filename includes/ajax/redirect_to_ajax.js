@@ -1,8 +1,18 @@
 
 function validateAddManualRedirectForm(event) {
+    abj404_validateAndUpdateFeedback();
+
     var field = jQuery('#redirect_to_user_field');
     var val = field.val();
+    var hiddenField = jQuery('#redirect_to_data_field_id');
+    var hiddenVal = hiddenField.val();
     if (val === undefined || val === '') {
+        field.css("background-color", "#f79999");
+        field.focus();
+        return false;
+    }
+    if (hiddenVal === undefined || hiddenVal === null || hiddenVal === '') {
+        hiddenField.css("background-color", "#f79999");
         field.css("background-color", "#f79999");
         field.focus();
         return false;
@@ -149,7 +159,15 @@ function abj404_validateAndUpdateFeedback() {
         // if no item was selected then we force the search box to change back to 
         // whatever the user previously selected.
         var selectedVal = jQuery('#redirect_to_data_field_title').val();
-        jQuery("#redirect_to_user_field").val(selectedVal);
+        var selectedID = jQuery("#redirect_to_data_field_id").val();
+        if (selectedVal === undefined || selectedVal === null || selectedVal === '' ||
+                selectedID === undefined || selectedID === null || selectedID === '') {
+            jQuery("#redirect_to_user_field").val('');
+            jQuery("#redirect_to_data_field_title").val('');
+            jQuery("#redirect_to_data_field_id").val('');
+        } else {
+            jQuery("#redirect_to_user_field").val(selectedVal);
+        }
     }
 
     var selectedPageID = jQuery("#redirect_to_data_field_id").val();

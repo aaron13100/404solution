@@ -4046,6 +4046,46 @@ class ABJ_404_Solution_DataAccess {
         return $deletedCount;
     }
 
+    /**
+     * Delete old rows from the logs/protocol table based on age.
+     *
+     * Uses batch deletes to avoid a long-running single table lock.
+     *
+     * @param int $daysToKeep
+     * @param int $now
+     * @return int
+     */
+    private function deleteOldLogsByAge(int $daysToKeep, int $now): int {
+        if ($daysToKeep <= 0) {
+            return 0;
+        }
+
+        $cutoffTimestamp = max(0, $now - ($daysToKeep * 86400));
+        $deletedTotal = 0;
+        $batchSize = 2000;
+        $maxBatches = 200;
+
+        for ($i = 0; $i < $maxBatches; $i++) {
+            $result = $this->queryAndGetResults(
+                "DELETE FROM {wp_abj404_logsv2} WHERE timestamp <= %d LIMIT %d",
+                array(
+                    'query_params' => array($cutoffTimestamp, $batchSize),
+                    'log_errors' => false,
+                )
+            );
+            $rowsDeleted = intval(is_scalar($result['rows_affected'] ?? 0) ? $result['rows_affected'] : 0);
+            if ($rowsDeleted <= 0) {
+                break;
+            }
+            $deletedTotal += $rowsDeleted;
+            if ($rowsDeleted < $batchSize) {
+                break;
+            }
+        }
+
+        return $deletedTotal;
+    }
+
     /** Delete old redirects based on how old they are. This runs daily.
      * @return string
      */
@@ -4059,7 +4099,8 @@ class ABJ_404_Solution_DataAccess {
         $capturedURLsCount = 0;
         $autoRedirectsCount = 0;
         $manualRedirectsCount = 0;
-        $oldLogRowsDeleted = 0;
+        $oldLogRowsDeletedBySize = 0;
+        $oldLogRowsDeletedByAge = 0;
 
         // If true then the user clicked the button to execute the mantenance.
         $manually_fired = $abj404dao->getPostOrGetSanitize('manually_fired', 'false');
@@ -4092,6 +4133,8 @@ class ABJ_404_Solution_DataAccess {
         if (array_key_exists('capture_deletion', $options) && $options['capture_deletion'] != '0') {
             $status_list = ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER;
             $capturedURLsCount = $this->deleteOldRedirectsByType($options, $now, 'capture_deletion', $status_list, 'Captured 404');
+            $captureDeletionDays = intval(is_scalar($options['capture_deletion']) ? $options['capture_deletion'] : 0);
+            $oldLogRowsDeletedByAge = $this->deleteOldLogsByAge($captureDeletionDays, $now);
         }
 
         // Remove Automatic Redirects
@@ -4125,7 +4168,7 @@ class ABJ_404_Solution_DataAccess {
 	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
 	        $query = $this->f->str_replace('{lines_to_delete}', (string)$logLinesToDelete, $query);
 	        $results = $this->queryAndGetResults($query);
-	        $oldLogRowsDeleted = $results['rows_affected'];
+	        $oldLogRowsDeletedBySize = intval(is_scalar($results['rows_affected'] ?? 0) ? $results['rows_affected'] : 0);
         }
         
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
@@ -4138,7 +4181,9 @@ class ABJ_404_Solution_DataAccess {
                 $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
                 ", Old manual redirects removed: " . $manualRedirectsCount .
                 ", Orphaned auto redirects removed: " . $orphanedCount .
-                ", Old log lines removed: " . $oldLogRowsDeleted . ", New log size: " . $logSizeMB . "MB" .
+                ", Old log lines removed by age: " . $oldLogRowsDeletedByAge .
+                ", Old log lines removed by size: " . $oldLogRowsDeletedBySize .
+                ", New log size: " . $logSizeMB . "MB" .
                 ", Duplicate rows deleted: " . $duplicateRowsDeleted . ", Debug file size limited: " .
                 $renamed;
         
