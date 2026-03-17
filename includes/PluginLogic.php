@@ -970,8 +970,7 @@ class ABJ_404_Solution_PluginLogic {
 
 	            // the 404 page...
 	            $abj404logic->forceRedirect(esc_url($pLink),
-	            	(int)$defRedir,
-	            	(int)ABJ404_TYPE_404_DISPLAYED);
+	            	(int)$defRedir);
 	            exit;
             }
         }
