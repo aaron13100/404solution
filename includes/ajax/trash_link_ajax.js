@@ -38,11 +38,18 @@ function bindTrashLinkListeners() {
                 if (payload.result && payload.result.startsWith("fail")) {
                     row.css("background-color", "yellow");
                     alert("Error: " + JSON.stringify(payload, null, 2));
-                    
+
                 } else {
                     row.hide(1000, function(){ row.remove(); });
-                    jQuery('.subsubsub').replaceWith(payload.subsubsub);
-                    jQuery('.subsubsub').effect('highlight');
+                    // Update tab count badges with fresh counts from the server
+                    if (payload.tabCounts && Array.isArray(payload.tabCounts)) {
+                        jQuery('.abj404-content-tab .abj404-tab-count').each(function(i) {
+                            if (i < payload.tabCounts.length) {
+                                jQuery(this).text(payload.tabCounts[i]);
+                            }
+                        });
+                        jQuery('.abj404-content-tabs').effect('highlight');
+                    }
                 }
             },
             error: function (jqXHR, textStatus, errorThrown) {

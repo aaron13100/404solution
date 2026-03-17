@@ -56,29 +56,32 @@ class ABJ_404_Solution_Ajax_TrashLink {
         
         $data = array();
         $data['resultset'] = $abj404dao->moveRedirectsToTrash((int)$idToTrash, (int)$trashAction);
-        $data['subsubsub'] = is_object($abj404view) && method_exists($abj404view, 'getSubSubSub')
-            ? $abj404view->getSubSubSub($subpage)
-            : '';
-        
-        
+
+        // Return fresh tab counts so the JS can update the tab badges.
+        // Bypass cache since the trash action just changed the counts.
+        if ($subpage === 'abj404_captured') {
+            $counts = $abj404dao->getCapturedStatusCounts(true);
+        } else {
+            $counts = $abj404dao->getRedirectStatusCounts(true);
+        }
+        $data['tabCounts'] = array_values($counts);
+
         if (empty($data['resultset'])) {
             $data['result'] = "success";
-            
+
         } else {
             $data['result'] = "fail";
         }
 
         if ($data['result'] === 'success') {
             wp_send_json_success($data, 200);
-	        } else {
-	            // Keep the same fields for UI, but indicate failure via WP-shaped error response.
-	            wp_send_json_error(array(
-	                'message' => __('Error: Unable to move redirect to trash.', '404-solution'),
-	                'resultset' => $data['resultset'],
-	                'subsubsub' => $data['subsubsub'],
-	                'result' => 'fail',
-	            ), 500);
-	        }
+        } else {
+            wp_send_json_error(array(
+                'message' => __('Error: Unable to move redirect to trash.', '404-solution'),
+                'resultset' => $data['resultset'],
+                'result' => 'fail',
+            ), 500);
+        }
     }
     
 }
