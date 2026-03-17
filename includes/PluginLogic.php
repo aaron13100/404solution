@@ -2347,7 +2347,7 @@ class ABJ_404_Solution_PluginLogic {
         $response['message'] = "";
         $userEnteredURL = '';
 
-        if (!isset($_POST['redirect_to_data_field_id'])) {
+        if (!isset($_POST['redirect_to_data_field_id']) || $_POST['redirect_to_data_field_id'] === '') {
             $response['message'] = __('Error: Redirect destination is required.', '404-solution') . "<BR/>";
             return $response;
         }

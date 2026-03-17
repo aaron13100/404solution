@@ -4070,10 +4070,13 @@ class ABJ_404_Solution_DataAccess {
                 "DELETE FROM {wp_abj404_logsv2} WHERE timestamp <= %d LIMIT %d",
                 array(
                     'query_params' => array($cutoffTimestamp, $batchSize),
-                    'log_errors' => false,
+                    'log_errors' => true,
                 )
             );
-            $rowsDeleted = intval(is_scalar($result['rows_affected'] ?? 0) ? $result['rows_affected'] : 0);
+            $rowsDeletedRaw = $result['rows_affected'] ?? 0;
+            $rowsDeleted = (is_int($rowsDeletedRaw) || is_float($rowsDeletedRaw) || is_string($rowsDeletedRaw))
+                ? (int)$rowsDeletedRaw
+                : 0;
             if ($rowsDeleted <= 0) {
                 break;
             }
@@ -4168,7 +4171,10 @@ class ABJ_404_Solution_DataAccess {
 	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
 	        $query = $this->f->str_replace('{lines_to_delete}', (string)$logLinesToDelete, $query);
 	        $results = $this->queryAndGetResults($query);
-	        $oldLogRowsDeletedBySize = intval(is_scalar($results['rows_affected'] ?? 0) ? $results['rows_affected'] : 0);
+            $oldLogRowsDeletedBySizeRaw = $results['rows_affected'] ?? 0;
+            $oldLogRowsDeletedBySize = (is_int($oldLogRowsDeletedBySizeRaw) || is_float($oldLogRowsDeletedBySizeRaw) || is_string($oldLogRowsDeletedBySizeRaw))
+                ? (int)$oldLogRowsDeletedBySizeRaw
+                : 0;
         }
         
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
@@ -4177,12 +4183,14 @@ class ABJ_404_Solution_DataAccess {
         $renamed = $abj404dao->limitDebugFileSize();
         $renamed = $renamed ? "true" : "false";
         
+        $oldLogRowsDeleted = $oldLogRowsDeletedByAge + $oldLogRowsDeletedBySize;
+
         $message = "deleteOldRedirectsCron. Old captured URLs removed: " .
                 $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
                 ", Old manual redirects removed: " . $manualRedirectsCount .
                 ", Orphaned auto redirects removed: " . $orphanedCount .
-                ", Old log lines removed by age: " . $oldLogRowsDeletedByAge .
-                ", Old log lines removed by size: " . $oldLogRowsDeletedBySize .
+                ", Old log lines removed: " . $oldLogRowsDeleted .
+                " (age: " . $oldLogRowsDeletedByAge . ", size: " . $oldLogRowsDeletedBySize . ")" .
                 ", New log size: " . $logSizeMB . "MB" .
                 ", Duplicate rows deleted: " . $duplicateRowsDeleted . ", Debug file size limited: " .
                 $renamed;
