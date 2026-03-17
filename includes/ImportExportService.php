@@ -78,18 +78,18 @@ class ABJ_404_Solution_ImportExportService {
      */
     function convertExportCsvToRedirectionFormat($sourceFile, $destinationFile) {
         if (!file_exists($sourceFile)) {
-            return 'Error: Native export file does not exist.';
+            return __('Error: Native export file does not exist.', '404-solution');
         }
 
         $in = fopen($sourceFile, 'r');
         if ($in === false) {
-            return 'Error: Could not read native export file.';
+            return __('Error: Could not read native export file.', '404-solution');
         }
 
         $out = fopen($destinationFile, 'w');
         if ($out === false) {
             fclose($in);
-            return 'Error: Could not create Redirection export file.';
+            return __('Error: Could not create Redirection export file.', '404-solution');
         }
 
         fputcsv($out, array('source', 'target', 'regex', 'code'), ',', '"', '\\');
@@ -124,7 +124,7 @@ class ABJ_404_Solution_ImportExportService {
     function doImportFile() {
         $anyIssuesToNote = array();
         if (!isset($_FILES['import_file']) || $_FILES['import_file']['error'] != UPLOAD_ERR_OK) {
-            return 'File upload error.';
+            return __('File upload error.', '404-solution');
         }
 
         $dryRun = isset($_POST['dry_run']) && sanitize_text_field((string)$_POST['dry_run']) === '1';
@@ -135,27 +135,27 @@ class ABJ_404_Solution_ImportExportService {
         $allowed_extensions = array('csv', 'txt');
         $file_ext = strtolower(pathinfo($_FILES['import_file']['name'], PATHINFO_EXTENSION));
         if (!in_array($file_ext, $allowed_extensions)) {
-            return 'Error: Invalid file type. Only CSV/TXT files are allowed.';
+            return __('Error: Invalid file type. Only CSV/TXT files are allowed.', '404-solution');
         }
 
         $max_file_size = 5 * 1024 * 1024;
         if ($_FILES['import_file']['size'] > $max_file_size) {
-            return 'Error: File too large. Maximum size is 5MB.';
+            return __('Error: File too large. Maximum size is 5MB.', '404-solution');
         }
 
         $allowed_mime_types = array('text/csv', 'text/plain', 'application/csv', 'text/comma-separated-values', 'application/vnd.ms-excel');
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         if ($finfo === false) {
-            return 'Error: Unable to determine file type.';
+            return __('Error: Unable to determine file type.', '404-solution');
         }
         $mime_type = finfo_file($finfo, $_FILES['import_file']['tmp_name']);
         if (!in_array($mime_type, $allowed_mime_types)) {
-            return 'Error: Invalid file type. Only CSV files are allowed.';
+            return __('Error: Invalid file type. Only CSV files are allowed.', '404-solution');
         }
 
         $file_handle = fopen($_FILES['import_file']['tmp_name'], 'r');
         if (!$file_handle) {
-            return 'Error opening the file.';
+            return __('Error opening the file.', '404-solution');
         }
 
         $delimiter = $this->detectCsvDelimiterFromFile($file_handle);
@@ -205,20 +205,20 @@ class ABJ_404_Solution_ImportExportService {
 
         if ($dryRun) {
             $msg = sprintf(
-                'Dry run complete. Valid redirects: %d. Invalid rows: %d. Total rows processed: %d.',
+                __('Dry run complete. Valid redirects: %d. Invalid rows: %d. Total rows processed: %d.', '404-solution'),
                 $validRows,
                 $invalidRows,
                 $processedRows
             );
             if (count($anyIssuesToNote) > 0) {
-                $msg .= ' Preview issues: ' .
+                $msg .= ' ' . __('Preview issues:', '404-solution') . ' ' .
                     implode(", <BR/>\n", array_slice($anyIssuesToNote, 0, 20));
             }
             return $msg;
         }
 
         if (count($anyIssuesToNote) > 0) {
-            return 'Error: ' . implode(", <BR/>\n", $anyIssuesToNote);
+            return __('Error:', '404-solution') . ' ' . implode(", <BR/>\n", $anyIssuesToNote);
         }
 
         return __('The file seems to have loaded okay. Please check the redirects page.', '404-solution');
@@ -241,7 +241,7 @@ class ABJ_404_Solution_ImportExportService {
 
         $maybeExisting2 = $this->dao->getExistingRedirectForURL($fromURL);
         if ((count($maybeExisting2) > 0 && $maybeExisting2['id'] != 0)) {
-            $msg = 'Ignored importing redirect because a redirect with the same from URL already exists. URL: ' . $fromURL;
+            $msg = __('Ignored importing redirect because a redirect with the same from URL already exists. URL:', '404-solution') . ' ' . $fromURL;
             $this->logger->warn($msg);
             $anyIssuesToNote[] = $msg;
             return $anyIssuesToNote;
@@ -264,7 +264,7 @@ class ABJ_404_Solution_ImportExportService {
         } else if (strpos($final_dest, '/') === 0) {
             $type = $typePost;
         } else {
-            $msg = 'Unrecognized destination type while importing file. Destination: ' . $final_dest;
+            $msg = __('Unrecognized destination type while importing file. Destination:', '404-solution') . ' ' . $final_dest;
             $this->logger->warn($msg);
             $anyIssuesToNote[] = $msg;
             return $anyIssuesToNote;
@@ -299,7 +299,7 @@ class ABJ_404_Solution_ImportExportService {
                 $type = $typeTag;
                 $final_dest = (string)$postFromTag->term_id;
             } else {
-                $this->logger->warn("Couldn't find post from slug. slug: " . $slug);
+                $this->logger->warn(__("Couldn't find post from slug. slug:", '404-solution') . ' ' . $slug);
             }
         }
 
@@ -340,7 +340,7 @@ class ABJ_404_Solution_ImportExportService {
             );
         }
 
-        return array('error' => 'Invalid CSV format. ' . count($data) . ' found but 2 or 5 expected.');
+        return array('error' => sprintf(__('Invalid CSV format. %d columns found but 2 or 5 expected.', '404-solution'), count($data)));
     }
 
     /**
@@ -413,7 +413,7 @@ class ABJ_404_Solution_ImportExportService {
         $toIndex = $this->findImportHeaderIndex($normalizedHeaders, array('to_url', 'target', 'destination', 'action_data', 'redirect_to', 'url_to'));
 
         if ($fromIndex === -1 || $toIndex === -1) {
-            return array('error' => 'Invalid CSV format. Could not map source/destination columns.');
+            return array('error' => __('Invalid CSV format. Could not map source/destination columns.', '404-solution'));
         }
 
         $from = array_key_exists($fromIndex, $row) ? trim((string)$row[$fromIndex]) : '';
@@ -482,7 +482,7 @@ class ABJ_404_Solution_ImportExportService {
                 'to_url'   => trim((string)$columns[1]),
             );
         }
-        return array('error' => 'Invalid CSV format. ' . count($columns) . ' found but 2, 5, or 6 expected.');
+        return array('error' => sprintf(__('Invalid CSV format. %d columns found but 2, 5, or 6 expected.', '404-solution'), count($columns)));
     }
 
     /**

@@ -25,7 +25,7 @@ class ABJ_404_Solution_SpellingMatchingEngine implements ABJ_404_Solution_Matchi
 
     /** @return string */
     public function getName(): string {
-        return 'spell check';
+        return __('spell check', '404-solution');
     }
 
     /** @param ABJ_404_Solution_MatchRequest $request */

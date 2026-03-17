@@ -72,7 +72,7 @@ class ABJ_404_Solution_ContentMatchingEngine implements ABJ_404_Solution_Matchin
 
     /** @return string */
     public function getName(): string {
-        return 'content keywords';
+        return __('content keywords', '404-solution');
     }
 
     /** @param ABJ_404_Solution_MatchRequest $request */

@@ -72,7 +72,7 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
 
     /** @return string */
     public function getName(): string {
-        return 'category/tag keywords';
+        return __('category/tag keywords', '404-solution');
     }
 
     /** @param ABJ_404_Solution_MatchRequest $request */

@@ -71,7 +71,7 @@ class ABJ_404_Solution_TitleMatchingEngine implements ABJ_404_Solution_MatchingE
 
     /** @return string */
     public function getName(): string {
-        return 'title keywords';
+        return __('title keywords', '404-solution');
     }
 
     /** @param ABJ_404_Solution_MatchRequest $request */

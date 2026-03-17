@@ -2511,3 +2511,103 @@ msgstr "Engine"
 
 msgid "Status"
 msgstr "Status"
+
+#: includes/engine/SlugMatchingEngine.php
+msgid "exact slug"
+msgstr "exact slug"
+
+#: includes/engine/UrlFixEngine.php
+msgid "url fix"
+msgstr "url fix"
+
+#: includes/engine/TitleMatchingEngine.php
+msgid "title keywords"
+msgstr "title keywords"
+
+#: includes/engine/CategoryTagMatchingEngine.php
+msgid "category/tag keywords"
+msgstr "category/tag keywords"
+
+#: includes/engine/ContentMatchingEngine.php
+msgid "content keywords"
+msgstr "content keywords"
+
+#: includes/engine/SpellingMatchingEngine.php
+msgid "spell check"
+msgstr "spell check"
+
+#: includes/engine/ArchiveFallbackEngine.php
+msgid "archive fallback"
+msgstr "archive fallback"
+
+#: includes/ImportExportService.php
+msgid "Error: Native export file does not exist."
+msgstr "Error: Native export file does not exist."
+
+#: includes/ImportExportService.php
+msgid "Error: Could not read native export file."
+msgstr "Error: Could not read native export file."
+
+#: includes/ImportExportService.php
+msgid "Error: Could not create Redirection export file."
+msgstr "Error: Could not create Redirection export file."
+
+#: includes/ImportExportService.php
+msgid "File upload error."
+msgstr "File upload error."
+
+#: includes/ImportExportService.php
+msgid "Error: Invalid file type. Only CSV/TXT files are allowed."
+msgstr "Error: Invalid file type. Only CSV/TXT files are allowed."
+
+#: includes/ImportExportService.php
+msgid "Error: File too large. Maximum size is 5MB."
+msgstr "Error: File too large. Maximum size is 5MB."
+
+#: includes/ImportExportService.php
+msgid "Error: Unable to determine file type."
+msgstr "Error: Unable to determine file type."
+
+#: includes/ImportExportService.php
+msgid "Error: Invalid file type. Only CSV files are allowed."
+msgstr "Error: Invalid file type. Only CSV files are allowed."
+
+#: includes/ImportExportService.php
+msgid "Error opening the file."
+msgstr "Error opening the file."
+
+#: includes/ImportExportService.php
+msgid "Dry run complete. Valid redirects: %d. Invalid rows: %d. Total rows processed: %d."
+msgstr "Dry run complete. Valid redirects: %d. Invalid rows: %d. Total rows processed: %d."
+
+#: includes/ImportExportService.php
+msgid "Preview issues:"
+msgstr "Preview issues:"
+
+#: includes/ImportExportService.php
+msgid "Error:"
+msgstr "Error:"
+
+#: includes/ImportExportService.php
+msgid "Ignored importing redirect because a redirect with the same from URL already exists. URL:"
+msgstr "Ignored importing redirect because a redirect with the same from URL already exists. URL:"
+
+#: includes/ImportExportService.php
+msgid "Unrecognized destination type while importing file. Destination:"
+msgstr "Unrecognized destination type while importing file. Destination:"
+
+#: includes/ImportExportService.php
+msgid "Couldn't find post from slug. slug:"
+msgstr "Couldn't find post from slug. slug:"
+
+#: includes/ImportExportService.php
+msgid "Invalid CSV format. %d columns found but 2 or 5 expected."
+msgstr "Invalid CSV format. %d columns found but 2 or 5 expected."
+
+#: includes/ImportExportService.php
+msgid "Invalid CSV format. Could not map source/destination columns."
+msgstr "Invalid CSV format. Could not map source/destination columns."
+
+#: includes/ImportExportService.php
+msgid "Invalid CSV format. %d columns found but 2, 5, or 6 expected."
+msgstr "Invalid CSV format. %d columns found but 2, 5, or 6 expected."

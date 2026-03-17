@@ -33,7 +33,7 @@ class ABJ_404_Solution_ArchiveFallbackEngine implements ABJ_404_Solution_Matchin
 
     /** @return string */
     public function getName(): string {
-        return 'archive fallback';
+        return __('archive fallback', '404-solution');
     }
 
     /** @param ABJ_404_Solution_MatchRequest $request */

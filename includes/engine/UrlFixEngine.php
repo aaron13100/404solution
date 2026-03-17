@@ -66,7 +66,7 @@ class ABJ_404_Solution_UrlFixEngine implements ABJ_404_Solution_MatchingEngine {
 
     /** @return string */
     public function getName(): string {
-        return 'url fix';
+        return __('url fix', '404-solution');
     }
 
     /** @param ABJ_404_Solution_MatchRequest $request */

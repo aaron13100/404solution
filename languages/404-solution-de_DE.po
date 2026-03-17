@@ -2514,3 +2514,103 @@ msgstr "Suchmaschine"
 
 msgid "Status"
 msgstr "Status"
+
+#: includes/engine/SlugMatchingEngine.php
+msgid "exact slug"
+msgstr "exakter Slug"
+
+#: includes/engine/UrlFixEngine.php
+msgid "url fix"
+msgstr "URL-Korrektur"
+
+#: includes/engine/TitleMatchingEngine.php
+msgid "title keywords"
+msgstr "Titel-Schlüsselwörter"
+
+#: includes/engine/CategoryTagMatchingEngine.php
+msgid "category/tag keywords"
+msgstr "Kategorie-/Schlagwort-Schlüsselwörter"
+
+#: includes/engine/ContentMatchingEngine.php
+msgid "content keywords"
+msgstr "Inhalts-Schlüsselwörter"
+
+#: includes/engine/SpellingMatchingEngine.php
+msgid "spell check"
+msgstr "Rechtschreibprüfung"
+
+#: includes/engine/ArchiveFallbackEngine.php
+msgid "archive fallback"
+msgstr "Archiv-Fallback"
+
+#: includes/ImportExportService.php
+msgid "Error: Native export file does not exist."
+msgstr "Fehler: Die native Exportdatei existiert nicht."
+
+#: includes/ImportExportService.php
+msgid "Error: Could not read native export file."
+msgstr "Fehler: Die native Exportdatei konnte nicht gelesen werden."
+
+#: includes/ImportExportService.php
+msgid "Error: Could not create Redirection export file."
+msgstr "Fehler: Die Redirection-Exportdatei konnte nicht erstellt werden."
+
+#: includes/ImportExportService.php
+msgid "File upload error."
+msgstr "Fehler beim Hochladen der Datei."
+
+#: includes/ImportExportService.php
+msgid "Error: Invalid file type. Only CSV/TXT files are allowed."
+msgstr "Fehler: Ungültiger Dateityp. Nur CSV/TXT-Dateien sind erlaubt."
+
+#: includes/ImportExportService.php
+msgid "Error: File too large. Maximum size is 5MB."
+msgstr "Fehler: Datei zu groß. Die maximale Größe beträgt 5 MB."
+
+#: includes/ImportExportService.php
+msgid "Error: Unable to determine file type."
+msgstr "Fehler: Der Dateityp konnte nicht ermittelt werden."
+
+#: includes/ImportExportService.php
+msgid "Error: Invalid file type. Only CSV files are allowed."
+msgstr "Fehler: Ungültiger Dateityp. Nur CSV-Dateien sind erlaubt."
+
+#: includes/ImportExportService.php
+msgid "Error opening the file."
+msgstr "Fehler beim Öffnen der Datei."
+
+#: includes/ImportExportService.php
+msgid "Dry run complete. Valid redirects: %d. Invalid rows: %d. Total rows processed: %d."
+msgstr "Testlauf abgeschlossen. Gültige Weiterleitungen: %d. Ungültige Zeilen: %d. Verarbeitete Zeilen insgesamt: %d."
+
+#: includes/ImportExportService.php
+msgid "Preview issues:"
+msgstr "Vorschau-Probleme:"
+
+#: includes/ImportExportService.php
+msgid "Error:"
+msgstr "Fehler:"
+
+#: includes/ImportExportService.php
+msgid "Ignored importing redirect because a redirect with the same from URL already exists. URL:"
+msgstr "Weiterleitung beim Import ignoriert, da bereits eine Weiterleitung mit derselben Quell-URL existiert. URL:"
+
+#: includes/ImportExportService.php
+msgid "Unrecognized destination type while importing file. Destination:"
+msgstr "Unbekannter Zieltyp beim Importieren der Datei. Ziel:"
+
+#: includes/ImportExportService.php
+msgid "Couldn't find post from slug. slug:"
+msgstr "Beitrag konnte anhand des Slugs nicht gefunden werden. Slug:"
+
+#: includes/ImportExportService.php
+msgid "Invalid CSV format. %d columns found but 2 or 5 expected."
+msgstr "Ungültiges CSV-Format. %d Spalten gefunden, aber 2 oder 5 erwartet."
+
+#: includes/ImportExportService.php
+msgid "Invalid CSV format. Could not map source/destination columns."
+msgstr "Ungültiges CSV-Format. Quell-/Zielspalten konnten nicht zugeordnet werden."
+
+#: includes/ImportExportService.php
+msgid "Invalid CSV format. %d columns found but 2, 5, or 6 expected."
+msgstr "Ungültiges CSV-Format. %d Spalten gefunden, aber 2, 5 oder 6 erwartet."

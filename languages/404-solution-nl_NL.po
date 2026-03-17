@@ -2513,3 +2513,106 @@ msgstr "Zoekmachine"
 
 msgid "Status"
 msgstr "Status"
+
+#: includes/engine/SlugMatchingEngine.php
+msgid "exact slug"
+msgstr "exacte slug"
+
+#: includes/engine/SlugMatchingEngine.php
+msgid "url fix"
+msgstr "URL-correctie"
+
+#: includes/engine/SlugMatchingEngine.php
+msgid "title keywords"
+msgstr "titelzoekwoorden"
+
+#: includes/engine/SlugMatchingEngine.php
+msgid "category/tag keywords"
+msgstr "categorie-/tagzoekwoorden"
+
+#: includes/engine/SlugMatchingEngine.php
+msgid "content keywords"
+msgstr "inhoudszoekwoorden"
+
+#: includes/engine/SlugMatchingEngine.php
+msgid "spell check"
+msgstr "spellingscontrole"
+
+#: includes/engine/SlugMatchingEngine.php
+msgid "archive fallback"
+msgstr "archiefterugval"
+
+#: includes/ImportExport.php
+msgid "Error: Native export file does not exist."
+msgstr "Fout: het native exportbestand bestaat niet."
+
+#: includes/ImportExport.php
+msgid "Error: Could not read native export file."
+msgstr "Fout: het native exportbestand kon niet worden gelezen."
+
+#: includes/ImportExport.php
+msgid "Error: Could not create Redirection export file."
+msgstr "Fout: het Redirection-exportbestand kon niet worden aangemaakt."
+
+#: includes/ImportExport.php
+msgid "File upload error."
+msgstr "Fout bij het uploaden van het bestand."
+
+#: includes/ImportExport.php
+msgid "Error: Invalid file type. Only CSV/TXT files are allowed."
+msgstr "Fout: ongeldig bestandstype. Alleen CSV/TXT-bestanden zijn toegestaan."
+
+#: includes/ImportExport.php
+msgid "Error: File too large. Maximum size is 5MB."
+msgstr "Fout: bestand te groot. De maximale grootte is 5MB."
+
+#: includes/ImportExport.php
+msgid "Error: Unable to determine file type."
+msgstr "Fout: kan het bestandstype niet bepalen."
+
+#: includes/ImportExport.php
+msgid "Error: Invalid file type. Only CSV files are allowed."
+msgstr "Fout: ongeldig bestandstype. Alleen CSV-bestanden zijn toegestaan."
+
+#: includes/ImportExport.php
+msgid "Error opening the file."
+msgstr "Fout bij het openen van het bestand."
+
+#: includes/ImportExport.php
+#, php-format
+msgid "Dry run complete. Valid redirects: %d. Invalid rows: %d. Total rows processed: %d."
+msgstr "Proefdraai voltooid. Geldige omleidingen: %d. Ongeldige rijen: %d. Totaal verwerkte rijen: %d."
+
+#: includes/ImportExport.php
+msgid "Preview issues:"
+msgstr "Voorbeeldproblemen:"
+
+#: includes/ImportExport.php
+msgid "Error:"
+msgstr "Fout:"
+
+#: includes/ImportExport.php
+msgid "Ignored importing redirect because a redirect with the same from URL already exists. URL:"
+msgstr "Importeren van omleiding overgeslagen omdat er al een omleiding met dezelfde bron-URL bestaat. URL:"
+
+#: includes/ImportExport.php
+msgid "Unrecognized destination type while importing file. Destination:"
+msgstr "Niet-herkend bestemmingstype bij het importeren van bestand. Bestemming:"
+
+#: includes/ImportExport.php
+msgid "Couldn't find post from slug. slug:"
+msgstr "Kon bericht niet vinden op basis van slug. slug:"
+
+#: includes/ImportExport.php
+#, php-format
+msgid "Invalid CSV format. %d columns found but 2 or 5 expected."
+msgstr "Ongeldig CSV-formaat. %d kolommen gevonden, maar 2 of 5 verwacht."
+
+#: includes/ImportExport.php
+msgid "Invalid CSV format. Could not map source/destination columns."
+msgstr "Ongeldig CSV-formaat. Kon bron-/bestemmingskolommen niet toewijzen."
+
+#: includes/ImportExport.php
+#, php-format
+msgid "Invalid CSV format. %d columns found but 2, 5, or 6 expected."
+msgstr "Ongeldig CSV-formaat. %d kolommen gevonden, maar 2, 5 of 6 verwacht."

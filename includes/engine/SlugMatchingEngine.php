@@ -24,7 +24,7 @@ class ABJ_404_Solution_SlugMatchingEngine implements ABJ_404_Solution_MatchingEn
 
     /** @return string */
     public function getName(): string {
-        return 'exact slug';
+        return __('exact slug', '404-solution');
     }
 
     /** @param ABJ_404_Solution_MatchRequest $request */
