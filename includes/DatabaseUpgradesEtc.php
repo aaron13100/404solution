@@ -289,44 +289,42 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     
 	    /** @return void */
 	    function runInitialCreateTables() {
-	    	global $wpdb;
-	    	$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
+	    	// Discover all permanent table DDL files dynamically.
+	    	// Adding a new table = adding a create*Table.sql file. No other code changes needed.
+	    	$sqlDir = __DIR__ . '/sql';
+	    	$files = glob($sqlDir . '/create*Table.sql');
+	    	if (!is_array($files)) {
+	    		$files = array();
+	    	}
+	    	sort($files);
+
+	    	foreach ($files as $file) {
+	    		// Skip temporary tables (e.g., createLogsHitsTempTable.sql).
+	    		if (stripos(basename($file), 'Temp') !== false) {
+	    			continue;
+	    		}
+
+	    		$query = ABJ_404_Solution_Functions::readFileContents($file);
+	    		if (!is_string($query) || trim($query) === '') {
+	    			continue;
+	    		}
+	    		$query = $this->applyPluginTableCharsetCollate($query);
+	    		$this->dao->queryAndGetResults($query);
+
+	    		// Extract the table placeholder (e.g. "{wp_abj404_redirects}") from the DDL
+	    		// and resolve it to the actual prefixed table name for verifyColumns().
+	    		if (preg_match('/\{(wp_abj404_\w+)\}/', $query, $matches)) {
+	    			$tableName = $this->dao->doTableNameReplacements('{' . $matches[1] . '}');
+	    			$this->verifyColumns($tableName, $query);
+	    		}
+	    	}
+
+	    	// Table-specific post-creation steps.
 	    	$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
-	    	$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
-	    	$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
-	    	$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
-	    	$ngramCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_ngram_cache}");
+	    	$this->ensureLogsCompositeIndex($logsTable);
 
-	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
-	        $query = $this->applyPluginTableCharsetCollate($query);
-	        $this->dao->queryAndGetResults($query);
-	        $this->verifyColumns($permalinkCacheTable, $query);
-
-	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
-	        $query = $this->applyPluginTableCharsetCollate($query);
-	        $this->dao->queryAndGetResults($query);
-	        $this->verifyColumns($spellingCacheTable, $query);
-
-	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createNGramCacheTable.sql");
-	        $query = $this->applyPluginTableCharsetCollate($query);
-	        $this->dao->queryAndGetResults($query);
-	        $this->verifyColumns($ngramCacheTable, $query);
-
-	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
-	        $query = $this->applyPluginTableCharsetCollate($query);
-	        $this->dao->queryAndGetResults($query);
-	        $this->verifyColumns($redirectsTable, $query);
-
-	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
-	        $query = $this->applyPluginTableCharsetCollate($query);
-	        $this->dao->queryAndGetResults($query);
-	        $this->verifyColumns($logsTable, $query);
-	        $this->ensureLogsCompositeIndex($logsTable);
-
-	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
-	        $query = $this->applyPluginTableCharsetCollate($query);
-	        $this->dao->queryAndGetResults($query);
-	        $this->verifyColumns($lookupTable, $query);
+	    	// Mark view cache table as ensured so ensureViewSnapshotTableExists() skips redundant DDL.
+	    	ABJ_404_Solution_DataAccess::setViewSnapshotTableEnsured(true);
 	    }
 
 	    /**

@@ -63,6 +63,10 @@ class ABJ_404_Solution_DataAccess {
     private static $invalidDataRetryInProgress = false;
     /** @var bool Ensure view cache table DDL runs at most once per request. */
     private static $viewSnapshotTableEnsured = false;
+    /** @param bool $value @return void */
+    public static function setViewSnapshotTableEnsured(bool $value): void {
+        self::$viewSnapshotTableEnsured = $value;
+    }
 
     /** @var ABJ_404_Solution_Functions */
     private $f;
@@ -393,21 +397,11 @@ class ABJ_404_Solution_DataAccess {
             return;
         }
         self::$viewSnapshotTableEnsured = true;
-        $create = "CREATE TABLE IF NOT EXISTS {wp_abj404_view_cache} (
-            id bigint(20) NOT NULL auto_increment,
-            cache_key varchar(64) NOT NULL,
-            subpage varchar(64) NOT NULL default '',
-            payload longtext NOT NULL,
-            payload_bytes int(10) unsigned NOT NULL default 0,
-            refreshed_at bigint(20) NOT NULL default 0,
-            expires_at bigint(20) NOT NULL default 0,
-            updated_at bigint(20) NOT NULL default 0,
-            PRIMARY KEY (id),
-            UNIQUE KEY cache_key (cache_key),
-            KEY expires_at (expires_at),
-            KEY refreshed_at (refreshed_at)
-        ) COMMENT='404 Solution View Snapshot Cache Table'";
-        $this->queryAndGetResults($create, array('log_errors' => false));
+        $sqlFile = __DIR__ . '/sql/createViewCacheTable.sql';
+        $create = ABJ_404_Solution_Functions::readFileContents($sqlFile);
+        if (is_string($create) && trim($create) !== '') {
+            $this->queryAndGetResults($create, array('log_errors' => false));
+        }
     }
 
     /** @param string $cacheKey @return string */
@@ -766,9 +760,18 @@ class ABJ_404_Solution_DataAccess {
         }
 
         $this->applyDiagnosticLatencyIfConfigured();
-        
+
         $timer = new ABJ_404_Solution_Timer();
-        
+
+        // When log_errors is false, also suppress $wpdb's own error output
+        // (prevents best-effort queries from leaking to debug.log when WP_DEBUG is on).
+        $suppressWpdbErrors = !$options['log_errors'] && method_exists($wpdb, 'suppress_errors');
+        $previousSuppressState = false;
+        if ($suppressWpdbErrors) {
+            /** @var wpdb $wpdb */
+            $previousSuppressState = $wpdb->suppress_errors(true);
+        }
+
         $result = array();
         $result['rows'] = $wpdb->get_results($query, ARRAY_A);
         
@@ -814,6 +817,12 @@ class ABJ_404_Solution_DataAccess {
 
         if ($result['last_error'] !== '') {
             $this->noteDatabaseIssueFromError($result['last_error']);
+        }
+
+        // Restore $wpdb error reporting after all retry paths have completed.
+        if ($suppressWpdbErrors) {
+            /** @var wpdb $wpdb */
+            $wpdb->suppress_errors($previousSuppressState);
         }
 
         if ($options['log_errors'] && $result['last_error'] != '') {
