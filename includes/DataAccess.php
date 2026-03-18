@@ -1145,6 +1145,13 @@ class ABJ_404_Solution_DataAccess {
             return;
         }
 
+        // During upgrades and nightly maintenance, createDatabaseTables() runs
+        // proactively before any queries.  If we reach this point, a plugin table
+        // went missing during normal usage — always worth an ERROR so it appears
+        // in the debug file and triggers email notification.
+        $this->logger->errorMessage("Missing plugin table detected during query. "
+            . "Attempting auto-repair. SQL error: " . $result['last_error']);
+
         self::$tableRepairInProgress = true;
         try {
             $upgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
@@ -1157,6 +1164,10 @@ class ABJ_404_Solution_DataAccess {
             $result['last_result'] = $wpdb->last_result ?? array();
             $result['rows_affected'] = $wpdb->rows_affected ?? 0;
             $result['insert_id'] = $wpdb->insert_id ?? 0;
+
+            if ($result['last_error'] === '') {
+                $this->logger->infoMessage("Missing-table auto-repair succeeded.");
+            }
         } catch (Throwable $e) {
             $this->logger->warn("Missing-table auto-repair failed: " . $e->getMessage());
         } finally {
