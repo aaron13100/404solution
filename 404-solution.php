@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 3.3.0
+	Version: 3.3.1
 	Requires at least: 5.0
 	Requires PHP: 7.4
 

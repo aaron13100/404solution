@@ -1,5 +1,16 @@
 # Changelog #
 
+## Version 3.3.1 (Mar 18, 2026) ##
+* FIX: Resolved "Table wp_abj404_view_cache doesn't exist" errors on some v3.3.0 upgrades where the cache table was not created.
+* FIX: Best-effort database queries (cache operations, invalidations) no longer leak errors to debug.log when WP_DEBUG is enabled.
+* FIX: Orphaned-redirect cleanup cron no longer triggers errors on sites with incomplete database installs.
+* FIX: Schema comparison no longer falsely detects TEXT/BLOB column changes on every upgrade, eliminating unnecessary ALTER TABLE operations.
+* FIX: Invalid UTF-8 bot URLs are now rejected before reaching the SQL layer, preventing recurring database errors.
+* FIX: Table rename migration now handles case-insensitive metadata key lookup across different MySQL/MariaDB drivers.
+* FIX: Log queue INSERT now validates columns against the actual table schema, preventing failures on installations with schema drift.
+* FIX: N-gram similarity scoring guards against division-by-zero when both comparison sets are empty.
+* Improvement: Table creation now uses SQL file auto-discovery — adding a new plugin table only requires adding a SQL file, no code changes needed.
+
 ## Version 3.3.0 (Mar 15, 2026) ##
 * NEW: 7-engine matching pipeline — slug matching, URL typo correction, title keywords, category/tag path matching, content keywords, spelling similarity, and archive fallback.
 * NEW: Title keyword matching engine — finds posts whose title words appear in the broken URL, with fuzzy Levenshtein scoring for near-matches.

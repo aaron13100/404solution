@@ -5,7 +5,7 @@ Tags: 404, redirect, auto redirect, broken links, similar post
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.3.0
+Stable tag: 3.3.1
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -281,6 +281,17 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.3.1 (Mar 18, 2026) =
+* FIX: Resolved "Table wp_abj404_view_cache doesn't exist" errors on some v3.3.0 upgrades where the cache table was not created.
+* FIX: Best-effort database queries (cache operations, invalidations) no longer leak errors to debug.log when WP_DEBUG is enabled.
+* FIX: Orphaned-redirect cleanup cron no longer triggers errors on sites with incomplete database installs.
+* FIX: Schema comparison no longer falsely detects TEXT/BLOB column changes on every upgrade, eliminating unnecessary ALTER TABLE operations.
+* FIX: Invalid UTF-8 bot URLs are now rejected before reaching the SQL layer, preventing recurring database errors.
+* FIX: Table rename migration now handles case-insensitive metadata key lookup across different MySQL/MariaDB drivers.
+* FIX: Log queue INSERT now validates columns against the actual table schema, preventing failures on installations with schema drift.
+* FIX: N-gram similarity scoring guards against division-by-zero when both comparison sets are empty.
+* Improvement: Table creation now uses SQL file auto-discovery — adding a new plugin table only requires adding a SQL file, no code changes needed.
 
 = Version 3.3.0 (Mar 15, 2026) =
 * NEW: 7-engine matching pipeline — slug matching, URL typo correction, title keywords, category/tag path matching, content keywords, spelling similarity, and archive fallback.
