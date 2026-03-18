@@ -229,7 +229,10 @@ class ABJ_404_Solution_NGramFilter {
         $intersection = count(array_intersect_key($set1, $set2));
 
         // Dice coefficient: 2 * |intersection| / (|set1| + |set2|)
-        $dice = (2.0 * $intersection) / (count($set1) + count($set2));
+        // Defensive: guard denominator even though empty() check above should guarantee > 0.
+        $denominator = count($set1) + count($set2);
+        /** @phpstan-ignore greater.alwaysTrue, ternary.elseUnreachable */
+        $dice = ($denominator > 0) ? (2.0 * $intersection) / $denominator : 0.0;
 
         return $dice;
     }
@@ -819,8 +822,7 @@ class ABJ_404_Solution_NGramFilter {
             // (This is redundant for filtered queries but kept for unfiltered path)
             $pageNgramCountRaw = isset($page['ngram_count']) ? $page['ngram_count'] : 0;
             $pageCombinedCount = is_scalar($pageNgramCountRaw) ? (int)$pageNgramCountRaw : 0;
-            // $queryCombinedCount >= 1 (guarded above), so $denominator >= 1
-            $denominator = max($queryCombinedCount, $pageCombinedCount);
+            $denominator = max(1, $queryCombinedCount, $pageCombinedCount);
             $countRatio = min($queryCombinedCount, $pageCombinedCount) / $denominator;
             if ($countRatio < 0.4) {
                 continue;

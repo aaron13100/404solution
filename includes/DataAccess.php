@@ -186,10 +186,31 @@ class ABJ_404_Solution_DataAccess {
             return false;
         }
 
-        // Use SHOW TABLES to check existence
-        $table = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $tableName));
+        // Use SHOW TABLES to check existence (esc_sql avoids prepare() variadic
+        // arg issues with some test mocks while remaining injection-safe for a table name)
+        $table = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
 
         return ($table == $tableName);
+    }
+
+    /**
+     * Get the column names of an actual database table via SHOW COLUMNS.
+     * Returns empty array on failure (table missing, permissions, etc.)
+     * so callers can fall back to their default behavior.
+     *
+     * @param string $tableName Full table name (including prefix)
+     * @return array<int, string>
+     */
+    private function getTableColumnNames(string $tableName): array {
+        global $wpdb;
+        if (!isset($wpdb)) { return []; }
+        $rows = $wpdb->get_results("SHOW COLUMNS FROM `" . esc_sql($tableName) . "`", ARRAY_A);
+        if (!is_array($rows) || !empty($wpdb->last_error)) { return []; }
+        $columns = [];
+        foreach ($rows as $row) {
+            if (isset($row['Field'])) { $columns[] = $row['Field']; }
+        }
+        return $columns;
     }
 
     /** @return array{version: string, last_updated: string|null} */
@@ -822,7 +843,9 @@ class ABJ_404_Solution_DataAccess {
             if ($reportError && (
                 $this->isDiskFullError($result['last_error']) ||
                 $this->isReadOnlyError($result['last_error']) ||
-                $this->isQuotaLimitError($result['last_error'])
+                $this->isQuotaLimitError($result['last_error']) ||
+                $this->isInvalidDataError($result['last_error']) ||
+                $this->isCollationError($result['last_error'])
             )) {
                 $this->logger->warn("Server-side DB issue (handled): " . $result['last_error']);
                 $reportError = false;
@@ -3565,6 +3588,13 @@ class ABJ_404_Solution_DataAccess {
             }
         }
 
+        // Schema drift tolerance: filter out columns that don't exist in the actual
+        // table. Old installations may lack columns added in newer versions (e.g. 'engine').
+        $schemaColumns = $this->getTableColumnNames($tableName);
+        if (!empty($schemaColumns)) {
+            $validatedColumns = array_intersect($validatedColumns, $schemaColumns);
+        }
+
         if (empty($validatedColumns)) {
             // No valid columns - clear queue and reset flag
             self::$logQueue = [];
@@ -3965,6 +3995,13 @@ class ABJ_404_Solution_DataAccess {
      * @return int Number of orphaned redirects deleted.
      */
     public function cleanupOrphanedAutoRedirects(): int {
+        // Guard: skip if redirects table doesn't exist (prevents recurring cron errors)
+        $redirectsTable = $this->doTableNameReplacements('{wp_abj404_redirects}');
+        if (!$this->tableExists($redirectsTable)) {
+            $this->logger->warn("Skipping orphaned redirect cleanup: table missing.");
+            return 0;
+        }
+
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getOrphanedAutoRedirects.sql");
         $query = $this->f->doNormalReplacements($query);
 
@@ -4432,6 +4469,11 @@ class ABJ_404_Solution_DataAccess {
         // Strip invalid UTF-8/control bytes but keep valid unicode for multilingual slugs.
         $url = $this->f->sanitizeInvalidUTF8($url);
 
+        // Reject URLs still invalid after sanitization (bot garbage like %c0, null bytes)
+        if (function_exists('mb_check_encoding') && !mb_check_encoding($url, 'UTF-8')) {
+            return array('id' => 0);
+        }
+
         // Normalize to relative path before querying (Issue #24)
         // Fix HIGH #1 (5th review): Abort operation if normalization fails
         // Querying with un-normalized URLs causes lookup failures
@@ -4454,6 +4496,11 @@ class ABJ_404_Solution_DataAccess {
     function getExistingRedirectForURL($url) {
         // Strip invalid UTF-8/control bytes but keep valid unicode for multilingual slugs.
         $url = $this->f->sanitizeInvalidUTF8($url);
+
+        // Reject URLs still invalid after sanitization (bot garbage like %c0, null bytes)
+        if (function_exists('mb_check_encoding') && !mb_check_encoding($url, 'UTF-8')) {
+            return array('id' => 0);
+        }
 
         // Normalize to relative path before querying (Issue #24)
         // Fix HIGH #1 (5th review): Abort operation if normalization fails

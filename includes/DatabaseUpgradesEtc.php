@@ -229,7 +229,15 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		}
 
 		foreach ($results['rows'] as $row) {
-			$tableName = $row['table_name'] ?? $row['TABLE_NAME'];
+			// Case-insensitive key lookup: MySQL drivers return information_schema
+			// column names in varying cases (table_name, TABLE_NAME, Table_Name).
+			$tableName = null;
+			foreach ($row as $key => $value) {
+				if (strtolower((string)$key) === 'table_name') {
+					$tableName = $value;
+					break;
+				}
+			}
 
 			if (!empty($tableName)) {
 				$lowercaseName = strtolower($tableName);
@@ -910,6 +918,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$removeIntSizePattern = '/( \w*?int)(\(\d+\))/m';
     	$existingTableSQL = preg_replace($removeIntSizePattern, "$1", $existingTableSQL) ?? '';
     	$createTableStatementGoal = preg_replace($removeIntSizePattern, "$1", $createTableStatementGoal) ?? '';
+
+    	// MySQL's SHOW CREATE TABLE omits "DEFAULT NULL" for TEXT/BLOB columns
+    	// (it's implicit). Normalize both sides so this doesn't flag as a mismatch.
+    	$removeTextDefaultNull = '/(text|blob|mediumtext|longtext|tinytext|mediumblob|longblob|tinyblob)\s+default\s+null/';
+    	$existingTableSQL = preg_replace($removeTextDefaultNull, "$1", $existingTableSQL) ?? $existingTableSQL;
+    	$createTableStatementGoal = preg_replace($removeTextDefaultNull, "$1", $createTableStatementGoal) ?? $createTableStatementGoal;
 
     	// get column names and types pattern;
     	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+)\s?),/";
