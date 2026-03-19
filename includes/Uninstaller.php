@@ -98,8 +98,12 @@ class ABJ_404_Solution_Uninstaller {
                 $wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->esc_like($prefix . 'abj404_') . '%'),
                 ARRAY_N
             );
-            foreach ($allTables as $row) {
-                self::deleteTable($row[0]);
+            if (is_array($allTables)) {
+                foreach ($allTables as $row) {
+                    if (is_string($row[0])) {
+                        self::deleteTable($row[0]);
+                    }
+                }
             }
             return;
         }
