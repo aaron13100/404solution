@@ -86,26 +86,42 @@ class ABJ_404_Solution_Uninstaller {
         /** @var \wpdb $wpdb */
         $prefix = strtolower($wpdb->prefix);
 
-        // Delete redirect table if user chose to
-        if ($preferences['delete_redirects'] ?? false) {
+        $deleteRedirects = $preferences['delete_redirects'] ?? false;
+        $deleteLogs      = $preferences['delete_logs']      ?? false;
+        $deleteCache     = $preferences['delete_cache']     ?? false;
+
+        // When ALL data-deletion options are selected, use SHOW TABLES for dynamic
+        // discovery — the DB is the source of truth for which plugin tables exist.
+        // This ensures future tables are cleaned up even if this list isn't updated.
+        if ($deleteRedirects && $deleteLogs && $deleteCache) {
+            $allTables = $wpdb->get_results(
+                $wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->esc_like($prefix . 'abj404_') . '%'),
+                ARRAY_N
+            );
+            foreach ($allTables as $row) {
+                self::deleteTable($row[0]);
+            }
+            return;
+        }
+
+        // Partial deletion: respect each category preference separately.
+        if ($deleteRedirects) {
             self::deleteTable($prefix . 'abj404_redirects');
         }
 
-        // Delete log tables if user chose to
-        if ($preferences['delete_logs'] ?? false) {
+        if ($deleteLogs) {
             self::deleteTable($prefix . 'abj404_logsv2');
             self::deleteTable($prefix . 'abj404_lookup');
         }
 
-        // Always delete cache tables (can be rebuilt)
-        if ($preferences['delete_cache'] ?? false) {
+        if ($deleteCache) {
             self::deleteTable($prefix . 'abj404_permalink_cache');
             self::deleteTable($prefix . 'abj404_ngram_cache');
             self::deleteTable($prefix . 'abj404_spelling_cache');
             self::deleteTable($prefix . 'abj404_view_cache');
         }
 
-        // Always delete temporary tables
+        // Always delete temporary tables (they hold no user data worth preserving).
         self::deleteTable($prefix . 'abj404_logs_hits_temp');
     }
 

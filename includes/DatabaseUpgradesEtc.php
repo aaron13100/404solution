@@ -570,37 +570,37 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
     /** @return void */
     function createIndexes() {
-    	global $wpdb;
-    	$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
-    	$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
-    	$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
-    	$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
-    	$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
-    	$ngramCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_ngram_cache}");
+    	// Loop over every permanent table DDL file (same discovery as runInitialCreateTables).
+    	// doTableNameReplacements() handles all {wp_abj404_*} placeholders in one call,
+    	// so new tables are automatically included without modifying this method.
+    	$sqlDir = __DIR__ . '/sql';
+    	$files = glob($sqlDir . '/create*Table.sql');
+    	if (!is_array($files)) {
+    		$files = [];
+    	}
+    	sort($files);
 
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createPermalinkCacheTable.sql");
-    	$query = $this->f->str_replace('{wp_abj404_permalink_cache}', $permalinkCacheTable, $query);
-    	$this->verifyIndexes($permalinkCacheTable, $query);
+    	foreach ($files as $file) {
+    		if (stripos(basename($file), 'Temp') !== false) {
+    			continue;
+    		}
 
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createSpellingCacheTable.sql");
-    	$query = $this->f->str_replace('{wp_abj404_spelling_cache}', $spellingCacheTable, $query);
-    	$this->verifyIndexes($spellingCacheTable, $query);
+    		$query = ABJ_404_Solution_Functions::readFileContents($file);
+    		if (!is_string($query) || trim($query) === '') {
+    			continue;
+    		}
 
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createNGramCacheTable.sql");
-    	$query = $this->f->str_replace('{wp_abj404_ngram_cache}', $ngramCacheTable, $query);
-    	$this->verifyIndexes($ngramCacheTable, $query);
+    		// Replace all {wp_abj404_*} placeholders using the shared helper.
+    		$query = $this->dao->doTableNameReplacements($query);
 
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createRedirectsTable.sql");
-    	$query = $this->f->str_replace('{redirectsTable}', $redirectsTable, $query);
-    	$this->verifyIndexes($redirectsTable, $query);
+    		// Extract the resolved table name from the DDL so we can pass it to verifyIndexes().
+    		if (!preg_match('/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"]?(\S+?)[`"]?\s*\(/i', $query, $m)) {
+    			continue;
+    		}
+    		$tableName = trim($m[1], '`"');
 
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
-    	$query = $this->f->str_replace('{wp_abj404_logsv2}', $logsTable, $query);
-    	$this->verifyIndexes($logsTable, $query);
-
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLookupTable.sql");
-    	$query = $this->f->str_replace('{wp_abj404_lookup}', $lookupTable, $query);
-    	$this->verifyIndexes($lookupTable, $query);
+    		$this->verifyIndexes($tableName, $query);
+    	}
     }
 
     /**
@@ -1331,13 +1331,17 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			function correctCollations() {
 				global $wpdb;
 			
-			$redirectsTable = $this->dao->doTableNameReplacements("{wp_abj404_redirects}");
-			$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
-			$lookupTable = $this->dao->doTableNameReplacements("{wp_abj404_lookup}");
-			$permalinkCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_permalink_cache}");
-			$spellingCacheTable = $this->dao->doTableNameReplacements("{wp_abj404_spelling_cache}");
-			
-			$abjTableNames = array($redirectsTable, $logsTable, $lookupTable, $permalinkCacheTable, $spellingCacheTable);
+			// Discover all plugin tables dynamically so new tables are automatically included.
+			// Use queryAndGetResults() so the SHOW TABLES call goes through the same DAO
+			// layer as all other queries (enables testability via mock injection).
+			// {wp_prefix} is resolved by doTableNameReplacements inside queryAndGetResults.
+			$rawResult = $this->dao->queryAndGetResults("SHOW TABLES LIKE '{wp_prefix}abj404_%'");
+			$abjTableNames = [];
+			if (isset($rawResult['rows']) && is_array($rawResult['rows'])) {
+				foreach ($rawResult['rows'] as $row) {
+					$abjTableNames[] = is_array($row) ? reset($row) : (string)$row;
+				}
+			}
 
 				$tableCollations = [];
 				foreach ($abjTableNames as $tableName) {
@@ -2525,13 +2529,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     /**
      * Verify and repair tables for the current site only.
      *
-     * Checks all 6 required tables for the plugin:
-     * - abj404_redirects (redirect rules)
-     * - abj404_logsv2 (404 hits and redirect logs)
-     * - abj404_lookup (user/location lookups)
-     * - abj404_permalink_cache (performance cache)
-     * - abj404_spelling_cache (spell-check results cache)
-     * - abj404_ngram_cache (n-gram search cache)
+     * Derives the list of required tables dynamically from create*Table.sql files
+     * (same source of truth as runInitialCreateTables()), so new tables are
+     * automatically included without any code changes here.
      *
      * If ANY table is missing, triggers full table creation/repair.
      *
@@ -2540,15 +2540,25 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     private function verifyAndRepairCurrentSite() {
         global $wpdb;
 
-        // Define all required tables
-        $requiredTables = [
-            'abj404_redirects',
-            'abj404_logsv2',
-            'abj404_lookup',
-            'abj404_permalink_cache',
-            'abj404_spelling_cache',
-            'abj404_ngram_cache',
-        ];
+        // Derive required tables from SQL DDL files — same source of truth as runInitialCreateTables().
+        // Adding a new create*Table.sql file automatically includes it here.
+        $requiredTables = [];
+        $sqlDir = __DIR__ . '/sql';
+        $ddlFiles = glob($sqlDir . '/create*Table.sql');
+        if (!is_array($ddlFiles)) {
+            $ddlFiles = [];
+        }
+        foreach ($ddlFiles as $ddlFile) {
+            if (stripos(basename($ddlFile), 'Temp') !== false) {
+                continue;
+            }
+            // Use file_get_contents() directly to avoid the WordPress-dependent
+            // ABJ_404_Solution_Functions::readFileContents() wrapper here.
+            $ddlContent = @file_get_contents($ddlFile);
+            if ($ddlContent !== false && preg_match('/\{wp_(abj404_\w+)\}/', $ddlContent, $m)) {
+                $requiredTables[] = $m[1];
+            }
+        }
 
         $missingTables = [];
         $normalizedPrefix = $this->dao->getLowercasePrefix();

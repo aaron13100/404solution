@@ -5,7 +5,7 @@ Tags: 404, redirect, auto redirect, broken links, similar post
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.3.1
+Stable tag: 3.3.2
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -282,16 +282,15 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Changelog ==
 
+= Version 3.3.2 (Mar 19, 2026) =
+* Improvement: Plugin table cleanup on blog deletion, uninstall, and collation repair now uses dynamic discovery, ensuring any future tables are automatically included.
+
 = Version 3.3.1 (Mar 18, 2026) =
 * FIX: Resolved "Table wp_abj404_view_cache doesn't exist" errors on some v3.3.0 upgrades where the cache table was not created.
-* FIX: Best-effort database queries (cache operations, invalidations) no longer leak errors to debug.log when WP_DEBUG is enabled.
+* FIX: Reduced debug log noise when WP_DEBUG is enabled.
 * FIX: Orphaned-redirect cleanup cron no longer triggers errors on sites with incomplete database installs.
-* FIX: Schema comparison no longer falsely detects TEXT/BLOB column changes on every upgrade, eliminating unnecessary ALTER TABLE operations.
-* FIX: Invalid UTF-8 bot URLs are now rejected before reaching the SQL layer, preventing recurring database errors.
-* FIX: Table rename migration now handles case-insensitive metadata key lookup across different MySQL/MariaDB drivers.
-* FIX: Log queue INSERT now validates columns against the actual table schema, preventing failures on installations with schema drift.
-* FIX: N-gram similarity scoring guards against division-by-zero when both comparison sets are empty.
-* Improvement: Table creation now uses SQL file auto-discovery — adding a new plugin table only requires adding a SQL file, no code changes needed.
+* FIX: Plugin upgrades no longer perform unnecessary database ALTER TABLE operations.
+* FIX: Bot requests with malformed character encodings no longer cause database errors.
 
 = Version 3.3.0 (Mar 15, 2026) =
 * NEW: 7-engine matching pipeline — slug matching, URL typo correction, title keywords, category/tag path matching, content keywords, spelling similarity, and archive fallback.
@@ -307,9 +306,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 = Version 3.2.2 (Mar 14, 2026) =
 * FIX: Spell-checker could produce inaccurate match scores on sites with many pages due to an internal data-type mismatch in the large-candidate optimization path.
-* FIX: Resolved PHP 8.5 deprecation warnings ("null as array offset") in the spell-checker matching pipeline.
-* FIX: Eliminated urlencode(null) deprecation warnings on PHP 8.5 when preserving table filter state during redirect edits.
-* Improvement: Comprehensive type-safety hardening across all plugin files to prevent null-related errors on PHP 8.5+ and future PHP 9.0.
+* Improvement: Improved compatibility with PHP 8.5 and future PHP versions.
 
 = Version 3.2.1 (Mar 2, 2026) =
 * FIX: 404 page suggestions now show category names instead of full URLs for WooCommerce product categories and other custom taxonomies.
@@ -339,11 +336,9 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 = Version 3.1.7 (Dec 19, 2025) =
 * FIX: Prevent invalid SQL during missing-index creation by parsing index definitions from the plugin SQL templates and emitting structured `ALTER TABLE ... ADD INDEX ...` statements.
-* Test: Add regression coverage for parsing log table composite index definitions and for missing index definitions in SQL templates.
 
 = Version 3.1.6 (Dec 18, 2025) =
 * FIX: Redirects table pagination/search no longer fails on some MariaDB versions with a SQL syntax error while updating the table.
-* Test: Added SQL template lint and a MariaDB integration test to prevent regressions.
 
 = Version 3.1.5 (Dec 18, 2025) =
 * FIX: Resolve Page Redirects / Captured 404s table search failing on some databases with "Illegal mix of collations ... for operation 'replace'".

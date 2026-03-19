@@ -966,13 +966,17 @@ class ABJ_404_Solution_UninstallModal {
             $targetEngine
         );
 
-        $pluginTables = array(
-            'Logs' => $dao->doTableNameReplacements("{wp_abj404_logsv2}"),
-            'Lookup' => $dao->doTableNameReplacements("{wp_abj404_lookup}"),
-            'Permalink Cache' => $dao->doTableNameReplacements("{wp_abj404_permalink_cache}"),
-            'Spelling Cache' => $dao->doTableNameReplacements("{wp_abj404_spelling_cache}"),
-            'Redirects' => $dao->doTableNameReplacements("{wp_abj404_redirects}"),
+        // Discover all plugin tables dynamically so new tables are automatically included.
+        $prefix = $dao->getLowercasePrefix();
+        $rawTables = $wpdb->get_results(
+            $wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->esc_like($prefix . 'abj404_') . '%'),
+            ARRAY_N
         );
+        $pluginTables = array();
+        foreach ($rawTables as $row) {
+            $fullName = $row[0];
+            $pluginTables[$fullName] = $fullName;
+        }
 
         foreach ($pluginTables as $label => $tableName) {
             $tableInfo = self::getTableInfo($tableName);
