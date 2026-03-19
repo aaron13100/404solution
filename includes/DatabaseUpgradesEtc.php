@@ -77,14 +77,18 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @param bool $updatingToNewVersion
      * @return void
      */
-    function createDatabaseTables($updatingToNewVersion = false) {
+    function createDatabaseTables($updatingToNewVersion = false, $force = false) {
 
     	$synchronizedKeyFromUser = "create_db_tables";
-    	$uniqueID = $this->syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
+    	$uniqueID = null;
 
-    	if ($uniqueID == '' || $uniqueID == null) {
-    		$this->logger->debugMessage("Avoiding multiple calls for creating database tables.");
-    		return;
+    	if (!$force) {
+    		$uniqueID = $this->syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
+
+    		if ($uniqueID == '' || $uniqueID == null) {
+    			$this->logger->debugMessage("Avoiding multiple calls for creating database tables.");
+    			return;
+    		}
     	}
 
     	// Fixed: Use finally block to ensure lock is ALWAYS released, even on fatal errors
@@ -95,8 +99,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->logger->errorMessage("Error creating database tables. ", $e);
     		throw $e;  // Re-throw to propagate the error
     	} finally {
-    		// This ALWAYS executes, even on fatal errors or exceptions
-    		$this->syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
+    		// Release the lock only if one was acquired (non-forced path).
+    		if ($uniqueID !== null && $uniqueID !== '') {
+    			$this->syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
+    		}
     	}
     }
     
@@ -112,9 +118,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	}
 
     	// MULTISITE: Process current site immediately, schedule background task for remaining sites
-    	// Only during activation, not during updates/repairs
     	if ($this->isNetworkActivated() && !$updatingToNewVersion) {
-    		// Create tables for current site immediately (prevents timeout on activation)
+    		// Activation path: create tables for current site + schedule background for others.
     		$currentBlogId = get_current_blog_id();
     		$this->runInitialCreateTables();
     		$this->correctCollations();
@@ -126,10 +131,26 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     			$currentBlogId
     		));
 
-    		// Schedule background processing for all other sites
     		$this->scheduleBackgroundMultisiteActivation($currentBlogId);
+
+    	} else if ($this->isNetworkActivated() && $updatingToNewVersion) {
+    		// Upgrade path on a network install: update tables for current site + schedule
+    		// background upgrade for other sites (so sub-site tables are also updated).
+    		$currentBlogId = get_current_blog_id();
+    		$this->runInitialCreateTables();
+    		$this->correctCollations();
+    		$this->updateTableEngineToInnoDB();
+    		$this->createIndexes();
+
+    		$this->logger->infoMessage(sprintf(
+    			"Network upgrade: Updated tables for current site (ID %d). Scheduling background upgrade for remaining sites.",
+    			$currentBlogId
+    		));
+
+    		$this->scheduleBackgroundMultisiteUpgrade($currentBlogId);
+
     	} else {
-    		// Single site or site-activated: create tables for current site only
+    		// Single site (or non-network-activated): create/update tables for current site only.
     		$this->runInitialCreateTables();
     		$this->correctCollations();
     		$this->updateTableEngineToInnoDB();
@@ -191,38 +212,63 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function correctIssuesBefore() {
     	$this->dao->correctDuplicateLookupValues();
 
-    	// 3.3.4: Repair view_cache tables that were stripped of all columns by the
-    	// 3.3.3 backtick-missing bug.  The table is a pure cache — dropping it is
-    	// safe; runInitialCreateTables() will recreate it immediately after.
+    	// 3.3.4+: Repair any plugin table that was stripped of all columns by a
+    	// DDL parsing bug.  The 3.3.3 bug only affected view_cache, but any future
+    	// DDL file shipped without parseable column syntax could wipe any table.
+    	// Dropped tables are pure caches or safely recreatable; runInitialCreateTables()
+    	// will recreate them immediately after.
     	$this->repairStrippedViewCacheTable();
 
     	$this->correctMatchData();
     }
 
     /**
-     * If the view_cache table exists but is missing its primary `id` column the
-     * table was corrupted by the 3.3.3 column-drop bug.  Drop it so that
-     * runInitialCreateTables() can recreate it cleanly from the DDL file.
+     * For every permanent plugin table, check whether the table exists but is
+     * missing its primary `id` column — the signature of the 3.3.3 column-drop
+     * bug.  If a table is stripped, drop it so that runInitialCreateTables() can
+     * recreate it cleanly from the DDL file.
+     *
+     * Generalised in 3.3.5 from a view_cache-only fix to cover all plugin tables:
+     * the 3.3.3 bug only affected view_cache.sql, but any future DDL file shipped
+     * without parseable backtick column syntax would trigger the same data wipe on
+     * that table with no repair path.
+     *
      * @return void
      */
     function repairStrippedViewCacheTable() {
-    	$tableName = $this->dao->doTableNameReplacements('{wp_abj404_view_cache}');
-    	$ddl = $this->dao->getCreateTableDDL($tableName);
+    	$sqlDir = __DIR__ . '/sql';
+    	$files = glob($sqlDir . '/create*Table.sql') ?: [];
 
-    	// Table doesn't exist at all — nothing to repair.
-    	if (empty($ddl)) {
-    		return;
+    	foreach ($files as $file) {
+    		if (stripos(basename($file), 'Temp') !== false) {
+    			continue;
+    		}
+    		$ddlTemplate = ABJ_404_Solution_Functions::readFileContents($file);
+    		if (!is_string($ddlTemplate) || trim($ddlTemplate) === '') {
+    			continue;
+    		}
+    		if (!preg_match('/\{(wp_abj404_\w+)\}/', $ddlTemplate, $matches)) {
+    			continue;
+    		}
+    		$placeholder = '{' . $matches[1] . '}';
+    		$tableName = $this->dao->doTableNameReplacements($placeholder);
+    		$ddl = $this->dao->getCreateTableDDL($tableName);
+
+    		// Table doesn't exist at all — nothing to repair.
+    		if (empty($ddl)) {
+    			continue;
+    		}
+
+    		// If the DDL contains the `id` column the table is intact.
+    		if (stripos($ddl, '`id`') !== false || preg_match('/\bid\b/', $ddl)) {
+    			continue;
+    		}
+
+    		// Table exists but is missing its primary column — it was stripped.
+    		$this->logger->infoMessage("Repairing stripped plugin table " . $tableName .
+    			" (missing id column — caused by DDL parsing bug). Dropping for clean recreation.");
+    		$this->dao->queryAndGetResults("DROP TABLE IF EXISTS " . $tableName);
     	}
-
-    	// If the DDL contains the `id` column the table is intact.
-    	if (stripos($ddl, '`id`') !== false || preg_match('/\bid\b/', $ddl)) {
-    		return;
-    	}
-
-    	// Table exists but is missing its primary column — it was stripped.
-    	$this->logger->infoMessage("Repairing stripped view_cache table " . $tableName .
-    		" (missing id column — caused by 3.3.3 backtick bug). Dropping for clean recreation.");
-    	$this->dao->queryAndGetResults("DROP TABLE IF EXISTS " . $tableName);
     }
     
     /**
@@ -513,6 +559,123 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             delete_site_option('abj404_activation_processed_blogs');
             delete_site_option('abj404_activation_in_progress');
             $this->logger->infoMessage("Background multisite activation complete. All sites processed.");
+            return true;
+        }
+    }
+
+    /**
+     * Schedule a background upgrade for all network sites except the one that
+     * was just upgraded synchronously.
+     *
+     * @param int $alreadyProcessedBlogId Blog ID of the site already upgraded.
+     * @return void
+     */
+    private function scheduleBackgroundMultisiteUpgrade($alreadyProcessedBlogId) {
+        update_site_option('abj404_upgrade_processed_blogs', array($alreadyProcessedBlogId));
+        update_site_option('abj404_upgrade_in_progress', true);
+
+        $hookName = 'abj404_network_upgrade_background';
+
+        if (wp_next_scheduled($hookName)) {
+            $this->logger->debugMessage("Background multisite upgrade already scheduled.");
+            return;
+        }
+
+        $scheduled = wp_schedule_single_event(time() + 30, $hookName);
+
+        if ($scheduled === false) {
+            $this->logger->errorMessage("Failed to schedule background multisite upgrade. Remaining sites will not have tables updated automatically.");
+        } else {
+            $this->logger->infoMessage("Background multisite upgrade scheduled successfully.");
+        }
+    }
+
+    /**
+     * Process multisite plugin upgrade in batches (called by WP-Cron).
+     *
+     * Upgrades remaining sites that weren't handled during the initial upgrade.
+     * Processes up to 10 sites per run to avoid timeouts, then reschedules itself
+     * if more sites remain.
+     *
+     * @return bool True if all sites processed, false if more remain.
+     */
+    public function processMultisiteUpgradeBatch() {
+        $processedBlogs = get_site_option('abj404_upgrade_processed_blogs', array());
+        if (!is_array($processedBlogs)) {
+            $processedBlogs = array();
+        }
+
+        $allSites = get_sites(array('fields' => 'ids', 'number' => 0));
+        $remainingSites = array_diff($allSites, $processedBlogs);
+
+        if (empty($remainingSites)) {
+            delete_site_option('abj404_upgrade_processed_blogs');
+            delete_site_option('abj404_upgrade_in_progress');
+            $this->logger->infoMessage("Background multisite upgrade complete. All sites processed.");
+            return true;
+        }
+
+        $batchSize = 10;
+        $sitesToProcess = array_slice($remainingSites, 0, $batchSize);
+        $totalRemaining = count($remainingSites);
+
+        $this->logger->infoMessage(sprintf(
+            "Processing multisite upgrade batch: %d sites (of %d remaining)",
+            count($sitesToProcess),
+            $totalRemaining
+        ));
+
+        foreach ($sitesToProcess as $siteId) {
+            try {
+                switch_to_blog($siteId);
+
+                $this->logger->debugMessage(sprintf(
+                    "Upgrading site ID %d...",
+                    $siteId
+                ));
+
+                // Run the full upgrade sequence for this site without going through
+                // createDatabaseTables() — that would re-schedule more background tasks.
+                $this->correctIssuesBefore();
+                $this->runInitialCreateTables();
+                $this->correctCollations();
+                $this->updateTableEngineToInnoDB();
+                $this->createIndexes();
+                $this->correctIssuesAfter();
+
+                $logic = ABJ_404_Solution_PluginLogic::getInstance();
+                $logic->doUpdateDBVersionOption();
+
+                $processedBlogs[] = $siteId;
+                update_site_option('abj404_upgrade_processed_blogs', $processedBlogs);
+
+                $this->logger->debugMessage(sprintf("Successfully upgraded site ID %d", $siteId));
+
+            } catch (Throwable $e) {
+                $this->logger->errorMessage(sprintf(
+                    "Failed to upgrade site ID %d: %s",
+                    $siteId,
+                    $e->getMessage()
+                ));
+                $processedBlogs[] = $siteId;
+                update_site_option('abj404_upgrade_processed_blogs', $processedBlogs);
+            } finally {
+                restore_current_blog();
+            }
+        }
+
+        $stillRemaining = count($remainingSites) - count($sitesToProcess);
+        if ($stillRemaining > 0) {
+            $this->logger->infoMessage(sprintf(
+                "Upgrade batch complete. Rescheduling for %d remaining sites.",
+                $stillRemaining
+            ));
+            wp_schedule_single_event(time() + 30, 'abj404_network_upgrade_background');
+            return false;
+        } else {
+            delete_site_option('abj404_upgrade_processed_blogs');
+            delete_site_option('abj404_upgrade_in_progress');
+            $this->logger->infoMessage("Background multisite upgrade complete. All sites processed.");
             return true;
         }
     }

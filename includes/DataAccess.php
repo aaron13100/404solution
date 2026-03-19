@@ -1155,7 +1155,12 @@ class ABJ_404_Solution_DataAccess {
         self::$tableRepairInProgress = true;
         try {
             $upgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-            $upgrades->createDatabaseTables(false);
+            // Pass $force = true so the repair bypasses the concurrency lock — if another
+            // request holds the lock (e.g. a concurrent upgrade), calling createDatabaseTables
+            // without $force would silently return without creating anything, leaving the
+            // missing table unrepaired.  Concurrent CREATE TABLE IF NOT EXISTS calls are safe
+            // (idempotent), so bypassing the lock here is correct.
+            $upgrades->createDatabaseTables(false, true);
 
             global $wpdb;
             $wpdb->flush();

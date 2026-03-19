@@ -506,12 +506,21 @@ function abj404_networkActivationBackgroundListener() {
 	$upgradesEtc->processMultisiteActivationBatch();
 }
 }
+if (!function_exists('abj404_networkUpgradeBackgroundListener')) {
+/** @return void */
+function abj404_networkUpgradeBackgroundListener() {
+	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+	$upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+	$upgradesEtc->processMultisiteUpgradeBatch();
+}
+}
 add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
 add_action('abj404_updateLogsHitsTableAction', 'abj404_updateLogsHitsTableListener');
 add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheListener', 10, 2);
 	add_action('abj404_rebuild_ngram_cache_hook', 'abj404_rebuildNGramCacheListener', 10, 1);
 	add_action('abj404_network_activation_hook', 'abj404_networkActivationListener');
 	add_action('abj404_network_activation_background', 'abj404_networkActivationBackgroundListener');
+	add_action('abj404_network_upgrade_background', 'abj404_networkUpgradeBackgroundListener');
 
 	/**
 	 * Override the locale for this plugin if user has configured a language override.
