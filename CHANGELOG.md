@@ -1,5 +1,10 @@
 # Changelog #
 
+## Version 3.3.4 (Mar 19, 2026) ##
+* FIX: Fixed an upgrade bug introduced in 3.3.3 that accidentally cleared the admin page view cache on upgrade. No redirect data was affected — the cache rebuilds automatically.
+* FIX: Added a safety check to prevent future upgrades from accidentally wiping plugin caches.
+* FIX: Sites affected by the 3.3.3 bug will have their cache table automatically repaired on the first admin page load after updating.
+
 ## Version 3.3.3 (Mar 19, 2026) ##
 * FIX: Uninstaller no longer produces a PHPStan type error when `$wpdb->get_results()` returns null on edge-case database configurations.
 

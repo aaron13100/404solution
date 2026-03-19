@@ -81,9 +81,9 @@ Other stuff is here.
 ## Changelog ##
 
 ## Version 3.3.4 (Mar 19, 2026) ##
-* HOTFIX: Fixed critical bug introduced in 3.3.3 where all columns of the `view_cache` table were dropped during upgrades. Root cause: `createViewCacheTable.sql` was missing backticks around column names, causing the schema-comparison regex to see an empty goal schema and flag every existing column as "excess".
-* FIX: Added a safety guard in `getTableDifferences()`: if goal DDL parses to zero column names, the drop list is cleared and an error is logged rather than destroying the table.
-* FIX: One-time migration detects and drops a stripped `view_cache` table (missing its `id` column) so it is cleanly recreated on the next plugin load.
+* FIX: Fixed an upgrade bug introduced in 3.3.3 that accidentally cleared the admin page view cache. No redirect data was affected — the cache rebuilds automatically on the next page load.
+* FIX: Schema comparison now refuses to drop columns when the target schema parses to zero columns, preventing a whole class of accidental data-wipe bugs.
+* FIX: One-time repair detects and drops any `view_cache` table left in a stripped state by the 3.3.3 bug, so it is cleanly recreated on the next plugin load.
 
 ## Version 3.3.3 (Mar 19, 2026) ##
 * FIX: Uninstaller no longer produces a PHPStan type error when `$wpdb->get_results()` returns null on edge-case database configurations.

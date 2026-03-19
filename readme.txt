@@ -283,9 +283,9 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 == Changelog ==
 
 = Version 3.3.4 (Mar 19, 2026) =
-* HOTFIX: Fixed critical bug introduced in 3.3.3 where all columns of the `view_cache` table were dropped during upgrades. Root cause: the `createViewCacheTable.sql` DDL file was missing backticks around column names, causing the schema-comparison regex to see an empty goal schema and flag every existing column as "excess". This wiped the cache table on upgrade for all users.
-* FIX: Added a safety guard in `getTableDifferences()`: if the goal DDL produces zero parsed column names, the column-drop list is cleared and an error is logged instead of destroying the table.
-* FIX: Added a one-time migration that detects and drops a stripped `view_cache` table (missing its primary `id` column) so it is cleanly recreated on the next plugin load.
+* FIX: Fixed an upgrade bug introduced in 3.3.3 that accidentally cleared the admin page view cache. No redirect data was affected — the cache rebuilds automatically on the next page load.
+* FIX: Added a safety check to prevent future upgrades from accidentally wiping plugin caches.
+* FIX: Sites affected by the 3.3.3 bug will have their cache table automatically repaired on the first admin page load after updating.
 
 = Version 3.3.3 (Mar 19, 2026) =
 * FIX: Uninstaller no longer produces a PHPStan type error when `$wpdb->get_results()` returns null on edge-case database configurations.
