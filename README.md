@@ -80,6 +80,15 @@ Other stuff is here.
 
 ## Changelog ##
 
+## Version 3.3.4 (Mar 19, 2026) ##
+* HOTFIX: Fixed critical bug introduced in 3.3.3 where all columns of the `view_cache` table were dropped during upgrades. Root cause: `createViewCacheTable.sql` was missing backticks around column names, causing the schema-comparison regex to see an empty goal schema and flag every existing column as "excess".
+* FIX: Added a safety guard in `getTableDifferences()`: if goal DDL parses to zero column names, the drop list is cleared and an error is logged rather than destroying the table.
+* FIX: One-time migration detects and drops a stripped `view_cache` table (missing its `id` column) so it is cleanly recreated on the next plugin load.
+
+## Version 3.3.3 (Mar 19, 2026) ##
+* FIX: Uninstaller no longer produces a PHPStan type error when `$wpdb->get_results()` returns null on edge-case database configurations.
+* Improvement: Plugin table cleanup on blog deletion, uninstall, and collation repair now uses dynamic discovery, ensuring any future tables are automatically included.
+
 ## Version 3.3.1 (Mar 18, 2026) ##
 * FIX: Resolved "Table wp_abj404_view_cache doesn't exist" errors on some v3.3.0 upgrades where the cache table was not created.
 * FIX: Best-effort database queries (cache operations, invalidations) no longer leak errors to debug.log when WP_DEBUG is enabled.

@@ -190,8 +190,39 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      */
     function correctIssuesBefore() {
     	$this->dao->correctDuplicateLookupValues();
-    	
+
+    	// 3.3.4: Repair view_cache tables that were stripped of all columns by the
+    	// 3.3.3 backtick-missing bug.  The table is a pure cache — dropping it is
+    	// safe; runInitialCreateTables() will recreate it immediately after.
+    	$this->repairStrippedViewCacheTable();
+
     	$this->correctMatchData();
+    }
+
+    /**
+     * If the view_cache table exists but is missing its primary `id` column the
+     * table was corrupted by the 3.3.3 column-drop bug.  Drop it so that
+     * runInitialCreateTables() can recreate it cleanly from the DDL file.
+     * @return void
+     */
+    function repairStrippedViewCacheTable() {
+    	$tableName = $this->dao->doTableNameReplacements('{wp_abj404_view_cache}');
+    	$ddl = $this->dao->getCreateTableDDL($tableName);
+
+    	// Table doesn't exist at all — nothing to repair.
+    	if (empty($ddl)) {
+    		return;
+    	}
+
+    	// If the DDL contains the `id` column the table is intact.
+    	if (stripos($ddl, '`id`') !== false || preg_match('/\bid\b/', $ddl)) {
+    		return;
+    	}
+
+    	// Table exists but is missing its primary column — it was stripped.
+    	$this->logger->infoMessage("Repairing stripped view_cache table " . $tableName .
+    		" (missing id column — caused by 3.3.3 backtick bug). Dropping for clean recreation.");
+    	$this->dao->queryAndGetResults("DROP TABLE IF EXISTS " . $tableName);
     }
     
     /**
@@ -940,6 +971,26 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$goalTableMatchesColumnNames = array_map('trim', $goalTableMatchesColumnNames);
     	$existingTableMatchesColumnNames = array_map('trim', $existingTableMatchesColumnNames);
     	
+    	// Safety guard: if the goal DDL produced zero column names the regex failed
+    	// to parse it (e.g. missing backticks). In that case never drop any existing
+    	// columns — an empty goal list would otherwise flag every real column as
+    	// "extra" and wipe the table.
+    	if (empty($goalTableMatchesColumnNames) && !empty($existingTableMatchesColumnNames)) {
+    		$this->logger->errorMessage("Goal DDL for " . $tableName .
+    			" produced no column matches — likely missing backticks. " .
+    			"Skipping column comparison to prevent data loss.");
+    		$dropTheseColumns = [];
+    		$createTheseColumns = [];
+    		return array("updateTheseColumns" => [],
+    			"dropTheseColumns" => [],
+    			"createTheseColumns" => [],
+    			"goalTableMatchesColumnDDL" => [],
+    			"existingTableMatchesColumnDDL" => [],
+    			"goalTableMatches" => $goalTableMatches,
+    			"goalTableMatchesColumnNames" => []
+    		);
+    	}
+
     	// see if some columns need to be created.
     	$dropTheseColumns = array_diff($existingTableMatchesColumnNames,
     		$goalTableMatchesColumnNames);
