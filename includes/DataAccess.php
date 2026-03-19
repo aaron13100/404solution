@@ -591,7 +591,7 @@ class ABJ_404_Solution_DataAccess {
      */
     function getCreateTableDDL($tableName) {
     	$query = "show create table " . $tableName;
-    	$result = $this->queryAndGetResults($query);
+    	$result = $this->queryAndGetResults($query, array('log_errors' => false, 'skip_repair' => true));
     	$rows = $result['rows'];
 
     	// Handle case where query returns no results (e.g., in test environment)
@@ -736,7 +736,7 @@ class ABJ_404_Solution_DataAccess {
 
         $options = array_merge(array('log_errors' => true,
             'log_too_slow' => true, 'ignore_errors' => array(),
-            'query_params' => array()),
+            'query_params' => array(), 'skip_repair' => false),
             $options);
 
        	$ignoreErrorStrings = is_array($options['ignore_errors']) ? $options['ignore_errors'] : array();
@@ -807,7 +807,7 @@ class ABJ_404_Solution_DataAccess {
             $result['insert_id'] = $wpdb->insert_id ?? 0;
         }
 
-        if ($result['last_error'] !== '' && $this->isMissingPluginTableError($result['last_error'])) {
+        if (!$options['skip_repair'] && $result['last_error'] !== '' && $this->isMissingPluginTableError($result['last_error'])) {
             $this->attemptMissingTableRepairAndRetry($query, $result);
         }
 
