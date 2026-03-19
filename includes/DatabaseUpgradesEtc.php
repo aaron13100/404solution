@@ -648,8 +648,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$createTableStatementGoal = strtolower(
     		$this->removeCommentsFromColumns($createTableStatementGoal));
     	
-    	// get column names and types pattern;
-    	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+?) .+?),/";
+    	// get column names and types pattern (backticks are optional — accept both styles);
+    	// (?!key\b) guards against accidentally matching PRIMARY KEY / UNIQUE KEY lines,
+    	// where "PRIMARY" would appear as the column name and "key" as the type.
+    	$colNamesAndTypesPattern = "/\s+?(`?(\w+?)`? (?!key\b)(\w.+?) .+?),/";
     	// remove the columns.
     	$existingTableSQL = preg_replace($colNamesAndTypesPattern, "", $existingTableSQL) ?? '';
     	$createTableStatementGoal = preg_replace($colNamesAndTypesPattern, "",
@@ -954,8 +956,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$existingTableSQL = preg_replace($removeTextDefaultNull, "$1", $existingTableSQL) ?? $existingTableSQL;
     	$createTableStatementGoal = preg_replace($removeTextDefaultNull, "$1", $createTableStatementGoal) ?? $createTableStatementGoal;
 
-    	// get column names and types pattern;
-    	$colNamesAndTypesPattern = "/\s+?(`(\w+?)` (\w.+)\s?),/";
+    	// get column names and types pattern (backticks are optional — accept both styles);
+    	// (?!key\b) guards against accidentally matching PRIMARY KEY / UNIQUE KEY lines.
+    	$colNamesAndTypesPattern = "/\s+?(`?(\w+?)`? (?!key\b)(\w.+)\s?),/";
     	$existingTableMatches = null;
     	$goalTableMatches = null;
     	// match the existing table. use preg_match_all because I couldn't find an
@@ -972,12 +975,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$existingTableMatchesColumnNames = array_map('trim', $existingTableMatchesColumnNames);
     	
     	// Safety guard: if the goal DDL produced zero column names the regex failed
-    	// to parse it (e.g. missing backticks). In that case never drop any existing
-    	// columns — an empty goal list would otherwise flag every real column as
-    	// "extra" and wipe the table.
+    	// to parse it (e.g. malformed or unparseable DDL). In that case never drop
+    	// any existing columns — an empty goal list would otherwise flag every real
+    	// column as "extra" and wipe the table.
     	if (empty($goalTableMatchesColumnNames) && !empty($existingTableMatchesColumnNames)) {
     		$this->logger->errorMessage("Goal DDL for " . $tableName .
-    			" produced no column matches — likely missing backticks. " .
+    			" produced no column matches -- the DDL may be malformed or unparseable. " .
     			"Skipping column comparison to prevent data loss.");
     		$dropTheseColumns = [];
     		$createTheseColumns = [];
@@ -1005,16 +1008,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$goalTableMatchesColumnDDL = array_map('trim', $goalTableMatchesColumnDDL);
     	$existingTableMatchesColumnDDL = array_map('trim', $existingTableMatchesColumnDDL);
     	
-    	// normalize minor differences between mysql versions
+    	// normalize minor differences between mysql versions (strip backticks so DDL
+    	// files using either quoting style compare equal to SHOW CREATE TABLE output)
     	$newGoalTableDDL = array();
     	foreach ($goalTableMatchesColumnDDL as $oneDDLLine) {
-    		$newVal = str_replace("default '0'", "default 0", $oneDDLLine);
+    		$newVal = str_replace('`', '', $oneDDLLine);
+    		$newVal = str_replace("default '0'", "default 0", $newVal);
     		array_push($newGoalTableDDL, $newVal);
     	}
     	$goalTableMatchesColumnDDL = $newGoalTableDDL;
     	$newExistingTableDDL = array();
     	foreach ($existingTableMatchesColumnDDL as $oneDDLLine) {
-    		$newVal = str_replace("default '0'", "default 0", $oneDDLLine);
+    		$newVal = str_replace('`', '', $oneDDLLine);
+    		$newVal = str_replace("default '0'", "default 0", $newVal);
     		array_push($newExistingTableDDL, $newVal);
     	}
     	$existingTableMatchesColumnDDL = $newExistingTableDDL;
@@ -1071,7 +1077,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	}
 
     	// create missing columns
+    	// Normalize $goalMatchesSub the same way getTableDifferences() normalizes
+    	// $goalTableMatchesColumnDDL so array_search() can find the right index.
     	$goalMatchesSub = is_array($goalTableMatches[1] ?? null) ? $goalTableMatches[1] : [];
+    	$goalMatchesSub = array_map(function ($ddl) {
+    		return str_replace("default '0'", "default 0", str_replace('`', '', trim($ddl)));
+    	}, $goalMatchesSub);
     	foreach ($updateTheseColumns as $colDDL) {
     		// find the colum name.
     		$matchIndex = array_search($colDDL, $goalMatchesSub);
