@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 trait ABJ_404_Solution_DataAccess_LogsTrait {
 
+    /** @return bool */
     function hitsTableNeedsRebuild() {
         $storedMaxId = $this->getStoredMaxLogId();
         $currentMaxId = $this->getMaxLogId();

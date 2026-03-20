@@ -9,6 +9,7 @@ if (!defined('ABSPATH')) {
  */
 trait ViewTrait_RedirectsTable {
 
+    /** @return void */
     function echoAdminCapturedURLsPage() {
         $sub = 'abj404_captured';
 

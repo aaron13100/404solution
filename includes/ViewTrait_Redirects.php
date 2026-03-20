@@ -9,6 +9,7 @@ if (!defined('ABSPATH')) {
  */
 trait ViewTrait_Redirects {
 
+    /** @return void */
     function echoAdminEditRedirectPage() {
 
         $options = $this->getOptionsWithDefaults();

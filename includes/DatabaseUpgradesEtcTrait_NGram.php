@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
 
+    /** @return bool */
     function scheduleNGramCacheRebuild() {
         global $wpdb;
 

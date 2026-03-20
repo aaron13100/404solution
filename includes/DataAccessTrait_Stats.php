@@ -6,6 +6,11 @@ if (!defined('ABSPATH')) {
 
 trait ABJ_404_Solution_DataAccess_StatsTrait {
 
+    /**
+     * @param string $query
+     * @param array<int|string, mixed> $valueParams
+     * @return int
+     */
     function getStatsCount($query, array $valueParams) {
         global $wpdb;
 

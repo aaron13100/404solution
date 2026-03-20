@@ -7,6 +7,8 @@ if (!defined('ABSPATH')) {
 /**
  * Page ordering, hierarchy helpers, redirect destination building, and notification helpers.
  * Used by ABJ_404_Solution_PluginLogic via `use`.
+ *
+ * @phpstan-type PageObject object{id: int, post_parent: int, depth: int, post_type: string, post_title: string}
  */
 trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
 

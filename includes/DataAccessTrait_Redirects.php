@@ -6,6 +6,10 @@ if (!defined('ABSPATH')) {
 
 trait ABJ_404_Solution_DataAccess_RedirectsTrait {
 
+    /**
+     * @param int|string $id
+     * @return void
+     */
     function deleteRedirect($id) {
         global $wpdb;
         $cleanedID = absint(sanitize_text_field((string)$id));

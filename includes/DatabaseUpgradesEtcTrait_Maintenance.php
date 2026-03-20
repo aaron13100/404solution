@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 
+    /** @return void */
     function updateTableEngineToInnoDB() {
     	// get a list of all tables.
         global $wpdb;
@@ -413,6 +414,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 			return false;
 		}
 
+    /** @return void */
     public function runDailyInsuranceCheck() {
         // Always verify current site only
         // Per-site cron execution ensures network coverage without O(N²) duplication

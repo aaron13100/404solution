@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
 
+    /** @return array<string, mixed> */
     function getTableEngines() {
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/selectTableEngines.sql");
     	$results = $this->queryAndGetResults($query);

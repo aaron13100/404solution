@@ -85,7 +85,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @param bool $updatingToNewVersion
      * @return void
      */
-    function createDatabaseTables($updatingToNewVersion = false, $force = false) {
+    function createDatabaseTables($updatingToNewVersion = false, bool $force = false) {
 
     	$synchronizedKeyFromUser = "create_db_tables";
     	$uniqueID = null;
@@ -1252,7 +1252,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	// $goalTableMatchesColumnDDL so array_search() can find the right index.
     	$goalMatchesSub = is_array($goalTableMatches[1] ?? null) ? $goalTableMatches[1] : [];
     	$goalMatchesSub = array_map(function ($ddl) {
-    		return str_replace("default '0'", "default 0", str_replace('`', '', trim($ddl)));
+    		$ddlStr = is_string($ddl) ? $ddl : '';
+		return str_replace("default '0'", "default 0", str_replace('`', '', trim($ddlStr)));
     	}, $goalMatchesSub);
     	foreach ($updateTheseColumns as $colDDL) {
     		// find the colum name.
@@ -1289,6 +1290,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    	}
 	    	return preg_replace('/ (?:COMMENT.+?,[\r\n])/', ",\n", (string) $createTableDDL) ?? $createTableDDL;
 	    }
+    /**
+     * @param string $tableName
+     * @return void
+     */
     function deleteIndexes($tableName) {
 
     	// get the indexes list.
