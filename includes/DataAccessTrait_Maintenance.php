@@ -9,10 +9,25 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
     /** @param string $errorMessage @return void */
     function repairTable(string $errorMessage): void {
 
-        $re = "Table '(.*\/)?(.+)' is marked as crashed and ";
-        $matches = array();
+        // Match "Table '...' is marked as crashed" (errno 1194/1195).
+        $re1 = "Table '(.*\/)?(.+)' is marked as crashed and ";
+        // Match "Incorrect key file for table '...'" (errno 1034).
+        // The table name may include a path prefix (./db/name) and a .MYI suffix.
+        $re2 = "Incorrect key file for table '(?:.*\/)?([^'.]+?)(?:\\.MYI)?'";
 
-        $this->f->regexMatch($re, $errorMessage, $matches);
+        $matches = array();
+        $this->f->regexMatch($re1, $errorMessage, $matches);
+
+        if (empty($matches) || count($matches) <= 2 || $this->f->strlen($matches[2]) === 0) {
+            // Try the errno 1034 pattern. Use a single capture group (no path prefix group)
+            // so $matches[1] is the bare table name.
+            $this->f->regexMatch($re2, $errorMessage, $matches);
+            // Shift result to match[2] position expected by the code below.
+            if (!empty($matches) && isset($matches[1]) && $this->f->strlen($matches[1]) > 0) {
+                $matches[2] = $matches[1];
+            }
+        }
+
         if (!empty($matches) && count($matches) > 2 && $this->f->strlen($matches[2]) > 0) {
             $tableToRepair = $matches[2];
             if ($this->f->strpos($tableToRepair, "abj404") !== false) {
@@ -44,9 +59,27 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
                 }
 
             } else {
-                // tell someone the table $tableToRepair is broken.
-            	$this->logger->warn("The table " . $tableToRepair . " needs to be " .
-            		"repaired with something like: repair table " . $tableToRepair);
+                // Non-plugin table: the plugin cannot repair it, but we can notify the admin
+                // once per day so they can contact their host.
+                $this->logger->warn("The table " . $tableToRepair . " needs to be " .
+                    "repaired with something like: repair table " . $tableToRepair);
+
+                $cooldownKey = 'abj404_corrupted_temp_table_notice_until';
+                $alreadyNotified = function_exists('get_transient') ? get_transient($cooldownKey) : false;
+                if (!$alreadyNotified) {
+                    $noticeMessage = function_exists('__')
+                        ? __('A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)', '404-solution')
+                        : 'A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)';
+                    if (function_exists('set_transient')) {
+                        set_transient('abj404_plugin_db_notice', array(
+                            'type'         => 'corrupted_temp_table',
+                            'message'      => $noticeMessage,
+                            'timestamp'    => time(),
+                            'error_string' => $errorMessage,
+                        ), 86400);
+                        set_transient($cooldownKey, 1, 86400);
+                    }
+                }
             }
         }
     }

@@ -2620,3 +2620,20 @@ msgstr "Ogiltigt CSV-format. %d kolumner hittades men 2, 5 eller 6 förväntades
 #: includes/ShortCode.php
 msgid "Loading page suggestions..."
 msgstr "Laddar sidförslag..."
+
+#: 404-solution.php:603
+msgid "A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider."
+msgstr "En tillfällig MySQL-tabell är skadad, vanligtvis orsakat av disk- eller hårdvaruproblem. Tillägget kan inte reparera den. Kontakta din hosting-leverantör."
+
+#: 404-solution.php:605
+msgid "The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space."
+msgstr "404 Solutions loggtabell är full. Tillägget rensade automatiskt de 1 000 äldsta posterna för att frigöra utrymme, men loggning kan fortfarande vara begränsad. Kontakta din hosting-leverantör angående diskutrymme."
+
+#: includes/DataAccessTrait_Maintenance.php:71
+msgid "A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
+msgstr "En tillfällig databastabell är skadad — detta orsakas vanligtvis av en full eller defekt disk. Kontakta din host. (MySQL-fel 1034)"
+
+#: includes/DataAccessTrait_Logs.php:1139
+msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
+msgstr "404 Solutions loggtabell är full och kan inte acceptera nya poster. Detta orsakas vanligtvis av en full disk. Kontakta din hosting-leverantör eller rensa loggtabellen manuellt."
+

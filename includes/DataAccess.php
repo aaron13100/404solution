@@ -872,9 +872,12 @@ class ABJ_404_Solution_DataAccess {
                 $this->repairTable($result['last_error']);
             }
             if ($this->f->strpos($result['last_error'],
-            		"ALTER TABLE causes auto_increment resequencing") !== false && 
+            		"ALTER TABLE causes auto_increment resequencing") !== false &&
             		$this->f->strpos($result['last_error'], "resulting in duplicate entry") !== false) {
             		$this->repairDuplicateIDs($result['last_error'], $query);
+            }
+            if ($this->isIncorrectKeyFileError($result['last_error'])) {
+                $this->repairCorruptedTableAndRetry($query, $result);
             }
 
             // ignore any specific errors.
@@ -1037,6 +1040,14 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /** @param string $errorText @return bool */
+    private function isIncorrectKeyFileError(string $errorText): bool {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        return stripos($errorText, 'Incorrect key file') !== false;
+    }
+
+    /** @param string $errorText @return bool */
     private function isDeadlockOrLockTimeoutError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
@@ -1084,7 +1095,7 @@ class ABJ_404_Solution_DataAccess {
      * @param string $errorString
      * @return void
      */
-    private function setPluginDbNotice(string $type, string $message, string $errorString = ''): void {
+    protected function setPluginDbNotice(string $type, string $message, string $errorString = ''): void {
         $payload = array(
             'type' => $type,
             'message' => $message,
@@ -1220,8 +1231,37 @@ class ABJ_404_Solution_DataAccess {
             self::$tableRepairInProgress = false;
         }
     }
-    
-    /** Try to call strip_invalid_text_from_query and return the result. 
+
+    /**
+     * Attempt REPAIR TABLE after errno 1034 ("Incorrect key file"), then retry the query once.
+     * For plugin tables the retry is attempted after repair. For non-plugin tables the repair
+     * is not our responsibility, but we surface a rate-limited admin notice.
+     *
+     * @param string $query
+     * @param array<string, mixed> $result passed by reference
+     * @return void
+     */
+    private function repairCorruptedTableAndRetry(string $query, array &$result): void {
+        $errorMessage = is_string($result['last_error']) ? $result['last_error'] : '';
+        // Delegate the REPAIR TABLE call (and the non-plugin-table notice) to the trait method.
+        $this->repairTable($errorMessage);
+
+        // Only retry for plugin tables — they may now be healthy.
+        if (stripos($errorMessage, 'abj404') !== false) {
+            global $wpdb;
+            $wpdb->flush();
+            $result['rows'] = $wpdb->get_results($query, ARRAY_A);
+            $result['last_error'] = (string)($wpdb->last_error ?? '');
+            $result['last_result'] = $wpdb->last_result ?? array();
+            $result['rows_affected'] = $wpdb->rows_affected ?? 0;
+            $result['insert_id'] = $wpdb->insert_id ?? 0;
+            if ($result['last_error'] === '') {
+                $this->logger->infoMessage("Retry after 'Incorrect key file' repair succeeded for plugin table.");
+            }
+        }
+    }
+
+    /** Try to call strip_invalid_text_from_query and return the result.
      * @param string $query
      * @return NULL|string|WP_Error
      */

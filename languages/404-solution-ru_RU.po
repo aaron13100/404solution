@@ -2625,3 +2625,20 @@ msgstr "Недопустимый формат CSV. Найдено столбцо
 #: includes/ShortCode.php
 msgid "Loading page suggestions..."
 msgstr "Загрузка предложений страниц..."
+
+#: 404-solution.php:603
+msgid "A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider."
+msgstr "Временная таблица MySQL повреждена, обычно из-за проблем с диском или оборудованием. Плагин не может её исправить. Пожалуйста, свяжитесь с вашим хостинг-провайдером."
+
+#: 404-solution.php:605
+msgid "The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space."
+msgstr "Таблица журналов 404 Solution заполнена. Плагин автоматически удалил 1 000 самых старых записей для освобождения места, однако ведение журнала может быть ограничено. Свяжитесь с вашим хостинг-провайдером по вопросу дискового пространства."
+
+#: includes/DataAccessTrait_Maintenance.php:71
+msgid "A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
+msgstr "Временная таблица базы данных повреждена — обычно это вызвано заполненным или неисправным диском. Пожалуйста, свяжитесь с вашим хостом. (Ошибка MySQL 1034)"
+
+#: includes/DataAccessTrait_Logs.php:1139
+msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
+msgstr "Таблица журналов 404 Solution заполнена и не может принимать новые записи. Обычно это вызвано заполненным диском. Свяжитесь с вашим хостинг-провайдером или вручную очистите таблицу журналов."
+

@@ -953,6 +953,27 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         if ($result === false && !empty($wpdb->last_error)) {
             $batchError = $wpdb->last_error;
 
+            // Auto-trim oldest log entries when the log table is full (errno 1114 "table is full").
+            // Rate-limited to once per hour to avoid thrashing on a genuinely full disk.
+            if ($this->isTableFullError($batchError)) {
+                $trimmed = $this->autoTrimLogsv2IfNeeded($tableName, $batchError);
+                if ($trimmed) {
+                    // Retry the INSERT after freeing space.
+                    /** @var \wpdb $wpdb */
+                    $wpdb->flush();
+                    $retryResult = $wpdb->query($prepared);
+                    if ($retryResult !== false) {
+                        self::$logQueue = [];
+                        self::$shutdownHookRegistered = false;
+                        self::$isFlushingLogQueue = false;
+                        return;
+                    }
+                    $batchError = $wpdb->last_error;
+                }
+                // Still failing after trim (or trim rate-limited): surface admin notice.
+                $this->setLogsv2FullNotice($batchError);
+            }
+
             // Attempt a one-time recovery for known connection-state issues (e.g., "Commands out of sync").
             if ($this->isCommandsOutOfSyncError($batchError)) {
                 $isolated = $this->getIsolatedWpdb();
@@ -1072,6 +1093,59 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
 
     private function isCommandsOutOfSyncError(string $error): bool {
         return stripos($error, 'commands out of sync') !== false;
+    }
+
+    /** @param string $error @return bool */
+    private function isTableFullError(string $error): bool {
+        $lower = strtolower($error);
+        return stripos($lower, 'is full') !== false || stripos($lower, 'table full') !== false;
+    }
+
+    /**
+     * Delete the oldest 1000 rows from logsv2 to free space, rate-limited to once per hour.
+     *
+     * @param string $tableName Fully-resolved logsv2 table name.
+     * @param string $errorMessage The error that triggered the call.
+     * @return bool True if a trim was attempted (regardless of success), false if rate-limited.
+     */
+    private function autoTrimLogsv2IfNeeded(string $tableName, string $errorMessage): bool {
+        $cooldownKey = 'abj404_logsv2_trim_cooldown_until';
+        $alreadyTrimmed = function_exists('get_transient') ? get_transient($cooldownKey) : false;
+        if ($alreadyTrimmed) {
+            return false;
+        }
+
+        global $wpdb;
+        // ORDER BY ensures we delete oldest first. LIMIT keeps the DELETE bounded.
+        $trimSql = "DELETE FROM `{$tableName}` ORDER BY timestamp ASC LIMIT 1000";
+        $wpdb->query($trimSql);
+
+        $ttl = defined('HOUR_IN_SECONDS') ? (int) HOUR_IN_SECONDS : 3600;
+        if (function_exists('set_transient')) {
+            set_transient($cooldownKey, 1, $ttl);
+        }
+
+        if (!empty($wpdb->last_error)) {
+            $this->logger->warn("Log table full — auto-trim failed: " . $wpdb->last_error);
+        } else {
+            $this->logger->warn("Log table full — auto-trimmed 1000 oldest entries to free space.");
+        }
+        return true;
+    }
+
+    /** @param string $errorMessage @return void */
+    private function setLogsv2FullNotice(string $errorMessage): void {
+        $message = function_exists('__')
+            ? __('The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table.', '404-solution')
+            : 'The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table.';
+        if (function_exists('set_transient')) {
+            set_transient('abj404_plugin_db_notice', array(
+                'type'         => 'log_table_full',
+                'message'      => $message,
+                'timestamp'    => time(),
+                'error_string' => $errorMessage,
+            ), 86400);
+        }
     }
 
     /**

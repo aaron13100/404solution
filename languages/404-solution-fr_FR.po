@@ -2614,3 +2614,20 @@ msgstr "Format CSV non valide. %d colonnes trouvées mais 2, 5 ou 6 attendues."
 #: includes/ShortCode.php
 msgid "Loading page suggestions..."
 msgstr "Chargement des suggestions de pages..."
+
+#: 404-solution.php:603
+msgid "A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider."
+msgstr "Une table MySQL temporaire est corrompue, généralement à cause d'un problème de disque ou de matériel. Le plugin ne peut pas la réparer. Veuillez contacter votre hébergeur."
+
+#: 404-solution.php:605
+msgid "The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space."
+msgstr "La table de journaux de 404 Solution est pleine. Le plugin a automatiquement supprimé les 1 000 entrées les plus anciennes pour libérer de l'espace, mais la journalisation peut rester limitée. Contactez votre hébergeur à propos de l'espace disque."
+
+#: includes/DataAccessTrait_Maintenance.php:71
+msgid "A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
+msgstr "Une table temporaire de base de données est corrompue — cela est généralement dû à un disque plein ou défaillant. Veuillez contacter votre hébergeur. (Erreur MySQL 1034)"
+
+#: includes/DataAccessTrait_Logs.php:1139
+msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
+msgstr "La table de journaux de 404 Solution est pleine et ne peut pas accepter de nouvelles entrées. Cela est généralement dû à un disque plein. Contactez votre hébergeur ou purgez manuellement la table des journaux."
+

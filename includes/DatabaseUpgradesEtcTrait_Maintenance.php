@@ -11,8 +11,6 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
     	// get a list of all tables.
         global $wpdb;
     	$result = $this->dao->getTableEngines();
-    	$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
-    	
     	// if any rows are found then update the tables.
     	$resultRows = isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : [];
     	if (!empty($resultRows)) {
@@ -26,14 +24,13 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
     		      (array_key_exists('ENGINE', $row) ? (string)$row['ENGINE'] : '');
 
 		        $query = null;
-    		    // Use MyISAM because optimize table is slow otherwise.
-                if ($tableName == $logsTable && $this->dao->isMyISAMSupported()) {
-                    if (strtolower($engine) != 'myisam') {
-                        $this->logger->infoMessage("Updating " . $tableName . " to MyISAM.");
-                        $query = 'alter table `' . $tableName . '` engine = MyISAM;';
-                    }
-
-                } else if (strtolower($engine) != 'innodb') {
+    		    // All plugin tables use InnoDB: crash-safe, no row-count ceiling, no table-level
+    		    // locking. The former MyISAM special-case for logsv2 ("OPTIMIZE TABLE is slow
+    		    // otherwise") no longer applies — OPTIMIZE TABLE on InnoDB has been equivalent to
+    		    // ALTER TABLE ... ENGINE=InnoDB since MySQL 5.6 (rebuilds tablespace in-place).
+    		    // InnoDB also eliminates the MyISAM-specific "table is full" failure mode on sites
+    		    // with disk pressure (MyISAM .MYI files cannot grow past 4 GiB by default).
+                if (strtolower($engine) != 'innodb') {
                     $this->logger->infoMessage("Updating " . $tableName . " to InnoDB.");
                     $query = 'alter table `' . $tableName . '` engine = InnoDB;';
                 }

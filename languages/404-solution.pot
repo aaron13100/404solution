@@ -1401,6 +1401,14 @@ msgstr ""
 msgid "Your database query quota was exceeded. This usually resets automatically."
 msgstr ""
 
+#: 404-solution.php:554
+msgid "A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider."
+msgstr ""
+
+#: 404-solution.php:556
+msgid "The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space."
+msgstr ""
+
 #: 404-solution.php:559
 msgid "Show database error details"
 msgstr ""
@@ -1419,6 +1427,14 @@ msgstr ""
 
 #: includes/DataAccess.php:1009
 msgid "Database collation mismatch was detected. A compatibility fallback was used where possible."
+msgstr ""
+
+#: includes/DataAccessTrait_Maintenance.php
+msgid "A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
+msgstr ""
+
+#: includes/DataAccessTrait_Logs.php
+msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
 msgstr ""
 
 #: includes/DataAccess.php includes/View.php

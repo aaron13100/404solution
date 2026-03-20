@@ -2466,6 +2466,18 @@ msgstr "Your database is currently in read-only mode. Contact your hosting provi
 msgid "Your database query quota was exceeded. This usually resets automatically."
 msgstr "Your database query quota was exceeded. This usually resets automatically."
 
+msgid "A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider."
+msgstr "A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider."
+
+msgid "The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space."
+msgstr "The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space."
+
+msgid "A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
+msgstr "A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
+
+msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
+msgstr "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
+
 msgid "Show database error details"
 msgstr "Show database error details"
 

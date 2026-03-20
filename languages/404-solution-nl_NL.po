@@ -2620,3 +2620,20 @@ msgstr "Ongeldig CSV-formaat. %d kolommen gevonden, maar 2, 5 of 6 verwacht."
 #: includes/ShortCode.php
 msgid "Loading page suggestions..."
 msgstr "Paginasuggesties laden..."
+
+#: 404-solution.php:603
+msgid "A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider."
+msgstr "Een tijdelijke MySQL-tabel is beschadigd, meestal veroorzaakt door schijf- of hardwareproblemen. De plugin kan het niet repareren. Neem contact op met uw hostingprovider."
+
+#: 404-solution.php:605
+msgid "The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space."
+msgstr "De logtabel van 404 Solution is vol. De plugin heeft automatisch de 1.000 oudste vermeldingen verwijderd om ruimte vrij te maken, maar logboekregistratie kan nog steeds beperkt zijn. Neem contact op met uw hostingprovider over schijfruimte."
+
+#: includes/DataAccessTrait_Maintenance.php:71
+msgid "A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
+msgstr "Een tijdelijke databasetabel is beschadigd — dit wordt gewoonlijk veroorzaakt door een volle of defecte schijf. Neem contact op met uw host. (MySQL-fout 1034)"
+
+#: includes/DataAccessTrait_Logs.php:1139
+msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
+msgstr "De logtabel van 404 Solution is vol en kan geen nieuwe vermeldingen accepteren. Dit wordt gewoonlijk veroorzaakt door een volle schijf. Neem contact op met uw hostingprovider of wis de logtabel handmatig."
+

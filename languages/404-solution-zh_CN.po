@@ -2628,3 +2628,20 @@ msgstr "无效的 CSV 格式。找到 %d 列，但预期为 2、5 或 6 列。"
 #: includes/ShortCode.php
 msgid "Loading page suggestions..."
 msgstr "正在加载页面建议..."
+
+#: 404-solution.php:603
+msgid "A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider."
+msgstr "MySQL临时表已损坏，通常由磁盘或硬件问题引起。插件无法修复它。请联系您的主机提供商。"
+
+#: 404-solution.php:605
+msgid "The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space."
+msgstr "404 Solution的日志表已满。插件已自动清除最旧的1,000条记录以释放空间，但日志记录可能仍然受限。请联系您的主机提供商了解磁盘空间情况。"
+
+#: includes/DataAccessTrait_Maintenance.php:71
+msgid "A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
+msgstr "数据库临时表已损坏——这通常由磁盘空间不足或磁盘故障引起。请联系您的主机。（MySQL错误1034）"
+
+#: includes/DataAccessTrait_Logs.php:1139
+msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
+msgstr "404 Solution的日志表已满，无法接受新条目。这通常由磁盘空间不足引起。请联系您的主机提供商，或手动清理日志表。"
+

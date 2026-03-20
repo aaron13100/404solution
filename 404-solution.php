@@ -558,6 +558,10 @@ if (!function_exists('abj404_show_runtime_integrity_notice')) {
 		if (!is_admin() || !current_user_can('manage_options')) {
 			return;
 		}
+		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+		if ($page !== ABJ404_PP) {
+			return;
+		}
 		$missing = get_transient('abj404_runtime_missing_files');
 		if (!is_array($missing) || count($missing) === 0) {
 			return;
@@ -595,6 +599,10 @@ if (!function_exists('abj404_show_plugin_db_notice')) {
 			$guidance = __('Your database is currently in read-only mode. Contact your hosting provider.', '404-solution');
 		} elseif ($type === 'query_quota') {
 			$guidance = __('Your database query quota was exceeded. This usually resets automatically.', '404-solution');
+		} elseif ($type === 'corrupted_temp_table') {
+			$guidance = __('A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider.', '404-solution');
+		} elseif ($type === 'log_table_full') {
+			$guidance = __('The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space.', '404-solution');
 		}
 		echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ' . esc_html($notice['message']) . '</p>';
 		if ($guidance !== '') {

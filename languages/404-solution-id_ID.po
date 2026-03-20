@@ -2615,3 +2615,20 @@ msgstr "Format CSV tidak valid. %d kolom ditemukan, tetapi 2, 5, atau 6 yang dih
 #: includes/ShortCode.php
 msgid "Loading page suggestions..."
 msgstr "Memuat saran halaman..."
+
+#: 404-solution.php:603
+msgid "A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider."
+msgstr "Tabel sementara MySQL rusak, biasanya disebabkan oleh masalah disk atau perangkat keras. Plugin tidak dapat memperbaikinya. Hubungi penyedia hosting Anda."
+
+#: 404-solution.php:605
+msgid "The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space."
+msgstr "Tabel log 404 Solution penuh. Plugin secara otomatis menghapus 1.000 entri terlama untuk membebaskan ruang, tetapi pencatatan mungkin masih terbatas. Hubungi penyedia hosting Anda tentang ruang disk."
+
+#: includes/DataAccessTrait_Maintenance.php:71
+msgid "A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
+msgstr "Tabel sementara database rusak — ini biasanya disebabkan oleh disk yang penuh atau gagal. Hubungi host Anda. (Kesalahan MySQL 1034)"
+
+#: includes/DataAccessTrait_Logs.php:1139
+msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
+msgstr "Tabel log 404 Solution penuh dan tidak dapat menerima entri baru. Ini biasanya disebabkan oleh disk yang penuh. Hubungi penyedia hosting Anda atau hapus tabel log secara manual."
+
