@@ -1,0 +1,1020 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+trait ABJ_404_Solution_DataAccess_RedirectsTrait {
+
+    function deleteRedirect($id) {
+        global $wpdb;
+        $cleanedID = absint(sanitize_text_field((string)$id));
+
+        // no nonce here because this action is not always user generated.
+
+        if (is_numeric($id)) {
+            $query = "delete from {wp_abj404_redirects} where id = %d";
+            $this->queryAndGetResults($query, array('query_params' => array($cleanedID)));
+
+            // Invalidate caches
+            $this->invalidateStatusCountsCache();
+            $this->clearRegexRedirectsCache();
+        }
+    }
+
+    /**
+     * Remove auto-created redirects whose destination post no longer exists or is not published.
+     *
+     * @return int Number of orphaned redirects deleted.
+     */
+    public function cleanupOrphanedAutoRedirects(): int {
+        // Guard: skip if redirects table doesn't exist (prevents recurring cron errors)
+        $redirectsTable = $this->doTableNameReplacements('{wp_abj404_redirects}');
+        if (!$this->tableExists($redirectsTable)) {
+            $this->logger->warn("Skipping orphaned redirect cleanup: table missing.");
+            return 0;
+        }
+
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getOrphanedAutoRedirects.sql");
+        $query = $this->f->doNormalReplacements($query);
+
+        $results = $this->queryAndGetResults($query);
+        $rows = is_array($results['rows']) ? $results['rows'] : [];
+        $deletedCount = 0;
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $id = isset($row['id']) && is_scalar($row['id']) ? (string)$row['id'] : '0';
+            $url = isset($row['url']) && is_string($row['url']) ? $row['url'] : '';
+            $this->logger->debugMessage('Orphaned auto redirect deleted: "' . $url . '" (dest post ' .
+                (isset($row['final_dest']) && is_scalar($row['final_dest']) ? (string)$row['final_dest'] : '?') . ' missing/unpublished).');
+            $this->deleteRedirect($id);
+            $deletedCount++;
+        }
+
+        return $deletedCount;
+    }
+
+    /** Helper method to delete old redirects of a specific type.
+     * Extracted common logic from deleteOldRedirectsCron() to eliminate duplication.
+     *
+     * @param array<string, mixed> $options Plugin options
+     * @param int $now Current timestamp
+     * @param string $optionKey Option key for deletion threshold ('capture_deletion', 'auto_deletion', 'manual_deletion')
+     * @param string $statusList Comma-separated list of status codes to delete
+     * @param string $debugMessageType Type description for debug logging ('Captured 404', 'Automatic redirect', 'Manual redirect')
+     * @return int Count of deleted redirects
+     */
+    private function deleteOldRedirectsByType($options, $now, $optionKey, $statusList, $debugMessageType) {
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $deletedCount = 0;
+
+        // Calculate time threshold
+        $deletionDays = $options[$optionKey];
+        $deletionTime = $deletionDays * 86400;
+        $then = $now - $deletionTime;
+
+        // Load and prepare SQL query
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
+        $query = $this->f->str_replace('{status_list}', $statusList, $query);
+        $query = $this->f->str_replace('{timelimit}', (string)$then, $query);
+
+        // Fix for MAX_JOIN_SIZE error (reported by 24 users - 53% of errors)
+        // Set SQL_BIG_SELECTS=1 to allow large queries during maintenance operations
+        // IMPORTANT: This is a SESSION-LEVEL setting that only affects this connection
+        // and automatically expires when the script finishes (no permanent database changes)
+        // This is safe for cron jobs and prevents "The SELECT would examine more than MAX_JOIN_SIZE rows" error
+        global $wpdb;
+        $wpdb->query("SET SQL_BIG_SELECTS=1");
+
+        // Execute query and get results
+        $results = $this->queryAndGetResults($query);
+        $rows = is_array($results['rows']) ? $results['rows'] : array();
+
+        // Delete each redirect and log
+        foreach ($rows as $rowRaw) {
+            if (!is_array($rowRaw)) {
+                continue;
+            }
+            $row = $rowRaw;
+            // Build debug message based on redirect type
+            if ($debugMessageType === 'Captured 404') {
+                $this->logger->debugMessage("Captured 404 for \"" . (is_string($row['from_url'] ?? '') ? $row['from_url'] : '') .
+                    '" deleted (last used: ' . (is_string($row['last_used_formatted'] ?? '') ? $row['last_used_formatted'] : '') . ').');
+            } else {
+                // Auto and Manual redirects show from/to URLs
+                $this->logger->debugMessage($debugMessageType . " from: " . (is_string($row['from_url'] ?? '') ? $row['from_url'] : '') . ' to: ' .
+                    (is_string($row['best_guess_dest'] ?? '') ? $row['best_guess_dest'] : '') . ' deleted (last used: ' . (is_string($row['last_used_formatted'] ?? '') ? $row['last_used_formatted'] : '') . ').');
+            }
+
+            $abj404dao->deleteRedirect(isset($row['id']) && is_scalar($row['id']) ? (string)$row['id'] : '0');
+            $deletedCount++;
+        }
+
+        return $deletedCount;
+    }
+
+    /**
+     * Delete old rows from the logs/protocol table based on age.
+     *
+     * Uses batch deletes to avoid a long-running single table lock.
+     *
+     * @param int $daysToKeep
+     * @param int $now
+     * @return int
+     */
+    private function deleteOldLogsByAge(int $daysToKeep, int $now): int {
+        if ($daysToKeep <= 0) {
+            return 0;
+        }
+
+        $cutoffTimestamp = max(0, $now - ($daysToKeep * 86400));
+        $deletedTotal = 0;
+        $batchSize = 2000;
+        $maxBatches = 200;
+
+        for ($i = 0; $i < $maxBatches; $i++) {
+            $result = $this->queryAndGetResults(
+                "DELETE FROM {wp_abj404_logsv2} WHERE timestamp <= %d LIMIT %d",
+                array(
+                    'query_params' => array($cutoffTimestamp, $batchSize),
+                    'log_errors' => true,
+                )
+            );
+            $rowsDeletedRaw = $result['rows_affected'] ?? 0;
+            $rowsDeleted = (is_int($rowsDeletedRaw) || is_float($rowsDeletedRaw) || is_string($rowsDeletedRaw))
+                ? (int)$rowsDeletedRaw
+                : 0;
+            if ($rowsDeleted <= 0) {
+                break;
+            }
+            $deletedTotal += $rowsDeleted;
+            if ($rowsDeleted < $batchSize) {
+                break;
+            }
+        }
+
+        return $deletedTotal;
+    }
+
+    /** Delete old redirects based on how old they are. This runs daily.
+     * @return string
+     */
+    function deleteOldRedirectsCron() {
+        global $wpdb;
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        
+        $options = $abj404logic->getOptions();
+        $now = time();
+        $capturedURLsCount = 0;
+        $autoRedirectsCount = 0;
+        $manualRedirectsCount = 0;
+        $oldLogRowsDeletedBySize = 0;
+        $oldLogRowsDeletedByAge = 0;
+
+        // If true then the user clicked the button to execute the mantenance.
+        $manually_fired = $abj404dao->getPostOrGetSanitize('manually_fired', 'false');
+        if ($this->f->strtolower($manually_fired) == 'true') {
+            $manually_fired = true;
+        } else {
+            $manually_fired = false;
+        }
+
+        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+        $upgradesEtc->createDatabaseTables(false);
+
+        // Ensure database connection is active for long-running maintenance operations
+        // This prevents "MySQL server has gone away" errors
+        $this->ensureConnection();
+
+        // delete the export file
+        $tempFile = $abj404logic->getExportFilename();
+        if (file_exists($tempFile)) {
+        	ABJ_404_Solution_Functions::safeUnlink($tempFile);
+        }
+        
+        // reset the crashed table count
+        $options['repaired_count'] = 0;
+        $abj404logic->updateOptions($options);
+
+        $duplicateRowsDeleted = $abj404dao->removeDuplicatesCron();
+
+        // Remove Captured URLs
+        if (array_key_exists('capture_deletion', $options) && $options['capture_deletion'] != '0') {
+            $status_list = ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER;
+            $capturedURLsCount = $this->deleteOldRedirectsByType($options, $now, 'capture_deletion', $status_list, 'Captured 404');
+            $captureDeletionDays = intval(is_scalar($options['capture_deletion']) ? $options['capture_deletion'] : 0);
+            $oldLogRowsDeletedByAge = $this->deleteOldLogsByAge($captureDeletionDays, $now);
+        }
+
+        // Remove Automatic Redirects
+        if (isset($options['auto_deletion']) && $options['auto_deletion'] != '0') {
+            $status_list = (string)ABJ404_STATUS_AUTO;
+            $autoRedirectsCount = $this->deleteOldRedirectsByType($options, $now, 'auto_deletion', $status_list, 'Automatic redirect');
+        }
+
+        // Remove Manual Redirects
+        if (isset($options['manual_deletion']) && $options['manual_deletion'] != '0') {
+            $status_list = ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_REGEX;
+            $manualRedirectsCount = $this->deleteOldRedirectsByType($options, $now, 'manual_deletion', $status_list, 'Manual redirect');
+        }
+
+        // Remove orphaned auto redirects (destination post deleted/unpublished)
+        $orphanedCount = $this->cleanupOrphanedAutoRedirects();
+
+        //Clean up old logs. prepare the query. get the disk usage in bytes. compare to the max requested
+        // disk usage (MB to bytes). delete 1k rows at a time until the size is acceptable.
+        $logsSizeBytes = $abj404dao->getLogDiskUsage();
+        $maxLogSizeBytes = (array_key_exists('maximum_log_disk_usage', $options) ? $options['maximum_log_disk_usage'] : 100) * 1024 * 1000;
+        
+        $totalLogLines = $abj404dao->getLogsCount(0);
+        $averageSizePerLine = max($logsSizeBytes, 1) / max($totalLogLines, 1);
+        $logLinesToKeep = ceil($maxLogSizeBytes / $averageSizePerLine);
+        $logLinesToDelete = max($totalLogLines - $logLinesToKeep, 0);
+        if ($logLinesToDelete == null || trim((string)$logLinesToDelete) == '') {
+        	$logLinesToDelete = 0;
+        }
+        if ($logLinesToDelete > 0) {
+	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
+	        $query = $this->f->str_replace('{lines_to_delete}', (string)$logLinesToDelete, $query);
+	        $results = $this->queryAndGetResults($query);
+            $oldLogRowsDeletedBySizeRaw = $results['rows_affected'] ?? 0;
+            $oldLogRowsDeletedBySize = (is_int($oldLogRowsDeletedBySizeRaw) || is_float($oldLogRowsDeletedBySizeRaw) || is_string($oldLogRowsDeletedBySizeRaw))
+                ? (int)$oldLogRowsDeletedBySizeRaw
+                : 0;
+        }
+        
+        $logsSizeBytes = $abj404dao->getLogDiskUsage();
+        $logSizeMB = round($logsSizeBytes / (1024 * 1000), 2);
+        
+        $renamed = $abj404dao->limitDebugFileSize();
+        $renamed = $renamed ? "true" : "false";
+        
+        $oldLogRowsDeleted = $oldLogRowsDeletedByAge + $oldLogRowsDeletedBySize;
+
+        $message = "deleteOldRedirectsCron. Old captured URLs removed: " .
+                $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
+                ", Old manual redirects removed: " . $manualRedirectsCount .
+                ", Orphaned auto redirects removed: " . $orphanedCount .
+                ", Old log lines removed: " . $oldLogRowsDeleted .
+                " (age: " . $oldLogRowsDeletedByAge . ", size: " . $oldLogRowsDeletedBySize . ")" .
+                ", New log size: " . $logSizeMB . "MB" .
+                ", Duplicate rows deleted: " . $duplicateRowsDeleted . ", Debug file size limited: " .
+                $renamed;
+        
+        // only send a 404 notification email during daily maintenance.
+        $adminEmailVal = array_key_exists('admin_notification_email', $options) ? $options['admin_notification_email'] : '';
+        if ($adminEmailVal !== null &&
+                $this->f->strlen(trim(is_string($adminEmailVal) ? $adminEmailVal : '')) > 5) {
+            
+            if ($manually_fired) {
+                $message .= ', The admin email notification option is skipped for user '
+                        . 'initiated maintenance runs.';
+            } else {
+                $message .= ', ' . $abj404logic->emailCaptured404Notification();
+            }
+        } else {
+            $message .= ', Admin email notification option turned off.';
+        }
+
+        if (isset($options['send_error_logs']) &&
+                $options['send_error_logs'] == '1') {
+            if ($this->logger->emailErrorLogIfNecessary()) {
+                $message .= ", Log file emailed to developer.";
+            }
+        }
+        
+        // add some entries to the permalink cache if necessary
+        $abj404permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
+        $rowsUpdated = $abj404permalinkCache->updatePermalinkCache(15);
+        $message .= ", Permlink cache rows updated: " . $rowsUpdated;
+        
+        $manually_fired_String = ($manually_fired) ? 'true' : 'false';
+        $message .= ", User initiated: " . $manually_fired_String;
+                
+        $this->logger->infoMessage($message);
+        
+        // fix any lingering errors
+        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+        $upgradesEtc->createDatabaseTables();
+        
+        $this->queryAndGetResults("optimize table {wp_abj404_redirects}");
+        
+        $upgradesEtc->updatePluginCheck();
+        
+        return $message;
+    }
+    
+    /** @return bool */
+    function limitDebugFileSize(): bool {
+        $renamed = false;
+        
+        $mbFileSize = $this->logger->getDebugFileSize() / 1024 / 1000;
+        if ($mbFileSize > 10) {
+            $this->logger->limitDebugFileSize();
+            $renamed = true;
+        }
+        
+        return $renamed;
+    }
+    
+    /** Remove duplicates.
+     * @return int
+     */
+    function removeDuplicatesCron(): int {
+        $rowsDeleted = 0;
+        $query = "SELECT COUNT(id) as repetitions, url FROM {wp_abj404_redirects} GROUP BY url HAVING repetitions > 1 ";
+        $result = $this->queryAndGetResults($query);
+        $outerRows = is_array($result['rows']) ? $result['rows'] : array();
+        foreach ($outerRows as $outerRow) {
+            if (!is_array($outerRow)) {
+                continue;
+            }
+            $row = $outerRow;
+            $url = $row['url'];
+
+            // Fix HIGH #2 (5th review): Use prepared statements instead of manual escaping
+            $queryr1 = $this->prepare_query_wp(
+                "select id from {wp_abj404_redirects} where url = {url} order by timestamp desc limit 0,1",
+                array("url" => $url)
+            );
+            $result = $this->queryAndGetResults($queryr1);
+            $innerRows = is_array($result['rows']) ? $result['rows'] : array();
+            if (count($innerRows) >= 1) {
+                $row = is_array($innerRows[0]) ? $innerRows[0] : array();
+                $original = isset($row['id']) ? $row['id'] : 0;
+
+                // Fix HIGH #2 (5th review): Use prepared statements instead of manual escaping
+                $queryl = $this->prepare_query_wp(
+                    "delete from {wp_abj404_redirects} where url = {url} and id != {original}",
+                    array("url" => $url, "original" => $original)
+                );
+                $this->queryAndGetResults($queryl);
+                $rowsDeleted++;
+            }
+        }
+
+        // Invalidate status counts cache if any duplicates were removed
+        if ($rowsDeleted > 0) {
+            $this->invalidateStatusCountsCache();
+        }
+
+        return $rowsDeleted;
+    }
+
+    /**
+     * Store a redirect for future use.
+     * @global type $wpdb
+     * @param string $fromURL
+     * @param string $status ABJ404_STATUS_MANUAL etc
+     * @param string $type ABJ404_TYPE_POST, ABJ404_TYPE_CAT, ABJ404_TYPE_TAG, etc.
+     * @param string $final_dest
+     * @param string $code
+     * @param int $disabled
+     * @param string|null $engine  The matching engine that created this redirect (null for manual/unknown)
+     * @return int
+     */
+    function setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled = 0, $engine = null) {
+        global $wpdb;
+
+        // nonce is verified outside of this method. We can't verify here because 
+        // automatic redirects are sometimes created without user interaction.
+
+        if (!is_numeric($type)) {
+            $this->logger->errorMessage("Wrong data type for redirect. TYPE is non-numeric. From: " .
+                    esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
+        } else if (!is_numeric($status)) {
+            $this->logger->errorMessage("Wrong data type for redirect. STATUS is non-numeric. From: " . 
+                    esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
+        }
+
+        $statusAsInt = is_numeric($status) ? absint($status) : -1;
+        $typeAsInt = is_numeric($type) ? absint($type) : -1;
+
+        // Guard: automatic redirects must point to a currently valid destination.
+        // This prevents persisting "auto" rows with missing/unpublished targets.
+        if ($statusAsInt === ABJ404_STATUS_AUTO &&
+                !$this->isValidAutomaticRedirectDestination($typeAsInt, $final_dest)) {
+            $this->logger->debugMessage("Skipping automatic redirect with invalid destination. " .
+                    "From: " . esc_url($fromURL) . ", Dest: " . esc_html((string)$final_dest) .
+                    ", Type: " . esc_html((string)$type) . ", Status: " . esc_html((string)$status));
+            return 0;
+        }
+
+        // if we should not capture a 404 then don't.
+        if (!array_key_exists(ABJ404_PP, $_REQUEST) ||
+        		!array_key_exists('ignore_doprocess', $_REQUEST[ABJ404_PP]) ||
+        		!@$_REQUEST[ABJ404_PP]['ignore_doprocess']) {
+            $now = time();
+            $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
+
+            // Normalize to relative path before storing (Issue #24)
+            // Fix HIGH #1 (5th review): Abort operation if normalization fails
+            // Storing un-normalized URLs causes permanent lookup failures
+            $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+            $fromURL = $abj404logic->normalizeToRelativePath($fromURL);
+
+            // Fix HIGH #1 (3rd review): Remove esc_sql() - wpdb->insert handles escaping
+            $insertData = array(
+                'url' => $fromURL,
+                'status' => $status,
+                'type' => $type,
+                'final_dest' => $final_dest,
+                'code' => $code,
+                'disabled' => $disabled,
+                'timestamp' => $now,
+            );
+            $insertFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d');
+            if ($engine !== null) {
+                $insertData['engine'] = substr((string)$engine, 0, 64);
+                $insertFormats[] = '%s';
+            }
+            $wpdb->insert($redirectsTable, $insertData, $insertFormats);
+
+            // Invalidate caches
+            $this->invalidateStatusCountsCache();
+            // Clear regex cache in case a regex redirect was added
+            if ($status == ABJ404_STATUS_REGEX) {
+                $this->clearRegexRedirectsCache();
+            }
+        }
+
+        return $wpdb->insert_id;
+    }
+
+    /**
+     * Automatic redirects are only valid for published posts or existing terms.
+     * If a destination is missing or unpublished, skip creating the auto redirect.
+     *
+     * @param int $type
+     * @param mixed $finalDest
+     * @return bool
+     */
+    private function isValidAutomaticRedirectDestination($type, $finalDest) {
+        $destId = absint(is_scalar($finalDest) ? $finalDest : 0);
+
+        if ($type === ABJ404_TYPE_POST) {
+            if ($destId <= 0) {
+                return false;
+            }
+            if (!function_exists('get_post')) {
+                return true;
+            }
+
+            $post = get_post($destId);
+            if (!is_object($post)) {
+                return false;
+            }
+
+            $postStatus = strtolower($post->post_status);
+
+            return in_array($postStatus, array('publish', 'published'), true);
+        }
+
+        if ($type === ABJ404_TYPE_CAT || $type === ABJ404_TYPE_TAG) {
+            if ($destId <= 0) {
+                return false;
+            }
+            if (!function_exists('get_term')) {
+                return true;
+            }
+
+            $taxonomy = ($type === ABJ404_TYPE_CAT) ? 'category' : 'post_tag';
+            $term = get_term($destId, $taxonomy);
+            if ($term === null || is_wp_error($term)) {
+                return false;
+            }
+            return is_object($term);
+        }
+
+        // Auto redirects should not target other types.
+        return false;
+    }
+
+    /** Get the redirect for the URL.
+     * @param string $url
+     * @return array<string, mixed>
+     */
+    function getActiveRedirectForURL($url) {
+        // Strip invalid UTF-8/control bytes but keep valid unicode for multilingual slugs.
+        $url = $this->f->sanitizeInvalidUTF8($url);
+
+        // Reject URLs still invalid after sanitization (bot garbage like %c0, null bytes)
+        if (function_exists('mb_check_encoding') && !mb_check_encoding($url, 'UTF-8')) {
+            return array('id' => 0);
+        }
+
+        // Normalize to relative path before querying (Issue #24)
+        // Fix HIGH #1 (5th review): Abort operation if normalization fails
+        // Querying with un-normalized URLs causes lookup failures
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $candidates = $abj404logic->getNormalizedUrlCandidates($url);
+        foreach ($candidates as $candidate) {
+            $redirect = $this->getActiveRedirectForNormalizedUrl($candidate);
+            if ($redirect['id'] !== 0) {
+                return $redirect;
+            }
+        }
+
+        return array('id' => 0);
+    }
+
+    /** Get the redirect for the URL.
+     * @param string $url
+     * @return array<string, mixed>
+     */
+    function getExistingRedirectForURL($url) {
+        // Strip invalid UTF-8/control bytes but keep valid unicode for multilingual slugs.
+        $url = $this->f->sanitizeInvalidUTF8($url);
+
+        // Reject URLs still invalid after sanitization (bot garbage like %c0, null bytes)
+        if (function_exists('mb_check_encoding') && !mb_check_encoding($url, 'UTF-8')) {
+            return array('id' => 0);
+        }
+
+        // Normalize to relative path before querying (Issue #24)
+        // Fix HIGH #1 (5th review): Abort operation if normalization fails
+        // Querying with un-normalized URLs causes lookup failures
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $candidates = $abj404logic->getNormalizedUrlCandidates($url);
+        foreach ($candidates as $candidate) {
+            $redirect = $this->getExistingRedirectForNormalizedUrl($candidate);
+            if ($redirect['id'] !== 0) {
+                return $redirect;
+            }
+        }
+
+        return array('id' => 0);
+    }
+
+    /**
+     * @param string $url
+     * @return array<string, mixed>
+     */
+    private function getActiveRedirectForNormalizedUrl($url) {
+        $redirect = array();
+
+        // we look for two URLs that might match. one with a trailing slash and one without.
+        // the one the user entered takes priority in case the admin added separate redirects for
+        // cases with and without the slash (and for backward compatibility).
+        $url1 = $url;
+        $url2 = $url;
+        if (substr($url, -1) === '/') {
+            $url2 = rtrim($url, '/');
+        } else {
+            $url2 = $url2 . '/';
+        }
+
+        // join to the wp_posts table to make sure the post exists.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPermalinkFromURL.sql");
+        // Fix HIGH #2 (5th review): Use prepared statements instead of manual escaping
+        $query = $this->prepare_query_wp($query, array("url1" => $url1, "url2" => $url2));
+        $query = $this->doTableNameReplacements($query);
+        $query = $this->f->doNormalReplacements($query);
+        $results = $this->queryAndGetResults($query);
+        $rows = $results['rows'];
+
+        if (is_array($rows)) {
+            if (empty($rows)) {
+                $redirect['id'] = 0;
+            } else {
+                foreach ($rows[0] as $key => $value) {
+                    $redirect[$key] = $value;
+                }
+            }
+        }
+
+        if (!isset($redirect['id'])) {
+            $redirect['id'] = 0;
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * @param string $url
+     * @return array<string, mixed>
+     */
+    private function getExistingRedirectForNormalizedUrl($url) {
+        $redirect = array();
+
+        // a disabled value of '1' means in the trash.
+        $query = $this->prepare_query_wp('select * from {wp_abj404_redirects} where BINARY url = BINARY {url} ' .
+            " and disabled = 0 ", array("url" => $url));
+        $results = $this->queryAndGetResults($query);
+        $rows = $results['rows'];
+
+        if (is_array($rows)) {
+            if (empty($rows)) {
+                $redirect['id'] = 0;
+            } else {
+                foreach ($rows[0] as $key => $value) {
+                    $redirect[$key] = $value;
+                }
+            }
+        }
+
+        if (!isset($redirect['id'])) {
+            $redirect['id'] = 0;
+        }
+
+        return $redirect;
+    }
+    
+    /** Returns rows with the IDs of the published items.
+     * @global type $wpdb
+     * @global type $abj404logic
+     * @global type $abj404dao
+     * @global type $abj404logging
+     * @param string $slug only get results for this slug. (empty means all posts)
+     * @param string $searchTerm use this string in a LIKE on the sql.
+     * @param string $limitResults
+     * @param string $orderResults
+     * @param string $extraWhereClause use this string in a where on the sql.
+     * @return array<int, object>
+     */
+    function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '',
+    	$limitResults = '', $orderResults = '', $extraWhereClause = '') {
+        global $wpdb;
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+
+        // Fix for missing table error (reported by 2 users - 4% of errors)
+        // Check if wp_posts table exists before querying
+        if (!$this->tableExists($wpdb->posts)) {
+            $this->logger->errorMessage("WordPress posts table not found: " . $wpdb->posts .
+                ". This may indicate an incorrect table prefix or database configuration issue.");
+            return array(); // Return empty array instead of crashing
+        }
+
+        // get the valid post types
+        $options = $abj404logic->getOptions();
+        $rptVal = $options['recognized_post_types'] ?? '';
+        $postTypes = $this->f->explodeNewline(is_string($rptVal) ? $rptVal : '');
+        $recognizedPostTypes = '';
+        foreach ($postTypes as $postType) {
+            $recognizedPostTypes .= "'" . trim($this->f->strtolower($postType)) . "', ";
+        }
+        $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
+        // ----------------
+
+        if ($slug != "") {
+            // Sanitize invalid UTF-8 before SQL to prevent database errors
+            // (fixes bug: URLs like %9F%9F%9F%9F-%9F%9F%9F-1.png cause "invalid data" errors)
+            $slug = $this->f->sanitizeInvalidUTF8($slug);
+
+            // Check if the post_name column supports utf8mb4 collation
+            // (fixes bug: Arabic sites on latin1 databases get "invalid data" errors)
+            // Note: Check actual column collation, not database default - on mixed setups
+            // the database may be latin1 but wp_posts.post_name is utf8mb4
+            $columnCollation = $wpdb->get_var($wpdb->prepare(
+                "SELECT COLLATION_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                 AND TABLE_NAME = %s
+                 AND COLUMN_NAME = 'post_name'",
+                $wpdb->posts
+            ));
+            if ($columnCollation !== null && strpos(strtolower($columnCollation), 'utf8mb4') !== false) {
+                // Column supports utf8mb4 - use CAST for proper Unicode comparison
+                $resolvedCollation = $this->sanitizeCollationIdentifier($columnCollation);
+                if ($resolvedCollation === '') {
+                    $resolvedCollation = $this->getPreferredUtf8mb4Collation();
+                }
+                $specifiedSlug = " */\n and CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = "
+                        . "'" . esc_sql($slug) . "' \n ";
+                $specifiedSlug = str_replace('utf8mb4_unicode_ci', $resolvedCollation, $specifiedSlug);
+            } else {
+                // Legacy column (latin1, utf8, etc.) - use simple comparison.
+                // 4-byte UTF-8 characters (emoji, rare CJK, etc.) cannot exist in a
+                // utf8mb3/latin1 column, so skip the slug comparison entirely to avoid
+                // "Illegal mix of collations" errors.
+                if ($this->f->containsUtf8mb4Characters($slug)) {
+                    $specifiedSlug = '';
+                } else {
+                    $specifiedSlug = " */\n and wp_posts.post_name = "
+                            . "'" . esc_sql($slug) . "' \n ";
+                }
+            }
+        } else {
+            $specifiedSlug = '';
+        }
+        
+        if ($searchTerm != "") {
+        	$searchTerm = " */\n and lower(wp_posts.post_title) like "
+        		. "'%" . esc_sql($this->f->strtolower($searchTerm)) . "%' \n ";
+        } else {
+        	$searchTerm = '';
+        }
+        
+        if ($extraWhereClause != "") {
+        	$extraWhereClause = " */\n " . $extraWhereClause;
+        }
+        
+        if (!empty($limitResults)) {
+            $limitResults = " */\n  limit " . $limitResults;
+        }
+        if (!empty($orderResults)) {
+        	$orderResults = " */\n  order by " . $orderResults;
+        }
+        
+        // load the query and do the replacements.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
+        $query = $this->doTableNameReplacements($query);
+        $query = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
+        $query = $this->f->str_replace('{specifiedSlug}', $specifiedSlug, $query);
+        $query = $this->f->str_replace('{searchTerm}', $searchTerm, $query);
+        $query = $this->f->str_replace('{extraWhereClause}', $extraWhereClause, $query);
+        $query = $this->f->str_replace('{limit-results}', $limitResults, $query);
+        $query = $this->f->str_replace('{order-results}', $orderResults, $query);
+        
+        $rows = $wpdb->get_results($query);
+        if (!empty($wpdb->last_error) && $this->isInvalidDataError($wpdb->last_error) &&
+                $slug != "" && strpos($query, 'CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4)') !== false) {
+            // Compatibility fallback: retry once without CAST/COLLATE for environments
+            // where mixed encodings still reject utf8mb4 coercion.
+            $fallbackSpecifiedSlug = " */\n and wp_posts.post_name = '" . esc_sql($slug) . "' \n ";
+            $fallbackQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
+            $fallbackQuery = $this->doTableNameReplacements($fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{specifiedSlug}', $fallbackSpecifiedSlug, $fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{searchTerm}', $searchTerm, $fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{extraWhereClause}', $extraWhereClause, $fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{limit-results}', $limitResults, $fallbackQuery);
+            $fallbackQuery = $this->f->str_replace('{order-results}', $orderResults, $fallbackQuery);
+            $fallbackResult = $this->queryAndGetResults($fallbackQuery, array('log_errors' => false));
+            $fallbackRows = is_array($fallbackResult['rows'] ?? array()) ? ($fallbackResult['rows'] ?? array()) : array();
+            $rows = array_map(function($row) {
+                return (object)$row;
+            }, $fallbackRows);
+        }
+
+        // check for errors
+        if ($wpdb->last_error) {
+            $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+        }
+        
+        return $rows;
+    }
+
+    /** Returns rows with the IDs of the published images.
+     * @return array<int, object>
+     */
+    function getPublishedImagesIDs() {
+        global $wpdb;
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        
+        // get the valid post types
+        $options = $abj404logic->getOptions();
+        $rptVal2 = $options['recognized_post_types'] ?? '';
+        $postTypes = $this->f->explodeNewline(is_string($rptVal2) ? $rptVal2 : '');
+        $recognizedPostTypes = '';
+        foreach ($postTypes as $postType) {
+            $recognizedPostTypes .= "'" . trim($this->f->strtolower($postType)) . "', ";
+        }
+        $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
+        // ----------------
+
+        // load the query and do the replacements.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedImageIDs.sql");
+        $query = $this->doTableNameReplacements($query);
+        $query = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
+        
+        $rows = $wpdb->get_results($query);
+        // check for errors
+        if ($wpdb->last_error) {
+            $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+        }
+        
+        return $rows;
+    }
+
+    /** Returns rows with the defined terms (tags).
+     * @param string|null $slug
+     * @param int|null $limit
+     * @return array<int, object>
+     */
+    function getPublishedTags($slug = null, $limit = null) {
+        global $wpdb;
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+
+        // get the valid post types
+        $options = $abj404logic->getOptions();
+
+        $rcVal = $options['recognized_categories'] ?? '';
+        $categories = $this->f->explodeNewline(is_string($rcVal) ? $rcVal : '');
+        $recognizedCategories = '';
+        foreach ($categories as $category) {
+            $recognizedCategories .= "'" . trim($this->f->strtolower($category)) . "', ";
+        }
+        $recognizedCategories = rtrim($recognizedCategories, ", ");
+
+        if ($slug != null) {
+            // Sanitize invalid UTF-8 before SQL to prevent database errors
+            $slug = $this->f->sanitizeInvalidUTF8($slug);
+            $slug = "*/ and wp_terms.slug = '" . esc_sql($slug) . "'\n";
+        }
+
+        $limitClause = '';
+        if ($limit !== null && is_numeric($limit) && $limit > 0) {
+            $limitClause = "LIMIT " . intval($limit);
+        }
+
+        // load the query and do the replacements.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedTags.sql");
+        $query = $this->f->str_replace('{slug}', $slug, $query);
+        $query = $this->f->str_replace('{limit}', $limitClause, $query);
+        $query = $this->doTableNameReplacements($query);
+        $query = $this->f->str_replace('{recognizedCategories}', $recognizedCategories, $query);
+        
+        $rows = $wpdb->get_results($query);
+        // check for errors
+        if ($wpdb->last_error) {
+            $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+        }
+        
+        $rows = $this->addURLToTermsRows($rows);
+        
+        return $rows;
+    }
+    
+    /**
+     * @param array<int, object> $rows
+     * @return array<int, object>
+     */
+    function addURLToTermsRows($rows) {
+    	// add url data
+    	global $wp_rewrite;
+    	$extraPermaStructureCache = array();
+    	foreach ($rows as $row) {
+    		$taxonomy = isset($row->taxonomy) ? (string)$row->taxonomy : '';
+    		if (!array_key_exists($taxonomy, $extraPermaStructureCache)) {
+    			$extraPermaStructureCache[$taxonomy] = $wp_rewrite->get_extra_permastruct($taxonomy);
+    		}
+    		$struct = $extraPermaStructureCache[$taxonomy];
+    		
+    		$slug = isset($row->slug) ? (string)$row->slug : '';
+    		$url = str_replace('%' . $taxonomy . '%', $slug, $struct);
+    		
+    		// TODO verify one of the urls?
+    		/*
+    		if (!$verifiedOne) {
+    			$id = $row->term_id;
+    			$link = get_tag_link($id);
+    			$link = get_category_link($id);
+    			// $link should equal $url
+		    	$verifiedOne = true;
+    		}
+    		*/
+    		
+    		/** @var \stdClass $row */
+    		$row->url = $url;
+    	}
+    	
+    	return $rows;
+    }
+    
+    /** Returns rows with the defined categories.
+     * @param int|null $term_id
+     * @param string|null $slug
+     * @param int|null $limit
+     * @return array<int, object>
+     */
+    function getPublishedCategories($term_id = null, $slug = null, $limit = null) {
+        global $wpdb;
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+
+        // get the valid post types
+        $options = $abj404logic->getOptions();
+
+        $rcVal2 = $options['recognized_categories'] ?? '';
+        $categories = $this->f->explodeNewline(is_string($rcVal2) ? $rcVal2 : '');
+        $recognizedCategories = '';
+        if (empty($categories)) {
+            $recognizedCategories = "''";
+        }
+        foreach ($categories as $category) {
+            $recognizedCategories .= "'" . trim($this->f->strtolower($category)) . "', ";
+        }
+        $recognizedCategories = rtrim($recognizedCategories, ", ");
+
+        if ($term_id != null) {
+            // Cast to integer for safety even though term_id is currently always null from callers
+            $term_id = "*/ and {wp_terms}.term_id = " . intval($term_id) . "\n";
+        }
+
+        if ($slug != null) {
+            // Sanitize invalid UTF-8 before SQL to prevent database errors
+            $slug = $this->f->sanitizeInvalidUTF8($slug);
+            $slug = "*/ and {wp_terms}.slug = '" . esc_sql($slug) . "'\n";
+        }
+
+        $limitClause = '';
+        if ($limit !== null && is_numeric($limit) && $limit > 0) {
+            $limitClause = "LIMIT " . intval($limit);
+        }
+
+        // load the query and do the replacements.
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedCategories.sql");
+        $query = $this->f->str_replace('{recognizedCategories}', $recognizedCategories, $query);
+        $query = $this->f->str_replace('{term_id}', $term_id !== null ? (string)$term_id : '', $query);
+        $query = $this->f->str_replace('{slug}', $slug, $query);
+        $query = $this->f->str_replace('{limit}', $limitClause, $query);
+        $query = $this->doTableNameReplacements($query);
+        
+        $rows = $wpdb->get_results($query);
+        // check for errors
+        if ($wpdb->last_error) {
+            $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+        }
+        
+        $rows = $this->addURLToTermsRows($rows);
+        
+        return $rows;
+    }
+
+    /** Delete stored redirects based on passed in POST data.
+     * @return string
+     */
+    function deleteSpecifiedRedirects() {
+        global $wpdb;
+        $message = "";
+
+        // nonce already verified.
+
+        if (!array_key_exists('sanity_purge', $_POST) || $_POST['sanity_purge'] != "1") {
+            $message = __('Error: You didn\'t check the I understand checkbox. No purging of records for you!', '404-solution');
+            return $message;
+        }
+        
+        if (!isset($_POST['types']) || $_POST['types'] == '') {
+            $message = __('Error: No redirect types were selected. No purges will be done.', '404-solution');
+            return $message;
+        }
+        
+        if (is_array($_POST['types'])) {
+            $type = array_map('sanitize_text_field', $_POST['types']);
+        } else {
+            $type = sanitize_text_field($_POST['types']);
+        }
+
+        if (!is_array($type)) {
+            $message = __('An unknown error has occurred.', '404-solution');
+            return $message;
+        }
+        
+        $redirectTypes = array();
+        foreach ($type as $aType) {
+            if (('' . $aType != ABJ404_TYPE_HOME) && ('' . $aType != ABJ404_TYPE_HOME)) {
+                array_push($redirectTypes, absint($aType));
+            }
+        }
+
+        if (empty($redirectTypes)) {
+            $message = __('Error: No valid redirect types were selected. Exiting.', '404-solution');
+            $this->logger->debugMessage("Error: No valid redirect types were selected. Types: " .
+                    wp_kses_post((string)json_encode($redirectTypes)));
+            return $message;
+        }
+        $purge = sanitize_text_field($_POST['purgetype']);
+
+        if ($purge != 'abj404_logs' && $purge != 'abj404_redirects') {
+            $message = __('Error: An invalid purge type was selected. Exiting.', '404-solution');
+            $this->logger->debugMessage("Error: An invalid purge type was selected. Type: " .
+                    wp_kses_post((string)json_encode($purge)));
+            return $message;
+        }
+        
+        // always add the type "0" because it's an invalid type that may exist in the databse.
+        // Adding it here does some cleanup if any is necessary.
+        array_push($redirectTypes, 0);
+
+        // Ensure all values are integers to prevent SQL injection
+        $redirectTypes = array_map('absint', $redirectTypes);
+        $typesForSQL = implode(',', $redirectTypes);
+
+        if ($purge == 'abj404_redirects') {
+            $query = "update {wp_abj404_redirects} set disabled = 1 where status in (" . $typesForSQL . ")";
+            $query = $this->doTableNameReplacements($query);
+            $redirectCount = $wpdb->query($query);
+
+            // Invalidate caches so the admin table reflects the purge immediately
+            $this->invalidateStatusCountsCache();
+            $this->clearRegexRedirectsCache();
+
+            $message .= sprintf( _n( '%s redirect entry was moved to the trash.',
+                    '%s redirect entries were moved to the trash.', $redirectCount, '404-solution'), $redirectCount);
+        }
+
+        return $message;
+    }
+
+    /**
+     * This returns only the first column of the first row of the result.
+     * @global type $wpdb
+     * @param string $query a query that starts with "select count(id) from ..."
+     * @param array<int, mixed> $valueParams values to use to prepare the query.
+     * @return int the count (result) of the query.
+     */
+}
