@@ -5,7 +5,7 @@ Tags: 404, redirect, auto redirect, broken links, similar post
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.3.4
+Stable tag: 3.3.5
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -281,6 +281,10 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.3.5 (Mar 20, 2026) =
+* Improvement: Large source files refactored into focused trait files — no functional changes, but the codebase is easier to navigate and maintain.
+* Improvement: Strict type checking (PHPStan level 9) enforced throughout the codebase, catching and fixing potential type-mismatch errors before they could affect users.
 
 = Version 3.3.4 (Mar 19, 2026) =
 * FIX: Fixed an upgrade bug introduced in 3.3.3 that accidentally cleared the admin page view cache. No redirect data was affected — the cache rebuilds automatically on the next page load.

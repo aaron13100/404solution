@@ -1,5 +1,9 @@
 # Changelog #
 
+## Version 3.3.5 (Mar 20, 2026) ##
+* Improvement: Large source files refactored into focused trait files — no functional changes, but the codebase is easier to navigate and maintain.
+* Improvement: Strict type checking (PHPStan level 9) enforced throughout the codebase, catching and fixing potential type-mismatch errors before they could affect users.
+
 ## Version 3.3.4 (Mar 19, 2026) ##
 * FIX: Fixed an upgrade bug introduced in 3.3.3 that accidentally cleared the admin page view cache on upgrade. No redirect data was affected — the cache rebuilds automatically.
 * FIX: Added a safety check to prevent future upgrades from accidentally wiping plugin caches.
