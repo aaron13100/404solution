@@ -2637,3 +2637,15 @@ msgstr "Een tijdelijke databasetabel is beschadigd — dit wordt gewoonlijk vero
 msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
 msgstr "De logtabel van 404 Solution is vol en kan geen nieuwe vermeldingen accepteren. Dit wordt gewoonlijk veroorzaakt door een volle schijf. Neem contact op met uw hostingprovider of wis de logtabel handmatig."
 
+
+#: includes/PermalinkCache.php
+msgid "Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space."
+msgstr "De permalink-cache lijkt leeg na herbouw — suggesties kunnen worden aangetast. Probeer opnieuw te herbouwen of controleer de beschikbare schijfruimte."
+
+#: 404-solution.php
+msgid "The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space."
+msgstr "De permalink-cache lijkt leeg te zijn. Probeer hem te herbouwen via het tabblad Hulpmiddelen of controleer of uw site voldoende schijfruimte heeft."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently — redirect suspended until destination is restored."
+msgstr "De bestemming gaf recentelijk een 404 terug — de doorverwijzing is opgeschort totdat de bestemming is hersteld."

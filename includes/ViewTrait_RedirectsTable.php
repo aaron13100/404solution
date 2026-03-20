@@ -734,6 +734,11 @@ trait ViewTrait_RedirectsTable {
         $html .= $this->getTableColumns($sub, $columns);
         $html .= "</thead><tbody id=\"the-list\">";
         
+        $deadDestIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
+        if (!is_array($deadDestIds)) {
+            $deadDestIds = array();
+        }
+
         $rows = $this->dao->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRedirectRows */
         $typedRedirectRows = array_values(array_filter($rows, 'is_array'));
@@ -928,6 +933,14 @@ trait ViewTrait_RedirectsTable {
                         $destForView = __('(Destination unavailable)', '404-solution');
                     }
                 }
+            }
+
+            // Dead destination: destination exists in DB but is generating 404s
+            $rowIdStr = is_scalar($row['id'] ?? '') ? (string) ($row['id'] ?? '') : '';
+            if (in_array($rowIdStr, $deadDestIds, true)) {
+                $destinationExists    = 'display: none;';
+                $destinationDoesNotExist = '';
+                $destinationWarningText = __('Destination returned 404 recently — redirect suspended until destination is restored.', '404-solution');
             }
 
             // URL regex warning visibility

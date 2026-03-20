@@ -2653,3 +2653,15 @@ msgstr "جدول قاعدة البيانات المؤقت تالف — يحدث 
 msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
 msgstr "جدول سجلات 404 Solution ممتلئ ولا يمكنه قبول إدخالات جديدة. يحدث هذا عادةً بسبب قرص ممتلئ. يرجى التواصل مع مزود الاستضافة أو حذف جدول السجلات يدويًا."
 
+
+#: includes/PermalinkCache.php
+msgid "Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space."
+msgstr "يبدو أن ذاكرة التخزين المؤقت للروابط الدائمة فارغة بعد إعادة البناء — قد تكون الاقتراحات متأثرة. جرب إعادة البناء مرة أخرى أو تحقق من مساحة القرص المتاحة."
+
+#: 404-solution.php
+msgid "The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space."
+msgstr "يبدو أن ذاكرة التخزين المؤقت للروابط الدائمة فارغة. جرب إعادة بنائها من علامة التبويب أدوات، أو تحقق من أن موقعك يحتوي على مساحة قرص كافية."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently — redirect suspended until destination is restored."
+msgstr "عادت الوجهة بخطأ 404 مؤخراً — تم تعليق إعادة التوجيه حتى يتم استعادة الوجهة."

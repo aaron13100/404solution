@@ -150,8 +150,13 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
         if ($requestedURL != "") {
             if ($redirect['id'] != '0' && $redirect['final_dest'] != '0') {
-                $this->processRedirect($requestedURL, $redirect, 'existing');
-                exit;
+                $deadIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
+                $redirectIdStr = isset($redirect['id']) && is_scalar($redirect['id']) ? (string) $redirect['id'] : '0';
+                if (!is_array($deadIds) || !in_array($redirectIdStr, $deadIds, true)) {
+                    $this->processRedirect($requestedURL, $redirect, 'existing');
+                    exit;
+                }
+                // Destination is known-dead — fall through to suggestions logic
             }
 
             if ($requestedURLWithoutComments != $requestedURL) {
@@ -159,8 +164,12 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 $redirect = $this->dao->getActiveRedirectForURL($requestedURLWithoutComments);
                 $this->recordRedirectLookupTiming($lookupStart);
                 if ($redirect['id'] != '0' && $redirect['final_dest'] != '0') {
-                    $this->processRedirect($requestedURL, $redirect, 'existing');
-                    exit;
+                    $deadIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
+                    $redirectIdStr = isset($redirect['id']) && is_scalar($redirect['id']) ? (string) $redirect['id'] : '0';
+                    if (!is_array($deadIds) || !in_array($redirectIdStr, $deadIds, true)) {
+                        $this->processRedirect($requestedURL, $redirect, 'existing');
+                        exit;
+                    }
                 }
             }
 

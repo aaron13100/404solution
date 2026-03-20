@@ -112,7 +112,32 @@ class ABJ_404_Solution_PermalinkCache {
 
         $this->populateContentKeywords();
 
+        $this->checkPermalinkCacheStaleness();
+
         return $rowsInserted;
+    }
+
+    /** @return void */
+    private function checkPermalinkCacheStaleness(): void {
+        $cacheCount = $this->dao->getPermalinkCacheCount();
+        if ($cacheCount > 0) {
+            return;
+        }
+        $postCount = function_exists('wp_count_posts') ? (int) (wp_count_posts('post')->publish ?? 0) : 0;
+        $pageCount = function_exists('wp_count_posts') ? (int) (wp_count_posts('page')->publish ?? 0) : 0;
+        if ($postCount + $pageCount === 0) {
+            return;
+        }
+        $message = function_exists('__')
+            ? __('Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space.', '404-solution')
+            : 'Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space.';
+        if (function_exists('set_transient')) {
+            set_transient('abj404_plugin_db_notice', array(
+                'type'      => 'stale_permalink_cache',
+                'message'   => $message,
+                'timestamp' => time(),
+            ), 86400);
+        }
     }
     
     /**

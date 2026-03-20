@@ -2635,3 +2635,15 @@ msgstr "Eine temporäre Datenbanktabelle ist beschädigt — dies wird in der Re
 msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
 msgstr "Die Protokolltabelle von 404 Solution ist voll und kann keine neuen Einträge akzeptieren. Dies wird in der Regel durch eine volle Festplatte verursacht. Kontaktieren Sie Ihren Hosting-Anbieter oder bereinigen Sie die Protokolltabelle manuell."
 
+
+#: includes/PermalinkCache.php
+msgid "Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space."
+msgstr "Der Permalink-Cache scheint nach der Neuerstellung leer zu sein — Vorschläge könnten beeinträchtigt sein. Versuchen Sie, ihn erneut zu erstellen, oder prüfen Sie den verfügbaren Speicherplatz."
+
+#: 404-solution.php
+msgid "The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space."
+msgstr "Der Permalink-Cache scheint leer zu sein. Versuchen Sie, ihn über den Reiter Tools neu zu erstellen, oder prüfen Sie, ob Ihre Website über ausreichend Speicherplatz verfügt."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently — redirect suspended until destination is restored."
+msgstr "Das Ziel hat kürzlich einen 404-Fehler zurückgegeben — die Weiterleitung ist bis zur Wiederherstellung des Ziels ausgesetzt."

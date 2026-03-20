@@ -316,6 +316,47 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
     }
 
     /**
+     * Find redirects whose destination URL appears in the 404 log as a recent 404.
+     * Only internal URL destinations can be detected this way (external 404s are not
+     * logged by this plugin). Stores flagged redirect IDs in a transient for fast
+     * lookup at redirect-processing time.
+     *
+     * @return void
+     */
+    function flagDeadDestinationRedirects(): void {
+        $cutoff         = time() - 7 * 86400;
+        $redirectsTable = $this->doTableNameReplacements('{wp_abj404_redirects}');
+        $logsTable      = $this->doTableNameReplacements('{wp_abj404_logsv2}');
+
+        global $wpdb;
+        $rows = $wpdb->get_col($wpdb->prepare(
+            "SELECT DISTINCT r.id
+             FROM `{$redirectsTable}` r
+             INNER JOIN `{$logsTable}` l ON l.requested_url = r.final_dest
+             WHERE l.timestamp > %d
+               AND (l.dest_url = '' OR l.dest_url IS NULL)
+               AND r.disabled = 0
+               AND r.final_dest != ''
+               AND r.final_dest != '0'",
+            $cutoff
+        ));
+
+        $flaggedIds = is_array($rows) ? array_map('strval', $rows) : array();
+
+        if (function_exists('set_transient')) {
+            $ttl = defined('HOUR_IN_SECONDS') ? 25 * (int) HOUR_IN_SECONDS : 90000;
+            set_transient('abj404_dead_dest_ids', $flaggedIds, $ttl);
+        }
+
+        if (!empty($flaggedIds)) {
+            $this->logger->infoMessage(
+                __CLASS__ . '/' . __FUNCTION__ . ': Flagged ' . count($flaggedIds) .
+                ' redirect(s) with dead destinations: ' . implode(', ', $flaggedIds)
+            );
+        }
+    }
+
+    /**
      * @param string $requestedURLRaw
      * @return mixed
      */

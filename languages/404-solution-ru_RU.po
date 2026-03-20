@@ -2642,3 +2642,15 @@ msgstr "Временная таблица базы данных поврежде
 msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
 msgstr "Таблица журналов 404 Solution заполнена и не может принимать новые записи. Обычно это вызвано заполненным диском. Свяжитесь с вашим хостинг-провайдером или вручную очистите таблицу журналов."
 
+
+#: includes/PermalinkCache.php
+msgid "Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space."
+msgstr "Кэш постоянных ссылок кажется пустым после перестройки — предложения могут быть ухудшены. Попробуйте перестроить снова или проверьте доступное место на диске."
+
+#: 404-solution.php
+msgid "The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space."
+msgstr "Кэш постоянных ссылок кажется пустым. Попробуйте перестроить его на вкладке Инструменты или убедитесь, что на вашем сайте достаточно места на диске."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently — redirect suspended until destination is restored."
+msgstr "Пункт назначения недавно вернул ошибку 404 — перенаправление приостановлено до восстановления пункта назначения."

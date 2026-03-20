@@ -2641,3 +2641,15 @@ msgstr "データベースの一時テーブルが破損しています。通常
 msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
 msgstr "404 Solutionのログテーブルが満杯になり、新しいエントリを受け付けられません。通常はディスクの空き不足が原因です。ホスティングプロバイダーにお問い合わせいただくか、ログテーブルを手動でクリアしてください。"
 
+
+#: includes/PermalinkCache.php
+msgid "Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space."
+msgstr "再構築後にパーマリンクキャッシュが空のようです — 提案が低下する可能性があります。再度再構築を試みるか、利用可能なディスク容量を確認してください。"
+
+#: 404-solution.php
+msgid "The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space."
+msgstr "パーマリンクキャッシュが空のようです。ツールタブから再構築を試みるか、サイトに十分なディスク容量があることを確認してください。"
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently — redirect suspended until destination is restored."
+msgstr "リダイレクト先が最近404を返しました — 宛先が復元されるまでリダイレクトは停止されています。"

@@ -2627,3 +2627,15 @@ msgstr "Invalid CSV format. %d columns found but 2, 5, or 6 expected."
 #: includes/ShortCode.php
 msgid "Loading page suggestions..."
 msgstr "Loading page suggestions..."
+
+#: includes/PermalinkCache.php
+msgid "Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space."
+msgstr "Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space."
+
+#: 404-solution.php
+msgid "The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space."
+msgstr "The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently — redirect suspended until destination is restored."
+msgstr "Destination returned 404 recently — redirect suspended until destination is restored."

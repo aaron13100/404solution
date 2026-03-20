@@ -603,6 +603,8 @@ if (!function_exists('abj404_show_plugin_db_notice')) {
 			$guidance = __('A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider.', '404-solution');
 		} elseif ($type === 'log_table_full') {
 			$guidance = __('The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space.', '404-solution');
+		} elseif ($type === 'stale_permalink_cache') {
+			$guidance = __('The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space.', '404-solution');
 		}
 		echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ' . esc_html($notice['message']) . '</p>';
 		if ($guidance !== '') {

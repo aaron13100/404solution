@@ -613,7 +613,15 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
     	return $results;
     }
 
-    /** 
+    /** @return int */
+    function getPermalinkCacheCount(): int {
+        $table = $this->doTableNameReplacements('{wp_abj404_permalink_cache}');
+        global $wpdb;
+        $count = $wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
+        return is_numeric($count) ? (int) $count : 0;
+    }
+
+    /**
      * @global type $wpdb
      * @global type $abj404logging
      * @param int $type ABJ404_EXTERNAL, ABJ404_POST, ABJ404_CAT, or ABJ404_TAG.

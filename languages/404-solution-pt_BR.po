@@ -2637,3 +2637,15 @@ msgstr "Uma tabela temporária do banco de dados está corrompida — isso geral
 msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
 msgstr "A tabela de logs do 404 Solution está cheia e não pode aceitar novas entradas. Isso geralmente é causado por um disco cheio. Entre em contato com seu provedor de hospedagem ou limpe manualmente a tabela de logs."
 
+
+#: includes/PermalinkCache.php
+msgid "Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space."
+msgstr "O cache de permalinks parece vazio após a reconstrução — as sugestões podem estar degradadas. Tente reconstruí-lo novamente ou verifique o espaço em disco disponível."
+
+#: 404-solution.php
+msgid "The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space."
+msgstr "O cache de permalinks parece estar vazio. Tente reconstruí-lo na aba Ferramentas ou verifique se o seu site tem espaço em disco suficiente."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently — redirect suspended until destination is restored."
+msgstr "O destino retornou 404 recentemente — o redirecionamento está suspenso até que o destino seja restaurado."

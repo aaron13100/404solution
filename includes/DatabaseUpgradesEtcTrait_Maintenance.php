@@ -577,5 +577,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 
         // Clean up expired rate limit transients to prevent wp_options bloat
         $this->cleanupExpiredRateLimitTransients();
+
+        // Flag redirects whose destination URL is generating 404s (drives redirect suspension)
+        ABJ_404_Solution_DataAccess::getInstance()->flagDeadDestinationRedirects();
     }
 }
