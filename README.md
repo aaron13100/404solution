@@ -80,6 +80,12 @@ Other stuff is here.
 
 ## Changelog ##
 
+## Version 3.3.7 (Mar 20, 2026) ##
+* Improvement: The plugin now automatically repairs corrupted plugin tables (MySQL errno 1034 "Incorrect key file") and retries the failed operation, so transient disk-level corruption no longer causes user-visible errors.
+* Improvement: The activity log table is now stored on InnoDB, eliminating the "table is full" (errno 1114) failure mode that affected MyISAM tables. If the log table fills up, the plugin automatically trims the oldest 1,000 entries to free space and retries.
+* Improvement: Admin notices for database problems now only appear on the plugin's own settings page rather than on every WordPress admin screen.
+* Fix: Corrected a latent PHP error in the "Incorrect key file" recovery path that would have triggered a fatal error instead of attempting repair.
+
 ## Version 3.3.6 (Mar 20, 2026) ##
 * Fix: Prevented a spurious database error during schema upgrades where a comment in an internal SQL file was mistakenly interpreted as a column definition, causing a malformed ALTER TABLE statement to be logged. No data was affected.
 
