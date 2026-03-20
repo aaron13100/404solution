@@ -5,7 +5,7 @@ Tags: 404, redirect, auto redirect, broken links, similar post
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.3.5
+Stable tag: 3.3.6
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -281,6 +281,9 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
 
 == Changelog ==
+
+= Version 3.3.6 (Mar 20, 2026) =
+* Fix: Prevented a spurious database error during schema upgrades where a comment in an internal SQL file was mistakenly interpreted as a column definition, causing a malformed ALTER TABLE statement to be logged. No data was affected.
 
 = Version 3.3.5 (Mar 20, 2026) =
 * Improvement: Large source files refactored into focused trait files — no functional changes, but the codebase is easier to navigate and maintain.

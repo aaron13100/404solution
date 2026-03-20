@@ -1280,7 +1280,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	}
     }
     
-    /** Create table DDL is returned without comments on any columns.
+    /** Create table DDL is returned without SQL comments of any kind.
+     * Strips block comments (slash-star ... star-slash), line comments (-- ...),
+     * and inline COMMENT 'text' column clauses so the column-name regex in
+     * getTableDifferences() cannot mistake comment text for column definitions.
      * @param string|null $createTableDDL
      * @return string
      */
@@ -1288,7 +1291,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    	if ($createTableDDL === null) {
 	    		return '';
 	    	}
-	    	return preg_replace('/ (?:COMMENT.+?,[\r\n])/', ",\n", (string) $createTableDDL) ?? $createTableDDL;
+	    	$ddl = (string) $createTableDDL;
+	    	// Strip block comments (slash-star ... star-slash), including multi-line.
+	    	$ddl = preg_replace('/\/\*.*?\*\//s', '', $ddl) ?? $ddl;
+	    	// Strip line comments (-- ...).
+	    	$ddl = preg_replace('/--[^\r\n]*/', '', $ddl) ?? $ddl;
+	    	// Strip inline COMMENT 'text', clauses from column definitions.
+	    	return preg_replace('/ (?:COMMENT.+?,[\r\n])/', ",\n", $ddl) ?? $ddl;
 	    }
     /**
      * @param string $tableName
