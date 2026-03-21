@@ -155,6 +155,16 @@ trait ViewTrait_Settings {
 
         echo "</form><!-- end in admin-options-page -->";
 
+        // Engine Profiles — outside the main form (uses its own AJAX save)
+        $epHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/engineProfilesSection.html');
+        $epHtml = $this->f->doNormalReplacements($epHtml);
+        $abj404view->echoOptionsSection('settings-engine-profiles', 'abj404-engineProfiles', __('Engine Profiles', '404-solution'), $epHtml, false, $abj404view->getCardIcon('filter'));
+
+        // Google Search Console — outside the main form (has its own form)
+        $gscLogger = ABJ_404_Solution_Logging::getInstance();
+        $gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
+        $abj404view->echoOptionsSection('settings-gsc', 'abj404-gsc-section', __('Google Search Console', '404-solution'), $gsc->renderAdminSection(), false, $abj404view->getCardIcon('chart'));
+
         echo "</div>"; // end abj404-settings-content
         echo "</div>"; // end abj404-container
     }

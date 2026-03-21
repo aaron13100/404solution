@@ -25,7 +25,7 @@ Most redirect plugins fall into two categories: tools that require you to manual
 * **7 matching engines, in sequence.** Slug match → URL fix → Title keywords → Category/tag paths → Content search → Spelling similarity → Archive fallback. The first engine with a confident match wins.
 * **Automatic, from day one.** Install and activate. 404 Solution starts capturing and redirecting immediately. You can tune it; you don't have to.
 * **Redirect management when you need it.** Full manual redirect editor, regex support, bulk actions, and CSV/JSON import compatible with Redirection's export format.
-* **Debug mode that shows its work.** Enable the debug interstitial and see exactly which engine chose a redirect and why — a level of transparency no competing plugin offers.
+* **Debug mode that shows its work.** Enable debug logging and see exactly which engine chose a redirect and why — a level of transparency no competing plugin offers.
 * **Built for real-world hosting.** Self-healing database tables, auto-recovery from corruption, automatic log trimming, and zero wp-admin-wide banners.
 * **Ships with extras most plugins sell separately.** HTTP 410 Gone, 307/308/451 status codes, Google Search Console integration, REST API, WP-CLI support, email digest reports, and security probe detection — all free.
 
@@ -76,7 +76,7 @@ The whole process adds no perceptible latency for visitors on non-404 pages. The
 
 * Stats dashboard with traffic trend charts (404s, redirects, captures over time)
 * Email digest reports with optional PDF attachment
-* Debug interstitial — see which engine fired and why
+* Debug logging — see which engine fired and why
 * Google Search Console integration — import crawl errors and push fixes
 * Internal link scanner to find broken links before visitors do
 
@@ -126,7 +126,7 @@ The two plugins are complementary. Many sites run both: Redirection for planned 
 
 WP 404 Auto Redirect uses keyword matching, which works when the URL contains recognizable words from a post title. It fails on character-level typos — a URL like `/prodcut/` has no keyword that matches "product."
 
-404 Solution adds Levenshtein spell-checking, which catches transpositions and typos regardless of whether the keywords match. It also includes: full 404 logging, manual redirect management, CSV import/export, 410/451 status codes, GDPR IP hashing, debug interstitial, REST API, and WP-CLI support.
+404 Solution adds Levenshtein spell-checking, which catches transpositions and typos regardless of whether the keywords match. It also includes: full 404 logging, manual redirect management, CSV import/export, 410/451 status codes, GDPR IP hashing, debug logging, REST API, and WP-CLI support.
 
 = What HTTP status codes are supported? =
 
@@ -194,7 +194,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 1. **Redirect Dashboard** — Active redirects with status code badges (301, 302, 307, 308, 410, 451) and match confidence scores. Sort, search, and bulk-edit without leaving the page.
 2. **Stats and Trends** — Traffic trend charts plotting 404 hits, redirects, and captures over time. See which URLs break most often.
-3. **Debug Interstitial** — Enable debug mode to see exactly which of the 7 engines fired, what score it assigned, and why it chose that destination.
+3. **Debug Mode** — Enable debug logging to see exactly which of the 7 engines fired, what score it assigned, and why it chose that destination.
 4. **Captured 404s** — Every 404 logged with URL, referrer, user agent, and timestamp. Create a redirect for any row with one click.
 5. **Settings Page** — Enable/disable individual matching engines, set per-engine confidence thresholds, configure fallback behavior.
 6. **Email Digest** — Weekly email digest with top 404 URLs, hit counts, and optional PDF attachment.

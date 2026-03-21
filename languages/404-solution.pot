@@ -1898,6 +1898,9 @@ msgstr ""
 msgid "OAuth token exchange failed."
 msgstr ""
 
+msgid "Google Search Console"
+msgstr ""
+
 msgid "Google Search Console Integration"
 msgstr ""
 

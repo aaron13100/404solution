@@ -506,16 +506,6 @@ trait ViewTrait_Stats {
         $html = $this->getMigrateFromPluginMarkup();
         $abj404view->echoOptionsSection('tools-migrate', 'abj404-migrateFromPlugin', __('Migrate from Another Plugin', '404-solution'), $html, false, $abj404view->getCardIcon('upload'));
 
-        // Google Search Console Integration Card (renders its own card)
-        $logger = ABJ_404_Solution_Logging::getInstance();
-        $gsc = new ABJ_404_Solution_GoogleSearchConsole($logger);
-        echo $gsc->renderAdminSection();
-
-        // Engine Profiles Card
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/engineProfilesSection.html');
-        $html = $this->f->doNormalReplacements($html);
-        $abj404view->echoOptionsSection('tools-engine-profiles', 'abj404-engineProfiles', __('Engine Profiles', '404-solution'), $html, false, $abj404view->getCardIcon('filter'));
-
         echo "</div>";
         echo "</div>";
     }

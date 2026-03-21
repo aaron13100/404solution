@@ -2872,6 +2872,9 @@ msgstr "Security check failed."
 msgid "OAuth token exchange failed."
 msgstr "OAuth token exchange failed."
 
+msgid "Google Search Console"
+msgstr "Google Search Console"
+
 msgid "Google Search Console Integration"
 msgstr "Google Search Console Integration"
 

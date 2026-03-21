@@ -342,7 +342,8 @@ class ABJ_404_Solution_GoogleSearchConsole {
     // -------------------------------------------------------------------------
 
     /**
-     * Render the GSC settings/status section for the Tools or Stats tab.
+     * Render the inner content for the GSC settings/status section.
+     * Callers should wrap this via echoOptionsSection() for proper card + collapse support.
      * @return string HTML
      */
     public function renderAdminSection(): string {
@@ -351,11 +352,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
         $s = $this->getSettings();
         $callbackUrl = $this->getCallbackUrl();
 
-        $html = '<div class="abj404-card" id="abj404-gsc-section">';
-        $html .= '<div class="abj404-card-header"><h2 class="abj404-card-title">';
-        $html .= esc_html__('Google Search Console Integration', '404-solution');
-        $html .= '</h2></div>';
-        $html .= '<div class="abj404-card-body">';
+        $html = '';
 
         if (!$configured) {
             $html .= '<p>' . esc_html__('Connect to Google Search Console to see which broken URLs were getting real search traffic.', '404-solution') . '</p>';
@@ -423,7 +420,6 @@ class ABJ_404_Solution_GoogleSearchConsole {
             }
         }
 
-        $html .= '</div></div>';
         return $html;
     }
 }

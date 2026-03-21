@@ -91,6 +91,7 @@
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 20px;
     align-items: start;
+    margin-bottom: 24px;
 }
 
 .abj404-flow-layout .abj404-card {
