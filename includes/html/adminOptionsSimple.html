@@ -31,6 +31,8 @@
                 <select name="default_redirect" id="default_redirect" class="abj404-form-select">
                     <option value="301" {selectedDefaultRedirect301}>{Permanent 301}</option>
                     <option value="302" {selectedDefaultRedirect302}>{Temporary 302}</option>
+                    <option value="307" {selectedDefaultRedirect307}>{Temporary 307 (preserve method)}</option>
+                    <option value="308" {selectedDefaultRedirect308}>{Permanent 308 (preserve method)}</option>
                 </select>
                 <p class="abj404-form-help">{301 for SEO, 302 for temporary changes}</p>
             </div>
@@ -73,6 +75,15 @@
                     <span>{URLs}</span>
                 </div>
                 <p class="abj404-form-help">{Show admin notice when 404 count gets high (0 to disable)}</p>
+            </div>
+            <div class="abj404-form-group">
+                <label class="abj404-form-label" for="admin_notification_frequency">{Email notification frequency}</label>
+                <select name="admin_notification_frequency" id="admin_notification_frequency" class="abj404-form-select">
+                    <option value="instant" {selectedNotifyInstant}>{Instant (when threshold exceeded)}</option>
+                    <option value="daily" {selectedNotifyDaily}>{Daily digest}</option>
+                    <option value="weekly" {selectedNotifyWeekly}>{Weekly digest}</option>
+                </select>
+                <p class="abj404-form-help">{Choose how often to receive email notifications about captured 404s.}</p>
             </div>
         </div>
     </div>

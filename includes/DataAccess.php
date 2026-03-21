@@ -856,6 +856,22 @@ class ABJ_404_Solution_DataAccess {
             $this->attemptInvalidDataRetry($query, $result);
         }
 
+        // Lock wait timeout (errno 1205) and deadlock (errno 1213): retry once after a
+        // brief pause. Both errors are transient on shared hosting and usually resolve
+        // on the first retry. If the retry also fails, the error is surfaced below.
+        if ($result['last_error'] !== '' && $this->isDeadlockOrLockTimeoutError($result['last_error'])) {
+            /** @var wpdb $wpdb */
+            usleep(50000); // 50 ms — enough for most short-lived locks to release
+            $result['rows'] = $wpdb->get_results($query, ARRAY_A);
+            $result['last_error'] = (string)($wpdb->last_error ?? '');
+            $result['last_result'] = $wpdb->last_result ?? array();
+            $result['rows_affected'] = $wpdb->rows_affected ?? 0;
+            $result['insert_id'] = $wpdb->insert_id ?? 0;
+            if ($result['last_error'] !== '' && $this->isDeadlockOrLockTimeoutError($result['last_error'])) {
+                $this->setPluginDbNotice('lock_timeout', $this->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $result['last_error']);
+            }
+        }
+
         if ($result['last_error'] !== '') {
             $this->noteDatabaseIssueFromError($result['last_error']);
         }
@@ -1124,6 +1140,42 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /** @param string $errorText @return void */
+    /**
+     * Extract a table name from a MySQL "table is full" error message.
+     * MySQL formats this as: The table 'table_name' is full
+     * @param string $errorText
+     * @return string|null The table name, or null if not parseable.
+     */
+    private function extractTableNameFromFullError(string $errorText): ?string {
+        if (preg_match("/table '([^']+)' is full/i", $errorText, $m)) {
+            return $m[1];
+        }
+        return null;
+    }
+
+    /**
+     * Check if a given table uses the InnoDB storage engine.
+     * Returns false on any query failure (safe default).
+     * @param string $tableName
+     * @return bool
+     */
+    private function isInnoDBTable(string $tableName): bool {
+        global $wpdb;
+        /** @var wpdb $wpdb */
+        if (!method_exists($wpdb, 'get_var') || !method_exists($wpdb, 'prepare')) {
+            return false; // Safe default when $wpdb is a partial stub
+        }
+        $dbName = (property_exists($wpdb, 'dbname') && is_string($wpdb->dbname)) ? $wpdb->dbname : (defined('DB_NAME') ? DB_NAME : '');
+        $engine = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
+                $dbName,
+                $tableName
+            )
+        );
+        return is_string($engine) && strtolower($engine) === 'innodb';
+    }
+
     private function noteDatabaseIssueFromError(string $errorText): void {
         if (!is_string($errorText) || trim($errorText) === '') {
             return;
@@ -1131,6 +1183,19 @@ class ABJ_404_Solution_DataAccess {
         if ($this->isDiskFullError($errorText)) {
             $this->serverSideIssueNoted = true;
             $this->setRuntimeFlag('abj404_db_disk_full_until', time() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
+
+            // Disambiguate InnoDB tablespace exhaustion from actual disk full or MyISAM limit.
+            // "table is full" for InnoDB means the shared tablespace (ibdata1) is at capacity —
+            // trimming plugin rows will NOT free space; the host must expand the tablespace.
+            $tableFull = stripos($errorText, 'table') !== false && stripos($errorText, 'is full') !== false;
+            if ($tableFull) {
+                $tableName = $this->extractTableNameFromFullError($errorText);
+                if ($tableName !== null && $this->isInnoDBTable($tableName)) {
+                    $this->setPluginDbNotice('disk_full', $this->localizeOrDefault('The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1).'), $errorText);
+                    return;
+                }
+            }
+
             $this->setPluginDbNotice('disk_full', $this->localizeOrDefault('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.'), $errorText);
             return;
         }

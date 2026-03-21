@@ -328,6 +328,30 @@ if (is_admin()) {
 	ABJ_404_Solution_ViewUpdater::init();
 }
 
+// REST API — runs on both admin and front-end requests.
+add_action('init', function() {
+	if (!function_exists('register_rest_route')) {
+		return;
+	}
+	if (!class_exists('ABJ_404_Solution_RestApiController')) {
+		require_once plugin_dir_path(ABJ404_FILE) . 'includes/Loader.php';
+	}
+	$dao   = ABJ_404_Solution_DataAccess::getInstance();
+	$logic = ABJ_404_Solution_PluginLogic::getInstance();
+	$restController = new ABJ_404_Solution_RestApiController($dao, $logic);
+	$restController->register();
+}, 1);
+
+// WP-CLI commands.
+if (defined('WP_CLI') && WP_CLI) {
+	add_action('init', function() {
+		if (!class_exists('ABJ_404_Solution_WPCLICommands')) {
+			require_once plugin_dir_path(ABJ404_FILE) . 'includes/Loader.php';
+		}
+		\WP_CLI::add_command('abj404', 'ABJ_404_Solution_WPCLICommands');
+	}, 1);
+}
+
 // ----
 // get the plugin priority to use before adding the template_redirect action.
 $__abj404_options = abj404_get_settings_options();
@@ -517,6 +541,17 @@ function abj404_networkUpgradeBackgroundListener() {
 add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
 add_action('abj404_updateLogsHitsTableAction', 'abj404_updateLogsHitsTableListener');
 add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheListener', 10, 2);
+add_action('abj404_send_digest', 'abj404_sendDigestCronListener');
+if (!function_exists('abj404_sendDigestCronListener')) {
+/** @return void */
+function abj404_sendDigestCronListener() {
+	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+	$dao = ABJ_404_Solution_DataAccess::getInstance();
+	$logger = ABJ_404_Solution_Logging::getInstance();
+	$emailDigest = new ABJ_404_Solution_EmailDigest($dao, $logger);
+	$emailDigest->onCronSendDigest();
+}
+}
 	add_action('abj404_rebuild_ngram_cache_hook', 'abj404_rebuildNGramCacheListener', 10, 1);
 	add_action('abj404_network_activation_hook', 'abj404_networkActivationListener');
 	add_action('abj404_network_activation_background', 'abj404_networkActivationBackgroundListener');
@@ -605,6 +640,8 @@ if (!function_exists('abj404_show_plugin_db_notice')) {
 			$guidance = __('The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space.', '404-solution');
 		} elseif ($type === 'stale_permalink_cache') {
 			$guidance = __('The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space.', '404-solution');
+		} elseif ($type === 'lock_timeout') {
+			$guidance = __('A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists.', '404-solution');
 		}
 		echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ' . esc_html($notice['message']) . '</p>';
 		if ($guidance !== '') {

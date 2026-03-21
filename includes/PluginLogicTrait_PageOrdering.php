@@ -340,6 +340,16 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
 
         $options = $this->getOptions(true);
 
+        $frequency = isset($options['admin_notification_frequency']) && is_string($options['admin_notification_frequency'])
+            ? $options['admin_notification_frequency']
+            : 'instant';
+
+        // For non-instant frequencies, the digest handles sending — skip the count-only email.
+        if ($frequency !== 'instant') {
+            $emailDigest = new ABJ_404_Solution_EmailDigest($this->dao, $this->logger);
+            return $emailDigest->sendDigest();
+        }
+
         $captured404Count = $this->dao->getCapturedCountForNotification();
         if (!$this->shouldNotifyAboutCaptured404s($captured404Count)) {
             return "Not enough 404s found to send an admin notification email (" . $captured404Count . ").";

@@ -43,6 +43,9 @@ trait ViewTrait_Stats {
             . ' data-stats-refresh-current-hash="' . esc_attr($statsHash) . '"'
             . ' data-stats-refresh-available-text="' . esc_attr(__('Refresh available', '404-solution')) . '"></div>';
 
+        // Security notice: surface cached threat detections from nightly analysis.
+        $this->echoSecurityNotice();
+
         // Flow layout for stats cards
         echo "<div class=\"abj404-flow-layout\">";
 
@@ -126,10 +129,201 @@ trait ViewTrait_Stats {
         }
 
         echo "</div>"; // Close flow layout
+
+        // Trend Analytics section (full-width, below the flow layout cards)
+        $this->echoTrendsSection();
+
+        // Broken Internal Links section
+        $this->echoBrokenInternalLinksSection();
+
         echo "</div>"; // Close settings content
         echo "</div>"; // Close container
     }
-    
+
+    /**
+     * Output the Trends (time-series charts) section on the Stats page.
+     * @return void
+     */
+    private function echoTrendsSection() {
+        global $abj404view;
+
+        $trendNonce = wp_create_nonce('abj404_trendData');
+        $ajaxUrl = admin_url('admin-ajax.php');
+
+        $trendsContent  = '<div id="abj404-trends-container">';
+        $trendsContent .= '<p class="abj404-trends-loading">' . esc_html__('Loading chart data\u2026', '404-solution') . '</p>';
+        $trendsContent .= '<div id="abj404-trends-charts" style="display:none">';
+        $trendsContent .= '<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-404s"></canvas></div>';
+        $trendsContent .= '<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-redirects"></canvas></div>';
+        $trendsContent .= '<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-captures"></canvas></div>';
+        $trendsContent .= '</div>';
+        $trendsContent .= '<p id="abj404-trends-error" style="display:none;color:#d63638">'
+            . esc_html__('Could not load chart data.', '404-solution') . '</p>';
+        $trendsContent .= '</div>';
+
+        $trendsContent .= '<style>'
+            . '.abj404-trend-chart-wrap { margin-bottom: 24px; }'
+            . '.abj404-trends-loading { color: #646970; font-style: italic; }'
+            . '</style>';
+
+        // Inline JS: load Chart.js from CDN then fetch data and render charts.
+        $label404      = esc_js(__('404 Hits per Day', '404-solution'));
+        $labelRedirect = esc_js(__('Redirects per Day', '404-solution'));
+        $labelCapture  = esc_js(__('New Captures per Day', '404-solution'));
+        $ajaxUrlEsc    = esc_js($ajaxUrl);
+        $nonceEsc      = esc_js($trendNonce);
+
+        $trendsContent .= '<script>'
+            . '(function() {'
+            . '  var ajaxUrl = "' . $ajaxUrlEsc . '";'
+            . '  var nonce   = "' . $nonceEsc . '";'
+            . '  function loadChartJs(cb) {'
+            . '    if (window.Chart) { cb(); return; }'
+            . '    var s = document.createElement("script");'
+            . '    s.src = "https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js";'
+            . '    s.onload = cb;'
+            . '    s.onerror = function() {'
+            . '      var loadEl = document.querySelector(".abj404-trends-loading");'
+            . '      if (loadEl) loadEl.style.display = "none";'
+            . '      var errEl = document.getElementById("abj404-trends-error");'
+            . '      if (errEl) errEl.style.display = "";'
+            . '    };'
+            . '    document.head.appendChild(s);'
+            . '  }'
+            . '  function buildChart(canvasId, label, color, labels, values) {'
+            . '    var ctx = document.getElementById(canvasId);'
+            . '    if (!ctx) return;'
+            . '    new Chart(ctx, {'
+            . '      type: "line",'
+            . '      data: {'
+            . '        labels: labels,'
+            . '        datasets: [{'
+            . '          label: label,'
+            . '          data: values,'
+            . '          borderColor: color,'
+            . '          backgroundColor: color.replace("rgb(", "rgba(").replace(")", ", 0.15)"),'
+            . '          tension: 0.3,'
+            . '          fill: true,'
+            . '          pointRadius: 3'
+            . '        }]'
+            . '      },'
+            . '      options: {'
+            . '        responsive: true,'
+            . '        plugins: { legend: { display: true } },'
+            . '        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }'
+            . '      }'
+            . '    });'
+            . '  }'
+            . '  function fetchAndRender() {'
+            . '    fetch(ajaxUrl + "?action=abj404getTrendData&nonce=" + encodeURIComponent(nonce) + "&days=30")'
+            . '      .then(function(r) { return r.json(); })'
+            . '      .then(function(resp) {'
+            . '        var loadEl = document.querySelector(".abj404-trends-loading");'
+            . '        if (loadEl) loadEl.style.display = "none";'
+            . '        if (!resp || !resp.success || !Array.isArray(resp.data)) {'
+            . '          var errEl = document.getElementById("abj404-trends-error");'
+            . '          if (errEl) errEl.style.display = "";'
+            . '          return;'
+            . '        }'
+            . '        var rows = resp.data;'
+            . '        var labels    = rows.map(function(r) { return r.date; });'
+            . '        var vals404   = rows.map(function(r) { return r.hits_404; });'
+            . '        var valsRedir = rows.map(function(r) { return r.hits_redirect; });'
+            . '        var valsCapt  = rows.map(function(r) { return r.new_captures; });'
+            . '        document.getElementById("abj404-trends-charts").style.display = "";'
+            . '        buildChart("abj404-chart-404s",      "' . $label404      . '", "rgb(0,115,170)",  labels, vals404);'
+            . '        buildChart("abj404-chart-redirects", "' . $labelRedirect . '", "rgb(70,170,100)", labels, valsRedir);'
+            . '        buildChart("abj404-chart-captures",  "' . $labelCapture  . '", "rgb(220,100,50)", labels, valsCapt);'
+            . '      })'
+            . '      .catch(function() {'
+            . '        var loadEl = document.querySelector(".abj404-trends-loading");'
+            . '        if (loadEl) loadEl.style.display = "none";'
+            . '        var errEl = document.getElementById("abj404-trends-error");'
+            . '        if (errEl) errEl.style.display = "";'
+            . '      });'
+            . '  }'
+            . '  document.addEventListener("DOMContentLoaded", function() {'
+            . '    loadChartJs(fetchAndRender);'
+            . '  });'
+            . '})();'
+            . '</script>';
+
+        $abj404view->echoOptionsSection(
+            'stats-trends',
+            'abj404-trendsSection',
+            __('Trends (Last 30 Days)', '404-solution'),
+            $trendsContent,
+            false,
+            $abj404view->getCardIcon('chart')
+        );
+    }
+
+    /**
+     * Output the Broken Internal Links section on the Stats page (if results are cached).
+     * @return void
+     */
+    private function echoBrokenInternalLinksSection() {
+        global $abj404view;
+
+        if (!class_exists('ABJ_404_Solution_InternalLinkScanner')) {
+            return;
+        }
+
+        $scanner = new ABJ_404_Solution_InternalLinkScanner();
+        $results = $scanner->getCachedResults();
+
+        if ($results === false || !is_array($results)) {
+            // No cached results yet — nothing to show.
+            return;
+        }
+
+        if (empty($results)) {
+            $content = '<p>' . esc_html__('No broken internal links found.', '404-solution') . '</p>';
+        } else {
+            $postCount = count(array_unique(array_column($results, 'post_id')));
+            $content  = '<p>' . esc_html(sprintf(
+                /* translators: 1: number of broken links, 2: number of posts/pages */
+                __('Found %1$d broken internal link(s) across %2$d post(s)/page(s).', '404-solution'),
+                count($results),
+                $postCount
+            )) . '</p>';
+            $content .= '<table class="widefat striped"><thead><tr>'
+                . '<th>' . esc_html__('Post/Page', '404-solution') . '</th>'
+                . '<th>' . esc_html__('Broken URL', '404-solution') . '</th>'
+                . '<th>' . esc_html__('404 Hits', '404-solution') . '</th>'
+                . '</tr></thead><tbody>';
+            foreach ($results as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                $postTitle = isset($item['post_title']) ? (string)$item['post_title'] : '';
+                $brokenUrl = isset($item['broken_url']) ? (string)$item['broken_url'] : '';
+                $hitCount  = isset($item['hit_count'])  ? intval($item['hit_count'])  : 0;
+                $postId    = isset($item['post_id'])     ? intval($item['post_id'])    : 0;
+                $editLink  = ($postId > 0) ? get_edit_post_link($postId) : '';
+                $content .= '<tr>';
+                if ($editLink) {
+                    $content .= '<td><a href="' . esc_url($editLink) . '">' . esc_html($postTitle) . '</a></td>';
+                } else {
+                    $content .= '<td>' . esc_html($postTitle) . '</td>';
+                }
+                $content .= '<td><code>' . esc_html($brokenUrl) . '</code></td>';
+                $content .= '<td>' . esc_html((string)$hitCount) . '</td>';
+                $content .= '</tr>';
+            }
+            $content .= '</tbody></table>';
+        }
+
+        $abj404view->echoOptionsSection(
+            'stats-broken-links',
+            'abj404-brokenLinksSection',
+            __('Broken Internal Links', '404-solution'),
+            $content,
+            false,
+            $abj404view->getCardIcon('warning')
+        );
+    }
+
     /** @return void */
     function echoAdminDebugFile() {
         if ($this->logic->userIsPluginAdmin()) {
@@ -198,6 +392,55 @@ trait ViewTrait_Stats {
     }
 
     /**
+     * Echo a security notice on the Stats page if the nightly analysis found threats.
+     * Shows a notice box with a count summary. No-op when no cached results exist.
+     *
+     * @return void
+     */
+    private function echoSecurityNotice(): void {
+        $dao    = ABJ_404_Solution_DataAccess::getInstance();
+        $logger = ABJ_404_Solution_Logging::getInstance();
+        $monitor = new ABJ_404_Solution_SecurityMonitor($dao, $logger);
+
+        $results = $monitor->getCachedResults();
+
+        // false means no cached analysis yet — suppress the notice.
+        if ($results === false || !is_array($results) || empty($results)) {
+            return;
+        }
+
+        $count = count($results);
+        echo '<div class="notice notice-warning abj404-security-notice" style="margin:0 0 16px 0;padding:12px 16px;">';
+        echo '<p><strong>' . esc_html__('Security Scan', '404-solution') . '</strong> &mdash; ';
+        echo esc_html(
+            sprintf(
+                _n(
+                    'Security scan found potential attack patterns. %d suspicious 404 pattern detected in the last 24 hours.',
+                    'Security scan found potential attack patterns. %d suspicious 404 patterns detected in the last 24 hours.',
+                    $count,
+                    '404-solution'
+                ),
+                $count
+            )
+        );
+        echo '</p>';
+        if ($count > 0) {
+            echo '<ul style="margin:4px 0 0 16px;list-style:disc;">';
+            foreach ($results as $threat) {
+                if (!is_array($threat)) {
+                    continue;
+                }
+                $detail = isset($threat['detail']) && is_string($threat['detail']) ? $threat['detail'] : '';
+                if ($detail !== '') {
+                    echo '<li>' . esc_html($detail) . '</li>';
+                }
+            }
+            echo '</ul>';
+        }
+        echo '</div>';
+    }
+
+    /**
      * Display the tools page.
      * @return void
      */
@@ -261,8 +504,82 @@ trait ViewTrait_Stats {
         $html = $this->f->doNormalReplacements($html);
         $abj404view->echoOptionsSection('tools-etc', 'abj404-etcTools', __('Etcetera', '404-solution'), $html, false, $abj404view->getCardIcon('cog'));
 
+        // Migrate from Another Plugin Card
+        $html = $this->getMigrateFromPluginMarkup();
+        $abj404view->echoOptionsSection('tools-migrate', 'abj404-migrateFromPlugin', __('Migrate from Another Plugin', '404-solution'), $html, false, $abj404view->getCardIcon('upload'));
+
+        // Google Search Console Integration Card (renders its own card)
+        $logger = ABJ_404_Solution_Logging::getInstance();
+        $gsc = new ABJ_404_Solution_GoogleSearchConsole($logger);
+        echo $gsc->renderAdminSection();
+
         echo "</div>";
         echo "</div>";
+    }
+
+    /**
+     * Build the "Migrate from Another Plugin" card markup.
+     * Auto-detects installed redirect plugins and renders a form for import.
+     *
+     * @return string
+     */
+    private function getMigrateFromPluginMarkup(): string {
+        $dao    = ABJ_404_Solution_DataAccess::getInstance();
+        $logger = ABJ_404_Solution_Logging::getInstance();
+        $importer = new ABJ_404_Solution_CrossPluginImporter($dao, $logger);
+
+        $detected = $importer->detectInstalledPlugins();
+
+        $pluginLabels = array(
+            'rankmath'           => __('Rank Math', '404-solution'),
+            'yoast'              => __('Yoast SEO Premium', '404-solution'),
+            'aioseo'             => __('AIOSEO', '404-solution'),
+            'safe-redirect-manager' => __('Safe Redirect Manager', '404-solution'),
+            'redirection'        => __('Redirection Plugin', '404-solution'),
+        );
+
+        $availableSources = array();
+        foreach ($detected as $slug => $isAvailable) {
+            if ($isAvailable) {
+                $availableSources[$slug] = isset($pluginLabels[$slug]) ? $pluginLabels[$slug] : $slug;
+            }
+        }
+
+        $migrateActionUrl = wp_nonce_url(
+            '?page=' . ABJ404_PP . '&subpage=abj404_tools',
+            'abj404_importFromPlugin'
+        );
+
+        $html = '<p>';
+        if (empty($availableSources)) {
+            $html .= esc_html__('No supported redirect plugins detected on this site.', '404-solution');
+            $html .= '</p>';
+            $html .= '<p>' . esc_html__('Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection.', '404-solution') . '</p>';
+            return $html;
+        }
+
+        $detectedNames = array_values($availableSources);
+        $html .= esc_html__('Detected redirect plugins:', '404-solution') . ' ';
+        $html .= '<strong>' . esc_html(implode(', ', $detectedNames)) . '</strong>';
+        $html .= '</p>';
+
+        $html .= '<form method="POST" action="' . esc_url($migrateActionUrl) . '">';
+        $html .= '<p>';
+        $html .= '<label for="abj404-import-source"><strong>' . esc_html__('Source plugin:', '404-solution') . '</strong></label> ';
+        $html .= '<select name="import_source" id="abj404-import-source">';
+        foreach ($availableSources as $slug => $label) {
+            $html .= '<option value="' . esc_attr($slug) . '">' . esc_html($label) . '</option>';
+        }
+        $html .= '</select>';
+        $html .= '</p>';
+        $html .= '<p>';
+        $html .= '<input type="hidden" name="action" value="importFromPlugin">';
+        $html .= '<input type="submit" class="button-secondary" value="' . esc_attr__('Import Redirects', '404-solution') . '">';
+        $html .= '</p>';
+        $html .= '<p><em>' . esc_html__('This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved.', '404-solution') . '</em></p>';
+        $html .= '</form>';
+
+        return $html;
     }
 
     /**

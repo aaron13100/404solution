@@ -357,6 +357,62 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
     }
 
     /**
+     * Move auto-created redirects to trash if they are older than the configured expiration.
+     *
+     * Uses the `timestamp` column (creation time) of the redirects table. Only affects
+     * redirects with status = ABJ404_STATUS_AUTO that are not already disabled. The
+     * threshold is controlled by the `auto_302_expiration_days` option (0 = disabled).
+     *
+     * @return int Number of redirects moved to trash
+     */
+    public function expireOldAutoRedirects(): int {
+        $options = ABJ_404_Solution_PluginLogic::getInstance()->getOptions();
+        $daysRaw = isset($options['auto_302_expiration_days']) ? $options['auto_302_expiration_days'] : 0;
+        $days = (int)$daysRaw;
+        if ($days <= 0) {
+            return 0;
+        }
+
+        $redirectsTable = $this->doTableNameReplacements('{wp_abj404_redirects}');
+        if (!$this->tableExists($redirectsTable)) {
+            $this->logger->warn("expireOldAutoRedirects: redirects table missing, skipping.");
+            return 0;
+        }
+
+        $cutoff = time() - ($days * 86400);
+        global $wpdb;
+
+        // Fetch IDs to expire so we can use the existing moveRedirectsToTrash path
+        $ids = $wpdb->get_col($wpdb->prepare(
+            "SELECT id FROM `{$redirectsTable}`
+             WHERE status = %d
+               AND disabled = 0
+               AND `timestamp` > 0
+               AND `timestamp` < %d",
+            ABJ404_STATUS_AUTO,
+            $cutoff
+        ));
+
+        if ($wpdb->last_error) {
+            $this->logger->warn("expireOldAutoRedirects: DB error fetching old auto-redirects: " . $wpdb->last_error);
+            return 0;
+        }
+
+        if (empty($ids)) {
+            return 0;
+        }
+
+        $moved = 0;
+        foreach ($ids as $id) {
+            $this->moveRedirectsToTrash(absint($id), 1);
+            $moved++;
+        }
+
+        $this->logger->infoMessage("expireOldAutoRedirects: moved {$moved} expired auto-redirect(s) to trash (threshold: {$days} days).");
+        return $moved;
+    }
+
+    /**
      * @param string $requestedURLRaw
      * @return mixed
      */

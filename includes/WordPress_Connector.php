@@ -161,6 +161,9 @@ class ABJ_404_Solution_WordPress_Connector {
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_updateOptions', 'ABJ_404_Solution_Ajax_Php::updateOptions');
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404getTrendData', 'ABJ_404_Solution_Ajax_TrendData::echoTrendData');
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_oauth_callback', 'ABJ_404_Solution_WordPress_Connector::handleGscOauthCallback');
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_revoke', 'ABJ_404_Solution_WordPress_Connector::handleGscRevoke');
 
         ABJ_404_Solution_Ajax_SettingsModeToggle::init();
         ABJ_404_Solution_UninstallModal::init();
@@ -1046,6 +1049,62 @@ class ABJ_404_Solution_WordPress_Connector {
         	$GLOBALS['abj404_settingsPageName'] = add_submenu_page('options-general.php', PLUGIN_NAME, $pageName, 'manage_options', ABJ404_PP,
                     'ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay');
         }
+    }
+
+    /**
+     * AJAX handler: OAuth callback from Google. Exchanges the authorization code for tokens,
+     * then redirects back to the Tools tab.
+     * @return void
+     */
+    public static function handleGscOauthCallback() {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Insufficient permissions.', '404-solution'), 403);
+        }
+
+        $code  = isset($_GET['code'])  ? sanitize_text_field((string)$_GET['code'])  : '';
+        $state = isset($_GET['state']) ? sanitize_text_field((string)$_GET['state']) : '';
+
+        // Verify state nonce to prevent CSRF.
+        if (!wp_verify_nonce($state, 'abj404_gsc_oauth')) {
+            wp_die(__('Security check failed.', '404-solution'), 403);
+        }
+
+        if ($code === '') {
+            // User denied access or error occurred.
+            $toolsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&gsc_error=access_denied');
+            wp_safe_redirect($toolsUrl);
+            exit;
+        }
+
+        $logger = ABJ_404_Solution_Logging::getInstance();
+        $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
+        $error  = $gsc->exchangeCodeForToken($code);
+
+        $toolsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools');
+        if ($error !== '') {
+            $toolsUrl .= '&gsc_error=' . urlencode($error);
+        } else {
+            $toolsUrl .= '&gsc_connected=1';
+        }
+        wp_safe_redirect($toolsUrl);
+        exit;
+    }
+
+    /**
+     * AJAX handler: revoke GSC authorization.
+     * @return void
+     */
+    public static function handleGscRevoke() {
+        if (!current_user_can('manage_options') || !check_admin_referer('abj404_gsc_revoke')) {
+            wp_die(__('Security check failed.', '404-solution'), 403);
+        }
+
+        $logger = ABJ_404_Solution_Logging::getInstance();
+        $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
+        $gsc->revokeAuthorization();
+
+        wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&gsc_disconnected=1'));
+        exit;
     }
 
 }

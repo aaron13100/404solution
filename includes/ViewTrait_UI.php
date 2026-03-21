@@ -472,6 +472,8 @@ trait ViewTrait_UI {
         $selectedCapture404 = $this->getCheckedAttr($options, 'capture_404');
         $selectedDefaultRedirect301 = ($options['default_redirect'] == '301') ? 'selected' : '';
         $selectedDefaultRedirect302 = ($options['default_redirect'] == '302') ? 'selected' : '';
+        $selectedDefaultRedirect307 = ($options['default_redirect'] == '307') ? 'selected' : '';
+        $selectedDefaultRedirect308 = ($options['default_redirect'] == '308') ? 'selected' : '';
 
         // Theme selections
         $selectedThemeDefault = ($options['admin_theme'] == 'default') ? 'selected' : '';
@@ -479,6 +481,12 @@ trait ViewTrait_UI {
         $selectedThemeMono = ($options['admin_theme'] == 'mono') ? 'selected' : '';
         $selectedThemeNeon = ($options['admin_theme'] == 'neon') ? 'selected' : '';
         $selectedThemeObsidian = ($options['admin_theme'] == 'obsidian') ? 'selected' : '';
+
+        // Notification frequency selections
+        $notifyFrequency = isset($options['admin_notification_frequency']) ? (string)$options['admin_notification_frequency'] : 'instant';
+        $selectedNotifyInstant = ($notifyFrequency === 'instant') ? 'selected' : '';
+        $selectedNotifyDaily   = ($notifyFrequency === 'daily')   ? 'selected' : '';
+        $selectedNotifyWeekly  = ($notifyFrequency === 'weekly')  ? 'selected' : '';
 
         // Read and build the simple options template
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsSimple.html");
@@ -491,6 +499,8 @@ trait ViewTrait_UI {
         $html = $this->f->str_replace('{selectedCapture404}', $selectedCapture404, $html);
         $html = $this->f->str_replace('{selectedDefaultRedirect301}', $selectedDefaultRedirect301, $html);
         $html = $this->f->str_replace('{selectedDefaultRedirect302}', $selectedDefaultRedirect302, $html);
+        $html = $this->f->str_replace('{selectedDefaultRedirect307}', $selectedDefaultRedirect307, $html);
+        $html = $this->f->str_replace('{selectedDefaultRedirect308}', $selectedDefaultRedirect308, $html);
 
         // Replace values
         $html = $this->f->str_replace('{capture_deletion}', esc_attr($this->optStr($options, 'capture_deletion')), $html);
@@ -536,6 +546,19 @@ trait ViewTrait_UI {
         $html = $this->f->str_replace('{Need more control?}', __('Need more control?', '404-solution'), $html);
         $html = $this->f->str_replace('{Switch to Advanced Mode}', __('Switch to Advanced Mode', '404-solution'), $html);
         $html = $this->f->str_replace('{for 30+ additional options.}', __('for 30+ additional options.', '404-solution'), $html);
+
+        // Frequency dropdown selections and labels
+        $html = $this->f->str_replace('{selectedNotifyInstant}', $selectedNotifyInstant, $html);
+        $html = $this->f->str_replace('{selectedNotifyDaily}', $selectedNotifyDaily, $html);
+        $html = $this->f->str_replace('{selectedNotifyWeekly}', $selectedNotifyWeekly, $html);
+        $html = $this->f->str_replace('{Email notification frequency}', __('Email notification frequency', '404-solution'), $html);
+        $html = $this->f->str_replace('{Instant (when threshold exceeded)}', __('Instant (when threshold exceeded)', '404-solution'), $html);
+        $html = $this->f->str_replace('{Daily digest}', __('Daily digest', '404-solution'), $html);
+        $html = $this->f->str_replace('{Weekly digest}', __('Weekly digest', '404-solution'), $html);
+        $html = $this->f->str_replace('{Choose how often to receive email notifications about captured 404s.}', __('Choose how often to receive email notifications about captured 404s.', '404-solution'), $html);
+        // Also handle the Temporary 307/308 options (present in simple mode too)
+        $html = $this->f->str_replace('{Temporary 307 (preserve method)}', __('Temporary 307 (preserve method)', '404-solution'), $html);
+        $html = $this->f->str_replace('{Permanent 308 (preserve method)}', __('Permanent 308 (preserve method)', '404-solution'), $html);
 
         echo $html;
     }

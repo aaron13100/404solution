@@ -558,10 +558,15 @@ trait ViewTrait_RedirectsTable {
         echo '<div class="abj404-form-group">';
         echo '<label class="abj404-form-label">' . esc_html__('Redirect Type', '404-solution') . '</label>';
         echo '<select name="code" class="abj404-form-select">';
-        $selected301 = ($options['default_redirect'] == '301') ? ' selected' : '';
-        $selected302 = ($options['default_redirect'] == '302') ? ' selected' : '';
-        echo '<option value="301"' . $selected301 . '>301 - ' . esc_html__('Permanent Redirect (Recommended for SEO)', '404-solution') . '</option>';
-        echo '<option value="302"' . $selected302 . '>302 - ' . esc_html__('Temporary Redirect', '404-solution') . '</option>';
+        $sel301 = ($options['default_redirect'] == '301') ? ' selected' : '';
+        $sel302 = ($options['default_redirect'] == '302') ? ' selected' : '';
+        $sel307 = ($options['default_redirect'] == '307') ? ' selected' : '';
+        $sel308 = ($options['default_redirect'] == '308') ? ' selected' : '';
+        echo '<option value="301"' . $sel301 . '>301 - ' . esc_html__('Permanent Redirect (Recommended for SEO)', '404-solution') . '</option>';
+        echo '<option value="302"' . $sel302 . '>302 - ' . esc_html__('Temporary Redirect', '404-solution') . '</option>';
+        echo '<option value="307"' . $sel307 . '>307 - ' . esc_html__('Temporary Redirect (preserve method)', '404-solution') . '</option>';
+        echo '<option value="308"' . $sel308 . '>308 - ' . esc_html__('Permanent Redirect (preserve method)', '404-solution') . '</option>';
+        echo '<option value="410">410 - ' . esc_html__('Gone (resource permanently removed)', '404-solution') . '</option>';
         echo '</select>';
         echo '</div>';
 
@@ -902,7 +907,14 @@ trait ViewTrait_RedirectsTable {
             }
 
             $rowCode = is_scalar($row['code'] ?? '') ? (string)($row['code'] ?? '') : '';
-            $codeBadgeClass = ($rowCode == '301') ? 'abj404-badge-301' : 'abj404-badge-302';
+            $codeBadgeMap = array(
+                '301' => 'abj404-badge-301',
+                '302' => 'abj404-badge-302',
+                '307' => 'abj404-badge-307',
+                '308' => 'abj404-badge-308',
+                '410' => 'abj404-badge-410',
+            );
+            $codeBadgeClass = isset($codeBadgeMap[$rowCode]) ? $codeBadgeMap[$rowCode] : 'abj404-badge-302';
 
             $lastUsedClass = '';
             if ($last_used == 0) {
@@ -989,6 +1001,9 @@ trait ViewTrait_RedirectsTable {
             $rowEngine = is_string($row['engine'] ?? '') ? trim((string)($row['engine'] ?? '')) : '';
             $engineHTML = ($rowEngine !== '') ? '<br><span class="abj404-engine-label">' . esc_html($rowEngine) . '</span>' : '';
             $htmlTemp = $this->f->str_replace('{engineHTML}', $engineHTML, $htmlTemp);
+            $rawScore = $row['score'] ?? null;
+            $rowScore = ($rawScore !== null && $rawScore !== '') ? '<br><span class="abj404-score-badge">' . esc_html(number_format((float)$rawScore, 0)) . '%</span>' : '';
+            $htmlTemp = $this->f->str_replace('{rowScore}', $rowScore, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{type}', $typeForView, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{rowCode}', $rowCode, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{hits}', esc_html((string)$hits), $htmlTemp);
@@ -1044,13 +1059,11 @@ trait ViewTrait_RedirectsTable {
             $postedURL = $urlPlaceholder;
         }
 
-        $selected301 = "";
-        $selected302 = "";
-        if ($options['default_redirect'] == '301') {
-            $selected301 = " selected ";
-        } else {
-            $selected302 = " selected ";
-        }
+        $selected301 = ($options['default_redirect'] == '301') ? ' selected ' : '';
+        $selected302 = ($options['default_redirect'] == '302') ? ' selected ' : '';
+        $selected307 = ($options['default_redirect'] == '307') ? ' selected ' : '';
+        $selected308 = ($options['default_redirect'] == '308') ? ' selected ' : '';
+        $selected410 = '';
         
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectTop.html");
@@ -1079,6 +1092,9 @@ trait ViewTrait_RedirectsTable {
         $html = $this->f->str_replace('{postedURL}', esc_attr($postedURL), $html);
         $html = $this->f->str_replace('{301selected}', $selected301, $html);
         $html = $this->f->str_replace('{302selected}', $selected302, $html);
+        $html = $this->f->str_replace('{307selected}', $selected307, $html);
+        $html = $this->f->str_replace('{308selected}', $selected308, $html);
+        $html = $this->f->str_replace('{410selected}', $selected410, $html);
         
         // constants and translations.
         $html = $this->f->doNormalReplacements($html);
@@ -1107,14 +1123,22 @@ trait ViewTrait_RedirectsTable {
         echo '<label class="abj404-form-label" for="code">' . esc_html__('Redirect Type', '404-solution') . '</label>';
         echo '<select id="code" name="code" class="abj404-form-select">';
 
-        $codes = array(301, 302);
-        foreach ($codes as $code) {
-            $selected = ($code == $codeselected) ? ' selected' : '';
-            $title = ($code == 301) ? '301 - ' . __('Permanent Redirect (Recommended for SEO)', '404-solution') : '302 - ' . __('Temporary Redirect', '404-solution');
+        $codeLabels = array(
+            301 => '301 - ' . __('Permanent Redirect (Recommended for SEO)', '404-solution'),
+            302 => '302 - ' . __('Temporary Redirect', '404-solution'),
+            307 => '307 - ' . __('Temporary Redirect (preserve method)', '404-solution'),
+            308 => '308 - ' . __('Permanent Redirect (preserve method)', '404-solution'),
+            410 => '410 - ' . __('Gone (resource permanently removed)', '404-solution'),
+        );
+        foreach ($codeLabels as $code => $title) {
+            $selected = ((string)$code === (string)$codeselected) ? ' selected' : '';
             echo '<option value="' . esc_attr((string)$code) . '"' . $selected . '>' . esc_html($title) . '</option>';
         }
         echo '</select>';
         echo '</div>';
+
+        // Conditions section
+        $this->echoRedirectConditionsSection();
 
         // Button group
         echo '<div class="abj404-button-group">';
@@ -1164,9 +1188,175 @@ trait ViewTrait_RedirectsTable {
                 __('Home Page', '404-solution') . "</option>";
 
         $content .= "\n" . '</optgroup>' . "\n";
-        
+
         return $content;
     }
 
+    /**
+     * Render the Conditions section on the Edit Redirect page.
+     *
+     * Reads the current redirect ID from GET/POST so existing conditions can
+     * be pre-populated.  New redirects (id = 0) render an empty container.
+     *
+     * @return void
+     */
+    private function echoRedirectConditionsSection(): void {
+        $redirectId = 0;
+        if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
+            $redirectId = absint($_GET['id']);
+        } elseif (isset($_POST['id']) && $this->f->regexMatch('[0-9]+', (string)$_POST['id'])) {
+            $redirectId = absint($_POST['id']);
+        }
+
+        $existingConditions = ($redirectId > 0) ? $this->dao->getRedirectConditions($redirectId) : [];
+
+        echo '<div class="abj404-form-group abj404-conditions-section">';
+        echo '<h4>' . esc_html__('Conditions (optional)', '404-solution') . '</h4>';
+        echo '<p class="abj404-form-help">' . esc_html__('This redirect only fires when all conditions are met. Leave empty to always redirect.', '404-solution') . '</p>';
+
+        echo '<div id="abj404-conditions-container">';
+        foreach ($existingConditions as $i => $cond) {
+            $this->echoConditionRow($i, $cond);
+        }
+        echo '</div>';
+
+        echo '<button type="button" onclick="abj404AddConditionRow()" class="button abj404-btn-add-condition">'
+            . esc_html__('+ Add Condition', '404-solution')
+            . '</button>';
+
+        echo '</div>';
+
+        // Hidden template row (display:none) cloned by JS.
+        echo '<script type="text/template" id="abj404-condition-row-template">';
+        $this->echoConditionRow('__IDX__', []);
+        echo '</script>';
+
+        // Inline JS for dynamic condition rows.
+        $this->echoConditionsJavaScript();
+    }
+
+    /**
+     * Render a single condition row.
+     *
+     * @param int|string           $index  Row index (used in field names).
+     * @param array<string, mixed> $cond   Existing condition data (empty = defaults).
+     * @return void
+     */
+    private function echoConditionRow($index, array $cond): void {
+        $logic    = isset($cond['logic'])          && is_string($cond['logic'])          ? $cond['logic']          : 'AND';
+        $type     = isset($cond['condition_type']) && is_string($cond['condition_type']) ? $cond['condition_type'] : '';
+        $operator = isset($cond['operator'])       && is_string($cond['operator'])       ? $cond['operator']       : 'equals';
+        $value    = isset($cond['value'])          && is_string($cond['value'])          ? $cond['value']          : '';
+        $sortOrder = isset($cond['sort_order'])    && is_scalar($cond['sort_order'])     ? (int)$cond['sort_order'] : (int)$index;
+
+        $namePrefix = 'conditions[' . $index . ']';
+
+        echo '<div class="abj404-condition-row" data-index="' . esc_attr((string)$index) . '">';
+
+        // Logic (AND / OR) — shown only on rows after the first.
+        echo '<select name="' . esc_attr($namePrefix . '[logic]') . '" class="abj404-condition-logic" aria-label="' . esc_attr__('Logic', '404-solution') . '">';
+        foreach (['AND' => __('AND', '404-solution'), 'OR' => __('OR', '404-solution')] as $logicVal => $logicLabel) {
+            $sel = ($logic === $logicVal) ? ' selected' : '';
+            echo '<option value="' . esc_attr($logicVal) . '"' . $sel . '>' . esc_html($logicLabel) . '</option>';
+        }
+        echo '</select>';
+
+        // Condition type.
+        $typeOptions = [
+            'login_status' => __('Login Status', '404-solution'),
+            'user_role'    => __('User Role', '404-solution'),
+            'referrer'     => __('Referrer URL', '404-solution'),
+            'user_agent'   => __('User Agent', '404-solution'),
+            'ip_range'     => __('IP Range (CIDR)', '404-solution'),
+            'http_header'  => __('HTTP Header', '404-solution'),
+        ];
+        echo '<select name="' . esc_attr($namePrefix . '[condition_type]') . '" class="abj404-condition-type" aria-label="' . esc_attr__('Condition type', '404-solution') . '">';
+        echo '<option value="">' . esc_html__('— Select type —', '404-solution') . '</option>';
+        foreach ($typeOptions as $typeVal => $typeLabel) {
+            $sel = ($type === $typeVal) ? ' selected' : '';
+            echo '<option value="' . esc_attr($typeVal) . '"' . $sel . '>' . esc_html($typeLabel) . '</option>';
+        }
+        echo '</select>';
+
+        // Operator.
+        $operatorOptions = [
+            'equals'       => __('equals', '404-solution'),
+            'not_equals'   => __('not equals', '404-solution'),
+            'contains'     => __('contains', '404-solution'),
+            'not_contains' => __('does not contain', '404-solution'),
+            'regex'        => __('matches regex', '404-solution'),
+        ];
+        echo '<select name="' . esc_attr($namePrefix . '[operator]') . '" class="abj404-condition-operator" aria-label="' . esc_attr__('Operator', '404-solution') . '">';
+        foreach ($operatorOptions as $opVal => $opLabel) {
+            $sel = ($operator === $opVal) ? ' selected' : '';
+            echo '<option value="' . esc_attr($opVal) . '"' . $sel . '>' . esc_html($opLabel) . '</option>';
+        }
+        echo '</select>';
+
+        // Value input.
+        echo '<input type="text" name="' . esc_attr($namePrefix . '[value]') . '" class="abj404-condition-value abj404-form-input" value="' . esc_attr($value) . '" placeholder="' . esc_attr__('Value', '404-solution') . '" aria-label="' . esc_attr__('Condition value', '404-solution') . '">';
+
+        // Sort order (hidden).
+        echo '<input type="hidden" name="' . esc_attr($namePrefix . '[sort_order]') . '" class="abj404-condition-sort-order" value="' . esc_attr((string)$sortOrder) . '">';
+
+        // Remove button.
+        echo '<button type="button" class="button abj404-remove-condition" onclick="abj404RemoveConditionRow(this)" aria-label="' . esc_attr__('Remove condition', '404-solution') . '">'
+            . esc_html__('Remove', '404-solution')
+            . '</button>';
+
+        echo '</div>';
+    }
+
+    /**
+     * Output inline JavaScript that manages dynamic condition rows.
+     *
+     * @return void
+     */
+    private function echoConditionsJavaScript(): void {
+        $redirectId = 0;
+        if (isset($_GET['id']) && is_scalar($_GET['id']) && ctype_digit((string)$_GET['id'])) {
+            $redirectId = (int)$_GET['id'];
+        } elseif (isset($_POST['id']) && is_scalar($_POST['id']) && ctype_digit((string)$_POST['id'])) {
+            $redirectId = (int)$_POST['id'];
+        }
+        $initialIndex = ($redirectId > 0) ? max(1, count($this->dao->getRedirectConditions($redirectId))) : 1;
+
+        echo '<script type="text/javascript">' . "\n";
+        echo '(function() {' . "\n";
+        echo '    var abj404ConditionIndex = ' . (int)$initialIndex . ';' . "\n";
+        echo "\n";
+        echo '    window.abj404AddConditionRow = function() {' . "\n";
+        echo '        var template = document.getElementById(\'abj404-condition-row-template\');' . "\n";
+        echo '        if (!template) { return; }' . "\n";
+        echo '        var html = template.innerHTML.replace(/__IDX__/g, String(abj404ConditionIndex));' . "\n";
+        echo '        var container = document.getElementById(\'abj404-conditions-container\');' . "\n";
+        echo '        if (!container) { return; }' . "\n";
+        echo '        var div = document.createElement(\'div\');' . "\n";
+        echo '        div.innerHTML = html;' . "\n";
+        echo '        while (div.firstChild) {' . "\n";
+        echo '            container.appendChild(div.firstChild);' . "\n";
+        echo '        }' . "\n";
+        echo '        abj404UpdateConditionSortOrders();' . "\n";
+        echo '        abj404ConditionIndex++;' . "\n";
+        echo '    };' . "\n";
+        echo "\n";
+        echo '    window.abj404RemoveConditionRow = function(btn) {' . "\n";
+        echo '        var row = btn.closest(\'.abj404-condition-row\');' . "\n";
+        echo '        if (row) {' . "\n";
+        echo '            row.parentNode.removeChild(row);' . "\n";
+        echo '            abj404UpdateConditionSortOrders();' . "\n";
+        echo '        }' . "\n";
+        echo '    };' . "\n";
+        echo "\n";
+        echo '    function abj404UpdateConditionSortOrders() {' . "\n";
+        echo '        var rows = document.querySelectorAll(\'#abj404-conditions-container .abj404-condition-row\');' . "\n";
+        echo '        for (var i = 0; i < rows.length; i++) {' . "\n";
+        echo '            var so = rows[i].querySelector(\'.abj404-condition-sort-order\');' . "\n";
+        echo '            if (so) { so.value = String(i); }' . "\n";
+        echo '        }' . "\n";
+        echo '    }' . "\n";
+        echo '}());' . "\n";
+        echo '</script>' . "\n";
+    }
 
 }

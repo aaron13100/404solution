@@ -1805,6 +1805,21 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     color: #614200;
 }
 
+.abj404-badge-307 {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.abj404-badge-308 {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.abj404-badge-410 {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
 .abj404-badge-captured {
     background: #fef3c7;
     color: #92400e;
@@ -2759,6 +2774,17 @@ html[data-theme="obsidian"] .abj404-filter-bar {
     font-size: 11px;
     color: var(--abj404-text-muted, #646970);
     font-style: italic;
+}
+
+.abj404-score-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--abj404-accent, #2271b1);
+    background: var(--abj404-accent-light, #e8f0fb);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-top: 2px;
 }
 
 .abj404-username-label {

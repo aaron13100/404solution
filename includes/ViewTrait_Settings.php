@@ -225,6 +225,7 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{selectedAutoCats}', $selectedAutoCats, $html);
         $html = $this->f->str_replace('{selectedAutoTags}', $selectedAutoTags, $html);
         $html = $this->f->str_replace('{auto_deletion}', esc_attr($this->optStr($options, 'auto_deletion')), $html);
+        $html = $this->f->str_replace('{auto_302_expiration_days}', esc_attr($this->optStr($options, 'auto_302_expiration_days')), $html);
         $html = $this->f->str_replace('{spaces}', $spaces, $html);
         $html = $this->f->doNormalReplacements($html);
         $content .= $html;
@@ -470,14 +471,10 @@ trait ViewTrait_Settings {
 	    function getAdminOptionsPageGeneralSettings($options) {
 	        $options = $this->normalizeOptionsForView($options);
 	        
-	        $selectedDefaultRedirect301 = "";
-        if ($options['default_redirect'] == '301') {
-            $selectedDefaultRedirect301 = " selected";
-        }
-        $selectedDefaultRedirect302 = "";
-        if ($options['default_redirect'] == '302') {
-            $selectedDefaultRedirect302 = " selected";
-        }
+	        $selectedDefaultRedirect301 = ($options['default_redirect'] == '301') ? ' selected' : '';
+        $selectedDefaultRedirect302 = ($options['default_redirect'] == '302') ? ' selected' : '';
+        $selectedDefaultRedirect307 = ($options['default_redirect'] == '307') ? ' selected' : '';
+        $selectedDefaultRedirect308 = ($options['default_redirect'] == '308') ? ' selected' : '';
 
         $selectedCapture404 = $this->getCheckedAttr($options, 'capture_404');
         $selectedSendErrorLogs = $this->getCheckedAttr($options, 'send_error_logs');
@@ -534,11 +531,19 @@ trait ViewTrait_Settings {
 
 
         $selectedRemoveMatches = $this->getCheckedAttr($options, 'remove_matches');
-        
+
+        // Notification frequency selection
+        $notifyFrequency = isset($options['admin_notification_frequency']) ? (string)$options['admin_notification_frequency'] : 'instant';
+        $selectedNotifyInstant = ($notifyFrequency === 'instant') ? ' selected' : '';
+        $selectedNotifyDaily   = ($notifyFrequency === 'daily')   ? ' selected' : '';
+        $selectedNotifyWeekly  = ($notifyFrequency === 'weekly')  ? ' selected' : '';
+
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
         $html = $this->f->str_replace('{selectedSendErrorLogs}', $selectedSendErrorLogs, $html);
         $html = $this->f->str_replace('{selectedDefaultRedirect301}', $selectedDefaultRedirect301, $html);
         $html = $this->f->str_replace('{selectedDefaultRedirect302}', $selectedDefaultRedirect302, $html);
+        $html = $this->f->str_replace('{selectedDefaultRedirect307}', $selectedDefaultRedirect307, $html);
+        $html = $this->f->str_replace('{selectedDefaultRedirect308}', $selectedDefaultRedirect308, $html);
         $html = $this->f->str_replace('{selectedCapture404}', $selectedCapture404, $html);
         $html = $this->f->str_replace('{admin_notification}', $this->optStr($options, 'admin_notification'), $html);
         $html = $this->f->str_replace('{capture_deletion}', $this->optStr($options, 'capture_deletion'), $html);
@@ -574,10 +579,13 @@ trait ViewTrait_Settings {
         $adminEmail = get_option('admin_email');
         $html = $this->f->str_replace('{default_wordpress_admin_email}', is_string($adminEmail) ? $adminEmail : '', $html);
         $html = $this->f->str_replace('{PHP_VERSION}', PHP_VERSION, $html);
+        $html = $this->f->str_replace('{selectedNotifyInstant}', $selectedNotifyInstant, $html);
+        $html = $this->f->str_replace('{selectedNotifyDaily}', $selectedNotifyDaily, $html);
+        $html = $this->f->str_replace('{selectedNotifyWeekly}', $selectedNotifyWeekly, $html);
 
         // constants and translations.
         $html = $this->f->doNormalReplacements($html);
-        
+
         return $html;
     }
 

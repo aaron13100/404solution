@@ -129,6 +129,22 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
+        } else if ($action == "saveGscSettings") {
+            if (check_admin_referer('abj404_gsc_save', '_wpnonce_gsc') && is_admin()) {
+                $logger = ABJ_404_Solution_Logging::getInstance();
+                $gsc = new ABJ_404_Solution_GoogleSearchConsole($logger);
+                $error = $gsc->saveSettings($_POST);
+                $message = ($error === '') ? __('Google Search Console credentials saved.', '404-solution') : $error;
+            } else {
+                $this->logger->debugMessage("saveGscSettings security check failed. is_admin: " . is_admin());
+            }
+        } else if ($action == "importFromPlugin") {
+            if (check_admin_referer('abj404_importFromPlugin') && is_admin()) {
+                $message = $this->handleActionImportFromPlugin();
+            } else {
+                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
+                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
+            }
         } else if ($this->f->substr($action . '', 0, 4) == "bulk") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 if (!isset($_POST['idnum'])) {
@@ -579,12 +595,66 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 $statusType = ABJ404_STATUS_REGEX;
             }
 
+            // Parse scheduled redirect dates from POST data
+            $startDateRaw = isset($_POST['redirect_start_date']) && is_string($_POST['redirect_start_date']) ? trim($_POST['redirect_start_date']) : '';
+            $endDateRaw = isset($_POST['redirect_end_date']) && is_string($_POST['redirect_end_date']) ? trim($_POST['redirect_end_date']) : '';
+            $startTs = ($startDateRaw !== '') ? strtotime($startDateRaw . ' 00:00:00') : null;
+            $endTs = ($endDateRaw !== '') ? strtotime($endDateRaw . ' 23:59:59') : null;
+            // Treat strtotime failures as null
+            if ($startTs === false) { $startTs = null; }
+            if ($endTs === false) { $endTs = null; }
+
+            // Sanitize and collect conditions from POST data.
+            $rawConditions = (isset($_POST['conditions']) && is_array($_POST['conditions']))
+                ? $_POST['conditions'] : [];
+            $sanitizedConditions = [];
+            $allowedConditionTypes = [
+                'login_status', 'user_role', 'referrer',
+                'user_agent', 'ip_range', 'http_header',
+            ];
+            $allowedOperators = [
+                'equals', 'not_equals', 'contains',
+                'not_contains', 'regex', 'cidr',
+            ];
+            foreach ($rawConditions as $rawCond) {
+                if (!is_array($rawCond)) {
+                    continue;
+                }
+                $condType = isset($rawCond['condition_type']) && is_string($rawCond['condition_type'])
+                    ? sanitize_text_field($rawCond['condition_type']) : '';
+                if (!in_array($condType, $allowedConditionTypes, true)) {
+                    continue;
+                }
+                $condLogic = (isset($rawCond['logic']) && strtoupper((string)$rawCond['logic']) === 'OR') ? 'OR' : 'AND';
+                $condOperator = isset($rawCond['operator']) && is_string($rawCond['operator'])
+                    ? sanitize_text_field($rawCond['operator']) : 'equals';
+                if (!in_array($condOperator, $allowedOperators, true)) {
+                    $condOperator = 'equals';
+                }
+                $condValue = isset($rawCond['value']) && is_string($rawCond['value'])
+                    ? sanitize_text_field($rawCond['value']) : '';
+                $condSortOrder = isset($rawCond['sort_order']) ? absint($rawCond['sort_order']) : 0;
+
+                $sanitizedConditions[] = [
+                    'logic'          => $condLogic,
+                    'condition_type' => $condType,
+                    'operator'       => $condOperator,
+                    'value'          => $condValue,
+                    'sort_order'     => $condSortOrder,
+                ];
+            }
+
             // decide whether we're updating one or multiple redirects.
             if ($fromURL != "") {
                 $id = isset($_POST['id']) && is_scalar($_POST['id']) ? (int)$_POST['id'] : 0;
                 $code = isset($_POST['code']) && is_string($_POST['code']) ? $_POST['code'] : '';
                 $this->dao->updateRedirect($tdType, $tdDest,
-                        $fromURL, $id, $code, (string)$statusType);
+                        $fromURL, $id, $code, (string)$statusType, $startTs, $endTs);
+
+                // Save conditions only for single-redirect edits (bulk edit has no conditions UI).
+                if ($id > 0) {
+                    $this->dao->saveRedirectConditions($id, $sanitizedConditions);
+                }
 
             } else if ($ids_multiple != "") {
                 // get the redirect data for each ID.
@@ -732,6 +802,46 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         }
 
         return $message;
+    }
+
+    /**
+     * Handle the importFromPlugin POST action.
+     * Reads the selected source plugin from $_POST['import_source'] and delegates
+     * to CrossPluginImporter::importFrom().
+     *
+     * @return string Human-readable result message.
+     */
+    private function handleActionImportFromPlugin(): string {
+        $source = isset($_POST['import_source']) && is_string($_POST['import_source'])
+            ? sanitize_text_field($_POST['import_source'])
+            : '';
+
+        if ($source === '') {
+            return __('Error: No source plugin specified.', '404-solution');
+        }
+
+        $allowedSources = array('rankmath', 'yoast', 'aioseo', 'safe-redirect-manager', 'redirection');
+        if (!in_array($source, $allowedSources, true)) {
+            return sprintf(
+                /* translators: %s = unknown source identifier */
+                __('Error: Unknown source plugin "%s".', '404-solution'),
+                esc_html($source)
+            );
+        }
+
+        $importer = new ABJ_404_Solution_CrossPluginImporter($this->dao, $this->logger);
+        $count    = $importer->importFrom($source);
+
+        return sprintf(
+            /* translators: %d = number of redirects imported */
+            _n(
+                '%d redirect imported successfully.',
+                '%d redirects imported successfully.',
+                $count,
+                '404-solution'
+            ),
+            $count
+        );
     }
 
 }

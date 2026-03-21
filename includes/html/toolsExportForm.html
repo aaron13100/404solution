@@ -3,8 +3,21 @@
     <input type="hidden" name="action" value="exportRedirects">
     <p>{Create a CSV file with the redirects and captured 404s.}
     </p>
+    <p>
+        <label for="export_format">{Export format:}</label>
+        <select name="export_format" id="export_format">
+            <option value="native">{Native CSV (404 Solution)}</option>
+            <option value="redirection">{Redirection Plugin CSV}</option>
+            <option value="htaccess">{Apache .htaccess}</option>
+            <option value="nginx">{Nginx config}</option>
+            <option value="cloudflare">{Cloudflare Workers script}</option>
+            <option value="netlify">{Netlify _redirects}</option>
+            <option value="vercel">{Vercel vercel.json}</option>
+        </select>
+    </p>
     <input type="submit" id="import_file" name="import_file" class="button-secondary"
      onchange="form.submit()" value="{Create and Download}">
     <p></p>
 </form>
+
 

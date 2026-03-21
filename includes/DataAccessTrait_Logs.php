@@ -1303,6 +1303,74 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
     }
 
     /**
+     * Get daily 404/redirect activity for the last N days.
+     *
+     * Returns array of rows, one per day (including days with zero activity),
+     * sorted ascending by date.  Each row has:
+     *   'date'          => 'YYYY-MM-DD'
+     *   'hits_404'      => int  (rows where dest_url is '' or NULL)
+     *   'hits_redirect' => int  (rows where dest_url is non-empty)
+     *   'new_captures'  => int  (same as hits_404 for trend purposes)
+     *
+     * @param int $days Number of days (default 30, clamped to 1-90)
+     * @return array<int, array<string, mixed>>
+     */
+    public function getDailyActivityTrend(int $days = 30): array {
+        $days = max(1, min(90, $days));
+
+        $logsTable = $this->doTableNameReplacements('{wp_abj404_logsv2}');
+        $cutoff = time() - ($days * 86400);
+
+        $query = "SELECT
+                    DATE(FROM_UNIXTIME(`timestamp`)) AS `date`,
+                    SUM(CASE WHEN (`dest_url` IS NULL OR `dest_url` = '') THEN 1 ELSE 0 END) AS `hits_404`,
+                    SUM(CASE WHEN (`dest_url` IS NOT NULL AND `dest_url` <> '') THEN 1 ELSE 0 END) AS `hits_redirect`
+                  FROM " . $logsTable . "
+                  WHERE `timestamp` >= " . intval($cutoff) . "
+                  GROUP BY DATE(FROM_UNIXTIME(`timestamp`))
+                  ORDER BY `date` ASC";
+
+        $result = $this->queryAndGetResults($query);
+        $rows = (isset($result['rows']) && is_array($result['rows'])) ? $result['rows'] : array();
+
+        // Build a date-keyed map from query results.
+        $byDate = array();
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $d = isset($row['date']) ? (string)$row['date'] : '';
+            if ($d === '') {
+                continue;
+            }
+            $byDate[$d] = array(
+                'date'          => $d,
+                'hits_404'      => intval($row['hits_404'] ?? 0),
+                'hits_redirect' => intval($row['hits_redirect'] ?? 0),
+                'new_captures'  => intval($row['hits_404'] ?? 0),
+            );
+        }
+
+        // Fill in days with zero activity so the chart always shows N points.
+        $output = array();
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $d = date('Y-m-d', time() - ($i * 86400));
+            if (isset($byDate[$d])) {
+                $output[] = $byDate[$d];
+            } else {
+                $output[] = array(
+                    'date'          => $d,
+                    'hits_404'      => 0,
+                    'hits_redirect' => 0,
+                    'new_captures'  => 0,
+                );
+            }
+        }
+
+        return $output;
+    }
+
+    /**
      * @param string $userName
      * @return int
      */

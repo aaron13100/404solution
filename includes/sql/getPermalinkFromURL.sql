@@ -18,6 +18,10 @@ where   r.url in (BINARY '{url1}', BINARY '{url2}')
         and (p.id is not null or t.term_id is not null or r.type = {ABJ404_TYPE_EXTERNAL})
         and (p.post_status in ('publish', 'published') or r.type != 1)
 
+        /* scheduled redirect: only match within active date range */
+        and (r.start_ts IS NULL OR r.start_ts <= UNIX_TIMESTAMP())
+        and (r.end_ts IS NULL OR r.end_ts > UNIX_TIMESTAMP())
+
 -- make sure the first url appears first.
 order by (CASE
 			when r.url = BINARY '{url1}' then 1

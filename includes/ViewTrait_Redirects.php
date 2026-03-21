@@ -129,6 +129,24 @@ trait ViewTrait_Redirects {
             echo '</div>';
             echo '</div>';
 
+            // Scheduled redirect: start date
+            $startTs = isset($redirect['start_ts']) && is_numeric($redirect['start_ts']) ? (int)$redirect['start_ts'] : 0;
+            $endTs = isset($redirect['end_ts']) && is_numeric($redirect['end_ts']) ? (int)$redirect['end_ts'] : 0;
+            $startDate = $startTs > 0 ? date('Y-m-d', $startTs) : '';
+            $endDate = $endTs > 0 ? date('Y-m-d', $endTs) : '';
+
+            echo '<div class="abj404-form-group">';
+            echo '<label class="abj404-form-label" for="redirect_start_date">' . esc_html__('Active From (optional)', '404-solution') . '</label>';
+            echo '<input type="date" name="redirect_start_date" id="redirect_start_date" class="abj404-form-input" value="' . esc_attr($startDate) . '">';
+            echo '<p class="abj404-form-help">' . esc_html__('Leave blank to activate immediately', '404-solution') . '</p>';
+            echo '</div>';
+
+            echo '<div class="abj404-form-group">';
+            echo '<label class="abj404-form-label" for="redirect_end_date">' . esc_html__('Active Until (optional)', '404-solution') . '</label>';
+            echo '<input type="date" name="redirect_end_date" id="redirect_end_date" class="abj404-form-input" value="' . esc_attr($endDate) . '">';
+            echo '<p class="abj404-form-help">' . esc_html__('Leave blank to never expire', '404-solution') . '</p>';
+            echo '</div>';
+
         } else if ($recnums_multiple != null) {
             $redirects_multiple = $this->dao->getRedirectsByIDs($recnums_multiple);
             if ($redirects_multiple == null) {

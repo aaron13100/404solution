@@ -630,36 +630,39 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
      * @param int $idForUpdate
      * @param string $redirectCode
      * @param string $statusType ABJ404_STATUS_MANUAL or ABJ404_STATUS_REGEX
+     * @param int|null $startTs Unix timestamp when redirect becomes active (null = always)
+     * @param int|null $endTs   Unix timestamp when redirect expires (null = never)
      * @return string
      */
-    function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType) {
+    function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType, $startTs = null, $endTs = null) {
         global $wpdb;
-        
+
         if (($type < 0) || ($idForUpdate <= 0)) {
             $this->logger->errorMessage("Bad data passed for update redirect request. Type: " .
                 esc_html((string)$type) . ", Dest: " . esc_html($dest) . ", ID(s): " . esc_html((string)$idForUpdate));
             echo __('Error: Bad data passed for update redirect request.', '404-solution');
             return '';
         }
-        
+
         $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
-        $wpdb->update($redirectsTable, array(
-        	'url' => $fromURL,
+
+        $updateData = array(
+            'url' => $fromURL,
             'status' => $statusType,
             'type' => absint($type),
             'final_dest' => $dest,
-            'code' => esc_attr($redirectCode)
-                ), array(
-            'id' => absint($idForUpdate)
-                ), array(
-            '%s',
-            '%d',
-            '%d',
-            '%s',
-            '%d'
-                ), array(
-            '%d'
-                )
+            'code' => esc_attr($redirectCode),
+            'start_ts' => ($startTs !== null) ? (int)$startTs : null,
+            'end_ts'   => ($endTs !== null) ? (int)$endTs : null,
+        );
+        $updateFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d');
+
+        $wpdb->update(
+            $redirectsTable,
+            $updateData,
+            array('id' => absint($idForUpdate)),
+            $updateFormats,
+            array('%d')
         );
 
         // Invalidate caches - status/url change affects regex redirects
@@ -670,6 +673,73 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
         $this->moveRedirectsToTrash(absint($idForUpdate), 0);
 
         return '';
+    }
+
+    /**
+     * Get the top N captured 404s by hit count for the digest email.
+     *
+     * @param int $limit Maximum number of rows to return.
+     * @return array<int, array<string, mixed>>
+     */
+    function getTopCapturedForDigest(int $limit): array {
+        global $wpdb;
+
+        $limit = max(1, $limit);
+        $redirectsTable = $this->doTableNameReplacements('{wp_abj404_redirects}');
+
+        $sql = $wpdb->prepare(
+            "SELECT url, logshits, created FROM {$redirectsTable}
+             WHERE status = %d AND disabled = 0
+             ORDER BY logshits DESC
+             LIMIT %d",
+            ABJ404_STATUS_CAPTURED,
+            $limit
+        );
+
+        $rows = $wpdb->get_results($sql, ARRAY_A);
+        if (!is_array($rows)) {
+            return array();
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Get summary stats for the digest email.
+     *
+     * @return array{total_captured: int, total_manual: int, total_auto: int}
+     */
+    function getDigestSummaryStats(): array {
+        $zero = array(
+            'total_captured' => 0,
+            'total_manual' => 0,
+            'total_auto' => 0,
+        );
+
+        $redirectsTable = $this->doTableNameReplacements('{wp_abj404_redirects}');
+
+        try {
+            $total_captured = $this->getStatsCount(
+                "SELECT COUNT(id) FROM {$redirectsTable} WHERE status = %d AND disabled = 0",
+                array(ABJ404_STATUS_CAPTURED)
+            );
+            $total_manual = $this->getStatsCount(
+                "SELECT COUNT(id) FROM {$redirectsTable} WHERE status = %d AND disabled = 0",
+                array(ABJ404_STATUS_MANUAL)
+            );
+            $total_auto = $this->getStatsCount(
+                "SELECT COUNT(id) FROM {$redirectsTable} WHERE status = %d AND disabled = 0",
+                array(ABJ404_STATUS_AUTO)
+            );
+        } catch (Throwable $e) {
+            return $zero;
+        }
+
+        return array(
+            'total_captured' => intval($total_captured),
+            'total_manual' => intval($total_manual),
+            'total_auto' => intval($total_auto),
+        );
     }
 
     /** @return int */

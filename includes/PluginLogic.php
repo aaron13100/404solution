@@ -878,6 +878,7 @@ class ABJ_404_Solution_PluginLogic {
             'auto_score_content' => '',
             'template_redirect_priority' => '9',
             'auto_deletion' => '1095',
+            'auto_302_expiration_days' => '0',
             'auto_cats' => '1',
             'auto_tags' => '1',
             'dest404page' => '0|' . ABJ404_TYPE_404_DISPLAYED,
@@ -902,6 +903,9 @@ class ABJ_404_Solution_PluginLogic {
             'plugin_language_override' => '',
             'disable_auto_dark_mode' => '0',
             'admin_notification_email' => '',
+            'admin_notification_frequency' => 'instant',
+            'admin_notification_digest_limit' => '10',
+            'admin_notification_last_sent' => '0',
             'page_redirects_order_by' => 'url',
             'page_redirects_order' => 'ASC',
             'captured_order_by' => 'logshits',
@@ -1258,6 +1262,12 @@ class ABJ_404_Solution_PluginLogic {
      * @return bool true if the user is sent to the default 404 page.
      */
     function forceRedirect(string $location, int $status = 302, $type = -1, string $requestedURL = '', bool $isCustom404 = false): bool {
+        // 410 Gone: send the status header but let WordPress render suggestions content.
+        if ($status === 410) {
+            status_header(410);
+            return false;
+        }
+
         $finalDestination = $this->buildFinalRedirectDestination($location, $requestedURL, $isCustom404);
 
     	$previousRequest = $this->readCookieWithPreviousRqeuestShort();

@@ -153,8 +153,13 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 $deadIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
                 $redirectIdStr = isset($redirect['id']) && is_scalar($redirect['id']) ? (string) $redirect['id'] : '0';
                 if (!is_array($deadIds) || !in_array($redirectIdStr, $deadIds, true)) {
-                    $this->processRedirect($requestedURL, $redirect, 'existing');
-                    exit;
+                    $condEvaluator = new ABJ_404_Solution_RedirectConditionEvaluator($this->dao);
+                    $redirectIdForCond = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
+                    if ($condEvaluator->shouldApplyRedirect($redirectIdForCond)) {
+                        $this->processRedirect($requestedURL, $redirect, 'existing');
+                        exit;
+                    }
+                    // Conditions not met — fall through as if no redirect found.
                 }
                 // Destination is known-dead — fall through to suggestions logic
             }
@@ -167,8 +172,13 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                     $deadIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
                     $redirectIdStr = isset($redirect['id']) && is_scalar($redirect['id']) ? (string) $redirect['id'] : '0';
                     if (!is_array($deadIds) || !in_array($redirectIdStr, $deadIds, true)) {
-                        $this->processRedirect($requestedURL, $redirect, 'existing');
-                        exit;
+                        $condEvaluator = new ABJ_404_Solution_RedirectConditionEvaluator($this->dao);
+                        $redirectIdForCond = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
+                        if ($condEvaluator->shouldApplyRedirect($redirectIdForCond)) {
+                            $this->processRedirect($requestedURL, $redirect, 'existing');
+                            exit;
+                        }
+                        // Conditions not met — fall through as if no redirect found.
                     }
                 }
             }
@@ -187,7 +197,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 $matchResult = $this->runMatchingEngines($matchRequest);
                 if ($matchResult !== null) {
                     $defaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '';
-                    $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO, $matchResult->getType(), $matchResult->getId(), $defaultRedirect, 0, $matchResult->getEngineName());
+                    $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO, $matchResult->getType(), $matchResult->getId(), $defaultRedirect, 0, $matchResult->getEngineName(), $matchResult->getScore());
 
                     // Resolve link via WordPress API to ensure correct site prefix
                     // (cached URLs from permalink_cache may omit subdirectory prefix)
@@ -496,6 +506,14 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $redirectFinalDest = isset($redirect['final_dest']) && is_scalar($redirect['final_dest']) ? (string)$redirect['final_dest'] : '';
         $redirectCode = isset($redirect['code']) && is_scalar($redirect['code']) ? (int)$redirect['code'] : 0;
         $redirectId = isset($redirect['id']) && is_scalar($redirect['id']) ? (string)$redirect['id'] : '0';
+
+        // 410 Gone: send HTTP 410 status and let WordPress render the suggestions page normally.
+        if ($redirectCode === 410) {
+            $this->dao->logRedirectHit($redirectUrl, '410', $matchReason);
+            $this->logic->forceRedirect('', 410);
+            // forceRedirect returns false for 410 without exiting — page continues to render.
+            return false;
+        }
 
         if ($redirect['type'] == ABJ404_TYPE_404_DISPLAYED) {
             $this->dao->logRedirectHit($redirectUrl, '404', $matchReason);

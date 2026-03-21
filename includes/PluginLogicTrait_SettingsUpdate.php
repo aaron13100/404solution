@@ -273,7 +273,8 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         $message = "";
 
         if (isset($postData['default_redirect'])) {
-            if ($postData['default_redirect'] == "301" || $postData['default_redirect'] == "302") {
+            $validDefaultCodes = array('301', '302', '307', '308');
+            if (in_array((string)$postData['default_redirect'], $validDefaultCodes, true)) {
                 $options['default_redirect'] = is_scalar($postData['default_redirect']) ? intval($postData['default_redirect']) : 301;
             } else {
                 $message .= __('Error: Invalid value specified for default redirect type', '404-solution') . ".<BR/>";
@@ -383,6 +384,27 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $options['admin_notification_email'] = trim(wp_kses_post(is_string($postData['admin_notification_email']) ? $postData['admin_notification_email'] : ''));
         }
 
+        if (isset($postData['admin_notification_frequency'])) {
+            $allowed_frequencies = array('instant', 'daily', 'weekly');
+            $freq = sanitize_text_field(is_string($postData['admin_notification_frequency']) ? $postData['admin_notification_frequency'] : '');
+            if (in_array($freq, $allowed_frequencies, true)) {
+                $options['admin_notification_frequency'] = $freq;
+                // Reschedule digest cron whenever frequency changes.
+                $emailDigest = new ABJ_404_Solution_EmailDigest($this->dao, $this->logger);
+                $emailDigest->scheduleNextDigest();
+            } else {
+                $message .= __('Error: Invalid email notification frequency selected', '404-solution') . ".<BR/>";
+            }
+        }
+
+        if (isset($postData['admin_notification_digest_limit'])) {
+            if (is_numeric($postData['admin_notification_digest_limit']) && $postData['admin_notification_digest_limit'] >= 1) {
+                $options['admin_notification_digest_limit'] = absint($postData['admin_notification_digest_limit']);
+            } else {
+                $message .= __('Error: Digest limit must be a number greater than or equal to 1', '404-solution') . ".<BR/>";
+            }
+        }
+
         return $message;
     }
 
@@ -441,6 +463,9 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
 
         $message .= $this->validateAndSetNumericField($options, $postData, 'auto_deletion',
             'Error: Auto redirect deletion value must be a number greater than or equal to zero');
+
+        $message .= $this->validateAndSetNumericField($options, $postData, 'auto_302_expiration_days',
+            'Error: Auto-redirect expiration days must be a number greater than or equal to zero');
 
         $message .= $this->validateAndSetNumericField($options, $postData, 'maximum_log_disk_usage',
             'Error: Maximum log disk usage must be a number greater than zero', 0, true);

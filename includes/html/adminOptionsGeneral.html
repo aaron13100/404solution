@@ -9,6 +9,8 @@
     <select name="default_redirect" id="default_redirect">
         <option value="301" {selectedDefaultRedirect301}>{Permanent 301}</option>
         <option value="302" {selectedDefaultRedirect302}>{Temporary 302}</option>
+        <option value="307" {selectedDefaultRedirect307}>{Temporary 307 (preserve method)}</option>
+        <option value="308" {selectedDefaultRedirect308}>{Permanent 308 (preserve method)}</option>
     </select>
 </p>
 <p>
@@ -26,6 +28,15 @@
     <BR/>&nbsp;&nbsp;&nbsp;{When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The "from" email address is always the default WordPress admin email:} 
     <span style="font-weight: bold;">{default_wordpress_admin_email}</span>. 
     {One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings.} 
+</p>
+<p>
+    <label for="admin_notification_frequency">{Email notification frequency}:</label>
+    <select name="admin_notification_frequency" id="admin_notification_frequency">
+        <option value="instant" {selectedNotifyInstant}>{Instant (when threshold exceeded)}</option>
+        <option value="daily" {selectedNotifyDaily}>{Daily digest}</option>
+        <option value="weekly" {selectedNotifyWeekly}>{Weekly digest}</option>
+    </select>
+    <BR/>&nbsp;&nbsp;&nbsp;{Choose how often to receive email notifications about captured 404s.}
 </p>
 <p>
     <label for="capture_deletion">{Delete captured 404 URLs after}:</label>
