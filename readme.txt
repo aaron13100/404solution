@@ -1,7 +1,7 @@
 === 404 Solution ===
 Contributors: aaron13100
 Website: https://www.ajexperience.com/404-solution/
-Tags: 404, redirect, auto redirect, broken links, similar post
+Tags: 404, redirect, 404 redirect, broken links, spell check, smart redirect, 404 error, woocommerce
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
@@ -9,85 +9,98 @@ Stable tag: 3.3.7
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Automatically redirect 404 errors to similar posts and pages using intelligent matching, spell-checking, and a 7-engine pipeline.
+Automatically redirect 404 errors to the right page using a 7-engine matching pipeline and spell-checking algorithm. Zero configuration required.
 
 == Description ==
 
-Stop losing visitors to broken links and 404 errors. **404 Solution automatically redirects 404s to similar posts and pages** using advanced spell-checking and a 7-engine intelligent matching pipeline to **find the actual page your visitor was trying to reach**.
+Stop losing visitors and search rankings to broken links. **404 Solution automatically redirects 404s to the right page** — not just your homepage — using a 7-engine matching pipeline that includes a spell-checking algorithm to find what visitors actually typed.
 
-When a visitor hits a broken link like `/prodcut/awesome-item` (typo), most 404 redirect plugins send them to your homepage where they get lost and leave. 404 Solution is different – it **automatically finds `/product/awesome-item`** and redirects them to the right place. It handles typos, changed URLs, deleted pages, moved content, and restructured permalinks.
+**Example:** A visitor hits `/prodcut/awesome-item` (typo). Most 404 redirect plugins send them to your homepage. 404 Solution's spell-checker finds `/product/awesome-item` and redirects them there automatically.
 
-= Why 404 Solution is Different =
+= Why 404 Solution Is Different =
 
-**Intelligent URL Matching** – Uses sophisticated algorithms (N-gram similarity, Levenshtein distance, multi-word matching) to find the closest existing page, not just blindly redirect to homepage.
+Most redirect plugins fall into two categories: tools that require you to manually write every rule, or tools that blindly send every 404 to your homepage. 404 Solution does neither.
 
-**Spell-Checking Technology** – Automatically handles typos and URL variations so visitors find what they want even when they misspell URLs.
+* **A spell-checking algorithm that actually matches typos.** Using Levenshtein distance and N-gram scoring, 404 Solution catches `/prodcut/`, `/categroy/`, and `/wooocmmerce/` and finds the real destination — something no other free plugin does.
+* **7 matching engines, in sequence.** Slug match → URL fix → Title keywords → Category/tag paths → Content search → Spelling similarity → Archive fallback. The first engine with a confident match wins.
+* **Automatic, from day one.** Install and activate. 404 Solution starts capturing and redirecting immediately. You can tune it; you don't have to.
+* **Redirect management when you need it.** Full manual redirect editor, regex support, bulk actions, and CSV/JSON import compatible with Redirection's export format.
+* **Debug mode that shows its work.** Enable the debug interstitial and see exactly which engine chose a redirect and why — a level of transparency no competing plugin offers.
+* **Built for real-world hosting.** Self-healing database tables, auto-recovery from corruption, automatic log trimming, and zero wp-admin-wide banners.
+* **Ships with extras most plugins sell separately.** HTTP 410 Gone, 307/308/451 status codes, Google Search Console integration, REST API, WP-CLI support, email digest reports, and security probe detection — all free.
 
-**Zero Configuration** – Works perfectly out of the box with smart defaults. Advanced users have full control over every aspect.
+= Unlike plugins that blindly redirect to your homepage =
 
-**WooCommerce Optimized** – Specifically designed to work with products, categories, variations, and custom post types.
+A 404-to-homepage redirect tells Google your broken URL is the same page as your homepage. That creates a soft 404 — a page Google may index as duplicate content, eroding crawl budget and ranking over time.
 
-= Core Features =
-
-* **Automatic intelligent redirects** based on the best possible match for the URL
-* **7-engine matching pipeline** — slug matching, URL typo correction, title keywords, category/tag path matching, content keywords, spelling, and archive fallback
-* **Title keyword matching** — finds posts whose title words appear in the broken URL
-* **Content keyword matching** — searches post body text for URL keywords
-* **Category/tag matching** with hierarchical path resolution (e.g. `/shop/electronics` maps to the right category)
-* **URL typo correction** — strips `.html`, `.php`, trailing numbers, and common suffixes to recover the real slug
-* **Post type archive fallback** — when nothing else matches, redirects to the appropriate archive page
-* **Per-engine score thresholds** — fine-tune how aggressive each matching strategy is
-* **404 error logging** with detailed visitor data and referrer information
-* **Manual redirect creation** for specific URLs to any existing page
-* **Page suggestions shortcode** to display matches on custom 404 pages
-* **Automatic cleanup** removes redirects when URLs match new pages, destinations are deleted, or redirects are no longer used
-* **Regular expression support** for advanced redirect patterns
-* **Debug logging** to troubleshoot redirect behavior
-* **Performance optimized** for sites with 10,000+ pages
-* **Multilingual-friendly redirects** (TranslatePress, WPML, Polylang) to keep redirects in the request language
+404 Solution redirects to the *correct* destination, or returns a proper 410 Gone when content is permanently removed. Both outcomes are better for search engines and for visitors.
 
 = How It Works =
 
-1. Visitor hits a broken link (404 error)
-2. 404 Solution analyzes the URL and runs it through a 7-engine matching pipeline: slug matching, URL typo fixing, title keywords, category/tag path matching, content keywords, spelling similarity, and archive fallback
-3. The first engine to find a confident match wins — each engine has its own tunable score threshold
-4. Visitor is automatically redirected to the correct page
-5. You can review all 404s and create custom redirects as needed
+1. A visitor reaches a URL that returns a 404.
+2. 404 Solution runs the URL through its 7-engine pipeline.
+3. Each engine tries to find a confident match above its score threshold.
+4. The first engine to find a match wins. The visitor is redirected to the correct page.
+5. The redirect is logged. You can review, edit, or delete it from the dashboard.
+
+The whole process adds no perceptible latency for visitors on non-404 pages. The matching pipeline only runs when a genuine 404 occurs.
+
+= Key Features =
+
+**Intelligent Automatic Matching**
+
+* 7-engine matching pipeline (slug, URL fix, title, category/tag, content, spelling, archive)
+* Levenshtein distance + N-gram scoring catches genuine typos
+* Per-engine confidence thresholds — tune aggressiveness per engine
+* Conditional engine groups — override the matching strategy for specific URL patterns
+* Slug-change auto-detection — redirects created automatically when you rename a post
+* Trash/deletion monitoring — redirect created automatically when a post is deleted
+
+**Redirect Management**
+
+* Manual redirect editor with bulk actions
+* Full regular expression support
+* CSV and JSON import/export (compatible with Redirection plugin format)
+* .htaccess and Nginx server-level export
+* Per-post and per-term exclusion via meta box
+* HTTP status codes: 301, 302, 307 (method-preserving temporary), 308 (method-preserving permanent), 410 Gone, 451 Unavailable For Legal Reasons, and Meta Refresh
+* GDPR-compliant: IP addresses are hashed before storage — never written to disk in plain text
+
+**404 Monitoring and Logging**
+
+* Captures every 404 hit with referrer, user agent, and timestamp
+* Automatic log trimming with configurable disk usage limits
+* Security monitoring — flags vulnerability scanner probes (.env, /wp-config.php, phpMyAdmin, etc.)
+
+**Reporting and Diagnostics**
+
+* Stats dashboard with traffic trend charts (404s, redirects, captures over time)
+* Email digest reports with optional PDF attachment
+* Debug interstitial — see which engine fired and why
+* Google Search Console integration — import crawl errors and push fixes
+* Internal link scanner to find broken links before visitors do
+
+**Developer and Integrator Tools**
+
+* REST API for redirect management
+* WP-CLI subcommands (list, create, delete, import, export)
+* Scheduled maintenance cron
+* Full WordPress Multisite support
+
+**Compatibility**
+
+* WooCommerce (products, variations, categories, custom URLs)
+* Yoast SEO, Rank Math
+* WPML, Polylang, TranslatePress
+* Easy Digital Downloads
+* All custom post types and custom taxonomies
 
 = Perfect For =
 
-* **eCommerce sites** (WooCommerce, Easy Digital Downloads) with changing product URLs
+* **eCommerce sites** (WooCommerce, EDD) with changing product URLs
 * **Content sites** with evolving permalink structures
 * **Migrated sites** where old URLs need to map to new content
 * **Large sites** with thousands of pages where manual redirects are impractical
-* **Any WordPress site** that wants to provide better user experience
-
-= What Makes This Different From Other Redirect Plugins? =
-
-**vs. Redirection** – Redirection requires manual redirect rules. 404 Solution automatically finds matches using intelligent algorithms.
-
-**vs. 404 to 301** – 404 to 301 redirects everything to your homepage. 404 Solution finds the actual page visitors want.
-
-**vs. Simple 301 Redirects** – Simple 301 only does manual redirects. 404 Solution creates intelligent automatic redirects based on URL similarity.
-
-**vs. WP 404 Auto Redirect to Similar Post** – WP 404 Auto Redirect uses keyword matching only. 404 Solution adds Levenshtein spell-checking to catch typos, content body search, hierarchical category/tag path resolution, per-engine score thresholds, full 404 logging with admin dashboard, and manual redirect management — all in one plugin.
-
-= Technical Details =
-
-* Supports 301 (permanent) and 302 (temporary) redirects
-* 7-engine matching pipeline with configurable score thresholds
-* N-gram similarity scoring for fast candidate narrowing
-* Spell-checking with Levenshtein distance calculation for typo correction
-* Title, content, and taxonomy keyword matching
-* Custom post type support (products, events, portfolios, etc.)
-* Taxonomy-aware (categories, tags, custom taxonomies) with hierarchical path resolution
-* Per-post and per-term exclusion via WordPress meta
-* Query parameter preservation
-* Referrer tracking and logging
-* IP address logging (GDPR-compliant hashing available)
-* Automatic performance optimization for large sites
-
-**Note:** For high-traffic sites with thousands of simultaneous users, disable "Create automatic redirects" and avoid using the shortcode to ensure optimal performance.
 
 == Installation ==
 
@@ -97,175 +110,81 @@ When a visitor hits a broken link like `/prodcut/awesome-item` (typo), most 404 
 
 == Frequently Asked Questions ==
 
-= How is this different from Redirection plugin? =
+= How is this different from the Redirection plugin? =
 
-**Redirection** requires you to manually create redirect rules for each broken URL. **404 Solution automatically finds the best matching page** using intelligent algorithms.
+Redirection is a manual redirect manager — you write the rules, it applies them. That is useful when you know in advance which URLs will break. 404 Solution handles the URLs you don't know about: it automatically finds the right destination using a 7-engine matching pipeline and a spell-checking algorithm.
 
-**Example:** If a visitor tries `/prodcut/awesome-item` (typo), Redirection won't do anything unless you manually created that specific redirect. 404 Solution automatically finds `/product/awesome-item` and redirects them there.
+**Example:** If a visitor types `/prodcut/awesome-item`, Redirection does nothing unless you manually created that specific rule. 404 Solution finds `/product/awesome-item` automatically.
 
-**Use Redirection when:** You need complete manual control over every redirect.
-**Use 404 Solution when:** You want automatic intelligent redirects that understand typos and URL variations.
+The two plugins are complementary. Many sites run both: Redirection for planned migrations and 404 Solution for everything else.
 
 = How is this different from 404 to 301? =
 
-**404 to 301** redirects ALL 404 errors to your homepage (or one specific page). **404 Solution finds the actual page** the visitor was looking for.
-
-**Example:** A visitor tries to access `/category/electronics` which doesn't exist. 404 to 301 sends them to your homepage where they're lost. 404 Solution finds `/shop/electronics` and redirects them there.
-
-**404 to 301** is simpler but provides a worse user experience. **404 Solution** is smarter and keeps visitors engaged.
+404 to 301 redirects ALL 404 errors to one fixed destination (usually the homepage). 404 Solution finds the actual page the visitor was looking for. Sending visitors to your homepage is poor UX and can create soft 404 problems in Google Search Console.
 
 = How is this different from WP 404 Auto Redirect to Similar Post? =
 
-**WP 404 Auto Redirect to Similar Post** uses a single matching approach. **404 Solution** runs a 7-engine pipeline — slug matching, URL typo correction, title keywords, category/tag paths, content keywords, spelling similarity, and archive fallback — so it finds the right page in more situations.
+WP 404 Auto Redirect uses keyword matching, which works when the URL contains recognizable words from a post title. It fails on character-level typos — a URL like `/prodcut/` has no keyword that matches "product."
 
-404 Solution also gives you per-engine score thresholds, per-post/per-term exclusion controls, debug logging, and automatic cleanup of orphaned redirects.
+404 Solution adds Levenshtein spell-checking, which catches transpositions and typos regardless of whether the keywords match. It also includes: full 404 logging, manual redirect management, CSV import/export, 410/451 status codes, GDPR IP hashing, debug interstitial, REST API, and WP-CLI support.
+
+= What HTTP status codes are supported? =
+
+**301** (permanent redirect), **302** (temporary redirect), **307** (temporary, method-preserving), **308** (permanent, method-preserving), **410 Gone** (correct response for permanently deleted content — better for SEO than a 301 to homepage), **451 Unavailable For Legal Reasons**, and **Meta Refresh** (client-side HTML redirect).
+
+Using 410 instead of redirecting deleted content to your homepage produces better results in Google Search Console and prevents soft-404 indexing.
 
 = Will this slow down my site? =
 
-No, 404 Solution is highly optimized and has minimal performance impact for most sites. The plugin uses:
-* N-gram indexing for fast URL matching
-* Performance optimizations for large sites (10,000+ pages)
-* Efficient database queries with proper caching
-
-**Important:** For very high-traffic sites with thousands of simultaneous users, disable "Create automatic redirects" and don't use the shortcode to ensure optimal performance.
-
-= Does it work with WPML or Polylang? =
-
-Yes. 404 Solution keeps redirects in the same language as the request when WPML or Polylang is active. TranslatePress is also supported. Language is detected using the multilingual plugin’s URL/language APIs, and the matched redirect destination is translated to that language without changing the matching logic.
+No. The matching pipeline only runs when a genuine 404 occurs — normal page loads are unaffected. For large sites, 404 Solution uses N-gram indexing and caching tables to keep matching fast. Once a redirect is established, subsequent hits are served from the redirect table directly, bypassing the pipeline.
 
 = Does it work with WooCommerce? =
 
-Yes! 404 Solution is specifically optimized for WooCommerce and handles:
-* Products and product variations
-* Product categories and tags
-* Custom product URLs
-* Shop pages and archives
+Yes. 404 Solution indexes WooCommerce products, product variations, product categories, and tags. When a product URL changes or a product is deleted, the appropriate redirect is created automatically.
 
-When products are renamed or URLs change, 404 Solution automatically redirects old URLs to the new product pages.
+= What happens when a redirect destination is deleted? =
 
-= How does the intelligent matching work? =
+404 Solution detects when a destination post is trashed or deleted and flags the redirect. Redirects pointing to deleted content are highlighted in the redirect table so nothing slips through unnoticed. The daily maintenance cron automatically removes orphaned auto-redirects.
 
-404 Solution runs the broken URL through a 7-engine pipeline, in order:
+= Can I import redirects from another plugin? =
 
-1. **Slug matching** – Looks for an existing page whose slug is an exact or near-exact match
-2. **URL typo correction** – Strips common suffixes (.html, .php, trailing numbers) and retries
-3. **Title keyword matching** – Finds posts whose title words appear in the broken URL
-4. **Category/tag matching** – Resolves hierarchical paths like `/shop/electronics` to the right taxonomy term
-5. **Content keyword matching** – Searches post body text for keywords from the URL
-6. **Spelling similarity** – Uses Levenshtein distance and N-gram scoring to find the closest URL
-7. **Archive fallback** – Redirects to the post type archive when no single-post match is found
+Yes. 404 Solution imports CSV and JSON in the Redirection plugin's export format. It can also directly import from Rank Math, Yoast SEO, AIOSEO, and Safe Redirect Manager's database tables from the Tools tab.
 
-The first engine to find a match above its score threshold wins. Each engine threshold is independently tunable.
+= Is it GDPR compliant? =
 
-= Will it redirect existing pages by mistake? =
+Yes. IP addresses are hashed using a one-way algorithm before storage — the original IP is never written to disk. Log retention limits are configurable. No data is transmitted to external servers.
 
-No. 404 Solution ONLY processes actual 404 errors (pages that don't exist). It will never redirect an existing page.
+= Does it support regex? =
 
-If you're experiencing unexpected redirects, check:
-1. Did the page exist when the redirect was created?
-2. Are other plugins causing conflicts?
-3. Enable debug logging (Options page) to see exactly what's happening
+Yes. Manual redirect rules support full regular expression syntax for source URLs.
 
-= How long does it take for 404 URLs to start showing up? =
+= Does it work with WPML, Polylang, or TranslatePress? =
 
-Immediately! As long as "Capture incoming 404 URLs" is enabled, 404 errors appear in the captured list as soon as a visitor hits a 404 page.
+Yes. 404 Solution detects the active language from the multilingual plugin's API and resolves redirect destinations to the correct translated version automatically.
 
-= Will this plugin handle permalink changes? =
+= Can I use WP-CLI to manage redirects? =
 
-Yes! 404 Solution records the page/post ID number and looks up the most current permalink before redirecting. This means:
-* If you change your permalink structure, redirects automatically update
-* If you rename a page, redirects point to the new URL
-* No manual updates needed when URLs change
+Yes. 404 Solution includes WP-CLI subcommands for listing, creating, deleting, importing, and exporting redirects — useful for scripted migrations and DevOps workflows.
+
+= Does it work after a site migration? =
+
+Yes. 404 Solution is ideal for site migrations: slug-change auto-detection, URL typo correction (strips `.html`, `.php`, `.asp`), hierarchical category path resolution, and regex redirects for bulk pattern changes.
 
 = Can I redirect all 404s to a specific page? =
 
-Yes. Go to **404 Solution → Options → Redirect all unhandled 404s to** and select your preferred page. This is useful for:
-* Custom 404 pages with special messaging
-* Fallback pages when no good match is found
-* Temporary catch-all during site migrations
+Yes. Go to **Settings → 404 Solution → Redirect all unhandled 404s to** and select your preferred fallback page.
 
 = How do I manage log files and disk usage? =
 
-Log cleanup is automatic! Configure it under **Options → General Settings → Maximum log disk usage**. You can:
-* Set maximum log size (as low as 1MB)
-* Auto-delete old entries when limit is reached
-* Manually clear logs anytime from the Logs page
-
-= What does "captured 404 URLs to be processed" mean? =
-
-This just means visitors tried to access pages that don't exist – completely normal! You can:
-
-**Option 1:** Ignore the message by adjusting **Options → General Settings → Admin notification level**
-
-**Option 2:** Process them by going to **Captured 404 URLs** page and either:
-* Let automatic redirects handle them
-* Create manual redirects to specific pages
-* Mark them to ignore
+Log cleanup is automatic. Configure maximum log size under **Options → General Settings → Maximum log disk usage**. You can also manually clear logs from the Logs page.
 
 = Can I exclude certain URLs from being processed? =
 
-Yes! Go to **Options → Advanced Settings → Files and Folders Ignore Strings** and add the paths you want to ignore. Common exclusions:
-* `/wp-admin/*` – Admin pages
-* `/wp-content/*` – Media files
-* `*.jpg`, `*.png` – Image files
-* `/feed/*` – RSS feeds
+Yes. Use **Options → Advanced Settings → Files and Folders Ignore Strings** to add paths to ignore. Per-post and per-term exclusion is also available via the edit screen checkbox.
 
-= How do I see IP addresses in the logs? =
+= How do I exclude a specific post or page? =
 
-Enable **"Log raw IPs"** in the settings. Note: For GDPR compliance, consider using hashed IPs instead of raw IP addresses.
-
-= Does this work with custom post types? =
-
-Yes! 404 Solution supports ALL custom post types including:
-* WooCommerce products
-* Events (The Events Calendar, Event Espresso)
-* Portfolios
-* Team members
-* Custom content types
-
-= Can I use regular expressions for redirects? =
-
-Yes! 404 Solution supports regex patterns for advanced redirect rules. This is useful for:
-* Redirecting multiple similar URLs with one rule
-* Pattern-based matching
-* Complex URL transformations
-
-= Is this GDPR compliant? =
-
-Yes. 404 Solution includes GDPR-friendly features:
-* Option to hash IP addresses before storage
-* Automatic log cleanup/retention limits
-* No external data transmission
-* Full control over what data is logged
-
-= What kind of support is available? =
-
-404 Solution is actively maintained with:
-* WordPress.org support forum (free community support)
-* Regular updates and bug fixes
-* Debug logging to troubleshoot issues
-* Comprehensive documentation
-
-For urgent issues, enable debug logging and post in the support forum with details.
-
-= How do I exclude a specific post or page from automatic redirects? =
-
-Two ways:
-
-1. **Per-post exclusion (recommended):** Edit the post/page and check the "Exclude from 404 Solution redirects" checkbox in the sidebar. This uses post meta and works for any post type.
-2. **Global exclusion list:** Go to **Options → Advanced Settings → Exclude Specific Pages** and add individual items.
-
-Category and tag terms can also be excluded via term meta on the edit screen.
-
-= Does 404 Solution work after a site migration? =
-
-Yes! 404 Solution is ideal for site migrations. It handles:
-
-* **Changed permalink structures** — old URLs automatically redirect to new ones
-* **Renamed pages and posts** — redirects update automatically because they store post IDs, not URLs
-* **Moved content between categories** — the category/tag engine resolves hierarchical paths
-* **Domain changes** — use regex redirects for bulk URL pattern changes
-* **Platform migrations** — the URL typo engine strips old file extensions like `.html` and `.php`
+Edit the post/page and check the "Exclude from 404 Solution redirects" checkbox in the sidebar. Category and tag terms can also be excluded via term meta on the edit screen.
 
 = Have you written any other programs? =
 
@@ -273,12 +192,12 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Screenshots ==
 
-1. **Intelligent Redirect Dashboard** - See automatic matches in action with confidence scores
-2. **404 Error Logs** - Track all 404 errors with visitor data, referrers, and timestamps
-3. **Easy Redirect Creation** - Create manual redirects with autocomplete and validation
-4. **Captured URLs Management** - Review and process 404s with one-click redirect creation
-5. **Performance Statistics** - Monitor redirect effectiveness and site performance
-6. **Advanced Options** - Fine-tune intelligent matching, logging, and behavior
+1. **Redirect Dashboard** — Active redirects with status code badges (301, 302, 307, 308, 410, 451) and match confidence scores. Sort, search, and bulk-edit without leaving the page.
+2. **Stats and Trends** — Traffic trend charts plotting 404 hits, redirects, and captures over time. See which URLs break most often.
+3. **Debug Interstitial** — Enable debug mode to see exactly which of the 7 engines fired, what score it assigned, and why it chose that destination.
+4. **Captured 404s** — Every 404 logged with URL, referrer, user agent, and timestamp. Create a redirect for any row with one click.
+5. **Settings Page** — Enable/disable individual matching engines, set per-engine confidence thresholds, configure fallback behavior.
+6. **Email Digest** — Weekly email digest with top 404 URLs, hit counts, and optional PDF attachment.
 
 == Changelog ==
 
@@ -296,31 +215,31 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Improvement: Strict type checking (PHPStan level 9) enforced throughout the codebase, catching and fixing potential type-mismatch errors before they could affect users.
 
 = Version 3.3.4 (Mar 19, 2026) =
-* FIX: Fixed an upgrade bug introduced in 3.3.3 that accidentally cleared the admin page view cache. No redirect data was affected — the cache rebuilds automatically on the next page load.
-* FIX: Added a safety check to prevent future upgrades from accidentally wiping plugin caches.
-* FIX: Sites affected by the 3.3.3 bug will have their cache table automatically repaired on the first admin page load after updating.
+* Fix: Fixed an upgrade bug introduced in 3.3.3 that accidentally cleared the admin page view cache. No redirect data was affected — the cache rebuilds automatically on the next page load.
+* Fix: Added a safety check to prevent future upgrades from accidentally wiping plugin caches.
+* Fix: Sites affected by the 3.3.3 bug will have their cache table automatically repaired on the first admin page load after updating.
 
 = Version 3.3.3 (Mar 19, 2026) =
-* FIX: Uninstaller no longer produces a PHPStan type error when `$wpdb->get_results()` returns null on edge-case database configurations.
+* Fix: Uninstaller no longer produces a PHPStan type error when `$wpdb->get_results()` returns null on edge-case database configurations.
 * Improvement: Plugin table cleanup on blog deletion, uninstall, and collation repair now uses dynamic discovery, ensuring any future tables are automatically included.
 
 = Version 3.3.1 (Mar 18, 2026) =
-* FIX: Resolved "Table wp_abj404_view_cache doesn't exist" errors on some v3.3.0 upgrades where the cache table was not created.
-* FIX: Reduced debug log noise when WP_DEBUG is enabled.
-* FIX: Orphaned-redirect cleanup cron no longer triggers errors on sites with incomplete database installs.
-* FIX: Plugin upgrades no longer perform unnecessary database ALTER TABLE operations.
-* FIX: Bot requests with malformed character encodings no longer cause database errors.
+* Fix: Resolved "Table wp_abj404_view_cache doesn't exist" errors on some v3.3.0 upgrades where the cache table was not created.
+* Fix: Reduced debug log noise when WP_DEBUG is enabled.
+* Fix: Orphaned-redirect cleanup cron no longer triggers errors on sites with incomplete database installs.
+* Fix: Plugin upgrades no longer perform unnecessary database ALTER TABLE operations.
+* Fix: Bot requests with malformed character encodings no longer cause database errors.
 
 = Version 3.3.0 (Mar 15, 2026) =
-* NEW: 7-engine matching pipeline — slug matching, URL typo correction, title keywords, category/tag path matching, content keywords, spelling similarity, and archive fallback.
-* NEW: Title keyword matching engine — finds posts whose title words appear in the broken URL, with fuzzy Levenshtein scoring for near-matches.
-* NEW: Content keyword matching engine — searches post body text when title and slug matching fail.
-* NEW: Category/tag matching engine — resolves hierarchical paths like `/shop/electronics` to the right taxonomy term or finds posts within a category.
-* NEW: URL typo correction engine — strips `.html`, `.php`, `.asp` and other file extensions, plus trailing punctuation from copy-paste errors.
-* NEW: Post type archive fallback engine — redirects to archive pages when no single-post match is found.
-* NEW: Per-engine score thresholds — fine-tune how aggressive each matching strategy is (Advanced Settings).
-* NEW: Per-post and per-term exclusion — exclude individual posts, pages, or taxonomy terms from automatic redirects via edit screen checkbox.
-* NEW: Orphaned redirect cleanup — daily cron automatically removes auto-redirects whose destination post was deleted or unpublished.
+* Add: 7-engine matching pipeline — slug matching, URL typo correction, title keywords, category/tag path matching, content keywords, spelling similarity, and archive fallback.
+* Add: Title keyword matching engine — finds posts whose title words appear in the broken URL, with fuzzy Levenshtein scoring for near-matches.
+* Add: Content keyword matching engine — searches post body text when title and slug matching fail.
+* Add: Category/tag matching engine — resolves hierarchical paths like `/shop/electronics` to the right taxonomy term or finds posts within a category.
+* Add: URL typo correction engine — strips `.html`, `.php`, `.asp` and other file extensions, plus trailing punctuation from copy-paste errors.
+* Add: Post type archive fallback engine — redirects to archive pages when no single-post match is found.
+* Add: Per-engine score thresholds — fine-tune how aggressive each matching strategy is (Advanced Settings).
+* Add: Per-post and per-term exclusion — exclude individual posts, pages, or taxonomy terms from automatic redirects via edit screen checkbox.
+* Add: Orphaned redirect cleanup — daily cron automatically removes auto-redirects whose destination post was deleted or unpublished.
 * Improvement: WordPress.org discoverability — updated plugin description, tags, and FAQ for better search visibility.
 
 = Version 3.2.2 (Mar 14, 2026) =
@@ -422,9 +341,9 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * FIX: Resolve "Table doesn't exist" errors on case-sensitive MySQL installations (lower_case_table_names=0) with mixed-case WordPress prefixes. All plugin table references now use normalized lowercase prefixes to match table creation behavior.
 
 = Version 3.0.3 (Nov 23, 2025) =
-* Improved: GDPR compliance in log files (just in case). 
+* Improved: GDPR compliance in log files (just in case).
 * Improved: Some missing translation keys.
-* Improved: Deactivation feedback. 
+* Improved: Deactivation feedback.
 
 = Version 3.0.2 (Nov 22, 2025) =
 * FIX: Table creation issues on multisite. (Thanks to debug file participants!)
@@ -432,9 +351,9 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 = Version 3.0.1 (Nov 20, 2025) =
 * Improvement: Use accordions on the settings screen instead of chips.
 * FIX: Division by 0 in the new ngram filter.
-* FIX: Language file format issues for various languages. 
+* FIX: Language file format issues for various languages.
 * FIX: Correct the deactivate feedback trigger.
-* FIX: Log slow query content correctly. 
+* FIX: Log slow query content correctly.
 * FIX: Table creation issues on multisites.
 
 = Version 3.0.0 (Nov 17, 2025) =
@@ -454,10 +373,6 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 = Version 2.36.8 (April 25, 2025) =
 * FIX: Avoid a logging issue while logging a DB error for leehodson.
-
-= Version 2.36.7 (April 25, 2025) =
-* FIX: Avoid a logging issue while logging a DB error for leehodson.
-* Improvement: Fix some warnings and code issues brought up by intelephense.
 
 = Version 2.36.6 (April 15, 2025) =
 * Improvement: Page suggestions: when an admin user clicks the score after a suggestion link it gives them some more information about the link like author, post date, etc.
