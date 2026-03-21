@@ -335,11 +335,8 @@ if (is_admin()) {
 	ABJ_404_Solution_ViewUpdater::init();
 }
 
-// REST API — runs on both admin and front-end requests.
-add_action('init', function() {
-	if (!function_exists('register_rest_route')) {
-		return;
-	}
+// REST API — deferred to rest_api_init so DataAccess/PluginLogic are only loaded on actual REST requests.
+add_action('rest_api_init', function() {
 	if (!class_exists('ABJ_404_Solution_RestApiController')) {
 		require_once plugin_dir_path(ABJ404_FILE) . 'includes/Loader.php';
 	}
@@ -347,7 +344,7 @@ add_action('init', function() {
 	$logic = ABJ_404_Solution_PluginLogic::getInstance();
 	$restController = new ABJ_404_Solution_RestApiController($dao, $logic);
 	$restController->register();
-}, 1);
+});
 
 // WP-CLI commands.
 if (defined('WP_CLI') && WP_CLI) {
@@ -580,13 +577,12 @@ if (!function_exists('abj404_override_plugin_locale')) {
  * @return string
  */
 function abj404_override_plugin_locale($locale, $domain) {
-	// Only override for our plugin's text domain
+	// Only override for our plugin's text domain.
+	// Use the value cached in $GLOBALS at plugin boot to avoid a redundant get_option() call.
 	if ($domain === '404-solution') {
-		$options = abj404_get_settings_options();
-
-		// Check if language override is set and not empty
-		if (is_array($options) && !empty($options['plugin_language_override']) && is_string($options['plugin_language_override'])) {
-			return $options['plugin_language_override'];
+		$override = isset($GLOBALS['abj404_plugin_language_override']) && is_string($GLOBALS['abj404_plugin_language_override']) ? $GLOBALS['abj404_plugin_language_override'] : '';
+		if ($override !== '') {
+			return $override;
 		}
 	}
 	return $locale;
