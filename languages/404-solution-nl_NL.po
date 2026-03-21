@@ -3061,3 +3061,10 @@ msgstr "Deze inhoud is niet beschikbaar vanwege een juridische eis."
 
 msgid "Unavailable For Legal Reasons"
 msgstr "Niet beschikbaar om juridische redenen"
+
+# Trash/deletion redirect strings
+msgid "Create redirect when a page is trashed or deleted"
+msgstr "Redirect aanmaken wanneer een pagina naar prullenbak wordt verplaatst of verwijderd"
+
+msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
+msgstr "Wanneer een gepubliceerde pagina naar de prullenbak wordt verplaatst of permanent verwijderd, maak dan een redirect van de oude URL naar de startpagina."

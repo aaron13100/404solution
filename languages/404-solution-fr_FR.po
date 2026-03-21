@@ -3055,3 +3055,10 @@ msgstr "Ce contenu est indisponible en raison d'une demande légale."
 
 msgid "Unavailable For Legal Reasons"
 msgstr "Indisponible pour des raisons légales"
+
+# Trash/deletion redirect strings
+msgid "Create redirect when a page is trashed or deleted"
+msgstr "Créer une redirection quand une page est mise à la corbeille ou supprimée"
+
+msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
+msgstr "Quand une page publiée est déplacée vers la corbeille ou définitivement supprimée, créer une redirection de son ancienne URL vers la page d'accueil."

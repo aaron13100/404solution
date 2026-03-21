@@ -3061,3 +3061,10 @@ msgstr "Det här innehållet är inte tillgängligt på grund av ett rättsligt 
 
 msgid "Unavailable For Legal Reasons"
 msgstr "Ej tillgänglig av juridiska skäl"
+
+# Trash/deletion redirect strings
+msgid "Create redirect when a page is trashed or deleted"
+msgstr "Skapa omdirigering när en sida skickas till papperskorgen eller raderas"
+
+msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
+msgstr "När en publicerad sida flyttas till papperskorgen eller raderas permanent skapas en omdirigering från dess gamla URL till startsidan."

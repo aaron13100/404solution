@@ -218,12 +218,14 @@ trait ViewTrait_Settings {
         $selectedAutoSlugs = $this->getCheckedAttr($options, 'auto_slugs');
         $selectedAutoCats = $this->getCheckedAttr($options, 'auto_cats');
         $selectedAutoTags = $this->getCheckedAttr($options, 'auto_tags');
+        $selectedAutoTrashRedirect = $this->getCheckedAttr($options, 'auto_trash_redirect');
 
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsAutoRedirects.html");
         $html = $this->f->str_replace('{selectedAutoRedirects}', $selectedAutoRedirects, $html);
         $html = $this->f->str_replace('{selectedAutoSlugs}', $selectedAutoSlugs, $html);
         $html = $this->f->str_replace('{selectedAutoCats}', $selectedAutoCats, $html);
         $html = $this->f->str_replace('{selectedAutoTags}', $selectedAutoTags, $html);
+        $html = $this->f->str_replace('{selectedAutoTrashRedirect}', $selectedAutoTrashRedirect, $html);
         $html = $this->f->str_replace('{auto_deletion}', esc_attr($this->optStr($options, 'auto_deletion')), $html);
         $html = $this->f->str_replace('{auto_302_expiration_days}', esc_attr($this->optStr($options, 'auto_302_expiration_days')), $html);
         $html = $this->f->str_replace('{spaces}', $spaces, $html);

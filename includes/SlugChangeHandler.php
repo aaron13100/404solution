@@ -35,6 +35,8 @@ class ABJ_404_Solution_SlugChangeHandler {
     static function init() {
         $me = ABJ_404_Solution_SlugChangeHandler::getInstance();
         add_action('save_post', array($me, 'save_postHandler'), 10, 3);
+        add_action('transition_post_status', array($me, 'postStatusTransitionHandler'), 10, 3);
+        add_action('before_delete_post', array($me, 'beforeDeletePostHandler'), 10, 2);
     }
 
     /** We'll just make sure the permalink gets updated in case it's changed.
@@ -154,5 +156,119 @@ class ABJ_404_Solution_SlugChangeHandler {
                 (string)$post_id, (isset($options['default_redirect']) && is_scalar($options['default_redirect'])) ? (string)$options['default_redirect'] : '301', 0, 'slug change');
         $abj404logging->infoMessage("Added automatic redirect after slug change from " .
             $oldURL . ' to ' . $newURL . " for post ID " . $post_id);
+    }
+
+    /**
+     * Fires when a published post is moved to trash.
+     * Creates a redirect from the old permalink to the homepage.
+     *
+     * @param string $new_status New post status.
+     * @param string $old_status Old post status.
+     * @param \WP_Post $post Post object.
+     * @return void
+     */
+    function postStatusTransitionHandler($new_status, $old_status, $post) {
+        // Only care about published posts being trashed.
+        if ($old_status !== 'publish' || $new_status !== 'trash') {
+            return;
+        }
+
+        if (!is_object($post) || !property_exists($post, 'ID')) {
+            return;
+        }
+
+        $post_id = (int)$post->ID;
+
+        // Check option
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $options = $abj404logic->getOptions();
+        if (!isset($options['auto_trash_redirect']) || $options['auto_trash_redirect'] != '1') {
+            return;
+        }
+
+        // Prevent duplicate processing within same request
+        if (isset(self::$processedPosts[$post_id])) {
+            return;
+        }
+
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $oldURL = $abj404dao->getPermalinkFromCache($post_id);
+
+        if ($oldURL == null || $oldURL == '') {
+            return;
+        }
+
+        $oldURLParsed = parse_url($oldURL);
+        if ($oldURLParsed === false || !isset($oldURLParsed['path']) || $oldURLParsed['path'] === '') {
+            return;
+        }
+
+        $oldSlug = $oldURLParsed['path'];
+        $redirectCode = (isset($options['default_redirect']) && is_scalar($options['default_redirect'])) ? (string)$options['default_redirect'] : '301';
+
+        self::$processedPosts[$post_id] = true;
+
+        $abj404dao->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_HOME,
+            '0', $redirectCode, 0, 'post trashed');
+
+        ABJ_404_Solution_Logging::getInstance()->infoMessage(
+            "Added automatic redirect to homepage after post trashed. ID: " . $post_id . ", old URL: " . $oldURL);
+    }
+
+    /**
+     * Fires just before a published post is permanently deleted.
+     * Creates a redirect from the old permalink to the homepage.
+     *
+     * @param int $post_id Post ID.
+     * @param \WP_Post $post Post object.
+     * @return void
+     */
+    function beforeDeletePostHandler($post_id, $post) {
+        if (!is_object($post) || !property_exists($post, 'post_status')) {
+            return;
+        }
+
+        // Only published posts (not already-trashed posts being force-deleted).
+        $postStatus = is_string($post->post_status) ? $post->post_status : '';
+        if (!in_array($postStatus, array('publish', 'published'), true)) {
+            return;
+        }
+
+        // Check option
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $options = $abj404logic->getOptions();
+        if (!isset($options['auto_trash_redirect']) || $options['auto_trash_redirect'] != '1') {
+            return;
+        }
+
+        $post_id = (int)$post_id;
+
+        // Prevent duplicate processing within same request
+        if (isset(self::$processedPosts[$post_id])) {
+            return;
+        }
+
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $oldURL = $abj404dao->getPermalinkFromCache($post_id);
+
+        if ($oldURL == null || $oldURL == '') {
+            return;
+        }
+
+        $oldURLParsed = parse_url($oldURL);
+        if ($oldURLParsed === false || !isset($oldURLParsed['path']) || $oldURLParsed['path'] === '') {
+            return;
+        }
+
+        $oldSlug = $oldURLParsed['path'];
+        $redirectCode = (isset($options['default_redirect']) && is_scalar($options['default_redirect'])) ? (string)$options['default_redirect'] : '301';
+
+        self::$processedPosts[$post_id] = true;
+
+        $abj404dao->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_HOME,
+            '0', $redirectCode, 0, 'post deleted');
+
+        ABJ_404_Solution_Logging::getInstance()->infoMessage(
+            "Added automatic redirect to homepage after post deleted. ID: " . $post_id . ", old URL: " . $oldURL);
     }
 }

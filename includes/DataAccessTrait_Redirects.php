@@ -499,6 +499,11 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             return is_object($term);
         }
 
+        // Homepage is always a valid auto redirect destination.
+        if ($type === ABJ404_TYPE_HOME) {
+            return true;
+        }
+
         // Auto redirects should not target other types.
         return false;
     }

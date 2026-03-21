@@ -3066,3 +3066,10 @@ msgstr "Этот контент недоступен в связи с юриди
 
 msgid "Unavailable For Legal Reasons"
 msgstr "Недоступно по юридическим причинам"
+
+# Trash/deletion redirect strings
+msgid "Create redirect when a page is trashed or deleted"
+msgstr "Создавать перенаправление при удалении страницы в корзину или постоянном удалении"
+
+msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
+msgstr "Когда опубликованная страница перемещается в корзину или удаляется навсегда, создаётся перенаправление со старого URL на главную страницу."

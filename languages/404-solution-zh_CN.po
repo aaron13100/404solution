@@ -3069,3 +3069,10 @@ msgstr "由于法律要求，此内容不可用。"
 
 msgid "Unavailable For Legal Reasons"
 msgstr "因法律原因不可用"
+
+# Trash/deletion redirect strings
+msgid "Create redirect when a page is trashed or deleted"
+msgstr "当页面移至回收站或删除时创建重定向"
+
+msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
+msgstr "当已发布的页面被移至回收站或永久删除时，从其旧URL创建到首页的重定向。"

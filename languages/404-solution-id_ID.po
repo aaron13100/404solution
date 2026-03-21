@@ -3056,3 +3056,10 @@ msgstr "Konten ini tidak tersedia karena tuntutan hukum."
 
 msgid "Unavailable For Legal Reasons"
 msgstr "Tidak Tersedia karena Alasan Hukum"
+
+# Trash/deletion redirect strings
+msgid "Create redirect when a page is trashed or deleted"
+msgstr "Buat redirect saat halaman dihapus ke sampah atau dihapus permanen"
+
+msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
+msgstr "Ketika halaman yang diterbitkan dipindahkan ke sampah atau dihapus secara permanen, buat redirect dari URL lamanya ke halaman utama."

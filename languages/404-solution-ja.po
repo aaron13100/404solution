@@ -3065,3 +3065,10 @@ msgstr "このコンテンツは法的要求により利用できません。"
 
 msgid "Unavailable For Legal Reasons"
 msgstr "法的理由により利用不可"
+
+# Trash/deletion redirect strings
+msgid "Create redirect when a page is trashed or deleted"
+msgstr "ページをゴミ箱に移動または削除したときにリダイレクトを作成"
+
+msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
+msgstr "公開されたページがゴミ箱に移動または完全に削除された場合、古いURLからホームページへのリダイレクトを作成します。"

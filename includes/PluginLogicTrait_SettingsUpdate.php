@@ -539,7 +539,8 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
 
         // All boolean options that could be in forms
         $allBooleanOptions = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags',
-            'auto_redirects', 'auto_slugs', 'auto_cats', 'auto_tags', 'capture_404', 'send_error_logs', 'log_raw_ips',
+            'auto_redirects', 'auto_slugs', 'auto_cats', 'auto_tags', 'auto_trash_redirect',
+            'capture_404', 'send_error_logs', 'log_raw_ips',
         	'redirect_all_requests', 'update_suggest_url', 'suggest_minscore_enabled'
         );
 

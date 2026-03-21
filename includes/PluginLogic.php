@@ -872,6 +872,7 @@ class ABJ_404_Solution_PluginLogic {
             'update_suggest_url' => '0',
             'auto_redirects' => '1',
             'auto_slugs' => '1',
+            'auto_trash_redirect' => '0',
             'auto_score' => '90',
             'auto_score_title' => '',
             'auto_score_category_tag' => '',

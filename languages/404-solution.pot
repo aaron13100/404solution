@@ -2076,3 +2076,10 @@ msgstr ""
 
 msgid "Unavailable For Legal Reasons"
 msgstr ""
+
+# Trash/deletion redirect strings
+msgid "Create redirect when a page is trashed or deleted"
+msgstr ""
+
+msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
+msgstr ""

@@ -3077,3 +3077,10 @@ msgstr "هذا المحتوى غير متاح بسبب طلب قانوني."
 
 msgid "Unavailable For Legal Reasons"
 msgstr "غير متاح لأسباب قانونية"
+
+# Trash/deletion redirect strings
+msgid "Create redirect when a page is trashed or deleted"
+msgstr "إنشاء إعادة توجيه عند نقل صفحة إلى المهملات أو حذفها"
+
+msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
+msgstr "عند نقل صفحة منشورة إلى المهملات أو حذفها نهائياً، أنشئ إعادة توجيه من عنوانها القديم إلى الصفحة الرئيسية."
