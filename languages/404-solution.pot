@@ -1610,3 +1610,449 @@ msgstr ""
 #: includes/ViewTrait_RedirectsTable.php
 msgid "Destination returned 404 recently — redirect suspended until destination is restored."
 msgstr ""
+
+#: includes/html/adminOptionsAutoRedirects.html
+msgid "Expire auto-redirects after"
+msgstr ""
+
+#: includes/html/adminOptionsAutoRedirects.html
+msgid "days (0 to disable)"
+msgstr ""
+
+#: includes/html/adminOptionsAutoRedirects.html
+msgid "Auto-created redirects older than this many days will be automatically moved to trash."
+msgstr ""
+
+#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
+msgid "Temporary 307 (preserve method)"
+msgstr ""
+
+#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
+msgid "Permanent 308 (preserve method)"
+msgstr ""
+
+#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
+msgid "Email notification frequency"
+msgstr ""
+
+#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
+msgid "Instant (when threshold exceeded)"
+msgstr ""
+
+#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
+msgid "Daily digest"
+msgstr ""
+
+#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
+msgid "Weekly digest"
+msgstr ""
+
+#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
+msgid "Choose how often to receive email notifications about captured 404s."
+msgstr ""
+
+#: includes/html/toolsExportForm.html
+msgid "Export format:"
+msgstr ""
+
+#: includes/html/toolsExportForm.html
+msgid "Native CSV (404 Solution)"
+msgstr ""
+
+#: includes/html/toolsExportForm.html
+msgid "Redirection Plugin CSV"
+msgstr ""
+
+#: includes/DataAccess.php
+msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
+msgstr ""
+
+#: includes/DataAccess.php
+msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
+msgstr ""
+
+#: includes/SecurityMonitor.php
+msgid "%1$d distinct 404 URLs under \"%2$s\" detected — possible path enumeration."
+msgstr ""
+
+# Strings added for new features (3.3.8)
+
+msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
+msgstr ""
+
+msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
+msgstr ""
+
+msgid "Email notification frequency"
+msgstr ""
+
+msgid "Instant (when threshold exceeded)"
+msgstr ""
+
+msgid "Daily digest"
+msgstr ""
+
+msgid "Weekly digest"
+msgstr ""
+
+msgid "Choose how often to receive email notifications about captured 404s."
+msgstr ""
+
+msgid "Temporary 307 (preserve method)"
+msgstr ""
+
+msgid "Permanent 308 (preserve method)"
+msgstr ""
+
+msgid "%1$d distinct 404 URLs under \"%2$s\" detected — possible path enumeration."
+msgstr ""
+
+msgid "404"
+msgstr ""
+
+msgid "Loading chart data\u2026"
+msgstr ""
+
+msgid "Could not load chart data."
+msgstr ""
+
+msgid "404 Hits per Day"
+msgstr ""
+
+msgid "Redirects per Day"
+msgstr ""
+
+msgid "New Captures per Day"
+msgstr ""
+
+msgid "Trends (Last 30 Days)"
+msgstr ""
+
+msgid "No broken internal links found."
+msgstr ""
+
+msgid "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
+msgstr ""
+
+msgid "Post/Page"
+msgstr ""
+
+msgid "Broken URL"
+msgstr ""
+
+msgid "404 Hits"
+msgstr ""
+
+msgid "Broken Internal Links"
+msgstr ""
+
+msgid "Security Scan"
+msgstr ""
+
+msgid "Migrate from Another Plugin"
+msgstr ""
+
+msgid "Rank Math"
+msgstr ""
+
+msgid "Yoast SEO Premium"
+msgstr ""
+
+msgid "AIOSEO"
+msgstr ""
+
+msgid "Safe Redirect Manager"
+msgstr ""
+
+msgid "Redirection Plugin"
+msgstr ""
+
+msgid "No supported redirect plugins detected on this site."
+msgstr ""
+
+msgid "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
+msgstr ""
+
+msgid "Detected redirect plugins:"
+msgstr ""
+
+msgid "Source plugin:"
+msgstr ""
+
+msgid "Import Redirects"
+msgstr ""
+
+msgid "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
+msgstr ""
+
+msgid "Temporary Redirect (preserve method)"
+msgstr ""
+
+msgid "Permanent Redirect (preserve method)"
+msgstr ""
+
+msgid "Gone (resource permanently removed)"
+msgstr ""
+
+msgid "Conditions (optional)"
+msgstr ""
+
+msgid "This redirect only fires when all conditions are met. Leave empty to always redirect."
+msgstr ""
+
+msgid "+ Add Condition"
+msgstr ""
+
+msgid "Logic"
+msgstr ""
+
+msgid "AND"
+msgstr ""
+
+msgid "OR"
+msgstr ""
+
+msgid "Login Status"
+msgstr ""
+
+msgid "User Role"
+msgstr ""
+
+msgid "Referrer URL"
+msgstr ""
+
+msgid "User Agent"
+msgstr ""
+
+msgid "IP Range (CIDR)"
+msgstr ""
+
+msgid "HTTP Header"
+msgstr ""
+
+msgid "Condition type"
+msgstr ""
+
+msgid "— Select type —"
+msgstr ""
+
+msgid "equals"
+msgstr ""
+
+msgid "not equals"
+msgstr ""
+
+msgid "contains"
+msgstr ""
+
+msgid "does not contain"
+msgstr ""
+
+msgid "matches regex"
+msgstr ""
+
+msgid "Operator"
+msgstr ""
+
+msgid "Value"
+msgstr ""
+
+msgid "Condition value"
+msgstr ""
+
+msgid "Remove condition"
+msgstr ""
+
+msgid "Remove"
+msgstr ""
+
+msgid "Error: Invalid email notification frequency selected"
+msgstr ""
+
+msgid "Error: Digest limit must be a number greater than or equal to 1"
+msgstr ""
+
+msgid "Google Search Console credentials saved."
+msgstr ""
+
+msgid "Error: No source plugin specified."
+msgstr ""
+
+msgid "Error: Unknown source plugin \"%s\"."
+msgstr ""
+
+msgid "Insufficient permissions."
+msgstr ""
+
+msgid "Security check failed."
+msgstr ""
+
+msgid "OAuth token exchange failed."
+msgstr ""
+
+msgid "Google Search Console Integration"
+msgstr ""
+
+msgid "Connect to Google Search Console to see which broken URLs were getting real search traffic."
+msgstr ""
+
+msgid "Setup steps:"
+msgstr ""
+
+msgid "Create a project in %s."
+msgstr ""
+
+msgid "Enable the \"Google Search Console API\"."
+msgstr ""
+
+msgid "Create OAuth 2.0 credentials (Web application type)."
+msgstr ""
+
+msgid "Add this Authorized Redirect URI: %s"
+msgstr ""
+
+msgid "Enter your Client ID and Client Secret below."
+msgstr ""
+
+msgid "Client ID"
+msgstr ""
+
+msgid "Client Secret"
+msgstr ""
+
+msgid "Search Console Site URL"
+msgstr ""
+
+msgid "The site URL as registered in Search Console (e.g. https://example.com/)."
+msgstr ""
+
+msgid "Save Credentials"
+msgstr ""
+
+msgid "Credentials saved."
+msgstr ""
+
+msgid "Click the button below to authorize access to your Search Console data."
+msgstr ""
+
+msgid "Authorize with Google"
+msgstr ""
+
+msgid "Remove Credentials"
+msgstr ""
+
+msgid "Connected to Google Search Console."
+msgstr ""
+
+msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
+msgstr ""
+
+msgid "Disconnect"
+msgstr ""
+
+msgid "404 URLs with Search Traffic (last 90 days)"
+msgstr ""
+
+msgid "Clicks"
+msgstr ""
+
+msgid "Impressions"
+msgstr ""
+
+msgid "Avg. Position"
+msgstr ""
+
+msgid "The \"from\" URL is required."
+msgstr ""
+
+msgid "The \"to\" URL is required."
+msgstr ""
+
+msgid "Failed to create redirect."
+msgstr ""
+
+msgid "Invalid redirect ID."
+msgstr ""
+
+msgid "Both \"from\" and \"to\" parameters are required."
+msgstr ""
+
+msgid "Invalid captured 404 ID."
+msgstr ""
+
+msgid "Captured 404 not found."
+msgstr ""
+
+msgid "The captured 404 record has no URL."
+msgstr ""
+
+msgid "The \"url\" parameter is required."
+msgstr ""
+
+msgid "No captured 404s in this period."
+msgstr ""
+
+msgid "404 Solution Digest"
+msgstr ""
+
+msgid "Summary"
+msgstr ""
+
+msgid "Top Captured 404 URLs"
+msgstr ""
+
+msgid "First Seen"
+msgstr ""
+
+msgid "View Captured 404s"
+msgstr ""
+
+msgid "To stop receiving these emails, update your notification settings."
+msgstr ""
+
+msgid "Manage settings"
+msgstr ""
+
+msgid "Sent"
+msgstr ""
+
+msgid "Plugin"
+msgstr ""
+
+msgid "404 Solution Digest — %s"
+msgstr ""
+
+msgid "Active From (optional)"
+msgstr ""
+
+msgid "Leave blank to activate immediately"
+msgstr ""
+
+msgid "Active Until (optional)"
+msgstr ""
+
+msgid "Leave blank to never expire"
+msgstr ""
+
+msgid "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
+msgstr ""
+
+# HTML template strings added for new features (3.3.8)
+
+msgid "Export format:"
+msgstr ""
+
+msgid "Apache .htaccess"
+msgstr ""
+
+msgid "Nginx config"
+msgstr ""
+
+msgid "Cloudflare Workers script"
+msgstr ""
+
+msgid "Netlify _redirects"
+msgstr ""
+
+msgid "Vercel vercel.json"
+msgstr ""
