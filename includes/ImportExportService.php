@@ -761,7 +761,7 @@ class ABJ_404_Solution_ImportExportService {
      * @param array<int, string> $columns Already parsed CSV columns for one row.
      * @return array<string, string>
      */
-    private function mapImportRowWithoutHeaders($columns) {
+    function mapImportRowWithoutHeaders($columns) {
         $columns = array_values($columns);
         if (count($columns) === 6) {
             return array(
@@ -797,7 +797,7 @@ class ABJ_404_Solution_ImportExportService {
      * @param resource $fileHandle
      * @return string
      */
-    private function detectCsvDelimiterFromFile($fileHandle) {
+    function detectCsvDelimiterFromFile($fileHandle) {
         while (($line = fgets($fileHandle)) !== false) {
             if (trim($line) === '') {
                 continue;

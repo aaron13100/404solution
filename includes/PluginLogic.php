@@ -1262,10 +1262,30 @@ class ABJ_404_Solution_PluginLogic {
      * @return bool true if the user is sent to the default 404 page.
      */
     function forceRedirect(string $location, int $status = 302, $type = -1, string $requestedURL = '', bool $isCustom404 = false): bool {
-        // 410 Gone: send the status header but let WordPress render suggestions content.
+        // 410 Gone: send status header then render the gone410.html template and exit.
         if ($status === 410) {
             status_header(410);
-            return false;
+            $templatePath = __DIR__ . '/html/gone410.html';
+            if (file_exists($templatePath)) {
+                $siteName = function_exists('get_bloginfo') ? get_bloginfo('name') : '';
+                $siteUrl  = function_exists('home_url') ? home_url('/') : '/';
+                $templateContent = file_get_contents($templatePath);
+                if (is_string($templateContent)) {
+                    $templateContent = str_replace(
+                        array('{site_name}', '{site_url}', '{heading}', '{message}', '{back_home}'),
+                        array(
+                            esc_html($siteName),
+                            esc_url($siteUrl),
+                            esc_html__('This content has been permanently removed.', '404-solution'),
+                            esc_html__('The page you requested no longer exists and has not been moved to a new location.', '404-solution'),
+                            esc_html__('Back to home page', '404-solution'),
+                        ),
+                        $templateContent
+                    );
+                    echo $templateContent;
+                }
+            }
+            exit;
         }
 
         $finalDestination = $this->buildFinalRedirectDestination($location, $requestedURL, $isCustom404);

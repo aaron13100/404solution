@@ -3041,3 +3041,13 @@ msgstr "Netlify _redirects"
 
 msgid "Vercel vercel.json"
 msgstr "Vercel vercel.json"
+
+# 410 Gone page strings
+msgid "This content has been permanently removed."
+msgstr "Este conteúdo foi removido permanentemente."
+
+msgid "The page you requested no longer exists and has not been moved to a new location."
+msgstr "A página solicitada não existe mais e não foi movida para um novo local."
+
+msgid "Back to home page"
+msgstr "Voltar para a página inicial"

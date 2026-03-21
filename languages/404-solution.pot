@@ -2056,3 +2056,13 @@ msgstr ""
 
 msgid "Vercel vercel.json"
 msgstr ""
+
+# 410 Gone page strings
+msgid "This content has been permanently removed."
+msgstr ""
+
+msgid "The page you requested no longer exists and has not been moved to a new location."
+msgstr ""
+
+msgid "Back to home page"
+msgstr ""

@@ -10,11 +10,15 @@ if (!defined('ABSPATH')) {
  * Registered as: wp abj404 <subcommand>
  *
  * Subcommands:
- *   list     — list redirects
- *   create   — create a manual redirect
- *   delete   — move a redirect to trash
- *   stats    — show summary statistics
- *   purge    — purge captured 404s
+ *   list        — list redirects
+ *   create      — create a manual redirect
+ *   delete      — move a redirect to trash
+ *   stats       — show summary statistics
+ *   purge       — purge captured 404s
+ *   import      — import redirects from a CSV file
+ *   export      — export redirects to stdout or a file
+ *   flush-cache — clear one or more caches
+ *   test        — test which redirect would fire for a URL
  */
 class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
@@ -241,6 +245,353 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         }
 
         \WP_CLI::success("Purged {$deleted} captured 404 entries.");
+    }
+
+    /**
+     * Import redirects from a CSV file.
+     *
+     * ## OPTIONS
+     *
+     * <file>
+     * : Path to the CSV file to import.
+     *
+     * [--dry-run]
+     * : Preview the import without writing to the database.
+     *
+     * ## EXAMPLES
+     *
+     *     wp abj404 import redirects.csv
+     *     wp abj404 import redirects.csv --dry-run
+     *
+     * @subcommand import
+     *
+     * @param array<int, string>    $args
+     * @param array<string, string> $assocArgs
+     * @return void
+     */
+    public function import_redirects($args, $assocArgs) {
+        if (empty($args[0])) {
+            \WP_CLI::error('Please provide a path to the CSV file. Usage: wp abj404 import <file>');
+            return;
+        }
+
+        $filePath = $args[0];
+        if (!file_exists($filePath)) {
+            \WP_CLI::error("File not found: {$filePath}");
+            return;
+        }
+
+        $dryRun = isset($assocArgs['dry-run']);
+
+        require_once __DIR__ . '/DataAccess.php';
+        require_once __DIR__ . '/ImportExportService.php';
+
+        $dao     = ABJ_404_Solution_DataAccess::getInstance();
+        $logging = ABJ_404_Solution_Logging::getInstance();
+        $svc     = new ABJ_404_Solution_ImportExportService($dao, $logging);
+
+        $fileHandle = fopen($filePath, 'r');
+        if ($fileHandle === false) {
+            \WP_CLI::error("Could not open file: {$filePath}");
+            return;
+        }
+
+        // Detect delimiter by reading a sample then rewinding.
+        $delimiter = $svc->detectCsvDelimiterFromFile($fileHandle);
+        rewind($fileHandle);
+
+        $headerColumns  = null;
+        $processedRows  = 0;
+        $validRows      = 0;
+        $invalidRows    = 0;
+        $anyIssuesToNote = array();
+
+        while (($row = fgetcsv($fileHandle, 0, $delimiter, '"', '\\')) !== false) {
+            $data = array_map(function($v) {
+                return trim((string)$v);
+            }, $row);
+
+            // Skip blank lines.
+            if (count($data) === 1 && $data[0] === '') {
+                continue;
+            }
+
+            // Detect and consume the header row.
+            if ($headerColumns === null && $svc->isCompatibleImportHeaderRow($data)) {
+                $headerColumns = $svc->normalizeImportHeaders($data);
+                continue;
+            }
+
+            $dataArray = ($headerColumns !== null)
+                ? $svc->mapImportRowByHeaders($data, $headerColumns)
+                : $svc->mapImportRowWithoutHeaders($data);
+
+            if (isset($dataArray['error'])) {
+                fclose($fileHandle);
+                \WP_CLI::error($dataArray['error']);
+                return;
+            }
+
+            // Skip header-literal rows that slipped through.
+            if (isset($dataArray['from_url']) &&
+                    ($dataArray['from_url'] === 'from_url' || $dataArray['from_url'] === 'request')) {
+                continue;
+            }
+
+            $processedRows++;
+            $issues = $svc->loadDataArrayFromFile($dataArray, $dryRun);
+            if (count($issues) > 0) {
+                $invalidRows++;
+            } else {
+                $validRows++;
+            }
+            $anyIssuesToNote = array_merge($anyIssuesToNote, $issues);
+        }
+        fclose($fileHandle);
+
+        if ($dryRun) {
+            \WP_CLI::line("Dry run: valid={$validRows}, invalid={$invalidRows}, total={$processedRows}");
+            foreach (array_slice($anyIssuesToNote, 0, 20) as $issue) {
+                \WP_CLI::warning($issue);
+            }
+            return;
+        }
+
+        if (count($anyIssuesToNote) > 0) {
+            foreach (array_slice($anyIssuesToNote, 0, 20) as $issue) {
+                \WP_CLI::warning($issue);
+            }
+        }
+        \WP_CLI::success("Import complete. Valid={$validRows}, invalid={$invalidRows}, total={$processedRows}");
+    }
+
+    /**
+     * Export redirects to stdout or a file.
+     *
+     * ## OPTIONS
+     *
+     * [--format=<format>]
+     * : Output format. One of: native, redirection, htaccess, nginx, cloudflare, netlify, vercel.
+     *   Default: native.
+     *
+     * [--output=<file>]
+     * : Write output to this file path instead of stdout.
+     *
+     * ## EXAMPLES
+     *
+     *     wp abj404 export
+     *     wp abj404 export --format=htaccess
+     *     wp abj404 export --format=native --output=redirects.csv
+     *
+     * @subcommand export
+     *
+     * @param array<int, string>    $args
+     * @param array<string, string> $assocArgs
+     * @return void
+     */
+    public function export_redirects($args, $assocArgs) {
+        require_once __DIR__ . '/DataAccess.php';
+        require_once __DIR__ . '/ImportExportService.php';
+
+        $format = isset($assocArgs['format']) ? strtolower(trim($assocArgs['format'])) : 'native';
+        $output = isset($assocArgs['output']) ? trim($assocArgs['output']) : '';
+
+        $dao     = ABJ_404_Solution_DataAccess::getInstance();
+        $logging = ABJ_404_Solution_Logging::getInstance();
+        $svc     = new ABJ_404_Solution_ImportExportService($dao, $logging);
+
+        $serverFormats = array('htaccess', 'nginx', 'cloudflare', 'netlify', 'vercel');
+        if (in_array($format, $serverFormats, true)) {
+            switch ($format) {
+                case 'htaccess':
+                    $content = $svc->generateHtaccessRules();
+                    break;
+                case 'nginx':
+                    $content = $svc->generateNginxRules();
+                    break;
+                case 'cloudflare':
+                    $content = $svc->generateCloudflareWorkerScript();
+                    break;
+                case 'netlify':
+                    $content = $svc->generateNetlifyRedirects();
+                    break;
+                default: // vercel
+                    $content = $svc->generateVercelRedirects();
+                    break;
+            }
+
+            if ($output !== '') {
+                if (file_put_contents($output, $content) === false) {
+                    \WP_CLI::error("Could not write to file: {$output}");
+                    return;
+                }
+                \WP_CLI::success("Exported {$format} rules to: {$output}");
+            } else {
+                echo $content;
+            }
+            return;
+        }
+
+        // CSV-based formats (native, redirection).
+        $tempFile = sys_get_temp_dir() . '/abj404_export_' . time() . '.csv';
+
+        if ($format === 'redirection') {
+            $nativeTemp = sys_get_temp_dir() . '/abj404_export_native_' . time() . '.csv';
+            $dao->doRedirectsExport($nativeTemp);
+            $error = $svc->convertExportCsvToRedirectionFormat($nativeTemp, $tempFile);
+            @unlink($nativeTemp);
+            if ($error !== '') {
+                \WP_CLI::error("Export conversion failed: {$error}");
+                return;
+            }
+        } else {
+            $dao->doRedirectsExport($tempFile);
+        }
+
+        if (!file_exists($tempFile)) {
+            \WP_CLI::line('No redirects to export.');
+            @unlink($tempFile);
+            return;
+        }
+
+        if ($output !== '') {
+            if (!rename($tempFile, $output)) {
+                // rename may fail across filesystems; fall back to copy+delete.
+                if (!copy($tempFile, $output)) {
+                    @unlink($tempFile);
+                    \WP_CLI::error("Could not write to file: {$output}");
+                    return;
+                }
+                @unlink($tempFile);
+            }
+            \WP_CLI::success("Exported {$format} redirects to: {$output}");
+        } else {
+            $csv = file_get_contents($tempFile);
+            @unlink($tempFile);
+            if ($csv === false) {
+                \WP_CLI::error('Could not read export temp file.');
+                return;
+            }
+            echo $csv;
+        }
+    }
+
+    /**
+     * Flush one or more internal caches.
+     *
+     * ## OPTIONS
+     *
+     * [--type=<type>]
+     * : Which cache to flush. One of: spelling, ngram, permalink, all. Default: all.
+     *
+     * ## EXAMPLES
+     *
+     *     wp abj404 flush-cache
+     *     wp abj404 flush-cache --type=spelling
+     *     wp abj404 flush-cache --type=permalink
+     *
+     * @subcommand flush-cache
+     *
+     * @param array<int, string>    $args
+     * @param array<string, string> $assocArgs
+     * @return void
+     */
+    public function flush_cache($args, $assocArgs) {
+        require_once __DIR__ . '/DataAccess.php';
+
+        $type = isset($assocArgs['type']) ? strtolower(trim($assocArgs['type'])) : 'all';
+
+        $validTypes = array('spelling', 'ngram', 'permalink', 'all');
+        if (!in_array($type, $validTypes, true)) {
+            \WP_CLI::error("Invalid type. Choose one of: " . implode(', ', $validTypes));
+            return;
+        }
+
+        global $wpdb;
+        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $flushed = array();
+
+        if ($type === 'spelling' || $type === 'all') {
+            $dao->deleteSpellingCache();
+            $flushed[] = 'spelling';
+        }
+
+        if ($type === 'permalink' || $type === 'all') {
+            $dao->truncatePermalinkCacheTable();
+            $flushed[] = 'permalink';
+        }
+
+        if ($type === 'ngram' || $type === 'all') {
+            $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
+            $wpdb->query("TRUNCATE TABLE `{$ngramTable}`");
+            // Reset the initialized flag so the cache is rebuilt on the next request.
+            delete_option('abj404_ngram_cache_initialized');
+            delete_option('abj404_ngram_rebuild_offset');
+            $flushed[] = 'ngram';
+        }
+
+        \WP_CLI::success('Flushed caches: ' . implode(', ', $flushed));
+    }
+
+    /**
+     * Test which redirect would fire for a given URL.
+     *
+     * ## OPTIONS
+     *
+     * <url>
+     * : The URL to test (relative path, e.g. /old-page, or absolute URL).
+     *
+     * ## EXAMPLES
+     *
+     *     wp abj404 test /old-page
+     *     wp abj404 test https://example.com/old-page
+     *
+     * @subcommand test
+     *
+     * @param array<int, string>    $args
+     * @param array<string, string> $assocArgs
+     * @return void
+     */
+    public function test_redirect($args, $assocArgs) {
+        if (empty($args[0])) {
+            \WP_CLI::error('Please provide a URL to test. Usage: wp abj404 test <url>');
+            return;
+        }
+
+        require_once __DIR__ . '/DataAccess.php';
+        require_once __DIR__ . '/Functions.php';
+
+        $url = trim($args[0]);
+        $dao = ABJ_404_Solution_DataAccess::getInstance();
+
+        // Check for an exact match (manual or auto redirect).
+        $exact = $dao->getExistingRedirectForURL($url);
+        if (isset($exact['id']) && (int)$exact['id'] !== 0) {
+            $dest = isset($exact['final_dest']) ? (string)$exact['final_dest'] : '';
+            $code = isset($exact['code']) ? (string)$exact['code'] : '301';
+            \WP_CLI::success("Exact match found (ID: {$exact['id']}): {$url} → {$dest} [{$code}]");
+            return;
+        }
+
+        // Check for a regex match.
+        $regexRedirects = $dao->getRedirectsWithRegEx();
+        $f = ABJ_404_Solution_Functions::getInstance();
+        foreach ($regexRedirects as $row) {
+            $pattern = isset($row['url']) ? (string)$row['url'] : '';
+            if ($pattern === '') {
+                continue;
+            }
+            $matches = array();
+            if ($f->regexMatch($pattern, $url, $matches)) {
+                $dest = isset($row['final_dest']) ? (string)$row['final_dest'] : '';
+                $code = isset($row['code']) ? (string)$row['code'] : '301';
+                $id   = isset($row['id']) ? (string)$row['id'] : '?';
+                \WP_CLI::success("Regex match found (ID: {$id}, pattern: {$pattern}): {$url} → {$dest} [{$code}]");
+                return;
+            }
+        }
+
+        \WP_CLI::line("No redirect found for: {$url}");
     }
 
     // -----------------------------------------------------------------------

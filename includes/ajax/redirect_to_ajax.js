@@ -1,5 +1,11 @@
 
 function validateAddManualRedirectForm(event) {
+    // 410 Gone redirects have no destination — skip destination validation.
+    var codeSelect = jQuery('#code');
+    if (codeSelect.length && codeSelect.val() === '410') {
+        return true;
+    }
+
     abj404_validateAndUpdateFeedback();
 
     var field = jQuery('#redirect_to_user_field');
@@ -121,6 +127,38 @@ jQuery(document).ready(function($) {
     jQuery('#redirect_to_user_field').focusout(function(event) {
         abj404_validateAndUpdateFeedback();
     });
+
+    // Toggle destination field visibility when the redirect code changes.
+    // 410 Gone has no destination URL — hide the field and clear its values.
+    function abj404_toggle410DestinationField() {
+        var codeSelect = jQuery('#code');
+        if (!codeSelect.length) { return; }
+
+        var is410 = codeSelect.val() === '410';
+        var destArea = jQuery('.abj404-redirect-to-field').closest('div').addBack();
+        // Find the destination label + field container (the .abj404-redirect-to-field div
+        // and its preceding label, which together are wrapped by the form).
+        var destWrapper = jQuery('#redirect_to_user_field').closest('.abj404-redirect-to-field');
+        var destLabel = destWrapper.prev('label');
+
+        if (is410) {
+            destWrapper.hide();
+            destLabel.hide();
+            // Clear values so the hidden field doesn't fail server-side validation.
+            jQuery('#redirect_to_user_field').val('').removeAttr('required');
+            jQuery('#redirect_to_data_field_id').val('');
+            jQuery('#redirect_to_data_field_title').val('');
+        } else {
+            destWrapper.show();
+            destLabel.show();
+            jQuery('#redirect_to_user_field').attr('required', 'required');
+        }
+    }
+
+    jQuery('#code').on('change', abj404_toggle410DestinationField);
+
+    // Run once on page load in case 410 is already selected (e.g. editing an existing 410 redirect).
+    abj404_toggle410DestinationField();
 
     // we run this here for when the user edits an existing redirect.
     abj404_validateAndUpdateFeedback();
