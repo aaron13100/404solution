@@ -1281,7 +1281,13 @@ class ABJ_404_Solution_DataAccess {
 
             global $wpdb;
             $wpdb->flush();
+            // Suppress WP's own error output for the retry — if it also fails, we
+            // report it ourselves below.  Without this, WP logs a second
+            // "WordPress database error" entry on top of the first, producing
+            // duplicate noise in debug.log for every failed cron run.
+            $prevSuppressState = $wpdb->suppress_errors(true);
             $result['rows'] = $wpdb->get_results($query, ARRAY_A);
+            $wpdb->suppress_errors($prevSuppressState);
             $result['last_error'] = (string)($wpdb->last_error ?? '');
             $result['last_result'] = $wpdb->last_result ?? array();
             $result['rows_affected'] = $wpdb->rows_affected ?? 0;
