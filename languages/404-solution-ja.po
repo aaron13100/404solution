@@ -3085,3 +3085,94 @@ msgstr ""
 
 msgid "You are being redirected. Click the link if not redirected automatically."
 msgstr ""
+
+# Engine Profile admin section strings
+msgid "Engine Profiles"
+msgstr "エンジンプロファイル"
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "エンジンプロファイルを使用すると、特定のURLパターンに対して実行するマッチングエンジンを制限できます。パターンが404 URLに一致した最初のプロファイルが優先されます。プロファイルが一致しない場合、すべてのエンジンが通常通り実行されます。"
+
+msgid "No engine profiles defined."
+msgstr "エンジンプロファイルが定義されていません。"
+
+msgid "Add Engine Profile"
+msgstr "エンジンプロファイルを追加"
+
+msgid "Edit Engine Profile"
+msgstr "エンジンプロファイルを編集"
+
+msgid "e.g. Products section"
+msgstr "例：製品セクション"
+
+msgid "e.g. /products/* or ^/products/"
+msgstr "例：/products/* または ^/products/"
+
+msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgstr "単純なパターンにはワイルドカードとして*を使用します。完全な正規表現パターンには「Regex」にチェックを入れてください。"
+
+msgid "Pattern is a regular expression"
+msgstr "パターンは正規表現です"
+
+msgid "Enabled Engines:"
+msgstr "有効なエンジン："
+
+msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
+msgstr "このプロファイルに一致するURLに対して実行するエンジンを選択します。すべてのエンジンを実行するには、すべてチェックを外したままにしてください。"
+
+msgid "Slug Matching"
+msgstr "スラッグマッチング"
+
+msgid "Spelling Matching"
+msgstr "スペリングマッチング"
+
+msgid "Title Matching"
+msgstr "タイトルマッチング"
+
+msgid "Content Matching"
+msgstr "コンテンツマッチング"
+
+msgid "Category/Tag Matching"
+msgstr "カテゴリ/タグマッチング"
+
+msgid "URL Fix"
+msgstr "URL修正"
+
+msgid "Archive Fallback"
+msgstr "アーカイブフォールバック"
+
+msgid "Lower number = higher priority. First matching profile wins."
+msgstr "数値が小さいほど優先順位が高くなります。最初に一致したプロファイルが優先されます。"
+
+msgid "Profile is active"
+msgstr "プロファイルは有効です"
+
+msgid "Save Profile"
+msgstr "プロファイルを保存"
+
+msgid "Profile name is required."
+msgstr "プロファイル名は必須です。"
+
+msgid "URL pattern is required."
+msgstr "URLパターンは必須です。"
+
+msgid "Profile saved."
+msgstr "プロファイルが保存されました。"
+
+msgid "Failed to save profile."
+msgstr "プロファイルの保存に失敗しました。"
+
+msgid "Delete this engine profile?"
+msgstr "このエンジンプロファイルを削除しますか？"
+
+msgid "Invalid regular expression pattern."
+msgstr "正規表現パターンが無効です。"
+
+msgid "Failed to save engine profile."
+msgstr "エンジンプロファイルの保存に失敗しました。"
+
+msgid "Invalid profile ID."
+msgstr "プロファイルIDが無効です。"
+
+msgid "Failed to delete engine profile."
+msgstr "エンジンプロファイルの削除に失敗しました。"

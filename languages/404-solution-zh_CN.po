@@ -3089,3 +3089,94 @@ msgstr ""
 
 msgid "You are being redirected. Click the link if not redirected automatically."
 msgstr ""
+
+# Engine Profile admin section strings
+msgid "Engine Profiles"
+msgstr "引擎配置文件"
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "引擎配置文件允许您限制针对特定 URL 模式运行哪些匹配引擎。第一个模式与 404 URL 匹配的配置文件获胜。如果没有配置文件匹配，所有引擎将正常运行。"
+
+msgid "No engine profiles defined."
+msgstr "未定义引擎配置文件。"
+
+msgid "Add Engine Profile"
+msgstr "添加引擎配置文件"
+
+msgid "Edit Engine Profile"
+msgstr "编辑引擎配置文件"
+
+msgid "e.g. Products section"
+msgstr "例：产品区域"
+
+msgid "e.g. /products/* or ^/products/"
+msgstr "例：/products/* 或 ^/products/"
+
+msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgstr "对简单模式使用 * 作为通配符。勾选\"Regex\"以使用完整的正则表达式模式。"
+
+msgid "Pattern is a regular expression"
+msgstr "该模式是正则表达式"
+
+msgid "Enabled Engines:"
+msgstr "已启用的引擎："
+
+msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
+msgstr "选择应针对与此配置文件匹配的 URL 运行哪些引擎。取消勾选所有选项以运行所有引擎。"
+
+msgid "Slug Matching"
+msgstr "Slug 匹配"
+
+msgid "Spelling Matching"
+msgstr "拼写匹配"
+
+msgid "Title Matching"
+msgstr "标题匹配"
+
+msgid "Content Matching"
+msgstr "内容匹配"
+
+msgid "Category/Tag Matching"
+msgstr "分类/标签匹配"
+
+msgid "URL Fix"
+msgstr "URL 修复"
+
+msgid "Archive Fallback"
+msgstr "档案回退"
+
+msgid "Lower number = higher priority. First matching profile wins."
+msgstr "数字越小 = 优先级越高。第一个匹配的配置文件获胜。"
+
+msgid "Profile is active"
+msgstr "配置文件处于活动状态"
+
+msgid "Save Profile"
+msgstr "保存配置文件"
+
+msgid "Profile name is required."
+msgstr "需要配置文件名称。"
+
+msgid "URL pattern is required."
+msgstr "需要 URL 模式。"
+
+msgid "Profile saved."
+msgstr "配置文件已保存。"
+
+msgid "Failed to save profile."
+msgstr "保存配置文件失败。"
+
+msgid "Delete this engine profile?"
+msgstr "删除此引擎配置文件？"
+
+msgid "Invalid regular expression pattern."
+msgstr "正则表达式模式无效。"
+
+msgid "Failed to save engine profile."
+msgstr "保存引擎配置文件失败。"
+
+msgid "Invalid profile ID."
+msgstr "配置文件 ID 无效。"
+
+msgid "Failed to delete engine profile."
+msgstr "删除引擎配置文件失败。"

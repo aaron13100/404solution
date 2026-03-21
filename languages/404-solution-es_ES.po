@@ -3078,3 +3078,94 @@ msgstr "Redirigiendo…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
 msgstr "Está siendo redirigido. Haga clic en el enlace si no es redirigido automáticamente."
+
+# Engine Profile admin section strings
+msgid "Engine Profiles"
+msgstr "Perfiles de motor"
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "Los perfiles de motor le permiten restringir qué motores de coincidencia se ejecutan para patrones de URL específicos. Gana el primer perfil cuyo patrón coincide con una URL 404. Si ningún perfil coincide, todos los motores se ejecutan normalmente."
+
+msgid "No engine profiles defined."
+msgstr "No hay perfiles de motor definidos."
+
+msgid "Add Engine Profile"
+msgstr "Añadir perfil de motor"
+
+msgid "Edit Engine Profile"
+msgstr "Editar perfil de motor"
+
+msgid "e.g. Products section"
+msgstr "p. ej. Sección de productos"
+
+msgid "e.g. /products/* or ^/products/"
+msgstr "p. ej. /products/* o ^/products/"
+
+msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgstr "Use * como comodín para patrones simples. Marque \"Regex\" para patrones de expresión regular completos."
+
+msgid "Pattern is a regular expression"
+msgstr "El patrón es una expresión regular"
+
+msgid "Enabled Engines:"
+msgstr "Motores habilitados:"
+
+msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
+msgstr "Seleccione qué motores deben ejecutarse para las URL que coincidan con este perfil. Deje todos sin marcar para ejecutar todos los motores."
+
+msgid "Slug Matching"
+msgstr "Coincidencia de slug"
+
+msgid "Spelling Matching"
+msgstr "Coincidencia ortográfica"
+
+msgid "Title Matching"
+msgstr "Coincidencia de título"
+
+msgid "Content Matching"
+msgstr "Coincidencia de contenido"
+
+msgid "Category/Tag Matching"
+msgstr "Coincidencia de categoría/etiqueta"
+
+msgid "URL Fix"
+msgstr "Corrección de URL"
+
+msgid "Archive Fallback"
+msgstr "Reserva de archivo"
+
+msgid "Lower number = higher priority. First matching profile wins."
+msgstr "Número menor = mayor prioridad. Gana el primer perfil coincidente."
+
+msgid "Profile is active"
+msgstr "El perfil está activo"
+
+msgid "Save Profile"
+msgstr "Guardar perfil"
+
+msgid "Profile name is required."
+msgstr "El nombre del perfil es obligatorio."
+
+msgid "URL pattern is required."
+msgstr "El patrón de URL es obligatorio."
+
+msgid "Profile saved."
+msgstr "Perfil guardado."
+
+msgid "Failed to save profile."
+msgstr "Error al guardar el perfil."
+
+msgid "Delete this engine profile?"
+msgstr "¿Eliminar este perfil de motor?"
+
+msgid "Invalid regular expression pattern."
+msgstr "Patrón de expresión regular no válido."
+
+msgid "Failed to save engine profile."
+msgstr "Error al guardar el perfil de motor."
+
+msgid "Invalid profile ID."
+msgstr "ID de perfil no válido."
+
+msgid "Failed to delete engine profile."
+msgstr "Error al eliminar el perfil de motor."

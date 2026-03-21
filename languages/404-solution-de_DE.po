@@ -3079,3 +3079,94 @@ msgstr "Weiterleiten…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
 msgstr "Sie werden weitergeleitet. Klicken Sie auf den Link, falls Sie nicht automatisch weitergeleitet werden."
+
+# Engine Profile admin section strings
+msgid "Engine Profiles"
+msgstr "Engine-Profile"
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "Engine-Profile ermöglichen es Ihnen, einzuschränken, welche Matching-Engines für bestimmte URL-Muster ausgeführt werden. Das erste Profil, dessen Muster mit einer 404-URL übereinstimmt, gewinnt. Wenn kein Profil übereinstimmt, werden alle Engines normal ausgeführt."
+
+msgid "No engine profiles defined."
+msgstr "Keine Engine-Profile definiert."
+
+msgid "Add Engine Profile"
+msgstr "Engine-Profil hinzufügen"
+
+msgid "Edit Engine Profile"
+msgstr "Engine-Profil bearbeiten"
+
+msgid "e.g. Products section"
+msgstr "z. B. Produktbereich"
+
+msgid "e.g. /products/* or ^/products/"
+msgstr "z. B. /products/* oder ^/products/"
+
+msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgstr "Verwenden Sie * als Platzhalter für einfache Muster. Aktivieren Sie \"Regex\" für vollständige Regex-Muster."
+
+msgid "Pattern is a regular expression"
+msgstr "Muster ist ein regulärer Ausdruck"
+
+msgid "Enabled Engines:"
+msgstr "Aktivierte Engines:"
+
+msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
+msgstr "Wählen Sie aus, welche Engines für URLs ausgeführt werden sollen, die diesem Profil entsprechen. Lassen Sie alle deaktiviert, um alle Engines auszuführen."
+
+msgid "Slug Matching"
+msgstr "Slug-Abgleich"
+
+msgid "Spelling Matching"
+msgstr "Rechtschreibabgleich"
+
+msgid "Title Matching"
+msgstr "Titelabgleich"
+
+msgid "Content Matching"
+msgstr "Inhaltsabgleich"
+
+msgid "Category/Tag Matching"
+msgstr "Kategorie/Tag-Abgleich"
+
+msgid "URL Fix"
+msgstr "URL-Korrektur"
+
+msgid "Archive Fallback"
+msgstr "Archiv-Fallback"
+
+msgid "Lower number = higher priority. First matching profile wins."
+msgstr "Niedrigere Zahl = höhere Priorität. Das erste übereinstimmende Profil gewinnt."
+
+msgid "Profile is active"
+msgstr "Profil ist aktiv"
+
+msgid "Save Profile"
+msgstr "Profil speichern"
+
+msgid "Profile name is required."
+msgstr "Profilname ist erforderlich."
+
+msgid "URL pattern is required."
+msgstr "URL-Muster ist erforderlich."
+
+msgid "Profile saved."
+msgstr "Profil gespeichert."
+
+msgid "Failed to save profile."
+msgstr "Profil konnte nicht gespeichert werden."
+
+msgid "Delete this engine profile?"
+msgstr "Dieses Engine-Profil löschen?"
+
+msgid "Invalid regular expression pattern."
+msgstr "Ungültiges Muster für regulären Ausdruck."
+
+msgid "Failed to save engine profile."
+msgstr "Engine-Profil konnte nicht gespeichert werden."
+
+msgid "Invalid profile ID."
+msgstr "Ungültige Profil-ID."
+
+msgid "Failed to delete engine profile."
+msgstr "Engine-Profil konnte nicht gelöscht werden."

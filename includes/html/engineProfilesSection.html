@@ -1,0 +1,88 @@
+<div id="abj404-engine-profiles-section">
+
+<p>{Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally.}</p>
+
+<div id="abj404-engine-profiles-list-wrap">
+    <table id="abj404-engine-profiles-table" class="widefat striped" style="margin-bottom: 12px;">
+        <thead>
+            <tr>
+                <th>{Name}</th>
+                <th>{URL Pattern}</th>
+                <th>{Regex}</th>
+                <th>{Engines}</th>
+                <th>{Priority}</th>
+                <th>{Active}</th>
+                <th>{Actions}</th>
+            </tr>
+        </thead>
+        <tbody id="abj404-engine-profiles-tbody">
+            <tr id="abj404-engine-profiles-empty-row">
+                <td colspan="7">{No engine profiles defined.}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<button type="button" id="abj404-add-engine-profile-btn" class="button button-primary">
+    {Add Engine Profile}
+</button>
+
+<div id="abj404-engine-profile-form-wrap" style="display:none; margin-top: 12px; padding: 12px; border: 1px solid #c3c4c7; background: #f9f9f9;">
+    <h4 id="abj404-engine-profile-form-title">{Add Engine Profile}</h4>
+
+    <input type="hidden" id="abj404-profile-id" value="0">
+
+    <table class="form-table">
+        <tr>
+            <th scope="row"><label for="abj404-profile-name">{Name}:</label></th>
+            <td><input type="text" id="abj404-profile-name" class="regular-text" placeholder="{e.g. Products section}"></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="abj404-profile-pattern">{URL Pattern}:</label></th>
+            <td>
+                <input type="text" id="abj404-profile-pattern" class="regular-text" placeholder="{e.g. /products/* or ^/products/}">
+                <p class="description">{Use * as wildcard for simple patterns. Check &quot;Regex&quot; for full regex patterns.}</p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="abj404-profile-is-regex">{Regex}:</label></th>
+            <td>
+                <input type="checkbox" id="abj404-profile-is-regex" value="1">
+                <label for="abj404-profile-is-regex">{Pattern is a regular expression}</label>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row">{Enabled Engines}:</th>
+            <td id="abj404-profile-engines-checkboxes">
+                <p class="description">{Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines.}</p>
+                <label><input type="checkbox" class="abj404-engine-cb" value="ABJ_404_Solution_SlugMatchingEngine"> {Slug Matching}</label><br>
+                <label><input type="checkbox" class="abj404-engine-cb" value="ABJ_404_Solution_SpellingMatchingEngine"> {Spelling Matching}</label><br>
+                <label><input type="checkbox" class="abj404-engine-cb" value="ABJ_404_Solution_TitleMatchingEngine"> {Title Matching}</label><br>
+                <label><input type="checkbox" class="abj404-engine-cb" value="ABJ_404_Solution_ContentMatchingEngine"> {Content Matching}</label><br>
+                <label><input type="checkbox" class="abj404-engine-cb" value="ABJ_404_Solution_CategoryTagMatchingEngine"> {Category/Tag Matching}</label><br>
+                <label><input type="checkbox" class="abj404-engine-cb" value="ABJ_404_Solution_UrlFixEngine"> {URL Fix}</label><br>
+                <label><input type="checkbox" class="abj404-engine-cb" value="ABJ_404_Solution_ArchiveFallbackEngine"> {Archive Fallback}</label>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="abj404-profile-priority">{Priority}:</label></th>
+            <td>
+                <input type="number" id="abj404-profile-priority" value="0" min="0" max="9999" style="width: 70px;">
+                <p class="description">{Lower number = higher priority. First matching profile wins.}</p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="abj404-profile-status">{Active}:</label></th>
+            <td>
+                <input type="checkbox" id="abj404-profile-status" value="1" checked>
+                <label for="abj404-profile-status">{Profile is active}</label>
+            </td>
+        </tr>
+    </table>
+
+    <button type="button" id="abj404-save-engine-profile-btn" class="button button-primary">{Save Profile}</button>
+    <button type="button" id="abj404-cancel-engine-profile-btn" class="button">{Cancel}</button>
+    <span id="abj404-engine-profile-save-msg" style="display:none; margin-left: 8px;"></span>
+</div>
+
+</div><!-- end abj404-engine-profiles-section -->

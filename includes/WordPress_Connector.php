@@ -165,6 +165,7 @@ class ABJ_404_Solution_WordPress_Connector {
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_oauth_callback', 'ABJ_404_Solution_WordPress_Connector::handleGscOauthCallback');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_revoke', 'ABJ_404_Solution_WordPress_Connector::handleGscRevoke');
 
+        ABJ_404_Solution_Ajax_EngineProfiles::registerActions();
         ABJ_404_Solution_Ajax_SettingsModeToggle::init();
         ABJ_404_Solution_UninstallModal::init();
         ABJ_404_Solution_SetupWizard::init();
@@ -204,6 +205,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         $isOptionsPage = ($subpage === 'abj404_options');
         $isStatsPage = ($subpage === 'abj404_stats');
+        $isToolsPage = ($subpage === 'abj404_tools');
         $isCardAccordionPage = in_array($subpage, array('abj404_options', 'abj404_tools', 'abj404_stats'), true);
         $isLogsPage = ($subpage === 'abj404_logs');
         $isListPage = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_logs'), true);
@@ -301,6 +303,27 @@ class ABJ_404_Solution_WordPress_Connector {
             wp_localize_script('abj404-options-accordion', 'abj404Accordion', array(
                 'expandAll' => __('Expand All', '404-solution'),
                 'collapseAll' => __('Collapse All', '404-solution'),
+            ));
+        }
+
+        if ($isToolsPage) {
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-engine-profiles',
+                plugin_dir_url(__FILE__) . 'ajax/ajax-engine-profiles.js',
+                array('jquery'));
+            wp_localize_script('abj404-engine-profiles', 'abj404EngineProfiles', array(
+                'nonce'   => wp_create_nonce('abj404_engine_profiles_nonce'),
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'i18n'    => array(
+                    'edit'            => __('Edit', '404-solution'),
+                    'delete'          => __('Delete', '404-solution'),
+                    'addProfile'      => __('Add Engine Profile', '404-solution'),
+                    'editProfile'     => __('Edit Engine Profile', '404-solution'),
+                    'nameRequired'    => __('Profile name is required.', '404-solution'),
+                    'patternRequired' => __('URL pattern is required.', '404-solution'),
+                    'saved'           => __('Profile saved.', '404-solution'),
+                    'saveFailed'      => __('Failed to save profile.', '404-solution'),
+                    'confirmDelete'   => __('Delete this engine profile?', '404-solution'),
+                ),
             ));
         }
 

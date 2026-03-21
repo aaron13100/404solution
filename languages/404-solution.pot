@@ -2096,3 +2096,94 @@ msgstr ""
 
 msgid "You are being redirected. Click the link if not redirected automatically."
 msgstr ""
+
+# Engine Profile admin section strings
+msgid "Engine Profiles"
+msgstr ""
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr ""
+
+msgid "No engine profiles defined."
+msgstr ""
+
+msgid "Add Engine Profile"
+msgstr ""
+
+msgid "Edit Engine Profile"
+msgstr ""
+
+msgid "e.g. Products section"
+msgstr ""
+
+msgid "e.g. /products/* or ^/products/"
+msgstr ""
+
+msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgstr ""
+
+msgid "Pattern is a regular expression"
+msgstr ""
+
+msgid "Enabled Engines:"
+msgstr ""
+
+msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
+msgstr ""
+
+msgid "Slug Matching"
+msgstr ""
+
+msgid "Spelling Matching"
+msgstr ""
+
+msgid "Title Matching"
+msgstr ""
+
+msgid "Content Matching"
+msgstr ""
+
+msgid "Category/Tag Matching"
+msgstr ""
+
+msgid "URL Fix"
+msgstr ""
+
+msgid "Archive Fallback"
+msgstr ""
+
+msgid "Lower number = higher priority. First matching profile wins."
+msgstr ""
+
+msgid "Profile is active"
+msgstr ""
+
+msgid "Save Profile"
+msgstr ""
+
+msgid "Profile name is required."
+msgstr ""
+
+msgid "URL pattern is required."
+msgstr ""
+
+msgid "Profile saved."
+msgstr ""
+
+msgid "Failed to save profile."
+msgstr ""
+
+msgid "Delete this engine profile?"
+msgstr ""
+
+msgid "Invalid regular expression pattern."
+msgstr ""
+
+msgid "Failed to save engine profile."
+msgstr ""
+
+msgid "Invalid profile ID."
+msgstr ""
+
+msgid "Failed to delete engine profile."
+msgstr ""

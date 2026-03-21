@@ -3075,3 +3075,94 @@ msgstr "Redirection en cours…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
 msgstr "Vous êtes en cours de redirection. Cliquez sur le lien si vous n'êtes pas redirigé automatiquement."
+
+# Engine Profile admin section strings
+msgid "Engine Profiles"
+msgstr "Profils de moteur"
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "Les profils de moteur vous permettent de restreindre les moteurs de correspondance qui s'exécutent pour des modèles d'URL spécifiques. Le premier profil dont le modèle correspond à une URL 404 gagne. Si aucun profil ne correspond, tous les moteurs fonctionnent normalement."
+
+msgid "No engine profiles defined."
+msgstr "Aucun profil de moteur défini."
+
+msgid "Add Engine Profile"
+msgstr "Ajouter un profil de moteur"
+
+msgid "Edit Engine Profile"
+msgstr "Modifier le profil de moteur"
+
+msgid "e.g. Products section"
+msgstr "ex. Section produits"
+
+msgid "e.g. /products/* or ^/products/"
+msgstr "ex. /products/* ou ^/products/"
+
+msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgstr "Utilisez * comme caractère générique pour les modèles simples. Cochez \"Regex\" pour les modèles d'expression régulière complets."
+
+msgid "Pattern is a regular expression"
+msgstr "Le modèle est une expression régulière"
+
+msgid "Enabled Engines:"
+msgstr "Moteurs activés :"
+
+msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
+msgstr "Sélectionnez les moteurs à exécuter pour les URL correspondant à ce profil. Laissez tout décoché pour exécuter tous les moteurs."
+
+msgid "Slug Matching"
+msgstr "Correspondance de slug"
+
+msgid "Spelling Matching"
+msgstr "Correspondance orthographique"
+
+msgid "Title Matching"
+msgstr "Correspondance de titre"
+
+msgid "Content Matching"
+msgstr "Correspondance de contenu"
+
+msgid "Category/Tag Matching"
+msgstr "Correspondance catégorie/étiquette"
+
+msgid "URL Fix"
+msgstr "Correction d'URL"
+
+msgid "Archive Fallback"
+msgstr "Secours d'archive"
+
+msgid "Lower number = higher priority. First matching profile wins."
+msgstr "Nombre inférieur = priorité plus élevée. Le premier profil correspondant gagne."
+
+msgid "Profile is active"
+msgstr "Le profil est actif"
+
+msgid "Save Profile"
+msgstr "Enregistrer le profil"
+
+msgid "Profile name is required."
+msgstr "Le nom du profil est obligatoire."
+
+msgid "URL pattern is required."
+msgstr "Le modèle d'URL est obligatoire."
+
+msgid "Profile saved."
+msgstr "Profil enregistré."
+
+msgid "Failed to save profile."
+msgstr "Échec de l'enregistrement du profil."
+
+msgid "Delete this engine profile?"
+msgstr "Supprimer ce profil de moteur ?"
+
+msgid "Invalid regular expression pattern."
+msgstr "Modèle d'expression régulière invalide."
+
+msgid "Failed to save engine profile."
+msgstr "Échec de l'enregistrement du profil de moteur."
+
+msgid "Invalid profile ID."
+msgstr "ID de profil invalide."
+
+msgid "Failed to delete engine profile."
+msgstr "Échec de la suppression du profil de moteur."

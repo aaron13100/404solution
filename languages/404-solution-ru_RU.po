@@ -3086,3 +3086,94 @@ msgstr ""
 
 msgid "You are being redirected. Click the link if not redirected automatically."
 msgstr ""
+
+# Engine Profile admin section strings
+msgid "Engine Profiles"
+msgstr "Профили механизмов"
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "Профили механизмов позволяют ограничить, какие механизмы сопоставления запускаются для конкретных шаблонов URL. Побеждает первый профиль, шаблон которого совпадает с URL 404. Если ни один профиль не совпадает, все механизмы работают в обычном режиме."
+
+msgid "No engine profiles defined."
+msgstr "Профили механизмов не определены."
+
+msgid "Add Engine Profile"
+msgstr "Добавить профиль механизма"
+
+msgid "Edit Engine Profile"
+msgstr "Редактировать профиль механизма"
+
+msgid "e.g. Products section"
+msgstr "напр. Раздел продуктов"
+
+msgid "e.g. /products/* or ^/products/"
+msgstr "напр. /products/* или ^/products/"
+
+msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgstr "Используйте * в качестве подстановочного знака для простых шаблонов. Отметьте «Regex» для полных шаблонов регулярных выражений."
+
+msgid "Pattern is a regular expression"
+msgstr "Шаблон является регулярным выражением"
+
+msgid "Enabled Engines:"
+msgstr "Включённые механизмы:"
+
+msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
+msgstr "Выберите механизмы, которые должны работать для URL-адресов, соответствующих этому профилю. Оставьте все флажки снятыми, чтобы запускать все механизмы."
+
+msgid "Slug Matching"
+msgstr "Сопоставление slug"
+
+msgid "Spelling Matching"
+msgstr "Орфографическое сопоставление"
+
+msgid "Title Matching"
+msgstr "Сопоставление по заголовку"
+
+msgid "Content Matching"
+msgstr "Сопоставление по содержимому"
+
+msgid "Category/Tag Matching"
+msgstr "Сопоставление по категории/тегу"
+
+msgid "URL Fix"
+msgstr "Исправление URL"
+
+msgid "Archive Fallback"
+msgstr "Резервный архив"
+
+msgid "Lower number = higher priority. First matching profile wins."
+msgstr "Меньшее число = более высокий приоритет. Побеждает первый совпадающий профиль."
+
+msgid "Profile is active"
+msgstr "Профиль активен"
+
+msgid "Save Profile"
+msgstr "Сохранить профиль"
+
+msgid "Profile name is required."
+msgstr "Требуется имя профиля."
+
+msgid "URL pattern is required."
+msgstr "Требуется шаблон URL."
+
+msgid "Profile saved."
+msgstr "Профиль сохранён."
+
+msgid "Failed to save profile."
+msgstr "Не удалось сохранить профиль."
+
+msgid "Delete this engine profile?"
+msgstr "Удалить этот профиль механизма?"
+
+msgid "Invalid regular expression pattern."
+msgstr "Неверный шаблон регулярного выражения."
+
+msgid "Failed to save engine profile."
+msgstr "Не удалось сохранить профиль механизма."
+
+msgid "Invalid profile ID."
+msgstr "Неверный идентификатор профиля."
+
+msgid "Failed to delete engine profile."
+msgstr "Не удалось удалить профиль механизма."

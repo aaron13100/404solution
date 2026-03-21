@@ -3078,3 +3078,94 @@ msgstr ""
 
 msgid "You are being redirected. Click the link if not redirected automatically."
 msgstr ""
+
+# Engine Profile admin section strings
+msgid "Engine Profiles"
+msgstr "Profili motore"
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "I profili motore consentono di limitare i motori di corrispondenza eseguiti per specifici pattern URL. Vince il primo profilo il cui pattern corrisponde a un URL 404. Se nessun profilo corrisponde, tutti i motori vengono eseguiti normalmente."
+
+msgid "No engine profiles defined."
+msgstr "Nessun profilo motore definito."
+
+msgid "Add Engine Profile"
+msgstr "Aggiungi profilo motore"
+
+msgid "Edit Engine Profile"
+msgstr "Modifica profilo motore"
+
+msgid "e.g. Products section"
+msgstr "es. Sezione prodotti"
+
+msgid "e.g. /products/* or ^/products/"
+msgstr "es. /products/* o ^/products/"
+
+msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgstr "Usa * come carattere jolly per pattern semplici. Seleziona \"Regex\" per pattern di espressione regolare completi."
+
+msgid "Pattern is a regular expression"
+msgstr "Il pattern è un'espressione regolare"
+
+msgid "Enabled Engines:"
+msgstr "Motori abilitati:"
+
+msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
+msgstr "Seleziona i motori da eseguire per gli URL corrispondenti a questo profilo. Lascia tutto deselezionato per eseguire tutti i motori."
+
+msgid "Slug Matching"
+msgstr "Corrispondenza slug"
+
+msgid "Spelling Matching"
+msgstr "Corrispondenza ortografica"
+
+msgid "Title Matching"
+msgstr "Corrispondenza titolo"
+
+msgid "Content Matching"
+msgstr "Corrispondenza contenuto"
+
+msgid "Category/Tag Matching"
+msgstr "Corrispondenza categoria/tag"
+
+msgid "URL Fix"
+msgstr "Correzione URL"
+
+msgid "Archive Fallback"
+msgstr "Fallback archivio"
+
+msgid "Lower number = higher priority. First matching profile wins."
+msgstr "Numero inferiore = priorità più alta. Vince il primo profilo corrispondente."
+
+msgid "Profile is active"
+msgstr "Il profilo è attivo"
+
+msgid "Save Profile"
+msgstr "Salva profilo"
+
+msgid "Profile name is required."
+msgstr "Il nome del profilo è obbligatorio."
+
+msgid "URL pattern is required."
+msgstr "Il pattern URL è obbligatorio."
+
+msgid "Profile saved."
+msgstr "Profilo salvato."
+
+msgid "Failed to save profile."
+msgstr "Impossibile salvare il profilo."
+
+msgid "Delete this engine profile?"
+msgstr "Eliminare questo profilo motore?"
+
+msgid "Invalid regular expression pattern."
+msgstr "Pattern di espressione regolare non valido."
+
+msgid "Failed to save engine profile."
+msgstr "Impossibile salvare il profilo motore."
+
+msgid "Invalid profile ID."
+msgstr "ID profilo non valido."
+
+msgid "Failed to delete engine profile."
+msgstr "Impossibile eliminare il profilo motore."

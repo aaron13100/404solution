@@ -3097,3 +3097,94 @@ msgstr "جارٍ التوجيه…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
 msgstr "أنت تُعاد توجيهك. انقر على الرابط إذا لم تتم إعادة التوجيه تلقائيًا."
+
+# Engine Profile admin section strings
+msgid "Engine Profiles"
+msgstr "ملفات تعريف المحرك"
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "ملفات تعريف المحرك تتيح لك تقييد محركات المطابقة التي تعمل لأنماط URL محددة. يفوز أول ملف تعريف يتطابق نمطه مع عنوان URL 404. إذا لم يتطابق أي ملف تعريف، تعمل جميع المحركات بشكل طبيعي."
+
+msgid "No engine profiles defined."
+msgstr "لم يتم تحديد ملفات تعريف للمحرك."
+
+msgid "Add Engine Profile"
+msgstr "إضافة ملف تعريف محرك"
+
+msgid "Edit Engine Profile"
+msgstr "تعديل ملف تعريف المحرك"
+
+msgid "e.g. Products section"
+msgstr "مثال: قسم المنتجات"
+
+msgid "e.g. /products/* or ^/products/"
+msgstr "مثال: /products/* أو ^/products/"
+
+msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgstr "استخدم * كبديل للأنماط البسيطة. حدد \"Regex\" للأنماط الكاملة."
+
+msgid "Pattern is a regular expression"
+msgstr "النمط هو تعبير منتظم"
+
+msgid "Enabled Engines:"
+msgstr "المحركات المُفعَّلة:"
+
+msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
+msgstr "حدد المحركات التي يجب تشغيلها لعناوين URL المطابقة لهذا الملف. اتركها جميعًا غير محددة لتشغيل جميع المحركات."
+
+msgid "Slug Matching"
+msgstr "مطابقة الslug"
+
+msgid "Spelling Matching"
+msgstr "مطابقة الإملاء"
+
+msgid "Title Matching"
+msgstr "مطابقة العنوان"
+
+msgid "Content Matching"
+msgstr "مطابقة المحتوى"
+
+msgid "Category/Tag Matching"
+msgstr "مطابقة الفئة/الوسم"
+
+msgid "URL Fix"
+msgstr "إصلاح URL"
+
+msgid "Archive Fallback"
+msgstr "احتياط الأرشيف"
+
+msgid "Lower number = higher priority. First matching profile wins."
+msgstr "الرقم الأصغر = أولوية أعلى. يفوز أول ملف تعريف مطابق."
+
+msgid "Profile is active"
+msgstr "الملف التعريفي نشط"
+
+msgid "Save Profile"
+msgstr "حفظ الملف التعريفي"
+
+msgid "Profile name is required."
+msgstr "اسم الملف التعريفي مطلوب."
+
+msgid "URL pattern is required."
+msgstr "نمط URL مطلوب."
+
+msgid "Profile saved."
+msgstr "تم حفظ الملف التعريفي."
+
+msgid "Failed to save profile."
+msgstr "فشل حفظ الملف التعريفي."
+
+msgid "Delete this engine profile?"
+msgstr "حذف ملف تعريف المحرك هذا؟"
+
+msgid "Invalid regular expression pattern."
+msgstr "نمط التعبير المنتظم غير صالح."
+
+msgid "Failed to save engine profile."
+msgstr "فشل حفظ ملف تعريف المحرك."
+
+msgid "Invalid profile ID."
+msgstr "معرّف الملف التعريفي غير صالح."
+
+msgid "Failed to delete engine profile."
+msgstr "فشل حذف ملف تعريف المحرك."

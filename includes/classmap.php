@@ -30,6 +30,8 @@ return array(
     'ABJ_404_Solution_FrontendRequestPipeline' => $base . 'includes/FrontendRequestPipeline.php',
     'ABJ_404_Solution_ImportExportService' => $base . 'includes/ImportExportService.php',
     'ABJ_404_Solution_Logging' => $base . 'includes/Logging.php',
+    'ABJ_404_Solution_EngineProfileResolver' => $base . 'includes/EngineProfileResolver.php',
+    'ABJ_404_Solution_Ajax_EngineProfiles' => $base . 'includes/ajax/Ajax_EngineProfiles.php',
     'ABJ_404_Solution_MatchingEngine' => $base . 'includes/MatchingEngine.php',
     'ABJ_404_Solution_MatchRequest' => $base . 'includes/MatchRequest.php',
     'ABJ_404_Solution_MatchResult' => $base . 'includes/MatchResult.php',

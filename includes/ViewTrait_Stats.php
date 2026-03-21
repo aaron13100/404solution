@@ -513,6 +513,11 @@ trait ViewTrait_Stats {
         $gsc = new ABJ_404_Solution_GoogleSearchConsole($logger);
         echo $gsc->renderAdminSection();
 
+        // Engine Profiles Card
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/engineProfilesSection.html');
+        $html = $this->f->doNormalReplacements($html);
+        $abj404view->echoOptionsSection('tools-engine-profiles', 'abj404-engineProfiles', __('Engine Profiles', '404-solution'), $html, false, $abj404view->getCardIcon('filter'));
+
         echo "</div>";
         echo "</div>";
     }

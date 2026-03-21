@@ -298,7 +298,10 @@ class ABJ_404_Solution_FrontendRequestPipeline {
      * @return ABJ_404_Solution_MatchResult|null
      */
     private function runMatchingEngines(ABJ_404_Solution_MatchRequest $request): ?ABJ_404_Solution_MatchResult {
-        foreach ($this->matchingEngines as $engine) {
+        $enginesToRun = ABJ_404_Solution_EngineProfileResolver::getInstance()
+            ->resolve($request->getRequestedURL(), $this->matchingEngines);
+
+        foreach ($enginesToRun as $engine) {
             if (!($engine instanceof ABJ_404_Solution_MatchingEngine)) {
                 $this->logger->warn('Matching engine is not an instance of ABJ_404_Solution_MatchingEngine: ' .
                     (is_object($engine) ? get_class($engine) : gettype($engine)));

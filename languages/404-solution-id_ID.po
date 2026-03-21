@@ -3076,3 +3076,94 @@ msgstr ""
 
 msgid "You are being redirected. Click the link if not redirected automatically."
 msgstr ""
+
+# Engine Profile admin section strings
+msgid "Engine Profiles"
+msgstr "Profil Mesin"
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "Profil mesin memungkinkan Anda membatasi mesin pencocokan mana yang berjalan untuk pola URL tertentu. Profil pertama yang polanya cocok dengan URL 404 menang. Jika tidak ada profil yang cocok, semua mesin berjalan normal."
+
+msgid "No engine profiles defined."
+msgstr "Tidak ada profil mesin yang ditentukan."
+
+msgid "Add Engine Profile"
+msgstr "Tambah Profil Mesin"
+
+msgid "Edit Engine Profile"
+msgstr "Edit Profil Mesin"
+
+msgid "e.g. Products section"
+msgstr "mis. Bagian produk"
+
+msgid "e.g. /products/* or ^/products/"
+msgstr "mis. /products/* atau ^/products/"
+
+msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgstr "Gunakan * sebagai wildcard untuk pola sederhana. Centang \"Regex\" untuk pola ekspresi reguler penuh."
+
+msgid "Pattern is a regular expression"
+msgstr "Pola adalah ekspresi reguler"
+
+msgid "Enabled Engines:"
+msgstr "Mesin Aktif:"
+
+msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
+msgstr "Pilih mesin mana yang harus berjalan untuk URL yang cocok dengan profil ini. Biarkan semua tidak dicentang untuk menjalankan semua mesin."
+
+msgid "Slug Matching"
+msgstr "Pencocokan Slug"
+
+msgid "Spelling Matching"
+msgstr "Pencocokan Ejaan"
+
+msgid "Title Matching"
+msgstr "Pencocokan Judul"
+
+msgid "Content Matching"
+msgstr "Pencocokan Konten"
+
+msgid "Category/Tag Matching"
+msgstr "Pencocokan Kategori/Tag"
+
+msgid "URL Fix"
+msgstr "Perbaikan URL"
+
+msgid "Archive Fallback"
+msgstr "Cadangan Arsip"
+
+msgid "Lower number = higher priority. First matching profile wins."
+msgstr "Angka lebih kecil = prioritas lebih tinggi. Profil yang cocok pertama menang."
+
+msgid "Profile is active"
+msgstr "Profil aktif"
+
+msgid "Save Profile"
+msgstr "Simpan Profil"
+
+msgid "Profile name is required."
+msgstr "Nama profil diperlukan."
+
+msgid "URL pattern is required."
+msgstr "Pola URL diperlukan."
+
+msgid "Profile saved."
+msgstr "Profil disimpan."
+
+msgid "Failed to save profile."
+msgstr "Gagal menyimpan profil."
+
+msgid "Delete this engine profile?"
+msgstr "Hapus profil mesin ini?"
+
+msgid "Invalid regular expression pattern."
+msgstr "Pola ekspresi reguler tidak valid."
+
+msgid "Failed to save engine profile."
+msgstr "Gagal menyimpan profil mesin."
+
+msgid "Invalid profile ID."
+msgstr "ID profil tidak valid."
+
+msgid "Failed to delete engine profile."
+msgstr "Gagal menghapus profil mesin."
