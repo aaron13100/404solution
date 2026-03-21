@@ -1651,6 +1651,14 @@ msgstr ""
 msgid "Choose how often to receive email notifications about captured 404s."
 msgstr ""
 
+#: includes/html/adminOptionsGeneral.html
+msgid "Attach PDF report to digest email"
+msgstr ""
+
+#: includes/html/adminOptionsGeneral.html
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr ""
+
 #: includes/html/toolsExportForm.html
 msgid "Export format:"
 msgstr ""
@@ -2104,6 +2112,27 @@ msgstr ""
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr ""
 
+msgid "Name"
+msgstr ""
+
+msgid "URL Pattern"
+msgstr ""
+
+msgid "Regex"
+msgstr ""
+
+msgid "Engines"
+msgstr ""
+
+msgid "Priority"
+msgstr ""
+
+msgid "Active"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
 msgid "No engine profiles defined."
 msgstr ""
 
@@ -2119,13 +2148,13 @@ msgstr ""
 msgid "e.g. /products/* or ^/products/"
 msgstr ""
 
-msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgid "Use * as wildcard for simple patterns. Check &quot;Regex&quot; for full regex patterns."
 msgstr ""
 
 msgid "Pattern is a regular expression"
 msgstr ""
 
-msgid "Enabled Engines:"
+msgid "Enabled Engines"
 msgstr ""
 
 msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."

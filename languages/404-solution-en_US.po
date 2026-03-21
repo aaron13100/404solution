@@ -2663,6 +2663,12 @@ msgstr "Weekly digest"
 msgid "Choose how often to receive email notifications about captured 404s."
 msgstr "Choose how often to receive email notifications about captured 404s."
 
+msgid "Attach PDF report to digest email"
+msgstr "Attach PDF report to digest email"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+
 msgid "Temporary 307 (preserve method)"
 msgstr "Temporary 307 (preserve method)"
 
@@ -3081,6 +3087,27 @@ msgstr "Engine Profiles"
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 
+msgid "Name"
+msgstr "Name"
+
+msgid "URL Pattern"
+msgstr "URL Pattern"
+
+msgid "Regex"
+msgstr "Regex"
+
+msgid "Engines"
+msgstr "Engines"
+
+msgid "Priority"
+msgstr "Priority"
+
+msgid "Active"
+msgstr "Active"
+
+msgid "Actions"
+msgstr "Actions"
+
 msgid "No engine profiles defined."
 msgstr "No engine profiles defined."
 
@@ -3096,14 +3123,14 @@ msgstr "e.g. Products section"
 msgid "e.g. /products/* or ^/products/"
 msgstr "e.g. /products/* or ^/products/"
 
-msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
-msgstr "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgid "Use * as wildcard for simple patterns. Check &quot;Regex&quot; for full regex patterns."
+msgstr "Use * as wildcard for simple patterns. Check &quot;Regex&quot; for full regex patterns."
 
 msgid "Pattern is a regular expression"
 msgstr "Pattern is a regular expression"
 
-msgid "Enabled Engines:"
-msgstr "Enabled Engines:"
+msgid "Enabled Engines"
+msgstr "Enabled Engines"
 
 msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
 msgstr "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."

@@ -2678,6 +2678,12 @@ msgstr "Weekly digest"
 msgid "Choose how often to receive email notifications about captured 404s."
 msgstr "Choose how often to receive email notifications about captured 404s."
 
+msgid "Attach PDF report to digest email"
+msgstr "Attach PDF report to digest email"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+
 msgid "Temporary 307 (preserve method)"
 msgstr "Temporary 307 (preserve method)"
 
@@ -3076,16 +3082,16 @@ msgstr "Когда опубликованная страница перемещ�
 
 # Meta Refresh redirect strings
 msgid "0 Meta Refresh"
-msgstr ""
+msgstr "0 Meta Refresh"
 
 msgid "Meta Refresh"
-msgstr ""
+msgstr "Meta Refresh"
 
 msgid "Redirecting…"
-msgstr ""
+msgstr "Redirecting…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
-msgstr ""
+msgstr "You are being redirected. Click the link if not redirected automatically."
 
 # Engine Profile admin section strings
 msgid "Engine Profiles"
@@ -3093,6 +3099,27 @@ msgstr "Профили механизмов"
 
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr "Профили механизмов позволяют ограничить, какие механизмы сопоставления запускаются для конкретных шаблонов URL. Побеждает первый профиль, шаблон которого совпадает с URL 404. Если ни один профиль не совпадает, все механизмы работают в обычном режиме."
+
+msgid "Name"
+msgstr "Name"
+
+msgid "URL Pattern"
+msgstr "URL Pattern"
+
+msgid "Regex"
+msgstr "Regex"
+
+msgid "Engines"
+msgstr "Engines"
+
+msgid "Priority"
+msgstr "Priority"
+
+msgid "Active"
+msgstr "Active"
+
+msgid "Actions"
+msgstr "Actions"
 
 msgid "No engine profiles defined."
 msgstr "Профили механизмов не определены."
@@ -3109,14 +3136,14 @@ msgstr "напр. Раздел продуктов"
 msgid "e.g. /products/* or ^/products/"
 msgstr "напр. /products/* или ^/products/"
 
-msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgid "Use * as wildcard for simple patterns. Check &quot;Regex&quot; for full regex patterns."
 msgstr "Используйте * в качестве подстановочного знака для простых шаблонов. Отметьте «Regex» для полных шаблонов регулярных выражений."
 
 msgid "Pattern is a regular expression"
 msgstr "Шаблон является регулярным выражением"
 
-msgid "Enabled Engines:"
-msgstr "Включённые механизмы:"
+msgid "Enabled Engines"
+msgstr "Включённые механизмы"
 
 msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
 msgstr "Выберите механизмы, которые должны работать для URL-адресов, соответствующих этому профилю. Оставьте все флажки снятыми, чтобы запускать все механизмы."

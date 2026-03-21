@@ -151,7 +151,7 @@ trait ViewTrait_Stats {
         $ajaxUrl = admin_url('admin-ajax.php');
 
         $trendsContent  = '<div id="abj404-trends-container">';
-        $trendsContent .= '<p class="abj404-trends-loading">' . esc_html__('Loading chart data\u2026', '404-solution') . '</p>';
+        $trendsContent .= '<p class="abj404-trends-loading">' . esc_html__('Loading chart data…', '404-solution') . '</p>';
         $trendsContent .= '<div id="abj404-trends-charts" style="display:none">';
         $trendsContent .= '<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-404s"></canvas></div>';
         $trendsContent .= '<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-redirects"></canvas></div>';

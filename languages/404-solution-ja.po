@@ -2677,6 +2677,12 @@ msgstr "Weekly digest"
 msgid "Choose how often to receive email notifications about captured 404s."
 msgstr "Choose how often to receive email notifications about captured 404s."
 
+msgid "Attach PDF report to digest email"
+msgstr "Attach PDF report to digest email"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+
 msgid "Temporary 307 (preserve method)"
 msgstr "Temporary 307 (preserve method)"
 
@@ -3075,16 +3081,16 @@ msgstr "公開されたページがゴミ箱に移動または完全に削除さ
 
 # Meta Refresh redirect strings
 msgid "0 Meta Refresh"
-msgstr ""
+msgstr "0 Meta Refresh"
 
 msgid "Meta Refresh"
-msgstr ""
+msgstr "Meta Refresh"
 
 msgid "Redirecting…"
-msgstr ""
+msgstr "Redirecting…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
-msgstr ""
+msgstr "You are being redirected. Click the link if not redirected automatically."
 
 # Engine Profile admin section strings
 msgid "Engine Profiles"
@@ -3092,6 +3098,27 @@ msgstr "エンジンプロファイル"
 
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr "エンジンプロファイルを使用すると、特定のURLパターンに対して実行するマッチングエンジンを制限できます。パターンが404 URLに一致した最初のプロファイルが優先されます。プロファイルが一致しない場合、すべてのエンジンが通常通り実行されます。"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "URL Pattern"
+msgstr "URL Pattern"
+
+msgid "Regex"
+msgstr "Regex"
+
+msgid "Engines"
+msgstr "Engines"
+
+msgid "Priority"
+msgstr "Priority"
+
+msgid "Active"
+msgstr "Active"
+
+msgid "Actions"
+msgstr "Actions"
 
 msgid "No engine profiles defined."
 msgstr "エンジンプロファイルが定義されていません。"
@@ -3108,14 +3135,14 @@ msgstr "例：製品セクション"
 msgid "e.g. /products/* or ^/products/"
 msgstr "例：/products/* または ^/products/"
 
-msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgid "Use * as wildcard for simple patterns. Check &quot;Regex&quot; for full regex patterns."
 msgstr "単純なパターンにはワイルドカードとして*を使用します。完全な正規表現パターンには「Regex」にチェックを入れてください。"
 
 msgid "Pattern is a regular expression"
 msgstr "パターンは正規表現です"
 
-msgid "Enabled Engines:"
-msgstr "有効なエンジン："
+msgid "Enabled Engines"
+msgstr "有効なエンジン"
 
 msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
 msgstr "このプロファイルに一致するURLに対して実行するエンジンを選択します。すべてのエンジンを実行するには、すべてチェックを外したままにしてください。"

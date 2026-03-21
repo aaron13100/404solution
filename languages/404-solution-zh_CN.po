@@ -2681,6 +2681,12 @@ msgstr "Weekly digest"
 msgid "Choose how often to receive email notifications about captured 404s."
 msgstr "Choose how often to receive email notifications about captured 404s."
 
+msgid "Attach PDF report to digest email"
+msgstr "Attach PDF report to digest email"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+
 msgid "Temporary 307 (preserve method)"
 msgstr "Temporary 307 (preserve method)"
 
@@ -3079,16 +3085,16 @@ msgstr "当已发布的页面被移至回收站或永久删除时，从其旧URL
 
 # Meta Refresh redirect strings
 msgid "0 Meta Refresh"
-msgstr ""
+msgstr "0 Meta Refresh"
 
 msgid "Meta Refresh"
-msgstr ""
+msgstr "Meta Refresh"
 
 msgid "Redirecting…"
-msgstr ""
+msgstr "Redirecting…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
-msgstr ""
+msgstr "You are being redirected. Click the link if not redirected automatically."
 
 # Engine Profile admin section strings
 msgid "Engine Profiles"
@@ -3096,6 +3102,27 @@ msgstr "引擎配置文件"
 
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr "引擎配置文件允许您限制针对特定 URL 模式运行哪些匹配引擎。第一个模式与 404 URL 匹配的配置文件获胜。如果没有配置文件匹配，所有引擎将正常运行。"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "URL Pattern"
+msgstr "URL Pattern"
+
+msgid "Regex"
+msgstr "Regex"
+
+msgid "Engines"
+msgstr "Engines"
+
+msgid "Priority"
+msgstr "Priority"
+
+msgid "Active"
+msgstr "Active"
+
+msgid "Actions"
+msgstr "Actions"
 
 msgid "No engine profiles defined."
 msgstr "未定义引擎配置文件。"
@@ -3112,14 +3139,14 @@ msgstr "例：产品区域"
 msgid "e.g. /products/* or ^/products/"
 msgstr "例：/products/* 或 ^/products/"
 
-msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgid "Use * as wildcard for simple patterns. Check &quot;Regex&quot; for full regex patterns."
 msgstr "对简单模式使用 * 作为通配符。勾选\"Regex\"以使用完整的正则表达式模式。"
 
 msgid "Pattern is a regular expression"
 msgstr "该模式是正则表达式"
 
-msgid "Enabled Engines:"
-msgstr "已启用的引擎："
+msgid "Enabled Engines"
+msgstr "已启用的引擎"
 
 msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
 msgstr "选择应针对与此配置文件匹配的 URL 运行哪些引擎。取消勾选所有选项以运行所有引擎。"

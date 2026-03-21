@@ -2673,6 +2673,12 @@ msgstr "Weekly digest"
 msgid "Choose how often to receive email notifications about captured 404s."
 msgstr "Choose how often to receive email notifications about captured 404s."
 
+msgid "Attach PDF report to digest email"
+msgstr "Attach PDF report to digest email"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+
 msgid "Temporary 307 (preserve method)"
 msgstr "Temporary 307 (preserve method)"
 
@@ -3071,16 +3077,16 @@ msgstr "Wanneer een gepubliceerde pagina naar de prullenbak wordt verplaatst of 
 
 # Meta Refresh redirect strings
 msgid "0 Meta Refresh"
-msgstr ""
+msgstr "0 Meta Refresh"
 
 msgid "Meta Refresh"
-msgstr ""
+msgstr "Meta Refresh"
 
 msgid "Redirecting…"
-msgstr ""
+msgstr "Redirecting…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
-msgstr ""
+msgstr "You are being redirected. Click the link if not redirected automatically."
 
 # Engine Profile admin section strings
 msgid "Engine Profiles"
@@ -3088,6 +3094,27 @@ msgstr "Motorprofielen"
 
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr "Met motorprofielen kunt u beperken welke overeenkomstmotoren worden uitgevoerd voor specifieke URL-patronen. Het eerste profiel waarvan het patroon overeenkomt met een 404-URL wint. Als geen enkel profiel overeenkomt, worden alle motoren normaal uitgevoerd."
+
+msgid "Name"
+msgstr "Name"
+
+msgid "URL Pattern"
+msgstr "URL Pattern"
+
+msgid "Regex"
+msgstr "Regex"
+
+msgid "Engines"
+msgstr "Engines"
+
+msgid "Priority"
+msgstr "Priority"
+
+msgid "Active"
+msgstr "Active"
+
+msgid "Actions"
+msgstr "Actions"
 
 msgid "No engine profiles defined."
 msgstr "Geen motorprofielen gedefinieerd."
@@ -3104,14 +3131,14 @@ msgstr "bijv. Productensectie"
 msgid "e.g. /products/* or ^/products/"
 msgstr "bijv. /products/* of ^/products/"
 
-msgid "Use * as wildcard for simple patterns. Check \"Regex\" for full regex patterns."
+msgid "Use * as wildcard for simple patterns. Check &quot;Regex&quot; for full regex patterns."
 msgstr "Gebruik * als jokerteken voor eenvoudige patronen. Vink \"Regex\" aan voor volledige regex-patronen."
 
 msgid "Pattern is a regular expression"
 msgstr "Patroon is een reguliere expressie"
 
-msgid "Enabled Engines:"
-msgstr "Ingeschakelde motoren:"
+msgid "Enabled Engines"
+msgstr "Ingeschakelde motoren"
 
 msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
 msgstr "Selecteer welke motoren moeten worden uitgevoerd voor URL's die overeenkomen met dit profiel. Laat alles uitgevinkt om alle motoren uit te voeren."
