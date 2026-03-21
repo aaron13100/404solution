@@ -3059,3 +3059,13 @@ msgstr "您请求的页面不再存在，也未被移动到新位置。"
 
 msgid "Back to home page"
 msgstr "返回首页"
+
+# 451 Unavailable For Legal Reasons strings
+msgid "451 Unavailable For Legal Reasons"
+msgstr "451 因法律原因不可用"
+
+msgid "This content is unavailable due to a legal demand."
+msgstr "由于法律要求，此内容不可用。"
+
+msgid "Unavailable For Legal Reasons"
+msgstr "因法律原因不可用"

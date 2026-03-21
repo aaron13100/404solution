@@ -3056,3 +3056,13 @@ msgstr "Запрошенная страница больше не существ
 
 msgid "Back to home page"
 msgstr "Вернуться на главную страницу"
+
+# 451 Unavailable For Legal Reasons strings
+msgid "451 Unavailable For Legal Reasons"
+msgstr "451 Недоступно по юридическим причинам"
+
+msgid "This content is unavailable due to a legal demand."
+msgstr "Этот контент недоступен в связи с юридическим требованием."
+
+msgid "Unavailable For Legal Reasons"
+msgstr "Недоступно по юридическим причинам"

@@ -567,6 +567,7 @@ trait ViewTrait_RedirectsTable {
         echo '<option value="307"' . $sel307 . '>307 - ' . esc_html__('Temporary Redirect (preserve method)', '404-solution') . '</option>';
         echo '<option value="308"' . $sel308 . '>308 - ' . esc_html__('Permanent Redirect (preserve method)', '404-solution') . '</option>';
         echo '<option value="410">410 - ' . esc_html__('Gone (resource permanently removed)', '404-solution') . '</option>';
+        echo '<option value="451">451 - ' . esc_html__('Unavailable For Legal Reasons', '404-solution') . '</option>';
         echo '</select>';
         echo '</div>';
 
@@ -913,6 +914,7 @@ trait ViewTrait_RedirectsTable {
                 '307' => 'abj404-badge-307',
                 '308' => 'abj404-badge-308',
                 '410' => 'abj404-badge-410',
+                '451' => 'abj404-badge-451',
             );
             $codeBadgeClass = isset($codeBadgeMap[$rowCode]) ? $codeBadgeMap[$rowCode] : 'abj404-badge-302';
 
@@ -1064,7 +1066,8 @@ trait ViewTrait_RedirectsTable {
         $selected307 = ($options['default_redirect'] == '307') ? ' selected ' : '';
         $selected308 = ($options['default_redirect'] == '308') ? ' selected ' : '';
         $selected410 = '';
-        
+        $selected451 = '';
+
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectTop.html");
         $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
@@ -1095,7 +1098,8 @@ trait ViewTrait_RedirectsTable {
         $html = $this->f->str_replace('{307selected}', $selected307, $html);
         $html = $this->f->str_replace('{308selected}', $selected308, $html);
         $html = $this->f->str_replace('{410selected}', $selected410, $html);
-        
+        $html = $this->f->str_replace('{451selected}', $selected451, $html);
+
         // constants and translations.
         $html = $this->f->doNormalReplacements($html);
         
@@ -1129,6 +1133,7 @@ trait ViewTrait_RedirectsTable {
             307 => '307 - ' . __('Temporary Redirect (preserve method)', '404-solution'),
             308 => '308 - ' . __('Permanent Redirect (preserve method)', '404-solution'),
             410 => '410 - ' . __('Gone (resource permanently removed)', '404-solution'),
+            451 => '451 - ' . __('Unavailable For Legal Reasons', '404-solution'),
         );
         foreach ($codeLabels as $code => $title) {
             $selected = ((string)$code === (string)$codeselected) ? ' selected' : '';

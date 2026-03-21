@@ -1288,6 +1288,32 @@ class ABJ_404_Solution_PluginLogic {
             exit;
         }
 
+        // 451 Unavailable For Legal Reasons: send status header then render the gone451.html template and exit.
+        if ($status === 451) {
+            status_header(451);
+            $templatePath = __DIR__ . '/html/gone451.html';
+            if (file_exists($templatePath)) {
+                $siteName = function_exists('get_bloginfo') ? get_bloginfo('name') : '';
+                $siteUrl  = function_exists('home_url') ? home_url('/') : '/';
+                $templateContent = file_get_contents($templatePath);
+                if (is_string($templateContent)) {
+                    $templateContent = str_replace(
+                        array('{site_name}', '{site_url}', '{heading}', '{message}', '{back_home}'),
+                        array(
+                            esc_html($siteName),
+                            esc_url($siteUrl),
+                            esc_html__('451 Unavailable For Legal Reasons', '404-solution'),
+                            esc_html__('This content is unavailable due to a legal demand.', '404-solution'),
+                            esc_html__('Back to home page', '404-solution'),
+                        ),
+                        $templateContent
+                    );
+                    echo $templateContent;
+                }
+            }
+            exit;
+        }
+
         $finalDestination = $this->buildFinalRedirectDestination($location, $requestedURL, $isCustom404);
 
     	$previousRequest = $this->readCookieWithPreviousRqeuestShort();

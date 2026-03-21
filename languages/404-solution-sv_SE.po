@@ -3051,3 +3051,13 @@ msgstr "Sidan du begärde finns inte längre och har inte flyttats till en ny pl
 
 msgid "Back to home page"
 msgstr "Tillbaka till startsidan"
+
+# 451 Unavailable For Legal Reasons strings
+msgid "451 Unavailable For Legal Reasons"
+msgstr "451 Ej tillgänglig av juridiska skäl"
+
+msgid "This content is unavailable due to a legal demand."
+msgstr "Det här innehållet är inte tillgängligt på grund av ett rättsligt krav."
+
+msgid "Unavailable For Legal Reasons"
+msgstr "Ej tillgänglig av juridiska skäl"

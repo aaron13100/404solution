@@ -3046,3 +3046,13 @@ msgstr "Halaman yang Anda minta tidak lagi ada dan tidak dipindahkan ke lokasi b
 
 msgid "Back to home page"
 msgstr "Kembali ke beranda"
+
+# 451 Unavailable For Legal Reasons strings
+msgid "451 Unavailable For Legal Reasons"
+msgstr "451 Tidak Tersedia karena Alasan Hukum"
+
+msgid "This content is unavailable due to a legal demand."
+msgstr "Konten ini tidak tersedia karena tuntutan hukum."
+
+msgid "Unavailable For Legal Reasons"
+msgstr "Tidak Tersedia karena Alasan Hukum"

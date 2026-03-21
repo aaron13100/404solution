@@ -587,7 +587,8 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
 
         $tdType = is_scalar($typeAndDest['type']) ? (int)$typeAndDest['type'] : 0;
         $tdDest = is_scalar($typeAndDest['dest']) ? (string)$typeAndDest['dest'] : '';
-        $isCode410 = isset($_POST['code']) && (string)$_POST['code'] === '410';
+        $postedCodeForCheck = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
+        $isCode410 = $postedCodeForCheck === '410' || $postedCodeForCheck === '451';
         if ($tdType != 0 && ($tdDest !== "" || $isCode410)) {
             $statusType = ABJ404_STATUS_MANUAL;
             if (isset($_POST['is_regex_url']) &&
@@ -693,9 +694,9 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         $response['message'] = "";
         $userEnteredURL = '';
 
-        // 410 Gone redirects have no destination URL — bypass destination validation.
+        // 410 Gone and 451 Unavailable For Legal Reasons have no destination URL — bypass destination validation.
         $postedCode = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
-        if ($postedCode === '410') {
+        if ($postedCode === '410' || $postedCode === '451') {
             $response['type'] = (string)ABJ404_TYPE_HOME;
             $response['dest'] = '';
             return $response;
@@ -789,7 +790,8 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
 
         $tdType2 = is_scalar($typeAndDest['type']) ? (string)$typeAndDest['type'] : '';
         $tdDest2 = is_scalar($typeAndDest['dest']) ? (string)$typeAndDest['dest'] : '';
-        $code410 = isset($_POST['code']) && (string)$_POST['code'] === '410';
+        $postedCodeForCheck2 = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
+        $code410 = $postedCodeForCheck2 === '410' || $postedCodeForCheck2 === '451';
         if ($tdType2 != "" && ($tdDest2 !== "" || $code410)) {
             // url match type. regex or normal exact match.
             $statusType = ABJ404_STATUS_MANUAL;

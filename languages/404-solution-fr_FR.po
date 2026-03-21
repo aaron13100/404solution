@@ -3045,3 +3045,13 @@ msgstr "La page que vous avez demandée n'existe plus et n'a pas été déplacé
 
 msgid "Back to home page"
 msgstr "Retour à la page d'accueil"
+
+# 451 Unavailable For Legal Reasons strings
+msgid "451 Unavailable For Legal Reasons"
+msgstr "451 Indisponible pour des raisons légales"
+
+msgid "This content is unavailable due to a legal demand."
+msgstr "Ce contenu est indisponible en raison d'une demande légale."
+
+msgid "Unavailable For Legal Reasons"
+msgstr "Indisponible pour des raisons légales"

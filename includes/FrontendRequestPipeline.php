@@ -515,6 +515,13 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             return false;
         }
 
+        // 451 Unavailable For Legal Reasons: render template and exit.
+        if ($redirectCode === 451) {
+            $this->dao->logRedirectHit($redirectUrl, '451', $matchReason);
+            $this->logic->forceRedirect('', 451);
+            return false;
+        }
+
         if ($redirect['type'] == ABJ404_TYPE_404_DISPLAYED) {
             $this->dao->logRedirectHit($redirectUrl, '404', $matchReason);
             $this->triggerAsyncSuggestionsIfNeeded($requestedURL);

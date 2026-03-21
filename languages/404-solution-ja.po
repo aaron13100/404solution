@@ -3055,3 +3055,13 @@ msgstr "お探しのページは存在せず、新しい場所にも移動され
 
 msgid "Back to home page"
 msgstr "ホームページに戻る"
+
+# 451 Unavailable For Legal Reasons strings
+msgid "451 Unavailable For Legal Reasons"
+msgstr "451 法的理由により利用不可"
+
+msgid "This content is unavailable due to a legal demand."
+msgstr "このコンテンツは法的要求により利用できません。"
+
+msgid "Unavailable For Legal Reasons"
+msgstr "法的理由により利用不可"

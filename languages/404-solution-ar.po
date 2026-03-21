@@ -3067,3 +3067,13 @@ msgstr "الصفحة التي طلبتها لم تعد موجودة ولم يت�
 
 msgid "Back to home page"
 msgstr "العودة إلى الصفحة الرئيسية"
+
+# 451 Unavailable For Legal Reasons strings
+msgid "451 Unavailable For Legal Reasons"
+msgstr "451 غير متاح لأسباب قانونية"
+
+msgid "This content is unavailable due to a legal demand."
+msgstr "هذا المحتوى غير متاح بسبب طلب قانوني."
+
+msgid "Unavailable For Legal Reasons"
+msgstr "غير متاح لأسباب قانونية"

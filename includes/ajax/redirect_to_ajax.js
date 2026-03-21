@@ -1,8 +1,8 @@
 
 function validateAddManualRedirectForm(event) {
-    // 410 Gone redirects have no destination — skip destination validation.
+    // 410 Gone and 451 Unavailable For Legal Reasons have no destination — skip destination validation.
     var codeSelect = jQuery('#code');
-    if (codeSelect.length && codeSelect.val() === '410') {
+    if (codeSelect.length && (codeSelect.val() === '410' || codeSelect.val() === '451')) {
         return true;
     }
 
@@ -129,12 +129,12 @@ jQuery(document).ready(function($) {
     });
 
     // Toggle destination field visibility when the redirect code changes.
-    // 410 Gone has no destination URL — hide the field and clear its values.
+    // 410 Gone and 451 Unavailable For Legal Reasons have no destination URL — hide the field and clear its values.
     function abj404_toggle410DestinationField() {
         var codeSelect = jQuery('#code');
         if (!codeSelect.length) { return; }
 
-        var is410 = codeSelect.val() === '410';
+        var is410 = codeSelect.val() === '410' || codeSelect.val() === '451';
         var destArea = jQuery('.abj404-redirect-to-field').closest('div').addBack();
         // Find the destination label + field container (the .abj404-redirect-to-field div
         // and its preceding label, which together are wrapped by the form).

@@ -179,7 +179,7 @@ class ABJ_404_Solution_ImportExportService {
             $finalDest = isset($row['final_dest']) ? (string)$row['final_dest'] : '';
 
             // Resolve destination
-            if ($code === 410) {
+            if ($code === 410 || $code === 451) {
                 $dest = $source;
             } elseif (!empty($row['cached_url'])) {
                 $dest = (string)$row['cached_url'];
@@ -236,7 +236,8 @@ class ABJ_404_Solution_ImportExportService {
                 $pattern = $pattern . '/?';
             }
 
-            if ($code === 410) {
+            if ($code === 410 || $code === 451) {
+                // Apache [G] flag sends a 410 Gone response; it is the closest equivalent for 451.
                 $lines[] = 'RewriteRule ^' . $pattern . '$ - [G,L]';
             } else {
                 $flag    = ($code === 301) ? 'R=301' : 'R=' . $code;
@@ -271,8 +272,8 @@ class ABJ_404_Solution_ImportExportService {
                 $directive = 'location = ' . $source;
             }
 
-            if ($code === 410) {
-                $lines[] = $directive . ' { return 410; }';
+            if ($code === 410 || $code === 451) {
+                $lines[] = $directive . ' { return ' . $code . '; }';
             } else {
                 $lines[] = $directive . ' { return ' . $code . ' ' . $dest . '; }';
             }
@@ -315,7 +316,7 @@ class ABJ_404_Solution_ImportExportService {
         $script .= "  const url = new URL(request.url);\n";
         $script .= "  const rule = REDIRECTS[url.pathname] || REDIRECTS[url.pathname.replace(/\\/$/, '')];\n";
         $script .= "  if (rule) {\n";
-        $script .= "    if (rule.status === 410) return new Response(null, { status: 410 });\n";
+        $script .= "    if (rule.status === 410 || rule.status === 451) return new Response(null, { status: rule.status });\n";
         $script .= "    return Response.redirect(rule.dest.startsWith('http') ? rule.dest : url.origin + rule.dest, rule.status);\n";
         $script .= "  }\n";
         $script .= "  return fetch(request);\n";
@@ -360,8 +361,8 @@ class ABJ_404_Solution_ImportExportService {
         $entries = array();
 
         foreach ($redirects as $r) {
-            if ($r['code'] === 410) {
-                // Vercel has no native 410 support; skip.
+            if ($r['code'] === 410 || $r['code'] === 451) {
+                // Vercel has no native 410/451 support; skip.
                 continue;
             }
             $entries[] = array(
