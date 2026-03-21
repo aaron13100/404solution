@@ -2690,8 +2690,8 @@ msgstr "Permanent 308 (preserve method)"
 msgid "%1$d distinct 404 URLs under \"%2$s\" detected — possible path enumeration."
 msgstr "%1$d distinct 404 URLs under \"%2$s\" detected — possible path enumeration."
 
-msgid "Loading chart data\u2026"
-msgstr "Loading chart data\u2026"
+msgid "Loading chart data…"
+msgstr "Loading chart data…"
 
 msgid "Could not load chart data."
 msgstr "Could not load chart data."
