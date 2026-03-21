@@ -59,13 +59,13 @@ class ABJ_404_Solution_GoogleSearchConsole {
 
     /**
      * Save GSC settings. Returns an error message string or '' on success.
-     * @param array $postData
+     * @param array<string, mixed> $postData
      * @return string
      */
     public function saveSettings(array $postData): string {
-        $clientId     = isset($postData['gsc_client_id'])     ? sanitize_text_field((string)$postData['gsc_client_id'])     : '';
-        $clientSecret = isset($postData['gsc_client_secret']) ? sanitize_text_field((string)$postData['gsc_client_secret']) : '';
-        $siteUrl      = isset($postData['gsc_site_url'])      ? esc_url_raw((string)$postData['gsc_site_url'])              : home_url('/');
+        $clientId     = isset($postData['gsc_client_id'])     ? sanitize_text_field((string)(is_scalar($postData['gsc_client_id'])     ? $postData['gsc_client_id']     : '')) : '';
+        $clientSecret = isset($postData['gsc_client_secret']) ? sanitize_text_field((string)(is_scalar($postData['gsc_client_secret']) ? $postData['gsc_client_secret'] : '')) : '';
+        $siteUrl      = isset($postData['gsc_site_url'])      ? esc_url_raw((string)(is_scalar($postData['gsc_site_url'])      ? $postData['gsc_site_url']      : ''))              : home_url('/');
 
         update_option(self::OPTION_KEY, array(
             'client_id'     => $clientId,
@@ -155,7 +155,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
         if (!is_array($body) || empty($body['access_token'])) {
-            $error = isset($body['error_description']) ? $body['error_description'] : __('OAuth token exchange failed.', '404-solution');
+            $error = (is_array($body) && isset($body['error_description'])) ? $body['error_description'] : __('OAuth token exchange failed.', '404-solution');
             return is_string($error) ? $error : __('OAuth token exchange failed.', '404-solution');
         }
 
@@ -243,7 +243,8 @@ class ABJ_404_Solution_GoogleSearchConsole {
 
         $siteUrl = $s['site_url'];
         $endDate = date('Y-m-d');
-        $startDate = date('Y-m-d', strtotime("-{$days} days"));
+        $startTimestamp = strtotime("-{$days} days");
+        $startDate = date('Y-m-d', $startTimestamp !== false ? $startTimestamp : 0);
 
         // Limit to first 100 URLs per API call to stay within API limits
         $urlChunks = array_chunk($urls, 50);
@@ -281,7 +282,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
                         'Authorization' => 'Bearer ' . $token['access_token'],
                         'Content-Type'  => 'application/json',
                     ),
-                    'body'    => wp_json_encode($body),
+                    'body'    => (string)wp_json_encode($body),
                     'timeout' => 20,
                 )
             );
@@ -322,7 +323,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
      * Fetch top N 404 URLs that also have GSC search traffic.
      * Correlates captured 404s with GSC data.
      *
-     * @param array $capturedUrls Array of captured 404 URL strings
+     * @param array<string> $capturedUrls Array of captured 404 URL strings
      * @param int $days Number of days for GSC data
      * @return array<int, array<string, mixed>> Rows with url, clicks, impressions, position
      */

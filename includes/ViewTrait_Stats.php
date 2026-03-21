@@ -296,10 +296,10 @@ trait ViewTrait_Stats {
                 if (!is_array($item)) {
                     continue;
                 }
-                $postTitle = isset($item['post_title']) ? (string)$item['post_title'] : '';
-                $brokenUrl = isset($item['broken_url']) ? (string)$item['broken_url'] : '';
-                $hitCount  = isset($item['hit_count'])  ? intval($item['hit_count'])  : 0;
-                $postId    = isset($item['post_id'])     ? intval($item['post_id'])    : 0;
+                $postTitle = (string)$item['post_title'];
+                $brokenUrl = (string)$item['broken_url'];
+                $hitCount  = intval($item['hit_count']);
+                $postId    = intval($item['post_id']);
                 $editLink  = ($postId > 0) ? get_edit_post_link($postId) : '';
                 $content .= '<tr>';
                 if ($editLink) {
@@ -424,19 +424,17 @@ trait ViewTrait_Stats {
             )
         );
         echo '</p>';
-        if ($count > 0) {
-            echo '<ul style="margin:4px 0 0 16px;list-style:disc;">';
+        echo '<ul style="margin:4px 0 0 16px;list-style:disc;">';
             foreach ($results as $threat) {
                 if (!is_array($threat)) {
                     continue;
                 }
-                $detail = isset($threat['detail']) && is_string($threat['detail']) ? $threat['detail'] : '';
+                $detail = (string)$threat['detail'];
                 if ($detail !== '') {
                     echo '<li>' . esc_html($detail) . '</li>';
                 }
             }
             echo '</ul>';
-        }
         echo '</div>';
     }
 

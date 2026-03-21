@@ -229,7 +229,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // Only published posts (not already-trashed posts being force-deleted).
-        $postStatus = is_string($post->post_status) ? $post->post_status : '';
+        $postStatus = (string)$post->post_status;
         if (!in_array($postStatus, array('publish', 'published'), true)) {
             return;
         }

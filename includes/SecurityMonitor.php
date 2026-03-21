@@ -22,10 +22,7 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_SecurityMonitor {
 
-    /** @var object */
-    private $dao;
-
-    /** @var object */
+    /** @var ABJ_404_Solution_Logging */
     private $logger;
 
     /** Transient key for cached analysis results */
@@ -35,11 +32,10 @@ class ABJ_404_Solution_SecurityMonitor {
     const TRANSIENT_TTL = 86400;
 
     /**
-     * @param object $dao    ABJ_404_Solution_DataAccess instance
-     * @param object $logger ABJ_404_Solution_Logging instance
+     * @param object $_dao   ABJ_404_Solution_DataAccess instance (reserved for future use)
+     * @param ABJ_404_Solution_Logging $logger
      */
-    public function __construct($dao, $logger) {
-        $this->dao    = $dao;
+    public function __construct($_dao, $logger) {
         $this->logger = $logger;
     }
 
@@ -81,10 +77,11 @@ class ABJ_404_Solution_SecurityMonitor {
     /**
      * Return the most recent cached analysis results without re-running.
      *
-     * @return array|false Array of threat detections, or false if no cache exists.
+     * @return array<int, array{type: string, severity: string, detail: string, count: int}>|false
      */
     public function getCachedResults() {
-        return get_transient(self::TRANSIENT_KEY);
+        $result = get_transient(self::TRANSIENT_KEY);
+        return is_array($result) ? $result : false;
     }
 
     // -------------------------------------------------------------------------

@@ -483,7 +483,7 @@ trait ViewTrait_UI {
         $selectedThemeObsidian = ($options['admin_theme'] == 'obsidian') ? 'selected' : '';
 
         // Notification frequency selections
-        $notifyFrequency = isset($options['admin_notification_frequency']) ? (string)$options['admin_notification_frequency'] : 'instant';
+        $notifyFrequency = isset($options['admin_notification_frequency']) ? (string)(is_scalar($options['admin_notification_frequency']) ? $options['admin_notification_frequency'] : 'instant') : 'instant';
         $selectedNotifyInstant = ($notifyFrequency === 'instant') ? 'selected' : '';
         $selectedNotifyDaily   = ($notifyFrequency === 'daily')   ? 'selected' : '';
         $selectedNotifyWeekly  = ($notifyFrequency === 'weekly')  ? 'selected' : '';

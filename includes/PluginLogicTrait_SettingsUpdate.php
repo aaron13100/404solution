@@ -274,7 +274,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
 
         if (isset($postData['default_redirect'])) {
             $validDefaultCodes = array('301', '302', '307', '308');
-            if (in_array((string)$postData['default_redirect'], $validDefaultCodes, true)) {
+            if (in_array((string)(is_scalar($postData['default_redirect']) ? $postData['default_redirect'] : ''), $validDefaultCodes, true)) {
                 $options['default_redirect'] = is_scalar($postData['default_redirect']) ? intval($postData['default_redirect']) : 301;
             } else {
                 $message .= __('Error: Invalid value specified for default redirect type', '404-solution') . ".<BR/>";

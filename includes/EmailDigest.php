@@ -49,9 +49,9 @@ class ABJ_404_Solution_EmailDigest {
             ? admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options')
             : '#';
 
-        $totalCaptured = intval($stats['total_captured'] ?? 0);
-        $totalManual = intval($stats['total_manual'] ?? 0);
-        $totalAuto = intval($stats['total_auto'] ?? 0);
+        $totalCaptured = intval($stats['total_captured']);
+        $totalManual = intval($stats['total_manual']);
+        $totalAuto = intval($stats['total_auto']);
 
         // ---- HTML rows for the top-captured table ----
         $tableRows = '';
@@ -62,8 +62,8 @@ class ABJ_404_Solution_EmailDigest {
         } else {
             foreach ($topCaptured as $row) {
                 $url = isset($row['url']) && is_string($row['url']) ? esc_html($row['url']) : '';
-                $hits = isset($row['logshits']) ? intval($row['logshits']) : 0;
-                $created = isset($row['created']) ? date('Y-m-d', intval($row['created'])) : '';
+                $hits = isset($row['logshits']) ? intval(is_scalar($row['logshits']) ? $row['logshits'] : 0) : 0;
+                $created = isset($row['created']) ? date('Y-m-d', intval(is_scalar($row['created']) ? $row['created'] : 0)) : '';
                 $tableRows .= '<tr>'
                     . '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;word-break:break-all;">' . $url . '</td>'
                     . '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;text-align:center;">' . $hits . '</td>'
@@ -224,7 +224,7 @@ class ABJ_404_Solution_EmailDigest {
         $topCaptured = $this->dao->getTopCapturedForDigest($limit);
         $stats = $this->dao->getDigestSummaryStats();
 
-        if (intval($stats['total_captured'] ?? 0) === 0 && empty($topCaptured)) {
+        if (intval($stats['total_captured']) === 0 && empty($topCaptured)) {
             return 'Digest skipped: no captured 404s to report.';
         }
 

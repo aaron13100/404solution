@@ -63,10 +63,10 @@ class ABJ_404_Solution_InternalLinkScanner {
 
                 // Extract all href values.
                 preg_match_all('/href=["\']([^"\']+)["\']/', $content, $matches);
-                $hrefs = isset($matches[1]) ? $matches[1] : array();
+                $hrefs = $matches[1];
 
                 foreach ($hrefs as $href) {
-                    $href = is_string($href) ? trim($href) : '';
+                    $href = trim($href);
                     if ($href === '') {
                         continue;
                     }
@@ -116,7 +116,8 @@ class ABJ_404_Solution_InternalLinkScanner {
      *         Cached results array, or false if no cache exists.
      */
     public function getCachedResults() {
-        return get_transient(self::TRANSIENT_KEY);
+        $result = get_transient(self::TRANSIENT_KEY);
+        return is_array($result) ? $result : false;
     }
 
     /**
@@ -184,7 +185,7 @@ class ABJ_404_Solution_InternalLinkScanner {
             'suppress_filters' => true,
         ));
 
-        return is_array($posts) ? $posts : array();
+        return $posts;
     }
 
     /**
@@ -205,7 +206,7 @@ class ABJ_404_Solution_InternalLinkScanner {
         // Absolute URL: strip the home_url prefix if it matches this site.
         if ($siteHome !== '' && strpos($href, $siteHome) === 0) {
             $relative = substr($href, strlen($siteHome));
-            return ($relative === '' || $relative === false) ? '/' : $relative;
+            return ($relative === '') ? '/' : $relative;
         }
 
         // Fragment-only or javascript: — not a real internal link.

@@ -1125,7 +1125,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 ? trim($cond['operator']) : 'equals';
             $value    = isset($cond['value']) && is_string($cond['value'])
                 ? trim($cond['value']) : '';
-            $sortOrder = isset($cond['sort_order']) ? absint($cond['sort_order']) : $index;
+            $sortOrder = isset($cond['sort_order']) ? absint(is_scalar($cond['sort_order']) ? $cond['sort_order'] : 0) : $index;
 
             // Validate required fields.
             if (!in_array($logic, $allowedLogic, true)) {

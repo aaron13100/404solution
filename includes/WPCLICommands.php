@@ -566,10 +566,11 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
         // Check for an exact match (manual or auto redirect).
         $exact = $dao->getExistingRedirectForURL($url);
-        if (isset($exact['id']) && (int)$exact['id'] !== 0) {
-            $dest = isset($exact['final_dest']) ? (string)$exact['final_dest'] : '';
-            $code = isset($exact['code']) ? (string)$exact['code'] : '301';
-            \WP_CLI::success("Exact match found (ID: {$exact['id']}): {$url} → {$dest} [{$code}]");
+        if (isset($exact['id']) && (int)(is_scalar($exact['id']) ? $exact['id'] : 0) !== 0) {
+            $dest   = isset($exact['final_dest']) && is_scalar($exact['final_dest']) ? (string)$exact['final_dest'] : '';
+            $code   = isset($exact['code']) && is_scalar($exact['code']) ? (string)$exact['code'] : '301';
+            $exactId = is_scalar($exact['id']) ? (string)$exact['id'] : '?';
+            \WP_CLI::success("Exact match found (ID: {$exactId}): {$url} → {$dest} [{$code}]");
             return;
         }
 
@@ -577,15 +578,15 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $regexRedirects = $dao->getRedirectsWithRegEx();
         $f = ABJ_404_Solution_Functions::getInstance();
         foreach ($regexRedirects as $row) {
-            $pattern = isset($row['url']) ? (string)$row['url'] : '';
+            $pattern = isset($row['url']) && is_scalar($row['url']) ? (string)$row['url'] : '';
             if ($pattern === '') {
                 continue;
             }
             $matches = array();
             if ($f->regexMatch($pattern, $url, $matches)) {
-                $dest = isset($row['final_dest']) ? (string)$row['final_dest'] : '';
-                $code = isset($row['code']) ? (string)$row['code'] : '301';
-                $id   = isset($row['id']) ? (string)$row['id'] : '?';
+                $dest = isset($row['final_dest']) && is_scalar($row['final_dest']) ? (string)$row['final_dest'] : '';
+                $code = isset($row['code']) && is_scalar($row['code']) ? (string)$row['code'] : '301';
+                $id   = isset($row['id']) && is_scalar($row['id']) ? (string)$row['id'] : '?';
                 \WP_CLI::success("Regex match found (ID: {$id}, pattern: {$pattern}): {$url} → {$dest} [{$code}]");
                 return;
             }

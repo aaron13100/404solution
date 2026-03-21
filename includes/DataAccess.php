@@ -863,10 +863,10 @@ class ABJ_404_Solution_DataAccess {
             /** @var wpdb $wpdb */
             usleep(50000); // 50 ms — enough for most short-lived locks to release
             $result['rows'] = $wpdb->get_results($query, ARRAY_A);
-            $result['last_error'] = (string)($wpdb->last_error ?? '');
-            $result['last_result'] = $wpdb->last_result ?? array();
-            $result['rows_affected'] = $wpdb->rows_affected ?? 0;
-            $result['insert_id'] = $wpdb->insert_id ?? 0;
+            $result['last_error'] = (string)$wpdb->last_error;
+            $result['last_result'] = $wpdb->last_result;
+            $result['rows_affected'] = $wpdb->rows_affected;
+            $result['insert_id'] = $wpdb->insert_id;
             if ($result['last_error'] !== '' && $this->isDeadlockOrLockTimeoutError($result['last_error'])) {
                 $this->setPluginDbNotice('lock_timeout', $this->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $result['last_error']);
             }
@@ -1165,7 +1165,7 @@ class ABJ_404_Solution_DataAccess {
         if (!method_exists($wpdb, 'get_var') || !method_exists($wpdb, 'prepare')) {
             return false; // Safe default when $wpdb is a partial stub
         }
-        $dbName = (property_exists($wpdb, 'dbname') && is_string($wpdb->dbname)) ? $wpdb->dbname : (defined('DB_NAME') ? DB_NAME : '');
+        $dbName = defined('DB_NAME') ? (string)DB_NAME : '';
         $engine = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",

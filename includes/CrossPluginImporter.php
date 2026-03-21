@@ -20,15 +20,15 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_CrossPluginImporter {
 
-    /** @var object */
+    /** @var ABJ_404_Solution_DataAccess */
     private $dao;
 
-    /** @var object */
+    /** @var ABJ_404_Solution_Logging */
     private $logger;
 
     /**
-     * @param object $dao    ABJ_404_Solution_DataAccess instance
-     * @param object $logger ABJ_404_Solution_Logging instance
+     * @param ABJ_404_Solution_DataAccess $dao
+     * @param ABJ_404_Solution_Logging $logger
      */
     public function __construct($dao, $logger) {
         $this->dao    = $dao;
@@ -73,7 +73,7 @@ class ABJ_404_Solution_CrossPluginImporter {
      *
      * @param string $source       One of 'rankmath', 'yoast', 'aioseo', 'safe-redirect-manager', 'redirection'
      * @param int    $previewLimit Maximum rows to return for preview
-     * @return array<int, array{source_url: string, dest_url: string, code: int, is_regex: bool}>
+     * @return array<int, array<string, mixed>>
      */
     public function getImportPreview(string $source, int $previewLimit = 10): array {
         $rows = $this->readSource($source);
@@ -143,7 +143,7 @@ class ABJ_404_Solution_CrossPluginImporter {
      * Dispatch to the appropriate source-specific reader.
      *
      * @param string $source
-     * @return array<int, array{source_url: string, dest_url: string, code: int, is_regex: bool}>
+     * @return array<int, array<string, mixed>>
      */
     private function readSource(string $source): array {
         switch ($source) {
@@ -168,7 +168,7 @@ class ABJ_404_Solution_CrossPluginImporter {
     /**
      * Read Rank Math redirections from rank_math_redirections table.
      *
-     * @return array<int, array{source_url: string, dest_url: string, code: int, is_regex: bool}>
+     * @return array<int, array<string, mixed>>
      */
     private function readRankMath(): array {
         global $wpdb;
@@ -218,7 +218,7 @@ class ABJ_404_Solution_CrossPluginImporter {
     /**
      * Read Yoast SEO Premium redirects from yoast_seo_redirects table.
      *
-     * @return array<int, array{source_url: string, dest_url: string, code: int, is_regex: bool}>
+     * @return array<int, array<string, mixed>>
      */
     private function readYoast(): array {
         global $wpdb;
@@ -266,7 +266,7 @@ class ABJ_404_Solution_CrossPluginImporter {
     /**
      * Read AIOSEO redirects from aioseo_redirects table.
      *
-     * @return array<int, array{source_url: string, dest_url: string, code: int, is_regex: bool}>
+     * @return array<int, array<string, mixed>>
      */
     private function readAIOSEO(): array {
         global $wpdb;
@@ -313,7 +313,7 @@ class ABJ_404_Solution_CrossPluginImporter {
     /**
      * Read Safe Redirect Manager redirects via the redirect_rule custom post type.
      *
-     * @return array<int, array{source_url: string, dest_url: string, code: int, is_regex: bool}>
+     * @return array<int, array<string, mixed>>
      */
     private function readSafeRedirectManager(): array {
         if (!function_exists('get_posts')) {
@@ -335,7 +335,7 @@ class ABJ_404_Solution_CrossPluginImporter {
             if (!is_object($post)) {
                 continue;
             }
-            $postId = isset($post->ID) ? (int)$post->ID : 0;
+            $postId = (int)$post->ID;
             if ($postId === 0) {
                 continue;
             }
@@ -365,7 +365,7 @@ class ABJ_404_Solution_CrossPluginImporter {
     /**
      * Read Redirection plugin redirects from redirection_items table.
      *
-     * @return array<int, array{source_url: string, dest_url: string, code: int, is_regex: bool}>
+     * @return array<int, array<string, mixed>>
      */
     private function readRedirection(): array {
         global $wpdb;
@@ -428,6 +428,7 @@ class ABJ_404_Solution_CrossPluginImporter {
         if (!$wpdb || !method_exists($wpdb, 'prepare') || !method_exists($wpdb, 'get_var')) {
             return false;
         }
+        /** @var \wpdb $wpdb */
 
         // Use get_var so we get null on miss rather than an error.
         $result = $wpdb->get_var(

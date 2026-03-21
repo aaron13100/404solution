@@ -1006,7 +1006,7 @@ trait ViewTrait_RedirectsTable {
             $engineHTML = ($rowEngine !== '') ? '<br><span class="abj404-engine-label">' . esc_html($rowEngine) . '</span>' : '';
             $htmlTemp = $this->f->str_replace('{engineHTML}', $engineHTML, $htmlTemp);
             $rawScore = $row['score'] ?? null;
-            $rowScore = ($rawScore !== null && $rawScore !== '') ? '<br><span class="abj404-score-badge">' . esc_html(number_format((float)$rawScore, 0)) . '%</span>' : '';
+            $rowScore = ($rawScore !== null && $rawScore !== '') ? '<br><span class="abj404-score-badge">' . esc_html(number_format((float)(is_numeric($rawScore) ? $rawScore : 0), 0)) . '%</span>' : '';
             $htmlTemp = $this->f->str_replace('{rowScore}', $rowScore, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{type}', $typeForView, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{rowCode}', $rowCode, $htmlTemp);

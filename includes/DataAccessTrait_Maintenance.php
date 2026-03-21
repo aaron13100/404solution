@@ -368,7 +368,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
     public function expireOldAutoRedirects(): int {
         $options = ABJ_404_Solution_PluginLogic::getInstance()->getOptions();
         $daysRaw = isset($options['auto_302_expiration_days']) ? $options['auto_302_expiration_days'] : 0;
-        $days = (int)$daysRaw;
+        $days = is_numeric($daysRaw) ? (int)$daysRaw : 0;
         if ($days <= 0) {
             return 0;
         }
