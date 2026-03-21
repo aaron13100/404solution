@@ -3066,3 +3066,16 @@ msgstr "Weiterleitung erstellen, wenn eine Seite gelöscht oder in den Papierkor
 
 msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
 msgstr "Wenn eine veröffentlichte Seite in den Papierkorb verschoben oder dauerhaft gelöscht wird, wird eine Weiterleitung von der alten URL zur Startseite erstellt."
+
+# Meta Refresh redirect strings
+msgid "0 Meta Refresh"
+msgstr "0 Meta-Refresh"
+
+msgid "Meta Refresh"
+msgstr "Meta-Refresh"
+
+msgid "Redirecting…"
+msgstr "Weiterleiten…"
+
+msgid "You are being redirected. Click the link if not redirected automatically."
+msgstr "Sie werden weitergeleitet. Klicken Sie auf den Link, falls Sie nicht automatisch weitergeleitet werden."

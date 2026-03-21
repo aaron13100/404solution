@@ -3062,3 +3062,16 @@ msgstr "Créer une redirection quand une page est mise à la corbeille ou suppri
 
 msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
 msgstr "Quand une page publiée est déplacée vers la corbeille ou définitivement supprimée, créer une redirection de son ancienne URL vers la page d'accueil."
+
+# Meta Refresh redirect strings
+msgid "0 Meta Refresh"
+msgstr "0 Meta Refresh"
+
+msgid "Meta Refresh"
+msgstr "Meta Refresh"
+
+msgid "Redirecting…"
+msgstr "Redirection en cours…"
+
+msgid "You are being redirected. Click the link if not redirected automatically."
+msgstr "Vous êtes en cours de redirection. Cliquez sur le lien si vous n'êtes pas redirigé automatiquement."

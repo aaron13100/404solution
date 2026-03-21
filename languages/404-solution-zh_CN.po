@@ -3076,3 +3076,16 @@ msgstr "当页面移至回收站或删除时创建重定向"
 
 msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
 msgstr "当已发布的页面被移至回收站或永久删除时，从其旧URL创建到首页的重定向。"
+
+# Meta Refresh redirect strings
+msgid "0 Meta Refresh"
+msgstr ""
+
+msgid "Meta Refresh"
+msgstr ""
+
+msgid "Redirecting…"
+msgstr ""
+
+msgid "You are being redirected. Click the link if not redirected automatically."
+msgstr ""

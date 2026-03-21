@@ -1315,6 +1315,29 @@ class ABJ_404_Solution_PluginLogic {
             exit;
         }
 
+        // Meta Refresh: emit an HTML page with <meta http-equiv="refresh"> and exit.
+        if ($status === 0 && $location !== '') {
+            status_header(200);
+            $templatePath = __DIR__ . '/html/metaRefresh.html';
+            if (file_exists($templatePath)) {
+                $templateContent = file_get_contents($templatePath);
+                if (is_string($templateContent)) {
+                    $templateContent = str_replace(
+                        array('{url}', '{delay}', '{title}', '{message}'),
+                        array(
+                            esc_url($location),
+                            '0',
+                            esc_html__('Redirecting…', '404-solution'),
+                            esc_html__('You are being redirected. Click the link if not redirected automatically.', '404-solution'),
+                        ),
+                        $templateContent
+                    );
+                    echo $templateContent;
+                }
+            }
+            exit;
+        }
+
         $finalDestination = $this->buildFinalRedirectDestination($location, $requestedURL, $isCustom404);
 
     	$previousRequest = $this->readCookieWithPreviousRqeuestShort();

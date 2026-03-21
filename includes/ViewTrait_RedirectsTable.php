@@ -568,6 +568,7 @@ trait ViewTrait_RedirectsTable {
         echo '<option value="308"' . $sel308 . '>308 - ' . esc_html__('Permanent Redirect (preserve method)', '404-solution') . '</option>';
         echo '<option value="410">410 - ' . esc_html__('Gone (resource permanently removed)', '404-solution') . '</option>';
         echo '<option value="451">451 - ' . esc_html__('Unavailable For Legal Reasons', '404-solution') . '</option>';
+        echo '<option value="0">0 - ' . esc_html__('Meta Refresh', '404-solution') . '</option>';
         echo '</select>';
         echo '</div>';
 
@@ -915,6 +916,7 @@ trait ViewTrait_RedirectsTable {
                 '308' => 'abj404-badge-308',
                 '410' => 'abj404-badge-410',
                 '451' => 'abj404-badge-451',
+                '0'   => 'abj404-badge-meta',
             );
             $codeBadgeClass = isset($codeBadgeMap[$rowCode]) ? $codeBadgeMap[$rowCode] : 'abj404-badge-302';
 
@@ -1067,6 +1069,7 @@ trait ViewTrait_RedirectsTable {
         $selected308 = ($options['default_redirect'] == '308') ? ' selected ' : '';
         $selected410 = '';
         $selected451 = '';
+        $selected0 = '';
 
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectTop.html");
@@ -1099,6 +1102,7 @@ trait ViewTrait_RedirectsTable {
         $html = $this->f->str_replace('{308selected}', $selected308, $html);
         $html = $this->f->str_replace('{410selected}', $selected410, $html);
         $html = $this->f->str_replace('{451selected}', $selected451, $html);
+        $html = $this->f->str_replace('{0selected}', $selected0, $html);
 
         // constants and translations.
         $html = $this->f->doNormalReplacements($html);
@@ -1134,6 +1138,7 @@ trait ViewTrait_RedirectsTable {
             308 => '308 - ' . __('Permanent Redirect (preserve method)', '404-solution'),
             410 => '410 - ' . __('Gone (resource permanently removed)', '404-solution'),
             451 => '451 - ' . __('Unavailable For Legal Reasons', '404-solution'),
+            0   => '0 - '   . __('Meta Refresh', '404-solution'),
         );
         foreach ($codeLabels as $code => $title) {
             $selected = ((string)$code === (string)$codeselected) ? ' selected' : '';

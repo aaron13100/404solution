@@ -1825,6 +1825,11 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     color: #991b1b;
 }
 
+.abj404-badge-meta {
+    background: #ccfbf1;
+    color: #0f766e;
+}
+
 .abj404-badge-captured {
     background: #fef3c7;
     color: #92400e;

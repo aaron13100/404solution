@@ -3068,3 +3068,16 @@ msgstr "Criar redirecionamento quando uma página for movida para a lixeira ou e
 
 msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
 msgstr "Quando uma página publicada for movida para a lixeira ou excluída permanentemente, cria um redirecionamento da URL antiga para a página inicial."
+
+# Meta Refresh redirect strings
+msgid "0 Meta Refresh"
+msgstr ""
+
+msgid "Meta Refresh"
+msgstr ""
+
+msgid "Redirecting…"
+msgstr ""
+
+msgid "You are being redirected. Click the link if not redirected automatically."
+msgstr ""

@@ -3084,3 +3084,16 @@ msgstr "إنشاء إعادة توجيه عند نقل صفحة إلى المه�
 
 msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
 msgstr "عند نقل صفحة منشورة إلى المهملات أو حذفها نهائياً، أنشئ إعادة توجيه من عنوانها القديم إلى الصفحة الرئيسية."
+
+# Meta Refresh redirect strings
+msgid "0 Meta Refresh"
+msgstr "0 ميتا ريفريش"
+
+msgid "Meta Refresh"
+msgstr "ميتا ريفريش"
+
+msgid "Redirecting…"
+msgstr "جارٍ التوجيه…"
+
+msgid "You are being redirected. Click the link if not redirected automatically."
+msgstr "أنت تُعاد توجيهك. انقر على الرابط إذا لم تتم إعادة التوجيه تلقائيًا."

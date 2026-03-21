@@ -3065,3 +3065,16 @@ msgstr "Crea reindirizzamento quando una pagina viene spostata nel cestino o eli
 
 msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
 msgstr "Quando una pagina pubblicata viene spostata nel cestino o eliminata definitivamente, crea un reindirizzamento dal suo vecchio URL alla home page."
+
+# Meta Refresh redirect strings
+msgid "0 Meta Refresh"
+msgstr ""
+
+msgid "Meta Refresh"
+msgstr ""
+
+msgid "Redirecting…"
+msgstr ""
+
+msgid "You are being redirected. Click the link if not redirected automatically."
+msgstr ""

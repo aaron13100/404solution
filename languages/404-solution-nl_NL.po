@@ -3068,3 +3068,16 @@ msgstr "Redirect aanmaken wanneer een pagina naar prullenbak wordt verplaatst of
 
 msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
 msgstr "Wanneer een gepubliceerde pagina naar de prullenbak wordt verplaatst of permanent verwijderd, maak dan een redirect van de oude URL naar de startpagina."
+
+# Meta Refresh redirect strings
+msgid "0 Meta Refresh"
+msgstr ""
+
+msgid "Meta Refresh"
+msgstr ""
+
+msgid "Redirecting…"
+msgstr ""
+
+msgid "You are being redirected. Click the link if not redirected automatically."
+msgstr ""

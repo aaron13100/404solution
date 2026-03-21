@@ -3073,3 +3073,16 @@ msgstr "Создавать перенаправление при удалени�
 
 msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
 msgstr "Когда опубликованная страница перемещается в корзину или удаляется навсегда, создаётся перенаправление со старого URL на главную страницу."
+
+# Meta Refresh redirect strings
+msgid "0 Meta Refresh"
+msgstr ""
+
+msgid "Meta Refresh"
+msgstr ""
+
+msgid "Redirecting…"
+msgstr ""
+
+msgid "You are being redirected. Click the link if not redirected automatically."
+msgstr ""

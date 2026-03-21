@@ -3063,3 +3063,16 @@ msgstr "Buat redirect saat halaman dihapus ke sampah atau dihapus permanen"
 
 msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
 msgstr "Ketika halaman yang diterbitkan dipindahkan ke sampah atau dihapus secara permanen, buat redirect dari URL lamanya ke halaman utama."
+
+# Meta Refresh redirect strings
+msgid "0 Meta Refresh"
+msgstr ""
+
+msgid "Meta Refresh"
+msgstr ""
+
+msgid "Redirecting…"
+msgstr ""
+
+msgid "You are being redirected. Click the link if not redirected automatically."
+msgstr ""

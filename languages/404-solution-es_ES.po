@@ -3065,3 +3065,16 @@ msgstr "Crear redirección cuando una página se elimina o se envía a la papele
 
 msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
 msgstr "Cuando una página publicada se mueve a la papelera o se elimina permanentemente, se crea una redirección desde la URL antigua a la página de inicio."
+
+# Meta Refresh redirect strings
+msgid "0 Meta Refresh"
+msgstr "0 Meta Refresh"
+
+msgid "Meta Refresh"
+msgstr "Meta Refresh"
+
+msgid "Redirecting…"
+msgstr "Redirigiendo…"
+
+msgid "You are being redirected. Click the link if not redirected automatically."
+msgstr "Está siendo redirigido. Haga clic en el enlace si no es redirigido automáticamente."
