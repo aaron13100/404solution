@@ -26,7 +26,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
 
     const OAUTH_AUTH_URL    = 'https://accounts.google.com/o/oauth2/v2/auth';
     const OAUTH_TOKEN_URL   = 'https://oauth2.googleapis.com/token';
-    const API_BASE_URL      = 'https://searchconsole.googleapis.com/v1';
+    const API_BASE_URL      = 'https://www.googleapis.com/webmasters/v3';
     const SCOPE             = 'https://www.googleapis.com/auth/webmasters.readonly';
 
     /** @var ABJ_404_Solution_Logging */
