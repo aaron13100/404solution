@@ -328,9 +328,16 @@ if (!function_exists('abj404_shortCodeListener')) {
 	}
 }
 
+// Always load Loader.php to ensure plugin constants (ABJ404_TYPE_404_DISPLAYED,
+// ABJ404_STATUS_MANUAL, etc.) are defined in all contexts: admin, REST API, WP-CLI
+// eval, and template_redirect. Without this, direct calls to plugin classes via
+// wp eval fail with "Undefined constant" errors because Loader.php was previously
+// only loaded inside is_admin() — leaving WP-CLI and other non-admin contexts
+// without the constants they need.
+require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+
 // admin
 if (is_admin()) {
-	require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 	ABJ_404_Solution_WordPress_Connector::init();
 	ABJ_404_Solution_ViewUpdater::init();
 }
@@ -338,12 +345,8 @@ if (is_admin()) {
 // REST API — deferred to rest_api_init so DataAccess/PluginLogic are only loaded on actual REST requests.
 // Note: We call registerRoutes() directly here (not register()), because register() itself calls
 // add_action('rest_api_init', ...) which would queue routes AFTER rest_api_init has already fired.
-// We always load Loader.php to ensure constants (ABJ404_TRASH_FILTER etc.) are defined, since
-// is_admin() is false for REST requests so Loader.php is not loaded earlier.
+// Loader.php is already required unconditionally above, so constants are always defined.
 add_action('rest_api_init', function() {
-	if (!defined('ABJ404_TRASH_FILTER')) {
-		require_once plugin_dir_path(ABJ404_FILE) . 'includes/Loader.php';
-	}
 	$dao   = ABJ_404_Solution_DataAccess::getInstance();
 	$logic = ABJ_404_Solution_PluginLogic::getInstance();
 	$restController = new ABJ_404_Solution_RestApiController($dao, $logic);
@@ -351,11 +354,9 @@ add_action('rest_api_init', function() {
 });
 
 // WP-CLI commands.
+// Loader.php is already required unconditionally above, so constants and classes are available.
 if (defined('WP_CLI') && WP_CLI) {
 	add_action('init', function() {
-		if (!class_exists('ABJ_404_Solution_WPCLICommands')) {
-			require_once plugin_dir_path(ABJ404_FILE) . 'includes/Loader.php';
-		}
 		\WP_CLI::add_command('abj404', 'ABJ_404_Solution_WPCLICommands');
 	}, 1);
 }
