@@ -397,8 +397,10 @@ trait ViewTrait_RedirectsTable {
         echo '</div>';
 
         // Confidence filter dropdown
-        $currentScoreRange = is_string($tableOptions['score_range'] ?? '') ? (string)($tableOptions['score_range'] ?? 'all') : 'all';
-        $scoreRangeBaseUrl = '?page=' . ABJ404_PP . '&subpage=' . esc_attr($sub) . '&filter=' . intval($tableOptions['filter'] ?? 0);
+        $rawScoreRange = $tableOptions['score_range'] ?? 'all';
+        $currentScoreRange = is_string($rawScoreRange) ? $rawScoreRange : 'all';
+        $rawFilter = $tableOptions['filter'] ?? 0;
+        $scoreRangeBaseUrl = '?page=' . ABJ404_PP . '&subpage=' . esc_attr($sub) . '&filter=' . (int)(is_scalar($rawFilter) ? $rawFilter : 0);
         echo '<div class="abj404-rows-per-page">';
         echo '<span>' . esc_html__('Confidence:', '404-solution') . '</span>';
         $scoreRangeBaseUrlJs = addslashes(esc_url($scoreRangeBaseUrl));
@@ -579,7 +581,7 @@ trait ViewTrait_RedirectsTable {
         // Redirect type
         echo '<div class="abj404-form-group">';
         echo '<label class="abj404-form-label">' . esc_html__('Redirect Type', '404-solution') . '</label>';
-        echo '<select name="code" class="abj404-form-select">';
+        echo '<select id="code" name="code" class="abj404-form-select">';
         $sel301 = ($options['default_redirect'] == '301') ? ' selected' : '';
         $sel302 = ($options['default_redirect'] == '302') ? ' selected' : '';
         $sel307 = ($options['default_redirect'] == '307') ? ' selected' : '';
