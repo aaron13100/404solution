@@ -3025,20 +3025,11 @@ msgstr "404 Solution Digest"
 msgid "Digest Report"
 msgstr "ダイジェストレポート"
 
-msgid "Captured"
-msgstr "キャプチャ済み"
-
 msgid "404 URLs"
 msgstr "404 URL"
 
-msgid "Auto"
-msgstr "自動"
-
 msgid "Redirected"
 msgstr "リダイレクト済み"
-
-msgid "Manual"
-msgstr "手動"
 
 msgid "Configured"
 msgstr "設定済み"

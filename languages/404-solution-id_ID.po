@@ -3016,20 +3016,11 @@ msgstr "404 Solution Digest"
 msgid "Digest Report"
 msgstr "Laporan Ringkasan"
 
-msgid "Captured"
-msgstr "Tertangkap"
-
 msgid "404 URLs"
 msgstr "URL 404"
 
-msgid "Auto"
-msgstr "Otomatis"
-
 msgid "Redirected"
 msgstr "Dialihkan"
-
-msgid "Manual"
-msgstr "Manual"
 
 msgid "Configured"
 msgstr "Dikonfigurasi"

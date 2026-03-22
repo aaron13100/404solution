@@ -3021,20 +3021,11 @@ msgstr "404 Solution Digest"
 msgid "Digest Report"
 msgstr "Samenvattingsrapport"
 
-msgid "Captured"
-msgstr "Vastgelegd"
-
 msgid "404 URLs"
 msgstr "404-URL's"
 
-msgid "Auto"
-msgstr "Automatisch"
-
 msgid "Redirected"
 msgstr "Doorgestuurd"
-
-msgid "Manual"
-msgstr "Handmatig"
 
 msgid "Configured"
 msgstr "Geconfigureerd"

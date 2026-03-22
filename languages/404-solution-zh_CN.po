@@ -3029,20 +3029,11 @@ msgstr "404 Solution Digest"
 msgid "Digest Report"
 msgstr "摘要报告"
 
-msgid "Captured"
-msgstr "已捕获"
-
 msgid "404 URLs"
 msgstr "404 个 URL"
 
-msgid "Auto"
-msgstr "自动"
-
 msgid "Redirected"
 msgstr "已重定向"
-
-msgid "Manual"
-msgstr "手动"
 
 msgid "Configured"
 msgstr "已配置"

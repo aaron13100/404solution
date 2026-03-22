@@ -3019,20 +3019,11 @@ msgstr "404 Solution Digest"
 msgid "Digest Report"
 msgstr "Digest-Bericht"
 
-msgid "Captured"
-msgstr "Erfasst"
-
 msgid "404 URLs"
 msgstr "404-URLs"
 
-msgid "Auto"
-msgstr "Automatisch"
-
 msgid "Redirected"
 msgstr "Weitergeleitet"
-
-msgid "Manual"
-msgstr "Manuell"
 
 msgid "Configured"
 msgstr "Konfiguriert"

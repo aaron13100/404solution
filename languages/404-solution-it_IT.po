@@ -3018,20 +3018,11 @@ msgstr "404 Solution Digest"
 msgid "Digest Report"
 msgstr "Rapporto digest"
 
-msgid "Captured"
-msgstr "Catturati"
-
 msgid "404 URLs"
 msgstr "URL 404"
 
-msgid "Auto"
-msgstr "Automatico"
-
 msgid "Redirected"
 msgstr "Reindirizzato"
-
-msgid "Manual"
-msgstr "Manuale"
 
 msgid "Configured"
 msgstr "Configurato"

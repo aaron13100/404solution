@@ -3037,20 +3037,11 @@ msgstr "404 Solution Digest"
 msgid "Digest Report"
 msgstr "تقرير الملخص"
 
-msgid "Captured"
-msgstr "تم التقاطه"
-
 msgid "404 URLs"
 msgstr "عناوين URL 404"
 
-msgid "Auto"
-msgstr "تلقائي"
-
 msgid "Redirected"
 msgstr "تمت إعادة التوجيه"
-
-msgid "Manual"
-msgstr "يدوي"
 
 msgid "Configured"
 msgstr "تم الإعداد"

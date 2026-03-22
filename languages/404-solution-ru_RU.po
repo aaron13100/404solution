@@ -3026,20 +3026,11 @@ msgstr "404 Solution Digest"
 msgid "Digest Report"
 msgstr "Сводный отчёт"
 
-msgid "Captured"
-msgstr "Захвачено"
-
 msgid "404 URLs"
 msgstr "404 URL"
 
-msgid "Auto"
-msgstr "Авто"
-
 msgid "Redirected"
 msgstr "Перенаправлено"
-
-msgid "Manual"
-msgstr "Вручную"
 
 msgid "Configured"
 msgstr "Настроено"
