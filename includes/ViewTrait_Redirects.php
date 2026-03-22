@@ -55,6 +55,8 @@ trait ViewTrait_Redirects {
 
         $recnum = null;
         $recnums_multiple = null;
+        $startDate = '';
+        $endDate = '';
         if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {
             $this->logger->debugMessage("Edit redirect page. GET ID: " .
                     wp_kses_post((string)json_encode($_GET['id'])));
@@ -129,23 +131,11 @@ trait ViewTrait_Redirects {
             echo '</div>';
             echo '</div>';
 
-            // Scheduled redirect: start date
+            // Scheduled redirect dates (rendered inside Advanced Options in echoEditRedirect)
             $startTs = isset($redirect['start_ts']) && is_numeric($redirect['start_ts']) ? (int)$redirect['start_ts'] : 0;
             $endTs = isset($redirect['end_ts']) && is_numeric($redirect['end_ts']) ? (int)$redirect['end_ts'] : 0;
             $startDate = $startTs > 0 ? date('Y-m-d', $startTs) : '';
             $endDate = $endTs > 0 ? date('Y-m-d', $endTs) : '';
-
-            echo '<div class="abj404-form-group">';
-            echo '<label class="abj404-form-label" for="redirect_start_date">' . esc_html__('Active From (optional)', '404-solution') . '</label>';
-            echo '<input type="date" name="redirect_start_date" id="redirect_start_date" class="abj404-form-input" value="' . esc_attr($startDate) . '">';
-            echo '<p class="abj404-form-help">' . esc_html__('Leave blank to activate immediately', '404-solution') . '</p>';
-            echo '</div>';
-
-            echo '<div class="abj404-form-group">';
-            echo '<label class="abj404-form-label" for="redirect_end_date">' . esc_html__('Active Until (optional)', '404-solution') . '</label>';
-            echo '<input type="date" name="redirect_end_date" id="redirect_end_date" class="abj404-form-input" value="' . esc_attr($endDate) . '">';
-            echo '<p class="abj404-form-help">' . esc_html__('Leave blank to never expire', '404-solution') . '</p>';
-            echo '</div>';
 
         } else if ($recnums_multiple != null) {
             $redirects_multiple = $this->dao->getRedirectsByIDs($recnums_multiple);
@@ -229,7 +219,7 @@ trait ViewTrait_Redirects {
         $html = $this->f->doNormalReplacements($html);
         echo $html;
         
-        $this->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'), $source_page, $filter, $orderby, $order);
+        $this->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'), $source_page, $filter, $orderby, $order, $startDate, $endDate);
 
         echo '</form>';
         echo '</div>'; // end abj404-edit-container
