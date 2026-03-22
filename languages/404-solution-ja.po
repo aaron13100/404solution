@@ -3022,6 +3022,34 @@ msgstr "No captured 404s in this period."
 msgid "404 Solution Digest"
 msgstr "404 Solution Digest"
 
+msgid "Digest Report"
+msgstr "ダイジェストレポート"
+
+msgid "Captured"
+msgstr "キャプチャ済み"
+
+msgid "404 URLs"
+msgstr "404 URL"
+
+msgid "Auto"
+msgstr "自動"
+
+msgid "Redirected"
+msgstr "リダイレクト済み"
+
+msgid "Manual"
+msgstr "手動"
+
+msgid "Configured"
+msgstr "設定済み"
+
+msgid "Resolution Rate"
+msgstr "解決率"
+
+#. translators: 1: number of resolved URLs, 2: total number of URLs
+msgid "%1$d of %2$d URLs handled"
+msgstr "%2$d 件中 %1$d 件の URL を処理済み"
+
 msgid "Summary"
 msgstr "Summary"
 
@@ -3033,6 +3061,12 @@ msgstr "First Seen"
 
 msgid "View Captured 404s"
 msgstr "View Captured 404s"
+
+msgid "Manage Settings"
+msgstr "設定を管理"
+
+msgid "To stop these emails, update your notification settings."
+msgstr "このメールの受信を停止するには、通知設定を更新してください。"
 
 msgid "To stop receiving these emails, update your notification settings."
 msgstr "To stop receiving these emails, update your notification settings."

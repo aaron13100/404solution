@@ -3034,6 +3034,34 @@ msgstr "No captured 404s in this period."
 msgid "404 Solution Digest"
 msgstr "404 Solution Digest"
 
+msgid "Digest Report"
+msgstr "تقرير الملخص"
+
+msgid "Captured"
+msgstr "تم التقاطه"
+
+msgid "404 URLs"
+msgstr "عناوين URL 404"
+
+msgid "Auto"
+msgstr "تلقائي"
+
+msgid "Redirected"
+msgstr "تمت إعادة التوجيه"
+
+msgid "Manual"
+msgstr "يدوي"
+
+msgid "Configured"
+msgstr "تم الإعداد"
+
+msgid "Resolution Rate"
+msgstr "معدل الحل"
+
+#. translators: 1: number of resolved URLs, 2: total number of URLs
+msgid "%1$d of %2$d URLs handled"
+msgstr "%1$d من %2$d عنوان URL تمت معالجته"
+
 msgid "Summary"
 msgstr "Summary"
 
@@ -3045,6 +3073,12 @@ msgstr "First Seen"
 
 msgid "View Captured 404s"
 msgstr "View Captured 404s"
+
+msgid "Manage Settings"
+msgstr "إدارة الإعدادات"
+
+msgid "To stop these emails, update your notification settings."
+msgstr "لإيقاف هذه الرسائل، قم بتحديث إعدادات الإشعارات."
 
 msgid "To stop receiving these emails, update your notification settings."
 msgstr "To stop receiving these emails, update your notification settings."

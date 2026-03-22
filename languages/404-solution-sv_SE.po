@@ -3018,6 +3018,34 @@ msgstr "No captured 404s in this period."
 msgid "404 Solution Digest"
 msgstr "404 Solution Digest"
 
+msgid "Digest Report"
+msgstr "Sammanfattningsrapport"
+
+msgid "Captured"
+msgstr "Fångade"
+
+msgid "404 URLs"
+msgstr "404-URL:er"
+
+msgid "Auto"
+msgstr "Auto"
+
+msgid "Redirected"
+msgstr "Omdirigerad"
+
+msgid "Manual"
+msgstr "Manuell"
+
+msgid "Configured"
+msgstr "Konfigurerad"
+
+msgid "Resolution Rate"
+msgstr "Lösningsgrad"
+
+#. translators: 1: number of resolved URLs, 2: total number of URLs
+msgid "%1$d of %2$d URLs handled"
+msgstr "%1$d av %2$d URL:er hanterade"
+
 msgid "Summary"
 msgstr "Summary"
 
@@ -3029,6 +3057,12 @@ msgstr "First Seen"
 
 msgid "View Captured 404s"
 msgstr "View Captured 404s"
+
+msgid "Manage Settings"
+msgstr "Hantera inställningar"
+
+msgid "To stop these emails, update your notification settings."
+msgstr "För att sluta ta emot dessa e-postmeddelanden, uppdatera dina aviseringsinställningar."
 
 msgid "To stop receiving these emails, update your notification settings."
 msgstr "To stop receiving these emails, update your notification settings."

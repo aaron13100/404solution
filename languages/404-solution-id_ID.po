@@ -3013,6 +3013,34 @@ msgstr "No captured 404s in this period."
 msgid "404 Solution Digest"
 msgstr "404 Solution Digest"
 
+msgid "Digest Report"
+msgstr "Laporan Ringkasan"
+
+msgid "Captured"
+msgstr "Tertangkap"
+
+msgid "404 URLs"
+msgstr "URL 404"
+
+msgid "Auto"
+msgstr "Otomatis"
+
+msgid "Redirected"
+msgstr "Dialihkan"
+
+msgid "Manual"
+msgstr "Manual"
+
+msgid "Configured"
+msgstr "Dikonfigurasi"
+
+msgid "Resolution Rate"
+msgstr "Tingkat Penyelesaian"
+
+#. translators: 1: number of resolved URLs, 2: total number of URLs
+msgid "%1$d of %2$d URLs handled"
+msgstr "%1$d dari %2$d URL ditangani"
+
 msgid "Summary"
 msgstr "Summary"
 
@@ -3024,6 +3052,12 @@ msgstr "First Seen"
 
 msgid "View Captured 404s"
 msgstr "View Captured 404s"
+
+msgid "Manage Settings"
+msgstr "Kelola Pengaturan"
+
+msgid "To stop these emails, update your notification settings."
+msgstr "Untuk menghentikan email ini, perbarui pengaturan notifikasi Anda."
 
 msgid "To stop receiving these emails, update your notification settings."
 msgstr "To stop receiving these emails, update your notification settings."
