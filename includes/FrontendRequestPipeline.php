@@ -149,7 +149,11 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->logAReallyLongDebugMessage($options, $requestedURL, $redirect);
 
         if ($requestedURL != "") {
-            if ($redirect['id'] != '0' && $redirect['final_dest'] != '0') {
+            // A redirect is actionable when it has an id AND either has a real destination
+            // (final_dest != '0') OR is a homepage redirect (TYPE_HOME always uses final_dest=0).
+            $typeHomeInt = defined('ABJ404_TYPE_HOME') ? (int)ABJ404_TYPE_HOME : 5;
+            $redirectTypeInt1 = isset($redirect['type']) && is_scalar($redirect['type']) ? (int)$redirect['type'] : 0;
+            if ($redirect['id'] != '0' && ($redirect['final_dest'] != '0' || $redirectTypeInt1 === $typeHomeInt)) {
                 $deadIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
                 $redirectIdStr = isset($redirect['id']) && is_scalar($redirect['id']) ? (string) $redirect['id'] : '0';
                 if (!is_array($deadIds) || !in_array($redirectIdStr, $deadIds, true)) {
@@ -168,7 +172,8 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 $lookupStart = microtime(true);
                 $redirect = $this->dao->getActiveRedirectForURL($requestedURLWithoutComments);
                 $this->recordRedirectLookupTiming($lookupStart);
-                if ($redirect['id'] != '0' && $redirect['final_dest'] != '0') {
+                $redirectTypeInt2 = isset($redirect['type']) && is_scalar($redirect['type']) ? (int)$redirect['type'] : 0;
+                if ($redirect['id'] != '0' && ($redirect['final_dest'] != '0' || $redirectTypeInt2 === $typeHomeInt)) {
                     $deadIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
                     $redirectIdStr = isset($redirect['id']) && is_scalar($redirect['id']) ? (string) $redirect['id'] : '0';
                     if (!is_array($deadIds) || !in_array($redirectIdStr, $deadIds, true)) {

@@ -291,6 +291,11 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             }
         }
         
+        // Flag redirects whose destination URL is generating 404s (dead-destination detection).
+        // This drives the "suspended redirect" warning in the admin table and allows
+        // the frontend pipeline to skip known-bad destinations.
+        $abj404dao->flagDeadDestinationRedirects();
+
         // add some entries to the permalink cache if necessary
         $abj404permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
         $rowsUpdated = $abj404permalinkCache->updatePermalinkCache(15);
