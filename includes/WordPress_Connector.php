@@ -668,8 +668,24 @@ class ABJ_404_Solution_WordPress_Connector {
         global $pagenow;
         global $abj404view;
 
-        if ( (array_key_exists('page', $_GET) && $_GET['page'] == ABJ404_PP) ||
-             ($pagenow == 'index.php' && !isset($_GET['page'])) ) {
+        $isPluginPage = array_key_exists('page', $_GET) && $_GET['page'] == ABJ404_PP;
+        $isDashboard  = $pagenow == 'index.php' && !isset($_GET['page']);
+
+        // Display infrastructure notices (DB errors, stale cache, etc.) only on
+        // the plugin's own admin pages — not on the dashboard or other screens.
+        // This prevents noisy notices from appearing across all of wp-admin.
+        if ($isPluginPage) {
+            $dbNotice = get_transient('abj404_plugin_db_notice');
+            if (is_array($dbNotice) && isset($dbNotice['message']) && is_string($dbNotice['message'])) {
+                $type = isset($dbNotice['type']) && is_string($dbNotice['type']) ? $dbNotice['type'] : 'warning';
+                // Map internal type names to WP notice CSS classes.
+                $cssClass = ($type === 'stale_permalink_cache' || $type === 'warning') ? 'notice-warning' : 'notice-error';
+                echo '<div class="notice ' . esc_attr($cssClass) . '"><p>' .
+                    esc_html($dbNotice['message']) . '</p></div>';
+            }
+        }
+
+        if ($isPluginPage || $isDashboard) {
             $captured404Count = $instance->dao->getCapturedCountForNotification();
             if ($instance->logic->shouldNotifyAboutCaptured404s($captured404Count)) {
                 $msg = $abj404view->getDashboardNotificationCaptured($captured404Count);

@@ -552,6 +552,29 @@ class ABJ_404_Solution_ShortCode {
             $rIdAndTypeStr = is_string($idAndType) ? $idAndType : (string)$idAndType;
             $rLinkScoreFloat = is_scalar($linkScore) ? (float)$linkScore : 0.0;
             $rRowTypeStr = is_string($rowType) ? $rowType : null;
+
+            // Check per-post/per-term exclusion before rendering.
+            // ABJ404_TYPE_POST=1, ABJ404_TYPE_CAT=2, ABJ404_TYPE_TAG=3.
+            $idTypeParts = explode('|', $rIdAndTypeStr, 2);
+            $idInt = isset($idTypeParts[0]) && is_numeric($idTypeParts[0]) ? (int)$idTypeParts[0] : 0;
+            $typeInt = isset($idTypeParts[1]) && is_numeric($idTypeParts[1]) ? (int)$idTypeParts[1] : 0;
+            if ($idInt > 0) {
+                $typePost = defined('ABJ404_TYPE_POST') ? (int)ABJ404_TYPE_POST : 1;
+                $typeCat  = defined('ABJ404_TYPE_CAT')  ? (int)ABJ404_TYPE_CAT  : 2;
+                $typeTag  = defined('ABJ404_TYPE_TAG')  ? (int)ABJ404_TYPE_TAG  : 3;
+                if ($typeInt === $typePost) {
+                    $excludeMeta = get_post_meta($idInt, '_abj404_exclude', true);
+                    if ($excludeMeta === '1') {
+                        continue;
+                    }
+                } elseif ($typeInt === $typeCat || $typeInt === $typeTag) {
+                    $excludeMeta = get_term_meta($idInt, '_abj404_exclude', true);
+                    if ($excludeMeta === '1') {
+                        continue;
+                    }
+                }
+            }
+
             $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rIdAndTypeStr, $rLinkScoreFloat,
                 $rRowTypeStr, $options);
 

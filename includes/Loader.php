@@ -70,10 +70,14 @@ abj_404_solution_init_services();
 // always include
 ABJ_404_Solution_ErrorHandler::init();
 
+// SlugChangeHandler registers the save_post hook which must fire whenever a post
+// is saved — including via WP-CLI (wp post update) and REST API, not only in admin.
+// Moving it outside is_admin() ensures auto-redirects are created in all contexts.
+ABJ_404_Solution_SlugChangeHandler::init();
+
 if (is_admin()) {
 	ABJ_404_Solution_PermalinkCache::init();
 	ABJ_404_Solution_SpellChecker::init();
-	ABJ_404_Solution_SlugChangeHandler::init();
 	ABJ_404_Solution_PostEditorIntegration::init();
 
     // Get services from the container instead of using getInstance()
