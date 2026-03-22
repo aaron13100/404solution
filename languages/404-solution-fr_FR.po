@@ -2706,9 +2706,6 @@ msgstr "Temporary 307 (preserve method)"
 msgid "Permanent 308 (preserve method)"
 msgstr "Permanent 308 (preserve method)"
 
-msgid "%1$d distinct 404 URLs under \"%2$s\" detected — possible path enumeration."
-msgstr "%1$d distinct 404 URLs under \"%2$s\" detected — possible path enumeration."
-
 msgid "Loading chart data…"
 msgstr "Loading chart data…"
 
@@ -2760,8 +2757,6 @@ msgstr "404 Hits"
 msgid "Broken Internal Links"
 msgstr "Broken Internal Links"
 
-msgid "Security Scan"
-msgstr "Security Scan"
 
 msgid "Migrate from Another Plugin"
 msgstr "Migrate from Another Plugin"

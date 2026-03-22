@@ -1709,10 +1709,6 @@ msgstr ""
 msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
 msgstr ""
 
-#: includes/SecurityMonitor.php
-msgid "%1$d distinct 404 URLs under \"%2$s\" detected — possible path enumeration."
-msgstr ""
-
 # Strings added for new features (3.3.8)
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
@@ -1740,9 +1736,6 @@ msgid "Temporary 307 (preserve method)"
 msgstr ""
 
 msgid "Permanent 308 (preserve method)"
-msgstr ""
-
-msgid "%1$d distinct 404 URLs under \"%2$s\" detected — possible path enumeration."
 msgstr ""
 
 msgid "404"
@@ -1797,9 +1790,6 @@ msgid "404 Hits"
 msgstr ""
 
 msgid "Broken Internal Links"
-msgstr ""
-
-msgid "Security Scan"
 msgstr ""
 
 msgid "Migrate from Another Plugin"

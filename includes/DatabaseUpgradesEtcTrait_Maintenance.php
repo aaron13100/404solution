@@ -584,12 +584,6 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         // Expire auto-created redirects that exceed the configured age threshold
         ABJ_404_Solution_DataAccess::getInstance()->expireOldAutoRedirects();
 
-        // Security monitor: analyze recent 404 logs and cache results for the Stats page.
-        $dao    = ABJ_404_Solution_DataAccess::getInstance();
-        $logger = ABJ_404_Solution_Logging::getInstance();
-        $monitor = new ABJ_404_Solution_SecurityMonitor($dao, $logger);
-        $monitor->runNightlyAnalysis();
-
         // Nightly internal-link scan: find broken internal links in published content.
         if (class_exists('ABJ_404_Solution_InternalLinkScanner')) {
             $scanner = new ABJ_404_Solution_InternalLinkScanner();
