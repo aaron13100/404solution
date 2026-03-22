@@ -1263,6 +1263,17 @@ class ABJ_404_Solution_DataAccess {
             return;
         }
 
+        // Rate-limit repeated failures: after a failed repair, downgrade subsequent
+        // occurrences to WARNING for 24 hours so cron-per-run error storms don't
+        // generate email reports. The first failure still logs ERROR and attempts repair.
+        $repairCooldownKey = 'abj404_missing_table_repair_cooldown';
+        $cooldownUntil = $this->getRuntimeFlag($repairCooldownKey);
+        if (is_scalar($cooldownUntil) && (int)$cooldownUntil > time()) {
+            $this->logger->warn("Missing plugin table (repair previously failed, cooldown active): "
+                . $result['last_error']);
+            return;
+        }
+
         // During upgrades and nightly maintenance, createDatabaseTables() runs
         // proactively before any queries.  If we reach this point, a plugin table
         // went missing during normal usage — always worth an ERROR so it appears
@@ -1296,9 +1307,31 @@ class ABJ_404_Solution_DataAccess {
 
             if ($result['last_error'] === '') {
                 $this->logger->infoMessage("Missing-table auto-repair succeeded.");
+                // Clear any active cooldown — repair is now working.
+                if (function_exists('delete_transient')) {
+                    delete_transient($repairCooldownKey);
+                } elseif (function_exists('delete_option')) {
+                    delete_option($repairCooldownKey);
+                }
+            } else {
+                // Repair failed. Engage 24h cooldown and surface a single admin notice on
+                // the plugin screen so the admin knows to investigate (e.g. missing CREATE
+                // privilege or wrong DB user).  Never email; never show on all wp-admin pages.
+                $this->setRuntimeFlag($repairCooldownKey, time() + 86400, 86400);
+                $noticePayload = array(
+                    'type'         => 'missing_table',
+                    'message'      => $this->localizeOrDefault(
+                        'A plugin database table is missing and could not be repaired automatically. '
+                        . 'Try deactivating and reactivating 404 Solution, or verify that your database user has CREATE TABLE privileges.'
+                    ),
+                    'timestamp'    => time(),
+                    'error_string' => $result['last_error'],
+                );
+                $this->setRuntimeFlag('abj404_plugin_db_notice', $noticePayload, 86400);
             }
         } catch (Throwable $e) {
             $this->logger->warn("Missing-table auto-repair failed: " . $e->getMessage());
+            $this->setRuntimeFlag($repairCooldownKey, time() + 86400, 86400);
         } finally {
             self::$tableRepairInProgress = false;
         }

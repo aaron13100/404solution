@@ -771,9 +771,17 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
 
         // check for errors
         if ($wpdb->last_error) {
-            $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+            // "Unknown column 'plc.content_keywords'" occurs during the DB migration window
+            // when the column hasn't been added yet (e.g. sync lock was stuck for ~24h).
+            // Degrade to warning so it doesn't generate email reports for every 404 hit.
+            if (stripos($wpdb->last_error, 'unknown column') !== false &&
+                    stripos($wpdb->last_error, 'content_keywords') !== false) {
+                $this->logger->warn("content_keywords column not yet available (DB migration pending): " . $wpdb->last_error);
+            } else {
+                $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+            }
         }
-        
+
         return $rows;
     }
 
