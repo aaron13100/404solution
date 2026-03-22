@@ -116,6 +116,11 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             }
         }
 
+        // Score range filter (high / medium / low / manual / all).
+        $rawScoreRange = (string)$this->dao->getPostOrGetSanitize('score_range', 'all');
+        $allowedScoreRanges = array('all', 'high', 'medium', 'low', 'manual');
+        $tableOptions['score_range'] = in_array($rawScoreRange, $allowedScoreRanges, true) ? $rawScoreRange : 'all';
+
         // sanitize all values.
         $sanitizedTableOptions = $this->sanitizePostData($tableOptions);
 

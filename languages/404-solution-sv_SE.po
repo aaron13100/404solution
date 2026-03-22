@@ -798,6 +798,33 @@ msgstr "Flera e-postadresser kan separeras med kommatecken (,). Avsändarens e-p
 msgid "Never Used"
 msgstr "Aldrig använd"
 
+msgid "Confidence"
+msgstr "Konfidens"
+
+msgid "Confidence:"
+msgstr "Konfidens:"
+
+msgid "Match Confidence"
+msgstr "Träffsäkerhet"
+
+msgid "High (≥80%)"
+msgstr "Hög (≥80%)"
+
+msgid "Medium (50–79%)"
+msgstr "Medel (50–79%)"
+
+msgid "Low (<50%)"
+msgstr "Låg (<50%)"
+
+msgid "Manual (no score)"
+msgstr "Manuell (ingen poäng)"
+
+msgid "Avg confidence: %s%%"
+msgstr "Genomsn. konfidens: %s%%"
+
+msgid "Manual redirect — no confidence score"
+msgstr "Manuell omdirigering — inget konfidenspoäng"
+
 msgid "New Redirect Added Successfully!"
 msgstr "Ny omdirigering har lagts till."
 
@@ -2705,6 +2732,21 @@ msgstr "New Captures per Day"
 
 msgid "Trends (Last 30 Days)"
 msgstr "Trends (Last 30 Days)"
+
+msgid "Trend Analytics"
+msgstr "Trendanalys"
+
+msgid "7 days"
+msgstr "7 dagar"
+
+msgid "30 days"
+msgstr "30 dagar"
+
+msgid "90 days"
+msgstr "90 dagar"
+
+msgid "Period"
+msgstr "Period"
 
 msgid "No broken internal links found."
 msgstr "No broken internal links found."

@@ -817,6 +817,33 @@ msgstr "Multiple email addresses can be separated by commas (,). The \"from\" em
 msgid "Never Used"
 msgstr "Never Used"
 
+msgid "Confidence"
+msgstr "Confidence"
+
+msgid "Confidence:"
+msgstr "Confidence:"
+
+msgid "Match Confidence"
+msgstr "Match Confidence"
+
+msgid "High (≥80%)"
+msgstr "High (≥80%)"
+
+msgid "Medium (50–79%)"
+msgstr "Medium (50–79%)"
+
+msgid "Low (<50%)"
+msgstr "Low (<50%)"
+
+msgid "Manual (no score)"
+msgstr "Manual (no score)"
+
+msgid "Avg confidence: %s%%"
+msgstr "Avg confidence: %s%%"
+
+msgid "Manual redirect — no confidence score"
+msgstr "Manual redirect — no confidence score"
+
 msgid "New Redirect Added Successfully!"
 msgstr "New Redirect Added Successfully!"
 
@@ -2695,6 +2722,21 @@ msgstr "New Captures per Day"
 
 msgid "Trends (Last 30 Days)"
 msgstr "Trends (Last 30 Days)"
+
+msgid "Trend Analytics"
+msgstr "Trend Analytics"
+
+msgid "7 days"
+msgstr "7 days"
+
+msgid "30 days"
+msgstr "30 days"
+
+msgid "90 days"
+msgstr "90 days"
+
+msgid "Period"
+msgstr "Period"
 
 msgid "No broken internal links found."
 msgstr "No broken internal links found."

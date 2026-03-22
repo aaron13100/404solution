@@ -395,6 +395,28 @@ trait ViewTrait_RedirectsTable {
         }
         echo '</select>';
         echo '</div>';
+
+        // Confidence filter dropdown
+        $currentScoreRange = is_string($tableOptions['score_range'] ?? '') ? (string)($tableOptions['score_range'] ?? 'all') : 'all';
+        $scoreRangeBaseUrl = '?page=' . ABJ404_PP . '&subpage=' . esc_attr($sub) . '&filter=' . intval($tableOptions['filter'] ?? 0);
+        echo '<div class="abj404-rows-per-page">';
+        echo '<span>' . esc_html__('Confidence:', '404-solution') . '</span>';
+        $scoreRangeBaseUrlJs = addslashes(esc_url($scoreRangeBaseUrl));
+        echo '<select class="abj404-filter-select" name="score_range_filter" onchange="window.location=\'' . $scoreRangeBaseUrlJs . '&score_range=\'+encodeURIComponent(this.value);">';
+        $scoreRangeOptions = array(
+            'all'    => __('All', '404-solution'),
+            'high'   => __('High (≥80%)', '404-solution'),
+            'medium' => __('Medium (50–79%)', '404-solution'),
+            'low'    => __('Low (<50%)', '404-solution'),
+            'manual' => __('Manual (no score)', '404-solution'),
+        );
+        foreach ($scoreRangeOptions as $val => $label) {
+            $sel = ($currentScoreRange === $val) ? ' selected' : '';
+            echo '<option value="' . esc_attr($val) . '"' . $sel . '>' . esc_html($label) . '</option>';
+        }
+        echo '</select>';
+        echo '</div>';
+
         echo '<span class="abj404-refresh-status" aria-live="polite"></span>';
         echo '</div>';
 
@@ -723,6 +745,10 @@ trait ViewTrait_RedirectsTable {
         $columns['code']['title'] = __('Redirect', '404-solution');
         $columns['code']['orderby'] = "code";
         $columns['code']['width'] = "5%";
+        $columns['confidence']['title'] = __('Confidence', '404-solution');
+        $columns['confidence']['orderby'] = "score";
+        $columns['confidence']['width'] = "7%";
+        $columns['confidence']['class'] = "hide-on-tablet";
         $columns['hits']['title'] = __('Hits', '404-solution');
         $columns['hits']['orderby'] = "logshits";
         $columns['hits']['width'] = "7%";
@@ -1006,8 +1032,23 @@ trait ViewTrait_RedirectsTable {
             $engineHTML = ($rowEngine !== '') ? '<br><span class="abj404-engine-label">' . esc_html($rowEngine) . '</span>' : '';
             $htmlTemp = $this->f->str_replace('{engineHTML}', $engineHTML, $htmlTemp);
             $rawScore = $row['score'] ?? null;
-            $rowScore = ($rawScore !== null && $rawScore !== '') ? '<br><span class="abj404-score-badge">' . esc_html(number_format((float)(is_numeric($rawScore) ? $rawScore : 0), 0)) . '%</span>' : '';
-            $htmlTemp = $this->f->str_replace('{rowScore}', $rowScore, $htmlTemp);
+            // Keep {rowScore} empty — score now lives in its own Confidence column.
+            $htmlTemp = $this->f->str_replace('{rowScore}', '', $htmlTemp);
+            if ($rawScore !== null && $rawScore !== '') {
+                $scoreNum = (float)(is_numeric($rawScore) ? $rawScore : 0);
+                $scorePct = number_format($scoreNum, 0);
+                if ($scoreNum >= 80) {
+                    $scoreBadgeClass = 'abj404-score-high';
+                } elseif ($scoreNum >= 50) {
+                    $scoreBadgeClass = 'abj404-score-medium';
+                } else {
+                    $scoreBadgeClass = 'abj404-score-low';
+                }
+                $scoreCell = '<span class="abj404-score-badge ' . $scoreBadgeClass . '">' . esc_html($scorePct) . '%</span>';
+            } else {
+                $scoreCell = '<span class="abj404-score-manual" title="' . esc_attr__('Manual redirect — no confidence score', '404-solution') . '">—</span>';
+            }
+            $htmlTemp = $this->f->str_replace('{scoreCell}', $scoreCell, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{type}', $typeForView, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{rowCode}', $rowCode, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{hits}', esc_html((string)$hits), $htmlTemp);
@@ -1025,7 +1066,7 @@ trait ViewTrait_RedirectsTable {
         }
         if ($displayed == 0) {
             $html .= "<tr>\n" .
-                "<td colspan=\"9\" class=\"abj404-empty-state\">" .
+                "<td colspan=\"10\" class=\"abj404-empty-state\">" .
                 "<div class=\"abj404-empty-state-icon\">📋</div>" .
                 "<h3>" . __('No Redirect Records To Display', '404-solution') . "</h3>" .
                 "<p>" . __('Redirects will appear here once created.', '404-solution') . "</p>" .

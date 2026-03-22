@@ -798,6 +798,33 @@ msgstr "Vários endereços de e-mail podem ser separados por vírgulas (,). O en
 msgid "Never Used"
 msgstr "Nunca Usado"
 
+msgid "Confidence"
+msgstr "Confiança"
+
+msgid "Confidence:"
+msgstr "Confiança:"
+
+msgid "Match Confidence"
+msgstr "Confiança de correspondência"
+
+msgid "High (≥80%)"
+msgstr "Alto (≥80%)"
+
+msgid "Medium (50–79%)"
+msgstr "Médio (50–79%)"
+
+msgid "Low (<50%)"
+msgstr "Baixo (<50%)"
+
+msgid "Manual (no score)"
+msgstr "Manual (sem pontuação)"
+
+msgid "Avg confidence: %s%%"
+msgstr "Confiança média: %s%%"
+
+msgid "Manual redirect — no confidence score"
+msgstr "Redirecionamento manual — sem pontuação de confiança"
+
 msgid "New Redirect Added Successfully!"
 msgstr "Novo Redirecionamento Adicionado com Sucesso!"
 
@@ -2705,6 +2732,21 @@ msgstr "New Captures per Day"
 
 msgid "Trends (Last 30 Days)"
 msgstr "Trends (Last 30 Days)"
+
+msgid "Trend Analytics"
+msgstr "Análise de tendências"
+
+msgid "7 days"
+msgstr "7 dias"
+
+msgid "30 days"
+msgstr "30 dias"
+
+msgid "90 days"
+msgstr "90 dias"
+
+msgid "Period"
+msgstr "Período"
 
 msgid "No broken internal links found."
 msgstr "No broken internal links found."

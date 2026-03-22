@@ -1,5 +1,5 @@
 === 404 Solution ===
-Contributors: aaron13100
+Contributors: ajexperience
 Website: https://www.ajexperience.com/404-solution/
 Tags: 404, redirect, 404 redirect, broken links, spell check, smart redirect, 404 error, woocommerce
 Requires at least: 5.0

@@ -2791,11 +2791,33 @@ html[data-theme="obsidian"] .abj404-filter-bar {
     display: inline-block;
     font-size: 11px;
     font-weight: 600;
-    color: var(--abj404-accent, #2271b1);
-    background: var(--abj404-accent-light, #e8f0fb);
     border-radius: 3px;
     padding: 1px 5px;
-    margin-top: 2px;
+}
+
+.abj404-score-high {
+    color: #1a5c2a;
+    background: #d4edda;
+}
+
+.abj404-score-medium {
+    color: #7a4e00;
+    background: #fff3cd;
+}
+
+.abj404-score-low {
+    color: #721c24;
+    background: #f8d7da;
+}
+
+.abj404-score-manual {
+    color: #646970;
+    font-size: 14px;
+}
+
+.abj404-confidence-cell {
+    text-align: center;
+    white-space: nowrap;
 }
 
 .abj404-username-label {

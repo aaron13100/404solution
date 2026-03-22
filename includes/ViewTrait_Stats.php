@@ -130,6 +130,9 @@ trait ViewTrait_Stats {
 
         echo "</div>"; // Close flow layout
 
+        // Match Confidence distribution card (full-width)
+        $this->echoConfidenceDistributionSection();
+
         // Trend Analytics section (full-width, below the flow layout cards)
         $this->echoTrendsSection();
 
@@ -138,6 +141,115 @@ trait ViewTrait_Stats {
 
         echo "</div>"; // Close settings content
         echo "</div>"; // Close container
+    }
+
+    /**
+     * Output the Match Confidence distribution card on the Stats page.
+     * Queries the redirects table for score band counts and renders a Chart.js doughnut.
+     * @return void
+     */
+    private function echoConfidenceDistributionSection() {
+        global $abj404view, $wpdb;
+
+        if (!isset($wpdb)) {
+            return;
+        }
+
+        $redirectsTable = $wpdb->prefix . 'abj404_redirects';
+
+        // Query score distribution bands.
+        $query = $wpdb->prepare(
+            "SELECT
+               SUM(CASE WHEN score IS NULL THEN 1 ELSE 0 END) AS manual_count,
+               SUM(CASE WHEN score >= 80 THEN 1 ELSE 0 END) AS high_count,
+               SUM(CASE WHEN score >= 50 AND score < 80 THEN 1 ELSE 0 END) AS medium_count,
+               SUM(CASE WHEN score IS NOT NULL AND score < 50 THEN 1 ELSE 0 END) AS low_count,
+               AVG(score) AS avg_score
+             FROM `{$redirectsTable}`
+             WHERE disabled = %d AND status != %d",
+            0,
+            0
+        );
+
+        $row = $wpdb->get_row($query, ARRAY_A);
+        if (!is_array($row)) {
+            return;
+        }
+
+        $highCount   = (int)($row['high_count']   ?? 0);
+        $mediumCount = (int)($row['medium_count'] ?? 0);
+        $lowCount    = (int)($row['low_count']    ?? 0);
+        $manualCount = (int)($row['manual_count'] ?? 0);
+        $avgScore    = ($row['avg_score'] !== null) ? round((float)$row['avg_score'], 1) : null;
+
+        $total = $highCount + $mediumCount + $lowCount + $manualCount;
+        if ($total === 0) {
+            return;
+        }
+
+        $labelHigh   = esc_html__('High (≥80%)', '404-solution');
+        $labelMedium = esc_html__('Medium (50–79%)', '404-solution');
+        $labelLow    = esc_html__('Low (<50%)', '404-solution');
+        $labelManual = esc_html__('Manual (no score)', '404-solution');
+
+        $avgLabel = ($avgScore !== null)
+            ? sprintf(
+                '<strong>' . esc_html__('Avg confidence: %s%%', '404-solution') . '</strong>',
+                esc_html(number_format($avgScore, 1))
+            )
+            : '';
+
+        $content  = '<div class="abj404-confidence-dist">';
+        $content .= '<p class="abj404-confidence-avg">' . $avgLabel . '</p>';
+        $content .= '<canvas id="abj404-chart-confidence" style="max-height:200px;max-width:400px;"></canvas>';
+        $content .= '<ul class="abj404-confidence-legend">';
+        $content .= '<li><span class="abj404-legend-dot abj404-conf-high"></span>' . esc_html($labelHigh) . ' <strong>' . esc_html((string)$highCount) . '</strong></li>';
+        $content .= '<li><span class="abj404-legend-dot abj404-conf-medium"></span>' . esc_html($labelMedium) . ' <strong>' . esc_html((string)$mediumCount) . '</strong></li>';
+        $content .= '<li><span class="abj404-legend-dot abj404-conf-low"></span>' . esc_html($labelLow) . ' <strong>' . esc_html((string)$lowCount) . '</strong></li>';
+        $content .= '<li><span class="abj404-legend-dot abj404-conf-manual"></span>' . esc_html($labelManual) . ' <strong>' . esc_html((string)$manualCount) . '</strong></li>';
+        $content .= '</ul>';
+        $content .= '</div>';
+
+        $content .= '<style>'
+            . '.abj404-confidence-dist { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }'
+            . '.abj404-confidence-avg { font-size: 14px; margin-bottom: 8px; }'
+            . '.abj404-confidence-legend { list-style: none; margin: 0; padding: 0; }'
+            . '.abj404-confidence-legend li { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 13px; }'
+            . '.abj404-legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }'
+            . '.abj404-conf-high   { background: #28a745; }'
+            . '.abj404-conf-medium { background: #ffc107; }'
+            . '.abj404-conf-low    { background: #dc3545; }'
+            . '.abj404-conf-manual { background: #adb5bd; }'
+            . '</style>';
+
+        $content .= '<script>'
+            . '(function() {'
+            . '  function renderConfidenceChart() {'
+            . '    var ctx = document.getElementById("abj404-chart-confidence");'
+            . '    if (!ctx || !window.Chart) return;'
+            . '    new Chart(ctx, {'
+            . '      type: "doughnut",'
+            . '      data: {'
+            . '        labels: [' . json_encode($labelHigh) . ',' . json_encode($labelMedium) . ',' . json_encode($labelLow) . ',' . json_encode($labelManual) . '],'
+            . '        datasets: [{ data: [' . $highCount . ',' . $mediumCount . ',' . $lowCount . ',' . $manualCount . '],'
+            . '          backgroundColor: ["#28a745","#ffc107","#dc3545","#adb5bd"] }]'
+            . '      },'
+            . '      options: { responsive: true, plugins: { legend: { display: false } } }'
+            . '    });'
+            . '  }'
+            . '  if (window.Chart) { renderConfidenceChart(); }'
+            . '  else { document.addEventListener("abj404ChartJsLoaded", renderConfidenceChart); }'
+            . '})();'
+            . '</script>';
+
+        $abj404view->echoOptionsSection(
+            'stats-confidence',
+            'abj404-confidenceSection',
+            __('Match Confidence', '404-solution'),
+            $content,
+            false,
+            $abj404view->getCardIcon('check')
+        );
     }
 
     /**
@@ -150,7 +262,16 @@ trait ViewTrait_Stats {
         $trendNonce = wp_create_nonce('abj404_trendData');
         $ajaxUrl = admin_url('admin-ajax.php');
 
+        $label7d  = esc_html__('7 days', '404-solution');
+        $label30d = esc_html__('30 days', '404-solution');
+        $label90d = esc_html__('90 days', '404-solution');
+
         $trendsContent  = '<div id="abj404-trends-container">';
+        $trendsContent .= '<div class="abj404-trends-period-selector" role="group" aria-label="' . esc_attr__('Period', '404-solution') . '">';
+        $trendsContent .= '<label class="abj404-trends-period-label"><input type="radio" name="abj404_trend_period" value="7"> ' . $label7d . '</label>';
+        $trendsContent .= '<label class="abj404-trends-period-label"><input type="radio" name="abj404_trend_period" value="30" checked> ' . $label30d . '</label>';
+        $trendsContent .= '<label class="abj404-trends-period-label"><input type="radio" name="abj404_trend_period" value="90"> ' . $label90d . '</label>';
+        $trendsContent .= '</div>';
         $trendsContent .= '<p class="abj404-trends-loading">' . esc_html__('Loading chart data…', '404-solution') . '</p>';
         $trendsContent .= '<div id="abj404-trends-charts" style="display:none">';
         $trendsContent .= '<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-404s"></canvas></div>';
@@ -162,6 +283,9 @@ trait ViewTrait_Stats {
         $trendsContent .= '</div>';
 
         $trendsContent .= '<style>'
+            . '.abj404-trends-period-selector { margin-bottom: 16px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }'
+            . '.abj404-trends-period-label { cursor: pointer; font-weight: 500; }'
+            . '.abj404-trends-period-label input { margin-right: 4px; }'
             . '.abj404-trend-chart-wrap { margin-bottom: 24px; }'
             . '.abj404-trends-loading { color: #646970; font-style: italic; }'
             . '</style>';
@@ -181,7 +305,10 @@ trait ViewTrait_Stats {
             . '    if (window.Chart) { cb(); return; }'
             . '    var s = document.createElement("script");'
             . '    s.src = "https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js";'
-            . '    s.onload = cb;'
+            . '    s.onload = function() {'
+            . '      document.dispatchEvent(new Event("abj404ChartJsLoaded"));'
+            . '      cb();'
+            . '    };'
             . '    s.onerror = function() {'
             . '      var loadEl = document.querySelector(".abj404-trends-loading");'
             . '      if (loadEl) loadEl.style.display = "none";'
@@ -192,8 +319,8 @@ trait ViewTrait_Stats {
             . '  }'
             . '  function buildChart(canvasId, label, color, labels, values) {'
             . '    var ctx = document.getElementById(canvasId);'
-            . '    if (!ctx) return;'
-            . '    new Chart(ctx, {'
+            . '    if (!ctx) return null;'
+            . '    return new Chart(ctx, {'
             . '      type: "line",'
             . '      data: {'
             . '        labels: labels,'
@@ -214,14 +341,33 @@ trait ViewTrait_Stats {
             . '      }'
             . '    });'
             . '  }'
+            . '  var chartInstances = {};'
+            . '  function getSelectedDays() {'
+            . '    var radios = document.querySelectorAll("input[name=abj404_trend_period]");'
+            . '    for (var i = 0; i < radios.length; i++) {'
+            . '      if (radios[i].checked) return parseInt(radios[i].value, 10);'
+            . '    }'
+            . '    return 30;'
+            . '  }'
+            . '  function destroyCharts() {'
+            . '    ["abj404-chart-404s","abj404-chart-redirects","abj404-chart-captures"].forEach(function(id) {'
+            . '      if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }'
+            . '    });'
+            . '  }'
             . '  function fetchAndRender() {'
-            . '    fetch(ajaxUrl + "?action=abj404getTrendData&nonce=" + encodeURIComponent(nonce) + "&days=30")'
+            . '    var days = getSelectedDays();'
+            . '    var loadEl = document.querySelector(".abj404-trends-loading");'
+            . '    var errEl  = document.getElementById("abj404-trends-error");'
+            . '    var chartsEl = document.getElementById("abj404-trends-charts");'
+            . '    if (loadEl) loadEl.style.display = "";'
+            . '    if (errEl)  errEl.style.display  = "none";'
+            . '    if (chartsEl) chartsEl.style.display = "none";'
+            . '    destroyCharts();'
+            . '    fetch(ajaxUrl + "?action=abj404getTrendData&nonce=" + encodeURIComponent(nonce) + "&days=" + days)'
             . '      .then(function(r) { return r.json(); })'
             . '      .then(function(resp) {'
-            . '        var loadEl = document.querySelector(".abj404-trends-loading");'
             . '        if (loadEl) loadEl.style.display = "none";'
             . '        if (!resp || !resp.success || !Array.isArray(resp.data)) {'
-            . '          var errEl = document.getElementById("abj404-trends-error");'
             . '          if (errEl) errEl.style.display = "";'
             . '          return;'
             . '        }'
@@ -230,20 +376,22 @@ trait ViewTrait_Stats {
             . '        var vals404   = rows.map(function(r) { return r.hits_404; });'
             . '        var valsRedir = rows.map(function(r) { return r.hits_redirect; });'
             . '        var valsCapt  = rows.map(function(r) { return r.new_captures; });'
-            . '        document.getElementById("abj404-trends-charts").style.display = "";'
-            . '        buildChart("abj404-chart-404s",      "' . $label404      . '", "rgb(0,115,170)",  labels, vals404);'
-            . '        buildChart("abj404-chart-redirects", "' . $labelRedirect . '", "rgb(70,170,100)", labels, valsRedir);'
-            . '        buildChart("abj404-chart-captures",  "' . $labelCapture  . '", "rgb(220,100,50)", labels, valsCapt);'
+            . '        if (chartsEl) chartsEl.style.display = "";'
+            . '        chartInstances["abj404-chart-404s"]      = buildChart("abj404-chart-404s",      "' . $label404      . '", "rgb(0,115,170)",  labels, vals404);'
+            . '        chartInstances["abj404-chart-redirects"] = buildChart("abj404-chart-redirects", "' . $labelRedirect . '", "rgb(70,170,100)", labels, valsRedir);'
+            . '        chartInstances["abj404-chart-captures"]  = buildChart("abj404-chart-captures",  "' . $labelCapture  . '", "rgb(220,100,50)", labels, valsCapt);'
             . '      })'
             . '      .catch(function() {'
-            . '        var loadEl = document.querySelector(".abj404-trends-loading");'
             . '        if (loadEl) loadEl.style.display = "none";'
-            . '        var errEl = document.getElementById("abj404-trends-error");'
             . '        if (errEl) errEl.style.display = "";'
             . '      });'
             . '  }'
+            . '  function onPeriodChange() { fetchAndRender(); }'
             . '  document.addEventListener("DOMContentLoaded", function() {'
             . '    loadChartJs(fetchAndRender);'
+            . '    document.querySelectorAll("input[name=abj404_trend_period]").forEach(function(r) {'
+            . '      r.addEventListener("change", onPeriodChange);'
+            . '    });'
             . '  });'
             . '})();'
             . '</script>';
@@ -251,7 +399,7 @@ trait ViewTrait_Stats {
         $abj404view->echoOptionsSection(
             'stats-trends',
             'abj404-trendsSection',
-            __('Trends (Last 30 Days)', '404-solution'),
+            __('Trend Analytics', '404-solution'),
             $trendsContent,
             false,
             $abj404view->getCardIcon('chart')

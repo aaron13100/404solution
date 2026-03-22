@@ -803,6 +803,33 @@ msgstr "多个电子邮件地址可以用逗号 (,) 分隔。\"发件人\" 电�
 msgid "Never Used"
 msgstr "从未使用"
 
+msgid "Confidence"
+msgstr "置信度"
+
+msgid "Confidence:"
+msgstr "置信度："
+
+msgid "Match Confidence"
+msgstr "匹配置信度"
+
+msgid "High (≥80%)"
+msgstr "高 (≥80%)"
+
+msgid "Medium (50–79%)"
+msgstr "中 (50–79%)"
+
+msgid "Low (<50%)"
+msgstr "低 (<50%)"
+
+msgid "Manual (no score)"
+msgstr "手动（无分数）"
+
+msgid "Avg confidence: %s%%"
+msgstr "平均置信度：%s%%"
+
+msgid "Manual redirect — no confidence score"
+msgstr "手动重定向 — 无置信度分数"
+
 msgid "New Redirect Added Successfully!"
 msgstr "新重定向添加成功！"
 
@@ -2713,6 +2740,21 @@ msgstr "New Captures per Day"
 
 msgid "Trends (Last 30 Days)"
 msgstr "Trends (Last 30 Days)"
+
+msgid "Trend Analytics"
+msgstr "趋势分析"
+
+msgid "7 days"
+msgstr "7天"
+
+msgid "30 days"
+msgstr "30天"
+
+msgid "90 days"
+msgstr "90天"
+
+msgid "Period"
+msgstr "时间段"
 
 msgid "No broken internal links found."
 msgstr "No broken internal links found."

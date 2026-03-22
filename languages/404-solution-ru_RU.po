@@ -798,6 +798,33 @@ msgstr "Несколько адресов электронной почты мо
 msgid "Never Used"
 msgstr "Никогда не использовалось"
 
+msgid "Confidence"
+msgstr "Достоверность"
+
+msgid "Confidence:"
+msgstr "Достоверность:"
+
+msgid "Match Confidence"
+msgstr "Уверенность совпадения"
+
+msgid "High (≥80%)"
+msgstr "Высокая (≥80%)"
+
+msgid "Medium (50–79%)"
+msgstr "Средняя (50–79%)"
+
+msgid "Low (<50%)"
+msgstr "Низкая (<50%)"
+
+msgid "Manual (no score)"
+msgstr "Ручной (без оценки)"
+
+msgid "Avg confidence: %s%%"
+msgstr "Средн. достоверность: %s%%"
+
+msgid "Manual redirect — no confidence score"
+msgstr "Ручное перенаправление — без оценки достоверности"
+
 msgid "New Redirect Added Successfully!"
 msgstr "Новое перенаправление успешно добавлено!"
 
@@ -2710,6 +2737,21 @@ msgstr "New Captures per Day"
 
 msgid "Trends (Last 30 Days)"
 msgstr "Trends (Last 30 Days)"
+
+msgid "Trend Analytics"
+msgstr "Анализ трендов"
+
+msgid "7 days"
+msgstr "7 дней"
+
+msgid "30 days"
+msgstr "30 дней"
+
+msgid "90 days"
+msgstr "90 дней"
+
+msgid "Period"
+msgstr "Период"
 
 msgid "No broken internal links found."
 msgstr "No broken internal links found."

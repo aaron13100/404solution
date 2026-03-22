@@ -798,6 +798,33 @@ msgstr "Meerdere e-mailadressen kunnen worden gescheiden door komma's (,). Het \
 msgid "Never Used"
 msgstr "Nooit gebruikt"
 
+msgid "Confidence"
+msgstr "Betrouwbaarheid"
+
+msgid "Confidence:"
+msgstr "Betrouwbaarheid:"
+
+msgid "Match Confidence"
+msgstr "Overeenkomst betrouwbaarheid"
+
+msgid "High (≥80%)"
+msgstr "Hoog (≥80%)"
+
+msgid "Medium (50–79%)"
+msgstr "Gemiddeld (50–79%)"
+
+msgid "Low (<50%)"
+msgstr "Laag (<50%)"
+
+msgid "Manual (no score)"
+msgstr "Handmatig (geen score)"
+
+msgid "Avg confidence: %s%%"
+msgstr "Gem. betrouwbaarheid: %s%%"
+
+msgid "Manual redirect — no confidence score"
+msgstr "Handmatige doorverwijzing — geen betrouwbaarheidsscore"
+
 msgid "New Redirect Added Successfully!"
 msgstr "Nieuwe omleiding succesvol toegevoegd!"
 
@@ -2705,6 +2732,21 @@ msgstr "New Captures per Day"
 
 msgid "Trends (Last 30 Days)"
 msgstr "Trends (Last 30 Days)"
+
+msgid "Trend Analytics"
+msgstr "Trendanalyse"
+
+msgid "7 days"
+msgstr "7 dagen"
+
+msgid "30 days"
+msgstr "30 dagen"
+
+msgid "90 days"
+msgstr "90 dagen"
+
+msgid "Period"
+msgstr "Periode"
 
 msgid "No broken internal links found."
 msgstr "No broken internal links found."

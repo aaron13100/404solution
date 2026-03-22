@@ -593,6 +593,36 @@ msgstr ""
 msgid "Never Used"
 msgstr ""
 
+msgid "Confidence"
+msgstr ""
+
+msgid "Confidence:"
+msgstr ""
+
+msgid "Match Confidence"
+msgstr ""
+
+msgid "High (≥80%)"
+msgstr ""
+
+msgid "Medium (50–79%)"
+msgstr ""
+
+msgid "Low (<50%)"
+msgstr ""
+
+msgid "Manual (no score)"
+msgstr ""
+
+msgid "Avg confidence: %s%%"
+msgstr ""
+
+msgid "Manual redirect — no confidence score"
+msgstr ""
+
+msgid "Rows per page:"
+msgstr ""
+
 #: includes/admin.php:1601, includes/admin.php:1901
 msgid "Restore"
 msgstr ""
@@ -1734,6 +1764,21 @@ msgid "New Captures per Day"
 msgstr ""
 
 msgid "Trends (Last 30 Days)"
+msgstr ""
+
+msgid "Trend Analytics"
+msgstr ""
+
+msgid "7 days"
+msgstr ""
+
+msgid "30 days"
+msgstr ""
+
+msgid "90 days"
+msgstr ""
+
+msgid "Period"
 msgstr ""
 
 msgid "No broken internal links found."

@@ -793,6 +793,33 @@ msgstr "يمكن فصل عناوين البريد المتعددة بفواصل 
 msgid "Never Used"
 msgstr "لم يُستخدم أبداً"
 
+msgid "Confidence"
+msgstr "الثقة"
+
+msgid "Confidence:"
+msgstr "الثقة:"
+
+msgid "Match Confidence"
+msgstr "ثقة المطابقة"
+
+msgid "High (≥80%)"
+msgstr "مرتفع (≥80%)"
+
+msgid "Medium (50–79%)"
+msgstr "متوسط (50–79%)"
+
+msgid "Low (<50%)"
+msgstr "منخفض (<50%)"
+
+msgid "Manual (no score)"
+msgstr "يدوي (بدون نتيجة)"
+
+msgid "Avg confidence: %s%%"
+msgstr "متوسط الثقة: %s%%"
+
+msgid "Manual redirect — no confidence score"
+msgstr "إعادة توجيه يدوية — لا توجد درجة ثقة"
+
 msgid "New Redirect Added Successfully!"
 msgstr "تمت إضافة إعادة التوجيه الجديدة بنجاح!"
 
@@ -2721,6 +2748,21 @@ msgstr "New Captures per Day"
 
 msgid "Trends (Last 30 Days)"
 msgstr "Trends (Last 30 Days)"
+
+msgid "Trend Analytics"
+msgstr "تحليلات الاتجاه"
+
+msgid "7 days"
+msgstr "7 أيام"
+
+msgid "30 days"
+msgstr "30 يوماً"
+
+msgid "90 days"
+msgstr "90 يوماً"
+
+msgid "Period"
+msgstr "الفترة"
 
 msgid "No broken internal links found."
 msgstr "No broken internal links found."

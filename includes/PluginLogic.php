@@ -68,6 +68,7 @@ class ABJ_404_Solution_PluginLogic {
         'dest',
         'final_dest',
         'code',
+        'score',
         'timestamp',
         'created',
         'lastused',

@@ -798,6 +798,33 @@ msgstr "Beberapa alamat email dapat dipisahkan dengan koma (,). Alamat email \"d
 msgid "Never Used"
 msgstr "Tidak Pernah Digunakan"
 
+msgid "Confidence"
+msgstr "Kepercayaan"
+
+msgid "Confidence:"
+msgstr "Kepercayaan:"
+
+msgid "Match Confidence"
+msgstr "Kepercayaan Cocok"
+
+msgid "High (≥80%)"
+msgstr "Tinggi (≥80%)"
+
+msgid "Medium (50–79%)"
+msgstr "Sedang (50–79%)"
+
+msgid "Low (<50%)"
+msgstr "Rendah (<50%)"
+
+msgid "Manual (no score)"
+msgstr "Manual (tanpa skor)"
+
+msgid "Avg confidence: %s%%"
+msgstr "Kepercayaan rata-rata: %s%%"
+
+msgid "Manual redirect — no confidence score"
+msgstr "Pengalihan manual — tidak ada skor kepercayaan"
+
 msgid "New Redirect Added Successfully!"
 msgstr "Pengalihan Baru Berhasil Ditambahkan!"
 
@@ -2700,6 +2727,21 @@ msgstr "New Captures per Day"
 
 msgid "Trends (Last 30 Days)"
 msgstr "Trends (Last 30 Days)"
+
+msgid "Trend Analytics"
+msgstr "Analitik Tren"
+
+msgid "7 days"
+msgstr "7 hari"
+
+msgid "30 days"
+msgstr "30 hari"
+
+msgid "90 days"
+msgstr "90 hari"
+
+msgid "Period"
+msgstr "Periode"
 
 msgid "No broken internal links found."
 msgstr "No broken internal links found."

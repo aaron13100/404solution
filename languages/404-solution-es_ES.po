@@ -798,6 +798,33 @@ msgstr "Varias direcciones de correo electrónico pueden separarse por comas (,)
 msgid "Never Used"
 msgstr "Nunca usado"
 
+msgid "Confidence"
+msgstr "Confianza"
+
+msgid "Confidence:"
+msgstr "Confianza:"
+
+msgid "Match Confidence"
+msgstr "Confianza de coincidencia"
+
+msgid "High (≥80%)"
+msgstr "Alto (≥80%)"
+
+msgid "Medium (50–79%)"
+msgstr "Medio (50–79%)"
+
+msgid "Low (<50%)"
+msgstr "Bajo (<50%)"
+
+msgid "Manual (no score)"
+msgstr "Manual (sin puntuación)"
+
+msgid "Avg confidence: %s%%"
+msgstr "Confianza promedio: %s%%"
+
+msgid "Manual redirect — no confidence score"
+msgstr "Redirección manual — sin puntuación de confianza"
+
 msgid "New Redirect Added Successfully!"
 msgstr "¡Nueva redirección añadida correctamente!"
 
@@ -2702,6 +2729,21 @@ msgstr "New Captures per Day"
 
 msgid "Trends (Last 30 Days)"
 msgstr "Trends (Last 30 Days)"
+
+msgid "Trend Analytics"
+msgstr "Análisis de tendencias"
+
+msgid "7 days"
+msgstr "7 días"
+
+msgid "30 days"
+msgstr "30 días"
+
+msgid "90 days"
+msgstr "90 días"
+
+msgid "Period"
+msgstr "Período"
 
 msgid "No broken internal links found."
 msgstr "No broken internal links found."

@@ -801,6 +801,33 @@ msgstr "複数のメールアドレスはカンマ（,）で区切ることが�
 msgid "Never Used"
 msgstr "未使用"
 
+msgid "Confidence"
+msgstr "信頼度"
+
+msgid "Confidence:"
+msgstr "信頼度："
+
+msgid "Match Confidence"
+msgstr "一致の信頼度"
+
+msgid "High (≥80%)"
+msgstr "高 (≥80%)"
+
+msgid "Medium (50–79%)"
+msgstr "中 (50–79%)"
+
+msgid "Low (<50%)"
+msgstr "低 (<50%)"
+
+msgid "Manual (no score)"
+msgstr "手動 (スコアなし)"
+
+msgid "Avg confidence: %s%%"
+msgstr "平均信頼度: %s%%"
+
+msgid "Manual redirect — no confidence score"
+msgstr "手動リダイレクト — 信頼スコアなし"
+
 msgid "New Redirect Added Successfully!"
 msgstr "新しいリダイレクトが正常に追加されました！"
 
@@ -2709,6 +2736,21 @@ msgstr "New Captures per Day"
 
 msgid "Trends (Last 30 Days)"
 msgstr "Trends (Last 30 Days)"
+
+msgid "Trend Analytics"
+msgstr "トレンド分析"
+
+msgid "7 days"
+msgstr "7日間"
+
+msgid "30 days"
+msgstr "30日間"
+
+msgid "90 days"
+msgstr "90日間"
+
+msgid "Period"
+msgstr "期間"
 
 msgid "No broken internal links found."
 msgstr "No broken internal links found."
