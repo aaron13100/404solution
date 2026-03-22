@@ -777,17 +777,33 @@ class ABJ_404_Solution_Logging {
             $line
         ) ?? $line;
 
-        // Redact absolute file paths to prevent info disclosure
-        // Matches /home/user/..., /var/www/..., etc.
-        // Captures leading space/start to preserve formatting
+        // Redact absolute file paths to prevent server-path disclosure.
+        //
+        // Stack traces format paths as:
+        //   #0 /home/user/public_html/wp-includes/class.php(123): method()
+        //   thrown in /var/www/html/wp-content/plugins/foo/bar.php on line 45
+        //
+        // The document root varies per host (/home/user/, /var/www/, /srv/www/,
+        // /Users/username/, etc.) but WordPress always has recognisable sub-dirs.
+        // Replace everything before the WP marker so the marker itself is kept
+        // (aids debugging) while the host-specific prefix is hidden.
+        //
+        // Covered markers: wp-content, wp-admin, wp-includes, wp-login.php,
+        //                   wp-config.php, wp-cron.php, wp-blog-header.php
+        $wpUnixMarkers = 'wp-content|wp-admin|wp-includes|wp-login\\.php|wp-config\\.php|wp-cron\\.php|wp-blog-header\\.php';
+        // Unix paths: preceded by start-of-string, whitespace, or (#/digit/paren
+        // that appear in stack-trace lines like "#0 /path..." or "(thrown in /path...")
         $line = preg_replace(
-            '/(^|\s)(\/[^\s]+\/wp-content\/)/i',
-            '$1/...redacted.../wp-content/',
+            '/(^|[\s\(])(\/[^\s\(]+?)\/(' . $wpUnixMarkers . ')\b/i',
+            '$1/...redacted.../$3',
             $line
         ) ?? $line;
+        // Windows paths: same markers, backslash separators.
+        // e.g. C:\inetpub\wwwroot\wp-content\ -> C:\...redacted...\wp-content\
+        // Each \\ in the pattern string matches one literal backslash in the path.
         $line = preg_replace(
-            '/\b[a-z]:\\\\[^\s]+\\\\wp-content\\\\/i',
-            'C:\\...redacted...\\wp-content\\',
+            '/\b[a-z]:\\\\[^\s]+\\\\(' . $wpUnixMarkers . ')\b/i',
+            'C:\\\\...redacted...\\\\$1',
             $line
         ) ?? $line;
 
