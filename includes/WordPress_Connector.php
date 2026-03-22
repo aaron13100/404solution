@@ -209,6 +209,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $isCardAccordionPage = in_array($subpage, array('abj404_options', 'abj404_tools', 'abj404_stats'), true);
         $isLogsPage = ($subpage === 'abj404_logs');
         $isListPage = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_logs'), true);
+        $isEditPage = ($subpage === 'abj404_edit');
         $needsDestinationAutocomplete = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_options', 'abj404_edit'), true);
 
         // remove the "thank you for creating with wordpress" message
@@ -251,6 +252,10 @@ class ABJ_404_Solution_WordPress_Connector {
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-enable_disable_apply_button_js');
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-trash_link_ajax', plugin_dir_url(__FILE__) . 'ajax/trash_link_ajax.js',
                     array('jquery'));
+        }
+        // tableInteractions.js provides abj404ToggleRegexInfo() used on both list pages
+        // and the Edit Redirect page (subpage=abj404_edit).
+        if ($isListPage || $isEditPage) {
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-table-interactions', plugin_dir_url(__FILE__) . 'js/tableInteractions.js',
                     array('jquery'));
 
