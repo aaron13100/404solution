@@ -159,15 +159,17 @@ class ABJ_404_Solution_RestApiController {
         $status  = sanitize_text_field(is_scalar($rawStatus) ? (string)$rawStatus : '');
         $filter  = sanitize_text_field(is_scalar($rawFilter) ? (string)$rawFilter : '');
 
-        // Map user-facing status string to the numeric sub value used by getRedirectsForView.
-        $sub = $this->statusStringToSub($status);
+        // $sub is the tab/view name — always 'abj404_redirects' for this endpoint.
+        // $statusFilter is the numeric status filter (0 = all active, or a specific status).
+        $sub          = 'abj404_redirects';
+        $statusFilter = $this->statusStringToNumericFilter($status);
 
         $tableOptions = array(
             'orderby' => 'url',
             'order'   => 'ASC',
             'paged'   => $page,
             'perpage' => $perPage,
-            'filter'  => $filter,
+            'filter'  => $statusFilter,
             'logsid'  => 0,
             'sub'     => $sub,
         );
@@ -554,7 +556,15 @@ class ABJ_404_Solution_RestApiController {
      * @param string $status
      * @return string
      */
-    private function statusStringToSub($status) {
+    /**
+     * Convert a user-facing status string to the numeric filter value used by
+     * getRedirectsForView/getRedirectsForViewCount.
+     * '0' means "all active" (default).
+     *
+     * @param string $status
+     * @return string
+     */
+    private function statusStringToNumericFilter($status) {
         switch (strtolower($status)) {
             case 'manual':
                 return (string)ABJ404_STATUS_MANUAL;
@@ -563,7 +573,7 @@ class ABJ_404_Solution_RestApiController {
             case 'regex':
                 return (string)ABJ404_STATUS_REGEX;
             default:
-                // '0' means "all active" for the redirects view.
+                // 0 means "all active redirects".
                 return '0';
         }
     }

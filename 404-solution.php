@@ -336,14 +336,18 @@ if (is_admin()) {
 }
 
 // REST API — deferred to rest_api_init so DataAccess/PluginLogic are only loaded on actual REST requests.
+// Note: We call registerRoutes() directly here (not register()), because register() itself calls
+// add_action('rest_api_init', ...) which would queue routes AFTER rest_api_init has already fired.
+// We always load Loader.php to ensure constants (ABJ404_TRASH_FILTER etc.) are defined, since
+// is_admin() is false for REST requests so Loader.php is not loaded earlier.
 add_action('rest_api_init', function() {
-	if (!class_exists('ABJ_404_Solution_RestApiController')) {
+	if (!defined('ABJ404_TRASH_FILTER')) {
 		require_once plugin_dir_path(ABJ404_FILE) . 'includes/Loader.php';
 	}
 	$dao   = ABJ_404_Solution_DataAccess::getInstance();
 	$logic = ABJ_404_Solution_PluginLogic::getInstance();
 	$restController = new ABJ_404_Solution_RestApiController($dao, $logic);
-	$restController->register();
+	$restController->registerRoutes();
 });
 
 // WP-CLI commands.

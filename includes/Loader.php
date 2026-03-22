@@ -45,8 +45,13 @@ if (!defined('ABJ404_TYPE_TAG')) { define( 'ABJ404_TYPE_TAG', 3 ); }
 if (!defined('ABJ404_TYPE_EXTERNAL')) { define( 'ABJ404_TYPE_EXTERNAL', 4 ); }
 if (!defined('ABJ404_TYPE_HOME')) { define( 'ABJ404_TYPE_HOME', 5 ); }
 
-$abj404_redirect_types = array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO, ABJ404_STATUS_REGEX);
-$abj404_captured_types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
+// Use $GLOBALS so these are in the true PHP global scope even when Loader.php
+// is require_once'd from inside a function or closure (e.g. the rest_api_init callback).
+$GLOBALS['abj404_redirect_types'] = array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_AUTO, ABJ404_STATUS_REGEX);
+$GLOBALS['abj404_captured_types'] = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
+// Also set as local-scope variables for backward compatibility when included at file scope.
+$abj404_redirect_types = $GLOBALS['abj404_redirect_types'];
+$abj404_captured_types = $GLOBALS['abj404_captured_types'];
 
 // other
 if (!defined("ABJ404_OPTION_DEFAULT_PERPAGE")) { define("ABJ404_OPTION_DEFAULT_PERPAGE", 25); }
