@@ -2971,6 +2971,33 @@ msgstr "Search traffic data for your captured 404 URLs is shown below. Data is c
 msgid "Disconnect"
 msgstr "Disconnect"
 
+msgid "Connected to Google Search Console"
+msgstr "Mit Google Search Console verbunden"
+
+msgid "Credentials saved — authorization required"
+msgstr "Anmeldedaten gespeichert — Autorisierung erforderlich"
+
+msgid "Authorization failed"
+msgstr "Autorisierung fehlgeschlagen"
+
+msgid "Authorization was denied or cancelled."
+msgstr "Die Autorisierung wurde verweigert oder abgebrochen."
+
+msgid "Try Again"
+msgstr "Erneut versuchen"
+
+msgid "Copy"
+msgstr "Kopieren"
+
+msgid "Copied!"
+msgstr "Kopiert!"
+
+msgid "Add this Authorized Redirect URI to your OAuth client:"
+msgstr "Fügen Sie diese autorisierte Weiterleitungs-URI zu Ihrem OAuth-Client hinzu:"
+
+msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to start over."
+msgstr "Klicken Sie auf 'Erneut versuchen', um die Autorisierung zu wiederholen, oder auf 'Anmeldedaten entfernen', um neu zu beginnen."
+
 msgid "404 URLs with Search Traffic (last 90 days)"
 msgstr "404 URLs with Search Traffic (last 90 days)"
 
@@ -3067,6 +3094,9 @@ msgstr "Plugin"
 
 msgid "404 Solution Digest — %s"
 msgstr "404 Solution Digest — %s"
+
+msgid "Advanced Options"
+msgstr "Erweiterte Optionen"
 
 msgid "Active From (optional)"
 msgstr "Active From (optional)"

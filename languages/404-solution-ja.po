@@ -2977,6 +2977,33 @@ msgstr "Search traffic data for your captured 404 URLs is shown below. Data is c
 msgid "Disconnect"
 msgstr "Disconnect"
 
+msgid "Connected to Google Search Console"
+msgstr "Google Search Consoleとの接続が確立されました"
+
+msgid "Credentials saved — authorization required"
+msgstr "認証情報を保存しました — 認可が必要です"
+
+msgid "Authorization failed"
+msgstr "認可に失敗しました"
+
+msgid "Authorization was denied or cancelled."
+msgstr "認可が拒否またはキャンセルされました。"
+
+msgid "Try Again"
+msgstr "再試行"
+
+msgid "Copy"
+msgstr "コピー"
+
+msgid "Copied!"
+msgstr "コピーしました！"
+
+msgid "Add this Authorized Redirect URI to your OAuth client:"
+msgstr "この承認済みリダイレクトURIをOAuthクライアントに追加してください："
+
+msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to start over."
+msgstr "「再試行」をクリックして認可を再試行するか、「認証情報を削除」をクリックしてやり直してください。"
+
 msgid "404 URLs with Search Traffic (last 90 days)"
 msgstr "404 URLs with Search Traffic (last 90 days)"
 
@@ -3073,6 +3100,9 @@ msgstr "Plugin"
 
 msgid "404 Solution Digest — %s"
 msgstr "404 Solution Digest — %s"
+
+msgid "Advanced Options"
+msgstr "詳細オプション"
 
 msgid "Active From (optional)"
 msgstr "Active From (optional)"

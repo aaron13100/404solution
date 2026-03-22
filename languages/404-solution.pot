@@ -2006,6 +2006,33 @@ msgstr ""
 msgid "Disconnect"
 msgstr ""
 
+msgid "Connected to Google Search Console"
+msgstr ""
+
+msgid "Credentials saved — authorization required"
+msgstr ""
+
+msgid "Authorization failed"
+msgstr ""
+
+msgid "Authorization was denied or cancelled."
+msgstr ""
+
+msgid "Try Again"
+msgstr ""
+
+msgid "Copy"
+msgstr ""
+
+msgid "Copied!"
+msgstr ""
+
+msgid "Add this Authorized Redirect URI to your OAuth client:"
+msgstr ""
+
+msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to start over."
+msgstr ""
+
 msgid "404 URLs with Search Traffic (last 90 days)"
 msgstr ""
 
@@ -2110,6 +2137,9 @@ msgid "Plugin"
 msgstr ""
 
 msgid "404 Solution Digest — %s"
+msgstr ""
+
+msgid "Advanced Options"
 msgstr ""
 
 msgid "Active From (optional)"

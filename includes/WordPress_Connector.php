@@ -1133,24 +1133,22 @@ class ABJ_404_Solution_WordPress_Connector {
             wp_die(__('Security check failed.', '404-solution'), 403);
         }
 
+        $logger = ABJ_404_Solution_Logging::getInstance();
+        $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
+
         if ($code === '') {
             // User denied access or error occurred.
-            $toolsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&gsc_error=access_denied');
-            wp_safe_redirect($toolsUrl);
+            $gsc->setLastOAuthError(__('Authorization was denied or cancelled.', '404-solution'));
+            wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
             exit;
         }
 
-        $logger = ABJ_404_Solution_Logging::getInstance();
-        $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
-        $error  = $gsc->exchangeCodeForToken($code);
+        $error = $gsc->exchangeCodeForToken($code);
 
-        $toolsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools');
         if ($error !== '') {
-            $toolsUrl .= '&gsc_error=' . urlencode($error);
-        } else {
-            $toolsUrl .= '&gsc_connected=1';
+            $gsc->setLastOAuthError($error);
         }
-        wp_safe_redirect($toolsUrl);
+        wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
         exit;
     }
 
@@ -1167,7 +1165,7 @@ class ABJ_404_Solution_WordPress_Connector {
         $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
         $gsc->revokeAuthorization();
 
-        wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&gsc_disconnected=1'));
+        wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
         exit;
     }
 

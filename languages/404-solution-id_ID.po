@@ -2968,6 +2968,33 @@ msgstr "Search traffic data for your captured 404 URLs is shown below. Data is c
 msgid "Disconnect"
 msgstr "Disconnect"
 
+msgid "Connected to Google Search Console"
+msgstr "Terhubung ke Google Search Console"
+
+msgid "Credentials saved — authorization required"
+msgstr "Kredensial disimpan — otorisasi diperlukan"
+
+msgid "Authorization failed"
+msgstr "Otorisasi gagal"
+
+msgid "Authorization was denied or cancelled."
+msgstr "Otorisasi ditolak atau dibatalkan."
+
+msgid "Try Again"
+msgstr "Coba lagi"
+
+msgid "Copy"
+msgstr "Salin"
+
+msgid "Copied!"
+msgstr "Disalin!"
+
+msgid "Add this Authorized Redirect URI to your OAuth client:"
+msgstr "Tambahkan URI Redirect Resmi ini ke klien OAuth Anda:"
+
+msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to start over."
+msgstr "Klik 'Coba lagi' untuk mencoba ulang otorisasi, atau 'Hapus Kredensial' untuk memulai ulang."
+
 msgid "404 URLs with Search Traffic (last 90 days)"
 msgstr "404 URLs with Search Traffic (last 90 days)"
 
@@ -3064,6 +3091,9 @@ msgstr "Plugin"
 
 msgid "404 Solution Digest — %s"
 msgstr "404 Solution Digest — %s"
+
+msgid "Advanced Options"
+msgstr "Opsi Lanjutan"
 
 msgid "Active From (optional)"
 msgstr "Active From (optional)"
