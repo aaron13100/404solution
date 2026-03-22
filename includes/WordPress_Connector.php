@@ -306,7 +306,7 @@ class ABJ_404_Solution_WordPress_Connector {
             ));
         }
 
-        if ($isToolsPage) {
+        if ($isOptionsPage) {
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-engine-profiles',
                 plugin_dir_url(__FILE__) . 'ajax/ajax-engine-profiles.js',
                 array('jquery'));

@@ -80,9 +80,18 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
         }
 
         // Validate regex pattern before saving.
+        // Patterns are stored WITHOUT PHP delimiters (users write ^/shop/ not #^/shop/#).
+        // The resolver wraps with # delimiters at match-time when the first char is not
+        // a common delimiter — we must mirror that same logic here so validation matches
+        // what will actually be executed.
         if ($isRegex) {
+            $testPattern      = $urlPattern;
+            $commonDelimiters = ['/', '#', '~', '!', '@', '|', '%'];
+            if (!in_array(substr($testPattern, 0, 1), $commonDelimiters, true)) {
+                $testPattern = '#' . $testPattern . '#';
+            }
             set_error_handler(function (int $errno, string $errstr, string $errfile = '', int $errline = 0): bool { return false; }, E_WARNING);
-            $testResult = @preg_match($urlPattern, '');
+            $testResult = @preg_match($testPattern, '');
             restore_error_handler();
             if ($testResult === false) {
                 wp_send_json_error(['message' => __('Invalid regular expression pattern.', '404-solution')]);
