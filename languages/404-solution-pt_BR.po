@@ -3299,3 +3299,6 @@ msgstr "ID de perfil inválido."
 
 msgid "Failed to delete engine profile."
 msgstr "Falha ao excluir o perfil de mecanismo."
+
+msgid "Send Feedback"
+msgstr "Enviar comentários"

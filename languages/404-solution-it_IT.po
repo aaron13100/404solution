@@ -3296,3 +3296,6 @@ msgstr "ID profilo non valido."
 
 msgid "Failed to delete engine profile."
 msgstr "Impossibile eliminare il profilo motore."
+
+msgid "Send Feedback"
+msgstr "Invia feedback"

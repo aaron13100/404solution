@@ -3303,3 +3303,6 @@ msgstr "プロファイルIDが無効です。"
 
 msgid "Failed to delete engine profile."
 msgstr "エンジンプロファイルの削除に失敗しました。"
+
+msgid "Send Feedback"
+msgstr "フィードバックを送る"

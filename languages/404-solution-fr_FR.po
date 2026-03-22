@@ -3293,3 +3293,6 @@ msgstr "ID de profil invalide."
 
 msgid "Failed to delete engine profile."
 msgstr "Échec de la suppression du profil de moteur."
+
+msgid "Send Feedback"
+msgstr "Envoyer un commentaire"

@@ -3307,3 +3307,6 @@ msgstr "配置文件 ID 无效。"
 
 msgid "Failed to delete engine profile."
 msgstr "删除引擎配置文件失败。"
+
+msgid "Send Feedback"
+msgstr "发送反馈"

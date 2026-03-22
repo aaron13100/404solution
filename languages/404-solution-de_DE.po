@@ -3297,3 +3297,6 @@ msgstr "Ungültige Profil-ID."
 
 msgid "Failed to delete engine profile."
 msgstr "Engine-Profil konnte nicht gelöscht werden."
+
+msgid "Send Feedback"
+msgstr "Feedback senden"

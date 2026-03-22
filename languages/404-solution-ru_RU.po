@@ -3304,3 +3304,6 @@ msgstr "Неверный идентификатор профиля."
 
 msgid "Failed to delete engine profile."
 msgstr "Не удалось удалить профиль механизма."
+
+msgid "Send Feedback"
+msgstr "Отправить отзыв"

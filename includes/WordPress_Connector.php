@@ -148,6 +148,8 @@ class ABJ_404_Solution_WordPress_Connector {
 
         add_filter("plugin_action_links_" . ABJ404_NAME,
             'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
+        add_filter('plugin_row_meta',
+            'ABJ_404_Solution_WordPress_Connector::addPluginRowMeta', 10, 2);
         add_action('admin_notices',
             'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
         add_action('admin_menu',
@@ -595,6 +597,24 @@ class ABJ_404_Solution_WordPress_Connector {
         	. $debugExplanation . '</a>';
         array_push($links, $debugExplanation);
 
+        return $links;
+    }
+
+    /**
+     * Adds a "Send Feedback" link to the plugin row on the Plugins page.
+     *
+     * @param array<int|string, string> $links
+     * @param string $file
+     * @return array<int|string, string>
+     */
+    static function addPluginRowMeta($links, $file) {
+        if ($file !== ABJ404_NAME) {
+            return $links;
+        }
+        $email   = defined('ABJ404_AUTHOR_EMAIL') ? ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';
+        $subject = rawurlencode('Feedback: 404 Solution');
+        $links[] = '<a href="mailto:' . esc_attr($email) . '?subject=' . $subject . '">'
+            . esc_html__('Send Feedback', '404-solution') . '</a>';
         return $links;
     }
 

@@ -2328,3 +2328,6 @@ msgstr ""
 
 msgid "Failed to delete engine profile."
 msgstr ""
+
+msgid "Send Feedback"
+msgstr ""

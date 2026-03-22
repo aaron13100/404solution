@@ -3299,3 +3299,6 @@ msgstr "Ogiltigt profil-ID."
 
 msgid "Failed to delete engine profile."
 msgstr "Det gick inte att ta bort motorprofilen."
+
+msgid "Send Feedback"
+msgstr "Skicka feedback"

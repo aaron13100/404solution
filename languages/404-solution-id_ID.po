@@ -3294,3 +3294,6 @@ msgstr "ID profil tidak valid."
 
 msgid "Failed to delete engine profile."
 msgstr "Gagal menghapus profil mesin."
+
+msgid "Send Feedback"
+msgstr "Kirim Masukan"

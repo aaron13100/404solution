@@ -3315,3 +3315,6 @@ msgstr "معرّف الملف التعريفي غير صالح."
 
 msgid "Failed to delete engine profile."
 msgstr "فشل حذف ملف تعريف المحرك."
+
+msgid "Send Feedback"
+msgstr "أرسل تعليق"
