@@ -3142,7 +3142,7 @@ msgid "Example 1:"
 msgstr "Beispiel 1:"
 
 msgid "Your store lives at /products/. Spelling correction works great on blog posts, but on a product section you want only exact slug matching and URL fixing — fuzzy spelling suggestions might point to the wrong product. Create a profile with the URL pattern /products/* and check only \"Slug Matching\" and \"URL Fix\"."
-msgstr "Ihr Shop befindet sich unter /products/. Rechtschreibkorrektur funktioniert bei Blog-Beiträgen gut, aber im Produktbereich möchten Sie nur exakten Slug-Abgleich und URL-Korrektur — unscharfe Rechtschreibvorschläge könnten auf das falsche Produkt zeigen. Erstellen Sie ein Profil mit dem URL-Muster /products/* und aktivieren Sie nur „Slug-Abgleich" und „URL-Korrektur"."
+msgstr "Ihr Shop befindet sich unter /products/. Rechtschreibkorrektur funktioniert bei Blog-Beiträgen gut, aber im Produktbereich möchten Sie nur exakten Slug-Abgleich und URL-Korrektur — unscharfe Rechtschreibvorschläge könnten auf das falsche Produkt zeigen. Erstellen Sie ein Profil mit dem URL-Muster /products/* und aktivieren Sie nur „Slug-Abgleich\" und „URL-Korrektur\"."
 
 msgid "Example 2:"
 msgstr "Beispiel 2:"

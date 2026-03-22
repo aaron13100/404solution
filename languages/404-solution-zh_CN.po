@@ -3152,7 +3152,7 @@ msgid "Example 1:"
 msgstr "示例 1："
 
 msgid "Your store lives at /products/. Spelling correction works great on blog posts, but on a product section you want only exact slug matching and URL fixing — fuzzy spelling suggestions might point to the wrong product. Create a profile with the URL pattern /products/* and check only \"Slug Matching\" and \"URL Fix\"."
-msgstr "您的商店位于 /products/。拼写纠正在博客文章中效果很好，但在产品区您只需要精确的 Slug 匹配和 URL 修复——模糊的拼写建议可能会指向错误的产品。创建一个 URL 模式为 /products/* 的配置文件，仅勾选"Slug 匹配"和"URL 修复"。"
+msgstr "您的商店位于 /products/。拼写纠正在博客文章中效果很好，但在产品区您只需要精确的 Slug 匹配和 URL 修复——模糊的拼写建议可能会指向错误的产品。创建一个 URL 模式为 /products/* 的配置文件，仅勾选\"Slug 匹配\"和\"URL 修复\"。"
 
 msgid "Example 2:"
 msgstr "示例 2："
