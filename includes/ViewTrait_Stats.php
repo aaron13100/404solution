@@ -43,9 +43,6 @@ trait ViewTrait_Stats {
             . ' data-stats-refresh-current-hash="' . esc_attr($statsHash) . '"'
             . ' data-stats-refresh-available-text="' . esc_attr(__('Refresh available', '404-solution')) . '"></div>';
 
-        // Security notice: surface cached threat detections from nightly analysis.
-        $this->echoSecurityNotice();
-
         // Flow layout for stats cards
         echo "<div class=\"abj404-flow-layout\">";
 
@@ -540,53 +537,6 @@ trait ViewTrait_Stats {
     }
 
     /**
-     * Echo a security notice on the Stats page if the nightly analysis found threats.
-     * Shows a notice box with a count summary. No-op when no cached results exist.
-     *
-     * @return void
-     */
-    private function echoSecurityNotice(): void {
-        $dao    = ABJ_404_Solution_DataAccess::getInstance();
-        $logger = ABJ_404_Solution_Logging::getInstance();
-        $monitor = new ABJ_404_Solution_SecurityMonitor($dao, $logger);
-
-        $results = $monitor->getCachedResults();
-
-        // false means no cached analysis yet — suppress the notice.
-        if ($results === false || !is_array($results) || empty($results)) {
-            return;
-        }
-
-        $count = count($results);
-        echo '<div class="notice notice-warning abj404-security-notice" style="margin:0 0 16px 0;padding:12px 16px;">';
-        echo '<p><strong>' . esc_html__('Security Scan', '404-solution') . '</strong> &mdash; ';
-        echo esc_html(
-            sprintf(
-                _n(
-                    'Security scan found potential attack patterns. %d suspicious 404 pattern detected in the last 24 hours.',
-                    'Security scan found potential attack patterns. %d suspicious 404 patterns detected in the last 24 hours.',
-                    $count,
-                    '404-solution'
-                ),
-                $count
-            )
-        );
-        echo '</p>';
-        echo '<ul style="margin:4px 0 0 16px;list-style:disc;">';
-            foreach ($results as $threat) {
-                if (!is_array($threat)) {
-                    continue;
-                }
-                $detail = (string)$threat['detail'];
-                if ($detail !== '') {
-                    echo '<li>' . esc_html($detail) . '</li>';
-                }
-            }
-            echo '</ul>';
-        echo '</div>';
-    }
-
-    /**
      * Display the tools page.
      * @return void
      */
@@ -660,7 +610,12 @@ trait ViewTrait_Stats {
 
     /**
      * Build the "Migrate from Another Plugin" card markup.
-     * Auto-detects installed redirect plugins and renders a form for import.
+     * Auto-detects installed redirect plugins and renders a two-step preview+import flow.
+     *
+     * Step 1: User selects a plugin and clicks "Preview Import" — an AJAX request fetches
+     *         the count of available redirects without importing anything.
+     * Step 2: The count is shown. If N > 0, a "Confirm Import" button submits the real
+     *         import form. If N = 0, "No redirects found" is shown with a Back button.
      *
      * @return string
      */
@@ -704,7 +659,11 @@ trait ViewTrait_Stats {
         $html .= '<strong>' . esc_html(implode(', ', $detectedNames)) . '</strong>';
         $html .= '</p>';
 
-        $html .= '<form method="POST" action="' . esc_url($migrateActionUrl) . '">';
+        $previewNonce = wp_create_nonce('abj404_crossPluginPreview');
+        $ajaxUrl      = admin_url('admin-ajax.php');
+
+        // Step 1: source selector + Preview button (visible by default)
+        $html .= '<div id="abj404-migrate-step1">';
         $html .= '<p>';
         $html .= '<label for="abj404-import-source"><strong>' . esc_html__('Source plugin:', '404-solution') . '</strong></label> ';
         $html .= '<select name="import_source" id="abj404-import-source">';
@@ -714,11 +673,104 @@ trait ViewTrait_Stats {
         $html .= '</select>';
         $html .= '</p>';
         $html .= '<p>';
-        $html .= '<input type="hidden" name="action" value="importFromPlugin">';
-        $html .= '<input type="submit" class="button-secondary" value="' . esc_attr__('Import Redirects', '404-solution') . '">';
+        $html .= '<button type="button" id="abj404-migrate-preview-btn" class="button-secondary">';
+        $html .= esc_html__('Preview Import', '404-solution');
+        $html .= '</button>';
+        $html .= ' <span id="abj404-migrate-preview-spinner" style="display:none;margin-left:6px;" class="spinner is-active"></span>';
         $html .= '</p>';
-        $html .= '<p><em>' . esc_html__('This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved.', '404-solution') . '</em></p>';
+        $html .= '</div>';
+
+        // Step 2: preview result + confirm form (hidden until preview completes)
+        $html .= '<div id="abj404-migrate-step2" style="display:none;">';
+        $html .= '<p id="abj404-migrate-preview-msg"></p>';
+        $html .= '<form id="abj404-migrate-confirm-form" method="POST" action="' . esc_url($migrateActionUrl) . '" style="display:none;">';
+        $html .= '<input type="hidden" name="action" value="importFromPlugin">';
+        $html .= '<input type="hidden" name="import_source" id="abj404-migrate-confirm-source" value="">';
+        $html .= '<input type="submit" class="button-primary" value="' . esc_attr__('Confirm Import', '404-solution') . '">';
+        $html .= ' <button type="button" id="abj404-migrate-back-btn" class="button-secondary">';
+        $html .= esc_html__('Back', '404-solution');
+        $html .= '</button>';
         $html .= '</form>';
+        $html .= '<div id="abj404-migrate-back-noform" style="display:none;">';
+        $html .= '<button type="button" id="abj404-migrate-back-btn2" class="button-secondary">';
+        $html .= esc_html__('Back', '404-solution');
+        $html .= '</button>';
+        $html .= '</div>';
+        $html .= '</div>';
+
+        $html .= '<p><em>' . esc_html__('This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved.', '404-solution') . '</em></p>';
+
+        // Inline JS for the two-step flow
+        $html .= '<script>(function() {';
+        $html .= 'var ajaxUrl   = ' . json_encode($ajaxUrl) . ';';
+        $html .= 'var nonce     = ' . json_encode($previewNonce) . ';';
+        $html .= 'var msgFound  = ' . json_encode(__('Found %d redirect(s) from %s — proceed with import?', '404-solution')) . ';';
+        $html .= 'var msgNone   = ' . json_encode(__('No redirects found in %s. Nothing to import.', '404-solution')) . ';';
+        $html .= 'var msgError  = ' . json_encode(__('Could not fetch preview. Please try again.', '404-solution')) . ';';
+        $html .= 'function showStep1() {';
+        $html .= '  document.getElementById("abj404-migrate-step1").style.display = "";';
+        $html .= '  document.getElementById("abj404-migrate-step2").style.display = "none";';
+        $html .= '}';
+        $html .= 'function showStep2(count, source, label) {';
+        $html .= '  document.getElementById("abj404-migrate-step1").style.display = "none";';
+        $html .= '  document.getElementById("abj404-migrate-step2").style.display = "";';
+        $html .= '  var msgEl  = document.getElementById("abj404-migrate-preview-msg");';
+        $html .= '  var form   = document.getElementById("abj404-migrate-confirm-form");';
+        $html .= '  var noForm = document.getElementById("abj404-migrate-back-noform");';
+        $html .= '  if (count > 0) {';
+        $html .= '    msgEl.textContent = msgFound.replace("%d", count).replace("%s", label);';
+        $html .= '    document.getElementById("abj404-migrate-confirm-source").value = source;';
+        $html .= '    form.style.display = "";';
+        $html .= '    noForm.style.display = "none";';
+        $html .= '  } else {';
+        $html .= '    msgEl.textContent = msgNone.replace("%s", label);';
+        $html .= '    form.style.display = "none";';
+        $html .= '    noForm.style.display = "";';
+        $html .= '  }';
+        $html .= '}';
+        $html .= 'function showError() {';
+        $html .= '  document.getElementById("abj404-migrate-step1").style.display = "none";';
+        $html .= '  document.getElementById("abj404-migrate-step2").style.display = "";';
+        $html .= '  document.getElementById("abj404-migrate-preview-msg").textContent = msgError;';
+        $html .= '  document.getElementById("abj404-migrate-confirm-form").style.display = "none";';
+        $html .= '  document.getElementById("abj404-migrate-back-noform").style.display = "";';
+        $html .= '}';
+        $html .= 'document.addEventListener("DOMContentLoaded", function() {';
+        $html .= '  var previewBtn = document.getElementById("abj404-migrate-preview-btn");';
+        $html .= '  var backBtn    = document.getElementById("abj404-migrate-back-btn");';
+        $html .= '  var backBtn2   = document.getElementById("abj404-migrate-back-btn2");';
+        $html .= '  if (previewBtn) {';
+        $html .= '    previewBtn.addEventListener("click", function() {';
+        $html .= '      var select = document.getElementById("abj404-import-source");';
+        $html .= '      var source = select ? select.value : "";';
+        $html .= '      if (!source) return;';
+        $html .= '      var spinner = document.getElementById("abj404-migrate-preview-spinner");';
+        $html .= '      if (spinner) spinner.style.display = "";';
+        $html .= '      previewBtn.disabled = true;';
+        $html .= '      var fd = new FormData();';
+        $html .= '      fd.append("action", "abj404_crossPluginPreview");';
+        $html .= '      fd.append("nonce", nonce);';
+        $html .= '      fd.append("import_source", source);';
+        $html .= '      fetch(ajaxUrl, { method: "POST", body: fd, credentials: "same-origin" })';
+        $html .= '        .then(function(r) { return r.json(); })';
+        $html .= '        .then(function(resp) {';
+        $html .= '          if (spinner) spinner.style.display = "none";';
+        $html .= '          previewBtn.disabled = false;';
+        $html .= '          if (resp && resp.success && resp.data) {';
+        $html .= '            showStep2(parseInt(resp.data.count, 10) || 0, resp.data.source, resp.data.label);';
+        $html .= '          } else { showError(); }';
+        $html .= '        })';
+        $html .= '        .catch(function() {';
+        $html .= '          if (spinner) spinner.style.display = "none";';
+        $html .= '          previewBtn.disabled = false;';
+        $html .= '          showError();';
+        $html .= '        });';
+        $html .= '    });';
+        $html .= '  }';
+        $html .= '  if (backBtn)  { backBtn.addEventListener("click",  function() { showStep1(); }); }';
+        $html .= '  if (backBtn2) { backBtn2.addEventListener("click", function() { showStep1(); }); }';
+        $html .= '});';
+        $html .= '})();</script>';
 
         return $html;
     }

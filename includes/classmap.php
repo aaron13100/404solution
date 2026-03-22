@@ -9,12 +9,12 @@ if (!defined('ABSPATH')) {
 
 $base = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 return array(
+    'ABJ_404_Solution_Ajax_CrossPluginImporter' => $base . 'includes/ajax/Ajax_CrossPluginImporter.php',
     'ABJ_404_Solution_Ajax_Php' => $base . 'includes/ajax/Ajax_Php.php',
     'ABJ_404_Solution_Ajax_TrendData' => $base . 'includes/ajax/Ajax_TrendData.php',
     'ABJ_404_Solution_CrossPluginImporter' => $base . 'includes/CrossPluginImporter.php',
     'ABJ_404_Solution_GoogleSearchConsole' => $base . 'includes/GoogleSearchConsole.php',
     'ABJ_404_Solution_InternalLinkScanner' => $base . 'includes/InternalLinkScanner.php',
-    'ABJ_404_Solution_SecurityMonitor' => $base . 'includes/SecurityMonitor.php',
     'ABJ_404_Solution_Ajax_SettingsModeToggle' => $base . 'includes/ajax/Ajax_SettingsModeToggle.php',
     'ABJ_404_Solution_Ajax_SuggestionCompute' => $base . 'includes/ajax/Ajax_SuggestionCompute.php',
     'ABJ_404_Solution_Ajax_SuggestionPolling' => $base . 'includes/ajax/Ajax_SuggestionPolling.php',

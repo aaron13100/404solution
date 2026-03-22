@@ -164,6 +164,7 @@ class ABJ_404_Solution_WordPress_Connector {
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_updateOptions', 'ABJ_404_Solution_Ajax_Php::updateOptions');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404getTrendData', 'ABJ_404_Solution_Ajax_TrendData::echoTrendData');
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_crossPluginPreview', 'ABJ_404_Solution_Ajax_CrossPluginImporter::handlePreview');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_oauth_callback', 'ABJ_404_Solution_WordPress_Connector::handleGscOauthCallback');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_revoke', 'ABJ_404_Solution_WordPress_Connector::handleGscRevoke');
 
