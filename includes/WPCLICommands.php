@@ -28,7 +28,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
      * ## OPTIONS
      *
      * [--status=<status>]
-     * : Filter by status. One of: manual, auto, captured, regex.
+     * : Filter by status. One of: manual, auto, captured, regex, ignored, later.
      *
      * [--format=<format>]
      * : Output format. One of: table, csv, json. Default: table.
@@ -37,6 +37,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
      *
      *     wp abj404 list
      *     wp abj404 list --status=manual --format=json
+     *     wp abj404 list --status=captured --format=csv
      *
      * @subcommand list
      *
@@ -51,16 +52,29 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $status = isset($assocArgs['status']) ? strtolower(trim($assocArgs['status'])) : '';
         $format = isset($assocArgs['format']) ? strtolower(trim($assocArgs['format'])) : 'table';
 
+        $validStatuses = array('', 'manual', 'auto', 'captured', 'regex', 'ignored', 'later');
+        if ($status !== '' && !in_array($status, $validStatuses, true)) {
+            \WP_CLI::error('Invalid --status value. Choose one of: ' . implode(', ', array_filter($validStatuses)));
+            return;
+        }
+
         // Map status string to numeric constant.
         $types = $this->statusStringToTypes($status);
 
-        // Fetch all matching rows using a simple paginated loop (max 2000 rows for CLI safety).
+        // Fetch all matching rows (max 2000 rows for CLI safety).
         $rows = $this->fetchRedirectRows($dao, $types, 2000);
 
         if (empty($rows)) {
             \WP_CLI::line('No redirects found.');
             return;
         }
+
+        // Humanize the integer status column so output is readable.
+        foreach ($rows as &$row) {
+            $rawStatus = $row['status'] ?? 0;
+            $row['status'] = $this->statusIntToLabel(is_numeric($rawStatus) ? (int)$rawStatus : 0);
+        }
+        unset($row);
 
         $fields = array('id', 'url', 'status', 'type', 'final_dest', 'code', 'disabled', 'timestamp');
         \WP_CLI\Utils\format_items($format, $rows, $fields);
@@ -72,13 +86,16 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
      * ## OPTIONS
      *
      * --from=<url>
-     * : The source URL (relative path, e.g. /old-page).
+     * : The source URL (relative path starting with /, e.g. /old-page).
+     *   Quote URLs containing & or ? to prevent shell interpretation:
+     *   wp abj404 create --from='/search?q=foo' --to=/results
      *
-     * --to=<url>
-     * : The destination URL or path.
+     * [--to=<url>]
+     * : The destination URL or path. Required unless --code is 410 or 451.
      *
      * [--code=<code>]
-     * : HTTP redirect code. One of: 301, 302. Default: 301.
+     * : HTTP redirect code. One of: 301, 302, 307, 308, 410, 451. Default: 301.
+     *   410 and 451 serve a "Gone" / "Unavailable for Legal Reasons" page with no destination.
      *
      * [--regex]
      * : Treat the source URL as a regular expression.
@@ -87,6 +104,8 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
      *
      *     wp abj404 create --from=/old-page --to=/new-page
      *     wp abj404 create --from=/old-page --to=https://example.com/new --code=302
+     *     wp abj404 create --from=/deleted-product --code=410
+     *     wp abj404 create --from='/search?q=old' --to='/search?q=new'
      *
      * @param array<int, string>    $args
      * @param array<string, string> $assocArgs
@@ -99,28 +118,45 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
         $from  = isset($assocArgs['from']) ? trim($assocArgs['from']) : '';
         $to    = isset($assocArgs['to']) ? trim($assocArgs['to']) : '';
-        $code  = isset($assocArgs['code']) ? absint($assocArgs['code']) : 301;
+        $code  = isset($assocArgs['code']) ? (int)$assocArgs['code'] : 301;
         $regex = isset($assocArgs['regex']);
 
         if ($from === '') {
             \WP_CLI::error('--from is required.');
             return;
         }
-        if ($to === '') {
-            \WP_CLI::error('--to is required.');
-            return;
+
+        // Warn about missing leading slash — it's a common mistake that creates unmatchable rules.
+        if ($from !== '' && $from[0] !== '/' && !preg_match('#^https?://#i', $from)) {
+            \WP_CLI::warning("--from '{$from}' does not start with '/'. Incoming requests are matched against the path (e.g. /old-page), so this redirect may never fire.");
         }
-        if (!in_array($code, array(301, 302), true)) {
-            \WP_CLI::warning('Invalid redirect code; defaulting to 301.');
+
+        $validCodes = array(301, 302, 307, 308, 410, 451);
+        if (!in_array($code, $validCodes, true)) {
+            \WP_CLI::warning('Invalid redirect code; defaulting to 301. Valid codes: ' . implode(', ', $validCodes));
             $code = 301;
         }
 
-        $status    = $regex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
-        $type      = $this->detectType($to);
+        // 410 Gone and 451 Unavailable For Legal Reasons serve a terminal page — no destination needed.
+        $isTerminalCode = in_array($code, array(410, 451), true);
+        if ($to === '' && !$isTerminalCode) {
+            \WP_CLI::error('--to is required (omit only when --code is 410 or 451).');
+            return;
+        }
+
+        if ($isTerminalCode) {
+            $to   = '0';
+            $type = (string)ABJ404_TYPE_404_DISPLAYED;
+        } else {
+            $type = $this->detectType($to);
+        }
+
+        $status     = $regex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
         $insertedId = $dao->setupRedirect($from, $status, $type, $to, (string)$code, 0, 'wp-cli');
 
         if ($insertedId) {
-            \WP_CLI::success("Redirect created (ID: {$insertedId}): {$from} -> {$to} [{$code}]");
+            $dest = $isTerminalCode ? "(none — {$code})" : "{$to}";
+            \WP_CLI::success("Redirect created (ID: {$insertedId}): {$from} → {$dest} [{$code}]");
         } else {
             \WP_CLI::error('Failed to create redirect. Check that the source URL is unique.');
         }
@@ -129,14 +165,19 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
     /**
      * Move a redirect to the trash.
      *
+     * Accepts either a numeric ID or a source URL. When a URL is given the
+     * plugin looks up the matching redirect and resolves it to an ID first.
+     *
      * ## OPTIONS
      *
-     * <id>
-     * : The ID of the redirect to trash.
+     * <id-or-url>
+     * : The numeric ID of the redirect, or the source URL (e.g. /old-page).
      *
      * ## EXAMPLES
      *
      *     wp abj404 delete 42
+     *     wp abj404 delete /old-page
+     *     wp abj404 delete '/search?q=old'
      *
      * @param array<int, string>    $args
      * @param array<string, string> $assocArgs
@@ -146,19 +187,37 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         require_once __DIR__ . '/DataAccess.php';
 
         if (empty($args[0])) {
-            \WP_CLI::error('Please provide a redirect ID.');
+            \WP_CLI::error('Please provide a redirect ID or source URL.');
             return;
         }
 
-        $id  = absint($args[0]);
         $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $arg = trim($args[0]);
+
+        if (ctype_digit($arg)) {
+            // Numeric argument — treat as ID.
+            $id = (int)$arg;
+            if ($id === 0) {
+                \WP_CLI::error('Invalid redirect ID.');
+                return;
+            }
+        } else {
+            // Non-numeric — look up by source URL.
+            $redirect = $dao->getExistingRedirectForURL($arg);
+            if (!isset($redirect['id']) || (int)(is_scalar($redirect['id']) ? $redirect['id'] : 0) === 0) {
+                \WP_CLI::error("No redirect found for URL: {$arg}");
+                return;
+            }
+            $id = (int)(is_scalar($redirect['id']) ? $redirect['id'] : 0);
+            \WP_CLI::line("Resolved '{$arg}' to redirect ID {$id}.");
+        }
 
         $error = $dao->moveRedirectsToTrash($id, 1);
 
         if ($error === '') {
             \WP_CLI::success("Redirect ID {$id} moved to trash.");
         } else {
-            \WP_CLI::error("Failed to trash redirect: {$error}");
+            \WP_CLI::error("No redirect with ID {$id} found, or database error: {$error}");
         }
     }
 
@@ -208,9 +267,13 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
      * <type>
      * : What to purge. Currently only "captured" is supported.
      *
+     * [--yes]
+     * : Skip the confirmation prompt.
+     *
      * ## EXAMPLES
      *
      *     wp abj404 purge captured
+     *     wp abj404 purge captured --yes
      *
      * @param array<int, string>    $args
      * @param array<string, string> $assocArgs
@@ -234,6 +297,18 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
             ABJ404_STATUS_IGNORED,
             ABJ404_STATUS_LATER,
         ));
+
+        // Count before confirming so the user knows the blast radius.
+        $count = (int)$wpdb->get_var(
+            "SELECT COUNT(*) FROM `{$table}` WHERE status IN ({$statusIn}) AND disabled = 0"
+        );
+
+        if ($count === 0) {
+            \WP_CLI::line('No captured 404 entries to purge.');
+            return;
+        }
+
+        \WP_CLI::confirm("This will permanently delete {$count} captured 404 entr" . ($count === 1 ? 'y' : 'ies') . '. Continue?', $assocArgs);
 
         $deleted = $wpdb->query(
             "DELETE FROM `{$table}` WHERE status IN ({$statusIn}) AND disabled = 0"
@@ -534,17 +609,25 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
     }
 
     /**
-     * Test which redirect would fire for a given URL.
+     * Test which stored redirect would fire for a given URL.
+     *
+     * Checks manual, auto, and regex redirects stored in the database.
+     * Does NOT simulate the full spelling/suggestion matching pipeline —
+     * a result of "No redirect found" means no stored rule matches, but
+     * the plugin might still generate a page-suggestion redirect at runtime.
      *
      * ## OPTIONS
      *
      * <url>
      * : The URL to test (relative path, e.g. /old-page, or absolute URL).
+     *   Quote URLs containing & or ? to prevent shell expansion:
+     *   wp abj404 test '/search?q=old&page=2'
      *
      * ## EXAMPLES
      *
      *     wp abj404 test /old-page
      *     wp abj404 test https://example.com/old-page
+     *     wp abj404 test '/products?id=42'
      *
      * @subcommand test
      *
@@ -644,10 +727,32 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
                 return array(ABJ404_STATUS_AUTO);
             case 'captured':
                 return array(ABJ404_STATUS_CAPTURED);
+            case 'ignored':
+                return array(ABJ404_STATUS_IGNORED);
+            case 'later':
+                return array(ABJ404_STATUS_LATER);
             case 'regex':
                 return array(ABJ404_STATUS_REGEX);
             default:
                 return array();
+        }
+    }
+
+    /**
+     * Map a numeric status constant to a human-readable label for list output.
+     *
+     * @param int $status
+     * @return string
+     */
+    private function statusIntToLabel($status) {
+        switch ($status) {
+            case ABJ404_STATUS_MANUAL:   return 'manual';
+            case ABJ404_STATUS_AUTO:     return 'auto';
+            case ABJ404_STATUS_CAPTURED: return 'captured';
+            case ABJ404_STATUS_IGNORED:  return 'ignored';
+            case ABJ404_STATUS_LATER:    return 'later';
+            case ABJ404_STATUS_REGEX:    return 'regex';
+            default:                     return (string)$status;
         }
     }
 
