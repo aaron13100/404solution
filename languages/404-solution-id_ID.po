@@ -3132,8 +3132,38 @@ msgstr "You are being redirected. Click the link if not redirected automatically
 msgid "Engine Profiles"
 msgstr "Profil Mesin"
 
-msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
-msgstr "Profil mesin memungkinkan Anda membatasi mesin pencocokan mana yang berjalan untuk pola URL tertentu. Profil pertama yang polanya cocok dengan URL 404 menang. Jika tidak ada profil yang cocok, semua mesin berjalan normal."
+msgid "By default, when a visitor hits a 404 URL, all suggestion methods run: slug matching, spelling correction, title matching, content search, category/tag matching, URL fixing, and archive fallback. Engine Profiles let you override this for specific sections of your site — choose exactly which methods run when a 404 URL falls within a URL pattern you define."
+msgstr "Secara default, ketika pengunjung mengakses URL 404, semua metode saran akan berjalan: pencocokan slug, koreksi ejaan, pencocokan judul, pencarian konten, pencocokan kategori/tag, perbaikan URL, dan fallback arsip. Profil Mesin memungkinkan Anda mengganti perilaku ini untuk bagian tertentu dari situs Anda — pilih dengan tepat metode mana yang berjalan ketika URL 404 berada dalam pola URL yang Anda tentukan."
+
+msgid "Example 1:"
+msgstr "Contoh 1:"
+
+msgid "Your store lives at /products/. Spelling correction works great on blog posts, but on a product section you want only exact slug matching and URL fixing — fuzzy spelling suggestions might point to the wrong product. Create a profile with the URL pattern /products/* and check only \"Slug Matching\" and \"URL Fix\"."
+msgstr "Toko Anda berada di /products/. Koreksi ejaan bekerja dengan baik untuk artikel blog, tetapi di bagian produk Anda hanya menginginkan pencocokan slug yang tepat dan perbaikan URL — saran ejaan yang tidak tepat dapat mengarah ke produk yang salah. Buat profil dengan pola URL /products/* dan centang hanya \"Pencocokan Slug\" dan \"Perbaikan URL\"."
+
+msgid "Example 2:"
+msgstr "Contoh 2:"
+
+msgid "You have a documentation archive at /docs/ that you recently restructured. The content is too technical for spelling suggestions to be useful, so you enable only the Archive Fallback engine there."
+msgstr "Anda memiliki arsip dokumentasi di /docs/ yang baru-baru ini Anda restrukturisasi. Kontennya terlalu teknis agar saran ejaan berguna, jadi Anda hanya mengaktifkan mesin fallback arsip di sana."
+
+msgid "How profiles are applied:"
+msgstr "Cara profil diterapkan:"
+
+msgid "Each profile has a URL pattern (e.g. /products/*) that is tested against the incoming 404 URL."
+msgstr "Setiap profil memiliki pola URL (mis. /products/*) yang diuji terhadap URL 404 yang masuk."
+
+msgid "Profiles are checked in priority order — lower number means checked first."
+msgstr "Profil diperiksa dalam urutan prioritas — nomor yang lebih kecil diperiksa lebih dulu."
+
+msgid "The first profile whose URL pattern matches the 404 URL wins. Only the engines you selected in that profile will run."
+msgstr "Profil pertama yang pola URL-nya cocok dengan URL 404 akan menang. Hanya mesin yang Anda pilih dalam profil tersebut yang akan berjalan."
+
+msgid "If none of your profiles match the 404 URL, the default behavior applies: all engines run."
+msgstr "Jika tidak ada profil Anda yang cocok dengan URL 404, perilaku default berlaku: semua mesin berjalan."
+
+msgid "Most sites do not need Engine Profiles. They are for advanced scenarios where one section of your site needs different suggestion logic than the rest."
+msgstr "Sebagian besar situs tidak memerlukan Profil Mesin. Profil ini untuk skenario lanjutan di mana satu bagian situs Anda memerlukan logika saran yang berbeda dari bagian lainnya."
 
 msgid "Name"
 msgstr "Name"

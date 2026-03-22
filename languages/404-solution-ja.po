@@ -3141,8 +3141,38 @@ msgstr "You are being redirected. Click the link if not redirected automatically
 msgid "Engine Profiles"
 msgstr "エンジンプロファイル"
 
-msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
-msgstr "エンジンプロファイルを使用すると、特定のURLパターンに対して実行するマッチングエンジンを制限できます。パターンが404 URLに一致した最初のプロファイルが優先されます。プロファイルが一致しない場合、すべてのエンジンが通常通り実行されます。"
+msgid "By default, when a visitor hits a 404 URL, all suggestion methods run: slug matching, spelling correction, title matching, content search, category/tag matching, URL fixing, and archive fallback. Engine Profiles let you override this for specific sections of your site — choose exactly which methods run when a 404 URL falls within a URL pattern you define."
+msgstr "デフォルトでは、訪問者が404 URLにアクセスすると、すべての提案方法が実行されます：スラッグ一致、スペル修正、タイトル一致、コンテンツ検索、カテゴリー/タグ一致、URL修正、アーカイブフォールバック。エンジンプロファイルを使用すると、サイトの特定のセクションに対してこれを上書きできます。404 URLが定義したURLパターンに一致する際に、どのメソッドを実行するかを正確に選択できます。"
+
+msgid "Example 1:"
+msgstr "例1："
+
+msgid "Your store lives at /products/. Spelling correction works great on blog posts, but on a product section you want only exact slug matching and URL fixing — fuzzy spelling suggestions might point to the wrong product. Create a profile with the URL pattern /products/* and check only \"Slug Matching\" and \"URL Fix\"."
+msgstr "あなたのストアは/products/にあります。ブログ投稿ではスペル修正が効果的ですが、商品セクションではスラッグの完全一致とURL修正のみを使用したい場合があります。あいまいなスペル提案は間違った商品を指し示す可能性があります。URLパターンを/products/*に設定したプロファイルを作成し、「スラッグ一致」と「URL修正」のみをチェックしてください。"
+
+msgid "Example 2:"
+msgstr "例2："
+
+msgid "You have a documentation archive at /docs/ that you recently restructured. The content is too technical for spelling suggestions to be useful, so you enable only the Archive Fallback engine there."
+msgstr "最近再構成した/docs/にドキュメントアーカイブがあります。コンテンツが技術的すぎてスペル提案が役に立たないため、そこではアーカイブフォールバックエンジンのみを有効にします。"
+
+msgid "How profiles are applied:"
+msgstr "プロファイルの適用方法："
+
+msgid "Each profile has a URL pattern (e.g. /products/*) that is tested against the incoming 404 URL."
+msgstr "各プロファイルには、受信した404 URLに対してテストされるURLパターン（例：/products/*）があります。"
+
+msgid "Profiles are checked in priority order — lower number means checked first."
+msgstr "プロファイルは優先順位の順に確認されます。数字が小さいほど先に確認されます。"
+
+msgid "The first profile whose URL pattern matches the 404 URL wins. Only the engines you selected in that profile will run."
+msgstr "URLパターンが404 URLと一致する最初のプロファイルが優先されます。そのプロファイルで選択したエンジンのみが実行されます。"
+
+msgid "If none of your profiles match the 404 URL, the default behavior applies: all engines run."
+msgstr "どのプロファイルも404 URLと一致しない場合、デフォルトの動作が適用されます：すべてのエンジンが実行されます。"
+
+msgid "Most sites do not need Engine Profiles. They are for advanced scenarios where one section of your site needs different suggestion logic than the rest."
+msgstr "ほとんどのサイトではエンジンプロファイルは必要ありません。サイトの一部のセクションが他の部分とは異なる提案ロジックを必要とする高度なシナリオ向けです。"
 
 msgid "Name"
 msgstr "Name"

@@ -3145,8 +3145,38 @@ msgstr "You are being redirected. Click the link if not redirected automatically
 msgid "Engine Profiles"
 msgstr "引擎配置文件"
 
-msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
-msgstr "引擎配置文件允许您限制针对特定 URL 模式运行哪些匹配引擎。第一个模式与 404 URL 匹配的配置文件获胜。如果没有配置文件匹配，所有引擎将正常运行。"
+msgid "By default, when a visitor hits a 404 URL, all suggestion methods run: slug matching, spelling correction, title matching, content search, category/tag matching, URL fixing, and archive fallback. Engine Profiles let you override this for specific sections of your site — choose exactly which methods run when a 404 URL falls within a URL pattern you define."
+msgstr "默认情况下，当访客访问 404 URL 时，所有建议方法都会运行：Slug 匹配、拼写纠正、标题匹配、内容搜索、分类/标签匹配、URL 修复和存档回退。引擎配置文件允许您针对网站的特定部分覆盖此设置——精确选择当 404 URL 落在您定义的 URL 模式范围内时运行哪些方法。"
+
+msgid "Example 1:"
+msgstr "示例 1："
+
+msgid "Your store lives at /products/. Spelling correction works great on blog posts, but on a product section you want only exact slug matching and URL fixing — fuzzy spelling suggestions might point to the wrong product. Create a profile with the URL pattern /products/* and check only \"Slug Matching\" and \"URL Fix\"."
+msgstr "您的商店位于 /products/。拼写纠正在博客文章中效果很好，但在产品区您只需要精确的 Slug 匹配和 URL 修复——模糊的拼写建议可能会指向错误的产品。创建一个 URL 模式为 /products/* 的配置文件，仅勾选"Slug 匹配"和"URL 修复"。"
+
+msgid "Example 2:"
+msgstr "示例 2："
+
+msgid "You have a documentation archive at /docs/ that you recently restructured. The content is too technical for spelling suggestions to be useful, so you enable only the Archive Fallback engine there."
+msgstr "您在 /docs/ 有一个文档存档，最近进行了重新整理。内容过于技术性，拼写建议没有实际用处，因此您在那里只启用存档回退引擎。"
+
+msgid "How profiles are applied:"
+msgstr "配置文件的应用方式："
+
+msgid "Each profile has a URL pattern (e.g. /products/*) that is tested against the incoming 404 URL."
+msgstr "每个配置文件都有一个 URL 模式（例如 /products/*），该模式会与传入的 404 URL 进行匹配。"
+
+msgid "Profiles are checked in priority order — lower number means checked first."
+msgstr "配置文件按优先级顺序检查——数字越小，越先检查。"
+
+msgid "The first profile whose URL pattern matches the 404 URL wins. Only the engines you selected in that profile will run."
+msgstr "第一个 URL 模式与 404 URL 匹配的配置文件获胜。只有您在该配置文件中选择的引擎才会运行。"
+
+msgid "If none of your profiles match the 404 URL, the default behavior applies: all engines run."
+msgstr "如果您的配置文件均与 404 URL 不匹配，则应用默认行为：所有引擎运行。"
+
+msgid "Most sites do not need Engine Profiles. They are for advanced scenarios where one section of your site needs different suggestion logic than the rest."
+msgstr "大多数网站不需要引擎配置文件。它们适用于网站某个部分需要与其余部分不同建议逻辑的高级场景。"
 
 msgid "Name"
 msgstr "Name"

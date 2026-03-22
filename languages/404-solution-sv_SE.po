@@ -3137,8 +3137,38 @@ msgstr "You are being redirected. Click the link if not redirected automatically
 msgid "Engine Profiles"
 msgstr "Motorprofiler"
 
-msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
-msgstr "Motorprofiler låter dig begränsa vilka matchningsmotorer som körs för specifika URL-mönster. Den första profilen vars mönster matchar en 404-URL vinner. Om ingen profil matchar körs alla motorer normalt."
+msgid "By default, when a visitor hits a 404 URL, all suggestion methods run: slug matching, spelling correction, title matching, content search, category/tag matching, URL fixing, and archive fallback. Engine Profiles let you override this for specific sections of your site — choose exactly which methods run when a 404 URL falls within a URL pattern you define."
+msgstr "Som standard körs alla förslagsmetoder när en besökare träffar en 404-URL: slug-matchning, stavningskorrektion, titelmatchning, innehållssökning, kategori-/taggmatchning, URL-korrigering och arkivfallback. Med Engine-profiler kan du åsidosätta detta för specifika delar av din webbplats — välj exakt vilka metoder som körs när en 404-URL faller inom ett URL-mönster du definierar."
+
+msgid "Example 1:"
+msgstr "Exempel 1:"
+
+msgid "Your store lives at /products/. Spelling correction works great on blog posts, but on a product section you want only exact slug matching and URL fixing — fuzzy spelling suggestions might point to the wrong product. Create a profile with the URL pattern /products/* and check only \"Slug Matching\" and \"URL Fix\"."
+msgstr "Din butik finns på /products/. Stavningskorrektion fungerar bra för blogginlägg, men i en produktsektion vill du bara ha exakt slug-matchning och URL-korrigering — otydliga stavningsförslag kan peka på fel produkt. Skapa en profil med URL-mönstret /products/* och bocka bara i \"Slug-matchning\" och \"URL-korrigering\"."
+
+msgid "Example 2:"
+msgstr "Exempel 2:"
+
+msgid "You have a documentation archive at /docs/ that you recently restructured. The content is too technical for spelling suggestions to be useful, so you enable only the Archive Fallback engine there."
+msgstr "Du har ett dokumentationsarkiv på /docs/ som du nyligen omstrukturerat. Innehållet är för tekniskt för att stavningsförslag ska vara användbara, så du aktiverar bara arkivfallback-motorn där."
+
+msgid "How profiles are applied:"
+msgstr "Hur profiler tillämpas:"
+
+msgid "Each profile has a URL pattern (e.g. /products/*) that is tested against the incoming 404 URL."
+msgstr "Varje profil har ett URL-mönster (t.ex. /products/*) som testas mot den inkommande 404-URL:en."
+
+msgid "Profiles are checked in priority order — lower number means checked first."
+msgstr "Profiler kontrolleras i prioritetsordning — lägre nummer kontrolleras först."
+
+msgid "The first profile whose URL pattern matches the 404 URL wins. Only the engines you selected in that profile will run."
+msgstr "Den första profilen vars URL-mönster matchar 404-URL:en vinner. Endast de motorer du valt i den profilen kommer att köras."
+
+msgid "If none of your profiles match the 404 URL, the default behavior applies: all engines run."
+msgstr "Om ingen av dina profiler matchar 404-URL:en gäller standardbeteendet: alla motorer körs."
+
+msgid "Most sites do not need Engine Profiles. They are for advanced scenarios where one section of your site needs different suggestion logic than the rest."
+msgstr "De flesta webbplatser behöver inga Engine-profiler. De är för avancerade scenarier där en del av din webbplats behöver en annan förslagslogik än resten."
 
 msgid "Name"
 msgstr "Name"

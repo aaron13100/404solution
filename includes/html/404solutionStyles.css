@@ -85,6 +85,12 @@
     margin-bottom: 0;
 }
 
+/* Cards rendered outside the main form (Engine Profiles, GSC) are direct children
+   of the settings container. Give them top margin to match the 24px gap between cards. */
+.abj404-settings-content > .abj404-card {
+    margin-top: 24px;
+}
+
 /* Flow layout for stats page - cards in a flexible grid */
 .abj404-flow-layout {
     display: grid;

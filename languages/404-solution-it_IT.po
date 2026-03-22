@@ -3134,8 +3134,38 @@ msgstr "You are being redirected. Click the link if not redirected automatically
 msgid "Engine Profiles"
 msgstr "Profili motore"
 
-msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
-msgstr "I profili motore consentono di limitare i motori di corrispondenza eseguiti per specifici pattern URL. Vince il primo profilo il cui pattern corrisponde a un URL 404. Se nessun profilo corrisponde, tutti i motori vengono eseguiti normalmente."
+msgid "By default, when a visitor hits a 404 URL, all suggestion methods run: slug matching, spelling correction, title matching, content search, category/tag matching, URL fixing, and archive fallback. Engine Profiles let you override this for specific sections of your site — choose exactly which methods run when a 404 URL falls within a URL pattern you define."
+msgstr "Per impostazione predefinita, quando un visitatore accede a un URL 404, vengono eseguiti tutti i metodi di suggerimento: corrispondenza dello slug, correzione ortografica, corrispondenza del titolo, ricerca nel contenuto, corrispondenza categoria/tag, correzione URL e fallback all'archivio. I profili motore consentono di ignorare questo comportamento per sezioni specifiche del sito — scegliere esattamente quali metodi vengono eseguiti quando un URL 404 corrisponde a un pattern URL definito dall'utente."
+
+msgid "Example 1:"
+msgstr "Esempio 1:"
+
+msgid "Your store lives at /products/. Spelling correction works great on blog posts, but on a product section you want only exact slug matching and URL fixing — fuzzy spelling suggestions might point to the wrong product. Create a profile with the URL pattern /products/* and check only \"Slug Matching\" and \"URL Fix\"."
+msgstr "Il negozio si trova in /products/. La correzione ortografica funziona bene nei post del blog, ma in una sezione prodotti si desidera solo la corrispondenza esatta dello slug e la correzione URL — i suggerimenti ortografici approssimativi potrebbero puntare al prodotto sbagliato. Creare un profilo con il pattern URL /products/* e selezionare solo \"Corrispondenza slug\" e \"Correzione URL\"."
+
+msgid "Example 2:"
+msgstr "Esempio 2:"
+
+msgid "You have a documentation archive at /docs/ that you recently restructured. The content is too technical for spelling suggestions to be useful, so you enable only the Archive Fallback engine there."
+msgstr "Si dispone di un archivio di documentazione in /docs/ che è stato recentemente ristrutturato. Il contenuto è troppo tecnico per cui i suggerimenti ortografici siano utili, quindi si abilita solo il motore di fallback all'archivio."
+
+msgid "How profiles are applied:"
+msgstr "Come vengono applicati i profili:"
+
+msgid "Each profile has a URL pattern (e.g. /products/*) that is tested against the incoming 404 URL."
+msgstr "Ogni profilo ha un pattern URL (ad es. /products/*) che viene confrontato con l'URL 404 in arrivo."
+
+msgid "Profiles are checked in priority order — lower number means checked first."
+msgstr "I profili vengono controllati in ordine di priorità — il numero più basso viene controllato per primo."
+
+msgid "The first profile whose URL pattern matches the 404 URL wins. Only the engines you selected in that profile will run."
+msgstr "Il primo profilo il cui pattern URL corrisponde all'URL 404 vince. Verranno eseguiti solo i motori selezionati in quel profilo."
+
+msgid "If none of your profiles match the 404 URL, the default behavior applies: all engines run."
+msgstr "Se nessuno dei profili corrisponde all'URL 404, viene applicato il comportamento predefinito: vengono eseguiti tutti i motori."
+
+msgid "Most sites do not need Engine Profiles. They are for advanced scenarios where one section of your site needs different suggestion logic than the rest."
+msgstr "La maggior parte dei siti non necessita di profili motore. Sono destinati a scenari avanzati in cui una sezione del sito richiede una logica di suggerimento diversa dal resto."
 
 msgid "Name"
 msgstr "Name"

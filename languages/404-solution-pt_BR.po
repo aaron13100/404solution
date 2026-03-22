@@ -3137,8 +3137,38 @@ msgstr "You are being redirected. Click the link if not redirected automatically
 msgid "Engine Profiles"
 msgstr "Perfis de mecanismo"
 
-msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
-msgstr "Os perfis de mecanismo permitem restringir quais mecanismos de correspondência são executados para padrões de URL específicos. O primeiro perfil cujo padrão corresponde a uma URL 404 vence. Se nenhum perfil corresponder, todos os mecanismos são executados normalmente."
+msgid "By default, when a visitor hits a 404 URL, all suggestion methods run: slug matching, spelling correction, title matching, content search, category/tag matching, URL fixing, and archive fallback. Engine Profiles let you override this for specific sections of your site — choose exactly which methods run when a 404 URL falls within a URL pattern you define."
+msgstr "Por padrão, quando um visitante acessa uma URL 404, todos os métodos de sugestão são executados: correspondência de slug, correção ortográfica, correspondência de título, pesquisa de conteúdo, correspondência de categoria/tag, correção de URL e fallback de arquivo. Os perfis de mecanismo permitem substituir isso para seções específicas do seu site — escolha exatamente quais métodos são executados quando uma URL 404 se enquadra em um padrão de URL que você define."
+
+msgid "Example 1:"
+msgstr "Exemplo 1:"
+
+msgid "Your store lives at /products/. Spelling correction works great on blog posts, but on a product section you want only exact slug matching and URL fixing — fuzzy spelling suggestions might point to the wrong product. Create a profile with the URL pattern /products/* and check only \"Slug Matching\" and \"URL Fix\"."
+msgstr "Sua loja fica em /products/. A correção ortográfica funciona bem em posts de blog, mas em uma seção de produtos você quer apenas a correspondência exata de slug e a correção de URL — sugestões ortográficas aproximadas podem apontar para o produto errado. Crie um perfil com o padrão de URL /products/* e marque apenas \"Correspondência de slug\" e \"Correção de URL\"."
+
+msgid "Example 2:"
+msgstr "Exemplo 2:"
+
+msgid "You have a documentation archive at /docs/ that you recently restructured. The content is too technical for spelling suggestions to be useful, so you enable only the Archive Fallback engine there."
+msgstr "Você tem um arquivo de documentação em /docs/ que reestruturou recentemente. O conteúdo é técnico demais para que sugestões ortográficas sejam úteis, então você ativa apenas o mecanismo de fallback de arquivo."
+
+msgid "How profiles are applied:"
+msgstr "Como os perfis são aplicados:"
+
+msgid "Each profile has a URL pattern (e.g. /products/*) that is tested against the incoming 404 URL."
+msgstr "Cada perfil tem um padrão de URL (ex.: /products/*) que é testado em relação à URL 404 recebida."
+
+msgid "Profiles are checked in priority order — lower number means checked first."
+msgstr "Os perfis são verificados em ordem de prioridade — número menor significa verificado primeiro."
+
+msgid "The first profile whose URL pattern matches the 404 URL wins. Only the engines you selected in that profile will run."
+msgstr "O primeiro perfil cujo padrão de URL corresponda à URL 404 vence. Apenas os mecanismos selecionados nesse perfil serão executados."
+
+msgid "If none of your profiles match the 404 URL, the default behavior applies: all engines run."
+msgstr "Se nenhum dos seus perfis corresponder à URL 404, o comportamento padrão se aplica: todos os mecanismos são executados."
+
+msgid "Most sites do not need Engine Profiles. They are for advanced scenarios where one section of your site needs different suggestion logic than the rest."
+msgstr "A maioria dos sites não precisa de perfis de mecanismo. Eles são para cenários avançados em que uma seção do seu site precisa de uma lógica de sugestão diferente do restante."
 
 msgid "Name"
 msgstr "Name"

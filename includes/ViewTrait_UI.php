@@ -338,7 +338,7 @@ trait ViewTrait_UI {
         echo esc_html(sprintf(__('Plugin v%s', '404-solution'), $version));
         echo '</div>';
         echo '<div class="abj404-save-bar-actions">';
-        echo '<input type="submit" name="abj404-optionssub" id="abj404-optionssub" value="' . esc_attr__('Save Settings', '404-solution') . '" class="button button-primary abj404-btn abj404-btn-primary">';
+        echo '<input type="submit" form="admin-options-page" name="abj404-optionssub" id="abj404-optionssub" value="' . esc_attr__('Save Settings', '404-solution') . '" class="button button-primary abj404-btn abj404-btn-primary">';
         echo '</div>';
         echo '</div>';
     }

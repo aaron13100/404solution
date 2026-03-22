@@ -3131,8 +3131,38 @@ msgstr "Vous êtes en cours de redirection. Cliquez sur le lien si vous n'êtes 
 msgid "Engine Profiles"
 msgstr "Profils de moteur"
 
-msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
-msgstr "Les profils de moteur vous permettent de restreindre les moteurs de correspondance qui s'exécutent pour des modèles d'URL spécifiques. Le premier profil dont le modèle correspond à une URL 404 gagne. Si aucun profil ne correspond, tous les moteurs fonctionnent normalement."
+msgid "By default, when a visitor hits a 404 URL, all suggestion methods run: slug matching, spelling correction, title matching, content search, category/tag matching, URL fixing, and archive fallback. Engine Profiles let you override this for specific sections of your site — choose exactly which methods run when a 404 URL falls within a URL pattern you define."
+msgstr "Par défaut, lorsqu'un visiteur accède à une URL 404, toutes les méthodes de suggestion s'exécutent : correspondance de slug, correction orthographique, correspondance de titre, recherche de contenu, correspondance de catégorie/étiquette, correction d'URL et recours aux archives. Les profils de moteur vous permettent de modifier ce comportement pour des sections spécifiques de votre site — choisissez exactement quelles méthodes s'exécutent lorsqu'une URL 404 correspond à un modèle d'URL que vous définissez."
+
+msgid "Example 1:"
+msgstr "Exemple 1 :"
+
+msgid "Your store lives at /products/. Spelling correction works great on blog posts, but on a product section you want only exact slug matching and URL fixing — fuzzy spelling suggestions might point to the wrong product. Create a profile with the URL pattern /products/* and check only \"Slug Matching\" and \"URL Fix\"."
+msgstr "Votre boutique se trouve à /products/. La correction orthographique fonctionne bien sur les articles de blog, mais dans une section produits, vous ne souhaitez que la correspondance exacte de slug et la correction d'URL — les suggestions orthographiques approximatives pourraient pointer vers le mauvais produit. Créez un profil avec le modèle d'URL /products/* et cochez uniquement « Correspondance de slug » et « Correction d'URL »."
+
+msgid "Example 2:"
+msgstr "Exemple 2 :"
+
+msgid "You have a documentation archive at /docs/ that you recently restructured. The content is too technical for spelling suggestions to be useful, so you enable only the Archive Fallback engine there."
+msgstr "Vous avez une archive de documentation à /docs/ que vous avez récemment restructurée. Le contenu est trop technique pour que les suggestions orthographiques soient utiles, vous activez donc uniquement le moteur de recours aux archives."
+
+msgid "How profiles are applied:"
+msgstr "Comment les profils sont appliqués :"
+
+msgid "Each profile has a URL pattern (e.g. /products/*) that is tested against the incoming 404 URL."
+msgstr "Chaque profil possède un modèle d'URL (ex. /products/*) testé par rapport à l'URL 404 entrante."
+
+msgid "Profiles are checked in priority order — lower number means checked first."
+msgstr "Les profils sont vérifiés par ordre de priorité — le numéro le plus bas est vérifié en premier."
+
+msgid "The first profile whose URL pattern matches the 404 URL wins. Only the engines you selected in that profile will run."
+msgstr "Le premier profil dont le modèle d'URL correspond à l'URL 404 l'emporte. Seuls les moteurs que vous avez sélectionnés dans ce profil s'exécuteront."
+
+msgid "If none of your profiles match the 404 URL, the default behavior applies: all engines run."
+msgstr "Si aucun de vos profils ne correspond à l'URL 404, le comportement par défaut s'applique : tous les moteurs s'exécutent."
+
+msgid "Most sites do not need Engine Profiles. They are for advanced scenarios where one section of your site needs different suggestion logic than the rest."
+msgstr "La plupart des sites n'ont pas besoin de profils de moteur. Ils sont destinés aux scénarios avancés où une section de votre site nécessite une logique de suggestion différente du reste."
 
 msgid "Name"
 msgstr "Name"
