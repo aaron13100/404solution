@@ -3017,6 +3017,9 @@ msgstr "Clicks"
 msgid "Impressions"
 msgstr "Impressions"
 
+msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
+msgstr "在过去90天内，未找到您捕获的404 URL的搜索流量数据。"
+
 msgid "Avg. Position"
 msgstr "Avg. Position"
 

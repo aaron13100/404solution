@@ -3025,6 +3025,9 @@ msgstr "Clicks"
 msgid "Impressions"
 msgstr "Impressions"
 
+msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
+msgstr "لم يتم العثور على بيانات حركة البحث لعناوين URL المسجلة 404 في آخر 90 يومًا."
+
 msgid "Avg. Position"
 msgstr "Avg. Position"
 

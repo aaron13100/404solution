@@ -2042,6 +2042,9 @@ msgstr ""
 msgid "Impressions"
 msgstr ""
 
+msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
+msgstr ""
+
 msgid "Avg. Position"
 msgstr ""
 

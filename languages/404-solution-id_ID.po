@@ -3004,6 +3004,9 @@ msgstr "Clicks"
 msgid "Impressions"
 msgstr "Impressions"
 
+msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
+msgstr "Tidak ada data lalu lintas penelusuran yang ditemukan untuk URL 404 yang ditangkap dalam 90 hari terakhir."
+
 msgid "Avg. Position"
 msgstr "Avg. Position"
 

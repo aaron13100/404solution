@@ -3013,6 +3013,9 @@ msgstr "Clicks"
 msgid "Impressions"
 msgstr "Impressions"
 
+msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
+msgstr "過去90日間にキャプチャされた404 URLの検索トラフィックデータが見つかりませんでした。"
+
 msgid "Avg. Position"
 msgstr "Avg. Position"
 

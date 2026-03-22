@@ -402,9 +402,12 @@ class ABJ_404_Solution_GoogleSearchConsole {
     /**
      * Render the inner content for the GSC settings/status card.
      * Callers wrap this via echoOptionsSection() for card + collapse support.
+     *
+     * @param string[] $capturedUrls Captured 404 URLs from the logs table, used to fetch GSC data
+     *                               when the connected state needs a fresh API call.
      * @return string HTML
      */
-    public function renderAdminSection(): string {
+    public function renderAdminSection(array $capturedUrls = []): string {
         switch ($this->getState()) {
             case 'not_configured':
                 return $this->renderNotConfiguredState();
@@ -413,7 +416,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
             case 'error':
                 return $this->renderErrorState();
             default: // 'connected'
-                return $this->renderConnectedState();
+                return $this->renderConnectedState($capturedUrls);
         }
     }
 
@@ -502,7 +505,11 @@ class ABJ_404_Solution_GoogleSearchConsole {
      * State: fully connected. Shows a green status pill + traffic data table.
      * @return string
      */
-    private function renderConnectedState(): string {
+    /**
+     * @param string[] $capturedUrls
+     * @return string
+     */
+    private function renderConnectedState(array $capturedUrls = []): string {
         $revokeUrl = wp_nonce_url(admin_url('admin-ajax.php?action=abj404_gsc_revoke'), 'abj404_gsc_revoke');
 
         $html  = '<div class="abj404-gsc-status abj404-gsc-status--green">';
@@ -511,7 +518,12 @@ class ABJ_404_Solution_GoogleSearchConsole {
         $html .= '<p>' . esc_html__('Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour.', '404-solution') . '</p>';
         $html .= '<a href="' . esc_url($revokeUrl) . '" class="abj404-btn abj404-btn-secondary">' . esc_html__('Disconnect', '404-solution') . '</a>';
 
+        // Fetch from API if the cache is cold and we have URLs to query.
         $cached = get_transient(self::TRANSIENT_KEY);
+        if (!is_array($cached) && !empty($capturedUrls)) {
+            $cached = $this->getSearchAnalyticsForUrls($capturedUrls);
+        }
+
         if (is_array($cached) && !empty($cached)) {
             $html .= '<h4>' . esc_html__('404 URLs with Search Traffic (last 90 days)', '404-solution') . '</h4>';
             $html .= '<table class="abj404-table" style="margin-top:8px;">';
@@ -533,6 +545,8 @@ class ABJ_404_Solution_GoogleSearchConsole {
                 $html .= '</tr>';
             }
             $html .= '</tbody></table>';
+        } else {
+            $html .= '<p style="margin-top:12px;color:#646970;">' . esc_html__('No search traffic data found for your captured 404 URLs in the last 90 days.', '404-solution') . '</p>';
         }
 
         return $html;

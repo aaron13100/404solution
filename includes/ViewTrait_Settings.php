@@ -162,7 +162,17 @@ trait ViewTrait_Settings {
             // Google Search Console — outside the main form (has its own form)
             $gscLogger = ABJ_404_Solution_Logging::getInstance();
             $gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
-            $abj404view->echoOptionsSection('settings-gsc', 'abj404-gsc-section', __('Google Search Console', '404-solution'), $gsc->renderAdminSection(), false, $abj404view->getCardIcon('chart'));
+            // Pass captured 404 URLs so the connected state can fetch GSC data on first load.
+            $logRows = $this->dao->getLogsIDandURL();
+            $capturedUrls = array();
+            foreach ($logRows as $r) {
+                $url = isset($r['requested_url']) && is_string($r['requested_url']) ? $r['requested_url'] : '';
+                if ($url !== '') {
+                    $capturedUrls[] = $url;
+                }
+            }
+            $capturedUrls = array_values(array_unique($capturedUrls));
+            $abj404view->echoOptionsSection('settings-gsc', 'abj404-gsc-section', __('Google Search Console', '404-solution'), $gsc->renderAdminSection($capturedUrls), false, $abj404view->getCardIcon('chart'));
         }
 
         // Sticky save bar — outside the form but linked via form="admin-options-page" on the submit button
