@@ -3006,7 +3006,7 @@ msgid "Add this Authorized Redirect URI to your OAuth client:"
 msgstr "将此授权重定向URI添加到您的OAuth客户端："
 
 msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to start over."
-msgstr "点击"重试"重新尝试授权，或点击"删除凭据"重新开始。"
+msgstr "点击「重试」重新尝试授权，或点击「删除凭据」重新开始。"
 
 msgid "404 URLs with Search Traffic (last 90 days)"
 msgstr "404 URLs with Search Traffic (last 90 days)"
