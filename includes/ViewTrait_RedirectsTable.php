@@ -531,7 +531,7 @@ trait ViewTrait_RedirectsTable {
         echo '<h2>' . esc_html__('Add Manual Redirect', '404-solution') . '</h2>';
         echo '<button type="button" class="abj404-modal-close" onclick="abj404CloseAddRedirectModal()">&times;</button>';
         echo '</div>';
-        echo '<form method="POST" action="' . esc_url($link) . '">';
+        echo '<form method="POST" action="' . esc_url($link) . '" onsubmit="return validateAddManualRedirectForm(event);">';
         echo '<input type="hidden" name="action" value="addRedirect">';
         echo '<div class="abj404-modal-body">';
 
@@ -578,25 +578,63 @@ trait ViewTrait_RedirectsTable {
 
         echo '</div>';
 
-        // Redirect type
+        // Redirect type — button grid
+        $rawDefault = $options['default_redirect'] ?? '301';
+        $defaultCode = is_string($rawDefault) ? $rawDefault : '301';
         echo '<div class="abj404-form-group">';
         echo '<label class="abj404-form-label">' . esc_html__('Redirect Type', '404-solution') . '</label>';
-        echo '<select id="code" name="code" class="abj404-form-select">';
-        $sel301 = ($options['default_redirect'] == '301') ? ' selected' : '';
-        $sel302 = ($options['default_redirect'] == '302') ? ' selected' : '';
-        $sel307 = ($options['default_redirect'] == '307') ? ' selected' : '';
-        $sel308 = ($options['default_redirect'] == '308') ? ' selected' : '';
-        echo '<option value="301"' . $sel301 . '>301 - ' . esc_html__('Permanent Redirect (Recommended for SEO)', '404-solution') . '</option>';
-        echo '<option value="302"' . $sel302 . '>302 - ' . esc_html__('Temporary Redirect', '404-solution') . '</option>';
-        echo '<option value="307"' . $sel307 . '>307 - ' . esc_html__('Temporary Redirect (preserve method)', '404-solution') . '</option>';
-        echo '<option value="308"' . $sel308 . '>308 - ' . esc_html__('Permanent Redirect (preserve method)', '404-solution') . '</option>';
-        echo '<option value="410">410 - ' . esc_html__('Gone (resource permanently removed)', '404-solution') . '</option>';
-        echo '<option value="451">451 - ' . esc_html__('Unavailable For Legal Reasons', '404-solution') . '</option>';
-        echo '<option value="0">0 - ' . esc_html__('Meta Refresh', '404-solution') . '</option>';
-        echo '</select>';
+        echo '<input type="hidden" id="code" name="code" value="' . esc_attr($defaultCode) . '">';
+        echo '<div class="abj404-redirect-type-grid">';
+        $modalCodeButtons = array(
+            301 => array(__('301', '404-solution'),          __('Permanent', '404-solution')),
+            302 => array(__('302', '404-solution'),          __('Temporary', '404-solution')),
+            307 => array(__('307', '404-solution'),          __('Temp, method-safe', '404-solution')),
+            308 => array(__('308', '404-solution'),          __('Perm, method-safe', '404-solution')),
+            410 => array(__('410', '404-solution'),          __('Gone', '404-solution')),
+            451 => array(__('451', '404-solution'),          __('Legal reasons', '404-solution')),
+            0   => array(__('Meta Refresh', '404-solution'), __('HTTP 200 + meta tag', '404-solution')),
+        );
+        foreach ($modalCodeButtons as $code => $labels) {
+            $isActive = ((string)$code === $defaultCode) ? ' abj404-redirect-type-btn--active' : '';
+            $isFull   = ($code === 0) ? ' abj404-redirect-type-btn--full' : '';
+            echo '<button type="button"'
+                . ' class="abj404-redirect-type-btn' . $isActive . $isFull . '"'
+                . ' data-code="' . esc_attr((string)$code) . '"'
+                . ' onclick="abj404SelectRedirectType(this)">';
+            echo '<strong>' . esc_html($labels[0]) . '</strong>';
+            echo '<span>' . esc_html($labels[1]) . '</span>';
+            echo '</button>';
+        }
+        echo '</div>';
+        echo '<p class="abj404-form-help">' . esc_html__('Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages.', '404-solution') . '</p>';
         echo '</div>';
 
+        // Advanced Options: schedule + conditions
+        echo '<details class="abj404-advanced-options">';
+        echo '<summary class="abj404-advanced-options__summary">' . esc_html__('Advanced Options', '404-solution') . '</summary>';
+        echo '<div class="abj404-advanced-options__body">';
+
+        // Active From
+        echo '<div class="abj404-form-group">';
+        echo '<label class="abj404-form-label" for="redirect_start_date">' . esc_html__('Active From (optional)', '404-solution') . '</label>';
+        echo '<input type="date" name="redirect_start_date" id="redirect_start_date" class="abj404-form-input" value="">';
+        echo '<p class="abj404-form-help">' . esc_html__('Leave blank to activate immediately', '404-solution') . '</p>';
         echo '</div>';
+
+        // Active Until
+        echo '<div class="abj404-form-group">';
+        echo '<label class="abj404-form-label" for="redirect_end_date">' . esc_html__('Active Until (optional)', '404-solution') . '</label>';
+        echo '<input type="date" name="redirect_end_date" id="redirect_end_date" class="abj404-form-input" value="">';
+        echo '<p class="abj404-form-help">' . esc_html__('Leave blank to never expire', '404-solution') . '</p>';
+        echo '</div>';
+
+        // Conditions
+        $this->echoRedirectConditionsSection();
+
+        echo '</div>'; // end .abj404-advanced-options__body
+        echo '</details>';
+
+        echo '</div>'; // end .abj404-modal-body
         echo '<div class="abj404-modal-footer">';
         echo '<button type="button" class="abj404-btn abj404-btn-secondary" onclick="abj404CloseAddRedirectModal()">' . esc_html__('Cancel', '404-solution') . '</button>';
         echo '<button type="submit" class="abj404-btn abj404-btn-primary">' . esc_html__('Add Redirect', '404-solution') . '</button>';
@@ -1171,26 +1209,52 @@ trait ViewTrait_RedirectsTable {
      * @return void
      */
     function echoEditRedirect($destination, $codeselected, $label, $source_page = null, $filter = null, $orderby = null, $order = null, $startDate = '', $endDate = '') {
-        // Redirect type dropdown
+        // Redirect type — button grid with hidden input
         echo '<div class="abj404-form-group">';
-        echo '<label class="abj404-form-label" for="code">' . esc_html__('Redirect Type', '404-solution') . '</label>';
-        echo '<select id="code" name="code" class="abj404-form-select">';
+        echo '<label class="abj404-form-label">' . esc_html__('Redirect Type', '404-solution') . '</label>';
+        echo '<input type="hidden" id="code" name="code" value="' . esc_attr((string)$codeselected) . '">';
+        echo '<div class="abj404-redirect-type-grid">';
 
-        $codeLabels = array(
-            301 => '301 - ' . __('Permanent Redirect (Recommended for SEO)', '404-solution'),
-            302 => '302 - ' . __('Temporary Redirect', '404-solution'),
-            307 => '307 - ' . __('Temporary Redirect (preserve method)', '404-solution'),
-            308 => '308 - ' . __('Permanent Redirect (preserve method)', '404-solution'),
-            410 => '410 - ' . __('Gone (resource permanently removed)', '404-solution'),
-            451 => '451 - ' . __('Unavailable For Legal Reasons', '404-solution'),
-            0   => '0 - '   . __('Meta Refresh', '404-solution'),
+        $codeButtons = array(
+            301 => array(__('301', '404-solution'),          __('Permanent', '404-solution')),
+            302 => array(__('302', '404-solution'),          __('Temporary', '404-solution')),
+            307 => array(__('307', '404-solution'),          __('Temp, method-safe', '404-solution')),
+            308 => array(__('308', '404-solution'),          __('Perm, method-safe', '404-solution')),
+            410 => array(__('410', '404-solution'),          __('Gone', '404-solution')),
+            451 => array(__('451', '404-solution'),          __('Legal reasons', '404-solution')),
+            0   => array(__('Meta Refresh', '404-solution'), __('HTTP 200 + meta tag', '404-solution')),
         );
-        foreach ($codeLabels as $code => $title) {
-            $selected = ((string)$code === (string)$codeselected) ? ' selected' : '';
-            echo '<option value="' . esc_attr((string)$code) . '"' . $selected . '>' . esc_html($title) . '</option>';
+        foreach ($codeButtons as $code => $labels) {
+            $isActive  = ((string)$code === (string)$codeselected) ? ' abj404-redirect-type-btn--active' : '';
+            $isFull    = ($code === 0) ? ' abj404-redirect-type-btn--full' : '';
+            echo '<button type="button"'
+                . ' class="abj404-redirect-type-btn' . $isActive . $isFull . '"'
+                . ' data-code="' . esc_attr((string)$code) . '"'
+                . ' onclick="abj404SelectRedirectType(this)">';
+            echo '<strong>' . esc_html($labels[0]) . '</strong>';
+            echo '<span>' . esc_html($labels[1]) . '</span>';
+            echo '</button>';
         }
-        echo '</select>';
+
         echo '</div>';
+        echo '<p class="abj404-form-help">' . esc_html__('Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages.', '404-solution') . '</p>';
+        echo '</div>';
+        echo '<script type="text/javascript">';
+        echo 'if (typeof window.abj404SelectRedirectType === "undefined") {';
+        echo '    window.abj404SelectRedirectType = function(btn) {';
+        echo '        var grid = btn.closest(".abj404-redirect-type-grid");';
+        echo '        grid.querySelectorAll(".abj404-redirect-type-btn").forEach(function(b) {';
+        echo '            b.classList.remove("abj404-redirect-type-btn--active");';
+        echo '        });';
+        echo '        btn.classList.add("abj404-redirect-type-btn--active");';
+        echo '        var hidden = document.getElementById("code");';
+        echo '        if (hidden) {';
+        echo '            hidden.value = btn.dataset.code;';
+        echo '            if (typeof jQuery !== "undefined") { jQuery("#code").trigger("change"); }';
+        echo '        }';
+        echo '    };';
+        echo '}';
+        echo '</script>';
 
         // Advanced Options: Active From/Until + Conditions (collapsed by default; open when values exist)
         $redirectId = 0;

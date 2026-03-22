@@ -14,25 +14,32 @@ trait ViewTrait_Redirects {
 
         $options = $this->getOptionsWithDefaults();
 
+        // Compute source page early so we can use it in the back link
+        $source_page = $this->dao->getPostOrGetSanitize('source_page');
+        if ($source_page === '') {
+            $source_page = $this->dao->getPostOrGetSanitize('subpage');
+        }
+        if ($source_page === '' || $source_page == 'abj404_edit') {
+            $source_page = 'abj404_redirects';
+        }
+        $backUrl = '?page=' . ABJ404_PP . '&subpage=' . esc_attr($source_page);
+
         // Modern page container
         echo '<div class="abj404-edit-page">';
         echo '<div class="abj404-edit-container">';
+
+        // Header row: title + back link
+        echo '<div class="abj404-edit-page-header">';
         echo '<h2>' . esc_html__('Edit Redirect', '404-solution') . '</h2>';
+        echo '<a href="' . esc_url($backUrl) . '" class="abj404-back-link">&#8592; ' . esc_html__('Back to Redirects', '404-solution') . '</a>';
+        echo '</div>';
 
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_edit", "abj404editRedirect");
 
         echo '<form method="POST" name="admin-edit-redirect" action="' . esc_attr($link) . '" onsubmit="return validateAddManualRedirectForm(event);">';
         echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
 
-        // Capture source page and table options to return user to the same place after saving
-        $source_page = $this->dao->getPostOrGetSanitize('source_page');
-        if ($source_page === '') {
-            $source_page = $this->dao->getPostOrGetSanitize('subpage');
-        }
-        // Default to redirects page if no source specified
-        if ($source_page === '' || $source_page == 'abj404_edit') {
-            $source_page = 'abj404_redirects';
-        }
+        // Preserve source page for return navigation
         echo "<input type=\"hidden\" name=\"source_page\" value=\"" . esc_attr($source_page) . "\">";
 
         // Preserve table options so we can return to the exact same view

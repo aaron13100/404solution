@@ -2305,6 +2305,17 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     display: none;
 }
 
+/* Modal: button-grid and form inputs fill modal width */
+.abj404-modal .abj404-form-input,
+.abj404-modal .abj404-form-select {
+    max-width: 100%;
+}
+
+/* Modal: advanced options section needs a bit more room */
+.abj404-modal .abj404-advanced-options {
+    margin: 0 0 16px 0;
+}
+
 /* Autocomplete input wrapper */
 .abj404-input-with-spinner {
     display: inline;
@@ -2337,7 +2348,7 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     border: 1px solid var(--abj404-border, #c3c4c7);
     border-radius: 8px;
     padding: 24px 32px;
-    max-width: 700px;
+    max-width: 520px;
 }
 
 .abj404-edit-container h2 {
@@ -2347,6 +2358,106 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     margin: 0 0 24px 0;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--abj404-border, #e0e0e0);
+}
+
+/* Edit page header row: title + back link */
+.abj404-edit-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--abj404-border, #e0e0e0);
+}
+
+.abj404-edit-page-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--abj404-text, #1d2327);
+    margin: 0;
+    border: none;
+    padding: 0;
+}
+
+.abj404-back-link {
+    font-size: 13px;
+    color: var(--abj404-accent, #2271b1);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.abj404-back-link:hover {
+    text-decoration: underline;
+    color: var(--abj404-accent-hover, #135e96);
+}
+
+/* Redirect type button grid */
+.abj404-redirect-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.abj404-redirect-type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 8px;
+    border: 1px solid var(--abj404-border, #c3c4c7);
+    border-radius: 4px;
+    background: var(--abj404-surface, #fff);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    text-align: center;
+    color: var(--abj404-text, #1d2327);
+    line-height: 1.3;
+    font-family: inherit;
+}
+
+.abj404-redirect-type-btn strong {
+    font-size: 15px;
+    font-weight: 700;
+    display: block;
+}
+
+.abj404-redirect-type-btn span {
+    font-size: 11px;
+    color: var(--abj404-text-muted, #646970);
+    display: block;
+}
+
+.abj404-redirect-type-btn:hover {
+    border-color: var(--abj404-accent, #2271b1);
+    background: #f0f5fb;
+}
+
+.abj404-redirect-type-btn--active {
+    border-color: var(--abj404-accent, #2271b1);
+    background: var(--abj404-accent, #2271b1);
+    color: #fff;
+}
+
+.abj404-redirect-type-btn--active strong {
+    color: #fff;
+}
+
+.abj404-redirect-type-btn--active span {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.abj404-redirect-type-btn--active:hover {
+    background: var(--abj404-accent-hover, #135e96);
+    border-color: var(--abj404-accent-hover, #135e96);
+}
+
+/* Meta Refresh button spans full width */
+.abj404-redirect-type-btn--full {
+    grid-column: 1 / -1;
 }
 
 /* URL list for bulk editing */
@@ -2391,6 +2502,12 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     border-top: 1px solid var(--abj404-border, #e0e0e0);
 }
 
+/* Edit page: inputs fill the narrower card */
+.abj404-edit-container .abj404-form-input,
+.abj404-edit-container .abj404-form-select {
+    max-width: 100%;
+}
+
 /* Redirect-to field wrapper structure */
 .abj404-edit-container .abj404-redirect-to-field {
     margin-bottom: 20px;
@@ -2414,7 +2531,7 @@ html[data-theme="obsidian"] .abj404-tab-branding {
 /* Style the autocomplete field on edit page */
 .abj404-edit-container #redirect_to_user_field {
     width: 100%;
-    max-width: 500px;
+    max-width: 100%;
     padding: 10px 12px;
     border: 1px solid var(--abj404-border, #8c8f94);
     border-radius: 4px;
@@ -3558,7 +3675,7 @@ input[type="checkbox"]:focus-visible {
 }
 
 .abj404-advanced-options__body {
-    padding: 12px 16px 4px;
+    padding: 20px 28px 24px;
     border-top: 1px solid #c3c4c7;
 }
 
