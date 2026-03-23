@@ -35,6 +35,28 @@ class ABJ_404_Solution_RestApiController {
     /** @return void */
     public function register() {
         add_action('rest_api_init', array($this, 'registerRoutes'));
+        // Hide the plugin namespace from the public REST index to reduce fingerprinting.
+        // Authenticated access is unaffected — routes still work normally.
+        add_filter('rest_index_data', array($this, 'hideNamespaceFromIndex'));
+    }
+
+    /**
+     * Remove this plugin's namespace from the publicly-enumerable namespace list
+     * returned by GET /wp-json/. All routes remain accessible to authenticated
+     * requests; this only prevents unauthenticated namespace discovery.
+     *
+     * @param array<string,mixed> $data
+     * @return array<string,mixed>
+     */
+    public function hideNamespaceFromIndex($data) {
+        if (is_array($data) && isset($data['namespaces']) && is_array($data['namespaces'])) {
+            $data['namespaces'] = array_values(
+                array_filter($data['namespaces'], function ($ns) {
+                    return $ns !== self::NAMESPACE;
+                })
+            );
+        }
+        return $data;
     }
 
     /** @return void */
