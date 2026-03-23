@@ -109,20 +109,16 @@ trait ViewTrait_Redirects {
             $redirectUrl = is_string($redirect['url'] ?? '') ? (string)($redirect['url'] ?? '') : '';
             echo '<input type="hidden" name="id" value="' . esc_attr($redirectId) . '">';
 
-            // URL field
+            // URL field (with optional "Matched by" note for auto-created redirects)
             echo '<div class="abj404-form-group">';
             echo '<label class="abj404-form-label" for="url">' . esc_html__('URL', '404-solution') . ' *</label>';
             echo '<input type="text" id="url" name="url" class="abj404-form-input" value="' . esc_attr($redirectUrl) . '" required>';
-            echo '</div>';
-
-            // Engine (read-only, shown only if set)
             $redirectEngine = is_string($redirect['engine'] ?? '') ? trim((string)($redirect['engine'] ?? '')) : '';
             if ($redirectEngine !== '') {
-                echo '<div class="abj404-form-group">';
-                echo '<label class="abj404-form-label">' . esc_html__('Engine', '404-solution') . '</label>';
-                echo '<span class="abj404-engine-label">' . esc_html($redirectEngine) . '</span>';
-                echo '</div>';
+                $humanEngine = $this->humanizeEngineName($redirectEngine);
+                echo '<p class="abj404-form-help abj404-matched-by">' . esc_html__('Auto-matched by:', '404-solution') . ' ' . esc_html($humanEngine) . '</p>';
             }
+            echo '</div>';
 
             // Regex checkbox
             echo '<div class="abj404-form-group">';
@@ -374,6 +370,39 @@ trait ViewTrait_Redirects {
         return $content;
     }
     
+    /**
+     * Convert a raw engine class name to a human-readable label.
+     *
+     * Examples:
+     *   TitleMatchingEngine        → "Title Matching"
+     *   SpellingMatchingEngine     → "Spelling Matching"
+     *   CategoryTagMatchingEngine  → "Category/Tag Matching"
+     *   UrlFixEngine               → "URL Fix"
+     *   ArchiveFallbackEngine      → "Archive Fallback"
+     *
+     * @param string $rawName
+     * @return string
+     */
+    private function humanizeEngineName(string $rawName): string {
+        // Strip full namespace prefix if stored with it.
+        $name = preg_replace('/^ABJ_404_Solution_/', '', $rawName);
+        if (!is_string($name)) {
+            $name = $rawName;
+        }
+        // Strip "MatchingEngine" or bare "Engine" suffix.
+        $name = (string)preg_replace('/MatchingEngine$/', ' Matching', $name);
+        $name = (string)preg_replace('/Engine$/', '', $name);
+        // Insert a space before each upper-case letter that follows a lower-case letter
+        // (e.g. CategoryTag → Category Tag).
+        $name = (string)preg_replace('/(?<=[a-z])([A-Z])/', ' $1', $name);
+        $name = trim($name);
+        // Fix known abbreviations.
+        $name = str_replace(array('Url ', 'Url'), array('URL ', 'URL'), $name);
+        // Fix Category/Tag — appears as "Category Tag Matching", make the separator a slash.
+        $name = str_replace('Category Tag', 'Category/Tag', $name);
+        return $name !== '' ? $name : $rawName;
+    }
+
     /**
      * @return void
      */
