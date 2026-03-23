@@ -576,7 +576,7 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
             $this->invalidateStatusCountsCache();
             $this->clearRegexRedirectsCache();
         }
-        if ($result == false) {
+        if ($result === false) {
             $message = __('Error: Unknown Database Error!', '404-solution');
         }
         return $message;
@@ -655,10 +655,18 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
             'type' => absint($type),
             'final_dest' => $dest,
             'code' => esc_attr($redirectCode),
-            'start_ts' => ($startTs !== null) ? (int)$startTs : null,
-            'end_ts'   => ($endTs !== null) ? (int)$endTs : null,
         );
-        $updateFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d');
+        $updateFormats = array('%s', '%d', '%d', '%s', '%d');
+
+        // Include non-null timestamps in the main update.
+        if ($startTs !== null) {
+            $updateData['start_ts'] = (int)$startTs;
+            $updateFormats[] = '%d';
+        }
+        if ($endTs !== null) {
+            $updateData['end_ts'] = (int)$endTs;
+            $updateFormats[] = '%d';
+        }
 
         $wpdb->update(
             $redirectsTable,
@@ -667,6 +675,23 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
             $updateFormats,
             array('%d')
         );
+
+        // Explicitly set timestamp columns to NULL when no schedule is set.
+        // $wpdb->update() with %d format converts null to 0 via (int)null,
+        // which breaks the SQL filter "end_ts IS NULL OR end_ts > UNIX_TIMESTAMP()"
+        // — end_ts=0 means "expired in 1970" and silently stops the redirect from matching.
+        $nullParts = [];
+        if ($startTs === null) {
+            $nullParts[] = '`start_ts` = NULL';
+        }
+        if ($endTs === null) {
+            $nullParts[] = '`end_ts` = NULL';
+        }
+        if (!empty($nullParts)) {
+            $nullSql = "UPDATE " . $redirectsTable . " SET " . implode(', ', $nullParts) .
+                " WHERE id = " . absint($idForUpdate);
+            $wpdb->query($nullSql);
+        }
 
         // Invalidate caches - status/url change affects regex redirects
         $this->invalidateStatusCountsCache();
