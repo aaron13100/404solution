@@ -1109,6 +1109,12 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
      * @return bool True if a trim was attempted (regardless of success), false if rate-limited.
      */
     private function autoTrimLogsv2IfNeeded(string $tableName, string $errorMessage): bool {
+        // Defense-in-depth: verify the table name is valid before using in SQL
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $tableName) || strpos($tableName, 'abj404_logsv2') === false) {
+            $this->logger->warn("autoTrimLogsv2IfNeeded: rejected unexpected table name: " . substr($tableName, 0, 100));
+            return false;
+        }
+
         $cooldownKey = 'abj404_logsv2_trim_cooldown_until';
         $alreadyTrimmed = function_exists('get_transient') ? get_transient($cooldownKey) : false;
         if ($alreadyTrimmed) {

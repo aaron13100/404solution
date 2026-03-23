@@ -6,6 +6,29 @@ if (!defined('ABSPATH')) {
 
 trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
 
+    /**
+     * Validate and sanitize a table name extracted from error messages or SQL.
+     * Only allows alphanumeric characters and underscores, and requires 'abj404' in the name.
+     *
+     * @param string $name Raw table name
+     * @return string|null Sanitized name, or null if invalid
+     */
+    private function sanitizeTableName(string $name): ?string {
+        // Strip any backticks that may already be present
+        $name = trim($name, '`');
+        // Only allow safe characters
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $name)) {
+            $this->logger->warn("sanitizeTableName: rejected invalid table name: " . substr($name, 0, 100));
+            return null;
+        }
+        // Must be a plugin table
+        if (strpos($name, 'abj404') === false) {
+            $this->logger->warn("sanitizeTableName: rejected non-plugin table name: " . $name);
+            return null;
+        }
+        return $name;
+    }
+
     /** @param string $errorMessage @return void */
     function repairTable(string $errorMessage): void {
 
@@ -29,9 +52,10 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
         }
 
         if (!empty($matches) && count($matches) > 2 && $this->f->strlen($matches[2]) > 0) {
-            $tableToRepair = $matches[2];
-            if ($this->f->strpos($tableToRepair, "abj404") !== false) {
-                $query = "repair table " . $tableToRepair;
+            $rawTableName = $matches[2];
+            $tableToRepair = $this->sanitizeTableName($rawTableName);
+            if ($tableToRepair !== null) {
+                $query = "REPAIR TABLE `{$tableToRepair}`";
                 $result = $this->queryAndGetResults($query, array('log_errors' => false));
                 $this->logger->infoMessage("Attempted to repair table " . $tableToRepair . ". Result: " .
                         json_encode($result));
@@ -43,26 +67,42 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
                 if (strpos($tableToRepair, 'redirects') === false) {
 	                $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 	                $options = $abj404logic->getOptions();
-	                if (!array_key_exists('repaired_count', $options)) {
-	                	$options['repaired_count'] = 0;
+
+	                // Migrate from old global scalar to per-table counts
+	                if (isset($options['repaired_count']) && is_scalar($options['repaired_count'])) {
+	                	unset($options['repaired_count']);
 	                }
-	                $options['repaired_count'] = (is_scalar($options['repaired_count']) ? intval($options['repaired_count']) : 0) + 1;
+	                if (!isset($options['repaired_counts']) || !is_array($options['repaired_counts'])) {
+	                	$options['repaired_counts'] = array();
+	                }
+
+	                $tableKey = $tableToRepair;
+	                $prevCount = isset($options['repaired_counts'][$tableKey]) ? intval($options['repaired_counts'][$tableKey]) : 0;
+	                $options['repaired_counts'][$tableKey] = $prevCount + 1;
 	                $abj404logic->updateOptions($options);
 
-	                if (intval($options['repaired_count']) > 3 &&
-	                		intval($options['repaired_count']) < 7) {
-
-	                	$upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-	                	$this->queryAndGetResults('drop table ' . $tableToRepair);
-	                	$upgradesEtc->createDatabaseTables(false);
+	                if ($prevCount + 1 > 3 && $prevCount + 1 < 7) {
+	                	// Before dropping, check if the last error was disk-full.
+	                	// Dropping + recreating on a full disk will just fail again.
+	                	$lowerError = strtolower($errorMessage);
+	                	if (strpos($lowerError, 'is full') !== false ||
+	                		strpos($lowerError, 'no space left') !== false ||
+	                		strpos($lowerError, 'table full') !== false) {
+	                		$this->logger->warn("Skipping drop+recreate for " . $tableToRepair .
+	                			" — disk appears full. Repair count: " . ($prevCount + 1));
+	                	} else {
+	                		$upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+	                		$this->queryAndGetResults("DROP TABLE `{$tableToRepair}`");
+	                		$upgradesEtc->createDatabaseTables(false);
+	                	}
 	                }
                 }
 
             } else {
-                // Non-plugin table: the plugin cannot repair it, but we can notify the admin
-                // once per day so they can contact their host.
-                $this->logger->warn("The table " . $tableToRepair . " needs to be " .
-                    "repaired with something like: repair table " . $tableToRepair);
+                // Non-plugin table or invalid name: the plugin cannot repair it,
+                // but we can notify the admin once per day so they can contact their host.
+                $this->logger->warn("The table " . $rawTableName . " needs to be " .
+                    "repaired with something like: repair table " . $rawTableName);
 
                 $cooldownKey = 'abj404_corrupted_temp_table_notice_until';
                 $alreadyNotified = function_exists('get_transient') ? get_transient($cooldownKey) : false;
@@ -98,7 +138,11 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
     			is_array($matchesForTableName) && isset($matchesForTableName[1]) && $this->f->strlen($matchesForTableName[1]) > 0) {
 
     		$idWithDuplicate = $matchesForID[1];
-    		$tableName = $matchesForTableName[1];
+    		$tableName = $this->sanitizeTableName($matchesForTableName[1]);
+    		if ($tableName === null) {
+    			$this->logger->warn("repairDuplicateIDs: rejected invalid table name from SQL: " . substr($matchesForTableName[1], 0, 100));
+    			return;
+    		}
 
     		// Validate that ID is numeric to prevent SQL injection
     		if (!is_numeric($idWithDuplicate)) {
@@ -111,7 +155,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
     		}
 
     		// Use prepared statement to prevent SQL injection
-    		$result = $this->queryAndGetResults("delete from " . $tableName . " where id = %d",
+    		$result = $this->queryAndGetResults("DELETE FROM `{$tableName}` where id = %d",
     			array('log_errors' => false, 'query_params' => array(absint($idWithDuplicate))));
    			$this->logger->infoMessage("Attempted to fix a duplicate entry issue. Table: " .
    				$tableName . ", Result: " . json_encode($result));

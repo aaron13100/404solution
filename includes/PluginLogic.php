@@ -1157,7 +1157,10 @@ class ABJ_404_Solution_PluginLogic {
                 ARRAY_N
             );
             foreach ($tables as $tableRow) {
-                $wpdb->query("DROP TABLE IF EXISTS {$tableRow[0]}");
+                $tblName = is_array($tableRow) && isset($tableRow[0]) ? $tableRow[0] : '';
+                if (preg_match('/^[a-zA-Z0-9_]+$/', $tblName) && strpos($tblName, 'abj404') !== false) {
+                    $wpdb->query("DROP TABLE IF EXISTS `{$tblName}`");
+                }
             }
 
             // Remove ALL plugin options
