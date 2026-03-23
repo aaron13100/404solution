@@ -172,7 +172,7 @@ trait ViewTrait_Settings {
                 }
             }
             $capturedUrls = array_values(array_unique($capturedUrls));
-            $abj404view->echoOptionsSection('settings-gsc', 'abj404-gsc-section', __('Google Search Console', '404-solution'), $gsc->renderAdminSection($capturedUrls), false, $abj404view->getCardIcon('chart'));
+            $abj404view->echoOptionsSection('settings-gsc', 'abj404-gsc-section', __('Google Search Console', '404-solution'), $gsc->renderAdminSection($capturedUrls), true, $abj404view->getCardIcon('chart'));
         }
 
         // Sticky save bar — outside the form but linked via form="admin-options-page" on the submit button

@@ -634,7 +634,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                     $condOperator = 'equals';
                 }
                 $condValue = isset($rawCond['value']) && is_string($rawCond['value'])
-                    ? sanitize_text_field($rawCond['value']) : '';
+                    ? sanitize_text_field(wp_unslash($rawCond['value'])) : '';
                 $condSortOrder = isset($rawCond['sort_order']) ? absint($rawCond['sort_order']) : 0;
 
                 $sanitizedConditions[] = [
