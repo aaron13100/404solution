@@ -145,18 +145,20 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         }
 
         if ($isTerminalCode) {
-            $to   = '0';
+            $dest = '0';
             $type = (string)ABJ404_TYPE_404_DISPLAYED;
         } else {
-            $type = $this->detectType($to);
+            $resolved = $this->resolveDestinationType($to);
+            $type     = $resolved['type'];
+            $dest     = $resolved['dest'];
         }
 
         $status     = $regex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
-        $insertedId = $dao->setupRedirect($from, $status, $type, $to, (string)$code, 0, 'wp-cli');
+        $insertedId = $dao->setupRedirect($from, $status, $type, $dest, (string)$code, 0, 'wp-cli');
 
         if ($insertedId) {
-            $dest = $isTerminalCode ? "(none — {$code})" : "{$to}";
-            \WP_CLI::success("Redirect created (ID: {$insertedId}): {$from} → {$dest} [{$code}]");
+            $displayDest = $isTerminalCode ? "(none — {$code})" : "{$to}";
+            \WP_CLI::success("Redirect created (ID: {$insertedId}): {$from} → {$displayDest} [{$code}]");
         } else {
             \WP_CLI::error('Failed to create redirect. Check that the source URL is unique.');
         }
@@ -757,15 +759,33 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
     }
 
     /**
-     * Detect the redirect type constant for a destination URL.
+     * Resolve the redirect type and final destination for a given URL.
+     *
+     * ABJ404_TYPE_HOME means "redirect to the home page" — the stored
+     * final_dest is ignored. Internal paths must be resolved to a post ID
+     * (ABJ404_TYPE_POST) or stored as ABJ404_TYPE_EXTERNAL so the URL is
+     * preserved and used as-is by the redirect pipeline.
      *
      * @param string $to
-     * @return string
+     * @return array{type: string, dest: string}
      */
-    private function detectType($to) {
+    private function resolveDestinationType($to) {
         if (strncasecmp($to, 'http://', 7) === 0 || strncasecmp($to, 'https://', 8) === 0) {
-            return (string)ABJ404_TYPE_EXTERNAL;
+            return array('type' => (string)ABJ404_TYPE_EXTERNAL, 'dest' => $to);
         }
-        return (string)ABJ404_TYPE_HOME;
+
+        $trimmed = trim($to, '/ ');
+        if ($trimmed === '') {
+            return array('type' => (string)ABJ404_TYPE_HOME, 'dest' => (string)ABJ404_TYPE_HOME);
+        }
+
+        if (function_exists('url_to_postid') && function_exists('home_url')) {
+            $postId = url_to_postid(home_url($to));
+            if ($postId > 0) {
+                return array('type' => (string)ABJ404_TYPE_POST, 'dest' => (string)$postId);
+            }
+        }
+
+        return array('type' => (string)ABJ404_TYPE_EXTERNAL, 'dest' => $to);
     }
 }

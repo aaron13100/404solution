@@ -238,10 +238,12 @@ class ABJ_404_Solution_RestApiController {
         }
 
         // Determine status and type.
-        $status = $regex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
-        $type   = $this->looksLikeExternalUrl($to) ? (string)ABJ404_TYPE_EXTERNAL : (string)ABJ404_TYPE_HOME;
+        $status   = $regex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
+        $resolved = $this->resolveDestinationType($to);
+        $type     = $resolved['type'];
+        $dest     = $resolved['dest'];
 
-        $insertedId = $this->dao->setupRedirect($from, $status, $type, $to, (string)$code, 0, 'rest-api');
+        $insertedId = $this->dao->setupRedirect($from, $status, $type, $dest, (string)$code, 0, 'rest-api');
 
         if (!$insertedId) {
             return new \WP_Error('create_failed', __('Failed to create redirect.', '404-solution'), array('status' => 500));
@@ -286,9 +288,11 @@ class ABJ_404_Solution_RestApiController {
 
         $isRegex    = (bool)$rawRegex;
         $statusType = $isRegex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
-        $type       = $this->looksLikeExternalUrl($to) ? ABJ404_TYPE_EXTERNAL : ABJ404_TYPE_HOME;
+        $resolved   = $this->resolveDestinationType($to);
+        $type       = $resolved['type'];
+        $dest       = $resolved['dest'];
 
-        $error = $this->dao->updateRedirect($type, $to, $from, $id, (string)$code, $statusType);
+        $error = $this->dao->updateRedirect($type, $dest, $from, $id, (string)$code, $statusType);
 
         if ($error !== '') {
             return new \WP_Error('update_failed', $error, array('status' => 500));
@@ -405,8 +409,10 @@ class ABJ_404_Solution_RestApiController {
             return new \WP_Error('bad_record', __('The captured 404 record has no URL.', '404-solution'), array('status' => 500));
         }
 
-        $type  = $this->looksLikeExternalUrl($to) ? ABJ404_TYPE_EXTERNAL : ABJ404_TYPE_HOME;
-        $error = $this->dao->updateRedirect($type, $to, $from, $id, (string)$code, (string)ABJ404_STATUS_MANUAL);
+        $resolved = $this->resolveDestinationType($to);
+        $type     = $resolved['type'];
+        $dest     = $resolved['dest'];
+        $error    = $this->dao->updateRedirect($type, $dest, $from, $id, (string)$code, (string)ABJ404_STATUS_MANUAL);
 
         if ($error !== '') {
             return new \WP_Error('update_failed', $error, array('status' => 500));
@@ -598,6 +604,43 @@ class ABJ_404_Solution_RestApiController {
                 // 0 means "all active redirects".
                 return '0';
         }
+    }
+
+    /**
+     * Resolve the redirect type and final destination for a given URL.
+     *
+     * ABJ404_TYPE_HOME (5) means "redirect to the home page" — permalinkInfoToArray()
+     * ignores the stored final_dest for this type. Internal paths must be resolved to
+     * a post ID (ABJ404_TYPE_POST) or stored as ABJ404_TYPE_EXTERNAL so the URL is
+     * preserved and used as-is by the redirect pipeline.
+     *
+     * @param string $to The destination URL provided by the API caller.
+     * @return array{type: string, dest: string}
+     */
+    private function resolveDestinationType($to) {
+        // External URLs (http/https).
+        if ($this->looksLikeExternalUrl($to)) {
+            return array('type' => (string)ABJ404_TYPE_EXTERNAL, 'dest' => $to);
+        }
+
+        // Home page: root path or empty string.
+        $trimmed = trim($to, '/ ');
+        if ($trimmed === '') {
+            return array('type' => (string)ABJ404_TYPE_HOME, 'dest' => (string)ABJ404_TYPE_HOME);
+        }
+
+        // Try to resolve the internal path to a WordPress post/page.
+        if (function_exists('url_to_postid')) {
+            $postId = url_to_postid(home_url($to));
+            if ($postId > 0) {
+                return array('type' => (string)ABJ404_TYPE_POST, 'dest' => (string)$postId);
+            }
+        }
+
+        // Unresolvable internal path — use EXTERNAL type so the URL is stored
+        // and used as-is by the redirect pipeline (FrontendRequestPipeline uses
+        // $redirectFinalDest directly for EXTERNAL type).
+        return array('type' => (string)ABJ404_TYPE_EXTERNAL, 'dest' => $to);
     }
 
     /**
