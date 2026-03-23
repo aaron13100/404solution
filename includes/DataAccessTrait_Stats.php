@@ -520,6 +520,9 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
      */
     function getRedirectsByIDs($ids) {
         global $wpdb;
+        if (!is_array($ids) || empty($ids)) {
+            return array();
+        }
         $validids = array_map('absint', $ids);
         $multipleIds = implode(',', $validids);
     
