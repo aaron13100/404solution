@@ -523,7 +523,7 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
         $validids = array_map('absint', $ids);
         $multipleIds = implode(',', $validids);
     
-        $query = "select id, url, type, status, final_dest, code, COALESCE(engine, '') as engine from {wp_abj404_redirects} " .
+        $query = "select id, url, type, status, final_dest, code, COALESCE(engine, '') as engine, start_ts, end_ts from {wp_abj404_redirects} " .
                 "where id in (" . $multipleIds . ")";
         $query = $this->doTableNameReplacements($query);
         $rows = $wpdb->get_results($query, ARRAY_A);
