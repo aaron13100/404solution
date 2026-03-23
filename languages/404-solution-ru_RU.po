@@ -2886,6 +2886,9 @@ msgstr "Remove condition"
 msgid "Remove"
 msgstr "Remove"
 
+msgid "Auto-matched by:"
+msgstr "Auto-matched by:"
+
 msgid "Error: Invalid email notification frequency selected"
 msgstr "Error: Invalid email notification frequency selected"
 
