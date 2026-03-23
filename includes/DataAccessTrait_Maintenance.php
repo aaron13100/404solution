@@ -7,6 +7,36 @@ if (!defined('ABSPATH')) {
 trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
 
     /**
+     * Tables that may be safely dropped and recreated after repeated repair failures.
+     * Tables NOT in this list (e.g. redirects, engine_profiles, redirect_conditions,
+     * ngram_cache) will never be auto-dropped because they contain user-configured
+     * data or are expensive to rebuild.
+     *
+     * New tables default to NOT droppable (safe-by-default).
+     *
+     * @var array<int, string>
+     */
+    private static $droppableTables = array(
+        'logsv2', 'permalink_cache', 'spelling_cache',
+        'lookup', 'logs_hits', 'view_cache',
+    );
+
+    /**
+     * Check whether a table name matches one of the droppable table suffixes.
+     *
+     * @param string $tableName Sanitized table name.
+     * @return bool
+     */
+    private function isDroppableTable(string $tableName): bool {
+        foreach (self::$droppableTables as $suffix) {
+            if (substr($tableName, -strlen($suffix)) === $suffix) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Validate and sanitize a table name extracted from error messages or SQL.
      * Only allows alphanumeric characters and underscores, and requires 'abj404' in the name.
      *
@@ -60,11 +90,11 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
                 $this->logger->infoMessage("Attempted to repair table " . $tableToRepair . ". Result: " .
                         json_encode($result));
 
-                // track how many times we've tried to repair something.
-                // only for the certain tables. Exclude the redirects table because people
-                // may have spent time creating entries there. Other tables are generated
-                // automatically.
-                if (strpos($tableToRepair, 'redirects') === false) {
+                // Track repair attempts only for tables that are safe to drop+recreate.
+                // Tables not in the droppable whitelist (e.g. redirects, engine_profiles,
+                // redirect_conditions, ngram_cache) are never auto-dropped because they
+                // contain user data or are expensive to rebuild.
+                if ($this->isDroppableTable($tableToRepair)) {
 	                $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 	                $options = $abj404logic->getOptions();
 

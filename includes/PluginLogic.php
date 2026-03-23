@@ -1221,7 +1221,7 @@ class ABJ_404_Solution_PluginLogic {
         if (!wp_next_scheduled('abj404_cleanupCronAction')) {
             // we randomize this so that when the geo2ip file is downloaded, there aren't a whole
             // lot of users that request the file at the same time.
-            $timeForEvent = '0' . rand(0, 5) . ':' . rand(10, 59) . ':' . rand(10, 59);
+            $timeForEvent = '0' . random_int(0, 5) . ':' . random_int(10, 59) . ':' . random_int(10, 59);
             $eventTimestamp = strtotime($timeForEvent);
             if ($eventTimestamp !== false) {
                 wp_schedule_event($eventTimestamp, 'daily', 'abj404_cleanupCronAction');

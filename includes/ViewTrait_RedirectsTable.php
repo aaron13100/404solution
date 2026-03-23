@@ -403,7 +403,7 @@ trait ViewTrait_RedirectsTable {
         $scoreRangeBaseUrl = '?page=' . ABJ404_PP . '&subpage=' . esc_attr($sub) . '&filter=' . (int)(is_scalar($rawFilter) ? $rawFilter : 0);
         echo '<div class="abj404-rows-per-page">';
         echo '<span>' . esc_html__('Confidence:', '404-solution') . '</span>';
-        $scoreRangeBaseUrlJs = addslashes(esc_url($scoreRangeBaseUrl));
+        $scoreRangeBaseUrlJs = esc_js(esc_url($scoreRangeBaseUrl));
         echo '<select class="abj404-filter-select" name="score_range_filter" onchange="window.location=\'' . $scoreRangeBaseUrlJs . '&score_range=\'+encodeURIComponent(this.value);">';
         $scoreRangeOptions = array(
             'all'    => __('All', '404-solution'),

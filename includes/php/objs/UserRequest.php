@@ -120,7 +120,8 @@ class ABJ_404_Solution_UserRequest {
         $commentPagePart = '';
         $results = array();
         if (isset($wp_rewrite) && isset($wp_rewrite->comments_pagination_base)) {
-        	$commentregex = '(.*)\/(' . $wp_rewrite->comments_pagination_base . '-[0-9]{1,})(\/|\z)?(.*)';
+        	$safeBase = preg_quote($wp_rewrite->comments_pagination_base);
+        	$commentregex = '(.*)\/(' . $safeBase . '-[0-9]{1,})(\/|\z)?(.*)';
         	$f->regexMatch($commentregex, $urlWithoutCommentPage, $results);
         	
         	if (!empty($results)) {

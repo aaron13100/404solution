@@ -302,10 +302,20 @@ class ABJ_404_Solution_ImportExportService {
 
         $entries = array();
         foreach ($redirects as $r) {
-            $source = addslashes($r['source']);
-            $dest   = addslashes($r['dest']);
-            $code   = (int)$r['code'];
-            $entries[] = "  '" . $source . "': { dest: '" . $dest . "', status: " . $code . " }";
+            $sourceJson = json_encode($r['source'], JSON_UNESCAPED_SLASHES);
+            $destJson   = json_encode($r['dest'], JSON_UNESCAPED_SLASHES);
+            // Fall back to UTF-8 sanitization if json_encode fails on invalid bytes
+            if ($sourceJson === false) {
+                $sourceJson = json_encode(mb_convert_encoding($r['source'], 'UTF-8', 'UTF-8'), JSON_UNESCAPED_SLASHES);
+            }
+            if ($destJson === false) {
+                $destJson = json_encode(mb_convert_encoding($r['dest'], 'UTF-8', 'UTF-8'), JSON_UNESCAPED_SLASHES);
+            }
+            if ($sourceJson === false || $destJson === false) {
+                continue;
+            }
+            $code = (int)$r['code'];
+            $entries[] = "  " . $sourceJson . ": { dest: " . $destJson . ", status: " . $code . " }";
         }
 
         $map = implode(",\n", $entries);
