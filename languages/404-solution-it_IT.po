@@ -3327,3 +3327,69 @@ msgstr "Impossibile eliminare il profilo motore."
 
 msgid "Send Feedback"
 msgstr "Invia feedback"
+
+msgid "301"
+msgstr "301"
+
+msgid "Permanent"
+msgstr "Permanente"
+
+msgid "302"
+msgstr "302"
+
+msgid "Temporary"
+msgstr "Temporaneo"
+
+msgid "307"
+msgstr "307"
+
+msgid "Temp, method-safe"
+msgstr "Temp, sicuro per metodo"
+
+msgid "308"
+msgstr "308"
+
+msgid "Perm, method-safe"
+msgstr "Perm, sicuro per metodo"
+
+msgid "410"
+msgstr "410"
+
+msgid "Gone"
+msgstr "Rimosso"
+
+msgid "451"
+msgstr "451"
+
+msgid "Legal reasons"
+msgstr "Motivi legali"
+
+msgid "HTTP 200 + meta tag"
+msgstr "HTTP 200 + tag meta"
+
+msgid "Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages."
+msgstr "Usa 301 per spostamenti permanenti. Usa 302 per test A/B o pagine stagionali."
+
+msgid "Back to Redirects"
+msgstr "Torna ai reindirizzamenti"
+
+msgid "Preview Import"
+msgstr "Anteprima importazione"
+
+msgid "Confirm Import"
+msgstr "Conferma importazione"
+
+msgid "Back"
+msgstr "Indietro"
+
+msgid "Found %d redirect(s) from %s — proceed with import?"
+msgstr "Trovati %d reindirizzamento(i) da %s — procedere con l'importazione?"
+
+msgid "No redirects found in %s. Nothing to import."
+msgstr "Nessun reindirizzamento trovato in %s. Niente da importare."
+
+msgid "Could not fetch preview. Please try again."
+msgstr "Impossibile recuperare l'anteprima. Si prega di riprovare."
+
+msgid "Invalid source plugin."
+msgstr "Plugin di origine non valido."

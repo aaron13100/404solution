@@ -3324,3 +3324,69 @@ msgstr "Échec de la suppression du profil de moteur."
 
 msgid "Send Feedback"
 msgstr "Envoyer un commentaire"
+
+msgid "301"
+msgstr "301"
+
+msgid "Permanent"
+msgstr "Permanent"
+
+msgid "302"
+msgstr "302"
+
+msgid "Temporary"
+msgstr "Temporaire"
+
+msgid "307"
+msgstr "307"
+
+msgid "Temp, method-safe"
+msgstr "Temp, méthode sûre"
+
+msgid "308"
+msgstr "308"
+
+msgid "Perm, method-safe"
+msgstr "Perm, méthode sûre"
+
+msgid "410"
+msgstr "410"
+
+msgid "Gone"
+msgstr "Supprimé"
+
+msgid "451"
+msgstr "451"
+
+msgid "Legal reasons"
+msgstr "Raisons légales"
+
+msgid "HTTP 200 + meta tag"
+msgstr "HTTP 200 + balise meta"
+
+msgid "Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages."
+msgstr "Utilisez 301 pour les déplacements permanents. Utilisez 302 pour les tests A/B ou les pages saisonnières."
+
+msgid "Back to Redirects"
+msgstr "Retour aux redirections"
+
+msgid "Preview Import"
+msgstr "Aperçu de l'importation"
+
+msgid "Confirm Import"
+msgstr "Confirmer l'importation"
+
+msgid "Back"
+msgstr "Retour"
+
+msgid "Found %d redirect(s) from %s — proceed with import?"
+msgstr "%d redirection(s) trouvée(s) depuis %s — procéder à l'importation ?"
+
+msgid "No redirects found in %s. Nothing to import."
+msgstr "Aucune redirection trouvée dans %s. Rien à importer."
+
+msgid "Could not fetch preview. Please try again."
+msgstr "Impossible de récupérer l'aperçu. Veuillez réessayer."
+
+msgid "Invalid source plugin."
+msgstr "Extension source invalide."

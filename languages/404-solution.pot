@@ -2354,3 +2354,69 @@ msgstr ""
 
 msgid "Send Feedback"
 msgstr ""
+
+msgid "301"
+msgstr ""
+
+msgid "Permanent"
+msgstr ""
+
+msgid "302"
+msgstr ""
+
+msgid "Temporary"
+msgstr ""
+
+msgid "307"
+msgstr ""
+
+msgid "Temp, method-safe"
+msgstr ""
+
+msgid "308"
+msgstr ""
+
+msgid "Perm, method-safe"
+msgstr ""
+
+msgid "410"
+msgstr ""
+
+msgid "Gone"
+msgstr ""
+
+msgid "451"
+msgstr ""
+
+msgid "Legal reasons"
+msgstr ""
+
+msgid "HTTP 200 + meta tag"
+msgstr ""
+
+msgid "Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages."
+msgstr ""
+
+msgid "Back to Redirects"
+msgstr ""
+
+msgid "Preview Import"
+msgstr ""
+
+msgid "Confirm Import"
+msgstr ""
+
+msgid "Back"
+msgstr ""
+
+msgid "Found %d redirect(s) from %s — proceed with import?"
+msgstr ""
+
+msgid "No redirects found in %s. Nothing to import."
+msgstr ""
+
+msgid "Could not fetch preview. Please try again."
+msgstr ""
+
+msgid "Invalid source plugin."
+msgstr ""

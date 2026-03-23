@@ -3330,3 +3330,69 @@ msgstr "Falha ao excluir o perfil de mecanismo."
 
 msgid "Send Feedback"
 msgstr "Enviar comentários"
+
+msgid "301"
+msgstr "301"
+
+msgid "Permanent"
+msgstr "Permanente"
+
+msgid "302"
+msgstr "302"
+
+msgid "Temporary"
+msgstr "Temporário"
+
+msgid "307"
+msgstr "307"
+
+msgid "Temp, method-safe"
+msgstr "Temp, método seguro"
+
+msgid "308"
+msgstr "308"
+
+msgid "Perm, method-safe"
+msgstr "Perm, método seguro"
+
+msgid "410"
+msgstr "410"
+
+msgid "Gone"
+msgstr "Removido"
+
+msgid "451"
+msgstr "451"
+
+msgid "Legal reasons"
+msgstr "Razões legais"
+
+msgid "HTTP 200 + meta tag"
+msgstr "HTTP 200 + meta-tag"
+
+msgid "Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages."
+msgstr "Use 301 para movimentos permanentes. Use 302 para testes A/B ou páginas sazonais."
+
+msgid "Back to Redirects"
+msgstr "Voltar para redirecionamentos"
+
+msgid "Preview Import"
+msgstr "Visualizar importação"
+
+msgid "Confirm Import"
+msgstr "Confirmar importação"
+
+msgid "Back"
+msgstr "Voltar"
+
+msgid "Found %d redirect(s) from %s — proceed with import?"
+msgstr "Encontrados %d redirecionamento(s) de %s — prosseguir com a importação?"
+
+msgid "No redirects found in %s. Nothing to import."
+msgstr "Nenhum redirecionamento encontrado em %s. Nada para importar."
+
+msgid "Could not fetch preview. Please try again."
+msgstr "Não foi possível obter a visualização. Por favor, tente novamente."
+
+msgid "Invalid source plugin."
+msgstr "Plugin de origem inválido."
