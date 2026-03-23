@@ -581,33 +581,7 @@ trait ViewTrait_RedirectsTable {
         // Redirect type — button grid
         $rawDefault = $options['default_redirect'] ?? '301';
         $defaultCode = is_string($rawDefault) ? $rawDefault : '301';
-        echo '<div class="abj404-form-group">';
-        echo '<label class="abj404-form-label">' . esc_html__('Redirect Type', '404-solution') . '</label>';
-        echo '<input type="hidden" id="code" name="code" value="' . esc_attr($defaultCode) . '">';
-        echo '<div class="abj404-redirect-type-grid">';
-        $modalCodeButtons = array(
-            301 => array(__('301', '404-solution'),          __('Permanent', '404-solution')),
-            302 => array(__('302', '404-solution'),          __('Temporary', '404-solution')),
-            307 => array(__('307', '404-solution'),          __('Temp, method-safe', '404-solution')),
-            308 => array(__('308', '404-solution'),          __('Perm, method-safe', '404-solution')),
-            410 => array(__('410', '404-solution'),          __('Gone', '404-solution')),
-            451 => array(__('451', '404-solution'),          __('Legal reasons', '404-solution')),
-            0   => array(__('Meta Refresh', '404-solution'), __('HTTP 200 + meta tag', '404-solution')),
-        );
-        foreach ($modalCodeButtons as $code => $labels) {
-            $isActive = ((string)$code === $defaultCode) ? ' abj404-redirect-type-btn--active' : '';
-            $isFull   = ($code === 0) ? ' abj404-redirect-type-btn--full' : '';
-            echo '<button type="button"'
-                . ' class="abj404-redirect-type-btn' . $isActive . $isFull . '"'
-                . ' data-code="' . esc_attr((string)$code) . '"'
-                . ' onclick="abj404SelectRedirectType(this)">';
-            echo '<strong>' . esc_html($labels[0]) . '</strong>';
-            echo '<span>' . esc_html($labels[1]) . '</span>';
-            echo '</button>';
-        }
-        echo '</div>';
-        echo '<p class="abj404-form-help">' . esc_html__('Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages.', '404-solution') . '</p>';
-        echo '</div>';
+        $this->echoRedirectTypeButtonGrid($defaultCode);
 
         // Advanced Options: schedule + conditions
         echo '<details class="abj404-advanced-options">';
@@ -642,6 +616,59 @@ trait ViewTrait_RedirectsTable {
         echo '</form>';
         echo '</div>';
         echo '</div>';
+    }
+
+    /**
+     * Render the redirect type button grid, hidden input, and the JS handler.
+     * Used by both the Add Redirect modal and the Edit Redirect page.
+     *
+     * @param string $selectedCode The currently selected code value (e.g. '301').
+     * @return void
+     */
+    private function echoRedirectTypeButtonGrid(string $selectedCode): void {
+        echo '<div class="abj404-form-group">';
+        echo '<label class="abj404-form-label">' . esc_html__('Redirect Type', '404-solution') . '</label>';
+        echo '<input type="hidden" id="code" name="code" value="' . esc_attr($selectedCode) . '">';
+        echo '<div class="abj404-redirect-type-grid">';
+        $codeButtons = array(
+            301 => array(__('301', '404-solution'),          __('Permanent', '404-solution')),
+            302 => array(__('302', '404-solution'),          __('Temporary', '404-solution')),
+            307 => array(__('307', '404-solution'),          __('Temp, method-safe', '404-solution')),
+            308 => array(__('308', '404-solution'),          __('Perm, method-safe', '404-solution')),
+            410 => array(__('410', '404-solution'),          __('Gone', '404-solution')),
+            451 => array(__('451', '404-solution'),          __('Legal reasons', '404-solution')),
+            0   => array(__('Meta Refresh', '404-solution'), __('HTTP 200 + meta tag', '404-solution')),
+        );
+        foreach ($codeButtons as $code => $labels) {
+            $isActive = ((string)$code === $selectedCode) ? ' abj404-redirect-type-btn--active' : '';
+            $isFull   = ($code === 0) ? ' abj404-redirect-type-btn--full' : '';
+            echo '<button type="button"'
+                . ' class="abj404-redirect-type-btn' . $isActive . $isFull . '"'
+                . ' data-code="' . esc_attr((string)$code) . '"'
+                . ' onclick="abj404SelectRedirectType(this)">';
+            echo '<strong>' . esc_html($labels[0]) . '</strong>';
+            echo '<span>' . esc_html($labels[1]) . '</span>';
+            echo '</button>';
+        }
+        echo '</div>';
+        echo '<p class="abj404-form-help">' . esc_html__('Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages.', '404-solution') . '</p>';
+        echo '</div>';
+        echo '<script type="text/javascript">';
+        echo 'if (typeof window.abj404SelectRedirectType === "undefined") {';
+        echo '    window.abj404SelectRedirectType = function(btn) {';
+        echo '        var grid = btn.closest(".abj404-redirect-type-grid");';
+        echo '        grid.querySelectorAll(".abj404-redirect-type-btn").forEach(function(b) {';
+        echo '            b.classList.remove("abj404-redirect-type-btn--active");';
+        echo '        });';
+        echo '        btn.classList.add("abj404-redirect-type-btn--active");';
+        echo '        var hidden = document.getElementById("code");';
+        echo '        if (hidden) {';
+        echo '            hidden.value = btn.dataset.code;';
+        echo '            if (typeof jQuery !== "undefined") { jQuery("#code").trigger("change"); }';
+        echo '        }';
+        echo '    };';
+        echo '}';
+        echo '</script>';
     }
 
 	    /**
@@ -1210,51 +1237,7 @@ trait ViewTrait_RedirectsTable {
      */
     function echoEditRedirect($destination, $codeselected, $label, $source_page = null, $filter = null, $orderby = null, $order = null, $startDate = '', $endDate = '') {
         // Redirect type — button grid with hidden input
-        echo '<div class="abj404-form-group">';
-        echo '<label class="abj404-form-label">' . esc_html__('Redirect Type', '404-solution') . '</label>';
-        echo '<input type="hidden" id="code" name="code" value="' . esc_attr((string)$codeselected) . '">';
-        echo '<div class="abj404-redirect-type-grid">';
-
-        $codeButtons = array(
-            301 => array(__('301', '404-solution'),          __('Permanent', '404-solution')),
-            302 => array(__('302', '404-solution'),          __('Temporary', '404-solution')),
-            307 => array(__('307', '404-solution'),          __('Temp, method-safe', '404-solution')),
-            308 => array(__('308', '404-solution'),          __('Perm, method-safe', '404-solution')),
-            410 => array(__('410', '404-solution'),          __('Gone', '404-solution')),
-            451 => array(__('451', '404-solution'),          __('Legal reasons', '404-solution')),
-            0   => array(__('Meta Refresh', '404-solution'), __('HTTP 200 + meta tag', '404-solution')),
-        );
-        foreach ($codeButtons as $code => $labels) {
-            $isActive  = ((string)$code === (string)$codeselected) ? ' abj404-redirect-type-btn--active' : '';
-            $isFull    = ($code === 0) ? ' abj404-redirect-type-btn--full' : '';
-            echo '<button type="button"'
-                . ' class="abj404-redirect-type-btn' . $isActive . $isFull . '"'
-                . ' data-code="' . esc_attr((string)$code) . '"'
-                . ' onclick="abj404SelectRedirectType(this)">';
-            echo '<strong>' . esc_html($labels[0]) . '</strong>';
-            echo '<span>' . esc_html($labels[1]) . '</span>';
-            echo '</button>';
-        }
-
-        echo '</div>';
-        echo '<p class="abj404-form-help">' . esc_html__('Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages.', '404-solution') . '</p>';
-        echo '</div>';
-        echo '<script type="text/javascript">';
-        echo 'if (typeof window.abj404SelectRedirectType === "undefined") {';
-        echo '    window.abj404SelectRedirectType = function(btn) {';
-        echo '        var grid = btn.closest(".abj404-redirect-type-grid");';
-        echo '        grid.querySelectorAll(".abj404-redirect-type-btn").forEach(function(b) {';
-        echo '            b.classList.remove("abj404-redirect-type-btn--active");';
-        echo '        });';
-        echo '        btn.classList.add("abj404-redirect-type-btn--active");';
-        echo '        var hidden = document.getElementById("code");';
-        echo '        if (hidden) {';
-        echo '            hidden.value = btn.dataset.code;';
-        echo '            if (typeof jQuery !== "undefined") { jQuery("#code").trigger("change"); }';
-        echo '        }';
-        echo '    };';
-        echo '}';
-        echo '</script>';
+        $this->echoRedirectTypeButtonGrid((string)$codeselected);
 
         // Advanced Options: Active From/Until + Conditions (collapsed by default; open when values exist)
         $redirectId = 0;
