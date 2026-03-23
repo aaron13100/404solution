@@ -308,6 +308,9 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
             $recognizedPostTypes .= "'" . trim($this->f->strtolower($postType)) . "', ";
         }
         $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
+        if ($recognizedPostTypes === '') {
+            return null;
+        }
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getIDsNeededForPermalinkCache.sql");
         $query = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);

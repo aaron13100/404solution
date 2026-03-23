@@ -679,6 +679,9 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             $recognizedPostTypes .= "'" . trim($this->f->strtolower($postType)) . "', ";
         }
         $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
+        if ($recognizedPostTypes === '') {
+            return array();
+        }
         // ----------------
 
         if ($slug != "") {
@@ -803,6 +806,9 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             $recognizedPostTypes .= "'" . trim($this->f->strtolower($postType)) . "', ";
         }
         $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
+        if ($recognizedPostTypes === '') {
+            return array();
+        }
         // ----------------
 
         // load the query and do the replacements.
