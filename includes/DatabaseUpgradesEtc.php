@@ -1258,6 +1258,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	foreach ($updateTheseColumns as $colDDL) {
     		// find the colum name.
     		$matchIndex = array_search($colDDL, $goalMatchesSub);
+    		if ($matchIndex === false) {
+    			$this->logger->warn("Could not match column DDL to goal schema, skipping: " . $colDDL);
+    			continue;
+    		}
     		$colName = is_string($goalTableMatchesColumnNames[$matchIndex] ?? null) ? $goalTableMatchesColumnNames[$matchIndex] : '';
 
     		// if the column exists then update it. otherwise create it.
