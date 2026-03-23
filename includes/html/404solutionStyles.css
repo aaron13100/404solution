@@ -2397,7 +2397,7 @@ html[data-theme="obsidian"] .abj404-tab-branding {
 /* Redirect type button grid */
 .abj404-redirect-type-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     margin-bottom: 8px;
 }

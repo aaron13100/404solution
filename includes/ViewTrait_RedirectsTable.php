@@ -553,13 +553,12 @@ trait ViewTrait_RedirectsTable {
         echo '</div>';
         echo '</div>';
 
-        // Redirect to field - using the existing AJAX autocomplete template
+        // Redirect to field - using the existing AJAX autocomplete template.
+        // The template provides the label via {redirect_to_label}; no separate PHP label needed.
         echo '<div class="abj404-form-group abj404-autocomplete-wrapper">';
-        echo '<label class="abj404-form-label">' . esc_html__('Redirect to', '404-solution') . ' *</label>';
 
-        // Load the autocomplete HTML template (includes wrapper and spinner)
         $redirectHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectPageSearchDropdown.html");
-        $redirectHtml = $this->f->str_replace('{redirect_to_label}', '', $redirectHtml);
+        $redirectHtml = $this->f->str_replace('{redirect_to_label}', esc_html__('Redirect to', '404-solution') . ' *', $redirectHtml);
         $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
             __('(Type a page name or an external URL)', '404-solution'), $redirectHtml);
         $redirectHtml = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',

@@ -135,22 +135,18 @@ jQuery(document).ready(function($) {
         if (!codeSelect.length) { return; }
 
         var is410 = codeSelect.val() === '410' || codeSelect.val() === '451';
-        var destArea = jQuery('.abj404-redirect-to-field').closest('div').addBack();
-        // Find the destination label + field container (the .abj404-redirect-to-field div
-        // and its preceding label, which together are wrapped by the form).
-        var destWrapper = jQuery('#redirect_to_user_field').closest('.abj404-redirect-to-field');
-        var destLabel = destWrapper.prev('label');
+        // The entire redirect-to section (label + field + hidden inputs) is wrapped in
+        // .abj404-autocomplete-wrapper on both the edit page and the add modal.
+        var destSection = jQuery('#redirect_to_user_field').closest('.abj404-autocomplete-wrapper');
 
         if (is410) {
-            destWrapper.hide();
-            destLabel.hide();
+            destSection.hide();
             // Clear values so the hidden field doesn't fail server-side validation.
             jQuery('#redirect_to_user_field').val('').removeAttr('required');
             jQuery('#redirect_to_data_field_id').val('');
             jQuery('#redirect_to_data_field_title').val('');
         } else {
-            destWrapper.show();
-            destLabel.show();
+            destSection.show();
             jQuery('#redirect_to_user_field').attr('required', 'required');
         }
     }

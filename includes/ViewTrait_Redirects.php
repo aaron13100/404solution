@@ -224,7 +224,9 @@ trait ViewTrait_Redirects {
         $html = $this->f->str_replace('{data-url}',
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $html);
         $html = $this->f->doNormalReplacements($html);
+        echo '<div class="abj404-form-group abj404-autocomplete-wrapper">';
         echo $html;
+        echo '</div>';
         
         $this->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'), $source_page, $filter, $orderby, $order, $startDate, $endDate);
 
