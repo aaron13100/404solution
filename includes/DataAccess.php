@@ -906,16 +906,21 @@ class ABJ_404_Solution_DataAccess {
             	}
             }
 
-            // Disk-full, read-only, and quota errors are server-side issues, not
-            // plugin bugs.  They are already handled by noteDatabaseIssueFromError()
-            // (admin notice + write-block cooldown), so log as WARN instead of ERROR
-            // to avoid triggering dev email reports.
+            // Server-side and infrastructure errors are not plugin bugs.  They are
+            // already handled by dedicated repair/retry handlers above or by
+            // noteDatabaseIssueFromError() (admin notice + write-block cooldown).
+            // Log as WARN instead of ERROR to avoid triggering dev email reports.
             if ($reportError && (
                 $this->isDiskFullError($result['last_error']) ||
                 $this->isReadOnlyError($result['last_error']) ||
                 $this->isQuotaLimitError($result['last_error']) ||
                 $this->isInvalidDataError($result['last_error']) ||
-                $this->isCollationError($result['last_error'])
+                $this->isCollationError($result['last_error']) ||
+                $this->isMissingPluginTableError($result['last_error']) ||
+                $this->isIncorrectKeyFileError($result['last_error']) ||
+                $this->isCrashedTableError($result['last_error']) ||
+                $this->isDeadlockOrLockTimeoutError($result['last_error']) ||
+                $this->isTransientConnectionError($result['last_error'])
             )) {
                 $this->logger->warn("Server-side DB issue (handled): " . $result['last_error']);
                 $reportError = false;
@@ -1054,6 +1059,14 @@ class ABJ_404_Solution_DataAccess {
         return ($this->f->strpos($lower, 'illegal mix of collations') !== false ||
             $this->f->strpos($lower, 'unknown collation') !== false ||
             $this->f->strpos($lower, 'collation') !== false && $this->f->strpos($lower, 'not valid') !== false);
+    }
+
+    /** @param string $errorText @return bool */
+    private function isCrashedTableError(string $errorText): bool {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        return stripos($errorText, 'is marked as crashed') !== false;
     }
 
     /** @param string $errorText @return bool */
@@ -1271,6 +1284,9 @@ class ABJ_404_Solution_DataAccess {
         if (is_scalar($cooldownUntil) && (int)$cooldownUntil > time()) {
             $this->logger->warn("Missing plugin table (repair previously failed, cooldown active): "
                 . $result['last_error']);
+            // Clear last_error so the caller (queryAndGetResults) does not
+            // double-report this error as "Ugh. SQL query error" ERROR.
+            $result['last_error'] = '';
             return;
         }
 
