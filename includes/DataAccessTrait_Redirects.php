@@ -361,8 +361,10 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                     "delete from {wp_abj404_redirects} where url = {url} and id != {original}",
                     array("url" => $url, "original" => $original)
                 );
-                $this->queryAndGetResults($queryl);
-                $rowsDeleted++;
+                $deleteResult = $this->queryAndGetResults($queryl);
+                $affected = isset($deleteResult['rows_affected']) && is_numeric($deleteResult['rows_affected'])
+                    ? (int)$deleteResult['rows_affected'] : 1;
+                $rowsDeleted += max($affected, 1);
             }
         }
 
