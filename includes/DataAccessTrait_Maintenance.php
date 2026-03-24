@@ -507,7 +507,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
 
         $row = is_array($rows[0] ?? null) ? $rows[0] : array();
         $json = isset($row['matchdata']) && is_string($row['matchdata']) ? $row['matchdata'] : '';
-        $returnValue = json_decode($json);
+        $returnValue = json_decode($json, true);
 
         return $returnValue;
     }
