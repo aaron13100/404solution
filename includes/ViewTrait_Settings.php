@@ -311,9 +311,9 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{recognized_post_types}', 
             str_replace('\\n', "\n", wp_kses_post($this->optStr($options, 'recognized_post_types'))), $html);
         $html = $this->f->str_replace('{all_post_types}', $allPostTypes, $html);
-        $html = $this->f->str_replace('{days_wait_before_major_update}', $this->optStr($options, 'days_wait_before_major_update'), $html);
-        
-        $html = $this->f->str_replace('{recognized_categories}', 
+        $html = $this->f->str_replace('{days_wait_before_major_update}', esc_attr($this->optStr($options, 'days_wait_before_major_update')), $html);
+
+        $html = $this->f->str_replace('{recognized_categories}',
             str_replace('\\n', "\n", wp_kses_post($this->optStr($options, 'recognized_categories'))), $html);
         $html = $this->f->str_replace('{folders_files_ignore}', 
             str_replace('\\n', "\n", wp_kses_post($this->optStr($options, 'folders_files_ignore'))), $html);
@@ -471,7 +471,7 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{OPTION_AUTO_SCORE_CATEGORY_TAG}', esc_attr($this->optStr($options, 'auto_score_category_tag')), $html);
         $html = $this->f->str_replace('{OPTION_AUTO_SCORE_CONTENT}', esc_attr($this->optStr($options, 'auto_score_content')), $html);
         $html = $this->f->str_replace('{OPTION_TEMPLATE_REDIRECT_PRIORITY}', esc_attr($this->optStr($options, 'template_redirect_priority')), $html);
-        $html = $this->f->str_replace('{days_wait_before_major_update}', $this->optStr($options, 'days_wait_before_major_update'), $html);
+        $html = $this->f->str_replace('{days_wait_before_major_update}', esc_attr($this->optStr($options, 'days_wait_before_major_update')), $html);
 
         // Handle plugin_admin_users - convert array to string first before sanitization
         $pluginAdminUsersRaw2 = $options['plugin_admin_users'];
@@ -570,10 +570,10 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{selectedDefaultRedirect307}', $selectedDefaultRedirect307, $html);
         $html = $this->f->str_replace('{selectedDefaultRedirect308}', $selectedDefaultRedirect308, $html);
         $html = $this->f->str_replace('{selectedCapture404}', $selectedCapture404, $html);
-        $html = $this->f->str_replace('{admin_notification}', $this->optStr($options, 'admin_notification'), $html);
-        $html = $this->f->str_replace('{capture_deletion}', $this->optStr($options, 'capture_deletion'), $html);
-        $html = $this->f->str_replace('{manual_deletion}', $this->optStr($options, 'manual_deletion'), $html);
-        $html = $this->f->str_replace('{maximum_log_disk_usage}', $this->optStr($options, 'maximum_log_disk_usage'), $html);
+        $html = $this->f->str_replace('{admin_notification}', esc_attr($this->optStr($options, 'admin_notification')), $html);
+        $html = $this->f->str_replace('{capture_deletion}', esc_attr($this->optStr($options, 'capture_deletion')), $html);
+        $html = $this->f->str_replace('{manual_deletion}', esc_attr($this->optStr($options, 'manual_deletion')), $html);
+        $html = $this->f->str_replace('{maximum_log_disk_usage}', esc_attr($this->optStr($options, 'maximum_log_disk_usage')), $html);
         $html = $this->f->str_replace('{logCurrentSizeDiskUsage}', (string)$logSizeMB, $html);
         $html = $this->f->str_replace('{logCurrentRowCount}', (string)$totalLogLines, $html);
         $html = $this->f->str_replace('{earliestLogDate}', $earliestLogDate, $html);
@@ -600,7 +600,7 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{selectedLanguageIdID}', $selectedLanguageIdID, $html);
         $html = $this->f->str_replace('{selectedLanguageSvSE}', $selectedLanguageSvSE, $html);
         $html = $this->f->str_replace('{disableAutoDarkModeChecked}', $disableAutoDarkModeChecked, $html);
-        $html = $this->f->str_replace('{admin_notification_email}', $this->optStr($options, 'admin_notification_email'), $html);
+        $html = $this->f->str_replace('{admin_notification_email}', esc_attr($this->optStr($options, 'admin_notification_email')), $html);
         $adminEmail = get_option('admin_email');
         $html = $this->f->str_replace('{default_wordpress_admin_email}', is_string($adminEmail) ? $adminEmail : '', $html);
         $html = $this->f->str_replace('{PHP_VERSION}', PHP_VERSION, $html);
