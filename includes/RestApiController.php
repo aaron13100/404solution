@@ -532,7 +532,9 @@ class ABJ_404_Solution_RestApiController {
                         continue;
                     }
                     $pattern = is_string($rr['url']) ? $rr['url'] : '';
-                    if ($pattern !== '' && @preg_match($pattern, $normalizedUrl) === 1) {
+                    // Patterns are stored without delimiters; wrap in {} like regexMatch() does.
+                    $delimited = '{' . $pattern . '}';
+                    if ($pattern !== '' && @preg_match($delimited, $normalizedUrl) === 1) {
                         $matchedRegex = $rr;
                         break;
                     }
