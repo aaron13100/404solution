@@ -437,6 +437,12 @@ trait SpellCheckerTrait_LevenshteinEngine {
 			return $RowLen;
 		}
 
+		// Pre-split into character arrays so multibyte characters are indexed correctly.
+		// Direct $str[$i] indexing accesses bytes, not characters, which corrupts the
+		// distance for multibyte strings (CJK, Cyrillic, Arabic, etc.).
+		$chars1 = mb_str_split($str1, 1, 'UTF-8');
+		$chars2 = mb_str_split($str2, 1, 'UTF-8');
+
 		// / Create the two vectors
 		$v0 = array_fill(0, $RowLen + 1, 0);
 		$v1 = array_fill(0, $RowLen + 1, 0);
@@ -456,7 +462,7 @@ trait SpellCheckerTrait_LevenshteinEngine {
 			// Step 4
 			// / For each row
 			for ($RowIdx = 1; $RowIdx <= $RowLen; $RowIdx++) {
-			    $cost = ($str1[$RowIdx - 1] == $str2[$ColIdx - 1]) ? 0 : 1;
+			    $cost = ($chars1[$RowIdx - 1] === $chars2[$ColIdx - 1]) ? 0 : 1;
 			    $v1[$RowIdx] = min($v0[$RowIdx] + 1, $v1[$RowIdx - 1] + 1, $v0[$RowIdx - 1] + $cost);
 			}
 
