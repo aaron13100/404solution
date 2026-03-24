@@ -714,10 +714,16 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
 
         $limit = max(1, $limit);
         $redirectsTable = $this->doTableNameReplacements('{wp_abj404_redirects}');
+        $logsTable = $this->doTableNameReplacements('{wp_abj404_logsv2}');
 
         $sql = $wpdb->prepare(
-            "SELECT url, logshits, created FROM {$redirectsTable}
-             WHERE status = %d AND disabled = 0
+            "SELECT r.url, COUNT(l.id) AS logshits, r.timestamp AS created
+             FROM {$redirectsTable} r
+             LEFT JOIN {$logsTable} l
+               ON CONCAT('/', TRIM(BOTH '/' FROM l.requested_url)) =
+                  CONCAT('/', TRIM(BOTH '/' FROM r.url))
+             WHERE r.status = %d AND r.disabled = 0
+             GROUP BY r.id, r.url, r.timestamp
              ORDER BY logshits DESC
              LIMIT %d",
             ABJ404_STATUS_CAPTURED,
