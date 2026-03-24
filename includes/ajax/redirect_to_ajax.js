@@ -52,7 +52,10 @@ jQuery(document).ready(function($) {
                   if (item.data_overflow_item) {
                       classesForCategoryLabel += " data-overflow-category";
                   }
-                  ul.append( "<li class='" + classesForCategoryLabel + "'>" + item.category + "</li>" );
+                  var catLi = document.createElement('li');
+                  catLi.className = classesForCategoryLabel;
+                  catLi.textContent = item.category;
+                  ul.append( catLi );
                   currentCategory = item.category;
               }
               // render the items
