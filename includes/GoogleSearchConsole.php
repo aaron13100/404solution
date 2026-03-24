@@ -252,8 +252,9 @@ class ABJ_404_Solution_GoogleSearchConsole {
         $startTimestamp = strtotime("-{$days} days");
         $startDate = date('Y-m-d', $startTimestamp !== false ? $startTimestamp : 0);
 
-        // Limit to first 100 URLs per API call to stay within API limits
-        $urlChunks = array_chunk($urls, 50);
+        // Cap total URLs and use small chunks to stay within GSC OR-filter limits (max ~5 filters per group)
+        $urls = array_slice($urls, 0, 500);
+        $urlChunks = array_chunk($urls, 5);
         $allRows = array();
 
         foreach ($urlChunks as $chunk) {
@@ -294,7 +295,13 @@ class ABJ_404_Solution_GoogleSearchConsole {
             );
 
             if (is_wp_error($response)) {
-                $this->logger->warn('GSC API error: ' . $response->get_error_message());
+                $this->logger->warn('GSC API transport error: ' . $response->get_error_message());
+                break;
+            }
+
+            $httpCode = (int) wp_remote_retrieve_response_code($response);
+            if ($httpCode !== 200) {
+                $this->logger->warn('GSC API returned HTTP ' . $httpCode . ': ' . wp_remote_retrieve_body($response));
                 break;
             }
 
