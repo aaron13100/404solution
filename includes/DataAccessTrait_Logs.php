@@ -791,9 +791,9 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             
         // ------------ debug message begin
         $helperFunctions = ABJ_404_Solution_Functions::getInstance();
-        $reasonMessage = trim(implode(", ", 
+        $reasonMessage = trim(implode(", ",
                     array_filter(
-                    array($_REQUEST[ABJ404_PP]['ignore_doprocess'], $_REQUEST[ABJ404_PP]['ignore_donotprocess']))));
+                    array($_REQUEST[ABJ404_PP]['ignore_doprocess'] ?? '', $_REQUEST[ABJ404_PP]['ignore_donotprocess'] ?? ''))));
         $permalinksKept = '(not set)';
         if ($this->logger->isDebug() && array_key_exists(ABJ404_PP, $_REQUEST) &&
         		array_key_exists('permalinks_found', $_REQUEST[ABJ404_PP])) {
