@@ -907,7 +907,7 @@ trait ViewTrait_RedirectsTable {
             }
             
             if ($link != '') {
-                $link = "href='$link'";
+                $link = "href='" . esc_url($link) . "'";
             }
 
             $hits = is_scalar($row['logshits'] ?? 0) ? (int)($row['logshits'] ?? 0) : 0;
