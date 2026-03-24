@@ -105,7 +105,7 @@ class ABJ_404_Solution_UserRequest {
         	 $f->endsWithCaseInsensitive($urlPath, '/amp/')
         	)
         	&& $f->strlen($urlPath) >= 6) {
-        	$urlParts['path'] = substr($urlPath, 0, $f->strlen($urlPath) - 4);
+        	$urlParts['path'] = $f->substr($urlPath, 0, $f->strlen($urlPath) - 4);
         }
         
         // remove any "/comment-page-???/" if there is one.
