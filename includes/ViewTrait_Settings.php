@@ -227,9 +227,9 @@ trait ViewTrait_Settings {
         		__('(An external URL will be used.)', '404-solution'), $html);
         $html = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', $pageMissingWarning, $html);
         
-        $html = $this->f->str_replace('{redirectPageTitle}', $pageTitle, $html);
-        $html = $this->f->str_replace('{pageIDAndType}', $userSelectedDefault404Page, $html);
-        $html = $this->f->str_replace('{redirectPageTitle}', $pageTitle, $html);
+        $html = $this->f->str_replace('{redirectPageTitle}', esc_attr($pageTitle), $html);
+        $html = $this->f->str_replace('{pageIDAndType}', esc_attr($userSelectedDefault404Page), $html);
+        $html = $this->f->str_replace('{redirectPageTitle}', esc_attr($pageTitle), $html);
         $html = $this->f->str_replace('{data-url}',
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $html);
         $html = $this->f->doNormalReplacements($html);

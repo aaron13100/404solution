@@ -59,8 +59,8 @@ trait ViewTrait_Logs {
         	__('(A custom string has been entered.)', '404-solution'), $html);
         $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
                 __('(Please choose from the dropdown list instead of typing your own URL.)', '404-solution'), $html);
-        $html = $this->f->str_replace('{pageIDAndType}', $pageIDAndType, $html);
-        $html = $this->f->str_replace('{redirectPageTitle}', $redirectPageTitle, $html);
+        $html = $this->f->str_replace('{pageIDAndType}', esc_attr($pageIDAndType), $html);
+        $html = $this->f->str_replace('{redirectPageTitle}', esc_attr($redirectPageTitle), $html);
         $html = $this->f->str_replace('{data-url}',
                 "admin-ajax.php?action=echoViewLogsFor&nonce=" . wp_create_nonce('abj404_ajax'), $html);
         $html = $this->f->doNormalReplacements($html);

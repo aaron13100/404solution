@@ -461,8 +461,8 @@ trait ViewTrait_UI {
         $dest404Dropdown = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
                 __('(An external URL will be used.)', '404-solution'), $dest404Dropdown);
         $dest404Dropdown = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', $pageMissingWarning, $dest404Dropdown);
-        $dest404Dropdown = $this->f->str_replace('{redirectPageTitle}', $pageTitle, $dest404Dropdown);
-        $dest404Dropdown = $this->f->str_replace('{pageIDAndType}', $userSelectedDefault404Page, $dest404Dropdown);
+        $dest404Dropdown = $this->f->str_replace('{redirectPageTitle}', esc_attr($pageTitle), $dest404Dropdown);
+        $dest404Dropdown = $this->f->str_replace('{pageIDAndType}', esc_attr($userSelectedDefault404Page), $dest404Dropdown);
         $dest404Dropdown = $this->f->str_replace('{data-url}',
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $dest404Dropdown);
         $dest404Dropdown = $this->f->doNormalReplacements($dest404Dropdown);
