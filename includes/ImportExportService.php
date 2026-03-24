@@ -623,6 +623,11 @@ class ABJ_404_Solution_ImportExportService {
                 $type = $typeTag;
                 $final_dest = (string)$postFromTag->term_id;
             } else {
+                // Slug doesn't resolve to any post/category/tag — use EXTERNAL
+                // so the path is used as-is by the redirect pipeline. Storing a
+                // non-numeric final_dest with TYPE_POST would cause the redirect
+                // to silently 404 (get_permalink() expects a numeric ID).
+                $type = ABJ404_TYPE_EXTERNAL;
                 $this->logger->warn(__("Couldn't find post from slug. slug:", '404-solution') . ' ' . $slug);
             }
         }
