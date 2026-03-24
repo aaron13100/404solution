@@ -107,12 +107,10 @@ class ABJ_404_Solution_CrossPluginImporter {
 
             $status = $isRegex ? ABJ404_STATUS_REGEX : ABJ404_STATUS_MANUAL;
 
-            // Determine destination type: external URLs use ABJ404_TYPE_EXTERNAL, otherwise post type.
-            if (preg_match('/^https?:\/\//i', $destUrl)) {
-                $type = ABJ404_TYPE_EXTERNAL;
-            } else {
-                $type = ABJ404_TYPE_POST;
-            }
+            // Determine destination type and resolve internal paths to post IDs.
+            $resolved = $this->resolveDestinationType($destUrl);
+            $type = $resolved['type'];
+            $destUrl = $resolved['dest'];
 
             $result = $this->dao->setupRedirect(
                 $sourceUrl,
@@ -415,6 +413,32 @@ class ABJ_404_Solution_CrossPluginImporter {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Resolve the redirect type and final destination for a given URL.
+     *
+     * External URLs (http/https) use ABJ404_TYPE_EXTERNAL with the URL as-is.
+     * Internal paths are resolved via url_to_postid() — if a post ID is found,
+     * ABJ404_TYPE_POST is used with the numeric ID. Otherwise ABJ404_TYPE_EXTERNAL
+     * is used so the path is preserved and used as-is by the redirect pipeline.
+     *
+     * @param string $destUrl
+     * @return array{type: int, dest: string}
+     */
+    private function resolveDestinationType(string $destUrl): array {
+        if (preg_match('/^https?:\/\//i', $destUrl)) {
+            return array('type' => ABJ404_TYPE_EXTERNAL, 'dest' => $destUrl);
+        }
+
+        if (function_exists('url_to_postid') && function_exists('home_url')) {
+            $postId = url_to_postid(home_url($destUrl));
+            if ($postId > 0) {
+                return array('type' => ABJ404_TYPE_POST, 'dest' => (string)$postId);
+            }
+        }
+
+        return array('type' => ABJ404_TYPE_EXTERNAL, 'dest' => $destUrl);
+    }
 
     /**
      * Check whether a table exists using SHOW TABLES LIKE.
