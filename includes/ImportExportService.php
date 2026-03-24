@@ -630,7 +630,9 @@ class ABJ_404_Solution_ImportExportService {
         if (!$dryRun) {
             $engine = isset($dataArray['engine']) && is_string($dataArray['engine']) && $dataArray['engine'] !== ''
                 ? $dataArray['engine'] : 'import';
-            $this->dao->setupRedirect($fromURL, (string)$status, (string)$type, (string)$final_dest, (string)301, 0, $engine);
+            $code = isset($dataArray['code']) && is_numeric($dataArray['code'])
+                ? (string)(int)$dataArray['code'] : '301';
+            $this->dao->setupRedirect($fromURL, (string)$status, (string)$type, (string)$final_dest, $code, 0, $engine);
         }
 
         return $anyIssuesToNote;
@@ -757,6 +759,11 @@ class ABJ_404_Solution_ImportExportService {
             $result['engine'] = trim((string)$row[$engineIndex]);
         }
 
+        $codeIndex = $this->findImportHeaderIndex($normalizedHeaders, array('code', 'redirect_code', 'http_code'));
+        if ($codeIndex !== -1 && array_key_exists($codeIndex, $row)) {
+            $result['code'] = trim((string)$row[$codeIndex]);
+        }
+
         return $result;
     }
 
@@ -781,6 +788,17 @@ class ABJ_404_Solution_ImportExportService {
      */
     function mapImportRowWithoutHeaders($columns) {
         $columns = array_values($columns);
+        if (count($columns) === 7) {
+            return array(
+                'from_url' => trim((string)$columns[0]),
+                'status'   => trim((string)$columns[1]),
+                'type'     => trim((string)$columns[2]),
+                'to_url'   => trim((string)$columns[3]),
+                'wp_type'  => trim((string)$columns[4]),
+                'engine'   => trim((string)$columns[5]),
+                'code'     => trim((string)$columns[6]),
+            );
+        }
         if (count($columns) === 6) {
             return array(
                 'from_url' => trim((string)$columns[0]),
@@ -806,7 +824,7 @@ class ABJ_404_Solution_ImportExportService {
                 'to_url'   => trim((string)$columns[1]),
             );
         }
-        return array('error' => sprintf(__('Invalid CSV format. %d columns found but 2, 5, or 6 expected.', '404-solution'), count($columns)));
+        return array('error' => sprintf(__('Invalid CSV format. %d columns found but 2, 5, 6, or 7 expected.', '404-solution'), count($columns)));
     }
 
     /**

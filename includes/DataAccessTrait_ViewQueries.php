@@ -379,7 +379,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
     		if ($fh === false) {
     			return;
     		}
-    		fputcsv($fh, array('from_url', 'status', 'type', 'to_url', 'wp_type', 'engine'));
+    		fputcsv($fh, array('from_url', 'status', 'type', 'to_url', 'wp_type', 'engine', 'code'));
 
     		while (($row = mysqli_fetch_array($result, MYSQLI_ASSOC))) {
     			fputcsv($fh, array(
@@ -388,7 +388,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
     				$row['type'],
     				$row['to_url'],
     				$row['type_wp'],
-    				isset($row['engine']) ? $row['engine'] : ''
+    				isset($row['engine']) ? $row['engine'] : '',
+    				isset($row['code']) ? $row['code'] : '301'
     			));
     		}
     		fclose($fh);

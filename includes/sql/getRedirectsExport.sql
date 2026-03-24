@@ -24,7 +24,8 @@ SELECT r.url as from_url,
             else r.final_dest
        end as to_url,
        wpp.post_type as type_wp,
-       COALESCE(r.engine, '') as engine
+       COALESCE(r.engine, '') as engine,
+       r.code
 
        /* ,
        r.final_dest,
