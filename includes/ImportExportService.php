@@ -430,7 +430,11 @@ class ABJ_404_Solution_ImportExportService {
             }
 
             $regexFlag = (strtolower($status) === 'regex') ? '1' : '0';
-            fputcsv($out, array($from, $to, $regexFlag, '301'), ',', '"', '\\');
+            $code = isset($row[6]) ? trim((string)$row[6]) : '301';
+            if ($code === '' || !is_numeric($code)) {
+                $code = '301';
+            }
+            fputcsv($out, array($from, $to, $regexFlag, $code), ',', '"', '\\');
         }
 
         fclose($in);
