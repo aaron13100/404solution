@@ -341,7 +341,7 @@ class ABJ_404_Solution_ShortCode {
             // <li>
             $content .= wp_kses_post($suggestEntryBefore);
 
-            $content .= "<a href=\"" . esc_url($permLink) . $commentPartAndQueryPart .
+            $content .= "<a href=\"" . esc_url($permLink . $commentPartAndQueryPart) .
                 "\" title=\"" . esc_attr($permTitle) . "\">" .
                 esc_attr($permTitle) . "</a>";
 
@@ -600,7 +600,7 @@ class ABJ_404_Solution_ShortCode {
             // <li>
             $content .= wp_kses_post($rSuggestEntryBefore);
 
-            $content .= "<a href=\"" . esc_url($rPermLink) . $commentPartAndQueryPart .
+            $content .= "<a href=\"" . esc_url($rPermLink . $commentPartAndQueryPart) .
                 "\" title=\"" . esc_attr($rPermTitle) . "\">" .
                 esc_attr($rPermTitle) . "</a>";
 
