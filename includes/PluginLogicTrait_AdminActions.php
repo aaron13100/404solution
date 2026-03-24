@@ -803,7 +803,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
 
             // Note: use !== '' instead of !empty() because empty('0') is true in PHP,
             // which would incorrectly discard code=0 (Meta Refresh).
-            $code = isset($_POST['code']) && is_scalar($_POST['code']) && (string)$_POST['code'] !== '' ? (string)$_POST['code'] : (string)ABJ404_STATUS_MANUAL;
+            $code = isset($_POST['code']) && is_scalar($_POST['code']) && (string)$_POST['code'] !== '' ? (string)$_POST['code'] : '301';
 
             $this->dao->setupRedirect($manualURL, (string)$statusType,
                     $tdType2, $tdDest2,
