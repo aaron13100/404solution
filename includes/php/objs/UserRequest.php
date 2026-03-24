@@ -32,7 +32,7 @@ class ABJ_404_Solution_UserRequest {
             if (!self::initialize()) {
                 $abj404logging = ABJ_404_Solution_Logging::getInstance();
                 $abj404logging->errorMessage('Issue initializing ' . __CLASS__, 
-                        new Exception("Issue initializing ' . __CLASS__"));
+                        new Exception('Issue initializing ' . __CLASS__));
             }
         }
         
