@@ -200,8 +200,9 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         	ABJ_404_Solution_Functions::safeUnlink($tempFile);
         }
         
-        // reset the crashed table count
+        // reset the crashed table count (both legacy scalar and per-table map)
         $options['repaired_count'] = 0;
+        $options['repaired_counts'] = array();
         $abj404logic->updateOptions($options);
 
         $duplicateRowsDeleted = $abj404dao->removeDuplicatesCron();
