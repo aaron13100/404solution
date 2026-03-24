@@ -54,6 +54,7 @@ trait SpellCheckerTrait_URLMatching {
 						null, $options);
 				}
 				$permalink['matching_regex'] = $regexURL;
+				$permalink['code'] = isset($row['code']) && is_scalar($row['code']) ? (int)$row['code'] : 0;
 				$originalPermalink = $isDebug ? $permalink : null;
 
 				// If regex has capture groups and destination has replacement markers, resolve them.

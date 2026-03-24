@@ -430,10 +430,12 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $regexAction = isset($regexPermalink['link']) && is_string($regexPermalink['link']) ? $regexPermalink['link'] : '';
             $regexType = isset($regexPermalink['type']) && (is_int($regexPermalink['type']) || is_string($regexPermalink['type'])) ? $regexPermalink['type'] : -1;
             $regexDefaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (int)$options['default_redirect'] : 0;
+            $regexCode = isset($regexPermalink['code']) && is_numeric($regexPermalink['code']) && (int)$regexPermalink['code'] > 0
+                ? (int)$regexPermalink['code'] : $regexDefaultRedirect;
             $this->dao->logRedirectHit($regexMatchingUrl, $regexAction, 'regex match', $requestedURL);
             $sentTo404Page = $this->logic->forceRedirect(
                 $regexLink,
-                $regexDefaultRedirect,
+                $regexCode,
                 $regexType,
                 $requestedURL
             );
