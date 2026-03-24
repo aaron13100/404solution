@@ -229,9 +229,9 @@ trait SpellCheckerTrait_CandidateFiltering {
      */
     private function mapTypeConstantToString($typeConstant) {
         // Define these constants if they are not globally available or use their actual values
-        if (!defined('ABJ404_TYPE_POST')) define('ABJ404_TYPE_POST', '1'); // Example value
-        if (!defined('ABJ404_TYPE_TAG')) define('ABJ404_TYPE_TAG', '2');   // Example value
-        if (!defined('ABJ404_TYPE_CAT')) define('ABJ404_TYPE_CAT', '3');   // Example value
+        if (!defined('ABJ404_TYPE_POST')) define('ABJ404_TYPE_POST', 1);
+        if (!defined('ABJ404_TYPE_CAT')) define('ABJ404_TYPE_CAT', 2);
+        if (!defined('ABJ404_TYPE_TAG')) define('ABJ404_TYPE_TAG', 3);
         // Add other types like ABJ404_TYPE_IMAGE if needed
 
         $typeConstantStr = is_scalar($typeConstant) ? (string)$typeConstant : '';
