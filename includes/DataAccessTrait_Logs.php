@@ -650,8 +650,8 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
 
         $now = time();
 
-        // remove ridiculous non-printable characters
-        $requested_url = preg_replace('/[^\x20-\x7E]/', '', $requested_url); // Remove non-printable ASCII characters
+        // remove non-printable control characters while preserving valid multibyte Unicode
+        $requested_url = preg_replace('/[\x00-\x1F\x7F]/u', '', $requested_url) ?? $requested_url;
 
         // Normalize to relative path before storing (Issue #24)
         $requested_url = $abj404logic->normalizeToRelativePath($requested_url);
