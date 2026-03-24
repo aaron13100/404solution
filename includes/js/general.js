@@ -105,11 +105,18 @@ function submitOptions(e) {
             console.log("saved options: " + message);
 
             // redirect and post a message (overlay will disappear on page reload)
-            var form = jQuery('<form action="' + payload['newURL'] + '" method="post">' +
-            		  '<input type="text" name="display-this-message" value="' + payload['message'] + '" />' +
-            		  '</form>');
-            jQuery('body').append(form);
-            form.submit();
+            // Use DOM methods to avoid XSS from unescaped payload values in HTML attributes.
+            var formEl = document.createElement('form');
+            formEl.method = 'post';
+            formEl.action = payload['newURL'];
+            formEl.style.display = 'none';
+            var inputEl = document.createElement('input');
+            inputEl.type = 'text';
+            inputEl.name = 'display-this-message';
+            inputEl.value = payload['message'];
+            formEl.appendChild(inputEl);
+            document.body.appendChild(formEl);
+            formEl.submit();
         },
         error: function (request, error) {
             clearTimeout(timeoutId);
