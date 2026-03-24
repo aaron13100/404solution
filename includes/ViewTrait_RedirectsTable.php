@@ -1085,8 +1085,8 @@ trait ViewTrait_RedirectsTable {
             $htmlTemp = $this->f->str_replace('{lastUsedClass}', $lastUsedClass, $htmlTemp);
 
 	            $htmlTemp = $this->f->str_replace('{link}', $link, $htmlTemp);
-	            $htmlTemp = $this->f->str_replace('{title}', $title, $htmlTemp);
-	            $htmlTemp = $this->f->str_replace('{dest}', $destForView, $htmlTemp);
+	            $htmlTemp = $this->f->str_replace('{title}', esc_attr($title), $htmlTemp);
+	            $htmlTemp = $this->f->str_replace('{dest}', esc_attr($destForView), $htmlTemp);
 	            $htmlTemp = $this->f->str_replace('{destination-exists}', $destinationExists, $htmlTemp);
 	            $htmlTemp = $this->f->str_replace('{destination-does-not-exist}', $destinationDoesNotExist, $htmlTemp);
                 $htmlTemp = $this->f->str_replace('{destination-warning-text}', $destinationWarningText, $htmlTemp);
