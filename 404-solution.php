@@ -127,12 +127,6 @@ function abj404_autoloader($class) {
 }
 spl_autoload_register('abj404_autoloader');
 
-// Load Composer vendor autoloader for production packages (e.g. Dompdf).
-// Guards with file_exists so the plugin degrades gracefully if vendor is absent.
-$abj404_vendor_autoload = plugin_dir_path(__FILE__) . 'vendor/autoload.php';
-if (file_exists($abj404_vendor_autoload)) {
-    require_once $abj404_vendor_autoload;
-}
 
 add_action('doing_it_wrong_run', function($function_name, $message, $version) {
 	if (strpos($message, '404-solution') !== false &&
