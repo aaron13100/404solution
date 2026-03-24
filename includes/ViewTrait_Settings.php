@@ -607,9 +607,6 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{selectedNotifyInstant}', $selectedNotifyInstant, $html);
         $html = $this->f->str_replace('{selectedNotifyDaily}', $selectedNotifyDaily, $html);
         $html = $this->f->str_replace('{selectedNotifyWeekly}', $selectedNotifyWeekly, $html);
-        $selectedPdfEmailReports = $this->getCheckedAttr($options, 'pdf_email_reports');
-        $html = $this->f->str_replace('{selectedPdfEmailReports}', $selectedPdfEmailReports, $html);
-
         // constants and translations.
         $html = $this->f->doNormalReplacements($html);
 

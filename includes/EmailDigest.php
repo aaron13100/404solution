@@ -380,75 +380,15 @@ class ABJ_404_Solution_EmailDigest {
             'From: ' . $adminEmailStr . ' <' . $adminEmailStr . '>',
         );
 
-        // Optionally attach a PDF summary.
-        $attachments = array();
-        $pdfEnabled = isset($options['pdf_email_reports']) && (bool)$options['pdf_email_reports'];
-        if ($pdfEnabled) {
-            $pdfPath = $this->generateDigestPDF($body, $dateRange);
-            if ($pdfPath !== '') {
-                $attachments[] = $pdfPath;
-            }
-        }
-
         $this->logger->debugMessage('Sending 404 digest email to: ' . $to);
-        wp_mail($to, $subject, $body, $headers, $attachments);
+        wp_mail($to, $subject, $body, $headers);
         $this->logger->debugMessage('404 digest email sent.');
-
-        // Clean up temp PDF file after sending.
-        foreach ($attachments as $att) {
-            if (file_exists($att)) {
-                @unlink($att);
-            }
-        }
 
         if (function_exists('update_option')) {
             update_option('admin_notification_last_sent', time());
         }
 
         return 'Digest email sent to: ' . $to;
-    }
-
-    /**
-     * Convert the digest HTML to a PDF file and return the temp file path.
-     *
-     * Returns an empty string if Dompdf is unavailable or generation fails.
-     *
-     * @param string $html      HTML to convert.
-     * @param string $dateRange Label used in the file name.
-     * @return string Temp file path, or '' on failure.
-     */
-    public function generateDigestPDF(string $html, string $dateRange = ''): string {
-        if (!class_exists('Dompdf\Dompdf')) {
-            return '';
-        }
-
-        try {
-            $options = new \Dompdf\Options();
-            $options->set('isRemoteEnabled', false);
-            $options->set('isHtml5ParserEnabled', true);
-
-            $dompdf = new \Dompdf\Dompdf($options);
-            $dompdf->loadHtml($html);
-            $dompdf->setPaper('A4', 'portrait');
-            $dompdf->render();
-
-            $pdfContent = $dompdf->output();
-            if (!is_string($pdfContent) || $pdfContent === '') {
-                return '';
-            }
-
-            $safeDateRange = preg_replace('/[^a-zA-Z0-9_-]/', '-', $dateRange !== '' ? $dateRange : date('Y-m-d'));
-            $tmpPath = sys_get_temp_dir() . '/abj404-digest-' . $safeDateRange . '-' . wp_generate_password(8, false) . '.pdf';
-
-            if (file_put_contents($tmpPath, $pdfContent) === false) {
-                return '';
-            }
-
-            return $tmpPath;
-        } catch (\Throwable $e) {
-            $this->logger->debugMessage('PDF generation failed: ' . $e->getMessage());
-            return '';
-        }
     }
 
     /**

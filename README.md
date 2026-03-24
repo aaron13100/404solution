@@ -66,7 +66,7 @@ The whole process adds no perceptible latency for visitors on non-404 pages. The
 **Reporting and Diagnostics**
 
 * Stats dashboard with traffic trend charts (404s, redirects, captures over time)
-* Email digest reports with optional PDF attachment
+* Email digest reports
 * Debug logging — see which engine fired and why
 * Google Search Console integration — import crawl errors and push fixes
 * Internal link scanner to find broken links before visitors do
@@ -198,7 +198,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 5. **Settings Page** — Enable/disable individual matching engines, set per-engine confidence thresholds, configure fallback behavior.
 ![5. Settings Page](https://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-5.jpg)
 
-6. **Email Digest** — Weekly email digest with top 404 URLs, hit counts, and optional PDF attachment.
+6. **Email Digest** — Weekly email digest with top 404 URLs and hit counts.
 ![6. Email Digest](https://plugins.svn.wordpress.org/404-solution/trunk/assets/screenshot-6.jpg)
 
 ## Changelog ##
@@ -209,7 +209,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 * Conditional engine groups (engine profiles) — override the matching strategy for specific URL patterns.
 * Google Search Console integration with guided setup wizard — import crawl errors and push fixes.
-* Email digest reports with optional PDF attachment — weekly summary of top 404s and redirect activity.
+* Email digest reports — weekly summary of top 404s and redirect activity.
 * REST API for redirect management.
 * WP-CLI overhaul — list, create, delete, import, export, and test subcommands.
 * Cross-plugin importer — import redirects from Rank Math, Yoast SEO, AIOSEO, and Safe Redirect Manager with a preview step.

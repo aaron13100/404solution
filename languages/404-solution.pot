@@ -1682,12 +1682,8 @@ msgid "Choose how often to receive email notifications about captured 404s."
 msgstr ""
 
 #: includes/html/adminOptionsGeneral.html
-msgid "Attach PDF report to digest email"
-msgstr ""
 
 #: includes/html/adminOptionsGeneral.html
-msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
-msgstr ""
 
 #: includes/html/toolsExportForm.html
 msgid "Export format:"
