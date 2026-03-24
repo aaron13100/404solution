@@ -552,9 +552,9 @@ function bindSearchFieldListeners() {
     if (filters === undefined || filters === null || filters.length === 0) {
         return;
     }
-    
+
     filters.prop('disabled', false);
-    
+
     var field = jQuery(filters[0]);
     var fieldLength = field.val().length;
     // only set the focus if the input box is visible. otherwise screen scrolls for no reason.
@@ -563,8 +563,22 @@ function bindSearchFieldListeners() {
     }
     // put the cursor at the end of the field
     filters[0].setSelectionRange(fieldLength, fieldLength);
-    
-    filters.on("search", function(event) {
+
+    // Initialize previous-value so the search event handler won't fire
+    // spuriously when the field is programmatically cleared from an
+    // already-empty state (e.g. Playwright's fill() clears before typing).
+    filters.each(function() {
+        var $f = jQuery(this);
+        if (typeof $f.attr('data-previous-value') === 'undefined') {
+            $f.attr('data-previous-value', $f.val() || '');
+        }
+    });
+
+    // Remove any previously bound handlers to prevent accumulation
+    // across repeated AJAX table refreshes.
+    filters.off('search.abj404 keypress.abj404 click.abj404');
+
+    filters.on("search.abj404", function(event) {
         var field = jQuery(event.target || event.srcElement);
         var previousValue = field.attr("data-previous-value");
         var fieldLength = field.val() == null ? 0 : field.val().length;
@@ -577,7 +591,7 @@ function bindSearchFieldListeners() {
     
     // update the page when the user presses enter.
     // store the typed value to restore once the page is reloaded.
-    filters.keypress(function(event) {
+    filters.on("keypress.abj404", function(event) {
         var field = jQuery(event.target || event.srcElement);
         var keycode = (event.which ? event.which : event.keyCode);
         if (keycode === 13) {
@@ -596,7 +610,7 @@ function bindSearchFieldListeners() {
     });
     
     // select all text when clicked
-    filters.click(function() {
+    filters.on("click.abj404", function() {
         jQuery(this).select();
     });
 }
