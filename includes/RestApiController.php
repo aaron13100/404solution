@@ -243,7 +243,7 @@ class ABJ_404_Solution_RestApiController {
         $type     = $resolved['type'];
         $dest     = $resolved['dest'];
 
-        $insertedId = $this->dao->setupRedirect($from, $status, $type, $dest, (string)$code, 0, 'rest-api');
+        $insertedId = $this->dao->setupRedirect($from, $status, (string)$type, $dest, (string)$code, 0, 'rest-api');
 
         if (!$insertedId) {
             return new \WP_Error('create_failed', __('Failed to create redirect.', '404-solution'), array('status' => 500));
@@ -292,7 +292,7 @@ class ABJ_404_Solution_RestApiController {
         $type       = $resolved['type'];
         $dest       = $resolved['dest'];
 
-        $error = $this->dao->updateRedirect($type, $dest, $from, $id, (string)$code, $statusType);
+        $error = $this->dao->updateRedirect((int)$type, $dest, $from, $id, (string)$code, $statusType);
 
         if ($error !== '') {
             return new \WP_Error('update_failed', $error, array('status' => 500));
@@ -412,7 +412,7 @@ class ABJ_404_Solution_RestApiController {
         $resolved = $this->resolveDestinationType($to);
         $type     = $resolved['type'];
         $dest     = $resolved['dest'];
-        $error    = $this->dao->updateRedirect($type, $dest, $from, $id, (string)$code, (string)ABJ404_STATUS_MANUAL);
+        $error    = $this->dao->updateRedirect((int)$type, $dest, $from, $id, (string)$code, (string)ABJ404_STATUS_MANUAL);
 
         if ($error !== '') {
             return new \WP_Error('update_failed', $error, array('status' => 500));
@@ -617,32 +617,32 @@ class ABJ_404_Solution_RestApiController {
      * preserved and used as-is by the redirect pipeline.
      *
      * @param string $to The destination URL provided by the API caller.
-     * @return array{type: string, dest: string}
+     * @return array{type: int, dest: string}
      */
     private function resolveDestinationType($to) {
         // External URLs (http/https).
         if ($this->looksLikeExternalUrl($to)) {
-            return array('type' => (string)ABJ404_TYPE_EXTERNAL, 'dest' => $to);
+            return array('type' => (int)ABJ404_TYPE_EXTERNAL, 'dest' => $to);
         }
 
         // Home page: root path or empty string.
         $trimmed = trim($to, '/ ');
         if ($trimmed === '') {
-            return array('type' => (string)ABJ404_TYPE_HOME, 'dest' => (string)ABJ404_TYPE_HOME);
+            return array('type' => (int)ABJ404_TYPE_HOME, 'dest' => (string)ABJ404_TYPE_HOME);
         }
 
         // Try to resolve the internal path to a WordPress post/page.
         if (function_exists('url_to_postid')) {
             $postId = url_to_postid(home_url($to));
             if ($postId > 0) {
-                return array('type' => (string)ABJ404_TYPE_POST, 'dest' => (string)$postId);
+                return array('type' => (int)ABJ404_TYPE_POST, 'dest' => (string)$postId);
             }
         }
 
         // Unresolvable internal path — use EXTERNAL type so the URL is stored
         // and used as-is by the redirect pipeline (FrontendRequestPipeline uses
         // $redirectFinalDest directly for EXTERNAL type).
-        return array('type' => (string)ABJ404_TYPE_EXTERNAL, 'dest' => $to);
+        return array('type' => (int)ABJ404_TYPE_EXTERNAL, 'dest' => $to);
     }
 
     /**

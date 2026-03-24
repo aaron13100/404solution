@@ -167,6 +167,14 @@ trait ABJ_404_Solution_PluginLogicTrait_UrlNormalization {
 
         $candidates = array($decoded);
 
+        // Case-insensitive fallback: URLs are case-insensitive in practice,
+        // but the DB uses BINARY comparison for performance. Try the lowercase
+        // variant so /E2E-Case matches a redirect stored as /e2e-case.
+        $lower = function_exists('mb_strtolower') ? mb_strtolower($decoded, 'UTF-8') : strtolower($decoded);
+        if ($lower !== $decoded) {
+            $candidates[] = $lower;
+        }
+
         // Legacy fallback for stored percent-encoded slugs.
         $encoded = $this->normalizeToRelativePath($this->f->encodeUrlForLegacyMatch($decoded));
         if ($encoded !== $decoded) {
