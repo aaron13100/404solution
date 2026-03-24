@@ -10,3 +10,4 @@ FROM {wp_abj404_logsv2}
 
 GROUP BY requested_url
 order by requested_url
+LIMIT 500
