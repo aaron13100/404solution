@@ -1622,7 +1622,7 @@ msgid "Invalid CSV format. Could not map source/destination columns."
 msgstr ""
 
 #: includes/ImportExportService.php
-msgid "Invalid CSV format. %d columns found but 2, 5, or 6 expected."
+msgid "Invalid CSV format. %d columns found but 2, 5, 6, or 7 expected."
 msgstr ""
 
 #: includes/ShortCode.php

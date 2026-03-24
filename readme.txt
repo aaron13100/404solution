@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check, smart redirect, 40
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.3.7
+Stable tag: 4.0.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -200,6 +200,37 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Email Digest** — Weekly email digest with top 404 URLs, hit counts, and optional PDF attachment.
 
 == Changelog ==
+
+= Version 4.0.0 (Mar 24, 2026) =
+
+**New Features**
+
+* Conditional engine groups (engine profiles) — override the matching strategy for specific URL patterns.
+* Google Search Console integration with guided setup wizard — import crawl errors and push fixes.
+* Email digest reports with optional PDF attachment — weekly summary of top 404s and redirect activity.
+* REST API for redirect management.
+* WP-CLI overhaul — list, create, delete, import, export, and test subcommands.
+* Cross-plugin importer — import redirects from Rank Math, Yoast SEO, AIOSEO, and Safe Redirect Manager with a preview step.
+* HTTP 410 Gone, 451 Unavailable For Legal Reasons, 307/308, and Meta Refresh redirect types.
+* Match confidence column, filter, and stats card — see how confident the engine was for each redirect.
+* Auto-redirect when published posts are trashed or permanently deleted.
+* Trend analytics dashboard — traffic trend charts plotting 404s, redirects, and captures over time.
+* Server config export for nginx, Cloudflare Worker, Netlify, and Vercel.
+* Stale cache detection and dead destination suspension.
+* Send Feedback link on the plugins page.
+
+**Bug Fixes**
+
+* Fixed mass redirect deletion deleting ALL redirects when threshold was empty.
+* Fixed category/tag type constants being swapped — category redirects pointed to tags and vice versa.
+* Fixed CSV export/import round-trip losing redirect codes (always stored as 301).
+* Fixed Redirection-format export hardcoding 301, losing actual redirect codes.
+* Fixed regex redirects ignoring per-redirect code and always using the global default.
+* Fixed AMP stripping corrupting multibyte URLs.
+* Fixed spell checker byte/character mismatch on multibyte strings.
+* Fixed log hits stripping valid multibyte Unicode from URLs.
+* Fixed spelling cache returning wrong data type, breaking suggestions.
+* Fixed database error storms flooding site admin emails.
 
 = Version 3.3.7 (Mar 20, 2026) =
 * Improvement: The plugin now automatically repairs corrupted plugin tables (MySQL errno 1034 "Incorrect key file") and retries the failed operation, so transient disk-level corruption no longer causes user-visible errors.
