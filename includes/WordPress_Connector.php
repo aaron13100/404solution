@@ -15,6 +15,11 @@ class ABJ_404_Solution_WordPress_Connector {
     private const REVIEW_ASK_LATER_DELAY_DAYS = 7;
     private const REVIEW_CLOSE_X_SNOOZE_DAYS = 14;
 
+    /** Set to true by handleReviewResponseRedirects() when feedback POST is processed,
+     * so maybeShowReviewRequest() can display the thank-you notice instead of the form.
+     * @var bool */
+    private static $feedbackSubmitted = false;
+
 	/** @var ABJ_404_Solution_PluginLogic */
 	private $logic;
 
@@ -152,6 +157,8 @@ class ABJ_404_Solution_WordPress_Connector {
             'ABJ_404_Solution_WordPress_Connector::addPluginRowMeta', 10, 2);
         add_action('admin_notices',
             'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
+        add_action('admin_init',
+            'ABJ_404_Solution_WordPress_Connector::handleReviewResponseRedirects');
         add_action('admin_menu',
             'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
         add_action('admin_enqueue_scripts',
@@ -723,49 +730,19 @@ class ABJ_404_Solution_WordPress_Connector {
         }
     }
 
-    /** Display a review request notification after a sustained period of plugin use.
-     * Uses a qualification question to ensure only satisfied users are directed to leave reviews.
-     * Unhappy users are directed to provide feedback instead.
+    /** Handle review GET redirects and feedback POST submission on admin_init (before output).
      *
-     * Guarantees:
-     * - Never shows again after user clicks "Never ask again"
-     * - Never shows again after user clicks review link button
-     * - Never shows again after user submits feedback
-     * - Shows again in 7 days after "Ask again later"
-     * - Shows again in 14 days after close "X"
+     * Called via the admin_init hook so wp_safe_redirect() + exit can be used safely.
+     * For feedback POST (no redirect), sets the static $feedbackSubmitted flag so
+     * maybeShowReviewRequest() can render the thank-you notice in the admin_notices hook.
+     *
+     * @return void
      */
-    /** @return void */
-    static function maybeShowReviewRequest() {
-        // Only show on 404 Solution plugin pages
+    static function handleReviewResponseRedirects() {
+        if (!is_admin()) {
+            return;
+        }
         if (!isset($_GET['page']) || $_GET['page'] !== ABJ404_PP) {
-            return;
-        }
-
-        // Check if user permanently dismissed this
-        $dismissed = get_user_meta(get_current_user_id(), 'abj404_review_dismissed', true);
-        if ($dismissed === 'permanent') {
-            return;
-        }
-
-        // Check if user asked to be reminded later
-        $remind_later = get_user_meta(get_current_user_id(), 'abj404_review_remind_later', true);
-        if ($remind_later && time() < $remind_later) {
-            // Not time yet to remind
-            return;
-        }
-
-        // Get plugin installation/activation time
-        $installed_time = get_option('abj404_installed_time');
-        if (!$installed_time) {
-            // First time - record installation time
-            $installed_time = time();
-            update_option('abj404_installed_time', $installed_time);
-            return;
-        }
-
-        // Show review request after enough real usage time has passed.
-        $days_installed = (time() - $installed_time) / 86400;
-        if ($days_installed < self::REVIEW_INITIAL_DELAY_DAYS) {
             return;
         }
 
@@ -830,7 +807,7 @@ class ABJ_404_Solution_WordPress_Connector {
             }
         }
 
-        // Handle feedback submission - PERMANENT dismissal
+        // Handle feedback POST submission - PERMANENT dismissal
         $rawFeedbackNonce = isset($_POST['abj404_feedback_nonce']) ? $_POST['abj404_feedback_nonce'] : '';
         $feedbackNonce = sanitize_text_field(self::normalizeRequestScalar($rawFeedbackNonce));
         if (isset($_POST['abj404_submit_feedback']) &&
@@ -870,9 +847,63 @@ class ABJ_404_Solution_WordPress_Connector {
             delete_user_meta(get_current_user_id(), 'abj404_review_step');
             delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
 
-            // Show thank you message
+            // Signal to maybeShowReviewRequest() to render the thank-you notice
+            self::$feedbackSubmitted = true;
+        }
+    }
+
+    /** Display a review request notification after a sustained period of plugin use.
+     * Uses a qualification question to ensure only satisfied users are directed to leave reviews.
+     * Unhappy users are directed to provide feedback instead.
+     *
+     * Guarantees:
+     * - Never shows again after user clicks "Never ask again"
+     * - Never shows again after user clicks review link button
+     * - Never shows again after user submits feedback
+     * - Shows again in 7 days after "Ask again later"
+     * - Shows again in 14 days after close "X"
+     */
+    /** @return void */
+    static function maybeShowReviewRequest() {
+        // Only show on 404 Solution plugin pages
+        if (!isset($_GET['page']) || $_GET['page'] !== ABJ404_PP) {
+            return;
+        }
+
+        // If feedback was submitted this request (processed early by handleReviewResponseRedirects),
+        // show the thank-you notice immediately — before any other checks, since those checks
+        // would bail because handleReviewResponseRedirects already set dismissed=permanent.
+        if (self::$feedbackSubmitted) {
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/feedbackSuccessNotice.html");
             echo $html;
+            return;
+        }
+
+        // Check if user permanently dismissed this
+        $dismissed = get_user_meta(get_current_user_id(), 'abj404_review_dismissed', true);
+        if ($dismissed === 'permanent') {
+            return;
+        }
+
+        // Check if user asked to be reminded later
+        $remind_later = get_user_meta(get_current_user_id(), 'abj404_review_remind_later', true);
+        if ($remind_later && time() < $remind_later) {
+            // Not time yet to remind
+            return;
+        }
+
+        // Get plugin installation/activation time
+        $installed_time = get_option('abj404_installed_time');
+        if (!$installed_time) {
+            // First time - record installation time
+            $installed_time = time();
+            update_option('abj404_installed_time', $installed_time);
+            return;
+        }
+
+        // Show review request after enough real usage time has passed.
+        $days_installed = (time() - $installed_time) / 86400;
+        if ($days_installed < self::REVIEW_INITIAL_DELAY_DAYS) {
             return;
         }
 
