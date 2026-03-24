@@ -76,7 +76,10 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $deletedCount = 0;
 
         // Calculate time threshold
-        $deletionDays = $options[$optionKey];
+        $deletionDays = intval(is_scalar($options[$optionKey] ?? 0) ? $options[$optionKey] : 0);
+        if ($deletionDays <= 0) {
+            return 0;
+        }
         $deletionTime = $deletionDays * 86400;
         $then = $now - $deletionTime;
 
