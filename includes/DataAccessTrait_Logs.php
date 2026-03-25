@@ -643,7 +643,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
      * @param string $matchReason
      * @param string|null $requestedURLDetail the exact URL that was requested, for cases when a regex URL was matched.
      */
-    function logRedirectHit(string $requested_url, string $action, string $matchReason, ?string $requestedURLDetail = null): void {
+    function logRedirectHit(string $requested_url, string $action, string $matchReason, ?string $requestedURLDetail = null, ?array $pipelineTrace = null): void {
         global $wpdb;
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $logTableName = $this->doTableNameReplacements("{wp_abj404_logsv2}");
@@ -820,6 +820,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             'username' => $usernameLookupID,
             'min_log_id' => $minLogID,
             'engine' => substr($matchReason, 0, 64),
+            'pipeline_trace' => $this->serializePipelineTrace($pipelineTrace),
         ]);
     }
 
@@ -1281,12 +1282,64 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             ? null : absint($minLogIdVal);
         $sanitized['engine'] = $normalizeString($entry['engine'], 64);
 
+        // pipeline_trace: pass through as-is (base64-encoded gzip string or null)
+        if (array_key_exists('pipeline_trace', $entry)) {
+            $traceVal = $entry['pipeline_trace'];
+            $sanitized['pipeline_trace'] = ($traceVal === null || is_string($traceVal)) ? $traceVal : null;
+        } else {
+            $sanitized['pipeline_trace'] = null;
+        }
+
         // Drop rows without required URL data
         if ($sanitized['requested_url'] === '' || $sanitized['dest_url'] === '') {
             return null;
         }
 
         return $sanitized;
+    }
+
+    /**
+     * Serialize a pipeline trace array for storage as a BLOB.
+     * Returns base64(gzip(json)) so the value is safe ASCII for SQL.
+     *
+     * @param array<int, array{step: string, outcome: string, detail: string}>|null $trace
+     * @return string|null
+     */
+    private function serializePipelineTrace(?array $trace): ?string {
+        if ($trace === null || empty($trace)) {
+            return null;
+        }
+        $json = json_encode($trace);
+        if ($json === false) {
+            return null;
+        }
+        $compressed = gzcompress($json, 6);
+        if ($compressed === false) {
+            return null;
+        }
+        return base64_encode($compressed);
+    }
+
+    /**
+     * Decompress and decode a stored pipeline trace blob.
+     *
+     * @param string|null $raw Base64-encoded gzip-compressed JSON string
+     * @return array<int, array{step: string, outcome: string, detail: string}>|null
+     */
+    public static function decompressPipelineTrace(?string $raw): ?array {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+        $decoded = base64_decode($raw, true);
+        if ($decoded === false) {
+            return null;
+        }
+        $json = @gzuncompress($decoded);
+        if ($json === false) {
+            return null;
+        }
+        $result = json_decode($json, true);
+        return is_array($result) ? $result : null;
     }
 
     /** Insert a value into the lookup table and return the ID of the value.

@@ -23,11 +23,23 @@ class ABJ_404_Solution_RedirectConditionEvaluator {
     /** @var ABJ_404_Solution_DataAccess */
     private $dao;
 
+    /** @var array<int, array{type: string, result: bool}> */
+    private $lastTrace = [];
+
     /**
      * @param ABJ_404_Solution_DataAccess $dao
      */
     public function __construct($dao) {
         $this->dao = $dao;
+    }
+
+    /**
+     * Return details of the most recent shouldApplyRedirect() call.
+     *
+     * @return array<int, array{type: string, result: bool}>
+     */
+    public function getLastEvaluationTrace(): array {
+        return $this->lastTrace;
     }
 
     /**
@@ -38,6 +50,7 @@ class ABJ_404_Solution_RedirectConditionEvaluator {
      */
     public function shouldApplyRedirect(int $redirectId): bool {
         $conditions = $this->getConditionsForRedirect($redirectId);
+        $this->lastTrace = [];
 
         // No conditions = always redirect.
         if (empty($conditions)) {
@@ -48,6 +61,10 @@ class ABJ_404_Solution_RedirectConditionEvaluator {
 
         foreach ($conditions as $condition) {
             $outcome = $this->evaluateCondition($condition);
+
+            $condType = isset($condition['condition_type']) && is_string($condition['condition_type'])
+                ? $condition['condition_type'] : 'unknown';
+            $this->lastTrace[] = ['type' => $condType, 'result' => $outcome];
 
             if ($result === null) {
                 // First condition initialises the running result.

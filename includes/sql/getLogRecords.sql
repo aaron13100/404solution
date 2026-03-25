@@ -1,12 +1,14 @@
 
-select {wp_abj404_logsv2}.timestamp, 
-       {wp_abj404_logsv2}.user_ip as remote_host, 
+select {wp_abj404_logsv2}.id as log_id,
+       {wp_abj404_logsv2}.timestamp,
+       {wp_abj404_logsv2}.user_ip as remote_host,
        {wp_abj404_logsv2}.referrer,
        {wp_abj404_logsv2}.dest_url as action,
        {wp_abj404_logsv2}.requested_url as url,
        COALESCE({wp_abj404_logsv2}.requested_url_detail, '') AS url_detail,
        usernameLookup.lkup_value as username,
-       COALESCE({wp_abj404_logsv2}.engine, '') AS engine
+       COALESCE({wp_abj404_logsv2}.engine, '') AS engine,
+       {wp_abj404_logsv2}.pipeline_trace as pipeline_trace
 
 from {wp_abj404_logsv2}
 

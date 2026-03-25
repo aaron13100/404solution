@@ -118,6 +118,9 @@ trait ViewTrait_Logs {
         $html = '<table class="abj404-table abj404-logs-table">';
         $html .= '<thead><tr>';
 
+        // Detail toggle column (not sortable)
+        $html .= '<th scope="col" class="abj404-trace-th"></th>';
+
         // Generate sortable column headers
         foreach ($columns as $key => $col) {
             $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_logs";
@@ -142,8 +145,22 @@ trait ViewTrait_Logs {
         $this->rememberTableDataSignature($sub, $typedLogRows);
         $logRecordsDisplayed = 0;
 
-	        foreach ($typedLogRows as $row) {
-	            $html .= '<tr>';
+        foreach ($typedLogRows as $row) {
+            $logId = is_scalar($row['log_id'] ?? '') ? (string)($row['log_id'] ?? '') : '';
+            $rawTrace = isset($row['pipeline_trace']) && is_string($row['pipeline_trace']) ? $row['pipeline_trace'] : null;
+            $traceSteps = ABJ_404_Solution_DataAccess::decompressPipelineTrace($rawTrace);
+            $hasTrace = is_array($traceSteps) && !empty($traceSteps);
+
+            $html .= '<tr>';
+
+            // Detail toggle button
+            $html .= '<td class="abj404-trace-toggle-cell">';
+            if ($hasTrace) {
+                $html .= '<button class="abj404-trace-toggle" data-row-id="' . esc_attr($logId) . '" title="' . esc_attr__('Show pipeline trace', '404-solution') . '">&#x25B6;</button>';
+            } else {
+                $html .= '<button class="abj404-trace-toggle" disabled title="' . esc_attr__('No trace available', '404-solution') . '">&#x25B6;</button>';
+            }
+            $html .= '</td>';
 
 	            // URL column
 	            $url = is_string($row['url'] ?? '') ? (string)($row['url'] ?? '') : '';
@@ -194,16 +211,53 @@ trait ViewTrait_Logs {
 	            $html .= '</td>';
 
             $html .= '</tr>';
+
+            // Hidden detail row with pipeline trace
+            if ($hasTrace && $logId !== '') {
+                $html .= '<tr id="abj404-trace-' . esc_attr($logId) . '" class="abj404-trace-detail" style="display:none">';
+                $html .= '<td colspan="6" class="abj404-trace-detail-cell">';
+                $html .= '<ol class="abj404-trace-steps">';
+                foreach ($traceSteps as $step) {
+                    $stepName = is_string($step['step'] ?? '') ? esc_html((string)($step['step'] ?? '')) : '';
+                    $outcome  = is_string($step['outcome'] ?? '') ? esc_html((string)($step['outcome'] ?? '')) : '';
+                    $detail   = is_string($step['detail'] ?? '') && (string)($step['detail'] ?? '') !== ''
+                        ? ' <em class="abj404-trace-detail-text">(' . esc_html((string)$step['detail']) . ')</em>' : '';
+                    $html .= '<li><strong>' . $stepName . '</strong> &rarr; ' . $outcome . $detail . '</li>';
+                }
+                $html .= '</ol>';
+                $html .= '</td>';
+                $html .= '</tr>';
+            }
+
             $logRecordsDisplayed++;
         }
 
         $this->logger->debugMessage($logRecordsDisplayed . " log records displayed on the page.");
 
         if ($logRecordsDisplayed == 0) {
-            $html .= '<tr><td colspan="5" class="abj404-empty-message">' . __('No Results To Display', '404-solution') . '</td></tr>';
+            $html .= '<tr><td colspan="6" class="abj404-empty-message">' . __('No Results To Display', '404-solution') . '</td></tr>';
         }
 
         $html .= '</tbody></table>';
+
+        // Inline JS for trace row expand/collapse (output once per page)
+        $html .= '<script>
+(function() {
+    if (window._abj404TraceToggleInit) { return; }
+    window._abj404TraceToggleInit = true;
+    document.addEventListener("click", function(e) {
+        var btn = e.target;
+        if (!btn || !btn.classList || !btn.classList.contains("abj404-trace-toggle")) { return; }
+        var rowId = btn.getAttribute("data-row-id");
+        if (!rowId) { return; }
+        var detail = document.getElementById("abj404-trace-" + rowId);
+        if (!detail) { return; }
+        var visible = detail.style.display !== "none";
+        detail.style.display = visible ? "none" : "";
+        btn.textContent = visible ? "\u25B6" : "\u25BC";
+    });
+}());
+</script>';
 
         return $html;
     }
