@@ -69,7 +69,14 @@ trait ViewTrait_UI {
         } catch (Exception $e) {
             $encodedEx = json_encode($e);
             $instance->logger->errorMessage("Caught exception: " . stripcslashes(wp_kses_post(is_string($encodedEx) ? $encodedEx : '')));
-            throw $e;
+            echo '<div class="wrap">';
+            echo '<div class="notice notice-error">';
+            echo '<p><strong>404 Solution:</strong> An error occurred while rendering this page.</p>';
+            echo '<details><summary>Show error details</summary>';
+            echo '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">' . esc_html($e->getMessage() . "\n" . $e->getTraceAsString()) . '</pre>';
+            echo '</details>';
+            echo '</div>';
+            echo '</div>';
         }
     }
     
