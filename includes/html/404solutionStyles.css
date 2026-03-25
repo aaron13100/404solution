@@ -2862,7 +2862,40 @@ html[data-theme="obsidian"] .abj404-filter-bar {
    ============================================ */
 
 .abj404-logs-table {
-    table-layout: auto;
+    table-layout: fixed;
+}
+
+/* Fixed column widths for the logs table (6 columns: toggle, URL, IP, Referrer, Action, Date) */
+.abj404-logs-table thead th:nth-child(1) { width: 32px;  } /* Trace toggle */
+.abj404-logs-table thead th:nth-child(2) { width: 28%;  } /* URL */
+.abj404-logs-table thead th:nth-child(3) { width: 10%;  } /* IP Address */
+.abj404-logs-table thead th:nth-child(4) { width: 22%;  } /* Referrer */
+.abj404-logs-table thead th:nth-child(5) { width: 22%;  } /* Action */
+.abj404-logs-table thead th:nth-child(6) { width: auto;  } /* Date (takes remaining) */
+
+/* Override the generic first-child 40px checkbox width for the narrow trace toggle */
+.abj404-logs-table th:first-child,
+.abj404-logs-table td:first-child {
+    width: 32px;
+    min-width: 32px;
+    max-width: 32px;
+}
+
+/* Prevent URL/Referrer/Action text from overflowing into adjacent columns */
+.abj404-logs-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.abj404-logs-table .abj404-url-cell {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.abj404-logs-table .abj404-url-cell:hover {
+    white-space: normal;
+    word-break: break-all;
 }
 
 /* Logs table URL cells use same word-break as regular tables */
