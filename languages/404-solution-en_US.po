@@ -3387,3 +3387,11 @@ msgstr "Could not fetch preview. Please try again."
 
 msgid "Invalid source plugin."
 msgstr "Invalid source plugin."
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "Show pipeline trace"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "No trace available"

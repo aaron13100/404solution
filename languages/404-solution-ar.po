@@ -3411,3 +3411,11 @@ msgstr "تعذر جلب المعاينة. يرجى المحاولة مرة أخ�
 
 msgid "Invalid source plugin."
 msgstr "مكوِّن المصدر غير صالح."
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "عرض تتبع خط الأنابيب"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "لا يوجد تتبع متاح"

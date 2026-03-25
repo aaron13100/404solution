@@ -3392,3 +3392,11 @@ msgstr "No se pudo obtener la vista previa. Por favor, inténtalo de nuevo."
 
 msgid "Invalid source plugin."
 msgstr "Plugin de origen no válido."
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "Mostrar traza de la canalización"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "No hay traza disponible"

@@ -3395,3 +3395,11 @@ msgstr "Não foi possível obter a visualização. Por favor, tente novamente."
 
 msgid "Invalid source plugin."
 msgstr "Plugin de origem inválido."
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "Mostrar rastreamento do pipeline"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "Nenhum rastreamento disponível"

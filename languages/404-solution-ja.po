@@ -3399,3 +3399,11 @@ msgstr "プレビューを取得できませんでした。もう一度お試し
 
 msgid "Invalid source plugin."
 msgstr "無効なソースプラグイン。"
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "パイプライントレースを表示"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "トレースがありません"

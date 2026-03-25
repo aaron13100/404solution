@@ -642,6 +642,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
      * @param string $action
      * @param string $matchReason
      * @param string|null $requestedURLDetail the exact URL that was requested, for cases when a regex URL was matched.
+     * @param list<array{step: string, outcome: string, detail: string}>|null $pipelineTrace
      */
     function logRedirectHit(string $requested_url, string $action, string $matchReason, ?string $requestedURLDetail = null, ?array $pipelineTrace = null): void {
         global $wpdb;

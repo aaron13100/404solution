@@ -3400,3 +3400,11 @@ msgstr "Не удалось получить предпросмотр. Пожа�
 
 msgid "Invalid source plugin."
 msgstr "Недопустимый плагин-источник."
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "Показать трассировку конвейера"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "Трассировка недоступна"

@@ -3389,3 +3389,11 @@ msgstr "Impossible de récupérer l'aperçu. Veuillez réessayer."
 
 msgid "Invalid source plugin."
 msgstr "Extension source invalide."
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "Afficher la trace du pipeline"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "Aucune trace disponible"

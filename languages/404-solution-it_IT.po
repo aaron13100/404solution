@@ -3392,3 +3392,11 @@ msgstr "Impossibile recuperare l'anteprima. Si prega di riprovare."
 
 msgid "Invalid source plugin."
 msgstr "Plugin di origine non valido."
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "Mostra traccia della pipeline"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "Nessuna traccia disponibile"

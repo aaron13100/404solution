@@ -3390,3 +3390,11 @@ msgstr "Tidak dapat mengambil pratinjau. Silakan coba lagi."
 
 msgid "Invalid source plugin."
 msgstr "Plugin sumber tidak valid."
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "Tampilkan jejak pipeline"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "Tidak ada jejak tersedia"

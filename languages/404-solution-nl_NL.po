@@ -3395,3 +3395,11 @@ msgstr "Kan voorbeeld niet ophalen. Probeer het opnieuw."
 
 msgid "Invalid source plugin."
 msgstr "Ongeldige bronplugin."
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "Pipeline-tracering tonen"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "Geen tracering beschikbaar"

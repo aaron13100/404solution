@@ -3395,3 +3395,11 @@ msgstr "Det gick inte att hämta förhandsgranskningen. Försök igen."
 
 msgid "Invalid source plugin."
 msgstr "Ogiltig källplugin."
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "Visa pipeline-spårning"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "Ingen spårning tillgänglig"

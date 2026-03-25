@@ -3393,3 +3393,11 @@ msgstr "Vorschau konnte nicht abgerufen werden. Bitte erneut versuchen."
 
 msgid "Invalid source plugin."
 msgstr "Ungültiges Quell-Plugin."
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "Pipeline-Ablaufverfolgung anzeigen"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "Keine Ablaufverfolgung verfügbar"

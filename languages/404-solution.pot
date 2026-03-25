@@ -2419,3 +2419,11 @@ msgstr ""
 
 msgid "Invalid source plugin."
 msgstr ""
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr ""

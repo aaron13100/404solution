@@ -3403,3 +3403,11 @@ msgstr "无法获取预览。请重试。"
 
 msgid "Invalid source plugin."
 msgstr "无效的源插件。"
+
+#: includes/ViewTrait_Logs.php:159
+msgid "Show pipeline trace"
+msgstr "显示管道跟踪"
+
+#: includes/ViewTrait_Logs.php:161
+msgid "No trace available"
+msgstr "无可用跟踪"

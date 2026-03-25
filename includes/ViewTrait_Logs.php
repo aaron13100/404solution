@@ -218,10 +218,10 @@ trait ViewTrait_Logs {
                 $html .= '<td colspan="6" class="abj404-trace-detail-cell">';
                 $html .= '<ol class="abj404-trace-steps">';
                 foreach ($traceSteps as $step) {
-                    $stepName = is_string($step['step'] ?? '') ? esc_html((string)($step['step'] ?? '')) : '';
-                    $outcome  = is_string($step['outcome'] ?? '') ? esc_html((string)($step['outcome'] ?? '')) : '';
-                    $detail   = is_string($step['detail'] ?? '') && (string)($step['detail'] ?? '') !== ''
-                        ? ' <em class="abj404-trace-detail-text">(' . esc_html((string)$step['detail']) . ')</em>' : '';
+                    $stepName = esc_html($step['step']);
+                    $outcome  = esc_html($step['outcome']);
+                    $detail   = $step['detail'] !== ''
+                        ? ' <em class="abj404-trace-detail-text">(' . esc_html($step['detail']) . ')</em>' : '';
                     $html .= '<li><strong>' . $stepName . '</strong> &rarr; ' . $outcome . $detail . '</li>';
                 }
                 $html .= '</ol>';
