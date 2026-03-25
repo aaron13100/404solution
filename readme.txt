@@ -212,10 +212,12 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Fixed full-table scan in log ID/URL query by adding LIMIT 500.
 * Fixed PHP 8.4 deprecation warning in CSV export (`fputcsv()` missing `$escape` parameter).
 * Removed dead PDF email attachment feature.
+* Fixed Logs table layout — long URLs no longer overflow into adjacent columns, and the Date column is no longer truncated.
+* Fixed redirect not firing on WordPress 6.9+ when `class-wp-font-face.php` sends output before headers.
 
 **Improvements**
 
-* Added pipeline trace for per-request detail logging in the Logs tab.
+* Added pipeline trace for per-request detail logging in the Logs tab — click the arrow on any log row to see every step of the redirect decision process.
 
 = Version 4.0.0 (Mar 24, 2026) =
 

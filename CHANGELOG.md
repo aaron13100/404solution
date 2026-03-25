@@ -1,5 +1,23 @@
 # Changelog #
 
+## Version 4.0.1 (Mar 25, 2026) ##
+
+**Bug Fixes**
+
+* Fixed perpetual "still differences" schema errors on the engine_profiles table caused by MySQL quoting numeric defaults differently than the goal DDL (e.g. `default '1'` vs `default 1`).
+* Fixed missing-table auto-repair flooding admins with error emails even when repair succeeded. Now only sends an email if repair actually fails.
+* Fixed blank screen after dismissing the review notice.
+* Fixed GSC integration sending unbounded API requests — added URL cap, corrected chunk size, and added a circuit-breaker.
+* Fixed full-table scan in log ID/URL query by adding LIMIT 500.
+* Fixed PHP 8.4 deprecation warning in CSV export (`fputcsv()` missing `$escape` parameter).
+* Removed dead PDF email attachment feature.
+* Fixed Logs table layout — long URLs no longer overflow into adjacent columns, and the Date column is no longer truncated.
+* Fixed redirect not firing on WordPress 6.9+ when `class-wp-font-face.php` sends output before headers.
+
+**Improvements**
+
+* Added pipeline trace for per-request detail logging in the Logs tab — click the arrow on any log row to see every step of the redirect decision process.
+
 ## Version 4.0.0 (Mar 24, 2026) ##
 
 **New Features**
