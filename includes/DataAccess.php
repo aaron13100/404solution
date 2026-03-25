@@ -1292,10 +1292,12 @@ class ABJ_404_Solution_DataAccess {
 
         // During upgrades and nightly maintenance, createDatabaseTables() runs
         // proactively before any queries.  If we reach this point, a plugin table
-        // went missing during normal usage — always worth an ERROR so it appears
-        // in the debug file and triggers email notification.
-        $this->logger->errorMessage("Missing plugin table detected during query. "
-            . "Attempting auto-repair. SQL error: " . $result['last_error']);
+        // went missing during normal usage.  Log as INFO while we attempt repair;
+        // only escalate to ERROR if repair fails (avoids flooding admin with
+        // error emails for transient issues that auto-repair resolves).
+        $originalSqlError = $result['last_error'];
+        $this->logger->infoMessage("Missing plugin table detected during query. "
+            . "Attempting auto-repair. SQL error: " . $originalSqlError);
 
         self::$tableRepairInProgress = true;
         try {
@@ -1330,7 +1332,11 @@ class ABJ_404_Solution_DataAccess {
                     delete_option($repairCooldownKey);
                 }
             } else {
-                // Repair failed. Engage 24h cooldown and surface a single admin notice on
+                // Repair failed — now escalate to ERROR so it triggers email notification.
+                $this->logger->errorMessage("Missing plugin table auto-repair failed. "
+                    . "Original error: " . $originalSqlError
+                    . ", Retry error: " . $result['last_error']);
+                // Engage 24h cooldown and surface a single admin notice on
                 // the plugin screen so the admin knows to investigate (e.g. missing CREATE
                 // privilege or wrong DB user).  Never email; never show on all wp-admin pages.
                 $this->setRuntimeFlag($repairCooldownKey, time() + 86400, 86400);

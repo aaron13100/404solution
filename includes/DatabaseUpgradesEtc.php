@@ -1184,14 +1184,16 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$newGoalTableDDL = array();
     	foreach ($goalTableMatchesColumnDDL as $oneDDLLine) {
     		$newVal = str_replace('`', '', $oneDDLLine);
-    		$newVal = str_replace("default '0'", "default 0", $newVal);
+    		// Normalize quoted numeric defaults: MySQL may return default '1'
+    		// while the goal DDL says default 1. Strip quotes around any integer.
+    		$newVal = preg_replace("/default '(\d+)'/", 'default $1', $newVal) ?? $newVal;
     		array_push($newGoalTableDDL, $newVal);
     	}
     	$goalTableMatchesColumnDDL = $newGoalTableDDL;
     	$newExistingTableDDL = array();
     	foreach ($existingTableMatchesColumnDDL as $oneDDLLine) {
     		$newVal = str_replace('`', '', $oneDDLLine);
-    		$newVal = str_replace("default '0'", "default 0", $newVal);
+    		$newVal = preg_replace("/default '(\d+)'/", 'default $1', $newVal) ?? $newVal;
     		array_push($newExistingTableDDL, $newVal);
     	}
     	$existingTableMatchesColumnDDL = $newExistingTableDDL;
