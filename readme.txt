@@ -192,12 +192,12 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Screenshots ==
 
-1. **Redirect Dashboard** — Active redirects with status code badges (301, 302, 307, 308, 410, 451) and match confidence scores. Sort, search, and bulk-edit without leaving the page.
-2. **Stats and Trends** — Traffic trend charts plotting 404 hits, redirects, and captures over time. See which URLs break most often.
-3. **Debug Mode** — Enable debug logging to see exactly which of the 7 engines fired, what score it assigned, and why it chose that destination.
-4. **Captured 404s** — Every 404 logged with URL, referrer, user agent, and timestamp. Create a redirect for any row with one click.
-5. **Settings Page** — Enable/disable individual matching engines, set per-engine confidence thresholds, configure fallback behavior.
-6. **Email Digest** — Weekly email digest with top 404 URLs and hit counts.
+1. **Redirect Dashboard** — Active redirects with color-coded status badges (301, 302, 307, 308, 410, 451), match confidence scores, and engine names. Filter by manual, automatic, or regex. Sort by any column.
+2. **Statistics** — Summary cards for redirects, captured URLs, and daily stats. Match confidence donut chart and 30/90-day trend analytics for 404 hits.
+3. **Debug Log** — Real-time debug output showing engine processing, spell-check scoring, candidate evaluation, and redirect decisions for every 404 request.
+4. **Captured 404s** — Every unhandled 404 logged with URL, hit count, first-seen and last-seen timestamps. Filter by captured, ignored, or later status.
+5. **Settings** — Configure automatic redirect behavior, custom 404 page, auto-deletion rules, default redirect type, and notification preferences.
+6. **Email Digest** — Weekly HTML email summarizing captured 404s, resolution rate, and a ranked table of top 404 URLs with color-coded hit badges.
 
 == Changelog ==
 
