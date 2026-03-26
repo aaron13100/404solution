@@ -159,70 +159,28 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             }
         }
 
+        $options = $this->logic->getOptions();
+
         $lookupStart = microtime(true);
         $redirect = $this->dao->getActiveRedirectForURL($requestedURL);
         $this->recordRedirectLookupTiming($lookupStart);
-        $options = $this->logic->getOptions();
         $this->logAReallyLongDebugMessage($options, $requestedURL, $redirect);
 
         if ($requestedURL != "") {
-            // A redirect is actionable when it has an id AND either has a real destination
-            // (final_dest != '0') OR is a homepage redirect (TYPE_HOME always uses final_dest=0).
-            $typeHomeInt = defined('ABJ404_TYPE_HOME') ? (int)ABJ404_TYPE_HOME : 5;
-            $redirectTypeInt1 = isset($redirect['type']) && is_scalar($redirect['type']) ? (int)$redirect['type'] : 0;
-            if ($redirect['id'] != '0' && ($redirect['final_dest'] != '0' || $redirectTypeInt1 === $typeHomeInt)) {
-                $this->addTraceStep('Redirect lookup', 'Found existing redirect', 'rule #' . (is_scalar($redirect['id']) ? (string)$redirect['id'] : '?'));
-                $deadIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
-                $redirectIdStr = isset($redirect['id']) && is_scalar($redirect['id']) ? (string) $redirect['id'] : '0';
-                if (!is_array($deadIds) || !in_array($redirectIdStr, $deadIds, true)) {
-                    $condEvaluator = new ABJ_404_Solution_RedirectConditionEvaluator($this->dao);
-                    $redirectIdForCond = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
-                    if ($condEvaluator->shouldApplyRedirect($redirectIdForCond)) {
-                        $this->addTraceStep('Conditions', 'All conditions met');
-                        $this->processRedirect($requestedURL, $redirect, 'existing');
-                        exit;
-                    }
-                    // Conditions not met — fall through as if no redirect found.
-                    $condTrace = $condEvaluator->getLastEvaluationTrace();
-                    $condDetail = implode(', ', array_map(function ($c) {
-                        $label = str_replace('_', ' ', $c['type']);
-                        return $label . ': ' . ($c['result'] ? 'passed' : 'failed');
-                    }, $condTrace));
-                    $this->addTraceStep('Conditions', 'Blocked by conditions', $condDetail);
-                } else {
-                    $this->addTraceStep('Health check', 'Destination unreachable — skipped');
-                }
-            } else {
-                $this->addTraceStep('Redirect lookup', 'No matching redirect');
+            $matched = $this->evaluateRedirectCandidate($redirect, '', $options);
+            if ($matched !== null) {
+                $this->processRedirect($requestedURL, $matched, 'existing');
+                exit;
             }
 
             if ($requestedURLWithoutComments != $requestedURL) {
                 $lookupStart = microtime(true);
-                $redirect = $this->dao->getActiveRedirectForURL($requestedURLWithoutComments);
+                $wcRedirect = $this->dao->getActiveRedirectForURL($requestedURLWithoutComments);
                 $this->recordRedirectLookupTiming($lookupStart);
-                $redirectTypeInt2 = isset($redirect['type']) && is_scalar($redirect['type']) ? (int)$redirect['type'] : 0;
-                if ($redirect['id'] != '0' && ($redirect['final_dest'] != '0' || $redirectTypeInt2 === $typeHomeInt)) {
-                    $this->addTraceStep('Redirect lookup (without comments)', 'Found existing redirect', 'rule #' . (is_scalar($redirect['id']) ? (string)$redirect['id'] : '?'));
-                    $deadIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
-                    $redirectIdStr = isset($redirect['id']) && is_scalar($redirect['id']) ? (string) $redirect['id'] : '0';
-                    if (!is_array($deadIds) || !in_array($redirectIdStr, $deadIds, true)) {
-                        $condEvaluator = new ABJ_404_Solution_RedirectConditionEvaluator($this->dao);
-                        $redirectIdForCond = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
-                        if ($condEvaluator->shouldApplyRedirect($redirectIdForCond)) {
-                            $this->addTraceStep('Conditions (without comments)', 'All conditions met');
-                            $this->processRedirect($requestedURL, $redirect, 'existing');
-                            exit;
-                        }
-                        // Conditions not met — fall through as if no redirect found.
-                        $condTrace = $condEvaluator->getLastEvaluationTrace();
-                        $condDetail = implode(', ', array_map(function ($c) {
-                            $label = str_replace('_', ' ', $c['type']);
-                            return $label . ': ' . ($c['result'] ? 'passed' : 'failed');
-                        }, $condTrace));
-                        $this->addTraceStep('Conditions (without comments)', 'Blocked by conditions', $condDetail);
-                    } else {
-                        $this->addTraceStep('Health check (without comments)', 'Destination unreachable — skipped');
-                    }
+                $matched = $this->evaluateRedirectCandidate($wcRedirect, ' (without comments)', $options);
+                if ($matched !== null) {
+                    $this->processRedirect($requestedURL, $matched, 'existing');
+                    exit;
                 }
             }
 
@@ -333,6 +291,51 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
         $this->emitBenchmarkHeadersIfEnabled();
         $this->logic->sendTo404Page($requestedURL, '', true, $options);
+    }
+
+    /**
+     * Evaluate an already-fetched redirect: check actionability, health, and conditions.
+     *
+     * @param array<string, mixed> $redirect The redirect row from getActiveRedirectForURL().
+     * @param string $labelSuffix Appended to trace step labels (e.g. ' (without comments)').
+     * @param array<string, mixed> $options Plugin options.
+     * @return array<string, mixed>|null The redirect row if actionable, null otherwise.
+     */
+    private function evaluateRedirectCandidate(array $redirect, string $labelSuffix, array $options): ?array {
+        $typeHomeInt = defined('ABJ404_TYPE_HOME') ? (int)ABJ404_TYPE_HOME : 5;
+        $redirectType = isset($redirect['type']) && is_scalar($redirect['type']) ? (int)$redirect['type'] : 0;
+
+        if ($redirect['id'] == '0' || ($redirect['final_dest'] == '0' && $redirectType !== $typeHomeInt)) {
+            if ($labelSuffix === '') {
+                $this->addTraceStep('Redirect lookup', 'No matching redirect');
+            }
+            return null;
+        }
+
+        $this->addTraceStep('Redirect lookup' . $labelSuffix, 'Found existing redirect',
+            'rule #' . (is_scalar($redirect['id']) ? (string)$redirect['id'] : '?'));
+
+        $deadIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
+        $redirectIdStr = isset($redirect['id']) && is_scalar($redirect['id']) ? (string)$redirect['id'] : '0';
+        if (is_array($deadIds) && in_array($redirectIdStr, $deadIds, true)) {
+            $this->addTraceStep('Health check' . $labelSuffix, 'Destination unreachable — skipped');
+            return null;
+        }
+
+        $condEvaluator = new ABJ_404_Solution_RedirectConditionEvaluator($this->dao);
+        $redirectIdForCond = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
+        if ($condEvaluator->shouldApplyRedirect($redirectIdForCond)) {
+            $this->addTraceStep('Conditions' . $labelSuffix, 'All conditions met');
+            return $redirect;
+        }
+
+        $condTrace = $condEvaluator->getLastEvaluationTrace();
+        $condDetail = implode(', ', array_map(function ($c) {
+            $label = str_replace('_', ' ', $c['type']);
+            return $label . ': ' . ($c['result'] ? 'passed' : 'failed');
+        }, $condTrace));
+        $this->addTraceStep('Conditions' . $labelSuffix, 'Blocked by conditions', $condDetail);
+        return null;
     }
 
     /**
