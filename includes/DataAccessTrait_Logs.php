@@ -1143,17 +1143,9 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
 
     /** @param string $errorMessage @return void */
     private function setLogsv2FullNotice(string $errorMessage): void {
-        $message = function_exists('__')
-            ? __('The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table.', '404-solution')
-            : 'The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table.';
-        if (function_exists('set_transient')) {
-            set_transient('abj404_plugin_db_notice', array(
-                'type'         => 'log_table_full',
-                'message'      => $message,
-                'timestamp'    => time(),
-                'error_string' => $errorMessage,
-            ), 86400);
-        }
+        $message = $this->localizeOrDefault(
+            'The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table.');
+        $this->setPluginDbNotice('log_table_full', $message, $errorMessage);
     }
 
     /**

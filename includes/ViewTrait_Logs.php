@@ -21,11 +21,6 @@ trait ViewTrait_Logs {
         // Sanitizing unchecked table options
         $tableOptions = $this->logic->sanitizePostData($tableOptions);
 
-        $timezoneRaw = get_option('timezone_string'); $timezone = is_string($timezoneRaw) ? $timezoneRaw : '';
-        if ('' == $timezone) {
-            $timezone = 'UTC';
-        }
-        date_default_timezone_set($timezone);
 
         // Modern page wrapper
         echo '<div class="abj404-table-page">';
@@ -204,7 +199,7 @@ trait ViewTrait_Logs {
 	            // Date (with user on second line)
 	            $timeToDisplay = abs(is_scalar($row['timestamp'] ?? 0) ? intval($row['timestamp'] ?? 0) : 0);
 	            $rowUsername = is_string($row['username'] ?? '') ? (string)($row['username'] ?? '') : '';
-	            $html .= '<td class="abj404-date-cell">' . date('Y/m/d', $timeToDisplay) . '<br>' . date('h:i:s A', $timeToDisplay);
+	            $html .= '<td class="abj404-date-cell">' . (string)wp_date('Y/m/d', $timeToDisplay) . '<br>' . (string)wp_date('h:i:s A', $timeToDisplay);
 	            if ($rowUsername !== '') {
 	                $html .= '<br><span class="abj404-username-label">' . esc_html($rowUsername) . '</span>';
 	            }

@@ -15,12 +15,6 @@ trait ViewTrait_RedirectsTable {
 
         $tableOptions = $this->logic->getTableOptions($sub);
 
-        $timezoneRaw = get_option('timezone_string'); $timezone = is_string($timezoneRaw) ? $timezoneRaw : '';
-        if ('' == $timezone) {
-            $timezone = 'UTC';
-        }
-        date_default_timezone_set($timezone);
-
         // Get counts for tabs
         $counts = $this->dao->getCapturedStatusCounts();
 
@@ -196,7 +190,7 @@ trait ViewTrait_RedirectsTable {
             $last_used = is_scalar($row['last_used'] ?? 0) ? (int)($row['last_used'] ?? 0) : 0;
             $lastUsedClass = '';
             if ($last_used != 0) {
-                $last = date("Y/m/d h:i:s A", abs($last_used));
+                $last = (string)wp_date("Y/m/d h:i:s A", abs($last_used));
             } else {
                 $last = __('Never', '404-solution');
                 $lastUsedClass = 'abj404-never-used';
@@ -299,7 +293,7 @@ trait ViewTrait_RedirectsTable {
             $tempHtml = $this->f->str_replace('{engineHTML}', $capturedEngineHTML, $tempHtml);
             $tempHtml = $this->f->str_replace('{hits}', esc_html((string)$hits), $tempHtml);
             $tempHtml = $this->f->str_replace('{created_date}',
-                    esc_html(date("Y/m/d h:i:s A", abs(is_scalar($row['timestamp'] ?? 0) ? intval($row['timestamp'] ?? 0) : 0))), $tempHtml);
+                    esc_html((string)wp_date("Y/m/d h:i:s A", abs(is_scalar($row['timestamp'] ?? 0) ? intval($row['timestamp'] ?? 0) : 0))), $tempHtml);
             $tempHtml = $this->f->str_replace('{last_used_date}', esc_html($last), $tempHtml);
             $tempHtml = $this->f->str_replace('{lastUsedClass}', $lastUsedClass, $tempHtml);
             $tempHtml = $this->f->str_replace('{editBtnHTML}', $editBtnHTML, $tempHtml);
@@ -334,12 +328,6 @@ trait ViewTrait_RedirectsTable {
         // Sanitizing unchecked table options
         $tableOptions = $this->logic->sanitizePostData($tableOptions);
         $currentFilter = $tableOptions['filter'] ?? 0;
-
-        $timezoneRaw = get_option('timezone_string'); $timezone = is_string($timezoneRaw) ? $timezoneRaw : '';
-        if ('' == $timezone) {
-            $timezone = 'UTC';
-        }
-        date_default_timezone_set($timezone);
 
         // Get counts for tabs
         $counts = $this->dao->getRedirectStatusCounts();
@@ -914,7 +902,7 @@ trait ViewTrait_RedirectsTable {
 
             $last_used = is_scalar($row['last_used'] ?? 0) ? (int)($row['last_used'] ?? 0) : 0;
             if ($last_used != 0) {
-                $last = date("Y/m/d h:i:s A", abs($last_used));
+                $last = (string)wp_date("Y/m/d h:i:s A", abs($last_used));
             } else {
                 $last = __('Never Used', '404-solution');
             }
@@ -1124,7 +1112,7 @@ trait ViewTrait_RedirectsTable {
             $htmlTemp = $this->f->str_replace('{trashtitle}', $trashtitle, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{deletelink}', $deletelink, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{created_date}',
-                    esc_html(date("Y/m/d h:i:s A", abs(is_scalar($row['timestamp'] ?? 0) ? intval($row['timestamp'] ?? 0) : 0))), $htmlTemp);
+                    esc_html((string)wp_date("Y/m/d h:i:s A", abs(is_scalar($row['timestamp'] ?? 0) ? intval($row['timestamp'] ?? 0) : 0))), $htmlTemp);
             $htmlTemp = $this->f->str_replace('{last_used_date}', esc_html($last), $htmlTemp);
 
             $htmlTemp = $this->f->doNormalReplacements($htmlTemp);

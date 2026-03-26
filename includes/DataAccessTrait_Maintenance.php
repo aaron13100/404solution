@@ -137,16 +137,10 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
                 $cooldownKey = 'abj404_corrupted_temp_table_notice_until';
                 $alreadyNotified = function_exists('get_transient') ? get_transient($cooldownKey) : false;
                 if (!$alreadyNotified) {
-                    $noticeMessage = function_exists('__')
-                        ? __('A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)', '404-solution')
-                        : 'A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)';
+                    $noticeMessage = $this->localizeOrDefault(
+                        'A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)');
+                    $this->setPluginDbNotice('corrupted_temp_table', $noticeMessage, $errorMessage);
                     if (function_exists('set_transient')) {
-                        set_transient('abj404_plugin_db_notice', array(
-                            'type'         => 'corrupted_temp_table',
-                            'message'      => $noticeMessage,
-                            'timestamp'    => time(),
-                            'error_string' => $errorMessage,
-                        ), 86400);
                         set_transient($cooldownKey, 1, 86400);
                     }
                 }
