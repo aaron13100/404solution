@@ -3419,3 +3419,120 @@ msgstr "عرض تتبع خط الأنابيب"
 #: includes/ViewTrait_Logs.php:161
 msgid "No trace available"
 msgstr "لا يوجد تتبع متاح"
+
+#, fuzzy
+msgid "Ignore list"
+msgstr "قائمة التجاهل"
+
+#, fuzzy
+msgid "Redirect lookup"
+msgstr "البحث عن إعادة توجيه"
+
+#, fuzzy
+msgid "Redirect lookup (without comments)"
+msgstr "البحث عن إعادة توجيه (بدون تعليقات)"
+
+#, fuzzy
+msgid "Conditions"
+msgstr "الشروط"
+
+#, fuzzy
+msgid "Conditions (without comments)"
+msgstr "الشروط (بدون تعليقات)"
+
+#, fuzzy
+msgid "Health check"
+msgstr "فحص السلامة"
+
+#, fuzzy
+msgid "Health check (without comments)"
+msgstr "فحص السلامة (بدون تعليقات)"
+
+#, fuzzy
+msgid "Regex rules"
+msgstr "قواعد التعبيرات النمطية"
+
+#, fuzzy
+msgid "Suggestion engines"
+msgstr "محركات الاقتراحات"
+
+#, fuzzy
+msgid "Result"
+msgstr "النتيجة"
+
+#, fuzzy
+msgid "Not ignored"
+msgstr "غير متجاهل"
+
+#, fuzzy
+msgid "Matched — request ignored"
+msgstr "مطابقة — تم تجاهل الطلب"
+
+#, fuzzy
+msgid "Found existing redirect"
+msgstr "تم العثور على إعادة توجيه موجودة"
+
+#, fuzzy
+msgid "No matching redirect"
+msgstr "لا توجد إعادة توجيه مطابقة"
+
+#, fuzzy
+msgid "All conditions met"
+msgstr "جميع الشروط مستوفاة"
+
+#, fuzzy
+msgid "Blocked by conditions"
+msgstr "محظور بسبب الشروط"
+
+#, fuzzy
+msgid "Destination unreachable — skipped"
+msgstr "الوجهة غير قابلة للوصول — تم التخطي"
+
+#, fuzzy
+msgid "Matched"
+msgstr "مطابقة"
+
+#, fuzzy
+msgid "No match"
+msgstr "لا توجد مطابقة"
+
+#, fuzzy
+msgid "Skipped"
+msgstr "تم التخطي"
+
+#, fuzzy
+msgid "Excluded"
+msgstr "مستبعد"
+
+
+#, fuzzy
+msgid "No match found"
+msgstr "لم يتم العثور على مطابقة"
+
+#, fuzzy
+msgid "Showed 404 page"
+msgstr "تم عرض صفحة 404"
+
+#, fuzzy
+msgid "Redirected to external URL"
+msgstr "تمت إعادة التوجيه إلى رابط خارجي"
+
+#, fuzzy
+msgid "No redirect — showed 404 page"
+msgstr "لا توجد إعادة توجيه — تم عرض صفحة 404"
+
+#, fuzzy
+msgid "Engine: %s"
+msgstr "المحرك: %s"
+
+#, fuzzy
+msgid "Redirected (%s)"
+msgstr "تمت إعادة التوجيه (%s)"
+
+#, fuzzy
+msgid "Responded with %s"
+msgstr "تم الرد بـ %s"
+
+#, fuzzy
+msgid "Showed 404 page — %s"
+msgstr "تم عرض صفحة 404 — %s"

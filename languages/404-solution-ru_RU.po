@@ -3408,3 +3408,120 @@ msgstr "Показать трассировку конвейера"
 #: includes/ViewTrait_Logs.php:161
 msgid "No trace available"
 msgstr "Трассировка недоступна"
+
+#, fuzzy
+msgid "Ignore list"
+msgstr "Список исключений"
+
+#, fuzzy
+msgid "Redirect lookup"
+msgstr "Поиск перенаправления"
+
+#, fuzzy
+msgid "Redirect lookup (without comments)"
+msgstr "Поиск перенаправления (без комментариев)"
+
+#, fuzzy
+msgid "Conditions"
+msgstr "Условия"
+
+#, fuzzy
+msgid "Conditions (without comments)"
+msgstr "Условия (без комментариев)"
+
+#, fuzzy
+msgid "Health check"
+msgstr "Проверка доступности"
+
+#, fuzzy
+msgid "Health check (without comments)"
+msgstr "Проверка доступности (без комментариев)"
+
+#, fuzzy
+msgid "Regex rules"
+msgstr "Правила регулярных выражений"
+
+#, fuzzy
+msgid "Suggestion engines"
+msgstr "Модули подбора"
+
+#, fuzzy
+msgid "Result"
+msgstr "Результат"
+
+#, fuzzy
+msgid "Not ignored"
+msgstr "Не исключён"
+
+#, fuzzy
+msgid "Matched — request ignored"
+msgstr "Совпадение — запрос проигнорирован"
+
+#, fuzzy
+msgid "Found existing redirect"
+msgstr "Найдено существующее перенаправление"
+
+#, fuzzy
+msgid "No matching redirect"
+msgstr "Подходящее перенаправление не найдено"
+
+#, fuzzy
+msgid "All conditions met"
+msgstr "Все условия выполнены"
+
+#, fuzzy
+msgid "Blocked by conditions"
+msgstr "Заблокировано условиями"
+
+#, fuzzy
+msgid "Destination unreachable — skipped"
+msgstr "Адрес назначения недоступен — пропущено"
+
+#, fuzzy
+msgid "Matched"
+msgstr "Совпадение"
+
+#, fuzzy
+msgid "No match"
+msgstr "Нет совпадений"
+
+#, fuzzy
+msgid "Skipped"
+msgstr "Пропущено"
+
+#, fuzzy
+msgid "Excluded"
+msgstr "Исключено"
+
+
+#, fuzzy
+msgid "No match found"
+msgstr "Совпадений не найдено"
+
+#, fuzzy
+msgid "Showed 404 page"
+msgstr "Показана страница 404"
+
+#, fuzzy
+msgid "Redirected to external URL"
+msgstr "Перенаправлено на внешний URL"
+
+#, fuzzy
+msgid "No redirect — showed 404 page"
+msgstr "Нет перенаправления — показана страница 404"
+
+#, fuzzy
+msgid "Engine: %s"
+msgstr "Модуль: %s"
+
+#, fuzzy
+msgid "Redirected (%s)"
+msgstr "Перенаправлено (%s)"
+
+#, fuzzy
+msgid "Responded with %s"
+msgstr "Ответ: %s"
+
+#, fuzzy
+msgid "Showed 404 page — %s"
+msgstr "Показана страница 404 — %s"

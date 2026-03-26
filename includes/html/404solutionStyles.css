@@ -2983,20 +2983,66 @@ html[data-theme="obsidian"] .abj404-filter-bar {
 
 .abj404-trace-steps {
     margin: 0;
-    padding-left: 20px;
-    font-family: monospace;
-    font-size: 12px;
+    padding-left: 0;
+    list-style: none;
+    font-size: 13px;
     color: var(--abj404-text, #1d2327);
-    line-height: 1.6;
+    line-height: 1.5;
 }
 
 .abj404-trace-steps li {
-    margin-bottom: 2px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+    padding: 3px 0;
+    border-bottom: 1px solid var(--abj404-bg-hover, #f0f0f1);
+}
+
+.abj404-trace-steps li:last-child {
+    border-bottom: none;
+}
+
+.abj404-trace-step-name {
+    flex: 0 0 auto;
+    min-width: 180px;
+    font-weight: 600;
+    color: var(--abj404-text, #1d2327);
+}
+
+.abj404-trace-outcome {
+    flex: 0 0 auto;
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.abj404-trace-outcome-pass {
+    background: #d4edda;
+    color: #155724;
+}
+
+.abj404-trace-outcome-fail {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.abj404-trace-outcome-neutral {
+    background: var(--abj404-bg-hover, #f0f0f1);
+    color: var(--abj404-text-muted, #646970);
+}
+
+.abj404-trace-outcome-result {
+    background: #cce5ff;
+    color: #004085;
 }
 
 .abj404-trace-detail-text {
+    flex: 1 1 auto;
     color: var(--abj404-text-muted, #646970);
-    font-style: normal;
+    font-size: 12px;
 }
 
 .abj404-score-badge {

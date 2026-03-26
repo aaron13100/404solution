@@ -2427,3 +2427,119 @@ msgstr ""
 #: includes/ViewTrait_Logs.php:161
 msgid "No trace available"
 msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Ignore list"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Redirect lookup"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Redirect lookup (without comments)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Conditions"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Conditions (without comments)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Health check"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Health check (without comments)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Regex rules"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Suggestion engines"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Result"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Not ignored"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Matched — request ignored"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Found existing redirect"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "No matching redirect"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "All conditions met"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Blocked by conditions"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Destination unreachable — skipped"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Matched"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "No match"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Skipped"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Excluded"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "No match found"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Showed 404 page"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Redirected to external URL"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "No redirect — showed 404 page"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Engine: %s"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Redirected (%s)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Responded with %s"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php
+msgid "Showed 404 page — %s"
+msgstr ""

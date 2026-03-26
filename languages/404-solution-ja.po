@@ -3407,3 +3407,120 @@ msgstr "パイプライントレースを表示"
 #: includes/ViewTrait_Logs.php:161
 msgid "No trace available"
 msgstr "トレースがありません"
+
+#, fuzzy
+msgid "Ignore list"
+msgstr "除外リスト"
+
+#, fuzzy
+msgid "Redirect lookup"
+msgstr "リダイレクト検索"
+
+#, fuzzy
+msgid "Redirect lookup (without comments)"
+msgstr "リダイレクト検索（コメントなし）"
+
+#, fuzzy
+msgid "Conditions"
+msgstr "条件"
+
+#, fuzzy
+msgid "Conditions (without comments)"
+msgstr "条件（コメントなし）"
+
+#, fuzzy
+msgid "Health check"
+msgstr "ヘルスチェック"
+
+#, fuzzy
+msgid "Health check (without comments)"
+msgstr "ヘルスチェック（コメントなし）"
+
+#, fuzzy
+msgid "Regex rules"
+msgstr "正規表現ルール"
+
+#, fuzzy
+msgid "Suggestion engines"
+msgstr "提案エンジン"
+
+#, fuzzy
+msgid "Result"
+msgstr "結果"
+
+#, fuzzy
+msgid "Not ignored"
+msgstr "除外対象外"
+
+#, fuzzy
+msgid "Matched — request ignored"
+msgstr "一致 — リクエスト除外"
+
+#, fuzzy
+msgid "Found existing redirect"
+msgstr "既存のリダイレクトを発見"
+
+#, fuzzy
+msgid "No matching redirect"
+msgstr "一致するリダイレクトなし"
+
+#, fuzzy
+msgid "All conditions met"
+msgstr "すべての条件を満たしました"
+
+#, fuzzy
+msgid "Blocked by conditions"
+msgstr "条件によりブロック"
+
+#, fuzzy
+msgid "Destination unreachable — skipped"
+msgstr "転送先に到達不能 — スキップ"
+
+#, fuzzy
+msgid "Matched"
+msgstr "一致"
+
+#, fuzzy
+msgid "No match"
+msgstr "一致なし"
+
+#, fuzzy
+msgid "Skipped"
+msgstr "スキップ"
+
+#, fuzzy
+msgid "Excluded"
+msgstr "除外済み"
+
+
+#, fuzzy
+msgid "No match found"
+msgstr "一致するものが見つかりません"
+
+#, fuzzy
+msgid "Showed 404 page"
+msgstr "404ページを表示"
+
+#, fuzzy
+msgid "Redirected to external URL"
+msgstr "外部URLへリダイレクト"
+
+#, fuzzy
+msgid "No redirect — showed 404 page"
+msgstr "リダイレクトなし — 404ページを表示"
+
+#, fuzzy
+msgid "Engine: %s"
+msgstr "エンジン: %s"
+
+#, fuzzy
+msgid "Redirected (%s)"
+msgstr "リダイレクト済み（%s）"
+
+#, fuzzy
+msgid "Responded with %s"
+msgstr "%sで応答"
+
+#, fuzzy
+msgid "Showed 404 page — %s"
+msgstr "404ページを表示 — %s"

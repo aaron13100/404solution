@@ -3403,3 +3403,120 @@ msgstr "Pipeline-tracering tonen"
 #: includes/ViewTrait_Logs.php:161
 msgid "No trace available"
 msgstr "Geen tracering beschikbaar"
+
+#, fuzzy
+msgid "Ignore list"
+msgstr "Negeerlijst"
+
+#, fuzzy
+msgid "Redirect lookup"
+msgstr "Doorverwijzing opzoeken"
+
+#, fuzzy
+msgid "Redirect lookup (without comments)"
+msgstr "Doorverwijzing opzoeken (zonder reacties)"
+
+#, fuzzy
+msgid "Conditions"
+msgstr "Voorwaarden"
+
+#, fuzzy
+msgid "Conditions (without comments)"
+msgstr "Voorwaarden (zonder reacties)"
+
+#, fuzzy
+msgid "Health check"
+msgstr "Gezondheidscontrole"
+
+#, fuzzy
+msgid "Health check (without comments)"
+msgstr "Gezondheidscontrole (zonder reacties)"
+
+#, fuzzy
+msgid "Regex rules"
+msgstr "Regex-regels"
+
+#, fuzzy
+msgid "Suggestion engines"
+msgstr "Suggestiemodules"
+
+#, fuzzy
+msgid "Result"
+msgstr "Resultaat"
+
+#, fuzzy
+msgid "Not ignored"
+msgstr "Niet genegeerd"
+
+#, fuzzy
+msgid "Matched — request ignored"
+msgstr "Overeenkomst — verzoek genegeerd"
+
+#, fuzzy
+msgid "Found existing redirect"
+msgstr "Bestaande doorverwijzing gevonden"
+
+#, fuzzy
+msgid "No matching redirect"
+msgstr "Geen overeenkomende doorverwijzing"
+
+#, fuzzy
+msgid "All conditions met"
+msgstr "Alle voorwaarden voldaan"
+
+#, fuzzy
+msgid "Blocked by conditions"
+msgstr "Geblokkeerd door voorwaarden"
+
+#, fuzzy
+msgid "Destination unreachable — skipped"
+msgstr "Bestemming onbereikbaar — overgeslagen"
+
+#, fuzzy
+msgid "Matched"
+msgstr "Overeenkomst"
+
+#, fuzzy
+msgid "No match"
+msgstr "Geen overeenkomst"
+
+#, fuzzy
+msgid "Skipped"
+msgstr "Overgeslagen"
+
+#, fuzzy
+msgid "Excluded"
+msgstr "Uitgesloten"
+
+
+#, fuzzy
+msgid "No match found"
+msgstr "Geen overeenkomst gevonden"
+
+#, fuzzy
+msgid "Showed 404 page"
+msgstr "404-pagina getoond"
+
+#, fuzzy
+msgid "Redirected to external URL"
+msgstr "Doorverwezen naar externe URL"
+
+#, fuzzy
+msgid "No redirect — showed 404 page"
+msgstr "Geen doorverwijzing — 404-pagina getoond"
+
+#, fuzzy
+msgid "Engine: %s"
+msgstr "Module: %s"
+
+#, fuzzy
+msgid "Redirected (%s)"
+msgstr "Doorverwezen (%s)"
+
+#, fuzzy
+msgid "Responded with %s"
+msgstr "Geantwoord met %s"
+
+#, fuzzy
+msgid "Showed 404 page — %s"
+msgstr "404-pagina getoond — %s"

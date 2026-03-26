@@ -3395,3 +3395,91 @@ msgstr "Show pipeline trace"
 #: includes/ViewTrait_Logs.php:161
 msgid "No trace available"
 msgstr "No trace available"
+
+msgid "Ignore list"
+msgstr "Ignore list"
+
+msgid "Redirect lookup"
+msgstr "Redirect lookup"
+
+msgid "Redirect lookup (without comments)"
+msgstr "Redirect lookup (without comments)"
+
+msgid "Conditions"
+msgstr "Conditions"
+
+msgid "Conditions (without comments)"
+msgstr "Conditions (without comments)"
+
+msgid "Health check"
+msgstr "Health check"
+
+msgid "Health check (without comments)"
+msgstr "Health check (without comments)"
+
+msgid "Regex rules"
+msgstr "Regex rules"
+
+msgid "Suggestion engines"
+msgstr "Suggestion engines"
+
+msgid "Result"
+msgstr "Result"
+
+msgid "Not ignored"
+msgstr "Not ignored"
+
+msgid "Matched — request ignored"
+msgstr "Matched — request ignored"
+
+msgid "Found existing redirect"
+msgstr "Found existing redirect"
+
+msgid "No matching redirect"
+msgstr "No matching redirect"
+
+msgid "All conditions met"
+msgstr "All conditions met"
+
+msgid "Blocked by conditions"
+msgstr "Blocked by conditions"
+
+msgid "Destination unreachable — skipped"
+msgstr "Destination unreachable — skipped"
+
+msgid "Matched"
+msgstr "Matched"
+
+msgid "No match"
+msgstr "No match"
+
+msgid "Skipped"
+msgstr "Skipped"
+
+msgid "Excluded"
+msgstr "Excluded"
+
+
+msgid "No match found"
+msgstr "No match found"
+
+msgid "Showed 404 page"
+msgstr "Showed 404 page"
+
+msgid "Redirected to external URL"
+msgstr "Redirected to external URL"
+
+msgid "No redirect — showed 404 page"
+msgstr "No redirect — showed 404 page"
+
+msgid "Engine: %s"
+msgstr "Engine: %s"
+
+msgid "Redirected (%s)"
+msgstr "Redirected (%s)"
+
+msgid "Responded with %s"
+msgstr "Responded with %s"
+
+msgid "Showed 404 page — %s"
+msgstr "Showed 404 page — %s"

@@ -3411,3 +3411,120 @@ msgstr "显示管道跟踪"
 #: includes/ViewTrait_Logs.php:161
 msgid "No trace available"
 msgstr "无可用跟踪"
+
+#, fuzzy
+msgid "Ignore list"
+msgstr "忽略列表"
+
+#, fuzzy
+msgid "Redirect lookup"
+msgstr "重定向查找"
+
+#, fuzzy
+msgid "Redirect lookup (without comments)"
+msgstr "重定向查找（不含评论）"
+
+#, fuzzy
+msgid "Conditions"
+msgstr "条件"
+
+#, fuzzy
+msgid "Conditions (without comments)"
+msgstr "条件（不含评论）"
+
+#, fuzzy
+msgid "Health check"
+msgstr "健康检查"
+
+#, fuzzy
+msgid "Health check (without comments)"
+msgstr "健康检查（不含评论）"
+
+#, fuzzy
+msgid "Regex rules"
+msgstr "正则表达式规则"
+
+#, fuzzy
+msgid "Suggestion engines"
+msgstr "建议引擎"
+
+#, fuzzy
+msgid "Result"
+msgstr "结果"
+
+#, fuzzy
+msgid "Not ignored"
+msgstr "未被忽略"
+
+#, fuzzy
+msgid "Matched — request ignored"
+msgstr "匹配 - 请求已忽略"
+
+#, fuzzy
+msgid "Found existing redirect"
+msgstr "已找到现有重定向"
+
+#, fuzzy
+msgid "No matching redirect"
+msgstr "无匹配的重定向"
+
+#, fuzzy
+msgid "All conditions met"
+msgstr "所有条件已满足"
+
+#, fuzzy
+msgid "Blocked by conditions"
+msgstr "被条件阻止"
+
+#, fuzzy
+msgid "Destination unreachable — skipped"
+msgstr "目标不可达 - 已跳过"
+
+#, fuzzy
+msgid "Matched"
+msgstr "已匹配"
+
+#, fuzzy
+msgid "No match"
+msgstr "无匹配"
+
+#, fuzzy
+msgid "Skipped"
+msgstr "已跳过"
+
+#, fuzzy
+msgid "Excluded"
+msgstr "已排除"
+
+
+#, fuzzy
+msgid "No match found"
+msgstr "未找到匹配项"
+
+#, fuzzy
+msgid "Showed 404 page"
+msgstr "已显示404页面"
+
+#, fuzzy
+msgid "Redirected to external URL"
+msgstr "已重定向到外部链接"
+
+#, fuzzy
+msgid "No redirect — showed 404 page"
+msgstr "无重定向 - 已显示404页面"
+
+#, fuzzy
+msgid "Engine: %s"
+msgstr "引擎：%s"
+
+#, fuzzy
+msgid "Redirected (%s)"
+msgstr "已重定向（%s）"
+
+#, fuzzy
+msgid "Responded with %s"
+msgstr "以%s响应"
+
+#, fuzzy
+msgid "Showed 404 page — %s"
+msgstr "已显示404页面 - %s"

@@ -218,11 +218,14 @@ trait ViewTrait_Logs {
                 $html .= '<td colspan="6" class="abj404-trace-detail-cell">';
                 $html .= '<ol class="abj404-trace-steps">';
                 foreach ($traceSteps as $step) {
-                    $stepName = esc_html($step['step']);
-                    $outcome  = esc_html($step['outcome']);
-                    $detail   = $step['detail'] !== ''
-                        ? ' <em class="abj404-trace-detail-text">(' . esc_html($step['detail']) . ')</em>' : '';
-                    $html .= '<li><strong>' . $stepName . '</strong> &rarr; ' . $outcome . $detail . '</li>';
+                    $stepName = esc_html($this->translateTraceLabel($step['step']));
+                    $outcome  = esc_html($this->translateTraceLabel($step['outcome']));
+                    $detail   = (isset($step['detail']) && $step['detail'] !== '')
+                        ? ' <span class="abj404-trace-detail-text">' . esc_html($step['detail']) . '</span>' : '';
+                    $outcomeClass = $this->traceOutcomeClass($step['outcome']);
+                    $html .= '<li><span class="abj404-trace-step-name">' . $stepName . '</span>'
+                        . '<span class="abj404-trace-outcome ' . $outcomeClass . '">' . $outcome . '</span>'
+                        . $detail . '</li>';
                 }
                 $html .= '</ol>';
                 $html .= '</td>';
@@ -260,6 +263,105 @@ trait ViewTrait_Logs {
 </script>';
 
         return $html;
+    }
+
+    /**
+     * Translate a known pipeline-trace string for admin display.
+     *
+     * Step names and outcomes are stored in English in the database so they
+     * remain stable across language switches.  This method translates them
+     * at render time into the current admin locale.
+     *
+     * @param string $text  The English string stored in the trace.
+     * @return string       The translated string (falls through unchanged
+     *                      for dynamic/unknown values like engine names or URLs).
+     */
+    private function translateTraceLabel(string $text): string {
+        // Static map — evaluated once per request.
+        static $map = null;
+        if ($map === null) {
+            $map = [
+                // Step names
+                'Ignore list'                       => __('Ignore list', '404-solution'),
+                'Redirect lookup'                   => __('Redirect lookup', '404-solution'),
+                'Redirect lookup (without comments)' => __('Redirect lookup (without comments)', '404-solution'),
+                'Conditions'                        => __('Conditions', '404-solution'),
+                'Conditions (without comments)'     => __('Conditions (without comments)', '404-solution'),
+                'Health check'                      => __('Health check', '404-solution'),
+                'Health check (without comments)'   => __('Health check (without comments)', '404-solution'),
+                'Regex rules'                       => __('Regex rules', '404-solution'),
+                'Suggestion engines'                => __('Suggestion engines', '404-solution'),
+                'Result'                            => __('Result', '404-solution'),
+                // Outcomes
+                'Not ignored'                       => __('Not ignored', '404-solution'),
+                'Matched — request ignored'         => __('Matched — request ignored', '404-solution'),
+                'Found existing redirect'           => __('Found existing redirect', '404-solution'),
+                'No matching redirect'              => __('No matching redirect', '404-solution'),
+                'All conditions met'                => __('All conditions met', '404-solution'),
+                'Blocked by conditions'             => __('Blocked by conditions', '404-solution'),
+                'Destination unreachable — skipped' => __('Destination unreachable — skipped', '404-solution'),
+                'Matched'                           => __('Matched', '404-solution'),
+                'No match'                          => __('No match', '404-solution'),
+                'Skipped'                           => __('Skipped', '404-solution'),
+                'Excluded'                          => __('Excluded', '404-solution'),
+                'Error'                             => __('Error', '404-solution'),
+                'No match found'                    => __('No match found', '404-solution'),
+                'Showed 404 page'                   => __('Showed 404 page', '404-solution'),
+                'Redirected to external URL'        => __('Redirected to external URL', '404-solution'),
+                'No redirect — showed 404 page'     => __('No redirect — showed 404 page', '404-solution'),
+            ];
+        }
+
+        // Exact match
+        if (isset($map[$text])) {
+            return $map[$text];
+        }
+
+        // Dynamic patterns: "Engine: Spelling", "Redirected (301)", etc.
+        if (strpos($text, 'Engine: ') === 0) {
+            $engineName = substr($text, 8);
+            return sprintf(__('Engine: %s', '404-solution'), $engineName);
+        }
+        if (preg_match('/^Redirected \((\d+)\)$/', $text, $m)) {
+            return sprintf(__('Redirected (%s)', '404-solution'), $m[1]);
+        }
+        if (preg_match('/^Responded with (.+)$/', $text, $m)) {
+            return sprintf(__('Responded with %s', '404-solution'), $m[1]);
+        }
+        if (preg_match('/^Showed 404 page — (.+)$/', $text, $m)) {
+            return sprintf(__('Showed 404 page — %s', '404-solution'), $m[1]);
+        }
+
+        return $text;
+    }
+
+    /**
+     * Return a CSS class for the trace outcome badge based on the outcome text.
+     *
+     * @param string $outcome
+     * @return string
+     */
+    private function traceOutcomeClass(string $outcome): string {
+        $lower = strtolower($outcome);
+        // Negative / blocking outcomes
+        if (strpos($lower, 'blocked') !== false || strpos($lower, 'unreachable') !== false
+            || strpos($lower, 'error') !== false || strpos($lower, 'ignored') !== false
+            || strpos($lower, 'missing') !== false || strpos($lower, 'invalid') !== false) {
+            return 'abj404-trace-outcome-fail';
+        }
+        // Final result outcomes
+        if (strpos($lower, 'redirected') !== false || strpos($lower, 'responded') !== false
+            || strpos($lower, 'showed 404') !== false || strpos($lower, 'no redirect') !== false) {
+            return 'abj404-trace-outcome-result';
+        }
+        // Positive / pass-through outcomes
+        if (strpos($lower, 'found') !== false || strpos($lower, 'matched') !== false
+            || strpos($lower, 'passed') !== false || strpos($lower, 'not ignored') !== false
+            || strpos($lower, 'all conditions met') !== false) {
+            return 'abj404-trace-outcome-pass';
+        }
+        // Neutral (skipped, no match, etc.)
+        return 'abj404-trace-outcome-neutral';
     }
 
     /**

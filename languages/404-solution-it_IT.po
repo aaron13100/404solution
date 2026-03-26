@@ -3400,3 +3400,120 @@ msgstr "Mostra traccia della pipeline"
 #: includes/ViewTrait_Logs.php:161
 msgid "No trace available"
 msgstr "Nessuna traccia disponibile"
+
+#, fuzzy
+msgid "Ignore list"
+msgstr "Lista ignorati"
+
+#, fuzzy
+msgid "Redirect lookup"
+msgstr "Ricerca reindirizzamento"
+
+#, fuzzy
+msgid "Redirect lookup (without comments)"
+msgstr "Ricerca reindirizzamento (senza commenti)"
+
+#, fuzzy
+msgid "Conditions"
+msgstr "Condizioni"
+
+#, fuzzy
+msgid "Conditions (without comments)"
+msgstr "Condizioni (senza commenti)"
+
+#, fuzzy
+msgid "Health check"
+msgstr "Controllo stato"
+
+#, fuzzy
+msgid "Health check (without comments)"
+msgstr "Controllo stato (senza commenti)"
+
+#, fuzzy
+msgid "Regex rules"
+msgstr "Regole regex"
+
+#, fuzzy
+msgid "Suggestion engines"
+msgstr "Motori di suggerimento"
+
+#, fuzzy
+msgid "Result"
+msgstr "Risultato"
+
+#, fuzzy
+msgid "Not ignored"
+msgstr "Non ignorato"
+
+#, fuzzy
+msgid "Matched — request ignored"
+msgstr "Corrispondenza — richiesta ignorata"
+
+#, fuzzy
+msgid "Found existing redirect"
+msgstr "Reindirizzamento esistente trovato"
+
+#, fuzzy
+msgid "No matching redirect"
+msgstr "Nessun reindirizzamento corrispondente"
+
+#, fuzzy
+msgid "All conditions met"
+msgstr "Tutte le condizioni soddisfatte"
+
+#, fuzzy
+msgid "Blocked by conditions"
+msgstr "Bloccato dalle condizioni"
+
+#, fuzzy
+msgid "Destination unreachable — skipped"
+msgstr "Destinazione irraggiungibile — saltato"
+
+#, fuzzy
+msgid "Matched"
+msgstr "Corrispondenza"
+
+#, fuzzy
+msgid "No match"
+msgstr "Nessuna corrispondenza"
+
+#, fuzzy
+msgid "Skipped"
+msgstr "Saltato"
+
+#, fuzzy
+msgid "Excluded"
+msgstr "Escluso"
+
+
+#, fuzzy
+msgid "No match found"
+msgstr "Nessuna corrispondenza trovata"
+
+#, fuzzy
+msgid "Showed 404 page"
+msgstr "Pagina 404 mostrata"
+
+#, fuzzy
+msgid "Redirected to external URL"
+msgstr "Reindirizzato a URL esterno"
+
+#, fuzzy
+msgid "No redirect — showed 404 page"
+msgstr "Nessun reindirizzamento — pagina 404 mostrata"
+
+#, fuzzy
+msgid "Engine: %s"
+msgstr "Motore: %s"
+
+#, fuzzy
+msgid "Redirected (%s)"
+msgstr "Reindirizzato (%s)"
+
+#, fuzzy
+msgid "Responded with %s"
+msgstr "Risposta con %s"
+
+#, fuzzy
+msgid "Showed 404 page — %s"
+msgstr "Pagina 404 mostrata — %s"
