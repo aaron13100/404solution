@@ -1181,22 +1181,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	
     	// normalize minor differences between mysql versions (strip backticks so DDL
     	// files using either quoting style compare equal to SHOW CREATE TABLE output)
-    	$newGoalTableDDL = array();
-    	foreach ($goalTableMatchesColumnDDL as $oneDDLLine) {
-    		$newVal = str_replace('`', '', $oneDDLLine);
-    		// Normalize quoted numeric defaults: MySQL may return default '1'
-    		// while the goal DDL says default 1. Strip quotes around any integer.
-    		$newVal = preg_replace("/default '(\d+)'/", 'default $1', $newVal) ?? $newVal;
-    		array_push($newGoalTableDDL, $newVal);
-    	}
-    	$goalTableMatchesColumnDDL = $newGoalTableDDL;
-    	$newExistingTableDDL = array();
-    	foreach ($existingTableMatchesColumnDDL as $oneDDLLine) {
-    		$newVal = str_replace('`', '', $oneDDLLine);
-    		$newVal = preg_replace("/default '(\d+)'/", 'default $1', $newVal) ?? $newVal;
-    		array_push($newExistingTableDDL, $newVal);
-    	}
-    	$existingTableMatchesColumnDDL = $newExistingTableDDL;
+    	$goalTableMatchesColumnDDL = array_map([$this, 'normalizeColumnDDL'], $goalTableMatchesColumnDDL);
+    	$existingTableMatchesColumnDDL = array_map([$this, 'normalizeColumnDDL'], $existingTableMatchesColumnDDL);
     	
     	// see if anything needs to be updated or created.
     	$updateTheseColumns = array_diff($goalTableMatchesColumnDDL,
@@ -1250,14 +1236,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	}
 
     	// create missing columns
-    	// Normalize $goalMatchesSub the same way getTableDifferences() normalizes
-    	// $goalTableMatchesColumnDDL so array_search() can find the right index.
+    	// Normalize $goalMatchesSub using the same normalizeColumnDDL() that
+    	// getTableDifferences() uses, so array_search() can find the right index.
     	$goalMatchesSub = is_array($goalTableMatches[1] ?? null) ? $goalTableMatches[1] : [];
-    	$goalMatchesSub = array_map(function ($ddl) {
-    		$ddlStr = is_string($ddl) ? $ddl : '';
-		$normalized = str_replace('`', '', trim($ddlStr));
-		return preg_replace("/default '(\d+)'/", 'default $1', $normalized) ?? $normalized;
-    	}, $goalMatchesSub);
+    	$goalMatchesSub = array_map([$this, 'normalizeColumnDDL'], $goalMatchesSub);
     	foreach ($updateTheseColumns as $colDDL) {
     		// find the colum name.
     		$matchIndex = array_search($colDDL, $goalMatchesSub);
@@ -1306,6 +1288,24 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    	// Strip inline COMMENT 'text', clauses from column definitions.
 	    	return preg_replace('/ (?:COMMENT.+?,[\r\n])/', ",\n", $ddl) ?? $ddl;
 	    }
+    /**
+     * Normalize a single column DDL fragment for comparison.
+     *
+     * Strips backticks and unquotes integer defaults so that DDL from
+     * SHOW CREATE TABLE (e.g. default '1') matches the goal DDL file
+     * (e.g. default 1). Used by both getTableDifferences() and
+     * updateATableBasedOnDifferences() — a single source of truth
+     * prevents the two normalization sites from drifting out of sync.
+     *
+     * @param mixed $ddl  A column DDL string (or non-string from regex match)
+     * @return string
+     */
+    function normalizeColumnDDL($ddl): string {
+    	$ddlStr = is_string($ddl) ? $ddl : '';
+    	$normalized = str_replace('`', '', trim($ddlStr));
+    	return preg_replace("/default '(\d+)'/", 'default $1', $normalized) ?? $normalized;
+    }
+
     /**
      * @param string $tableName
      * @return void

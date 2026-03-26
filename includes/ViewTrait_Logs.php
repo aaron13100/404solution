@@ -220,7 +220,7 @@ trait ViewTrait_Logs {
                 foreach ($traceSteps as $step) {
                     $stepName = esc_html($this->translateTraceLabel($step['step']));
                     $outcome  = esc_html($this->translateTraceLabel($step['outcome']));
-                    $detail   = (isset($step['detail']) && $step['detail'] !== '')
+                    $detail   = ($step['detail'] !== '')
                         ? ' <span class="abj404-trace-detail-text">' . esc_html($step['detail']) . '</span>' : '';
                     $outcomeClass = $this->traceOutcomeClass($step['outcome']);
                     $html .= '<li><span class="abj404-trace-step-name">' . $stepName . '</span>'
