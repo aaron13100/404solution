@@ -812,50 +812,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      */
     function verifyIndexes($tableName, $createTableStatementGoal) {
 
-    	// get the current create table statement
-    	$existingTableSQL = $this->dao->getCreateTableDDL($tableName);
-    	
-    	$existingTableSQL = strtolower($this->removeCommentsFromColumns($existingTableSQL));
-    	$createTableStatementGoal = strtolower(
-    		$this->removeCommentsFromColumns($createTableStatementGoal));
-    	
-    	// get column names and types pattern (backticks are optional — accept both styles);
-    	// (?!key\b) guards against accidentally matching PRIMARY KEY / UNIQUE KEY lines,
-    	// where "PRIMARY" would appear as the column name and "key" as the type.
-    	$colNamesAndTypesPattern = "/\s+?(`?(\w+?)`? (?!key\b)(\w.+?) .+?),/";
-    	// remove the columns.
-    	$existingTableSQL = preg_replace($colNamesAndTypesPattern, "", $existingTableSQL) ?? '';
-    	$createTableStatementGoal = preg_replace($colNamesAndTypesPattern, "",
-    		$createTableStatementGoal) ?? '';
-
-    	// remove the create table and primary key
-    	$primaryPos = strpos($existingTableSQL, 'primary');
-    	$existingTableSQL = $primaryPos !== false ? substr($existingTableSQL, $primaryPos) : '';
-    	$newlinePos = strpos($existingTableSQL, "\n");
-    	$existingTableSQL = $newlinePos !== false ? substr($existingTableSQL, $newlinePos) : '';
-    	$primaryPos = strpos($createTableStatementGoal, 'primary');
-    	$createTableStatementGoal = $primaryPos !== false ? substr($createTableStatementGoal, $primaryPos) : '';
-    	$newlinePos = strpos($createTableStatementGoal, "\n");
-    	$createTableStatementGoal = $newlinePos !== false ? substr($createTableStatementGoal, $newlinePos) : '';
-    	
-    	// remove the engine= ...
-    	$engineLoc = $this->f->strpos($existingTableSQL, ") engine");
-    	if ($engineLoc !== false) {
-    		$existingTableSQL = substr($existingTableSQL, 0, $engineLoc);
-    	}
-    	$commentLoc = $this->f->strpos($existingTableSQL, ") comment");
-    	if ($commentLoc !== false) {
-    		$existingTableSQL = substr($existingTableSQL, 0, $commentLoc);
-    	}
-    	$engineLoc = $this->f->strpos($createTableStatementGoal, ") engine");
-    	if ($engineLoc !== false) {
-    		$createTableStatementGoal = substr($createTableStatementGoal, 0, $engineLoc);
-    	}
-    	$commentLoc = $this->f->strpos($createTableStatementGoal, ") comment");
-    	if ($commentLoc !== false) {
-    		$createTableStatementGoal = substr($createTableStatementGoal, 0, $commentLoc);
-    	}
-    	
 	    	// get the indexes.
 	    	// Pattern matches lines starting with "KEY" / "UNIQUE KEY" - handles composite indexes with commas inside parens
 	    	// Indexes: treat the CREATE TABLE SQL as source of truth, and treat the database as truth
@@ -902,58 +858,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
         $results = $wpdb->get_results($sql, ARRAY_A);
         return !empty($results);
     }
-
-	    /**
-	     * @param string $tableName
-	     * @param string $indexDDL
-	     * @return string
-	     * @phpstan-ignore-next-line method.unused
-	     */
-	    private function buildAddIndexStatement($tableName, $indexDDL) {
-	        global $wpdb;
-	        /** @var \wpdb $wpdb */
-	        $serverVersion = method_exists($wpdb, 'db_version') ? ($wpdb->db_version() ?: '') : '';
-	        $serverInfo = property_exists($wpdb, 'db_server_info') ? ($wpdb->db_server_info ?? '') : '';
-
-	        $isMaria = stripos($serverInfo, 'mariadb') !== false || stripos($serverVersion, 'maria') !== false;
-	        $cleanedVersion = preg_replace('/[^\d\.]/', '', $serverVersion) ?? '';
-	        $supportsIfNotExists = $isMaria && version_compare($cleanedVersion, '10.5', '>=');
-
-	        $indexDDL = trim($indexDDL);
-
-	        // Normalize "KEY `name` (...)" / "UNIQUE KEY `name` (...)" into a form usable with "IF NOT EXISTS".
-	        // MariaDB supports: ADD [UNIQUE] INDEX IF NOT EXISTS `name` (...)
-		        if ($supportsIfNotExists) {
-		            $matches = [];
-		            if (preg_match('/^(unique\\s+)?key\\s+`([^`]+)`\\s*(\\(.+\\))\\s*$/i', $indexDDL, $matches)) {
-		                $unique = !empty($matches[1]);
-		                $name = $matches[2];
-		                $cols = $matches[3];
-		                $type = $unique ? 'unique index' : 'index';
-		                return "alter table " . $tableName . " add " . $type . " if not exists `" . $name . "` " . $cols;
-		            }
-		            if (preg_match('/^`([^`]+)`\\s*(\\(.+\\))\\s*$/', $indexDDL, $matches)) {
-		                $name = $matches[1];
-		                $cols = $matches[2];
-		                return "alter table " . $tableName . " add index if not exists `" . $name . "` " . $cols;
-		            }
-		        }
-
-		        // If we were given a bare index DDL like "`name` (...)", make it valid for MySQL too.
-		        if (preg_match('/^`[^`]+`\\s*\\(.+\\)\\s*$/', $indexDDL)) {
-		            return "alter table " . $tableName . " add index " . $indexDDL;
-		        }
-
-		        // If we were given a bare index DDL like "name (...)", make it valid too.
-		        if (preg_match('/^([A-Za-z0-9_]+)\\s*(\\(.+\\))\\s*$/', $indexDDL, $matches)) {
-		            $name = $matches[1];
-		            $cols = $matches[2];
-		            return "alter table " . $tableName . " add index `" . $name . "` " . $cols;
-		        }
-
-		        // Fallback: use the DDL as-is (already contains KEY/UNIQUE KEY).
-		        return "alter table " . $tableName . " add " . $indexDDL;
-		    }
 
 	    /**
 	     * Parse an index DDL line from our CREATE TABLE SQL into a structured spec.
