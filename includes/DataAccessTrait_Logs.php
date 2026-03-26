@@ -794,11 +794,12 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         $helperFunctions = ABJ_404_Solution_Functions::getInstance();
         $reasonMessage = trim(implode(", ",
                     array_filter(
-                    array($_REQUEST[ABJ404_PP]['ignore_doprocess'] ?? '', $_REQUEST[ABJ404_PP]['ignore_donotprocess'] ?? ''))));
+                    array(ABJ_404_Solution_RequestContext::getInstance()->ignore_doprocess ?: '',
+                          ABJ_404_Solution_RequestContext::getInstance()->ignore_donotprocess ?: ''))));
         $permalinksKept = '(not set)';
-        if ($this->logger->isDebug() && array_key_exists(ABJ404_PP, $_REQUEST) &&
-        		array_key_exists('permalinks_found', $_REQUEST[ABJ404_PP])) {
-       		$permalinksKept = $_REQUEST[ABJ404_PP]['permalinks_kept'];
+        $ctx = ABJ_404_Solution_RequestContext::getInstance();
+        if ($this->logger->isDebug() && !empty($ctx->permalinks_found)) {
+       		$permalinksKept = $ctx->permalinks_kept;
         }
         $this->logger->debugMessage("Logging redirect. Referer: " . esc_html($referer) . 
         		" | Current user: " . $current_user_name . " | From: " . $helperFunctions->normalizeUrlString($_SERVER['REQUEST_URI']) . 

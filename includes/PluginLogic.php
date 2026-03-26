@@ -416,7 +416,7 @@ class ABJ_404_Solution_PluginLogic {
             foreach ($patternsToIgnore as $patternToIgnore) {
                 $patternToIgnoreStr = is_string($patternToIgnore) ? $patternToIgnore : (string)$patternToIgnore;
                 $patternToIgnoreNoSlashes = stripslashes($patternToIgnoreStr);
-                $_REQUEST[ABJ404_PP]['debug_info'] = 'Applying regex pattern to ignore\"' .
+                ABJ_404_Solution_RequestContext::getInstance()->debug_info = 'Applying regex pattern to ignore\"' .
                     $patternToIgnoreNoSlashes . '" to URL slug: ' . $urlSlugOnly;
                 $matches = array();
                 if ($this->f->regexMatch($patternToIgnoreNoSlashes, $urlSlugOnly, $matches)) {
@@ -425,10 +425,10 @@ class ABJ_404_Solution_PluginLogic {
                     $ignoreReasonDoNotProcess = 'Files and folders (do not redirect) pattern: ' .
                         esc_html($patternToIgnoreNoSlashes);
                 }
-                $_REQUEST[ABJ404_PP]['debug_info'] = 'Cleared after regex pattern to ignore.';
+                ABJ_404_Solution_RequestContext::getInstance()->debug_info = 'Cleared after regex pattern to ignore.';
             }
         }
-        $_REQUEST[ABJ404_PP]['ignore_donotprocess'] = $ignoreReasonDoNotProcess;
+        ABJ_404_Solution_RequestContext::getInstance()->ignore_donotprocess = is_string($ignoreReasonDoNotProcess) ? $ignoreReasonDoNotProcess : false;
 
         // -----
         // ignore and process
@@ -442,7 +442,7 @@ class ABJ_404_Solution_PluginLogic {
                 $ignoreReasonDoProcess = 'User agent (process ok): ' . $agentToIgnore;
             }
         }
-        $_REQUEST[ABJ404_PP]['ignore_doprocess'] = $ignoreReasonDoProcess;
+        ABJ_404_Solution_RequestContext::getInstance()->ignore_doprocess = is_string($ignoreReasonDoProcess) ? $ignoreReasonDoProcess : false;
     }
 
     /** @return string */
@@ -502,7 +502,7 @@ class ABJ_404_Solution_PluginLogic {
      		echo $c;
     	}
 
-    	$_REQUEST[ABJ404_PP][$cookieName] = $requested_url;
+    	ABJ_404_Solution_RequestContext::getInstance()->requested_url = $requested_url;
     }
 
     /** The passed in reason will be appended to the automatically generated reason.

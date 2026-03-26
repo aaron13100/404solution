@@ -422,9 +422,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         }
 
         // if we should not capture a 404 then don't.
-        if (!array_key_exists(ABJ404_PP, $_REQUEST) ||
-        		!array_key_exists('ignore_doprocess', $_REQUEST[ABJ404_PP]) ||
-        		!@$_REQUEST[ABJ404_PP]['ignore_doprocess']) {
+        if (!ABJ_404_Solution_RequestContext::getInstance()->ignore_doprocess) {
             $now = time();
             $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
 

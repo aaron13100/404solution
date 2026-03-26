@@ -437,9 +437,9 @@ abstract class ABJ_404_Solution_Functions {
      * @return float|string
      */
     function getExecutionTime() {
-        if (array_key_exists(ABJ404_PP, $_REQUEST) && 
-                array_key_exists('process_start_time', $_REQUEST[ABJ404_PP])) {
-            $elapsedTime = microtime(true) - $_REQUEST[ABJ404_PP]['process_start_time'];
+        $startTime = ABJ_404_Solution_RequestContext::getInstance()->process_start_time;
+        if ($startTime !== null) {
+            $elapsedTime = microtime(true) - $startTime;
             
             return $elapsedTime;
         }

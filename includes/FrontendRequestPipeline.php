@@ -131,7 +131,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             return;
         }
 
-        $_REQUEST[ABJ404_PP]['process_start_time'] = microtime(true);
+        ABJ_404_Solution_RequestContext::getInstance()->process_start_time = microtime(true);
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
         if ($userRequest === null) {
             return;
@@ -142,7 +142,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->logic->initializeIgnoreValues($pathOnly, $urlSlugOnly);
         $this->trace = [];
 
-        if ($_REQUEST[ABJ404_PP]['ignore_donotprocess']) {
+        if (ABJ_404_Solution_RequestContext::getInstance()->ignore_donotprocess) {
             $this->addTraceStep('Ignore list', 'Matched — request ignored');
             $this->dao->logRedirectHit($pathOnly, '404', 'ignore_donotprocess', null, $this->trace);
             $this->emitBenchmarkHeadersIfEnabled();
