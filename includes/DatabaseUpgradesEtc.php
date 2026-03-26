@@ -1220,11 +1220,21 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	/** @var array<int|string, mixed> $goalTableMatchesColumnNames */
     	$goalTableMatchesColumnNames = is_array($tableDifferences['goalTableMatchesColumnNames']) ? $tableDifferences['goalTableMatchesColumnNames'] : [];
 
-    	// drop unnecessary columns.
-    	foreach ($dropTheseColumns as $colName) {
-    		$query = "alter table " . $tableName . " drop " . $colName;
-    		$this->dao->queryAndGetResults($query);
-    		$this->logger->infoMessage("I dropped a column (1): " . $query);
+    	// drop unnecessary columns — but never drop ALL columns (MySQL error:
+    	// "You can't delete all columns with ALTER TABLE; use DROP TABLE instead").
+    	// This happens when a table is completely restructured and every existing
+    	// column name differs from the goal schema.
+    	$existingColumnCount = count($existingTableMatchesColumnDDL);
+    	if (count($dropTheseColumns) > 0 && count($dropTheseColumns) >= $existingColumnCount) {
+    		$this->logger->warn("Skipping column drops on " . $tableName .
+    			" because it would remove all " . $existingColumnCount .
+    			" existing columns. Drops requested: " . implode(', ', $dropTheseColumns));
+    	} else {
+    		foreach ($dropTheseColumns as $colName) {
+    			$query = "alter table " . $tableName . " drop " . $colName;
+    			$this->dao->queryAndGetResults($query);
+    			$this->logger->infoMessage("I dropped a column (1): " . $query);
+    		}
     	}
 
     	// say why we're doing what we're doing.
