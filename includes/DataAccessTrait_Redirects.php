@@ -1006,7 +1006,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         
         $redirectTypes = array();
         foreach ($type as $aType) {
-            if (('' . $aType != ABJ404_TYPE_HOME) && ('' . $aType != ABJ404_TYPE_HOME)) {
+            if (('' . $aType != ABJ404_TYPE_HOME) && ('' . $aType != ABJ404_TYPE_404_DISPLAYED)) {
                 array_push($redirectTypes, absint($aType));
             }
         }
