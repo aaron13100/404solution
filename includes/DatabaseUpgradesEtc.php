@@ -1255,7 +1255,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	$goalMatchesSub = is_array($goalTableMatches[1] ?? null) ? $goalTableMatches[1] : [];
     	$goalMatchesSub = array_map(function ($ddl) {
     		$ddlStr = is_string($ddl) ? $ddl : '';
-		return str_replace("default '0'", "default 0", str_replace('`', '', trim($ddlStr)));
+		$normalized = str_replace('`', '', trim($ddlStr));
+		return preg_replace("/default '(\d+)'/", 'default $1', $normalized) ?? $normalized;
     	}, $goalMatchesSub);
     	foreach ($updateTheseColumns as $colDDL) {
     		// find the colum name.
