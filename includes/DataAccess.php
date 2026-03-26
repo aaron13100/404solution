@@ -970,7 +970,8 @@ class ABJ_404_Solution_DataAccess {
                     $this->serverSideIssueChecked = true;
                     $existing = $this->getRuntimeFlag('abj404_plugin_db_notice');
                     if (is_array($existing) && !empty($existing['type'])
-                        && $existing['type'] !== 'collation') {
+                        && $existing['type'] !== 'collation'
+                        && $existing['type'] !== 'stale_permalink_cache') {
                         $this->serverSideIssueNoted = true;
                     }
                 }

@@ -1017,7 +1017,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                     wp_kses_post((string)json_encode($redirectTypes)));
             return $message;
         }
-        $purge = sanitize_text_field($_POST['purgetype']);
+        $purge = isset($_POST['purgetype']) ? sanitize_text_field($_POST['purgetype']) : '';
 
         if ($purge != 'abj404_logs' && $purge != 'abj404_redirects') {
             $message = __('Error: An invalid purge type was selected. Exiting.', '404-solution');
