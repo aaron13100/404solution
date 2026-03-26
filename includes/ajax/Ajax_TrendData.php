@@ -10,21 +10,11 @@ if (!defined('ABSPATH')) {
  * Returns daily 404/redirect activity for Chart.js charts on the Stats page.
  */
 class ABJ_404_Solution_Ajax_TrendData {
+    use ABJ_404_Solution_AjaxSecurityTrait;
 
     /** @return void */
     public static function echoTrendData(): void {
-        $nonce = isset($_GET['nonce']) ? (string)$_GET['nonce'] : '';
-        if ($nonce === '' || !wp_verify_nonce($nonce, 'abj404_trendData')) {
-            wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
-
-        // Verify user has appropriate capabilities.
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        if (!$abj404logic->userIsPluginAdmin()) {
-            wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
+        self::requireAdminWithNonce('abj404_trendData');
 
         // Rate limiting: 60 requests per minute.
         if (ABJ_404_Solution_Ajax_Php::checkRateLimit('trend_data', 60, 60)) {

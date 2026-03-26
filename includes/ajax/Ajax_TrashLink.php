@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 
 /* Funtcions supporting Ajax stuff.  */
 class ABJ_404_Solution_Ajax_TrashLink {
+    use ABJ_404_Solution_AjaxSecurityTrait;
 
     /** Handle trash/restore actions via AJAX.
      * @return void
@@ -35,20 +36,7 @@ class ABJ_404_Solution_Ajax_TrashLink {
         /** @var ABJ_404_Solution_DataAccess $abj404dao */
         /** @var ABJ_404_Solution_PluginLogic $abj404logic */
 
-        $nonceOk = function_exists('check_ajax_referer')
-            ? check_ajax_referer('abj404_ajaxTrash', '_wpnonce', false)
-            : (function_exists('check_admin_referer') ? check_admin_referer('abj404_ajaxTrash', '_wpnonce') : false);
-
-        if (!$nonceOk || !is_admin()) {
-            wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
-
-        // Verify user has appropriate capabilities (respects plugin admin users)
-        if (!$abj404logic->userIsPluginAdmin()) {
-            wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
+        self::requireAdminWithNonce('abj404_ajaxTrash', '_wpnonce');
         
         $idToTrash = $abj404dao->getPostOrGetSanitize('id');
         $trashAction = $abj404dao->getPostOrGetSanitize('trash');

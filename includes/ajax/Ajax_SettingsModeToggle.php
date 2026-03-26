@@ -10,6 +10,7 @@ if (!defined('ABSPATH')) {
  */
 
 class ABJ_404_Solution_Ajax_SettingsModeToggle {
+    use ABJ_404_Solution_AjaxSecurityTrait;
 
     /** @var self|null */
     private static $instance = null;
@@ -37,24 +38,12 @@ class ABJ_404_Solution_Ajax_SettingsModeToggle {
      * @return void
      */
     function handleModeToggle(): void {
+        self::requireAdminWithNonce('abj404_mode_toggle');
+
         $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 
-        // Get and sanitize input
         $mode = $abj404dao->getPostOrGetSanitize('mode');
-        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
-
-        // Verify nonce for CSRF protection
-        if (!wp_verify_nonce($nonce, 'abj404_mode_toggle')) {
-            wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
-
-        // Verify user has appropriate capabilities
-        if (!$abj404logic->userIsPluginAdmin()) {
-            wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
 
         // Validate mode
         if ($mode !== 'simple' && $mode !== 'advanced') {
