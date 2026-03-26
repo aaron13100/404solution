@@ -295,13 +295,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
 
         // get the valid post types
         $options = $abj404logic->getOptions();
-        $rptValCache = $options['recognized_post_types'] ?? '';
-        $postTypes = $this->f->explodeNewline(is_string($rptValCache) ? $rptValCache : '');
-        $recognizedPostTypes = '';
-        foreach ($postTypes as $postType) {
-            $recognizedPostTypes .= "'" . trim($this->f->strtolower($postType)) . "', ";
-        }
-        $recognizedPostTypes = rtrim($recognizedPostTypes, ", ");
+        $recognizedPostTypes = $this->buildPostTypeSqlList($options);
         if ($recognizedPostTypes === '') {
             return null;
         }

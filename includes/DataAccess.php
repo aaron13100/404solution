@@ -739,10 +739,7 @@ class ABJ_404_Solution_DataAccess {
             global $wpdb;
             $wpdb->flush();
             $result['rows'] = $wpdb->get_results($retryQuery, ARRAY_A);
-            $result['last_error'] = (string)($wpdb->last_error ?? '');
-            $result['last_result'] = $wpdb->last_result ?? array();
-            $result['rows_affected'] = $wpdb->rows_affected ?? 0;
-            $result['insert_id'] = $wpdb->insert_id ?? 0;
+            $this->harvestWpdbResult($result);
         } catch (Throwable $e) {
             $this->logger->warn("Invalid-data retry failed: " . $e->getMessage());
         } finally {
@@ -761,6 +758,67 @@ class ABJ_404_Solution_DataAccess {
         }
         $delayMs = min(5000, $delayMs);
         usleep($delayMs * 1000);
+    }
+
+    /**
+     * Harvest standard result fields from $wpdb after a query.
+     *
+     * @param array<string, mixed> $result The result array to populate.
+     * @return void
+     */
+    private function harvestWpdbResult(array &$result): void {
+        global $wpdb;
+        $result['last_error'] = (string)($wpdb->last_error ?? '');
+        $result['last_result'] = $wpdb->last_result ?? array();
+        $result['rows_affected'] = $wpdb->rows_affected ?? 0;
+        $result['insert_id'] = $wpdb->insert_id ?? 0;
+    }
+
+    /**
+     * Build a SQL-safe comma-separated list from recognized_post_types option.
+     *
+     * @param array<string, mixed> $options Plugin options array.
+     * @return string e.g. "'post', 'page'" or '' if empty.
+     */
+    function buildPostTypeSqlList(array $options): string {
+        $rptVal = $options['recognized_post_types'] ?? '';
+        $postTypes = $this->f->explodeNewline(is_string($rptVal) ? $rptVal : '');
+        $recognizedPostTypes = '';
+        foreach ($postTypes as $postType) {
+            $recognizedPostTypes .= "'" . trim($this->f->strtolower($postType)) . "', ";
+        }
+        return rtrim($recognizedPostTypes, ", ");
+    }
+
+    /**
+     * Build a SQL-safe comma-separated list from recognized_categories option.
+     *
+     * @param array<string, mixed> $options Plugin options array.
+     * @return string e.g. "'category', 'post_tag'" or '' if empty.
+     */
+    function buildCategorySqlList(array $options): string {
+        $rcVal = $options['recognized_categories'] ?? '';
+        $categories = $this->f->explodeNewline(is_string($rcVal) ? $rcVal : '');
+        $recognizedCategories = '';
+        foreach ($categories as $category) {
+            $recognizedCategories .= "'" . trim($this->f->strtolower($category)) . "', ";
+        }
+        return rtrim($recognizedCategories, ", ");
+    }
+
+    /**
+     * Set SQL session variables to allow large queries.
+     *
+     * Sets max_join_size and sql_big_selects for the current session only.
+     * Prevents "The SELECT would examine more than MAX_JOIN_SIZE rows" errors.
+     *
+     * @return void
+     */
+    function setSqlBigSelects(): void {
+        $ignoreErrorsOptions = array('log_errors' => false);
+        $this->queryAndGetResults("set session max_join_size = 18446744073709551615",
+            $ignoreErrorsOptions);
+        $this->queryAndGetResults("set session sql_big_selects = 1", $ignoreErrorsOptions);
     }
 
     /** Return the results of the query in a variable.
@@ -821,15 +879,7 @@ class ABJ_404_Solution_DataAccess {
         if (function_exists('abj404_benchmark_record_db_query')) {
             abj404_benchmark_record_db_query(((float)$result['elapsed_time']) * 1000.0);
         }
-        $result['last_error'] = (string)($wpdb->last_error ?? '');
-        $result['last_result'] = $wpdb->last_result ?? array();
-        $result['rows_affected'] = $wpdb->rows_affected ?? 0;
-
-        if (isset($wpdb->dbh) && $wpdb->dbh != null && isset($wpdb->rows_affected)) {
-	        $result['rows_affected'] = $wpdb->rows_affected;
-        }
-
-        $result['insert_id'] = $wpdb->insert_id ?? 0;
+        $this->harvestWpdbResult($result);
         
         if (!is_array($result['rows'])) {
             // In production (WP_DEBUG off), only log SQL filename to avoid PII exposure
@@ -843,10 +893,7 @@ class ABJ_404_Solution_DataAccess {
             $this->ensureConnection();
             $wpdb->flush();
             $result['rows'] = $wpdb->get_results($query, ARRAY_A);
-            $result['last_error'] = (string)($wpdb->last_error ?? '');
-            $result['last_result'] = $wpdb->last_result ?? array();
-            $result['rows_affected'] = $wpdb->rows_affected ?? 0;
-            $result['insert_id'] = $wpdb->insert_id ?? 0;
+            $this->harvestWpdbResult($result);
         }
 
         if (!$options['skip_repair'] && $result['last_error'] !== '' && $this->isMissingPluginTableError($result['last_error'])) {
@@ -864,10 +911,7 @@ class ABJ_404_Solution_DataAccess {
             /** @var wpdb $wpdb */
             usleep(50000); // 50 ms — enough for most short-lived locks to release
             $result['rows'] = $wpdb->get_results($query, ARRAY_A);
-            $result['last_error'] = (string)$wpdb->last_error;
-            $result['last_result'] = $wpdb->last_result;
-            $result['rows_affected'] = $wpdb->rows_affected;
-            $result['insert_id'] = $wpdb->insert_id;
+            $this->harvestWpdbResult($result);
             if ($result['last_error'] !== '' && $this->isDeadlockOrLockTimeoutError($result['last_error'])) {
                 $this->setPluginDbNotice('lock_timeout', $this->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $result['last_error']);
             }
@@ -1319,10 +1363,7 @@ class ABJ_404_Solution_DataAccess {
             $prevSuppressState = $wpdb->suppress_errors(true);
             $result['rows'] = $wpdb->get_results($query, ARRAY_A);
             $wpdb->suppress_errors($prevSuppressState);
-            $result['last_error'] = (string)($wpdb->last_error ?? '');
-            $result['last_result'] = $wpdb->last_result ?? array();
-            $result['rows_affected'] = $wpdb->rows_affected ?? 0;
-            $result['insert_id'] = $wpdb->insert_id ?? 0;
+            $this->harvestWpdbResult($result);
 
             if ($result['last_error'] === '') {
                 $this->logger->infoMessage("Missing-table auto-repair succeeded.");

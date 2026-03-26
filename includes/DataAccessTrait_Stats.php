@@ -587,13 +587,7 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
     		"/sql/updatePermalinkCache.sql");
 
-    	// Fix for MAX_JOIN_SIZE error (reported by 8 users - 18% of errors)
-    	// Set SQL_BIG_SELECTS=1 to allow large queries during permalink cache updates
-    	// IMPORTANT: This is a SESSION-LEVEL setting that only affects this connection
-    	// and automatically expires when the script finishes (no permanent database changes)
-    	// This prevents "The SELECT would examine more than MAX_JOIN_SIZE rows" error on large sites
-    	global $wpdb;
-    	$wpdb->query("SET SQL_BIG_SELECTS=1");
+    	$this->setSqlBigSelects();
 
     	$results = $this->queryAndGetResults($query);
 

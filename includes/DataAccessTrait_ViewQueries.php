@@ -541,10 +541,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
 
         // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
         // they can use a different ID - not the ID from the logs table.
-        $ignoreErrorsOoptions = array('log_errors' => false);
-        $this->queryAndGetResults("set session max_join_size = 18446744073709551615",
-        	$ignoreErrorsOoptions);
-        $this->queryAndGetResults("set session sql_big_selects = 1", $ignoreErrorsOoptions);
+        $this->setSqlBigSelects();
         $results = $this->queryAndGetResults($query);
 
         if (!empty($results['last_error']) && is_string($results['last_error']) && $this->isCollationError($results['last_error'])) {
@@ -666,10 +663,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false, 0, PHP_INT_MAX,
         	true);
 
-        $ignoreErrorsOoptions = array('log_errors' => false);
-        $this->queryAndGetResults("set session max_join_size = 18446744073709551615", 
-        	$ignoreErrorsOoptions);
-        $this->queryAndGetResults("set session sql_big_selects = 1", $ignoreErrorsOoptions);
+        $this->setSqlBigSelects();
         $results = $this->queryAndGetResults($query);
         $lastErrorRaw = $results['last_error'] ?? '';
         $lastError = is_string($lastErrorRaw) ? $lastErrorRaw : '';
