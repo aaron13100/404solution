@@ -846,7 +846,7 @@ class ABJ_404_Solution_Logging {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $options = $abj404logic->getOptions(true);
         $debugFileKey = null;
-        if (array_key_exists(self::DEBUG_FILE_KEY, $options)) {
+        if (is_array($options) && array_key_exists(self::DEBUG_FILE_KEY, $options)) {
             $debugFileKey = is_string($options[self::DEBUG_FILE_KEY]) ? $options[self::DEBUG_FILE_KEY] : null;
         }
         // if the key doesn't exist then create it.
