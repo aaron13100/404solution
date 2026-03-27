@@ -578,11 +578,31 @@ trait ViewTrait_Logs {
         $html = $this->f->str_replace('{showSearchFilter}', $searchFilterControl, $html);
         $html = $this->f->str_replace('{TEXT_BEFORE_LINKS}', $currentlyShowingText, $html);
         $html = $this->f->str_replace('{TEXT_SHOW_ROWS}', $showRowsText, $html);
-        $html = $this->f->str_replace('{LINK_FIRST_PAGE}', esc_url($firsturl), $html);
-        $html = $this->f->str_replace('{LINK_PREVIOUS_PAGE}', esc_url($prevurl), $html);
+        // Build navigation buttons: disabled (span) when at the boundary page, link (a) otherwise.
+        $onFirstPage = ($paged <= 1);
+        $onLastPage  = ($paged >= $total_pages);
+
+        if ($onFirstPage) {
+            $btnFirst = '<span class="abj404-page-btn disabled" aria-label="' . esc_attr__('Go to first page', '404-solution') . '" aria-disabled="true">&laquo;</span>';
+            $btnPrev  = '<span class="abj404-page-btn disabled" aria-label="' . esc_attr__('Go to previous page', '404-solution') . '" aria-disabled="true">&lsaquo;</span>';
+        } else {
+            $btnFirst = '<a href="' . esc_url($firsturl) . '" class="abj404-page-btn" title="' . esc_attr__('Go to first page', '404-solution') . '" aria-label="' . esc_attr__('Go to first page', '404-solution') . '">&laquo;</a>';
+            $btnPrev  = '<a href="' . esc_url($prevurl) . '" class="abj404-page-btn" title="' . esc_attr__('Go to previous page', '404-solution') . '" aria-label="' . esc_attr__('Go to previous page', '404-solution') . '">&lsaquo;</a>';
+        }
+
+        if ($onLastPage) {
+            $btnNext = '<span class="abj404-page-btn disabled" aria-label="' . esc_attr__('Go to next page', '404-solution') . '" aria-disabled="true">&rsaquo;</span>';
+            $btnLast = '<span class="abj404-page-btn disabled" aria-label="' . esc_attr__('Go to last page', '404-solution') . '" aria-disabled="true">&raquo;</span>';
+        } else {
+            $btnNext = '<a href="' . esc_url($nexturl) . '" class="abj404-page-btn" title="' . esc_attr__('Go to next page', '404-solution') . '" aria-label="' . esc_attr__('Go to next page', '404-solution') . '">&rsaquo;</a>';
+            $btnLast = '<a href="' . esc_url($lasturl) . '" class="abj404-page-btn" title="' . esc_attr__('Go to last page', '404-solution') . '" aria-label="' . esc_attr__('Go to last page', '404-solution') . '">&raquo;</a>';
+        }
+
+        $html = $this->f->str_replace('{BTN_FIRST_PAGE}', $btnFirst, $html);
+        $html = $this->f->str_replace('{BTN_PREV_PAGE}', $btnPrev, $html);
         $html = $this->f->str_replace('{TEXT_CURRENT_PAGE}', $currentPageText, $html);
-        $html = $this->f->str_replace('{LINK_NEXT_PAGE}', esc_url($nexturl), $html);
-        $html = $this->f->str_replace('{LINK_LAST_PAGE}', esc_url($lasturl), $html);
+        $html = $this->f->str_replace('{BTN_NEXT_PAGE}', $btnNext, $html);
+        $html = $this->f->str_replace('{BTN_LAST_PAGE}', $btnLast, $html);
         $html = $this->f->str_replace('{filterText}', esc_attr($filterText), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-url}', esc_attr(admin_url('admin-ajax.php')), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-action}', esc_attr($ajaxAction), $html);

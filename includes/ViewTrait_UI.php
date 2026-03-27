@@ -112,7 +112,8 @@ trait ViewTrait_UI {
         $this->logger->debugMessage("Displaying sub page: " . esc_html($sub == '' ? '(none)' : $sub));
 
         $abj404view->outputAdminHeaderTabs($sub, $message);
-        
+        $abj404view->echoQuickLinks();
+
         $abj404action = $this->dao->getPostOrGetSanitize('abj404action');
         if (($action == 'editRedirect') || ($abj404action == 'editRedirect') || ($sub == 'abj404_edit')) {
             $abj404view->echoAdminEditRedirectPage();
@@ -308,9 +309,9 @@ trait ViewTrait_UI {
      * @return void
      */
     function echoQuickLinks() {
-        $statsUrl = admin_url('admin.php?page=' . ABJ404_PP . '&subpage=abj404_stats');
-        $capturedUrl = admin_url('admin.php?page=' . ABJ404_PP . '&subpage=abj404_captured');
-        $redirectsUrl = admin_url('admin.php?page=' . ABJ404_PP . '&subpage=abj404_redirects');
+        $statsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_stats');
+        $capturedUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_captured');
+        $redirectsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_redirects');
         $docsUrl = 'https://ajexoop.com/404-solution/documentation/';
 
         echo '<div class="abj404-quick-links">';
