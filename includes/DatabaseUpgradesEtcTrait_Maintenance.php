@@ -433,23 +433,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         global $wpdb;
 
         // Derive required tables from SQL DDL files — same source of truth as runInitialCreateTables().
-        // Adding a new create*Table.sql file automatically includes it here.
         $requiredTables = [];
-        $sqlDir = __DIR__ . '/sql';
-        $ddlFiles = glob($sqlDir . '/create*Table.sql');
-        if (!is_array($ddlFiles)) {
-            $ddlFiles = [];
-        }
-        foreach ($ddlFiles as $ddlFile) {
-            if (stripos(basename($ddlFile), 'Temp') !== false) {
-                continue;
-            }
-            // Use file_get_contents() directly to avoid the WordPress-dependent
-            // ABJ_404_Solution_Functions::readFileContents() wrapper here.
-            $ddlContent = @file_get_contents($ddlFile);
-            if ($ddlContent !== false && preg_match('/\{wp_(abj404_\w+)\}/', $ddlContent, $m)) {
-                $requiredTables[] = $m[1];
-            }
+        foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
+            $requiredTables[] = $ddlEntry['bareTableName'];
         }
 
         $missingTables = [];

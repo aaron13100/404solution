@@ -244,22 +244,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @return void
      */
     function repairStrippedViewCacheTable() {
-    	$sqlDir = __DIR__ . '/sql';
-    	$files = glob($sqlDir . '/create*Table.sql') ?: [];
-
-    	foreach ($files as $file) {
-    		if (stripos(basename($file), 'Temp') !== false) {
-    			continue;
-    		}
-    		$ddlTemplate = ABJ_404_Solution_Functions::readFileContents($file);
-    		if (!is_string($ddlTemplate) || trim($ddlTemplate) === '') {
-    			continue;
-    		}
-    		if (!preg_match('/\{(wp_abj404_\w+)\}/', $ddlTemplate, $matches)) {
-    			continue;
-    		}
-    		$placeholder = '{' . $matches[1] . '}';
-    		$tableName = $this->dao->doTableNameReplacements($placeholder);
+    	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
+    		$tableName = $this->dao->doTableNameReplacements($ddlEntry['placeholder']);
     		$ddl = $this->dao->getCreateTableDDL($tableName);
 
     		// Table doesn't exist at all — nothing to repair.
@@ -372,36 +358,48 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	}
     }
     
-	    /** @return void */
-	    function runInitialCreateTables() {
-	    	// Discover all permanent table DDL files dynamically.
-	    	// Adding a new table = adding a create*Table.sql file. No other code changes needed.
+	    /**
+	     * Discover all permanent (non-Temp) DDL files and extract table metadata.
+	     *
+	     * @return array<int, array{placeholder: string, bareTableName: string, ddlContent: string}>
+	     */
+	    function discoverPermanentDDLFiles(): array {
 	    	$sqlDir = __DIR__ . '/sql';
 	    	$files = glob($sqlDir . '/create*Table.sql');
 	    	if (!is_array($files)) {
-	    		$files = array();
+	    		$files = [];
 	    	}
 	    	sort($files);
 
+	    	$result = [];
 	    	foreach ($files as $file) {
-	    		// Skip temporary tables (e.g., createLogsHitsTempTable.sql).
 	    		if (stripos(basename($file), 'Temp') !== false) {
 	    			continue;
 	    		}
-
-	    		$query = ABJ_404_Solution_Functions::readFileContents($file);
-	    		if (!is_string($query) || trim($query) === '') {
+	    		$ddlContent = ABJ_404_Solution_Functions::readFileContents($file);
+	    		if (!is_string($ddlContent) || trim($ddlContent) === '') {
 	    			continue;
 	    		}
-	    		$query = $this->applyPluginTableCharsetCollate($query);
+	    		if (!preg_match('/\{(wp_(abj404_\w+))\}/', $ddlContent, $m)) {
+	    			continue;
+	    		}
+	    		$result[] = [
+	    			'placeholder' => '{' . $m[1] . '}',
+	    			'bareTableName' => $m[2],
+	    			'ddlContent' => $ddlContent,
+	    		];
+	    	}
+	    	return $result;
+	    }
+
+	    /** @return void */
+	    function runInitialCreateTables() {
+	    	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
+	    		$query = $this->applyPluginTableCharsetCollate($ddlEntry['ddlContent']);
 	    		$this->dao->queryAndGetResults($query);
 
-	    		// Extract the table placeholder (e.g. "{wp_abj404_redirects}") from the DDL
-	    		// and resolve it to the actual prefixed table name for verifyColumns().
-	    		if (preg_match('/\{(wp_abj404_\w+)\}/', $query, $matches)) {
-	    			$tableName = $this->dao->doTableNameReplacements('{' . $matches[1] . '}');
-	    			$this->verifyColumns($tableName, $query);
-	    		}
+	    		$tableName = $this->dao->doTableNameReplacements($ddlEntry['placeholder']);
+	    		$this->verifyColumns($tableName, $query);
 	    	}
 
 	    	// Table-specific post-creation steps.
@@ -772,35 +770,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
     /** @return void */
     function createIndexes() {
-    	// Loop over every permanent table DDL file (same discovery as runInitialCreateTables).
-    	// doTableNameReplacements() handles all {wp_abj404_*} placeholders in one call,
-    	// so new tables are automatically included without modifying this method.
-    	$sqlDir = __DIR__ . '/sql';
-    	$files = glob($sqlDir . '/create*Table.sql');
-    	if (!is_array($files)) {
-    		$files = [];
-    	}
-    	sort($files);
-
-    	foreach ($files as $file) {
-    		if (stripos(basename($file), 'Temp') !== false) {
-    			continue;
-    		}
-
-    		$query = ABJ_404_Solution_Functions::readFileContents($file);
-    		if (!is_string($query) || trim($query) === '') {
-    			continue;
-    		}
-
-    		// Replace all {wp_abj404_*} placeholders using the shared helper.
-    		$query = $this->dao->doTableNameReplacements($query);
-
-    		// Extract the resolved table name from the DDL so we can pass it to verifyIndexes().
-    		if (!preg_match('/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"]?(\S+?)[`"]?\s*\(/i', $query, $m)) {
-    			continue;
-    		}
-    		$tableName = trim($m[1], '`"');
-
+    	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
+    		$tableName = $this->dao->doTableNameReplacements($ddlEntry['placeholder']);
+    		$query = $this->dao->doTableNameReplacements($ddlEntry['ddlContent']);
     		$this->verifyIndexes($tableName, $query);
     	}
     }
