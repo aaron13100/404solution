@@ -40,6 +40,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         }
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getOrphanedAutoRedirects.sql");
+        $query = $this->doTableNameReplacements($query);
         $query = $this->f->doNormalReplacements($query);
 
         $results = $this->queryAndGetResults($query);
