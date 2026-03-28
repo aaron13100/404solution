@@ -1428,6 +1428,7 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     border: 1px solid var(--abj404-border, #8c8f94);
     border-radius: 4px;
     font-size: 14px;
+    line-height: normal;
     background: var(--abj404-surface, #fff);
     color: var(--abj404-text, #1d2327);
 }
@@ -1455,6 +1456,7 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     border: 1px solid var(--abj404-border, #8c8f94);
     border-radius: 4px;
     font-size: 14px;
+    line-height: normal;
     background: var(--abj404-surface, #fff);
     color: var(--abj404-text, #1d2327);
     cursor: pointer;
@@ -1481,6 +1483,7 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     border: 1px solid var(--abj404-border, #8c8f94);
     border-radius: 4px;
     font-size: 14px;
+    line-height: normal;
     background: var(--abj404-surface, #fff);
     cursor: pointer;
 }
