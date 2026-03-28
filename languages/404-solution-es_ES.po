@@ -570,10 +570,10 @@ msgid "Error: Unrecognized bulk action. (%s)"
 msgstr "Error: Acción masiva no reconocida. (%s)"
 
 msgid "Error: You didn't check the I understand checkbox. No importing for you!"
-msgstr "Error: No marcó la casilla \"Entiendo\". ¡No hay importación para usted!"
+msgstr "Error: No marcó la casilla \"Entiendo\". La importación no se realizará."
 
 msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
-msgstr "Error: No marcó la casilla \"Entiendo\". ¡No hay purga de registros para usted!"
+msgstr "Error: No marcó la casilla \"Entiendo\". La purga de registros no se realizará."
 
 msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
 msgstr "Error: El tiempo de espera antes de una actualización automática debe ser un número entre 0 y aproximadamente %d."

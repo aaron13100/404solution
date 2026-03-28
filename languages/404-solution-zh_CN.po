@@ -1280,7 +1280,7 @@ msgid "Visit"
 msgstr "访问"
 
 msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "警告：错误使用时，这将破坏您的网站。使用风险自负。看在上帝的份上，如果您不知道自己在做什么，请将其留空。"
+msgstr "警告：错误使用时，这将破坏您的网站。使用风险自负。求您了，如果您不知道自己在做什么，请将其留空。"
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
 msgstr "当插件检测到错误时，将整个日志文件通过电子邮件发送给开发者。"
