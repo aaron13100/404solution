@@ -112,7 +112,6 @@ trait ViewTrait_UI {
         $this->logger->debugMessage("Displaying sub page: " . esc_html($sub == '' ? '(none)' : $sub));
 
         $abj404view->outputAdminHeaderTabs($sub, $message);
-        $abj404view->echoQuickLinks();
 
         $abj404action = $this->dao->getPostOrGetSanitize('abj404action');
         if (($action == 'editRedirect') || ($abj404action == 'editRedirect') || ($sub == 'abj404_edit')) {
@@ -304,35 +303,6 @@ trait ViewTrait_UI {
         return isset($icons[$iconName]) ? $icons[$iconName] : '';
     }
 
-    /**
-     * Echo the quick links navigation bar
-     * @return void
-     */
-    function echoQuickLinks() {
-        $statsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_stats');
-        $capturedUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_captured');
-        $redirectsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_redirects');
-        $docsUrl = 'https://ajexoop.com/404-solution/documentation/';
-
-        echo '<div class="abj404-quick-links">';
-        echo '<a href="' . esc_url($statsUrl) . '" class="abj404-quick-link">';
-        echo '<span class="abj404-quick-link-icon">📊</span>';
-        echo esc_html__('View Stats', '404-solution');
-        echo '</a>';
-        echo '<a href="' . esc_url($capturedUrl) . '" class="abj404-quick-link">';
-        echo '<span class="abj404-quick-link-icon">📝</span>';
-        echo esc_html__('Captured 404s', '404-solution');
-        echo '</a>';
-        echo '<a href="' . esc_url($redirectsUrl) . '" class="abj404-quick-link">';
-        echo '<span class="abj404-quick-link-icon">🔄</span>';
-        echo esc_html__('Page Redirects', '404-solution');
-        echo '</a>';
-        echo '<a href="' . esc_url($docsUrl) . '" class="abj404-quick-link" target="_blank" rel="noopener">';
-        echo '<span class="abj404-quick-link-icon">📚</span>';
-        echo esc_html__('Documentation', '404-solution');
-        echo '</a>';
-        echo '</div>';
-    }
 
     /**
      * Echo the sticky save bar

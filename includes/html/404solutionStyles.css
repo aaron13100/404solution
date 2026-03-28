@@ -32,39 +32,6 @@
 }
 
 /* ============================================
-   Quick Links Navigation
-   ============================================ */
-
-.abj404-quick-links {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 24px;
-    padding: 16px 20px;
-    background: var(--abj404-info-bg, #e7f3ff);
-    border-radius: 6px;
-}
-
-.abj404-quick-link {
-    color: var(--abj404-accent, #2271b1);
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.abj404-quick-link:hover {
-    text-decoration: underline;
-    color: var(--abj404-accent-hover, #135e96);
-}
-
-.abj404-quick-link-icon {
-    font-size: 16px;
-}
-
-/* ============================================
    Card System
    ============================================ */
 
