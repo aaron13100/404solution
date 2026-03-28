@@ -1374,20 +1374,28 @@ class ABJ_404_Solution_DataAccess {
                     delete_option($repairCooldownKey);
                 }
             } else {
+                // Check for prefix mismatch: plugin tables may exist under a
+                // different $table_prefix than the current $wpdb->prefix (common
+                // after site migrations or hosting panel clones).
+                $prefixDiag = $this->diagnosePrefixMismatch();
+
                 // Repair failed — now escalate to ERROR so it triggers email notification.
                 $this->logger->errorMessage("Missing plugin table auto-repair failed. "
                     . "Original error: " . $originalSqlError
-                    . ", Retry error: " . $result['last_error']);
+                    . ", Retry error: " . $result['last_error']
+                    . $prefixDiag);
                 // Engage 24h cooldown and surface a single admin notice on
                 // the plugin screen so the admin knows to investigate (e.g. missing CREATE
                 // privilege or wrong DB user).  Never email; never show on all wp-admin pages.
                 $this->setRuntimeFlag($repairCooldownKey, time() + 86400, 86400);
+                $adminMsg = 'A plugin database table is missing and could not be repaired automatically. '
+                    . 'Try deactivating and reactivating 404 Solution, or verify that your database user has CREATE TABLE privileges.';
+                if ($prefixDiag !== '') {
+                    $adminMsg .= ' ' . $prefixDiag;
+                }
                 $noticePayload = array(
                     'type'         => 'missing_table',
-                    'message'      => $this->localizeOrDefault(
-                        'A plugin database table is missing and could not be repaired automatically. '
-                        . 'Try deactivating and reactivating 404 Solution, or verify that your database user has CREATE TABLE privileges.'
-                    ),
+                    'message'      => $this->localizeOrDefault($adminMsg),
                     'timestamp'    => time(),
                     'error_string' => $result['last_error'],
                 );
@@ -1398,6 +1406,64 @@ class ABJ_404_Solution_DataAccess {
             $this->setRuntimeFlag($repairCooldownKey, time() + 86400, 86400);
         } finally {
             self::$tableRepairInProgress = false;
+        }
+    }
+
+    /**
+     * Check whether plugin tables exist under a different prefix than $wpdb->prefix.
+     *
+     * After site migrations or hosting panel clones, $table_prefix in wp-config.php
+     * may differ from the prefix used when the plugin tables were originally created.
+     * Returns a diagnostic string if a mismatch is detected, empty string otherwise.
+     *
+     * @return string Diagnostic message or empty string.
+     */
+    private function diagnosePrefixMismatch(): string {
+        global $wpdb;
+        try {
+            $dbName = $wpdb->dbname ?? '';
+            if ($dbName === '') {
+                return '';
+            }
+            $dbNameEscaped = esc_sql($dbName);
+            $dbNameStr = is_array($dbNameEscaped) ? '' : $dbNameEscaped;
+            // Find any table containing 'abj404_redirects' in this database.
+            $rows = $wpdb->get_results(
+                "SELECT table_name FROM information_schema.tables "
+                . "WHERE table_schema = '{$dbNameStr}' "
+                . "AND LOWER(table_name) LIKE '%abj404\_redirects'",
+                ARRAY_A
+            );
+            if (!is_array($rows) || empty($rows)) {
+                return '';
+            }
+            $expectedTable = $this->getLowercasePrefix() . 'abj404_redirects';
+            $foundTables = [];
+            foreach ($rows as $row) {
+                // Case-insensitive key lookup (MySQL driver inconsistency).
+                $name = null;
+                foreach ($row as $key => $value) {
+                    if (strtolower((string)$key) === 'table_name') {
+                        $name = (string)$value;
+                        break;
+                    }
+                }
+                if ($name !== null) {
+                    $foundTables[] = $name;
+                }
+            }
+            // Filter out the table we're already looking for.
+            $mismatched = array_filter($foundTables, function ($t) use ($expectedTable) {
+                return strtolower($t) !== strtolower($expectedTable);
+            });
+            if (empty($mismatched)) {
+                return '';
+            }
+            return ', PREFIX MISMATCH DETECTED: $wpdb->prefix is "' . ($wpdb->prefix ?? '')
+                . '" (expected table: ' . $expectedTable . ') but plugin tables exist as: '
+                . implode(', ', $mismatched) . '. Check $table_prefix in wp-config.php.';
+        } catch (Throwable $e) {
+            return '';
         }
     }
 

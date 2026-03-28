@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 4.0.1
+Stable tag: 4.0.2
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -200,6 +200,33 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Email Digest** — Weekly HTML email summarizing captured 404s, resolution rate, and a ranked table of top 404 URLs with color-coded hit badges.
 
 == Changelog ==
+
+= Version 4.0.2 (Mar 27, 2026) =
+
+**New Features**
+
+* Graceful admin screen when plugin files are missing or corrupt — instead of a white screen, shows a diagnostic page listing missing files with reinstall instructions (Error 18).
+* Improved pipeline trace display with color-coded status badges for easier log reading.
+
+**Bug Fixes**
+
+* Fixed orphaned redirect cleanup failing on sites with non-default database table prefixes.
+* Fixed N-gram cache race condition where concurrent TRUNCATE and INSERT operations could corrupt the spelling cache.
+* Fixed timezone handling — replaced `date_default_timezone_set()` with WordPress `wp_date()` for timezone-safe date formatting.
+* Fixed ErrorHandler switch statement bug that could route errors to the wrong handler.
+* Fixed `deleteSpecifiedRedirects` type filter not correctly constraining purge operations.
+* Fixed DDL schema comparison incorrectly flagging non-zero quoted integer defaults (e.g. `DEFAULT '1'` vs `DEFAULT 1`) as schema differences.
+
+**Security**
+
+* Added defense-in-depth guard that prevents schema migrations from accidentally dropping all columns from a table.
+
+**Internal**
+
+* Major codebase refactoring: consolidated duplicated DataAccess patterns, unified AJAX security boilerplate into a shared trait, extracted shared helpers for multisite batch processing and DDL normalization.
+* Replaced `$_REQUEST[ABJ404_PP]` message bus with a typed `RequestContext` object.
+* Removed dead code: unused settings method, stale DDL builders, and redundant index verification logic.
+* Comprehensive E2E test suite expansion — 613 tests across 104 Playwright specs covering every admin UI interaction.
 
 = Version 4.0.1 (Mar 25, 2026) =
 

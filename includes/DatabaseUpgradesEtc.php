@@ -299,6 +299,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			return;
 		}
 
+		$currentPrefix = $this->dao->getLowercasePrefix();
+
 		foreach ($results['rows'] as $row) {
 			// Case-insensitive key lookup: MySQL drivers return information_schema
 			// column names in varying cases (table_name, TABLE_NAME, Table_Name).
@@ -312,17 +314,40 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
 			if (!empty($tableName)) {
 				$lowercaseName = strtolower($tableName);
-		
+
 				// Check if the table name is already lowercase, skip if it is
 				if ($tableName !== $lowercaseName) {
 					// Rename the table to lowercase
 					$renameQuery = "RENAME TABLE `{$tableName}` TO `{$lowercaseName}`";
-					$this->dao->queryAndGetResults($renameQuery, 
+					$this->dao->queryAndGetResults($renameQuery,
 						['ignore_errors' => ["already exists"]]);
 					$this->logger->infoMessage("Renamed table {$tableName} to {$lowercaseName}\n");
 				}
+
+				// Detect prefix mismatch: log a diagnostic message when plugin tables
+				// exist under a different prefix than the current $wpdb->prefix.
+				// This happens after site migrations that change $table_prefix in
+				// wp-config.php. The tables with data use the old prefix (e.g.
+				// "ldymvql8_abj404_redirects") but queries expect the new prefix
+				// (e.g. "wp_abj404_redirects"), causing "Table doesn't exist" errors.
+				$tableAfterLowercase = $lowercaseName;
+				$abj404Pos = strpos($tableAfterLowercase, 'abj404_');
+				if ($abj404Pos !== false && $abj404Pos > 0) {
+					$oldPrefix = substr($tableAfterLowercase, 0, $abj404Pos);
+					if ($oldPrefix !== $currentPrefix) {
+						$correctName = $currentPrefix . substr($tableAfterLowercase, $abj404Pos);
+						$this->logger->errorMessage(
+							"Table prefix mismatch detected: table '{$tableAfterLowercase}' exists "
+							. "but current \$table_prefix expects '{$correctName}'. "
+							. "This usually means the site was migrated and \$table_prefix in "
+							. "wp-config.php was changed from '{$oldPrefix}' to '{$currentPrefix}'. "
+							. "To fix: rename the table in your database, e.g. "
+							. "RENAME TABLE `{$tableAfterLowercase}` TO `{$correctName}`;"
+						);
+					}
+				}
 			} else {
-				$this->logger->warn("I didn't find a table name in the results of this row: " . 
+				$this->logger->warn("I didn't find a table name in the results of this row: " .
 					print_r($row, true));
 			}
 		}
@@ -1123,7 +1148,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function normalizeColumnDDL($ddl): string {
     	$ddlStr = is_string($ddl) ? $ddl : '';
     	$normalized = str_replace('`', '', trim($ddlStr));
-    	return preg_replace("/default '(\d+)'/", 'default $1', $normalized) ?? $normalized;
+    	return preg_replace("/default '(\d+)'/i", 'default $1', $normalized) ?? $normalized;
     }
 
     /**
