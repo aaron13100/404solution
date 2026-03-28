@@ -38,18 +38,27 @@ class ABJ_404_Solution_WPNotices {
         self::$adminNotices = array_unique(self::$adminNotices, SORT_REGULAR);
     }
 
-    /** 
+    /**
      * @return string the messages to display.
      */
     static function echoAdminNotices() {
     	$f = ABJ_404_Solution_Functions::getInstance();
     	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-    	
+
     	$allHTML = '';
     	if (!$abj404logic->userIsPluginAdmin()) {
             return '';
         }
-        
+
+        // Surface any database notice stored as a transient (e.g. missing table).
+        $dbNotice = get_transient('abj404_plugin_db_notice');
+        if (is_array($dbNotice) && !empty($dbNotice['message'])) {
+            $level = isset($dbNotice['type']) && $dbNotice['type'] === 'missing_table'
+                ? ABJ_404_Solution_WPNotice::ERROR
+                : ABJ_404_Solution_WPNotice::WARNING;
+            self::registerAdminMessage($level, $dbNotice['message']);
+        }
+
         foreach (self::$adminNotices as $oneNotice) {
             $html = ABJ_404_Solution_Functions::readFileContents(ABJ404_PATH . "/includes/html/notice.html");
             $html = $f->str_replace('{class}', 'notice is-dismissable is-dismissible ' . $oneNotice->getType(), $html);
