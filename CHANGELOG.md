@@ -6,6 +6,7 @@
 
 * Fixed filter bar inputs and selects overflowing below their container's bottom border due to WordPress admin styles setting an inflated line-height on form controls.
 * Fixed Logs tab URL search input being too narrow — it now dynamically grows to fill available space.
+* Fixed database error notices not appearing on the plugin admin page when a table is missing or cannot be created.
 
 ## Version 4.0.2 (Mar 28, 2026) ##
 
