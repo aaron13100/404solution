@@ -130,12 +130,12 @@ class ABJ_404_Solution_InternalLinkScanner {
 
         $capturedStatus = defined('ABJ404_STATUS_CAPTURED') ? intval(ABJ404_STATUS_CAPTURED) : 3;
 
-        // Use the plugin's DAO if available, otherwise fall back to a direct wpdb query.
+        // Use the plugin's DAO if available, otherwise fall back to strtolower prefix.
         if (class_exists('ABJ_404_Solution_DataAccess')) {
             $dao = ABJ_404_Solution_DataAccess::getInstance();
             $redirectsTable = $dao->doTableNameReplacements('{wp_abj404_redirects}');
         } else {
-            $redirectsTable = $wpdb->prefix . 'abj404_redirects';
+            $redirectsTable = strtolower($wpdb->prefix) . 'abj404_redirects';
         }
 
         $sql = $wpdb->prepare(

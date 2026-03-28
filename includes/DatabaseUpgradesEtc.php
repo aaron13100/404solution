@@ -275,31 +275,51 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
     /**
      * Makes all plugin table names lowercase, in case someone thought it was funny to use
-	 * the lower_case_table_names=0 setting.
+	 * the lower_case_table_names=0 setting. Also detects and adopts orphaned plugin tables
+	 * under old prefixes (from site migrations or the rename bug in v2.35.16–v3.x).
      * @return void
      */
-		function renameAbj404TablesToLowerCase() {
-			global $wpdb;
-			// Fetch all tables starting with "abj404", case-insensitive
-			$dbNameRaw = $wpdb->dbname ?? '';
-			if ($dbNameRaw === '') {
-				$this->logger->warn("Could not determine database name for lowercase rename.");
+	function renameAbj404TablesToLowerCase() {
+		global $wpdb;
+
+		// On case-insensitive MySQL (lower_case_table_names >= 1), table names
+		// are already treated as lowercase internally. Renaming is pointless and
+		// can cause issues on some hosting setups.
+		$lctnResult = $wpdb->get_row("SHOW VARIABLES LIKE 'lower_case_table_names'", ARRAY_A);
+		if (is_array($lctnResult)) {
+			$lctnValue = null;
+			foreach ($lctnResult as $key => $value) {
+				if (strtolower((string)$key) === 'value') {
+					$lctnValue = $value;
+					break;
+				}
+			}
+			if ($lctnValue !== null && (int)$lctnValue >= 1) {
+				// MySQL already handles table names case-insensitively.
+				// Still run adoption check in case of prefix mismatch.
+				$this->adoptOrphanedTables();
 				return;
 			}
-			$dbNameEscaped = esc_sql($dbNameRaw);
-			$dbName = is_array($dbNameEscaped) ? '' : $dbNameEscaped;
-			$query = "SELECT table_name
-				FROM information_schema.tables
-				WHERE table_schema = '{$dbName}'
-				AND LOWER(table_name) LIKE '%abj404%'";
+		}
+
+		// Fetch all tables containing "abj404", case-insensitive
+		$dbNameRaw = $wpdb->dbname ?? '';
+		if ($dbNameRaw === '') {
+			$this->logger->warn("Could not determine database name for lowercase rename.");
+			return;
+		}
+		$dbNameEscaped = esc_sql($dbNameRaw);
+		$dbName = is_array($dbNameEscaped) ? '' : $dbNameEscaped;
+		$query = "SELECT table_name
+			FROM information_schema.tables
+			WHERE table_schema = '{$dbName}'
+			AND LOWER(table_name) LIKE '%abj404%'";
 		$results = $this->dao->queryAndGetResults($query);
 
 		if (!is_array($results['rows'])) {
 			$this->logger->warn("Could not query information_schema tables for lowercase rename.");
 			return;
 		}
-
-		$currentPrefix = $this->dao->getLowercasePrefix();
 
 		foreach ($results['rows'] as $row) {
 			// Case-insensitive key lookup: MySQL drivers return information_schema
@@ -323,34 +343,328 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 						['ignore_errors' => ["already exists"]]);
 					$this->logger->infoMessage("Renamed table {$tableName} to {$lowercaseName}\n");
 				}
-
-				// Detect prefix mismatch: log a diagnostic message when plugin tables
-				// exist under a different prefix than the current $wpdb->prefix.
-				// This happens after site migrations that change $table_prefix in
-				// wp-config.php. The tables with data use the old prefix (e.g.
-				// "ldymvql8_abj404_redirects") but queries expect the new prefix
-				// (e.g. "wp_abj404_redirects"), causing "Table doesn't exist" errors.
-				$tableAfterLowercase = $lowercaseName;
-				$abj404Pos = strpos($tableAfterLowercase, 'abj404_');
-				if ($abj404Pos !== false && $abj404Pos > 0) {
-					$oldPrefix = substr($tableAfterLowercase, 0, $abj404Pos);
-					if ($oldPrefix !== $currentPrefix) {
-						$correctName = $currentPrefix . substr($tableAfterLowercase, $abj404Pos);
-						$this->logger->errorMessage(
-							"Table prefix mismatch detected: table '{$tableAfterLowercase}' exists "
-							. "but current \$table_prefix expects '{$correctName}'. "
-							. "This usually means the site was migrated and \$table_prefix in "
-							. "wp-config.php was changed from '{$oldPrefix}' to '{$currentPrefix}'. "
-							. "To fix: rename the table in your database, e.g. "
-							. "RENAME TABLE `{$tableAfterLowercase}` TO `{$correctName}`;"
-						);
-					}
-				}
 			} else {
 				$this->logger->warn("I didn't find a table name in the results of this row: " .
 					print_r($row, true));
 			}
 		}
+
+		// After renaming, check for orphaned tables under old prefixes.
+		$this->adoptOrphanedTables();
+	}
+
+	/**
+	 * Known plugin table suffixes for adoption.
+	 * @var array<int, string>
+	 */
+	private const PLUGIN_TABLE_SUFFIXES = [
+		'abj404_redirects',
+		'abj404_logsv2',
+		'abj404_spelling_cache',
+		'abj404_permalink_cache',
+		'abj404_lookup',
+		'abj404_ngram_cache',
+		'abj404_logs_hits',
+		'abj404_redirect_conditions',
+		'abj404_engine_profiles',
+		'abj404_view_cache',
+	];
+
+	/**
+	 * Detect orphaned plugin tables under old prefixes and adopt their data
+	 * into the current-prefix tables. Uses slug verification against the logs
+	 * table to confirm ownership before adopting.
+	 *
+	 * @return void
+	 */
+	function adoptOrphanedTables(): void {
+		global $wpdb;
+
+		$dbNameRaw = $wpdb->dbname ?? '';
+		if ($dbNameRaw === '') {
+			return;
+		}
+		$dbNameEscaped = esc_sql($dbNameRaw);
+		$dbName = is_array($dbNameEscaped) ? '' : $dbNameEscaped;
+
+		// Find all abj404 tables in the database, grouped by prefix.
+		$query = "SELECT table_name
+			FROM information_schema.tables
+			WHERE table_schema = '{$dbName}'
+			AND LOWER(table_name) LIKE '%abj404\\_%'";
+		$results = $this->dao->queryAndGetResults($query);
+
+		if (!is_array($results['rows']) || empty($results['rows'])) {
+			return;
+		}
+
+		$currentPrefix = $this->dao->getLowercasePrefix();
+
+		// Group tables by their prefix (everything before 'abj404_').
+		/** @var array<string, array<string>> prefix => [table_name, ...] */
+		$tablesByPrefix = [];
+		foreach ($results['rows'] as $row) {
+			$tableName = null;
+			foreach ($row as $key => $value) {
+				if (strtolower((string)$key) === 'table_name') {
+					$tableName = strtolower((string)$value);
+					break;
+				}
+			}
+			if ($tableName === null) {
+				continue;
+			}
+
+			$abj404Pos = strpos($tableName, 'abj404_');
+			if ($abj404Pos === false) {
+				continue;
+			}
+
+			$prefix = substr($tableName, 0, $abj404Pos);
+			$tablesByPrefix[$prefix][] = $tableName;
+		}
+
+		// Process each OLD prefix (not the current one).
+		foreach ($tablesByPrefix as $oldPrefix => $tables) {
+			if ($oldPrefix === $currentPrefix) {
+				continue;
+			}
+
+			$this->logger->infoMessage(
+				"Found orphaned plugin tables under prefix '{$oldPrefix}' "
+				. "(current prefix is '{$currentPrefix}'): " . implode(', ', $tables)
+			);
+
+			// Check if old tables have any data at all.
+			$totalRows = $this->countOldPrefixRows($oldPrefix);
+			if ($totalRows === 0) {
+				$this->logger->infoMessage(
+					"Orphaned tables under prefix '{$oldPrefix}' are all empty. Skipping adoption."
+				);
+				continue;
+			}
+
+			// Verify ownership via logs dest_url slug matching.
+			$matchResult = $this->verifyOwnershipViaLogs($oldPrefix, $currentPrefix);
+
+			if ($matchResult === null) {
+				// Logs verification returned no data — fall back to redirects post-ID check.
+				$matchResult = $this->verifyOwnershipViaRedirects($oldPrefix);
+			}
+
+			if ($matchResult === false) {
+				$this->logger->infoMessage(
+					"Orphaned tables under prefix '{$oldPrefix}' failed ownership verification. "
+					. "Data does not appear to belong to this site. Skipping adoption."
+				);
+				continue;
+			}
+
+			// Ownership verified — adopt the data.
+			$this->adoptDataFromPrefix($oldPrefix, $currentPrefix);
+		}
+	}
+
+	/**
+	 * Count total rows across all known plugin tables for a given prefix.
+	 *
+	 * @param string $oldPrefix
+	 * @return int
+	 */
+	private function countOldPrefixRows(string $oldPrefix): int {
+		$total = 0;
+		foreach (self::PLUGIN_TABLE_SUFFIXES as $suffix) {
+			$tableName = $oldPrefix . $suffix;
+			$result = $this->dao->queryAndGetResults(
+				"SELECT COUNT(*) AS cnt FROM `{$tableName}`",
+				['ignore_errors' => ["doesn't exist", "not found"]]
+			);
+			if (is_array($result['rows']) && !empty($result['rows'])) {
+				$row = $result['rows'][0];
+				$cnt = is_array($row) ? (int)($row['cnt'] ?? $row['CNT'] ?? 0) : 0;
+				$total += $cnt;
+			}
+		}
+		return $total;
+	}
+
+	/**
+	 * Verify ownership of orphaned tables by matching logs dest_url against
+	 * current site's published post slugs.
+	 *
+	 * @param string $oldPrefix   The old table prefix.
+	 * @param string $currentPrefix The current (expected) prefix.
+	 * @return bool|null  true = verified, false = failed, null = no data to verify.
+	 */
+	private function verifyOwnershipViaLogs(string $oldPrefix, string $currentPrefix): ?bool {
+		$logsTable = $oldPrefix . 'abj404_logsv2';
+		$postsTable = $currentPrefix . 'posts';
+
+		// Check distinct internal dest_urls against published post slugs.
+		$query = "SELECT COUNT(*) AS total,
+				SUM(CASE WHEN matched = 1 THEN 1 ELSE 0 END) AS matches
+			FROM (
+				SELECT DISTINCT dest_url,
+					EXISTS(SELECT 1 FROM `{$postsTable}` p
+						WHERE p.post_status = 'publish'
+						AND LENGTH(p.post_name) >= 3
+						AND LOCATE(p.post_name, dest_url) > 0
+						LIMIT 1) AS matched
+				FROM `{$logsTable}` l
+				WHERE dest_url IS NOT NULL
+					AND dest_url != ''
+					AND dest_url != '404'
+					AND dest_url NOT LIKE 'http://%'
+					AND dest_url NOT LIKE 'https://%'
+				LIMIT 500
+			) sub";
+
+		$result = $this->dao->queryAndGetResults($query,
+			['ignore_errors' => ["doesn't exist", "not found"]]);
+
+		if (!is_array($result['rows']) || empty($result['rows'])) {
+			return null;
+		}
+
+		$row = $result['rows'][0];
+		$total = 0;
+		$matches = 0;
+		foreach ($row as $key => $value) {
+			$lk = strtolower((string)$key);
+			if ($lk === 'total') { $total = (int)$value; }
+			if ($lk === 'matches') { $matches = (int)$value; }
+		}
+
+		if ($total === 0) {
+			return null; // No internal dest_urls to verify.
+		}
+
+		$matchPct = ($matches / max(1, $total)) * 100;
+		$this->logger->infoMessage(
+			"Logs ownership verification for prefix '{$oldPrefix}': "
+			. "{$matches}/{$total} distinct internal dest_urls match published post slugs "
+			. "({$matchPct}%)"
+		);
+
+		return $matchPct >= 80;
+	}
+
+	/**
+	 * Fallback ownership verification using redirects table post-ID existence.
+	 * Weaker than slug matching but useful when logs have no internal dest_urls.
+	 *
+	 * @param string $oldPrefix
+	 * @return bool|null  true = verified, false = failed, null = no data.
+	 */
+	private function verifyOwnershipViaRedirects(string $oldPrefix): ?bool {
+		global $wpdb;
+		$redirectsTable = $oldPrefix . 'abj404_redirects';
+		$postsTable = ($wpdb->prefix ?? 'wp_') . 'posts';
+
+		$query = "SELECT COUNT(*) AS total,
+				SUM(CASE WHEN p.ID IS NOT NULL THEN 1 ELSE 0 END) AS matches
+			FROM `{$redirectsTable}` r
+			LEFT JOIN `{$postsTable}` p
+				ON p.ID = CAST(r.final_dest AS UNSIGNED)
+				AND p.post_status IN ('publish', 'draft', 'private')
+			WHERE r.type IN (1, 2, 3)";
+
+		$result = $this->dao->queryAndGetResults($query,
+			['ignore_errors' => ["doesn't exist", "not found"]]);
+
+		if (!is_array($result['rows']) || empty($result['rows'])) {
+			return null;
+		}
+
+		$row = $result['rows'][0];
+		$total = 0;
+		$matches = 0;
+		foreach ($row as $key => $value) {
+			$lk = strtolower((string)$key);
+			if ($lk === 'total') { $total = (int)$value; }
+			if ($lk === 'matches') { $matches = (int)$value; }
+		}
+
+		if ($total === 0) {
+			return null;
+		}
+
+		$matchPct = ($matches / max(1, $total)) * 100;
+		$this->logger->infoMessage(
+			"Redirects fallback ownership verification for prefix '{$oldPrefix}': "
+			. "{$matches}/{$total} type 1/2/3 redirects point to existing posts ({$matchPct}%)"
+		);
+
+		return $matchPct >= 80;
+	}
+
+	/**
+	 * Adopt data from orphaned tables under an old prefix into current-prefix tables.
+	 * Uses INSERT IGNORE to avoid duplicate key conflicts.
+	 *
+	 * @param string $oldPrefix
+	 * @param string $currentPrefix
+	 * @return void
+	 */
+	private function adoptDataFromPrefix(string $oldPrefix, string $currentPrefix): void {
+		$this->logger->infoMessage(
+			"Beginning adoption of data from prefix '{$oldPrefix}' to '{$currentPrefix}'"
+		);
+
+		$totalAdopted = 0;
+
+		foreach (self::PLUGIN_TABLE_SUFFIXES as $suffix) {
+			$oldTable = $oldPrefix . $suffix;
+			$newTable = $currentPrefix . $suffix;
+
+			// Check if old table exists and has rows.
+			$countResult = $this->dao->queryAndGetResults(
+				"SELECT COUNT(*) AS cnt FROM `{$oldTable}`",
+				['ignore_errors' => ["doesn't exist", "not found"]]
+			);
+			if (!is_array($countResult['rows']) || empty($countResult['rows'])) {
+				continue;
+			}
+			$row = $countResult['rows'][0];
+			$oldCount = is_array($row) ? (int)($row['cnt'] ?? $row['CNT'] ?? 0) : 0;
+			if ($oldCount === 0) {
+				continue;
+			}
+
+			// Check if new table exists (it should — auto-repair creates them).
+			$newExists = $this->dao->queryAndGetResults(
+				"SELECT 1 FROM `{$newTable}` LIMIT 1",
+				['ignore_errors' => ["doesn't exist", "not found"]]
+			);
+			if (!empty($newExists['last_error'])) {
+				$this->logger->infoMessage(
+					"Target table '{$newTable}' does not exist yet. Skipping adoption for '{$suffix}'."
+				);
+				continue;
+			}
+
+			// INSERT IGNORE: skip rows with conflicting primary keys.
+			$insertQuery = "INSERT IGNORE INTO `{$newTable}` SELECT * FROM `{$oldTable}`";
+			$insertResult = $this->dao->queryAndGetResults($insertQuery,
+				['ignore_errors' => ["doesn't exist", "not found", "Duplicate"]]);
+
+			$affectedRows = 0;
+			if (is_array($insertResult) && isset($insertResult['rows_affected'])) {
+				$rawAffected = $insertResult['rows_affected'];
+				$affectedRows = is_numeric($rawAffected) ? (int)$rawAffected : 0;
+			}
+
+			if ($affectedRows > 0) {
+				$totalAdopted += $affectedRows;
+				$this->logger->infoMessage(
+					"Adopted {$affectedRows} rows from '{$oldTable}' into '{$newTable}'"
+				);
+			}
+		}
+
+		$this->logger->infoMessage(
+			"Adoption complete: {$totalAdopted} total rows adopted from prefix '{$oldPrefix}' to '{$currentPrefix}'"
+		);
 	}
     
     /** @return void */

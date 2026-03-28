@@ -347,7 +347,7 @@ class ABJ_404_Solution_RestApiController {
         $total = $this->dao->getRecordCount($types, 0);
 
         global $wpdb;
-        $redirectsTable = $wpdb->prefix . 'abj404_redirects';
+        $redirectsTable = $this->dao->doTableNameReplacements('{wp_abj404_redirects}');
         $statusIn       = implode(', ', array_map('absint', $types));
         $limitStart     = ($page - 1) * $perPage;
 

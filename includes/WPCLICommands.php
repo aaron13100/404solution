@@ -292,8 +292,9 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         require_once __DIR__ . '/DataAccess.php';
 
         global $wpdb;
+        $dao = ABJ_404_Solution_DataAccess::getInstance();
 
-        $table = $wpdb->prefix . 'abj404_redirects';
+        $table = $dao->doTableNameReplacements('{wp_abj404_redirects}');
         $statusIn = implode(', ', array(
             ABJ404_STATUS_CAPTURED,
             ABJ404_STATUS_IGNORED,
@@ -599,7 +600,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         }
 
         if ($type === 'ngram' || $type === 'all') {
-            $ngramTable = $wpdb->prefix . 'abj404_ngram_cache';
+            $ngramTable = $dao->doTableNameReplacements('{wp_abj404_ngram_cache}');
             $wpdb->query("TRUNCATE TABLE `{$ngramTable}`");
             // Reset the initialized flag so the cache is rebuilt on the next request.
             delete_option('abj404_ngram_cache_initialized');
@@ -695,7 +696,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
     private function fetchRedirectRows($dao, array $types, $limit) {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'abj404_redirects';
+        $table = $dao->doTableNameReplacements('{wp_abj404_redirects}');
         $limit = absint($limit);
 
         if (!empty($types)) {

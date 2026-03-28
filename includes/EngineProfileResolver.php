@@ -204,7 +204,7 @@ class ABJ_404_Solution_EngineProfileResolver {
      */
     private function getTableName(): string {
         global $wpdb;
-        return $wpdb->prefix . 'abj404_engine_profiles';
+        return strtolower($wpdb->prefix) . 'abj404_engine_profiles';
     }
 
     /**
