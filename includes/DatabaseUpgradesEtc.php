@@ -1531,8 +1531,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      */
     function normalizeColumnDDL($ddl): string {
     	$ddlStr = is_string($ddl) ? $ddl : '';
-    	$normalized = str_replace('`', '', trim($ddlStr));
-    	return preg_replace("/default '(\d+)'/i", 'default $1', $normalized) ?? $normalized;
+    	$normalized = strtolower(str_replace('`', '', trim($ddlStr)));
+    	return preg_replace("/default '(\d+)'/", 'default $1', $normalized) ?? $normalized;
     }
 
     /**
