@@ -2875,6 +2875,15 @@ html[data-theme="obsidian"] .abj404-filter-bar {
     align-items: center;
     gap: 8px;
     margin: 0;
+    flex: 1;
+    min-width: 0;
+}
+
+.abj404-logs-search-form input[type="text"],
+.abj404-logs-search-form input.ui-autocomplete-input {
+    flex: 1;
+    min-width: 120px;
+    line-height: normal;
 }
 
 .abj404-logs-search-form label {
