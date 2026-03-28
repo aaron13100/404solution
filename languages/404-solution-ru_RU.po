@@ -35,23 +35,18 @@ msgstr "Деактивация"
 msgid "Saving..."
 msgstr "Сохранение..."
 
-#, fuzzy
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
 msgstr "Не удалось сохранить настройки — отсутствует токен безопасности. Мастер может появиться снова при следующем посещении."
 
-#, fuzzy
 msgid "Could not save dismissal. The wizard may appear again on next visit."
 msgstr "Не удалось сохранить закрытие. Мастер может появиться снова при следующем посещении."
 
-#, fuzzy
 msgid "Could not save dismissal: "
 msgstr "Не удалось сохранить закрытие: "
 
-#, fuzzy
 msgid " The wizard may appear again on next visit."
 msgstr " Мастер может появиться снова при следующем посещении."
 
-#, fuzzy
 msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
 msgstr "Ошибка сети — не удалось сохранить закрытие. Мастер может появиться снова при следующем посещении."
 
@@ -680,7 +675,6 @@ msgstr "Я понимаю вышеизложенное."
 msgid "IP Address"
 msgstr "IP-адрес"
 
-#, fuzzy
 msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "Если ни одна страница не соответствует минимальной оценке совпадения, будет отображен этот текст.  (по умолчанию: &lt;p&gt;Нет предложений. :/ &lt;/p&gt;)"
 
@@ -3409,120 +3403,91 @@ msgstr "Показать трассировку конвейера"
 msgid "No trace available"
 msgstr "Трассировка недоступна"
 
-#, fuzzy
 msgid "Ignore list"
 msgstr "Список исключений"
 
-#, fuzzy
 msgid "Redirect lookup"
 msgstr "Поиск перенаправления"
 
-#, fuzzy
 msgid "Redirect lookup (without comments)"
 msgstr "Поиск перенаправления (без комментариев)"
 
-#, fuzzy
 msgid "Conditions"
 msgstr "Условия"
 
-#, fuzzy
 msgid "Conditions (without comments)"
 msgstr "Условия (без комментариев)"
 
-#, fuzzy
 msgid "Health check"
 msgstr "Проверка доступности"
 
-#, fuzzy
 msgid "Health check (without comments)"
 msgstr "Проверка доступности (без комментариев)"
 
-#, fuzzy
 msgid "Regex rules"
 msgstr "Правила регулярных выражений"
 
-#, fuzzy
 msgid "Suggestion engines"
 msgstr "Модули подбора"
 
-#, fuzzy
 msgid "Result"
 msgstr "Результат"
 
-#, fuzzy
 msgid "Not ignored"
 msgstr "Не исключён"
 
-#, fuzzy
 msgid "Matched — request ignored"
 msgstr "Совпадение — запрос проигнорирован"
 
-#, fuzzy
 msgid "Found existing redirect"
 msgstr "Найдено существующее перенаправление"
 
-#, fuzzy
 msgid "No matching redirect"
 msgstr "Подходящее перенаправление не найдено"
 
-#, fuzzy
 msgid "All conditions met"
 msgstr "Все условия выполнены"
 
-#, fuzzy
 msgid "Blocked by conditions"
 msgstr "Заблокировано условиями"
 
-#, fuzzy
 msgid "Destination unreachable — skipped"
 msgstr "Адрес назначения недоступен — пропущено"
 
-#, fuzzy
 msgid "Matched"
 msgstr "Совпадение"
 
-#, fuzzy
 msgid "No match"
 msgstr "Нет совпадений"
 
-#, fuzzy
 msgid "Skipped"
 msgstr "Пропущено"
 
-#, fuzzy
 msgid "Excluded"
 msgstr "Исключено"
 
 
-#, fuzzy
 msgid "No match found"
 msgstr "Совпадений не найдено"
 
-#, fuzzy
 msgid "Showed 404 page"
 msgstr "Показана страница 404"
 
-#, fuzzy
 msgid "Redirected to external URL"
 msgstr "Перенаправлено на внешний URL"
 
-#, fuzzy
 msgid "No redirect — showed 404 page"
 msgstr "Нет перенаправления — показана страница 404"
 
-#, fuzzy
 msgid "Engine: %s"
 msgstr "Модуль: %s"
 
-#, fuzzy
 msgid "Redirected (%s)"
 msgstr "Перенаправлено (%s)"
 
-#, fuzzy
 msgid "Responded with %s"
 msgstr "Ответ: %s"
 
-#, fuzzy
 msgid "Showed 404 page — %s"
 msgstr "Показана страница 404 — %s"
 

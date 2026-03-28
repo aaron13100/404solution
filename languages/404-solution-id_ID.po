@@ -675,7 +675,6 @@ msgstr "Saya mengerti pernyataan di atas."
 msgid "IP Address"
 msgstr "Alamat IP"
 
-#, fuzzy
 msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "Jika tidak ada halaman yang memenuhi skor pencocokan minimum, maka teks ini akan ditampilkan.  (default: &lt;p&gt;Tidak ada saran. :/ &lt;/p&gt;)"
 
@@ -1313,7 +1312,7 @@ msgid "bulkOptions"
 msgstr "Opsi massal"
 
 msgid "data-pagination-ajax-url"
-msgstr "data-pagination-ajax-url *"
+msgstr "data-pagination-ajax-url"
 
 msgid "data-pagination-ajax-action"
 msgstr "data-pagination-ajax-action *"
@@ -1334,10 +1333,10 @@ msgid "deletePermanentlyHTML"
 msgstr "deletePermanentlyHTML *"
 
 msgid "destination-does-not-exist"
-msgstr "tujuan-tidak-ada"
+msgstr "destination-does-not-exist"
 
 msgid "destination-exists"
-msgstr "tujuan-ada"
+msgstr "destination-exists"
 
 msgid "disallow-redirect-all-requests"
 msgstr "larang-redirect-semua-permintaan"
@@ -3389,119 +3388,90 @@ msgstr "Tampilkan jejak pipeline"
 msgid "No trace available"
 msgstr "Tidak ada jejak tersedia"
 
-#, fuzzy
 msgid "Ignore list"
 msgstr "Daftar abaikan"
 
-#, fuzzy
 msgid "Redirect lookup"
 msgstr "Pencarian pengalihan"
 
-#, fuzzy
 msgid "Redirect lookup (without comments)"
 msgstr "Pencarian pengalihan (tanpa komentar)"
 
-#, fuzzy
 msgid "Conditions"
 msgstr "Kondisi"
 
-#, fuzzy
 msgid "Conditions (without comments)"
 msgstr "Kondisi (tanpa komentar)"
 
-#, fuzzy
 msgid "Health check"
 msgstr "Pemeriksaan kesehatan"
 
-#, fuzzy
 msgid "Health check (without comments)"
 msgstr "Pemeriksaan kesehatan (tanpa komentar)"
 
-#, fuzzy
 msgid "Regex rules"
 msgstr "Aturan regex"
 
-#, fuzzy
 msgid "Suggestion engines"
 msgstr "Mesin saran"
 
-#, fuzzy
 msgid "Result"
 msgstr "Hasil"
 
-#, fuzzy
 msgid "Not ignored"
 msgstr "Tidak diabaikan"
 
-#, fuzzy
 msgid "Matched — request ignored"
 msgstr "Cocok — permintaan diabaikan"
 
-#, fuzzy
 msgid "Found existing redirect"
 msgstr "Pengalihan yang ada ditemukan"
 
-#, fuzzy
 msgid "No matching redirect"
 msgstr "Tidak ada pengalihan yang cocok"
 
-#, fuzzy
 msgid "All conditions met"
 msgstr "Semua kondisi terpenuhi"
 
-#, fuzzy
 msgid "Blocked by conditions"
 msgstr "Diblokir oleh kondisi"
 
-#, fuzzy
 msgid "Destination unreachable — skipped"
 msgstr "Tujuan tidak dapat dijangkau — dilewati"
 
-#, fuzzy
 msgid "Matched"
 msgstr "Cocok"
 
-#, fuzzy
 msgid "No match"
 msgstr "Tidak cocok"
 
-#, fuzzy
 msgid "Skipped"
 msgstr "Dilewati"
 
-#, fuzzy
 msgid "Excluded"
 msgstr "Dikecualikan"
 
-#, fuzzy
 msgid "No match found"
 msgstr "Tidak ditemukan kecocokan"
 
-#, fuzzy
 msgid "Showed 404 page"
 msgstr "Halaman 404 ditampilkan"
 
-#, fuzzy
 msgid "Redirected to external URL"
 msgstr "Dialihkan ke URL eksternal"
 
-#, fuzzy
 msgid "No redirect — showed 404 page"
 msgstr "Tidak ada pengalihan — halaman 404 ditampilkan"
 
-#, fuzzy
 msgid "Engine: %s"
 msgstr "Mesin: %s"
 
-#, fuzzy
 msgid "Redirected (%s)"
 msgstr "Dialihkan (%s)"
 
-#, fuzzy
 msgid "Responded with %s"
 msgstr "Merespons dengan %s"
 
-#, fuzzy
 msgid "Showed 404 page — %s"
 msgstr "Halaman 404 ditampilkan — %s"
 

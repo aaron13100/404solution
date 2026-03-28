@@ -35,23 +35,18 @@ msgstr "Avaktiverar"
 msgid "Saving..."
 msgstr "Sparar..."
 
-#, fuzzy
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
 msgstr "Kunde inte spara inställningar – säkerhetstoken saknas. Guiden kan visas igen vid nästa besök."
 
-#, fuzzy
 msgid "Could not save dismissal. The wizard may appear again on next visit."
 msgstr "Kunde inte spara avvisningen. Guiden kan visas igen vid nästa besök."
 
-#, fuzzy
 msgid "Could not save dismissal: "
 msgstr "Kunde inte spara avvisningen: "
 
-#, fuzzy
 msgid " The wizard may appear again on next visit."
 msgstr " Guiden kan visas igen vid nästa besök."
 
-#, fuzzy
 msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
 msgstr "Nätverksfel – kunde inte spara avvisningen. Guiden kan visas igen vid nästa besök."
 
@@ -680,7 +675,6 @@ msgstr "Jag förstår ovanstående uttalande."
 msgid "IP Address"
 msgstr "IP-adress"
 
-#, fuzzy
 msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "Om inga sidor uppfyller minsta matchningspoäng, kommer denna text att visas. (standard: &lt;p&gt;Inga förslag. :/ &lt;/p&gt;)"
 
@@ -3404,120 +3398,91 @@ msgstr "Visa pipeline-spårning"
 msgid "No trace available"
 msgstr "Ingen spårning tillgänglig"
 
-#, fuzzy
 msgid "Ignore list"
 msgstr "Ignoreringslista"
 
-#, fuzzy
 msgid "Redirect lookup"
 msgstr "Omdirigeringsuppslagning"
 
-#, fuzzy
 msgid "Redirect lookup (without comments)"
 msgstr "Omdirigeringsuppslagning (utan kommentarer)"
 
-#, fuzzy
 msgid "Conditions"
 msgstr "Villkor"
 
-#, fuzzy
 msgid "Conditions (without comments)"
 msgstr "Villkor (utan kommentarer)"
 
-#, fuzzy
 msgid "Health check"
 msgstr "Hälsokontroll"
 
-#, fuzzy
 msgid "Health check (without comments)"
 msgstr "Hälsokontroll (utan kommentarer)"
 
-#, fuzzy
 msgid "Regex rules"
 msgstr "Regex-regler"
 
-#, fuzzy
 msgid "Suggestion engines"
 msgstr "Förslagsmoduler"
 
-#, fuzzy
 msgid "Result"
 msgstr "Resultat"
 
-#, fuzzy
 msgid "Not ignored"
 msgstr "Inte ignorerad"
 
-#, fuzzy
 msgid "Matched — request ignored"
 msgstr "Matchad — begäran ignorerad"
 
-#, fuzzy
 msgid "Found existing redirect"
 msgstr "Befintlig omdirigering hittad"
 
-#, fuzzy
 msgid "No matching redirect"
 msgstr "Ingen matchande omdirigering"
 
-#, fuzzy
 msgid "All conditions met"
 msgstr "Alla villkor uppfyllda"
 
-#, fuzzy
 msgid "Blocked by conditions"
 msgstr "Blockerad av villkor"
 
-#, fuzzy
 msgid "Destination unreachable — skipped"
 msgstr "Destination ej nåbar — överhoppad"
 
-#, fuzzy
 msgid "Matched"
 msgstr "Matchad"
 
-#, fuzzy
 msgid "No match"
 msgstr "Ingen match"
 
-#, fuzzy
 msgid "Skipped"
 msgstr "Överhoppad"
 
-#, fuzzy
 msgid "Excluded"
 msgstr "Utesluten"
 
 
-#, fuzzy
 msgid "No match found"
 msgstr "Ingen match hittades"
 
-#, fuzzy
 msgid "Showed 404 page"
 msgstr "Visade 404-sida"
 
-#, fuzzy
 msgid "Redirected to external URL"
 msgstr "Omdirigerad till extern URL"
 
-#, fuzzy
 msgid "No redirect — showed 404 page"
 msgstr "Ingen omdirigering — visade 404-sida"
 
-#, fuzzy
 msgid "Engine: %s"
 msgstr "Modul: %s"
 
-#, fuzzy
 msgid "Redirected (%s)"
 msgstr "Omdirigerad (%s)"
 
-#, fuzzy
 msgid "Responded with %s"
 msgstr "Svarade med %s"
 
-#, fuzzy
 msgid "Showed 404 page — %s"
 msgstr "Visade 404-sida — %s"
 

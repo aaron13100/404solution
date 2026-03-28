@@ -652,7 +652,7 @@ msgid "Here are some other great pages"
 msgstr "Hier sind weitere interessante Seiten"
 
 msgid "Hide %s"
-msgstr "Ausblenden %s"
+msgstr "%s ausblenden"
 
 msgid "Hits"
 msgstr "Treffer"
@@ -675,7 +675,6 @@ msgstr "Ich verstehe die obige Aussage."
 msgid "IP Address"
 msgstr "IP-Adresse"
 
-#, fuzzy
 msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "Wenn keine Seiten die minimale Übereinstimmungsbewertung erreichen, wird dieser Text angezeigt.  (Standard: &lt;p&gt;Keine Vorschläge. :/ &lt;/p&gt;)"
 
@@ -1314,7 +1313,7 @@ msgid "bulkOptions"
 msgstr "BulkOptions"
 
 msgid "data-pagination-ajax-url"
-msgstr "Daten-Paginierung-Ajax-URL"
+msgstr "data-pagination-ajax-url"
 
 msgid "data-pagination-ajax-action"
 msgstr "Daten-Paginierung-Ajax-Aktion"
@@ -1335,10 +1334,10 @@ msgid "deletePermanentlyHTML"
 msgstr "dauerhaft löschenHTML"
 
 msgid "destination-does-not-exist"
-msgstr "Ziel existiert nicht"
+msgstr "destination-does-not-exist"
 
 msgid "destination-exists"
-msgstr "Ziel existiert"
+msgstr "destination-exists"
 
 msgid "disallow-redirect-all-requests"
 msgstr "Disallow-Redirect-All-Requests"
@@ -3397,120 +3396,91 @@ msgstr "Pipeline-Ablaufverfolgung anzeigen"
 msgid "No trace available"
 msgstr "Keine Ablaufverfolgung verfügbar"
 
-#, fuzzy
 msgid "Ignore list"
 msgstr "Ignorierungsliste"
 
-#, fuzzy
 msgid "Redirect lookup"
 msgstr "Weiterleitungssuche"
 
-#, fuzzy
 msgid "Redirect lookup (without comments)"
 msgstr "Weiterleitungssuche (ohne Kommentare)"
 
-#, fuzzy
 msgid "Conditions"
 msgstr "Bedingungen"
 
-#, fuzzy
 msgid "Conditions (without comments)"
 msgstr "Bedingungen (ohne Kommentare)"
 
-#, fuzzy
 msgid "Health check"
 msgstr "Zustandsprüfung"
 
-#, fuzzy
 msgid "Health check (without comments)"
 msgstr "Zustandsprüfung (ohne Kommentare)"
 
-#, fuzzy
 msgid "Regex rules"
 msgstr "Regex-Regeln"
 
-#, fuzzy
 msgid "Suggestion engines"
 msgstr "Vorschlagsmodule"
 
-#, fuzzy
 msgid "Result"
 msgstr "Ergebnis"
 
-#, fuzzy
 msgid "Not ignored"
 msgstr "Nicht ignoriert"
 
-#, fuzzy
 msgid "Matched — request ignored"
 msgstr "Übereinstimmung — Anfrage ignoriert"
 
-#, fuzzy
 msgid "Found existing redirect"
 msgstr "Bestehende Weiterleitung gefunden"
 
-#, fuzzy
 msgid "No matching redirect"
 msgstr "Keine passende Weiterleitung"
 
-#, fuzzy
 msgid "All conditions met"
 msgstr "Alle Bedingungen erfüllt"
 
-#, fuzzy
 msgid "Blocked by conditions"
 msgstr "Durch Bedingungen blockiert"
 
-#, fuzzy
 msgid "Destination unreachable — skipped"
 msgstr "Ziel nicht erreichbar — übersprungen"
 
-#, fuzzy
 msgid "Matched"
 msgstr "Übereinstimmung"
 
-#, fuzzy
 msgid "No match"
 msgstr "Keine Übereinstimmung"
 
-#, fuzzy
 msgid "Skipped"
 msgstr "Übersprungen"
 
-#, fuzzy
 msgid "Excluded"
 msgstr "Ausgeschlossen"
 
 
-#, fuzzy
 msgid "No match found"
 msgstr "Keine Übereinstimmung gefunden"
 
-#, fuzzy
 msgid "Showed 404 page"
 msgstr "404-Seite angezeigt"
 
-#, fuzzy
 msgid "Redirected to external URL"
 msgstr "Auf externe URL umgeleitet"
 
-#, fuzzy
 msgid "No redirect — showed 404 page"
 msgstr "Keine Weiterleitung — 404-Seite angezeigt"
 
-#, fuzzy
 msgid "Engine: %s"
 msgstr "Modul: %s"
 
-#, fuzzy
 msgid "Redirected (%s)"
 msgstr "Umgeleitet (%s)"
 
-#, fuzzy
 msgid "Responded with %s"
 msgstr "Antwort mit %s"
 
-#, fuzzy
 msgid "Showed 404 page — %s"
 msgstr "404-Seite angezeigt — %s"
 
