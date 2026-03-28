@@ -236,7 +236,7 @@ msgstr "Avanzado"
 
 #: includes/View.php - Inline mode toggle
 msgid "Simple"
-msgstr "Simple ·"
+msgstr "Simple"
 
 #: includes/View.php - Quick links / Sticky save bar / Toast notification
 msgid "View Stats"
@@ -633,7 +633,7 @@ msgid "First, all of the normal \"exact match\" URLs are checked, then all of th
 msgstr "Primero, se verifican todas las URLs de \"coincidencia exacta\" normales, luego se verifican todas las URLs de expresión regular."
 
 msgid "General"
-msgstr "General ·"
+msgstr "General"
 
 msgid "General Settings"
 msgstr "Configuración general"
@@ -718,22 +718,22 @@ msgid "Issue deleting debug file. (%s)"
 msgstr "Problema al eliminar el archivo de depuración. (%s)"
 
 msgid "JAPANESE_FLASHCARDS_URL"
-msgstr "JAPANESE_FLASHCARDS_URL ·"
+msgstr "JAPANESE_FLASHCARDS_URL"
 
 msgid "Keeps the most recent (and deletes the oldest) log records when the disk usage reaches this limit."
 msgstr "Mantiene los registros más recientes (y elimina los más antiguos) cuando el uso del disco alcanza este límite."
 
 msgid "LINK_FIRST_PAGE"
-msgstr "LINK_FIRST_PAGE ·"
+msgstr "LINK_FIRST_PAGE"
 
 msgid "LINK_LAST_PAGE"
-msgstr "LINK_LAST_PAGE ·"
+msgstr "LINK_LAST_PAGE"
 
 msgid "LINK_NEXT_PAGE"
-msgstr "LINK_NEXT_PAGE ·"
+msgstr "LINK_NEXT_PAGE"
 
 msgid "LINK_PREVIOUS_PAGE"
-msgstr "LINK_PREVIOUS_PAGE ·"
+msgstr "LINK_PREVIOUS_PAGE"
 
 msgid "Last Used"
 msgstr "Último uso"
@@ -754,7 +754,7 @@ msgid "Logs"
 msgstr "Registros"
 
 msgid "MB"
-msgstr "MB ·"
+msgstr "MB"
 
 msgid "Maintenance"
 msgstr "Mantenimiento"
@@ -859,10 +859,10 @@ msgid "Note: The \"scores\" that appear in the format of \"(75.7576)\" after the
 msgstr "Nota: Las \"puntuaciones\" que aparecen en el formato \"(75.7576)\" después de los enlaces de página solo se muestran para usuarios administradores."
 
 msgid "OPTION_MIN_AUTO_SCORE"
-msgstr "OPTION_MIN_AUTO_SCORE ·"
+msgstr "OPTION_MIN_AUTO_SCORE"
 
 msgid "OPTION_TEMPLATE_REDIRECT_PRIORITY"
-msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY ·"
+msgstr "OPTION_TEMPLATE_REDIRECT_PRIORITY"
 
 msgid "One email will be sent per day (when maintenance is run) until the number of captured 404s goes below the number specified in the alert settings."
 msgstr "Se enviará un correo electrónico por día (cuando se ejecute el mantenimiento) hasta que el número de 404 capturados caiga por debajo del número especificado en la configuración de alertas."
@@ -913,7 +913,7 @@ msgid "Purge Type"
 msgstr "Tipo de purga"
 
 msgid "REDIRECT_TO_USER_FIELD_WARNING"
-msgstr "REDIRECT_TO_USER_FIELD_WARNING ·"
+msgstr "REDIRECT_TO_USER_FIELD_WARNING"
 
 msgid "Recognized Post Types"
 msgstr "Tipos de entrada reconocidos"
@@ -1003,37 +1003,37 @@ msgid "Run maintenance to delete old data (etc).&nbsp;&nbsp;It is not necessary 
 msgstr "Ejecute el mantenimiento para eliminar datos antiguos (etc).&nbsp;&nbsp;No es necesario ejecutar esto manualmente, ya que se realiza automáticamente de forma diaria."
 
 msgid "SELECTED_SUGGEST_CATS"
-msgstr "SELECTED_SUGGEST_CATS ·"
+msgstr "SELECTED_SUGGEST_CATS"
 
 msgid "SELECTED_SUGGEST_TAGS"
-msgstr "SELECTED_SUGGEST_TAGS ·"
+msgstr "SELECTED_SUGGEST_TAGS"
 
 msgid "SELECTED_SUGGEST_URL"
-msgstr "SELECTED_SUGGEST_URL ·"
+msgstr "SELECTED_SUGGEST_URL"
 
 msgid "SUGGEST_MAX_SUGGESTIONS"
-msgstr "SUGGEST_MAX_SUGGESTIONS ·"
+msgstr "SUGGEST_MAX_SUGGESTIONS"
 
 msgid "SUGGEST_MIN_SCORE"
-msgstr "SUGGEST_MIN_SCORE ·"
+msgstr "SUGGEST_MIN_SCORE"
 
 msgid "SUGGEST_USER_AFTER"
-msgstr "SUGGEST_USER_AFTER ·"
+msgstr "SUGGEST_USER_AFTER"
 
 msgid "SUGGEST_USER_BEFORE"
-msgstr "SUGGEST_USER_BEFORE ·"
+msgstr "SUGGEST_USER_BEFORE"
 
 msgid "SUGGEST_USER_ENTRY_AFTER"
-msgstr "SUGGEST_USER_ENTRY_AFTER ·"
+msgstr "SUGGEST_USER_ENTRY_AFTER"
 
 msgid "SUGGEST_USER_ENTRY_BEFORE"
-msgstr "SUGGEST_USER_ENTRY_BEFORE ·"
+msgstr "SUGGEST_USER_ENTRY_BEFORE"
 
 msgid "SUGGEST_USER_NO_RESULTS"
-msgstr "SUGGEST_USER_NO_RESULTS ·"
+msgstr "SUGGEST_USER_NO_RESULTS"
 
 msgid "SUGGEST_USER_TITLE"
-msgstr "SUGGEST_USER_TITLE ·"
+msgstr "SUGGEST_USER_TITLE"
 
 msgid "Sanity Check"
 msgstr "Verificación de integridad"
@@ -1072,26 +1072,26 @@ msgid "Supported formats are: <B>from_url,status,type,to_url,wp_type</B>"
 msgstr "Los formatos admitidos son: <B>from_url,status,type,to_url,wp_type</B>"
 
 msgid "TEXT_BEFORE_LINKS"
-msgstr "TEXT_BEFORE_LINKS ·"
+msgstr "TEXT_BEFORE_LINKS"
 
 msgid "TEXT_CURRENT_PAGE"
-msgstr "TEXT_CURRENT_PAGE ·"
+msgstr "TEXT_CURRENT_PAGE"
 
 msgid "TEXT_SHOW_ROWS"
-msgstr "TEXT_SHOW_ROWS ·"
+msgstr "TEXT_SHOW_ROWS"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
-msgstr "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING ·"
+msgstr "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_EMPTY"
-msgstr "TOOLTIP_POPUP_EXPLANATION_EMPTY ·"
+msgstr "TOOLTIP_POPUP_EXPLANATION_EMPTY"
 
 
 msgid "TOOLTIP_POPUP_EXPLANATION_PAGE"
-msgstr "TOOLTIP_POPUP_EXPLANATION_PAGE ·"
+msgstr "TOOLTIP_POPUP_EXPLANATION_PAGE"
 
 msgid "TOOLTIP_POPUP_EXPLANATION_URL"
-msgstr "TOOLTIP_POPUP_EXPLANATION_URL ·"
+msgstr "TOOLTIP_POPUP_EXPLANATION_URL"
 
 msgid "Tag"
 msgstr "Etiqueta"
@@ -1205,7 +1205,7 @@ msgid "Type a page name here and select it to add it to the exclusion list"
 msgstr "Escriba un nombre de página aquí y selecciónelo para añadirlo a la lista de exclusión"
 
 msgid "URL"
-msgstr "URL ·"
+msgstr "URL"
 
 msgid "URL(s) deleted"
 msgstr "URL(s) eliminada(s)"
@@ -1301,13 +1301,13 @@ msgid "You can see which post types are recognized by looking at the default 404
 msgstr "Puede ver qué tipos de entrada se reconocen mirando la opción de destino 404 predeterminada, que tiene una lista de páginas, entradas, productos, etc."
 
 msgid "add-exclude-page-data-url"
-msgstr "add-exclude-page-data-url ·"
+msgstr "add-exclude-page-data-url"
 
 msgid "addManualRedirectAction"
-msgstr "addManualRedirectAction ·"
+msgstr "addManualRedirectAction"
 
 msgid "ajaxTrashLink"
-msgstr "ajaxTrashLink ·"
+msgstr "ajaxTrashLink"
 
 msgid "and <B>from_url,to_url</B>"
 msgstr "y <B>from_url,to_url</B>"
@@ -1316,49 +1316,49 @@ msgid "and redirect to the specified page."
 msgstr "y redirigir a la página especificada."
 
 msgid "bulkOptions"
-msgstr "bulkOptions ·"
+msgstr "bulkOptions"
 
 msgid "data-pagination-ajax-url"
-msgstr "data-pagination-ajax-url ·"
+msgstr "data-pagination-ajax-url"
 
 msgid "data-pagination-ajax-action"
-msgstr "data-pagination-ajax-action ·"
+msgstr "data-pagination-ajax-action"
 
 msgid "data-pagination-ajax-subpage"
 msgstr "data-pagination-ajax-subpágina"
 
 msgid "data-pagination-ajax-nonce"
-msgstr "data-pagination-ajax-nonce ·"
+msgstr "data-pagination-ajax-nonce"
 
 msgid "data-url"
-msgstr "data-url ·"
+msgstr "data-url"
 
 msgid "days (0 means immediately, default 30)"
 msgstr "días (0 significa inmediatamente, predeterminado 30)"
 
 msgid "deletePermanentlyHTML"
-msgstr "deletePermanentlyHTML ·"
+msgstr "deletePermanentlyHTML"
 
 msgid "destination-does-not-exist"
-msgstr "destination-does-not-exist ·"
+msgstr "destination-does-not-exist"
 
 msgid "destination-exists"
 msgstr "El archivo de destino ya existe"
 
 msgid "disallow-redirect-all-requests"
-msgstr "disallow-redirect-all-requests ·"
+msgstr "disallow-redirect-all-requests"
 
 msgid "earliestLogDate"
-msgstr "earliestLogDate ·"
+msgstr "earliestLogDate"
 
 msgid "editLink"
-msgstr "editLink ·"
+msgstr "editLink"
 
 msgid "editlinkHTML"
-msgstr "editlinkHTML ·"
+msgstr "editlinkHTML"
 
 msgid "filterText"
-msgstr "filterText ·"
+msgstr "filterText"
 
 msgid "is maintained by"
 msgstr "es mantenido por"
@@ -1367,103 +1367,103 @@ msgid "loaded-excluded-pages"
 msgstr "cargado-excluido-páginas"
 
 msgid "logCurrentRowCount"
-msgstr "logCurrentRowCount ·"
+msgstr "logCurrentRowCount"
 
 msgid "logCurrentSizeDiskUsage"
-msgstr "logCurrentSizeDiskUsage ·"
+msgstr "logCurrentSizeDiskUsage"
 
 msgid "logslinkHTML"
-msgstr "logslinkHTML ·"
+msgstr "logslinkHTML"
 
 msgid "of"
 msgstr "de"
 
 msgid "pageIDAndType"
-msgstr "pageIDAndType ·"
+msgstr "pageIDAndType"
 
 msgid "postedURL"
-msgstr "postedURL ·"
+msgstr "postedURL"
 
 msgid "redirectPageTitle"
-msgstr "redirectPageTitle ·"
+msgstr "redirectPageTitle"
 
 msgid "rowActions"
-msgstr "rowActions ·"
+msgstr "rowActions"
 
 msgid "rowClass"
-msgstr "rowClass ·"
+msgstr "rowClass"
 
 msgid "rowCode"
-msgstr "rowCode ·"
+msgstr "rowCode"
 
 msgid "rowURL"
-msgstr "rowURL ·"
+msgstr "rowURL"
 
 msgid "selecteSsettingsLevel"
-msgstr "selecteSsettingsLevel ·"
+msgstr "selecteSsettingsLevel"
 
 msgid "selectedAutoCats"
-msgstr "selectedAutoCats ·"
+msgstr "selectedAutoCats"
 
 msgid "selectedAutoRedirects"
-msgstr "selectedAutoRedirects ·"
+msgstr "selectedAutoRedirects"
 
 msgid "selectedAutoTags"
-msgstr "selectedAutoTags ·"
+msgstr "selectedAutoTags"
 
 msgid "selectedCapture404"
-msgstr "selectedCapture404 ·"
+msgstr "selectedCapture404"
 
 msgid "selectedDefaultRedirect301"
-msgstr "selectedDefaultRedirect301 ·"
+msgstr "selectedDefaultRedirect301"
 
 msgid "selectedDefaultRedirect302"
-msgstr "selectedDefaultRedirect302 ·"
+msgstr "selectedDefaultRedirect302"
 
 msgid "selectedRemoveMatches"
-msgstr "selectedRemoveMatches ·"
+msgstr "selectedRemoveMatches"
 
 msgid "selectedSendErrorLogs"
-msgstr "selectedSendErrorLogs ·"
+msgstr "selectedSendErrorLogs"
 
 msgid "selectedThemeCalm"
-msgstr "selectedThemeCalm ·"
+msgstr "selectedThemeCalm"
 
 msgid "selectedThemeMono"
-msgstr "selectedThemeMono ·"
+msgstr "selectedThemeMono"
 
 msgid "selectedThemeNeon"
-msgstr "selectedThemeNeon ·"
+msgstr "selectedThemeNeon"
 
 msgid "selectedThemeObsidian"
-msgstr "selectedThemeObsidian ·"
+msgstr "selectedThemeObsidian"
 
 msgid "selectedUnderSettings"
-msgstr "selectedUnderSettings ·"
+msgstr "selectedUnderSettings"
 
 msgid "showSearchFilter"
-msgstr "showSearchFilter ·"
+msgstr "showSearchFilter"
 
 msgid "statusTitle"
-msgstr "statusTitle ·"
+msgstr "statusTitle"
 
 msgid "toolsExportRedirectsLink"
-msgstr "toolsExportRedirectsLink ·"
+msgstr "toolsExportRedirectsLink"
 
 msgid "toolsImportFormActionLink"
-msgstr "toolsImportFormActionLink ·"
+msgstr "toolsImportFormActionLink"
 
 msgid "toolsImportRedirectsLink"
-msgstr "toolsImportRedirectsLink ·"
+msgstr "toolsImportRedirectsLink"
 
 msgid "toolsMaintenanceFormActionLink"
-msgstr "toolsMaintenanceFormActionLink ·"
+msgstr "toolsMaintenanceFormActionLink"
 
 msgid "toolsPurgeFormActionLink"
-msgstr "toolsPurgeFormActionLink ·"
+msgstr "toolsPurgeFormActionLink"
 
 msgid "urlPlaceholder"
-msgstr "urlPlaceholder ·"
+msgstr "urlPlaceholder"
 
 msgid "will match any URL that begins with"
 msgstr "coincidirá con cualquier URL que comience con"
@@ -1991,7 +1991,7 @@ msgid "Ignore"
 msgstr "Ignorar"
 
 msgid "Manual"
-msgstr "Manual ·"
+msgstr "Manual"
 
 msgid "Automatic"
 msgstr "Automático"
@@ -2133,7 +2133,7 @@ msgstr "La verificación de seguridad falló. Por favor, inténtelo de nuevo."
 
 #: includes/SetupWizard.php
 msgid "Error"
-msgstr "Error ·"
+msgstr "Error"
 
 #: includes/SetupWizard.php
 msgid "You do not have permission to access this page."
@@ -2205,11 +2205,11 @@ msgstr "Guardar y comenzar"
 
 #: includes/html/tableRowPageRedirects.html
 msgid "url-is-normal"
-msgstr "url-is-normal ·"
+msgstr "url-is-normal"
 
 #: includes/html/tableRowPageRedirects.html
 msgid "url-looks-like-regex"
-msgstr "url-looks-like-regex ·"
+msgstr "url-looks-like-regex"
 
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
@@ -2352,7 +2352,7 @@ msgstr "Sí"
 
 #: includes/View.php
 msgid "No"
-msgstr "No ·"
+msgstr "No"
 
 #: includes/View.php
 msgid "mbstring Extension"
@@ -2376,7 +2376,7 @@ msgstr "Disponible"
 
 #: includes/View.php
 msgid "WP_DEBUG"
-msgstr "WP_DEBUG ·"
+msgstr "WP_DEBUG"
 
 #: includes/View.php
 msgid "Enabled"
@@ -2388,11 +2388,11 @@ msgstr "Desactivado"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-auto-refresh"
-msgstr "data-pagination-auto-refresh ·"
+msgstr "data-pagination-auto-refresh"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-refresh-started-text"
-msgstr "data-pagination-refresh-started-text ·"
+msgstr "data-pagination-refresh-started-text"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-refresh-finished-text"
