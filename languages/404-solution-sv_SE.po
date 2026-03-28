@@ -1270,8 +1270,8 @@ msgstr "Visa loggar för"
 msgid "Visit"
 msgstr "Besök"
 
-msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "VARNING: När detta används felaktigt KOMMER det att bryta din webbplats. Använd på egen risk. Snälla, för kärleken till allt som är heligt, lämna detta tomt om du inte vet vad du gör."
+msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of your website, leave this empty if you don't know what you're doing."
+msgstr "VARNING: När detta används felaktigt KOMMER det att bryta din webbplats. Använd på egen risk. Snälla, för din webbplats skull, lämna detta tomt om du inte vet vad du gör."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
 msgstr "När ett fel upptäcks av plugin:et, skicka hela loggfilen till utvecklaren."

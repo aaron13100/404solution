@@ -1269,8 +1269,8 @@ msgstr "Ver logs de"
 msgid "Visit"
 msgstr "Visitar"
 
-msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "AVISO: Quando usado incorretamente, isso IRÁ quebrar seu site. Use por sua conta e risco. Por favor, pelo amor de tudo que é sagrado, deixe isso vazio se você não sabe o que está fazendo."
+msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of your website, leave this empty if you don't know what you're doing."
+msgstr "AVISO: Quando usado incorretamente, isso IRÁ quebrar seu site. Use por sua conta e risco. Por favor, pelo bem do seu site, deixe isso vazio se você não sabe o que está fazendo."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
 msgstr "Quando um erro é detectado pelo plugin, enviar o arquivo de log completo por e-mail para o desenvolvedor."

@@ -1270,8 +1270,8 @@ msgstr "Просмотреть журналы для"
 msgid "Visit"
 msgstr "Перейти"
 
-msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "ВНИМАНИЕ: При неправильном использовании это нарушит работу сайта. Используйте на свой страх и риск. Пожалуйста, оставьте это поле пустым, если не знаете, что делаете."
+msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of your website, leave this empty if you don't know what you're doing."
+msgstr "ВНИМАНИЕ: При неправильном использовании это нарушит работу сайта. Используйте на свой страх и риск. Пожалуйста, ради вашего сайта, оставьте это поле пустым, если не знаете, что делаете."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
 msgstr "Когда плагин обнаруживает ошибку, отправлять весь файл журнала разработчику по электронной почте."

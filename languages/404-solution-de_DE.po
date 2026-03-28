@@ -1270,8 +1270,8 @@ msgstr "Protokolle anzeigen für"
 msgid "Visit"
 msgstr "Besuchen"
 
-msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "WARNUNG: Bei falscher Verwendung wird dies Ihre Website unbrauchbar machen. Verwendung auf eigene Gefahr. Bitte lassen Sie dies leer, wenn Sie nicht wissen, was Sie tun."
+msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of your website, leave this empty if you don't know what you're doing."
+msgstr "WARNUNG: Bei falscher Verwendung wird dies Ihre Website unbrauchbar machen. Verwendung auf eigene Gefahr. Bitte, Ihrer Website zuliebe, lassen Sie dies leer, wenn Sie nicht wissen, was Sie tun."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
 msgstr "Wenn ein Fehler vom Plugin erkannt wird, senden Sie die gesamte Protokolldatei per E-Mail an den Entwickler."

@@ -1269,8 +1269,8 @@ msgstr "Lihat log untuk"
 msgid "Visit"
 msgstr "Kunjungi"
 
-msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "PERINGATAN: Jika digunakan dengan tidak benar ini AKAN merusak situs web Anda. Gunakan dengan risiko Anda sendiri. Tolong, mohon dengan sangat, biarkan ini kosong jika Anda tidak tahu apa yang Anda lakukan."
+msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of your website, leave this empty if you don't know what you're doing."
+msgstr "PERINGATAN: Jika digunakan dengan tidak benar ini AKAN merusak situs web Anda. Gunakan dengan risiko Anda sendiri. Tolong, demi kebaikan situs web Anda, biarkan ini kosong jika Anda tidak tahu apa yang Anda lakukan."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
 msgstr "Ketika kesalahan terdeteksi oleh plugin, kirimkan email seluruh file log ke pengembang."

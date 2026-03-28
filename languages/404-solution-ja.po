@@ -1276,8 +1276,8 @@ msgstr "ログを表示"
 msgid "Visit"
 msgstr "訪問"
 
-msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "警告：これを誤って使用すると、サイトが正常に動作しなくなります。自己責任で使用してください。自分が何をしているのか分からない場合は、これを空のままにしてください。"
+msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of your website, leave this empty if you don't know what you're doing."
+msgstr "警告：これを誤って使用すると、サイトが正常に動作しなくなります。自己責任で使用してください。サイトのために、自分が何をしているのか分からない場合は、これを空のままにしてください。"
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
 msgstr "プラグインがエラーを検出したときに、ログファイル全体を開発者にメールで送信します。"

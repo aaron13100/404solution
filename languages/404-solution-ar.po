@@ -1270,8 +1270,8 @@ msgstr "عرض السجلات لـ"
 msgid "Visit"
 msgstr "زيارة"
 
-msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of all that is holy, leave this empty if you don't know what you're doing."
-msgstr "تحذير: عند الاستخدام الخاطئ سيعطل هذا موقعك. استخدم على مسؤوليتك الخاصة. من فضلك، اترك هذا فارغاً إذا كنت لا تعرف ما تفعله."
+msgid "WARNING: When used incorrectly this WILL break your website. Use at your own risk. Please, for the love of your website, leave this empty if you don't know what you're doing."
+msgstr "تحذير: عند الاستخدام الخاطئ سيعطل هذا موقعك. استخدم على مسؤوليتك الخاصة. من فضلك، حبًّا في موقعك، اترك هذا فارغاً إذا كنت لا تعرف ما تفعله."
 
 msgid "When an error is detected by the plugin, email the entire log file to the developer."
 msgstr "عند اكتشاف خطأ بواسطة الإضافة، أرسل ملف السجل الكامل بالبريد الإلكتروني إلى المطور."
