@@ -377,7 +377,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 *
 	 * @return void
 	 */
-	function adoptOrphanedTables(): void {
+	private function adoptOrphanedTables(): void {
 		global $wpdb;
 
 		$dbNameRaw = $wpdb->dbname ?? '';
@@ -445,22 +445,26 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			}
 
 			// Verify ownership via logs dest_url slug matching.
-			$matchResult = $this->verifyOwnershipViaLogs($oldPrefix, $currentPrefix);
+			$matchResult = $this->verifyOwnershipViaLogs($oldPrefix);
 
 			if ($matchResult === null) {
 				// Logs verification returned no data — fall back to redirects post-ID check.
 				$matchResult = $this->verifyOwnershipViaRedirects($oldPrefix);
 			}
 
-			if ($matchResult === false) {
+			if ($matchResult !== true) {
+				// false = data doesn't match this site; null = insufficient data to verify.
+				// Either way, do not adopt — absence of veto is not permission.
+				$reason = ($matchResult === false)
+					? "Data does not appear to belong to this site."
+					: "Insufficient data in logs and redirects to verify ownership.";
 				$this->logger->infoMessage(
-					"Orphaned tables under prefix '{$oldPrefix}' failed ownership verification. "
-					. "Data does not appear to belong to this site. Skipping adoption."
+					"Orphaned tables under prefix '{$oldPrefix}' — skipping adoption. {$reason}"
 				);
 				continue;
 			}
 
-			// Ownership verified — adopt the data.
+			// Ownership positively verified — adopt the data.
 			$this->adoptDataFromPrefix($oldPrefix, $currentPrefix);
 		}
 	}
@@ -493,12 +497,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 * current site's published post slugs.
 	 *
 	 * @param string $oldPrefix   The old table prefix.
-	 * @param string $currentPrefix The current (expected) prefix.
 	 * @return bool|null  true = verified, false = failed, null = no data to verify.
 	 */
-	private function verifyOwnershipViaLogs(string $oldPrefix, string $currentPrefix): ?bool {
+	private function verifyOwnershipViaLogs(string $oldPrefix): ?bool {
+		global $wpdb;
 		$logsTable = $oldPrefix . 'abj404_logsv2';
-		$postsTable = $currentPrefix . 'posts';
+		// WordPress core posts table uses the original $wpdb->prefix (possibly mixed-case),
+		// NOT our lowercased prefix. Only plugin tables were renamed to lowercase.
+		$postsTable = ($wpdb->prefix ?? 'wp_') . 'posts';
 
 		// Check distinct internal dest_urls against published post slugs.
 		$query = "SELECT COUNT(*) AS total,
@@ -508,8 +514,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 					EXISTS(SELECT 1 FROM `{$postsTable}` p
 						WHERE p.post_status = 'publish'
 						AND LENGTH(p.post_name) >= 3
-						AND LOCATE(p.post_name, dest_url) > 0
-						LIMIT 1) AS matched
+						AND LOCATE(p.post_name, dest_url) > 0) AS matched
 				FROM `{$logsTable}` l
 				WHERE dest_url IS NOT NULL
 					AND dest_url != ''
@@ -643,8 +648,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 				continue;
 			}
 
-			// INSERT IGNORE: skip rows with conflicting primary keys.
-			$insertQuery = "INSERT IGNORE INTO `{$newTable}` SELECT * FROM `{$oldTable}`";
+			// Build a column-matched INSERT to handle schema drift between old and new tables.
+			// Old tables from older plugin versions may have fewer or different columns.
+			$commonColumns = $this->getCommonColumns($oldTable, $newTable);
+			if (empty($commonColumns)) {
+				$this->logger->infoMessage(
+					"No common columns found between '{$oldTable}' and '{$newTable}'. Skipping."
+				);
+				continue;
+			}
+
+			$columnList = implode('`, `', $commonColumns);
+			$insertQuery = "INSERT IGNORE INTO `{$newTable}` (`{$columnList}`) "
+				. "SELECT `{$columnList}` FROM `{$oldTable}`";
 			$insertResult = $this->dao->queryAndGetResults($insertQuery,
 				['ignore_errors' => ["doesn't exist", "not found", "Duplicate"]]);
 
@@ -666,7 +682,61 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			"Adoption complete: {$totalAdopted} total rows adopted from prefix '{$oldPrefix}' to '{$currentPrefix}'"
 		);
 	}
-    
+
+	/**
+	 * Get the list of column names that exist in both tables.
+	 * Used by adoptDataFromPrefix() to build column-matched INSERTs
+	 * that survive schema drift between plugin versions.
+	 *
+	 * @param string $tableA
+	 * @param string $tableB
+	 * @return array<int, string>  Column names present in both tables (lowercase).
+	 */
+	private function getCommonColumns(string $tableA, string $tableB): array {
+		$colsA = $this->getTableColumns($tableA);
+		$colsB = $this->getTableColumns($tableB);
+
+		if (empty($colsA) || empty($colsB)) {
+			return [];
+		}
+
+		return array_values(array_intersect($colsA, $colsB));
+	}
+
+	/**
+	 * Get column names for a table via SHOW COLUMNS.
+	 *
+	 * @param string $tableName
+	 * @return array<int, string>  Column names (lowercase).
+	 */
+	private function getTableColumns(string $tableName): array {
+		$result = $this->dao->queryAndGetResults(
+			"SHOW COLUMNS FROM `{$tableName}`",
+			['ignore_errors' => ["doesn't exist", "not found"]]
+		);
+
+		if (!is_array($result['rows']) || empty($result['rows'])) {
+			return [];
+		}
+
+		$columns = [];
+		foreach ($result['rows'] as $row) {
+			// SHOW COLUMNS returns 'Field' key — case-insensitive lookup.
+			$colName = null;
+			foreach ($row as $key => $value) {
+				if (strtolower((string)$key) === 'field') {
+					$colName = strtolower((string)$value);
+					break;
+				}
+			}
+			if ($colName !== null) {
+				$columns[] = $colName;
+			}
+		}
+
+		return $columns;
+	}
+
     /** @return void */
     function correctMatchData() {
     	$this->dao->queryAndGetResults("delete from {wp_abj404_spelling_cache} " .

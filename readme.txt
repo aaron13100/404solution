@@ -201,15 +201,18 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Changelog ==
 
-= Version 4.0.2 (Mar 27, 2026) =
+= Version 4.0.2 (Mar 28, 2026) =
 
 **New Features**
 
+* Orphaned table adoption — automatically detects and recovers plugin data left behind by site migrations or table prefix changes. Uses slug-matching verification to confirm data ownership before adopting.
 * Graceful admin screen when plugin files are missing or corrupt — instead of a white screen, shows a diagnostic page listing missing files with reinstall instructions (Error 18).
 * Improved pipeline trace display with color-coded status badges for easier log reading.
 
 **Bug Fixes**
 
+* Fixed table prefix normalization — centralized 15+ direct `$wpdb->prefix` usages to go through the lowercased prefix helper, preventing "Table doesn't exist" errors on case-sensitive MySQL servers after table rename.
+* Fixed `renameAbj404TablesToLowerCase()` running unnecessarily on MySQL servers with `lower_case_table_names >= 1` (where MySQL already handles table name casing).
 * Fixed orphaned redirect cleanup failing on sites with non-default database table prefixes.
 * Fixed N-gram cache race condition where concurrent TRUNCATE and INSERT operations could corrupt the spelling cache.
 * Fixed timezone handling — replaced `date_default_timezone_set()` with WordPress `wp_date()` for timezone-safe date formatting.
@@ -223,6 +226,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 **Internal**
 
+* Column-matched INSERT for table adoption — uses `SHOW COLUMNS` and `array_intersect` to handle schema drift between plugin versions when adopting data from old-prefix tables.
 * Major codebase refactoring: consolidated duplicated DataAccess patterns, unified AJAX security boilerplate into a shared trait, extracted shared helpers for multisite batch processing and DDL normalization.
 * Replaced `$_REQUEST[ABJ404_PP]` message bus with a typed `RequestContext` object.
 * Removed dead code: unused settings method, stale DDL builders, and redundant index verification logic.
