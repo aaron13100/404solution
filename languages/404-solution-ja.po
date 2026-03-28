@@ -36,25 +36,20 @@ msgstr "無効化中"
 msgid "Saving..."
 msgstr "保存中..."
 
-#, fuzzy
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
-msgstr "設定を保存できませんでした-セキュリティトークンがありません。ウィザードは次回の訪問時に再び表示される可能性があります。"
+msgstr "設定を保存できませんでした。セキュリティトークンが不足しています。次回訪問時にウィザードが再度表示される場合があります。"
 
-#, fuzzy
 msgid "Could not save dismissal. The wizard may appear again on next visit."
-msgstr "却下を保存できませんでした。ウィザードは次回の訪問時に再び表示される可能性があります。"
+msgstr "非表示設定を保存できませんでした。次回訪問時にウィザードが再度表示される場合があります。"
 
-#, fuzzy
 msgid "Could not save dismissal: "
-msgstr "却下を保存できませんでした："
+msgstr "非表示設定を保存できませんでした："
 
-#, fuzzy
 msgid " The wizard may appear again on next visit."
-msgstr "ウィザードは次回の訪問時に再び表示される可能性があります。"
+msgstr "次回訪問時にウィザードが再度表示される場合があります。"
 
-#, fuzzy
 msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
-msgstr "ネットワークエラー-却下を保存できませんでした。ウィザードは次回の訪問時に再び表示される可能性があります。"
+msgstr "ネットワークエラーにより非表示設定を保存できませんでした。次回訪問時にウィザードが再度表示される場合があります。"
 
 msgid "Settings"
 msgstr "設定"
@@ -1926,154 +1921,154 @@ msgid "for 30+ additional options."
 msgstr "30以上の追加オプションがあります。"
 
 msgid "Statistics"
-msgstr "Statistics"
+msgstr "統計"
 
 msgid "Example:"
-msgstr "Example:"
+msgstr "例："
 
 msgid "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
-msgstr "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "/events/(.+) は /events/ で始まるすべてのURLに一致し、指定されたページにリダイレクトします。キャプチャグループが使用されているため、外部URLのリダイレクト先文字列で $1 置換を使用できます。"
 
 msgid "URLs to redirect"
-msgstr "URLs to redirect"
+msgstr "リダイレクトするURL"
 
 msgid "Captured"
-msgstr "Captured"
+msgstr "キャプチャ済み"
 
 msgid "Ignored"
-msgstr "Ignored"
+msgstr "無視済み"
 
 msgid "Later"
-msgstr "Later"
+msgstr "後で"
 
 msgid "Type to filter URLs... (press Enter)"
-msgstr "Type to filter URLs... (press Enter)"
+msgstr "URLをフィルタ…（Enterで検索）"
 
 msgid "Are you sure you want to permanently delete all items in trash?"
-msgstr "Are you sure you want to permanently delete all items in trash?"
+msgstr "ゴミ箱内のすべてのアイテムを完全に削除してもよろしいですか？"
 
 msgid "selected"
-msgstr "selected"
+msgstr "件選択中"
 
 msgid "Mark Captured"
-msgstr "Mark Captured"
+msgstr "キャプチャ済みにする"
 
 msgid "Mark Ignored"
-msgstr "Mark Ignored"
+msgstr "無視済みにする"
 
 msgid "Move to Trash"
-msgstr "Move to Trash"
+msgstr "ゴミ箱に移動"
 
 msgid "Create Redirect"
-msgstr "Create Redirect"
+msgstr "リダイレクトを作成"
 
 msgid "Clear"
-msgstr "Clear"
+msgstr "クリア"
 
 msgid "Never"
-msgstr "Never"
+msgstr "なし"
 
 msgid "Captured 404 URL"
-msgstr "Captured 404 URL"
+msgstr "キャプチャされた404 URL"
 
 msgid "Ignored URL - will not be suggested"
-msgstr "Ignored URL - will not be suggested"
+msgstr "無視済みURL（提案されません）"
 
 msgid "Edit"
-msgstr "Edit"
+msgstr "編集"
 
 msgid "View Logs"
-msgstr "View Logs"
+msgstr "ログを表示"
 
 msgid "Delete Permanently"
-msgstr "Delete Permanently"
+msgstr "完全に削除"
 
 msgid "Are you sure you want to permanently delete this item?"
-msgstr "Are you sure you want to permanently delete this item?"
+msgstr "このアイテムを完全に削除してもよろしいですか？"
 
 msgid "Delete"
-msgstr "Delete"
+msgstr "削除"
 
 msgid "Ignore"
-msgstr "Ignore"
+msgstr "無視"
 
 msgid "Manual"
-msgstr "Manual"
+msgstr "手動"
 
 msgid "Automatic"
-msgstr "Automatic"
+msgstr "自動"
 
 msgid "Type to filter redirects... (press Enter)"
-msgstr "Type to filter redirects... (press Enter)"
+msgstr "リダイレクトをフィルタ…（Enterで検索）"
 
 msgid "redirects selected"
-msgstr "redirects selected"
+msgstr "件のリダイレクトを選択中"
 
 msgid "Bulk Actions"
-msgstr "Bulk Actions"
+msgstr "一括操作"
 
 msgid "Edit Redirects"
-msgstr "Edit Redirects"
+msgstr "リダイレクトを編集"
 
 msgid "Restore Redirects"
-msgstr "Restore Redirects"
+msgstr "リダイレクトを復元"
 
 msgid "Clear Selection"
-msgstr "Clear Selection"
+msgstr "選択を解除"
 
 msgid "Are you sure you want to permanently delete all items in the trash?"
-msgstr "Are you sure you want to permanently delete all items in the trash?"
+msgstr "ゴミ箱内のすべてのアイテムを完全に削除してもよろしいですか？"
 
 msgid "Add Manual Redirect"
-msgstr "Add Manual Redirect"
+msgstr "手動リダイレクトを追加"
 
 msgid "The URL path that should be redirected (without domain)"
-msgstr "The URL path that should be redirected (without domain)"
+msgstr "リダイレクトするURLパス（ドメインなし）"
 
 msgid "Permanent Redirect (Recommended for SEO)"
-msgstr "Permanent Redirect (Recommended for SEO)"
+msgstr "恒久リダイレクト（SEO推奨）"
 
 msgid "Temporary Redirect"
-msgstr "Temporary Redirect"
+msgstr "一時リダイレクト"
 
 msgid "logs"
-msgstr "logs"
+msgstr "ログ"
 
 msgid "redirects"
-msgstr "redirects"
+msgstr "リダイレクト"
 
 msgid "Showing %1$d-%2$d of %3$d %4$s"
-msgstr "Showing %1$d-%2$d of %3$d %4$s"
+msgstr "%3$d件中 %1$d～%2$d件を表示"
 
 msgid "Redirects will appear here once created."
-msgstr "Redirects will appear here once created."
+msgstr "リダイレクトが作成されるとここに表示されます。"
 
 msgid "Redirect Logs"
-msgstr "Redirect Logs"
+msgstr "リダイレクトログ"
 
 msgid "Action"
-msgstr "Action"
+msgstr "アクション"
 
 msgid "404"
 msgstr "404"
 
 msgid "Today's Stats"
-msgstr "Today's Stats"
+msgstr "今日の統計"
 
 msgid "This Month"
-msgstr "This Month"
+msgstr "今月"
 
 msgid "This Year"
-msgstr "This Year"
+msgstr "今年"
 
 msgid "All Stats"
-msgstr "All Stats"
+msgstr "すべての統計"
 
 msgid "Visit URL"
-msgstr "Visit URL"
+msgstr "URLを開く"
 
 msgid "This page doesn't exist or is not published so the redirect won't work."
-msgstr "This page doesn't exist or is not published so the redirect won't work."
+msgstr "このページは存在しないか未公開のため、リダイレクトは機能しません。"
 
 #: includes/DataAccess.php
 msgid "Just now"
@@ -2449,13 +2444,13 @@ msgid "Refresh available"
 msgstr "更新があります"
 
 msgid "More info"
-msgstr "More info"
+msgstr "詳細情報"
 
 msgid "Destination missing. Edit this redirect and choose a destination."
-msgstr "Destination missing. Edit this redirect and choose a destination."
+msgstr "リダイレクト先が未設定です。このリダイレクトを編集してリダイレクト先を選択してください。"
 
 msgid "(Destination missing)"
-msgstr "(Destination missing)"
+msgstr "（リダイレクト先未設定）"
 
 msgid "data-pagination-refresh-available-text"
 msgstr "data-pagination-refresh-available-text"
@@ -2684,51 +2679,51 @@ msgstr "リダイレクト先が最近404を返しました — 宛先が復元�
 # Strings added for new features (3.3.8)
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
-msgstr "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
+msgstr "データベースのロック待ちタイムアウトが発生しました。この問題が続く場合は、ホスティング会社にお問い合わせください。別のプロセスが長時間ロックを保持している可能性があります。"
 
 msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
-msgstr "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
+msgstr "InnoDBテーブルスペースが不足しています。プラグインのデータを削除してもこの容量は解放されません。ホスティング会社に連絡してInnoDBテーブルスペース（ibdata1）の拡張を依頼してください。"
 
 msgid "Email notification frequency"
-msgstr "Email notification frequency"
+msgstr "メール通知の頻度"
 
 msgid "Instant (when threshold exceeded)"
-msgstr "Instant (when threshold exceeded)"
+msgstr "即時（しきい値超過時）"
 
 msgid "Daily digest"
-msgstr "Daily digest"
+msgstr "日次ダイジェスト"
 
 msgid "Weekly digest"
-msgstr "Weekly digest"
+msgstr "週次ダイジェスト"
 
 msgid "Choose how often to receive email notifications about captured 404s."
-msgstr "Choose how often to receive email notifications about captured 404s."
+msgstr "キャプチャされた404に関するメール通知の受信頻度を選択してください。"
 
 
 
 msgid "Temporary 307 (preserve method)"
-msgstr "Temporary 307 (preserve method)"
+msgstr "一時リダイレクト 307（メソッド維持）"
 
 msgid "Permanent 308 (preserve method)"
-msgstr "Permanent 308 (preserve method)"
+msgstr "恒久リダイレクト 308（メソッド維持）"
 
 msgid "Loading chart data…"
-msgstr "Loading chart data…"
+msgstr "グラフデータを読み込み中…"
 
 msgid "Could not load chart data."
-msgstr "Could not load chart data."
+msgstr "グラフデータを読み込めませんでした。"
 
 msgid "404 Hits per Day"
-msgstr "404 Hits per Day"
+msgstr "日別404ヒット数"
 
 msgid "Redirects per Day"
-msgstr "Redirects per Day"
+msgstr "日別リダイレクト数"
 
 msgid "New Captures per Day"
-msgstr "New Captures per Day"
+msgstr "日別新規キャプチャ数"
 
 msgid "Trends (Last 30 Days)"
-msgstr "Trends (Last 30 Days)"
+msgstr "トレンド（過去30日間）"
 
 msgid "Trend Analytics"
 msgstr "トレンド分析"
@@ -2746,26 +2741,26 @@ msgid "Period"
 msgstr "期間"
 
 msgid "No broken internal links found."
-msgstr "No broken internal links found."
+msgstr "壊れた内部リンクは見つかりませんでした。"
 
 msgid "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
-msgstr "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
+msgstr "%2$d件の投稿・固定ページで%1$d件の壊れた内部リンクが見つかりました。"
 
 msgid "Post/Page"
-msgstr "Post/Page"
+msgstr "投稿/固定ページ"
 
 msgid "Broken URL"
-msgstr "Broken URL"
+msgstr "壊れたURL"
 
 msgid "404 Hits"
-msgstr "404 Hits"
+msgstr "404ヒット数"
 
 msgid "Broken Internal Links"
-msgstr "Broken Internal Links"
+msgstr "壊れた内部リンク"
 
 
 msgid "Migrate from Another Plugin"
-msgstr "Migrate from Another Plugin"
+msgstr "他のプラグインから移行"
 
 msgid "Rank Math"
 msgstr "Rank Math"
@@ -2776,50 +2771,52 @@ msgstr "Yoast SEO Premium"
 msgid "AIOSEO"
 msgstr "AIOSEO"
 
+# translation-verified: Product name "Safe Redirect Manager" intentionally in English
 msgid "Safe Redirect Manager"
 msgstr "Safe Redirect Manager"
 
 msgid "Redirection Plugin"
-msgstr "Redirection Plugin"
+msgstr "Redirection プラグイン"
 
 msgid "No supported redirect plugins detected on this site."
-msgstr "No supported redirect plugins detected on this site."
+msgstr "このサイトで対応済みのリダイレクトプラグインは検出されませんでした。"
 
+# translation-verified: Plugin names "Rank Math", "Yoast SEO Premium", "AIOSEO", "Safe Redirect Manager", "Redirection" intentionally in English
 msgid "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
-msgstr "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
+msgstr "対応しているプラグイン：Rank Math、Yoast SEO Premium、AIOSEO、Safe Redirect Manager、Redirection。"
 
 msgid "Detected redirect plugins:"
-msgstr "Detected redirect plugins:"
+msgstr "検出されたリダイレクトプラグイン："
 
 msgid "Source plugin:"
-msgstr "Source plugin:"
+msgstr "移行元プラグイン："
 
 msgid "Import Redirects"
-msgstr "Import Redirects"
+msgstr "リダイレクトをインポート"
 
 msgid "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
-msgstr "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
+msgstr "選択したプラグインのすべてのアクティブなリダイレクトを 404 Solution にインポートします。正規表現とリダイレクトコードはそのまま保持されます。"
 
 msgid "Temporary Redirect (preserve method)"
-msgstr "Temporary Redirect (preserve method)"
+msgstr "一時リダイレクト（メソッド維持）"
 
 msgid "Permanent Redirect (preserve method)"
-msgstr "Permanent Redirect (preserve method)"
+msgstr "恒久リダイレクト（メソッド維持）"
 
 msgid "Gone (resource permanently removed)"
-msgstr "Gone (resource permanently removed)"
+msgstr "Gone（リソースが完全に削除済み）"
 
 msgid "Conditions (optional)"
-msgstr "Conditions (optional)"
+msgstr "条件（任意）"
 
 msgid "This redirect only fires when all conditions are met. Leave empty to always redirect."
-msgstr "This redirect only fires when all conditions are met. Leave empty to always redirect."
+msgstr "すべての条件が満たされた場合のみリダイレクトが実行されます。空のままにすると常にリダイレクトされます。"
 
 msgid "+ Add Condition"
-msgstr "+ Add Condition"
+msgstr "＋ 条件を追加"
 
 msgid "Logic"
-msgstr "Logic"
+msgstr "論理演算"
 
 msgid "AND"
 msgstr "AND"
@@ -2828,148 +2825,154 @@ msgid "OR"
 msgstr "OR"
 
 msgid "Login Status"
-msgstr "Login Status"
+msgstr "ログイン状態"
 
 msgid "User Role"
-msgstr "User Role"
+msgstr "ユーザー権限"
 
 msgid "Referrer URL"
-msgstr "Referrer URL"
+msgstr "リファラーURL"
 
 msgid "User Agent"
-msgstr "User Agent"
+msgstr "ユーザーエージェント"
 
 msgid "IP Range (CIDR)"
-msgstr "IP Range (CIDR)"
+msgstr "IP範囲（CIDR）"
 
 msgid "HTTP Header"
-msgstr "HTTP Header"
+msgstr "HTTPヘッダー"
 
 msgid "Condition type"
-msgstr "Condition type"
+msgstr "条件タイプ"
 
 msgid "— Select type —"
-msgstr "— Select type —"
+msgstr "— タイプを選択 —"
 
 msgid "equals"
-msgstr "equals"
+msgstr "等しい"
 
 msgid "not equals"
-msgstr "not equals"
+msgstr "等しくない"
 
 msgid "contains"
-msgstr "contains"
+msgstr "含む"
 
 msgid "does not contain"
-msgstr "does not contain"
+msgstr "含まない"
 
 msgid "matches regex"
-msgstr "matches regex"
+msgstr "正規表現に一致"
 
 msgid "Operator"
-msgstr "Operator"
+msgstr "演算子"
 
 msgid "Value"
-msgstr "Value"
+msgstr "値"
 
 msgid "Condition value"
-msgstr "Condition value"
+msgstr "条件の値"
 
 msgid "Remove condition"
-msgstr "Remove condition"
+msgstr "条件を削除"
 
 msgid "Remove"
-msgstr "Remove"
+msgstr "削除"
 
 msgid "Auto-matched by:"
-msgstr "Auto-matched by:"
+msgstr "自動マッチ元："
 
 msgid "Error: Invalid email notification frequency selected"
-msgstr "Error: Invalid email notification frequency selected"
+msgstr "エラー：無効なメール通知頻度が選択されました"
 
 msgid "Error: Digest limit must be a number greater than or equal to 1"
-msgstr "Error: Digest limit must be a number greater than or equal to 1"
+msgstr "エラー：ダイジェスト件数の上限は1以上の数値である必要があります"
 
 msgid "Google Search Console credentials saved."
-msgstr "Google Search Console credentials saved."
+msgstr "Google Search Console の認証情報が正常に保存されました。"
 
 msgid "Error: No source plugin specified."
-msgstr "Error: No source plugin specified."
+msgstr "エラー：移行元プラグインが指定されていません。"
 
 msgid "Error: Unknown source plugin \"%s\"."
-msgstr "Error: Unknown source plugin \"%s\"."
+msgstr "エラー：不明な移行元プラグイン「%s」です。"
 
 msgid "Insufficient permissions."
-msgstr "Insufficient permissions."
+msgstr "権限が不足しています。"
 
 msgid "Security check failed."
-msgstr "Security check failed."
+msgstr "セキュリティチェックに失敗しました。"
 
 msgid "OAuth token exchange failed."
-msgstr "OAuth token exchange failed."
+msgstr "OAuthトークンの交換に失敗しました。"
 
+# translation-verified: Product name "Google Search Console" intentionally in English
 msgid "Google Search Console"
 msgstr "Google Search Console"
 
+# translation-verified: Brand name "Google Search Console" intentionally in English
 msgid "Google Search Console Integration"
-msgstr "Google Search Console Integration"
+msgstr "Google Search Console との連携設定"
 
 msgid "Connect to Google Search Console to see which broken URLs were getting real search traffic."
-msgstr "Connect to Google Search Console to see which broken URLs were getting real search traffic."
+msgstr "Google Search Console に接続して、壊れたURLが実際にどの程度検索トラフィックを受けていたかを確認できます。"
 
 msgid "Setup steps:"
-msgstr "Setup steps:"
+msgstr "セットアップ手順："
 
 msgid "Create a project in %s."
-msgstr "Create a project in %s."
+msgstr "%s でプロジェクトを作成してください。"
 
+# translation-verified: Brand name "Google Search Console API" intentionally in English
 msgid "Enable the \"Google Search Console API\"."
-msgstr "Enable the \"Google Search Console API\"."
+msgstr "「Google Search Console API」を有効化してください。"
 
 msgid "Create OAuth 2.0 credentials (Web application type)."
-msgstr "Create OAuth 2.0 credentials (Web application type)."
+msgstr "OAuth 2.0 認証情報を作成してください（ウェブアプリケーションタイプ）。"
 
 msgid "Add this Authorized Redirect URI: %s"
-msgstr "Add this Authorized Redirect URI: %s"
+msgstr "次の承認済みリダイレクトURIを追加してください：%s"
 
 msgid "Enter your Client ID and Client Secret below."
-msgstr "Enter your Client ID and Client Secret below."
+msgstr "以下にクライアントIDとクライアントシークレットを入力してください。"
 
 msgid "Client ID"
-msgstr "Client ID"
+msgstr "クライアントID"
 
 msgid "Client Secret"
-msgstr "Client Secret"
+msgstr "クライアントシークレット"
 
+# translation-verified: Brand name "Search Console" intentionally in English
 msgid "Search Console Site URL"
-msgstr "Search Console Site URL"
+msgstr "Search Console サイトURL"
 
+# translation-verified: Brand name "Search Console" and example URL intentionally in English
 msgid "The site URL as registered in Search Console (e.g. https://example.com/)."
-msgstr "The site URL as registered in Search Console (e.g. https://example.com/)."
+msgstr "Search Console に登録されているサイトURL（例：https://example.com/）。"
 
 msgid "Save Credentials"
-msgstr "Save Credentials"
+msgstr "認証情報を保存"
 
 msgid "Credentials saved."
-msgstr "Credentials saved."
+msgstr "認証情報を保存しました。"
 
 msgid "Click the button below to authorize access to your Search Console data."
-msgstr "Click the button below to authorize access to your Search Console data."
+msgstr "以下のボタンをクリックして、Search Console データへのアクセスを承認してください。"
 
 msgid "Authorize with Google"
-msgstr "Authorize with Google"
+msgstr "Googleで認証"
 
 msgid "Remove Credentials"
-msgstr "Remove Credentials"
+msgstr "認証情報を削除"
 
+# translation-verified: Brand name "Google Search Console" intentionally in English
 msgid "Connected to Google Search Console."
-msgstr "Connected to Google Search Console."
+msgstr "Google Search Console に接続済みです。"
 
 msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
+msgstr "キャプチャされた404 URLの検索トラフィックデータを以下に表示しています。データは1時間キャッシュされます。"
 
 msgid "Disconnect"
-msgstr "Disconnect"
+msgstr "接続を解除"
 
 msgid "Connected to Google Search Console"
 msgstr "Google Search Consoleとの接続が確立されました"
@@ -2999,52 +3002,52 @@ msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to star
 msgstr "「再試行」をクリックして認可を再試行するか、「認証情報を削除」をクリックしてやり直してください。"
 
 msgid "404 URLs with Search Traffic (last 90 days)"
-msgstr "404 URLs with Search Traffic (last 90 days)"
+msgstr "検索トラフィックのある404 URL（過去90日間）"
 
 msgid "Clicks"
-msgstr "Clicks"
+msgstr "クリック数"
 
 msgid "Impressions"
-msgstr "Impressions"
+msgstr "表示回数"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "過去90日間にキャプチャされた404 URLの検索トラフィックデータが見つかりませんでした。"
 
 msgid "Avg. Position"
-msgstr "Avg. Position"
+msgstr "平均掲載順位"
 
 msgid "The \"from\" URL is required."
-msgstr "The \"from\" URL is required."
+msgstr "「転送元」URLは必須です。"
 
 msgid "The \"to\" URL is required."
-msgstr "The \"to\" URL is required."
+msgstr "「転送先」URLは必須です。"
 
 msgid "Failed to create redirect."
-msgstr "Failed to create redirect."
+msgstr "リダイレクトの作成に失敗しました。"
 
 msgid "Invalid redirect ID."
-msgstr "Invalid redirect ID."
+msgstr "無効なリダイレクトIDです。"
 
 msgid "Both \"from\" and \"to\" parameters are required."
-msgstr "Both \"from\" and \"to\" parameters are required."
+msgstr "「転送元」と「転送先」の両方のパラメータが必要です。"
 
 msgid "Invalid captured 404 ID."
-msgstr "Invalid captured 404 ID."
+msgstr "無効なキャプチャ済み404 IDです。"
 
 msgid "Captured 404 not found."
-msgstr "Captured 404 not found."
+msgstr "キャプチャ済み404が見つかりません。"
 
 msgid "The captured 404 record has no URL."
-msgstr "The captured 404 record has no URL."
+msgstr "キャプチャされた404レコードにURLがありません。"
 
 msgid "The \"url\" parameter is required."
-msgstr "The \"url\" parameter is required."
+msgstr "「url」パラメータは必須です。"
 
 msgid "No captured 404s in this period."
-msgstr "No captured 404s in this period."
+msgstr "この期間にキャプチャされた404はありません。"
 
 msgid "404 Solution Digest"
-msgstr "404 Solution Digest"
+msgstr "404 Solution ダイジェスト"
 
 msgid "Digest Report"
 msgstr "ダイジェストレポート"
@@ -3066,16 +3069,16 @@ msgid "%1$d of %2$d URLs handled"
 msgstr "%2$d 件中 %1$d 件の URL を処理済み"
 
 msgid "Summary"
-msgstr "Summary"
+msgstr "概要"
 
 msgid "Top Captured 404 URLs"
-msgstr "Top Captured 404 URLs"
+msgstr "キャプチャされた上位の404 URL"
 
 msgid "First Seen"
-msgstr "First Seen"
+msgstr "初回検出日"
 
 msgid "View Captured 404s"
-msgstr "View Captured 404s"
+msgstr "キャプチャ済み404を表示"
 
 msgid "Manage Settings"
 msgstr "設定を管理"
@@ -3084,64 +3087,67 @@ msgid "To stop these emails, update your notification settings."
 msgstr "このメールの受信を停止するには、通知設定を更新してください。"
 
 msgid "To stop receiving these emails, update your notification settings."
-msgstr "To stop receiving these emails, update your notification settings."
+msgstr "このメールの受信を停止するには、通知設定を更新してください。"
 
 msgid "Manage settings"
-msgstr "Manage settings"
+msgstr "設定を管理"
 
 msgid "Sent"
-msgstr "Sent"
+msgstr "送信済み"
 
 msgid "Plugin"
-msgstr "Plugin"
+msgstr "プラグイン"
 
+# translation-verified: Product name "404 Solution" intentionally in English
 msgid "404 Solution Digest — %s"
-msgstr "404 Solution Digest — %s"
+msgstr "404 Solution ダイジェスト — %s"
 
 msgid "Advanced Options"
 msgstr "詳細オプション"
 
 msgid "Active From (optional)"
-msgstr "Active From (optional)"
+msgstr "有効開始日（任意）"
 
 msgid "Leave blank to activate immediately"
-msgstr "Leave blank to activate immediately"
+msgstr "すぐに有効にする場合は空欄のままにしてください"
 
 msgid "Active Until (optional)"
-msgstr "Active Until (optional)"
+msgstr "有効終了日（任意）"
 
 msgid "Leave blank to never expire"
-msgstr "Leave blank to never expire"
+msgstr "無期限にする場合は空欄のままにしてください"
 
 msgid "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
-msgstr "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
+msgstr "データベースのロック待ちタイムアウトが発生しました。これは通常、別のプロセスがデータベースのテーブルロックを保持していることが原因です。自動的に解決される場合もありますが、問題が続く場合はホスティング会社にお問い合わせください。"
 
 msgid "Expire auto-redirects after"
-msgstr "Expire auto-redirects after"
+msgstr "自動リダイレクトの有効期限"
 
 msgid "days (0 to disable)"
-msgstr "days (0 to disable)"
+msgstr "日間（0で無効）"
 
 msgid "Auto-created redirects older than this many days will be automatically moved to trash."
-msgstr "Auto-created redirects older than this many days will be automatically moved to trash."
+msgstr "指定した日数を超えた自動作成リダイレクトは自動的にゴミ箱に移動されます。"
 
 msgid "Export format:"
-msgstr "Export format:"
+msgstr "エクスポート形式："
 
+# translation-verified: Product name "404 Solution" and format "CSV" intentionally in English
 msgid "Native CSV (404 Solution)"
-msgstr "Native CSV (404 Solution)"
+msgstr "ネイティブCSV（404 Solution）"
 
 msgid "Redirection Plugin CSV"
-msgstr "Redirection Plugin CSV"
+msgstr "Redirection プラグインCSV"
 
 msgid "Apache .htaccess"
 msgstr "Apache .htaccess"
 
 msgid "Nginx config"
-msgstr "Nginx config"
+msgstr "Nginx 設定ファイル"
 
+# translation-verified: Brand name "Cloudflare Workers" intentionally in English
 msgid "Cloudflare Workers script"
-msgstr "Cloudflare Workers script"
+msgstr "Cloudflare Workers スクリプト"
 
 msgid "Netlify _redirects"
 msgstr "Netlify _redirects"
@@ -3184,10 +3190,10 @@ msgid "Meta Refresh"
 msgstr "Meta Refresh"
 
 msgid "Redirecting…"
-msgstr "Redirecting…"
+msgstr "リダイレクト中…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
-msgstr "You are being redirected. Click the link if not redirected automatically."
+msgstr "リダイレクト中です。自動的にリダイレクトされない場合はリンクをクリックしてください。"
 
 # Engine Profile admin section strings
 msgid "Engine Profiles"
@@ -3227,25 +3233,25 @@ msgid "Most sites do not need Engine Profiles. They are for advanced scenarios w
 msgstr "ほとんどのサイトではエンジンプロファイルは必要ありません。サイトの一部のセクションが他の部分とは異なる提案ロジックを必要とする高度なシナリオ向けです。"
 
 msgid "Name"
-msgstr "Name"
+msgstr "名前"
 
 msgid "URL Pattern"
-msgstr "URL Pattern"
+msgstr "URLパターン"
 
 msgid "Regex"
-msgstr "Regex"
+msgstr "正規表現"
 
 msgid "Engines"
-msgstr "Engines"
+msgstr "エンジン"
 
 msgid "Priority"
-msgstr "Priority"
+msgstr "優先度"
 
 msgid "Active"
-msgstr "Active"
+msgstr "有効"
 
 msgid "Actions"
-msgstr "Actions"
+msgstr "操作"
 
 msgid "No engine profiles defined."
 msgstr "エンジンプロファイルが定義されていません。"
@@ -3524,3 +3530,12 @@ msgstr "%sで応答"
 #, fuzzy
 msgid "Showed 404 page — %s"
 msgstr "404ページを表示 — %s"
+
+msgid "Attach PDF report to digest email"
+msgstr "ダイジェストメールにPDFレポートを添付"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "有効にすると、各ダイジェストメールにPDF概要が添付されます（日次または週次ダイジェストのみ）。"
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "エンジンプロファイルを使用すると、特定のURLパターンに対してどのマッチングエンジンを実行するかを制限できます。404 URLに一致する最初のプロファイルが適用されます。一致するプロファイルがない場合は、すべてのエンジンが通常どおり実行されます。"

@@ -35,25 +35,20 @@ msgstr "Deaktiviere..."
 msgid "Saving..."
 msgstr "Speichere..."
 
-#, fuzzy
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
-msgstr "Einstellungen konnten nicht gespeichert werden – Sicherheitstoken fehlt. Beim nächsten Besuch wird der Assistent möglicherweise erneut angezeigt."
+msgstr "Einstellungen konnten nicht gespeichert werden – Sicherheitstoken fehlt. Der Assistent wird beim nächsten Besuch möglicherweise erneut angezeigt."
 
-#, fuzzy
 msgid "Could not save dismissal. The wizard may appear again on next visit."
-msgstr "Konnte die Entlassung nicht retten. Beim nächsten Besuch wird der Assistent möglicherweise erneut angezeigt."
+msgstr "Schließen konnte nicht gespeichert werden. Der Assistent wird beim nächsten Besuch möglicherweise erneut angezeigt."
 
-#, fuzzy
 msgid "Could not save dismissal: "
-msgstr "Entlassung konnte nicht gespeichert werden:"
+msgstr "Schließen konnte nicht gespeichert werden: "
 
-#, fuzzy
 msgid " The wizard may appear again on next visit."
-msgstr "Beim nächsten Besuch wird der Assistent möglicherweise erneut angezeigt."
+msgstr " Der Assistent wird beim nächsten Besuch möglicherweise erneut angezeigt."
 
-#, fuzzy
 msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
-msgstr "Netzwerkfehler – Entlassung konnte nicht gespeichert werden. Beim nächsten Besuch wird der Assistent möglicherweise erneut angezeigt."
+msgstr "Netzwerkfehler – Schließen konnte nicht gespeichert werden. Der Assistent wird beim nächsten Besuch möglicherweise erneut angezeigt."
 
 msgid "Settings"
 msgstr "Einstellungen"
@@ -1926,13 +1921,13 @@ msgid "Example:"
 msgstr "Beispiel:"
 
 msgid "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
-msgstr "/events/(.+) stimmt mit jeder URL überein, die mit /events/ beginnt, und leitet zur angegebenen Seite weiter. Da eine Capture-Gruppe verwendet wird, können Sie einen $1-Ersatz in der Zielzeichenfolge einer externen URL verwenden."
+msgstr "/events/(.+) stimmt mit jeder URL überein, die mit /events/ beginnt, und leitet auf die angegebene Seite weiter. Da eine Erfassungsgruppe verwendet wird, können Sie einen $1-Platzhalter im Ziel-String einer externen URL verwenden."
 
 msgid "URLs to redirect"
 msgstr "URLs zur Weiterleitung"
 
 msgid "Captured"
-msgstr "Gefangen"
+msgstr "Erfasst"
 
 msgid "Ignored"
 msgstr "Ignoriert"
@@ -1941,7 +1936,7 @@ msgid "Later"
 msgstr "Später"
 
 msgid "Type to filter URLs... (press Enter)"
-msgstr "Geben Sie ein, um URLs zu filtern... (drücken Sie die Eingabetaste)"
+msgstr "Tippen, um URLs zu filtern... (Eingabetaste drücken)"
 
 msgid "Are you sure you want to permanently delete all items in trash?"
 msgstr "Sind Sie sicher, dass Sie alle Elemente im Papierkorb dauerhaft löschen möchten?"
@@ -1950,10 +1945,10 @@ msgid "selected"
 msgstr "ausgewählt"
 
 msgid "Mark Captured"
-msgstr "Markieren Sie „Gefangen“."
+msgstr "Als erfasst markieren"
 
 msgid "Mark Ignored"
-msgstr "Markieren Sie Ignoriert"
+msgstr "Als ignoriert markieren"
 
 msgid "Move to Trash"
 msgstr "In den Papierkorb verschieben"
@@ -1962,7 +1957,7 @@ msgid "Create Redirect"
 msgstr "Weiterleitung erstellen"
 
 msgid "Clear"
-msgstr "Klar"
+msgstr "Leeren"
 
 msgid "Never"
 msgstr "Niemals"
@@ -1992,13 +1987,13 @@ msgid "Ignore"
 msgstr "Ignorieren"
 
 msgid "Manual"
-msgstr "Handbuch"
+msgstr "Manuell"
 
 msgid "Automatic"
 msgstr "Automatisch"
 
 msgid "Type to filter redirects... (press Enter)"
-msgstr "Geben Sie ein, um Weiterleitungen zu filtern... (drücken Sie die Eingabetaste)"
+msgstr "Tippen, um Weiterleitungen zu filtern... (Eingabetaste drücken)"
 
 msgid "redirects selected"
 msgstr "Weiterleitungen ausgewählt"
@@ -2013,7 +2008,7 @@ msgid "Restore Redirects"
 msgstr "Weiterleitungen wiederherstellen"
 
 msgid "Clear Selection"
-msgstr "Auswahl löschen"
+msgstr "Auswahl aufheben"
 
 msgid "Are you sure you want to permanently delete all items in the trash?"
 msgstr "Sind Sie sicher, dass Sie alle Elemente im Papierkorb dauerhaft löschen möchten?"
@@ -2037,13 +2032,13 @@ msgid "redirects"
 msgstr "Weiterleitungen"
 
 msgid "Showing %1$d-%2$d of %3$d %4$s"
-msgstr "%1$d-%2$d von %3$d %4$s werden angezeigt"
+msgstr "%1$d–%2$d von %3$d %4$s werden angezeigt"
 
 msgid "Redirects will appear here once created."
 msgstr "Weiterleitungen werden hier angezeigt, sobald sie erstellt wurden."
 
 msgid "Redirect Logs"
-msgstr "Protokolle umleiten"
+msgstr "Weiterleitungsprotokolle"
 
 msgid "Action"
 msgstr "Aktion"
@@ -2064,10 +2059,10 @@ msgid "All Stats"
 msgstr "Alle Statistiken"
 
 msgid "Visit URL"
-msgstr "Besuchen Sie die URL"
+msgstr "URL besuchen"
 
 msgid "This page doesn't exist or is not published so the redirect won't work."
-msgstr "Diese Seite existiert nicht oder wurde nicht veröffentlicht, sodass die Weiterleitung nicht funktioniert."
+msgstr "Diese Seite existiert nicht oder ist nicht veröffentlicht, daher funktioniert die Weiterleitung nicht."
 
 #: includes/DataAccess.php
 msgid "Just now"
@@ -2443,13 +2438,13 @@ msgid "Refresh available"
 msgstr "Aktualisierung verfügbar"
 
 msgid "More info"
-msgstr "More info"
+msgstr "Weitere Informationen"
 
 msgid "Destination missing. Edit this redirect and choose a destination."
-msgstr "Destination missing. Edit this redirect and choose a destination."
+msgstr "Ziel fehlt. Bearbeiten Sie diese Weiterleitung und wählen Sie ein Ziel."
 
 msgid "(Destination missing)"
-msgstr "(Destination missing)"
+msgstr "(Ziel fehlt)"
 
 msgid "data-pagination-refresh-available-text"
 msgstr "data-pagination-refresh-available-text"
@@ -2678,51 +2673,51 @@ msgstr "Das Ziel hat kürzlich einen 404-Fehler zurückgegeben — die Weiterlei
 # Strings added for new features (3.3.8)
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
-msgstr "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
+msgstr "Ein Datenbank-Sperrwartezeit-Timeout ist aufgetreten. Falls dieses Problem bestehen bleibt, kontaktieren Sie Ihren Hoster – ein anderer Prozess hält möglicherweise eine lang andauernde Sperre."
 
 msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
-msgstr "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
+msgstr "Der InnoDB-Tablespace scheint erschöpft zu sein. Das Löschen von Plugin-Daten gibt diesen Speicherplatz NICHT frei. Kontaktieren Sie Ihren Hosting-Anbieter, um den InnoDB-Tablespace (ibdata1) zu erweitern."
 
 msgid "Email notification frequency"
-msgstr "Email notification frequency"
+msgstr "E-Mail-Benachrichtigungshäufigkeit"
 
 msgid "Instant (when threshold exceeded)"
-msgstr "Instant (when threshold exceeded)"
+msgstr "Sofort (bei Überschreitung des Schwellenwerts)"
 
 msgid "Daily digest"
-msgstr "Daily digest"
+msgstr "Tägliche Zusammenfassung"
 
 msgid "Weekly digest"
-msgstr "Weekly digest"
+msgstr "Wöchentliche Zusammenfassung"
 
 msgid "Choose how often to receive email notifications about captured 404s."
-msgstr "Choose how often to receive email notifications about captured 404s."
+msgstr "Wählen Sie, wie oft Sie E-Mail-Benachrichtigungen über erfasste 404-Fehler erhalten möchten."
 
 
 
 msgid "Temporary 307 (preserve method)"
-msgstr "Temporary 307 (preserve method)"
+msgstr "Temporär 307 (Methode beibehalten)"
 
 msgid "Permanent 308 (preserve method)"
-msgstr "Permanent 308 (preserve method)"
+msgstr "Permanent 308 (Methode beibehalten)"
 
 msgid "Loading chart data…"
-msgstr "Loading chart data…"
+msgstr "Diagrammdaten werden geladen…"
 
 msgid "Could not load chart data."
-msgstr "Could not load chart data."
+msgstr "Diagrammdaten konnten nicht geladen werden."
 
 msgid "404 Hits per Day"
-msgstr "404 Hits per Day"
+msgstr "404-Treffer pro Tag"
 
 msgid "Redirects per Day"
-msgstr "Redirects per Day"
+msgstr "Weiterleitungen pro Tag"
 
 msgid "New Captures per Day"
-msgstr "New Captures per Day"
+msgstr "Neue Erfassungen pro Tag"
 
 msgid "Trends (Last 30 Days)"
-msgstr "Trends (Last 30 Days)"
+msgstr "Trends (letzte 30 Tage)"
 
 msgid "Trend Analytics"
 msgstr "Trend-Analyse"
@@ -2740,26 +2735,26 @@ msgid "Period"
 msgstr "Zeitraum"
 
 msgid "No broken internal links found."
-msgstr "No broken internal links found."
+msgstr "Keine defekten internen Links gefunden."
 
 msgid "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
-msgstr "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
+msgstr "%1$d defekte(r) interne(r) Link(s) in %2$d Beitrag/Beiträgen bzw. Seite(n) gefunden."
 
 msgid "Post/Page"
-msgstr "Post/Page"
+msgstr "Beitrag/Seite"
 
 msgid "Broken URL"
-msgstr "Broken URL"
+msgstr "Defekte URL"
 
 msgid "404 Hits"
-msgstr "404 Hits"
+msgstr "404-Treffer"
 
 msgid "Broken Internal Links"
-msgstr "Broken Internal Links"
+msgstr "Defekte interne Links"
 
 
 msgid "Migrate from Another Plugin"
-msgstr "Migrate from Another Plugin"
+msgstr "Von einem anderen Plugin migrieren"
 
 msgid "Rank Math"
 msgstr "Rank Math"
@@ -2777,130 +2772,130 @@ msgid "Redirection Plugin"
 msgstr "Redirection Plugin"
 
 msgid "No supported redirect plugins detected on this site."
-msgstr "No supported redirect plugins detected on this site."
+msgstr "Auf dieser Website wurden keine unterstützten Weiterleitungs-Plugins erkannt."
 
 msgid "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
-msgstr "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
+msgstr "Unterstützte Plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
 
 msgid "Detected redirect plugins:"
-msgstr "Detected redirect plugins:"
+msgstr "Erkannte Weiterleitungs-Plugins:"
 
 msgid "Source plugin:"
-msgstr "Source plugin:"
+msgstr "Quell-Plugin:"
 
 msgid "Import Redirects"
-msgstr "Import Redirects"
+msgstr "Weiterleitungen importieren"
 
 msgid "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
-msgstr "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
+msgstr "Hiermit werden alle aktiven Weiterleitungen aus dem ausgewählten Plugin in 404 Solution importiert. Regex und Weiterleitungscodes bleiben erhalten."
 
 msgid "Temporary Redirect (preserve method)"
-msgstr "Temporary Redirect (preserve method)"
+msgstr "Temporäre Weiterleitung (Methode beibehalten)"
 
 msgid "Permanent Redirect (preserve method)"
-msgstr "Permanent Redirect (preserve method)"
+msgstr "Permanente Weiterleitung (Methode beibehalten)"
 
 msgid "Gone (resource permanently removed)"
-msgstr "Gone (resource permanently removed)"
+msgstr "Entfernt (Ressource dauerhaft gelöscht)"
 
 msgid "Conditions (optional)"
-msgstr "Conditions (optional)"
+msgstr "Bedingungen (optional)"
 
 msgid "This redirect only fires when all conditions are met. Leave empty to always redirect."
-msgstr "This redirect only fires when all conditions are met. Leave empty to always redirect."
+msgstr "Diese Weiterleitung wird nur ausgeführt, wenn alle Bedingungen erfüllt sind. Leer lassen, um immer weiterzuleiten."
 
 msgid "+ Add Condition"
-msgstr "+ Add Condition"
+msgstr "+ Bedingung hinzufügen"
 
 msgid "Logic"
-msgstr "Logic"
+msgstr "Logik"
 
 msgid "AND"
-msgstr "AND"
+msgstr "UND"
 
 msgid "OR"
-msgstr "OR"
+msgstr "ODER"
 
 msgid "Login Status"
-msgstr "Login Status"
+msgstr "Anmeldestatus"
 
 msgid "User Role"
-msgstr "User Role"
+msgstr "Benutzerrolle"
 
 msgid "Referrer URL"
-msgstr "Referrer URL"
+msgstr "Referrer-URL"
 
 msgid "User Agent"
 msgstr "User Agent"
 
 msgid "IP Range (CIDR)"
-msgstr "IP Range (CIDR)"
+msgstr "IP-Bereich (CIDR)"
 
 msgid "HTTP Header"
-msgstr "HTTP Header"
+msgstr "HTTP-Header"
 
 msgid "Condition type"
-msgstr "Condition type"
+msgstr "Bedingungstyp"
 
 msgid "— Select type —"
-msgstr "— Select type —"
+msgstr "— Typ auswählen —"
 
 msgid "equals"
-msgstr "equals"
+msgstr "ist gleich"
 
 msgid "not equals"
-msgstr "not equals"
+msgstr "ist nicht gleich"
 
 msgid "contains"
-msgstr "contains"
+msgstr "enthält"
 
 msgid "does not contain"
-msgstr "does not contain"
+msgstr "enthält nicht"
 
 msgid "matches regex"
-msgstr "matches regex"
+msgstr "stimmt mit Regex überein"
 
 msgid "Operator"
 msgstr "Operator"
 
 msgid "Value"
-msgstr "Value"
+msgstr "Wert"
 
 msgid "Condition value"
-msgstr "Condition value"
+msgstr "Bedingungswert"
 
 msgid "Remove condition"
-msgstr "Remove condition"
+msgstr "Bedingung entfernen"
 
 msgid "Remove"
-msgstr "Remove"
+msgstr "Entfernen"
 
 msgid "Auto-matched by:"
-msgstr "Auto-matched by:"
+msgstr "Automatisch zugeordnet durch:"
 
 msgid "Error: Invalid email notification frequency selected"
-msgstr "Error: Invalid email notification frequency selected"
+msgstr "Fehler: Ungültige E-Mail-Benachrichtigungshäufigkeit ausgewählt"
 
 msgid "Error: Digest limit must be a number greater than or equal to 1"
-msgstr "Error: Digest limit must be a number greater than or equal to 1"
+msgstr "Fehler: Das Zusammenfassungslimit muss eine Zahl größer oder gleich 1 sein"
 
 msgid "Google Search Console credentials saved."
-msgstr "Google Search Console credentials saved."
+msgstr "Google Search Console Anmeldedaten gespeichert."
 
 msgid "Error: No source plugin specified."
-msgstr "Error: No source plugin specified."
+msgstr "Fehler: Kein Quell-Plugin angegeben."
 
 msgid "Error: Unknown source plugin \"%s\"."
-msgstr "Error: Unknown source plugin \"%s\"."
+msgstr "Fehler: Unbekanntes Quell-Plugin \"%s\"."
 
 msgid "Insufficient permissions."
-msgstr "Insufficient permissions."
+msgstr "Unzureichende Berechtigungen."
 
 msgid "Security check failed."
-msgstr "Security check failed."
+msgstr "Sicherheitsüberprüfung fehlgeschlagen."
 
 msgid "OAuth token exchange failed."
-msgstr "OAuth token exchange failed."
+msgstr "OAuth-Token-Austausch fehlgeschlagen."
 
 msgid "Google Search Console"
 msgstr "Google Search Console"
@@ -2909,61 +2904,61 @@ msgid "Google Search Console Integration"
 msgstr "Google Search Console Integration"
 
 msgid "Connect to Google Search Console to see which broken URLs were getting real search traffic."
-msgstr "Connect to Google Search Console to see which broken URLs were getting real search traffic."
+msgstr "Verbinden Sie sich mit Google Search Console, um zu sehen, welche defekten URLs echten Suchtraffic erhalten haben."
 
 msgid "Setup steps:"
-msgstr "Setup steps:"
+msgstr "Einrichtungsschritte:"
 
 msgid "Create a project in %s."
-msgstr "Create a project in %s."
+msgstr "Erstellen Sie ein Projekt in %s."
 
 msgid "Enable the \"Google Search Console API\"."
-msgstr "Enable the \"Google Search Console API\"."
+msgstr "Aktivieren Sie die \"Google Search Console API\"."
 
 msgid "Create OAuth 2.0 credentials (Web application type)."
-msgstr "Create OAuth 2.0 credentials (Web application type)."
+msgstr "Erstellen Sie OAuth 2.0-Anmeldedaten (Webanwendungstyp)."
 
 msgid "Add this Authorized Redirect URI: %s"
-msgstr "Add this Authorized Redirect URI: %s"
+msgstr "Fügen Sie diese autorisierte Weiterleitungs-URI hinzu: %s"
 
 msgid "Enter your Client ID and Client Secret below."
-msgstr "Enter your Client ID and Client Secret below."
+msgstr "Geben Sie Ihre Client-ID und Ihr Client-Secret unten ein."
 
 msgid "Client ID"
-msgstr "Client ID"
+msgstr "Client-ID"
 
 msgid "Client Secret"
-msgstr "Client Secret"
+msgstr "Client-Secret"
 
 msgid "Search Console Site URL"
-msgstr "Search Console Site URL"
+msgstr "Search Console Website-URL"
 
 msgid "The site URL as registered in Search Console (e.g. https://example.com/)."
-msgstr "The site URL as registered in Search Console (e.g. https://example.com/)."
+msgstr "Die Website-URL wie in Search Console registriert (z. B. https://example.com/)."
 
 msgid "Save Credentials"
-msgstr "Save Credentials"
+msgstr "Anmeldedaten speichern"
 
 msgid "Credentials saved."
-msgstr "Credentials saved."
+msgstr "Anmeldedaten gespeichert."
 
 msgid "Click the button below to authorize access to your Search Console data."
-msgstr "Click the button below to authorize access to your Search Console data."
+msgstr "Klicken Sie auf die Schaltfläche unten, um den Zugriff auf Ihre Search Console-Daten zu autorisieren."
 
 msgid "Authorize with Google"
-msgstr "Authorize with Google"
+msgstr "Mit Google autorisieren"
 
 msgid "Remove Credentials"
-msgstr "Remove Credentials"
+msgstr "Anmeldedaten entfernen"
 
 msgid "Connected to Google Search Console."
-msgstr "Connected to Google Search Console."
+msgstr "Verbunden mit Google Search Console."
 
 msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
+msgstr "Suchtraffic-Daten für Ihre erfassten 404-URLs werden unten angezeigt. Daten werden 1 Stunde zwischengespeichert."
 
 msgid "Disconnect"
-msgstr "Disconnect"
+msgstr "Trennen"
 
 msgid "Connected to Google Search Console"
 msgstr "Mit Google Search Console verbunden"
@@ -2993,52 +2988,52 @@ msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to star
 msgstr "Klicken Sie auf 'Erneut versuchen', um die Autorisierung zu wiederholen, oder auf 'Anmeldedaten entfernen', um neu zu beginnen."
 
 msgid "404 URLs with Search Traffic (last 90 days)"
-msgstr "404 URLs with Search Traffic (last 90 days)"
+msgstr "404-URLs mit Suchtraffic (letzte 90 Tage)"
 
 msgid "Clicks"
-msgstr "Clicks"
+msgstr "Klicks"
 
 msgid "Impressions"
-msgstr "Impressions"
+msgstr "Impressionen"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "Keine Suchanfragedaten für Ihre erfassten 404-URLs der letzten 90 Tage gefunden."
 
 msgid "Avg. Position"
-msgstr "Avg. Position"
+msgstr "Durchschn. Position"
 
 msgid "The \"from\" URL is required."
-msgstr "The \"from\" URL is required."
+msgstr "Die \"Von\"-URL ist erforderlich."
 
 msgid "The \"to\" URL is required."
-msgstr "The \"to\" URL is required."
+msgstr "Die \"Zu\"-URL ist erforderlich."
 
 msgid "Failed to create redirect."
-msgstr "Failed to create redirect."
+msgstr "Weiterleitung konnte nicht erstellt werden."
 
 msgid "Invalid redirect ID."
-msgstr "Invalid redirect ID."
+msgstr "Ungültige Weiterleitungs-ID."
 
 msgid "Both \"from\" and \"to\" parameters are required."
-msgstr "Both \"from\" and \"to\" parameters are required."
+msgstr "Die Parameter \"Von\" und \"Zu\" sind beide erforderlich."
 
 msgid "Invalid captured 404 ID."
-msgstr "Invalid captured 404 ID."
+msgstr "Ungültige erfasste 404-ID."
 
 msgid "Captured 404 not found."
-msgstr "Captured 404 not found."
+msgstr "Erfasster 404-Fehler nicht gefunden."
 
 msgid "The captured 404 record has no URL."
-msgstr "The captured 404 record has no URL."
+msgstr "Der erfasste 404-Datensatz hat keine URL."
 
 msgid "The \"url\" parameter is required."
-msgstr "The \"url\" parameter is required."
+msgstr "Der \"url\"-Parameter ist erforderlich."
 
 msgid "No captured 404s in this period."
-msgstr "No captured 404s in this period."
+msgstr "Keine erfassten 404-Fehler in diesem Zeitraum."
 
 msgid "404 Solution Digest"
-msgstr "404 Solution Digest"
+msgstr "404 Solution Zusammenfassung"
 
 msgid "Digest Report"
 msgstr "Digest-Bericht"
@@ -3060,16 +3055,16 @@ msgid "%1$d of %2$d URLs handled"
 msgstr "%1$d von %2$d URLs bearbeitet"
 
 msgid "Summary"
-msgstr "Summary"
+msgstr "Zusammenfassung"
 
 msgid "Top Captured 404 URLs"
-msgstr "Top Captured 404 URLs"
+msgstr "Häufigste erfasste 404-URLs"
 
 msgid "First Seen"
-msgstr "First Seen"
+msgstr "Erstmals gesehen"
 
 msgid "View Captured 404s"
-msgstr "View Captured 404s"
+msgstr "Erfasste 404-Fehler anzeigen"
 
 msgid "Manage Settings"
 msgstr "Einstellungen verwalten"
@@ -3078,52 +3073,52 @@ msgid "To stop these emails, update your notification settings."
 msgstr "Um diese E-Mails zu stoppen, aktualisieren Sie Ihre Benachrichtigungseinstellungen."
 
 msgid "To stop receiving these emails, update your notification settings."
-msgstr "To stop receiving these emails, update your notification settings."
+msgstr "Um keine weiteren E-Mails zu erhalten, aktualisieren Sie Ihre Benachrichtigungseinstellungen."
 
 msgid "Manage settings"
-msgstr "Manage settings"
+msgstr "Einstellungen verwalten"
 
 msgid "Sent"
-msgstr "Sent"
+msgstr "Gesendet"
 
 msgid "Plugin"
 msgstr "Plugin"
 
 msgid "404 Solution Digest — %s"
-msgstr "404 Solution Digest — %s"
+msgstr "404 Solution Zusammenfassung — %s"
 
 msgid "Advanced Options"
 msgstr "Erweiterte Optionen"
 
 msgid "Active From (optional)"
-msgstr "Active From (optional)"
+msgstr "Aktiv ab (optional)"
 
 msgid "Leave blank to activate immediately"
-msgstr "Leave blank to activate immediately"
+msgstr "Leer lassen für sofortige Aktivierung"
 
 msgid "Active Until (optional)"
-msgstr "Active Until (optional)"
+msgstr "Aktiv bis (optional)"
 
 msgid "Leave blank to never expire"
-msgstr "Leave blank to never expire"
+msgstr "Leer lassen, damit sie nie abläuft"
 
 msgid "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
-msgstr "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
+msgstr "Ein Datenbank-Sperrwartezeit-Timeout ist aufgetreten. Dies wird in der Regel durch einen anderen Prozess verursacht, der eine Tabellensperre auf Ihrer Datenbank hält. Es kann sich automatisch beheben, oder kontaktieren Sie Ihren Hosting-Anbieter, falls das Problem bestehen bleibt."
 
 msgid "Expire auto-redirects after"
-msgstr "Expire auto-redirects after"
+msgstr "Automatische Weiterleitungen ablaufen lassen nach"
 
 msgid "days (0 to disable)"
-msgstr "days (0 to disable)"
+msgstr "Tagen (0 zum Deaktivieren)"
 
 msgid "Auto-created redirects older than this many days will be automatically moved to trash."
-msgstr "Auto-created redirects older than this many days will be automatically moved to trash."
+msgstr "Automatisch erstellte Weiterleitungen, die älter als diese Anzahl von Tagen sind, werden automatisch in den Papierkorb verschoben."
 
 msgid "Export format:"
-msgstr "Export format:"
+msgstr "Exportformat:"
 
 msgid "Native CSV (404 Solution)"
-msgstr "Native CSV (404 Solution)"
+msgstr "Natives CSV (404 Solution)"
 
 msgid "Redirection Plugin CSV"
 msgstr "Redirection Plugin CSV"
@@ -3132,10 +3127,10 @@ msgid "Apache .htaccess"
 msgstr "Apache .htaccess"
 
 msgid "Nginx config"
-msgstr "Nginx config"
+msgstr "Nginx-Konfiguration"
 
 msgid "Cloudflare Workers script"
-msgstr "Cloudflare Workers script"
+msgstr "Cloudflare Workers-Skript"
 
 msgid "Netlify _redirects"
 msgstr "Netlify _redirects"
@@ -3224,22 +3219,22 @@ msgid "Name"
 msgstr "Name"
 
 msgid "URL Pattern"
-msgstr "URL Pattern"
+msgstr "URL-Muster"
 
 msgid "Regex"
 msgstr "Regex"
 
 msgid "Engines"
-msgstr "Engines"
+msgstr "Suchmaschinen"
 
 msgid "Priority"
-msgstr "Priority"
+msgstr "Priorität"
 
 msgid "Active"
-msgstr "Active"
+msgstr "Aktiv"
 
 msgid "Actions"
-msgstr "Actions"
+msgstr "Aktionen"
 
 msgid "No engine profiles defined."
 msgstr "Keine Engine-Profile definiert."
@@ -3518,3 +3513,12 @@ msgstr "Antwort mit %s"
 #, fuzzy
 msgid "Showed 404 page — %s"
 msgstr "404-Seite angezeigt — %s"
+
+msgid "Attach PDF report to digest email"
+msgstr "PDF-Bericht an Zusammenfassungs-E-Mail anhängen"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "Wenn aktiviert, wird eine PDF-Zusammenfassung an jede Zusammenfassungs-E-Mail angehängt (nur für tägliche oder wöchentliche Zusammenfassungen)."
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "Mit Engine-Profilen können Sie einschränken, welche Abgleich-Engines für bestimmte URL-Muster ausgeführt werden. Das erste Profil, dessen Muster mit einer 404-URL übereinstimmt, gewinnt. Wenn kein Profil zutrifft, werden alle Engines normal ausgeführt."

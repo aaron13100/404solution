@@ -2543,3 +2543,15 @@ msgstr ""
 #: includes/ViewTrait_Logs.php
 msgid "Showed 404 page — %s"
 msgstr ""
+
+#: includes/ViewTrait_Admin.php
+msgid "Attach PDF report to digest email"
+msgstr ""
+
+#: includes/ViewTrait_Admin.php
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr ""
+
+#: includes/ViewTrait_Admin.php
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr ""

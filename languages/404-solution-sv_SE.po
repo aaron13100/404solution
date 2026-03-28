@@ -37,23 +37,23 @@ msgstr "Sparar..."
 
 #, fuzzy
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
-msgstr "Could not save settings - missing security token. The wizard may appear again on next visit."
+msgstr "Kunde inte spara inställningar – säkerhetstoken saknas. Guiden kan visas igen vid nästa besök."
 
 #, fuzzy
 msgid "Could not save dismissal. The wizard may appear again on next visit."
-msgstr "Could not save dismissal. The wizard may appear again on next visit."
+msgstr "Kunde inte spara avvisningen. Guiden kan visas igen vid nästa besök."
 
 #, fuzzy
 msgid "Could not save dismissal: "
-msgstr "Could not save dismissal: "
+msgstr "Kunde inte spara avvisningen: "
 
 #, fuzzy
 msgid " The wizard may appear again on next visit."
-msgstr " The wizard may appear again on next visit."
+msgstr " Guiden kan visas igen vid nästa besök."
 
 #, fuzzy
 msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
-msgstr "Network error - could not save dismissal. The wizard may appear again on next visit."
+msgstr "Nätverksfel – kunde inte spara avvisningen. Guiden kan visas igen vid nästa besök."
 
 msgid "Settings"
 msgstr "Inställningar"
@@ -1919,154 +1919,154 @@ msgid "for 30+ additional options."
 msgstr "for 30+ additional options."
 
 msgid "Statistics"
-msgstr "Statistics"
+msgstr "Statistik"
 
 msgid "Example:"
-msgstr "Example:"
+msgstr "Exempel:"
 
 msgid "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
-msgstr "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "/events/(.+) matchar alla URL:er som börjar med /events/ och omdirigerar till den angivna sidan. Eftersom en fångstgrupp används kan du använda en $1-ersättning i destinationssträngen för en extern URL."
 
 msgid "URLs to redirect"
-msgstr "URLs to redirect"
+msgstr "URL:er att omdirigera"
 
 msgid "Captured"
-msgstr "Captured"
+msgstr "Infångade"
 
 msgid "Ignored"
-msgstr "Ignored"
+msgstr "Ignorerade"
 
 msgid "Later"
-msgstr "Later"
+msgstr "Senare"
 
 msgid "Type to filter URLs... (press Enter)"
-msgstr "Type to filter URLs... (press Enter)"
+msgstr "Skriv för att filtrera URL:er... (tryck Enter)"
 
 msgid "Are you sure you want to permanently delete all items in trash?"
-msgstr "Are you sure you want to permanently delete all items in trash?"
+msgstr "Är du säker på att du vill permanent ta bort alla objekt i papperskorgen?"
 
 msgid "selected"
-msgstr "selected"
+msgstr "markerade"
 
 msgid "Mark Captured"
-msgstr "Mark Captured"
+msgstr "Markera som infångad"
 
 msgid "Mark Ignored"
-msgstr "Mark Ignored"
+msgstr "Markera som ignorerad"
 
 msgid "Move to Trash"
-msgstr "Move to Trash"
+msgstr "Flytta till papperskorgen"
 
 msgid "Create Redirect"
-msgstr "Create Redirect"
+msgstr "Skapa omdirigering"
 
 msgid "Clear"
-msgstr "Clear"
+msgstr "Rensa"
 
 msgid "Never"
-msgstr "Never"
+msgstr "Aldrig"
 
 msgid "Captured 404 URL"
-msgstr "Captured 404 URL"
+msgstr "Infångad 404-URL"
 
 msgid "Ignored URL - will not be suggested"
-msgstr "Ignored URL - will not be suggested"
+msgstr "Ignorerad URL – kommer inte att föreslås"
 
 msgid "Edit"
-msgstr "Edit"
+msgstr "Redigera"
 
 msgid "View Logs"
-msgstr "View Logs"
+msgstr "Visa loggar"
 
 msgid "Delete Permanently"
-msgstr "Delete Permanently"
+msgstr "Ta bort permanent"
 
 msgid "Are you sure you want to permanently delete this item?"
-msgstr "Are you sure you want to permanently delete this item?"
+msgstr "Är du säker på att du vill permanent ta bort detta objekt?"
 
 msgid "Delete"
-msgstr "Delete"
+msgstr "Ta bort"
 
 msgid "Ignore"
-msgstr "Ignore"
+msgstr "Ignorera"
 
 msgid "Manual"
-msgstr "Manual"
+msgstr "Manuell"
 
 msgid "Automatic"
-msgstr "Automatic"
+msgstr "Automatisk"
 
 msgid "Type to filter redirects... (press Enter)"
-msgstr "Type to filter redirects... (press Enter)"
+msgstr "Skriv för att filtrera omdirigeringar... (tryck Enter)"
 
 msgid "redirects selected"
-msgstr "redirects selected"
+msgstr "omdirigeringar markerade"
 
 msgid "Bulk Actions"
-msgstr "Bulk Actions"
+msgstr "Massåtgärder"
 
 msgid "Edit Redirects"
-msgstr "Edit Redirects"
+msgstr "Redigera omdirigeringar"
 
 msgid "Restore Redirects"
-msgstr "Restore Redirects"
+msgstr "Återställ omdirigeringar"
 
 msgid "Clear Selection"
-msgstr "Clear Selection"
+msgstr "Rensa markering"
 
 msgid "Are you sure you want to permanently delete all items in the trash?"
-msgstr "Are you sure you want to permanently delete all items in the trash?"
+msgstr "Är du säker på att du vill permanent ta bort alla objekt i papperskorgen?"
 
 msgid "Add Manual Redirect"
-msgstr "Add Manual Redirect"
+msgstr "Lägg till manuell omdirigering"
 
 msgid "The URL path that should be redirected (without domain)"
-msgstr "The URL path that should be redirected (without domain)"
+msgstr "URL-sökvägen som ska omdirigeras (utan domän)"
 
 msgid "Permanent Redirect (Recommended for SEO)"
-msgstr "Permanent Redirect (Recommended for SEO)"
+msgstr "Permanent omdirigering (rekommenderas för SEO)"
 
 msgid "Temporary Redirect"
-msgstr "Temporary Redirect"
+msgstr "Tillfällig omdirigering"
 
 msgid "logs"
-msgstr "logs"
+msgstr "loggar"
 
 msgid "redirects"
-msgstr "redirects"
+msgstr "omdirigeringar"
 
 msgid "Showing %1$d-%2$d of %3$d %4$s"
-msgstr "Showing %1$d-%2$d of %3$d %4$s"
+msgstr "Visar %1$d–%2$d av %3$d %4$s"
 
 msgid "Redirects will appear here once created."
-msgstr "Redirects will appear here once created."
+msgstr "Omdirigeringar visas här när de har skapats."
 
 msgid "Redirect Logs"
-msgstr "Redirect Logs"
+msgstr "Omdirigeringsloggar"
 
 msgid "Action"
-msgstr "Action"
+msgstr "Åtgärd"
 
 msgid "404"
 msgstr "404"
 
 msgid "Today's Stats"
-msgstr "Today's Stats"
+msgstr "Dagens statistik"
 
 msgid "This Month"
-msgstr "This Month"
+msgstr "Denna månad"
 
 msgid "This Year"
-msgstr "This Year"
+msgstr "I år"
 
 msgid "All Stats"
-msgstr "All Stats"
+msgstr "All statistik"
 
 msgid "Visit URL"
-msgstr "Visit URL"
+msgstr "Besök URL"
 
 msgid "This page doesn't exist or is not published so the redirect won't work."
-msgstr "This page doesn't exist or is not published so the redirect won't work."
+msgstr "Denna sida finns inte eller är inte publicerad, så omdirigeringen kommer inte att fungera."
 
 #: includes/DataAccess.php
 msgid "Just now"
@@ -2442,13 +2442,13 @@ msgid "Refresh available"
 msgstr "Uppdatering tillgänglig"
 
 msgid "More info"
-msgstr "More info"
+msgstr "Mer info"
 
 msgid "Destination missing. Edit this redirect and choose a destination."
-msgstr "Destination missing. Edit this redirect and choose a destination."
+msgstr "Destination saknas. Redigera denna omdirigering och välj en destination."
 
 msgid "(Destination missing)"
-msgstr "(Destination missing)"
+msgstr "(Destination saknas)"
 
 msgid "data-pagination-refresh-available-text"
 msgstr "data-pagination-refresh-available-text"
@@ -2680,51 +2680,51 @@ msgstr "Destinationen returnerade 404 nyligen — omdirigeringen är pausad till
 # Strings added for new features (3.3.8)
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
-msgstr "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
+msgstr "En databaslåsnings-timeout inträffade. Om detta kvarstår, kontakta din webbhost – en annan process kan hålla ett långvarigt lås."
 
 msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
-msgstr "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
+msgstr "InnoDB-tabellutrymmet verkar vara fullt. Att ta bort plugin-data kommer INTE att frigöra detta utrymme. Kontakta din webbhost för att utöka InnoDB-tabellutrymmet (ibdata1)."
 
 msgid "Email notification frequency"
-msgstr "Email notification frequency"
+msgstr "Frekvens för e-postnotifieringar"
 
 msgid "Instant (when threshold exceeded)"
-msgstr "Instant (when threshold exceeded)"
+msgstr "Omedelbart (när tröskelvärdet överskrids)"
 
 msgid "Daily digest"
-msgstr "Daily digest"
+msgstr "Daglig sammanfattning"
 
 msgid "Weekly digest"
-msgstr "Weekly digest"
+msgstr "Veckovis sammanfattning"
 
 msgid "Choose how often to receive email notifications about captured 404s."
-msgstr "Choose how often to receive email notifications about captured 404s."
+msgstr "Välj hur ofta du vill få e-postnotifieringar om infångade 404:or."
 
 
 
 msgid "Temporary 307 (preserve method)"
-msgstr "Temporary 307 (preserve method)"
+msgstr "Tillfällig 307 (bevara metod)"
 
 msgid "Permanent 308 (preserve method)"
-msgstr "Permanent 308 (preserve method)"
+msgstr "Permanent 308 (bevara metod)"
 
 msgid "Loading chart data…"
-msgstr "Loading chart data…"
+msgstr "Laddar diagramdata…"
 
 msgid "Could not load chart data."
-msgstr "Could not load chart data."
+msgstr "Kunde inte ladda diagramdata."
 
 msgid "404 Hits per Day"
-msgstr "404 Hits per Day"
+msgstr "404-träffar per dag"
 
 msgid "Redirects per Day"
-msgstr "Redirects per Day"
+msgstr "Omdirigeringar per dag"
 
 msgid "New Captures per Day"
-msgstr "New Captures per Day"
+msgstr "Nya infångningar per dag"
 
 msgid "Trends (Last 30 Days)"
-msgstr "Trends (Last 30 Days)"
+msgstr "Trender (senaste 30 dagarna)"
 
 msgid "Trend Analytics"
 msgstr "Trendanalys"
@@ -2742,26 +2742,26 @@ msgid "Period"
 msgstr "Period"
 
 msgid "No broken internal links found."
-msgstr "No broken internal links found."
+msgstr "Inga trasiga interna länkar hittades."
 
 msgid "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
-msgstr "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
+msgstr "Hittade %1$d trasig(a) intern(a) länk(ar) på %2$d inlägg/sidor."
 
 msgid "Post/Page"
-msgstr "Post/Page"
+msgstr "Inlägg/sida"
 
 msgid "Broken URL"
-msgstr "Broken URL"
+msgstr "Trasig URL"
 
 msgid "404 Hits"
-msgstr "404 Hits"
+msgstr "404-träffar"
 
 msgid "Broken Internal Links"
-msgstr "Broken Internal Links"
+msgstr "Trasiga interna länkar"
 
 
 msgid "Migrate from Another Plugin"
-msgstr "Migrate from Another Plugin"
+msgstr "Migrera från ett annat plugin"
 
 msgid "Rank Math"
 msgstr "Rank Math"
@@ -2779,193 +2779,193 @@ msgid "Redirection Plugin"
 msgstr "Redirection Plugin"
 
 msgid "No supported redirect plugins detected on this site."
-msgstr "No supported redirect plugins detected on this site."
+msgstr "Inga stödda omdirigeringsplugin hittades på denna webbplats."
 
 msgid "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
-msgstr "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
+msgstr "Plugin som stöds: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
 
 msgid "Detected redirect plugins:"
-msgstr "Detected redirect plugins:"
+msgstr "Upptäckta omdirigeringsplugin:"
 
 msgid "Source plugin:"
-msgstr "Source plugin:"
+msgstr "Källplugin:"
 
 msgid "Import Redirects"
-msgstr "Import Redirects"
+msgstr "Importera omdirigeringar"
 
 msgid "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
-msgstr "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
+msgstr "Detta importerar alla aktiva omdirigeringar från det valda pluginet till 404 Solution. Regex och omdirigeringskoder bevaras."
 
 msgid "Temporary Redirect (preserve method)"
-msgstr "Temporary Redirect (preserve method)"
+msgstr "Tillfällig omdirigering (bevara metod)"
 
 msgid "Permanent Redirect (preserve method)"
-msgstr "Permanent Redirect (preserve method)"
+msgstr "Permanent omdirigering (bevara metod)"
 
 msgid "Gone (resource permanently removed)"
-msgstr "Gone (resource permanently removed)"
+msgstr "Borttagen (resursen är permanent borttagen)"
 
 msgid "Conditions (optional)"
-msgstr "Conditions (optional)"
+msgstr "Villkor (valfritt)"
 
 msgid "This redirect only fires when all conditions are met. Leave empty to always redirect."
-msgstr "This redirect only fires when all conditions are met. Leave empty to always redirect."
+msgstr "Denna omdirigering aktiveras bara när alla villkor är uppfyllda. Lämna tomt för att alltid omdirigera."
 
 msgid "+ Add Condition"
-msgstr "+ Add Condition"
+msgstr "+ Lägg till villkor"
 
 msgid "Logic"
-msgstr "Logic"
+msgstr "Logik"
 
 msgid "AND"
-msgstr "AND"
+msgstr "OCH"
 
 msgid "OR"
-msgstr "OR"
+msgstr "ELLER"
 
 msgid "Login Status"
-msgstr "Login Status"
+msgstr "Inloggningsstatus"
 
 msgid "User Role"
-msgstr "User Role"
+msgstr "Användarroll"
 
 msgid "Referrer URL"
-msgstr "Referrer URL"
+msgstr "Hänvisnings-URL"
 
 msgid "User Agent"
 msgstr "User Agent"
 
 msgid "IP Range (CIDR)"
-msgstr "IP Range (CIDR)"
+msgstr "IP-intervall (CIDR)"
 
 msgid "HTTP Header"
-msgstr "HTTP Header"
+msgstr "HTTP-huvud"
 
 msgid "Condition type"
-msgstr "Condition type"
+msgstr "Villkorstyp"
 
 msgid "— Select type —"
-msgstr "— Select type —"
+msgstr "— Välj typ —"
 
 msgid "equals"
-msgstr "equals"
+msgstr "är lika med"
 
 msgid "not equals"
-msgstr "not equals"
+msgstr "är inte lika med"
 
 msgid "contains"
-msgstr "contains"
+msgstr "innehåller"
 
 msgid "does not contain"
-msgstr "does not contain"
+msgstr "innehåller inte"
 
 msgid "matches regex"
-msgstr "matches regex"
+msgstr "matchar regex"
 
 msgid "Operator"
 msgstr "Operator"
 
 msgid "Value"
-msgstr "Value"
+msgstr "Värde"
 
 msgid "Condition value"
-msgstr "Condition value"
+msgstr "Villkorsvärde"
 
 msgid "Remove condition"
-msgstr "Remove condition"
+msgstr "Ta bort villkor"
 
 msgid "Remove"
-msgstr "Remove"
+msgstr "Ta bort"
 
 msgid "Auto-matched by:"
-msgstr "Auto-matched by:"
+msgstr "Automatiskt matchad av:"
 
 msgid "Error: Invalid email notification frequency selected"
-msgstr "Error: Invalid email notification frequency selected"
+msgstr "Fel: Ogiltig frekvens för e-postnotifiering vald"
 
 msgid "Error: Digest limit must be a number greater than or equal to 1"
-msgstr "Error: Digest limit must be a number greater than or equal to 1"
+msgstr "Fel: Sammanfattningsgränsen måste vara ett tal större än eller lika med 1"
 
 msgid "Google Search Console credentials saved."
-msgstr "Google Search Console credentials saved."
+msgstr "Google Search Console-uppgifter sparade."
 
 msgid "Error: No source plugin specified."
-msgstr "Error: No source plugin specified."
+msgstr "Fel: Inget källplugin angivet."
 
 msgid "Error: Unknown source plugin \"%s\"."
-msgstr "Error: Unknown source plugin \"%s\"."
+msgstr "Fel: Okänt källplugin \"%s\"."
 
 msgid "Insufficient permissions."
-msgstr "Insufficient permissions."
+msgstr "Otillräckliga behörigheter."
 
 msgid "Security check failed."
-msgstr "Security check failed."
+msgstr "Säkerhetskontrollen misslyckades."
 
 msgid "OAuth token exchange failed."
-msgstr "OAuth token exchange failed."
+msgstr "OAuth-tokenutbytet misslyckades."
 
 msgid "Google Search Console"
 msgstr "Google Search Console"
 
 msgid "Google Search Console Integration"
-msgstr "Google Search Console Integration"
+msgstr "Google Search Console-integrering"
 
 msgid "Connect to Google Search Console to see which broken URLs were getting real search traffic."
-msgstr "Connect to Google Search Console to see which broken URLs were getting real search traffic."
+msgstr "Anslut till Google Search Console för att se vilka trasiga URL:er som fick verklig söktrafik."
 
 msgid "Setup steps:"
-msgstr "Setup steps:"
+msgstr "Installationssteg:"
 
 msgid "Create a project in %s."
-msgstr "Create a project in %s."
+msgstr "Skapa ett projekt i %s."
 
 msgid "Enable the \"Google Search Console API\"."
-msgstr "Enable the \"Google Search Console API\"."
+msgstr "Aktivera \"Google Search Console API\"."
 
 msgid "Create OAuth 2.0 credentials (Web application type)."
-msgstr "Create OAuth 2.0 credentials (Web application type)."
+msgstr "Skapa OAuth 2.0-autentiseringsuppgifter (webbapplikationstyp)."
 
 msgid "Add this Authorized Redirect URI: %s"
-msgstr "Add this Authorized Redirect URI: %s"
+msgstr "Lägg till denna auktoriserade omdirigerings-URI: %s"
 
 msgid "Enter your Client ID and Client Secret below."
-msgstr "Enter your Client ID and Client Secret below."
+msgstr "Ange ditt klient-ID och din klienthemlighet nedan."
 
 msgid "Client ID"
-msgstr "Client ID"
+msgstr "Klient-ID"
 
 msgid "Client Secret"
-msgstr "Client Secret"
+msgstr "Klienthemlighet"
 
 msgid "Search Console Site URL"
-msgstr "Search Console Site URL"
+msgstr "Search Console webbplats-URL"
 
 msgid "The site URL as registered in Search Console (e.g. https://example.com/)."
-msgstr "The site URL as registered in Search Console (e.g. https://example.com/)."
+msgstr "Webbplatsens URL som registrerad i Search Console (t.ex. https://example.com/)."
 
 msgid "Save Credentials"
-msgstr "Save Credentials"
+msgstr "Spara uppgifter"
 
 msgid "Credentials saved."
-msgstr "Credentials saved."
+msgstr "Uppgifter sparade."
 
 msgid "Click the button below to authorize access to your Search Console data."
-msgstr "Click the button below to authorize access to your Search Console data."
+msgstr "Klicka på knappen nedan för att auktorisera åtkomst till dina Search Console-data."
 
 msgid "Authorize with Google"
-msgstr "Authorize with Google"
+msgstr "Auktorisera med Google"
 
 msgid "Remove Credentials"
-msgstr "Remove Credentials"
+msgstr "Ta bort uppgifter"
 
 msgid "Connected to Google Search Console."
-msgstr "Connected to Google Search Console."
+msgstr "Ansluten till Google Search Console."
 
 msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
+msgstr "Söktrafikdata för dina infångade 404-URL:er visas nedan. Data cachelagras i 1 timme."
 
 msgid "Disconnect"
-msgstr "Disconnect"
+msgstr "Koppla från"
 
 msgid "Connected to Google Search Console"
 msgstr "Ansluten till Google Search Console"
@@ -2995,52 +2995,52 @@ msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to star
 msgstr "Klicka på 'Försök igen' för att försöka auktorisera igen, eller 'Ta bort uppgifter' för att börja om."
 
 msgid "404 URLs with Search Traffic (last 90 days)"
-msgstr "404 URLs with Search Traffic (last 90 days)"
+msgstr "404-URL:er med söktrafik (senaste 90 dagarna)"
 
 msgid "Clicks"
-msgstr "Clicks"
+msgstr "Klick"
 
 msgid "Impressions"
-msgstr "Impressions"
+msgstr "Visningar"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "Ingen söktrafik hittades för dina registrerade 404-URL:er under de senaste 90 dagarna."
 
 msgid "Avg. Position"
-msgstr "Avg. Position"
+msgstr "Genomsnittlig position"
 
 msgid "The \"from\" URL is required."
-msgstr "The \"from\" URL is required."
+msgstr "\"Från\"-URL:en är obligatorisk."
 
 msgid "The \"to\" URL is required."
-msgstr "The \"to\" URL is required."
+msgstr "\"Till\"-URL:en är obligatorisk."
 
 msgid "Failed to create redirect."
-msgstr "Failed to create redirect."
+msgstr "Kunde inte skapa omdirigering."
 
 msgid "Invalid redirect ID."
-msgstr "Invalid redirect ID."
+msgstr "Ogiltigt omdirigeringsid."
 
 msgid "Both \"from\" and \"to\" parameters are required."
-msgstr "Both \"from\" and \"to\" parameters are required."
+msgstr "Både \"från\"- och \"till\"-parametrarna krävs."
 
 msgid "Invalid captured 404 ID."
-msgstr "Invalid captured 404 ID."
+msgstr "Ogiltigt infångat 404-id."
 
 msgid "Captured 404 not found."
-msgstr "Captured 404 not found."
+msgstr "Infångad 404 hittades inte."
 
 msgid "The captured 404 record has no URL."
-msgstr "The captured 404 record has no URL."
+msgstr "Den infångade 404-posten har ingen URL."
 
 msgid "The \"url\" parameter is required."
-msgstr "The \"url\" parameter is required."
+msgstr "\"url\"-parametern är obligatorisk."
 
 msgid "No captured 404s in this period."
-msgstr "No captured 404s in this period."
+msgstr "Inga infångade 404:or under denna period."
 
 msgid "404 Solution Digest"
-msgstr "404 Solution Digest"
+msgstr "404 Solution-sammanfattning"
 
 msgid "Digest Report"
 msgstr "Sammanfattningsrapport"
@@ -3062,16 +3062,16 @@ msgid "%1$d of %2$d URLs handled"
 msgstr "%1$d av %2$d URL:er hanterade"
 
 msgid "Summary"
-msgstr "Summary"
+msgstr "Sammanfattning"
 
 msgid "Top Captured 404 URLs"
-msgstr "Top Captured 404 URLs"
+msgstr "Mest infångade 404-URL:er"
 
 msgid "First Seen"
-msgstr "First Seen"
+msgstr "Först sedd"
 
 msgid "View Captured 404s"
-msgstr "View Captured 404s"
+msgstr "Visa infångade 404:or"
 
 msgid "Manage Settings"
 msgstr "Hantera inställningar"
@@ -3080,52 +3080,52 @@ msgid "To stop these emails, update your notification settings."
 msgstr "För att sluta ta emot dessa e-postmeddelanden, uppdatera dina aviseringsinställningar."
 
 msgid "To stop receiving these emails, update your notification settings."
-msgstr "To stop receiving these emails, update your notification settings."
+msgstr "För att sluta ta emot dessa e-postmeddelanden, uppdatera dina notifieringsinställningar."
 
 msgid "Manage settings"
-msgstr "Manage settings"
+msgstr "Hantera inställningar"
 
 msgid "Sent"
-msgstr "Sent"
+msgstr "Skickat"
 
 msgid "Plugin"
 msgstr "Plugin"
 
 msgid "404 Solution Digest — %s"
-msgstr "404 Solution Digest — %s"
+msgstr "404 Solution-sammanfattning — %s"
 
 msgid "Advanced Options"
 msgstr "Avancerade alternativ"
 
 msgid "Active From (optional)"
-msgstr "Active From (optional)"
+msgstr "Aktiv från (valfritt)"
 
 msgid "Leave blank to activate immediately"
-msgstr "Leave blank to activate immediately"
+msgstr "Lämna tomt för att aktivera direkt"
 
 msgid "Active Until (optional)"
-msgstr "Active Until (optional)"
+msgstr "Aktiv till (valfritt)"
 
 msgid "Leave blank to never expire"
-msgstr "Leave blank to never expire"
+msgstr "Lämna tomt för att aldrig löpa ut"
 
 msgid "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
-msgstr "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
+msgstr "En databaslåsnings-timeout inträffade. Detta orsakas vanligtvis av att en annan process håller ett tabelllås i din databas. Det kan lösa sig automatiskt, eller kontakta din webbhost om det kvarstår."
 
 msgid "Expire auto-redirects after"
-msgstr "Expire auto-redirects after"
+msgstr "Låt automatiska omdirigeringar löpa ut efter"
 
 msgid "days (0 to disable)"
-msgstr "days (0 to disable)"
+msgstr "dagar (0 för att inaktivera)"
 
 msgid "Auto-created redirects older than this many days will be automatically moved to trash."
-msgstr "Auto-created redirects older than this many days will be automatically moved to trash."
+msgstr "Automatiskt skapade omdirigeringar som är äldre än detta antal dagar flyttas automatiskt till papperskorgen."
 
 msgid "Export format:"
-msgstr "Export format:"
+msgstr "Exportformat:"
 
 msgid "Native CSV (404 Solution)"
-msgstr "Native CSV (404 Solution)"
+msgstr "Eget CSV-format (404 Solution)"
 
 msgid "Redirection Plugin CSV"
 msgstr "Redirection Plugin CSV"
@@ -3134,10 +3134,10 @@ msgid "Apache .htaccess"
 msgstr "Apache .htaccess"
 
 msgid "Nginx config"
-msgstr "Nginx config"
+msgstr "Nginx-konfiguration"
 
 msgid "Cloudflare Workers script"
-msgstr "Cloudflare Workers script"
+msgstr "Cloudflare Workers-skript"
 
 msgid "Netlify _redirects"
 msgstr "Netlify _redirects"
@@ -3180,10 +3180,10 @@ msgid "Meta Refresh"
 msgstr "Meta Refresh"
 
 msgid "Redirecting…"
-msgstr "Redirecting…"
+msgstr "Omdirigerar…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
-msgstr "You are being redirected. Click the link if not redirected automatically."
+msgstr "Du omdirigeras. Klicka på länken om du inte omdirigeras automatiskt."
 
 # Engine Profile admin section strings
 msgid "Engine Profiles"
@@ -3226,22 +3226,22 @@ msgid "Name"
 msgstr "Name"
 
 msgid "URL Pattern"
-msgstr "URL Pattern"
+msgstr "URL-mönster"
 
 msgid "Regex"
 msgstr "Regex"
 
 msgid "Engines"
-msgstr "Engines"
+msgstr "Motorer"
 
 msgid "Priority"
-msgstr "Priority"
+msgstr "Prioritet"
 
 msgid "Active"
-msgstr "Active"
+msgstr "Aktiv"
 
 msgid "Actions"
-msgstr "Actions"
+msgstr "Åtgärder"
 
 msgid "No engine profiles defined."
 msgstr "Inga motorprofiler definierade."
@@ -3520,3 +3520,12 @@ msgstr "Svarade med %s"
 #, fuzzy
 msgid "Showed 404 page — %s"
 msgstr "Visade 404-sida — %s"
+
+msgid "Attach PDF report to digest email"
+msgstr "Bifoga PDF-rapport till sammanfattningsmail"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "När aktiverat bifogas en PDF-sammanfattning till varje sammanfattningsmail (endast dagliga eller veckovisa sammanfattningar)."
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "Motorprofiler låter dig begränsa vilka matchningsmotorer som körs för specifika URL-mönster. Den första profilen vars mönster matchar en 404 URL tillämpas. Om ingen profil matchar körs alla motorer normalt."

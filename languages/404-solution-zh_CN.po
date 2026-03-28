@@ -35,25 +35,20 @@ msgstr "正在停用"
 msgid "Saving..."
 msgstr "正在保存..."
 
-#, fuzzy
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
-msgstr "Could not save settings - missing security token. The wizard may appear again on next visit."
+msgstr "无法保存设置 - 缺少安全令牌。向导可能会在下次访问时再次出现。"
 
-#, fuzzy
 msgid "Could not save dismissal. The wizard may appear again on next visit."
-msgstr "Could not save dismissal. The wizard may appear again on next visit."
+msgstr "无法保存关闭状态。向导可能会在下次访问时再次出现。"
 
-#, fuzzy
 msgid "Could not save dismissal: "
-msgstr "Could not save dismissal: "
+msgstr "无法保存关闭状态："
 
-#, fuzzy
 msgid " The wizard may appear again on next visit."
-msgstr " The wizard may appear again on next visit."
+msgstr " 向导可能会在下次访问时再次出现。"
 
-#, fuzzy
 msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
-msgstr "Network error - could not save dismissal. The wizard may appear again on next visit."
+msgstr "网络错误 - 无法保存关闭状态。向导可能会在下次访问时再次出现。"
 
 msgid "Settings"
 msgstr "设置"
@@ -1930,154 +1925,154 @@ msgid "for 30+ additional options."
 msgstr "提供30多个额外选项。"
 
 msgid "Statistics"
-msgstr "Statistics"
+msgstr "统计"
 
 msgid "Example:"
-msgstr "Example:"
+msgstr "示例："
 
 msgid "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
-msgstr "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "/events/(.+) 将匹配所有以 /events/ 开头的 URL，并重定向到指定页面。由于使用了捕获组，您可以在外部 URL 的目标字符串中使用 $1 替换。"
 
 msgid "URLs to redirect"
-msgstr "URLs to redirect"
+msgstr "待重定向的 URL"
 
 msgid "Captured"
-msgstr "Captured"
+msgstr "已捕获"
 
 msgid "Ignored"
-msgstr "Ignored"
+msgstr "已忽略"
 
 msgid "Later"
-msgstr "Later"
+msgstr "稍后"
 
 msgid "Type to filter URLs... (press Enter)"
-msgstr "Type to filter URLs... (press Enter)"
+msgstr "输入以筛选 URL...（按回车键）"
 
 msgid "Are you sure you want to permanently delete all items in trash?"
-msgstr "Are you sure you want to permanently delete all items in trash?"
+msgstr "您确定要永久删除回收站中的所有项目吗？"
 
 msgid "selected"
-msgstr "selected"
+msgstr "已选择"
 
 msgid "Mark Captured"
-msgstr "Mark Captured"
+msgstr "标记为已捕获"
 
 msgid "Mark Ignored"
-msgstr "Mark Ignored"
+msgstr "标记为已忽略"
 
 msgid "Move to Trash"
-msgstr "Move to Trash"
+msgstr "移至回收站"
 
 msgid "Create Redirect"
-msgstr "Create Redirect"
+msgstr "创建重定向"
 
 msgid "Clear"
-msgstr "Clear"
+msgstr "清除"
 
 msgid "Never"
-msgstr "Never"
+msgstr "从不"
 
 msgid "Captured 404 URL"
-msgstr "Captured 404 URL"
+msgstr "已捕获的 404 URL"
 
 msgid "Ignored URL - will not be suggested"
-msgstr "Ignored URL - will not be suggested"
+msgstr "已忽略的 URL — 不会被推荐"
 
 msgid "Edit"
-msgstr "Edit"
+msgstr "编辑"
 
 msgid "View Logs"
-msgstr "View Logs"
+msgstr "查看日志"
 
 msgid "Delete Permanently"
-msgstr "Delete Permanently"
+msgstr "永久删除"
 
 msgid "Are you sure you want to permanently delete this item?"
-msgstr "Are you sure you want to permanently delete this item?"
+msgstr "您确定要永久删除此项目吗？"
 
 msgid "Delete"
-msgstr "Delete"
+msgstr "删除"
 
 msgid "Ignore"
-msgstr "Ignore"
+msgstr "忽略"
 
 msgid "Manual"
-msgstr "Manual"
+msgstr "手动"
 
 msgid "Automatic"
-msgstr "Automatic"
+msgstr "自动"
 
 msgid "Type to filter redirects... (press Enter)"
-msgstr "Type to filter redirects... (press Enter)"
+msgstr "输入以筛选重定向...（按回车键）"
 
 msgid "redirects selected"
-msgstr "redirects selected"
+msgstr "个重定向已选择"
 
 msgid "Bulk Actions"
-msgstr "Bulk Actions"
+msgstr "批量操作"
 
 msgid "Edit Redirects"
-msgstr "Edit Redirects"
+msgstr "编辑重定向"
 
 msgid "Restore Redirects"
-msgstr "Restore Redirects"
+msgstr "恢复重定向"
 
 msgid "Clear Selection"
-msgstr "Clear Selection"
+msgstr "清除选择"
 
 msgid "Are you sure you want to permanently delete all items in the trash?"
-msgstr "Are you sure you want to permanently delete all items in the trash?"
+msgstr "您确定要永久删除回收站中的所有项目吗？"
 
 msgid "Add Manual Redirect"
-msgstr "Add Manual Redirect"
+msgstr "添加手动重定向"
 
 msgid "The URL path that should be redirected (without domain)"
-msgstr "The URL path that should be redirected (without domain)"
+msgstr "应重定向的 URL 路径（不含域名）"
 
 msgid "Permanent Redirect (Recommended for SEO)"
-msgstr "Permanent Redirect (Recommended for SEO)"
+msgstr "永久重定向（推荐用于 SEO）"
 
 msgid "Temporary Redirect"
-msgstr "Temporary Redirect"
+msgstr "临时重定向"
 
 msgid "logs"
-msgstr "logs"
+msgstr "日志"
 
 msgid "redirects"
-msgstr "redirects"
+msgstr "重定向"
 
 msgid "Showing %1$d-%2$d of %3$d %4$s"
-msgstr "Showing %1$d-%2$d of %3$d %4$s"
+msgstr "当前显示第 %1$d 至第 %2$d 条记录，共计 %3$d 条%4$s"
 
 msgid "Redirects will appear here once created."
-msgstr "Redirects will appear here once created."
+msgstr "创建重定向后将在此处显示。"
 
 msgid "Redirect Logs"
-msgstr "Redirect Logs"
+msgstr "重定向日志"
 
 msgid "Action"
-msgstr "Action"
+msgstr "操作"
 
 msgid "404"
 msgstr "404"
 
 msgid "Today's Stats"
-msgstr "Today's Stats"
+msgstr "今日统计"
 
 msgid "This Month"
-msgstr "This Month"
+msgstr "本月"
 
 msgid "This Year"
-msgstr "This Year"
+msgstr "本年"
 
 msgid "All Stats"
-msgstr "All Stats"
+msgstr "全部统计"
 
 msgid "Visit URL"
-msgstr "Visit URL"
+msgstr "访问 URL"
 
 msgid "This page doesn't exist or is not published so the redirect won't work."
-msgstr "This page doesn't exist or is not published so the redirect won't work."
+msgstr "此页面不存在或未发布，因此重定向将不会生效。"
 
 #: includes/DataAccess.php
 msgid "Just now"
@@ -2453,13 +2448,13 @@ msgid "Refresh available"
 msgstr "可用刷新"
 
 msgid "More info"
-msgstr "More info"
+msgstr "更多信息"
 
 msgid "Destination missing. Edit this redirect and choose a destination."
-msgstr "Destination missing. Edit this redirect and choose a destination."
+msgstr "目标地址缺失。请编辑此重定向并选择目标地址。"
 
 msgid "(Destination missing)"
-msgstr "(Destination missing)"
+msgstr "(目标地址缺失)"
 
 msgid "data-pagination-refresh-available-text"
 msgstr "data-pagination-refresh-available-text"
@@ -2688,51 +2683,51 @@ msgstr "目标最近返回了404 — 重定向已暂停，直到目标恢复。"
 # Strings added for new features (3.3.8)
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
-msgstr "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
+msgstr "数据库锁等待超时。如果此问题持续发生，请联系您的主机提供商 — 可能有其他进程持有长时间运行的锁。"
 
 msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
-msgstr "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
+msgstr "InnoDB 表空间似乎已耗尽。删除插件数据不会释放此空间。请联系您的主机提供商扩展 InnoDB 表空间（ibdata1）。"
 
 msgid "Email notification frequency"
-msgstr "Email notification frequency"
+msgstr "邮件通知频率"
 
 msgid "Instant (when threshold exceeded)"
-msgstr "Instant (when threshold exceeded)"
+msgstr "即时通知（超过阈值时）"
 
 msgid "Daily digest"
-msgstr "Daily digest"
+msgstr "每日摘要"
 
 msgid "Weekly digest"
-msgstr "Weekly digest"
+msgstr "每周摘要"
 
 msgid "Choose how often to receive email notifications about captured 404s."
-msgstr "Choose how often to receive email notifications about captured 404s."
+msgstr "选择接收已捕获 404 邮件通知的频率。"
 
 
 
 msgid "Temporary 307 (preserve method)"
-msgstr "Temporary 307 (preserve method)"
+msgstr "临时 307（保留请求方法）"
 
 msgid "Permanent 308 (preserve method)"
-msgstr "Permanent 308 (preserve method)"
+msgstr "永久 308（保留请求方法）"
 
 msgid "Loading chart data…"
-msgstr "Loading chart data…"
+msgstr "正在加载图表数据…"
 
 msgid "Could not load chart data."
-msgstr "Could not load chart data."
+msgstr "无法加载图表数据。"
 
 msgid "404 Hits per Day"
-msgstr "404 Hits per Day"
+msgstr "每日 404 访问量"
 
 msgid "Redirects per Day"
-msgstr "Redirects per Day"
+msgstr "每日重定向次数"
 
 msgid "New Captures per Day"
-msgstr "New Captures per Day"
+msgstr "每日新捕获数"
 
 msgid "Trends (Last 30 Days)"
-msgstr "Trends (Last 30 Days)"
+msgstr "趋势（最近 30 天）"
 
 msgid "Trend Analytics"
 msgstr "趋势分析"
@@ -2750,26 +2745,26 @@ msgid "Period"
 msgstr "时间段"
 
 msgid "No broken internal links found."
-msgstr "No broken internal links found."
+msgstr "未发现损坏的内部链接。"
 
 msgid "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
-msgstr "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
+msgstr "在 %2$d 篇文章/页面中发现了 %1$d 个损坏的内部链接。"
 
 msgid "Post/Page"
-msgstr "Post/Page"
+msgstr "文章/页面"
 
 msgid "Broken URL"
-msgstr "Broken URL"
+msgstr "损坏的 URL"
 
 msgid "404 Hits"
-msgstr "404 Hits"
+msgstr "404 访问量"
 
 msgid "Broken Internal Links"
-msgstr "Broken Internal Links"
+msgstr "损坏的内部链接"
 
 
 msgid "Migrate from Another Plugin"
-msgstr "Migrate from Another Plugin"
+msgstr "从其他插件迁移"
 
 msgid "Rank Math"
 msgstr "Rank Math"
@@ -2784,160 +2779,160 @@ msgid "Safe Redirect Manager"
 msgstr "Safe Redirect Manager"
 
 msgid "Redirection Plugin"
-msgstr "Redirection Plugin"
+msgstr "Redirection 插件"
 
 msgid "No supported redirect plugins detected on this site."
-msgstr "No supported redirect plugins detected on this site."
+msgstr "在此站点上未检测到受支持的重定向插件。"
 
 msgid "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
-msgstr "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
+msgstr "支持导入的重定向插件：Rank Math、Yoast SEO Premium、AIOSEO、Safe Redirect Manager、Redirection。"
 
 msgid "Detected redirect plugins:"
-msgstr "Detected redirect plugins:"
+msgstr "检测到的重定向插件："
 
 msgid "Source plugin:"
-msgstr "Source plugin:"
+msgstr "来源插件："
 
 msgid "Import Redirects"
-msgstr "Import Redirects"
+msgstr "导入重定向"
 
 msgid "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
-msgstr "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
+msgstr "此操作将从所选插件导入所有活动的重定向到 404 Solution。正则表达式和重定向代码将被保留。"
 
 msgid "Temporary Redirect (preserve method)"
-msgstr "Temporary Redirect (preserve method)"
+msgstr "临时重定向（保留请求方法）"
 
 msgid "Permanent Redirect (preserve method)"
-msgstr "Permanent Redirect (preserve method)"
+msgstr "永久重定向（保留请求方法）"
 
 msgid "Gone (resource permanently removed)"
-msgstr "Gone (resource permanently removed)"
+msgstr "已删除（资源已被永久移除）"
 
 msgid "Conditions (optional)"
-msgstr "Conditions (optional)"
+msgstr "条件（可选）"
 
 msgid "This redirect only fires when all conditions are met. Leave empty to always redirect."
-msgstr "This redirect only fires when all conditions are met. Leave empty to always redirect."
+msgstr "此重定向仅在满足所有条件时触发。留空则始终执行重定向。"
 
 msgid "+ Add Condition"
-msgstr "+ Add Condition"
+msgstr "+ 添加条件"
 
 msgid "Logic"
-msgstr "Logic"
+msgstr "逻辑"
 
 msgid "AND"
-msgstr "AND"
+msgstr "与（AND）"
 
 msgid "OR"
-msgstr "OR"
+msgstr "或（OR）"
 
 msgid "Login Status"
-msgstr "Login Status"
+msgstr "登录状态"
 
 msgid "User Role"
-msgstr "User Role"
+msgstr "用户角色"
 
 msgid "Referrer URL"
-msgstr "Referrer URL"
+msgstr "来源 URL"
 
 msgid "User Agent"
-msgstr "User Agent"
+msgstr "用户代理"
 
 msgid "IP Range (CIDR)"
-msgstr "IP Range (CIDR)"
+msgstr "IP 范围（CIDR）"
 
 msgid "HTTP Header"
-msgstr "HTTP Header"
+msgstr "HTTP 头"
 
 msgid "Condition type"
-msgstr "Condition type"
+msgstr "条件类型"
 
 msgid "— Select type —"
-msgstr "— Select type —"
+msgstr "— 选择类型 —"
 
 msgid "equals"
-msgstr "equals"
+msgstr "等于"
 
 msgid "not equals"
-msgstr "not equals"
+msgstr "不等于"
 
 msgid "contains"
-msgstr "contains"
+msgstr "包含"
 
 msgid "does not contain"
-msgstr "does not contain"
+msgstr "不包含"
 
 msgid "matches regex"
-msgstr "matches regex"
+msgstr "匹配正则表达式"
 
 msgid "Operator"
-msgstr "Operator"
+msgstr "运算符"
 
 msgid "Value"
-msgstr "Value"
+msgstr "值"
 
 msgid "Condition value"
-msgstr "Condition value"
+msgstr "条件值"
 
 msgid "Remove condition"
-msgstr "Remove condition"
+msgstr "移除条件"
 
 msgid "Remove"
-msgstr "Remove"
+msgstr "移除"
 
 msgid "Auto-matched by:"
-msgstr "Auto-matched by:"
+msgstr "自动匹配方式："
 
 msgid "Error: Invalid email notification frequency selected"
-msgstr "Error: Invalid email notification frequency selected"
+msgstr "错误：选择的邮件通知频率无效"
 
 msgid "Error: Digest limit must be a number greater than or equal to 1"
-msgstr "Error: Digest limit must be a number greater than or equal to 1"
+msgstr "错误：摘要限制必须是大于或等于 1 的数字"
 
 msgid "Google Search Console credentials saved."
-msgstr "Google Search Console credentials saved."
+msgstr "您的 Google Search Console 授权凭据已成功保存。"
 
 msgid "Error: No source plugin specified."
-msgstr "Error: No source plugin specified."
+msgstr "错误：未指定来源插件。"
 
 msgid "Error: Unknown source plugin \"%s\"."
-msgstr "Error: Unknown source plugin \"%s\"."
+msgstr "错误：未知的来源插件「%s」。"
 
 msgid "Insufficient permissions."
-msgstr "Insufficient permissions."
+msgstr "权限不足。"
 
 msgid "Security check failed."
-msgstr "Security check failed."
+msgstr "安全检查失败。"
 
 msgid "OAuth token exchange failed."
-msgstr "OAuth token exchange failed."
+msgstr "OAuth 令牌交换失败。"
 
 msgid "Google Search Console"
 msgstr "Google Search Console"
 
 msgid "Google Search Console Integration"
-msgstr "Google Search Console Integration"
+msgstr "集成 Google Search Console 搜索分析服务"
 
 msgid "Connect to Google Search Console to see which broken URLs were getting real search traffic."
-msgstr "Connect to Google Search Console to see which broken URLs were getting real search traffic."
+msgstr "连接到 Google Search Console，查看哪些损坏的 URL 曾获得真实的搜索流量。"
 
 msgid "Setup steps:"
-msgstr "Setup steps:"
+msgstr "设置步骤："
 
 msgid "Create a project in %s."
-msgstr "Create a project in %s."
+msgstr "在 %s 中创建项目。"
 
 msgid "Enable the \"Google Search Console API\"."
-msgstr "Enable the \"Google Search Console API\"."
+msgstr "在项目中启用「Google Search Console API」接口。"
 
 msgid "Create OAuth 2.0 credentials (Web application type)."
-msgstr "Create OAuth 2.0 credentials (Web application type)."
+msgstr "创建 OAuth 2.0 凭据（Web 应用程序类型）。"
 
 msgid "Add this Authorized Redirect URI: %s"
-msgstr "Add this Authorized Redirect URI: %s"
+msgstr "添加此授权重定向 URI：%s"
 
 msgid "Enter your Client ID and Client Secret below."
-msgstr "Enter your Client ID and Client Secret below."
+msgstr "请在下方输入您的客户端标识 Client ID 和客户端密钥 Client Secret。"
 
 msgid "Client ID"
 msgstr "Client ID"
@@ -2946,34 +2941,34 @@ msgid "Client Secret"
 msgstr "Client Secret"
 
 msgid "Search Console Site URL"
-msgstr "Search Console Site URL"
+msgstr "搜索控制台中注册的站点地址"
 
 msgid "The site URL as registered in Search Console (e.g. https://example.com/)."
-msgstr "The site URL as registered in Search Console (e.g. https://example.com/)."
+msgstr "在搜索控制台中注册的站点网址，即您的网站首页地址（例如 https://example.com/）。"
 
 msgid "Save Credentials"
-msgstr "Save Credentials"
+msgstr "保存凭据"
 
 msgid "Credentials saved."
-msgstr "Credentials saved."
+msgstr "凭据已保存。"
 
 msgid "Click the button below to authorize access to your Search Console data."
-msgstr "Click the button below to authorize access to your Search Console data."
+msgstr "点击下方按钮授权访问您的 Search Console 数据。"
 
 msgid "Authorize with Google"
-msgstr "Authorize with Google"
+msgstr "使用 Google 授权"
 
 msgid "Remove Credentials"
-msgstr "Remove Credentials"
+msgstr "移除凭据"
 
 msgid "Connected to Google Search Console."
-msgstr "Connected to Google Search Console."
+msgstr "已成功连接到 Google Search Console 搜索分析服务。"
 
 msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
+msgstr "以下显示您已捕获的 404 URL 的搜索流量数据。数据缓存时间为 1 小时。"
 
 msgid "Disconnect"
-msgstr "Disconnect"
+msgstr "断开连接"
 
 msgid "Connected to Google Search Console"
 msgstr "已成功连接到 Google Search Console 并开始获取搜索数据"
@@ -3003,52 +2998,52 @@ msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to star
 msgstr "点击「重试」重新尝试授权，或点击「删除凭据」重新开始。"
 
 msgid "404 URLs with Search Traffic (last 90 days)"
-msgstr "404 URLs with Search Traffic (last 90 days)"
+msgstr "具有搜索流量的 404 URL（最近 90 天）"
 
 msgid "Clicks"
-msgstr "Clicks"
+msgstr "点击次数"
 
 msgid "Impressions"
-msgstr "Impressions"
+msgstr "展示次数"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "在过去90天内，未找到您捕获的404 URL的搜索流量数据。"
 
 msgid "Avg. Position"
-msgstr "Avg. Position"
+msgstr "平均排名"
 
 msgid "The \"from\" URL is required."
-msgstr "The \"from\" URL is required."
+msgstr "「from」URL 为必填项。"
 
 msgid "The \"to\" URL is required."
-msgstr "The \"to\" URL is required."
+msgstr "「to」URL 为必填项。"
 
 msgid "Failed to create redirect."
-msgstr "Failed to create redirect."
+msgstr "创建重定向失败。"
 
 msgid "Invalid redirect ID."
-msgstr "Invalid redirect ID."
+msgstr "无效的重定向 ID。"
 
 msgid "Both \"from\" and \"to\" parameters are required."
-msgstr "Both \"from\" and \"to\" parameters are required."
+msgstr "「from」和「to」参数均为必填项。"
 
 msgid "Invalid captured 404 ID."
-msgstr "Invalid captured 404 ID."
+msgstr "无效的已捕获 404 ID。"
 
 msgid "Captured 404 not found."
-msgstr "Captured 404 not found."
+msgstr "未找到已捕获的 404 记录。"
 
 msgid "The captured 404 record has no URL."
-msgstr "The captured 404 record has no URL."
+msgstr "已捕获的 404 记录没有 URL。"
 
 msgid "The \"url\" parameter is required."
-msgstr "The \"url\" parameter is required."
+msgstr "「url」参数为必填项。"
 
 msgid "No captured 404s in this period."
-msgstr "No captured 404s in this period."
+msgstr "此时间段内没有已捕获的 404。"
 
 msgid "404 Solution Digest"
-msgstr "404 Solution Digest"
+msgstr "404 Solution 摘要"
 
 msgid "Digest Report"
 msgstr "摘要报告"
@@ -3070,16 +3065,16 @@ msgid "%1$d of %2$d URLs handled"
 msgstr "已处理%1$d个，共%2$d个"
 
 msgid "Summary"
-msgstr "Summary"
+msgstr "摘要"
 
 msgid "Top Captured 404 URLs"
-msgstr "Top Captured 404 URLs"
+msgstr "最常捕获的 404 URL"
 
 msgid "First Seen"
-msgstr "First Seen"
+msgstr "首次发现"
 
 msgid "View Captured 404s"
-msgstr "View Captured 404s"
+msgstr "查看已捕获的 404"
 
 msgid "Manage Settings"
 msgstr "管理设置"
@@ -3088,64 +3083,64 @@ msgid "To stop these emails, update your notification settings."
 msgstr "要停止接收这些邮件，请更新您的通知设置。"
 
 msgid "To stop receiving these emails, update your notification settings."
-msgstr "To stop receiving these emails, update your notification settings."
+msgstr "如需停止接收这些邮件，请更新您的通知设置。"
 
 msgid "Manage settings"
-msgstr "Manage settings"
+msgstr "管理设置"
 
 msgid "Sent"
-msgstr "Sent"
+msgstr "已发送"
 
 msgid "Plugin"
-msgstr "Plugin"
+msgstr "插件"
 
 msgid "404 Solution Digest — %s"
-msgstr "404 Solution Digest — %s"
+msgstr "404 Solution 重定向摘要通知 — %s"
 
 msgid "Advanced Options"
 msgstr "高级选项"
 
 msgid "Active From (optional)"
-msgstr "Active From (optional)"
+msgstr "生效开始时间（可选）"
 
 msgid "Leave blank to activate immediately"
-msgstr "Leave blank to activate immediately"
+msgstr "留空则立即生效"
 
 msgid "Active Until (optional)"
-msgstr "Active Until (optional)"
+msgstr "生效结束时间（可选）"
 
 msgid "Leave blank to never expire"
-msgstr "Leave blank to never expire"
+msgstr "留空则永不过期"
 
 msgid "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
-msgstr "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
+msgstr "数据库锁等待超时。这通常是由于其他进程持有数据库表锁所导致的。此问题可能会自动解决，如果持续发生，请联系您的主机提供商。"
 
 msgid "Expire auto-redirects after"
-msgstr "Expire auto-redirects after"
+msgstr "自动重定向过期时间"
 
 msgid "days (0 to disable)"
-msgstr "days (0 to disable)"
+msgstr "天（设为 0 禁用）"
 
 msgid "Auto-created redirects older than this many days will be automatically moved to trash."
-msgstr "Auto-created redirects older than this many days will be automatically moved to trash."
+msgstr "超过此天数的自动创建的重定向将被自动移至回收站。"
 
 msgid "Export format:"
-msgstr "Export format:"
+msgstr "导出格式："
 
 msgid "Native CSV (404 Solution)"
-msgstr "Native CSV (404 Solution)"
+msgstr "原生 CSV（404 Solution）"
 
 msgid "Redirection Plugin CSV"
-msgstr "Redirection Plugin CSV"
+msgstr "Redirection 插件 CSV"
 
 msgid "Apache .htaccess"
 msgstr "Apache .htaccess"
 
 msgid "Nginx config"
-msgstr "Nginx config"
+msgstr "Nginx 配置"
 
 msgid "Cloudflare Workers script"
-msgstr "Cloudflare Workers script"
+msgstr "导出为 Cloudflare Workers 脚本格式"
 
 msgid "Netlify _redirects"
 msgstr "Netlify _redirects"
@@ -3188,10 +3183,10 @@ msgid "Meta Refresh"
 msgstr "Meta Refresh"
 
 msgid "Redirecting…"
-msgstr "Redirecting…"
+msgstr "正在重定向…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
-msgstr "You are being redirected. Click the link if not redirected automatically."
+msgstr "正在为您重定向。如果未自动重定向，请点击链接。"
 
 # Engine Profile admin section strings
 msgid "Engine Profiles"
@@ -3234,22 +3229,22 @@ msgid "Name"
 msgstr "Name"
 
 msgid "URL Pattern"
-msgstr "URL Pattern"
+msgstr "URL 模式"
 
 msgid "Regex"
-msgstr "Regex"
+msgstr "正则表达式"
 
 msgid "Engines"
-msgstr "Engines"
+msgstr "匹配引擎"
 
 msgid "Priority"
-msgstr "Priority"
+msgstr "优先级"
 
 msgid "Active"
-msgstr "Active"
+msgstr "启用"
 
 msgid "Actions"
-msgstr "Actions"
+msgstr "操作"
 
 msgid "No engine profiles defined."
 msgstr "未定义引擎配置文件。"
@@ -3528,3 +3523,14 @@ msgstr "以%s响应"
 #, fuzzy
 msgid "Showed 404 page — %s"
 msgstr "已显示404页面 - %s"
+
+
+msgid "Attach PDF report to digest email"
+msgstr "将 PDF 报告附加到摘要邮件"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "启用后，每封摘要邮件将附带 PDF 摘要（仅限每日或每周摘要）。"
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "引擎配置允许您限制特定 URL 模式运行哪些匹配引擎。第一个模式匹配到 404 URL 的配置将生效。如果没有配置匹配，则所有引擎正常运行。"
+

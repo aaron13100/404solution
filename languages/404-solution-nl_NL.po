@@ -35,25 +35,20 @@ msgstr "Deactiveren"
 msgid "Saving..."
 msgstr "Opslaan..."
 
-#, fuzzy
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
-msgstr "Could not save settings - missing security token. The wizard may appear again on next visit."
+msgstr "Instellingen konden niet worden opgeslagen - beveiligingstoken ontbreekt. De wizard verschijnt mogelijk opnieuw bij uw volgende bezoek."
 
-#, fuzzy
 msgid "Could not save dismissal. The wizard may appear again on next visit."
-msgstr "Could not save dismissal. The wizard may appear again on next visit."
+msgstr "Sluiting kon niet worden opgeslagen. De wizard verschijnt mogelijk opnieuw bij uw volgende bezoek."
 
-#, fuzzy
 msgid "Could not save dismissal: "
-msgstr "Could not save dismissal: "
+msgstr "Sluiting kon niet worden opgeslagen: "
 
-#, fuzzy
 msgid " The wizard may appear again on next visit."
-msgstr " The wizard may appear again on next visit."
+msgstr " De wizard verschijnt mogelijk opnieuw bij uw volgende bezoek."
 
-#, fuzzy
 msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
-msgstr "Network error - could not save dismissal. The wizard may appear again on next visit."
+msgstr "Netwerkfout - sluiting kon niet worden opgeslagen. De wizard verschijnt mogelijk opnieuw bij uw volgende bezoek."
 
 msgid "Settings"
 msgstr "Instellingen"
@@ -680,7 +675,6 @@ msgstr "Ik begrijp bovenstaande verklaring."
 msgid "IP Address"
 msgstr "IP-adres"
 
-#, fuzzy
 msgid "If no suggested pages are found, then this text will be displayed.  (default: &lt;p&gt;No suggestions. :/ &lt;/p&gt;)"
 msgstr "Als geen enkele pagina de minimale matchscore haalt, wordt deze tekst weergegeven.  (standaard: &lt;p&gt;Geen suggesties. :/ &lt;/p&gt;)"
 
@@ -1919,154 +1913,154 @@ msgid "for 30+ additional options."
 msgstr "for 30+ additional options."
 
 msgid "Statistics"
-msgstr "Statistics"
+msgstr "Statistieken"
 
 msgid "Example:"
-msgstr "Example:"
+msgstr "Voorbeeld:"
 
 msgid "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
-msgstr "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "/events/(.+) komt overeen met elke URL die begint met /events/ en leidt door naar de opgegeven pagina. Omdat een capture group wordt gebruikt, kunt u een $1-vervanging gebruiken in de bestemmings-URL van een externe URL."
 
 msgid "URLs to redirect"
-msgstr "URLs to redirect"
+msgstr "URL's om door te verwijzen"
 
 msgid "Captured"
-msgstr "Captured"
+msgstr "Vastgelegd"
 
 msgid "Ignored"
-msgstr "Ignored"
+msgstr "Genegeerd"
 
 msgid "Later"
 msgstr "Later"
 
 msgid "Type to filter URLs... (press Enter)"
-msgstr "Type to filter URLs... (press Enter)"
+msgstr "Typ om URL's te filteren... (druk op Enter)"
 
 msgid "Are you sure you want to permanently delete all items in trash?"
-msgstr "Are you sure you want to permanently delete all items in trash?"
+msgstr "Weet u zeker dat u alle items in de prullenbak definitief wilt verwijderen?"
 
 msgid "selected"
-msgstr "selected"
+msgstr "geselecteerd"
 
 msgid "Mark Captured"
-msgstr "Mark Captured"
+msgstr "Markeer als vastgelegd"
 
 msgid "Mark Ignored"
-msgstr "Mark Ignored"
+msgstr "Markeer als genegeerd"
 
 msgid "Move to Trash"
-msgstr "Move to Trash"
+msgstr "Naar prullenbak verplaatsen"
 
 msgid "Create Redirect"
-msgstr "Create Redirect"
+msgstr "Omleiding aanmaken"
 
 msgid "Clear"
-msgstr "Clear"
+msgstr "Wissen"
 
 msgid "Never"
-msgstr "Never"
+msgstr "Nooit"
 
 msgid "Captured 404 URL"
-msgstr "Captured 404 URL"
+msgstr "Vastgelegde 404-URL"
 
 msgid "Ignored URL - will not be suggested"
-msgstr "Ignored URL - will not be suggested"
+msgstr "Genegeerde URL - wordt niet voorgesteld"
 
 msgid "Edit"
-msgstr "Edit"
+msgstr "Bewerken"
 
 msgid "View Logs"
-msgstr "View Logs"
+msgstr "Logboeken bekijken"
 
 msgid "Delete Permanently"
-msgstr "Delete Permanently"
+msgstr "Definitief verwijderen"
 
 msgid "Are you sure you want to permanently delete this item?"
-msgstr "Are you sure you want to permanently delete this item?"
+msgstr "Weet u zeker dat u dit item definitief wilt verwijderen?"
 
 msgid "Delete"
-msgstr "Delete"
+msgstr "Verwijderen"
 
 msgid "Ignore"
-msgstr "Ignore"
+msgstr "Negeren"
 
 msgid "Manual"
-msgstr "Manual"
+msgstr "Handmatig"
 
 msgid "Automatic"
-msgstr "Automatic"
+msgstr "Automatisch"
 
 msgid "Type to filter redirects... (press Enter)"
-msgstr "Type to filter redirects... (press Enter)"
+msgstr "Typ om omleidingen te filteren... (druk op Enter)"
 
 msgid "redirects selected"
-msgstr "redirects selected"
+msgstr "omleidingen geselecteerd"
 
 msgid "Bulk Actions"
-msgstr "Bulk Actions"
+msgstr "Bulkacties"
 
 msgid "Edit Redirects"
-msgstr "Edit Redirects"
+msgstr "Omleidingen bewerken"
 
 msgid "Restore Redirects"
-msgstr "Restore Redirects"
+msgstr "Omleidingen herstellen"
 
 msgid "Clear Selection"
-msgstr "Clear Selection"
+msgstr "Selectie wissen"
 
 msgid "Are you sure you want to permanently delete all items in the trash?"
-msgstr "Are you sure you want to permanently delete all items in the trash?"
+msgstr "Weet u zeker dat u alle items in de prullenbak definitief wilt verwijderen?"
 
 msgid "Add Manual Redirect"
-msgstr "Add Manual Redirect"
+msgstr "Handmatige omleiding toevoegen"
 
 msgid "The URL path that should be redirected (without domain)"
-msgstr "The URL path that should be redirected (without domain)"
+msgstr "Het URL-pad dat omgeleid moet worden (zonder domein)"
 
 msgid "Permanent Redirect (Recommended for SEO)"
-msgstr "Permanent Redirect (Recommended for SEO)"
+msgstr "Permanente omleiding (aanbevolen voor SEO)"
 
 msgid "Temporary Redirect"
-msgstr "Temporary Redirect"
+msgstr "Tijdelijke omleiding"
 
 msgid "logs"
-msgstr "logs"
+msgstr "logboeken"
 
 msgid "redirects"
-msgstr "redirects"
+msgstr "omleidingen"
 
 msgid "Showing %1$d-%2$d of %3$d %4$s"
-msgstr "Showing %1$d-%2$d of %3$d %4$s"
+msgstr "%1$d-%2$d van %3$d %4$s weergegeven"
 
 msgid "Redirects will appear here once created."
-msgstr "Redirects will appear here once created."
+msgstr "Omleidingen verschijnen hier zodra ze zijn aangemaakt."
 
 msgid "Redirect Logs"
-msgstr "Redirect Logs"
+msgstr "Omleidingslogboeken"
 
 msgid "Action"
-msgstr "Action"
+msgstr "Actie"
 
 msgid "404"
 msgstr "404"
 
 msgid "Today's Stats"
-msgstr "Today's Stats"
+msgstr "Statistieken van vandaag"
 
 msgid "This Month"
-msgstr "This Month"
+msgstr "Deze maand"
 
 msgid "This Year"
-msgstr "This Year"
+msgstr "Dit jaar"
 
 msgid "All Stats"
-msgstr "All Stats"
+msgstr "Alle statistieken"
 
 msgid "Visit URL"
-msgstr "Visit URL"
+msgstr "URL bezoeken"
 
 msgid "This page doesn't exist or is not published so the redirect won't work."
-msgstr "This page doesn't exist or is not published so the redirect won't work."
+msgstr "Deze pagina bestaat niet of is niet gepubliceerd, dus de omleiding werkt niet."
 
 #: includes/DataAccess.php
 msgid "Just now"
@@ -2442,13 +2436,13 @@ msgid "Refresh available"
 msgstr "Vernieuwen beschikbaar"
 
 msgid "More info"
-msgstr "More info"
+msgstr "Meer informatie"
 
 msgid "Destination missing. Edit this redirect and choose a destination."
-msgstr "Destination missing. Edit this redirect and choose a destination."
+msgstr "Bestemming ontbreekt. Bewerk deze omleiding en kies een bestemming."
 
 msgid "(Destination missing)"
-msgstr "(Destination missing)"
+msgstr "(Bestemming ontbreekt)"
 
 msgid "data-pagination-refresh-available-text"
 msgstr "data-pagination-refresh-available-text"
@@ -2680,51 +2674,51 @@ msgstr "De bestemming gaf recentelijk een 404 terug — de doorverwijzing is opg
 # Strings added for new features (3.3.8)
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
-msgstr "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
+msgstr "Er is een time-out opgetreden bij het wachten op een databasevergrendeling. Als dit aanhoudt, neem dan contact op met uw hostingprovider — een ander proces houdt mogelijk een langdurige vergrendeling vast."
 
 msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
-msgstr "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
+msgstr "De InnoDB-tabelruimte lijkt vol te zijn. Het verwijderen van plugingegevens maakt deze ruimte NIET vrij. Neem contact op met uw hostingprovider om de InnoDB-tabelruimte (ibdata1) uit te breiden."
 
 msgid "Email notification frequency"
-msgstr "Email notification frequency"
+msgstr "Frequentie van e-mailmeldingen"
 
 msgid "Instant (when threshold exceeded)"
-msgstr "Instant (when threshold exceeded)"
+msgstr "Direct (wanneer drempelwaarde overschreden)"
 
 msgid "Daily digest"
-msgstr "Daily digest"
+msgstr "Dagelijkse samenvatting"
 
 msgid "Weekly digest"
-msgstr "Weekly digest"
+msgstr "Wekelijkse samenvatting"
 
 msgid "Choose how often to receive email notifications about captured 404s."
-msgstr "Choose how often to receive email notifications about captured 404s."
+msgstr "Kies hoe vaak u e-mailmeldingen wilt ontvangen over vastgelegde 404's."
 
 
 
 msgid "Temporary 307 (preserve method)"
-msgstr "Temporary 307 (preserve method)"
+msgstr "Tijdelijk 307 (methode behouden)"
 
 msgid "Permanent 308 (preserve method)"
-msgstr "Permanent 308 (preserve method)"
+msgstr "Permanent 308 (methode behouden)"
 
 msgid "Loading chart data…"
-msgstr "Loading chart data…"
+msgstr "Grafiekgegevens laden…"
 
 msgid "Could not load chart data."
-msgstr "Could not load chart data."
+msgstr "Grafiekgegevens konden niet worden geladen."
 
 msgid "404 Hits per Day"
-msgstr "404 Hits per Day"
+msgstr "404-treffers per dag"
 
 msgid "Redirects per Day"
-msgstr "Redirects per Day"
+msgstr "Omleidingen per dag"
 
 msgid "New Captures per Day"
-msgstr "New Captures per Day"
+msgstr "Nieuwe vastleggingen per dag"
 
 msgid "Trends (Last 30 Days)"
-msgstr "Trends (Last 30 Days)"
+msgstr "Trends (laatste 30 dagen)"
 
 msgid "Trend Analytics"
 msgstr "Trendanalyse"
@@ -2742,26 +2736,26 @@ msgid "Period"
 msgstr "Periode"
 
 msgid "No broken internal links found."
-msgstr "No broken internal links found."
+msgstr "Geen defecte interne links gevonden."
 
 msgid "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
-msgstr "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
+msgstr "%1$d defecte interne link(s) gevonden in %2$d bericht(en)/pagina('s)."
 
 msgid "Post/Page"
-msgstr "Post/Page"
+msgstr "Bericht/Pagina"
 
 msgid "Broken URL"
-msgstr "Broken URL"
+msgstr "Defecte URL"
 
 msgid "404 Hits"
-msgstr "404 Hits"
+msgstr "404-treffers"
 
 msgid "Broken Internal Links"
-msgstr "Broken Internal Links"
+msgstr "Defecte interne links"
 
 
 msgid "Migrate from Another Plugin"
-msgstr "Migrate from Another Plugin"
+msgstr "Migreren vanuit een andere plugin"
 
 msgid "Rank Math"
 msgstr "Rank Math"
@@ -2779,157 +2773,157 @@ msgid "Redirection Plugin"
 msgstr "Redirection Plugin"
 
 msgid "No supported redirect plugins detected on this site."
-msgstr "No supported redirect plugins detected on this site."
+msgstr "Geen ondersteunde omleidingsplugins gedetecteerd op deze site."
 
 msgid "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
-msgstr "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
+msgstr "Ondersteunde plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
 
 msgid "Detected redirect plugins:"
-msgstr "Detected redirect plugins:"
+msgstr "Gedetecteerde omleidingsplugins:"
 
 msgid "Source plugin:"
-msgstr "Source plugin:"
+msgstr "Bronplugin:"
 
 msgid "Import Redirects"
-msgstr "Import Redirects"
+msgstr "Omleidingen importeren"
 
 msgid "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
-msgstr "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
+msgstr "Hiermee worden alle actieve omleidingen van de geselecteerde plugin geïmporteerd in 404 Solution. Regex en omleidingscodes blijven behouden."
 
 msgid "Temporary Redirect (preserve method)"
-msgstr "Temporary Redirect (preserve method)"
+msgstr "Tijdelijke omleiding (methode behouden)"
 
 msgid "Permanent Redirect (preserve method)"
-msgstr "Permanent Redirect (preserve method)"
+msgstr "Permanente omleiding (methode behouden)"
 
 msgid "Gone (resource permanently removed)"
-msgstr "Gone (resource permanently removed)"
+msgstr "Verdwenen (bron permanent verwijderd)"
 
 msgid "Conditions (optional)"
-msgstr "Conditions (optional)"
+msgstr "Voorwaarden (optioneel)"
 
 msgid "This redirect only fires when all conditions are met. Leave empty to always redirect."
-msgstr "This redirect only fires when all conditions are met. Leave empty to always redirect."
+msgstr "Deze omleiding wordt alleen uitgevoerd als aan alle voorwaarden is voldaan. Laat leeg om altijd om te leiden."
 
 msgid "+ Add Condition"
-msgstr "+ Add Condition"
+msgstr "+ Voorwaarde toevoegen"
 
 msgid "Logic"
-msgstr "Logic"
+msgstr "Logica"
 
 msgid "AND"
-msgstr "AND"
+msgstr "EN"
 
 msgid "OR"
-msgstr "OR"
+msgstr "OF"
 
 msgid "Login Status"
-msgstr "Login Status"
+msgstr "Inlogstatus"
 
 msgid "User Role"
-msgstr "User Role"
+msgstr "Gebruikersrol"
 
 msgid "Referrer URL"
-msgstr "Referrer URL"
+msgstr "Verwijzende URL"
 
 msgid "User Agent"
 msgstr "User Agent"
 
 msgid "IP Range (CIDR)"
-msgstr "IP Range (CIDR)"
+msgstr "IP-bereik (CIDR)"
 
 msgid "HTTP Header"
-msgstr "HTTP Header"
+msgstr "HTTP-header"
 
 msgid "Condition type"
-msgstr "Condition type"
+msgstr "Voorwaardetype"
 
 msgid "— Select type —"
-msgstr "— Select type —"
+msgstr "— Selecteer type —"
 
 msgid "equals"
-msgstr "equals"
+msgstr "is gelijk aan"
 
 msgid "not equals"
-msgstr "not equals"
+msgstr "is niet gelijk aan"
 
 msgid "contains"
-msgstr "contains"
+msgstr "bevat"
 
 msgid "does not contain"
-msgstr "does not contain"
+msgstr "bevat niet"
 
 msgid "matches regex"
-msgstr "matches regex"
+msgstr "komt overeen met regex"
 
 msgid "Operator"
 msgstr "Operator"
 
 msgid "Value"
-msgstr "Value"
+msgstr "Waarde"
 
 msgid "Condition value"
-msgstr "Condition value"
+msgstr "Voorwaardewaarde"
 
 msgid "Remove condition"
-msgstr "Remove condition"
+msgstr "Voorwaarde verwijderen"
 
 msgid "Remove"
-msgstr "Remove"
+msgstr "Verwijderen"
 
 msgid "Auto-matched by:"
-msgstr "Auto-matched by:"
+msgstr "Automatisch gekoppeld door:"
 
 msgid "Error: Invalid email notification frequency selected"
-msgstr "Error: Invalid email notification frequency selected"
+msgstr "Fout: ongeldige frequentie voor e-mailmeldingen geselecteerd"
 
 msgid "Error: Digest limit must be a number greater than or equal to 1"
-msgstr "Error: Digest limit must be a number greater than or equal to 1"
+msgstr "Fout: de samenvattingslimiet moet een getal zijn dat groter is dan of gelijk is aan 1"
 
 msgid "Google Search Console credentials saved."
-msgstr "Google Search Console credentials saved."
+msgstr "Google Search Console-referenties opgeslagen."
 
 msgid "Error: No source plugin specified."
-msgstr "Error: No source plugin specified."
+msgstr "Fout: geen bronplugin opgegeven."
 
 msgid "Error: Unknown source plugin \"%s\"."
-msgstr "Error: Unknown source plugin \"%s\"."
+msgstr "Fout: onbekende bronplugin \"%s\"."
 
 msgid "Insufficient permissions."
-msgstr "Insufficient permissions."
+msgstr "Onvoldoende rechten."
 
 msgid "Security check failed."
-msgstr "Security check failed."
+msgstr "Beveiligingscontrole mislukt."
 
 msgid "OAuth token exchange failed."
-msgstr "OAuth token exchange failed."
+msgstr "OAuth-tokenuitwisseling mislukt."
 
 msgid "Google Search Console"
 msgstr "Google Search Console"
 
 msgid "Google Search Console Integration"
-msgstr "Google Search Console Integration"
+msgstr "Google Search Console-integratie"
 
 msgid "Connect to Google Search Console to see which broken URLs were getting real search traffic."
-msgstr "Connect to Google Search Console to see which broken URLs were getting real search traffic."
+msgstr "Verbind met Google Search Console om te zien welke defecte URL's daadwerkelijk zoekverkeer ontvingen."
 
 msgid "Setup steps:"
-msgstr "Setup steps:"
+msgstr "Installatiestappen:"
 
 msgid "Create a project in %s."
-msgstr "Create a project in %s."
+msgstr "Maak een project aan in %s."
 
 msgid "Enable the \"Google Search Console API\"."
-msgstr "Enable the \"Google Search Console API\"."
+msgstr "Schakel de \"Google Search Console API\" in."
 
 msgid "Create OAuth 2.0 credentials (Web application type)."
-msgstr "Create OAuth 2.0 credentials (Web application type)."
+msgstr "Maak OAuth 2.0-referenties aan (type webapplicatie)."
 
 msgid "Add this Authorized Redirect URI: %s"
-msgstr "Add this Authorized Redirect URI: %s"
+msgstr "Voeg deze geautoriseerde omleidings-URI toe: %s"
 
 msgid "Enter your Client ID and Client Secret below."
-msgstr "Enter your Client ID and Client Secret below."
+msgstr "Voer hieronder uw Client ID en Client Secret in."
 
 msgid "Client ID"
 msgstr "Client ID"
@@ -2938,34 +2932,34 @@ msgid "Client Secret"
 msgstr "Client Secret"
 
 msgid "Search Console Site URL"
-msgstr "Search Console Site URL"
+msgstr "Search Console site-URL"
 
 msgid "The site URL as registered in Search Console (e.g. https://example.com/)."
-msgstr "The site URL as registered in Search Console (e.g. https://example.com/)."
+msgstr "De site-URL zoals geregistreerd in Search Console (bijv. https://example.com/)."
 
 msgid "Save Credentials"
-msgstr "Save Credentials"
+msgstr "Referenties opslaan"
 
 msgid "Credentials saved."
-msgstr "Credentials saved."
+msgstr "Referenties opgeslagen."
 
 msgid "Click the button below to authorize access to your Search Console data."
-msgstr "Click the button below to authorize access to your Search Console data."
+msgstr "Klik op de onderstaande knop om toegang tot uw Search Console-gegevens te autoriseren."
 
 msgid "Authorize with Google"
-msgstr "Authorize with Google"
+msgstr "Autoriseren met Google"
 
 msgid "Remove Credentials"
-msgstr "Remove Credentials"
+msgstr "Referenties verwijderen"
 
 msgid "Connected to Google Search Console."
-msgstr "Connected to Google Search Console."
+msgstr "Verbonden met Google Search Console."
 
 msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
+msgstr "Zoekverkeersgegevens voor uw vastgelegde 404-URL's worden hieronder weergegeven. Gegevens worden 1 uur gecacht."
 
 msgid "Disconnect"
-msgstr "Disconnect"
+msgstr "Verbinding verbreken"
 
 msgid "Connected to Google Search Console"
 msgstr "Verbonden met Google Search Console"
@@ -2995,52 +2989,52 @@ msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to star
 msgstr "Klik op 'Opnieuw proberen' om autorisatie opnieuw te proberen, of 'Inloggegevens verwijderen' om opnieuw te beginnen."
 
 msgid "404 URLs with Search Traffic (last 90 days)"
-msgstr "404 URLs with Search Traffic (last 90 days)"
+msgstr "404-URL's met zoekverkeer (laatste 90 dagen)"
 
 msgid "Clicks"
-msgstr "Clicks"
+msgstr "Klikken"
 
 msgid "Impressions"
-msgstr "Impressions"
+msgstr "Vertoningen"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "Geen zoekverkeergegevens gevonden voor uw vastgelegde 404-URL's in de afgelopen 90 dagen."
 
 msgid "Avg. Position"
-msgstr "Avg. Position"
+msgstr "Gem. positie"
 
 msgid "The \"from\" URL is required."
-msgstr "The \"from\" URL is required."
+msgstr "De \"van\"-URL is vereist."
 
 msgid "The \"to\" URL is required."
-msgstr "The \"to\" URL is required."
+msgstr "De \"naar\"-URL is vereist."
 
 msgid "Failed to create redirect."
-msgstr "Failed to create redirect."
+msgstr "Omleiding kon niet worden aangemaakt."
 
 msgid "Invalid redirect ID."
-msgstr "Invalid redirect ID."
+msgstr "Ongeldig omleidings-ID."
 
 msgid "Both \"from\" and \"to\" parameters are required."
-msgstr "Both \"from\" and \"to\" parameters are required."
+msgstr "Zowel de \"van\"- als de \"naar\"-parameter is vereist."
 
 msgid "Invalid captured 404 ID."
-msgstr "Invalid captured 404 ID."
+msgstr "Ongeldig vastgelegde 404-ID."
 
 msgid "Captured 404 not found."
-msgstr "Captured 404 not found."
+msgstr "Vastgelegde 404 niet gevonden."
 
 msgid "The captured 404 record has no URL."
-msgstr "The captured 404 record has no URL."
+msgstr "Het vastgelegde 404-record heeft geen URL."
 
 msgid "The \"url\" parameter is required."
-msgstr "The \"url\" parameter is required."
+msgstr "De \"url\"-parameter is vereist."
 
 msgid "No captured 404s in this period."
-msgstr "No captured 404s in this period."
+msgstr "Geen vastgelegde 404's in deze periode."
 
 msgid "404 Solution Digest"
-msgstr "404 Solution Digest"
+msgstr "404 Solution-samenvatting"
 
 msgid "Digest Report"
 msgstr "Samenvattingsrapport"
@@ -3062,16 +3056,16 @@ msgid "%1$d of %2$d URLs handled"
 msgstr "%1$d van %2$d URL's verwerkt"
 
 msgid "Summary"
-msgstr "Summary"
+msgstr "Samenvatting"
 
 msgid "Top Captured 404 URLs"
-msgstr "Top Captured 404 URLs"
+msgstr "Meest vastgelegde 404-URL's"
 
 msgid "First Seen"
-msgstr "First Seen"
+msgstr "Eerste keer gezien"
 
 msgid "View Captured 404s"
-msgstr "View Captured 404s"
+msgstr "Vastgelegde 404's bekijken"
 
 msgid "Manage Settings"
 msgstr "Instellingen beheren"
@@ -3080,52 +3074,52 @@ msgid "To stop these emails, update your notification settings."
 msgstr "Om deze e-mails te stoppen, werk uw meldingsinstellingen bij."
 
 msgid "To stop receiving these emails, update your notification settings."
-msgstr "To stop receiving these emails, update your notification settings."
+msgstr "Wijzig uw meldingsinstellingen om deze e-mails niet meer te ontvangen."
 
 msgid "Manage settings"
-msgstr "Manage settings"
+msgstr "Instellingen beheren"
 
 msgid "Sent"
-msgstr "Sent"
+msgstr "Verzonden"
 
 msgid "Plugin"
 msgstr "Plugin"
 
 msgid "404 Solution Digest — %s"
-msgstr "404 Solution Digest — %s"
+msgstr "404 Solution-samenvatting — %s"
 
 msgid "Advanced Options"
 msgstr "Geavanceerde opties"
 
 msgid "Active From (optional)"
-msgstr "Active From (optional)"
+msgstr "Actief vanaf (optioneel)"
 
 msgid "Leave blank to activate immediately"
-msgstr "Leave blank to activate immediately"
+msgstr "Laat leeg om direct te activeren"
 
 msgid "Active Until (optional)"
-msgstr "Active Until (optional)"
+msgstr "Actief tot (optioneel)"
 
 msgid "Leave blank to never expire"
-msgstr "Leave blank to never expire"
+msgstr "Laat leeg om nooit te laten verlopen"
 
 msgid "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
-msgstr "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
+msgstr "Er is een time-out opgetreden bij het wachten op een databasevergrendeling. Dit wordt meestal veroorzaakt door een ander proces dat een tabelvergrendeling op uw database vasthoudt. Het kan vanzelf worden opgelost, of neem contact op met uw hostingprovider als het aanhoudt."
 
 msgid "Expire auto-redirects after"
-msgstr "Expire auto-redirects after"
+msgstr "Automatische omleidingen laten verlopen na"
 
 msgid "days (0 to disable)"
-msgstr "days (0 to disable)"
+msgstr "dagen (0 om uit te schakelen)"
 
 msgid "Auto-created redirects older than this many days will be automatically moved to trash."
-msgstr "Auto-created redirects older than this many days will be automatically moved to trash."
+msgstr "Automatisch aangemaakte omleidingen die ouder zijn dan dit aantal dagen worden automatisch naar de prullenbak verplaatst."
 
 msgid "Export format:"
-msgstr "Export format:"
+msgstr "Exportformaat:"
 
 msgid "Native CSV (404 Solution)"
-msgstr "Native CSV (404 Solution)"
+msgstr "Standaard CSV (404 Solution)"
 
 msgid "Redirection Plugin CSV"
 msgstr "Redirection Plugin CSV"
@@ -3134,10 +3128,10 @@ msgid "Apache .htaccess"
 msgstr "Apache .htaccess"
 
 msgid "Nginx config"
-msgstr "Nginx config"
+msgstr "Nginx-configuratie"
 
 msgid "Cloudflare Workers script"
-msgstr "Cloudflare Workers script"
+msgstr "Cloudflare Workers-script"
 
 msgid "Netlify _redirects"
 msgstr "Netlify _redirects"
@@ -3180,10 +3174,10 @@ msgid "Meta Refresh"
 msgstr "Meta Refresh"
 
 msgid "Redirecting…"
-msgstr "Redirecting…"
+msgstr "Doorverwijzen…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
-msgstr "You are being redirected. Click the link if not redirected automatically."
+msgstr "U wordt doorverwezen. Klik op de link als u niet automatisch wordt doorverwezen."
 
 # Engine Profile admin section strings
 msgid "Engine Profiles"
@@ -3226,22 +3220,22 @@ msgid "Name"
 msgstr "Name"
 
 msgid "URL Pattern"
-msgstr "URL Pattern"
+msgstr "URL-patroon"
 
 msgid "Regex"
 msgstr "Regex"
 
 msgid "Engines"
-msgstr "Engines"
+msgstr "Modules"
 
 msgid "Priority"
-msgstr "Priority"
+msgstr "Prioriteit"
 
 msgid "Active"
-msgstr "Active"
+msgstr "Actief"
 
 msgid "Actions"
-msgstr "Actions"
+msgstr "Acties"
 
 msgid "No engine profiles defined."
 msgstr "Geen motorprofielen gedefinieerd."
@@ -3404,119 +3398,100 @@ msgstr "Pipeline-tracering tonen"
 msgid "No trace available"
 msgstr "Geen tracering beschikbaar"
 
-#, fuzzy
 msgid "Ignore list"
 msgstr "Negeerlijst"
 
-#, fuzzy
 msgid "Redirect lookup"
 msgstr "Doorverwijzing opzoeken"
 
-#, fuzzy
 msgid "Redirect lookup (without comments)"
 msgstr "Doorverwijzing opzoeken (zonder reacties)"
 
-#, fuzzy
 msgid "Conditions"
 msgstr "Voorwaarden"
 
-#, fuzzy
 msgid "Conditions (without comments)"
 msgstr "Voorwaarden (zonder reacties)"
 
-#, fuzzy
 msgid "Health check"
 msgstr "Gezondheidscontrole"
 
-#, fuzzy
 msgid "Health check (without comments)"
 msgstr "Gezondheidscontrole (zonder reacties)"
 
-#, fuzzy
 msgid "Regex rules"
 msgstr "Regex-regels"
 
-#, fuzzy
 msgid "Suggestion engines"
 msgstr "Suggestiemodules"
 
-#, fuzzy
 msgid "Result"
 msgstr "Resultaat"
 
-#, fuzzy
 msgid "Not ignored"
 msgstr "Niet genegeerd"
 
-#, fuzzy
 msgid "Matched — request ignored"
 msgstr "Overeenkomst — verzoek genegeerd"
 
-#, fuzzy
 msgid "Found existing redirect"
 msgstr "Bestaande doorverwijzing gevonden"
 
-#, fuzzy
 msgid "No matching redirect"
 msgstr "Geen overeenkomende doorverwijzing"
 
-#, fuzzy
 msgid "All conditions met"
 msgstr "Alle voorwaarden voldaan"
 
-#, fuzzy
 msgid "Blocked by conditions"
 msgstr "Geblokkeerd door voorwaarden"
 
-#, fuzzy
 msgid "Destination unreachable — skipped"
 msgstr "Bestemming onbereikbaar — overgeslagen"
 
-#, fuzzy
 msgid "Matched"
 msgstr "Overeenkomst"
 
-#, fuzzy
 msgid "No match"
 msgstr "Geen overeenkomst"
 
-#, fuzzy
 msgid "Skipped"
 msgstr "Overgeslagen"
 
-#, fuzzy
 msgid "Excluded"
 msgstr "Uitgesloten"
 
 
-#, fuzzy
 msgid "No match found"
 msgstr "Geen overeenkomst gevonden"
 
-#, fuzzy
 msgid "Showed 404 page"
 msgstr "404-pagina getoond"
 
-#, fuzzy
 msgid "Redirected to external URL"
 msgstr "Doorverwezen naar externe URL"
 
-#, fuzzy
 msgid "No redirect — showed 404 page"
 msgstr "Geen doorverwijzing — 404-pagina getoond"
 
-#, fuzzy
 msgid "Engine: %s"
 msgstr "Module: %s"
 
-#, fuzzy
 msgid "Redirected (%s)"
 msgstr "Doorverwezen (%s)"
 
-#, fuzzy
 msgid "Responded with %s"
 msgstr "Geantwoord met %s"
 
-#, fuzzy
 msgid "Showed 404 page — %s"
 msgstr "404-pagina getoond — %s"
+
+msgid "Attach PDF report to digest email"
+msgstr "PDF-rapport bijvoegen bij samenvattingsmail"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "Indien ingeschakeld, wordt een PDF-samenvatting bijgevoegd bij elke samenvattingsmail (alleen dagelijkse of wekelijkse samenvattingen)."
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "Met moduleprofilen kunt u beperken welke overeenkomstmodules worden uitgevoerd voor specifieke URL-patronen. Het eerste profiel waarvan het patroon overeenkomt met een 404-URL wint. Als geen enkel profiel overeenkomt, worden alle modules normaal uitgevoerd."
+

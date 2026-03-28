@@ -37,23 +37,23 @@ msgstr "Сохранение..."
 
 #, fuzzy
 msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
-msgstr "Could not save settings - missing security token. The wizard may appear again on next visit."
+msgstr "Не удалось сохранить настройки — отсутствует токен безопасности. Мастер может появиться снова при следующем посещении."
 
 #, fuzzy
 msgid "Could not save dismissal. The wizard may appear again on next visit."
-msgstr "Could not save dismissal. The wizard may appear again on next visit."
+msgstr "Не удалось сохранить закрытие. Мастер может появиться снова при следующем посещении."
 
 #, fuzzy
 msgid "Could not save dismissal: "
-msgstr "Could not save dismissal: "
+msgstr "Не удалось сохранить закрытие: "
 
 #, fuzzy
 msgid " The wizard may appear again on next visit."
-msgstr " The wizard may appear again on next visit."
+msgstr " Мастер может появиться снова при следующем посещении."
 
 #, fuzzy
 msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
-msgstr "Network error - could not save dismissal. The wizard may appear again on next visit."
+msgstr "Ошибка сети — не удалось сохранить закрытие. Мастер может появиться снова при следующем посещении."
 
 msgid "Settings"
 msgstr "Настройки"
@@ -1921,154 +1921,154 @@ msgid "for 30+ additional options."
 msgstr "for 30+ additional options."
 
 msgid "Statistics"
-msgstr "Statistics"
+msgstr "Статистика"
 
 msgid "Example:"
-msgstr "Example:"
+msgstr "Пример:"
 
 msgid "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
-msgstr "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr "/events/(.+) совпадёт с любым URL, начинающимся с /events/, и перенаправит на указанную страницу. Поскольку используется группа захвата, вы можете использовать подстановку $1 в строке назначения внешнего URL."
 
 msgid "URLs to redirect"
-msgstr "URLs to redirect"
+msgstr "URL для перенаправления"
 
 msgid "Captured"
-msgstr "Captured"
+msgstr "Обнаруженные"
 
 msgid "Ignored"
-msgstr "Ignored"
+msgstr "Игнорируемые"
 
 msgid "Later"
-msgstr "Later"
+msgstr "Позже"
 
 msgid "Type to filter URLs... (press Enter)"
-msgstr "Type to filter URLs... (press Enter)"
+msgstr "Введите для фильтрации URL... (нажмите Enter)"
 
 msgid "Are you sure you want to permanently delete all items in trash?"
-msgstr "Are you sure you want to permanently delete all items in trash?"
+msgstr "Вы уверены, что хотите навсегда удалить все элементы из корзины?"
 
 msgid "selected"
-msgstr "selected"
+msgstr "выбрано"
 
 msgid "Mark Captured"
-msgstr "Mark Captured"
+msgstr "Пометить как обнаруженные"
 
 msgid "Mark Ignored"
-msgstr "Mark Ignored"
+msgstr "Пометить как игнорируемые"
 
 msgid "Move to Trash"
-msgstr "Move to Trash"
+msgstr "Переместить в корзину"
 
 msgid "Create Redirect"
-msgstr "Create Redirect"
+msgstr "Создать перенаправление"
 
 msgid "Clear"
-msgstr "Clear"
+msgstr "Очистить"
 
 msgid "Never"
-msgstr "Never"
+msgstr "Никогда"
 
 msgid "Captured 404 URL"
-msgstr "Captured 404 URL"
+msgstr "Обнаруженный URL с ошибкой 404"
 
 msgid "Ignored URL - will not be suggested"
-msgstr "Ignored URL - will not be suggested"
+msgstr "Игнорируемый URL — не будет предлагаться"
 
 msgid "Edit"
-msgstr "Edit"
+msgstr "Редактировать"
 
 msgid "View Logs"
-msgstr "View Logs"
+msgstr "Просмотр журнала"
 
 msgid "Delete Permanently"
-msgstr "Delete Permanently"
+msgstr "Удалить навсегда"
 
 msgid "Are you sure you want to permanently delete this item?"
-msgstr "Are you sure you want to permanently delete this item?"
+msgstr "Вы уверены, что хотите навсегда удалить этот элемент?"
 
 msgid "Delete"
-msgstr "Delete"
+msgstr "Удалить"
 
 msgid "Ignore"
-msgstr "Ignore"
+msgstr "Игнорировать"
 
 msgid "Manual"
-msgstr "Manual"
+msgstr "Вручную"
 
 msgid "Automatic"
-msgstr "Automatic"
+msgstr "Автоматически"
 
 msgid "Type to filter redirects... (press Enter)"
-msgstr "Type to filter redirects... (press Enter)"
+msgstr "Введите для фильтрации перенаправлений... (нажмите Enter)"
 
 msgid "redirects selected"
-msgstr "redirects selected"
+msgstr "перенаправлений выбрано"
 
 msgid "Bulk Actions"
-msgstr "Bulk Actions"
+msgstr "Массовые действия"
 
 msgid "Edit Redirects"
-msgstr "Edit Redirects"
+msgstr "Редактировать перенаправления"
 
 msgid "Restore Redirects"
-msgstr "Restore Redirects"
+msgstr "Восстановить перенаправления"
 
 msgid "Clear Selection"
-msgstr "Clear Selection"
+msgstr "Снять выделение"
 
 msgid "Are you sure you want to permanently delete all items in the trash?"
-msgstr "Are you sure you want to permanently delete all items in the trash?"
+msgstr "Вы уверены, что хотите навсегда удалить все элементы из корзины?"
 
 msgid "Add Manual Redirect"
-msgstr "Add Manual Redirect"
+msgstr "Добавить перенаправление вручную"
 
 msgid "The URL path that should be redirected (without domain)"
-msgstr "The URL path that should be redirected (without domain)"
+msgstr "Путь URL, который нужно перенаправить (без домена)"
 
 msgid "Permanent Redirect (Recommended for SEO)"
-msgstr "Permanent Redirect (Recommended for SEO)"
+msgstr "Постоянное перенаправление (рекомендуется для SEO)"
 
 msgid "Temporary Redirect"
-msgstr "Temporary Redirect"
+msgstr "Временное перенаправление"
 
 msgid "logs"
-msgstr "logs"
+msgstr "записи журнала"
 
 msgid "redirects"
-msgstr "redirects"
+msgstr "перенаправления"
 
 msgid "Showing %1$d-%2$d of %3$d %4$s"
-msgstr "Showing %1$d-%2$d of %3$d %4$s"
+msgstr "Показано %1$d–%2$d из %3$d %4$s"
 
 msgid "Redirects will appear here once created."
-msgstr "Redirects will appear here once created."
+msgstr "Перенаправления появятся здесь после создания."
 
 msgid "Redirect Logs"
-msgstr "Redirect Logs"
+msgstr "Журнал перенаправлений"
 
 msgid "Action"
-msgstr "Action"
+msgstr "Действие"
 
 msgid "404"
 msgstr "404"
 
 msgid "Today's Stats"
-msgstr "Today's Stats"
+msgstr "Статистика за сегодня"
 
 msgid "This Month"
-msgstr "This Month"
+msgstr "За этот месяц"
 
 msgid "This Year"
-msgstr "This Year"
+msgstr "За этот год"
 
 msgid "All Stats"
-msgstr "All Stats"
+msgstr "Вся статистика"
 
 msgid "Visit URL"
-msgstr "Visit URL"
+msgstr "Перейти по URL"
 
 msgid "This page doesn't exist or is not published so the redirect won't work."
-msgstr "This page doesn't exist or is not published so the redirect won't work."
+msgstr "Эта страница не существует или не опубликована, поэтому перенаправление не будет работать."
 
 #: includes/DataAccess.php
 msgid "Just now"
@@ -2444,13 +2444,13 @@ msgid "Refresh available"
 msgstr "Доступно обновление"
 
 msgid "More info"
-msgstr "More info"
+msgstr "Подробнее"
 
 msgid "Destination missing. Edit this redirect and choose a destination."
-msgstr "Destination missing. Edit this redirect and choose a destination."
+msgstr "Назначение отсутствует. Отредактируйте это перенаправление и выберите назначение."
 
 msgid "(Destination missing)"
-msgstr "(Destination missing)"
+msgstr "(Назначение отсутствует)"
 
 msgid "data-pagination-refresh-available-text"
 msgstr "data-pagination-refresh-available-text"
@@ -2685,51 +2685,51 @@ msgstr "Пункт назначения недавно вернул ошибку
 # Strings added for new features (3.3.8)
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
-msgstr "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
+msgstr "Произошло превышение времени ожидания блокировки базы данных. Если проблема сохраняется, свяжитесь с хостинг-провайдером — другой процесс может удерживать длительную блокировку."
 
 msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
-msgstr "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
+msgstr "Табличное пространство InnoDB, по-видимому, исчерпано. Удаление данных плагина НЕ освободит это пространство. Свяжитесь с хостинг-провайдером для расширения табличного пространства InnoDB (ibdata1)."
 
 msgid "Email notification frequency"
-msgstr "Email notification frequency"
+msgstr "Частота уведомлений по электронной почте"
 
 msgid "Instant (when threshold exceeded)"
-msgstr "Instant (when threshold exceeded)"
+msgstr "Мгновенно (при превышении порога)"
 
 msgid "Daily digest"
-msgstr "Daily digest"
+msgstr "Ежедневная сводка"
 
 msgid "Weekly digest"
-msgstr "Weekly digest"
+msgstr "Еженедельная сводка"
 
 msgid "Choose how often to receive email notifications about captured 404s."
-msgstr "Choose how often to receive email notifications about captured 404s."
+msgstr "Выберите, как часто получать уведомления по электронной почте об обнаруженных ошибках 404."
 
 
 
 msgid "Temporary 307 (preserve method)"
-msgstr "Temporary 307 (preserve method)"
+msgstr "Временное 307 (сохранить метод)"
 
 msgid "Permanent 308 (preserve method)"
-msgstr "Permanent 308 (preserve method)"
+msgstr "Постоянное 308 (сохранить метод)"
 
 msgid "Loading chart data…"
-msgstr "Loading chart data…"
+msgstr "Загрузка данных диаграммы…"
 
 msgid "Could not load chart data."
-msgstr "Could not load chart data."
+msgstr "Не удалось загрузить данные диаграммы."
 
 msgid "404 Hits per Day"
-msgstr "404 Hits per Day"
+msgstr "Запросов 404 в день"
 
 msgid "Redirects per Day"
-msgstr "Redirects per Day"
+msgstr "Перенаправлений в день"
 
 msgid "New Captures per Day"
-msgstr "New Captures per Day"
+msgstr "Новых обнаружений в день"
 
 msgid "Trends (Last 30 Days)"
-msgstr "Trends (Last 30 Days)"
+msgstr "Тенденции (последние 30 дней)"
 
 msgid "Trend Analytics"
 msgstr "Анализ трендов"
@@ -2747,230 +2747,230 @@ msgid "Period"
 msgstr "Период"
 
 msgid "No broken internal links found."
-msgstr "No broken internal links found."
+msgstr "Битых внутренних ссылок не обнаружено."
 
 msgid "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
-msgstr "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
+msgstr "Обнаружено %1$d битых внутренних ссылок в %2$d записях/страницах."
 
 msgid "Post/Page"
-msgstr "Post/Page"
+msgstr "Запись/Страница"
 
 msgid "Broken URL"
-msgstr "Broken URL"
+msgstr "Битый URL"
 
 msgid "404 Hits"
-msgstr "404 Hits"
+msgstr "Запросов 404"
 
 msgid "Broken Internal Links"
-msgstr "Broken Internal Links"
+msgstr "Битые внутренние ссылки"
 
 
 msgid "Migrate from Another Plugin"
-msgstr "Migrate from Another Plugin"
+msgstr "Импорт из другого плагина"
 
 msgid "Rank Math"
-msgstr "Rank Math"
+msgstr "Плагин Rank Math"
 
 msgid "Yoast SEO Premium"
-msgstr "Yoast SEO Premium"
+msgstr "Плагин Yoast SEO Premium"
 
 msgid "AIOSEO"
 msgstr "AIOSEO"
 
 msgid "Safe Redirect Manager"
-msgstr "Safe Redirect Manager"
+msgstr "Плагин Safe Redirect Manager"
 
 msgid "Redirection Plugin"
-msgstr "Redirection Plugin"
+msgstr "Плагин Redirection"
 
 msgid "No supported redirect plugins detected on this site."
-msgstr "No supported redirect plugins detected on this site."
+msgstr "На этом сайте не обнаружено поддерживаемых плагинов перенаправлений."
 
 msgid "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
-msgstr "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
+msgstr "Поддерживаемые плагины: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
 
 msgid "Detected redirect plugins:"
-msgstr "Detected redirect plugins:"
+msgstr "Обнаруженные плагины перенаправлений:"
 
 msgid "Source plugin:"
-msgstr "Source plugin:"
+msgstr "Плагин-источник:"
 
 msgid "Import Redirects"
-msgstr "Import Redirects"
+msgstr "Импортировать перенаправления"
 
 msgid "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
-msgstr "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
+msgstr "Будут импортированы все активные перенаправления из выбранного плагина в 404 Solution. Regex и коды перенаправлений сохраняются."
 
 msgid "Temporary Redirect (preserve method)"
-msgstr "Temporary Redirect (preserve method)"
+msgstr "Временное перенаправление (сохранить метод)"
 
 msgid "Permanent Redirect (preserve method)"
-msgstr "Permanent Redirect (preserve method)"
+msgstr "Постоянное перенаправление (сохранить метод)"
 
 msgid "Gone (resource permanently removed)"
-msgstr "Gone (resource permanently removed)"
+msgstr "Удалён (ресурс удалён навсегда)"
 
 msgid "Conditions (optional)"
-msgstr "Conditions (optional)"
+msgstr "Условия (необязательно)"
 
 msgid "This redirect only fires when all conditions are met. Leave empty to always redirect."
-msgstr "This redirect only fires when all conditions are met. Leave empty to always redirect."
+msgstr "Это перенаправление срабатывает только при выполнении всех условий. Оставьте пустым для постоянного перенаправления."
 
 msgid "+ Add Condition"
-msgstr "+ Add Condition"
+msgstr "+ Добавить условие"
 
 msgid "Logic"
-msgstr "Logic"
+msgstr "Логика"
 
 msgid "AND"
-msgstr "AND"
+msgstr "И"
 
 msgid "OR"
-msgstr "OR"
+msgstr "ИЛИ"
 
 msgid "Login Status"
-msgstr "Login Status"
+msgstr "Статус авторизации"
 
 msgid "User Role"
-msgstr "User Role"
+msgstr "Роль пользователя"
 
 msgid "Referrer URL"
-msgstr "Referrer URL"
+msgstr "URL источника перехода"
 
 msgid "User Agent"
-msgstr "User Agent"
+msgstr "Агент пользователя"
 
 msgid "IP Range (CIDR)"
-msgstr "IP Range (CIDR)"
+msgstr "Диапазон IP (CIDR)"
 
 msgid "HTTP Header"
-msgstr "HTTP Header"
+msgstr "HTTP-заголовок"
 
 msgid "Condition type"
-msgstr "Condition type"
+msgstr "Тип условия"
 
 msgid "— Select type —"
-msgstr "— Select type —"
+msgstr "— Выберите тип —"
 
 msgid "equals"
-msgstr "equals"
+msgstr "равно"
 
 msgid "not equals"
-msgstr "not equals"
+msgstr "не равно"
 
 msgid "contains"
-msgstr "contains"
+msgstr "содержит"
 
 msgid "does not contain"
-msgstr "does not contain"
+msgstr "не содержит"
 
 msgid "matches regex"
-msgstr "matches regex"
+msgstr "совпадает с regex"
 
 msgid "Operator"
-msgstr "Operator"
+msgstr "Оператор"
 
 msgid "Value"
-msgstr "Value"
+msgstr "Значение"
 
 msgid "Condition value"
-msgstr "Condition value"
+msgstr "Значение условия"
 
 msgid "Remove condition"
-msgstr "Remove condition"
+msgstr "Удалить условие"
 
 msgid "Remove"
-msgstr "Remove"
+msgstr "Удалить"
 
 msgid "Auto-matched by:"
-msgstr "Auto-matched by:"
+msgstr "Автоматически сопоставлено:"
 
 msgid "Error: Invalid email notification frequency selected"
-msgstr "Error: Invalid email notification frequency selected"
+msgstr "Ошибка: выбрана недопустимая частота уведомлений по электронной почте"
 
 msgid "Error: Digest limit must be a number greater than or equal to 1"
-msgstr "Error: Digest limit must be a number greater than or equal to 1"
+msgstr "Ошибка: лимит сводки должен быть числом, большим или равным 1"
 
 msgid "Google Search Console credentials saved."
-msgstr "Google Search Console credentials saved."
+msgstr "Учётные данные Google Search Console сохранены."
 
 msgid "Error: No source plugin specified."
-msgstr "Error: No source plugin specified."
+msgstr "Ошибка: плагин-источник не указан."
 
 msgid "Error: Unknown source plugin \"%s\"."
-msgstr "Error: Unknown source plugin \"%s\"."
+msgstr "Ошибка: неизвестный плагин-источник «%s»."
 
 msgid "Insufficient permissions."
-msgstr "Insufficient permissions."
+msgstr "Недостаточно прав доступа."
 
 msgid "Security check failed."
-msgstr "Security check failed."
+msgstr "Проверка безопасности не пройдена."
 
 msgid "OAuth token exchange failed."
-msgstr "OAuth token exchange failed."
+msgstr "Обмен токенами OAuth не удался."
 
 msgid "Google Search Console"
-msgstr "Google Search Console"
+msgstr "Консоль поиска Google"
 
 msgid "Google Search Console Integration"
-msgstr "Google Search Console Integration"
+msgstr "Интеграция с Google Search Console"
 
 msgid "Connect to Google Search Console to see which broken URLs were getting real search traffic."
-msgstr "Connect to Google Search Console to see which broken URLs were getting real search traffic."
+msgstr "Подключитесь к Google Search Console, чтобы узнать, какие битые URL получали реальный поисковый трафик."
 
 msgid "Setup steps:"
-msgstr "Setup steps:"
+msgstr "Шаги настройки:"
 
 msgid "Create a project in %s."
-msgstr "Create a project in %s."
+msgstr "Создайте проект в %s."
 
 msgid "Enable the \"Google Search Console API\"."
-msgstr "Enable the \"Google Search Console API\"."
+msgstr "Включите «Google Search Console API»."
 
 msgid "Create OAuth 2.0 credentials (Web application type)."
-msgstr "Create OAuth 2.0 credentials (Web application type)."
+msgstr "Создайте учётные данные OAuth 2.0 (тип «Веб-приложение»)."
 
 msgid "Add this Authorized Redirect URI: %s"
-msgstr "Add this Authorized Redirect URI: %s"
+msgstr "Добавьте этот авторизованный URI перенаправления: %s"
 
 msgid "Enter your Client ID and Client Secret below."
-msgstr "Enter your Client ID and Client Secret below."
+msgstr "Введите ваш Client ID и Client Secret ниже."
 
 msgid "Client ID"
-msgstr "Client ID"
+msgstr "Идентификатор клиента"
 
 msgid "Client Secret"
-msgstr "Client Secret"
+msgstr "Секретный ключ клиента"
 
 msgid "Search Console Site URL"
-msgstr "Search Console Site URL"
+msgstr "URL сайта в Search Console"
 
 msgid "The site URL as registered in Search Console (e.g. https://example.com/)."
-msgstr "The site URL as registered in Search Console (e.g. https://example.com/)."
+msgstr "URL сайта, зарегистрированный в Search Console (например, https://example.com/)."
 
 msgid "Save Credentials"
-msgstr "Save Credentials"
+msgstr "Сохранить учётные данные"
 
 msgid "Credentials saved."
-msgstr "Credentials saved."
+msgstr "Учётные данные сохранены."
 
 msgid "Click the button below to authorize access to your Search Console data."
-msgstr "Click the button below to authorize access to your Search Console data."
+msgstr "Нажмите кнопку ниже, чтобы авторизовать доступ к вашим данным Search Console."
 
 msgid "Authorize with Google"
-msgstr "Authorize with Google"
+msgstr "Авторизоваться через Google"
 
 msgid "Remove Credentials"
-msgstr "Remove Credentials"
+msgstr "Удалить учётные данные"
 
 msgid "Connected to Google Search Console."
-msgstr "Connected to Google Search Console."
+msgstr "Подключено к Google Search Console."
 
 msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
+msgstr "Ниже показаны данные поискового трафика для обнаруженных URL с ошибкой 404. Данные кэшируются на 1 час."
 
 msgid "Disconnect"
-msgstr "Disconnect"
+msgstr "Отключить"
 
 msgid "Connected to Google Search Console"
 msgstr "Подключено к Google Search Console"
@@ -3000,52 +3000,52 @@ msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to star
 msgstr "Нажмите «Попробовать снова», чтобы повторить авторизацию, или «Удалить учётные данные», чтобы начать заново."
 
 msgid "404 URLs with Search Traffic (last 90 days)"
-msgstr "404 URLs with Search Traffic (last 90 days)"
+msgstr "URL с ошибкой 404, имеющие поисковый трафик (последние 90 дней)"
 
 msgid "Clicks"
-msgstr "Clicks"
+msgstr "Клики"
 
 msgid "Impressions"
-msgstr "Impressions"
+msgstr "Показы"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "Данные о поисковом трафике для ваших зафиксированных 404 URL за последние 90 дней не найдены."
 
 msgid "Avg. Position"
-msgstr "Avg. Position"
+msgstr "Средняя позиция"
 
 msgid "The \"from\" URL is required."
-msgstr "The \"from\" URL is required."
+msgstr "Необходимо указать URL «откуда»."
 
 msgid "The \"to\" URL is required."
-msgstr "The \"to\" URL is required."
+msgstr "Необходимо указать URL «куда»."
 
 msgid "Failed to create redirect."
-msgstr "Failed to create redirect."
+msgstr "Не удалось создать перенаправление."
 
 msgid "Invalid redirect ID."
-msgstr "Invalid redirect ID."
+msgstr "Недопустимый идентификатор перенаправления."
 
 msgid "Both \"from\" and \"to\" parameters are required."
-msgstr "Both \"from\" and \"to\" parameters are required."
+msgstr "Необходимо указать оба параметра: «откуда» и «куда»."
 
 msgid "Invalid captured 404 ID."
-msgstr "Invalid captured 404 ID."
+msgstr "Недопустимый идентификатор обнаруженной ошибки 404."
 
 msgid "Captured 404 not found."
-msgstr "Captured 404 not found."
+msgstr "Обнаруженная ошибка 404 не найдена."
 
 msgid "The captured 404 record has no URL."
-msgstr "The captured 404 record has no URL."
+msgstr "Запись обнаруженной ошибки 404 не содержит URL."
 
 msgid "The \"url\" parameter is required."
-msgstr "The \"url\" parameter is required."
+msgstr "Необходимо указать параметр «url»."
 
 msgid "No captured 404s in this period."
-msgstr "No captured 404s in this period."
+msgstr "Нет обнаруженных ошибок 404 за этот период."
 
 msgid "404 Solution Digest"
-msgstr "404 Solution Digest"
+msgstr "Сводка 404 Solution"
 
 msgid "Digest Report"
 msgstr "Сводный отчёт"
@@ -3067,16 +3067,16 @@ msgid "%1$d of %2$d URLs handled"
 msgstr "Обработано %1$d из %2$d URL"
 
 msgid "Summary"
-msgstr "Summary"
+msgstr "Итого"
 
 msgid "Top Captured 404 URLs"
-msgstr "Top Captured 404 URLs"
+msgstr "Наиболее частые URL с ошибкой 404"
 
 msgid "First Seen"
-msgstr "First Seen"
+msgstr "Впервые обнаружено"
 
 msgid "View Captured 404s"
-msgstr "View Captured 404s"
+msgstr "Просмотр обнаруженных ошибок 404"
 
 msgid "Manage Settings"
 msgstr "Управление настройками"
@@ -3085,70 +3085,70 @@ msgid "To stop these emails, update your notification settings."
 msgstr "Чтобы прекратить получение этих писем, обновите настройки уведомлений."
 
 msgid "To stop receiving these emails, update your notification settings."
-msgstr "To stop receiving these emails, update your notification settings."
+msgstr "Чтобы прекратить получение этих писем, обновите настройки уведомлений."
 
 msgid "Manage settings"
-msgstr "Manage settings"
+msgstr "Управление настройками"
 
 msgid "Sent"
-msgstr "Sent"
+msgstr "Отправлено"
 
 msgid "Plugin"
-msgstr "Plugin"
+msgstr "Плагин"
 
 msgid "404 Solution Digest — %s"
-msgstr "404 Solution Digest — %s"
+msgstr "Сводка 404 Solution — %s"
 
 msgid "Advanced Options"
 msgstr "Дополнительные параметры"
 
 msgid "Active From (optional)"
-msgstr "Active From (optional)"
+msgstr "Действует с (необязательно)"
 
 msgid "Leave blank to activate immediately"
-msgstr "Leave blank to activate immediately"
+msgstr "Оставьте пустым для немедленной активации"
 
 msgid "Active Until (optional)"
-msgstr "Active Until (optional)"
+msgstr "Действует до (необязательно)"
 
 msgid "Leave blank to never expire"
-msgstr "Leave blank to never expire"
+msgstr "Оставьте пустым, чтобы не ограничивать срок действия"
 
 msgid "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
-msgstr "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
+msgstr "Произошло превышение времени ожидания блокировки базы данных. Обычно это вызвано другим процессом, удерживающим блокировку таблицы. Проблема может разрешиться автоматически, или свяжитесь с хостинг-провайдером, если она сохраняется."
 
 msgid "Expire auto-redirects after"
-msgstr "Expire auto-redirects after"
+msgstr "Срок действия автоматических перенаправлений"
 
 msgid "days (0 to disable)"
-msgstr "days (0 to disable)"
+msgstr "дней (0 для отключения)"
 
 msgid "Auto-created redirects older than this many days will be automatically moved to trash."
-msgstr "Auto-created redirects older than this many days will be automatically moved to trash."
+msgstr "Автоматически созданные перенаправления старше указанного количества дней будут автоматически перемещены в корзину."
 
 msgid "Export format:"
-msgstr "Export format:"
+msgstr "Формат экспорта:"
 
 msgid "Native CSV (404 Solution)"
-msgstr "Native CSV (404 Solution)"
+msgstr "CSV (404 Solution)"
 
 msgid "Redirection Plugin CSV"
-msgstr "Redirection Plugin CSV"
+msgstr "CSV для плагина Redirection"
 
 msgid "Apache .htaccess"
-msgstr "Apache .htaccess"
+msgstr "Формат Apache .htaccess"
 
 msgid "Nginx config"
-msgstr "Nginx config"
+msgstr "Конфигурация Nginx"
 
 msgid "Cloudflare Workers script"
-msgstr "Cloudflare Workers script"
+msgstr "Скрипт Cloudflare Workers"
 
 msgid "Netlify _redirects"
-msgstr "Netlify _redirects"
+msgstr "Формат Netlify _redirects"
 
 msgid "Vercel vercel.json"
-msgstr "Vercel vercel.json"
+msgstr "Формат Vercel vercel.json"
 
 # 410 Gone page strings
 msgid "This content has been permanently removed."
@@ -3179,16 +3179,16 @@ msgstr "Когда опубликованная страница перемещ�
 
 # Meta Refresh redirect strings
 msgid "0 Meta Refresh"
-msgstr "0 Meta Refresh"
+msgstr "0 через Meta Refresh"
 
 msgid "Meta Refresh"
-msgstr "Meta Refresh"
+msgstr "Через Meta Refresh"
 
 msgid "Redirecting…"
-msgstr "Redirecting…"
+msgstr "Перенаправление…"
 
 msgid "You are being redirected. Click the link if not redirected automatically."
-msgstr "You are being redirected. Click the link if not redirected automatically."
+msgstr "Выполняется перенаправление. Нажмите на ссылку, если перенаправление не произошло автоматически."
 
 # Engine Profile admin section strings
 msgid "Engine Profiles"
@@ -3231,22 +3231,22 @@ msgid "Name"
 msgstr "Name"
 
 msgid "URL Pattern"
-msgstr "URL Pattern"
+msgstr "Шаблон URL"
 
 msgid "Regex"
-msgstr "Regex"
+msgstr "Регулярное выражение"
 
 msgid "Engines"
-msgstr "Engines"
+msgstr "Механизмы"
 
 msgid "Priority"
-msgstr "Priority"
+msgstr "Приоритет"
 
 msgid "Active"
-msgstr "Active"
+msgstr "Активно"
 
 msgid "Actions"
-msgstr "Actions"
+msgstr "Действия"
 
 msgid "No engine profiles defined."
 msgstr "Профили механизмов не определены."
@@ -3525,3 +3525,12 @@ msgstr "Ответ: %s"
 #, fuzzy
 msgid "Showed 404 page — %s"
 msgstr "Показана страница 404 — %s"
+
+msgid "Attach PDF report to digest email"
+msgstr "Прикреплять PDF-отчёт к сводке по электронной почте"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "При включении PDF-отчёт прикрепляется к каждому письму сводки (только для ежедневных и еженедельных сводок)."
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "Профили механизмов позволяют ограничить, какие механизмы сопоставления запускаются для определённых шаблонов URL. Побеждает первый профиль, шаблон которого совпадает с URL ошибки 404. Если ни один профиль не совпадает, все механизмы работают в обычном режиме."

@@ -2040,7 +2040,7 @@ msgid "redirects"
 msgstr "إعادة توجيه"
 
 msgid "Showing %1$d-%2$d of %3$d %4$s"
-msgstr "عرض %1$d-%2$d من %3$d %4$s"
+msgstr "عرض العناصر من %1$d إلى %2$d من أصل %3$d %4$s"
 
 msgid "Redirects will appear here once created."
 msgstr "ستظهر إعادة التوجيه هنا بمجرد إنشائها."
@@ -2446,13 +2446,13 @@ msgid "Refresh available"
 msgstr "تحديث متاح"
 
 msgid "More info"
-msgstr "More info"
+msgstr "مزيد من المعلومات"
 
 msgid "Destination missing. Edit this redirect and choose a destination."
-msgstr "Destination missing. Edit this redirect and choose a destination."
+msgstr "الوجهة مفقودة. قم بتعديل هذا التحويل واختر وجهة."
 
 msgid "(Destination missing)"
-msgstr "(Destination missing)"
+msgstr "(الوجهة مفقودة)"
 
 msgid "data-pagination-refresh-available-text"
 msgstr "data-pagination-refresh-available-text"
@@ -2696,51 +2696,51 @@ msgstr "عادت الوجهة بخطأ 404 مؤخراً — تم تعليق إع
 # Strings added for new features (3.3.8)
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
-msgstr "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
+msgstr "حدث انتهاء مهلة انتظار قفل قاعدة البيانات. إذا استمرت هذه المشكلة، تواصل مع مزود الاستضافة — قد تكون هناك عملية أخرى تحتفظ بقفل طويل الأمد."
 
 msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
-msgstr "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
+msgstr "يبدو أن مساحة جداول InnoDB قد نفدت. حذف بيانات الإضافة لن يحرر هذه المساحة. تواصل مع مزود الاستضافة لتوسيع مساحة جداول InnoDB (ibdata1)."
 
 msgid "Email notification frequency"
-msgstr "Email notification frequency"
+msgstr "تكرار إشعارات البريد الإلكتروني"
 
 msgid "Instant (when threshold exceeded)"
-msgstr "Instant (when threshold exceeded)"
+msgstr "فوري (عند تجاوز الحد)"
 
 msgid "Daily digest"
-msgstr "Daily digest"
+msgstr "ملخص يومي"
 
 msgid "Weekly digest"
-msgstr "Weekly digest"
+msgstr "ملخص أسبوعي"
 
 msgid "Choose how often to receive email notifications about captured 404s."
-msgstr "Choose how often to receive email notifications about captured 404s."
+msgstr "اختر عدد مرات تلقي إشعارات البريد الإلكتروني حول صفحات 404 الملتقطة."
 
 
 
 msgid "Temporary 307 (preserve method)"
-msgstr "Temporary 307 (preserve method)"
+msgstr "مؤقت 307 (الحفاظ على الطريقة)"
 
 msgid "Permanent 308 (preserve method)"
-msgstr "Permanent 308 (preserve method)"
+msgstr "دائم 308 (الحفاظ على الطريقة)"
 
 msgid "Loading chart data…"
-msgstr "Loading chart data…"
+msgstr "جارٍ تحميل بيانات الرسم البياني…"
 
 msgid "Could not load chart data."
-msgstr "Could not load chart data."
+msgstr "تعذر تحميل بيانات الرسم البياني."
 
 msgid "404 Hits per Day"
-msgstr "404 Hits per Day"
+msgstr "زيارات 404 في اليوم"
 
 msgid "Redirects per Day"
-msgstr "Redirects per Day"
+msgstr "تحويلات في اليوم"
 
 msgid "New Captures per Day"
-msgstr "New Captures per Day"
+msgstr "التقاطات جديدة في اليوم"
 
 msgid "Trends (Last 30 Days)"
-msgstr "Trends (Last 30 Days)"
+msgstr "الاتجاهات (آخر 30 يوماً)"
 
 msgid "Trend Analytics"
 msgstr "تحليلات الاتجاه"
@@ -2758,26 +2758,26 @@ msgid "Period"
 msgstr "الفترة"
 
 msgid "No broken internal links found."
-msgstr "No broken internal links found."
+msgstr "لم يتم العثور على روابط داخلية معطلة."
 
 msgid "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
-msgstr "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
+msgstr "تم العثور على %1$d رابط داخلي معطل في %2$d مقالة/صفحة."
 
 msgid "Post/Page"
-msgstr "Post/Page"
+msgstr "مقالة/صفحة"
 
 msgid "Broken URL"
-msgstr "Broken URL"
+msgstr "عنوان URL معطل"
 
 msgid "404 Hits"
-msgstr "404 Hits"
+msgstr "زيارات 404"
 
 msgid "Broken Internal Links"
-msgstr "Broken Internal Links"
+msgstr "الروابط الداخلية المعطلة"
 
 
 msgid "Migrate from Another Plugin"
-msgstr "Migrate from Another Plugin"
+msgstr "الترحيل من إضافة أخرى"
 
 msgid "Rank Math"
 msgstr "Rank Math"
@@ -2789,199 +2789,199 @@ msgid "AIOSEO"
 msgstr "AIOSEO"
 
 msgid "Safe Redirect Manager"
-msgstr "Safe Redirect Manager"
+msgstr "إضافة إدارة التحويلات الآمنة Safe Redirect Manager"
 
 msgid "Redirection Plugin"
-msgstr "Redirection Plugin"
+msgstr "إضافة Redirection"
 
 msgid "No supported redirect plugins detected on this site."
-msgstr "No supported redirect plugins detected on this site."
+msgstr "لم يتم اكتشاف أي إضافات تحويل مدعومة على هذا الموقع."
 
 msgid "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
-msgstr "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
+msgstr "الإضافات المدعومة للاستيراد منها هي: Rank Math، و Yoast SEO Premium، و AIOSEO، و Safe Redirect Manager، و إضافة Redirection."
 
 msgid "Detected redirect plugins:"
-msgstr "Detected redirect plugins:"
+msgstr "إضافات التحويل المكتشفة:"
 
 msgid "Source plugin:"
-msgstr "Source plugin:"
+msgstr "الإضافة المصدر:"
 
 msgid "Import Redirects"
-msgstr "Import Redirects"
+msgstr "استيراد التحويلات"
 
 msgid "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
-msgstr "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
+msgstr "سيتم استيراد جميع التحويلات النشطة من الإضافة المحددة إلى 404 Solution. يتم الاحتفاظ بأكواد Regex والتحويل."
 
 msgid "Temporary Redirect (preserve method)"
-msgstr "Temporary Redirect (preserve method)"
+msgstr "تحويل مؤقت (الحفاظ على الطريقة)"
 
 msgid "Permanent Redirect (preserve method)"
-msgstr "Permanent Redirect (preserve method)"
+msgstr "تحويل دائم (الحفاظ على الطريقة)"
 
 msgid "Gone (resource permanently removed)"
-msgstr "Gone (resource permanently removed)"
+msgstr "محذوف (المورد أُزيل نهائياً)"
 
 msgid "Conditions (optional)"
-msgstr "Conditions (optional)"
+msgstr "الشروط (اختياري)"
 
 msgid "This redirect only fires when all conditions are met. Leave empty to always redirect."
-msgstr "This redirect only fires when all conditions are met. Leave empty to always redirect."
+msgstr "يعمل هذا التحويل فقط عند استيفاء جميع الشروط. اتركه فارغاً للتحويل دائماً."
 
 msgid "+ Add Condition"
-msgstr "+ Add Condition"
+msgstr "+ إضافة شرط"
 
 msgid "Logic"
-msgstr "Logic"
+msgstr "المنطق"
 
 msgid "AND"
-msgstr "AND"
+msgstr "و"
 
 msgid "OR"
-msgstr "OR"
+msgstr "أو"
 
 msgid "Login Status"
-msgstr "Login Status"
+msgstr "حالة تسجيل الدخول"
 
 msgid "User Role"
-msgstr "User Role"
+msgstr "دور المستخدم"
 
 msgid "Referrer URL"
-msgstr "Referrer URL"
+msgstr "عنوان URL المُحيل"
 
 msgid "User Agent"
-msgstr "User Agent"
+msgstr "وكيل المستخدم"
 
 msgid "IP Range (CIDR)"
-msgstr "IP Range (CIDR)"
+msgstr "نطاق IP (CIDR)"
 
 msgid "HTTP Header"
-msgstr "HTTP Header"
+msgstr "ترويسة HTTP"
 
 msgid "Condition type"
-msgstr "Condition type"
+msgstr "نوع الشرط"
 
 msgid "— Select type —"
-msgstr "— Select type —"
+msgstr "— اختر النوع —"
 
 msgid "equals"
-msgstr "equals"
+msgstr "يساوي"
 
 msgid "not equals"
-msgstr "not equals"
+msgstr "لا يساوي"
 
 msgid "contains"
-msgstr "contains"
+msgstr "يحتوي على"
 
 msgid "does not contain"
-msgstr "does not contain"
+msgstr "لا يحتوي على"
 
 msgid "matches regex"
-msgstr "matches regex"
+msgstr "يطابق regex"
 
 msgid "Operator"
-msgstr "Operator"
+msgstr "المُعامل"
 
 msgid "Value"
-msgstr "Value"
+msgstr "القيمة"
 
 msgid "Condition value"
-msgstr "Condition value"
+msgstr "قيمة الشرط"
 
 msgid "Remove condition"
-msgstr "Remove condition"
+msgstr "إزالة الشرط"
 
 msgid "Remove"
-msgstr "Remove"
+msgstr "إزالة"
 
 msgid "Auto-matched by:"
-msgstr "Auto-matched by:"
+msgstr "مُطابَق تلقائياً بواسطة:"
 
 msgid "Error: Invalid email notification frequency selected"
-msgstr "Error: Invalid email notification frequency selected"
+msgstr "خطأ: تم اختيار تكرار إشعارات بريد إلكتروني غير صالح"
 
 msgid "Error: Digest limit must be a number greater than or equal to 1"
-msgstr "Error: Digest limit must be a number greater than or equal to 1"
+msgstr "خطأ: يجب أن يكون حد الملخص رقماً أكبر من أو يساوي 1"
 
 msgid "Google Search Console credentials saved."
-msgstr "Google Search Console credentials saved."
+msgstr "تم حفظ بيانات اعتماد Google Search Console."
 
 msgid "Error: No source plugin specified."
-msgstr "Error: No source plugin specified."
+msgstr "خطأ: لم يتم تحديد إضافة مصدر."
 
 msgid "Error: Unknown source plugin \"%s\"."
-msgstr "Error: Unknown source plugin \"%s\"."
+msgstr "خطأ: إضافة مصدر غير معروفة \"%s\"."
 
 msgid "Insufficient permissions."
-msgstr "Insufficient permissions."
+msgstr "صلاحيات غير كافية."
 
 msgid "Security check failed."
-msgstr "Security check failed."
+msgstr "فشل التحقق الأمني."
 
 msgid "OAuth token exchange failed."
-msgstr "OAuth token exchange failed."
+msgstr "فشل تبادل رمز OAuth."
 
 msgid "Google Search Console"
-msgstr "Google Search Console"
+msgstr "وحدة تحكم البحث Google Search Console"
 
 msgid "Google Search Console Integration"
-msgstr "Google Search Console Integration"
+msgstr "التكامل مع وحدة تحكم البحث Google Search Console"
 
 msgid "Connect to Google Search Console to see which broken URLs were getting real search traffic."
-msgstr "Connect to Google Search Console to see which broken URLs were getting real search traffic."
+msgstr "اتصل بـ Google Search Console لمعرفة عناوين URL المعطلة التي كانت تتلقى زيارات بحث حقيقية."
 
 msgid "Setup steps:"
-msgstr "Setup steps:"
+msgstr "خطوات الإعداد:"
 
 msgid "Create a project in %s."
-msgstr "Create a project in %s."
+msgstr "أنشئ مشروعاً في %s."
 
 msgid "Enable the \"Google Search Console API\"."
-msgstr "Enable the \"Google Search Console API\"."
+msgstr "قم بتفعيل واجهة برمجة التطبيقات \"Google Search Console API\"."
 
 msgid "Create OAuth 2.0 credentials (Web application type)."
-msgstr "Create OAuth 2.0 credentials (Web application type)."
+msgstr "أنشئ بيانات اعتماد OAuth 2.0 (نوع تطبيق ويب)."
 
 msgid "Add this Authorized Redirect URI: %s"
-msgstr "Add this Authorized Redirect URI: %s"
+msgstr "أضف عنوان URI المعتمد للتحويل هذا: %s"
 
 msgid "Enter your Client ID and Client Secret below."
-msgstr "Enter your Client ID and Client Secret below."
+msgstr "أدخل معرّف العميل وسر العميل أدناه."
 
 msgid "Client ID"
-msgstr "Client ID"
+msgstr "معرّف العميل"
 
 msgid "Client Secret"
-msgstr "Client Secret"
+msgstr "سر العميل"
 
 msgid "Search Console Site URL"
-msgstr "Search Console Site URL"
+msgstr "عنوان URL للموقع في Search Console"
 
 msgid "The site URL as registered in Search Console (e.g. https://example.com/)."
-msgstr "The site URL as registered in Search Console (e.g. https://example.com/)."
+msgstr "عنوان الموقع الإلكتروني كما هو مسجل في وحدة تحكم البحث Search Console (مثال: https://example.com/)."
 
 msgid "Save Credentials"
-msgstr "Save Credentials"
+msgstr "حفظ بيانات الاعتماد"
 
 msgid "Credentials saved."
-msgstr "Credentials saved."
+msgstr "تم حفظ بيانات الاعتماد."
 
 msgid "Click the button below to authorize access to your Search Console data."
-msgstr "Click the button below to authorize access to your Search Console data."
+msgstr "انقر على الزر أدناه للسماح بالوصول إلى بيانات Search Console الخاصة بك."
 
 msgid "Authorize with Google"
-msgstr "Authorize with Google"
+msgstr "التفويض عبر Google"
 
 msgid "Remove Credentials"
-msgstr "Remove Credentials"
+msgstr "إزالة بيانات الاعتماد"
 
 msgid "Connected to Google Search Console."
-msgstr "Connected to Google Search Console."
+msgstr "تم الاتصال بنجاح بوحدة تحكم البحث Google Search Console."
 
 msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
+msgstr "بيانات حركة البحث لعناوين URL ذات الخطأ 404 الملتقطة معروضة أدناه. يتم تخزين البيانات مؤقتاً لمدة ساعة واحدة."
 
 msgid "Disconnect"
-msgstr "Disconnect"
+msgstr "قطع الاتصال"
 
 msgid "Connected to Google Search Console"
 msgstr "تم الاتصال بـ Google Search Console بنجاح"
@@ -3011,52 +3011,52 @@ msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to star
 msgstr "انقر على 'حاول مرة أخرى' لإعادة محاولة التفويض، أو 'إزالة بيانات الاعتماد' للبدء من جديد."
 
 msgid "404 URLs with Search Traffic (last 90 days)"
-msgstr "404 URLs with Search Traffic (last 90 days)"
+msgstr "عناوين URL ذات الخطأ 404 مع حركة البحث (آخر 90 يوماً)"
 
 msgid "Clicks"
-msgstr "Clicks"
+msgstr "النقرات"
 
 msgid "Impressions"
-msgstr "Impressions"
+msgstr "مرات الظهور"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "لم يتم العثور على بيانات حركة البحث لعناوين URL المسجلة 404 في آخر 90 يومًا."
 
 msgid "Avg. Position"
-msgstr "Avg. Position"
+msgstr "متوسط الترتيب"
 
 msgid "The \"from\" URL is required."
-msgstr "The \"from\" URL is required."
+msgstr "عنوان URL المصدر (\"from\") مطلوب."
 
 msgid "The \"to\" URL is required."
-msgstr "The \"to\" URL is required."
+msgstr "عنوان URL الوجهة (\"to\") مطلوب."
 
 msgid "Failed to create redirect."
-msgstr "Failed to create redirect."
+msgstr "فشل إنشاء التحويل."
 
 msgid "Invalid redirect ID."
-msgstr "Invalid redirect ID."
+msgstr "معرّف تحويل غير صالح."
 
 msgid "Both \"from\" and \"to\" parameters are required."
-msgstr "Both \"from\" and \"to\" parameters are required."
+msgstr "كلا المعاملين \"from\" و \"to\" مطلوبان."
 
 msgid "Invalid captured 404 ID."
-msgstr "Invalid captured 404 ID."
+msgstr "معرّف 404 ملتقط غير صالح."
 
 msgid "Captured 404 not found."
-msgstr "Captured 404 not found."
+msgstr "لم يتم العثور على 404 الملتقط."
 
 msgid "The captured 404 record has no URL."
-msgstr "The captured 404 record has no URL."
+msgstr "سجل 404 الملتقط لا يحتوي على عنوان URL."
 
 msgid "The \"url\" parameter is required."
-msgstr "The \"url\" parameter is required."
+msgstr "معامل \"url\" مطلوب."
 
 msgid "No captured 404s in this period."
-msgstr "No captured 404s in this period."
+msgstr "لا توجد صفحات 404 ملتقطة في هذه الفترة."
 
 msgid "404 Solution Digest"
-msgstr "404 Solution Digest"
+msgstr "ملخص 404 Solution"
 
 msgid "Digest Report"
 msgstr "تقرير الملخص"
@@ -3078,16 +3078,16 @@ msgid "%1$d of %2$d URLs handled"
 msgstr "%1$d من %2$d عنوان URL تمت معالجته"
 
 msgid "Summary"
-msgstr "Summary"
+msgstr "الملخص"
 
 msgid "Top Captured 404 URLs"
-msgstr "Top Captured 404 URLs"
+msgstr "أكثر عناوين URL ذات الخطأ 404 التقاطاً"
 
 msgid "First Seen"
-msgstr "First Seen"
+msgstr "أول ظهور"
 
 msgid "View Captured 404s"
-msgstr "View Captured 404s"
+msgstr "عرض صفحات 404 الملتقطة"
 
 msgid "Manage Settings"
 msgstr "إدارة الإعدادات"
@@ -3096,64 +3096,64 @@ msgid "To stop these emails, update your notification settings."
 msgstr "لإيقاف هذه الرسائل، قم بتحديث إعدادات الإشعارات."
 
 msgid "To stop receiving these emails, update your notification settings."
-msgstr "To stop receiving these emails, update your notification settings."
+msgstr "لإيقاف تلقي هذه الرسائل، قم بتحديث إعدادات الإشعارات."
 
 msgid "Manage settings"
-msgstr "Manage settings"
+msgstr "إدارة الإعدادات"
 
 msgid "Sent"
-msgstr "Sent"
+msgstr "مُرسل"
 
 msgid "Plugin"
-msgstr "Plugin"
+msgstr "إضافة"
 
 msgid "404 Solution Digest — %s"
-msgstr "404 Solution Digest — %s"
+msgstr "الملخص الدوري من إضافة 404 Solution — %s"
 
 msgid "Advanced Options"
 msgstr "خيارات متقدمة"
 
 msgid "Active From (optional)"
-msgstr "Active From (optional)"
+msgstr "نشط من (اختياري)"
 
 msgid "Leave blank to activate immediately"
-msgstr "Leave blank to activate immediately"
+msgstr "اتركه فارغاً للتفعيل فوراً"
 
 msgid "Active Until (optional)"
-msgstr "Active Until (optional)"
+msgstr "نشط حتى (اختياري)"
 
 msgid "Leave blank to never expire"
-msgstr "Leave blank to never expire"
+msgstr "اتركه فارغاً لعدم انتهاء الصلاحية"
 
 msgid "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
-msgstr "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
+msgstr "حدث انتهاء مهلة انتظار قفل قاعدة البيانات. يحدث هذا عادةً بسبب عملية أخرى تحتفظ بقفل جدول على قاعدة البيانات. قد يُحل تلقائياً، أو تواصل مع مزود الاستضافة إذا استمرت المشكلة."
 
 msgid "Expire auto-redirects after"
-msgstr "Expire auto-redirects after"
+msgstr "انتهاء صلاحية التحويلات التلقائية بعد"
 
 msgid "days (0 to disable)"
-msgstr "days (0 to disable)"
+msgstr "يوم (0 للتعطيل)"
 
 msgid "Auto-created redirects older than this many days will be automatically moved to trash."
-msgstr "Auto-created redirects older than this many days will be automatically moved to trash."
+msgstr "التحويلات المُنشأة تلقائياً الأقدم من هذا العدد من الأيام ستُنقل تلقائياً إلى سلة المهملات."
 
 msgid "Export format:"
-msgstr "Export format:"
+msgstr "صيغة التصدير:"
 
 msgid "Native CSV (404 Solution)"
-msgstr "Native CSV (404 Solution)"
+msgstr "ملف بتنسيق CSV الأصلي لإضافة (404 Solution)"
 
 msgid "Redirection Plugin CSV"
-msgstr "Redirection Plugin CSV"
+msgstr "ملف بتنسيق CSV الخاص بإضافة Redirection"
 
 msgid "Apache .htaccess"
 msgstr "Apache .htaccess"
 
 msgid "Nginx config"
-msgstr "Nginx config"
+msgstr "إعدادات Nginx"
 
 msgid "Cloudflare Workers script"
-msgstr "Cloudflare Workers script"
+msgstr "نص برمجي لخدمة عمال كلاود فلير Cloudflare Workers"
 
 msgid "Netlify _redirects"
 msgstr "Netlify _redirects"
@@ -3239,25 +3239,25 @@ msgid "Most sites do not need Engine Profiles. They are for advanced scenarios w
 msgstr "لا تحتاج معظم المواقع إلى ملفات تعريف للمحركات. فهي مخصصة للسيناريوهات المتقدمة حيث يحتاج قسم من موقعك إلى منطق اقتراح مختلف عن بقية الموقع."
 
 msgid "Name"
-msgstr "Name"
+msgstr "الاسم"
 
 msgid "URL Pattern"
-msgstr "URL Pattern"
+msgstr "نمط URL"
 
 msgid "Regex"
 msgstr "Regex"
 
 msgid "Engines"
-msgstr "Engines"
+msgstr "المحركات"
 
 msgid "Priority"
-msgstr "Priority"
+msgstr "الأولوية"
 
 msgid "Active"
-msgstr "Active"
+msgstr "نشط"
 
 msgid "Actions"
-msgstr "Actions"
+msgstr "الإجراءات"
 
 msgid "No engine profiles defined."
 msgstr "لم يتم تحديد ملفات تعريف للمحرك."
@@ -3536,3 +3536,12 @@ msgstr "تم الرد بـ %s"
 #, fuzzy
 msgid "Showed 404 page — %s"
 msgstr "تم عرض صفحة 404 — %s"
+
+msgid "Attach PDF report to digest email"
+msgstr "إرفاق تقرير PDF بالبريد الإلكتروني للملخص"
+
+msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
+msgstr "عند التفعيل، يتم إرفاق ملخص PDF مع كل بريد إلكتروني للملخص (الملخصات اليومية أو الأسبوعية فقط)."
+
+msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+msgstr "تتيح لك ملفات تعريف المحركات تقييد محركات المطابقة التي تعمل لأنماط URL معينة. أول ملف تعريف يتطابق نمطه مع عنوان URL ذي الخطأ 404 يُطبَّق. إذا لم يتطابق أي ملف تعريف، تعمل جميع المحركات بشكل طبيعي."
