@@ -53,8 +53,9 @@ msgstr "网络错误 - 无法保存关闭状态。向导可能会在下次访问
 msgid "Settings"
 msgstr "设置"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution：已将 %d 个重定向迁移到与子目录无关的格式。"
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution：已将 %d 个重定向迁移到与子目录无关的格式。"
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %3$s 中的 %2$s"
 
@@ -1702,8 +1703,9 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "在停用之前，选择如何处理您的数据："
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "保留我的重定向（%d）"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "保留我的重定向（%d）"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

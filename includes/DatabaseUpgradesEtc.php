@@ -201,7 +201,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     			$rawRedirectsUpdated = $migrationResults['redirects_updated'];
     			$redirectsUpdated = is_scalar($rawRedirectsUpdated) ? (int)$rawRedirectsUpdated : 0;
     			$message = sprintf(
-    				__('404 Solution: Migrated %d redirects to subdirectory-independent format.', '404-solution'),
+    				_n(
+    					'404 Solution: Migrated %d redirect to subdirectory-independent format.',
+    					'404 Solution: Migrated %d redirects to subdirectory-independent format.',
+    					$redirectsUpdated,
+    					'404-solution'
+    				),
     				$redirectsUpdated
     			);
     			add_settings_error('abj404_settings', 'migration_success', $message, 'updated');

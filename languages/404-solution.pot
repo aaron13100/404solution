@@ -815,8 +815,10 @@ msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking 
 msgstr ""
 
 #: includes/DatabaseUpgradesEtc.php:140
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr ""
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] ""
+msgstr[1] ""
 
 
 #: includes/UninstallModal.php
@@ -1027,8 +1029,10 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr ""
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr ""
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] ""
+msgstr[1] ""
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

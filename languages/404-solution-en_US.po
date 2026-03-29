@@ -74,8 +74,10 @@ msgstr "Network error - could not save dismissal. The wizard may appear again on
 msgid "Settings"
 msgstr "Settings"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgstr[1] "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s of %3$s"
 
@@ -1716,8 +1718,10 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "Before deactivating, choose what happens to your data:"
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "Keep my redirects (%d)"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "Keep my redirect (%d)"
+msgstr[1] "Keep my redirects (%d)"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

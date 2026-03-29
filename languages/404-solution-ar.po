@@ -53,8 +53,14 @@ msgstr "خطأ في الشبكة - تعذر حفظ الإغلاق. قد يظهر
 msgid "Settings"
 msgstr "الإعدادات"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: تم ترحيل %d عمليات إعادة توجيه إلى تنسيق مستقل عن المجلد الفرعي."
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution: لم يتم ترحيل أي إعادة توجيه إلى تنسيق مستقل عن المجلد الفرعي."
+msgstr[1] "404 Solution: تم ترحيل إعادة توجيه واحدة إلى تنسيق مستقل عن المجلد الفرعي."
+msgstr[2] "404 Solution: تم ترحيل إعادتي توجيه إلى تنسيق مستقل عن المجلد الفرعي."
+msgstr[3] "404 Solution: تم ترحيل %d عمليات إعادة توجيه إلى تنسيق مستقل عن المجلد الفرعي."
+msgstr[4] "404 Solution: تم ترحيل %d عملية إعادة توجيه إلى تنسيق مستقل عن المجلد الفرعي."
+msgstr[5] "404 Solution: تم ترحيل %d عملية إعادة توجيه إلى تنسيق مستقل عن المجلد الفرعي."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s من %3$s"
 
@@ -1699,8 +1705,14 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "قبل إلغاء التفعيل، اختر ما يحدث لبياناتك:"
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "الاحتفاظ بإعادة التوجيه الخاصة بي (%d)"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "لا يوجد إعادة توجيه للاحتفاظ بها"
+msgstr[1] "الاحتفاظ بإعادة التوجيه الخاصة بي (%d)"
+msgstr[2] "الاحتفاظ بإعادتي التوجيه الخاصتين بي (%d)"
+msgstr[3] "الاحتفاظ بعمليات إعادة التوجيه الخاصة بي (%d)"
+msgstr[4] "الاحتفاظ بعمليات إعادة التوجيه الخاصة بي (%d)"
+msgstr[5] "الاحتفاظ بعمليات إعادة التوجيه الخاصة بي (%d)"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

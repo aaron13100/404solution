@@ -53,8 +53,9 @@ msgstr "Kesalahan jaringan - tidak dapat menyimpan penolakan. Wizard mungkin mun
 msgid "Settings"
 msgstr "Pengaturan"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: Berhasil memigrasikan %d pengalihan ke format independen subdirektori."
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution: Berhasil memigrasikan %d pengalihan ke format independen subdirektori."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s dari %3$s"
 
@@ -1688,8 +1689,9 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "Sebelum menonaktifkan, pilih apa yang akan terjadi pada data Anda:"
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "Simpan pengalihan saya (%d)"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "Simpan pengalihan saya (%d)"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

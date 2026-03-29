@@ -53,8 +53,11 @@ msgstr "Ошибка сети — не удалось сохранить зак�
 msgid "Settings"
 msgstr "Настройки"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: Мигрировано %d перенаправлений в формат, независимый от подкаталогов."
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution: Мигрировано %d перенаправление в формат, независимый от подкаталогов."
+msgstr[1] "404 Solution: Мигрировано %d перенаправления в формат, независимый от подкаталогов."
+msgstr[2] "404 Solution: Мигрировано %d перенаправлений в формат, независимый от подкаталогов."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s из %3$s"
 
@@ -1693,8 +1696,11 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "Перед деактивацией выберите, что произойдет с вашими данными:"
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "Сохранить мои перенаправления (%d)"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "Сохранить моё перенаправление (%d)"
+msgstr[1] "Сохранить мои перенаправления (%d)"
+msgstr[2] "Сохранить мои перенаправления (%d)"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

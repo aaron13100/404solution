@@ -53,8 +53,10 @@ msgstr "Erro de rede — não foi possível salvar a dispensa. O assistente pode
 msgid "Settings"
 msgstr "Configurações"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: %d redirecionamentos migrados para formato independente de subdiretório."
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution: %d redirecionamento migrado para formato independente de subdiretório."
+msgstr[1] "404 Solution: %d redirecionamentos migrados para formato independente de subdiretório."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s de %3$s"
 
@@ -1690,8 +1692,10 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "Antes de desativar, escolha o que acontece com seus dados:"
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "Manter meus redirecionamentos (%d)"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "Manter meu redirecionamento (%d)"
+msgstr[1] "Manter meus redirecionamentos (%d)"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

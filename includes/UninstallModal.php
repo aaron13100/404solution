@@ -160,7 +160,7 @@ class ABJ_404_Solution_UninstallModal {
 
                 <label>
                     <input type="checkbox" id="abj404-keep-redirects" checked>
-                    <strong><?php printf(__('Keep my redirects (%d)', '404-solution'), $redirectCount); ?></strong>
+                    <strong><?php printf(_n('Keep my redirect (%d)', 'Keep my redirects (%d)', $redirectCount, '404-solution'), $redirectCount); ?></strong>
                     <span class="description" style="display: inline; margin-left: 5px;">
                         <?php _e('— saves them for later if you reinstall', '404-solution'); ?>
                     </span>

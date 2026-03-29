@@ -53,8 +53,10 @@ msgstr "Erreur réseau — impossible d'enregistrer la fermeture. L'assistant po
 msgid "Settings"
 msgstr "Paramètres"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution : %d redirections migrées vers un format indépendant des sous-répertoires."
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution : %d redirection migrée vers un format indépendant des sous-répertoires."
+msgstr[1] "404 Solution : %d redirections migrées vers un format indépendant des sous-répertoires."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s de %3$s"
 
@@ -1691,8 +1693,10 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "Avant de désactiver, choisissez ce qui arrive à vos données :"
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "Conserver mes redirections (%d)"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "Conserver ma redirection (%d)"
+msgstr[1] "Conserver mes redirections (%d)"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

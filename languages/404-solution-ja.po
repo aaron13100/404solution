@@ -54,8 +54,9 @@ msgstr "ネットワークエラーにより非表示設定を保存できませ
 msgid "Settings"
 msgstr "設定"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: %d件のリダイレクトをサブディレクトリに依存しない形式に移行しました。"
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution: %d件のリダイレクトをサブディレクトリに依存しない形式に移行しました。"
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %3$sの%2$s"
 
@@ -1698,8 +1699,9 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "無効化する前に、データをどうするか選択してください："
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "リダイレクトを保持する（%d）"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "リダイレクトを保持する（%d）"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

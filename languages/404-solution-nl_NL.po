@@ -53,8 +53,10 @@ msgstr "Netwerkfout - sluiting kon niet worden opgeslagen. De wizard verschijnt 
 msgid "Settings"
 msgstr "Instellingen"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: %d omleidingen gemigreerd naar submapsonafhankelijk formaat."
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution: %d omleiding gemigreerd naar submapsonafhankelijk formaat."
+msgstr[1] "404 Solution: %d omleidingen gemigreerd naar submapsonafhankelijk formaat."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s van %3$s"
 
@@ -1691,8 +1693,10 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "Kies voordat u deactiveert wat er met uw gegevens gebeurt:"
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "Bewaar mijn omleidingen (%d)"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "Bewaar mijn omleiding (%d)"
+msgstr[1] "Bewaar mijn omleidingen (%d)"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

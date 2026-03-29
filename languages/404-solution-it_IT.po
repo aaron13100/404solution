@@ -53,8 +53,10 @@ msgstr "Errore di rete: impossibile salvare la chiusura. La procedura guidata po
 msgid "Settings"
 msgstr "Impostazioni"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: Migrati %d redirect nel formato indipendente dalla sottodirectory."
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution: Migrato %d reindirizzamento nel formato indipendente dalla sottodirectory."
+msgstr[1] "404 Solution: Migrati %d reindirizzamenti nel formato indipendente dalla sottodirectory."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s di %3$s"
 
@@ -1691,8 +1693,10 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "Prima di disattivare, scegli cosa succede ai tuoi dati:"
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "Mantieni i miei redirect (%d)"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "Mantieni il mio reindirizzamento (%d)"
+msgstr[1] "Mantieni i miei reindirizzamenti (%d)"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

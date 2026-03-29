@@ -53,8 +53,10 @@ msgstr "Netzwerkfehler – Schließen konnte nicht gespeichert werden. Der Assis
 msgid "Settings"
 msgstr "Einstellungen"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: %d Weiterleitungen in unterverzeichnisunabhängiges Format migriert."
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution: %d Weiterleitung in unterverzeichnisunabhängiges Format migriert."
+msgstr[1] "404 Solution: %d Weiterleitungen in unterverzeichnisunabhängiges Format migriert."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s von %3$s"
 
@@ -1691,8 +1693,10 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "Wählen Sie vor der Deaktivierung, was mit Ihren Daten geschehen soll:"
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "Meine Weiterleitungen behalten (%d)"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "Meine Weiterleitung behalten (%d)"
+msgstr[1] "Meine Weiterleitungen behalten (%d)"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"

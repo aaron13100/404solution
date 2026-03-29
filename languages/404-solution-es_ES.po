@@ -58,8 +58,10 @@ msgstr "Error de red - no se pudo guardar el descarte. El asistente puede aparec
 msgid "Settings"
 msgstr "Ajustes"
 
-msgid "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr "404 Solution: Se han migrado %d redirecciones a formato independiente de subdirectorio."
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] "404 Solution: Se ha migrado %d redirección a formato independiente de subdirectorio."
+msgstr[1] "404 Solution: Se han migrado %d redirecciones a formato independiente de subdirectorio."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s de %3$s"
 
@@ -1696,8 +1698,10 @@ msgid "Before deactivating, choose what happens to your data:"
 msgstr "Antes de desactivar, elija qué sucede con sus datos:"
 
 #: includes/UninstallModal.php
-msgid "Keep my redirects (%d)"
-msgstr "Mantener mis redirecciones (%d)"
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] "Mantener mi redirección (%d)"
+msgstr[1] "Mantener mis redirecciones (%d)"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"
