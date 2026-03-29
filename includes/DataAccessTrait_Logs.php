@@ -467,7 +467,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         $rawLogsId = $tableOptions['logsid'];
         if ($rawLogsId != 0) {
             $logsid_included = 'specific logs id included. */';
-            $logsid = esc_sql($abj404logic->sanitizeForSQL(is_string($rawLogsId) ? $rawLogsId : ''));
+            $logsid = esc_sql($abj404logic->sanitizeForSQL(is_scalar($rawLogsId) ? (string)$rawLogsId : ''));
         }
 
         // Whitelist allowed columns for orderby to prevent SQL injection
