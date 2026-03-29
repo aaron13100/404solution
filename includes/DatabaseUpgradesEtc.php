@@ -197,7 +197,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$migrationResults = $this->migrateURLsToRelativePaths();
 
     		// Show admin notice if migration occurred
-    		if ($updatingToNewVersion && !empty($migrationResults['redirects_updated']) && function_exists('add_settings_error')) {
+    		if ($updatingToNewVersion && !empty($migrationResults['redirects_updated'])) {
     			$rawRedirectsUpdated = $migrationResults['redirects_updated'];
     			$redirectsUpdated = is_scalar($rawRedirectsUpdated) ? (int)$rawRedirectsUpdated : 0;
     			$message = sprintf(
@@ -209,7 +209,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     				),
     				$redirectsUpdated
     			);
-    			add_settings_error('abj404_settings', 'migration_success', $message, 'updated');
+    			if (function_exists('add_settings_error')) {
+    				add_settings_error('abj404_settings', 'migration_success', $message, 'updated');
+    			}
     		}
     	}
 
