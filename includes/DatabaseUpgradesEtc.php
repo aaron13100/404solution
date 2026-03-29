@@ -1004,6 +1004,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 $this->correctCollations();
                 $this->updateTableEngineToInnoDB();
                 $this->createIndexes();
+                $this->renameAbj404TablesToLowerCase();
 
                 ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
@@ -1048,6 +1049,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 $this->correctCollations();
                 $this->updateTableEngineToInnoDB();
                 $this->createIndexes();
+                $this->renameAbj404TablesToLowerCase();
                 $this->correctIssuesAfter();
 
                 $logic = ABJ_404_Solution_PluginLogic::getInstance();
@@ -1358,7 +1360,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->removeCommentsFromColumns($createTableStatementGoal));
     	
     	// remove the "COLLATE xxx" from the columns.
-    	$removeCollatePattern = '/collate \w+ ?/';
+    	$removeCollatePattern = '/collate[= ]\w+ ?/';
     	$existingTableSQL = preg_replace($removeCollatePattern, "", $existingTableSQL) ?? '';
     	$createTableStatementGoal = preg_replace($removeCollatePattern, "", $createTableStatementGoal) ?? '';
 
