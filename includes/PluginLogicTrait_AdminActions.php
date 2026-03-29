@@ -541,6 +541,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
 
         } else {
             $this->logger->errorMessage("Unrecognized type in doEmptyTrash(" . $sub . ")");
+            return;
         }
 
         $result = $this->dao->queryAndGetResults($query);
