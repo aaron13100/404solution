@@ -203,6 +203,26 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 ## Changelog ##
 
+## Version 4.0.4 (Mar 29, 2026) ##
+
+**Bug Fixes**
+
+* Fixed multisite activation/upgrade skipping orphaned table adoption — batch methods now run adoption after table creation, ensuring migrated data is recovered on multisite networks.
+* Fixed DDL schema comparison failing on MariaDB servers that use `COLLATE=utf8mb4_unicode_ci` (equals sign) instead of MySQL's `COLLATE utf8mb4_unicode_ci` (space), causing unnecessary schema rebuild loops.
+* Fixed `doEmptyTrash()` executing an empty SQL query when called with an unrecognized sub-page parameter — now early-returns after logging the error.
+* Fixed logs URL filter failing when `logsid` was passed as a non-string type, causing a type error in `sanitizeForSQL()`.
+* Fixed invalid UTF-8 byte sequences in captured URLs corrupting log INSERT queries — added `mb_convert_encoding()` sanitization at the log entry boundary.
+* Fixed DDL normalization not stripping `DEFAULT NULL` (which is implicit for nullable columns), causing infinite schema diff loops on some MySQL versions.
+* Fixed orphaned table adoption running on every page load instead of once — adopted prefixes are now recorded in `wp_options` to prevent re-detection.
+* Fixed table adoption running before target tables existed — adoption now executes after `runInitialCreateTables()`.
+
+**Internationalization**
+
+* Completed translations for all 204 pending strings across 12 languages.
+* Added proper `_n()` plural forms for redirect count strings.
+* Fixed culturally inappropriate translations and religious idioms in warning messages.
+* Fixed fuzzy flags, broken format specifiers, and missing slug translations in PO files.
+
 ## Version 4.0.3 (Mar 28, 2026) ##
 
 **Bug Fixes**
@@ -240,7 +260,6 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Major codebase refactoring: consolidated duplicated DataAccess patterns, unified AJAX security boilerplate into a shared trait, extracted shared helpers for multisite batch processing and DDL normalization.
 * Replaced `$_REQUEST[ABJ404_PP]` message bus with a typed `RequestContext` object.
 * Removed dead code: unused settings method, stale DDL builders, and redundant index verification logic.
-* Comprehensive E2E test suite expansion — 613 tests across 104 Playwright specs covering every admin UI interaction.
 
 ## Version 4.0.1 (Mar 25, 2026) ##
 
