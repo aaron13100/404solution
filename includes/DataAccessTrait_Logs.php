@@ -1253,7 +1253,12 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             if (is_object($value) || is_array($value)) {
                 return null;
             }
-            return substr((string)$value, 0, $maxLen);
+            $str = (string)$value;
+            // Strip invalid UTF-8 sequences that cause "invalid data" SQL errors.
+            if (function_exists('mb_convert_encoding')) {
+                $str = mb_convert_encoding($str, 'UTF-8', 'UTF-8');
+            }
+            return substr($str, 0, $maxLen);
         };
 
         $sanitized = array();

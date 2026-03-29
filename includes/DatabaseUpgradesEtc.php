@@ -119,8 +119,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
      * @return void
      */
     private function reallyCreateDatabaseTables($updatingToNewVersion = false) {
-		$this->renameAbj404TablesToLowerCase();
-
     	if ($updatingToNewVersion) {
     		$this->correctIssuesBefore();
     	}
@@ -164,6 +162,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->updateTableEngineToInnoDB();
     		$this->createIndexes();
     	}
+
+    	// Adopt orphaned tables AFTER target tables exist (rename handles prefix mismatches).
+    	$this->renameAbj404TablesToLowerCase();
 
     	// we could do this only when a table is created or when the "meta" column is created
     	// but it doesn't take long anyway so we do it every night.
@@ -431,9 +432,18 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			$tablesByPrefix[$prefix][] = $tableName;
 		}
 
+		// Skip prefixes we've already adopted.
+		$adoptedPrefixes = get_option('abj404_adopted_prefixes', array());
+		if (!is_array($adoptedPrefixes)) {
+			$adoptedPrefixes = array();
+		}
+
 		// Process each OLD prefix (not the current one).
 		foreach ($tablesByPrefix as $oldPrefix => $tables) {
 			if ($oldPrefix === $currentPrefix) {
+				continue;
+			}
+			if (in_array($oldPrefix, $adoptedPrefixes, true)) {
 				continue;
 			}
 
@@ -688,6 +698,16 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		$this->logger->infoMessage(
 			"Adoption complete: {$totalAdopted} total rows adopted from prefix '{$oldPrefix}' to '{$currentPrefix}'"
 		);
+
+		// Record this prefix as adopted so we don't re-detect it on every page load.
+		$adoptedPrefixes = get_option('abj404_adopted_prefixes', array());
+		if (!is_array($adoptedPrefixes)) {
+			$adoptedPrefixes = array();
+		}
+		if (!in_array($oldPrefix, $adoptedPrefixes, true)) {
+			$adoptedPrefixes[] = $oldPrefix;
+			update_option('abj404_adopted_prefixes', $adoptedPrefixes, false);
+		}
 	}
 
 	/**
@@ -1539,7 +1559,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function normalizeColumnDDL($ddl): string {
     	$ddlStr = is_string($ddl) ? $ddl : '';
     	$normalized = strtolower(str_replace('`', '', trim($ddlStr)));
-    	return preg_replace("/default '(\d+)'/", 'default $1', $normalized) ?? $normalized;
+    	$normalized = preg_replace("/default '(\d+)'/", 'default $1', $normalized) ?? $normalized;
+    	// MySQL omits DEFAULT NULL for nullable columns — strip it so DDL file
+    	// and SHOW CREATE TABLE produce identical normalized strings.
+    	$normalized = preg_replace('/\s+default\s+null\b/', '', $normalized) ?? $normalized;
+    	return $normalized;
     }
 
     /**
