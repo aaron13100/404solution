@@ -366,6 +366,42 @@ class ABJ_404_Solution_SystemPage {
     }
 
     /**
+     * Hook: enqueue_block_editor_assets — show notice in the block editor when editing the system page.
+     *
+     * Uses the wp.data notices store to create an info notice at the top of the block editor.
+     *
+     * @return void
+     */
+    public static function enqueueBlockEditorNotice(): void {
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (!$screen || $screen->base !== 'post') {
+            return;
+        }
+
+        // Check if the current post is the system page.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $postId = isset($_GET['post']) ? (int) $_GET['post'] : 0;
+        if (!$postId || !self::isSystemPage($postId)) {
+            return;
+        }
+
+        $settingsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options');
+        $message = esc_html__('This page is used by 404 Solution to display suggested pages to visitors.', '404-solution');
+        $linkText = esc_html__('Learn more', '404-solution');
+
+        wp_add_inline_script('wp-edit-post', sprintf(
+            'wp.domReady(function(){' .
+            'wp.data.dispatch("core/notices").createNotice("info",%s+%s,{id:"abj404-system-page-notice",isDismissible:false,' .
+            'actions:[{label:%s,url:%s}]});' .
+            '});',
+            wp_json_encode($message . ' '),
+            wp_json_encode(''),
+            wp_json_encode($linkText),
+            wp_json_encode($settingsUrl)
+        ));
+    }
+
+    /**
      * Register all WordPress hooks for system page management.
      *
      * @return void
@@ -381,8 +417,11 @@ class ABJ_404_Solution_SystemPage {
         // Recreate action
         add_action('admin_init', array(__CLASS__, 'handleRecreateAction'));
 
-        // Editor notice
+        // Editor notice (classic editor)
         add_action('edit_form_after_title', array(__CLASS__, 'showEditorNotice'));
+
+        // Editor notice (block editor / Gutenberg)
+        add_action('enqueue_block_editor_assets', array(__CLASS__, 'enqueueBlockEditorNotice'));
 
         // Exclude from sitemaps (WordPress 5.5+ native robots)
         add_filter('wp_robots', array(__CLASS__, 'addNoindexToSystemPage'));
