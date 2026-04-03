@@ -409,41 +409,8 @@ trait ViewTrait_UI {
      * @return void
      */
     function echoSimpleModeOptions($options) {
-        // Get dest404page dropdown HTML (reuse existing logic)
-        $userSelectedDefault404PageRaw = (array_key_exists('dest404page', $options) &&
-                isset($options['dest404page']) ? $options['dest404page'] : null);
-        $userSelectedDefault404Page = is_string($userSelectedDefault404PageRaw) ? $userSelectedDefault404PageRaw : '';
-        $urlDestinationRaw = (array_key_exists('dest404pageURL', $options) &&
-                isset($options['dest404pageURL']) ? $options['dest404pageURL'] : null);
-        $urlDestination = is_string($urlDestinationRaw) ? $urlDestinationRaw : '';
-
-        $pageTitle = $this->logic->getPageTitleFromIDAndType($userSelectedDefault404Page, $urlDestination);
-        $pageMissingWarning = "";
-        if ($userSelectedDefault404Page !== '') {
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($userSelectedDefault404Page, 0);
-            if (!in_array($permalink['status'], array('publish', 'published'))) {
-                $pageMissingWarning = __("(The specified page doesn't exist. Please update this setting.)", '404-solution');
-            }
-        }
-
-        // Build dest404page dropdown
-        $dest404Dropdown = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
-                "/html/addManualRedirectPageSearchDropdown.html");
-        $dest404Dropdown = $this->f->str_replace('{redirect_to_label}', '', $dest404Dropdown);
-        $dest404Dropdown = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
-                __('(Type a page name or an external URL)', '404-solution'), $dest404Dropdown);
-        $dest404Dropdown = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
-                __('(A page has been selected.)', '404-solution'), $dest404Dropdown);
-        $dest404Dropdown = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
-            __('(A custom string has been entered.)', '404-solution'), $dest404Dropdown);
-        $dest404Dropdown = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
-                __('(An external URL will be used.)', '404-solution'), $dest404Dropdown);
-        $dest404Dropdown = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', $pageMissingWarning, $dest404Dropdown);
-        $dest404Dropdown = $this->f->str_replace('{redirectPageTitle}', esc_attr($pageTitle), $dest404Dropdown);
-        $dest404Dropdown = $this->f->str_replace('{pageIDAndType}', esc_attr($userSelectedDefault404Page), $dest404Dropdown);
-        $dest404Dropdown = $this->f->str_replace('{data-url}',
-                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $dest404Dropdown);
-        $dest404Dropdown = $this->f->doNormalReplacements($dest404Dropdown);
+        // Build behavior tiles HTML (replaces old dropdown)
+        $behaviorTilesHtml = $this->getBehaviorTilesHTML($options);
 
         // Build selected states for checkboxes and dropdowns
         $selectedAutoRedirects = $this->getCheckedAttr($options, 'auto_redirects');
@@ -469,8 +436,8 @@ trait ViewTrait_UI {
         // Read and build the simple options template
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsSimple.html");
 
-        // Replace dest404page dropdown
-        $html = $this->f->str_replace('{dest404pageOptions}', $dest404Dropdown, $html);
+        // Replace dest404page tiles
+        $html = $this->f->str_replace('{behaviorTiles}', $behaviorTilesHtml, $html);
 
         // Replace checkbox states
         $html = $this->f->str_replace('{selectedAutoRedirects}', $selectedAutoRedirects, $html);

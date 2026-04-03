@@ -193,47 +193,15 @@ trait ViewTrait_Settings {
      */
     function getAdminOptionsPageAutoRedirects($options) {
         $options = $this->normalizeOptionsForView($options);
-        
+
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         $content = "";
-        $userSelectedDefault404PageRaw = (array_key_exists('dest404page', $options) &&
-                isset($options['dest404page']) ? $options['dest404page'] : null);
-        $userSelectedDefault404Page = is_string($userSelectedDefault404PageRaw) ? $userSelectedDefault404PageRaw : '';
-        $urlDestinationRaw = (array_key_exists('dest404pageURL', $options) &&
-                isset($options['dest404pageURL']) ? $options['dest404pageURL'] : null);
-        $urlDestination = is_string($urlDestinationRaw) ? $urlDestinationRaw : '';
 
-        $pageMissingWarning = "";
-        if ($userSelectedDefault404Page !== '') {
-        	$permalink =
-        		ABJ_404_Solution_Functions::permalinkInfoToArray($userSelectedDefault404Page, 0);
-        	if (!in_array($permalink['status'], array('publish', 'published'))) {
-        		$pageMissingWarning = __("(The specified page doesn't exist. " .
-        				"Please update this setting.)", '404-solution');
-        	}
-        }
-
-        $pageTitle = $this->logic->getPageTitleFromIDAndType($userSelectedDefault404Page, $urlDestination);
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
-                "/html/addManualRedirectPageSearchDropdown.html");
-        $html = $this->f->str_replace('{redirect_to_label}', __('Redirect all unhandled 404s to', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}', 
-                __('(Type a page name or an external URL)', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}', 
-                __('(A page has been selected.)', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
-        	__('(A custom string has been entered.)', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
-        		__('(An external URL will be used.)', '404-solution'), $html);
-        $html = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', $pageMissingWarning, $html);
-        
-        $html = $this->f->str_replace('{redirectPageTitle}', esc_attr($pageTitle), $html);
-        $html = $this->f->str_replace('{pageIDAndType}', esc_attr($userSelectedDefault404Page), $html);
-        $html = $this->f->str_replace('{redirectPageTitle}', esc_attr($pageTitle), $html);
-        $html = $this->f->str_replace('{data-url}',
-                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $html);
-        $html = $this->f->doNormalReplacements($html);
-        $content .= $html;
+        // Behavior tiles (replaces the old page-search dropdown)
+        $content .= '<div class="abj404-form-group">';
+        $content .= '<label class="abj404-form-label">' . __('Default 404 destination', '404-solution') . '</label>';
+        $content .= $this->getBehaviorTilesHTML($options);
+        $content .= '</div>';
 
         // -----------------------------------------------
         // Load auto redirects options template

@@ -28,15 +28,47 @@ class ABJ_404_Solution_Uninstaller {
         // 1. Delete database tables based on user preferences
         self::deleteTables($wpdb, $preferences);
 
-        // 2. Delete all WordPress options
+        // 2. Delete system page if user chose to delete data
+        $deleteAnyData = ($preferences['delete_redirects'] ?? false)
+            || ($preferences['delete_logs'] ?? false)
+            || ($preferences['delete_cache'] ?? false);
+        if ($deleteAnyData) {
+            self::deleteSystemPage();
+        }
+
+        // 3. Delete all WordPress options
         self::deleteAllOptions();
 
-        // 3. Clean up scheduled cron jobs
+        // 4. Clean up scheduled cron jobs
         self::cleanupCronJobs();
 
-        // 4. Send feedback via email if requested
+        // 5. Send feedback via email if requested
         if (($preferences['send_feedback'] ?? false) && !empty($preferences['uninstall_reason'] ?? '')) {
             self::sendFeedbackEmail($preferences);
+        }
+    }
+
+    /**
+     * Delete the auto-created system page (if it exists).
+     * Finds it via post meta _abj404_system_page = 1.
+     *
+     * @return void
+     */
+    private static function deleteSystemPage(): void {
+        $pages = get_posts(array(
+            'post_type'      => 'page',
+            'post_status'    => 'any',
+            'meta_key'       => '_abj404_system_page',
+            'meta_value'     => '1',
+            'posts_per_page' => 5,
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+        ));
+
+        if (is_array($pages)) {
+            foreach ($pages as $pageId) {
+                wp_delete_post((int) $pageId, true);
+            }
         }
     }
 

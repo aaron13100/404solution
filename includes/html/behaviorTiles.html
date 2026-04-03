@@ -1,0 +1,57 @@
+<div class="abj404-behavior-tiles" data-selected="{selected_behavior}">
+    <input type="hidden" name="dest404_behavior" id="dest404_behavior" value="{selected_behavior}">
+    <input type="hidden" name="redirect_to_data_field_id" id="redirect_to_data_field_id" value="{pageIDAndType}">
+
+    <div class="abj404-tiles-grid">
+        <!-- Suggest similar pages -->
+        <div class="abj404-tile{tile_suggest_selected}" data-behavior="suggest" tabindex="0" role="radio" aria-checked="{suggest_aria_checked}">
+            <div class="abj404-tile-badge">{Recommended}</div>
+            <div class="abj404-tile-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+            <h3 class="abj404-tile-title">{Suggest similar pages}</h3>
+            <p class="abj404-tile-desc">{Shows visitors a list of pages matching the URL they were looking for}</p>
+        </div>
+
+        <!-- Redirect to homepage -->
+        <div class="abj404-tile{tile_homepage_selected}" data-behavior="homepage" tabindex="0" role="radio" aria-checked="{homepage_aria_checked}">
+            <div class="abj404-tile-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+            </div>
+            <h3 class="abj404-tile-title">{Redirect to homepage}</h3>
+            <p class="abj404-tile-desc">{Sends all 404 visitors to the site front page}</p>
+        </div>
+
+        <!-- Custom page -->
+        <div class="abj404-tile{tile_custom_selected}" data-behavior="custom" tabindex="0" role="radio" aria-checked="{custom_aria_checked}">
+            <div class="abj404-tile-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <h3 class="abj404-tile-title">{Custom page}</h3>
+            <p class="abj404-tile-desc">{Choose a specific page to show for all 404 errors}</p>
+        </div>
+
+        <!-- Theme default -->
+        <div class="abj404-tile{tile_theme_default_selected}" data-behavior="theme_default" tabindex="0" role="radio" aria-checked="{theme_default_aria_checked}">
+            <div class="abj404-tile-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                </svg>
+            </div>
+            <h3 class="abj404-tile-title">{Theme default}</h3>
+            <p class="abj404-tile-desc">{Uses the theme built-in 404 page, no redirect}</p>
+        </div>
+    </div>
+
+    <!-- Custom page picker (shown only when 'custom' is selected) -->
+    <div class="abj404-custom-page-picker" id="abj404-custom-page-picker" style="display:{custom_picker_display};">
+        <label class="abj404-form-label" for="abj404-custom-page-search">{Select a page}</label>
+        {customPageDropdown}
+    </div>
+</div>

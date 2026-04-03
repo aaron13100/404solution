@@ -3869,3 +3869,100 @@ input[type="checkbox"]:focus-visible {
 .abj404-gsc-error-box p:last-child {
     margin-bottom: 0;
 }
+
+/* ============================================
+   Behavior Tiles (404 Destination)
+   ============================================ */
+
+.abj404-behavior-tiles {
+    margin: 0;
+}
+
+.abj404-tiles-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 600px) {
+    .abj404-tiles-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.abj404-tile {
+    position: relative;
+    border: 2px solid var(--abj404-border, #dcdcde);
+    border-radius: 8px;
+    padding: 20px 16px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+    background: var(--abj404-surface, #fff);
+    text-align: center;
+}
+
+.abj404-tile:hover {
+    border-color: var(--abj404-primary, #2271b1);
+    box-shadow: 0 0 0 1px var(--abj404-primary, #2271b1);
+}
+
+.abj404-tile:focus {
+    outline: 2px solid var(--abj404-primary, #2271b1);
+    outline-offset: 2px;
+}
+
+.abj404-tile.selected {
+    border-color: var(--abj404-primary, #2271b1);
+    background: color-mix(in srgb, var(--abj404-primary, #2271b1) 6%, var(--abj404-surface, #fff));
+    box-shadow: 0 0 0 1px var(--abj404-primary, #2271b1);
+}
+
+.abj404-tile-badge {
+    display: none;
+    position: absolute;
+    top: -10px;
+    right: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--abj404-primary, #2271b1);
+    color: #fff;
+}
+
+.abj404-tile[data-behavior="suggest"] .abj404-tile-badge {
+    display: block;
+}
+
+.abj404-tile-icon {
+    margin-bottom: 8px;
+    color: var(--abj404-text-secondary, #646970);
+}
+
+.abj404-tile.selected .abj404-tile-icon {
+    color: var(--abj404-primary, #2271b1);
+}
+
+.abj404-tile-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    color: var(--abj404-text, #1d2327);
+}
+
+.abj404-tile-desc {
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0;
+    color: var(--abj404-text-secondary, #646970);
+}
+
+.abj404-custom-page-picker {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: var(--abj404-bg-subtle, #f6f7f7);
+    border-radius: 6px;
+    border: 1px solid var(--abj404-border, #dcdcde);
+}

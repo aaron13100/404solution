@@ -308,6 +308,10 @@ class ABJ_404_Solution_WordPress_Connector {
             // Settings mode toggle (Simple/Advanced)
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-settings-mode-toggle', plugin_dir_url(__FILE__) . 'ajax/SettingsModeToggle.js',
                 array('jquery'));
+
+            // Behavior tiles (404 destination selector)
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-behavior-tiles', ABJ404_URL . 'includes/js/behaviorTiles.js',
+                array());
         }
 
         if ($isCardAccordionPage) {

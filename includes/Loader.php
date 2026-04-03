@@ -75,6 +75,9 @@ ABJ_404_Solution_ErrorHandler::init();
 // Moving it outside is_admin() ensures auto-redirects are created in all contexts.
 ABJ_404_Solution_SlugChangeHandler::init();
 
+// System page hooks must fire on both admin and frontend
+ABJ_404_Solution_SystemPage::registerHooks();
+
 if (is_admin()) {
 	ABJ_404_Solution_PermalinkCache::init();
 	ABJ_404_Solution_SpellChecker::init();

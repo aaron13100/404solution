@@ -58,6 +58,7 @@ return array(
     'ABJ_404_Solution_ShortCode' => $base . 'includes/ShortCode.php',
     'ABJ_404_Solution_SlugChangeHandler' => $base . 'includes/SlugChangeHandler.php',
     'ABJ_404_Solution_SpellChecker' => $base . 'includes/SpellChecker.php',
+    'ABJ_404_Solution_SystemPage' => $base . 'includes/SystemPage.php',
     'ABJ_404_Solution_SynchronizationUtils' => $base . 'includes/SynchronizationUtils.php',
     'ABJ_404_Solution_Timer' => $base . 'includes/Timer.php',
     'ABJ_404_Solution_UninstallModal' => $base . 'includes/UninstallModal.php',

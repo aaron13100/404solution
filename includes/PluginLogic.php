@@ -518,6 +518,18 @@ class ABJ_404_Solution_PluginLogic {
         $options = (is_array($optionsOverride) ? $optionsOverride : $abj404logic->getOptions());
 
         // ---------------------------------------
+        // Fallback detection: if behavior is 'suggest' but system page was deleted,
+        // flip to theme_default before attempting to redirect.
+        $behavior = isset($options['dest404_behavior']) ? $options['dest404_behavior'] : '';
+        if ($behavior === 'suggest') {
+            $systemPage = ABJ_404_Solution_SystemPage::getInstance();
+            if (!$systemPage->systemPageExists()) {
+                $systemPage->handleSystemPageDeleted();
+                // Reload options after flip
+                $options = $this->getOptions(true);
+            }
+        }
+
         // if there's a default 404 page specified then use that.
         $dest404pageRaw = isset($options['dest404page']) ? $options['dest404page'] : null;
         $dest404page = is_string($dest404pageRaw) ? $dest404pageRaw : (ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
@@ -839,6 +851,27 @@ class ABJ_404_Solution_PluginLogic {
             $this->updateOptions($options);
         }
 
+        // Since 4.1.0: Migrate dest404page to dest404_behavior tile setting.
+        // Existing installs may have a custom page set. Map it to the new behavior.
+        if (!isset($options['dest404_behavior']) || $options['dest404_behavior'] === 'theme_default') {
+            $dest = is_string($options['dest404page']) ? $options['dest404page'] : '';
+            if ($dest === '0|' . ABJ404_TYPE_404_DISPLAYED || $dest === (string)ABJ404_TYPE_404_DISPLAYED || $dest === '') {
+                $options['dest404_behavior'] = 'theme_default';
+            } else if ($dest === '0|' . ABJ404_TYPE_HOME) {
+                $options['dest404_behavior'] = 'homepage';
+            } else if ($dest !== '') {
+                // Check if it's a system page (from a previous install of this feature)
+                $parts = explode('|', $dest);
+                $pageId = isset($parts[0]) ? (int)$parts[0] : 0;
+                if ($pageId > 0 && ABJ_404_Solution_SystemPage::isSystemPage($pageId)) {
+                    $options['dest404_behavior'] = 'suggest';
+                } else {
+                    $options['dest404_behavior'] = 'custom';
+                }
+            }
+            $this->updateOptions($options);
+        }
+
         $options = $this->doUpdateDBVersionOption($options);
         $this->logger->infoMessage(self::$uniqID . ": Updating database version to " .
         	ABJ404_VERSION . " (end).");
@@ -913,6 +946,7 @@ class ABJ_404_Solution_PluginLogic {
             'captured_order_by' => 'logshits',
             'captured_order' => 'DESC',
         	'excludePages[]' => '',
+            'dest404_behavior' => 'theme_default',
         );
 
         return $options;
