@@ -25,9 +25,19 @@
                 hiddenInput.value = behavior;
             }
 
-            // Show/hide custom page picker
+            // Show/hide custom page picker and toggle required on its input
+            // so hidden required fields don't block form submission.
             if (customPicker) {
-                customPicker.style.display = behavior === 'custom' ? '' : 'none';
+                var isCustom = behavior === 'custom';
+                customPicker.style.display = isCustom ? '' : 'none';
+                var pickerInput = customPicker.querySelector('[name="redirect_to_user_field"]');
+                if (pickerInput) {
+                    if (isCustom) {
+                        pickerInput.setAttribute('required', '');
+                    } else {
+                        pickerInput.removeAttribute('required');
+                    }
+                }
             }
 
             // Mark the form as dirty so the save bar shows
