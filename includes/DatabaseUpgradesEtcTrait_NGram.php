@@ -240,7 +240,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
                     }
                 }
 
-                $progress = $sitePages > 0 ? round(($offset / $sitePages) * 100, 1) : 100;
+                $progress = $sitePages > 0 ? min(100, round(($offset / $sitePages) * 100, 1)) : 100;
 
                 $this->logger->infoMessage(sprintf(
                     "Site %d progress: %d%% complete (%d/%d pages), %d success, %d failed",
@@ -322,7 +322,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
                     }
                 }
 
-                $progress = $totalPages > 0 ? round(($offset / $totalPages) * 100, 1) : 100;
+                $progress = $totalPages > 0 ? min(100, round(($offset / $totalPages) * 100, 1)) : 100;
 
                 $this->logger->infoMessage(sprintf(
                     "Async N-gram rebuild progress: %d%% complete (%d/%d pages), %d success, %d failed",

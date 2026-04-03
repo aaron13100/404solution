@@ -1173,10 +1173,39 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    		$this->logger->infoMessage(self::$uniqID . ": On {$tableName} I'm adding missing indexes: " . implode(', ', $missingIndexNames));
 	    	}
 
+	    	// Get actual columns in the table so we can skip indexes that reference missing columns.
+	    	$existingColumns = [];
+	    	$showColResult = $this->dao->queryAndGetResults("SHOW COLUMNS FROM " . $tableName);
+	    	if (!empty($showColResult['rows'])) {
+	    		foreach ($showColResult['rows'] as $colRow) {
+	    			foreach ($colRow as $key => $value) {
+	    				if (strtolower((string)$key) === 'field') {
+	    					$existingColumns[] = strtolower((string)$value);
+	    					break;
+	    				}
+	    			}
+	    		}
+	    	}
+
 	    	foreach ($missingIndexNames as $indexName) {
 	    		$spec = $goalSpecsByName[$indexName] ?? null;
 	    		if (empty($spec)) {
 	    			continue;
+	    		}
+
+	    		// Verify all columns referenced by this index actually exist in the table.
+	    		if (!empty($existingColumns)) {
+	    			$indexColNames = [];
+	    			preg_match_all('/`([^`]+)`/', $spec['columns'], $colMatches);
+	    			if (!empty($colMatches[1])) {
+	    				$indexColNames = array_map('strtolower', $colMatches[1]);
+	    			}
+	    			$missingCols = array_diff($indexColNames, $existingColumns);
+	    			if (!empty($missingCols)) {
+	    				$this->logger->warn("Skipping index {$indexName} on {$tableName}: " .
+	    					"column(s) " . implode(', ', $missingCols) . " do not exist in the table.");
+	    				continue;
+	    			}
 	    		}
 
 		    		$spellingCacheTableName = $this->dao->doTableNameReplacements('{wp_abj404_spelling_cache}');
