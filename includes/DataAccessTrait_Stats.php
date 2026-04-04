@@ -798,7 +798,7 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
             // e.g. sync lock was stuck for ~24h). Degrade to warning; the caller returns empty.
             if (stripos($wpdb->last_error, 'unknown column') !== false) {
                 $this->logger->warn("content_keywords column not yet available (DB migration pending): " . $wpdb->last_error);
-            } else {
+            } else if (!$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
                 $this->logger->errorMessage("Error fetching posts for content keywords: " . $wpdb->last_error);
             }
             return array();
@@ -826,7 +826,7 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
             array('%d')
         );
 
-        if ($wpdb->last_error) {
+        if ($wpdb->last_error && !$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
             $this->logger->errorMessage("Error updating content_keywords for id $id: " . $wpdb->last_error);
         }
     }

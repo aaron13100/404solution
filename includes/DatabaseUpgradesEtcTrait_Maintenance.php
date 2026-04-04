@@ -512,7 +512,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         $expiredTimeouts = $wpdb->get_col($query);
 
         if ($wpdb->last_error) {
-            $this->logger->errorMessage("Failed to query for expired rate limit transients: " . $wpdb->last_error);
+            if (!$this->dao->classifyAndHandleInfrastructureError($wpdb->last_error)) {
+                $this->logger->errorMessage("Failed to query for expired rate limit transients: " . $wpdb->last_error);
+            }
             return ['deleted' => 0, 'errors' => 1, 'error' => $wpdb->last_error];
         }
 

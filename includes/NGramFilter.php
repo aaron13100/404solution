@@ -308,7 +308,9 @@ class ABJ_404_Solution_NGramFilter {
                 $errorContext .= sprintf(", Blog ID: %d", get_current_blog_id());
             }
 
-            $this->logger->errorMessage($errorContext);
+            if (!$this->dao->classifyAndHandleInfrastructureError($wpdb->last_error ?? '')) {
+                $this->logger->errorMessage($errorContext);
+            }
             return false;
         }
 

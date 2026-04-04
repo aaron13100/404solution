@@ -254,7 +254,9 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
 
         // Check for errors
         if ($wpdb->last_error) {
-            $this->logger->errorMessage("Error executing batch logs query. Err: " . $wpdb->last_error);
+            if (!$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
+                $this->logger->errorMessage("Error executing batch logs query. Err: " . $wpdb->last_error);
+            }
             return $rows;
         }
 

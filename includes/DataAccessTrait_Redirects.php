@@ -774,7 +774,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             if (stripos($wpdb->last_error, 'unknown column') !== false &&
                     stripos($wpdb->last_error, 'content_keywords') !== false) {
                 $this->logger->warn("content_keywords column not yet available (DB migration pending): " . $wpdb->last_error);
-            } else {
+            } else if (!$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
                 $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
             }
         }
@@ -804,7 +804,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         
         $rows = $wpdb->get_results($query);
         // check for errors
-        if ($wpdb->last_error) {
+        if ($wpdb->last_error && !$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
             $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
         }
         
@@ -845,7 +845,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         
         $rows = $wpdb->get_results($query);
         // check for errors
-        if ($wpdb->last_error) {
+        if ($wpdb->last_error && !$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
             $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
         }
         
@@ -934,7 +934,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         
         $rows = $wpdb->get_results($query);
         // check for errors
-        if ($wpdb->last_error) {
+        if ($wpdb->last_error && !$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
             $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
         }
         

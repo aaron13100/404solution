@@ -444,7 +444,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
             // Clear existing N-gram cache (only if force rebuild or empty)
             $result = $wpdb->query("TRUNCATE TABLE {$ngramTable}");
             if ($result === false) {
-                $this->logger->errorMessage("Failed to truncate N-gram cache table: " . $wpdb->last_error);
+                if (!$this->dao->classifyAndHandleInfrastructureError($wpdb->last_error ?? '')) {
+                    $this->logger->errorMessage("Failed to truncate N-gram cache table: " . $wpdb->last_error);
+                }
                 return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 1, 'error' => $wpdb->last_error];
             }
 
@@ -457,7 +459,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
             $totalPages = $wpdb->get_var("SELECT COUNT(*) FROM {$permalinkCacheTable}");
 
             if ($totalPages === null) {
-                $this->logger->errorMessage("Failed to query permalink cache table: " . $wpdb->last_error);
+                if (!$this->dao->classifyAndHandleInfrastructureError($wpdb->last_error ?? '')) {
+                    $this->logger->errorMessage("Failed to query permalink cache table: " . $wpdb->last_error);
+                }
                 return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 1, 'error' => $wpdb->last_error];
             }
 
@@ -557,7 +561,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
             $missingIds = $wpdb->get_col($query);
 
             if ($wpdb->last_error) {
-                $this->logger->errorMessage("Failed to query for missing post ngram entries: " . $wpdb->last_error);
+                if (!$this->dao->classifyAndHandleInfrastructureError($wpdb->last_error)) {
+                    $this->logger->errorMessage("Failed to query for missing post ngram entries: " . $wpdb->last_error);
+                }
                 return array_merge($stats, ['error' => $wpdb->last_error]);
             }
 
@@ -672,7 +678,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
         $orphanedPosts = $wpdb->get_results($query);
 
         if ($wpdb->last_error) {
-            $this->logger->errorMessage("Failed to query for orphaned post ngram entries: " . $wpdb->last_error);
+            if (!$this->dao->classifyAndHandleInfrastructureError($wpdb->last_error)) {
+                $this->logger->errorMessage("Failed to query for orphaned post ngram entries: " . $wpdb->last_error);
+            }
             return array_merge($stats, ['error' => $wpdb->last_error]);
         }
 
@@ -692,7 +700,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
 
                 if ($result === false) {
                     $deleteError = is_string($wpdb->last_error) ? $wpdb->last_error : '';
-                    $this->logger->errorMessage("Failed to delete orphaned post ngram entry ID {$entryId}: " . $deleteError);
+                    if (!$this->dao->classifyAndHandleInfrastructureError($deleteError)) {
+                        $this->logger->errorMessage("Failed to delete orphaned post ngram entry ID {$entryId}: " . $deleteError);
+                    }
                     $stats['errors']++;
                 } else {
                     $stats['posts_deleted']++;
@@ -744,7 +754,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
 
                     if ($result === false) {
                         $catDeleteError = is_string($wpdb->last_error) ? $wpdb->last_error : '';
-                        $this->logger->errorMessage("Failed to delete orphaned category ngram entry ID {$categoryId}: " . $catDeleteError);
+                        if (!$this->dao->classifyAndHandleInfrastructureError($catDeleteError)) {
+                            $this->logger->errorMessage("Failed to delete orphaned category ngram entry ID {$categoryId}: " . $catDeleteError);
+                        }
                         $stats['errors']++;
                     } else {
                         $stats['categories_deleted']++;

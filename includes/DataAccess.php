@@ -1028,6 +1028,42 @@ class ABJ_404_Solution_DataAccess {
         return $result;
     }
 
+    /**
+     * Classify a $wpdb->last_error as an infrastructure issue (disk full, read-only, etc.).
+     * If it IS an infrastructure error: logs WARN and calls noteDatabaseIssueFromError().
+     * If it is NOT: returns false (caller is responsible for logging at ERROR level).
+     *
+     * Use this at call sites that bypass queryAndGetResults() and call $wpdb directly.
+     * Public so that NGramFilter, DatabaseUpgradesEtc, and other classes can call it
+     * via $this->dao->classifyAndHandleInfrastructureError().
+     *
+     * @param string $errorText The value of $wpdb->last_error.
+     * @return bool True if the error was classified as infrastructure (already handled).
+     */
+    public function classifyAndHandleInfrastructureError(string $errorText): bool {
+        if ($errorText === '') {
+            return false;
+        }
+
+        if ($this->isDiskFullError($errorText) ||
+            $this->isReadOnlyError($errorText) ||
+            $this->isQuotaLimitError($errorText) ||
+            $this->isInvalidDataError($errorText) ||
+            $this->isCollationError($errorText) ||
+            $this->isMissingPluginTableError($errorText) ||
+            $this->isIncorrectKeyFileError($errorText) ||
+            $this->isCrashedTableError($errorText) ||
+            $this->isDeadlockOrLockTimeoutError($errorText) ||
+            $this->isTransientConnectionError($errorText)
+        ) {
+            $this->logger->warn("Server-side DB issue (handled): " . $errorText);
+            $this->noteDatabaseIssueFromError($errorText);
+            return true;
+        }
+
+        return false;
+    }
+
     /** @param string|null $errorText @return bool */
     private function isTransientConnectionError(?string $errorText): bool {
         $errorText = $errorText ?? '';
@@ -1379,6 +1415,19 @@ class ABJ_404_Solution_DataAccess {
                 // after site migrations or hosting panel clones).
                 $prefixDiag = $this->diagnosePrefixMismatch();
 
+                // Multisite cross-prefix: a query referenced another subsite's table.
+                // The plugin correctly created tables for the current site, but cannot
+                // fix another subsite's missing tables from this request context.
+                // That subsite will get its tables when its own cron fires.
+                if ($this->isMultisiteCrossPrefixError($originalSqlError)) {
+                    $this->logger->warn("Multisite cross-prefix table reference (not actionable from this site). "
+                        . "Current prefix: " . ($wpdb->prefix ?? '')
+                        . ", Original error: " . $originalSqlError . $prefixDiag);
+                    // Clear last_error so queryAndGetResults() does not double-report.
+                    $result['last_error'] = '';
+                    return;
+                }
+
                 // Repair failed — now escalate to ERROR so it triggers email notification.
                 $this->logger->errorMessage("Missing plugin table auto-repair failed. "
                     . "Original error: " . $originalSqlError
@@ -1459,12 +1508,60 @@ class ABJ_404_Solution_DataAccess {
             if (empty($mismatched)) {
                 return '';
             }
-            return ', PREFIX MISMATCH DETECTED: $wpdb->prefix is "' . ($wpdb->prefix ?? '')
+            $msg = ', PREFIX MISMATCH DETECTED: $wpdb->prefix is "' . ($wpdb->prefix ?? '')
                 . '" (expected table: ' . $expectedTable . ') but plugin tables exist as: '
-                . implode(', ', $mismatched) . '. Check $table_prefix in wp-config.php.';
+                . implode(', ', $mismatched) . '.';
+            if (function_exists('is_multisite') && is_multisite()) {
+                $msg .= ' This is a multisite installation — the other prefixes likely belong to other subsites (normal).';
+            } else {
+                $msg .= ' Check $table_prefix in wp-config.php.';
+            }
+            return $msg;
         } catch (Throwable $e) {
             return '';
         }
+    }
+
+    /**
+     * Detect whether a missing-table error references a different multisite subsite's prefix.
+     *
+     * On network-activated multisite, wp-cron can fire queries that reference tables
+     * from a different subsite's prefix (e.g. wp_4_abj404_* while current prefix is wp_).
+     * This is not an error — the other subsite's tables exist under its own prefix and
+     * will be serviced when that subsite's cron fires.
+     *
+     * @param string $errorText The MySQL error string.
+     * @return bool True if the error references a different multisite subsite's prefix.
+     */
+    private function isMultisiteCrossPrefixError(string $errorText): bool {
+        if ($errorText === '' || !function_exists('is_multisite') || !is_multisite()) {
+            return false;
+        }
+
+        global $wpdb;
+        // Extract table name from error. MySQL formats:
+        //   Table 'dbname.tablename' doesn't exist
+        //   Table `dbname`.`tablename` doesn't exist
+        if (!preg_match("/['\x60](?:[^'\x60]+\.)?([^'\x60]*abj404_[^'\x60]+)['\x60]/i", $errorText, $matches)) {
+            return false;
+        }
+        $referencedTable = strtolower($matches[1]);
+
+        $currentPrefix = strtolower($wpdb->prefix ?? 'wp_');
+        $basePrefix = strtolower($wpdb->base_prefix ?? 'wp_');
+
+        // If the table starts with the current prefix, it's genuinely missing for THIS site.
+        if (strpos($referencedTable, $currentPrefix . 'abj404_') === 0) {
+            return false;
+        }
+
+        // Check if it matches {base_prefix}{N}_abj404_ (a different subsite's table).
+        $pattern = '/^' . preg_quote($basePrefix, '/') . '(\d+)_abj404_/';
+        if (preg_match($pattern, $referencedTable)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

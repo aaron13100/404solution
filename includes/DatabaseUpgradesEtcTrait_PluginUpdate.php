@@ -75,7 +75,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait {
         // Check for errors
         if ($updateResult === false) {
             $results['errors'][] = "Failed to update redirects: " . $wpdb->last_error;
-            $abj404logging->errorMessage("Migration failed: " . $wpdb->last_error);
+            if (!$this->dao->classifyAndHandleInfrastructureError($wpdb->last_error ?? '')) {
+                $abj404logging->errorMessage("Migration failed: " . $wpdb->last_error);
+            }
         } else {
             $results['redirects_updated'] = $updateResult;
 
