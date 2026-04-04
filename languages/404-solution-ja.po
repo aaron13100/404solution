@@ -3511,3 +3511,63 @@ msgstr "有効にすると、各ダイジェストメールにPDF概要が添付
 
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr "エンジンプロファイルを使用すると、特定のURLパターンに対してどのマッチングエンジンを実行するかを制限できます。404 URLに一致する最初のプロファイルが適用されます。一致するプロファイルがない場合は、すべてのエンジンが通常どおり実行されます。"
+
+msgid "Error: Invalid 404 behavior selected"
+msgstr "エラー: 無効な404動作が選択されました"
+
+msgid "Error: Could not create the suggestion page"
+msgstr "エラー: 提案ページを作成できませんでした"
+
+msgid "Page Not Found"
+msgstr "ページが見つかりません"
+
+msgid "Your 404 suggestion page was deleted."
+msgstr "404提案ページが削除されました。"
+
+msgid "Recreate it"
+msgstr "再作成する"
+
+msgid "or choose a different option below."
+msgstr "または下から別のオプションを選択してください。"
+
+msgid "This page is used by 404 Solution to display suggested pages to visitors."
+msgstr "このページは404 Solutionが訪問者に提案ページを表示するために使用しています。"
+
+msgid "Learn more"
+msgstr "詳細を見る"
+
+msgid "Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead."
+msgstr "404 Solutionの提案ページが削除されました。訪問者にはこのデフォルトの404ページが表示されています。"
+
+msgid "Go to settings"
+msgstr "設定に移動"
+
+msgid "Recommended"
+msgstr "推奨"
+
+msgid "Suggest similar pages"
+msgstr "類似ページを提案"
+
+msgid "Shows visitors a list of pages matching the URL they were looking for"
+msgstr "訪問者が探していたURLに一致するページの一覧を表示します"
+
+msgid "Redirect to homepage"
+msgstr "ホームページにリダイレクト"
+
+msgid "Sends all 404 visitors to the site front page"
+msgstr "すべての404訪問者をサイトのトップページにリダイレクトします"
+
+msgid "Custom page"
+msgstr "カスタムページ"
+
+msgid "Choose a specific page to show for all 404 errors"
+msgstr "すべての404エラーに表示する特定のページを選択"
+
+msgid "Theme default"
+msgstr "テーマのデフォルト"
+
+msgid "Uses the theme built-in 404 page, no redirect"
+msgstr "テーマ組み込みの404ページを使用、リダイレクトなし"
+
+msgid "Select a page"
+msgstr "ページを選択"

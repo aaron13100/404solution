@@ -3496,3 +3496,63 @@ msgstr "When enabled, a PDF summary is attached to each digest email (daily or w
 
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
+
+msgid "Error: Invalid 404 behavior selected"
+msgstr "Error: Invalid 404 behavior selected"
+
+msgid "Error: Could not create the suggestion page"
+msgstr "Error: Could not create the suggestion page"
+
+msgid "Page Not Found"
+msgstr "Page Not Found"
+
+msgid "Your 404 suggestion page was deleted."
+msgstr "Your 404 suggestion page was deleted."
+
+msgid "Recreate it"
+msgstr "Recreate it"
+
+msgid "or choose a different option below."
+msgstr "or choose a different option below."
+
+msgid "This page is used by 404 Solution to display suggested pages to visitors."
+msgstr "This page is used by 404 Solution to display suggested pages to visitors."
+
+msgid "Learn more"
+msgstr "Learn more"
+
+msgid "Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead."
+msgstr "Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead."
+
+msgid "Go to settings"
+msgstr "Go to settings"
+
+msgid "Recommended"
+msgstr "Recommended"
+
+msgid "Suggest similar pages"
+msgstr "Suggest similar pages"
+
+msgid "Shows visitors a list of pages matching the URL they were looking for"
+msgstr "Shows visitors a list of pages matching the URL they were looking for"
+
+msgid "Redirect to homepage"
+msgstr "Redirect to homepage"
+
+msgid "Sends all 404 visitors to the site front page"
+msgstr "Sends all 404 visitors to the site front page"
+
+msgid "Custom page"
+msgstr "Custom page"
+
+msgid "Choose a specific page to show for all 404 errors"
+msgstr "Choose a specific page to show for all 404 errors"
+
+msgid "Theme default"
+msgstr "Theme default"
+
+msgid "Uses the theme built-in 404 page, no redirect"
+msgstr "Uses the theme built-in 404 page, no redirect"
+
+msgid "Select a page"
+msgstr "Select a page"

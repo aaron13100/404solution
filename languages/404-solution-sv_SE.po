@@ -3498,3 +3498,63 @@ msgstr "När aktiverat bifogas en PDF-sammanfattning till varje sammanfattningsm
 
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr "Motorprofiler låter dig begränsa vilka matchningsmotorer som körs för specifika URL-mönster. Den första profilen vars mönster matchar en 404 URL tillämpas. Om ingen profil matchar körs alla motorer normalt."
+
+msgid "Error: Invalid 404 behavior selected"
+msgstr "Fel: ogiltigt 404-beteende valt"
+
+msgid "Error: Could not create the suggestion page"
+msgstr "Fel: kunde inte skapa förslagssidan"
+
+msgid "Page Not Found"
+msgstr "Sidan hittades inte"
+
+msgid "Your 404 suggestion page was deleted."
+msgstr "Din 404-förslagssida har tagits bort."
+
+msgid "Recreate it"
+msgstr "Återskapa den"
+
+msgid "or choose a different option below."
+msgstr "eller välj ett annat alternativ nedan."
+
+msgid "This page is used by 404 Solution to display suggested pages to visitors."
+msgstr "Den här sidan används av 404 Solution för att visa föreslagna sidor för besökare."
+
+msgid "Learn more"
+msgstr "Läs mer"
+
+msgid "Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead."
+msgstr "Din 404 Solution-förslagssida har tagits bort. Besökare ser denna standard 404-sida istället."
+
+msgid "Go to settings"
+msgstr "Gå till inställningar"
+
+msgid "Recommended"
+msgstr "Rekommenderad"
+
+msgid "Suggest similar pages"
+msgstr "Föreslå liknande sidor"
+
+msgid "Shows visitors a list of pages matching the URL they were looking for"
+msgstr "Visar besökare en lista med sidor som matchar den URL de letade efter"
+
+msgid "Redirect to homepage"
+msgstr "Omdirigera till startsidan"
+
+msgid "Sends all 404 visitors to the site front page"
+msgstr "Skickar alla 404-besökare till webbplatsens startsida"
+
+msgid "Custom page"
+msgstr "Anpassad sida"
+
+msgid "Choose a specific page to show for all 404 errors"
+msgstr "Välj en specifik sida att visa för alla 404-fel"
+
+msgid "Theme default"
+msgstr "Temastandard"
+
+msgid "Uses the theme built-in 404 page, no redirect"
+msgstr "Använder temats inbyggda 404-sida, ingen omdirigering"
+
+msgid "Select a page"
+msgstr "Välj en sida"

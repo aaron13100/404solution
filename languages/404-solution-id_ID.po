@@ -3485,3 +3485,63 @@ msgstr "Engine Profiles memungkinkan Anda membatasi mesin pencocokan mana yang b
 
 msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
 msgstr "Jika diaktifkan, ringkasan PDF akan dilampirkan ke setiap email ringkasan (hanya ringkasan harian atau mingguan)."
+
+msgid "Error: Invalid 404 behavior selected"
+msgstr "Kesalahan: perilaku 404 yang dipilih tidak valid"
+
+msgid "Error: Could not create the suggestion page"
+msgstr "Kesalahan: tidak dapat membuat halaman saran"
+
+msgid "Page Not Found"
+msgstr "Halaman Tidak Ditemukan"
+
+msgid "Your 404 suggestion page was deleted."
+msgstr "Halaman saran 404 Anda telah dihapus."
+
+msgid "Recreate it"
+msgstr "Buat ulang"
+
+msgid "or choose a different option below."
+msgstr "atau pilih opsi lain di bawah."
+
+msgid "This page is used by 404 Solution to display suggested pages to visitors."
+msgstr "Halaman ini digunakan oleh 404 Solution untuk menampilkan halaman yang disarankan kepada pengunjung."
+
+msgid "Learn more"
+msgstr "Pelajari selengkapnya"
+
+msgid "Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead."
+msgstr "Halaman saran 404 Solution Anda telah dihapus. Pengunjung melihat halaman 404 default ini sebagai gantinya."
+
+msgid "Go to settings"
+msgstr "Buka pengaturan"
+
+msgid "Recommended"
+msgstr "Direkomendasikan"
+
+msgid "Suggest similar pages"
+msgstr "Sarankan halaman serupa"
+
+msgid "Shows visitors a list of pages matching the URL they were looking for"
+msgstr "Menampilkan kepada pengunjung daftar halaman yang cocok dengan URL yang mereka cari"
+
+msgid "Redirect to homepage"
+msgstr "Alihkan ke beranda"
+
+msgid "Sends all 404 visitors to the site front page"
+msgstr "Mengirim semua pengunjung 404 ke halaman utama situs"
+
+msgid "Custom page"
+msgstr "Halaman khusus"
+
+msgid "Choose a specific page to show for all 404 errors"
+msgstr "Pilih halaman tertentu untuk ditampilkan pada semua kesalahan 404"
+
+msgid "Theme default"
+msgstr "Default tema"
+
+msgid "Uses the theme built-in 404 page, no redirect"
+msgstr "Menggunakan halaman 404 bawaan tema, tanpa pengalihan"
+
+msgid "Select a page"
+msgstr "Pilih halaman"

@@ -55,6 +55,11 @@ class ABJ_404_Solution_Uninstaller {
      * @return void
      */
     private static function deleteSystemPage(): void {
+        // Guard: get_posts may not exist during standalone uninstall (no autoloader).
+        if (!function_exists('get_posts')) {
+            return;
+        }
+
         $pages = get_posts(array(
             'post_type'      => 'page',
             'post_status'    => 'any',

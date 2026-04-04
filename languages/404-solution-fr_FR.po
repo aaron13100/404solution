@@ -3492,3 +3492,63 @@ msgstr "Répondu avec %s"
 
 msgid "Showed 404 page — %s"
 msgstr "Page 404 affichée — %s"
+
+msgid "Error: Invalid 404 behavior selected"
+msgstr "Erreur : comportement 404 sélectionné non valide"
+
+msgid "Error: Could not create the suggestion page"
+msgstr "Erreur : impossible de créer la page de suggestions"
+
+msgid "Page Not Found"
+msgstr "Page non trouvée"
+
+msgid "Your 404 suggestion page was deleted."
+msgstr "Votre page de suggestions 404 a été supprimée."
+
+msgid "Recreate it"
+msgstr "La recréer"
+
+msgid "or choose a different option below."
+msgstr "ou choisissez une autre option ci-dessous."
+
+msgid "This page is used by 404 Solution to display suggested pages to visitors."
+msgstr "Cette page est utilisée par 404 Solution pour afficher les pages suggérées aux visiteurs."
+
+msgid "Learn more"
+msgstr "En savoir plus"
+
+msgid "Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead."
+msgstr "Votre page de suggestions 404 Solution a été supprimée. Les visiteurs voient cette page 404 par défaut à la place."
+
+msgid "Go to settings"
+msgstr "Aller aux paramètres"
+
+msgid "Recommended"
+msgstr "Recommandé"
+
+msgid "Suggest similar pages"
+msgstr "Suggérer des pages similaires"
+
+msgid "Shows visitors a list of pages matching the URL they were looking for"
+msgstr "Affiche aux visiteurs une liste de pages correspondant à l'URL recherchée"
+
+msgid "Redirect to homepage"
+msgstr "Rediriger vers la page d'accueil"
+
+msgid "Sends all 404 visitors to the site front page"
+msgstr "Redirige tous les visiteurs 404 vers la page d'accueil du site"
+
+msgid "Custom page"
+msgstr "Page personnalisée"
+
+msgid "Choose a specific page to show for all 404 errors"
+msgstr "Choisir une page spécifique à afficher pour toutes les erreurs 404"
+
+msgid "Theme default"
+msgstr "Thème par défaut"
+
+msgid "Uses the theme built-in 404 page, no redirect"
+msgstr "Utilise la page 404 intégrée au thème, sans redirection"
+
+msgid "Select a page"
+msgstr "Sélectionner une page"

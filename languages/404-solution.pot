@@ -2559,3 +2559,83 @@ msgstr ""
 #: includes/ViewTrait_Admin.php
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php
+msgid "Error: Invalid 404 behavior selected"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php
+msgid "Error: Could not create the suggestion page"
+msgstr ""
+
+#: includes/SystemPage.php
+msgid "Page Not Found"
+msgstr ""
+
+#: includes/SystemPage.php
+msgid "Your 404 suggestion page was deleted."
+msgstr ""
+
+#: includes/SystemPage.php
+msgid "Recreate it"
+msgstr ""
+
+#: includes/SystemPage.php
+msgid "or choose a different option below."
+msgstr ""
+
+#: includes/SystemPage.php
+msgid "This page is used by 404 Solution to display suggested pages to visitors."
+msgstr ""
+
+#: includes/SystemPage.php
+msgid "Learn more"
+msgstr ""
+
+#: includes/SystemPage.php
+msgid "Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead."
+msgstr ""
+
+#: includes/SystemPage.php
+msgid "Go to settings"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php
+msgid "Recommended"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php
+msgid "Suggest similar pages"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php
+msgid "Shows visitors a list of pages matching the URL they were looking for"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php
+msgid "Redirect to homepage"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php
+msgid "Sends all 404 visitors to the site front page"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php
+msgid "Custom page"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php
+msgid "Choose a specific page to show for all 404 errors"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php
+msgid "Theme default"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php
+msgid "Uses the theme built-in 404 page, no redirect"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php
+msgid "Select a page"
+msgstr ""

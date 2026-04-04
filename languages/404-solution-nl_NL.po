@@ -3499,3 +3499,63 @@ msgstr "Indien ingeschakeld, wordt een PDF-samenvatting bijgevoegd bij elke same
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr "Met moduleprofilen kunt u beperken welke overeenkomstmodules worden uitgevoerd voor specifieke URL-patronen. Het eerste profiel waarvan het patroon overeenkomt met een 404-URL wint. Als geen enkel profiel overeenkomt, worden alle modules normaal uitgevoerd."
 
+
+msgid "Error: Invalid 404 behavior selected"
+msgstr "Fout: ongeldig 404-gedrag geselecteerd"
+
+msgid "Error: Could not create the suggestion page"
+msgstr "Fout: de suggestiepagina kon niet worden aangemaakt"
+
+msgid "Page Not Found"
+msgstr "Pagina niet gevonden"
+
+msgid "Your 404 suggestion page was deleted."
+msgstr "Uw 404-suggestiepagina is verwijderd."
+
+msgid "Recreate it"
+msgstr "Opnieuw aanmaken"
+
+msgid "or choose a different option below."
+msgstr "of kies hieronder een andere optie."
+
+msgid "This page is used by 404 Solution to display suggested pages to visitors."
+msgstr "Deze pagina wordt gebruikt door 404 Solution om voorgestelde pagina's aan bezoekers te tonen."
+
+msgid "Learn more"
+msgstr "Meer informatie"
+
+msgid "Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead."
+msgstr "Uw 404 Solution-suggestiepagina is verwijderd. Bezoekers zien in plaats daarvan deze standaard 404-pagina."
+
+msgid "Go to settings"
+msgstr "Naar instellingen"
+
+msgid "Recommended"
+msgstr "Aanbevolen"
+
+msgid "Suggest similar pages"
+msgstr "Vergelijkbare pagina's voorstellen"
+
+msgid "Shows visitors a list of pages matching the URL they were looking for"
+msgstr "Toont bezoekers een lijst met pagina's die overeenkomen met de gezochte URL"
+
+msgid "Redirect to homepage"
+msgstr "Omleiden naar startpagina"
+
+msgid "Sends all 404 visitors to the site front page"
+msgstr "Stuurt alle 404-bezoekers naar de startpagina van de site"
+
+msgid "Custom page"
+msgstr "Aangepaste pagina"
+
+msgid "Choose a specific page to show for all 404 errors"
+msgstr "Kies een specifieke pagina om te tonen bij alle 404-fouten"
+
+msgid "Theme default"
+msgstr "Themastandaard"
+
+msgid "Uses the theme built-in 404 page, no redirect"
+msgstr "Gebruikt de ingebouwde 404-pagina van het thema, geen omleiding"
+
+msgid "Select a page"
+msgstr "Selecteer een pagina"

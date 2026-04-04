@@ -3500,3 +3500,63 @@ msgstr "Cuando está activado, se adjunta un resumen en PDF a cada correo de res
 
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr "Los perfiles de motor le permiten restringir qué motores de coincidencia se ejecutan para patrones de URL específicos. El primer perfil cuyo patrón coincida con una URL 404 será el que se aplique. Si ningún perfil coincide, todos los motores se ejecutan normalmente."
+
+msgid "Error: Invalid 404 behavior selected"
+msgstr "Error: comportamiento 404 seleccionado no válido"
+
+msgid "Error: Could not create the suggestion page"
+msgstr "Error: no se pudo crear la página de sugerencias"
+
+msgid "Page Not Found"
+msgstr "Página no encontrada"
+
+msgid "Your 404 suggestion page was deleted."
+msgstr "Su página de sugerencias 404 fue eliminada."
+
+msgid "Recreate it"
+msgstr "Recrearla"
+
+msgid "or choose a different option below."
+msgstr "o elija una opción diferente a continuación."
+
+msgid "This page is used by 404 Solution to display suggested pages to visitors."
+msgstr "Esta página es utilizada por 404 Solution para mostrar páginas sugeridas a los visitantes."
+
+msgid "Learn more"
+msgstr "Más información"
+
+msgid "Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead."
+msgstr "Su página de sugerencias de 404 Solution fue eliminada. Los visitantes están viendo esta página 404 predeterminada."
+
+msgid "Go to settings"
+msgstr "Ir a configuración"
+
+msgid "Recommended"
+msgstr "Recomendado"
+
+msgid "Suggest similar pages"
+msgstr "Sugerir páginas similares"
+
+msgid "Shows visitors a list of pages matching the URL they were looking for"
+msgstr "Muestra a los visitantes una lista de páginas que coinciden con la URL que buscaban"
+
+msgid "Redirect to homepage"
+msgstr "Redirigir a la página de inicio"
+
+msgid "Sends all 404 visitors to the site front page"
+msgstr "Envía a todos los visitantes 404 a la página de inicio del sitio"
+
+msgid "Custom page"
+msgstr "Página personalizada"
+
+msgid "Choose a specific page to show for all 404 errors"
+msgstr "Elegir una página específica para mostrar en todos los errores 404"
+
+msgid "Theme default"
+msgstr "Predeterminado del tema"
+
+msgid "Uses the theme built-in 404 page, no redirect"
+msgstr "Usa la página 404 integrada del tema, sin redirección"
+
+msgid "Select a page"
+msgstr "Seleccionar una página"
