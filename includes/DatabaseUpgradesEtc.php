@@ -1176,13 +1176,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    	// Get actual columns in the table so we can skip indexes that reference missing columns.
 	    	$existingColumns = [];
 	    	$showColResult = $this->dao->queryAndGetResults("SHOW COLUMNS FROM " . $tableName);
-	    	if (!empty($showColResult['rows'])) {
-	    		foreach ($showColResult['rows'] as $colRow) {
-	    			foreach ($colRow as $key => $value) {
-	    				if (strtolower((string)$key) === 'field') {
-	    					$existingColumns[] = strtolower((string)$value);
-	    					break;
-	    				}
+	    	$showColRows = is_array($showColResult['rows'] ?? null) ? $showColResult['rows'] : [];
+	    	foreach ($showColRows as $colRow) {
+	    		if (!is_array($colRow)) { continue; }
+	    		foreach ($colRow as $key => $value) {
+	    			if (strtolower((string)$key) === 'field') {
+	    				$existingColumns[] = strtolower((string)$value);
+	    				break;
 	    			}
 	    		}
 	    	}

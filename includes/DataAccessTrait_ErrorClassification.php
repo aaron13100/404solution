@@ -302,7 +302,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         // went missing during normal usage.  Log as INFO while we attempt repair;
         // only escalate to ERROR if repair fails (avoids flooding admin with
         // error emails for transient issues that auto-repair resolves).
-        $originalSqlError = $result['last_error'];
+        $originalSqlError = is_string($result['last_error']) ? $result['last_error'] : '';
         $this->logger->infoMessage("Missing plugin table detected during query. "
             . "Attempting auto-repair. SQL error: " . $originalSqlError);
 
