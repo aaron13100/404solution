@@ -207,8 +207,10 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
                     if ($wpdb->last_error != null && trim((string)$wpdb->last_error) !== '') {
                         $allIsWell = false;
                         $lastError = (string)$wpdb->last_error;
-                        $this->logger->errorMessage("Error executing SQL transaction: " . $lastError);
-                        $this->logger->errorMessage("SQL causing the transaction error: " . $statement);
+                        if (!$this->classifyAndHandleInfrastructureError($lastError)) {
+                            $this->logger->errorMessage("Error executing SQL transaction: " . $lastError);
+                            $this->logger->errorMessage("SQL causing the transaction error: " . $statement);
+                        }
                         break;
                     }
                 }
