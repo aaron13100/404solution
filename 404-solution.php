@@ -145,6 +145,7 @@ function abj404_autoloader($class) {
 				$inc . 'DataAccessTrait_Logs.php',
 				$inc . 'DataAccessTrait_Redirects.php',
 				$inc . 'DataAccessTrait_Stats.php',
+				$inc . 'DataAccessTrait_ErrorClassification.php',
 			),
 			'ABJ_404_Solution_PluginLogic' => array(
 				$inc . 'PluginLogicTrait_UrlNormalization.php',
