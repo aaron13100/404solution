@@ -670,6 +670,58 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         return $message;
     }
 
+    /**
+     * Repair malformed suggestion template options.
+     *
+     * Keep valid custom text intact; only heal known-broken literal token forms.
+     *
+     * @param array<string, mixed> $options
+     * @return bool True when any option was changed.
+     */
+    private function normalizeSuggestionTemplateOptions(array &$options): bool {
+        $changed = false;
+        $defaults = $this->getDefaultOptions();
+
+        $titleDefault = isset($defaults['suggest_title']) && is_string($defaults['suggest_title']) ?
+            $defaults['suggest_title'] : '<h3>{suggest_title_text}</h3>';
+        $noResultsDefault = isset($defaults['suggest_noresults']) && is_string($defaults['suggest_noresults']) ?
+            $defaults['suggest_noresults'] : '<p>{suggest_noresults_text}</p>';
+
+        $titleValue = isset($options['suggest_title']) && is_scalar($options['suggest_title']) ?
+            (string)$options['suggest_title'] : '';
+        $titleLower = strtolower(trim($titleValue));
+        $titleHasBareBrokenToken = (strpos($titleValue, 'suggest_title_text') !== false &&
+            strpos($titleValue, '{suggest_title_text}') === false);
+        if (
+            $titleValue === '' ||
+            in_array($titleLower, array('suggest_title_text', '{suggest_title_text}'), true) ||
+            $titleHasBareBrokenToken
+        ) {
+            if ($titleValue !== $titleDefault) {
+                $options['suggest_title'] = $titleDefault;
+                $changed = true;
+            }
+        }
+
+        $noResultsValue = isset($options['suggest_noresults']) && is_scalar($options['suggest_noresults']) ?
+            (string)$options['suggest_noresults'] : '';
+        $noResultsLower = strtolower(trim($noResultsValue));
+        $noResultsHasBareBrokenToken = (strpos($noResultsValue, 'suggest_noresults_text') !== false &&
+            strpos($noResultsValue, '{suggest_noresults_text}') === false);
+        if (
+            $noResultsValue === '' ||
+            in_array($noResultsLower, array('suggest_noresults_text', '{suggest_noresults_text}'), true) ||
+            $noResultsHasBareBrokenToken
+        ) {
+            if ($noResultsValue !== $noResultsDefault) {
+                $options['suggest_noresults'] = $noResultsDefault;
+                $changed = true;
+            }
+        }
+
+        return $changed;
+    }
+
     /** Update regex pattern settings for ignoring files/folders and suggestion exclusions.
      * @param array<string, mixed> $options The options array to update
      * @param array<string, mixed> $postData The POST data

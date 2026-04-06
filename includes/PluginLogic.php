@@ -665,55 +665,6 @@ class ABJ_404_Solution_PluginLogic {
         return $options;
     }
 
-    /**
-     * Repair malformed suggestion template options.
-     *
-     * If placeholders are missing (or known broken literals are saved), reset the option
-     * to the plugin default to guarantee a valid, translatable template.
-     *
-     * @param array<string, mixed> $options
-     * @return bool True when any option was changed.
-     */
-    private function normalizeSuggestionTemplateOptions(array &$options): bool {
-        $changed = false;
-        $defaults = $this->getDefaultOptions();
-
-        $titleDefault = isset($defaults['suggest_title']) && is_string($defaults['suggest_title']) ?
-            $defaults['suggest_title'] : '<h3>{suggest_title_text}</h3>';
-        $noResultsDefault = isset($defaults['suggest_noresults']) && is_string($defaults['suggest_noresults']) ?
-            $defaults['suggest_noresults'] : '<p>{suggest_noresults_text}</p>';
-
-        $titleValue = isset($options['suggest_title']) && is_scalar($options['suggest_title']) ?
-            (string)$options['suggest_title'] : '';
-        $titleLower = strtolower(trim($titleValue));
-        if (
-            $titleValue === '' ||
-            strpos($titleValue, '{suggest_title_text}') === false ||
-            in_array($titleLower, array('suggest_title_text', '{suggest_title_text}'), true)
-        ) {
-            if ($titleValue !== $titleDefault) {
-                $options['suggest_title'] = $titleDefault;
-                $changed = true;
-            }
-        }
-
-        $noResultsValue = isset($options['suggest_noresults']) && is_scalar($options['suggest_noresults']) ?
-            (string)$options['suggest_noresults'] : '';
-        $noResultsLower = strtolower(trim($noResultsValue));
-        if (
-            $noResultsValue === '' ||
-            strpos($noResultsValue, '{suggest_noresults_text}') === false ||
-            in_array($noResultsLower, array('suggest_noresults_text', '{suggest_noresults_text}'), true)
-        ) {
-            if ($noResultsValue !== $noResultsDefault) {
-                $options['suggest_noresults'] = $noResultsDefault;
-                $changed = true;
-            }
-        }
-
-        return $changed;
-    }
-
     /** @param array<string, mixed> $options @return void */
     function updateOptions(array $options): void {
     	$old_options = $this->options;
