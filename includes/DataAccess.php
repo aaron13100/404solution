@@ -1058,6 +1058,24 @@ class ABJ_404_Solution_DataAccess {
         $this->setRuntimeFlag('abj404_plugin_db_notice', $payload, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
     }
 
+    /**
+     * Clear the plugin DB notice only when its current type matches.
+     *
+     * @param string $type
+     * @return void
+     */
+    protected function clearPluginDbNoticeIfType(string $type): void {
+        $existing = $this->getRuntimeFlag('abj404_plugin_db_notice');
+        if (!is_array($existing)) {
+            return;
+        }
+        $currentType = isset($existing['type']) && is_string($existing['type']) ? $existing['type'] : '';
+        if ($currentType !== $type) {
+            return;
+        }
+        $this->clearServerSideDbNotice();
+    }
+
     /** @return void */
     private function clearServerSideDbNotice(): void {
         if (function_exists('delete_transient')) {

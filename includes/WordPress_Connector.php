@@ -710,7 +710,9 @@ class ABJ_404_Solution_WordPress_Connector {
 
         // Display infrastructure notices (DB errors, stale cache, etc.) only on
         // the plugin's own admin pages — not on the dashboard or other screens.
-        // This prevents noisy notices from appearing across all of wp-admin.
+        // This hook runs early in the request; rendering here ensures a notice
+        // set by a failed repair attempt is visible before later queries might
+        // auto-clear stale transients.
         if ($isPluginPage) {
             $dbNotice = get_transient('abj404_plugin_db_notice');
             if (is_array($dbNotice) && isset($dbNotice['message']) && is_string($dbNotice['message'])) {

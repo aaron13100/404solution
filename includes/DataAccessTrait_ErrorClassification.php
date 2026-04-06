@@ -335,6 +335,9 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
                 } elseif (function_exists('delete_option')) {
                     delete_option($repairCooldownKey);
                 }
+                // If a stale missing_table notice exists from an earlier failed
+                // repair attempt, clear it immediately now that repair succeeded.
+                $this->clearPluginDbNoticeIfType('missing_table');
             } else {
                 // Check for prefix mismatch: plugin tables may exist under a
                 // different $table_prefix than the current $wpdb->prefix (common
