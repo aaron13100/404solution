@@ -20,6 +20,96 @@ class ABJ_404_Solution_ShortCode {
 		
 		return self::$instance;
 	}
+
+    /**
+     * Resolve frontend locale with visitor-locale-first behavior.
+     *
+     * @return string
+     */
+    private static function resolveFrontendSuggestionLocale(): string {
+        // Polylang: explicit locale for current request (visitor context).
+        if (function_exists('pll_current_language')) {
+            $pllLocale = pll_current_language('locale');
+            if (is_string($pllLocale) && $pllLocale !== '') {
+                return $pllLocale;
+            }
+        }
+
+        // WPML: map current language code to locale if available.
+        if (function_exists('apply_filters') && has_filter('wpml_current_language')) {
+            $langCode = apply_filters('wpml_current_language', null);
+            if (is_string($langCode) && $langCode !== '' && has_filter('wpml_active_languages')) {
+                $active = apply_filters('wpml_active_languages', null, 'skip_missing=0');
+                if (is_array($active) && isset($active[$langCode]) && is_array($active[$langCode])) {
+                    $entry = $active[$langCode];
+                    if (!empty($entry['default_locale']) && is_string($entry['default_locale'])) {
+                        return $entry['default_locale'];
+                    }
+                    if (!empty($entry['locale']) && is_string($entry['locale'])) {
+                        return $entry['locale'];
+                    }
+                }
+            }
+        }
+
+        if (function_exists('determine_locale')) {
+            $locale = determine_locale();
+            if (is_string($locale) && $locale !== '') {
+                return $locale;
+            }
+        }
+
+        if (function_exists('get_locale')) {
+            $locale = get_locale();
+            if (is_string($locale) && $locale !== '') {
+                return $locale;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @return bool True when locale was switched.
+     */
+    private static function maybeSwitchToFrontendLocale(): bool {
+        if (!function_exists('switch_to_locale') || !function_exists('restore_previous_locale')) {
+            return false;
+        }
+
+        $targetLocale = self::resolveFrontendSuggestionLocale();
+        if ($targetLocale === '') {
+            return false;
+        }
+
+        return switch_to_locale($targetLocale);
+    }
+
+    /**
+     * @param bool $didSwitch
+     * @return void
+     */
+    private static function maybeRestoreFrontendLocale(bool $didSwitch): void {
+        if ($didSwitch && function_exists('restore_previous_locale')) {
+            restore_previous_locale();
+        }
+    }
+
+    /**
+     * Replace both placeholder and legacy bare token forms.
+     *
+     * @param string $template
+     * @param string $tokenNameWithoutBraces
+     * @param string $replacement
+     * @return string
+     */
+    private static function replaceSuggestionTemplateToken(string $template, string $tokenNameWithoutBraces, string $replacement): string {
+        return str_replace(
+            array('{' . $tokenNameWithoutBraces . '}', $tokenNameWithoutBraces),
+            $replacement,
+            $template
+        );
+    }
 	
 	/** If we're currently redirecting to a custom 404 page and we are about to show page
 	 * suggestions then update the URL displayed to the user.
@@ -44,7 +134,17 @@ class ABJ_404_Solution_ShortCode {
 		// if the cookie we need isn't set then give up.
 		$updateURLCookieName = ABJ404_PP . '_REQUEST_URI';
 		$updateURLCookieName .= '_UPDATE_URL';
-		if (!isset($_REQUEST[$updateURLCookieName]) || empty($_REQUEST[$updateURLCookieName])) {
+        $legacyRequestKey = ABJ404_PP . '_REQUEST_URI';
+        $requestedURLForRestore = '';
+        if (isset($_REQUEST[$updateURLCookieName]) && is_string($_REQUEST[$updateURLCookieName]) &&
+                $_REQUEST[$updateURLCookieName] !== '') {
+            $requestedURLForRestore = $_REQUEST[$updateURLCookieName];
+        } else if (isset($_REQUEST[$legacyRequestKey]) && is_string($_REQUEST[$legacyRequestKey]) &&
+                $_REQUEST[$legacyRequestKey] !== '') {
+            // Backward compatibility: older code paths used REQUEST_URI key directly.
+            $requestedURLForRestore = $_REQUEST[$legacyRequestKey];
+        }
+		if ($requestedURLForRestore === '') {
 			$shouldUpdateURL = false;
 			$debugMessage .= "do not update (no cookie found), ";
 		}
@@ -97,7 +197,7 @@ class ABJ_404_Solution_ShortCode {
 		
 		if ($shouldUpdateURL) {
 			// replace the current URL with the user's actual requested URL.
-			$requestedURL = $_REQUEST[$updateURLCookieName];
+			$requestedURL = $requestedURLForRestore;
 			$userFriendlyURL = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ?
 				"https" : "http") . "://" . $_SERVER['HTTP_HOST'] . esc_url($requestedURL);
 
@@ -143,6 +243,8 @@ class ABJ_404_Solution_ShortCode {
      * @return string
      */
     static function shortcodePageSuggestions( array $atts ): string {
+        $didSwitchLocale = self::maybeSwitchToFrontendLocale();
+        try {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
@@ -296,8 +398,9 @@ class ABJ_404_Solution_ShortCode {
         $content .= '<div class="suggest-404s">' . "\n";
         $suggestTitleStr = isset($options['suggest_title']) && is_string($options['suggest_title']) ? $options['suggest_title'] : '';
         $content .= wp_kses_post(
-            str_replace('{suggest_title_text}', __('Here are some other great pages', '404-solution'),
-                $suggestTitleStr )) . "\n";
+            self::replaceSuggestionTemplateToken($suggestTitleStr, 'suggest_title_text',
+                __('Here are some other great pages', '404-solution')
+            )) . "\n";
         
         $requestUriVal = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
         $currentSlug = $abj404logic->removeHomeDirectory(
@@ -403,8 +506,9 @@ class ABJ_404_Solution_ShortCode {
 
         } else {
             $content .= wp_kses_post(
-                str_replace('{suggest_noresults_text}', __('No suggestions. :/ ', '404-solution'),
-                    $suggestNoresults ));
+                self::replaceSuggestionTemplateToken($suggestNoresults, 'suggest_noresults_text',
+                    __('No suggestions. :/ ', '404-solution')
+                ));
         }
 
         $content .= "\n</div>";
@@ -498,6 +602,9 @@ class ABJ_404_Solution_ShortCode {
         $content .= "\n<!-- " . ABJ404_PP . " - End 404 suggestions for slug " . esc_html($urlSlugOnly) . " -->\n";
 
         return $content;
+        } finally {
+            self::maybeRestoreFrontendLocale($didSwitchLocale);
+        }
     }
 
     /**
@@ -509,6 +616,8 @@ class ABJ_404_Solution_ShortCode {
      * @return string HTML content for suggestions
      */
     public static function renderSuggestionsHTML(array $suggestionsPacket, string $requestedURL = ''): string {
+        $didSwitchLocale = self::maybeSwitchToFrontendLocale();
+        try {
         $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
         $f = ABJ_404_Solution_Functions::getInstance();
         // Rendering should be side-effect free (no upgrade/migration work triggered on frontend/AJAX).
@@ -531,8 +640,9 @@ class ABJ_404_Solution_ShortCode {
 
         $content = '<div class="suggest-404s">' . "\n";
         $content .= wp_kses_post(
-            str_replace('{suggest_title_text}', __('Here are some other great pages', '404-solution'),
-                $rSuggestTitle )) . "\n";
+            self::replaceSuggestionTemplateToken($rSuggestTitle, 'suggest_title_text',
+                __('Here are some other great pages', '404-solution')
+            )) . "\n";
 
         $currentSlug = '';
         if (isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI'])) {
@@ -623,13 +733,17 @@ class ABJ_404_Solution_ShortCode {
             $content .= wp_kses_post($rSuggestAfter) . "\n";
         } else {
             $content .= wp_kses_post(
-                str_replace('{suggest_noresults_text}', __('No suggestions. :/ ', '404-solution'),
-                    $rSuggestNoresults ));
+                self::replaceSuggestionTemplateToken($rSuggestNoresults, 'suggest_noresults_text',
+                    __('No suggestions. :/ ', '404-solution')
+                ));
         }
 
         $content .= "\n</div>";
 
         return $content;
+        } finally {
+            self::maybeRestoreFrontendLocale($didSwitchLocale);
+        }
     }
 
     /**
@@ -641,6 +755,8 @@ class ABJ_404_Solution_ShortCode {
      * @return string HTML placeholder with loading state
      */
     public static function renderAsyncPlaceholder(string $requestedURL, array $options): string {
+        $didSwitchLocale = self::maybeSwitchToFrontendLocale();
+        try {
         $suggestMaxVal = isset($options['suggest_max']) && is_scalar($options['suggest_max']) ? $options['suggest_max'] : 5;
         $suggestMax = intval($suggestMaxVal);
 
@@ -657,8 +773,9 @@ class ABJ_404_Solution_ShortCode {
         $content = '<div id="abj404-suggestions-placeholder" class="suggest-404s" ' .
             'data-requested-url="' . esc_attr($requestedURL) . '">' . "\n";
         $content .= wp_kses_post(
-            str_replace('{suggest_title_text}', __('Here are some other great pages', '404-solution'),
-                $pSuggestTitle )) . "\n";
+            self::replaceSuggestionTemplateToken($pSuggestTitle, 'suggest_title_text',
+                __('Here are some other great pages', '404-solution')
+            )) . "\n";
         $content .= wp_kses_post($pSuggestBefore);
         $content .= '<div class="abj404-loading">' . "\n";
         $content .= '<p class="abj404-loading-text">' . esc_html__('Loading page suggestions...', '404-solution') . '</p>' . "\n";
@@ -668,6 +785,9 @@ class ABJ_404_Solution_ShortCode {
         $content .= '</div>';
 
         return $content;
+        } finally {
+            self::maybeRestoreFrontendLocale($didSwitchLocale);
+        }
     }
 
     /**

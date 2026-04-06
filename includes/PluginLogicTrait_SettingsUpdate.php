@@ -665,6 +665,8 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             }
         }
 
+        $this->normalizeSuggestionTemplateOptions($options);
+
         return $message;
     }
 

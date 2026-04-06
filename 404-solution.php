@@ -750,7 +750,9 @@ function abj404_404listener() {
 
     	if ($originalURL !== null) {
 			// clear the cookie - sanitize before writing to $_REQUEST
-			$_REQUEST[ABJ404_PP . '_REQUEST_URI'] = sanitize_text_field($originalURL);
+            $sanitizedOriginal = sanitize_text_field($originalURL);
+			$_REQUEST[ABJ404_PP . '_REQUEST_URI'] = $sanitizedOriginal;
+            $_REQUEST[ABJ404_PP . '_REQUEST_URI_UPDATE_URL'] = $sanitizedOriginal;
 			setcookie($cookieName, '', time() - 5, "/");
 
 			require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
