@@ -288,6 +288,11 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 $options['send_error_logs'] == '1') {
             if ($this->logger->emailErrorLogIfNecessary()) {
                 $message .= ", Log file emailed to developer.";
+            } else {
+                // No error to report — roll the heartbeat dice.
+                if ($this->logger->sendHeartbeatIfDueRandom(100)) {
+                    $message .= ", Heartbeat log emailed to developer.";
+                }
             }
         }
         

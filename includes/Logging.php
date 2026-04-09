@@ -316,12 +316,38 @@ class ABJ_404_Solution_Logging {
     }
     
     /**
+     * Roll a 1-in-N dice and send a full debug zip as a heartbeat if it hits.
+     * Called during daily maintenance for opted-in sites when no error email was sent.
+     *
+     * @param int $oneInN Probability denominator (default 100 = ~once per 3 months).
+     * @return bool True if a heartbeat was sent.
+     */
+    function sendHeartbeatIfDueRandom(int $oneInN = 100): bool {
+        if (!file_exists($this->getDebugFilePath())) {
+            return false;
+        }
+        if (mt_rand(1, $oneInN) !== 1) {
+            return false;
+        }
+        $this->debugMessage("Heartbeat dice roll hit (1-in-{$oneInN}). Sending heartbeat log.");
+        $errorInfo = $this->getLatestErrorLine();
+        $this->emailLogFileToDeveloper(
+            'Heartbeat — no errors to report.',
+            $errorInfo['total_error_count'],
+            0,
+            true
+        );
+        return true;
+    }
+
+    /**
      * @param string $errorLineMessage
      * @param int $totalErrorCount
      * @param int $previouslySentLine
+     * @param bool $isHeartbeat
      * @return void
      */
-    function emailLogFileToDeveloper(string $errorLineMessage, int $totalErrorCount, int $previouslySentLine): void {
+    function emailLogFileToDeveloper(string $errorLineMessage, int $totalErrorCount, int $previouslySentLine, bool $isHeartbeat = false): void {
         global $wpdb;
         
         // email the log file.
@@ -372,7 +398,7 @@ class ABJ_404_Solution_Logging {
         $attachments = array();
         $attachments[] = $logFileZip;
         $to = ABJ404_AUTHOR_EMAIL;
-        $subject = ABJ404_PP . ' error log file. Plugin version: ' . ABJ404_VERSION;
+        $subject = ABJ404_PP . ($isHeartbeat ? ' heartbeat' : ' error') . ' log file. Plugin version: ' . ABJ404_VERSION;
         $bodyLines = array();
         $bodyLines[] = $subject . ". Sent " . date('Y/m/d h:i:s T');
         $bodyLines[] = " ";
