@@ -1368,8 +1368,8 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
      * Returns array of rows, one per day (including days with zero activity),
      * sorted ascending by date.  Each row has:
      *   'date'          => 'YYYY-MM-DD'
-     *   'hits_404'      => int  (rows where dest_url is '' or NULL)
-     *   'hits_redirect' => int  (rows where dest_url is non-empty)
+     *   'hits_404'      => int  (rows where dest_url equals the 404 sentinel)
+     *   'hits_redirect' => int  (rows where dest_url is not the 404 sentinel)
      *   'new_captures'  => int  (same as hits_404 for trend purposes)
      *
      * @param int $days Number of days (default 30, clamped to 1-90)
@@ -1381,16 +1381,19 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         $logsTable = $this->doTableNameReplacements('{wp_abj404_logsv2}');
         $cutoff = time() - ($days * 86400);
 
+        $notFoundDest = '404';
         $query = "SELECT
                     DATE(FROM_UNIXTIME(`timestamp`)) AS `date`,
-                    SUM(CASE WHEN (`dest_url` IS NULL OR `dest_url` = '') THEN 1 ELSE 0 END) AS `hits_404`,
-                    SUM(CASE WHEN (`dest_url` IS NOT NULL AND `dest_url` <> '') THEN 1 ELSE 0 END) AS `hits_redirect`
+                    SUM(CASE WHEN `dest_url` = %s THEN 1 ELSE 0 END) AS `hits_404`,
+                    SUM(CASE WHEN `dest_url` <> %s THEN 1 ELSE 0 END) AS `hits_redirect`
                   FROM " . $logsTable . "
                   WHERE `timestamp` >= " . intval($cutoff) . "
                   GROUP BY DATE(FROM_UNIXTIME(`timestamp`))
                   ORDER BY `date` ASC";
 
-        $result = $this->queryAndGetResults($query);
+        $result = $this->queryAndGetResults($query, array(
+            'query_params' => array($notFoundDest, $notFoundDest),
+        ));
         $rows = (isset($result['rows']) && is_array($result['rows'])) ? $result['rows'] : array();
 
         // Build a date-keyed map from query results.

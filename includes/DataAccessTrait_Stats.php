@@ -21,7 +21,10 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
         $results = $wpdb->get_col($wpdb->prepare($query, $valueParams));
 
         if (sizeof($results) == 0) {
-            throw new Exception("No results for query: " . esc_html($query));
+            if (property_exists($this, 'logger') && $this->logger) {
+                $this->logger->debugMessage("getStatsCount returned no results for query: " . esc_html($query));
+            }
+            return 0;
         }
         
         return intval($results[0]);
@@ -239,18 +242,8 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
             return $cached;
         }
 
-        if ($allowStale) {
-            $emptyData = $this->buildEmptyStatsDashboardSnapshotData();
-            $emptyPayload = array(
-                'refreshed_at' => 0,
-                'hash' => $this->hashStatsDashboardSnapshot($emptyData),
-                'data' => $emptyData,
-            );
-            if (function_exists('set_transient')) {
-                set_transient($this->getStatsDashboardSnapshotCacheKey(), $emptyPayload, self::STATS_DASHBOARD_CACHE_TTL_SECONDS);
-            }
-            return $emptyPayload;
-        }
+        // No cache exists — compute synchronously so the user sees real data
+        // on first load rather than depending entirely on AJAX background refresh.
 
         return $this->refreshStatsDashboardSnapshot(false);
     }
@@ -410,39 +403,6 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
         );
     }
 
-    /** @return array<string, mixed> */
-    private function buildEmptyStatsDashboardSnapshotData() {
-        $period = array(
-            'disp404' => 0,
-            'distinct404' => 0,
-            'visitors404' => 0,
-            'refer404' => 0,
-            'redirected' => 0,
-            'distinctredirected' => 0,
-            'distinctvisitors' => 0,
-            'distinctrefer' => 0,
-        );
-        return array(
-            'redirects' => array(
-                'auto301' => 0,
-                'auto302' => 0,
-                'manual301' => 0,
-                'manual302' => 0,
-                'trashed' => 0,
-            ),
-            'captured' => array(
-                'captured' => 0,
-                'ignored' => 0,
-                'trashed' => 0,
-            ),
-            'periods' => array(
-                'today' => $period,
-                'month' => $period,
-                'year' => $period,
-                'all' => $period,
-            ),
-        );
-    }
 
     /** 
      * @global type $wpdb
