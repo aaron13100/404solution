@@ -21,9 +21,7 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
         $results = $wpdb->get_col($wpdb->prepare($query, $valueParams));
 
         if (sizeof($results) == 0) {
-            if (property_exists($this, 'logger') && $this->logger) {
-                $this->logger->debugMessage("getStatsCount returned no results for query: " . esc_html($query));
-            }
+            $this->logger->debugMessage("getStatsCount returned no results for query: " . esc_html($query));
             return 0;
         }
         
