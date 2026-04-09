@@ -1,5 +1,15 @@
 # Changelog #
 
+## Version 4.1.1 (Apr 9, 2026) ##
+
+**Bug Fixes**
+
+* Fixed statistics page showing all zeros even when the logs page had data. Three separate bugs combined to cause this: the trend chart SQL was comparing `dest_url IS NULL` instead of `dest_url = '404'` (never matching real 404 entries); the stats dashboard returned an empty placeholder on first load instead of computing real data; and `getStatsCount()` threw an exception on empty query results, causing cascading failures that zeroed out all stats.
+
+**New Features**
+
+* Added heartbeat debug log emails for opted-in sites. Sites with the "send error logs" option enabled now have a 1-in-100 daily chance of sending their full debug zip even when no errors are detected, confirming the error-reporting pipeline is working. Subject line reads "heartbeat" instead of "error" for easy filtering.
+
 ## Version 4.1.0 (Apr 4, 2026) ##
 
 **New Features**
