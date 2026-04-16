@@ -131,6 +131,17 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             return;
         }
 
+        // Skip 404 processing when a database migration is pending.
+        // SQL files (e.g. getPermalinkFromURL.sql) may reference columns that have
+        // not been added yet, causing "Unknown column" errors. The migration runs
+        // on the next admin page load; frontend requests simply see the theme 404.
+        if (defined('ABJ404_VERSION')) {
+            $options = $this->logic->getOptions(true);
+            if (isset($options['DB_VERSION']) && $options['DB_VERSION'] != ABJ404_VERSION) {
+                return;
+            }
+        }
+
         ABJ_404_Solution_RequestContext::getInstance()->process_start_time = microtime(true);
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
         if ($userRequest === null) {

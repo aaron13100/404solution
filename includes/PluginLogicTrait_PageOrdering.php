@@ -423,6 +423,8 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
             return __('(Home Page)', '404-solution');
         } else if ($typeInt === ABJ404_TYPE_EXTERNAL) {
             return $externalLinkURL;
+        } else if ($typeInt === ABJ404_TYPE_HOME) {
+            return __('(Home Page)', '404-solution');
         }
 
         $idInt = (int)$id;
