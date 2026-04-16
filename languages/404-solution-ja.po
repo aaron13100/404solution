@@ -3571,3 +3571,23 @@ msgstr "テーマ組み込みの404ページを使用、リダイレクトなし
 
 msgid "Select a page"
 msgstr "ページを選択"
+
+#: includes/ViewTrait_UI.php
+msgid "Permission denied."
+msgstr "アクセスが拒否されました。"
+
+#: includes/ViewTrait_UI.php
+msgid "Your user account does not have permission to access this page."
+msgstr "お使いのユーザーアカウントにはこのページへのアクセス権限がありません。"
+
+#: includes/ViewTrait_UI.php
+msgid "Please verify that your WordPress role has the"
+msgstr "WordPressのロールに次の権限があることを確認してください："
+
+#: includes/ViewTrait_UI.php
+msgid "capability."
+msgstr "権限。"
+
+#: includes/ViewTrait_UI.php
+msgid "If you have a security plugin installed, it may be restricting access to this page."
+msgstr "セキュリティプラグインがインストールされている場合、このページへのアクセスが制限されている可能性があります。"

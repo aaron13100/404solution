@@ -3566,3 +3566,23 @@ msgstr "使用主题内置的404页面，不重定向"
 
 msgid "Select a page"
 msgstr "选择页面"
+
+#: includes/ViewTrait_UI.php
+msgid "Permission denied."
+msgstr "权限被拒绝。"
+
+#: includes/ViewTrait_UI.php
+msgid "Your user account does not have permission to access this page."
+msgstr "您的用户帐户无权访问此页面。"
+
+#: includes/ViewTrait_UI.php
+msgid "Please verify that your WordPress role has the"
+msgstr "请验证您的WordPress角色具有"
+
+#: includes/ViewTrait_UI.php
+msgid "capability."
+msgstr "权限。"
+
+#: includes/ViewTrait_UI.php
+msgid "If you have a security plugin installed, it may be restricting access to this page."
+msgstr "如果您安装了安全插件，它可能会限制对此页面的访问。"

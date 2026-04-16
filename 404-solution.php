@@ -577,6 +577,14 @@ if (!function_exists('abj404_degraded_admin_page')) {
 	/** @return void */
 	function abj404_degraded_admin_page() {
 		if (!current_user_can('manage_options')) {
+			echo '<div class="wrap">';
+			echo '<h1>404 Solution</h1>';
+			echo '<div class="notice notice-error"><p>';
+			echo '<strong>Permission denied.</strong> ';
+			echo 'Your user account does not have permission to access this page.';
+			echo '</p><p>';
+			echo 'Please verify that your WordPress role has the <code>manage_options</code> capability.';
+			echo '</p></div></div>';
 			return;
 		}
 

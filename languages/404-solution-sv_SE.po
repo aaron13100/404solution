@@ -3558,3 +3558,23 @@ msgstr "Använder temats inbyggda 404-sida, ingen omdirigering"
 
 msgid "Select a page"
 msgstr "Välj en sida"
+
+#: includes/ViewTrait_UI.php
+msgid "Permission denied."
+msgstr "Åtkomst nekad."
+
+#: includes/ViewTrait_UI.php
+msgid "Your user account does not have permission to access this page."
+msgstr "Ditt användarkonto har inte behörighet att komma åt den här sidan."
+
+#: includes/ViewTrait_UI.php
+msgid "Please verify that your WordPress role has the"
+msgstr "Kontrollera att din WordPress-roll har"
+
+#: includes/ViewTrait_UI.php
+msgid "capability."
+msgstr "behörigheten."
+
+#: includes/ViewTrait_UI.php
+msgid "If you have a security plugin installed, it may be restricting access to this page."
+msgstr "Om du har ett säkerhetsplugin installerat kan det begränsa åtkomsten till den här sidan."

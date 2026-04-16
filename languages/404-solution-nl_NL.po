@@ -3559,3 +3559,23 @@ msgstr "Gebruikt de ingebouwde 404-pagina van het thema, geen omleiding"
 
 msgid "Select a page"
 msgstr "Selecteer een pagina"
+
+#: includes/ViewTrait_UI.php
+msgid "Permission denied."
+msgstr "Toegang geweigerd."
+
+#: includes/ViewTrait_UI.php
+msgid "Your user account does not have permission to access this page."
+msgstr "Uw gebruikersaccount heeft geen toestemming om deze pagina te openen."
+
+#: includes/ViewTrait_UI.php
+msgid "Please verify that your WordPress role has the"
+msgstr "Controleer of uw WordPress-rol de"
+
+#: includes/ViewTrait_UI.php
+msgid "capability."
+msgstr "mogelijkheid heeft."
+
+#: includes/ViewTrait_UI.php
+msgid "If you have a security plugin installed, it may be restricting access to this page."
+msgstr "Als u een beveiligingsplugin hebt geïnstalleerd, kan deze de toegang tot deze pagina beperken."

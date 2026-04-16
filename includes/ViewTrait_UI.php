@@ -40,6 +40,17 @@ trait ViewTrait_UI {
             if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
                 $instance->logger->logUserCapabilities("handleMainAdminPageActionAndDisplay (" .
                         esc_html($action == '' ? '(none)' : $action) . ")");
+
+                echo '<div class="wrap">';
+                echo '<h1>' . esc_html(PLUGIN_NAME) . '</h1>';
+                echo '<div class="notice notice-error"><p>';
+                echo '<strong>' . esc_html__('Permission denied.', '404-solution') . '</strong> ';
+                echo esc_html__('Your user account does not have permission to access this page.', '404-solution');
+                echo '</p><p>';
+                echo esc_html__('Please verify that your WordPress role has the', '404-solution') . ' ';
+                echo '<code>manage_options</code> ' . esc_html__('capability.', '404-solution') . ' ';
+                echo esc_html__('If you have a security plugin installed, it may be restricting access to this page.', '404-solution');
+                echo '</p></div></div>';
                 return;
             }
 

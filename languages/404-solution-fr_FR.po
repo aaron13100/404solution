@@ -3552,3 +3552,23 @@ msgstr "Utilise la page 404 intégrée au thème, sans redirection"
 
 msgid "Select a page"
 msgstr "Sélectionner une page"
+
+#: includes/ViewTrait_UI.php
+msgid "Permission denied."
+msgstr "Permission refusée."
+
+#: includes/ViewTrait_UI.php
+msgid "Your user account does not have permission to access this page."
+msgstr "Votre compte utilisateur n'a pas la permission d'accéder à cette page."
+
+#: includes/ViewTrait_UI.php
+msgid "Please verify that your WordPress role has the"
+msgstr "Veuillez vérifier que votre rôle WordPress possède la"
+
+#: includes/ViewTrait_UI.php
+msgid "capability."
+msgstr "capacité."
+
+#: includes/ViewTrait_UI.php
+msgid "If you have a security plugin installed, it may be restricting access to this page."
+msgstr "Si vous avez un plugin de sécurité installé, il pourrait restreindre l'accès à cette page."

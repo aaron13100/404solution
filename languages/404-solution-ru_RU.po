@@ -3565,3 +3565,23 @@ msgstr "Использует встроенную страницу 404 темы,
 
 msgid "Select a page"
 msgstr "Выбрать страницу"
+
+#: includes/ViewTrait_UI.php
+msgid "Permission denied."
+msgstr "Доступ запрещён."
+
+#: includes/ViewTrait_UI.php
+msgid "Your user account does not have permission to access this page."
+msgstr "Ваша учётная запись не имеет разрешения на доступ к этой странице."
+
+#: includes/ViewTrait_UI.php
+msgid "Please verify that your WordPress role has the"
+msgstr "Пожалуйста, убедитесь, что ваша роль WordPress обладает"
+
+#: includes/ViewTrait_UI.php
+msgid "capability."
+msgstr "возможностью."
+
+#: includes/ViewTrait_UI.php
+msgid "If you have a security plugin installed, it may be restricting access to this page."
+msgstr "Если у вас установлен плагин безопасности, он может ограничивать доступ к этой странице."

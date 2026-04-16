@@ -3545,3 +3545,23 @@ msgstr "Menggunakan halaman 404 bawaan tema, tanpa pengalihan"
 
 msgid "Select a page"
 msgstr "Pilih halaman"
+
+#: includes/ViewTrait_UI.php
+msgid "Permission denied."
+msgstr "Izin ditolak."
+
+#: includes/ViewTrait_UI.php
+msgid "Your user account does not have permission to access this page."
+msgstr "Akun pengguna Anda tidak memiliki izin untuk mengakses halaman ini."
+
+#: includes/ViewTrait_UI.php
+msgid "Please verify that your WordPress role has the"
+msgstr "Harap verifikasi bahwa peran WordPress Anda memiliki"
+
+#: includes/ViewTrait_UI.php
+msgid "capability."
+msgstr "kemampuan."
+
+#: includes/ViewTrait_UI.php
+msgid "If you have a security plugin installed, it may be restricting access to this page."
+msgstr "Jika Anda memiliki plugin keamanan yang terinstal, plugin tersebut mungkin membatasi akses ke halaman ini."

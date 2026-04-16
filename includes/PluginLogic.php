@@ -219,7 +219,29 @@ class ABJ_404_Solution_PluginLogic {
     		}
 
     		// do the filter in case someone wants to add one
-    		return apply_filters('abj404_userIsPluginAdmin', $isPluginAdmin);
+    		$filtered = apply_filters('abj404_userIsPluginAdmin', $isPluginAdmin);
+
+    		// Log diagnostic details when access is denied, or when the filter changed the result.
+    		if (!$filtered || ($filtered !== $isPluginAdmin)) {
+    			$extraAdminsSummary = '';
+    			$rawExtra = $options['plugin_admin_users'] ?? array();
+    			if (is_array($rawExtra)) {
+    				$extraAdminsSummary = implode(', ', array_filter($rawExtra));
+    			} else if (is_string($rawExtra)) {
+    				$extraAdminsSummary = $rawExtra;
+    			}
+
+    			$this->logger->debugMessage(
+    				"userIsPluginAdmin detail: result=" . ($filtered ? 'true' : 'false') .
+    				", pre-filter=" . ($isPluginAdmin ? 'true' : 'false') .
+    				", manage_options=" . (current_user_can('manage_options') ? 'yes' : 'no') .
+    				", user=" . ($current_user_name ?? '(none)') .
+    				", plugin_admin_users=[" . esc_html($extraAdminsSummary) . "]" .
+    				($filtered !== $isPluginAdmin ? ", NOTE: abj404_userIsPluginAdmin filter changed the result" : "")
+    			);
+    		}
+
+    		return $filtered;
     	} finally {
     		ABJ_404_Solution_PluginLogic::$checkingIsAdmin = false;
     	}

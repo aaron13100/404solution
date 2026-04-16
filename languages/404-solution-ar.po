@@ -3587,3 +3587,23 @@ msgstr "يستخدم صفحة 404 المدمجة في القالب، بدون إ
 
 msgid "Select a page"
 msgstr "اختر صفحة"
+
+#: includes/ViewTrait_UI.php
+msgid "Permission denied."
+msgstr "تم رفض الإذن."
+
+#: includes/ViewTrait_UI.php
+msgid "Your user account does not have permission to access this page."
+msgstr "حساب المستخدم الخاص بك لا يملك إذن الوصول إلى هذه الصفحة."
+
+#: includes/ViewTrait_UI.php
+msgid "Please verify that your WordPress role has the"
+msgstr "يرجى التحقق من أن دور ووردبريس الخاص بك يمتلك"
+
+#: includes/ViewTrait_UI.php
+msgid "capability."
+msgstr "القدرة."
+
+#: includes/ViewTrait_UI.php
+msgid "If you have a security plugin installed, it may be restricting access to this page."
+msgstr "إذا كان لديك إضافة أمان مثبتة، فقد تكون تقيد الوصول إلى هذه الصفحة."
