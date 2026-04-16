@@ -453,7 +453,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			);
 
 			// Check if old tables have any data at all.
-			$totalRows = $this->countOldPrefixRows($oldPrefix);
+			$totalRows = $this->countOldPrefixRows($oldPrefix, $tables);
 			if ($totalRows === 0) {
 				$this->logger->infoMessage(
 					"Orphaned tables under prefix '{$oldPrefix}' are all empty. Skipping adoption."
@@ -482,7 +482,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			}
 
 			// Ownership positively verified — adopt the data.
-			$this->adoptDataFromPrefix($oldPrefix, $currentPrefix);
+			$this->adoptDataFromPrefix($oldPrefix, $currentPrefix, $tables);
 		}
 	}
 
@@ -490,12 +490,16 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 * Count total rows across all known plugin tables for a given prefix.
 	 *
 	 * @param string $oldPrefix
+	 * @param array<int, string> $knownTables  Table names actually found in information_schema.
 	 * @return int
 	 */
-	private function countOldPrefixRows(string $oldPrefix): int {
+	private function countOldPrefixRows(string $oldPrefix, array $knownTables): int {
 		$total = 0;
 		foreach (self::PLUGIN_TABLE_SUFFIXES as $suffix) {
 			$tableName = $oldPrefix . $suffix;
+			if (!in_array($tableName, $knownTables, true)) {
+				continue;
+			}
 			$result = $this->dao->queryAndGetResults(
 				"SELECT COUNT(*) AS cnt FROM `{$tableName}`",
 				['ignore_errors' => ["doesn't exist", "not found"]]
@@ -628,7 +632,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 * @param string $currentPrefix
 	 * @return void
 	 */
-	private function adoptDataFromPrefix(string $oldPrefix, string $currentPrefix): void {
+	private function adoptDataFromPrefix(string $oldPrefix, string $currentPrefix, array $knownTables): void {
 		$this->logger->infoMessage(
 			"Beginning adoption of data from prefix '{$oldPrefix}' to '{$currentPrefix}'"
 		);
@@ -637,6 +641,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
 		foreach (self::PLUGIN_TABLE_SUFFIXES as $suffix) {
 			$oldTable = $oldPrefix . $suffix;
+			if (!in_array($oldTable, $knownTables, true)) {
+				continue;
+			}
 			$newTable = $currentPrefix . $suffix;
 
 			// Check if old table exists and has rows.
