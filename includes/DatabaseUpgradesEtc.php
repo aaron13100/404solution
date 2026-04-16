@@ -630,6 +630,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 *
 	 * @param string $oldPrefix
 	 * @param string $currentPrefix
+	 * @param array<string> $knownTables
 	 * @return void
 	 */
 	private function adoptDataFromPrefix(string $oldPrefix, string $currentPrefix, array $knownTables): void {
