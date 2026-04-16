@@ -125,7 +125,6 @@ trait SpellCheckerTrait_LevenshteinEngine {
 		$userRequestedURLWords = explode(" ", (empty($fullURLspaces) ? $requestedURLCleaned : $fullURLspaces));
 		$idsWithWordsInCommon = array();
 		$wasntReadyCount = 0;
-		$idToPermalink = array();
 
 		// get the next X pages in batches until enough matches are found.
 		// Note: resetBatch is only called here if N-gram prefiltering wasn't applied
@@ -192,7 +191,6 @@ trait SpellCheckerTrait_LevenshteinEngine {
 
 			ABJ_404_Solution_RequestContext::getInstance()->debug_info = 'Likely match IDs processing permalink: ' .
 				$the_permalink . ', $wasntReadyCount: ' . $wasntReadyCount;
-			$idToPermalink[$id] = $the_permalink;
 
 			if (!is_array($urlParts) || !array_key_exists('path', $urlParts)) {
 				continue;
@@ -347,28 +345,56 @@ trait SpellCheckerTrait_LevenshteinEngine {
 
 		// OPTIMIZATION 6: Early return for large candidate sets (after N-gram filtering)
 		// If there are still more than 300 IDs after N-gram filtering, only use matches where words match.
-		// IMPORTANT: Must return [id => permalink] map, not a plain array of IDs, so callers can look up
-		// the permalink for each candidate without an extra database query.
 		if (count($listOfIDsToReturn) > 300 && count($idsWithWordsInCommon) >= $onlyNeedThisManyPages) {
 			$maybeOKguesses = array_intersect($listOfIDsToReturn, $idsWithWordsInCommon);
 
-			$sourceIds = (count($maybeOKguesses) >= $onlyNeedThisManyPages)
+			$candidateIds = (count($maybeOKguesses) >= $onlyNeedThisManyPages)
 				? $maybeOKguesses
 				: $idsWithWordsInCommon;
-
-			$result = array();
-			foreach ($sourceIds as $id) {
-				if (isset($idToPermalink[$id])) {
-					$result[$id] = $idToPermalink[$id];
-				}
-			}
-			return $result;
+		} else {
+			$candidateIds = $listOfIDsToReturn;
 		}
 
-		$result = array();
-		foreach ($listOfIDsToReturn as $id) {
-			if (isset($idToPermalink[$id])) {
-				$result[$id] = $idToPermalink[$id];
+		// Batch-fetch permalinks only for the final candidates.
+		// During the loop above we used each page's URL path for distance calculation
+		// but did not accumulate permalinks — on a 193K-page site that would consume ~61MB.
+		return $this->batchLookupPermalinks(array_values(array_unique($candidateIds)), $rowType);
+	}
+
+	/**
+	 * Batch-fetch permalinks for a set of candidate IDs.
+	 *
+	 * Instead of accumulating a permalink for every page processed (which consumes
+	 * ~61MB on a 193K-page site), we only look up permalinks for the final candidates.
+	 *
+	 * @param array<int, mixed> $ids The candidate page/tag/category IDs
+	 * @param string $rowType 'pages', 'tags', 'categories', or 'image'
+	 * @return array<int|string, string> Map of id => permalink URL
+	 */
+	private function batchLookupPermalinks(array $ids, string $rowType): array {
+		if (empty($ids)) {
+			return [];
+		}
+		$result = [];
+		if ($rowType === 'pages' || $rowType === 'image') {
+			// Batch-fetch from permalink cache table in a single query.
+			// IDs not found in the cache are excluded — they cannot be suggestions.
+			$intIds = array_map(function($v) { return is_scalar($v) ? (int)$v : 0; }, $ids);
+			$rows = $this->dao->getPermalinksByIds($intIds);
+			foreach ($rows as $row) {
+				$row = (array)$row;
+				if (isset($row['id'], $row['url']) && is_string($row['url'])) {
+					$result[$row['id']] = $this->f->normalizeUrlString($row['url']);
+				}
+			}
+		} else {
+			// Tags/categories: use WordPress API (typically small sets)
+			foreach ($ids as $id) {
+				$idInt = is_scalar($id) ? (int)$id : 0;
+				$permalink = $this->getPermalink($idInt, $rowType);
+				if (is_string($permalink) && $permalink !== '') {
+					$result[$id] = $permalink;
+				}
 			}
 		}
 		return $result;

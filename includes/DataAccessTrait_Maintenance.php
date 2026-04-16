@@ -332,6 +332,24 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
     }
 
     /**
+     * Batch-fetch permalinks for multiple IDs from the permalink cache.
+     *
+     * @param array<int, int> $ids
+     * @return array<int, object> Rows with id and url columns
+     */
+    function getPermalinksByIds(array $ids) {
+        if (empty($ids)) {
+            return array();
+        }
+        $sanitized = array_map('absint', $ids);
+        $placeholders = implode(',', $sanitized);
+        $query = "select id, url from {wp_abj404_permalink_cache} where id in (" . $placeholders . ")";
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
+        return is_array($results['rows']) ? $results['rows'] : array();
+    }
+
+    /**
      * @param int|string $id
      * @return array<string, mixed>|null
      */
