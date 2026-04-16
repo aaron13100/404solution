@@ -1,5 +1,18 @@
 # Changelog #
 
+## Version 4.1.2 (Apr 16, 2026) ##
+
+**Bug Fixes**
+
+* Fixed spell checker consuming ~61MB of memory on large sites — restructured the algorithm to use ~16KB regardless of site size.
+* Fixed a race condition in the `start_ts` column migration that could cause errors when multiple processes triggered the upgrade simultaneously.
+* Fixed HOME type pages displaying the wrong title in the suggestion results.
+* Fixed admin settings page showing a blank page instead of a visible error when the current user lacks the required permission.
+
+**Improvements**
+
+* Added all SQL files to the boot integrity check, ensuring corrupted or missing schema files are detected during plugin startup.
+
 ## Version 4.1.1 (Apr 9, 2026) ##
 
 **Bug Fixes**
