@@ -252,21 +252,13 @@ class ABJ_404_Solution_GoogleSearchConsole {
         $startTimestamp = strtotime("-{$days} days");
         $startDate = date('Y-m-d', $startTimestamp !== false ? $startTimestamp : 0);
 
-        // Cap total URLs and use small chunks to stay within GSC OR-filter limits (max ~5 filters per group)
+        // GSC API does not support OR-filtering in dimensionFilterGroups,
+        // so each URL must be queried individually.
         $urls = array_slice($urls, 0, 500);
-        $urlChunks = array_chunk($urls, 5);
         $allRows = array();
 
-        foreach ($urlChunks as $chunk) {
-            $dimensionFilters = array();
-            foreach ($chunk as $url) {
-                $absoluteUrl = (strpos($url, 'http') === 0) ? $url : rtrim(home_url('/'), '/') . '/' . ltrim($url, '/');
-                $dimensionFilters[] = array(
-                    'dimension'  => 'page',
-                    'operator'   => 'equals',
-                    'expression' => $absoluteUrl,
-                );
-            }
+        foreach ($urls as $url) {
+            $absoluteUrl = (strpos($url, 'http') === 0) ? $url : rtrim(home_url('/'), '/') . '/' . ltrim($url, '/');
 
             $body = array(
                 'startDate'       => $startDate,
@@ -274,8 +266,13 @@ class ABJ_404_Solution_GoogleSearchConsole {
                 'dimensions'      => array('page'),
                 'dimensionFilterGroups' => array(
                     array(
-                        'groupType' => 'or',
-                        'filters'   => $dimensionFilters,
+                        'filters' => array(
+                            array(
+                                'dimension'  => 'page',
+                                'operator'   => 'equals',
+                                'expression' => $absoluteUrl,
+                            ),
+                        ),
                     ),
                 ),
                 'rowLimit'        => 1000,
