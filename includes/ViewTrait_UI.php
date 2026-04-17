@@ -35,6 +35,8 @@ trait ViewTrait_UI {
         $instance = self::getInstance();
 
         try {
+            $instance->logger->debugMessage("Admin page render starting.");
+
             $action = $instance->dao->getPostOrGetSanitize('action');
 
             if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
