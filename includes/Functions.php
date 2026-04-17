@@ -568,7 +568,7 @@ abstract class ABJ_404_Solution_Functions {
         } else if ($typeInt === ABJ404_TYPE_TAG) {
             $permalink['link'] = get_tag_link($idInt);
             $tag = get_term($idInt);
-            if ($tag != null && !is_wp_error($tag)) {
+            if (is_object($tag) && !is_wp_error($tag)) {
                 $permalink['title'] = $tag->name;
             } else {
                 $permalink['title'] = $permalink['link'];
@@ -583,7 +583,7 @@ abstract class ABJ_404_Solution_Functions {
             // Use get_term_link() instead of get_category_link() to support
             // custom taxonomies like WooCommerce product_cat.
             $catTerm = get_term($idInt);
-            if ($catTerm != null && !is_wp_error($catTerm)) {
+            if (is_object($catTerm) && !is_wp_error($catTerm)) {
                 $termLink = get_term_link($catTerm);
                 $permalink['link'] = is_wp_error($termLink) ? get_category_link($idInt) : $termLink;
                 $permalink['title'] = $catTerm->name;
