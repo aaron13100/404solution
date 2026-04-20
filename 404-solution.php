@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 4.1.3
+	Version: 4.1.4
 	Requires at least: 5.0
 	Requires PHP: 7.4
 
@@ -692,15 +692,6 @@ if (!function_exists('abj404_admin_page_callback')) {
 	 * @return void
 	 */
 	function abj404_admin_page_callback() {
-		// Early diagnostic — uses error_log() directly so it works even when
-		// the plugin's own logging infrastructure is broken or unloaded.
-		$viewLoaded = class_exists('ABJ_404_Solution_View', false);
-		$bootOk = !empty($GLOBALS['abj404_boot_ok']);
-		$missing = !empty($GLOBALS['abj404_missing_files']) ? implode(', ', $GLOBALS['abj404_missing_files']) : 'none';
-		error_log('404 Solution admin page callback: boot_ok=' . ($bootOk ? 'true' : 'false')
-			. ', View_loaded=' . ($viewLoaded ? 'true' : 'false')
-			. ', missing_files=' . $missing);
-
 		// The false parameter avoids triggering the autoloader — if View was not
 		// loaded during boot, we don't want to attempt loading it again here.
 		if ($viewLoaded) {
