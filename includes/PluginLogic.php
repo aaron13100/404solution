@@ -703,6 +703,12 @@ class ABJ_404_Solution_PluginLogic {
      * @return array<string, mixed>
      */
     function updateToNewVersion(array $options) {
+        // Flush opcache for critical class files before any upgrade logic runs.
+        // On hosts with aggressive opcache (WP Engine, Flywheel, etc.) stale bytecode
+        // can persist after the plugin's PHP files are replaced on disk, causing
+        // transient fatals from class/method signature mismatches.
+        self::invalidateOpcacheForCriticalFiles();
+
         $syncUtils = ABJ_404_Solution_SynchronizationUtils::getInstance();
 
         $synchronizedKeyFromUser = "update_db_version";
@@ -993,6 +999,34 @@ class ABJ_404_Solution_PluginLogic {
         $this->updateOptions($options);
 
         return $options;
+    }
+
+    /**
+     * Invalidate opcache entries for critical class files so that PHP loads
+     * fresh bytecode after a plugin upgrade.  Prevents transient fatals on
+     * hosts with aggressive opcache settings (WP Engine, Flywheel, etc.).
+     *
+     * @return string[] File paths that were successfully invalidated.
+     */
+    static function invalidateOpcacheForCriticalFiles(): array {
+        if (!function_exists('opcache_invalidate')) {
+            return [];
+        }
+
+        $files = [
+            ABJ404_PATH . 'includes/Functions.php',
+            ABJ404_PATH . 'includes/php/FunctionsMBString.php',
+            ABJ404_PATH . 'includes/php/FunctionsPreg.php',
+        ];
+
+        $invalidated = [];
+        foreach ($files as $file) {
+            if (is_file($file) && opcache_invalidate($file, true)) {
+                $invalidated[] = $file;
+            }
+        }
+
+        return $invalidated;
     }
 
     /** Remove cron jobs. @return void */
