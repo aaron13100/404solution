@@ -686,12 +686,55 @@ if (!function_exists('abj404_degraded_admin_page')) {
 
 if (!function_exists('abj404_admin_page_callback')) {
 	/**
+	 * Show one-time admin fatal diagnostics captured during shutdown.
+	 *
+	 * @return void
+	 */
+	function abj404_render_last_admin_fatal_notice() {
+		if (!function_exists('current_user_can') || !current_user_can('manage_options')) {
+			return;
+		}
+
+		$fatalInfo = function_exists('get_transient') ? get_transient('abj404_admin_fatal') : false;
+		if ($fatalInfo === false && function_exists('get_option')) {
+			$fatalInfo = get_option('abj404_admin_fatal_fallback', false);
+		}
+		if (!is_array($fatalInfo) || empty($fatalInfo['message'])) {
+			return;
+		}
+
+		if (function_exists('delete_transient')) {
+			delete_transient('abj404_admin_fatal');
+		}
+		if (function_exists('delete_option')) {
+			delete_option('abj404_admin_fatal_fallback');
+		}
+
+		$pluginDir = defined('ABJ404_PATH') ? ABJ404_PATH : __DIR__ . '/';
+		$fatalFile = isset($fatalInfo['file']) ? str_replace($pluginDir, '', (string)$fatalInfo['file']) : '(unknown file)';
+		$fatalLine = isset($fatalInfo['line']) ? (int)$fatalInfo['line'] : 0;
+
+		echo '<div class="wrap">';
+		echo '<div class="notice notice-error">';
+		echo '<p><strong>404 Solution:</strong> A fatal error occurred while rendering the previous admin request.</p>';
+		echo '<details><summary>Show error details</summary>';
+		echo '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">' .
+			esc_html((string)$fatalInfo['message'] . "\n" . $fatalFile . ':' . (string)$fatalLine) .
+			'</pre>';
+		echo '</details>';
+		echo '</div>';
+		echo '</div>';
+	}
+
+	/**
 	 * Safe wrapper for the admin page callback. Falls back to the degraded
 	 * page if the View class was not loaded during boot.
 	 *
 	 * @return void
 	 */
 	function abj404_admin_page_callback() {
+		abj404_render_last_admin_fatal_notice();
+
 		// The false parameter avoids triggering the autoloader — if View was not
 		// loaded during boot, we don't want to attempt loading it again here.
 		if (class_exists('ABJ_404_Solution_View', false)) {

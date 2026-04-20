@@ -8,6 +8,13 @@ if (!defined('ABSPATH')) {
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 
 class ABJ_404_Solution_ErrorHandler {
+
+	/**
+	 * Prevent duplicate shutdown fallback output when multiple handlers run.
+	 *
+	 * @var bool
+	 */
+	private static $adminFatalPageRendered = false;
 	
 	/** Keep a reference to the original error handler so we can use it later.
 	 * @var callable|null
@@ -163,6 +170,139 @@ class ABJ_404_Solution_ErrorHandler {
         return in_array($type, $fatalTypes, true);
     }
 
+	/**
+	 * Best-effort scalar read from request arrays without depending on WP helpers.
+	 *
+	 * @param string $key
+	 * @return string
+	 */
+	private static function getRequestValue(string $key): string {
+		$raw = null;
+		if (array_key_exists($key, $_GET)) {
+			$raw = $_GET[$key];
+		} elseif (array_key_exists($key, $_POST)) {
+			$raw = $_POST[$key];
+		} elseif (array_key_exists($key, $_REQUEST)) {
+			$raw = $_REQUEST[$key];
+		}
+
+		if (!is_scalar($raw)) {
+			return '';
+		}
+
+		return trim((string)$raw);
+	}
+
+	/**
+	 * Detect whether the current request is the plugin admin page.
+	 *
+	 * @return bool
+	 */
+	private static function isPluginAdminPageRequest(): bool {
+		if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+			return false;
+		}
+
+		$page = self::getRequestValue('page');
+		if ($page === '') {
+			return false;
+		}
+
+		$pluginPage = defined('ABJ404_PP') ? (string)ABJ404_PP : 'abj404_solution';
+		return $page === $pluginPage;
+	}
+
+	/**
+	 * Persist the last admin fatal so we can show a notice on the next request.
+	 *
+	 * @param array<string,mixed> $lasterror
+	 * @return void
+	 */
+	private static function stashAdminFatal(array $lasterror): void {
+		$payload = array(
+			'message' => array_key_exists('message', $lasterror) ? (string)$lasterror['message'] : '',
+			'file' => array_key_exists('file', $lasterror) ? (string)$lasterror['file'] : '',
+			'line' => array_key_exists('line', $lasterror) ? (int)$lasterror['line'] : 0,
+			'type' => array_key_exists('type', $lasterror) ? (int)$lasterror['type'] : 0,
+			'time' => time(),
+			'page' => self::getRequestValue('page'),
+			'subpage' => self::getRequestValue('subpage'),
+		);
+
+		$ttl = defined('HOUR_IN_SECONDS') ? HOUR_IN_SECONDS : 3600;
+		if (function_exists('set_transient')) {
+			set_transient('abj404_admin_fatal', $payload, $ttl);
+			return;
+		}
+
+		if (function_exists('update_option')) {
+			update_option('abj404_admin_fatal_fallback', $payload);
+		}
+	}
+
+	/**
+	 * Render a small HTML fallback so fatal admin errors do not become a blank page.
+	 *
+	 * @param array<string,mixed> $lasterror
+	 * @return void
+	 */
+	private static function renderAdminFatalFallback(array $lasterror): void {
+		if (self::$adminFatalPageRendered) {
+			return;
+		}
+		self::$adminFatalPageRendered = true;
+
+		$canShowDetails = false;
+		try {
+			if (function_exists('current_user_can') && current_user_can('manage_options')) {
+				$canShowDetails = true;
+			} elseif (function_exists('is_super_admin') && is_super_admin()) {
+				$canShowDetails = true;
+			}
+		} catch (Throwable $e) {
+			$canShowDetails = false;
+		}
+
+		if (!(defined('ABJ404_TEST_DISABLE_OB') && ABJ404_TEST_DISABLE_OB)) {
+			while (ob_get_level() > 0) {
+				@ob_end_clean();
+			}
+		}
+
+		if (!headers_sent()) {
+			if (function_exists('status_header')) {
+				status_header(500);
+			} elseif (function_exists('http_response_code')) {
+				http_response_code(500);
+			}
+			header('Content-Type: text/html; charset=UTF-8');
+		}
+
+		$settingsUrl = '?page=' . (defined('ABJ404_PP') ? ABJ404_PP : 'abj404_solution') . '&subpage=abj404_options';
+		if (function_exists('admin_url')) {
+			$settingsUrl = admin_url('options-general.php' . $settingsUrl);
+		}
+
+		$message = array_key_exists('message', $lasterror) ? (string)$lasterror['message'] : 'Fatal error';
+		$file = array_key_exists('file', $lasterror) ? (string)$lasterror['file'] : '(unknown file)';
+		$line = array_key_exists('line', $lasterror) ? (int)$lasterror['line'] : 0;
+
+		echo '<!doctype html><html><head><meta charset="utf-8"><title>404 Solution Error</title></head><body style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;padding:24px;">';
+		echo '<h1 style="margin:0 0 12px 0;">404 Solution</h1>';
+		echo '<p><strong>A fatal error occurred while rendering this admin page.</strong></p>';
+		echo '<p>Open the Options tab to continue: <a href="' . htmlspecialchars($settingsUrl, ENT_QUOTES, 'UTF-8') . '">Options</a></p>';
+
+		if ($canShowDetails) {
+			echo '<details open><summary>Error details</summary>';
+			echo '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;">' .
+				htmlspecialchars($message . "\n" . $file . ':' . (string)$line, ENT_QUOTES, 'UTF-8') .
+				'</pre>';
+			echo '</details>';
+		}
+
+		echo '</body></html>';
+	}
+
 	    /**
 	     * @param array<string, mixed> $payload
 	     * @param int $httpStatus
@@ -217,6 +357,11 @@ class ABJ_404_Solution_ErrorHandler {
 
         $ctx = isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])
             ? $GLOBALS['abj404_ajax_context'] : null;
+
+		$isPluginAdminPage = self::isPluginAdminPageRequest();
+		if ($isPluginAdminPage) {
+			self::stashAdminFatal($lasterror);
+		}
 
         $isAjaxContext = is_array($ctx) &&
             !empty($ctx['ajax_expected_json']) &&
@@ -306,15 +451,19 @@ class ABJ_404_Solution_ErrorHandler {
         }
 
         // -------------------------
-        // Default behavior: only log plugin-scope fatals (avoid noise from other plugins/themes).
+        // Default behavior: only log plugin-scope fatals (avoid noise from other plugins/themes),
+        // except plugin admin page requests where we deliberately capture foreign fatals too.
         try {
             $errno = $lasterror['type'];
             $errfile = is_string($lasterror['file']) ? $lasterror['file'] : '';
             $slashPos2 = $f->strpos(ABJ404_NAME, '/');
             $pluginFolder = $f->substr(ABJ404_NAME, 0, ($slashPos2 !== false ? $slashPos2 : null));
 
-            // if the error file does not contain the name of our plugin then we ignore it.
-            if ($f->strpos($errfile, $pluginFolder) === false) {
+            $isPluginScopeFatal = ($f->strpos($errfile, $pluginFolder) !== false);
+
+            // If the error file does not contain our plugin name, ignore it unless
+            // we are rendering the plugin admin page where blank-page prevention is critical.
+            if (!$isPluginScopeFatal && !$isPluginAdminPage) {
                 return false;
             }
 
@@ -323,7 +472,11 @@ class ABJ_404_Solution_ErrorHandler {
             if ($ctxDebugInfo !== '') {
                 $extraInfo = stripcslashes(wp_kses_post((string)json_encode($ctxDebugInfo)));
             }
-            $errmsg = "ABJ404-SOLUTION Fatal error handler: " .
+            $contextPrefix = $isPluginScopeFatal
+                ? 'ABJ404-SOLUTION Fatal error handler: '
+                : 'ABJ404-SOLUTION Fatal error handler (plugin admin page, foreign scope): ';
+
+            $errmsg = $contextPrefix .
                 stripcslashes(wp_kses_post((string)json_encode($lasterror))) .
                 ", \nAdditional info: " . $extraInfo . ", mbstring: " .
                 (extension_loaded('mbstring') ? 'true' : 'false');
@@ -345,9 +498,13 @@ class ABJ_404_Solution_ErrorHandler {
             } else {
                 echo $errmsg;
             }
-        } catch (Exception $ex) {
+        } catch (Throwable $ex) {
             // ignored
         }
+
+		if ($isPluginAdminPage) {
+			self::renderAdminFatalFallback($lasterror);
+		}
 
         return false;
     }
