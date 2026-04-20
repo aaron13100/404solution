@@ -694,7 +694,7 @@ if (!function_exists('abj404_admin_page_callback')) {
 	function abj404_admin_page_callback() {
 		// The false parameter avoids triggering the autoloader — if View was not
 		// loaded during boot, we don't want to attempt loading it again here.
-		if ($viewLoaded) {
+		if (class_exists('ABJ_404_Solution_View', false)) {
 			try {
 				ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay();
 			} catch (\Throwable $e) {
