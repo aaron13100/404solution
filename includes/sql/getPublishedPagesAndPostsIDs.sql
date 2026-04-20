@@ -22,7 +22,7 @@ left outer join (
     
         left outer join {wp_terms} wpt
         on wptr.term_taxonomy_id = wpt.term_id
-        and wpt.name in ('exclude-from-search', 'exclude-from-catalog')
+        and wpt.name COLLATE {wpdb_collate} in ('exclude-from-search', 'exclude-from-catalog')
     
 	where wpt.name is not null
 
@@ -52,9 +52,9 @@ where wp_posts.post_status in ('publish', 'published')
 {extraWhereClause}
 /*  */
 
-and ( usefulterms.grouped_terms is null or 
-	  usefulterms.grouped_terms not like '%exclude-from-search%'
-	  or usefulterms.grouped_terms not like '%exclude-from-catalog%'
+and ( usefulterms.grouped_terms is null or
+	  usefulterms.grouped_terms COLLATE {wpdb_collate} not like '%exclude-from-search%'
+	  or usefulterms.grouped_terms COLLATE {wpdb_collate} not like '%exclude-from-catalog%'
     )
 
 /* order results. e.g order by abs(plc.url_length - 100), wp_posts.ID

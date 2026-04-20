@@ -8,20 +8,20 @@ select 	subTable.*,
 from (
 select  wpp.id as id, 
 
-        case
+        CONVERT(case
           when wpp.post_type = 'post' then
 
           concat(/* wpo_su.option_value, */
             replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(
-              BINARY wpo_pls.option_value, 
-                BINARY '%year%', date_format(wpp.post_date, '%Y')), 
-                BINARY '%monthnum%', date_format(wpp.post_date, '%m')), 
-                BINARY '%day%', date_format(wpp.post_date, '%d')), 
+              BINARY wpo_pls.option_value,
+                BINARY '%year%', date_format(wpp.post_date, '%Y')),
+                BINARY '%monthnum%', date_format(wpp.post_date, '%m')),
+                BINARY '%day%', date_format(wpp.post_date, '%d')),
                 BINARY '%hour%', date_format(wpp.post_date, '%HH')),
                 BINARY '%minute%', date_format(wpp.post_date, '%i')),
                 BINARY '%second%', date_format(wpp.post_date, '%ss')),
-                BINARY '%postname%', wpp.post_name), 
-                BINARY '%pagename%', wpp.post_name), 
+                BINARY '%postname%', wpp.post_name),
+                BINARY '%pagename%', wpp.post_name),
                 BINARY '%post_id%', wpp.id),
                 BINARY '%category%', coalesce(category_table.category, '')),
                 BINARY '%author%', coalesce(author_table.user_nicename, ''))
@@ -29,10 +29,10 @@ select  wpp.id as id,
 
           /* pages don't use the permalink structure. */
           else concat(concat('/', BINARY wpp.post_name), '/')
-        
-        end as url,
 
-        concat(concat(concat(concat('s:', BINARY wpp.post_status), ',t:'), BINARY wpp.post_type), ',') as meta,
+        end USING utf8mb4) COLLATE {wpdb_collate} as url,
+
+        CONVERT(concat(concat(concat(concat('s:', BINARY wpp.post_status), ',t:'), BINARY wpp.post_type), ',') USING utf8mb4) COLLATE {wpdb_collate} as meta,
 
         wpp.post_parent as post_parent
 

@@ -398,7 +398,18 @@ class ABJ_404_Solution_DataAccess {
         $replacements['{wp_users}'] = $wpdb->users ?? ($wpdb->prefix . 'users');
         $replacements['{wp_prefix}'] = $wpdb->prefix ?? 'wp_';
         $replacements['{wp_prefix_lower}'] = $this->getLowercasePrefix();
-        
+
+        // Resolve {wpdb_collate} so any SQL file can force a consistent collation
+        // on cross-table string expressions (prevents "Illegal mix of collations").
+        $wpdbCollate = 'utf8mb4_unicode_ci';
+        if (isset($wpdb->collate) && !empty($wpdb->collate)) {
+            $sanitized = preg_replace('/[^A-Za-z0-9_]/', '', $wpdb->collate);
+            if ($sanitized !== '' && $sanitized !== null) {
+                $wpdbCollate = $sanitized;
+            }
+        }
+        $replacements['{wpdb_collate}'] = $wpdbCollate;
+
         // wp database table replacements
         $query = $this->f->str_replace(array_keys($replacements), array_values($replacements), $query);
         
