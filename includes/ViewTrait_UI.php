@@ -77,7 +77,7 @@ trait ViewTrait_UI {
             // Output the correct page.
             $abj404view->echoChosenAdminTab($action, $sub, $message);
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $encodedEx = json_encode($e);
             $instance->logger->errorMessage("Caught exception: " . stripcslashes(wp_kses_post(is_string($encodedEx) ? $encodedEx : '')));
             echo '<div class="wrap">';

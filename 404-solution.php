@@ -695,17 +695,38 @@ if (!function_exists('abj404_admin_page_callback')) {
 		// The false parameter avoids triggering the autoloader — if View was not
 		// loaded during boot, we don't want to attempt loading it again here.
 		if (class_exists('ABJ_404_Solution_View', false)) {
+			ob_start();
+			$renderError = null;
 			try {
 				ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay();
 			} catch (\Throwable $e) {
+				$renderError = $e;
+			}
+			$output = ob_get_clean();
+
+			if ($renderError !== null) {
 				echo '<div class="wrap">';
 				echo '<div class="notice notice-error">';
 				echo '<p><strong>404 Solution:</strong> An error occurred while rendering this page.</p>';
 				echo '<details><summary>Show error details</summary>';
-				echo '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">' . esc_html($e->getMessage() . "\n" . $e->getTraceAsString()) . '</pre>';
+				echo '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">' . esc_html($renderError->getMessage() . "\n" . $renderError->getTraceAsString()) . '</pre>';
 				echo '</details>';
 				echo '</div>';
 				echo '</div>';
+			} elseif ($output === '' || $output === false) {
+				// The View class was loaded and didn't throw, but produced zero output.
+				// Show a diagnostic instead of a blank page.
+				echo '<div class="wrap">';
+				echo '<h1>404 Solution</h1>';
+				echo '<div class="notice notice-error"><p>';
+				echo '<strong>This page produced no output.</strong> ';
+				echo 'This can happen when a required dependency failed to initialize or a template file is missing.';
+				echo '</p><p>';
+				echo 'Try deactivating and reactivating the plugin. If the problem persists, ';
+				echo 'delete the plugin and reinstall it from the WordPress plugin directory.';
+				echo '</p></div></div>';
+			} else {
+				echo $output;
 			}
 		} else {
 			abj404_degraded_admin_page();
