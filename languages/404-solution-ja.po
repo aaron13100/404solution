@@ -3591,3 +3591,11 @@ msgstr "権限。"
 #: includes/ViewTrait_UI.php
 msgid "If you have a security plugin installed, it may be restricting access to this page."
 msgstr "セキュリティプラグインがインストールされている場合、このページへのアクセスが制限されている可能性があります。"
+
+#: includes/WordPress_Connector.php
+msgid "An internal error occurred while loading this admin page."
+msgstr "この管理ページの読み込み中に内部エラーが発生しました。"
+
+#: includes/WordPress_Connector.php
+msgid "Show details"
+msgstr "詳細を表示"

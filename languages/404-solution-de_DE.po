@@ -3576,3 +3576,11 @@ msgstr "Berechtigung besitzt."
 #: includes/ViewTrait_UI.php
 msgid "If you have a security plugin installed, it may be restricting access to this page."
 msgstr "Falls Sie ein Sicherheits-Plugin installiert haben, könnte dieses den Zugriff auf diese Seite einschränken."
+
+#: includes/WordPress_Connector.php
+msgid "An internal error occurred while loading this admin page."
+msgstr "Beim Laden dieser Admin-Seite ist ein interner Fehler aufgetreten."
+
+#: includes/WordPress_Connector.php
+msgid "Show details"
+msgstr "Details anzeigen"

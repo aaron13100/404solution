@@ -3585,3 +3585,11 @@ msgstr "возможностью."
 #: includes/ViewTrait_UI.php
 msgid "If you have a security plugin installed, it may be restricting access to this page."
 msgstr "Если у вас установлен плагин безопасности, он может ограничивать доступ к этой странице."
+
+#: includes/WordPress_Connector.php
+msgid "An internal error occurred while loading this admin page."
+msgstr "При загрузке этой страницы администрирования произошла внутренняя ошибка."
+
+#: includes/WordPress_Connector.php
+msgid "Show details"
+msgstr "Показать подробности"

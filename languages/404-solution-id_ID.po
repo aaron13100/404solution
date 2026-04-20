@@ -3565,3 +3565,11 @@ msgstr "kemampuan."
 #: includes/ViewTrait_UI.php
 msgid "If you have a security plugin installed, it may be restricting access to this page."
 msgstr "Jika Anda memiliki plugin keamanan yang terinstal, plugin tersebut mungkin membatasi akses ke halaman ini."
+
+#: includes/WordPress_Connector.php
+msgid "An internal error occurred while loading this admin page."
+msgstr "Terjadi kesalahan internal saat memuat halaman admin ini."
+
+#: includes/WordPress_Connector.php
+msgid "Show details"
+msgstr "Tampilkan detail"

@@ -3607,3 +3607,11 @@ msgstr "القدرة."
 #: includes/ViewTrait_UI.php
 msgid "If you have a security plugin installed, it may be restricting access to this page."
 msgstr "إذا كان لديك إضافة أمان مثبتة، فقد تكون تقيد الوصول إلى هذه الصفحة."
+
+#: includes/WordPress_Connector.php
+msgid "An internal error occurred while loading this admin page."
+msgstr "حدث خطأ داخلي أثناء تحميل صفحة الإدارة هذه."
+
+#: includes/WordPress_Connector.php
+msgid "Show details"
+msgstr "عرض التفاصيل"

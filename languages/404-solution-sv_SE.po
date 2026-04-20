@@ -3578,3 +3578,11 @@ msgstr "behörigheten."
 #: includes/ViewTrait_UI.php
 msgid "If you have a security plugin installed, it may be restricting access to this page."
 msgstr "Om du har ett säkerhetsplugin installerat kan det begränsa åtkomsten till den här sidan."
+
+#: includes/WordPress_Connector.php
+msgid "An internal error occurred while loading this admin page."
+msgstr "Ett internt fel uppstod vid laddning av denna administratörssida."
+
+#: includes/WordPress_Connector.php
+msgid "Show details"
+msgstr "Visa detaljer"
