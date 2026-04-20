@@ -550,8 +550,17 @@ unset($__abj404_loader_path);
 if ($GLOBALS['abj404_boot_ok']) {
 	// admin
 	if (is_admin()) {
-		ABJ_404_Solution_WordPress_Connector::init();
-		ABJ_404_Solution_ViewUpdater::init();
+		try {
+			ABJ_404_Solution_WordPress_Connector::init();
+			ABJ_404_Solution_ViewUpdater::init();
+		} catch (\Throwable $e) {
+			// init() failed — fall through to register the degraded admin page
+			// so the user still has a menu item with error details instead of nothing.
+			$GLOBALS['abj404_boot_ok'] = false;
+			$GLOBALS['abj404_boot_error'] = 'Plugin initialization failed: ' . $e->getMessage();
+			add_action('admin_menu', 'abj404_degraded_admin_menu');
+			add_action('admin_notices', 'abj404_degraded_admin_notice');
+		}
 	}
 
 	// REST API — deferred to rest_api_init so DataAccess/PluginLogic are only loaded on actual REST requests.
