@@ -61,9 +61,15 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         } else if ($pageBeingViewed == "abj404_logs") {
             $tableOptions['orderby'] = "timestamp";
         } else if ($pageBeingViewed == 'abj404_redirects') {
-            $tableOptions['orderby'] = $options['page_redirects_order_by'];
+            $savedRedirectsOrderBy = isset($options['page_redirects_order_by']) && is_scalar($options['page_redirects_order_by'])
+                ? (string)$options['page_redirects_order_by'] : 'url';
+            $tableOptions['orderby'] = in_array($savedRedirectsOrderBy, self::$allowedOrderbyColumns, true)
+                ? $savedRedirectsOrderBy : 'url';
         } else if ($pageBeingViewed == 'abj404_captured') {
-            $tableOptions['orderby'] = $options['captured_order_by'];
+            $savedCapturedOrderBy = isset($options['captured_order_by']) && is_scalar($options['captured_order_by'])
+                ? (string)$options['captured_order_by'] : 'timestamp';
+            $tableOptions['orderby'] = in_array($savedCapturedOrderBy, self::$allowedOrderbyColumns, true)
+                ? $savedCapturedOrderBy : 'timestamp';
         } else {
             $tableOptions['orderby'] = 'url';
         }
@@ -85,10 +91,16 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $tableOptions['order'] = "DESC";
 
         } else if ($pageBeingViewed == 'abj404_redirects') {
-            $tableOptions['order'] = $options['page_redirects_order'];
+            $savedRedirectsOrder = isset($options['page_redirects_order']) && is_scalar($options['page_redirects_order'])
+                ? strtoupper((string)$options['page_redirects_order']) : 'ASC';
+            $tableOptions['order'] = in_array($savedRedirectsOrder, self::$allowedOrderValues, true)
+                ? $savedRedirectsOrder : 'ASC';
 
         } else if ($pageBeingViewed == 'abj404_captured') {
-            $tableOptions['order'] = $options['captured_order'];
+            $savedCapturedOrder = isset($options['captured_order']) && is_scalar($options['captured_order'])
+                ? strtoupper((string)$options['captured_order']) : 'DESC';
+            $tableOptions['order'] = in_array($savedCapturedOrder, self::$allowedOrderValues, true)
+                ? $savedCapturedOrder : 'DESC';
 
         } else {
             $tableOptions['order'] = "ASC";

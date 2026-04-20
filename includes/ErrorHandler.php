@@ -21,6 +21,13 @@ class ABJ_404_Solution_ErrorHandler {
 	 */
 	static $originalErrorHandler = null;
 
+	/**
+	 * Reserved memory released during fatal shutdown handling so OOM errors can still render fallback output.
+	 *
+	 * @var string|null
+	 */
+	private static $reservedMemory = null;
+
     /** Setup.
      * @return void
      */
@@ -31,6 +38,10 @@ class ABJ_404_Solution_ErrorHandler {
     	
         // set to the user defined error handler
         set_error_handler("ABJ_404_Solution_ErrorHandler::NormalErrorHandler");
+        if (self::$reservedMemory === null) {
+            // Keep a small memory reserve so shutdown handling can render a fallback page on memory exhaustion.
+            self::$reservedMemory = str_repeat('R', 262144);
+        }
         register_shutdown_function('ABJ_404_Solution_ErrorHandler::FatalErrorHandler');
     }
 
@@ -166,7 +177,7 @@ class ABJ_404_Solution_ErrorHandler {
      * @return bool
      */
     private static function isFatalType(int $type): bool {
-        $fatalTypes = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
+        $fatalTypes = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR);
         return in_array($type, $fatalTypes, true);
     }
 
@@ -360,6 +371,8 @@ class ABJ_404_Solution_ErrorHandler {
 
 		$isPluginAdminPage = self::isPluginAdminPageRequest();
 		if ($isPluginAdminPage) {
+			// Free reserved memory first so fallback rendering can succeed after OOM fatals.
+			self::$reservedMemory = null;
 			self::stashAdminFatal($lasterror);
 		}
 

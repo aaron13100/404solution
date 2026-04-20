@@ -20,6 +20,9 @@ class ABJ_404_Solution_WordPress_Connector {
      * @var bool */
     private static $feedbackSubmitted = false;
 
+    /** @var array<int, string> */
+    private static $adminRuntimeErrors = array();
+
 	/** @var ABJ_404_Solution_PluginLogic */
 	private $logic;
 
@@ -118,6 +121,59 @@ class ABJ_404_Solution_WordPress_Connector {
 
 		return self::$instance;
 	}
+
+    /**
+     * Persist and queue an admin runtime error so users see a notice instead of a blank page.
+     *
+     * @param string $hookName
+     * @param Throwable $e
+     * @return void
+     */
+    private static function reportAdminRuntimeError(string $hookName, Throwable $e): void {
+        $summary = sprintf('[%s] %s', $hookName, $e->getMessage());
+        self::$adminRuntimeErrors[] = $summary;
+
+        try {
+            $logger = ABJ_404_Solution_Logging::getInstance();
+            $logger->errorMessage('Admin runtime exception in ' . $hookName . ': ' . $e->getMessage());
+        } catch (Throwable $ignored) {
+            // Last-resort logging fallback.
+            @error_log('404 Solution admin runtime exception in ' . $hookName . ': ' . $e->getMessage());
+        }
+
+        if (function_exists('set_transient')) {
+            set_transient('abj404_admin_runtime_error', $summary, 300);
+        }
+    }
+
+    /**
+     * Echo one-time admin runtime errors captured from earlier hooks in this request (or previous request).
+     *
+     * @return void
+     */
+    private static function echoAdminRuntimeErrorNotice(): void {
+        $errors = self::$adminRuntimeErrors;
+        self::$adminRuntimeErrors = array();
+
+        if (function_exists('get_transient')) {
+            $saved = get_transient('abj404_admin_runtime_error');
+            if (is_string($saved) && $saved !== '') {
+                $errors[] = $saved;
+                delete_transient('abj404_admin_runtime_error');
+            }
+        }
+
+        if (empty($errors)) {
+            return;
+        }
+
+        $message = implode("\n", array_unique(array_filter($errors)));
+        echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ';
+        echo esc_html__('An internal error occurred while loading this admin page.', '404-solution');
+        echo '</p><details><summary>' . esc_html__('Show details', '404-solution') . '</summary><pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">';
+        echo esc_html($message);
+        echo '</pre></details></div>';
+    }
 	
 	/** Setup.
 	 * @return void
@@ -204,23 +260,24 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
 
-        $subpage = '';
-        if (array_key_exists('subpage', $_GET)) {
-            $subpage = sanitize_text_field(self::normalizeRequestScalar($_GET['subpage']));
-        }
-        // Default plugin landing is redirects when subpage is not specified.
-        if ($subpage === '') {
-            $subpage = 'abj404_redirects';
-        }
+        try {
+            $subpage = '';
+            if (array_key_exists('subpage', $_GET)) {
+                $subpage = sanitize_text_field(self::normalizeRequestScalar($_GET['subpage']));
+            }
+            // Default plugin landing is redirects when subpage is not specified.
+            if ($subpage === '') {
+                $subpage = 'abj404_redirects';
+            }
 
-        $isOptionsPage = ($subpage === 'abj404_options');
-        $isStatsPage = ($subpage === 'abj404_stats');
-        $isToolsPage = ($subpage === 'abj404_tools');
-        $isCardAccordionPage = in_array($subpage, array('abj404_options', 'abj404_tools', 'abj404_stats'), true);
-        $isLogsPage = ($subpage === 'abj404_logs');
-        $isListPage = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_logs'), true);
-        $isEditPage = ($subpage === 'abj404_edit');
-        $needsDestinationAutocomplete = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_options', 'abj404_edit'), true);
+            $isOptionsPage = ($subpage === 'abj404_options');
+            $isStatsPage = ($subpage === 'abj404_stats');
+            $isToolsPage = ($subpage === 'abj404_tools');
+            $isCardAccordionPage = in_array($subpage, array('abj404_options', 'abj404_tools', 'abj404_stats'), true);
+            $isLogsPage = ($subpage === 'abj404_logs');
+            $isListPage = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_logs'), true);
+            $isEditPage = ($subpage === 'abj404_edit');
+            $needsDestinationAutocomplete = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_options', 'abj404_edit'), true);
 
         // remove the "thank you for creating with wordpress" message
         add_filter('admin_footer_text',
@@ -357,10 +414,13 @@ class ABJ_404_Solution_WordPress_Connector {
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-themes', ABJ404_URL . 'includes/html/adminThemes.css',
                 array());
 
-        // Load RTL styles for Arabic, Hebrew, and other right-to-left languages
-        if (is_rtl()) {
-            ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-rtl', ABJ404_URL . 'includes/html/404solutionStyles-rtl.css',
-                    array('abj404solution-styles'));
+            // Load RTL styles for Arabic, Hebrew, and other right-to-left languages
+            if (is_rtl()) {
+                ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-rtl', ABJ404_URL . 'includes/html/404solutionStyles-rtl.css',
+                        array('abj404solution-styles'));
+            }
+        } catch (Throwable $e) {
+            self::reportAdminRuntimeError('admin_enqueue_scripts', $e);
         }
     }
 
@@ -422,52 +482,53 @@ class ABJ_404_Solution_WordPress_Connector {
      */
     /** @return void */
     static function outputCriticalThemeCSS() {
-        // Only run on our plugin pages
-        if (!array_key_exists('abj404_settingsPageName', $GLOBALS) ||
-            !array_key_exists('page', $_GET) ||
-            $_GET['page'] != ABJ404_PP) {
-            return;
-        }
+        try {
+            // Only run on our plugin pages
+            if (!array_key_exists('abj404_settingsPageName', $GLOBALS) ||
+                !array_key_exists('page', $_GET) ||
+                $_GET['page'] != ABJ404_PP) {
+                return;
+            }
 
-        $logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $options = $logic->getOptions();
-        $theme = (isset($options['admin_theme']) && is_string($options['admin_theme'])) ? $options['admin_theme'] : 'default';
+            $logic = ABJ_404_Solution_PluginLogic::getInstance();
+            $options = $logic->getOptions();
+            $theme = (isset($options['admin_theme']) && is_string($options['admin_theme'])) ? $options['admin_theme'] : 'default';
 
-        // Check if auto dark mode detection is enabled (default: enabled)
-        $auto_dark_mode = !isset($options['disable_auto_dark_mode']) || $options['disable_auto_dark_mode'] != '1';
+            // Check if auto dark mode detection is enabled (default: enabled)
+            $auto_dark_mode = !isset($options['disable_auto_dark_mode']) || $options['disable_auto_dark_mode'] != '1';
 
-        // If theme is 'default' and auto dark mode is enabled, check for dark mode
-        if ($theme === 'default' && $auto_dark_mode) {
-            $theme = self::getAutoSelectedTheme();
-        }
+            // If theme is 'default' and auto dark mode is enabled, check for dark mode
+            if ($theme === 'default' && $auto_dark_mode) {
+                $theme = self::getAutoSelectedTheme();
+            }
 
-        // Sanitize theme value - only allow specific values
-        $allowed_themes = array('default', 'calm', 'mono', 'neon', 'obsidian');
-        if (!in_array($theme, $allowed_themes)) {
-            $theme = 'default';
-        }
+            // Sanitize theme value - only allow specific values
+            $allowed_themes = array('default', 'calm', 'mono', 'neon', 'obsidian');
+            if (!in_array($theme, $allowed_themes)) {
+                $theme = 'default';
+            }
 
-        // For 'default' theme, don't set data-theme attribute
-        // This respects WordPress admin color scheme (default/Fresh is light)
-        // and avoids overriding it with browser dark mode preference
-        if ($theme === 'default') {
-            // No theme CSS needed for default - use WordPress default styling
-            // Ensure no data-theme attribute is set
-            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeRemoverScript.html");
+            // For 'default' theme, don't set data-theme attribute
+            // This respects WordPress admin color scheme (default/Fresh is light)
+            // and avoids overriding it with browser dark mode preference
+            if ($theme === 'default') {
+                // No theme CSS needed for default - use WordPress default styling
+                // Ensure no data-theme attribute is set
+                $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeRemoverScript.html");
+                echo $html;
+                return;
+            }
+
+            // Output synchronous script to set data-theme attributes immediately
+            // This MUST run before CSS is parsed to prevent flash
+            // Setting on html immediately, and body as soon as it's available
+            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeSetterScript.html");
+            $f = ABJ_404_Solution_Functions::getInstance();
+            $html = $f->str_replace('{theme}', esc_js($theme), $html);
             echo $html;
-            return;
-        }
 
-        // Output synchronous script to set data-theme attributes immediately
-        // This MUST run before CSS is parsed to prevent flash
-        // Setting on html immediately, and body as soon as it's available
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeSetterScript.html");
-        $f = ABJ_404_Solution_Functions::getInstance();
-        $html = $f->str_replace('{theme}', esc_js($theme), $html);
-        echo $html;
-
-        // Define CSS variables for each theme
-        $themeVariables = array(
+            // Define CSS variables for each theme
+            $themeVariables = array(
             'mono' => array(
                 '--abj404-bg' => '#F8FAFC',
                 '--abj404-bg-muted' => '#F5F7FA',
@@ -554,21 +615,24 @@ class ABJ_404_Solution_WordPress_Connector {
             ),
         );
 
-        // Output inline critical CSS if theme is selected
-        /** @var string $themeKey */
-        $themeKey = $theme;
-        if (isset($themeVariables[$themeKey])) {
-            // Build CSS variables string
-            $cssVars = '';
-            foreach ($themeVariables[$themeKey] as $var => $value) {
-                $cssVars .= esc_html($var) . ':' . esc_html($value) . ';';
-            }
+            // Output inline critical CSS if theme is selected
+            /** @var string $themeKey */
+            $themeKey = $theme;
+            if (isset($themeVariables[$themeKey])) {
+                // Build CSS variables string
+                $cssVars = '';
+                foreach ($themeVariables[$themeKey] as $var => $value) {
+                    $cssVars .= esc_html($var) . ':' . esc_html($value) . ';';
+                }
 
-            // Load template and replace placeholder
-            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/criticalThemeCSS.html");
-            $f = ABJ_404_Solution_Functions::getInstance();
-            $html = $f->str_replace('{css_variables}', $cssVars, $html);
-            echo $html;
+                // Load template and replace placeholder
+                $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/criticalThemeCSS.html");
+                $f = ABJ_404_Solution_Functions::getInstance();
+                $html = $f->str_replace('{css_variables}', $cssVars, $html);
+                echo $html;
+            }
+        } catch (Throwable $e) {
+            self::reportAdminRuntimeError('admin_head', $e);
         }
     }
 
@@ -701,6 +765,8 @@ class ABJ_404_Solution_WordPress_Connector {
             $instance->logger->logUserCapabilities("echoDashboardNotification");
             return;
         }
+
+        self::echoAdminRuntimeErrorNotice();
 
         global $pagenow;
         global $abj404view;
