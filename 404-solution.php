@@ -153,6 +153,7 @@ function abj404_autoloader($class) {
 				$inc . 'PluginLogicTrait_ImportExport.php',
 				$inc . 'PluginLogicTrait_SettingsUpdate.php',
 				$inc . 'PluginLogicTrait_PageOrdering.php',
+				$inc . 'PluginLogicTrait_Lifecycle.php',
 			),
 			'ABJ_404_Solution_SpellChecker' => array(
 				$inc . 'SpellCheckerTrait_PostListeners.php',
@@ -308,6 +309,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'PluginLogicTrait_ImportExport.php',
 				$inc . 'PluginLogicTrait_SettingsUpdate.php',
 				$inc . 'PluginLogicTrait_PageOrdering.php',
+				$inc . 'PluginLogicTrait_Lifecycle.php',
 				// SpellChecker + traits
 				$inc . 'SpellChecker.php',
 				$inc . 'SpellCheckerTrait_PostListeners.php',
