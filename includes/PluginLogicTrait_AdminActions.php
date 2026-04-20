@@ -586,11 +586,12 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             return $typeAndDestMessage;
         }
 
-        $tdType = is_scalar($typeAndDest['type']) ? (int)$typeAndDest['type'] : 0;
+        $tdTypeRaw = is_scalar($typeAndDest['type']) ? (string)$typeAndDest['type'] : '';
+        $tdType = ($tdTypeRaw !== '') ? (int)$tdTypeRaw : -1;
         $tdDest = is_scalar($typeAndDest['dest']) ? (string)$typeAndDest['dest'] : '';
         $postedCodeForCheck = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
         $isCode410 = $postedCodeForCheck === '410' || $postedCodeForCheck === '451';
-        if ($tdType != 0 && ($tdDest !== "" || $isCode410)) {
+        if ($tdTypeRaw !== '' && ($tdDest !== "" || $isCode410)) {
             $statusType = ABJ404_STATUS_MANUAL;
             if (isset($_POST['is_regex_url']) &&
                 $_POST['is_regex_url'] != '0') {
