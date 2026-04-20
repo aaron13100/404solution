@@ -231,10 +231,10 @@ class ABJ_404_Solution_ErrorHandler {
 	 */
 	private static function stashAdminFatal(array $lasterror): void {
 		$payload = array(
-			'message' => array_key_exists('message', $lasterror) ? (string)$lasterror['message'] : '',
-			'file' => array_key_exists('file', $lasterror) ? (string)$lasterror['file'] : '',
-			'line' => array_key_exists('line', $lasterror) ? (int)$lasterror['line'] : 0,
-			'type' => array_key_exists('type', $lasterror) ? (int)$lasterror['type'] : 0,
+			'message' => array_key_exists('message', $lasterror) ? (is_string($lasterror['message']) ? $lasterror['message'] : '') : '',
+			'file' => array_key_exists('file', $lasterror) ? (is_string($lasterror['file']) ? $lasterror['file'] : '') : '',
+			'line' => array_key_exists('line', $lasterror) ? (is_int($lasterror['line']) ? $lasterror['line'] : 0) : 0,
+			'type' => array_key_exists('type', $lasterror) ? (is_int($lasterror['type']) ? $lasterror['type'] : 0) : 0,
 			'time' => time(),
 			'page' => self::getRequestValue('page'),
 			'subpage' => self::getRequestValue('subpage'),
@@ -294,9 +294,9 @@ class ABJ_404_Solution_ErrorHandler {
 			$settingsUrl = admin_url('options-general.php' . $settingsUrl);
 		}
 
-		$message = array_key_exists('message', $lasterror) ? (string)$lasterror['message'] : 'Fatal error';
-		$file = array_key_exists('file', $lasterror) ? (string)$lasterror['file'] : '(unknown file)';
-		$line = array_key_exists('line', $lasterror) ? (int)$lasterror['line'] : 0;
+		$message = array_key_exists('message', $lasterror) ? (is_string($lasterror['message']) ? $lasterror['message'] : 'Fatal error') : 'Fatal error';
+		$file = array_key_exists('file', $lasterror) ? (is_string($lasterror['file']) ? $lasterror['file'] : '(unknown file)') : '(unknown file)';
+		$line = array_key_exists('line', $lasterror) ? (is_int($lasterror['line']) ? $lasterror['line'] : 0) : 0;
 
 		echo '<!doctype html><html><head><meta charset="utf-8"><title>404 Solution Error</title></head><body style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;padding:24px;">';
 		echo '<h1 style="margin:0 0 12px 0;">404 Solution</h1>';
