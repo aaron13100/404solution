@@ -1118,30 +1118,44 @@ class ABJ_404_Solution_WordPress_Connector {
     /** @return void */
     static function addMainSettingsPageLink() {
         global $menu;
-        $instance = self::getInstance();
 
-        if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
-            $instance->logger->logUserCapabilities("addMainSettingsPageLink");
-            return;
-        }
-
-        $options = $instance->logic->getOptions();
+        // The menu must ALWAYS be registered so the admin page is accessible.
+        // Wrap all pre-registration logic in try/catch — if anything fails
+        // (missing tables, broken service container, etc.), fall through to
+        // register the menu with safe defaults.
         $pageName = "404 Solution";
+        $menuLocation = '';
 
-        // Admin notice
-        if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
-            $captured = $instance->dao->getCapturedCountForNotification();
-            if ($captured >= $options['admin_notification']) {
-                $pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . esc_html((string)$captured) . "</span></span>";
-                $pos = $instance->f->strpos($menu[80][0], 'update-plugins');
-                if ($pos === false) {
-                    $menu[80][0] = $menu[80][0] . " <span class='update-plugins count-1'><span class='update-count'>1</span></span>";
+        try {
+            $instance = self::getInstance();
+
+            if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
+                $instance->logger->logUserCapabilities("addMainSettingsPageLink");
+                return;
+            }
+
+            $options = $instance->logic->getOptions();
+            $menuLocation = isset($options['menuLocation']) ? $options['menuLocation'] : '';
+
+            // Admin notice badge
+            if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
+                $captured = $instance->dao->getCapturedCountForNotification();
+                if ($captured >= $options['admin_notification']) {
+                    $pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . esc_html((string)$captured) . "</span></span>";
+                    if (isset($menu[80][0])) {
+                        $pos = $instance->f->strpos($menu[80][0], 'update-plugins');
+                        if ($pos === false) {
+                            $menu[80][0] = $menu[80][0] . " <span class='update-plugins count-1'><span class='update-count'>1</span></span>";
+                        }
+                    }
                 }
             }
+        } catch (\Throwable $e) {
+            // Something failed before menu registration. Continue with defaults
+            // so the admin page is still accessible for debugging.
         }
 
-        if (isset($options['menuLocation']) &&
-                $options['menuLocation'] == 'settingsLevel') {
+        if ($menuLocation === 'settingsLevel') {
             // this adds the settings link at the same level as the "Tools" and "Settings" menu items.
 			$GLOBALS['abj404_settingsPageName'] = add_menu_page(PLUGIN_NAME, PLUGIN_NAME, 'manage_options', 'abj404_solution',
                     'abj404_admin_page_callback');
