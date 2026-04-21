@@ -211,10 +211,13 @@ trait ViewTrait_Redirects {
             $codeSelected = is_string($rawCode) ? $rawCode : '301';
         }
         
-        // Try to find a suggested destination for captured URLs with no destination set
+        // Try to find a suggested destination for captured URLs with no destination set.
+        // Captured URLs have final_dest=0, type=0 which resolves to pageIDAndType='0|0'
+        // (the default 404 page). Treat that as "no real destination" for suggestion purposes.
         $suggestion = null;
         $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
-        if ($pageIDAndType === '' && !empty($redirectUrl)) {
+        $hasNoRealDestination = ($pageIDAndType === '' || $pageIDAndType === '0|0');
+        if ($hasNoRealDestination && !empty($redirectUrl)) {
             $suggestion = $this->getSuggestedDestination($redirectUrl, $options);
         }
 
@@ -258,8 +261,8 @@ trait ViewTrait_Redirects {
         $html = $this->f->doNormalReplacements($html);
 
         // In Simple mode with a suggestion, hide the manual picker initially
-        $manualPickerStyle = ($suggestion !== null && $isSimpleMode) ? ' style="display:none;"' : '';
-        echo '<div class="abj404-form-group abj404-autocomplete-wrapper" id="abj404-manual-picker"' . $manualPickerStyle . '>';
+        $manualPickerHiddenClass = ($suggestion !== null && $isSimpleMode) ? ' abj404-hidden' : '';
+        echo '<div class="abj404-form-group abj404-autocomplete-wrapper' . $manualPickerHiddenClass . '" id="abj404-manual-picker">';
         echo $html;
         echo '</div>';
         

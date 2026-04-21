@@ -4022,6 +4022,10 @@ input[type="checkbox"]:focus-visible {
 }
 
 /* Suggested destination block on edit page */
+.abj404-hidden {
+    display: none !important;
+}
+
 .abj404-suggestion-block {
     padding: 16px;
     margin-bottom: 16px;

@@ -260,11 +260,11 @@ function abj404AcceptSuggestion(btn) {
     // Hide suggestion block, show manual picker (in case user wants to verify)
     var suggestionBlock = document.getElementById('abj404-suggestion-block');
     if (suggestionBlock) {
-        suggestionBlock.style.display = 'none';
+        suggestionBlock.classList.add('abj404-hidden');
     }
     var manualPicker = document.getElementById('abj404-manual-picker');
     if (manualPicker) {
-        manualPicker.style.display = '';
+        manualPicker.classList.remove('abj404-hidden');
     }
 }
 
@@ -274,11 +274,11 @@ function abj404AcceptSuggestion(btn) {
 function abj404ShowManualPicker() {
     var suggestionBlock = document.getElementById('abj404-suggestion-block');
     if (suggestionBlock) {
-        suggestionBlock.style.display = 'none';
+        suggestionBlock.classList.add('abj404-hidden');
     }
     var manualPicker = document.getElementById('abj404-manual-picker');
     if (manualPicker) {
-        manualPicker.style.display = '';
+        manualPicker.classList.remove('abj404-hidden');
     }
     // Focus the search field
     var searchField = document.getElementById('redirect_to_user_field');
