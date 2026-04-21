@@ -563,13 +563,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             $usedFallbackForLogsHits = true;
             $queryAllRowsAtOnce = false;
 
-            // If sorting by logshits/last_used, we must query ALL rows first,
-            // then sort in PHP, then apply limit - otherwise we get wrong results
+            // If sorting by logshits/last_used, we need to query rows, populate logs
+            // data in PHP, sort, then slice to the page. Cap the fetch to prevent
+            // memory exhaustion on large sites (PHP_INT_MAX previously crashed Apache).
             if ($tableOptions['orderby'] == 'logshits' || $tableOptions['orderby'] == 'last_used') {
                 $needsPhpSortAndLimit = true;
-                // Query all rows (no limit) so we can sort properly in PHP
+                $fallbackMaxRows = 5000;
                 $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false,
-                    0, PHP_INT_MAX, false);
+                    0, $fallbackMaxRows, false);
             } else {
                 // Other sort columns work fine with normal limit
                 $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false,
