@@ -172,21 +172,44 @@ trait ViewTrait_UI {
         ABJ_404_Solution_WPNotices::echoAdminNotices();
 
         echo "<div class=\"wrap\" style='z-index: 1;position: relative;'>";
+
+        // Post-setup welcome banner
+        if (isset($_GET['setup_complete']) && $_GET['setup_complete'] === '1') {
+            $options = $this->logic->getOptions();
+            $auto = !empty($options['auto_redirects']) && $options['auto_redirects'] !== '0';
+            $notify = !empty($options['admin_notification']) && $options['admin_notification'] !== '0';
+
+            echo '<div class="notice notice-success is-dismissible"><p>';
+            echo '<strong>' . esc_html__("You're all set!", '404-solution') . '</strong> ';
+            if ($auto && $notify) {
+                echo esc_html__('404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention.', '404-solution');
+            } elseif ($auto) {
+                echo esc_html__('404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected.', '404-solution');
+            } elseif ($notify) {
+                echo esc_html__('404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention.', '404-solution');
+            } else {
+                echo esc_html__('404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab.', '404-solution');
+            }
+            echo '</p></div>' . "\n";
+        }
+
         if ($message != "") {
             $allowed_tags = array(
                 'br' => array(),
                 'em' => array(),
                 'strong' => array(),
             );
-            
+
             if (($this->f->strlen($message) >= 6) && ($this->f->substr($this->f->strtolower($message), 0, 6) == 'error:')) {
                 $cssClasses = 'notice notice-error';
             } else {
                 $cssClasses = 'notice notice-success';
             }
-            
+
             echo '<div class="' . $cssClasses . '"><p>' . wp_kses($message, $allowed_tags) . "</p></div>\n";
         }
+
+        $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
 
         echo '<nav class="abj404-tab-navigation" role="tablist">';
 
@@ -204,19 +227,21 @@ trait ViewTrait_UI {
         echo '<span class="abj404-tab-text">' . esc_html__('Captured 404s', '404-solution') . '</span>';
         echo '</a>';
 
-        // Logs tab
-        $class = ($sub == 'abj404_logs') ? "active" : "";
-        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_logs" title="' . esc_attr__('Redirect & Capture Logs', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
-        echo '<span class="dashicons dashicons-list-view"></span>';
-        echo '<span class="abj404-tab-text">' . esc_html__('Logs', '404-solution') . '</span>';
-        echo '</a>';
+        if (!$isSimpleMode) {
+            // Logs tab (hidden in Simple mode)
+            $class = ($sub == 'abj404_logs') ? "active" : "";
+            echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_logs" title="' . esc_attr__('Redirect & Capture Logs', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
+            echo '<span class="dashicons dashicons-list-view"></span>';
+            echo '<span class="abj404-tab-text">' . esc_html__('Logs', '404-solution') . '</span>';
+            echo '</a>';
 
-        // Stats tab
-        $class = ($sub == 'abj404_stats') ? "active" : "";
-        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_stats" title="' . esc_attr__('Stats', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
-        echo '<span class="dashicons dashicons-chart-bar"></span>';
-        echo '<span class="abj404-tab-text">' . esc_html__('Stats', '404-solution') . '</span>';
-        echo '</a>';
+            // Stats tab (hidden in Simple mode)
+            $class = ($sub == 'abj404_stats') ? "active" : "";
+            echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_stats" title="' . esc_attr__('Stats', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
+            echo '<span class="dashicons dashicons-chart-bar"></span>';
+            echo '<span class="abj404-tab-text">' . esc_html__('Stats', '404-solution') . '</span>';
+            echo '</a>';
+        }
 
         // Tools tab
         $class = ($sub == 'abj404_tools') ? "active" : "";

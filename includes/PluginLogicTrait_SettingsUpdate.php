@@ -623,10 +623,11 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             'auto_redirects', 'auto_slugs', 'auto_cats', 'auto_tags', 'auto_trash_redirect',
             'capture_404', 'send_error_logs', 'log_raw_ips',
         	'redirect_all_requests', 'update_suggest_url', 'suggest_minscore_enabled',
+            'auto_trash_junk_urls',
         );
 
         // Options that appear in Simple Mode form
-        $simpleModeOptions = array('auto_redirects', 'capture_404');
+        $simpleModeOptions = array('auto_redirects', 'capture_404', 'auto_trash_junk_urls');
 
         // Determine which options to process from POST data
         if ($settingsMode === 'simple') {

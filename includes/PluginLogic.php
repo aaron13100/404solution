@@ -982,6 +982,22 @@ class ABJ_404_Solution_PluginLogic {
             'captured_order' => 'DESC',
         	'excludePages[]' => '',
             'dest404_behavior' => 'theme_default',
+            'auto_trash_junk_urls' => '1',
+            'auto_trash_junk_patterns' => implode("\n", array(
+                '.env', '.git/', '.aws/', '.svn/', '.hg/',
+                'xmlrpc.php', 'wlwmanifest.xml',
+                'wp-config', 'config.php', 'config.json', 'config.bak',
+                'phpinfo', 'phpmyadmin', 'phpMyAdmin', 'adminer',
+                'sqladmin', 'dbadmin', 'mysqladmin',
+                'id_rsa', '.bash_history', '.bashrc', '.DS_Store',
+                'nginx.conf', 'httpd.conf', 'Dockerfile', 'docker-compose',
+                '.sql', '.tar.gz', 'db_backup', 'database_backup',
+                'setup-config.php',
+                '/vendor/', '/node_modules/', '/tmp/',
+                '/_profiler/', '/_debugbar/', '/debug/', '/debugbar/',
+                '/META-INF/', '/WEB-INF/',
+                'magento_version', 'alfa-rex.php', 'bypass.php',
+            )),
         );
 
         return $options;

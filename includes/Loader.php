@@ -27,6 +27,7 @@ if (!defined('PLUGIN_NAME')) { define( 'PLUGIN_NAME', '404 Solution'); }
 
 // STATUS types
 if (!defined('ABJ404_TRASH_FILTER')) { define( 'ABJ404_TRASH_FILTER', -1 ); }
+if (!defined('ABJ404_HANDLED_FILTER')) { define( 'ABJ404_HANDLED_FILTER', -2 ); }
 if (!defined('ABJ404_STATUS_MANUAL')) { define( 'ABJ404_STATUS_MANUAL', 1 ); }
 if (!defined('ABJ404_STATUS_AUTO')) { define( 'ABJ404_STATUS_AUTO', 2 ); }
 if (!defined('ABJ404_STATUS_CAPTURED')) { define( 'ABJ404_STATUS_CAPTURED', 3 ); }

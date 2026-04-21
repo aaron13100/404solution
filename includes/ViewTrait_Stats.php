@@ -59,6 +59,15 @@ trait ViewTrait_Stats {
         $total = $auto301 + $auto302 + $manual301 + $manual302 + $trashed;
 
         $content = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/statsRedirectsBox.html");
+
+        // In Simple mode, replace technical "301"/"302" labels with plain language
+        if ($this->logic->getSettingsMode() === 'simple') {
+            $content = $this->f->str_replace('{Automatic 301 Redirects}', esc_html__('Automatic Permanent Redirects', '404-solution'), $content);
+            $content = $this->f->str_replace('{Automatic 302 Redirects}', esc_html__('Automatic Temporary Redirects', '404-solution'), $content);
+            $content = $this->f->str_replace('{Manual 301 Redirects}', esc_html__('Manual Permanent Redirects', '404-solution'), $content);
+            $content = $this->f->str_replace('{Manual 302 Redirects}', esc_html__('Manual Temporary Redirects', '404-solution'), $content);
+        }
+
         $content = $this->f->str_replace('{auto301}', esc_html((string)$auto301), $content);
         $content = $this->f->str_replace('{auto302}', esc_html((string)$auto302), $content);
         $content = $this->f->str_replace('{manual301}', esc_html((string)$manual301), $content);

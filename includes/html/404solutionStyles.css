@@ -3966,3 +3966,37 @@ input[type="checkbox"]:focus-visible {
     border-radius: 6px;
     border: 1px solid var(--abj404-border, #dcdcde);
 }
+
+/* Health status bar on Redirects landing page */
+.abj404-health-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    background: var(--abj404-bg-subtle, #f6f7f7);
+    border: 1px solid var(--abj404-border, #dcdcde);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--abj404-text, #1d2327);
+}
+
+.abj404-health-bar a {
+    margin-left: 4px;
+}
+
+.abj404-health-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.abj404-health-green {
+    background: #00a32a;
+}
+
+.abj404-health-yellow {
+    background: #dba617;
+}

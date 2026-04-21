@@ -148,6 +148,11 @@ class ABJ_404_Solution_SetupWizard {
      */
     private static $allowedQ2Values = ['yes', 'no'];
 
+    /** Allowed values for Q3
+     * @var array<int, string>
+     */
+    private static $allowedQ3Values = ['yes', 'no'];
+
     /**
      * Apply settings from wizard form
      * @return void
@@ -184,6 +189,19 @@ class ABJ_404_Solution_SetupWizard {
         }
 
         $options['capture_404'] = ($q2_answer === 'yes') ? '1' : '0';
+
+        // Question 3: Email alerts
+        $q3_answer = isset($_POST['abj404_setup_q3']) ? sanitize_text_field($_POST['abj404_setup_q3']) : 'yes';
+        if (!in_array($q3_answer, self::$allowedQ3Values, true)) {
+            $q3_answer = 'yes';
+        }
+
+        if ($q3_answer === 'yes') {
+            $options['admin_notification'] = '50';
+            $options['admin_notification_frequency'] = 'weekly';
+            $admin_email = get_option('admin_email');
+            $options['admin_notification_email'] = is_string($admin_email) ? $admin_email : '';
+        }
 
         // Save options
         $abj404logic->updateOptions($options);
@@ -671,6 +689,27 @@ class ABJ_404_Solution_SetupWizard {
                                     <span class="abj404-setup-option-text">
                                         <span class="abj404-setup-option-label"><?php esc_html_e("No, don't log 404s", '404-solution'); ?></span>
                                         <span class="abj404-setup-option-desc"><?php esc_html_e('Only handle manually created redirects', '404-solution'); ?></span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Question 3: Email alerts -->
+                        <div class="abj404-setup-question">
+                            <h3><?php esc_html_e('Get email alerts about 404 problems?', '404-solution'); ?></h3>
+                            <div class="abj404-setup-options">
+                                <label class="abj404-setup-option">
+                                    <input type="radio" name="abj404_setup_q3" value="yes" checked>
+                                    <span class="abj404-setup-option-text">
+                                        <span class="abj404-setup-option-label"><?php esc_html_e('Yes, email me a weekly summary (recommended)', '404-solution'); ?></span>
+                                        <span class="abj404-setup-option-desc"><?php esc_html_e('Get notified when captured 404 URLs exceed 50', '404-solution'); ?></span>
+                                    </span>
+                                </label>
+                                <label class="abj404-setup-option">
+                                    <input type="radio" name="abj404_setup_q3" value="no">
+                                    <span class="abj404-setup-option-text">
+                                        <span class="abj404-setup-option-label"><?php esc_html_e("No, I'll check manually", '404-solution'); ?></span>
+                                        <span class="abj404-setup-option-desc"><?php esc_html_e('You can always enable email alerts later in Options', '404-solution'); ?></span>
                                     </span>
                                 </label>
                             </div>

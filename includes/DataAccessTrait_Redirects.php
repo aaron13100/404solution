@@ -229,6 +229,9 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         // Remove orphaned auto redirects (destination post deleted/unpublished)
         $orphanedCount = $this->cleanupOrphanedAutoRedirects();
 
+        // Auto-trash junk/bot captured URLs
+        $junkTrashedCount = $this->autoTrashJunkCapturedUrls($options);
+
         //Clean up old logs. prepare the query. get the disk usage in bytes. compare to the max requested
         // disk usage (MB to bytes). delete 1k rows at a time until the size is acceptable.
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
@@ -263,6 +266,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 $capturedURLsCount . ", Old automatic redirects removed: " . $autoRedirectsCount .
                 ", Old manual redirects removed: " . $manualRedirectsCount .
                 ", Orphaned auto redirects removed: " . $orphanedCount .
+                ", Junk URLs auto-trashed: " . $junkTrashedCount .
                 ", Old log lines removed: " . $oldLogRowsDeleted .
                 " (age: " . $oldLogRowsDeletedByAge . ", size: " . $oldLogRowsDeletedBySize . ")" .
                 ", New log size: " . $logSizeMB . "MB" .
@@ -1160,5 +1164,87 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 $this->logger->warn("saveRedirectConditions: error inserting condition #{$index} for redirect_id={$redirectId}: " . $wpdb->last_error);
             }
         }
+    }
+
+    /**
+     * Auto-trash captured URLs that match known junk/bot patterns, and
+     * captured URLs with 0 hits older than 14 days.
+     *
+     * Rate-limited to once per hour via transient.
+     *
+     * @param array<string, mixed> $options Plugin options.
+     * @return int Number of URLs trashed.
+     */
+    function autoTrashJunkCapturedUrls(array $options): int {
+        // Feature must be enabled
+        $enabled = $options['auto_trash_junk_urls'] ?? '0';
+        if ($enabled !== '1') {
+            return 0;
+        }
+
+        // Rate limit: once per hour
+        $transientKey = 'abj404_last_auto_trash';
+        if (get_transient($transientKey) !== false) {
+            return 0;
+        }
+        set_transient($transientKey, time(), HOUR_IN_SECONDS);
+
+        $patternsRaw = $options['auto_trash_junk_patterns'] ?? '';
+        $patternsStr = is_string($patternsRaw) ? $patternsRaw : '';
+        $lines = array_filter(array_map('trim', explode("\n", $patternsStr)));
+
+        if (empty($lines)) {
+            return 0;
+        }
+
+        global $wpdb;
+        $totalTrashed = 0;
+
+        // Build LIKE conditions for each pattern
+        $likeClauses = array();
+        foreach ($lines as $pattern) {
+            $escaped = $wpdb->esc_like($pattern);
+            $likeClauses[] = $wpdb->prepare("url LIKE %s", '%' . $escaped . '%');
+        }
+
+        // Trash captured URLs matching junk patterns (case-insensitive via LIKE)
+        if (!empty($likeClauses)) {
+            $wherePatterns = implode(' OR ', $likeClauses);
+            $query = "UPDATE {wp_abj404_redirects}
+                SET disabled = 1
+                WHERE status = " . ABJ404_STATUS_CAPTURED . "
+                AND disabled = 0
+                AND (" . $wherePatterns . ")";
+            $query = $this->doTableNameReplacements($query);
+
+            $result = $this->queryAndGetResults($query);
+            $affected = $result['rows_affected'] ?? 0;
+            $totalTrashed += is_numeric($affected) ? (int)$affected : 0;
+        }
+
+        // Trash captured URLs with 0 hits older than 14 days
+        $cutoff = time() - (14 * DAY_IN_SECONDS);
+        $query = $wpdb->prepare(
+            "UPDATE {wp_abj404_redirects}
+            SET disabled = 1
+            WHERE status = " . ABJ404_STATUS_CAPTURED . "
+            AND disabled = 0
+            AND logshits = 0
+            AND timestamp < %d",
+            $cutoff
+        );
+        $query = $this->doTableNameReplacements($query);
+
+        $result = $this->queryAndGetResults($query);
+        $affected = $result['rows_affected'] ?? 0;
+        $totalTrashed += is_numeric($affected) ? (int)$affected : 0;
+
+        if ($totalTrashed > 0) {
+            $this->logger->infoMessage("Auto-trashed " . $totalTrashed . " junk/stale captured URLs during maintenance.");
+            // Invalidate the cached status counts so the UI reflects the change
+            delete_transient(self::CACHE_KEY_CAPTURED_STATUS);
+        }
+
+        return $totalTrashed;
     }
 }

@@ -756,10 +756,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             } else {
                 $this->logger->errorMessage("Unrecognized sub type: " . esc_html($sub));
             }
-            
+
         } else if ($tableOptions['filter'] == ABJ404_STATUS_MANUAL) {
             $statusTypes = implode(", ", array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_REGEX));
-            
+
+        } else if ($tableOptions['filter'] == ABJ404_HANDLED_FILTER) {
+            // Composite filter: Ignored + Later (Simple mode "Handled" tab)
+            $statusTypes = implode(", ", array(ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
+
         } else {
             $statusTypes = $tableOptions['filter'];
         }
@@ -767,6 +771,9 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
 
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             $trashValue = 1;
+        } else if ($tableOptions['filter'] == ABJ404_HANDLED_FILTER) {
+            // Show both active (disabled=0) and trashed (disabled=1) in Handled view
+            $trashValue = 0;
         } else {
             $trashValue = 0;
         }

@@ -477,6 +477,8 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{selectedNotifyInstant}', $selectedNotifyInstant, $html);
         $html = $this->f->str_replace('{selectedNotifyDaily}', $selectedNotifyDaily, $html);
         $html = $this->f->str_replace('{selectedNotifyWeekly}', $selectedNotifyWeekly, $html);
+        $selectedAutoTrashJunk = $this->getCheckedAttr($options, 'auto_trash_junk_urls');
+        $html = $this->f->str_replace('{selectedAutoTrashJunk}', $selectedAutoTrashJunk, $html);
         // constants and translations.
         $html = $this->f->doNormalReplacements($html);
 
