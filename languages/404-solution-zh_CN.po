@@ -3594,3 +3594,15 @@ msgstr "加载此管理页面时发生了内部错误。"
 #: includes/WordPress_Connector.php
 msgid "Show details"
 msgstr "显示详细信息"
+
+#: includes/GoogleSearchConsole.php
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr "高级设置：使用您自己的「谷歌云端」项目凭据进行连接"
+
+#: includes/GoogleSearchConsole.php
+msgid "Connect to Google Search Console"
+msgstr "连接到「谷歌搜索控制台」以获取搜索流量数据"
+
+#: includes/WordPress_Connector.php
+msgid "No access token received from authorization."
+msgstr "授权过程中未收到访问令牌，请重新尝试授权操作。"

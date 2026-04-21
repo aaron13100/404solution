@@ -30,6 +30,9 @@ class ABJ_404_Solution_GoogleSearchConsole {
     const API_BASE_URL      = 'https://www.googleapis.com/webmasters/v3';
     const SCOPE             = 'https://www.googleapis.com/auth/webmasters.readonly';
 
+    /** Base URL of the centralized OAuth proxy Worker. */
+    const CENTRALIZED_AUTH_URL = 'https://404-solution-auth.forethought-studio.com';
+
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
@@ -80,10 +83,32 @@ class ABJ_404_Solution_GoogleSearchConsole {
     }
 
     /**
-     * Is the integration configured (credentials entered)?
+     * Whether centralized OAuth mode is active (no per-user Google Cloud credentials needed).
+     *
+     * When true, the plugin uses a published OAuth app proxied through a Cloudflare Worker
+     * at CENTRALIZED_AUTH_URL instead of requiring each site owner to create their own
+     * Google Cloud project.
+     *
+     * @return bool
+     */
+    public function isCentralizedMode(): bool {
+        $s = $this->getSettings();
+        // Centralized mode is ON unless the user has entered their own credentials.
+        // The explicit flag allows toggling back from custom → centralized.
+        if ($s['client_id'] !== '' && $s['client_secret'] !== '') {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Is the integration configured (credentials entered or centralized mode)?
      * @return bool
      */
     public function isConfigured(): bool {
+        if ($this->isCentralizedMode()) {
+            return true;
+        }
         $s = $this->getSettings();
         return $s['client_id'] !== '' && $s['client_secret'] !== '';
     }
@@ -110,9 +135,23 @@ class ABJ_404_Solution_GoogleSearchConsole {
 
     /**
      * Build the Google OAuth 2.0 authorization URL.
+     *
+     * In centralized mode the user is sent to the Cloudflare Worker's /authorize
+     * endpoint which in turn redirects to Google. In custom-credentials mode the
+     * user is sent directly to Google.
+     *
      * @return string
      */
     public function buildAuthUrl(): string {
+        if ($this->isCentralizedMode()) {
+            $params = array(
+                'site_callback_url' => $this->getCallbackUrl(),
+                'nonce'             => wp_create_nonce('abj404_gsc_oauth'),
+                'scope'             => self::SCOPE,
+            );
+            return self::CENTRALIZED_AUTH_URL . '/authorize?' . http_build_query($params);
+        }
+
         $s = $this->getSettings();
         $params = array(
             'client_id'     => $s['client_id'],
@@ -135,11 +174,42 @@ class ABJ_404_Solution_GoogleSearchConsole {
     }
 
     /**
+     * Store tokens received directly from the centralized OAuth callback.
+     *
+     * In centralized mode, the Worker exchanges the auth code for tokens and
+     * passes them back as URL parameters — so there is no code-for-token
+     * exchange on the plugin side. This method stores the pre-exchanged tokens.
+     *
+     * @param string $accessToken
+     * @param string $refreshToken
+     * @param int    $expiresIn    Seconds until the access token expires.
+     * @return void
+     */
+    public function storeCentralizedTokens(string $accessToken, string $refreshToken, int $expiresIn): void {
+        $token = array(
+            'access_token'  => $accessToken,
+            'token_type'    => 'Bearer',
+            'expires_at'    => $expiresIn > 0 ? (time() + $expiresIn - 60) : 0,
+            'refresh_token' => $refreshToken,
+        );
+        update_option(self::TOKEN_OPTION_KEY, $token, false);
+        $this->clearLastOAuthError();
+    }
+
+    /**
      * Exchange an authorization code for tokens. Returns '' on success, error on failure.
+     *
+     * In centralized mode this should not be called — tokens arrive directly from
+     * the Worker callback via storeCentralizedTokens(). An early return guards against
+     * accidental invocation.
+     *
      * @param string $code
      * @return string
      */
     public function exchangeCodeForToken(string $code): string {
+        if ($this->isCentralizedMode()) {
+            return 'Code exchange is not used in centralized mode.';
+        }
         $s = $this->getSettings();
         $response = wp_remote_post(self::OAUTH_TOKEN_URL, array(
             'body' => array(
@@ -175,6 +245,11 @@ class ABJ_404_Solution_GoogleSearchConsole {
 
     /**
      * Refresh the access token using the stored refresh token.
+     *
+     * In centralized mode the refresh request is sent to the Worker's /refresh
+     * endpoint (which holds the client_secret). In custom mode the request goes
+     * directly to Google's token endpoint.
+     *
      * @return bool true if token refreshed successfully.
      */
     private function refreshToken(): bool {
@@ -182,6 +257,11 @@ class ABJ_404_Solution_GoogleSearchConsole {
         if (!is_array($token) || empty($token['refresh_token'])) {
             return false;
         }
+
+        if ($this->isCentralizedMode()) {
+            return $this->refreshTokenViaCentralized($token);
+        }
+
         $s = $this->getSettings();
         $response = wp_remote_post(self::OAUTH_TOKEN_URL, array(
             'body' => array(
@@ -190,6 +270,36 @@ class ABJ_404_Solution_GoogleSearchConsole {
                 'client_secret' => $s['client_secret'],
                 'grant_type'    => 'refresh_token',
             ),
+            'timeout' => 15,
+        ));
+
+        if (is_wp_error($response)) {
+            return false;
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        if (!is_array($body) || empty($body['access_token'])) {
+            return false;
+        }
+
+        $token['access_token'] = $body['access_token'];
+        $token['expires_at']   = isset($body['expires_in']) ? (time() + (int)$body['expires_in'] - 60) : 0;
+        update_option(self::TOKEN_OPTION_KEY, $token, false);
+        return true;
+    }
+
+    /**
+     * Refresh the access token via the centralized Worker's /refresh endpoint.
+     *
+     * @param array<string, mixed> $token Current stored token array.
+     * @return bool true if token refreshed successfully.
+     */
+    private function refreshTokenViaCentralized(array $token): bool {
+        $response = wp_remote_post(self::CENTRALIZED_AUTH_URL . '/refresh', array(
+            'headers' => array('Content-Type' => 'application/json'),
+            'body'    => (string)wp_json_encode(array(
+                'refresh_token' => $token['refresh_token'],
+            )),
             'timeout' => 15,
         ));
 
@@ -384,6 +494,10 @@ class ABJ_404_Solution_GoogleSearchConsole {
     /**
      * Determine the current UI state of the GSC integration.
      *
+     * In centralized mode the 'not_configured' state is skipped because
+     * no per-user credentials are needed — the state starts at
+     * 'configured_not_connected' until the user authorizes.
+     *
      * @return string 'not_configured'|'configured_not_connected'|'error'|'connected'
      */
     public function getState(): string {
@@ -425,16 +539,31 @@ class ABJ_404_Solution_GoogleSearchConsole {
     }
 
     /**
-     * State: credentials not yet entered. Shows 5-step setup wizard + credential form.
+     * State: no custom credentials entered and centralized mode not yet authorized.
+     *
+     * In centralized mode (default) this state is actually skipped because
+     * isConfigured() returns true. This render method now only appears when
+     * the user is in custom-credentials mode with empty credentials — which
+     * shouldn't normally happen since centralized is the default. Kept for
+     * the "use your own credentials" advanced flow.
+     *
+     * Shows a simple "Connect" button for centralized mode and an expandable
+     * advanced section for custom credentials.
+     *
      * @return string
      */
     private function renderNotConfiguredState(): string {
         $callbackUrl = $this->getCallbackUrl();
         $s           = $this->getSettings();
-        $copyLabel   = esc_js(__('Copy', '404-solution'));
         $copiedLabel = esc_js(__('Copied!', '404-solution'));
 
         $html  = '<p>' . esc_html__('Connect to Google Search Console to see which broken URLs were getting real search traffic.', '404-solution') . '</p>';
+
+        // Advanced: custom credentials toggle + wizard
+        $html .= '<details class="abj404-gsc-advanced">';
+        $html .= '<summary style="cursor:pointer;margin-top:12px;color:#646970;">' . esc_html__('Advanced: use your own Google Cloud credentials', '404-solution') . '</summary>';
+        $html .= '<div style="margin-top:10px;">';
+
         $html .= '<p><strong>' . esc_html__('Setup steps:', '404-solution') . '</strong></p>';
         $html .= '<ol class="abj404-wizard-steps">';
         $html .= '<li>' . sprintf(esc_html__('Create a project in %s.', '404-solution'), '<a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>') . '</li>';
@@ -483,17 +612,39 @@ class ABJ_404_Solution_GoogleSearchConsole {
         $html .= '<button type="submit" class="abj404-btn abj404-btn-primary">' . esc_html__('Save Credentials', '404-solution') . '</button>';
         $html .= '</form>';
 
+        $html .= '</div>'; // end details inner div
+        $html .= '</details>';
+
         return $html;
     }
 
     /**
-     * State: credentials saved but OAuth not yet completed.
-     * Shows an amber status pill + Authorize button.
+     * State: configured but OAuth not yet completed.
+     *
+     * In centralized mode: shows a friendly "Connect to Google Search Console" button
+     * plus an advanced link to use custom credentials.
+     * In custom mode: shows the existing "Credentials saved — authorization required" UI.
+     *
      * @return string
      */
     private function renderConfiguredNotConnectedState(): string {
         $authUrl   = $this->buildAuthUrl();
         $revokeUrl = wp_nonce_url(admin_url('admin-ajax.php?action=abj404_gsc_revoke'), 'abj404_gsc_revoke');
+
+        if ($this->isCentralizedMode()) {
+            $html  = '<p>' . esc_html__('Connect to Google Search Console to see which broken URLs were getting real search traffic.', '404-solution') . '</p>';
+            $html .= '<a href="' . esc_url($authUrl) . '" class="abj404-btn abj404-btn-primary">' . esc_html__('Connect to Google Search Console', '404-solution') . '</a>';
+
+            // Advanced: use your own credentials
+            $html .= '<details class="abj404-gsc-advanced" style="margin-top:16px;">';
+            $html .= '<summary style="cursor:pointer;color:#646970;">' . esc_html__('Advanced: use your own Google Cloud credentials', '404-solution') . '</summary>';
+            $html .= '<div style="margin-top:10px;">';
+            $html .= $this->renderCustomCredentialsForm();
+            $html .= '</div>';
+            $html .= '</details>';
+
+            return $html;
+        }
 
         $html  = '<div class="abj404-gsc-status abj404-gsc-status--amber">';
         $html .= esc_html__('Credentials saved — authorization required', '404-solution');
@@ -501,6 +652,69 @@ class ABJ_404_Solution_GoogleSearchConsole {
         $html .= '<p>' . esc_html__('Click the button below to authorize access to your Search Console data.', '404-solution') . '</p>';
         $html .= '<a href="' . esc_url($authUrl) . '" class="abj404-btn abj404-btn-primary">' . esc_html__('Authorize with Google', '404-solution') . '</a>';
         $html .= ' <a href="' . esc_url($revokeUrl) . '" class="abj404-btn abj404-btn-secondary">' . esc_html__('Remove Credentials', '404-solution') . '</a>';
+
+        return $html;
+    }
+
+    /**
+     * Render the custom credentials form used in the "Advanced" expandable section.
+     * Extracted to avoid duplication between renderNotConfiguredState and
+     * renderConfiguredNotConnectedState.
+     *
+     * @return string HTML
+     */
+    private function renderCustomCredentialsForm(): string {
+        $callbackUrl = $this->getCallbackUrl();
+        $s           = $this->getSettings();
+        $copiedLabel = esc_js(__('Copied!', '404-solution'));
+
+        $html  = '<p><strong>' . esc_html__('Setup steps:', '404-solution') . '</strong></p>';
+        $html .= '<ol class="abj404-wizard-steps">';
+        $html .= '<li>' . sprintf(esc_html__('Create a project in %s.', '404-solution'), '<a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>') . '</li>';
+        $html .= '<li>' . esc_html__('Enable the "Google Search Console API".', '404-solution') . '</li>';
+        $html .= '<li>' . esc_html__('Create OAuth 2.0 credentials (Web application type).', '404-solution') . '</li>';
+        $html .= '<li>' . esc_html__('Add this Authorized Redirect URI to your OAuth client:', '404-solution');
+        $html .= '<div class="abj404-copy-uri-wrap">';
+        $html .= '<code id="abj404-gsc-callback-uri" class="abj404-gsc-callback-code">' . esc_html($callbackUrl) . '</code>';
+        $html .= '<button type="button" class="abj404-btn abj404-btn-secondary abj404-copy-btn" onclick="abj404CopyGscUri(this)">' . esc_html__('Copy', '404-solution') . '</button>';
+        $html .= '</div>';
+        $html .= '</li>';
+        $html .= '<li>' . esc_html__('Enter your Client ID and Client Secret below.', '404-solution') . '</li>';
+        $html .= '</ol>';
+
+        // Tiny inline script: copy button handler (admin-only page, no CSP concerns)
+        $html .= '<script>';
+        $html .= 'function abj404CopyGscUri(btn){';
+        $html .= 'var code=document.getElementById(\'abj404-gsc-callback-uri\');';
+        $html .= 'if(!code||!navigator.clipboard)return;';
+        $html .= 'navigator.clipboard.writeText(code.textContent.trim()).then(function(){';
+        $html .= 'var orig=btn.textContent;';
+        $html .= 'btn.textContent=\'' . $copiedLabel . '\';';
+        $html .= 'btn.classList.add(\'abj404-copy-btn--done\');';
+        $html .= 'setTimeout(function(){btn.textContent=orig;btn.classList.remove(\'abj404-copy-btn--done\');},2000);';
+        $html .= '});';
+        $html .= '}';
+        $html .= '</script>';
+
+        $nonceField = wp_nonce_field('abj404_gsc_save', '_wpnonce_gsc', true, false);
+        $html .= '<form method="POST">';
+        $html .= $nonceField;
+        $html .= '<input type="hidden" name="action" value="saveGscSettings">';
+        $html .= '<div class="abj404-form-group">';
+        $html .= '<label class="abj404-form-label" for="gsc_client_id">' . esc_html__('Client ID', '404-solution') . '</label>';
+        $html .= '<input type="text" name="gsc_client_id" id="gsc_client_id" class="abj404-form-input" value="' . esc_attr($s['client_id']) . '">';
+        $html .= '</div>';
+        $html .= '<div class="abj404-form-group">';
+        $html .= '<label class="abj404-form-label" for="gsc_client_secret">' . esc_html__('Client Secret', '404-solution') . '</label>';
+        $html .= '<input type="password" name="gsc_client_secret" id="gsc_client_secret" class="abj404-form-input" value="' . esc_attr($s['client_secret']) . '">';
+        $html .= '</div>';
+        $html .= '<div class="abj404-form-group">';
+        $html .= '<label class="abj404-form-label" for="gsc_site_url">' . esc_html__('Search Console Site URL', '404-solution') . '</label>';
+        $html .= '<input type="url" name="gsc_site_url" id="gsc_site_url" class="abj404-form-input" value="' . esc_attr($s['site_url']) . '">';
+        $html .= '<p class="abj404-form-help">' . esc_html__('The site URL as registered in Search Console (e.g. https://example.com/).', '404-solution') . '</p>';
+        $html .= '</div>';
+        $html .= '<button type="submit" class="abj404-btn abj404-btn-primary">' . esc_html__('Save Credentials', '404-solution') . '</button>';
+        $html .= '</form>';
 
         return $html;
     }

@@ -2659,3 +2659,15 @@ msgstr ""
 #: includes/ViewTrait_UI.php
 msgid "If you have a security plugin installed, it may be restricting access to this page."
 msgstr ""
+
+#: includes/GoogleSearchConsole.php
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php
+msgid "Connect to Google Search Console"
+msgstr ""
+
+#: includes/WordPress_Connector.php
+msgid "No access token received from authorization."
+msgstr ""

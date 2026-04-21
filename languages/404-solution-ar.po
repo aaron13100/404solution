@@ -3615,3 +3615,15 @@ msgstr "حدث خطأ داخلي أثناء تحميل صفحة الإدارة �
 #: includes/WordPress_Connector.php
 msgid "Show details"
 msgstr "عرض التفاصيل"
+
+#: includes/GoogleSearchConsole.php
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr "إعدادات متقدمة: استخدم بيانات اعتماد مشروعك الخاص في Google Cloud"
+
+#: includes/GoogleSearchConsole.php
+msgid "Connect to Google Search Console"
+msgstr "الاتصال بخدمة مشرفي المواقع من جوجل لتحليل بيانات البحث"
+
+#: includes/WordPress_Connector.php
+msgid "No access token received from authorization."
+msgstr "لم يتم استلام رمز الوصول من عملية التفويض."

@@ -3584,3 +3584,15 @@ msgstr "Beim Laden dieser Admin-Seite ist ein interner Fehler aufgetreten."
 #: includes/WordPress_Connector.php
 msgid "Show details"
 msgstr "Details anzeigen"
+
+#: includes/GoogleSearchConsole.php
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr "Erweitert: Eigene Google-Cloud-Anmeldedaten verwenden"
+
+#: includes/GoogleSearchConsole.php
+msgid "Connect to Google Search Console"
+msgstr "Verbindung zur Google Search Console herstellen"
+
+#: includes/WordPress_Connector.php
+msgid "No access token received from authorization."
+msgstr "Kein Zugriffstoken bei der Autorisierung erhalten."

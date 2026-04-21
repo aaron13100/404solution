@@ -3573,3 +3573,15 @@ msgstr "Terjadi kesalahan internal saat memuat halaman admin ini."
 #: includes/WordPress_Connector.php
 msgid "Show details"
 msgstr "Tampilkan detail"
+
+#: includes/GoogleSearchConsole.php
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr "Lanjutan: gunakan kredensial proyek Google Cloud Anda sendiri"
+
+#: includes/GoogleSearchConsole.php
+msgid "Connect to Google Search Console"
+msgstr "Hubungkan ke layanan Google Search Console"
+
+#: includes/WordPress_Connector.php
+msgid "No access token received from authorization."
+msgstr "Tidak ada token akses yang diterima dari proses otorisasi."

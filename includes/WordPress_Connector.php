@@ -1234,8 +1234,14 @@ class ABJ_404_Solution_WordPress_Connector {
     }
 
     /**
-     * AJAX handler: OAuth callback from Google. Exchanges the authorization code for tokens,
-     * then redirects back to the Tools tab.
+     * AJAX handler: OAuth callback from Google (custom mode) or from the
+     * centralized Worker (centralized mode).
+     *
+     * In centralized mode the Worker has already exchanged the authorization
+     * code for tokens, so the callback URL contains access_token, refresh_token,
+     * and expires_in as query parameters. The `abj404_gsc_centralized` flag
+     * distinguishes the two flows.
+     *
      * @return void
      */
     public static function handleGscOauthCallback() {
@@ -1243,6 +1249,17 @@ class ABJ_404_Solution_WordPress_Connector {
             wp_die(__('Insufficient permissions.', '404-solution'), 403);
         }
 
+        $logger = ABJ_404_Solution_Logging::getInstance();
+        $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
+
+        $isCentralized = isset($_GET['abj404_gsc_centralized']) && $_GET['abj404_gsc_centralized'] === '1';
+
+        if ($isCentralized) {
+            self::handleCentralizedGscCallback($gsc);
+            return;
+        }
+
+        // --- Custom-credentials flow (original behavior) ---
         $code  = isset($_GET['code'])  ? sanitize_text_field((string)$_GET['code'])  : '';
         $state = isset($_GET['state']) ? sanitize_text_field((string)$_GET['state']) : '';
 
@@ -1250,9 +1267,6 @@ class ABJ_404_Solution_WordPress_Connector {
         if (!wp_verify_nonce($state, 'abj404_gsc_oauth')) {
             wp_die(__('Security check failed.', '404-solution'), 403);
         }
-
-        $logger = ABJ_404_Solution_Logging::getInstance();
-        $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
 
         if ($code === '') {
             // User denied access or error occurred.
@@ -1266,6 +1280,45 @@ class ABJ_404_Solution_WordPress_Connector {
         if ($error !== '') {
             $gsc->setLastOAuthError($error);
         }
+        wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
+        exit;
+    }
+
+    /**
+     * Handle the centralized OAuth callback. Tokens arrive as URL parameters
+     * from the Worker, so no code exchange is needed.
+     *
+     * @param ABJ_404_Solution_GoogleSearchConsole $gsc
+     * @return void
+     */
+    private static function handleCentralizedGscCallback(ABJ_404_Solution_GoogleSearchConsole $gsc): void {
+        $nonce = isset($_GET['nonce']) ? sanitize_text_field((string)$_GET['nonce']) : '';
+
+        // Verify round-tripped nonce for CSRF protection.
+        if (!wp_verify_nonce($nonce, 'abj404_gsc_oauth')) {
+            wp_die(__('Security check failed.', '404-solution'), 403);
+        }
+
+        // Check for error from the Worker.
+        $error = isset($_GET['abj404_gsc_error']) ? sanitize_text_field((string)$_GET['abj404_gsc_error']) : '';
+        if ($error !== '') {
+            $gsc->setLastOAuthError($error);
+            wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
+            exit;
+        }
+
+        $accessToken  = isset($_GET['access_token'])  ? sanitize_text_field((string)$_GET['access_token'])  : '';
+        $refreshToken = isset($_GET['refresh_token']) ? sanitize_text_field((string)$_GET['refresh_token']) : '';
+        $expiresIn    = isset($_GET['expires_in'])    ? (int)$_GET['expires_in']                             : 3600;
+
+        if ($accessToken === '') {
+            $gsc->setLastOAuthError(__('No access token received from authorization.', '404-solution'));
+            wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
+            exit;
+        }
+
+        $gsc->storeCentralizedTokens($accessToken, $refreshToken, $expiresIn);
+
         wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
         exit;
     }

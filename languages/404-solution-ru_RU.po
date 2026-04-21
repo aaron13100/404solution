@@ -3593,3 +3593,15 @@ msgstr "При загрузке этой страницы администрир
 #: includes/WordPress_Connector.php
 msgid "Show details"
 msgstr "Показать подробности"
+
+#: includes/GoogleSearchConsole.php
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr "Дополнительно: использовать собственные учётные данные Google Cloud"
+
+#: includes/GoogleSearchConsole.php
+msgid "Connect to Google Search Console"
+msgstr "Подключиться к сервису Google Search Console"
+
+#: includes/WordPress_Connector.php
+msgid "No access token received from authorization."
+msgstr "Токен доступа не был получен при авторизации."

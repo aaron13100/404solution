@@ -3586,3 +3586,15 @@ msgstr "Ett internt fel uppstod vid laddning av denna administratörssida."
 #: includes/WordPress_Connector.php
 msgid "Show details"
 msgstr "Visa detaljer"
+
+#: includes/GoogleSearchConsole.php
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr "Avancerat: använd dina egna autentiseringsuppgifter för Google Cloud"
+
+#: includes/GoogleSearchConsole.php
+msgid "Connect to Google Search Console"
+msgstr "Anslut till Google Search Console"
+
+#: includes/WordPress_Connector.php
+msgid "No access token received from authorization."
+msgstr "Ingen åtkomsttoken mottogs vid auktoriseringen."

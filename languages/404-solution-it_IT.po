@@ -3583,3 +3583,15 @@ msgstr "Si è verificato un errore interno durante il caricamento di questa pagi
 #: includes/WordPress_Connector.php
 msgid "Show details"
 msgstr "Mostra dettagli"
+
+#: includes/GoogleSearchConsole.php
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr "Avanzato: usa le tue credenziali personali di Google Cloud"
+
+#: includes/GoogleSearchConsole.php
+msgid "Connect to Google Search Console"
+msgstr "Connetti a Google Search Console"
+
+#: includes/WordPress_Connector.php
+msgid "No access token received from authorization."
+msgstr "Nessun token di accesso ricevuto dall'autorizzazione."

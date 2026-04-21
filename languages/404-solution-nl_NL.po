@@ -3587,3 +3587,15 @@ msgstr "Er is een interne fout opgetreden bij het laden van deze beheerpagina."
 #: includes/WordPress_Connector.php
 msgid "Show details"
 msgstr "Details weergeven"
+
+#: includes/GoogleSearchConsole.php
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr "Geavanceerd: gebruik je eigen Google Cloud-inloggegevens"
+
+#: includes/GoogleSearchConsole.php
+msgid "Connect to Google Search Console"
+msgstr "Verbinden met Google Search Console"
+
+#: includes/WordPress_Connector.php
+msgid "No access token received from authorization."
+msgstr "Geen toegangstoken ontvangen bij de autorisatie."

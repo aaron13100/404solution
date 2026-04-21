@@ -3585,3 +3585,15 @@ msgstr "An internal error occurred while loading this admin page."
 #: includes/WordPress_Connector.php
 msgid "Show details"
 msgstr "Show details"
+
+#: includes/GoogleSearchConsole.php
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr "Advanced: use your own Google Cloud credentials"
+
+#: includes/GoogleSearchConsole.php
+msgid "Connect to Google Search Console"
+msgstr "Connect to Google Search Console"
+
+#: includes/WordPress_Connector.php
+msgid "No access token received from authorization."
+msgstr "No access token received from authorization."

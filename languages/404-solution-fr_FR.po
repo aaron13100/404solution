@@ -3580,3 +3580,15 @@ msgstr "Une erreur interne est survenue lors du chargement de cette page d'admin
 #: includes/WordPress_Connector.php
 msgid "Show details"
 msgstr "Afficher les détails"
+
+#: includes/GoogleSearchConsole.php
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr "Avancé : utiliser vos propres identifiants Google Cloud"
+
+#: includes/GoogleSearchConsole.php
+msgid "Connect to Google Search Console"
+msgstr "Se connecter à Google Search Console"
+
+#: includes/WordPress_Connector.php
+msgid "No access token received from authorization."
+msgstr "Aucun jeton d'accès reçu lors de l'autorisation."
