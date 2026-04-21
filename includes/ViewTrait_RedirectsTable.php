@@ -22,12 +22,17 @@ trait ViewTrait_RedirectsTable {
         echo '<div class="abj404-table-page">';
 
         // Header with page title
-        echo '<div class="abj404-table-header">';
-        echo '<h2>' . __('Captured 404 URLs', '404-solution') . '</h2>';
-        echo '</div>';
-
-        // Content tabs
         $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
+        echo '<div class="abj404-table-header">';
+        echo '<div class="abj404-table-header-text">';
+        echo '<h2>' . __('Captured 404 URLs', '404-solution') . '</h2>';
+        if ($isSimpleMode) {
+            echo '<p class="abj404-guidance-subtitle">'
+                . esc_html__('Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest.', '404-solution')
+                . '</p>';
+        }
+        echo '</div>';
+        echo '</div>';
         echo '<div class="abj404-content-tabs">';
         $baseUrl = "?page=" . ABJ404_PP . "&subpage=abj404_captured";
         $baseUrl .= "&orderby=" . sanitize_text_field(array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url');
@@ -391,7 +396,14 @@ trait ViewTrait_RedirectsTable {
 
         // Page header with Add Redirect button
         echo '<div class="abj404-table-header">';
+        echo '<div class="abj404-table-header-text">';
         echo '<h1>' . esc_html__('Page Redirects', '404-solution') . '</h1>';
+        if ($this->logic->getSettingsMode() === 'simple') {
+            echo '<p class="abj404-guidance-subtitle">'
+                . esc_html__('The plugin creates these automatically. You only need to act when the status bar above says so.', '404-solution')
+                . '</p>';
+        }
+        echo '</div>';
         if ($currentFilter != ABJ404_TRASH_FILTER) {
             echo '<button type="button" class="abj404-btn abj404-btn-primary" data-modal-open="abj404-add-redirect-modal">';
             echo '+ ' . esc_html__('Add Redirect', '404-solution');
@@ -1322,39 +1334,41 @@ trait ViewTrait_RedirectsTable {
         // Redirect type — button grid with hidden input
         $this->echoRedirectTypeButtonGrid((string)$codeselected);
 
-        // Advanced Options: Active From/Until + Conditions (collapsed by default; open when values exist)
-        $redirectId = 0;
-        if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
-            $redirectId = absint($_GET['id']);
-        } elseif (isset($_POST['id']) && $this->f->regexMatch('[0-9]+', (string)$_POST['id'])) {
-            $redirectId = absint($_POST['id']);
+        // Advanced Options: Active From/Until + Conditions (hidden in Simple mode)
+        if ($this->logic->getSettingsMode() !== 'simple') {
+            $redirectId = 0;
+            if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
+                $redirectId = absint($_GET['id']);
+            } elseif (isset($_POST['id']) && $this->f->regexMatch('[0-9]+', (string)$_POST['id'])) {
+                $redirectId = absint($_POST['id']);
+            }
+            $hasExistingConditions = ($redirectId > 0) && !empty($this->dao->getRedirectConditions($redirectId));
+            $hasAdvancedValues = ($startDate !== '' || $endDate !== '' || $hasExistingConditions);
+            $openAttr = $hasAdvancedValues ? ' open' : '';
+            echo '<details class="abj404-advanced-options"' . $openAttr . '>';
+            echo '<summary class="abj404-advanced-options__summary">' . esc_html__('Advanced Options', '404-solution') . '</summary>';
+            echo '<div class="abj404-advanced-options__body">';
+
+            // Active From
+            echo '<div class="abj404-form-group">';
+            echo '<label class="abj404-form-label" for="redirect_start_date">' . esc_html__('Active From (optional)', '404-solution') . '</label>';
+            echo '<input type="date" name="redirect_start_date" id="redirect_start_date" class="abj404-form-input" value="' . esc_attr($startDate) . '">';
+            echo '<p class="abj404-form-help">' . esc_html__('Leave blank to activate immediately', '404-solution') . '</p>';
+            echo '</div>';
+
+            // Active Until
+            echo '<div class="abj404-form-group">';
+            echo '<label class="abj404-form-label" for="redirect_end_date">' . esc_html__('Active Until (optional)', '404-solution') . '</label>';
+            echo '<input type="date" name="redirect_end_date" id="redirect_end_date" class="abj404-form-input" value="' . esc_attr($endDate) . '">';
+            echo '<p class="abj404-form-help">' . esc_html__('Leave blank to never expire', '404-solution') . '</p>';
+            echo '</div>';
+
+            // Conditions
+            $this->echoRedirectConditionsSection();
+
+            echo '</div>'; // end abj404-advanced-options__body
+            echo '</details>';
         }
-        $hasExistingConditions = ($redirectId > 0) && !empty($this->dao->getRedirectConditions($redirectId));
-        $hasAdvancedValues = ($startDate !== '' || $endDate !== '' || $hasExistingConditions);
-        $openAttr = $hasAdvancedValues ? ' open' : '';
-        echo '<details class="abj404-advanced-options"' . $openAttr . '>';
-        echo '<summary class="abj404-advanced-options__summary">' . esc_html__('Advanced Options', '404-solution') . '</summary>';
-        echo '<div class="abj404-advanced-options__body">';
-
-        // Active From
-        echo '<div class="abj404-form-group">';
-        echo '<label class="abj404-form-label" for="redirect_start_date">' . esc_html__('Active From (optional)', '404-solution') . '</label>';
-        echo '<input type="date" name="redirect_start_date" id="redirect_start_date" class="abj404-form-input" value="' . esc_attr($startDate) . '">';
-        echo '<p class="abj404-form-help">' . esc_html__('Leave blank to activate immediately', '404-solution') . '</p>';
-        echo '</div>';
-
-        // Active Until
-        echo '<div class="abj404-form-group">';
-        echo '<label class="abj404-form-label" for="redirect_end_date">' . esc_html__('Active Until (optional)', '404-solution') . '</label>';
-        echo '<input type="date" name="redirect_end_date" id="redirect_end_date" class="abj404-form-input" value="' . esc_attr($endDate) . '">';
-        echo '<p class="abj404-form-help">' . esc_html__('Leave blank to never expire', '404-solution') . '</p>';
-        echo '</div>';
-
-        // Conditions
-        $this->echoRedirectConditionsSection();
-
-        echo '</div>'; // end abj404-advanced-options__body
-        echo '</details>';
 
         // Button group
         echo '<div class="abj404-button-group">';

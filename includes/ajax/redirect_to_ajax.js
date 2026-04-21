@@ -240,3 +240,49 @@ function abj404_isValidURL(url) {
     }
     return false;
 }
+
+/**
+ * Accept a suggested destination by filling in the redirect fields.
+ * @param {HTMLElement} btn The Accept Suggestion button with data attributes.
+ */
+function abj404AcceptSuggestion(btn) {
+    var pageTitle = btn.getAttribute('data-page-title');
+    var pageIdType = btn.getAttribute('data-page-id-type');
+
+    jQuery("#redirect_to_user_field").val(pageTitle);
+    jQuery("#redirect_to_data_field_title").val(pageTitle);
+    jQuery("#redirect_to_data_field_id").val(pageIdType);
+
+    if (typeof abj404_validateAndUpdateFeedback === 'function') {
+        abj404_validateAndUpdateFeedback();
+    }
+
+    // Hide suggestion block, show manual picker (in case user wants to verify)
+    var suggestionBlock = document.getElementById('abj404-suggestion-block');
+    if (suggestionBlock) {
+        suggestionBlock.style.display = 'none';
+    }
+    var manualPicker = document.getElementById('abj404-manual-picker');
+    if (manualPicker) {
+        manualPicker.style.display = '';
+    }
+}
+
+/**
+ * Show the manual destination picker and hide the suggestion block.
+ */
+function abj404ShowManualPicker() {
+    var suggestionBlock = document.getElementById('abj404-suggestion-block');
+    if (suggestionBlock) {
+        suggestionBlock.style.display = 'none';
+    }
+    var manualPicker = document.getElementById('abj404-manual-picker');
+    if (manualPicker) {
+        manualPicker.style.display = '';
+    }
+    // Focus the search field
+    var searchField = document.getElementById('redirect_to_user_field');
+    if (searchField) {
+        searchField.focus();
+    }
+}

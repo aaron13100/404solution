@@ -29,9 +29,16 @@ trait ViewTrait_Redirects {
         echo '<div class="abj404-edit-container">';
 
         // Header row: title + back link
+        $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
+        $isFromCaptured = ($source_page === 'abj404_captured');
         echo '<div class="abj404-edit-page-header">';
-        echo '<h2>' . esc_html__('Edit Redirect', '404-solution') . '</h2>';
-        echo '<a href="' . esc_url($backUrl) . '" class="abj404-back-link">&#8592; ' . esc_html__('Back to Redirects', '404-solution') . '</a>';
+        if ($isSimpleMode && $isFromCaptured) {
+            echo '<h2>' . esc_html__('Create Redirect', '404-solution') . '</h2>';
+            echo '<a href="' . esc_url($backUrl) . '" class="abj404-back-link">&#8592; ' . esc_html__('Back to Broken Links', '404-solution') . '</a>';
+        } else {
+            echo '<h2>' . esc_html__('Edit Redirect', '404-solution') . '</h2>';
+            echo '<a href="' . esc_url($backUrl) . '" class="abj404-back-link">&#8592; ' . esc_html__('Back to Redirects', '404-solution') . '</a>';
+        }
         echo '</div>';
 
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_edit", "abj404editRedirect");
@@ -120,19 +127,21 @@ trait ViewTrait_Redirects {
             }
             echo '</div>';
 
-            // Regex checkbox
-            echo '<div class="abj404-form-group">';
-            echo '<div class="abj404-checkbox-group">';
-            echo '<input type="checkbox" name="is_regex_url" id="is_regex_url" class="abj404-checkbox-input" value="1" ' . $isRegexChecked . '>';
-            echo '<label for="is_regex_url" class="abj404-checkbox-label">' . esc_html__('Treat this URL as a regular expression', '404-solution') . '</label>';
-            echo ' <a href="#" class="abj404-regex-toggle" onclick="abj404ToggleRegexInfo(event)">' . esc_html__('(Explain)', '404-solution') . '</a>';
-            echo '</div>';
-            echo '<div class="abj404-regex-info" style="display: none;">';
-            echo '<p>' . esc_html__('When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don\'t know what you\'re doing please don\'t use this option (as it\'s not necessary for the functioning of the plugin).', '404-solution') . '</p>';
-            echo '<p><strong>' . esc_html__('Example:', '404-solution') . '</strong> <code>/events/(.+)</code></p>';
-            echo '<p>' . esc_html__('/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL.', '404-solution') . '</p>';
-            echo '</div>';
-            echo '</div>';
+            // Regex checkbox (hidden in Simple mode)
+            if (!$isSimpleMode) {
+                echo '<div class="abj404-form-group">';
+                echo '<div class="abj404-checkbox-group">';
+                echo '<input type="checkbox" name="is_regex_url" id="is_regex_url" class="abj404-checkbox-input" value="1" ' . $isRegexChecked . '>';
+                echo '<label for="is_regex_url" class="abj404-checkbox-label">' . esc_html__('Treat this URL as a regular expression', '404-solution') . '</label>';
+                echo ' <a href="#" class="abj404-regex-toggle" onclick="abj404ToggleRegexInfo(event)">' . esc_html__('(Explain)', '404-solution') . '</a>';
+                echo '</div>';
+                echo '<div class="abj404-regex-info" style="display: none;">';
+                echo '<p>' . esc_html__('When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don\'t know what you\'re doing please don\'t use this option (as it\'s not necessary for the functioning of the plugin).', '404-solution') . '</p>';
+                echo '<p><strong>' . esc_html__('Example:', '404-solution') . '</strong> <code>/events/(.+)</code></p>';
+                echo '<p>' . esc_html__('/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL.', '404-solution') . '</p>';
+                echo '</div>';
+                echo '</div>';
+            }
 
             // Scheduled redirect dates (rendered inside Advanced Options in echoEditRedirect)
             $startTs = isset($redirect['start_ts']) && is_numeric($redirect['start_ts']) ? (int)$redirect['start_ts'] : 0;
@@ -202,6 +211,33 @@ trait ViewTrait_Redirects {
             $codeSelected = is_string($rawCode) ? $rawCode : '301';
         }
         
+        // Try to find a suggested destination for captured URLs with no destination set
+        $suggestion = null;
+        $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
+        if ($pageIDAndType === '' && !empty($redirectUrl)) {
+            $suggestion = $this->getSuggestedDestination($redirectUrl, $options);
+        }
+
+        // Render suggested destination block (if available)
+        if ($suggestion !== null) {
+            echo '<div class="abj404-suggestion-block" id="abj404-suggestion-block">';
+            echo '<div class="abj404-suggestion-label">' . esc_html__('Suggested destination', '404-solution') . '</div>';
+            echo '<div class="abj404-suggestion-content">';
+            echo '<strong>' . esc_html($suggestion['title']) . '</strong>';
+            echo '<span class="abj404-score-badge abj404-score-' . ($suggestion['score'] >= 75 ? 'high' : ($suggestion['score'] >= 50 ? 'medium' : 'low')) . '">'
+                . esc_html($suggestion['score'] . '%') . ' ' . esc_html__('match', '404-solution') . '</span>';
+            echo '</div>';
+            echo '<div class="abj404-suggestion-actions">';
+            echo '<button type="button" class="button button-primary" onclick="abj404AcceptSuggestion(this)"'
+                . ' data-page-title="' . esc_attr($suggestion['title']) . '"'
+                . ' data-page-id-type="' . esc_attr($suggestion['id_and_type']) . '">'
+                . esc_html__('Accept Suggestion', '404-solution') . '</button>';
+            echo '<button type="button" class="button" onclick="abj404ShowManualPicker()">'
+                . esc_html__('Pick a Different Page', '404-solution') . '</button>';
+            echo '</div>';
+            echo '</div>';
+        }
+
         $pageTitle = $this->logic->getPageTitleFromIDAndType($pageIDAndType, $redirectFinalDest);
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
                 "/html/addManualRedirectPageSearchDropdown.html");
@@ -220,7 +256,10 @@ trait ViewTrait_Redirects {
         $html = $this->f->str_replace('{data-url}',
                 "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $html);
         $html = $this->f->doNormalReplacements($html);
-        echo '<div class="abj404-form-group abj404-autocomplete-wrapper">';
+
+        // In Simple mode with a suggestion, hide the manual picker initially
+        $manualPickerStyle = ($suggestion !== null && $isSimpleMode) ? ' style="display:none;"' : '';
+        echo '<div class="abj404-form-group abj404-autocomplete-wrapper" id="abj404-manual-picker"' . $manualPickerStyle . '>';
         echo $html;
         echo '</div>';
         
@@ -404,8 +443,50 @@ trait ViewTrait_Redirects {
     }
 
     /**
-     * @return void
+     * Get the best suggested destination for a captured URL using the spell-checker.
+     *
+     * @param string $url The captured 404 URL.
+     * @param array<string, mixed> $options Plugin options.
+     * @return array{title: string, score: int, id_and_type: string}|null The best match, or null if none found.
      */
+    private function getSuggestedDestination(string $url, array $options): ?array {
+        try {
+            $spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
+            $permalinksPacket = $spellChecker->findMatchingPosts($url, '1', '1');
+            $permalinks = is_array($permalinksPacket[0] ?? null) ? $permalinksPacket[0] : array();
+            $rowType = is_string($permalinksPacket[1] ?? '') ? (string)($permalinksPacket[1] ?? '') : '';
 
+            if (empty($permalinks)) {
+                return null;
+            }
+
+            // Take the top match
+            $topIdAndType = array_key_first($permalinks);
+            $topScore = intval($permalinks[$topIdAndType]);
+
+            // Only suggest if score is at least 25%
+            if ($topScore < 25) {
+                return null;
+            }
+
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray(
+                $topIdAndType, $topScore, $rowType, $options
+            );
+
+            $title = is_string($permalink['title'] ?? '') ? (string)($permalink['title'] ?? '') : '';
+            if ($title === '' || ($permalink['status'] ?? '') === 'trash') {
+                return null;
+            }
+
+            return array(
+                'title' => $title,
+                'score' => $topScore,
+                'id_and_type' => is_string($topIdAndType) ? $topIdAndType : '',
+            );
+        } catch (\Throwable $e) {
+            // Spell-checker may fail on some URLs — degrade gracefully
+            return null;
+        }
+    }
 
 }

@@ -4000,3 +4000,69 @@ input[type="checkbox"]:focus-visible {
 .abj404-health-yellow {
     background: #dba617;
 }
+
+/* Header text wrapper — heading + guidance on same line */
+.abj404-table-header-text {
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+}
+
+/* Guidance text next to page headings (Simple mode) */
+.abj404-guidance-subtitle {
+    font-size: 13px;
+    color: var(--abj404-text, #50575e);
+    font-weight: 400;
+    line-height: 1.5;
+    margin: 0;
+    padding: 6px 12px;
+    background: var(--abj404-bg-subtle, #f0f6fc);
+    border-left: 3px solid #2271b1;
+    border-radius: 2px;
+}
+
+/* Suggested destination block on edit page */
+.abj404-suggestion-block {
+    padding: 16px;
+    margin-bottom: 16px;
+    background: #f0f6fc;
+    border: 1px solid #c3c4c7;
+    border-radius: 6px;
+}
+
+.abj404-suggestion-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #646970;
+    margin-bottom: 8px;
+}
+
+.abj404-suggestion-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 15px;
+}
+
+.abj404-suggestion-actions {
+    display: flex;
+    gap: 8px;
+}
+
+body.abj404-dark-mode .abj404-guidance-subtitle {
+    color: #b0b0b0;
+    background: var(--abj404-bg-subtle, #1a2332);
+    border-left-color: #5aa2ff;
+}
+
+body.abj404-dark-mode .abj404-suggestion-block {
+    background: #1a2332;
+    border-color: #3d3d3d;
+}
+
+body.abj404-dark-mode .abj404-suggestion-label {
+    color: #a0a0a0;
+}
