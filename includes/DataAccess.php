@@ -100,6 +100,9 @@ class ABJ_404_Solution_DataAccess {
     /** Cache key for captured status counts */
     const CACHE_KEY_CAPTURED_STATUS = 'abj404_captured_status_counts';
 
+    /** Cache key for high-impact captured URL count (3+ hits) */
+    const CACHE_KEY_HIGH_IMPACT_CAPTURED = 'abj404_high_impact_captured';
+
     /** Cache TTL in seconds (24 hours - safety net, primary refresh is event-driven invalidation) */
     const STATUS_CACHE_TTL = 86400;
 

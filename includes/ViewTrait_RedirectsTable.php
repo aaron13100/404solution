@@ -366,27 +366,26 @@ trait ViewTrait_RedirectsTable {
         // Modern table page wrapper
         echo '<div class="abj404-table-page">';
 
-        // Health status summary
+        // Health status summary — only flag captured URLs with 3+ hits (real user impact, not bot noise)
         $redirectCounts = $counts;
-        $capturedCounts = $this->dao->getCapturedStatusCounts();
         $activeRedirects = intval($redirectCounts['all'] ?? 0) - intval($redirectCounts['trash'] ?? 0);
-        $needsReview = intval($capturedCounts['captured'] ?? 0);
+        $highImpactCount = $this->dao->getHighImpactCapturedCount();
 
         echo '<div class="abj404-health-bar">';
-        if ($needsReview === 0) {
+        if ($highImpactCount === 0) {
             echo '<span class="abj404-health-dot abj404-health-green"></span>';
             echo esc_html(sprintf(
                 /* translators: %d is the number of active redirects */
-                __('All good — %d redirects active, no URLs need review', '404-solution'),
+                __('All good — %d redirects active, no URLs need attention', '404-solution'),
                 $activeRedirects
             ));
         } else {
             echo '<span class="abj404-health-dot abj404-health-yellow"></span>';
             echo esc_html(sprintf(
-                /* translators: 1: number of active redirects, 2: number of captured URLs needing review */
-                __('%1$d redirects active — %2$d captured URLs need review', '404-solution'),
+                /* translators: 1: number of active redirects, 2: number of captured URLs with repeated visitor hits */
+                __('%1$d redirects active — %2$d captured URLs have repeat visitors', '404-solution'),
                 $activeRedirects,
-                $needsReview
+                $highImpactCount
             ));
             echo ' <a href="?page=' . ABJ404_PP . '&subpage=abj404_captured&filter=' . ABJ404_STATUS_CAPTURED . '">';
             echo esc_html__('View', '404-solution');
@@ -1334,8 +1333,8 @@ trait ViewTrait_RedirectsTable {
         // Redirect type — button grid with hidden input
         $this->echoRedirectTypeButtonGrid((string)$codeselected);
 
-        // Advanced Options: Active From/Until + Conditions (hidden in Simple mode)
-        if ($this->logic->getSettingsMode() !== 'simple') {
+        // Advanced Options: Active From/Until + Conditions (collapsed by default)
+        {
             $redirectId = 0;
             if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
                 $redirectId = absint($_GET['id']);

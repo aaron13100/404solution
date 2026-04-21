@@ -265,6 +265,36 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
     }
 
     /**
+     * Count captured URLs that have been hit 3 or more times (signal of real user impact).
+     * Uses transient caching for performance.
+     * @return int Number of captured URLs with 3+ log hits
+     */
+    function getHighImpactCapturedCount(): int {
+        $cached = get_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED);
+        if ($cached !== false) {
+            return intval($cached);
+        }
+
+        $query = "SELECT COUNT(*) as cnt FROM (
+            SELECT r.id
+            FROM {wp_abj404_redirects} r
+            INNER JOIN {wp_abj404_logsv2} l ON r.url = l.requested_url
+            WHERE r.status = " . ABJ404_STATUS_CAPTURED . " AND r.disabled = 0
+            GROUP BY r.id
+            HAVING COUNT(l.id) >= 3
+        ) AS high_impact";
+        $query = $this->doTableNameReplacements($query);
+
+        $result = $this->queryAndGetResults($query);
+        $rows = is_array($result['rows']) ? $result['rows'] : array();
+        $count = (!empty($rows) && isset($rows[0]['cnt'])) ? intval($rows[0]['cnt']) : 0;
+
+        set_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED, $count, self::STATUS_CACHE_TTL);
+
+        return $count;
+    }
+
+    /**
      * Invalidate cached status counts.
      * Call this when redirects are created, updated, or deleted.
      */
@@ -272,6 +302,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
     function invalidateStatusCountsCache(): void {
         delete_transient(self::CACHE_KEY_REDIRECT_STATUS);
         delete_transient(self::CACHE_KEY_CAPTURED_STATUS);
+        delete_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED);
         $this->invalidateViewSnapshotCache();
     }
 

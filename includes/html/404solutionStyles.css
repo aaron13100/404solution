@@ -3024,6 +3024,13 @@ html[data-theme="obsidian"] .abj404-filter-bar {
     font-size: 12px;
 }
 
+.abj404-suggestion-type {
+    display: inline-block;
+    font-size: 12px;
+    color: #646970;
+    margin-left: 6px;
+}
+
 .abj404-score-badge {
     display: inline-block;
     font-size: 11px;

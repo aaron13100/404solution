@@ -32,13 +32,15 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
 
         $tableOptions['translations'] = $translationArray;
 
-        $tableOptions['filter'] = intval($this->dao->getPostOrGetSanitize("filter", ""));
-        if ($tableOptions['filter'] == "") {
+        $rawFilter = $this->dao->getPostOrGetSanitize("filter", "");
+        if ($rawFilter === "" || $rawFilter === null) {
             if ($this->dao->getPostOrGetSanitize('subpage') == 'abj404_captured') {
                 $tableOptions['filter'] = ABJ404_STATUS_CAPTURED;
             } else {
-                $tableOptions['filter'] = '0';
+                $tableOptions['filter'] = 0;
             }
+        } else {
+            $tableOptions['filter'] = intval($rawFilter);
         }
 
         $tableOptions['filterText'] = trim($this->dao->getPostOrGetSanitize("filterText", ""));

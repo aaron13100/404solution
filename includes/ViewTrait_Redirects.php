@@ -34,7 +34,7 @@ trait ViewTrait_Redirects {
         echo '<div class="abj404-edit-page-header">';
         if ($isSimpleMode && $isFromCaptured) {
             echo '<h2>' . esc_html__('Create Redirect', '404-solution') . '</h2>';
-            echo '<a href="' . esc_url($backUrl) . '" class="abj404-back-link">&#8592; ' . esc_html__('Back to Broken Links', '404-solution') . '</a>';
+            echo '<a href="' . esc_url($backUrl) . '" class="abj404-back-link">&#8592; ' . esc_html__('Back to Captured 404s', '404-solution') . '</a>';
         } else {
             echo '<h2>' . esc_html__('Edit Redirect', '404-solution') . '</h2>';
             echo '<a href="' . esc_url($backUrl) . '" class="abj404-back-link">&#8592; ' . esc_html__('Back to Redirects', '404-solution') . '</a>';
@@ -211,13 +211,12 @@ trait ViewTrait_Redirects {
             $codeSelected = is_string($rawCode) ? $rawCode : '301';
         }
         
-        // Try to find a suggested destination for captured URLs with no destination set.
-        // Captured URLs have final_dest=0, type=0 which resolves to pageIDAndType='0|0'
-        // (the default 404 page). Treat that as "no real destination" for suggestion purposes.
+        // Try to find a suggested destination for captured URLs.
+        // Any captured URL should get a suggestion lookup — the plugin may have auto-assigned
+        // a destination via the spell-checker, but the user hasn't chosen one yet.
         $suggestion = null;
         $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
-        $hasNoRealDestination = ($pageIDAndType === '' || $pageIDAndType === '0|0');
-        if ($hasNoRealDestination && !empty($redirectUrl)) {
+        if ($isFromCaptured && !empty($redirectUrl)) {
             $suggestion = $this->getSuggestedDestination($redirectUrl, $options);
         }
 
@@ -227,6 +226,9 @@ trait ViewTrait_Redirects {
             echo '<div class="abj404-suggestion-label">' . esc_html__('Suggested destination', '404-solution') . '</div>';
             echo '<div class="abj404-suggestion-content">';
             echo '<strong>' . esc_html($suggestion['title']) . '</strong>';
+            if (!empty($suggestion['type_label'])) {
+                echo '<span class="abj404-suggestion-type">' . esc_html($suggestion['type_label']) . '</span>';
+            }
             echo '<span class="abj404-score-badge abj404-score-' . ($suggestion['score'] >= 75 ? 'high' : ($suggestion['score'] >= 50 ? 'medium' : 'low')) . '">'
                 . esc_html($suggestion['score'] . '%') . ' ' . esc_html__('match', '404-solution') . '</span>';
             echo '</div>';
@@ -241,7 +243,15 @@ trait ViewTrait_Redirects {
             echo '</div>';
         }
 
-        $pageTitle = $this->logic->getPageTitleFromIDAndType($pageIDAndType, $redirectFinalDest);
+        // When creating from captured URLs, clear the redirect_to field so the
+        // placeholder text is visible. The suggestion block (if shown) handles
+        // presenting the best match separately.
+        if ($isFromCaptured) {
+            $pageTitle = '';
+            $pageIDAndType = '';
+        } else {
+            $pageTitle = $this->logic->getPageTitleFromIDAndType($pageIDAndType, $redirectFinalDest);
+        }
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
                 "/html/addManualRedirectPageSearchDropdown.html");
         $html = $this->f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
@@ -481,10 +491,26 @@ trait ViewTrait_Redirects {
                 return null;
             }
 
+            // Determine a human-readable type label
+            $typeParts = explode('|', is_string($topIdAndType) ? $topIdAndType : '');
+            $typeInt = isset($typeParts[1]) && is_numeric($typeParts[1]) ? (int)$typeParts[1] : -1;
+            $typeLabel = '';
+            if ($typeInt === ABJ404_TYPE_POST) {
+                $postType = get_post_type((int)$typeParts[0]);
+                $typeLabel = ($postType === 'page') ? __('Page', '404-solution') : __('Post', '404-solution');
+            } elseif ($typeInt === ABJ404_TYPE_CAT) {
+                $typeLabel = __('Category', '404-solution');
+            } elseif ($typeInt === ABJ404_TYPE_TAG) {
+                $typeLabel = __('Tag', '404-solution');
+            } elseif ($typeInt === ABJ404_TYPE_HOME) {
+                $typeLabel = __('Home', '404-solution');
+            }
+
             return array(
                 'title' => $title,
                 'score' => $topScore,
                 'id_and_type' => is_string($topIdAndType) ? $topIdAndType : '',
+                'type_label' => $typeLabel,
             );
         } catch (\Throwable $e) {
             // Spell-checker may fail on some URLs — degrade gracefully
