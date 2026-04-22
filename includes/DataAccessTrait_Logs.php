@@ -234,30 +234,41 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         }
 
         // Remove duplicates to avoid unnecessary work
-        $urls = array_unique($urls);
+        $urls = array_values(array_unique($urls));
 
-        // Fetch all logs data in a single batch query
-        $placeholders = implode(',', array_fill(0, count($urls), '%s'));
+        // Fetch logs data in batches to avoid extremely large IN() clauses
+        // which can be slow on tables with prefix indexes (190-char limit).
         $logsTable = $this->getPrefixedTableName('abj404_logsv2');
-        $query = $wpdb->prepare(
-            "SELECT requested_url,
-                    MIN(id) AS logsid,
-                    MAX(timestamp) AS last_used,
-                    COUNT(requested_url) AS logshits
-             FROM {$logsTable}
-             WHERE requested_url IN ($placeholders)
-             GROUP BY requested_url",
-            $urls
-        );
+        $batchSize = 50;
+        $logsResults = array();
+        $urlChunks = array_chunk($urls, $batchSize);
 
-        $logsResults = $wpdb->get_results($query, ARRAY_A);
+        foreach ($urlChunks as $urlChunk) {
+            $placeholders = implode(',', array_fill(0, count($urlChunk), '%s'));
+            $query = $wpdb->prepare(
+                "SELECT requested_url,
+                        MIN(id) AS logsid,
+                        MAX(timestamp) AS last_used,
+                        COUNT(requested_url) AS logshits
+                 FROM {$logsTable}
+                 WHERE requested_url IN ($placeholders)
+                 GROUP BY requested_url",
+                $urlChunk
+            );
 
-        // Check for errors
-        if ($wpdb->last_error) {
-            if (!$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
-                $this->logger->errorMessage("Error executing batch logs query. Err: " . $wpdb->last_error);
+            $chunkResults = $wpdb->get_results($query, ARRAY_A);
+
+            // Check for errors on each batch
+            if ($wpdb->last_error) {
+                if (!$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
+                    $this->logger->errorMessage("Error executing batch logs query. Err: " . $wpdb->last_error);
+                }
+                return $rows;
             }
-            return $rows;
+
+            if (is_array($chunkResults)) {
+                $logsResults = array_merge($logsResults, $chunkResults);
+            }
         }
 
         // Index logs data by canonical URL for fast lookup

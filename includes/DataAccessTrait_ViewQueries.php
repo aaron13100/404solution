@@ -275,14 +275,21 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             return intval(is_scalar($cached) ? $cached : 0);
         }
 
-        $query = "SELECT COUNT(*) as cnt FROM (
-            SELECT r.id
+        // Pre-aggregate log counts in a subquery, then count matching redirects.
+        // This avoids the expensive varchar JOIN (r.url = l.requested_url with
+        // 190-char prefix indexes) and the GROUP BY + HAVING temp table on the
+        // redirects table.  The logsv2 subquery uses the requested_url index to
+        // aggregate, and the outer query checks existence via IN on the same
+        // prefix-indexed column — far cheaper than a full JOIN.
+        $query = "SELECT COUNT(*) as cnt
             FROM {wp_abj404_redirects} r
-            INNER JOIN {wp_abj404_logsv2} l ON r.url = l.requested_url
             WHERE r.status = " . ABJ404_STATUS_CAPTURED . " AND r.disabled = 0
-            GROUP BY r.id
-            HAVING COUNT(l.id) >= 3
-        ) AS high_impact";
+              AND r.url IN (
+                SELECT requested_url
+                FROM {wp_abj404_logsv2}
+                GROUP BY requested_url
+                HAVING COUNT(*) >= 3
+              )";
         $query = $this->doTableNameReplacements($query);
 
         $result = $this->queryWithTimeout($query, 60);

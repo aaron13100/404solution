@@ -67,15 +67,15 @@ select
 from    {wp_abj404_redirects} wp_abj404_redirects
 
         LEFT OUTER JOIN {wp_posts} wp_posts
-        on binary wp_abj404_redirects.final_dest = binary wp_posts.id 
+        on CAST(wp_abj404_redirects.final_dest AS UNSIGNED) = wp_posts.id
 
         {logsTableJoin}
 
         left outer join {wp_terms} terms
-        on binary wp_abj404_redirects.final_dest = binary terms.term_id
+        on CAST(wp_abj404_redirects.final_dest AS UNSIGNED) = terms.term_id
 
         left outer join {wp_options} wp_options
-        on binary wp_options.option_name = binary 'blogname'
+        on wp_options.option_name = 'blogname'
 
 where 1 and (status in ({statusTypes})) and disabled = {trashValue}
 {scoreRangeClause}
