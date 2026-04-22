@@ -347,9 +347,41 @@ class ABJ_404_Solution_ViewUpdater {
                 $context['stage'] = 'table_redirects';
                 $data['table'] = $view->getAdminRedirectsPageTable($subpage);
 
+                // Include tab counts and health bar data so the page shell
+                // can render instantly with placeholders and fill them in.
+                $context['stage'] = 'redirect_status_counts';
+                $statusCounts = $abj404dao->getRedirectStatusCounts();
+                // Provide the captured filter constant so JS can build the "View" link.
+                $statusCounts['_capturedFilter'] = ABJ404_STATUS_CAPTURED;
+                $data['statusCounts'] = $statusCounts;
+                // Tab counts keyed by filter value for JS tab updates.
+                $data['tabCounts'] = array(
+                    '0' => $statusCounts['all'] ?? 0,
+                    (string)ABJ404_STATUS_MANUAL => $statusCounts['manual'] ?? 0,
+                    (string)ABJ404_STATUS_AUTO => $statusCounts['auto'] ?? 0,
+                    (string)ABJ404_TRASH_FILTER => $statusCounts['trash'] ?? 0,
+                );
+                $context['stage'] = 'high_impact_count';
+                $data['highImpactCapturedCount'] = $abj404dao->getHighImpactCapturedCount();
+
             } else if ($subpage == 'abj404_captured') {
                 $context['stage'] = 'table_captured';
                 $data['table'] = $view->getCapturedURLSPageTable($subpage);
+
+                // Include tab counts so the page shell can render instantly.
+                $context['stage'] = 'captured_status_counts';
+                $statusCounts = $abj404dao->getCapturedStatusCounts();
+                $data['statusCounts'] = $statusCounts;
+                // Tab counts keyed by filter value for JS tab updates.
+                // Includes the "handled" composite count for simple mode.
+                $data['tabCounts'] = array(
+                    '0' => $statusCounts['all'] ?? 0,
+                    (string)ABJ404_STATUS_CAPTURED => $statusCounts['captured'] ?? 0,
+                    (string)ABJ404_STATUS_IGNORED => $statusCounts['ignored'] ?? 0,
+                    (string)ABJ404_STATUS_LATER => $statusCounts['later'] ?? 0,
+                    (string)ABJ404_TRASH_FILTER => $statusCounts['trash'] ?? 0,
+                    (string)ABJ404_HANDLED_FILTER => ($statusCounts['ignored'] ?? 0) + ($statusCounts['later'] ?? 0) + ($statusCounts['trash'] ?? 0),
+                );
 
             } else if ($subpage == 'abj404_logs') {
                 $context['stage'] = 'table_logs';

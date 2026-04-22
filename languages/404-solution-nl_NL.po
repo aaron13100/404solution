@@ -3697,3 +3697,27 @@ msgstr "Post"
 
 msgid "Home"
 msgstr "Home"
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Loading status…"
+msgstr "Status laden…"
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Loading redirects…"
+msgstr "Omleidingen laden…"
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Loading captured URLs…"
+msgstr "Vastgelegde URLs laden…"
+
+#: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
+msgid "Loading…"
+msgstr "Laden…"
+
+#: includes/ViewTrait_Settings.php includes/js/settingsDeferred.js
+msgid "Loading Google Search Console section…"
+msgstr "Google Search Console sectie laden…"
+
+#: includes/ajax/Ajax_Php.php includes/js/settingsDeferred.js
+msgid "Unable to load Google Search Console section."
+msgstr "Kan de Google Search Console sectie niet laden."

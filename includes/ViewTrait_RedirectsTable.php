@@ -15,9 +15,6 @@ trait ViewTrait_RedirectsTable {
 
         $tableOptions = $this->logic->getTableOptions($sub);
 
-        // Get counts for tabs
-        $counts = $this->dao->getCapturedStatusCounts();
-
         // Modern page wrapper
         echo '<div class="abj404-table-page">';
 
@@ -33,23 +30,20 @@ trait ViewTrait_RedirectsTable {
         }
         echo '</div>';
         echo '</div>';
-        echo '<div class="abj404-content-tabs">';
-        $baseUrl = "?page=" . ABJ404_PP . "&subpage=abj404_captured";
-        $baseUrl .= "&orderby=" . sanitize_text_field(array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url');
-        $baseUrl .= "&order=" . sanitize_text_field(array_key_exists('order', $tableOptions) && is_string($tableOptions['order']) ? $tableOptions['order'] : 'ASC');
 
+        // Content tabs — counts are placeholders, populated via AJAX
+        echo '<div class="abj404-content-tabs" data-tab-counts-placeholder="1">';
         if ($isSimpleMode) {
             // Simple mode: two tabs — "Needs Review" and "Handled"
-            $handledCount = ($counts['ignored'] ?? 0) + ($counts['later'] ?? 0) + ($counts['trash'] ?? 0);
-            $this->echoContentTab('abj404_captured', ABJ404_STATUS_CAPTURED, __('Needs Review', '404-solution'), $counts['captured'] ?? 0, $tableOptions);
-            $this->echoContentTab('abj404_captured', ABJ404_HANDLED_FILTER, __('Handled', '404-solution'), $handledCount, $tableOptions);
+            $this->echoContentTab('abj404_captured', ABJ404_STATUS_CAPTURED, __('Needs Review', '404-solution'), '…', $tableOptions);
+            $this->echoContentTab('abj404_captured', ABJ404_HANDLED_FILTER, __('Handled', '404-solution'), '…', $tableOptions);
         } else {
             // Advanced mode: full 5-tab layout
-            $this->echoContentTab('abj404_captured', 0, __('All', '404-solution'), $counts['all'] ?? 0, $tableOptions);
-            $this->echoContentTab('abj404_captured', ABJ404_STATUS_CAPTURED, __('Captured', '404-solution'), $counts['captured'] ?? 0, $tableOptions);
-            $this->echoContentTab('abj404_captured', ABJ404_STATUS_IGNORED, __('Ignored', '404-solution'), $counts['ignored'] ?? 0, $tableOptions);
-            $this->echoContentTab('abj404_captured', ABJ404_STATUS_LATER, __('Later', '404-solution'), $counts['later'] ?? 0, $tableOptions);
-            $this->echoContentTab('abj404_captured', ABJ404_TRASH_FILTER, __('Trash', '404-solution'), $counts['trash'] ?? 0, $tableOptions);
+            $this->echoContentTab('abj404_captured', 0, __('All', '404-solution'), '…', $tableOptions);
+            $this->echoContentTab('abj404_captured', ABJ404_STATUS_CAPTURED, __('Captured', '404-solution'), '…', $tableOptions);
+            $this->echoContentTab('abj404_captured', ABJ404_STATUS_IGNORED, __('Ignored', '404-solution'), '…', $tableOptions);
+            $this->echoContentTab('abj404_captured', ABJ404_STATUS_LATER, __('Later', '404-solution'), '…', $tableOptions);
+            $this->echoContentTab('abj404_captured', ABJ404_TRASH_FILTER, __('Trash', '404-solution'), '…', $tableOptions);
         }
         echo '</div>';
 
@@ -59,10 +53,14 @@ trait ViewTrait_RedirectsTable {
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
         $autoRefresh = '1'; // $sub is always 'abj404_captured' here
-        $currentFilter = $tableOptions['filter'] ?? 0;
-        $currentOrderBy = is_string($tableOptions['orderby'] ?? '') ? (string)$tableOptions['orderby'] : 'url';
-        $currentOrder = is_string($tableOptions['order'] ?? '') ? (string)$tableOptions['order'] : 'ASC';
-        $currentPaged = isset($tableOptions['paged']) ? intval($tableOptions['paged']) : 1;
+        $rawFilter = $tableOptions['filter'] ?? 0;
+        $currentFilter = is_scalar($rawFilter) ? $rawFilter : 0;
+        $rawOrderBy = $tableOptions['orderby'] ?? '';
+        $currentOrderBy = is_string($rawOrderBy) ? $rawOrderBy : 'url';
+        $rawOrder = $tableOptions['order'] ?? '';
+        $currentOrder = is_string($rawOrder) ? $rawOrder : 'ASC';
+        $rawPaged = $tableOptions['paged'] ?? 1;
+        $currentPaged = is_scalar($rawPaged) ? intval($rawPaged) : 1;
         if ($currentPaged < 1) {
             $currentPaged = 1;
         }
@@ -144,15 +142,19 @@ trait ViewTrait_RedirectsTable {
         echo '<form id="bulk-action-form" method="POST" action="' . esc_url($url) . '">';
         wp_nonce_field('abj404_bulkProcess');
 
-        // Table + pagination placeholders. Full data is loaded via AJAX
-        // so initial page render is not blocked on heavy queries.
+        // Top pagination placeholder. Full data is loaded via AJAX so
+        // initial page render is not blocked on heavy queries.
+        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-top">';
+        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
+        echo '</div>';
+
+        // Table placeholder.
         echo '<table class="abj404-table" data-table-awaiting-load="1">';
         echo '<thead><tr><th>' . esc_html__('Loading captured URLs…', '404-solution') . '</th></tr></thead>';
         echo '<tbody><tr><td class="abj404-empty-message">' . esc_html__('Loading captured URLs…', '404-solution') . '</td></tr></tbody>';
         echo '</table>';
-        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-top">';
-        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
-        echo '</div>';
+
+        // Bottom pagination placeholder.
         echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-bottom">';
         echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
         echo '</div>';
@@ -379,39 +381,16 @@ trait ViewTrait_RedirectsTable {
 
         // Sanitizing unchecked table options
         $tableOptions = $this->logic->sanitizePostData($tableOptions);
-        $currentFilter = $tableOptions['filter'] ?? 0;
-
-        // Get counts for tabs
-        $counts = $this->dao->getRedirectStatusCounts();
+        $rawFilter = $tableOptions['filter'] ?? 0;
+        $currentFilter = is_scalar($rawFilter) ? $rawFilter : 0;
 
         // Modern table page wrapper
         echo '<div class="abj404-table-page">';
 
-        // Health status summary — only flag captured URLs with 3+ hits (real user impact, not bot noise)
-        $redirectCounts = $counts;
-        $activeRedirects = intval($redirectCounts['all'] ?? 0) - intval($redirectCounts['trash'] ?? 0);
-        $highImpactCount = $this->dao->getHighImpactCapturedCount();
-
-        echo '<div class="abj404-health-bar">';
-        if ($highImpactCount === 0) {
-            echo '<span class="abj404-health-dot abj404-health-green"></span>';
-            echo esc_html(sprintf(
-                /* translators: %d is the number of active redirects */
-                __('All good — %d redirects active, no URLs need attention', '404-solution'),
-                $activeRedirects
-            ));
-        } else {
-            echo '<span class="abj404-health-dot abj404-health-yellow"></span>';
-            echo esc_html(sprintf(
-                /* translators: 1: number of active redirects, 2: number of captured URLs with repeated visitor hits */
-                __('%1$d redirects active — %2$d captured URLs have repeat visitors', '404-solution'),
-                $activeRedirects,
-                $highImpactCount
-            ));
-            echo ' <a href="?page=' . ABJ404_PP . '&subpage=abj404_captured&filter=' . ABJ404_STATUS_CAPTURED . '">';
-            echo esc_html__('View', '404-solution');
-            echo '</a>';
-        }
+        // Health status summary — placeholder, populated via AJAX so page renders instantly
+        echo '<div class="abj404-health-bar" data-health-bar-placeholder="1">';
+        echo '<span class="abj404-health-dot"></span>';
+        echo esc_html__('Loading status…', '404-solution');
         echo '</div>';
 
         // Page header with Add Redirect button
@@ -431,12 +410,12 @@ trait ViewTrait_RedirectsTable {
         }
         echo '</div>';
 
-        // Content tabs
-        echo '<div class="abj404-content-tabs">';
-        $this->echoContentTab($sub, 0, __('All', '404-solution'), $counts['all'] ?? 0, $tableOptions);
-        $this->echoContentTab($sub, ABJ404_STATUS_MANUAL, __('Manual', '404-solution'), $counts['manual'] ?? 0, $tableOptions);
-        $this->echoContentTab($sub, ABJ404_STATUS_AUTO, __('Automatic', '404-solution'), $counts['auto'] ?? 0, $tableOptions);
-        $this->echoContentTab($sub, ABJ404_TRASH_FILTER, __('Trash', '404-solution'), $counts['trash'] ?? 0, $tableOptions);
+        // Content tabs — counts are placeholders, populated via AJAX
+        echo '<div class="abj404-content-tabs" data-tab-counts-placeholder="1">';
+        $this->echoContentTab($sub, 0, __('All', '404-solution'), '…', $tableOptions);
+        $this->echoContentTab($sub, ABJ404_STATUS_MANUAL, __('Manual', '404-solution'), '…', $tableOptions);
+        $this->echoContentTab($sub, ABJ404_STATUS_AUTO, __('Automatic', '404-solution'), '…', $tableOptions);
+        $this->echoContentTab($sub, ABJ404_TRASH_FILTER, __('Trash', '404-solution'), '…', $tableOptions);
         echo '</div>';
 
         // Filter bar with server-side search
@@ -445,9 +424,12 @@ trait ViewTrait_RedirectsTable {
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
         $autoRefresh = '1'; // $sub is always 'abj404_redirects' here
-        $currentOrderBy = is_string($tableOptions['orderby'] ?? '') ? (string)$tableOptions['orderby'] : 'url';
-        $currentOrder = is_string($tableOptions['order'] ?? '') ? (string)$tableOptions['order'] : 'ASC';
-        $currentPaged = isset($tableOptions['paged']) ? intval($tableOptions['paged']) : 1;
+        $rawOrderBy = $tableOptions['orderby'] ?? '';
+        $currentOrderBy = is_string($rawOrderBy) ? $rawOrderBy : 'url';
+        $rawOrder = $tableOptions['order'] ?? '';
+        $currentOrder = is_string($rawOrder) ? $rawOrder : 'ASC';
+        $rawPaged = $tableOptions['paged'] ?? 1;
+        $currentPaged = is_scalar($rawPaged) ? intval($rawPaged) : 1;
         if ($currentPaged < 1) {
             $currentPaged = 1;
         }
@@ -534,6 +516,11 @@ trait ViewTrait_RedirectsTable {
         echo '<button type="button" class="abj404-btn abj404-btn-secondary abj404-clear-selection" onclick="abj404ClearSelection()">' . esc_html__('Clear Selection', '404-solution') . '</button>';
         echo '</div>';
 
+        // Top pagination placeholder.
+        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-top">';
+        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
+        echo '</div>';
+
         // Table container
         echo '<div class="abj404-table-container">';
         echo '<table class="abj404-table" data-table-awaiting-load="1">';
@@ -542,11 +529,7 @@ trait ViewTrait_RedirectsTable {
         echo '</table>';
         echo '</div>';
 
-        // Pagination placeholders. The full controls are loaded via AJAX
-        // so the initial page render is not blocked by heavy table queries.
-        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-top">';
-        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
-        echo '</div>';
+        // Bottom pagination placeholder.
         echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-bottom">';
         echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
         echo '</div>';
@@ -593,7 +576,7 @@ trait ViewTrait_RedirectsTable {
         if ($filter != 0) {
             $url .= "&filter=" . $filter;
         }
-        echo '<a href="' . esc_url($url) . '" class="abj404-content-tab ' . $isActive . '">';
+        echo '<a href="' . esc_url($url) . '" class="abj404-content-tab ' . $isActive . '" data-tab-filter="' . esc_attr((string)$filter) . '">';
         echo esc_html($label);
         echo '<span class="abj404-tab-count">' . esc_html((string)$count) . '</span>';
         echo '</a>';

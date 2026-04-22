@@ -1203,7 +1203,10 @@ class ABJ_404_Solution_WordPress_Connector {
                 return;
             }
 
-            $options = $instance->logic->getOptions();
+            // Use skip_db_check=true so menu registration never triggers
+            // updateToNewVersion() — that can hang on slow database upgrades
+            // and block the entire admin page from rendering.
+            $options = $instance->logic->getOptions(true);
             $menuLocation = isset($options['menuLocation']) ? $options['menuLocation'] : '';
 
             // Admin notice badge

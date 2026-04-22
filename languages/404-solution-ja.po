@@ -3710,3 +3710,27 @@ msgstr "Post"
 
 msgid "Home"
 msgstr "Home"
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Loading status…"
+msgstr "ステータスを読み込み中…"
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Loading redirects…"
+msgstr "リダイレクトを読み込み中…"
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Loading captured URLs…"
+msgstr "キャプチャされたURLを読み込み中…"
+
+#: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
+msgid "Loading…"
+msgstr "読み込み中…"
+
+#: includes/ViewTrait_Settings.php includes/js/settingsDeferred.js
+msgid "Loading Google Search Console section…"
+msgstr "Google Search Consoleセクションを読み込み中…"
+
+#: includes/ajax/Ajax_Php.php includes/js/settingsDeferred.js
+msgid "Unable to load Google Search Console section."
+msgstr "Google Search Consoleセクションを読み込めませんでした。"

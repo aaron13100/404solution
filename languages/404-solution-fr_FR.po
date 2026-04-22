@@ -3691,3 +3691,27 @@ msgstr "Post"
 
 msgid "Home"
 msgstr "Home"
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Loading status…"
+msgstr "Chargement du statut…"
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Loading redirects…"
+msgstr "Chargement des redirections…"
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Loading captured URLs…"
+msgstr "Chargement des URLs capturées…"
+
+#: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
+msgid "Loading…"
+msgstr "Chargement…"
+
+#: includes/ViewTrait_Settings.php includes/js/settingsDeferred.js
+msgid "Loading Google Search Console section…"
+msgstr "Chargement de la section Google Search Console…"
+
+#: includes/ajax/Ajax_Php.php includes/js/settingsDeferred.js
+msgid "Unable to load Google Search Console section."
+msgstr "Impossible de charger la section Google Search Console."
