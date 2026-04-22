@@ -47,7 +47,7 @@ trait ViewTrait_Logs {
                 . ' data-pagination-current-order="' . esc_attr($order) . '"'
                 . ' data-pagination-current-filter="0"'
                 . ' data-pagination-current-paged="1"'
-                . ' data-pagination-current-logsid=""'
+                . ' data-pagination-current-logsid="' . esc_attr((string)$this->dao->getPostOrGetSanitize('redirect_to_data_field_id')) . '"'
                 . ' data-pagination-initial-load="1"'
                 . ' data-pagination-auto-refresh="1"'
                 . ' data-pagination-refresh-started-text="' . esc_attr(__('Refreshing data in background…', '404-solution')) . '"'
