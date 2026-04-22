@@ -1320,7 +1320,7 @@ html[data-theme="obsidian"] .abj404-tab-branding {
 }
 
 .abj404-table-header {
-    padding: 24px 32px;
+    padding: 5px 32px 15px;
     border-bottom: 1px solid var(--abj404-border, #e0e0e0);
     display: flex;
     justify-content: space-between;

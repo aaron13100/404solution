@@ -830,15 +830,17 @@ function paginationLinksChange(triggerItem, options) {
 
             // replace the tables - support both old (.wp-list-table) and new (.abj404-table) table classes
             var pageLinks = jQuery('.abj404-pagination-right');
-            if (pageLinks.length > 0) {
+            if (pageLinks.length > 1) {
+                // Two pagination bars: top gets search filter, bottom doesn't.
                 var $topPagination = jQuery(result.paginationLinksTop);
                 $topPagination.addClass('abj404-pagination-top');
                 jQuery(pageLinks[0]).replaceWith($topPagination);
-                if (pageLinks.length > 1) {
-                    var $bottomPagination = jQuery(result.paginationLinksBottom);
-                    $bottomPagination.addClass('abj404-pagination-bottom');
-                    jQuery(pageLinks[1]).replaceWith($bottomPagination);
-                }
+                var $bottomPagination = jQuery(result.paginationLinksBottom);
+                $bottomPagination.addClass('abj404-pagination-bottom');
+                jQuery(pageLinks[1]).replaceWith($bottomPagination);
+            } else if (pageLinks.length === 1) {
+                // Single pagination bar: use bottom variant (no search filter).
+                jQuery(pageLinks[0]).replaceWith(result.paginationLinksBottom);
             }
             // Replace the table - try both class names
             if (jQuery('.wp-list-table').length > 0) {
