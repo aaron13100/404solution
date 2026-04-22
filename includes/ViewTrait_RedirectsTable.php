@@ -59,11 +59,26 @@ trait ViewTrait_RedirectsTable {
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
         $autoRefresh = '1'; // $sub is always 'abj404_captured' here
+        $currentFilter = $tableOptions['filter'] ?? 0;
+        $currentOrderBy = is_string($tableOptions['orderby'] ?? '') ? (string)$tableOptions['orderby'] : 'url';
+        $currentOrder = is_string($tableOptions['order'] ?? '') ? (string)$tableOptions['order'] : 'ASC';
+        $currentPaged = isset($tableOptions['paged']) ? intval($tableOptions['paged']) : 1;
+        if ($currentPaged < 1) {
+            $currentPaged = 1;
+        }
+
         echo '<div class="abj404-filter-bar tablenav"'
                 . ' data-pagination-ajax-url="' . esc_attr(admin_url('admin-ajax.php')) . '"'
                 . ' data-pagination-ajax-action="ajaxUpdatePaginationLinks"'
                 . ' data-pagination-ajax-subpage="' . esc_attr($sub) . '"'
                 . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '"'
+                . ' data-pagination-current-signature=""'
+                . ' data-pagination-current-orderby="' . esc_attr($currentOrderBy) . '"'
+                . ' data-pagination-current-order="' . esc_attr($currentOrder) . '"'
+                . ' data-pagination-current-filter="' . esc_attr((string)$currentFilter) . '"'
+                . ' data-pagination-current-paged="' . esc_attr((string)$currentPaged) . '"'
+                . ' data-pagination-current-logsid=""'
+                . ' data-pagination-initial-load="0"'
                 . ' data-pagination-auto-refresh="' . esc_attr($autoRefresh) . '"'
                 . ' data-pagination-refresh-started-text="' . esc_attr(__('Refreshing data in background…', '404-solution')) . '"'
                 . ' data-pagination-refresh-finished-text="' . esc_attr(__('Data refreshed', '404-solution')) . '"'
@@ -83,7 +98,6 @@ trait ViewTrait_RedirectsTable {
         echo '</div>';
 
         // Empty trash button
-        $currentFilter = $tableOptions['filter'] ?? 0;
         if ($currentFilter == ABJ404_TRASH_FILTER) {
             $eturl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ABJ404_TRASH_FILTER;
             $eturl = wp_nonce_url($eturl, 'abj404_bulkProcess');
@@ -424,11 +438,24 @@ trait ViewTrait_RedirectsTable {
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
         $autoRefresh = '1'; // $sub is always 'abj404_redirects' here
+        $currentOrderBy = is_string($tableOptions['orderby'] ?? '') ? (string)$tableOptions['orderby'] : 'url';
+        $currentOrder = is_string($tableOptions['order'] ?? '') ? (string)$tableOptions['order'] : 'ASC';
+        $currentPaged = isset($tableOptions['paged']) ? intval($tableOptions['paged']) : 1;
+        if ($currentPaged < 1) {
+            $currentPaged = 1;
+        }
         echo '<div class="abj404-filter-bar tablenav"'
                 . ' data-pagination-ajax-url="' . esc_attr(admin_url('admin-ajax.php')) . '"'
                 . ' data-pagination-ajax-action="ajaxUpdatePaginationLinks"'
                 . ' data-pagination-ajax-subpage="' . esc_attr($sub) . '"'
                 . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '"'
+                . ' data-pagination-current-signature=""'
+                . ' data-pagination-current-orderby="' . esc_attr($currentOrderBy) . '"'
+                . ' data-pagination-current-order="' . esc_attr($currentOrder) . '"'
+                . ' data-pagination-current-filter="' . esc_attr((string)$currentFilter) . '"'
+                . ' data-pagination-current-paged="' . esc_attr((string)$currentPaged) . '"'
+                . ' data-pagination-current-logsid=""'
+                . ' data-pagination-initial-load="1"'
                 . ' data-pagination-auto-refresh="' . esc_attr($autoRefresh) . '"'
                 . ' data-pagination-refresh-started-text="' . esc_attr(__('Refreshing data in background…', '404-solution')) . '"'
                 . ' data-pagination-refresh-finished-text="' . esc_attr(__('Data refreshed', '404-solution')) . '"'
@@ -502,11 +529,20 @@ trait ViewTrait_RedirectsTable {
 
         // Table container
         echo '<div class="abj404-table-container">';
-        echo $this->getAdminRedirectsPageTable($sub);
+        echo '<table class="abj404-table" data-table-awaiting-load="1">';
+        echo '<thead><tr><th>' . esc_html__('Loading redirects…', '404-solution') . '</th></tr></thead>';
+        echo '<tbody><tr><td class="abj404-empty-message">' . esc_html__('Loading redirects…', '404-solution') . '</td></tr></tbody>';
+        echo '</table>';
         echo '</div>';
 
-        // Pagination (using original AJAX-integrated pagination)
-        echo $this->getPaginationLinks($sub, false);
+        // Pagination placeholders. The full controls are loaded via AJAX
+        // so the initial page render is not blocked by heavy table queries.
+        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-top">';
+        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
+        echo '</div>';
+        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-bottom">';
+        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
+        echo '</div>';
 
         echo '</form>';
 

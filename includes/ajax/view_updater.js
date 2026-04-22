@@ -10,6 +10,7 @@ if (typeof(getURLParameter) !== "function") {
 // when the user presses enter on the filter text input then update the table
 jQuery(document).ready(function($) {
     bindSearchFieldListeners();
+    triggerInitialTableLoadIfNeeded();
     triggerBackgroundTableRefreshIfEnabled();
     triggerStatsBackgroundRefreshIfEnabled();
 });
@@ -36,6 +37,10 @@ function triggerBackgroundTableRefreshIfEnabled() {
         return;
     }
     if ($config.attr('data-pagination-auto-refresh') !== '1') {
+        return;
+    }
+    if ($config.attr('data-pagination-initial-load') === '1' &&
+        jQuery('.abj404-table[data-table-awaiting-load="1"]').length > 0) {
         return;
     }
     if (!shouldRunAutoRefreshNow($config)) {
@@ -119,6 +124,36 @@ function triggerBackgroundTableRefreshIfEnabled() {
     } else {
         setTimeout(runRefresh, 900);
     }
+}
+
+function triggerInitialTableLoadIfNeeded() {
+    var $config = getRefreshStatusHost();
+    if ($config.length === 0) {
+        return;
+    }
+    if ($config.attr('data-pagination-initial-load') !== '1') {
+        return;
+    }
+    if (jQuery('.abj404-table[data-table-awaiting-load="1"]').length === 0) {
+        $config.attr('data-pagination-initial-load', '0');
+        return;
+    }
+
+    var perpageElements = document.querySelectorAll('.perpage');
+    if (perpageElements == null || perpageElements.length === 0) {
+        return;
+    }
+
+    paginationLinksChange(perpageElements[0], {
+        backgroundRefresh: false,
+        detectOnly: false,
+        onComplete: function() {
+            $config.attr('data-pagination-initial-load', '0');
+        },
+        onError: function() {
+            $config.attr('data-pagination-initial-load', '0');
+        }
+    });
 }
 
 function getStatsRefreshConfigHost() {
@@ -807,6 +842,7 @@ function paginationLinksChange(triggerItem, options) {
             if (typeof window.abj404InitTableInteractions === 'function') {
                 window.abj404InitTableInteractions();
             }
+            jQuery('.abj404-filter-bar').attr('data-pagination-initial-load', '0');
             bindSearchFieldListeners();
             if (typeof window.abj404InitTimeAgo === 'function') {
                 window.abj404InitTimeAgo();

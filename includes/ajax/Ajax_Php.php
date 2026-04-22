@@ -121,6 +121,61 @@ class ABJ_404_Solution_Ajax_Php {
 		wp_send_json_success($data, 200);
 	}
 
+	/** Load the Google Search Console options section asynchronously.
+	 * @return void
+	 */
+	static function loadGscSection() {
+		$logic = self::getServiceIfAvailable('plugin_logic');
+		/** @var ABJ_404_Solution_PluginLogic $abj404logic */
+		$abj404logic = ($logic !== null) ? $logic : ABJ_404_Solution_PluginLogic::getInstance();
+
+		if (!$abj404logic->userIsPluginAdmin()) {
+			wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
+			return; // @phpstan-ignore deadCode.unreachable
+		}
+
+		$nonceRaw = isset($_POST['nonce']) && is_string($_POST['nonce']) ? $_POST['nonce'] : '';
+		if ($nonceRaw === '' || !wp_verify_nonce($nonceRaw, 'abj404_gsc_deferred')) {
+			wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
+			return; // @phpstan-ignore deadCode.unreachable
+		}
+
+		if (self::checkRateLimit('load_gsc_section', 30, 60)) {
+			wp_send_json_error(array('message' => __('Rate limit exceeded. Please try again later.', '404-solution')), 429);
+			return; // @phpstan-ignore deadCode.unreachable
+		}
+
+		try {
+			$daoService = self::getServiceIfAvailable('data_access');
+			/** @var ABJ_404_Solution_DataAccess $abj404dao */
+			$abj404dao = ($daoService !== null) ? $daoService : ABJ_404_Solution_DataAccess::getInstance();
+			$gscLogger = ABJ_404_Solution_Logging::getInstance();
+			$gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
+
+			$logRows = $abj404dao->getLogsIDandURL();
+			$capturedUrls = array();
+			foreach ($logRows as $r) {
+				$url = isset($r['requested_url']) && is_string($r['requested_url']) ? $r['requested_url'] : '';
+				if ($url !== '') {
+					$capturedUrls[] = $url;
+				}
+			}
+			$capturedUrls = array_values(array_unique($capturedUrls));
+
+			$html = $gsc->renderAdminSection($capturedUrls);
+			wp_send_json_success(array('html' => $html), 200);
+			return; // @phpstan-ignore deadCode.unreachable
+		} catch (Throwable $e) {
+			try {
+				ABJ_404_Solution_Logging::getInstance()->errorMessage('Error loading deferred GSC section: ' . $e->getMessage());
+			} catch (Throwable $ignored) {
+				// ignore
+			}
+			wp_send_json_error(array('message' => __('Unable to load Google Search Console section.', '404-solution')), 500);
+			return; // @phpstan-ignore deadCode.unreachable
+		}
+	}
+
 	/**
 	 * Consistent JSON response helper for endpoints that previously echoed JSON and exited.
 	 *

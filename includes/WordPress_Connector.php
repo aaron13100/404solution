@@ -226,6 +226,7 @@ class ABJ_404_Solution_WordPress_Connector {
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_updateOptions', 'ABJ_404_Solution_Ajax_Php::updateOptions');
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_load_gsc_section', 'ABJ_404_Solution_Ajax_Php::loadGscSection');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404getTrendData', 'ABJ_404_Solution_Ajax_TrendData::echoTrendData');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_crossPluginPreview', 'ABJ_404_Solution_Ajax_CrossPluginImporter::handlePreview');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_oauth_callback', 'ABJ_404_Solution_WordPress_Connector::handleGscOauthCallback');
@@ -369,6 +370,8 @@ class ABJ_404_Solution_WordPress_Connector {
             // Behavior tiles (404 destination selector)
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-behavior-tiles', ABJ404_URL . 'includes/js/behaviorTiles.js',
                 array());
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-settings-deferred', ABJ404_URL . 'includes/js/settingsDeferred.js',
+                array('jquery'));
         }
 
         if ($isCardAccordionPage) {

@@ -159,20 +159,22 @@ trait ViewTrait_Settings {
             $epHtml = $this->f->doNormalReplacements($epHtml);
             $abj404view->echoOptionsSection('settings-engine-profiles', 'abj404-engineProfiles', __('Engine Profiles', '404-solution'), $epHtml, false, $abj404view->getCardIcon('filter'));
 
-            // Google Search Console — outside the main form (has its own form)
-            $gscLogger = ABJ_404_Solution_Logging::getInstance();
-            $gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
-            // Pass captured 404 URLs so the connected state can fetch GSC data on first load.
-            $logRows = $this->dao->getLogsIDandURL();
-            $capturedUrls = array();
-            foreach ($logRows as $r) {
-                $url = isset($r['requested_url']) && is_string($r['requested_url']) ? $r['requested_url'] : '';
-                if ($url !== '') {
-                    $capturedUrls[] = $url;
-                }
-            }
-            $capturedUrls = array_values(array_unique($capturedUrls));
-            $abj404view->echoOptionsSection('settings-gsc', 'abj404-gsc-section', __('Google Search Console', '404-solution'), $gsc->renderAdminSection($capturedUrls), true, $abj404view->getCardIcon('chart'));
+            // Google Search Console — deferred via AJAX so the options page shell
+            // renders immediately and is not blocked by logs/GSC data fetches.
+            $gscPlaceholder = '<div id="abj404-gsc-deferred-content"'
+                . ' data-deferred-load="1"'
+                . ' data-ajax-action="abj404_load_gsc_section"'
+                . ' data-ajax-nonce="' . esc_attr(wp_create_nonce('abj404_gsc_deferred')) . '">'
+                . '<p class="abj404-form-help">' . esc_html__('Loading Google Search Console section…', '404-solution') . '</p>'
+                . '</div>';
+            $abj404view->echoOptionsSection(
+                'settings-gsc',
+                'abj404-gsc-section',
+                __('Google Search Console', '404-solution'),
+                $gscPlaceholder,
+                true,
+                $abj404view->getCardIcon('chart')
+            );
         }
 
         // Sticky save bar — outside the form but linked via form="admin-options-page" on the submit button
