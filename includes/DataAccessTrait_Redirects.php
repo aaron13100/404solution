@@ -754,8 +754,34 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $query = $this->f->str_replace('{limit-results}', $limitResults, $query);
         $query = $this->f->str_replace('{order-results}', $orderResults, $query);
         
+        // Suppress wpdb error output to prevent debug.log flooding on collation
+        // mismatches (e.g. utf8mb3 WP tables + utf8mb4 plugin collation).
+        $previousSuppressState = $wpdb->suppress_errors(true);
         $rows = $wpdb->get_results($query);
-        if (!empty($wpdb->last_error) && $this->isInvalidDataError($wpdb->last_error) &&
+        $queryError = $wpdb->last_error;
+        $wpdb->suppress_errors($previousSuppressState);
+
+        // Collation-error fallback: if CONVERT(... USING utf8mb4) COLLATE still fails
+        // (e.g. MySQL version quirk), retry without any COLLATE forcing — the pre-4.1.4
+        // behavior that relies on implicit collation resolution.
+        if (!empty($queryError) && $this->isCollationError($queryError)) {
+            $fpreg = ABJ_404_Solution_FunctionsPreg::getInstance();
+            $fallbackQuery = $fpreg->regexReplace(
+                'CONVERT\(wpt\.name USING utf8mb4\) COLLATE [A-Za-z0-9_]+',
+                'wpt.name', $query);
+            $fallbackQuery = $fpreg->regexReplace(
+                'CONVERT\(usefulterms\.grouped_terms USING utf8mb4\) COLLATE [A-Za-z0-9_]+',
+                'usefulterms.grouped_terms', is_string($fallbackQuery) ? $fallbackQuery : $query);
+            $previousSuppressState2 = $wpdb->suppress_errors(true);
+            $rows = $wpdb->get_results($fallbackQuery);
+            $queryError = $wpdb->last_error;
+            $wpdb->suppress_errors($previousSuppressState2);
+            if (!empty($queryError)) {
+                $this->classifyAndHandleInfrastructureError($queryError);
+            }
+        }
+
+        if (!empty($queryError) && $this->isInvalidDataError($queryError) &&
                 $slug != "" && strpos($query, 'CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4)') !== false) {
             // Compatibility fallback: retry once without CAST/COLLATE for environments
             // where mixed encodings still reject utf8mb4 coercion.
@@ -769,22 +795,26 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             $fallbackQuery = $this->f->str_replace('{limit-results}', $limitResults, $fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{order-results}', $orderResults, $fallbackQuery);
             $fallbackResult = $this->queryAndGetResults($fallbackQuery, array('log_errors' => false));
+            $fallbackError = is_string($fallbackResult['last_error'] ?? '') ? ($fallbackResult['last_error'] ?? '') : '';
+            if (empty($fallbackError)) {
+                $queryError = ''; // fallback succeeded — clear the error
+            }
             $fallbackRows = is_array($fallbackResult['rows'] ?? array()) ? ($fallbackResult['rows'] ?? array()) : array();
             $rows = array_map(function($row) {
                 return (object)$row;
             }, $fallbackRows);
         }
 
-        // check for errors
-        if ($wpdb->last_error) {
+        // check for errors (use $queryError which tracks the latest attempt)
+        if ($queryError) {
             // "Unknown column 'plc.content_keywords'" occurs during the DB migration window
             // when the column hasn't been added yet (e.g. sync lock was stuck for ~24h).
             // Degrade to warning so it doesn't generate email reports for every 404 hit.
-            if (stripos($wpdb->last_error, 'unknown column') !== false &&
-                    stripos($wpdb->last_error, 'content_keywords') !== false) {
-                $this->logger->warn("content_keywords column not yet available (DB migration pending): " . $wpdb->last_error);
-            } else if (!$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
-                $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+            if (stripos($queryError, 'unknown column') !== false &&
+                    stripos($queryError, 'content_keywords') !== false) {
+                $this->logger->warn("content_keywords column not yet available (DB migration pending): " . $queryError);
+            } else if (!$this->classifyAndHandleInfrastructureError($queryError)) {
+                $this->logger->errorMessage("Error executing query. Err: " . $queryError . ", Query: " . $query);
             }
         }
 
