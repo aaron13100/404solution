@@ -323,7 +323,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             // "WordPress database error" entry on top of the first, producing
             // duplicate noise in debug.log for every failed cron run.
             $prevSuppressState = $wpdb->suppress_errors(true);
-            $result['rows'] = $wpdb->get_results($query, ARRAY_A);
+            $result['rows'] = $wpdb->get_results($query, $this->currentResultType);
             $wpdb->suppress_errors($prevSuppressState);
             $this->harvestWpdbResult($result);
 

@@ -68,6 +68,8 @@ class ABJ_404_Solution_DataAccess {
     private static $tableRepairInProgress = false;
     /** @var bool Prevent recursive invalid-data retry attempts. */
     private static $invalidDataRetryInProgress = false;
+    /** @var string Current wpdb result type for queryAndGetResults (ARRAY_A or OBJECT). */
+    private $currentResultType = ARRAY_A;
     /** @var bool Ensure view cache table DDL runs at most once per request. */
     private static $viewSnapshotTableEnsured = false;
     /** @param bool $value @return void */
@@ -736,7 +738,7 @@ class ABJ_404_Solution_DataAccess {
 
             global $wpdb;
             $wpdb->flush();
-            $result['rows'] = $wpdb->get_results($retryQuery, ARRAY_A);
+            $result['rows'] = $wpdb->get_results($retryQuery, $this->currentResultType);
             $this->harvestWpdbResult($result);
         } catch (Throwable $e) {
             $this->logger->warn("Invalid-data retry failed: " . $e->getMessage());
@@ -838,6 +840,7 @@ class ABJ_404_Solution_DataAccess {
             'result_type' => ARRAY_A),
             $options);
         $resultType = $options['result_type'] === OBJECT ? OBJECT : ARRAY_A;
+        $this->currentResultType = $resultType;
 
        	$ignoreErrorStrings = is_array($options['ignore_errors']) ? $options['ignore_errors'] : array();
         $queryParameters = is_array($options['query_params']) ? $options['query_params'] : array();
@@ -1142,7 +1145,7 @@ class ABJ_404_Solution_DataAccess {
         if (stripos($errorMessage, 'abj404') !== false) {
             global $wpdb;
             $wpdb->flush();
-            $result['rows'] = $wpdb->get_results($query, ARRAY_A);
+            $result['rows'] = $wpdb->get_results($query, $this->currentResultType);
             $result['last_error'] = (string)($wpdb->last_error ?? '');
             $result['last_result'] = $wpdb->last_result ?? array();
             $result['rows_affected'] = $wpdb->rows_affected ?? 0;

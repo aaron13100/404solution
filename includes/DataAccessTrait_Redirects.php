@@ -754,12 +754,9 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $query = $this->f->str_replace('{limit-results}', $limitResults, $query);
         $query = $this->f->str_replace('{order-results}', $orderResults, $query);
         
-        // Suppress wpdb error output to prevent debug.log flooding on collation
-        // mismatches (e.g. utf8mb3 WP tables + utf8mb4 plugin collation).
-        $previousSuppressState = $wpdb->suppress_errors(true);
-        $rows = $wpdb->get_results($query);
-        $queryError = $wpdb->last_error;
-        $wpdb->suppress_errors($previousSuppressState);
+        $result = $this->queryAndGetResults($query, array('result_type' => OBJECT));
+        $queryError = is_string($result['last_error'] ?? '') ? ($result['last_error'] ?? '') : '';
+        $rows = is_array($result['rows']) ? $result['rows'] : array();
 
         // Collation-error fallback: if CONVERT(... USING utf8mb4) COLLATE still fails
         // (e.g. MySQL version quirk), retry without any COLLATE forcing — the pre-4.1.4
@@ -772,12 +769,12 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             $fallbackQuery = $fpreg->regexReplace(
                 'CONVERT\(usefulterms\.grouped_terms USING utf8mb4\) COLLATE [A-Za-z0-9_]+',
                 'usefulterms.grouped_terms', is_string($fallbackQuery) ? $fallbackQuery : $query);
-            $previousSuppressState2 = $wpdb->suppress_errors(true);
-            $rows = $wpdb->get_results($fallbackQuery);
-            $queryError = $wpdb->last_error;
-            $wpdb->suppress_errors($previousSuppressState2);
-            if (!empty($queryError)) {
-                $this->classifyAndHandleInfrastructureError($queryError);
+            $fallbackResult = $this->queryAndGetResults(
+                is_string($fallbackQuery) ? $fallbackQuery : $query,
+                array('result_type' => OBJECT, 'log_errors' => false));
+            $queryError = is_string($fallbackResult['last_error'] ?? '') ? ($fallbackResult['last_error'] ?? '') : '';
+            if (empty($queryError)) {
+                $rows = is_array($fallbackResult['rows']) ? $fallbackResult['rows'] : array();
             }
         }
 
@@ -787,22 +784,18 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             // where mixed encodings still reject utf8mb4 coercion.
             $fallbackSpecifiedSlug = " */\n and wp_posts.post_name = '" . esc_sql($slug) . "' \n ";
             $fallbackQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
-            $fallbackQuery = $this->doTableNameReplacements($fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{specifiedSlug}', $fallbackSpecifiedSlug, $fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{searchTerm}', $searchTerm, $fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{extraWhereClause}', $extraWhereClause, $fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{limit-results}', $limitResults, $fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{order-results}', $orderResults, $fallbackQuery);
-            $fallbackResult = $this->queryAndGetResults($fallbackQuery, array('log_errors' => false));
+            $fallbackResult = $this->queryAndGetResults($fallbackQuery, array('result_type' => OBJECT, 'log_errors' => false));
             $fallbackError = is_string($fallbackResult['last_error'] ?? '') ? ($fallbackResult['last_error'] ?? '') : '';
             if (empty($fallbackError)) {
-                $queryError = ''; // fallback succeeded — clear the error
+                $queryError = '';
+                $rows = is_array($fallbackResult['rows']) ? $fallbackResult['rows'] : array();
             }
-            $fallbackRows = is_array($fallbackResult['rows'] ?? array()) ? ($fallbackResult['rows'] ?? array()) : array();
-            $rows = array_map(function($row) {
-                return (object)$row;
-            }, $fallbackRows);
         }
 
         // check for errors (use $queryError which tracks the latest attempt)
@@ -841,13 +834,13 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $query = $this->doTableNameReplacements($query);
         $query = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
         
-        $rows = $wpdb->get_results($query);
-        // check for errors
-        if ($wpdb->last_error && !$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
-            $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+        $result = $this->queryAndGetResults($query, array('result_type' => OBJECT));
+        $queryError = is_string($result['last_error'] ?? '') ? ($result['last_error'] ?? '') : '';
+        if ($queryError && !$this->classifyAndHandleInfrastructureError($queryError)) {
+            $this->logger->errorMessage("Error executing query. Err: " . $queryError . ", Query: " . $query);
         }
-        
-        return $rows;
+
+        return is_array($result['rows']) ? $result['rows'] : array();
     }
 
     /** Returns rows with the defined terms (tags).
@@ -881,15 +874,16 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $query = $this->f->str_replace('{limit}', $limitClause, $query);
         $query = $this->doTableNameReplacements($query);
         $query = $this->f->str_replace('{recognizedCategories}', $recognizedCategories, $query);
-        
-        $rows = $wpdb->get_results($query);
-        // check for errors
-        if ($wpdb->last_error && !$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
-            $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+
+        $result = $this->queryAndGetResults($query, array('result_type' => OBJECT));
+        $queryError = is_string($result['last_error'] ?? '') ? ($result['last_error'] ?? '') : '';
+        if ($queryError && !$this->classifyAndHandleInfrastructureError($queryError)) {
+            $this->logger->errorMessage("Error executing query. Err: " . $queryError . ", Query: " . $query);
         }
-        
+        $rows = is_array($result['rows']) ? $result['rows'] : array();
+
         $rows = $this->addURLToTermsRows($rows);
-        
+
         return $rows;
     }
     
@@ -970,15 +964,16 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $query = $this->f->str_replace('{slug}', $slug, $query);
         $query = $this->f->str_replace('{limit}', $limitClause, $query);
         $query = $this->doTableNameReplacements($query);
-        
-        $rows = $wpdb->get_results($query);
-        // check for errors
-        if ($wpdb->last_error && !$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
-            $this->logger->errorMessage("Error executing query. Err: " . $wpdb->last_error . ", Query: " . $query);
+
+        $result = $this->queryAndGetResults($query, array('result_type' => OBJECT));
+        $queryError = is_string($result['last_error'] ?? '') ? ($result['last_error'] ?? '') : '';
+        if ($queryError && !$this->classifyAndHandleInfrastructureError($queryError)) {
+            $this->logger->errorMessage("Error executing query. Err: " . $queryError . ", Query: " . $query);
         }
-        
+        $rows = is_array($result['rows']) ? $result['rows'] : array();
+
         $rows = $this->addURLToTermsRows($rows);
-        
+
         return $rows;
     }
 
