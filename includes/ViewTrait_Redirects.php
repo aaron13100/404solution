@@ -460,7 +460,7 @@ trait ViewTrait_Redirects {
      *
      * @param string $url The captured 404 URL.
      * @param array<string, mixed> $options Plugin options.
-     * @return array{title: string, score: int, id_and_type: string}|null The best match, or null if none found.
+     * @return array{title: string, score: int, id_and_type: string, type_label: string}|null The best match, or null if none found.
      */
     private function getSuggestedDestination(string $url, array $options): ?array {
         try {

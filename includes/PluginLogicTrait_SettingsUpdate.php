@@ -33,7 +33,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         $tableOptions['translations'] = $translationArray;
 
         $rawFilter = $this->dao->getPostOrGetSanitize("filter", "");
-        if ($rawFilter === "" || $rawFilter === null) {
+        if ($rawFilter === "") {
             if ($this->dao->getPostOrGetSanitize('subpage') == 'abj404_captured') {
                 $tableOptions['filter'] = ABJ404_STATUS_CAPTURED;
             } else {

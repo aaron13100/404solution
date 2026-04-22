@@ -272,7 +272,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
     function getHighImpactCapturedCount(): int {
         $cached = get_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED);
         if ($cached !== false) {
-            return intval($cached);
+            return intval(is_scalar($cached) ? $cached : 0);
         }
 
         $query = "SELECT COUNT(*) as cnt FROM (

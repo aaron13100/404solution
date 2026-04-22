@@ -1208,19 +1208,17 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         }
 
         // Trash captured URLs matching junk patterns (case-insensitive via LIKE)
-        if (!empty($likeClauses)) {
-            $wherePatterns = implode(' OR ', $likeClauses);
-            $query = "UPDATE {wp_abj404_redirects}
-                SET disabled = 1
-                WHERE status = " . ABJ404_STATUS_CAPTURED . "
-                AND disabled = 0
-                AND (" . $wherePatterns . ")";
-            $query = $this->doTableNameReplacements($query);
+        $wherePatterns = implode(' OR ', $likeClauses);
+        $query = "UPDATE {wp_abj404_redirects}
+            SET disabled = 1
+            WHERE status = " . ABJ404_STATUS_CAPTURED . "
+            AND disabled = 0
+            AND (" . $wherePatterns . ")";
+        $query = $this->doTableNameReplacements($query);
 
-            $result = $this->queryAndGetResults($query);
-            $affected = $result['rows_affected'] ?? 0;
-            $totalTrashed += is_numeric($affected) ? (int)$affected : 0;
-        }
+        $result = $this->queryAndGetResults($query);
+        $affected = $result['rows_affected'] ?? 0;
+        $totalTrashed += is_numeric($affected) ? (int)$affected : 0;
 
         // Trash captured URLs with 0 hits older than 14 days
         $cutoff = time() - (14 * DAY_IN_SECONDS);
