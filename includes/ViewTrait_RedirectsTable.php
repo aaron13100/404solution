@@ -142,20 +142,15 @@ trait ViewTrait_RedirectsTable {
         echo '<form id="bulk-action-form" method="POST" action="' . esc_url($url) . '">';
         wp_nonce_field('abj404_bulkProcess');
 
-        // Top pagination placeholder. Full data is loaded via AJAX so
-        // initial page render is not blocked on heavy queries.
-        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-top">';
-        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
-        echo '</div>';
-
-        // Table placeholder.
+        // Table + pagination placeholders. Full data is loaded via AJAX
+        // so initial page render is not blocked on heavy queries.
         echo '<table class="abj404-table" data-table-awaiting-load="1">';
         echo '<thead><tr><th>' . esc_html__('Loading captured URLs…', '404-solution') . '</th></tr></thead>';
         echo '<tbody><tr><td class="abj404-empty-message">' . esc_html__('Loading captured URLs…', '404-solution') . '</td></tr></tbody>';
         echo '</table>';
 
-        // Bottom pagination placeholder.
-        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-bottom">';
+        // Pagination placeholder (bottom only, matching original layout).
+        echo '<div class="abj404-pagination tablenav abj404-pagination-right">';
         echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
         echo '</div>';
 
@@ -516,11 +511,6 @@ trait ViewTrait_RedirectsTable {
         echo '<button type="button" class="abj404-btn abj404-btn-secondary abj404-clear-selection" onclick="abj404ClearSelection()">' . esc_html__('Clear Selection', '404-solution') . '</button>';
         echo '</div>';
 
-        // Top pagination placeholder.
-        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-top">';
-        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
-        echo '</div>';
-
         // Table container
         echo '<div class="abj404-table-container">';
         echo '<table class="abj404-table" data-table-awaiting-load="1">';
@@ -529,8 +519,8 @@ trait ViewTrait_RedirectsTable {
         echo '</table>';
         echo '</div>';
 
-        // Bottom pagination placeholder.
-        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-bottom">';
+        // Pagination placeholder (bottom only, matching original layout).
+        echo '<div class="abj404-pagination tablenav abj404-pagination-right">';
         echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
         echo '</div>';
 

@@ -100,11 +100,6 @@ trait ViewTrait_Logs {
         echo '<span class="abj404-refresh-status" aria-live="polite"></span>';
         echo '</div><!-- .abj404-filter-bar -->';
 
-        // Top pagination placeholder — data loaded via AJAX
-        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-top">';
-        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
-        echo '</div>';
-
         // Table placeholder — data loaded via AJAX
         echo '<table class="abj404-table" data-table-awaiting-load="1">';
         echo '<thead><tr><th>' . esc_html__('Loading logs…', '404-solution') . '</th></tr></thead>';
