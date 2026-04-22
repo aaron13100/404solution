@@ -1539,7 +1539,7 @@ html[data-theme="obsidian"] .abj404-tab-branding {
 
 .abj404-table-container {
     margin: 0;
-    padding: 0 16px 20px;
+    padding: 0 16px;
 }
 
 .abj404-table {
@@ -1968,6 +1968,10 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     align-items: center;
     flex-wrap: wrap;
     gap: 16px;
+}
+
+.abj404-pagination-bottom {
+    border-top: 0;
 }
 
 .abj404-pagination-info {
