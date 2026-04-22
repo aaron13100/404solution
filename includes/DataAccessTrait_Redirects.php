@@ -1245,15 +1245,20 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $affected = $result['rows_affected'] ?? 0;
         $totalTrashed += is_numeric($affected) ? (int)$affected : 0;
 
-        // Trash captured URLs with 0 hits older than 14 days
+        // Trash captured URLs with 0 log hits older than 14 days.
+        // logshits is not a column — it's computed from the logs table.
         $cutoff = time() - (14 * DAY_IN_SECONDS);
         $query = $wpdb->prepare(
-            "UPDATE {wp_abj404_redirects}
-            SET disabled = 1
-            WHERE status = " . ABJ404_STATUS_CAPTURED . "
-            AND disabled = 0
-            AND logshits = 0
-            AND timestamp < %d",
+            "UPDATE {wp_abj404_redirects} r
+            SET r.disabled = 1
+            WHERE r.status = " . ABJ404_STATUS_CAPTURED . "
+            AND r.disabled = 0
+            AND r.timestamp < %d
+            AND NOT EXISTS (
+                SELECT 1 FROM {wp_abj404_logsv2} l
+                WHERE l.requested_url = r.url
+                LIMIT 1
+            )",
             $cutoff
         );
         $query = $this->doTableNameReplacements($query);
