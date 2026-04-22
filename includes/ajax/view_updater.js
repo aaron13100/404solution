@@ -16,9 +16,13 @@ jQuery(document).ready(function($) {
 });
 
 function getRefreshStatusHost() {
-    var $host = jQuery('.abj404-pagination-right').first();
+    // Prefer the element that actually carries AJAX config attributes.
+    var $host = jQuery('[data-pagination-ajax-url]').first();
     if ($host.length === 0) {
         $host = jQuery('.abj404-filter-bar').first();
+    }
+    if ($host.length === 0) {
+        $host = jQuery('.abj404-pagination-right').first();
     }
     return $host;
 }
@@ -677,12 +681,12 @@ function paginationLinksChange(triggerItem, options) {
     var tableSelector = jQuery('.abj404-table').length > 0 ? '.abj404-table' : '.wp-list-table';
 
     // Get AJAX config from the page (supports both new data-attrs and legacy URL-with-query).
-    var $ajaxConfigEl = jQuery(".abj404-pagination-right").first();
+    var $ajaxConfigEl = jQuery("[data-pagination-ajax-url]").first();
     if ($ajaxConfigEl.length === 0) {
         $ajaxConfigEl = jQuery(".abj404-filter-bar").first();
     }
     if ($ajaxConfigEl.length === 0) {
-        $ajaxConfigEl = jQuery("[data-pagination-ajax-url]").first();
+        $ajaxConfigEl = jQuery(".abj404-pagination-right").first();
     }
     var url = $ajaxConfigEl.attr("data-pagination-ajax-url") || window.ajaxurl;
     if (!url) {
