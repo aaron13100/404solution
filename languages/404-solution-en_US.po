@@ -3597,3 +3597,143 @@ msgstr "Connect to Google Search Console"
 #: includes/WordPress_Connector.php
 msgid "No access token received from authorization."
 msgstr "No access token received from authorization."
+
+#: includes/html/adminOptionsSimple.html
+msgid "Automatically trash bot and spam URLs"
+msgstr "Automatically trash bot and spam URLs"
+
+#: includes/html/adminOptionsSimple.html
+msgid "Auto-trash captured URLs from bots and security scanners during daily maintenance"
+msgstr "Auto-trash captured URLs from bots and security scanners during daily maintenance"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
+msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
+msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
+msgstr "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
+msgstr "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "You're all set!"
+msgstr "You're all set!"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Get email alerts about 404 problems?"
+msgstr "Get email alerts about 404 problems?"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Yes, email me a weekly summary (recommended)"
+msgstr "Yes, email me a weekly summary (recommended)"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Get notified when captured 404 URLs exceed 50"
+msgstr "Get notified when captured 404 URLs exceed 50"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "You can always enable email alerts later in Options"
+msgstr "You can always enable email alerts later in Options"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "No, I'll check manually"
+msgstr "No, I'll check manually"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Automatic Permanent Redirects"
+msgstr "Automatic Permanent Redirects"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Automatic Temporary Redirects"
+msgstr "Automatic Temporary Redirects"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Manual Permanent Redirects"
+msgstr "Manual Permanent Redirects"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Manual Temporary Redirects"
+msgstr "Manual Temporary Redirects"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
+msgstr "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Needs Review"
+msgstr "Needs Review"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Handled"
+msgstr "Handled"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Dismiss"
+msgstr "Dismiss"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "All good — %d redirects active, no URLs need attention"
+msgstr "All good — %d redirects active, no URLs need attention"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "%1$d redirects active — %2$d captured URLs have repeat visitors"
+msgstr "%1$d redirects active — %2$d captured URLs have repeat visitors"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "View"
+msgstr "View"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "The plugin creates these automatically. You only need to act when the status bar above says so."
+msgstr "The plugin creates these automatically. You only need to act when the status bar above says so."
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Blocked"
+msgstr "Blocked"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Best for moved pages"
+msgstr "Best for moved pages"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Best for seasonal or test pages"
+msgstr "Best for seasonal or test pages"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Permanent is best for most redirects. Use Temporary if the page may come back."
+msgstr "Permanent is best for most redirects. Use Temporary if the page may come back."
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Back to Captured 404s"
+msgstr "Back to Captured 404s"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Suggested destination"
+msgstr "Suggested destination"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "match"
+msgstr "match"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Accept Suggestion"
+msgstr "Accept Suggestion"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Pick a Different Page"
+msgstr "Pick a Different Page"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Post"
+msgstr "Post"
+
+#: includes/ViewTrait_SimpleModeUX.php
+msgid "Home"
+msgstr "Home"

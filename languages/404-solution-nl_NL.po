@@ -1082,7 +1082,6 @@ msgstr "TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING"
 msgid "TOOLTIP_POPUP_EXPLANATION_EMPTY"
 msgstr "TOOLTIP_POPUP_EXPLANATION_EMPTY"
 
-
 msgid "TOOLTIP_POPUP_EXPLANATION_PAGE"
 msgstr "TOOLTIP_POPUP_EXPLANATION_PAGE"
 
@@ -2662,7 +2661,6 @@ msgstr "Een tijdelijke databasetabel is beschadigd — dit wordt gewoonlijk vero
 msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
 msgstr "De logtabel van 404 Solution is vol en kan geen nieuwe vermeldingen accepteren. Dit wordt gewoonlijk veroorzaakt door een volle schijf. Neem contact op met uw hostingprovider of wis de logtabel handmatig."
 
-
 #: includes/PermalinkCache.php
 msgid "Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space."
 msgstr "De permalink-cache lijkt leeg na herbouw — suggesties kunnen worden aangetast. Probeer opnieuw te herbouwen of controleer de beschikbare schijfruimte."
@@ -2697,8 +2695,6 @@ msgstr "Wekelijkse samenvatting"
 
 msgid "Choose how often to receive email notifications about captured 404s."
 msgstr "Kies hoe vaak u e-mailmeldingen wilt ontvangen over vastgelegde 404's."
-
-
 
 msgid "Temporary 307 (preserve method)"
 msgstr "Tijdelijk 307 (methode behouden)"
@@ -2756,7 +2752,6 @@ msgstr "404-treffers"
 
 msgid "Broken Internal Links"
 msgstr "Defecte interne links"
-
 
 msgid "Migrate from Another Plugin"
 msgstr "Migreren vanuit een andere plugin"
@@ -3465,7 +3460,6 @@ msgstr "Overgeslagen"
 msgid "Excluded"
 msgstr "Uitgesloten"
 
-
 msgid "No match found"
 msgstr "Geen overeenkomst gevonden"
 
@@ -3498,7 +3492,6 @@ msgstr "Indien ingeschakeld, wordt een PDF-samenvatting bijgevoegd bij elke same
 
 msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
 msgstr "Met moduleprofilen kunt u beperken welke overeenkomstmodules worden uitgevoerd voor specifieke URL-patronen. Het eerste profiel waarvan het patroon overeenkomt met een 404-URL wint. Als geen enkel profiel overeenkomt, worden alle modules normaal uitgevoerd."
-
 
 msgid "Error: Invalid 404 behavior selected"
 msgstr "Fout: ongeldig 404-gedrag geselecteerd"
@@ -3599,3 +3592,108 @@ msgstr "Verbinden met Google Search Console"
 #: includes/WordPress_Connector.php
 msgid "No access token received from authorization."
 msgstr "Geen toegangstoken ontvangen bij de autorisatie."
+
+msgid "Automatically trash bot and spam URLs"
+msgstr "Automatically trash bot and spam URLs"
+
+msgid "Auto-trash captured URLs from bots and security scanners during daily maintenance"
+msgstr "Auto-trash captured URLs from bots and security scanners during daily maintenance"
+
+msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
+msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
+
+msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
+msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
+
+msgid "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
+msgstr "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
+
+msgid "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
+msgstr "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
+
+msgid "You're all set!"
+msgstr "You're all set!"
+
+msgid "Get email alerts about 404 problems?"
+msgstr "Get email alerts about 404 problems?"
+
+msgid "Yes, email me a weekly summary (recommended)"
+msgstr "Yes, email me a weekly summary (recommended)"
+
+msgid "Get notified when captured 404 URLs exceed 50"
+msgstr "Get notified when captured 404 URLs exceed 50"
+
+msgid "You can always enable email alerts later in Options"
+msgstr "You can always enable email alerts later in Options"
+
+msgid "No, I'll check manually"
+msgstr "No, I'll check manually"
+
+msgid "Automatic Permanent Redirects"
+msgstr "Automatic Permanent Redirects"
+
+msgid "Automatic Temporary Redirects"
+msgstr "Automatic Temporary Redirects"
+
+msgid "Manual Permanent Redirects"
+msgstr "Manual Permanent Redirects"
+
+msgid "Manual Temporary Redirects"
+msgstr "Manual Temporary Redirects"
+
+msgid "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
+msgstr "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
+
+msgid "Needs Review"
+msgstr "Needs Review"
+
+msgid "Handled"
+msgstr "Handled"
+
+msgid "Dismiss"
+msgstr "Dismiss"
+
+msgid "All good — %d redirects active, no URLs need attention"
+msgstr "All good — %d redirects active, no URLs need attention"
+
+msgid "%1$d redirects active — %2$d captured URLs have repeat visitors"
+msgstr "%1$d redirects active — %2$d captured URLs have repeat visitors"
+
+msgid "View"
+msgstr "View"
+
+msgid "The plugin creates these automatically. You only need to act when the status bar above says so."
+msgstr "The plugin creates these automatically. You only need to act when the status bar above says so."
+
+msgid "Blocked"
+msgstr "Blocked"
+
+msgid "Best for moved pages"
+msgstr "Best for moved pages"
+
+msgid "Best for seasonal or test pages"
+msgstr "Best for seasonal or test pages"
+
+msgid "Permanent is best for most redirects. Use Temporary if the page may come back."
+msgstr "Permanent is best for most redirects. Use Temporary if the page may come back."
+
+msgid "Back to Captured 404s"
+msgstr "Back to Captured 404s"
+
+msgid "Suggested destination"
+msgstr "Suggested destination"
+
+msgid "match"
+msgstr "match"
+
+msgid "Accept Suggestion"
+msgstr "Accept Suggestion"
+
+msgid "Pick a Different Page"
+msgstr "Pick a Different Page"
+
+msgid "Post"
+msgstr "Post"
+
+msgid "Home"
+msgstr "Home"
