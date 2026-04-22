@@ -294,7 +294,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 $message .= ", Log file emailed to developer.";
             } else {
                 // No error to report — roll the heartbeat dice.
-                if ($this->logger->sendHeartbeatIfDueRandom(100)) {
+                if ($this->logger->sendHeartbeatIfDueRandom(200)) {
                     $message .= ", Heartbeat log emailed to developer.";
                 }
             }

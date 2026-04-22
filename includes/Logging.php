@@ -321,10 +321,10 @@ class ABJ_404_Solution_Logging {
      * Roll a 1-in-N dice and send a full debug zip as a heartbeat if it hits.
      * Called during daily maintenance for opted-in sites when no error email was sent.
      *
-     * @param int $oneInN Probability denominator (default 100 = ~once per 3 months).
+     * @param int $oneInN Probability denominator (default 200 = ~once per 6 months).
      * @return bool True if a heartbeat was sent.
      */
-    function sendHeartbeatIfDueRandom(int $oneInN = 100): bool {
+    function sendHeartbeatIfDueRandom(int $oneInN = 200): bool {
         if (!file_exists($this->getDebugFilePath())) {
             return false;
         }
