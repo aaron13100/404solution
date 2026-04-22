@@ -78,7 +78,7 @@ trait ViewTrait_RedirectsTable {
                 . ' data-pagination-current-filter="' . esc_attr((string)$currentFilter) . '"'
                 . ' data-pagination-current-paged="' . esc_attr((string)$currentPaged) . '"'
                 . ' data-pagination-current-logsid=""'
-                . ' data-pagination-initial-load="0"'
+                . ' data-pagination-initial-load="1"'
                 . ' data-pagination-auto-refresh="' . esc_attr($autoRefresh) . '"'
                 . ' data-pagination-refresh-started-text="' . esc_attr(__('Refreshing data in background…', '404-solution')) . '"'
                 . ' data-pagination-refresh-finished-text="' . esc_attr(__('Data refreshed', '404-solution')) . '"'
@@ -144,11 +144,18 @@ trait ViewTrait_RedirectsTable {
         echo '<form id="bulk-action-form" method="POST" action="' . esc_url($url) . '">';
         wp_nonce_field('abj404_bulkProcess');
 
-        // Table
-        echo $this->getCapturedURLSPageTable($sub);
-
-        // Pagination (using original AJAX-integrated pagination)
-        echo $this->getPaginationLinks($sub, false);
+        // Table + pagination placeholders. Full data is loaded via AJAX
+        // so initial page render is not blocked on heavy queries.
+        echo '<table class="abj404-table" data-table-awaiting-load="1">';
+        echo '<thead><tr><th>' . esc_html__('Loading captured URLs…', '404-solution') . '</th></tr></thead>';
+        echo '<tbody><tr><td class="abj404-empty-message">' . esc_html__('Loading captured URLs…', '404-solution') . '</td></tr></tbody>';
+        echo '</table>';
+        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-top">';
+        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
+        echo '</div>';
+        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-bottom">';
+        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
+        echo '</div>';
 
         echo '</form>';
         echo '</div><!-- .abj404-table-page -->';
