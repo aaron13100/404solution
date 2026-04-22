@@ -834,8 +834,10 @@ class ABJ_404_Solution_DataAccess {
 
         $options = array_merge(array('log_errors' => true,
             'log_too_slow' => true, 'ignore_errors' => array(),
-            'query_params' => array(), 'skip_repair' => false),
+            'query_params' => array(), 'skip_repair' => false,
+            'result_type' => ARRAY_A),
             $options);
+        $resultType = $options['result_type'] === OBJECT ? OBJECT : ARRAY_A;
 
        	$ignoreErrorStrings = is_array($options['ignore_errors']) ? $options['ignore_errors'] : array();
         $queryParameters = is_array($options['query_params']) ? $options['query_params'] : array();
@@ -871,26 +873,26 @@ class ABJ_404_Solution_DataAccess {
         }
 
         $result = array();
-        $result['rows'] = $wpdb->get_results($query, ARRAY_A);
-        
+        $result['rows'] = $wpdb->get_results($query, $resultType);
+
         $result['elapsed_time'] = $timer->stop();
         if (function_exists('abj404_benchmark_record_db_query')) {
             abj404_benchmark_record_db_query(((float)$result['elapsed_time']) * 1000.0);
         }
         $this->harvestWpdbResult($result);
-        
+
         if (!is_array($result['rows'])) {
             // In production (WP_DEBUG off), only log SQL filename to avoid PII exposure
             $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
             $this->logger->errorMessage("Query result is not an array. Query: " . $sqlInfo,
         			new Exception("Query result is not an array."));
         }
-        
+
         if ($result['last_error'] !== '' && $this->isTransientConnectionError($result['last_error'])) {
             // Retry once after reconnect for transient connection drops.
             $this->ensureConnection();
             $wpdb->flush();
-            $result['rows'] = $wpdb->get_results($query, ARRAY_A);
+            $result['rows'] = $wpdb->get_results($query, $resultType);
             $this->harvestWpdbResult($result);
         }
 
@@ -908,7 +910,7 @@ class ABJ_404_Solution_DataAccess {
         if ($result['last_error'] !== '' && $this->isDeadlockOrLockTimeoutError($result['last_error'])) {
             /** @var wpdb $wpdb */
             usleep(50000); // 50 ms — enough for most short-lived locks to release
-            $result['rows'] = $wpdb->get_results($query, ARRAY_A);
+            $result['rows'] = $wpdb->get_results($query, $resultType);
             $this->harvestWpdbResult($result);
             if ($result['last_error'] !== '' && $this->isDeadlockOrLockTimeoutError($result['last_error'])) {
                 $this->setPluginDbNotice('lock_timeout', $this->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $result['last_error']);
