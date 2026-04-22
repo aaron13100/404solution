@@ -3710,6 +3710,10 @@ msgstr "Carregando redirecionamentos…"
 msgid "Loading captured URLs…"
 msgstr "Carregando URLs capturadas…"
 
+#: includes/ViewTrait_Logs.php
+msgid "Loading logs…"
+msgstr "Carregando registros…"
+
 #: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
 msgid "Loading…"
 msgstr "Carregando…"

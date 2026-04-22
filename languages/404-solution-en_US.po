@@ -3750,6 +3750,10 @@ msgstr ""
 msgid "Loading captured URLs…"
 msgstr ""
 
+#: includes/ViewTrait_Logs.php
+msgid "Loading logs…"
+msgstr ""
+
 #: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
 msgid "Loading…"
 msgstr ""

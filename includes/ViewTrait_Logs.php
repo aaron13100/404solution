@@ -30,8 +30,29 @@ trait ViewTrait_Logs {
         echo '<h2>' . __('Redirect Logs', '404-solution') . '</h2>';
         echo '</div>';
 
-        // Filter bar with search dropdown
-        echo '<div class="abj404-filter-bar">';
+        // Extract current table options for the filter bar data attributes
+        $perpage = array_key_exists('perpage', $tableOptions) && is_scalar($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
+        $orderby = array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'timestamp';
+        $order = array_key_exists('order', $tableOptions) && is_string($tableOptions['order']) ? $tableOptions['order'] : 'DESC';
+        $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
+
+        // Filter bar with search dropdown and AJAX data attributes for deferred table load
+        echo '<div class="abj404-filter-bar tablenav"'
+                . ' data-pagination-ajax-url="' . esc_attr(admin_url('admin-ajax.php')) . '"'
+                . ' data-pagination-ajax-action="ajaxUpdatePaginationLinks"'
+                . ' data-pagination-ajax-subpage="' . esc_attr($sub) . '"'
+                . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '"'
+                . ' data-pagination-current-signature=""'
+                . ' data-pagination-current-orderby="' . esc_attr($orderby) . '"'
+                . ' data-pagination-current-order="' . esc_attr($order) . '"'
+                . ' data-pagination-current-filter="0"'
+                . ' data-pagination-current-paged="1"'
+                . ' data-pagination-current-logsid=""'
+                . ' data-pagination-initial-load="1"'
+                . ' data-pagination-auto-refresh="1"'
+                . ' data-pagination-refresh-started-text="' . esc_attr(__('Refreshing data in background…', '404-solution')) . '"'
+                . ' data-pagination-refresh-finished-text="' . esc_attr(__('Data refreshed', '404-solution')) . '"'
+                . ' data-pagination-refresh-available-text="' . esc_attr(__('Refresh available', '404-solution')) . '">';
 
         // Log search form
         echo '<form id="logs_search_form" name="admin-logs-page" method="GET" action="" class="abj404-logs-search-form">';
@@ -70,9 +91,6 @@ trait ViewTrait_Logs {
         echo '<select onchange="window.location.href=this.value">';
         $perPageOptions = array(10, 25, 50, 100, 250);
         foreach ($perPageOptions as $opt) {
-            $perpage = array_key_exists('perpage', $tableOptions) && is_scalar($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
-            $orderby = array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'timestamp';
-            $order = array_key_exists('order', $tableOptions) && is_string($tableOptions['order']) ? $tableOptions['order'] : 'DESC';
             $selected = ($perpage == $opt) ? ' selected' : '';
             $url = "?page=" . ABJ404_PP . "&subpage=abj404_logs" .
                    "&orderby=" . sanitize_text_field($orderby) . "&order=" . sanitize_text_field($order) . "&perpage=" . $opt;
@@ -81,13 +99,24 @@ trait ViewTrait_Logs {
         echo '</select>';
         echo '</div>';
 
+        echo '<span class="abj404-refresh-status" aria-live="polite"></span>';
         echo '</div><!-- .abj404-filter-bar -->';
 
-        // Table
-        echo $this->getAdminLogsPageTable($sub);
+        // Top pagination placeholder — data loaded via AJAX
+        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-top">';
+        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
+        echo '</div>';
 
-        // Pagination (AJAX-capable, includes background refresh config)
-        echo $this->getPaginationLinks($sub, false);
+        // Table placeholder — data loaded via AJAX
+        echo '<table class="abj404-table" data-table-awaiting-load="1">';
+        echo '<thead><tr><th>' . esc_html__('Loading logs…', '404-solution') . '</th></tr></thead>';
+        echo '<tbody><tr><td class="abj404-empty-message">' . esc_html__('Loading logs…', '404-solution') . '</td></tr></tbody>';
+        echo '</table>';
+
+        // Bottom pagination placeholder
+        echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-bottom">';
+        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
+        echo '</div>';
 
         echo '</div><!-- .abj404-table-page -->';
     }

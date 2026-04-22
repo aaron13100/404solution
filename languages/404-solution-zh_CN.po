@@ -3716,6 +3716,10 @@ msgstr "正在加载重定向…"
 msgid "Loading captured URLs…"
 msgstr "正在加载已捕获的网址…"
 
+#: includes/ViewTrait_Logs.php
+msgid "Loading logs…"
+msgstr "正在加载日志…"
+
 #: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
 msgid "Loading…"
 msgstr "正在加载…"

@@ -3717,6 +3717,10 @@ msgstr "Загрузка перенаправлений…"
 msgid "Loading captured URLs…"
 msgstr "Загрузка захваченных URL…"
 
+#: includes/ViewTrait_Logs.php
+msgid "Loading logs…"
+msgstr "Загрузка журналов…"
+
 #: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
 msgid "Loading…"
 msgstr "Загрузка…"

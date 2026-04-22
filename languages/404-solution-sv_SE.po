@@ -3710,6 +3710,10 @@ msgstr "Laddar omdirigeringar…"
 msgid "Loading captured URLs…"
 msgstr "Laddar infångade URL:er…"
 
+#: includes/ViewTrait_Logs.php
+msgid "Loading logs…"
+msgstr "Laddar loggposter…"
+
 #: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
 msgid "Loading…"
 msgstr "Laddar…"

@@ -3710,6 +3710,10 @@ msgstr "Omleidingen laden…"
 msgid "Loading captured URLs…"
 msgstr "Vastgelegde URLs laden…"
 
+#: includes/ViewTrait_Logs.php
+msgid "Loading logs…"
+msgstr "Logboek laden…"
+
 #: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
 msgid "Loading…"
 msgstr "Laden…"

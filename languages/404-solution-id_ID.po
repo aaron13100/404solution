@@ -3703,6 +3703,10 @@ msgstr "Memuat pengalihan…"
 msgid "Loading captured URLs…"
 msgstr "Memuat URL yang ditangkap…"
 
+#: includes/ViewTrait_Logs.php
+msgid "Loading logs…"
+msgstr "Memuat catatan log…"
+
 #: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
 msgid "Loading…"
 msgstr "Memuat…"

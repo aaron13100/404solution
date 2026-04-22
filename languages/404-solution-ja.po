@@ -3723,6 +3723,10 @@ msgstr "リダイレクトを読み込み中…"
 msgid "Loading captured URLs…"
 msgstr "キャプチャされたURLを読み込み中…"
 
+#: includes/ViewTrait_Logs.php
+msgid "Loading logs…"
+msgstr "ログを読み込み中…"
+
 #: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
 msgid "Loading…"
 msgstr "読み込み中…"

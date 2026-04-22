@@ -3708,6 +3708,10 @@ msgstr "Lade Weiterleitungen…"
 msgid "Loading captured URLs…"
 msgstr "Lade erfasste URLs…"
 
+#: includes/ViewTrait_Logs.php
+msgid "Loading logs…"
+msgstr "Lade Protokolleinträge…"
+
 #: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
 msgid "Loading…"
 msgstr "Laden…"

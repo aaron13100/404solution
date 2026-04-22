@@ -3739,6 +3739,10 @@ msgstr "جاري تحميل عمليات إعادة التوجيه…"
 msgid "Loading captured URLs…"
 msgstr "جاري تحميل عناوين URL الملتقطة…"
 
+#: includes/ViewTrait_Logs.php
+msgid "Loading logs…"
+msgstr "جاري تحميل السجلات…"
+
 #: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
 msgid "Loading…"
 msgstr "جاري التحميل…"
