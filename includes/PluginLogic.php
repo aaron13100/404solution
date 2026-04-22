@@ -1039,7 +1039,7 @@ class ABJ_404_Solution_PluginLogic {
 
         $invalidated = [];
         foreach ($files as $file) {
-            if (is_file($file) && opcache_invalidate($file, true)) {
+            if (is_file($file) && @opcache_invalidate($file, true)) {
                 $invalidated[] = $file;
             }
         }
