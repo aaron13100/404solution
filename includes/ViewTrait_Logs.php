@@ -88,13 +88,11 @@ trait ViewTrait_Logs {
         // Rows per page
         echo '<div class="abj404-rows-per-page">';
         echo '<span>' . __('Rows per page:', '404-solution') . '</span>';
-        echo '<select onchange="window.location.href=this.value">';
+        echo '<select class="abj404-filter-select perpage" name="perpage" onchange="paginationLinksChange(this);">';
         $perPageOptions = array(10, 25, 50, 100, 250);
         foreach ($perPageOptions as $opt) {
             $selected = ($perpage == $opt) ? ' selected' : '';
-            $url = "?page=" . ABJ404_PP . "&subpage=abj404_logs" .
-                   "&orderby=" . sanitize_text_field($orderby) . "&order=" . sanitize_text_field($order) . "&perpage=" . $opt;
-            echo '<option value="' . esc_url($url) . '"' . $selected . '>' . $opt . '</option>';
+            echo '<option value="' . $opt . '"' . $selected . '>' . $opt . '</option>';
         }
         echo '</select>';
         echo '</div>';
