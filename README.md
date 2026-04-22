@@ -203,6 +203,31 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 ## Changelog ##
 
+## Version 4.1.5 (Apr 22, 2026) ##
+
+**New Features**
+
+* Simple mode Phase 3 — streamlined UI with contextual guidance, suggested destinations for captured 404s, and auto-created redirects for first-time users. Hides advanced columns and options in Simple mode for a cleaner experience.
+* Centralized Google OAuth — one-click Google Search Console connection via a Cloudflare Worker relay, replacing the manual client-ID setup.
+
+**Bug Fixes**
+
+* Fixed "Illegal mix of collations" errors when WordPress core tables use `utf8mb3` and plugin tables use `utf8mb4`. Core columns are now wrapped with `CONVERT(...USING utf8mb4)` before applying `COLLATE`.
+* Fixed collation mismatch in `getPublishedImageIDs` query when comparing term names across tables with different collations.
+* Fixed `opcache_invalidate()` emitting a PHP warning on hosts that restrict the function via `disable_functions` (e.g. some WP Engine/Flywheel configurations).
+* Fixed potential out-of-memory crash when the `logs_hits` fallback query ran without a row limit — now capped at 5,000 rows.
+* Fixed four small correctness issues in redirect filtering, view queries, settings save, and redirect-table rendering.
+
+**Improvements**
+
+* Hardened admin page rendering against out-of-memory errors, corrupted options, and hook failures — the plugin now always shows its admin menu even when dependencies fail, and catches fatal errors with a shutdown handler fallback.
+* Migrated four redirect query methods to the centralized `queryAndGetResults()` handler for consistent error handling and retry logic.
+
+**Internationalization**
+
+* Added Simple mode Phase 3 strings to all 17 locale PO files.
+* Added missing admin error message translations across all locale PO files.
+
 ## Version 4.1.4 (Apr 20, 2026) ##
 
 **Bug Fixes**
