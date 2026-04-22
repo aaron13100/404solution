@@ -156,6 +156,11 @@ function triggerInitialTableLoadIfNeeded() {
         },
         onError: function() {
             $config.attr('data-pagination-initial-load', '0');
+            // Remove placeholder attributes so the page is not stuck on
+            // "Loading…" forever when the AJAX request fails.
+            jQuery('[data-table-awaiting-load]').removeAttr('data-table-awaiting-load');
+            jQuery('[data-tab-counts-placeholder]').removeAttr('data-tab-counts-placeholder');
+            jQuery('[data-health-bar-placeholder]').removeAttr('data-health-bar-placeholder');
         }
     });
 }
