@@ -867,7 +867,7 @@ class ABJ_404_Solution_DataAccess {
         // Non-SELECT queries (INSERT, UPDATE, CREATE, etc.) are not affected.
         $timeoutRaw = isset($options['timeout']) && is_numeric($options['timeout']) ? (int)$options['timeout'] : 0;
         $timeoutSeconds = $timeoutRaw > 0 ? $timeoutRaw : 60;
-        $isSelect = preg_match('/^\s*SELECT\s/i', $query) === 1;
+        $isSelect = $this->queryStartsWithSelect($query);
         if ($isSelect) {
             $query = $this->applyQueryTimeoutHint($query, $timeoutSeconds);
         }
@@ -1055,6 +1055,16 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /**
+     * @param string $query
+     * @return bool
+     */
+    private function queryStartsWithSelect(string $query): bool {
+        // SQL loaded from .sql files is wrapped in leading comments.
+        // Treat "/* ... */ SELECT ..." as a SELECT query for timeout purposes.
+        return preg_match('/^\s*(?:\/\*[\s\S]*?\*\/\s*)*SELECT\s/i', $query) === 1;
+    }
+
+    /**
      * Apply a database-engine-specific timeout hint to a SELECT query.
      *
      * MySQL 5.7.8+: uses the MAX_EXECUTION_TIME(ms) optimizer hint.
@@ -1080,7 +1090,7 @@ class ABJ_404_Solution_DataAccess {
 
         // MySQL 5.7.8+: optimizer hint after SELECT keyword.
         $timedQuery = preg_replace(
-            '/^(\s*SELECT\s)/i',
+            '/^(\s*(?:\/\*[\s\S]*?\*\/\s*)*SELECT\s)/i',
             '$1/*+ MAX_EXECUTION_TIME(' . $timeoutMs . ') */ ',
             $query
         );
