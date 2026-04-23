@@ -14,6 +14,7 @@ jQuery(document).ready(function ($) {
         url: window.ajaxurl || 'admin-ajax.php',
         type: 'POST',
         dataType: 'json',
+        timeout: 60000,
         data: {
             action: action,
             nonce: nonce
@@ -32,7 +33,10 @@ jQuery(document).ready(function ($) {
             $container.html('<p class="abj404-form-help">' + $('<div>').text(message).html() + '</p>');
             $container.attr('data-deferred-load', '0');
         },
-        error: function () {
+        error: function (jqXHR, textStatus) {
+            if (typeof console !== 'undefined' && console.log) {
+                console.log('404 Solution: GSC section load failed (' + textStatus + ')');
+            }
             $container.html('<p class="abj404-form-help">Unable to load Google Search Console section.</p>');
             $container.attr('data-deferred-load', '0');
         }

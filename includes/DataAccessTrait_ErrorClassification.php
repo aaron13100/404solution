@@ -163,6 +163,18 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         return stripos($errorText, 'Incorrect key file') !== false;
     }
 
+    /** Detect MySQL MAX_EXECUTION_TIME (errno 3024) and MariaDB max_statement_time (errno 1969) timeouts.
+     * @param string $errorText @return bool */
+    private function isQueryTimeoutError(string $errorText): bool {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        return (strpos($errorText, '3024') !== false ||
+            strpos($errorText, '1969') !== false ||
+            stripos($errorText, 'max_execution_time') !== false ||
+            stripos($errorText, 'max_statement_time') !== false);
+    }
+
     /** @param string $errorText @return bool */
     private function isDeadlockOrLockTimeoutError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {

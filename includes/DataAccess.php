@@ -837,7 +837,7 @@ class ABJ_404_Solution_DataAccess {
         $options = array_merge(array('log_errors' => true,
             'log_too_slow' => true, 'ignore_errors' => array(),
             'query_params' => array(), 'skip_repair' => false,
-            'result_type' => ARRAY_A),
+            'result_type' => ARRAY_A, 'timeout' => 0),
             $options);
         $resultType = $options['result_type'] === OBJECT ? OBJECT : ARRAY_A;
         $this->currentResultType = $resultType;
@@ -860,6 +860,16 @@ class ABJ_404_Solution_DataAccess {
                 $preparedFallback = $wpdb->prepare($queryLiteral, $queryParameters);
                 $query = $preparedFallback !== null ? $preparedFallback : $queryLiteral;
             }
+        }
+
+        // Apply query timeout hint for SELECT queries.
+        // Default timeout (60s) prevents any single query from blocking indefinitely.
+        // Non-SELECT queries (INSERT, UPDATE, CREATE, etc.) are not affected.
+        $timeoutRaw = isset($options['timeout']) && is_numeric($options['timeout']) ? (int)$options['timeout'] : 0;
+        $timeoutSeconds = $timeoutRaw > 0 ? $timeoutRaw : 60;
+        $isSelect = preg_match('/^\s*SELECT\s/i', $query) === 1;
+        if ($isSelect) {
+            $query = $this->applyQueryTimeoutHint($query, $timeoutSeconds);
         }
 
         $this->applyDiagnosticLatencyIfConfigured();
@@ -920,6 +930,18 @@ class ABJ_404_Solution_DataAccess {
             }
         }
 
+        // Query timeout (MySQL errno 3024 / MariaDB errno 1969): log the slow
+        // query so it appears in debug reports, then return empty results.
+        if ($result['last_error'] !== '' && $this->isQueryTimeoutError($result['last_error'])) {
+            $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
+            $this->logger->errorMessage(
+                'Query timed out after ' . $timeoutSeconds . 's. ' .
+                'Query: ' . substr(preg_replace('/\s+/', ' ', trim($sqlInfo)) ?? $sqlInfo, 0, 500)
+            );
+            $result['rows'] = array();
+            $result['timed_out'] = true;
+        }
+
         if ($result['last_error'] !== '') {
             $this->noteDatabaseIssueFromError($result['last_error']);
         }
@@ -967,7 +989,8 @@ class ABJ_404_Solution_DataAccess {
                 $this->isIncorrectKeyFileError($result['last_error']) ||
                 $this->isCrashedTableError($result['last_error']) ||
                 $this->isDeadlockOrLockTimeoutError($result['last_error']) ||
-                $this->isTransientConnectionError($result['last_error'])
+                $this->isTransientConnectionError($result['last_error']) ||
+                $this->isQueryTimeoutError($result['last_error'])
             )) {
                 $this->logger->warn("Server-side DB issue (handled): " . $result['last_error']);
                 $reportError = false;
@@ -1029,6 +1052,39 @@ class ABJ_404_Solution_DataAccess {
         }
         
         return $result;
+    }
+
+    /**
+     * Apply a database-engine-specific timeout hint to a SELECT query.
+     *
+     * MySQL 5.7.8+: uses the MAX_EXECUTION_TIME(ms) optimizer hint.
+     * MariaDB 10.1+: uses SET STATEMENT max_statement_time=N FOR ...
+     * Older engines ignore unknown hints, so this is safe as a no-op fallback.
+     *
+     * @param string $query The SELECT query
+     * @param int $timeoutSeconds Maximum execution time in seconds
+     * @return string The query with timeout hint applied
+     */
+    private function applyQueryTimeoutHint(string $query, int $timeoutSeconds): string {
+        global $wpdb;
+        $timeoutMs = $timeoutSeconds * 1000;
+
+        $dbVersion = isset($wpdb->dbh) && function_exists('mysqli_get_server_info') && $wpdb->dbh instanceof \mysqli
+            ? mysqli_get_server_info($wpdb->dbh)
+            : ($wpdb->db_version() ?? '');
+        $isMariaDB = stripos($dbVersion, 'mariadb') !== false;
+
+        if ($isMariaDB) {
+            return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
+        }
+
+        // MySQL 5.7.8+: optimizer hint after SELECT keyword.
+        $timedQuery = preg_replace(
+            '/^(\s*SELECT\s)/i',
+            '$1/*+ MAX_EXECUTION_TIME(' . $timeoutMs . ') */ ',
+            $query
+        );
+        return ($timedQuery !== null) ? $timedQuery : $query;
     }
 
     /**
