@@ -362,7 +362,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         // WordPress matches partial slugs via LIKE 'slug%' — a complementary
         // strategy to our Levenshtein-based spell checker. For example,
         // /redes matches /redes-social because the slug starts with "redes".
-        $wpGuessFallbackEnabled = $this->shouldRunWordPressGuessFallback($requestedURL);
+        $wpGuessFallbackEnabled = $autoRedirectsAreOn && $this->shouldRunWordPressGuessFallback($requestedURL);
         if ($wpGuessFallbackEnabled && function_exists('redirect_guess_404_permalink')) {
             $wpGuess = redirect_guess_404_permalink();
             if ($wpGuess && is_string($wpGuess)) {
@@ -409,7 +409,8 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             }
             $this->addTraceStep('WordPress URL guess', 'No match');
         } elseif (!$wpGuessFallbackEnabled) {
-            $this->addTraceStep('WordPress URL guess', 'Skipped by engine profile/filter');
+            $reason = !$autoRedirectsAreOn ? 'auto_redirects off' : 'engine profile/filter';
+            $this->addTraceStep('WordPress URL guess', 'Skipped — ' . $reason);
         }
 
         $this->logic->tryNormalPostQuery($options);
