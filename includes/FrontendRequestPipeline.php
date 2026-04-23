@@ -95,7 +95,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             return '';
         }
 
-        $path = isset($parts['path']) && is_string($parts['path']) ? $parts['path'] : '/';
+        $path = isset($parts['path']) ? $parts['path'] : '/';
         if ($path === '') {
             $path = '/';
         }

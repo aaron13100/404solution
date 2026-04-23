@@ -1,5 +1,25 @@
 # Changelog #
 
+## Version 4.1.6 (Apr 23, 2026) ##
+
+**New Features**
+
+* Automatic query timeout — all SELECT queries now include a server-side execution time limit, preventing runaway queries from locking the database on shared hosting.
+* WordPress URL-guess fallback — when no matching engine finds a redirect, the plugin now tries WordPress's built-in URL guessing as a last-resort redirect before returning a 404.
+
+**Improvements**
+
+* Admin pages now load instantly — all heavy database queries on the Redirects, Captured 404s, Logs, and Settings pages are deferred to AJAX, eliminating blocking page loads on large sites.
+* Optimized three slow view queries that could cause timeouts on sites with large redirect and log tables.
+
+**Bug Fixes**
+
+* Fixed AJAX error state leaving placeholder loading attributes on admin tables, preventing interaction until page reload.
+* Fixed duplicate bottom table separator appearing after AJAX table hydration.
+* Fixed Logs page not loading via AJAX due to missing `.perpage` class on the per-page select element.
+* Fixed stray search filter and unwanted top pagination placeholders appearing on admin pages.
+* Fixed SQL query referencing a non-existent column in the logs-hits join query.
+
 ## Version 4.1.5 (Apr 22, 2026) ##
 
 **New Features**
