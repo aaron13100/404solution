@@ -419,6 +419,31 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
     }
 
     /**
+     * Return up to 500 distinct requested URLs from the most recent log activity.
+     *
+     * Uses a reverse index scan on the timestamp index to fetch the 5 000 most
+     * recent rows, then deduplicates.  Much faster than GROUP BY on large tables
+     * because it avoids a full table scan and aggregate computation.
+     *
+     * @return array<int, string>
+     */
+    function getDistinctLoggedUrls(): array {
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getDistinctLoggedUrls.sql");
+
+        $results = $this->queryAndGetResults($query);
+        $rows = is_array($results['rows']) ? $results['rows'] : array();
+
+        $urls = array();
+        foreach ($rows as $row) {
+            $url = isset($row['requested_url']) && is_string($row['requested_url']) ? $row['requested_url'] : '';
+            if ($url !== '') {
+                $urls[] = $url;
+            }
+        }
+        return $urls;
+    }
+
+    /**
      * @param string $specificURL
      * @return array<int, array<string, mixed>>
      */

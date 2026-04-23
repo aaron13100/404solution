@@ -340,6 +340,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'sql/getIDsNeededForPermalinkCache.sql',
 				$inc . 'sql/getLogRecords.sql',
 				$inc . 'sql/getLogsCount.sql',
+				$inc . 'sql/getDistinctLoggedUrls.sql',
 				$inc . 'sql/getLogsIDandURL.sql',
 				$inc . 'sql/getLogsIDandURLForAjax.sql',
 				$inc . 'sql/getMostUnusedRedirects.sql',

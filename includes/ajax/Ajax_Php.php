@@ -152,15 +152,7 @@ class ABJ_404_Solution_Ajax_Php {
 			$gscLogger = ABJ_404_Solution_Logging::getInstance();
 			$gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
 
-			$logRows = $abj404dao->getLogsIDandURL();
-			$capturedUrls = array();
-			foreach ($logRows as $r) {
-				$url = isset($r['requested_url']) && is_string($r['requested_url']) ? $r['requested_url'] : '';
-				if ($url !== '') {
-					$capturedUrls[] = $url;
-				}
-			}
-			$capturedUrls = array_values(array_unique($capturedUrls));
+			$capturedUrls = $abj404dao->getDistinctLoggedUrls();
 
 			$html = $gsc->renderAdminSection($capturedUrls);
 			wp_send_json_success(array('html' => $html), 200);
