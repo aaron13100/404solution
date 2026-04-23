@@ -9,6 +9,33 @@ if (!defined('ABSPATH')) {
  * Used by ABJ_404_Solution_PluginLogic via `use`.
  */
 trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
+    /**
+     * Read a scalar query parameter directly from REQUEST_URI.
+     * This is a defensive fallback for environments where superglobals can
+     * miss or mangle specific keys (for example repeated keys becoming arrays).
+     *
+     * @param string $name
+     * @return string
+     */
+    private function getQueryParamFromRequestUri($name) {
+        if (!is_string($name) || $name === '') {
+            return '';
+        }
+        $requestUri = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        if ($requestUri === '') {
+            return '';
+        }
+        $queryString = parse_url($requestUri, PHP_URL_QUERY);
+        if (!is_string($queryString) || $queryString === '') {
+            return '';
+        }
+        $query = array();
+        parse_str($queryString, $query);
+        if (!array_key_exists($name, $query) || !is_scalar($query[$name])) {
+            return '';
+        }
+        return sanitize_text_field((string)$query[$name]);
+    }
 
     /**
      * @param string $pageBeingViewed
@@ -108,7 +135,13 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $tableOptions['order'] = "ASC";
         }
 
-        $tableOptions['paged'] = $this->dao->getPostOrGetSanitize("paged", '1');
+        // Prefer DAO helper (GET/POST), but fall back to REQUEST_URI query parsing for
+        // environments where 'paged' may not survive as a scalar in superglobals.
+        $paged = $this->dao->getPostOrGetSanitize("paged", '');
+        if ($paged === '') {
+            $paged = $this->getQueryParamFromRequestUri('paged');
+        }
+        $tableOptions['paged'] = ($paged === '') ? '1' : $paged;
 
         $perPageOption = ABJ404_OPTION_DEFAULT_PERPAGE;
         if (isset($options['perpage'])) {

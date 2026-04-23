@@ -927,7 +927,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         $searchFilterForRedirectsExists = "no redirects fiter text found";
         $searchFilterForCapturedExists = "no captured 404s filter text found";
         $filterText = '';
-        if ($tableOptions['filterText'] != '') {
+        $rawFilterText = is_string($tableOptions['filterText'] ?? null) ? $tableOptions['filterText'] : '';
+        if ($rawFilterText != '') {
             if ($sub == 'abj404_redirects') {
                 // Close the comment without including user input to avoid comment breakout.
                 $searchFilterForRedirectsExists = ' filter text enabled */';
@@ -942,8 +943,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         }
 
         // Sanitize filter text for use inside LIKE; strip comment markers and escape for SQL LIKE.
-        $filterTextRaw = $tableOptions['filterText'];
-        $filterTextRaw = str_replace(array('*', '/', '$'), '', is_string($filterTextRaw) ? $filterTextRaw : '');
+        $filterTextRaw = str_replace(array('*', '/', '$'), '', $rawFilterText);
         if (isset($wpdb) && is_object($wpdb) && method_exists($wpdb, 'esc_like')) {
             /** @var wpdb $wpdb */
             $filterTextRaw = $wpdb->esc_like($filterTextRaw);

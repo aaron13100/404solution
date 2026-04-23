@@ -10,10 +10,22 @@ if (typeof(getURLParameter) !== "function") {
 // when the user presses enter on the filter text input then update the table
 jQuery(document).ready(function($) {
     bindSearchFieldListeners();
+    bindPaginationLinkListeners();
     triggerInitialTableLoadIfNeeded();
     triggerBackgroundTableRefreshIfEnabled();
     triggerStatsBackgroundRefreshIfEnabled();
 });
+
+function bindPaginationLinkListeners() {
+    // Delegate to document so handlers survive table HTML replacement after AJAX refresh.
+    jQuery(document)
+        .off('click.abj404Pagination', '.abj404-pagination-controls a')
+        .on('click.abj404Pagination', '.abj404-pagination-controls a', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            paginationLinksChange(event.currentTarget || event.target || this);
+        });
+}
 
 function getRefreshStatusHost() {
     // Prefer the element that actually carries AJAX config attributes.
@@ -148,21 +160,35 @@ function triggerInitialTableLoadIfNeeded() {
         return;
     }
 
-    paginationLinksChange(perpageElements[0], {
-        backgroundRefresh: false,
-        detectOnly: false,
-        onComplete: function() {
-            $config.attr('data-pagination-initial-load', '0');
-        },
-        onError: function() {
-            $config.attr('data-pagination-initial-load', '0');
-            // Remove placeholder attributes so the page is not stuck on
-            // "Loading…" forever when the AJAX request fails.
-            jQuery('[data-table-awaiting-load]').removeAttr('data-table-awaiting-load');
-            jQuery('[data-tab-counts-placeholder]').removeAttr('data-tab-counts-placeholder');
-            jQuery('[data-health-bar-placeholder]').removeAttr('data-health-bar-placeholder');
-        }
-    });
+    var maxInitialLoadAttempts = 3;
+    var triggerInitialLoadAttempt = function(attemptNumber) {
+        paginationLinksChange(perpageElements[0], {
+            backgroundRefresh: false,
+            detectOnly: false,
+            onComplete: function() {
+                $config.attr('data-pagination-initial-load', '0');
+            },
+            onError: function(errorMeta) {
+                var status = errorMeta && errorMeta.status ? parseInt(errorMeta.status, 10) : 0;
+                if (attemptNumber < maxInitialLoadAttempts) {
+                    // Retry transient failures (including rate-limit responses) before
+                    // giving up and leaving placeholders in place.
+                    var delayMs = (status === 429) ? 1200 * attemptNumber : 700 * attemptNumber;
+                    window.setTimeout(function() {
+                        triggerInitialLoadAttempt(attemptNumber + 1);
+                    }, delayMs);
+                    return;
+                }
+                $config.attr('data-pagination-initial-load', '0');
+                // Last-resort fallback: unblock page placeholders so the UI is usable.
+                jQuery('[data-table-awaiting-load]').removeAttr('data-table-awaiting-load');
+                jQuery('[data-tab-counts-placeholder]').removeAttr('data-tab-counts-placeholder');
+                jQuery('[data-health-bar-placeholder]').removeAttr('data-health-bar-placeholder');
+            }
+        });
+    };
+
+    triggerInitialLoadAttempt(1);
 }
 
 function getStatsRefreshConfigHost() {
@@ -717,6 +743,10 @@ function paginationLinksChange(triggerItem, options) {
     if (!paged) {
         paged = getURLParameter('paged');
     }
+    var clickedPaged = extractPagedFromTrigger(triggerItem);
+    if (clickedPaged !== '') {
+        paged = clickedPaged;
+    }
     var id = $ajaxConfigEl.attr('data-pagination-current-logsid');
     if (!id) {
         id = getURLParameter('id');
@@ -989,7 +1019,12 @@ function paginationLinksChange(triggerItem, options) {
                 );
             }
             if (typeof options.onError === 'function') {
-                options.onError();
+                options.onError({
+                    status: status,
+                    textStatus: textStatus,
+                    errorThrown: errorThrown,
+                    message: messageFromServer
+                });
             }
             if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
                 var durationMs = Date.now() - requestStartedAt;
@@ -1002,4 +1037,51 @@ function paginationLinksChange(triggerItem, options) {
             }
         }
     });
+}
+
+function extractPagedFromTrigger(triggerItem) {
+    if (!triggerItem) {
+        return '';
+    }
+    var href = '';
+    var $trigger = jQuery(triggerItem);
+    if ($trigger.is('a')) {
+        href = $trigger.attr('href') || '';
+    } else {
+        var $link = $trigger.closest('a');
+        href = ($link.length > 0) ? ($link.attr('href') || '') : '';
+    }
+    if (!href) {
+        return '';
+    }
+
+    // Support both relative admin URLs and absolute URLs.
+    var query = '';
+    var queryStart = href.indexOf('?');
+    if (queryStart >= 0) {
+        query = href.substring(queryStart + 1);
+    } else {
+        query = href;
+    }
+    if (!query) {
+        return '';
+    }
+
+    var pairs = query.split('&');
+    for (var i = 0; i < pairs.length; i++) {
+        var kv = pairs[i].split('=');
+        if (kv.length < 2) {
+            continue;
+        }
+        var key = decodeURIComponent(kv[0] || '');
+        if (key !== 'paged') {
+            continue;
+        }
+        var value = decodeURIComponent(kv[1] || '');
+        if (/^[0-9]+$/.test(value)) {
+            return value;
+        }
+        return '';
+    }
+    return '';
 }

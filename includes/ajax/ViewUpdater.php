@@ -324,8 +324,14 @@ class ABJ_404_Solution_ViewUpdater {
                 return;
             }
 
-            // Rate limiting to prevent abuse (100 requests per minute)
-            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('update_pagination', 100, 60)) {
+            // Rate limiting to prevent abuse.
+            // This endpoint is hit by first-paint table loads, filter typing, pagination, and
+            // background detect-only checks; 100/min can throttle normal admin usage and leave
+            // tables stuck on "Loading…" under active workflows.
+            // Keep the protection, but use high ceilings for authenticated plugin-admin traffic.
+            // Parallel admin workflows can legitimately burst well above a few hundred requests/min.
+            $maxRequestsPerMinute = $detectOnly ? 3000 : 1500;
+            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('update_pagination', $maxRequestsPerMinute, 60)) {
                 self::safeLogAjaxFailure('AJAX rate limit in ajaxUpdatePaginationLinks.', $context);
                 self::markAjaxResponseSent();
                 $payload = self::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);

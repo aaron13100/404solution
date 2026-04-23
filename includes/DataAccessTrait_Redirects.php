@@ -784,6 +784,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             // where mixed encodings still reject utf8mb4 coercion.
             $fallbackSpecifiedSlug = " */\n and wp_posts.post_name = '" . esc_sql($slug) . "' \n ";
             $fallbackQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
+            $fallbackQuery = $this->doTableNameReplacements($fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{specifiedSlug}', $fallbackSpecifiedSlug, $fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{searchTerm}', $searchTerm, $fallbackQuery);
