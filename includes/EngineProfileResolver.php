@@ -71,6 +71,43 @@ class ABJ_404_Solution_EngineProfileResolver {
     }
 
     /**
+     * Determine whether a specific engine class is enabled for a requested URL.
+     *
+     * This mirrors profile matching + fail-open behavior used by resolve():
+     * - no matching profile -> enabled
+     * - empty/malformed enabled_engines -> enabled
+     * - matching profile with explicit enabled_engines -> enabled only if listed
+     *
+     * @param string $requestedURL
+     * @param string $engineClassName Fully-qualified class name or short suffix.
+     * @return bool
+     */
+    public function isEngineEnabledForUrl(string $requestedURL, string $engineClassName): bool {
+        $profiles = $this->getActiveProfiles();
+
+        if (empty($profiles)) {
+            return true;
+        }
+
+        foreach ($profiles as $profile) {
+            if (!$this->urlMatchesProfile($requestedURL, $profile)) {
+                continue;
+            }
+
+            $enabledLower = $this->decodeEnabledEnginesLower($profile);
+            if ($enabledLower === null || empty($enabledLower)) {
+                // Fail-open to preserve historical behavior for broken/empty config.
+                return true;
+            }
+
+            return $this->classMatchesEnabledList($engineClassName, $enabledLower);
+        }
+
+        // No profile matched this URL.
+        return true;
+    }
+
+    /**
      * Load all active profiles ordered by priority ASC (lowest priority number = first).
      *
      * Uses a per-request cache to avoid repeated DB queries.
@@ -165,38 +202,63 @@ class ABJ_404_Solution_EngineProfileResolver {
      * @return array<int, mixed>
      */
     private function filterEnginesByProfile(array $allEngines, object $profile): array {
-        $json = isset($profile->enabled_engines) ? (string)$profile->enabled_engines : '';
-
-        if (trim($json) === '') {
-            // Empty list — no restriction (fail-open).
+        $enabledLower = $this->decodeEnabledEnginesLower($profile);
+        if ($enabledLower === null || empty($enabledLower)) {
+            // Empty/malformed list — no restriction (fail-open).
             return $allEngines;
         }
-
-        $enabledClassNames = json_decode($json, true);
-
-        if (!is_array($enabledClassNames) || empty($enabledClassNames)) {
-            // Malformed JSON or empty array — fail-open.
-            return $allEngines;
-        }
-
-        // Normalize to lowercase for case-insensitive matching.
-        $enabledLower = array_map('strtolower', $enabledClassNames);
 
         $filtered = array_values(array_filter($allEngines, function ($engine) use ($enabledLower) {
             if (!is_object($engine)) {
                 return false;
             }
-            $className = strtolower(get_class($engine));
-            foreach ($enabledLower as $allowed) {
-                // Match by full class name or the short suffix after last underscore.
-                if ($className === $allowed || substr($className, -strlen($allowed)) === $allowed) {
-                    return true;
-                }
-            }
-            return false;
+            return $this->classMatchesEnabledList(get_class($engine), $enabledLower);
         }));
 
         return $filtered;
+    }
+
+    /**
+     * Parse enabled_engines JSON and normalize class names to lowercase.
+     *
+     * @param object $profile
+     * @return array<int, string>|null Null when empty/missing/malformed.
+     */
+    private function decodeEnabledEnginesLower(object $profile): ?array {
+        $json = isset($profile->enabled_engines) ? (string)$profile->enabled_engines : '';
+        if (trim($json) === '') {
+            return null;
+        }
+
+        $enabledClassNames = json_decode($json, true);
+        if (!is_array($enabledClassNames) || empty($enabledClassNames)) {
+            return null;
+        }
+
+        $enabledLower = array_values(array_filter(array_map(function ($name) {
+            return is_scalar($name) ? strtolower((string)$name) : '';
+        }, $enabledClassNames), function ($name) {
+            return $name !== '';
+        }));
+
+        return empty($enabledLower) ? null : $enabledLower;
+    }
+
+    /**
+     * Case-insensitive class-name check with suffix matching compatibility.
+     *
+     * @param string $className
+     * @param array<int, string> $enabledLower
+     * @return bool
+     */
+    private function classMatchesEnabledList(string $className, array $enabledLower): bool {
+        $classLower = strtolower($className);
+        foreach ($enabledLower as $allowed) {
+            if ($classLower === $allowed || substr($classLower, -strlen($allowed)) === $allowed) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
