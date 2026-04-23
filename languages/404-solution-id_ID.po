@@ -3277,6 +3277,9 @@ msgstr "Perbaikan URL"
 msgid "Archive Fallback"
 msgstr "Cadangan Arsip"
 
+msgid "WordPress URL Guess Fallback"
+msgstr "Cadangan Tebakan URL WordPress"
+
 msgid "Lower number = higher priority. First matching profile wins."
 msgstr "Angka lebih kecil = prioritas lebih tinggi. Profil yang cocok pertama menang."
 

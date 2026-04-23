@@ -2319,6 +2319,9 @@ msgstr ""
 msgid "Archive Fallback"
 msgstr ""
 
+msgid "WordPress URL Guess Fallback"
+msgstr ""
+
 msgid "Lower number = higher priority. First matching profile wins."
 msgstr ""
 

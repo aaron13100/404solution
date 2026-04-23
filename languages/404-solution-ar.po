@@ -3313,6 +3313,9 @@ msgstr "إصلاح URL"
 msgid "Archive Fallback"
 msgstr "احتياط الأرشيف"
 
+msgid "WordPress URL Guess Fallback"
+msgstr "احتياط تخمين عنوان URL في WordPress"
+
 msgid "Lower number = higher priority. First matching profile wins."
 msgstr "الرقم الأصغر = أولوية أعلى. يفوز أول ملف تعريف مطابق."
 

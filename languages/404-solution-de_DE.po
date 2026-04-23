@@ -3282,6 +3282,9 @@ msgstr "URL-Korrektur"
 msgid "Archive Fallback"
 msgstr "Archiv-Fallback"
 
+msgid "WordPress URL Guess Fallback"
+msgstr "WordPress-URL-Raten-Fallback"
+
 msgid "Lower number = higher priority. First matching profile wins."
 msgstr "Niedrigere Zahl = höhere Priorität. Das erste übereinstimmende Profil gewinnt."
 

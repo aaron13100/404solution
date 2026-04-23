@@ -3290,6 +3290,9 @@ msgstr "URL 修复"
 msgid "Archive Fallback"
 msgstr "档案回退"
 
+msgid "WordPress URL Guess Fallback"
+msgstr "WordPress网址猜测回退"
+
 msgid "Lower number = higher priority. First matching profile wins."
 msgstr "数字越小 = 优先级越高。第一个匹配的配置文件获胜。"
 

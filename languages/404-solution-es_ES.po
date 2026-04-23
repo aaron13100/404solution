@@ -3281,6 +3281,9 @@ msgstr "Corrección de URL"
 msgid "Archive Fallback"
 msgstr "Reserva de archivo"
 
+msgid "WordPress URL Guess Fallback"
+msgstr "Reserva de adivinación de URL de WordPress"
+
 msgid "Lower number = higher priority. First matching profile wins."
 msgstr "Número menor = mayor prioridad. Gana el primer perfil coincidente."
 
