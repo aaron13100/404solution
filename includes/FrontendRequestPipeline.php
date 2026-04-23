@@ -238,6 +238,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $redirect = $this->dao->getActiveRedirectForURL($requestedURL);
         $this->recordRedirectLookupTiming($lookupStart);
         $this->logAReallyLongDebugMessage($options, $requestedURL, $redirect);
+        $autoRedirectsAreOn = !array_key_exists('auto_redirects', $options) || $options['auto_redirects'] == '1';
 
         if ($requestedURL != "") {
             $matched = $this->evaluateRedirectCandidate($redirect, '', $options);
@@ -262,8 +263,6 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 $this->emitBenchmarkHeadersIfEnabled();
                 return;
             }
-
-            $autoRedirectsAreOn = !array_key_exists('auto_redirects', $options) || $options['auto_redirects'] == '1';
 
             if ($autoRedirectsAreOn) {
                 $matchRequest = new ABJ_404_Solution_MatchRequest($requestedURL, $urlSlugOnly, $options);
