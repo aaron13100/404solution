@@ -296,6 +296,36 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             }
         }
 
+        // Last resort: defer to WordPress's built-in URL guessing.
+        // WordPress matches partial slugs via LIKE 'slug%' — a complementary
+        // strategy to our Levenshtein-based spell checker. For example,
+        // /redes matches /redes-social because the slug starts with "redes".
+        if (function_exists('redirect_guess_404_permalink')) {
+            $wpGuess = redirect_guess_404_permalink();
+            if ($wpGuess && is_string($wpGuess)) {
+                $this->addTraceStep('WordPress URL guess', 'Matched — redirecting', $wpGuess);
+                $defaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect'])
+                    ? (string)$options['default_redirect'] : '301';
+
+                // Resolve post ID so the redirect record links to the destination post.
+                $wpGuessPostId = '';
+                $wpGuessType = (string)$this->wpTypePost();
+                if (function_exists('url_to_postid')) {
+                    $postId = url_to_postid($wpGuess);
+                    if ($postId > 0) {
+                        $wpGuessPostId = (string)$postId;
+                    }
+                }
+
+                $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO,
+                    $wpGuessType, $wpGuessPostId, $defaultRedirect, 0, 'wp_guess');
+                $this->dao->logRedirectHit($requestedURL, $wpGuess, 'wp_guess', null, $this->trace);
+                $this->logic->forceRedirect(esc_url($wpGuess), (int)$defaultRedirect);
+                exit;
+            }
+            $this->addTraceStep('WordPress URL guess', 'No match');
+        }
+
         $this->logic->tryNormalPostQuery($options);
         $this->addTraceStep('Result', 'No redirect — showed 404 page');
         $this->dao->logRedirectHit($requestedURL, '404', 'gave up.', null, $this->trace);
