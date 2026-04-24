@@ -1223,7 +1223,10 @@ trait ViewTrait_RedirectsTable {
                 }
                 $scoreCell = '<span class="abj404-score-badge ' . $scoreBadgeClass . '">' . esc_html($scorePct) . '%</span>';
             } else {
-                $scoreCell = '<span class="abj404-score-manual" title="' . esc_attr__('Manual redirect — no confidence score', '404-solution') . '">—</span>';
+                $noScoreTitle = ($rowEngine !== '')
+                    ? __('No confidence score for this engine', '404-solution')
+                    : __('Manual redirect — no confidence score', '404-solution');
+                $scoreCell = '<span class="abj404-score-manual" title="' . esc_attr($noScoreTitle) . '">—</span>';
             }
             $htmlTemp = $this->f->str_replace('{scoreCell}', $scoreCell, $htmlTemp);
             $htmlTemp = $this->f->str_replace('{type}', $typeForView, $htmlTemp);

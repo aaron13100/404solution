@@ -362,6 +362,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         // strategy to our Levenshtein-based spell checker. For example,
         // /redes matches /redes-social because the slug starts with "redes".
         $wpGuessFallbackEnabled = $autoRedirectsAreOn && $this->shouldRunWordPressGuessFallback($requestedURL);
+        $wpGuessEngineName = __('wp guess', '404-solution');
         if ($wpGuessFallbackEnabled && function_exists('redirect_guess_404_permalink')) {
             $wpGuess = redirect_guess_404_permalink();
             if ($wpGuess && is_string($wpGuess)) {
@@ -389,15 +390,15 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                         $wpGuess,
                         '',
                         0.0,
-                        'wp_guess'
+                        $wpGuessEngineName
                     );
                     if ($this->isExcluded($wpGuessResult, $options)) {
                         $this->addTraceStep('WordPress URL guess', 'Excluded destination — skipped', $wpGuess);
                     } else {
                         $this->addTraceStep('WordPress URL guess', 'Matched — redirecting', $wpGuess);
                         $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO,
-                            $wpGuessType, $wpGuessPostId, $defaultRedirect, 0, 'wp_guess');
-                        $this->dao->logRedirectHit($requestedURL, $wpGuess, 'wp_guess', null, $this->trace);
+                            $wpGuessType, $wpGuessPostId, $defaultRedirect, 0, $wpGuessEngineName);
+                        $this->dao->logRedirectHit($requestedURL, $wpGuess, $wpGuessEngineName, null, $this->trace);
                         $redirectSent = $this->logic->forceRedirect(esc_url($wpGuess), (int)$defaultRedirect);
                         if ($redirectSent !== false) {
                             exit;

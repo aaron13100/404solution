@@ -821,6 +821,10 @@ msgstr "Gem. betrouwbaarheid: %s%%"
 msgid "Manual redirect — no confidence score"
 msgstr "Handmatige doorverwijzing — geen betrouwbaarheidsscore"
 
+#: includes/ViewTrait_RedirectsTable.php
+msgid "No confidence score for this engine"
+msgstr "Geen betrouwbaarheidsscore voor deze engine"
+
 msgid "New Redirect Added Successfully!"
 msgstr "Nieuwe omleiding succesvol toegevoegd!"
 
@@ -2565,6 +2569,10 @@ msgstr "spellingscontrole"
 #: includes/engine/SlugMatchingEngine.php
 msgid "archive fallback"
 msgstr "archiefterugval"
+
+#: includes/FrontendRequestPipeline.php
+msgid "wp guess"
+msgstr "WP-schatting"
 
 #: includes/ImportExport.php
 msgid "Error: Native export file does not exist."

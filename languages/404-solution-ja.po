@@ -823,6 +823,10 @@ msgstr "平均信頼度: %s%%"
 msgid "Manual redirect — no confidence score"
 msgstr "手動リダイレクト — 信頼スコアなし"
 
+#: includes/ViewTrait_RedirectsTable.php
+msgid "No confidence score for this engine"
+msgstr "このエンジンには信頼度スコアがありません"
+
 msgid "New Redirect Added Successfully!"
 msgstr "新しいリダイレクトが正常に追加されました！"
 
@@ -2567,6 +2571,10 @@ msgstr "スペルチェック"
 #: includes/engine/ArchiveFallbackEngine.php
 msgid "archive fallback"
 msgstr "アーカイブフォールバック"
+
+#: includes/FrontendRequestPipeline.php
+msgid "wp guess"
+msgstr "WP推測"
 
 #: includes/ajax/ExportRedirects.php
 msgid "Error: Native export file does not exist."

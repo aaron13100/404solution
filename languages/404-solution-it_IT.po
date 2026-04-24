@@ -821,6 +821,10 @@ msgstr "Attendibilità media: %s%%"
 msgid "Manual redirect — no confidence score"
 msgstr "Reindirizzamento manuale — nessun punteggio di attendibilità"
 
+#: includes/ViewTrait_RedirectsTable.php
+msgid "No confidence score for this engine"
+msgstr "Nessun punteggio di affidabilità per questo motore"
+
 msgid "New Redirect Added Successfully!"
 msgstr "Nuovo redirect aggiunto con successo!"
 
@@ -2565,6 +2569,10 @@ msgstr "controllo ortografico"
 #: includes/engine/ArchiveFallbackEngine.php
 msgid "archive fallback"
 msgstr "fallback archivio"
+
+#: includes/FrontendRequestPipeline.php
+msgid "wp guess"
+msgstr "ipotesi WP"
 
 #: includes/ImportExportService.php
 msgid "Error: Native export file does not exist."

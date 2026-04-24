@@ -825,6 +825,10 @@ msgstr "平均置信度：%s%%"
 msgid "Manual redirect — no confidence score"
 msgstr "手动重定向 — 无置信度分数"
 
+#: includes/ViewTrait_RedirectsTable.php
+msgid "No confidence score for this engine"
+msgstr "此引擎没有置信度评分"
+
 msgid "New Redirect Added Successfully!"
 msgstr "新重定向添加成功！"
 
@@ -2571,6 +2575,10 @@ msgstr "拼写检查"
 #: includes/engine/ArchiveFallbackEngine.php
 msgid "archive fallback"
 msgstr "归档回退"
+
+#: includes/FrontendRequestPipeline.php
+msgid "wp guess"
+msgstr "「WP猜测」"
 
 #: includes/ajax/ExportRedirects.php
 msgid "Error: Native export file does not exist."

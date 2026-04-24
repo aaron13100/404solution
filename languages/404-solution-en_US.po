@@ -846,6 +846,10 @@ msgstr "Avg confidence: %s%%"
 msgid "Manual redirect — no confidence score"
 msgstr "Manual redirect — no confidence score"
 
+#: includes/ViewTrait_RedirectsTable.php
+msgid "No confidence score for this engine"
+msgstr "No confidence score for this engine"
+
 msgid "New Redirect Added Successfully!"
 msgstr "New Redirect Added Successfully!"
 
@@ -2582,6 +2586,10 @@ msgstr "spell check"
 #: includes/engine/ArchiveFallbackEngine.php
 msgid "archive fallback"
 msgstr "archive fallback"
+
+#: includes/FrontendRequestPipeline.php
+msgid "wp guess"
+msgstr "wp guess"
 
 #: includes/ImportExportService.php
 msgid "Error: Native export file does not exist."

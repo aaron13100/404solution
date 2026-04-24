@@ -620,6 +620,10 @@ msgstr ""
 msgid "Manual redirect — no confidence score"
 msgstr ""
 
+#: includes/ViewTrait_RedirectsTable.php
+msgid "No confidence score for this engine"
+msgstr ""
+
 msgid "Rows per page:"
 msgstr ""
 
@@ -1555,6 +1559,10 @@ msgstr ""
 
 #: includes/engine/ArchiveFallbackEngine.php
 msgid "archive fallback"
+msgstr ""
+
+#: includes/FrontendRequestPipeline.php
+msgid "wp guess"
 msgstr ""
 
 #: includes/ImportExportService.php

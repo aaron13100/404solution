@@ -822,6 +822,10 @@ msgstr "Средн. достоверность: %s%%"
 msgid "Manual redirect — no confidence score"
 msgstr "Ручное перенаправление — без оценки достоверности"
 
+#: includes/ViewTrait_RedirectsTable.php
+msgid "No confidence score for this engine"
+msgstr "Нет оценки достоверности для этого механизма"
+
 msgid "New Redirect Added Successfully!"
 msgstr "Новое перенаправление успешно добавлено!"
 
@@ -2572,6 +2576,10 @@ msgstr "проверка правописания"
 #: includes/engine/ArchiveFallbackEngine.php
 msgid "archive fallback"
 msgstr "откат на архив"
+
+#: includes/FrontendRequestPipeline.php
+msgid "wp guess"
+msgstr "предположение WP"
 
 #: includes/ajax/ExportRedirects.php
 msgid "Error: Native export file does not exist."

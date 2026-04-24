@@ -820,6 +820,10 @@ msgstr "Kepercayaan rata-rata: %s%%"
 msgid "Manual redirect — no confidence score"
 msgstr "Pengalihan manual — tidak ada skor kepercayaan"
 
+#: includes/ViewTrait_RedirectsTable.php
+msgid "No confidence score for this engine"
+msgstr "Tidak ada skor kepercayaan untuk mesin ini"
+
 msgid "New Redirect Added Successfully!"
 msgstr "Pengalihan Baru Berhasil Ditambahkan!"
 
@@ -2558,6 +2562,10 @@ msgstr "pemeriksaan ejaan"
 #: includes/engine/SlugMatchingEngine.php
 msgid "archive fallback"
 msgstr "cadangan arsip"
+
+#: includes/FrontendRequestPipeline.php
+msgid "wp guess"
+msgstr "tebakan WP"
 
 #: includes/ImportExport.php
 msgid "Error: Native export file does not exist."

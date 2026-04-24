@@ -821,6 +821,10 @@ msgstr "Confiança média: %s%%"
 msgid "Manual redirect — no confidence score"
 msgstr "Redirecionamento manual — sem pontuação de confiança"
 
+#: includes/ViewTrait_RedirectsTable.php
+msgid "No confidence score for this engine"
+msgstr "Sem pontuação de confiança para este mecanismo"
+
 msgid "New Redirect Added Successfully!"
 msgstr "Novo Redirecionamento Adicionado com Sucesso!"
 
@@ -2565,6 +2569,10 @@ msgstr "verificação ortográfica"
 #: includes/engine/SlugMatchingEngine.php
 msgid "archive fallback"
 msgstr "fallback de arquivo"
+
+#: includes/FrontendRequestPipeline.php
+msgid "wp guess"
+msgstr "suposição do WP"
 
 #: includes/ImportExport.php
 msgid "Error: Native export file does not exist."

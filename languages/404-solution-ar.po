@@ -825,6 +825,10 @@ msgstr "متوسط الثقة: %s%%"
 msgid "Manual redirect — no confidence score"
 msgstr "إعادة توجيه يدوية — لا توجد درجة ثقة"
 
+#: includes/ViewTrait_RedirectsTable.php
+msgid "No confidence score for this engine"
+msgstr "لا توجد درجة ثقة لهذا المحرك"
+
 msgid "New Redirect Added Successfully!"
 msgstr "تمت إضافة إعادة التوجيه الجديدة بنجاح!"
 
@@ -2594,6 +2598,10 @@ msgstr "التدقيق الإملائي"
 #: includes/engine/ArchiveFallbackEngine.php
 msgid "archive fallback"
 msgstr "الرجوع إلى الأرشيف"
+
+#: includes/FrontendRequestPipeline.php
+msgid "wp guess"
+msgstr "تخمين WP"
 
 #: includes/ajax/ExportRedirects.php
 msgid "Error: Native export file does not exist."

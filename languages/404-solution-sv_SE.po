@@ -821,6 +821,10 @@ msgstr "Genomsn. konfidens: %s%%"
 msgid "Manual redirect — no confidence score"
 msgstr "Manuell omdirigering — inget konfidenspoäng"
 
+#: includes/ViewTrait_RedirectsTable.php
+msgid "No confidence score for this engine"
+msgstr "Inget konfidenspoäng för denna motor"
+
 msgid "New Redirect Added Successfully!"
 msgstr "Ny omdirigering har lagts till."
 
@@ -2565,6 +2569,10 @@ msgstr "stavningskontroll"
 #: includes/engine/SlugMatchingEngine.php
 msgid "archive fallback"
 msgstr "arkivreserv"
+
+#: includes/FrontendRequestPipeline.php
+msgid "wp guess"
+msgstr "WP-gissning"
 
 #: includes/ImportExport.php
 msgid "Error: Native export file does not exist."
