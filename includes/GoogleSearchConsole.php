@@ -482,8 +482,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
         set_transient(self::LOCK_TRANSIENT_KEY, '1', self::LOCK_TTL);
 
         try {
-            $dao = ABJ_404_Solution_DataAccess::getInstance();
-            $urls = $dao->getDistinctLoggedUrls();
+            $urls = $this->getUrlsToQuery();
 
             $allRows = $this->doFetchFromApi($urls);
             set_transient(self::TRANSIENT_KEY, $allRows, self::TRANSIENT_TTL);
@@ -491,6 +490,19 @@ class ABJ_404_Solution_GoogleSearchConsole {
         } finally {
             delete_transient(self::LOCK_TRANSIENT_KEY);
         }
+    }
+
+    /**
+     * Get the list of 404 URLs to query from the logs table.
+     *
+     * Extracted as a protected method so tests can override without needing
+     * a full DataAccess/database stack.
+     *
+     * @return string[]
+     */
+    protected function getUrlsToQuery(): array {
+        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        return $dao->getDistinctLoggedUrls();
     }
 
     /**
