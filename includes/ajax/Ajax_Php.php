@@ -146,16 +146,20 @@ class ABJ_404_Solution_Ajax_Php {
 		}
 
 		try {
-			$daoService = self::getServiceIfAvailable('data_access');
-			/** @var ABJ_404_Solution_DataAccess $abj404dao */
-			$abj404dao = ($daoService !== null) ? $daoService : ABJ_404_Solution_DataAccess::getInstance();
 			$gscLogger = ABJ_404_Solution_Logging::getInstance();
 			$gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
 
-			$capturedUrls = $abj404dao->getDistinctLoggedUrls();
+			// Render using cached data only — never blocks on API calls.
+			$html = $gsc->renderAdminSection();
 
-			$html = $gsc->renderAdminSection($capturedUrls);
-			wp_send_json_success(array('html' => $html), 200);
+			// If connected and data is stale, kick off a background refresh.
+			$refreshScheduled = false;
+			if ($gsc->getState() === 'connected' && $gsc->isRefreshNeeded()) {
+				$gsc->scheduleBackgroundRefresh();
+				$refreshScheduled = true;
+			}
+
+			wp_send_json_success(array('html' => $html, 'refresh_scheduled' => $refreshScheduled), 200);
 			return; // @phpstan-ignore deadCode.unreachable
 		} catch (Throwable $e) {
 			try {

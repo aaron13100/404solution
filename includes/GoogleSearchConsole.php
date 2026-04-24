@@ -23,7 +23,14 @@ class ABJ_404_Solution_GoogleSearchConsole {
     const TOKEN_OPTION_KEY  = 'abj404_gsc_token';
     const ERROR_OPTION_KEY  = 'abj404_gsc_last_error';
     const TRANSIENT_KEY     = 'abj404_gsc_data';
-    const TRANSIENT_TTL     = 3600; // 1 hour cache
+    const TRANSIENT_TTL     = 90000; // ~25 hours — survives one missed nightly cron run
+
+    const CRON_HOOK              = 'abj404_gsc_fetch_cron';
+    const BACKGROUND_REFRESH_HOOK = 'abj404_gsc_background_refresh';
+    const LOCK_TRANSIENT_KEY     = 'abj404_gsc_fetch_lock';
+    const LOCK_TTL               = 900;  // 15-minute lock to prevent overlapping fetches
+    const LAST_FETCH_OPTION_KEY  = 'abj404_gsc_last_fetch_time';
+    const STALE_THRESHOLD        = 72000; // 20 hours — triggers background refresh
 
     const OAUTH_AUTH_URL    = 'https://accounts.google.com/o/oauth2/v2/auth';
     const OAUTH_TOKEN_URL   = 'https://oauth2.googleapis.com/token';
@@ -335,7 +342,10 @@ class ABJ_404_Solution_GoogleSearchConsole {
 
     /**
      * Fetch search analytics data for a list of URLs.
-     * Returns rows: [ [ 'url' => '...', 'clicks' => N, 'impressions' => N, 'position' => F.F ] ]
+     * Returns cached data if available, otherwise fetches from the API.
+     *
+     * In the nightly-cron architecture this method is primarily used as
+     * a fallback; the main fetch path is fetchAndCacheGscData().
      *
      * @param string[] $urls Relative or absolute URLs to query
      * @param int $days Number of days (max 16 months back)
@@ -351,6 +361,23 @@ class ABJ_404_Solution_GoogleSearchConsole {
             return $cached;
         }
 
+        $allRows = $this->doFetchFromApi($urls, $days);
+        set_transient(self::TRANSIENT_KEY, $allRows, self::TRANSIENT_TTL);
+        update_option(self::LAST_FETCH_OPTION_KEY, time(), false);
+        return $allRows;
+    }
+
+    /**
+     * Query the GSC Search Analytics API for each URL individually.
+     *
+     * GSC API does not support OR-filtering in dimensionFilterGroups,
+     * so each URL must be queried one at a time.
+     *
+     * @param string[] $urls Relative or absolute URLs to query
+     * @param int $days Number of days to look back
+     * @return array<int, array<string, mixed>>
+     */
+    private function doFetchFromApi(array $urls, int $days = 90): array {
         $s = $this->getSettings();
         $token = get_option(self::TOKEN_OPTION_KEY, false);
         if (!is_array($token) || empty($token['access_token'])) {
@@ -362,8 +389,6 @@ class ABJ_404_Solution_GoogleSearchConsole {
         $startTimestamp = strtotime("-{$days} days");
         $startDate = date('Y-m-d', $startTimestamp !== false ? $startTimestamp : 0);
 
-        // GSC API does not support OR-filtering in dimensionFilterGroups,
-        // so each URL must be queried individually.
         $urls = array_slice($urls, 0, 500);
         $allRows = array();
 
@@ -435,8 +460,78 @@ class ABJ_404_Solution_GoogleSearchConsole {
             return $b['clicks'] - $a['clicks'];
         });
 
-        set_transient(self::TRANSIENT_KEY, $allRows, self::TRANSIENT_TTL);
         return $allRows;
+    }
+
+    /**
+     * Fetch GSC data and cache it. Called by the nightly cron and background refresh.
+     *
+     * Uses a lock transient to prevent overlapping fetches.
+     *
+     * @return void
+     */
+    public function fetchAndCacheGscData(): void {
+        if (!$this->isAuthorized()) {
+            return;
+        }
+
+        // Prevent overlapping fetches
+        if (get_transient(self::LOCK_TRANSIENT_KEY)) {
+            return;
+        }
+        set_transient(self::LOCK_TRANSIENT_KEY, '1', self::LOCK_TTL);
+
+        try {
+            $dao = ABJ_404_Solution_DataAccess::getInstance();
+            $urls = $dao->getDistinctLoggedUrls();
+
+            $allRows = $this->doFetchFromApi($urls);
+            set_transient(self::TRANSIENT_KEY, $allRows, self::TRANSIENT_TTL);
+            update_option(self::LAST_FETCH_OPTION_KEY, time(), false);
+        } finally {
+            delete_transient(self::LOCK_TRANSIENT_KEY);
+        }
+    }
+
+    /**
+     * Return cached GSC data, or false if the cache is empty.
+     *
+     * @return array<int, array<string, mixed>>|false
+     */
+    public function getCachedData() {
+        $cached = get_transient(self::TRANSIENT_KEY);
+        return is_array($cached) ? $cached : false;
+    }
+
+    /**
+     * Whether a background refresh should be triggered.
+     *
+     * True when the last fetch was more than STALE_THRESHOLD seconds ago
+     * or no fetch has ever run.
+     *
+     * @return bool
+     */
+    public function isRefreshNeeded(): bool {
+        $lastFetch = get_option(self::LAST_FETCH_OPTION_KEY, 0);
+        $lastFetchTime = is_numeric($lastFetch) ? (int)$lastFetch : 0;
+        return (time() - $lastFetchTime) > self::STALE_THRESHOLD;
+    }
+
+    /**
+     * Schedule an immediate single-event background refresh via WP-Cron.
+     *
+     * Guards against scheduling when a fetch is already locked or already scheduled.
+     *
+     * @return void
+     */
+    public function scheduleBackgroundRefresh(): void {
+        if (get_transient(self::LOCK_TRANSIENT_KEY)) {
+            return;
+        }
+        if (wp_next_scheduled(self::BACKGROUND_REFRESH_HOOK)) {
+            return;
+        }
+        wp_schedule_single_event(time(), self::BACKGROUND_REFRESH_HOOK);
     }
 
     /**
@@ -521,8 +616,9 @@ class ABJ_404_Solution_GoogleSearchConsole {
      * Render the inner content for the GSC settings/status card.
      * Callers wrap this via echoOptionsSection() for card + collapse support.
      *
-     * @param string[] $capturedUrls Captured 404 URLs from the logs table, used to fetch GSC data
-     *                               when the connected state needs a fresh API call.
+     * Data is fetched by the nightly cron — this method only reads cached data.
+     *
+     * @param string[] $capturedUrls Deprecated — no longer used. Kept for backward compatibility.
      * @return string HTML
      */
     public function renderAdminSection(array $capturedUrls = []): string {
@@ -534,7 +630,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
             case 'error':
                 return $this->renderErrorState();
             default: // 'connected'
-                return $this->renderConnectedState($capturedUrls);
+                return $this->renderConnectedState();
         }
     }
 
@@ -721,26 +817,22 @@ class ABJ_404_Solution_GoogleSearchConsole {
 
     /**
      * State: fully connected. Shows a green status pill + traffic data table.
+     *
+     * Reads only from the transient cache — never calls the GSC API directly.
+     * The cache is populated by the nightly cron or a background refresh.
+     *
      * @return string
      */
-    /**
-     * @param string[] $capturedUrls
-     * @return string
-     */
-    private function renderConnectedState(array $capturedUrls = []): string {
+    private function renderConnectedState(): string {
         $revokeUrl = wp_nonce_url(admin_url('admin-ajax.php?action=abj404_gsc_revoke'), 'abj404_gsc_revoke');
 
         $html  = '<div class="abj404-gsc-status abj404-gsc-status--green">';
         $html .= esc_html__('Connected to Google Search Console', '404-solution');
         $html .= '</div>';
-        $html .= '<p>' . esc_html__('Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour.', '404-solution') . '</p>';
+        $html .= '<p>' . esc_html__('Search traffic data for your captured 404 URLs is shown below. Data is refreshed nightly.', '404-solution') . '</p>';
         $html .= '<a href="' . esc_url($revokeUrl) . '" class="abj404-btn abj404-btn-secondary">' . esc_html__('Disconnect', '404-solution') . '</a>';
 
-        // Fetch from API if the cache is cold and we have URLs to query.
-        $cached = get_transient(self::TRANSIENT_KEY);
-        if (!is_array($cached) && !empty($capturedUrls)) {
-            $cached = $this->getSearchAnalyticsForUrls($capturedUrls);
-        }
+        $cached = $this->getCachedData();
 
         if (is_array($cached) && !empty($cached)) {
             $html .= '<h4>' . esc_html__('404 URLs with Search Traffic (last 90 days)', '404-solution') . '</h4>';
@@ -763,6 +855,8 @@ class ABJ_404_Solution_GoogleSearchConsole {
                 $html .= '</tr>';
             }
             $html .= '</tbody></table>';
+        } elseif ($this->isRefreshNeeded()) {
+            $html .= '<p style="margin-top:12px;color:#646970;">' . esc_html__('GSC data is being fetched in the background. Reload this page in a few minutes.', '404-solution') . '</p>';
         } else {
             $html .= '<p style="margin-top:12px;color:#646970;">' . esc_html__('No search traffic data found for your captured 404 URLs in the last 90 days.', '404-solution') . '</p>';
         }

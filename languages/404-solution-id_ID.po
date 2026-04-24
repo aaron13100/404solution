@@ -2955,8 +2955,8 @@ msgstr "Hapus Kredensial"
 msgid "Connected to Google Search Console."
 msgstr "Terhubung ke Google Search Console."
 
-msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "Data lalu lintas pencarian untuk URL 404 yang tertangkap ditampilkan di bawah. Data disimpan dalam cache selama 1 jam."
+msgid "Search traffic data for your captured 404 URLs is shown below. Data is refreshed nightly."
+msgstr "Data lalu lintas pencarian untuk URL 404 yang tertangkap ditampilkan di bawah. Data diperbarui setiap malam."
 
 msgid "Disconnect"
 msgstr "Putuskan"
@@ -2999,6 +2999,10 @@ msgstr "Tayangan"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "Tidak ada data lalu lintas penelusuran yang ditemukan untuk URL 404 yang ditangkap dalam 90 hari terakhir."
+
+#: includes/GoogleSearchConsole.php
+msgid "GSC data is being fetched in the background. Reload this page in a few minutes."
+msgstr "Data GSC sedang diambil di latar belakang. Muat ulang halaman ini dalam beberapa menit."
 
 msgid "Avg. Position"
 msgstr "Posisi Rata-rata"

@@ -2960,8 +2960,8 @@ msgstr "Anmeldedaten entfernen"
 msgid "Connected to Google Search Console."
 msgstr "Verbunden mit Google Search Console."
 
-msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "Suchtraffic-Daten für Ihre erfassten 404-URLs werden unten angezeigt. Daten werden 1 Stunde zwischengespeichert."
+msgid "Search traffic data for your captured 404 URLs is shown below. Data is refreshed nightly."
+msgstr "Suchtraffic-Daten für Ihre erfassten 404-URLs werden unten angezeigt. Die Daten werden nächtlich aktualisiert."
 
 msgid "Disconnect"
 msgstr "Trennen"
@@ -3004,6 +3004,10 @@ msgstr "Impressionen"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "Keine Suchanfragedaten für Ihre erfassten 404-URLs der letzten 90 Tage gefunden."
+
+#: includes/GoogleSearchConsole.php
+msgid "GSC data is being fetched in the background. Reload this page in a few minutes."
+msgstr "GSC-Daten werden im Hintergrund abgerufen. Laden Sie diese Seite in wenigen Minuten neu."
 
 msgid "Avg. Position"
 msgstr "Durchschn. Position"

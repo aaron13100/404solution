@@ -14,7 +14,7 @@ jQuery(document).ready(function ($) {
         url: window.ajaxurl || 'admin-ajax.php',
         type: 'POST',
         dataType: 'json',
-        timeout: 60000,
+        timeout: 15000,
         data: {
             action: action,
             nonce: nonce

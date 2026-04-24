@@ -2972,8 +2972,8 @@ msgstr "認証情報を削除"
 msgid "Connected to Google Search Console."
 msgstr "Google Search Console に接続済みです。"
 
-msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "キャプチャされた404 URLの検索トラフィックデータを以下に表示しています。データは1時間キャッシュされます。"
+msgid "Search traffic data for your captured 404 URLs is shown below. Data is refreshed nightly."
+msgstr "キャプチャされた404 URLの検索トラフィックデータを以下に表示しています。データは毎晩更新されます。"
 
 msgid "Disconnect"
 msgstr "接続を解除"
@@ -3016,6 +3016,10 @@ msgstr "表示回数"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "過去90日間にキャプチャされた404 URLの検索トラフィックデータが見つかりませんでした。"
+
+#: includes/GoogleSearchConsole.php
+msgid "GSC data is being fetched in the background. Reload this page in a few minutes."
+msgstr "GSCデータをバックグラウンドで取得中です。数分後にこのページを再読み込みしてください。"
 
 msgid "Avg. Position"
 msgstr "平均掲載順位"

@@ -13,7 +13,8 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
 
     /** Remove cron jobs. @return void */
     static function doUnregisterCrons(): void {
-        $crons = array('abj404_cleanupCronAction', 'abj404_duplicateCronAction', 'removeDuplicatesCron', 'deleteOldRedirectsCron');
+        $crons = array('abj404_cleanupCronAction', 'abj404_duplicateCronAction', 'removeDuplicatesCron', 'deleteOldRedirectsCron',
+            'abj404_gsc_fetch_cron', 'abj404_gsc_background_refresh');
         for ($i = 0; $i < count($crons); $i++) {
             $cron_name = $crons[$i];
             $timestamp1 = wp_next_scheduled($cron_name);
@@ -271,7 +272,9 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
                 'abj404_cleanupCronAction',
                 'abj404_updateLogsHitsTableAction',
                 'abj404_updatePermalinkCacheAction',
-                'abj404_rebuild_ngram_cache_hook'
+                'abj404_rebuild_ngram_cache_hook',
+                'abj404_gsc_fetch_cron',
+                'abj404_gsc_background_refresh',
             );
 
             foreach ($cron_hooks as $hook) {
@@ -302,6 +305,14 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             $eventTimestamp = strtotime($timeForEvent);
             if ($eventTimestamp !== false) {
                 wp_schedule_event($eventTimestamp, 'daily', 'abj404_cleanupCronAction');
+            }
+        }
+
+        if (!wp_next_scheduled('abj404_gsc_fetch_cron')) {
+            $timeForGsc = '0' . random_int(1, 4) . ':' . random_int(10, 59) . ':' . random_int(10, 59);
+            $gscTimestamp = strtotime($timeForGsc);
+            if ($gscTimestamp !== false) {
+                wp_schedule_event($gscTimestamp, 'daily', 'abj404_gsc_fetch_cron');
             }
         }
     }

@@ -2991,8 +2991,8 @@ msgstr "إزالة بيانات الاعتماد"
 msgid "Connected to Google Search Console."
 msgstr "تم الاتصال بنجاح بوحدة تحكم البحث Google Search Console."
 
-msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "بيانات حركة البحث لعناوين URL ذات الخطأ 404 الملتقطة معروضة أدناه. يتم تخزين البيانات مؤقتاً لمدة ساعة واحدة."
+msgid "Search traffic data for your captured 404 URLs is shown below. Data is refreshed nightly."
+msgstr "بيانات حركة البحث لعناوين URL ذات الخطأ 404 الملتقطة معروضة أدناه. يتم تحديث البيانات كل ليلة."
 
 msgid "Disconnect"
 msgstr "قطع الاتصال"
@@ -3035,6 +3035,10 @@ msgstr "مرات الظهور"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "لم يتم العثور على بيانات حركة البحث لعناوين URL المسجلة 404 في آخر 90 يومًا."
+
+#: includes/GoogleSearchConsole.php
+msgid "GSC data is being fetched in the background. Reload this page in a few minutes."
+msgstr "يتم جلب بيانات GSC في الخلفية. أعد تحميل هذه الصفحة بعد بضع دقائق."
 
 msgid "Avg. Position"
 msgstr "متوسط الترتيب"

@@ -2959,8 +2959,8 @@ msgstr "Rimuovi credenziali"
 msgid "Connected to Google Search Console."
 msgstr "Connesso a Google Search Console."
 
-msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "I dati sul traffico di ricerca per gli URL 404 catturati sono mostrati di seguito. I dati vengono memorizzati nella cache per 1 ora."
+msgid "Search traffic data for your captured 404 URLs is shown below. Data is refreshed nightly."
+msgstr "I dati sul traffico di ricerca per gli URL 404 catturati sono mostrati di seguito. I dati vengono aggiornati ogni notte."
 
 msgid "Disconnect"
 msgstr "Disconnetti"
@@ -3003,6 +3003,10 @@ msgstr "Impressioni"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "Nessun dato di traffico di ricerca trovato per gli URL 404 acquisiti negli ultimi 90 giorni."
+
+#: includes/GoogleSearchConsole.php
+msgid "GSC data is being fetched in the background. Reload this page in a few minutes."
+msgstr "I dati GSC vengono recuperati in background. Ricarica questa pagina tra qualche minuto."
 
 msgid "Avg. Position"
 msgstr "Posizione media"

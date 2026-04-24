@@ -2968,8 +2968,8 @@ msgstr "移除凭据"
 msgid "Connected to Google Search Console."
 msgstr "已成功连接到 Google Search Console 搜索分析服务。"
 
-msgid "Search traffic data for your captured 404 URLs is shown below. Data is cached for 1 hour."
-msgstr "以下显示您已捕获的 404 URL 的搜索流量数据。数据缓存时间为 1 小时。"
+msgid "Search traffic data for your captured 404 URLs is shown below. Data is refreshed nightly."
+msgstr "以下显示您已捕获的 404 URL 的搜索流量数据。数据每晚自动刷新。"
 
 msgid "Disconnect"
 msgstr "断开连接"
@@ -3012,6 +3012,10 @@ msgstr "展示次数"
 
 msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
 msgstr "在过去90天内，未找到您捕获的404 URL的搜索流量数据。"
+
+#: includes/GoogleSearchConsole.php
+msgid "GSC data is being fetched in the background. Reload this page in a few minutes."
+msgstr "GSC数据正在后台获取中，请几分钟后刷新此页面。"
 
 msgid "Avg. Position"
 msgstr "平均排名"
