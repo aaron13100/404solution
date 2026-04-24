@@ -860,10 +860,14 @@ class ABJ_404_Solution_GoogleSearchConsole {
                     continue;
                 }
                 $html .= '<tr>';
-                $html .= '<td>' . esc_html(isset($row['url']) ? (string)$row['url'] : '') . '</td>';
-                $html .= '<td>' . esc_html((string)(isset($row['clicks']) ? $row['clicks'] : 0)) . '</td>';
-                $html .= '<td>' . esc_html((string)(isset($row['impressions']) ? $row['impressions'] : 0)) . '</td>';
-                $html .= '<td>' . esc_html((string)(isset($row['position']) ? $row['position'] : '—')) . '</td>';
+                $rowUrl = isset($row['url']) && is_scalar($row['url']) ? (string)$row['url'] : '';
+                $rowClicks = isset($row['clicks']) && is_scalar($row['clicks']) ? (string)$row['clicks'] : '0';
+                $rowImpressions = isset($row['impressions']) && is_scalar($row['impressions']) ? (string)$row['impressions'] : '0';
+                $rowPosition = isset($row['position']) && is_scalar($row['position']) ? (string)$row['position'] : '—';
+                $html .= '<td>' . esc_html($rowUrl) . '</td>';
+                $html .= '<td>' . esc_html($rowClicks) . '</td>';
+                $html .= '<td>' . esc_html($rowImpressions) . '</td>';
+                $html .= '<td>' . esc_html($rowPosition) . '</td>';
                 $html .= '</tr>';
             }
             $html .= '</tbody></table>';

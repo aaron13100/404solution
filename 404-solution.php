@@ -1035,7 +1035,7 @@ function abj404_sendDigestCronListener() {
 
 if (!function_exists('abj404_gscFetchCronListener')) {
 /** Nightly cron: fetch GSC data and cache it. @return void */
-function abj404_gscFetchCronListener() {
+function abj404_gscFetchCronListener(): void {
     try {
         require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
         $gscLogger = ABJ_404_Solution_Logging::getInstance();
@@ -1049,7 +1049,7 @@ function abj404_gscFetchCronListener() {
 
 if (!function_exists('abj404_gscBackgroundRefreshListener')) {
 /** On-demand background refresh triggered when an admin views the Options tab with stale data. @return void */
-function abj404_gscBackgroundRefreshListener() {
+function abj404_gscBackgroundRefreshListener(): void {
     try {
         require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
         $gscLogger = ABJ_404_Solution_Logging::getInstance();
