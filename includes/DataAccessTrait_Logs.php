@@ -278,6 +278,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
                 "FROM " . $logsv2Table . " " .
                 "WHERE id >= %d AND id < %d " .
                 "GROUP BY requested_url";
+            $chunkQuery = $this->applyTimeoutToInsertSelect($chunkQuery, 10);
             $chunkResult = $this->queryAndGetResults($chunkQuery, array(
                 'log_too_slow' => false,
                 'query_params' => array($start, $end),
