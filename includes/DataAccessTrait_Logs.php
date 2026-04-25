@@ -946,7 +946,8 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             array('query_params' => array($requested_url), 'log_errors' => false)
         );
         $checkMinIDQueryResults = is_array($primaryResult['rows'] ?? null) ? $primaryResult['rows'] : array();
-        $lastError = is_string($primaryResult['last_error'] ?? '') ? $primaryResult['last_error'] : '';
+        $lastErrorRaw = $primaryResult['last_error'] ?? '';
+        $lastError = is_string($lastErrorRaw) ? $lastErrorRaw : '';
         if ($lastError !== '' && $this->isInvalidDataError($lastError) && $canUseUtf8Cast) {
             $fallbackResult = $this->queryAndGetResults(
                 "SELECT id FROM `" . $logTableName . "` \n WHERE requested_url = %s \n LIMIT 1",

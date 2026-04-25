@@ -1107,9 +1107,13 @@ class ABJ_404_Solution_DataAccess {
         }
         if (isset($wpdb->dbh) && function_exists('mysqli_get_server_info') && $wpdb->dbh instanceof \mysqli) {
             $dbVersion = mysqli_get_server_info($wpdb->dbh);
+        } elseif ($wpdb instanceof \wpdb) {
+            $dbVersion = $wpdb->db_version() ?? '';
         } else {
+            // Test doubles / non-standard wpdb: try __call fallback.
             try {
-                $dbVersion = $wpdb->db_version() ?? '';
+                // @phpstan-ignore argument.type (Mockery mocks use __call; not statically verifiable)
+                $dbVersion = call_user_func(array($wpdb, 'db_version')) ?? '';
             } catch (\Throwable $e) {
                 $dbVersion = '';
             }
