@@ -353,28 +353,33 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
 
         foreach ($urlChunks as $urlChunk) {
             $placeholders = implode(',', array_fill(0, count($urlChunk), '%s'));
-            $query = $wpdb->prepare(
-                "SELECT requested_url,
+            $sql = "SELECT requested_url,
                         MIN(id) AS logsid,
                         MAX(timestamp) AS last_used,
                         COUNT(requested_url) AS logshits
                  FROM {$logsTable}
                  WHERE requested_url IN ($placeholders)
-                 GROUP BY requested_url",
-                $urlChunk
-            );
+                 GROUP BY requested_url";
 
-            $chunkResults = $wpdb->get_results($query, ARRAY_A);
+            // Route through queryAndGetResults so each chunk inherits the
+            // centralized 60s timeout. Without it, a slow chunk on a huge
+            // logsv2 table can stall an admin AJAX request past the
+            // reverse-proxy limit (Cloudflare 524).
+            $chunkResult = $this->queryAndGetResults($sql, array(
+                'query_params' => $urlChunk,
+                'log_too_slow' => false,
+            ));
 
-            // Check for errors on each batch
-            if ($wpdb->last_error) {
-                if (!$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
-                    $this->logger->errorMessage("Error executing batch logs query. Err: " . $wpdb->last_error);
-                }
+            // queryAndGetResults() already logs errors/timeouts and applies
+            // recovery. On failure abort the whole population early so we
+            // don't leak partial data into the view.
+            if (!empty($chunkResult['timed_out']) ||
+                (isset($chunkResult['last_error']) && $chunkResult['last_error'] != '')) {
                 return $rows;
             }
 
-            if (is_array($chunkResults)) {
+            $chunkResults = is_array($chunkResult['rows'] ?? null) ? $chunkResult['rows'] : array();
+            if (!empty($chunkResults)) {
                 $logsResults = array_merge($logsResults, $chunkResults);
             }
         }
@@ -698,12 +703,21 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             ORDER BY l.id DESC
             LIMIT %d OFFSET %d";
 
-        $prepared = $wpdb->prepare($sql, $lkupValue, $perPage, $offset);
-        $rows = $wpdb->get_results($prepared, ARRAY_A);
+        // Route through queryAndGetResults() so this GDPR exporter join
+        // inherits the centralized 60s timeout. The exporter runs in admin
+        // request context (paginated by core), and an unbounded JOIN against
+        // logsv2 could exceed reverse-proxy timeouts on large sites.
+        $result = $this->queryAndGetResults($sql, array(
+            'query_params' => array($lkupValue, $perPage, $offset),
+        ));
+        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
+            return array();
+        }
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
 
         $ids = array();
-        foreach ((array)$rows as $row) {
-            if (isset($row['id'])) {
+        foreach ($rows as $row) {
+            if (is_array($row) && isset($row['id'])) {
                 $ids[] = absint($row['id']);
             }
         }
@@ -734,11 +748,15 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             WHERE id IN ({$placeholders})
             ORDER BY id DESC";
 
-        // WPDB::prepare historically varies in how it accepts arrays; use varargs for compatibility.
-        /** @var wpdb $wpdb */
-        $prepared = call_user_func_array(array($wpdb, 'prepare'), array_merge(array($sql), $ids));
-        $preparedQuery = is_string($prepared) ? $prepared : $sql;
-        return (array)$wpdb->get_results($preparedQuery, ARRAY_A);
+        // Route through queryAndGetResults() so this exporter detail query
+        // inherits the centralized 60s timeout. The IN(...) is bounded by
+        // the page size from getLogsv2IdsForLookupValue, but a slow disk or
+        // lock contention can still hang the request.
+        $result = $this->queryAndGetResults($sql, array('query_params' => $ids));
+        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
+            return array();
+        }
+        return is_array($result['rows'] ?? null) ? $result['rows'] : array();
     }
 
     /**
@@ -773,13 +791,14 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             WHERE id IN ({$placeholders})";
 
         $params = array_merge(array('(Anonymized)'), $ids);
-        /** @var wpdb $wpdb */
-        $prepared = call_user_func_array(array($wpdb, 'prepare'), array_merge(array($sql), $params));
-        $preparedQuery = is_string($prepared) ? $prepared : $sql;
-        $result = $wpdb->query($preparedQuery);
-
-        // wpdb::query returns false on error.
-        return ($result !== false);
+        // Route through queryAndGetResults() so this GDPR eraser UPDATE
+        // inherits the centralized timeout (MariaDB SET STATEMENT for non-
+        // SELECT queries) and the standard retry/recovery handling.
+        $result = $this->queryAndGetResults($sql, array('query_params' => $params));
+        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
+            return false;
+        }
+        return true;
     }
     
     /** 
@@ -908,22 +927,31 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         }
         $requestedUrlCharsetLower = isset($requestedUrlCharset) ? strtolower((string)$requestedUrlCharset) : '';
         $canUseUtf8Cast = ($requestedUrlCharsetLower === '' || strpos($requestedUrlCharsetLower, 'utf8') !== false);
+        // Route through queryAndGetResults() so this per-404-hit lookup
+        // inherits the centralized 60s timeout. The CAST(... AS CHAR) form
+        // can bypass the requested_url index on some schemas, turning into a
+        // full table scan on huge logsv2 tables — a hot-path slow query
+        // would block the 404 page render itself.
         if ($canUseUtf8Cast) {
-            $checkMinIDQuery = $wpdb->prepare("SELECT id FROM `" . $logTableName . "` \n " .
+            $checkMinIDSql = "SELECT id FROM `" . $logTableName . "` \n " .
                 "WHERE CAST(requested_url AS CHAR CHARACTER SET utf8mb4) COLLATE " . $comparisonCollation . " = %s \n " .
-                "LIMIT 1", $requested_url);
+                "LIMIT 1";
         } else {
-            $checkMinIDQuery = $wpdb->prepare("SELECT id FROM `" . $logTableName . "` \n " .
+            $checkMinIDSql = "SELECT id FROM `" . $logTableName . "` \n " .
                 "WHERE requested_url = %s \n " .
-                "LIMIT 1", $requested_url);
+                "LIMIT 1";
         }
-        $checkMinIDQueryResults = $wpdb->get_results($checkMinIDQuery, ARRAY_A);
-        if (!empty($wpdb->last_error) && $this->isInvalidDataError($wpdb->last_error) && $canUseUtf8Cast) {
+        $primaryResult = $this->queryAndGetResults(
+            $checkMinIDSql,
+            array('query_params' => array($requested_url), 'log_errors' => false)
+        );
+        $checkMinIDQueryResults = is_array($primaryResult['rows'] ?? null) ? $primaryResult['rows'] : array();
+        if (!empty($primaryResult['last_error']) && $this->isInvalidDataError($primaryResult['last_error']) && $canUseUtf8Cast) {
             $fallbackResult = $this->queryAndGetResults(
                 "SELECT id FROM `" . $logTableName . "` \n WHERE requested_url = %s \n LIMIT 1",
                 array('query_params' => array($requested_url), 'log_errors' => false)
             );
-            $checkMinIDQueryResults = $fallbackResult['rows'] ?? array();
+            $checkMinIDQueryResults = is_array($fallbackResult['rows'] ?? null) ? $fallbackResult['rows'] : array();
         }
     
         if (empty($checkMinIDQueryResults)) {

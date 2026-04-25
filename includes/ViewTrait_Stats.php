@@ -164,24 +164,27 @@ trait ViewTrait_Stats {
         $dao = ABJ_404_Solution_DataAccess::getInstance();
         $redirectsTable = $dao->doTableNameReplacements('{wp_abj404_redirects}');
 
-        // Query score distribution bands.
-        $query = $wpdb->prepare(
-            "SELECT
+        // Query score distribution bands. Route through the DAO so the
+        // 5x SUM(CASE...) aggregate inherits the centralized 60s SELECT
+        // timeout — the redirects table can be very large on busy sites.
+        $sql = "SELECT
                SUM(CASE WHEN score IS NULL THEN 1 ELSE 0 END) AS manual_count,
                SUM(CASE WHEN score >= 80 THEN 1 ELSE 0 END) AS high_count,
                SUM(CASE WHEN score >= 50 AND score < 80 THEN 1 ELSE 0 END) AS medium_count,
                SUM(CASE WHEN score IS NOT NULL AND score < 50 THEN 1 ELSE 0 END) AS low_count,
                AVG(score) AS avg_score
              FROM `{$redirectsTable}`
-             WHERE disabled = %d AND status != %d",
-            0,
-            0
-        );
+             WHERE disabled = %d AND status != %d";
 
-        $row = $wpdb->get_row($query, ARRAY_A);
-        if (!is_array($row)) {
+        $result = $dao->queryAndGetResults($sql, array('query_params' => array(0, 0)));
+        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
             return;
         }
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        if (empty($rows) || !is_array($rows[0] ?? null)) {
+            return;
+        }
+        $row = $rows[0];
 
         $highCount   = (int)($row['high_count']   ?? 0);
         $mediumCount = (int)($row['medium_count'] ?? 0);

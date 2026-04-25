@@ -413,20 +413,38 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
         $redirectsTable = $this->doTableNameReplacements('{wp_abj404_redirects}');
         $logsTable      = $this->doTableNameReplacements('{wp_abj404_logsv2}');
 
-        global $wpdb;
-        $rows = $wpdb->get_col($wpdb->prepare(
-            "SELECT DISTINCT r.id
+        // Route through queryAndGetResults() so this redirects-vs-logsv2 JOIN
+        // inherits the centralized 60-second timeout. The JOIN runs in a cron
+        // context, but a bad index/lock contention can still hang long enough
+        // to back up the cron runner. Always store an empty flag list on
+        // failure so stale data does not poison redirect handling.
+        $sql = "SELECT DISTINCT r.id
              FROM `{$redirectsTable}` r
              INNER JOIN `{$logsTable}` l ON l.requested_url = r.final_dest
              WHERE l.timestamp > %d
                AND (l.dest_url = '' OR l.dest_url IS NULL)
                AND r.disabled = 0
                AND r.final_dest != ''
-               AND r.final_dest != '0'",
-            $cutoff
-        ));
+               AND r.final_dest != '0'";
 
-        $flaggedIds = is_array($rows) ? array_map('strval', $rows) : array();
+        $result = $this->queryAndGetResults($sql, array('query_params' => array($cutoff)));
+
+        $flaggedIds = array();
+        if (empty($result['timed_out']) && (!isset($result['last_error']) || $result['last_error'] == '')) {
+            $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+            foreach ($rows as $row) {
+                if (is_array($row)) {
+                    $value = $row['id'] ?? reset($row);
+                } elseif (is_object($row)) {
+                    $value = $row->id ?? null;
+                } else {
+                    $value = $row;
+                }
+                if ($value !== null && $value !== '') {
+                    $flaggedIds[] = (string)$value;
+                }
+            }
+        }
 
         if (function_exists('set_transient')) {
             $ttl = defined('HOUR_IN_SECONDS') ? 25 * (int) HOUR_IN_SECONDS : 90000;
@@ -465,22 +483,39 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
         }
 
         $cutoff = time() - ($days * 86400);
-        global $wpdb;
 
-        // Fetch IDs to expire so we can use the existing moveRedirectsToTrash path
-        $ids = $wpdb->get_col($wpdb->prepare(
-            "SELECT id FROM `{$redirectsTable}`
+        // Route through queryAndGetResults() so this cron query inherits the
+        // centralized timeout, retry, and corrupted-table recovery. The query
+        // is small (redirects table only) but the table can grow on busy
+        // sites and a long-held write lock could otherwise hang the cron.
+        $sql = "SELECT id FROM `{$redirectsTable}`
              WHERE status = %d
                AND disabled = 0
                AND `timestamp` > 0
-               AND `timestamp` < %d",
-            ABJ404_STATUS_AUTO,
-            $cutoff
+               AND `timestamp` < %d";
+
+        $result = $this->queryAndGetResults($sql, array(
+            'query_params' => array(ABJ404_STATUS_AUTO, $cutoff),
         ));
 
-        if ($wpdb->last_error) {
-            $this->logger->warn("expireOldAutoRedirects: DB error fetching old auto-redirects: " . $wpdb->last_error);
+        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
+            // queryAndGetResults() already logged the error/timeout; treat as no-op.
             return 0;
+        }
+
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        $ids = array();
+        foreach ($rows as $row) {
+            if (is_array($row)) {
+                $value = $row['id'] ?? reset($row);
+            } elseif (is_object($row)) {
+                $value = $row->id ?? null;
+            } else {
+                $value = $row;
+            }
+            if ($value !== null && $value !== '') {
+                $ids[] = absint($value);
+            }
         }
 
         if (empty($ids)) {
@@ -489,7 +524,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
 
         $moved = 0;
         foreach ($ids as $id) {
-            $this->moveRedirectsToTrash(absint($id), 1);
+            $this->moveRedirectsToTrash($id, 1);
             $moved++;
         }
 

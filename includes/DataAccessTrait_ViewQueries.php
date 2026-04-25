@@ -73,20 +73,26 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
     }
     
    /**
-    * @global type $wpdb
     * @return int the total number of redirects that have been captured.
     */
    function getCapturedCount() {
-       global $wpdb;
-       
-       $query = "select count(id) from {wp_abj404_redirects} where status = " . ABJ404_STATUS_CAPTURED;
-       $query = $this->doTableNameReplacements($query);
-       
-       $captured = $wpdb->get_col($query, 0);
-       if (!is_array($captured) || empty($captured)) {
+       $query = "select count(id) from {wp_abj404_redirects} where status = " . absint(ABJ404_STATUS_CAPTURED);
+
+       // Route through queryAndGetResults() so the count query inherits the
+       // centralized 60s timeout. Tiny query in normal operation, but the
+       // redirects table can grow into millions of rows on busy sites.
+       $result = $this->queryAndGetResults($query);
+       if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
            return 0;
        }
-       return intval($captured[0]);
+
+       $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+       if (empty($rows)) {
+           return 0;
+       }
+       $first = $rows[0];
+       $value = is_array($first) ? reset($first) : $first;
+       return intval($value);
    }
     
    /** Get all of the post types from the wp_posts table.
@@ -402,37 +408,49 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      * @return int the number of records found.
      */
     function getLogsCount($logID) {
-        global $wpdb;
         // Sanitize logID to prevent SQL injection
         $logID = absint($logID);
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsCount.sql");
-        $query = $this->doTableNameReplacements($query);
 
         if ($logID != 0) {
             $query = $this->f->str_replace('/* {SPECIFIC_ID}', '', $query);
             $query = $this->f->str_replace('{logID}', (string)$logID, $query);
         }
-        
-        $row = $wpdb->get_row($query, ARRAY_N);
-        if (!is_array($row) || empty($row)) {
+
+        // Route through queryAndGetResults() so the count query (potentially
+        // a JOIN against logsv2 when SPECIFIC_ID is set) inherits the
+        // centralized 60s timeout. Bypassing via $wpdb->get_row() leaves the
+        // admin page with no upper bound on slow logsv2 lookups.
+        $result = $this->queryAndGetResults($query);
+        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
             return 0;
         }
-        $records = $row[0];
 
-        return intval($records);
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        if (empty($rows)) {
+            return 0;
+        }
+        $first = $rows[0];
+        $value = is_array($first) ? reset($first) : $first;
+        return intval($value);
     }
 
-    /** 
-     * @global type $wpdb
+    /**
      * @return array<int, array<string, mixed>>
      */
     function getRedirectsAll() {
-        global $wpdb;
         $query = "select id, url from {wp_abj404_redirects} order by url";
-        $query = $this->doTableNameReplacements($query);
-        
-        $rows = $wpdb->get_results($query, ARRAY_A);
+
+        // Route through queryAndGetResults() so this list query inherits the
+        // centralized 60s timeout. The redirects table can be very large on
+        // busy sites and an unbounded ORDER BY without timeout protection
+        // could exceed reverse-proxy limits.
+        $result = $this->queryAndGetResults($query);
+        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
+            return array();
+        }
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         return $rows;
     }
     
@@ -481,12 +499,17 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      * @return array<int, array<string, mixed>>
      */
     function getRedirectsWithLogs() {
-        global $wpdb;
-        
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsWithLogs.sql");
-        $query = $this->doTableNameReplacements($query);
-        
-        $rows = $wpdb->get_results($query, ARRAY_A);
+
+        // Route through queryAndGetResults() so this redirects+logs JOIN
+        // inherits the centralized 60s timeout. logsv2 can be huge, and the
+        // join shape is identical to the one already protected in the hits
+        // table rebuild path (commit 70f3b5fe).
+        $result = $this->queryAndGetResults($query);
+        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
+            return array();
+        }
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         return $rows;
     }
 

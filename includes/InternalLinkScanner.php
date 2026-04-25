@@ -131,6 +131,7 @@ class ABJ_404_Solution_InternalLinkScanner {
         $capturedStatus = defined('ABJ404_STATUS_CAPTURED') ? intval(ABJ404_STATUS_CAPTURED) : 3;
 
         // Use the plugin's DAO if available, otherwise fall back to strtolower prefix.
+        $dao = null;
         if (class_exists('ABJ_404_Solution_DataAccess')) {
             $dao = ABJ_404_Solution_DataAccess::getInstance();
             $redirectsTable = $dao->doTableNameReplacements('{wp_abj404_redirects}');
@@ -138,14 +139,27 @@ class ABJ_404_Solution_InternalLinkScanner {
             $redirectsTable = strtolower($wpdb->prefix) . 'abj404_redirects';
         }
 
-        $sql = $wpdb->prepare(
-            "SELECT `url` FROM `{$redirectsTable}` WHERE `status` = %d AND `disabled` = 0",
-            $capturedStatus
-        );
+        $sql = "SELECT `url` FROM `{$redirectsTable}` WHERE `status` = %d AND `disabled` = 0";
 
-        $rows = $wpdb->get_results($sql, ARRAY_A);
-        if (!is_array($rows)) {
-            return array();
+        // Route through queryAndGetResults() so this nightly-cron scan inherits
+        // the centralized timeout, retry, and corrupted-table recovery instead
+        // of failing silently or hanging. Only fall back to the raw $wpdb path
+        // when the DAO class is unavailable (e.g. integration test bootstraps).
+        if ($dao !== null) {
+            $result = $dao->queryAndGetResults($sql, array(
+                'query_params' => array($capturedStatus),
+            ));
+            if (!empty($result['timed_out']) ||
+                (isset($result['last_error']) && $result['last_error'] != '')) {
+                return array();
+            }
+            $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        } else {
+            $prepared = $wpdb->prepare($sql, $capturedStatus);
+            $rows = $wpdb->get_results($prepared, ARRAY_A);
+            if (!is_array($rows)) {
+                return array();
+            }
         }
 
         $urlSet = array();
