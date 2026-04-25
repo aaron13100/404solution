@@ -148,31 +148,45 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'running', 86400);
             return false;
         }
+        $preAggTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}_preagg");
         try {
-        
+
         $finalDestTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}");
         $tempDestTable = $this->doTableNameReplacements("{wp_abj404_logs_hits}_temp");
-        $ttSelectQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
-        	"/sql/getRedirectsForViewTempTable.sql");
-        $ttSelectQuery = $this->doTableNameReplacements($ttSelectQuery);
-        
-        // create a temp table
+
+        // create the temp output table
         $this->queryAndGetResults("drop table if exists " . $tempDestTable);
-        $createTempTableQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
+        $createTempTableQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
         	"/sql/createLogsHitsTempTable.sql");
         $createTempTableQuery = $this->doTableNameReplacements($createTempTableQuery);
         $this->queryAndGetResults($createTempTableQuery);
         $this->queryAndGetResults("truncate table " . $tempDestTable);
-        
+
         // Capture a pre-insert snapshot watermark.
         // This keeps rebuild checks consistent with getMaxLogId() while avoiding
         // claiming coverage for rows that may arrive during/after the insert.
         $maxLogIdSnapshot = $this->getMaxLogId();
+        $minLogId = $this->getMinLogId();
+        $chunkSize = self::HITS_TABLE_PREAGG_CHUNK_SIZE;
+        $idRange = $maxLogIdSnapshot - $minLogId;
 
-        // insert the data into the temp table (this may take time).
-        $ttInsertQuery = "insert into " . $tempDestTable . " (requested_url, logsid, " .
-        	"last_used, logshits) \n " . $ttSelectQuery;
-        $results = $this->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false));
+        // Small-table fast path: if the entire logsv2 table fits in one chunk,
+        // run the original single query (no pre-aggregation overhead).
+        if ($idRange <= $chunkSize) {
+            $results = $this->hitsTableInsertDirect($tempDestTable);
+        } else {
+            $results = $this->hitsTableInsertChunked(
+                $tempDestTable, $preAggTable, $minLogId, $maxLogIdSnapshot, $chunkSize
+            );
+        }
+
+        // If the query timed out or errored, don't replace the existing table with empty data.
+        if ($results === false || !empty($results['timed_out']) || !empty($results['last_error'])) {
+            $this->queryAndGetResults("drop table if exists " . $tempDestTable);
+            $this->logger->debugMessage(__FUNCTION__ . " INSERT timed out or errored; aborting rebuild.");
+            $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
+            return false;
+        }
 
         // Store elapsed time and max log ID in comment for invalidation check
         // Format: "elapsed_time|max_log_id" (e.g., "0.35|12345")
@@ -182,7 +196,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         $comment = substr(esc_sql($comment), 0, 2048);
         $addComment = "ALTER TABLE " . $tempDestTable . " COMMENT '" . $comment . "'";
         $this->queryAndGetResults($addComment);
-        
+
         // drop the old hits table and rename the temp table to the hits table as a transaction
         $statements = array(
             "drop table if exists " . $finalDestTable,
@@ -191,17 +205,112 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         $this->executeAsTransaction($statements);
         $this->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, time(), 86400);
         $wasRefreshed = true;
-        
-        $this->logger->debugMessage(__FUNCTION__ . " refreshed " . $finalDestTable . " in " . $elapsedTime . 
+
+        $this->logger->debugMessage(__FUNCTION__ . " refreshed " . $finalDestTable . " in " . $elapsedTime .
                 " seconds.");
         } catch (Throwable $e) {
             // Never break the admin request because a shutdown refresh fails.
             $this->logger->errorMessage(__FUNCTION__ . " failed: " . $e->getMessage(), $e instanceof \Exception ? $e : null);
             $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
         } finally {
+            $this->queryAndGetResults("drop table if exists " . $preAggTable);
             $this->releaseHitsTableRebuildLock();
         }
         return $wasRefreshed;
+    }
+
+    /**
+     * Small-table fast path: single INSERT...SELECT with a DB-level timeout.
+     *
+     * @param string $tempDestTable
+     * @return array<string, mixed>
+     */
+    private function hitsTableInsertDirect(string $tempDestTable): array {
+        $ttSelectQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
+            "/sql/getRedirectsForViewTempTable.sql");
+        $ttSelectQuery = $this->doTableNameReplacements($ttSelectQuery);
+
+        $ttInsertQuery = "insert into " . $tempDestTable . " (requested_url, logsid, " .
+            "last_used, logshits) \n " . $ttSelectQuery;
+        $ttInsertQuery = $this->applyTimeoutToInsertSelect($ttInsertQuery, 60);
+        return $this->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false));
+    }
+
+    /**
+     * Large-table path: two-phase chunked pre-aggregation.
+     *
+     * Phase 1: chunk through logsv2 by ID range, aggregating each chunk into a
+     * pre-agg table (no join — uses PRIMARY KEY index, fast).
+     *
+     * Phase 2: join the small pre-agg table with redirects (same concat/trim
+     * normalization) and re-aggregate across chunks into the final temp table.
+     *
+     * @param string $tempDestTable
+     * @param string $preAggTable
+     * @param int $minId
+     * @param int $maxId
+     * @param int $chunkSize
+     * @return array<string, mixed>|false False on chunk error
+     */
+    private function hitsTableInsertChunked(
+        string $tempDestTable, string $preAggTable,
+        int $minId, int $maxId, int $chunkSize
+    ) {
+        $logsv2Table = $this->doTableNameReplacements("{wp_abj404_logsv2}");
+        $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
+        $startTime = microtime(true);
+
+        // Create the pre-aggregation scratch table.
+        $this->queryAndGetResults("drop table if exists " . $preAggTable);
+        $createPreAggQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
+            "/sql/createLogsHitsPreAggTable.sql");
+        $createPreAggQuery = $this->doTableNameReplacements($createPreAggQuery);
+        $this->queryAndGetResults($createPreAggQuery);
+
+        // Phase 1: chunk through logsv2 by ID range.
+        // Each chunk aggregates by requested_url within its ID slice.
+        // The same URL can appear across chunks — Phase 2 merges them.
+        for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
+            $end = $start + $chunkSize;
+            $chunkQuery = "INSERT INTO " . $preAggTable .
+                " (requested_url, logsid, last_used, logshits) " .
+                "SELECT requested_url, MIN(id), MAX(timestamp), COUNT(*) " .
+                "FROM " . $logsv2Table . " " .
+                "WHERE id >= %d AND id < %d " .
+                "GROUP BY requested_url";
+            $chunkResult = $this->queryAndGetResults($chunkQuery, array(
+                'log_too_slow' => false,
+                'query_params' => array($start, $end),
+            ));
+            if (!empty($chunkResult['timed_out']) || !empty($chunkResult['last_error'])) {
+                $this->logger->debugMessage(__FUNCTION__ .
+                    " Phase 1 chunk failed at id range [{$start}, {$end}); aborting.");
+                return false;
+            }
+        }
+
+        // Phase 2: join the small pre-agg table with redirects and
+        // re-aggregate across chunks into the final temp table.
+        // The concat/trim normalization is identical to the original query
+        // but runs against far fewer rows (unique URLs per chunk, not raw logs).
+        $phase2Query = "INSERT INTO " . $tempDestTable .
+            " (requested_url, logsid, last_used, logshits) " .
+            "SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits) " .
+            "FROM " . $preAggTable . " a " .
+            "INNER JOIN " . $redirectsTable . " r " .
+            "ON concat('/', trim(both '/' from a.requested_url)) = " .
+            "   concat('/', trim(both '/' from r.url)) " .
+            "GROUP BY a.requested_url";
+        $phase2Query = $this->applyTimeoutToInsertSelect($phase2Query, 60);
+        $results = $this->queryAndGetResults($phase2Query, array('log_too_slow' => false));
+
+        // Attach total elapsed time so the caller can store it in the table comment.
+        $results['elapsed_time'] = round(microtime(true) - $startTime, 3);
+
+        // Clean up pre-agg table (also done in the finally block as a safety net).
+        $this->queryAndGetResults("drop table if exists " . $preAggTable);
+
+        return $results;
     }
     
     /**

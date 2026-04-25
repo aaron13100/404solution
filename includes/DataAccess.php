@@ -37,6 +37,8 @@ class ABJ_404_Solution_DataAccess {
     const VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES = 2097152; // 2 MiB
     /** @var int Cross-request lock timeout for logs-hits rebuild jobs. */
     const HITS_TABLE_REBUILD_LOCK_TTL_SECONDS = 180;
+    /** @var int Number of logsv2 IDs to process per chunk during pre-aggregation. */
+    const HITS_TABLE_PREAGG_CHUNK_SIZE = 100000;
     /** @var int Max age for cached stats-periodic aggregates. */
     const PERIODIC_STATS_CACHE_TTL_SECONDS = 300;
     /** @var int Minimum interval before recalculating expensive stats aggregates. */
@@ -1095,6 +1097,40 @@ class ABJ_404_Solution_DataAccess {
             $query
         );
         return ($timedQuery !== null) ? $timedQuery : $query;
+    }
+
+    /**
+     * Apply a database-engine-specific timeout to an INSERT...SELECT query.
+     *
+     * MariaDB 10.1+: wraps the entire statement with SET STATEMENT max_statement_time=N FOR ...
+     * MySQL 5.7.8+: injects MAX_EXECUTION_TIME(ms) hint into the embedded SELECT.
+     * Older engines ignore unknown hints, so this is safe as a no-op fallback.
+     *
+     * @param string $insertSelectQuery The INSERT INTO ... SELECT ... query
+     * @param int $timeoutSeconds Maximum execution time in seconds
+     * @return string The query with timeout applied
+     */
+    function applyTimeoutToInsertSelect(string $insertSelectQuery, int $timeoutSeconds): string {
+        global $wpdb;
+        $timeoutMs = $timeoutSeconds * 1000;
+
+        $dbVersion = isset($wpdb->dbh) && function_exists('mysqli_get_server_info') && $wpdb->dbh instanceof \mysqli
+            ? mysqli_get_server_info($wpdb->dbh)
+            : ($wpdb->db_version() ?? '');
+        $isMariaDB = stripos($dbVersion, 'mariadb') !== false;
+
+        if ($isMariaDB) {
+            return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $insertSelectQuery;
+        }
+
+        // MySQL 5.7.8+: inject hint into the first SELECT keyword (the embedded SELECT).
+        $timedQuery = preg_replace(
+            '/(SELECT\s)/i',
+            'SELECT /*+ MAX_EXECUTION_TIME(' . $timeoutMs . ') */ ',
+            $insertSelectQuery,
+            1
+        );
+        return ($timedQuery !== null) ? $timedQuery : $insertSelectQuery;
     }
 
     /**

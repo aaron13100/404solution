@@ -1028,19 +1028,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
 
         // Check if the table exists
         if (!$this->logsHitsTableExists()) {
-            // First-time creation: table must exist before query runs, so create synchronously
-            $this->logger->debugMessage(__FUNCTION__ . " creating now because the table doesn't exist (first time).");
-            $created = $this->createRedirectsForViewHitsTable();
-            if ($created) {
-                $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'not_needed', 86400);
-            } else {
-                // Preserve a more specific state set by createRedirectsForViewHitsTable().
-                // For example, if another request already holds the lock we keep "running".
-                $decision = $this->getLogsHitsTableLastDecision();
-                if ($decision !== 'running') {
-                    $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
-                }
-            }
+            // Defer creation to shutdown hook so the admin page loads immediately.
+            // The view query gracefully falls back to null hits columns when the
+            // table doesn't exist (getRedirectsForViewQuery checks logsHitsTableExists).
+            // On sites with large logsv2 tables the INSERT...SELECT that populates
+            // the hits table can take minutes, which exceeds proxy timeouts (e.g.
+            // Cloudflare's 100-second limit → HTTP 524).
+            $this->logger->debugMessage(__FUNCTION__ . " table doesn't exist, deferring creation to shutdown hook.");
+            $this->scheduleHitsTableRebuild();
             return;
         }
 
@@ -1233,6 +1228,22 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         // Handle both object and array results
         $maxId = is_array($row) ? array_values($row)[0] : (array_values((array)$row)[0] ?? 0);
         return (int)($maxId ?? 0);
+    }
+
+    /** @return int */
+    function getMinLogId() {
+        $query = "SELECT MIN(id) FROM {wp_abj404_logsv2}";
+        $query = $this->doTableNameReplacements($query);
+        $results = $this->queryAndGetResults($query);
+
+        $resultRows = is_array($results['rows']) ? $results['rows'] : array();
+        if (empty($resultRows)) {
+            return 0;
+        }
+
+        $row = $resultRows[0];
+        $minId = is_array($row) ? array_values($row)[0] : (array_values((array)$row)[0] ?? 0);
+        return (int)($minId ?? 0);
     }
 
     /**
