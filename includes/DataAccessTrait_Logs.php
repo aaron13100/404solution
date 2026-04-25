@@ -232,8 +232,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
 
         $ttInsertQuery = "insert into " . $tempDestTable . " (requested_url, logsid, " .
             "last_used, logshits) \n " . $ttSelectQuery;
-        $ttInsertQuery = $this->applyTimeoutToInsertSelect($ttInsertQuery, 60);
-        return $this->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false));
+        return $this->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false, 'timeout' => 60));
     }
 
     /**
@@ -278,9 +277,9 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
                 "FROM " . $logsv2Table . " " .
                 "WHERE id >= %d AND id < %d " .
                 "GROUP BY requested_url";
-            $chunkQuery = $this->applyTimeoutToInsertSelect($chunkQuery, 10);
             $chunkResult = $this->queryAndGetResults($chunkQuery, array(
                 'log_too_slow' => false,
+                'timeout' => 10,
                 'query_params' => array($start, $end),
             ));
             if (!empty($chunkResult['timed_out']) || !empty($chunkResult['last_error'])) {
@@ -302,8 +301,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             "ON concat('/', trim(both '/' from a.requested_url)) = " .
             "   concat('/', trim(both '/' from r.url)) " .
             "GROUP BY a.requested_url";
-        $phase2Query = $this->applyTimeoutToInsertSelect($phase2Query, 60);
-        $results = $this->queryAndGetResults($phase2Query, array('log_too_slow' => false));
+        $results = $this->queryAndGetResults($phase2Query, array('log_too_slow' => false, 'timeout' => 60));
 
         // Attach total elapsed time so the caller can store it in the table comment.
         $results['elapsed_time'] = round(microtime(true) - $startTime, 3);

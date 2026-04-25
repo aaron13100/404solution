@@ -864,15 +864,11 @@ class ABJ_404_Solution_DataAccess {
             }
         }
 
-        // Apply query timeout hint for SELECT queries.
+        // Apply a DB-level timeout to every query.
         // Default timeout (60s) prevents any single query from blocking indefinitely.
-        // Non-SELECT queries (INSERT, UPDATE, CREATE, etc.) are not affected.
         $timeoutRaw = isset($options['timeout']) && is_numeric($options['timeout']) ? (int)$options['timeout'] : 0;
         $timeoutSeconds = $timeoutRaw > 0 ? $timeoutRaw : 60;
-        $isSelect = $this->queryStartsWithSelect($query);
-        if ($isSelect) {
-            $query = $this->applyQueryTimeoutHint($query, $timeoutSeconds);
-        }
+        $query = $this->applyQueryTimeout($query, $timeoutSeconds);
 
         $this->applyDiagnosticLatencyIfConfigured();
 
@@ -1067,30 +1063,66 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /**
-     * Apply a database-engine-specific timeout hint to a SELECT query.
+     * Apply a DB-level timeout to any query type.
      *
-     * MySQL 5.7.8+: uses the MAX_EXECUTION_TIME(ms) optimizer hint.
-     * MariaDB 10.1+: uses SET STATEMENT max_statement_time=N FOR ...
-     * Older engines ignore unknown hints, so this is safe as a no-op fallback.
+     * Dispatches to the appropriate engine-specific mechanism:
+     * - Pure SELECT: MySQL optimizer hint or MariaDB SET STATEMENT
+     * - INSERT...SELECT (or any non-leading SELECT): MariaDB SET STATEMENT
+     *   or MySQL hint injected into the embedded SELECT
+     * - Other DML/DDL: MariaDB SET STATEMENT (MySQL has no mechanism for
+     *   non-SELECT timeouts; these queries are typically fast)
      *
-     * @param string $query The SELECT query
+     * Skips queries that already carry a timeout hint to prevent double-wrapping
+     * (e.g. callers that used to apply timeouts manually before this was centralized).
+     *
+     * @param string $query Any SQL query
      * @param int $timeoutSeconds Maximum execution time in seconds
-     * @return string The query with timeout hint applied
+     * @return string The query with timeout applied (or unchanged if no mechanism)
      */
-    private function applyQueryTimeoutHint(string $query, int $timeoutSeconds): string {
-        global $wpdb;
-        $timeoutMs = $timeoutSeconds * 1000;
+    private function applyQueryTimeout(string $query, int $timeoutSeconds): string {
+        // Skip if a timeout hint is already present (prevents double-wrapping).
+        if (preg_match('/MAX_EXECUTION_TIME|max_statement_time/i', $query)) {
+            return $query;
+        }
 
+        if ($this->queryStartsWithSelect($query)) {
+            return $this->applySelectTimeout($query, $timeoutSeconds);
+        }
+        if (preg_match('/SELECT\s/i', $query)) {
+            // INSERT...SELECT, CREATE TABLE...SELECT, etc.
+            return $this->applyNonLeadingSelectTimeout($query, $timeoutSeconds);
+        }
+        // Plain INSERT, UPDATE, DELETE, DDL — only MariaDB has a timeout mechanism.
+        return $this->applyStatementTimeout($query, $timeoutSeconds);
+    }
+
+    /**
+     * Detect the DB engine. Returns true for MariaDB, false for MySQL/unknown.
+     * @return bool
+     */
+    private function isMariaDB(): bool {
+        global $wpdb;
         $dbVersion = isset($wpdb->dbh) && function_exists('mysqli_get_server_info') && $wpdb->dbh instanceof \mysqli
             ? mysqli_get_server_info($wpdb->dbh)
             : ($wpdb->db_version() ?? '');
-        $isMariaDB = stripos($dbVersion, 'mariadb') !== false;
+        return stripos($dbVersion, 'mariadb') !== false;
+    }
 
-        if ($isMariaDB) {
+    /**
+     * Apply timeout to a pure SELECT query.
+     *
+     * MySQL 5.7.8+: MAX_EXECUTION_TIME(ms) optimizer hint.
+     * MariaDB 10.1+: SET STATEMENT max_statement_time=N FOR ...
+     *
+     * @param string $query A SELECT query
+     * @param int $timeoutSeconds Maximum execution time in seconds
+     * @return string The query with timeout hint applied
+     */
+    private function applySelectTimeout(string $query, int $timeoutSeconds): string {
+        if ($this->isMariaDB()) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
-
-        // MySQL 5.7.8+: optimizer hint after SELECT keyword.
+        $timeoutMs = $timeoutSeconds * 1000;
         $timedQuery = preg_replace(
             '/^(\s*(?:\/\*[\s\S]*?\*\/\s*)*SELECT\s)/i',
             '$1/*+ MAX_EXECUTION_TIME(' . $timeoutMs . ') */ ',
@@ -1100,37 +1132,57 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /**
-     * Apply a database-engine-specific timeout to an INSERT...SELECT query.
+     * Apply timeout to a query containing a non-leading SELECT (INSERT...SELECT, etc.).
      *
-     * MariaDB 10.1+: wraps the entire statement with SET STATEMENT max_statement_time=N FOR ...
-     * MySQL 5.7.8+: injects MAX_EXECUTION_TIME(ms) hint into the embedded SELECT.
-     * Older engines ignore unknown hints, so this is safe as a no-op fallback.
+     * MariaDB 10.1+: SET STATEMENT max_statement_time=N FOR ... (wraps entire statement).
+     * MySQL 5.7.8+: MAX_EXECUTION_TIME(ms) hint injected into the first SELECT keyword.
+     *
+     * @param string $query An INSERT...SELECT or similar query
+     * @param int $timeoutSeconds Maximum execution time in seconds
+     * @return string The query with timeout applied
+     */
+    private function applyNonLeadingSelectTimeout(string $query, int $timeoutSeconds): string {
+        if ($this->isMariaDB()) {
+            return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
+        }
+        $timeoutMs = $timeoutSeconds * 1000;
+        $timedQuery = preg_replace(
+            '/(SELECT\s)/i',
+            'SELECT /*+ MAX_EXECUTION_TIME(' . $timeoutMs . ') */ ',
+            $query,
+            1
+        );
+        return ($timedQuery !== null) ? $timedQuery : $query;
+    }
+
+    /**
+     * Apply timeout to a non-SELECT statement (INSERT, UPDATE, DELETE, DDL).
+     *
+     * MariaDB 10.1+: SET STATEMENT max_statement_time=N FOR ... works on all DML.
+     * MySQL: has no SQL-level timeout mechanism for non-SELECT queries.
+     *
+     * @param string $query Any non-SELECT query
+     * @param int $timeoutSeconds Maximum execution time in seconds
+     * @return string The query with timeout applied (unchanged on MySQL)
+     */
+    private function applyStatementTimeout(string $query, int $timeoutSeconds): string {
+        if ($this->isMariaDB()) {
+            return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
+        }
+        // MySQL has no timeout mechanism for non-SELECT queries.
+        return $query;
+    }
+
+    /**
+     * @deprecated Use the 'timeout' option on queryAndGetResults() instead.
+     *             Kept for backward compatibility with any external callers.
      *
      * @param string $insertSelectQuery The INSERT INTO ... SELECT ... query
      * @param int $timeoutSeconds Maximum execution time in seconds
      * @return string The query with timeout applied
      */
     function applyTimeoutToInsertSelect(string $insertSelectQuery, int $timeoutSeconds): string {
-        global $wpdb;
-        $timeoutMs = $timeoutSeconds * 1000;
-
-        $dbVersion = isset($wpdb->dbh) && function_exists('mysqli_get_server_info') && $wpdb->dbh instanceof \mysqli
-            ? mysqli_get_server_info($wpdb->dbh)
-            : ($wpdb->db_version() ?? '');
-        $isMariaDB = stripos($dbVersion, 'mariadb') !== false;
-
-        if ($isMariaDB) {
-            return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $insertSelectQuery;
-        }
-
-        // MySQL 5.7.8+: inject hint into the first SELECT keyword (the embedded SELECT).
-        $timedQuery = preg_replace(
-            '/(SELECT\s)/i',
-            'SELECT /*+ MAX_EXECUTION_TIME(' . $timeoutMs . ') */ ',
-            $insertSelectQuery,
-            1
-        );
-        return ($timedQuery !== null) ? $timedQuery : $insertSelectQuery;
+        return $this->applyNonLeadingSelectTimeout($insertSelectQuery, $timeoutSeconds);
     }
 
     /**
