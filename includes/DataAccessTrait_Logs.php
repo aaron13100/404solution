@@ -262,7 +262,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         // Create the pre-aggregation scratch table.
         $this->queryAndGetResults("drop table if exists " . $preAggTable);
         $createPreAggQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
-            "/sql/createLogsHitsPreAggTable.sql");
+            "/sql/createLogsHitsPreAggTempTable.sql");
         $createPreAggQuery = $this->doTableNameReplacements($createPreAggQuery);
         $this->queryAndGetResults($createPreAggQuery);
 

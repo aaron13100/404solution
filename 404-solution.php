@@ -327,7 +327,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'sql/correctLookupTableIssue.sql',
 				$inc . 'sql/createEngineProfilesTable.sql',
 				$inc . 'sql/createLogTable.sql',
-				$inc . 'sql/createLogsHitsPreAggTable.sql',
+				$inc . 'sql/createLogsHitsPreAggTempTable.sql',
 				$inc . 'sql/createLogsHitsTempTable.sql',
 				$inc . 'sql/createLookupTable.sql',
 				$inc . 'sql/createNGramCacheTable.sql',

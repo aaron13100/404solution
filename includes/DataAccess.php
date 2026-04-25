@@ -1105,20 +1105,19 @@ class ABJ_404_Solution_DataAccess {
         if (!isset($wpdb) || !is_object($wpdb)) {
             return false;
         }
-        if (isset($wpdb->dbh) && function_exists('mysqli_get_server_info') && $wpdb->dbh instanceof \mysqli) {
-            $dbVersion = mysqli_get_server_info($wpdb->dbh);
-        } elseif ($wpdb instanceof \wpdb) {
-            $dbVersion = $wpdb->db_version() ?? '';
-        } else {
-            // Test doubles / non-standard wpdb: try __call fallback.
-            try {
-                // @phpstan-ignore argument.type (Mockery mocks use __call; not statically verifiable)
-                $dbVersion = call_user_func(array($wpdb, 'db_version')) ?? '';
-            } catch (\Throwable $e) {
-                $dbVersion = '';
+        try {
+            if (isset($wpdb->dbh) && function_exists('mysqli_get_server_info') && $wpdb->dbh instanceof \mysqli) {
+                $dbVersion = mysqli_get_server_info($wpdb->dbh);
+            } else {
+                /** @var wpdb $wpdb */
+                $dbVersion = $wpdb->db_version() ?? '';
             }
+        } catch (\Throwable $e) {
+            // Mockery mocks, plain stdClass, or other test doubles may not
+            // have db_version(). Default to MySQL (not MariaDB).
+            $dbVersion = '';
         }
-        return stripos(is_string($dbVersion) ? $dbVersion : '', 'mariadb') !== false;
+        return stripos($dbVersion, 'mariadb') !== false;
     }
 
     /**
