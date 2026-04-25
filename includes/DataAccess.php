@@ -1102,10 +1102,19 @@ class ABJ_404_Solution_DataAccess {
      */
     private function isMariaDB(): bool {
         global $wpdb;
-        $dbVersion = isset($wpdb->dbh) && function_exists('mysqli_get_server_info') && $wpdb->dbh instanceof \mysqli
-            ? mysqli_get_server_info($wpdb->dbh)
-            : ($wpdb->db_version() ?? '');
-        return stripos($dbVersion, 'mariadb') !== false;
+        if (!isset($wpdb) || !is_object($wpdb)) {
+            return false;
+        }
+        if (isset($wpdb->dbh) && function_exists('mysqli_get_server_info') && $wpdb->dbh instanceof \mysqli) {
+            $dbVersion = mysqli_get_server_info($wpdb->dbh);
+        } else {
+            try {
+                $dbVersion = $wpdb->db_version() ?? '';
+            } catch (\Throwable $e) {
+                $dbVersion = '';
+            }
+        }
+        return stripos(is_string($dbVersion) ? $dbVersion : '', 'mariadb') !== false;
     }
 
     /**
