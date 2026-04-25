@@ -109,29 +109,52 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
    }
    
    /** Get the approximate number of bytes used by the logs table.
-    * @global type $wpdb
-    * @return int
+    *
+    * Reads data_length+index_length from information_schema.tables. InnoDB
+    * (and modern MyISAM) maintain these values continuously, so an ANALYZE TABLE
+    * pre-warm is unnecessary — the residual accuracy gain is irrelevant for
+    * an "X MB" UI display and the bytes-per-log heuristic in deleteOldRedirectsCron.
+    *
+    * The previous implementation issued ANALYZE TABLE before the size lookup.
+    * On sites with millions of logsv2 rows that single statement could take
+    * 10–30 seconds. ANALYZE TABLE has no automatic query timeout (the SELECT
+    * timeout in queryAndGetResults() applies only to SELECT statements), so
+    * the Settings/Tools page render exceeded reverse-proxy timeouts (e.g.
+    * Cloudflare 524, nginx 504) on large sites.
+    *
+    * The size SELECT now routes through queryAndGetResults() so it inherits
+    * the default 60-second SELECT timeout. On timeout or other error we return
+    * a non-positive sentinel; downstream callers (deleteOldRedirectsCron,
+    * the Settings UI) treat that as "could not determine".
+    *
+    * @return int Bytes used by the logs table, 0 on missing/empty stats,
+    *             or -1 if the lookup itself failed/timed out.
     */
    function getLogDiskUsage() {
-       global $wpdb;
+       $query = 'SELECT (data_length+index_length) tablesize FROM information_schema.tables '
+               . 'WHERE table_name=\'{wp_abj404_logsv2}\'';
 
-       // we have to analyze the table first for the query to be valid.
-       $result = $this->queryAndGetResults("ANALYZE TABLE {wp_abj404_logsv2}");
+       $result = $this->queryAndGetResults($query);
 
-       if ($result['last_error'] != '') {
-           $this->logger->errorMessage("Error: " . esc_html(is_string($result['last_error']) ? $result['last_error'] : ''));
+       if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
+           $err = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
+           if ($err !== '') {
+               $this->logger->errorMessage("Error: " . esc_html($err));
+           }
            return -1;
        }
-       
-       $query = 'SELECT (data_length+index_length) tablesize FROM information_schema.tables ' . 
-               'WHERE table_name=\'{wp_abj404_logsv2}\'';
-       $query = $this->doTableNameReplacements($query);
 
-       $size = $wpdb->get_col($query, 0);
-       if (!is_array($size) || empty($size)) {
+       $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+       if (empty($rows)) {
            return 0;
        }
-       return intval($size[0]);
+
+       $row = is_array($rows[0] ?? null) ? $rows[0] : array();
+       $size = $row['tablesize'] ?? null;
+       if ($size === null || !is_scalar($size)) {
+           return 0;
+       }
+       return intval($size);
    }
 
     /**
