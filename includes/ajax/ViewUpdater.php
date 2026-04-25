@@ -85,10 +85,29 @@ class ABJ_404_Solution_ViewUpdater {
             }
         }
         echo json_encode($payload);
+
         // Test hook: allow unit tests to call handlers without terminating the test process.
         if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
             return;
         }
+
+        // Flush the response to the web server immediately so shutdown hooks
+        // (e.g. hits table rebuild) don't block the HTTP connection. Without this,
+        // reverse proxies like Cloudflare may time out (HTTP 524) if a shutdown
+        // hook runs a slow query, because the HTTP response isn't delivered until
+        // PHP exits.
+        if (function_exists('ob_end_flush')) {
+            while (ob_get_level() > 0) {
+                ob_end_flush();
+            }
+        }
+        if (function_exists('flush')) {
+            flush();
+        }
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+
         exit;
     }
 
