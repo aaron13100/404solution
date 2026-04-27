@@ -203,6 +203,23 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 ## Changelog ##
 
+## Version 4.1.8 (Apr 27, 2026) ##
+
+**Bug Fixes**
+
+* Fixed a critical 4.1.7 regression where the `wp_abj404_logs_hits` cache table was dropped during the 4.1.6 → 4.1.7 upgrade and never recreated. Affected sites saw "Table doesn't exist" errors flooding the debug log and triggering email reports. Sites that already upgraded to 4.1.7 will have the table automatically recreated when they upgrade to 4.1.8 — the cache repopulates on the next scheduled rebuild.
+* Fixed `mysqli_num_fields()` TypeError on PHP 8.1+ MariaDB sites caused by the new query timeout wrapper (4.1.7) being passed to `wpdb::get_results()` for non-SELECT queries. INSERT/UPDATE/DELETE/DDL queries now route through `wpdb::query()` so the wrapper no longer confuses WordPress's query classifier.
+
+**Internal**
+
+* Hardened `repairStrippedViewCacheTable()`: the destructive drop step now requires positive evidence that the file's intended DDL declares an `id` column AND the live table is missing it. The previous "drop if no `id` in live DDL" check was the mechanism by which the 4.1.7 release wiped the `_logs_hits` table.
+* Added regression tests that would have caught the 4.1.7 regression at release time:
+  * `DDLPlaceholderIntegrityTest` — every permanent DDL file's CREATE TABLE target must equal the placeholder, with no trailing suffix outside the braces.
+  * `RepairStrippedTablePositiveEvidenceTest` — drops require positive evidence; tables whose intended DDL has no `id` are never dropped.
+  * `LogsHitsRecoveryTest` and `UpgradeFromPriorVersionIntegrationTest` — recovery path verified end-to-end.
+  * `DataAccessNonSelectRoutingTest` — non-SELECT queries route through `wpdb::query()` even when wrapped with `SET STATEMENT`.
+* Extracted `correctIssuesBefore`, `correctIssuesAfter`, `repairStrippedViewCacheTable`, and the new `recoverMissingLogsHitsTable` into `DatabaseUpgradesEtcTrait_TableRepair` so the host class stays under its line budget.
+
 ## Version 4.1.7 (Apr 25, 2026) ##
 
 **Bug Fixes**
