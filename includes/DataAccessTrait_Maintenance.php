@@ -367,10 +367,24 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
         return is_array($rows[0] ?? null) ? $rows[0] : null;
     }
 
-    /** @return void */
+    /**
+     * Delete duplicate rows in the lookup table.  Called from
+     * correctIssuesBefore() during the upgrade flow, which runs *before*
+     * runInitialCreateTables() — so on a fresh install (or after the
+     * upgrade flow drops a stripped table for clean recreation) the lookup
+     * table may not yet exist.  Suppress errors and skip the table-repair
+     * retry path: there's nothing to clean up if the table doesn't exist,
+     * and we don't want this maintenance call to set the missing_table
+     * admin notice transient that will then surface as a `.notice-error`.
+     *
+     * @return void
+     */
     function correctDuplicateLookupValues(): void {
     	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/correctLookupTableIssue.sql");
-    	$this->queryAndGetResults($query);
+    	$this->queryAndGetResults($query, array(
+    		'log_errors' => false,
+    		'skip_repair' => true,
+    	));
     }
 
     /**

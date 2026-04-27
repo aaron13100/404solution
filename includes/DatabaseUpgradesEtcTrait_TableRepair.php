@@ -170,10 +170,19 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      * are remnants from interrupted background workers; the cache fills in
      * organically on the next 404, so it's safe to delete the empty rows.
      *
+     * Called from correctIssuesBefore() *and* correctIssuesAfter() during
+     * the upgrade flow.  The "before" call may run when the spelling_cache
+     * table doesn't exist (fresh install, or after stripped-table drop), so
+     * suppress errors and skip the table-repair retry: there's nothing to
+     * delete if the table doesn't exist, and we don't want this maintenance
+     * call to set the missing_table admin notice transient.
+     *
      * @return void
      */
     function correctMatchData() {
-    	$this->dao->queryAndGetResults("delete from {wp_abj404_spelling_cache} " .
-    		"where matchdata is null or matchdata = ''");
+    	$this->dao->queryAndGetResults(
+    		"delete from {wp_abj404_spelling_cache} where matchdata is null or matchdata = ''",
+    		array('log_errors' => false, 'skip_repair' => true)
+    	);
     }
 }
