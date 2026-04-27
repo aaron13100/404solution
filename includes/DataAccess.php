@@ -883,8 +883,21 @@ class ABJ_404_Solution_DataAccess {
             $previousSuppressState = $wpdb->suppress_errors(true);
         }
 
+        // Route by query type: SELECT-style queries (SELECT, SHOW, EXPLAIN, DESCRIBE)
+        // produce result rows and use $wpdb->get_results(). Other queries (INSERT,
+        // UPDATE, DELETE, DDL, SET, ...) use $wpdb->query() — get_results() would
+        // call mysqli_num_fields() on a `true` result on PHP 8.1+ and TypeError.
+        // The 4.1.7 SET STATEMENT timeout wrapping also breaks wpdb's leading-keyword
+        // routing, so the detection looks PAST any SET STATEMENT prefix.
+        $producesRows = $this->queryProducesResultRows($query);
+
         $result = array();
-        $result['rows'] = $wpdb->get_results($query, $resultType);
+        if ($producesRows) {
+            $result['rows'] = $wpdb->get_results($query, $resultType);
+        } else {
+            $wpdb->query($query);
+            $result['rows'] = array();
+        }
 
         $result['elapsed_time'] = $timer->stop();
         if (function_exists('abj404_benchmark_record_db_query')) {
@@ -892,7 +905,7 @@ class ABJ_404_Solution_DataAccess {
         }
         $this->harvestWpdbResult($result);
 
-        if (!is_array($result['rows'])) {
+        if ($producesRows && !is_array($result['rows'])) {
             // In production (WP_DEBUG off), only log SQL filename to avoid PII exposure
             $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
             $this->logger->errorMessage("Query result is not an array. Query: " . $sqlInfo,
@@ -903,7 +916,12 @@ class ABJ_404_Solution_DataAccess {
             // Retry once after reconnect for transient connection drops.
             $this->ensureConnection();
             $wpdb->flush();
-            $result['rows'] = $wpdb->get_results($query, $resultType);
+            if ($producesRows) {
+                $result['rows'] = $wpdb->get_results($query, $resultType);
+            } else {
+                $wpdb->query($query);
+                $result['rows'] = array();
+            }
             $this->harvestWpdbResult($result);
         }
 
@@ -921,7 +939,12 @@ class ABJ_404_Solution_DataAccess {
         if ($result['last_error'] !== '' && $this->isDeadlockOrLockTimeoutError($result['last_error'])) {
             /** @var wpdb $wpdb */
             usleep(50000); // 50 ms — enough for most short-lived locks to release
-            $result['rows'] = $wpdb->get_results($query, $resultType);
+            if ($producesRows) {
+                $result['rows'] = $wpdb->get_results($query, $resultType);
+            } else {
+                $wpdb->query($query);
+                $result['rows'] = array();
+            }
             $this->harvestWpdbResult($result);
             if ($result['last_error'] !== '' && $this->isDeadlockOrLockTimeoutError($result['last_error'])) {
                 $this->setPluginDbNotice('lock_timeout', $this->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $result['last_error']);
@@ -1060,6 +1083,34 @@ class ABJ_404_Solution_DataAccess {
         // SQL loaded from .sql files is wrapped in leading comments.
         // Treat "/* ... */ SELECT ..." as a SELECT query for timeout purposes.
         return preg_match('/^\s*(?:\/\*[\s\S]*?\*\/\s*)*SELECT\s/i', $query) === 1;
+    }
+
+    /**
+     * Returns true if the query produces a result set (rows), so it should
+     * be sent through $wpdb->get_results(). Returns false for INSERT, UPDATE,
+     * DELETE, REPLACE, DDL, SET, etc. — those should go through $wpdb->query().
+     *
+     * Sees past leading SQL comments and any `SET STATEMENT max_statement_time=N FOR `
+     * timeout wrapper. The wrapper is critical because applyQueryTimeout() prepends
+     * it on MariaDB, which would otherwise mask the underlying statement type.
+     *
+     * Misclassification triggered the 4.1.7 spell-check `mysqli_num_fields(true)`
+     * TypeError on PHP 8.1+ MariaDB sites — see DataAccessNonSelectRoutingTest.
+     *
+     * @param string $query
+     * @return bool
+     */
+    private function queryProducesResultRows(string $query): bool {
+        $stripped = (string)preg_replace('/^\s*(?:\/\*[\s\S]*?\*\/\s*)+/', '', $query);
+        $stripped = (string)preg_replace(
+            '/^\s*SET\s+STATEMENT\s+\w+\s*=\s*\d+\s+FOR\s+/i',
+            '',
+            $stripped,
+            1
+        );
+        // Strip nested leading comments inside the SET STATEMENT wrapper too.
+        $stripped = (string)preg_replace('/^\s*(?:\/\*[\s\S]*?\*\/\s*)+/', '', $stripped);
+        return preg_match('/^\s*(SELECT|SHOW|EXPLAIN|DESCRIBE|DESC)\s/i', $stripped) === 1;
     }
 
     /**

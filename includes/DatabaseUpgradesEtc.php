@@ -8,6 +8,7 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/DatabaseUpgradesEtcTrait_NGram.php';
 require_once __DIR__ . '/DatabaseUpgradesEtcTrait_Maintenance.php';
 require_once __DIR__ . '/DatabaseUpgradesEtcTrait_PluginUpdate.php';
+require_once __DIR__ . '/DatabaseUpgradesEtcTrait_TableRepair.php';
 
 /* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
@@ -48,6 +49,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	use ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait;
 	use ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait;
 	use ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait;
+	use ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait;
 
 	/**
 	 * Constructor with dependency injection.
@@ -219,66 +221,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	if ($updatingToNewVersion) {
     		$this->correctIssuesAfter();
     	}
-    }
-    
-    /**
-     * Correct any possible outstanding issues.
-     * @return void
-     */
-    function correctIssuesBefore() {
-    	$this->dao->correctDuplicateLookupValues();
-
-    	// 3.3.4+: Repair any plugin table that was stripped of all columns by a
-    	// DDL parsing bug.  The 3.3.3 bug only affected view_cache, but any future
-    	// DDL file shipped without parseable column syntax could wipe any table.
-    	// Dropped tables are pure caches or safely recreatable; runInitialCreateTables()
-    	// will recreate them immediately after.
-    	$this->repairStrippedViewCacheTable();
-
-    	$this->correctMatchData();
-    }
-
-    /**
-     * For every permanent plugin table, check whether the table exists but is
-     * missing its primary `id` column — the signature of the 3.3.3 column-drop
-     * bug.  If a table is stripped, drop it so that runInitialCreateTables() can
-     * recreate it cleanly from the DDL file.
-     *
-     * Generalised in 3.3.5 from a view_cache-only fix to cover all plugin tables:
-     * the 3.3.3 bug only affected view_cache.sql, but any future DDL file shipped
-     * without parseable backtick column syntax would trigger the same data wipe on
-     * that table with no repair path.
-     *
-     * @return void
-     */
-    function repairStrippedViewCacheTable() {
-    	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
-    		$tableName = $this->dao->doTableNameReplacements($ddlEntry['placeholder']);
-    		$ddl = $this->dao->getCreateTableDDL($tableName);
-
-    		// Table doesn't exist at all — nothing to repair.
-    		if (empty($ddl)) {
-    			continue;
-    		}
-
-    		// If the DDL contains the `id` column the table is intact.
-    		if (stripos($ddl, '`id`') !== false || preg_match('/\bid\b/', $ddl)) {
-    			continue;
-    		}
-
-    		// Table exists but is missing its primary column — it was stripped.
-    		$this->logger->infoMessage("Repairing stripped plugin table " . $tableName .
-    			" (missing id column — caused by DDL parsing bug). Dropping for clean recreation.");
-    		$this->dao->queryAndGetResults("DROP TABLE IF EXISTS " . $tableName);
-    	}
-    }
-    
-    /**
-     * Correct any possible outstanding issues.
-     * @return void
-     */
-    function correctIssuesAfter() {
-    	$this->correctMatchData();
     }
 
     /**
@@ -772,12 +714,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		return $columns;
 	}
 
-    /** @return void */
-    function correctMatchData() {
-    	$this->dao->queryAndGetResults("delete from {wp_abj404_spelling_cache} " .
-    		"where matchdata is null or matchdata = ''");
-    }
-    
 	/** When certain columns are created we have to populate data.
      * @param string $tableName
      * @param string $colName
@@ -858,7 +794,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	     * @param string $createTableSql
 	     * @return string
 	     */
-	    private function applyPluginTableCharsetCollate($createTableSql) {
+	    function applyPluginTableCharsetCollate($createTableSql) {
 	    	global $wpdb;
 	    	if (!is_string($createTableSql) || $createTableSql === '') {
 	    		return $createTableSql;
