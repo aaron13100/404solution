@@ -156,6 +156,13 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
     	$this->logger->infoMessage("Recreating missing " . $tableName .
     		" (lost during the 4.1.6→4.1.7 upgrade). The scheduled rebuild will repopulate it.");
     	$this->dao->queryAndGetResults($finalDdl);
+
+    	// The missing-table notice (set when ALTER TABLE failed during the 4.1.7
+    	// activation) is now stale — the table has been recovered.  Clear it so
+    	// the admin does not see an error notice on the next page load.
+    	if (function_exists('delete_transient')) {
+    		delete_transient('abj404_plugin_db_notice');
+    	}
     }
 
     /**
