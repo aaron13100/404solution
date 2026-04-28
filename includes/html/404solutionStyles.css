@@ -1424,7 +1424,7 @@ html[data-theme="obsidian"] .abj404-tab-branding {
 
 .abj404-search-box input {
     width: 100%;
-    padding: 10px 12px 10px 40px;
+    padding: 10px 12px;
     border: 1px solid var(--abj404-border, #8c8f94);
     border-radius: 4px;
     font-size: 14px;
@@ -1437,18 +1437,6 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     outline: none;
     border-color: var(--abj404-accent, #2271b1);
     box-shadow: 0 0 0 1px var(--abj404-accent, #2271b1);
-}
-
-.abj404-search-icon,
-.abj404-search-box svg {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--abj404-text-muted, #646970);
-    pointer-events: none;
-    width: 16px;
-    height: 16px;
 }
 
 .abj404-filter-select {
