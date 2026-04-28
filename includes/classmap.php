@@ -9,7 +9,45 @@ if (!defined('ABSPATH')) {
 
 $base = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 return array(
+    // Traits used by host classes via `use TraitName`.  Each host class
+    // require_once's its trait files at the top of its source file, but under
+    // ParaTest's 16-worker parallel runs Patchwork's stream wrapper can hit
+    // fd saturation and silently fail to open a trait source — the autoloader
+    // then needs to find the trait by name.  Without these entries the
+    // autoloader returns null, the host class declaration hits "Trait not
+    // found", and the test fails with no useful error.
     'ABJ_404_Solution_AjaxSecurityTrait' => $base . 'includes/ajax/AjaxSecurityTrait.php',
+    'ABJ_404_Solution_DataAccess_ErrorClassificationTrait' => $base . 'includes/DataAccessTrait_ErrorClassification.php',
+    'ABJ_404_Solution_DataAccess_LogsTrait' => $base . 'includes/DataAccessTrait_Logs.php',
+    'ABJ_404_Solution_DataAccess_MaintenanceTrait' => $base . 'includes/DataAccessTrait_Maintenance.php',
+    'ABJ_404_Solution_DataAccess_RedirectsTrait' => $base . 'includes/DataAccessTrait_Redirects.php',
+    'ABJ_404_Solution_DataAccess_StatsTrait' => $base . 'includes/DataAccessTrait_Stats.php',
+    'ABJ_404_Solution_DataAccess_ViewQueriesTrait' => $base . 'includes/DataAccessTrait_ViewQueries.php',
+    'ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait' => $base . 'includes/DatabaseUpgradesEtcTrait_Maintenance.php',
+    'ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait' => $base . 'includes/DatabaseUpgradesEtcTrait_NGram.php',
+    'ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait' => $base . 'includes/DatabaseUpgradesEtcTrait_PluginUpdate.php',
+    'ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait' => $base . 'includes/DatabaseUpgradesEtcTrait_TableRepair.php',
+    'ABJ_404_Solution_PluginLogicTrait_AdminActions' => $base . 'includes/PluginLogicTrait_AdminActions.php',
+    'ABJ_404_Solution_PluginLogicTrait_ImportExport' => $base . 'includes/PluginLogicTrait_ImportExport.php',
+    'ABJ_404_Solution_PluginLogicTrait_Lifecycle' => $base . 'includes/PluginLogicTrait_Lifecycle.php',
+    'ABJ_404_Solution_PluginLogicTrait_PageOrdering' => $base . 'includes/PluginLogicTrait_PageOrdering.php',
+    'ABJ_404_Solution_PluginLogicTrait_SettingsUpdate' => $base . 'includes/PluginLogicTrait_SettingsUpdate.php',
+    'ABJ_404_Solution_PluginLogicTrait_UrlNormalization' => $base . 'includes/PluginLogicTrait_UrlNormalization.php',
+    // SpellChecker and View traits use unprefixed names (legacy from earlier
+    // refactor).  The test bootstrap autoloader is classmap-driven (no prefix
+    // gate) so these resolve correctly when the host class's require_once
+    // silently fails under fd pressure.
+    'SpellCheckerTrait_CandidateFiltering' => $base . 'includes/SpellCheckerTrait_CandidateFiltering.php',
+    'SpellCheckerTrait_LevenshteinEngine' => $base . 'includes/SpellCheckerTrait_LevenshteinEngine.php',
+    'SpellCheckerTrait_PostListeners' => $base . 'includes/SpellCheckerTrait_PostListeners.php',
+    'SpellCheckerTrait_URLMatching' => $base . 'includes/SpellCheckerTrait_URLMatching.php',
+    'ViewTrait_Logs' => $base . 'includes/ViewTrait_Logs.php',
+    'ViewTrait_Redirects' => $base . 'includes/ViewTrait_Redirects.php',
+    'ViewTrait_RedirectsTable' => $base . 'includes/ViewTrait_RedirectsTable.php',
+    'ViewTrait_Settings' => $base . 'includes/ViewTrait_Settings.php',
+    'ViewTrait_Shared' => $base . 'includes/ViewTrait_Shared.php',
+    'ViewTrait_Stats' => $base . 'includes/ViewTrait_Stats.php',
+    'ViewTrait_UI' => $base . 'includes/ViewTrait_UI.php',
     'ABJ_404_Solution_Ajax_CrossPluginImporter' => $base . 'includes/ajax/Ajax_CrossPluginImporter.php',
     'ABJ_404_Solution_Ajax_Php' => $base . 'includes/ajax/Ajax_Php.php',
     'ABJ_404_Solution_Ajax_TrendData' => $base . 'includes/ajax/Ajax_TrendData.php',
