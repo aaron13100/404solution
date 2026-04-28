@@ -69,6 +69,13 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      * `id` column AND the live table is missing it — absence of `id` in a file
      * that never declared one is not evidence of stripping.
      *
+     * 4.1.8: Also called from runInitialCreateTables() so that any caller of
+     * createDatabaseTables() — including non-upgrade callers like
+     * deleteOldRedirectsCron's maintenance pass — repairs stripped tables
+     * before CREATE TABLE IF NOT EXISTS turns the broken state into a permanent
+     * "id-less" table via verifyColumns ALTER ADD.  Idempotent: when the live
+     * DDL already declares `id`, every iteration short-circuits.
+     *
      * @return void
      */
     function repairStrippedViewCacheTable() {
