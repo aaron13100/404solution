@@ -7,6 +7,84 @@ if (!defined('ABSPATH')) {
 trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
 
     /**
+     * Auto-recover from a collation mismatch detected at query time.
+     *
+     * Strategy (matches the project's "try, recover, retry, then notify" pattern,
+     * but the "notify" step is intentionally omitted per owner directive — collation
+     * issues must NEVER surface to the user):
+     *
+     *  1. Detect "Illegal mix of collations" / "Unknown collation" in $result['last_error'].
+     *  2. Honor a 1-hour cooldown transient (`abj404_collation_recovery_cooldown`) so a
+     *     storm of collation errors doesn't run correctCollations() repeatedly.
+     *  3. Call ABJ_404_Solution_DatabaseUpgradesEtc::correctCollations() which converges
+     *     all plugin tables to a single utf8mb4 collation (column-level + table-level).
+     *  4. Set the cooldown transient.
+     *  5. Retry the original query once.  If the retry succeeds, harvest the result; if
+     *     it still fails, return — the caller's $reportError logic downgrades collation
+     *     errors to WARN log entries (no email, no admin notice).
+     *
+     * Self-recursion is prevented by setting a static guard while correctCollations() runs:
+     * the ALTER TABLE statements that correctCollations() emits go back through
+     * queryAndGetResults(), and any collation error encountered there must NOT trigger
+     * another recovery (it would deadlock on the cooldown).
+     *
+     * @param string $query
+     * @param array<string, mixed> $result passed by reference
+     * @param bool   $producesRows Whether the query returns result rows.
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType wpdb output type for get_results().
+     * @return void
+     */
+    private function recoverFromCollationMismatchAndRetry(string $query, array &$result, bool $producesRows, string $resultType): void {
+        // Re-entry guard: if correctCollations()'s own ALTER TABLE hits a collation
+        // error, do NOT recurse — return and let the original error propagate.
+        if (self::$collationRecoveryInProgress) {
+            return;
+        }
+
+        $cooldownKey = 'abj404_collation_recovery_cooldown';
+        $cooldownUntil = $this->getRuntimeFlag($cooldownKey);
+        $onCooldown = is_scalar($cooldownUntil) && (int)$cooldownUntil > time();
+
+        if (!$onCooldown) {
+            self::$collationRecoveryInProgress = true;
+            try {
+                $this->logger->infoMessage("Collation mismatch detected — running correctCollations() to converge plugin tables.");
+                if (class_exists('ABJ_404_Solution_DatabaseUpgradesEtc')) {
+                    $upgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+                    if (method_exists($upgrades, 'correctCollations')) {
+                        $upgrades->correctCollations();
+                    }
+                }
+            } catch (Throwable $e) {
+                $this->logger->warn("correctCollations() threw during collation auto-recovery: " . $e->getMessage());
+            } finally {
+                self::$collationRecoveryInProgress = false;
+                // Set the 1-hour cooldown regardless of success/failure so we don't
+                // hammer correctCollations() on a hot query path.
+                $this->setRuntimeFlag($cooldownKey, time() + 3600, 3600);
+            }
+        }
+
+        // Retry the original query once, whether or not we ran correctCollations().
+        // After a successful run the underlying mismatch should be gone; if cooldown
+        // was active the retry is still cheap and may succeed for transient reasons.
+        global $wpdb;
+        /** @var wpdb $wpdb */
+        $wpdb->flush();
+        if ($producesRows) {
+            $result['rows'] = $wpdb->get_results($query, $resultType);
+        } else {
+            $wpdb->query($query);
+            $result['rows'] = array();
+        }
+        $this->harvestWpdbResult($result);
+
+        if ($result['last_error'] === '') {
+            $this->logger->debugMessage("Collation auto-recovery succeeded; query retry passed.");
+        }
+    }
+
+    /**
      * Tables that may be safely dropped and recreated after repeated repair failures.
      * Tables NOT in this list (e.g. redirects, engine_profiles, redirect_conditions,
      * ngram_cache) will never be auto-dropped because they contain user-configured

@@ -259,7 +259,12 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             return;
         }
         if ($this->isCollationError($errorText)) {
-            $this->setPluginDbNotice('collation', $this->localizeOrDefault('Database collation mismatch was detected. A compatibility fallback was used where possible.'), $errorText);
+            // Per owner directive: collation issues must NEVER surface as user notices.
+            // The plugin auto-recovers by running correctCollations() at query time
+            // (see DataAccess::recoverFromCollationMismatchAndRetry()).  Here we only
+            // log the original error at debug level so developers can see it in
+            // debug.txt without the user ever being notified.
+            $this->logger->debugMessage("Collation mismatch detected (auto-recovery will run): " . $errorText);
         }
     }
 

@@ -786,24 +786,31 @@ class ABJ_404_Solution_WordPress_Connector {
             $dbNotice = get_transient('abj404_plugin_db_notice');
             if (is_array($dbNotice) && isset($dbNotice['message']) && is_string($dbNotice['message'])) {
                 $type = isset($dbNotice['type']) && is_string($dbNotice['type']) ? $dbNotice['type'] : 'warning';
-                // Map internal type names to WP notice CSS classes. Per the
-                // defensive-coding philosophy, infrastructure issues the plugin
-                // can degrade past (collation mismatch, read-only DB, disk full,
-                // quota exceeded, stale cache, generic warning) render as
-                // notice-warning. Only failures that leave the plugin unable to
-                // function (e.g. missing tables that can't be repaired) escalate
-                // to notice-error.
-                $warningTypes = array(
-                    'stale_permalink_cache',
-                    'warning',
-                    'collation',
-                    'read_only',
-                    'disk_full',
-                    'query_quota',
-                );
-                $cssClass = in_array($type, $warningTypes, true) ? 'notice-warning' : 'notice-error';
-                echo '<div class="notice ' . esc_attr($cssClass) . '"><p>' .
-                    esc_html($dbNotice['message']) . '</p></div>';
+                // Per owner directive: collation issues must NEVER surface as user notices.
+                // The plugin auto-recovers by running correctCollations() at query time.
+                // Skip rendering even if a stale 'collation' transient exists from a
+                // previous plugin version.
+                if ($type === 'collation') {
+                    // intentionally do not render
+                } else {
+                    // Map internal type names to WP notice CSS classes. Per the
+                    // defensive-coding philosophy, infrastructure issues the plugin
+                    // can degrade past (read-only DB, disk full, quota exceeded,
+                    // stale cache, generic warning) render as notice-warning. Only
+                    // failures that leave the plugin unable to function (e.g.
+                    // missing tables that can't be repaired) escalate to
+                    // notice-error.
+                    $warningTypes = array(
+                        'stale_permalink_cache',
+                        'warning',
+                        'read_only',
+                        'disk_full',
+                        'query_quota',
+                    );
+                    $cssClass = in_array($type, $warningTypes, true) ? 'notice-warning' : 'notice-error';
+                    echo '<div class="notice ' . esc_attr($cssClass) . '"><p>' .
+                        esc_html($dbNotice['message']) . '</p></div>';
+                }
             }
         }
 

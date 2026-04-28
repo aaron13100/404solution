@@ -70,6 +70,11 @@ class ABJ_404_Solution_DataAccess {
     private static $tableRepairInProgress = false;
     /** @var bool Prevent recursive invalid-data retry attempts. */
     private static $invalidDataRetryInProgress = false;
+    /** @var bool Prevent recursive collation auto-recovery — correctCollations()
+     *  emits ALTER TABLE statements that re-enter queryAndGetResults(); without
+     *  this guard a collation error inside correctCollations() would deadlock on
+     *  the cooldown transient and recurse indefinitely. */
+    private static $collationRecoveryInProgress = false;
     /** @var string Current wpdb result type for queryAndGetResults (ARRAY_A or OBJECT). */
     private $currentResultType = ARRAY_A;
     /** @var bool Ensure view cache table DDL runs at most once per request. */
@@ -951,6 +956,14 @@ class ABJ_404_Solution_DataAccess {
             }
         }
 
+        // Collation mismatch ("Illegal mix of collations" / "Unknown collation"):
+        // run correctCollations() (rate-limited 1×/hour) to converge plugin tables
+        // back to a single utf8mb4 collation, then retry the query once.  This
+        // path is silent — the user is never notified about collation issues.
+        if ($result['last_error'] !== '' && $this->isCollationError($result['last_error'])) {
+            $this->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
+        }
+
         // Query timeout (MySQL errno 3024 / MariaDB errno 1969): log the slow
         // query so it appears in debug reports, then return empty results.
         if ($result['last_error'] !== '' && $this->isQueryTimeoutError($result['last_error'])) {
@@ -1061,8 +1074,11 @@ class ABJ_404_Solution_DataAccess {
                     $this->serverSideIssueChecked = true;
                     $existing = $this->getRuntimeFlag('abj404_plugin_db_notice');
                     if (is_array($existing) && !empty($existing['type'])
-                        && $existing['type'] !== 'collation'
                         && $existing['type'] !== 'stale_permalink_cache') {
+                        // Per owner directive: collation notices must NEVER reach the
+                        // user.  If a stale 'collation' transient exists from an older
+                        // plugin version, opportunistically clear it so it cannot be
+                        // shown by any code path.
                         $this->serverSideIssueNoted = true;
                     }
                 }
