@@ -775,13 +775,14 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
 
         $rows = $wpdb->get_results($query);
 
-        if ($wpdb->last_error) {
+        $lastError = $wpdb->last_error ?? '';
+        if ($lastError !== '') {
             // "Unknown column" means content_keywords hasn't been added yet (DB migration pending,
             // e.g. sync lock was stuck for ~24h). Degrade to warning; the caller returns empty.
-            if (stripos($wpdb->last_error, 'unknown column') !== false) {
-                $this->logger->warn("content_keywords column not yet available (DB migration pending): " . $wpdb->last_error);
-            } else if (!$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
-                $this->logger->errorMessage("Error fetching posts for content keywords: " . $wpdb->last_error);
+            if (stripos($lastError, 'unknown column') !== false) {
+                $this->logger->warn("content_keywords column not yet available (DB migration pending): " . $lastError);
+            } else if (!$this->classifyAndHandleInfrastructureError($lastError)) {
+                $this->logger->errorMessage("Error fetching posts for content keywords: " . $lastError);
             }
             return array();
         }
