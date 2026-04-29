@@ -190,23 +190,30 @@ class ABJ_404_Solution_FrontendRequestPipeline {
      */
     function process404() {
         if (!is_404() || is_admin()) {
+            // SAFE_BAIL: not a 404 or in wp-admin — nothing for us to do.
             return;
         }
 
-        // Skip 404 processing when a database migration is pending.
-        // SQL files (e.g. getPermalinkFromURL.sql) may reference columns that have
-        // not been added yet, causing "Unknown column" errors. The migration runs
-        // on the next admin page load; frontend requests simply see the theme 404.
+        // Self-heal a stale DB_VERSION on the frontend so end users get redirects
+        // without needing an admin visit (task 233). If recovery cannot close the
+        // gap (lock held, cooldown active, or migration repeatedly throws), fall
+        // through to a degraded redirect lookup (task 234) so manual redirects
+        // keep serving instead of every 404 falling to the theme 404 page.
+        $degradedMode = false;
         if (defined('ABJ404_VERSION')) {
             $options = $this->logic->getOptions(true);
             if (isset($options['DB_VERSION']) && $options['DB_VERSION'] != ABJ404_VERSION) {
-                return;
+                $options = $this->recoverDbVersionIfStale($options);
+                if (!isset($options['DB_VERSION']) || $options['DB_VERSION'] != ABJ404_VERSION) {
+                    $degradedMode = true;
+                }
             }
         }
 
         ABJ_404_Solution_RequestContext::getInstance()->process_start_time = microtime(true);
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
         if ($userRequest === null) {
+            // SAFE_BAIL: no user request context — cannot resolve a URL to look up.
             return;
         }
 
@@ -219,6 +226,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $this->addTraceStep('Ignore list', 'Matched — request ignored');
             $this->dao->logRedirectHit($pathOnly, '404', 'ignore_donotprocess', null, $this->trace);
             $this->emitBenchmarkHeadersIfEnabled();
+            // SAFE_BAIL: ignore_donotprocess matched — admin opted this UA out.
             return;
         }
         $this->addTraceStep('Ignore list', 'Not ignored');
@@ -235,7 +243,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $options = $this->logic->getOptions();
 
         $lookupStart = microtime(true);
-        $redirect = $this->dao->getActiveRedirectForURL($requestedURL);
+        $redirect = $this->dao->getActiveRedirectForURL($requestedURL, $degradedMode);
         $this->recordRedirectLookupTiming($lookupStart);
         $this->logAReallyLongDebugMessage($options, $requestedURL, $redirect);
         $autoRedirectsAreOn = !array_key_exists('auto_redirects', $options) || $options['auto_redirects'] == '1';
@@ -249,7 +257,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
             if ($requestedURLWithoutComments != $requestedURL) {
                 $lookupStart = microtime(true);
-                $wcRedirect = $this->dao->getActiveRedirectForURL($requestedURLWithoutComments);
+                $wcRedirect = $this->dao->getActiveRedirectForURL($requestedURLWithoutComments, $degradedMode);
                 $this->recordRedirectLookupTiming($lookupStart);
                 $matched = $this->evaluateRedirectCandidate($wcRedirect, ' (without comments)', $options);
                 if ($matched !== null) {
@@ -821,6 +829,64 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             return true;
         }
         exit;
+    }
+
+    /**
+     * Self-heal a stale DB_VERSION on the frontend so end users get redirects
+     * without needing an admin visit.
+     *
+     * Returns the (possibly fresh) options array. Caller must re-check
+     * DB_VERSION before continuing — this method may return without healing
+     * (cooldown active, lock held by another worker, or upgrade failed).
+     *
+     * Throttled by a transient so concurrent 404s don't all queue on the
+     * synchronizer lock. updateToNewVersion() is itself locked
+     * (synchronizerAcquireLockTry), so the worst case is a single 300ms
+     * lock-acquire attempt per cooldown window.
+     *
+     * @param array<string, mixed> $options Current options as returned by getOptions(true).
+     * @return array<string, mixed> Options after attempted recovery.
+     */
+    private function recoverDbVersionIfStale(array $options): array {
+        $cooldownKey = 'abj404_frontend_db_recovery_cooldown';
+
+        if (function_exists('get_transient') && get_transient($cooldownKey)) {
+            return $options;
+        }
+
+        // Set the cooldown BEFORE attempting recovery so concurrent requests
+        // bail immediately rather than piling onto the lock.
+        if (function_exists('set_transient')) {
+            set_transient($cooldownKey, '1', 5 * 60);
+        }
+
+        try {
+            $upgraded = $this->logic->updateToNewVersion($options);
+            if (is_array($upgraded)) {
+                $options = $upgraded;
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warn('Frontend DB version recovery failed: ' . $e->getMessage());
+            return $options;
+        }
+
+        // updateToNewVersion ends in updateOptions() which clears the resolved-
+        // options cache, so getOptions(true) returns fresh values from the DB.
+        $fresh = $this->logic->getOptions(true);
+        if (is_array($fresh) && isset($fresh['DB_VERSION'])
+                && $fresh['DB_VERSION'] == ABJ404_VERSION) {
+            return $fresh;
+        }
+
+        $observed = (is_array($fresh) && isset($fresh['DB_VERSION']) && is_scalar($fresh['DB_VERSION']))
+            ? (string)$fresh['DB_VERSION']
+            : '(missing)';
+        $this->logger->warn(sprintf(
+            'Frontend DB_VERSION still stale after recovery attempt: have=%s expected=%s',
+            $observed,
+            ABJ404_VERSION
+        ));
+        return is_array($fresh) ? $fresh : $options;
     }
 
     /**
