@@ -446,6 +446,58 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         self::$regexCacheDisabled = false;
     }
 
+    /** Approximate row count for the logsv2 table.
+     *
+     * Reads `TABLE_ROWS` from information_schema.tables — the same metadata
+     * source `getLogDiskUsage()` uses. InnoDB maintains an approximate row
+     * count there; reading it is O(1) and avoids the full index scan that an
+     * exact `SELECT COUNT(id) FROM ...logsv2` requires (multi-second on a
+     * 10M-row table).
+     *
+     * Use this in cron / size-estimation contexts where a ~1% approximation
+     * is acceptable. For exact pagination counts, use {@see getLogsCount()}.
+     *
+     * Fallback chain:
+     *   1. information_schema.TABLE_ROWS — happy path on every modern host.
+     *   2. exact COUNT(id) — when TABLE_ROWS is NULL (brand-new install /
+     *      never analyzed) or information_schema returns no row.
+     *   3. 0 — when the fallback also fails (read-only replica, dropped
+     *      connection, restricted info_schema). Caller guards the value
+     *      with `max(1, ...)` before using it as a denominator.
+     *
+     * The information_schema query is always scoped to the current schema
+     * (`table_schema = DATABASE()`) so multisite installs do not aggregate
+     * rows from sibling schemas with the same table name.
+     *
+     * @return int approximate number of rows in wp_abj404_logsv2.
+     */
+    function getLogsCountApprox(): int {
+        $query = "SELECT TABLE_ROWS FROM information_schema.tables "
+            . "WHERE table_name = '{wp_abj404_logsv2}' "
+            . "AND table_schema = DATABASE()";
+
+        $result = $this->queryAndGetResults($query, array('log_errors' => false));
+
+        $hasError = !empty($result['timed_out'])
+            || (isset($result['last_error']) && $result['last_error'] !== '');
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+
+        if (!$hasError && !empty($rows)) {
+            $row = is_array($rows[0] ?? null) ? $rows[0] : array();
+            // MySQL drivers may return information_schema column names in
+            // varying cases; normalize before lookup.
+            $row = array_change_key_case($row);
+            $tableRows = $row['table_rows'] ?? null;
+            if ($tableRows !== null && is_scalar($tableRows)) {
+                return (int)$tableRows;
+            }
+        }
+
+        // Fallback: exact COUNT. Only triggers when info_schema is unreachable
+        // (some shared hosts) or TABLE_ROWS is NULL (a never-analyzed table).
+        return $this->getLogsCount(0);
+    }
+
     /**
      * @global type $wpdb
      * @param int $logID only return results that correspond to the URL of this $logID. Use 0 to get all records.

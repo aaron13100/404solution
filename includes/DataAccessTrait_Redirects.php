@@ -237,7 +237,11 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
         $maxLogSizeBytes = (array_key_exists('maximum_log_disk_usage', $options) ? $options['maximum_log_disk_usage'] : 100) * 1024 * 1000;
         
-        $totalLogLines = $abj404dao->getLogsCount(0);
+        // Approximation: information_schema.TABLE_ROWS instead of a full
+        // COUNT(id) scan. The value is only used as the denominator in
+        // averageSizePerLine, so a ~1% drift is irrelevant. On 10M-row
+        // logsv2 this saves a multi-second index scan every daily cron tick.
+        $totalLogLines = $abj404dao->getLogsCountApprox();
         $averageSizePerLine = max($logsSizeBytes, 1) / max($totalLogLines, 1);
         $logLinesToKeep = ceil($maxLogSizeBytes / $averageSizePerLine);
         $logLinesToDelete = max($totalLogLines - $logLinesToKeep, 0);
