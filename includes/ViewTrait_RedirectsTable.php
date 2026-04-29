@@ -381,8 +381,15 @@ trait ViewTrait_RedirectsTable {
         // Modern table page wrapper
         echo '<div class="abj404-table-page">';
 
-        // Health status summary — placeholder, populated via AJAX so page renders instantly
-        echo '<div class="abj404-health-bar" data-health-bar-placeholder="1">';
+        // Health status summary — placeholder, populated via a dedicated AJAX call
+        // (ajaxRefreshHealthBar) so the slow getHighImpactCapturedCount() query
+        // never blocks the table's first paint. JS reads the attrs below to fire
+        // an independent request as soon as the placeholder is in the DOM.
+        $healthBarNonce = wp_create_nonce('abj404_refreshHealthBar');
+        echo '<div class="abj404-health-bar" data-health-bar-placeholder="1"'
+            . ' data-health-bar-ajax-url="' . esc_attr(admin_url('admin-ajax.php')) . '"'
+            . ' data-health-bar-ajax-action="ajaxRefreshHealthBar"'
+            . ' data-health-bar-nonce="' . esc_attr($healthBarNonce) . '">';
         echo '<span class="abj404-health-dot"></span>';
         echo esc_html__('Loading status…', '404-solution');
         echo '</div>';

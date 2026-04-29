@@ -28,6 +28,8 @@ class ABJ_404_Solution_ViewUpdater {
                 array($me, 'getPaginationLinks'));
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxRefreshStatsDashboard',
                 array($me, 'refreshStatsDashboard'));
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxRefreshHealthBar',
+                array($me, 'refreshHealthBar'));
         // wp_ajax_nopriv_ is for normal users
     }
 
@@ -372,13 +374,12 @@ class ABJ_404_Solution_ViewUpdater {
                 $context['stage'] = 'table_redirects';
                 $data['table'] = $view->getAdminRedirectsPageTable($subpage);
 
-                // Include tab counts and health bar data so the page shell
-                // can render instantly with placeholders and fill them in.
+                // Include tab counts so the page shell can render instantly with
+                // placeholders and fill them in. The slower health-bar query
+                // (getHighImpactCapturedCount, see refreshHealthBar()) is fetched
+                // in a separate AJAX call so it never blocks first paint of the table.
                 $context['stage'] = 'redirect_status_counts';
                 $statusCounts = $abj404dao->getRedirectStatusCounts();
-                // Provide the captured filter constant so JS can build the "View" link.
-                $statusCounts['_capturedFilter'] = ABJ404_STATUS_CAPTURED;
-                $data['statusCounts'] = $statusCounts;
                 // Tab counts keyed by filter value for JS tab updates.
                 $data['tabCounts'] = array(
                     '0' => $statusCounts['all'] ?? 0,
@@ -386,8 +387,6 @@ class ABJ_404_Solution_ViewUpdater {
                     (string)ABJ404_STATUS_AUTO => $statusCounts['auto'] ?? 0,
                     (string)ABJ404_TRASH_FILTER => $statusCounts['trash'] ?? 0,
                 );
-                $context['stage'] = 'high_impact_count';
-                $data['highImpactCapturedCount'] = $abj404dao->getHighImpactCapturedCount();
 
             } else if ($subpage == 'abj404_captured') {
                 $context['stage'] = 'table_captured';
@@ -616,5 +615,118 @@ class ABJ_404_Solution_ViewUpdater {
             return;
         }
     }
-    
+
+    /**
+     * Returns the data needed to render the redirects-page health bar:
+     * the high-impact captured-URL count and the redirect status counts
+     * (so the JS can compute "active = all - trash" and build the View link).
+     *
+     * Decoupled from ajaxUpdatePaginationLinks because getHighImpactCapturedCount()
+     * can run for tens of seconds on a cold cache against multi-million-row logs;
+     * letting it block the table response leaves the page stuck on "Loading…".
+     *
+     * @return void
+     */
+    function refreshHealthBar() {
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+
+        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
+        $page = $abj404dao->getPostOrGetSanitize('page', '');
+        $subpage = $abj404dao->getPostOrGetSanitize('subpage', '');
+
+        $isPluginAdmin = false;
+        $context = array(
+            'action' => 'ajaxRefreshHealthBar',
+            'page' => $page,
+            'subpage' => $subpage,
+            'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
+            'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
+        );
+        $context = self::startAjaxDebugContext($context);
+
+        try {
+            if (!wp_verify_nonce($nonce, 'abj404_refreshHealthBar')) {
+                self::safeLogAjaxFailure('AJAX invalid nonce in ajaxRefreshHealthBar.', $context);
+                self::markAjaxResponseSent();
+                $payload = self::buildAjaxErrorResponse('Invalid security token', null, false);
+                self::sendJsonResponseAndExit($payload, 403);
+                return;
+            }
+
+            $isPluginAdmin = $abj404logic->userIsPluginAdmin();
+            if (!$isPluginAdmin) {
+                self::safeLogAjaxFailure('AJAX unauthorized in ajaxRefreshHealthBar.', $context);
+                self::markAjaxResponseSent();
+                $payload = self::buildAjaxErrorResponse('Unauthorized', null, false);
+                self::sendJsonResponseAndExit($payload, 403);
+                return;
+            }
+
+            // Match the pagination AJAX rate limit ceiling — admin workflows
+            // can re-trigger this on filter typing and tab switches.
+            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('refresh_health_bar', 1500, 60)) {
+                self::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshHealthBar.', $context);
+                self::markAjaxResponseSent();
+                $payload = self::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+                self::sendJsonResponseAndExit($payload, 429);
+                return;
+            }
+
+            $context['stage'] = 'redirect_status_counts';
+            $statusCounts = $abj404dao->getRedirectStatusCounts();
+            // Provide the captured filter constant so JS can build the "View" link.
+            $statusCounts['_capturedFilter'] = ABJ404_STATUS_CAPTURED;
+
+            $context['stage'] = 'high_impact_count';
+            $highImpactCapturedCount = (int)$abj404dao->getHighImpactCapturedCount();
+
+            $response = array(
+                'highImpactCapturedCount' => $highImpactCapturedCount,
+                'statusCounts' => $statusCounts,
+            );
+
+            self::markAjaxResponseSent();
+            self::getAndClearAjaxBufferedOutput();
+            self::sendJsonResponseAndExit($response, 200);
+            return;
+
+        } catch (Throwable $e) {
+            if (!$isPluginAdmin) {
+                try {
+                    $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+                    if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
+                        $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
+                    }
+                } catch (Throwable $ignored) {
+                    // ignore and try fallback
+                }
+            }
+
+            $details = array(
+                'exception' => array(
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                ),
+                'context' => $context,
+            );
+            self::safeLogAjaxFailure('AJAX exception in ajaxRefreshHealthBar.', $details, $e);
+            $capturedOutput = self::getAndClearAjaxBufferedOutput();
+            if ($capturedOutput !== '') {
+                $details['buffered_output'] = substr($capturedOutput, 0, 8000);
+            }
+
+            self::markAjaxResponseSent();
+            $payload = self::buildAjaxErrorResponse(
+                'Server error while refreshing health bar.',
+                $details,
+                $isPluginAdmin
+            );
+            self::sendJsonResponseAndExit($payload, 500);
+            return;
+        }
+    }
+
 }

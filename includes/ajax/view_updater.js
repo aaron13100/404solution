@@ -893,26 +893,10 @@ function paginationLinksChange(triggerItem, options) {
                 });
                 jQuery('.abj404-content-tabs').removeAttr('data-tab-counts-placeholder');
             }
-            // Update health bar from AJAX response (redirects page only)
-            if (typeof result.highImpactCapturedCount !== 'undefined' && result.statusCounts) {
-                var $bar = jQuery('.abj404-health-bar[data-health-bar-placeholder]');
-                if ($bar.length > 0) {
-                    var active = (result.statusCounts.all || 0) - (result.statusCounts.trash || 0);
-                    var high = result.highImpactCapturedCount || 0;
-                    var html;
-                    if (high === 0) {
-                        html = '<span class="abj404-health-dot abj404-health-green"></span>' +
-                            jQuery('<span>').text(active + ' redirects active, no URLs need attention').html();
-                    } else {
-                        html = '<span class="abj404-health-dot abj404-health-yellow"></span>' +
-                            jQuery('<span>').text(active + ' redirects active \u2014 ' + high + ' captured URLs have repeat visitors').html() +
-                            ' <a href="?page=' + (getURLParameter('page') || 'abj404_solution') + '&subpage=abj404_captured&filter=' +
-                            (result.statusCounts._capturedFilter || '') + '">View</a>';
-                    }
-                    $bar.html(html);
-                    $bar.removeAttr('data-health-bar-placeholder');
-                }
-            }
+            // Health bar is hydrated by a separate AJAX call (refreshHealthBarIfNeeded)
+            // so the slow getHighImpactCapturedCount() query never blocks first paint
+            // of the redirects table.
+            refreshHealthBarIfNeeded();
             // Reinitialize table interactions (checkboxes, bulk actions) after AJAX refresh
             if (typeof window.abj404InitTableInteractions === 'function') {
                 window.abj404InitTableInteractions();
