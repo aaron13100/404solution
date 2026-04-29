@@ -266,6 +266,15 @@ function triggerInitialTableLoadIfNeeded() {
                 }
                 $config.attr('data-pagination-initial-load', '0');
                 // Last-resort fallback: unblock page placeholders so the UI is usable.
+                // Replace the "Loading…" cell text with a concrete error state so
+                // the page no longer appears stuck — stripping the attribute alone
+                // leaves the original placeholder rows visible to the user.
+                var errorMessage = 'Could not load table data. Try refreshing the page.';
+                jQuery('.abj404-table[data-table-awaiting-load] tbody').html(
+                    '<tr><td class="abj404-empty-message abj404-error">' +
+                    jQuery('<div/>').text(errorMessage).html() +
+                    '</td></tr>'
+                );
                 jQuery('[data-table-awaiting-load]').removeAttr('data-table-awaiting-load');
                 jQuery('[data-tab-counts-placeholder]').removeAttr('data-tab-counts-placeholder');
                 jQuery('[data-health-bar-placeholder]').removeAttr('data-health-bar-placeholder');
@@ -896,6 +905,11 @@ function paginationLinksChange(triggerItem, options) {
         url: baseUrl,
         type: 'POST',
         dataType: "json",
+        // Without a client-side timeout, a slow server (e.g. while
+        // attemptMissingTableRepairAndRetry runs createDatabaseTables) can leave
+        // the table stuck on its loading placeholder forever — onError never
+        // fires and the retry/fallback path never engages.
+        timeout: 15000,
         data: {
             action: action,
             page: page,
@@ -1074,18 +1088,33 @@ function paginationLinksChange(triggerItem, options) {
             }
 
             if (!isBackgroundRefresh) {
-                alert(
-                    "404 Solution: Ajax error while updating the table.\n\n" +
-                    "HTTP status: " + status + "\n" +
-                    "textStatus: " + textStatus + "\n" +
-                    "errorThrown: " + errorThrown + "\n" +
-                    "action: " + action + "\n" +
-                    "subpage: " + subpage + "\n" +
-                    "url: " + baseUrl + "\n\n" +
-                    (messageFromServer ? ("Server message:\n" + messageFromServer + "\n\n") : "") +
-                    (detailsFromServer ? ("Server details (admin only):\n" + detailsFromServer + "\n\n") : "") +
-                    "Response (preview):\n" + responsePreview
-                );
+                // Render a non-blocking admin notice instead of a native alert().
+                // Native alert() blocks the page, breaks browser automation tests,
+                // and forces the admin to dismiss before they can refresh.
+                var noticeTitle = '404 Solution: AJAX error while updating the table.';
+                var $notice = jQuery('<div class="notice notice-error abj404-ajax-error-notice is-dismissible"></div>');
+                var $titleEl = jQuery('<p></p>').css('font-weight', 'bold').text(noticeTitle);
+                var detailLines = [
+                    'HTTP status: ' + status,
+                    'textStatus: ' + textStatus,
+                    'errorThrown: ' + errorThrown,
+                    'action: ' + action,
+                    'subpage: ' + subpage
+                ];
+                if (messageFromServer) {
+                    detailLines.push('Server message: ' + messageFromServer);
+                }
+                var $detailsEl = jQuery('<pre></pre>')
+                    .css({whiteSpace: 'pre-wrap', margin: '0 0 8px 0'})
+                    .text(detailLines.join('\n'));
+                $notice.append($titleEl).append($detailsEl);
+                jQuery('.abj404-ajax-error-notice').remove();
+                var $tableContainer = jQuery('.abj404-table-container').first();
+                if ($tableContainer.length > 0) {
+                    $tableContainer.before($notice);
+                } else {
+                    jQuery('.wrap').first().prepend($notice);
+                }
             }
             if (typeof options.onError === 'function') {
                 options.onError({
