@@ -213,6 +213,8 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Fixed the Stats trend chart cache being polluted with empty results when the trend query errored or timed out.
 * Fixed admin search inputs on Page Redirects and Captured 404s rendering a stray "O"-shaped SVG glyph above the search box.
 * Fixed the health bar "unavailable" indicator rendering as a transparent dot during rollup rebuild — it now displays as a muted gray dot to communicate the transient state.
+* Fixed every frontend 404 falling through to the theme 404 page on installs where the database upgrade could not complete (corrupted DDL files, opcache divergence, restrictive shared hosting). The redirect lookup now falls back to a schema-tolerant query against the existing redirects table, so manual redirects keep firing while the upgrade is stuck. Trade-off: scheduled redirects briefly stop honoring their start/end windows during the degraded window.
+* Fixed asynchronous page suggestions failing to surface for long or low-overlap 404 URLs. The async worker now prioritizes recall over worst-case latency, since it already runs out-of-band and is rate-limited.
 
 **Improvements**
 
@@ -220,7 +222,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Health bar AJAX is now decoupled from pagination — the redirects table renders immediately while the health bar hydrates in a separate request, so a slow rollup query no longer blocks first paint.
 * The daily cron now reads log row counts from MySQL `information_schema` metadata instead of running a full index scan on every nightly tick.
 * Permalink keyword cron updates are now issued as a single bulk SQL query instead of up to 500 single-row UPDATEs per cycle, sharply reducing database load on busy sites.
-* The anonymous suggestion-compute endpoint now enforces a per-IP rate limit and rejects unauthorized requests before any plugin classes are loaded. The internal n-gram filter is also corpus-aware, only bypassing its expensive fallback path on small post corpora where the fallback is cheap.
+* The anonymous suggestion-compute endpoint now enforces a per-IP rate limit and rejects unauthorized requests before any plugin classes are loaded.
 
 = Version 4.1.8 (Apr 28, 2026) =
 
