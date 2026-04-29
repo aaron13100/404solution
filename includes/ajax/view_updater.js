@@ -14,7 +14,88 @@ jQuery(document).ready(function($) {
     triggerInitialTableLoadIfNeeded();
     triggerBackgroundTableRefreshIfEnabled();
     triggerStatsBackgroundRefreshIfEnabled();
+    // The health bar is rendered as an empty placeholder by PHP and hydrated
+    // here so the slow getHighImpactCapturedCount() query never blocks first
+    // paint of the redirects table.  Safe to call on every page — it returns
+    // early when no placeholder is in the DOM.
+    refreshHealthBarIfNeeded();
 });
+
+/**
+ * Hydrate the redirects-page health bar via a dedicated AJAX call so the
+ * slow getHighImpactCapturedCount() query never blocks the table render.
+ *
+ * Reads endpoint URL, action, and nonce from data-attrs on the placeholder
+ * div emitted by ViewTrait_RedirectsTable.  No-op when no placeholder is
+ * present (other admin pages, or when the bar is already hydrated).
+ *
+ * Idempotent: a `data-health-bar-loading` flag prevents duplicate concurrent
+ * requests when this function is invoked from both jQuery.ready and the
+ * pagination success handler on the same page load.
+ */
+function refreshHealthBarIfNeeded() {
+    var $bar = jQuery('.abj404-health-bar[data-health-bar-placeholder]');
+    if ($bar.length === 0) {
+        return;
+    }
+    if ($bar.attr('data-health-bar-loading') === '1') {
+        return;
+    }
+
+    var url = $bar.attr('data-health-bar-ajax-url') || window.ajaxurl;
+    var action = $bar.attr('data-health-bar-ajax-action') || 'ajaxRefreshHealthBar';
+    var nonce = $bar.attr('data-health-bar-nonce') || '';
+    if (!url || !nonce) {
+        // Endpoint config missing — drop the placeholder so the page is usable.
+        $bar.removeAttr('data-health-bar-placeholder');
+        $bar.empty();
+        return;
+    }
+
+    $bar.attr('data-health-bar-loading', '1');
+
+    jQuery.ajax({
+        url: url,
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            action: action,
+            nonce: nonce,
+            page: getURLParameter('page') || '',
+            subpage: getURLParameter('subpage') || ''
+        },
+        success: function(result) {
+            $bar.removeAttr('data-health-bar-loading');
+            if (!result || typeof result.highImpactCapturedCount === 'undefined' || !result.statusCounts) {
+                $bar.removeAttr('data-health-bar-placeholder');
+                $bar.empty();
+                return;
+            }
+            var active = (result.statusCounts.all || 0) - (result.statusCounts.trash || 0);
+            var high = result.highImpactCapturedCount || 0;
+            var html;
+            if (high === 0) {
+                html = '<span class="abj404-health-dot abj404-health-green"></span>' +
+                    jQuery('<span>').text(active + ' redirects active, no URLs need attention').html();
+            } else {
+                html = '<span class="abj404-health-dot abj404-health-yellow"></span>' +
+                    jQuery('<span>').text(active + ' redirects active — ' + high + ' captured URLs have repeat visitors').html() +
+                    ' <a href="?page=' + (getURLParameter('page') || 'abj404_solution') + '&subpage=abj404_captured&filter=' +
+                    (result.statusCounts._capturedFilter || '') + '">View</a>';
+            }
+            $bar.html(html);
+            $bar.removeAttr('data-health-bar-placeholder');
+        },
+        error: function() {
+            // On error, drop the placeholder so the UI doesn't get stuck on
+            // "Loading status…" forever.  The failure has already been logged
+            // server-side via the ajaxRefreshHealthBar exception handler.
+            $bar.removeAttr('data-health-bar-loading');
+            $bar.removeAttr('data-health-bar-placeholder');
+            $bar.empty();
+        }
+    });
+}
 
 function bindPaginationLinkListeners() {
     // Delegate to document so handlers survive table HTML replacement after AJAX refresh.
