@@ -301,9 +301,13 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         }
 
         // Rate-limit repeated failures: after a failed repair, downgrade subsequent
-        // occurrences to WARNING for 24 hours so cron-per-run error storms don't
+        // occurrences to WARNING for 1 hour so cron-per-run error storms don't
         // generate email reports. The first failure still logs ERROR and attempts repair.
+        // 1 hour (not 24h) — a transient race during the repair (e.g. concurrent wp-cron
+        // firing) can cause one failure that would clear by the next page load. A 24h
+        // lockout permanently disables self-healing for the rest of the admin session.
         $repairCooldownKey = 'abj404_missing_table_repair_cooldown';
+        $cooldownTtlSeconds = 3600;
         $cooldownUntil = $this->getRuntimeFlag($repairCooldownKey);
         if (is_scalar($cooldownUntil) && (int)$cooldownUntil > time()) {
             $this->logger->warn("Missing plugin table (repair previously failed, cooldown active): "
@@ -320,6 +324,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         // only escalate to ERROR if repair fails (avoids flooding admin with
         // error emails for transient issues that auto-repair resolves).
         $originalSqlError = is_string($result['last_error']) ? $result['last_error'] : '';
+        $missingTable = $this->extractMissingTableNameFromError($originalSqlError);
         $this->logger->infoMessage("Missing plugin table detected during query. "
             . "Attempting auto-repair. SQL error: " . $originalSqlError);
 
@@ -335,6 +340,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
             global $wpdb;
             $wpdb->flush();
+
             // Suppress WP's own error output for the retry — if it also fails, we
             // report it ourselves below.  Without this, WP logs a second
             // "WordPress database error" entry on top of the first, producing
@@ -375,15 +381,33 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
                 }
 
                 // Repair failed — now escalate to ERROR so it triggers email notification.
-                $this->logger->errorMessage("Missing plugin table auto-repair failed. "
-                    . "Original error: " . $originalSqlError
+                // Include the specific table that failed plus an explicit post-CREATE
+                // existence check so the debug log distinguishes "CREATE didn't materialize
+                // the table" (concurrency race, swallowed SQL error in queryAndGetResults,
+                // insufficient privileges) from other retry-failure modes.
+                $tableStillMissing = ($missingTable !== '' && !$this->tableExists($missingTable));
+                $tableContext = ($missingTable !== '')
+                    ? " Table: " . $missingTable . "."
+                    : '';
+                $existenceContext = $tableStillMissing
+                    ? ' Table is still missing after CREATE TABLE ran — '
+                    . 'createDatabaseTables() did not materialize this table '
+                    . '(likely a concurrent DROP, swallowed SQL error in queryAndGetResults, '
+                    . 'or insufficient CREATE TABLE privileges).'
+                    : '';
+                $this->logger->errorMessage("Missing plugin table auto-repair failed."
+                    . $tableContext
+                    . $existenceContext
+                    . " Original error: " . $originalSqlError
                     . ", Retry error: " . $result['last_error']
                     . $prefixDiag);
-                // Engage 24h cooldown and surface a single admin notice on
-                // the plugin screen so the admin knows to investigate (e.g. missing CREATE
-                // privilege or wrong DB user).  Never email; never show on all wp-admin pages.
-                $this->setRuntimeFlag($repairCooldownKey, time() + 86400, 86400);
-                $adminMsg = 'A plugin database table is missing and could not be repaired automatically. '
+                // Engage 1h cooldown and surface a single admin notice on
+                // the plugin screen so the admin knows to investigate.
+                // Never email; never show on all wp-admin pages.
+                $this->setRuntimeFlag($repairCooldownKey, time() + $cooldownTtlSeconds, $cooldownTtlSeconds);
+                $tableLabel = ($missingTable !== '') ? "'" . $missingTable . "' " : '';
+                $adminMsg = 'A plugin database table ' . $tableLabel
+                    . 'is missing and could not be repaired automatically. '
                     . 'Try deactivating and reactivating 404 Solution, or verify that your database user has CREATE TABLE privileges.';
                 if ($prefixDiag !== '') {
                     $adminMsg .= ' ' . $prefixDiag;
@@ -398,10 +422,36 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             }
         } catch (Throwable $e) {
             $this->logger->warn("Missing-table auto-repair failed: " . $e->getMessage());
-            $this->setRuntimeFlag($repairCooldownKey, time() + 86400, 86400);
+            $this->setRuntimeFlag($repairCooldownKey, time() + $cooldownTtlSeconds, $cooldownTtlSeconds);
         } finally {
             self::$tableRepairInProgress = false;
         }
+    }
+
+    /**
+     * Extract the unprefixed-by-database table name from a MySQL "doesn't exist"
+     * error message. Returns the bare table name (e.g. "wp_abj404_redirects")
+     * or empty string if the error format does not match.
+     *
+     * MySQL emits errors as either:
+     *   Table 'dbname.tablename' doesn't exist
+     *   Table 'tablename' doesn't exist
+     * The database-name segment is stripped because callers want the live
+     * table name suitable for SHOW TABLES LIKE.
+     *
+     * @param string $errorText
+     * @return string
+     */
+    private function extractMissingTableNameFromError(string $errorText): string {
+        if ($errorText === '') {
+            return '';
+        }
+        if (!preg_match("/Table '([^']+)' doesn't exist/i", $errorText, $matches)) {
+            return '';
+        }
+        $fullName = $matches[1];
+        $dotPos = strrpos($fullName, '.');
+        return $dotPos !== false ? substr($fullName, $dotPos + 1) : $fullName;
     }
 
     /**

@@ -789,6 +789,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    		$this->dao->queryAndGetResults($query);
 
 	    		$tableName = $this->dao->doTableNameReplacements($ddlEntry['placeholder']);
+
+	    		// Per-table post-CREATE verification: confirm the table actually
+	    		// exists on disk. queryAndGetResults logs SQL errors generically,
+	    		// but a silently-failing CREATE (concurrent DROP, swallowed parse
+	    		// error, prefix drift, or insufficient privileges) is invisible
+	    		// without an explicit existence check. Log per-table so the debug
+	    		// log identifies which DDL didn't materialize and why downstream
+	    		// auto-repair attempts will keep failing.
+	    		if (!$this->verifyTableMaterialized($tableName, $ddlEntry['placeholder'])) {
+	    			// Don't abort the loop — other tables can still get created.
+	    			continue;
+	    		}
+
 	    		$this->verifyColumns($tableName, $query);
 	    	}
 
@@ -798,6 +811,41 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
 	    	// Mark view cache table as ensured so ensureViewSnapshotTableExists() skips redundant DDL.
 	    	ABJ_404_Solution_DataAccess::setViewSnapshotTableEnsured(true);
+	    }
+
+	    /**
+	     * Verify that a CREATE TABLE actually materialized the named table on disk.
+	     * Returns true if the table exists, false (and logs a per-table error) if not.
+	     *
+	     * Distinguishes silently-failing CREATEs from generic SQL errors so the
+	     * debug log identifies which specific DDL didn't materialize. Common causes:
+	     * concurrent DROP from a parallel cron, SQL parse error swallowed by
+	     * queryAndGetResults, prefix drift between request and table_prefix in
+	     * wp-config, or missing CREATE TABLE privileges on the DB user.
+	     *
+	     * @param string $tableName  Fully-qualified table name (with prefix).
+	     * @param string $placeholder Original placeholder (e.g. "{wp_abj404_redirects}") for diagnostic context.
+	     * @return bool True if table exists post-CREATE, false otherwise.
+	     */
+	    private function verifyTableMaterialized(string $tableName, string $placeholder): bool {
+	    	global $wpdb;
+	    	if (!isset($wpdb)) {
+	    		return false;
+	    	}
+	    	$found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
+	    	if ($found === $tableName) {
+	    		return true;
+	    	}
+	    	$this->logger->errorMessage(
+	    		"CREATE TABLE did not materialize '" . $tableName . "' "
+	    		. "(placeholder " . $placeholder . "). "
+	    		. "Table is still missing on disk after CREATE TABLE IF NOT EXISTS ran. "
+	    		. "Likely causes: concurrent DROP from a parallel request, "
+	    		. "SQL parse error suppressed by queryAndGetResults, "
+	    		. "prefix mismatch between request and wp-config table_prefix, "
+	    		. "or insufficient CREATE TABLE privileges on the DB user."
+	    	);
+	    	return false;
 	    }
 
 	    /**
