@@ -682,36 +682,65 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
     /**
      * Get the top N captured 404s by hit count for the digest email.
      *
+     * Implementation: INNER JOIN against the pre-aggregated logs_hits rollup,
+     * which already stores logshits per requested_url and is rebuilt by cron
+     * via createRedirectsForViewHitsTable(). Same JOIN shape as
+     * getRedirectsForViewQuery() — BINARY column equality.
+     *
+     * The previous implementation LEFT JOINed logsv2 with CONCAT/TRIM on both
+     * sides; that defeats every index on requested_url and url, and on busy
+     * sites with millions of log rows the cron digest job timed out at 60s.
+     * The pre-aggregated rollup makes this query O(distinct URLs) instead of
+     * O(total log rows).
+     *
+     * Routes through queryAndGetResults() so the cron digest query inherits
+     * the centralized 60-second SELECT timeout, retry on transient errors,
+     * and corrupted-table REPAIR recovery.
+     *
+     * Fallback: if logs_hits is missing, return [] and schedule a shutdown-
+     * time rebuild so a subsequent digest run can serve real data. We
+     * deliberately do NOT fall back to scanning logsv2 — the whole point of
+     * this rewrite is to never run that query again.
+     *
      * @param int $limit Maximum number of rows to return.
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> Each row has keys: url, logshits, created.
      */
     function getTopCapturedForDigest(int $limit): array {
-        global $wpdb;
-
         $limit = max(1, $limit);
-        $redirectsTable = $this->doTableNameReplacements('{wp_abj404_redirects}');
-        $logsTable = $this->doTableNameReplacements('{wp_abj404_logsv2}');
 
-        $sql = $wpdb->prepare(
-            "SELECT r.url, COUNT(l.id) AS logshits, r.timestamp AS created
-             FROM {$redirectsTable} r
-             LEFT JOIN {$logsTable} l
-               ON CONCAT('/', TRIM(BOTH '/' FROM l.requested_url)) =
-                  CONCAT('/', TRIM(BOTH '/' FROM r.url))
-             WHERE r.status = %d AND r.disabled = 0
-             GROUP BY r.id, r.url, r.timestamp
-             ORDER BY logshits DESC
-             LIMIT %d",
-            ABJ404_STATUS_CAPTURED,
-            $limit
-        );
-
-        $rows = $wpdb->get_results($sql, ARRAY_A);
-        if (!is_array($rows)) {
+        if (!$this->logsHitsTableExists()) {
+            $this->scheduleHitsTableRebuild();
             return array();
         }
 
+        $query = $this->buildTopCapturedForDigestQuery($limit);
+        $result = $this->queryAndGetResults($query, array('timeout' => 60));
+
+        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
+            return array();
+        }
+
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         return $rows;
+    }
+
+    /**
+     * Build the SQL for getTopCapturedForDigest(). Exposed so structural
+     * regression tests can assert no logsv2 access and verify the EXPLAIN plan.
+     *
+     * @param int $limit Already-normalized positive integer LIMIT.
+     * @return string Fully-replaced SQL (table-name placeholders resolved).
+     */
+    function buildTopCapturedForDigestQuery(int $limit): string {
+        $limit = max(1, $limit);
+        $query = "SELECT r.url, h.logshits, r.timestamp AS created
+            FROM {wp_abj404_redirects} r
+            INNER JOIN {wp_abj404_logs_hits} h
+                ON BINARY r.url = BINARY h.requested_url
+            WHERE r.status = " . ABJ404_STATUS_CAPTURED . " AND r.disabled = 0
+            ORDER BY h.logshits DESC, r.url ASC
+            LIMIT " . $limit;
+        return $this->doTableNameReplacements($query);
     }
 
     /**
