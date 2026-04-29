@@ -72,9 +72,13 @@ function refreshHealthBarIfNeeded() {
                 return;
             }
             var active = (result.statusCounts.all || 0) - (result.statusCounts.trash || 0);
+            var rollupAvailable = result.rollupAvailable !== false && result.highImpactCapturedCount !== null;
             var high = result.highImpactCapturedCount || 0;
             var html;
-            if (high === 0) {
+            if (!rollupAvailable) {
+                html = '<span class="abj404-health-dot"></span>' +
+                    jQuery('<span>').text(active + ' redirects active, URL attention status unavailable while logs rebuild').html();
+            } else if (high === 0) {
                 html = '<span class="abj404-health-dot abj404-health-green"></span>' +
                     jQuery('<span>').text(active + ' redirects active, no URLs need attention').html();
             } else {

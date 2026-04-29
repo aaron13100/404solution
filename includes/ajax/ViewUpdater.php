@@ -679,10 +679,17 @@ class ABJ_404_Solution_ViewUpdater {
             $statusCounts['_capturedFilter'] = ABJ404_STATUS_CAPTURED;
 
             $context['stage'] = 'high_impact_count';
-            $highImpactCapturedCount = (int)$abj404dao->getHighImpactCapturedCount();
+            $rollupAvailable = $abj404dao->logsHitsTableExists();
+            if ($rollupAvailable) {
+                $highImpactCapturedCount = (int)$abj404dao->getHighImpactCapturedCount();
+            } else {
+                $abj404dao->scheduleHitsTableRebuild();
+                $highImpactCapturedCount = null;
+            }
 
             $response = array(
                 'highImpactCapturedCount' => $highImpactCapturedCount,
+                'rollupAvailable' => $rollupAvailable,
                 'statusCounts' => $statusCounts,
             );
 

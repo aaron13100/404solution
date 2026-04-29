@@ -913,7 +913,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             // Verify table was actually created before using it (handles silent creation failures)
             if ($this->logsHitsTableExists()) {
                 $logsTableJoin = "  LEFT OUTER JOIN {wp_abj404_logs_hits} logstable \n " .
-                        "  on binary wp_abj404_redirects.url = binary logstable.requested_url \n ";
+                        "  on binary logstable.requested_url = " .
+                        "binary concat('/', trim(both '/' from wp_abj404_redirects.url)) \n ";
             } else {
                 // Fall back to null columns if table creation failed
                 $logsTableColumns = "null as logshits, \n null as logsid, \n null as last_used, \n";
