@@ -13,12 +13,60 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_Ajax_SuggestionCompute {
 
     /**
+     * Per-IP rate limit for the anonymous compute endpoint.
+     * Generous enough for legitimate crawler 404 storms (a single bot hitting
+     * a few dozen broken links per minute), but caps the total expensive
+     * computations triggered by any one source.
+     */
+    const COMPUTE_RATE_LIMIT_MAX_REQUESTS = 30;
+    const COMPUTE_RATE_LIMIT_WINDOW_SECONDS = 60;
+
+    /**
+     * N-gram cache size threshold for skipping gate 4.
+     * Below this, the worst-case full Levenshtein scan is cheap enough that
+     * we may bypass gate 4 in the async path to broaden recall.  At or above
+     * this corpus size the full scan is expensive (~5s on 10K+ posts), so we
+     * leave gate 4 ON so a Dice<0.3 result returns early instead of scanning.
+     */
+    const SKIP_GATE4_MAX_CANDIDATES = 200;
+
+    /**
      * Compute suggestions for a 404 URL and store results in transient.
      * This runs in a background HTTP request.
+     *
+     * Cost ordering of checks (cheapest first, so an unauthorized hit
+     * never reaches class loading or DB lookups beyond a single transient
+     * read):
+     *   1. Per-IP rate limit (one transient read).
+     *   2. URL parameter present + non-empty after normalization.
+     *   3. Token transient lookup + token match.
+     *   4. Single-flight claim (status=='pending', started==0).
+     *   5. Resolve service singletons (Logging / PluginLogic / SpellChecker).
+     *   6. Run findMatchingPosts(), gated on corpus size.
+     *
      * @return void
      */
     public static function computeSuggestions(): void {
-        // Sanitize inputs
+        // (1) Per-IP rate limit FIRST — cheapest possible rejection so an
+        // attacker rotating fresh URLs (each producing a new token via a
+        // real 404) cannot trigger unbounded expensive computations.
+        // Single-flight protects same-token replay; this protects distinct-
+        // token flooding from one source.
+        if (class_exists('ABJ_404_Solution_Ajax_Php') &&
+                ABJ_404_Solution_Ajax_Php::checkRateLimit(
+                    'compute_suggestions',
+                    self::COMPUTE_RATE_LIMIT_MAX_REQUESTS,
+                    self::COMPUTE_RATE_LIMIT_WINDOW_SECONDS
+                )) {
+            wp_die('Rate limit exceeded');
+        }
+
+        // (2) Validate URL parameter present.  No class loading yet.
+        if (!isset($_POST['url'])) {
+            wp_die('Missing required parameters');
+        }
+
+        // URL normalization requires the Functions service.
         $f = ABJ_404_Solution_Functions::getInstance();
         if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
             try {
@@ -31,34 +79,26 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
                 // fall back to singleton
             }
         }
-        if (isset($_POST['url'])) {
-            $rawUrl = function_exists('wp_unslash') ? wp_unslash($_POST['url']) : $_POST['url'];
-            $requestedURL = $f->normalizeUrlString($rawUrl);
-        } else {
-            $requestedURL = '';
-        }
-
-        // Validate inputs
+        $rawUrl = function_exists('wp_unslash') ? wp_unslash($_POST['url']) : $_POST['url'];
+        $requestedURL = $f->normalizeUrlString($rawUrl);
         if (empty($requestedURL)) {
             wp_die('Missing required parameters');
         }
 
-        // Compute transient key from URL
+        // (3) Token check via transient lookup.
         $urlKey = md5($requestedURL);
         $transientKey = 'abj404_suggest_' . $urlKey;
 
-        // Double-check we should compute (might already be done or in progress)
         $existingRaw = get_transient($transientKey);
         /** @var array<string, mixed>|false $existing */
         $existing = is_array($existingRaw) ? $existingRaw : false;
 
-        // Get provided token from request
         $providedToken = isset($_POST['token']) ? sanitize_text_field($_POST['token']) : '';
 
-        // Security: Require a valid token for ALL computation requests
-        // This prevents DoS attacks via direct calls to admin-ajax.php
+        // Security: Require a valid token for ALL computation requests.
+        // This prevents DoS attacks via direct calls to admin-ajax.php.
         if (empty($existing) || !isset($existing['token'])) {
-            // No transient or no token stored - this is an unauthorized direct call
+            // No transient or no token stored - unauthorized direct call.
             wp_die('Unauthorized');
         }
 
@@ -69,7 +109,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             wp_die(); // Already done, nothing to do
         }
 
-        // Verify token matches - authenticates that request came from legitimate trigger
+        // Verify token matches — authenticates that request came from a legitimate trigger.
         if (empty($providedToken) || $providedToken !== $storedToken) {
             wp_die('Invalid token');
         }
@@ -135,9 +175,30 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         // Get options for suggestion settings
         $options = $abj404logic->getOptions();
 
-        // Async worker: disable the N-gram gate 4 early return so the full
-        // Levenshtein scan runs — the extra time is acceptable in background.
-        $spellChecker->setSkipNgramGate4(true);
+        // Conditional gate-4 bypass.  Gate 4 is the early return that fires
+        // when the N-gram prefilter finds zero candidates at Dice >= 0.3.
+        // On a small corpus the worst-case full Levenshtein fallback is
+        // cheap, so we skip the gate to broaden recall.  On a large corpus
+        // the fallback is expensive (~5s on 10K+ posts), so we leave gate 4
+        // ON to cap worst-case cost per request — same recall on the common
+        // case (where the prefilter does find candidates), much lower
+        // worst-case cost when it doesn't.
+        $candidateCount = 0;
+        try {
+            if (class_exists('ABJ_404_Solution_NGramFilter')) {
+                $ngram = ABJ_404_Solution_NGramFilter::getInstance();
+                if (is_object($ngram) && method_exists($ngram, 'getCacheCount')) {
+                    $candidateCount = (int)$ngram->getCacheCount();
+                }
+            }
+        } catch (Throwable $e) {
+            // If the corpus size cannot be read, default to NOT skipping
+            // gate 4 — the safer choice (caps worst-case cost).
+            $candidateCount = self::SKIP_GATE4_MAX_CANDIDATES;
+        }
+        if ($candidateCount < self::SKIP_GATE4_MAX_CANDIDATES) {
+            $spellChecker->setSkipNgramGate4(true);
+        }
 
         // Perform the expensive computation
         $suggestCatsRaw = isset($options['suggest_cats']) ? $options['suggest_cats'] : '';
