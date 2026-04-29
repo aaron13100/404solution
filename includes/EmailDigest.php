@@ -35,9 +35,14 @@ class ABJ_404_Solution_EmailDigest {
      * @param array<int, array<string, mixed>> $topCaptured Array of captured 404 rows from getTopCapturedForDigest().
      * @param array{total_captured: int, total_manual: int, total_auto: int} $stats From getDigestSummaryStats().
      * @param string $dateRange Human-readable date range label for the digest header.
+     * @param bool $rollupAvailable Whether the logs_hits rollup is currently
+     *    available. When false and $topCaptured is empty, the empty-state
+     *    cell renders an "unavailable, rebuild scheduled" message instead of
+     *    "No captured 404s in this period" so the admin can distinguish the
+     *    two cases.
      * @return string HTML email body with inline CSS.
      */
-    public function generateDigestHTML(array $topCaptured, array $stats, string $dateRange = ''): string {
+    public function generateDigestHTML(array $topCaptured, array $stats, string $dateRange = '', bool $rollupAvailable = true): string {
         if ($dateRange === '') {
             $dateRange = date('Y-m-d');
         }
@@ -70,8 +75,11 @@ class ABJ_404_Solution_EmailDigest {
         // ---- HTML rows for the top-captured table ----
         $tableRows = '';
         if (empty($topCaptured)) {
+            $emptyMessage = $rollupAvailable
+                ? esc_html__('No captured 404s in this period.', '404-solution')
+                : esc_html__('Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest.', '404-solution');
             $tableRows = '<tr><td colspan="3" style="padding:14px;text-align:center;color:#94a3b8;font-size:13px;">'
-                . esc_html__('No captured 404s in this period.', '404-solution')
+                . $emptyMessage
                 . '</td></tr>';
         } else {
             $rowIndex = 0;
@@ -357,15 +365,30 @@ class ABJ_404_Solution_EmailDigest {
             ? max(1, intval($options['admin_notification_digest_limit']))
             : 10;
 
-        $topCaptured = $this->dao->getTopCapturedForDigest($limit);
+        // Pre-check rollup availability so the email distinguishes "rollup is
+        // being rebuilt" from "no captured 404s." Without this, a missing
+        // rollup silently produces an "No captured 404s in this period" cell
+        // even when captured rows exist — misleading to the admin.
+        $rollupAvailable = $this->dao->logsHitsTableExists();
+        if (!$rollupAvailable) {
+            // Schedule a rebuild now so the next digest run has data.
+            $this->dao->scheduleHitsTableRebuild();
+            $topCaptured = array();
+        } else {
+            $topCaptured = $this->dao->getTopCapturedForDigest($limit);
+        }
         $stats = $this->dao->getDigestSummaryStats();
 
-        if (intval($stats['total_captured']) === 0 && empty($topCaptured)) {
+        // Skip the email entirely only when there is genuinely nothing to report
+        // AND the rollup is healthy. If the rollup is unavailable but stats show
+        // captured rows exist, ship the email with a "top URLs unavailable" note
+        // so the admin learns about the rebuild rather than hearing silence.
+        if ($rollupAvailable && intval($stats['total_captured']) === 0 && empty($topCaptured)) {
             return 'Digest skipped: no captured 404s to report.';
         }
 
         $dateRange = date('Y-m-d');
-        $body = $this->generateDigestHTML($topCaptured, $stats, $dateRange);
+        $body = $this->generateDigestHTML($topCaptured, $stats, $dateRange, $rollupAvailable);
 
         $subject = sprintf(
             /* translators: %s: current date */

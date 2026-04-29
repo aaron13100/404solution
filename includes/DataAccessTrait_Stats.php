@@ -682,25 +682,37 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
     /**
      * Get the top N captured 404s by hit count for the digest email.
      *
-     * Implementation: INNER JOIN against the pre-aggregated logs_hits rollup,
+     * Implementation: LEFT JOIN against the pre-aggregated logs_hits rollup,
      * which already stores logshits per requested_url and is rebuilt by cron
-     * via createRedirectsForViewHitsTable(). Same JOIN shape as
-     * getRedirectsForViewQuery() — BINARY column equality.
+     * via createRedirectsForViewHitsTable(). Same BINARY column equality as
+     * getRedirectsForViewQuery().
      *
-     * The previous implementation LEFT JOINed logsv2 with CONCAT/TRIM on both
-     * sides; that defeats every index on requested_url and url, and on busy
-     * sites with millions of log rows the cron digest job timed out at 60s.
-     * The pre-aggregated rollup makes this query O(distinct URLs) instead of
-     * O(total log rows).
+     * Why LEFT JOIN with COALESCE rather than INNER JOIN: the legacy query
+     * was a slash-normalized LEFT JOIN on logsv2 with COUNT(l.id) — captured
+     * rows with no matching logs (purged logs, fresh capture before any logs)
+     * appeared in the digest with logshits=0. INNER JOIN against logs_hits
+     * silently dropped those rows; LEFT JOIN + COALESCE(h.logshits, 0)
+     * restores parity for the no-hits / purged-hits cases.
+     *
+     * Known limitation vs. the legacy query: the old CONCAT/TRIM JOIN treated
+     * `/foo` and `foo` (and `/foo/`) as the same URL. The rollup stores rows
+     * by their exact logged URL, so BINARY equality here will treat URL
+     * variants as distinct. Fixing this properly requires canonicalizing URLs
+     * during logs_hits aggregation, which is a separate change. The previous
+     * CONCAT/TRIM JOIN cannot be restored — it defeats every index on
+     * requested_url and url, and on busy sites the cron digest job timed
+     * out at 60s.
      *
      * Routes through queryAndGetResults() so the cron digest query inherits
      * the centralized 60-second SELECT timeout, retry on transient errors,
      * and corrupted-table REPAIR recovery.
      *
-     * Fallback: if logs_hits is missing, return [] and schedule a shutdown-
-     * time rebuild so a subsequent digest run can serve real data. We
-     * deliberately do NOT fall back to scanning logsv2 — the whole point of
-     * this rewrite is to never run that query again.
+     * Fallback: if logs_hits is missing, log a warning, schedule a rebuild,
+     * and return []. Callers that need to distinguish "rollup unavailable"
+     * from "no captured 404s" should pre-check via {@see logsHitsTableExists()}
+     * (see EmailDigest::send for the canonical pattern). We deliberately do
+     * NOT fall back to scanning logsv2 — the whole point of this rewrite is
+     * to never run that query again.
      *
      * @param int $limit Maximum number of rows to return.
      * @return array<int, array<string, mixed>> Each row has keys: url, logshits, created.
@@ -709,6 +721,14 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
         $limit = max(1, $limit);
 
         if (!$this->logsHitsTableExists()) {
+            // Log so the operator can correlate "no top URLs in digest" with
+            // a rollup rebuild in flight, instead of silently shipping an
+            // empty table that looks like "no captured 404s in this period."
+            if (isset($this->logger) && method_exists($this->logger, 'warn')) {
+                $this->logger->warn('getTopCapturedForDigest: logs_hits rollup unavailable; '
+                    . 'digest top-captured table will be empty until rebuild completes. '
+                    . 'EmailDigest pre-checks via logsHitsTableExists() to render an "unavailable" message instead.');
+            }
             $this->scheduleHitsTableRebuild();
             return array();
         }
@@ -717,6 +737,16 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
         $result = $this->queryAndGetResults($query, array('timeout' => 60));
 
         if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
+            // Transient query failure on a present rollup. Log so the operator
+            // can correlate "empty digest table" with a real DB hiccup rather
+            // than assuming "no captured 404s in this period."
+            if (isset($this->logger) && method_exists($this->logger, 'warn')) {
+                $errMsg = isset($result['last_error']) ? (string)$result['last_error'] : '';
+                $timedOut = !empty($result['timed_out']);
+                $this->logger->warn('getTopCapturedForDigest: query failed against present rollup; '
+                    . 'digest top-captured table will be empty. timed_out=' . ($timedOut ? '1' : '0')
+                    . ', error=' . ($errMsg !== '' ? $errMsg : '(none)'));
+            }
             return array();
         }
 
@@ -728,17 +758,23 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
      * Build the SQL for getTopCapturedForDigest(). Exposed so structural
      * regression tests can assert no logsv2 access and verify the EXPLAIN plan.
      *
+     * Uses LEFT JOIN + COALESCE so captured rows with no matching logs_hits
+     * row still appear with logshits=0, restoring parity with the legacy
+     * slash-normalized LEFT JOIN. ORDER BY ... NULLS-via-COALESCE puts hit-bearing
+     * rows first; rows with 0 hits only surface when fewer than $limit captured
+     * URLs have any hits at all.
+     *
      * @param int $limit Already-normalized positive integer LIMIT.
      * @return string Fully-replaced SQL (table-name placeholders resolved).
      */
     function buildTopCapturedForDigestQuery(int $limit): string {
         $limit = max(1, $limit);
-        $query = "SELECT r.url, h.logshits, r.timestamp AS created
+        $query = "SELECT r.url, COALESCE(h.logshits, 0) AS logshits, r.timestamp AS created
             FROM {wp_abj404_redirects} r
-            INNER JOIN {wp_abj404_logs_hits} h
+            LEFT JOIN {wp_abj404_logs_hits} h
                 ON BINARY r.url = BINARY h.requested_url
             WHERE r.status = " . ABJ404_STATUS_CAPTURED . " AND r.disabled = 0
-            ORDER BY h.logshits DESC, r.url ASC
+            ORDER BY logshits DESC, r.url ASC
             LIMIT " . $limit;
         return $this->doTableNameReplacements($query);
     }
