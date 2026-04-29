@@ -1624,6 +1624,8 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         $result = $this->queryAndGetResults($query, array(
             'query_params' => array($notFoundDest, $notFoundDest),
         ));
+        $hadError = !empty($result['timed_out'])
+            || (isset($result['last_error']) && $result['last_error'] !== '');
         $rows = (isset($result['rows']) && is_array($result['rows'])) ? $result['rows'] : array();
 
         // Build a date-keyed map from query results.
@@ -1660,7 +1662,11 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             }
         }
 
-        if (function_exists('set_transient')) {
+        // Only cache the result on success. A transient DB error/timeout
+        // would otherwise pin a zero-filled chart for TREND_DATA_CACHE_TTL_SECONDS
+        // (15 min) so the admin sees "no activity" until the cache expires —
+        // misleading and harder to diagnose than letting the next request retry.
+        if (!$hadError && function_exists('set_transient')) {
             set_transient($cacheKey, $output, self::TREND_DATA_CACHE_TTL_SECONDS);
         }
 
