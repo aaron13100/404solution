@@ -683,9 +683,16 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
      * Get the top N captured 404s by hit count for the digest email.
      *
      * Implementation: LEFT JOIN against the pre-aggregated logs_hits rollup,
-     * which already stores logshits per requested_url and is rebuilt by cron
-     * via createRedirectsForViewHitsTable(). Same BINARY column equality as
-     * getRedirectsForViewQuery().
+     * which stores logshits per *canonical* requested_url and is rebuilt by
+     * cron via createRedirectsForViewHitsTable(). The canonical form is
+     * CONCAT('/', TRIM(BOTH '/' FROM url)) — the same normalization the
+     * legacy slash-tolerant LEFT JOIN on logsv2 used, hoisted to write time.
+     *
+     * The join canonicalizes r.url on the (small) redirects side and probes
+     * the indexed h.requested_url on the (canonical) rollup side, so URL
+     * variants like '/foo', 'foo', and '/foo/' all match the same rollup row
+     * — recovering the legacy query's variant-folding behavior without
+     * defeating any index.
      *
      * Why LEFT JOIN with COALESCE rather than INNER JOIN: the legacy query
      * was a slash-normalized LEFT JOIN on logsv2 with COUNT(l.id) — captured
@@ -693,15 +700,6 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
      * appeared in the digest with logshits=0. INNER JOIN against logs_hits
      * silently dropped those rows; LEFT JOIN + COALESCE(h.logshits, 0)
      * restores parity for the no-hits / purged-hits cases.
-     *
-     * Known limitation vs. the legacy query: the old CONCAT/TRIM JOIN treated
-     * `/foo` and `foo` (and `/foo/`) as the same URL. The rollup stores rows
-     * by their exact logged URL, so BINARY equality here will treat URL
-     * variants as distinct. Fixing this properly requires canonicalizing URLs
-     * during logs_hits aggregation, which is a separate change. The previous
-     * CONCAT/TRIM JOIN cannot be restored — it defeats every index on
-     * requested_url and url, and on busy sites the cron digest job timed
-     * out at 60s.
      *
      * Routes through queryAndGetResults() so the cron digest query inherits
      * the centralized 60-second SELECT timeout, retry on transient errors,
@@ -769,10 +767,13 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
      */
     function buildTopCapturedForDigestQuery(int $limit): string {
         $limit = max(1, $limit);
+        // logs_hits.requested_url is canonical (leading '/', no trailing '/').
+        // Canonicalize r.url on the (small) redirects side so variants fold
+        // into the same rollup row.
         $query = "SELECT r.url, COALESCE(h.logshits, 0) AS logshits, r.timestamp AS created
             FROM {wp_abj404_redirects} r
             LEFT JOIN {wp_abj404_logs_hits} h
-                ON BINARY r.url = BINARY h.requested_url
+                ON BINARY h.requested_url = BINARY CONCAT('/', TRIM(BOTH '/' FROM r.url))
             WHERE r.status = " . ABJ404_STATUS_CAPTURED . " AND r.disabled = 0
             ORDER BY logshits DESC, r.url ASC
             LIMIT " . $limit;

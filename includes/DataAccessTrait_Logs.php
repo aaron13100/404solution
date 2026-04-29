@@ -267,16 +267,19 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         $this->queryAndGetResults($createPreAggQuery);
 
         // Phase 1: chunk through logsv2 by ID range.
-        // Each chunk aggregates by requested_url within its ID slice.
-        // The same URL can appear across chunks — Phase 2 merges them.
+        // Each chunk aggregates by canonical requested_url (CONCAT('/', TRIM…))
+        // so URL variants like '/foo', 'foo', and '/foo/' collapse into a
+        // single pre-agg row. The same canonical key can still appear across
+        // chunks — Phase 2 sums them.
         for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
             $end = $start + $chunkSize;
             $chunkQuery = "INSERT INTO " . $preAggTable .
                 " (requested_url, logsid, last_used, logshits) " .
-                "SELECT requested_url, MIN(id), MAX(timestamp), COUNT(*) " .
+                "SELECT CONCAT('/', TRIM(BOTH '/' FROM requested_url)), " .
+                "       MIN(id), MAX(timestamp), COUNT(*) " .
                 "FROM " . $logsv2Table . " " .
                 "WHERE id >= %d AND id < %d " .
-                "GROUP BY requested_url";
+                "GROUP BY CONCAT('/', TRIM(BOTH '/' FROM requested_url))";
             $chunkResult = $this->queryAndGetResults($chunkQuery, array(
                 'log_too_slow' => false,
                 'timeout' => 10,
@@ -291,15 +294,16 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
 
         // Phase 2: join the small pre-agg table with redirects and
         // re-aggregate across chunks into the final temp table.
-        // The concat/trim normalization is identical to the original query
-        // but runs against far fewer rows (unique URLs per chunk, not raw logs).
+        // a.requested_url is already canonical from Phase 1, so the join
+        // only needs to canonicalize r.url. Final GROUP BY collapses any
+        // remaining duplicate canonical rows that originated from different
+        // ID-range chunks.
         $phase2Query = "INSERT INTO " . $tempDestTable .
             " (requested_url, logsid, last_used, logshits) " .
             "SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits) " .
             "FROM " . $preAggTable . " a " .
             "INNER JOIN " . $redirectsTable . " r " .
-            "ON concat('/', trim(both '/' from a.requested_url)) = " .
-            "   concat('/', trim(both '/' from r.url)) " .
+            "ON a.requested_url = CONCAT('/', TRIM(BOTH '/' FROM r.url)) " .
             "GROUP BY a.requested_url";
         $results = $this->queryAndGetResults($phase2Query, array('log_too_slow' => false, 'timeout' => 60));
 
