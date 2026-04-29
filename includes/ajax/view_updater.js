@@ -76,7 +76,7 @@ function refreshHealthBarIfNeeded() {
             var high = result.highImpactCapturedCount || 0;
             var html;
             if (!rollupAvailable) {
-                html = '<span class="abj404-health-dot"></span>' +
+                html = '<span class="abj404-health-dot abj404-health-gray"></span>' +
                     jQuery('<span>').text(active + ' redirects active, URL attention status unavailable while logs rebuild').html();
             } else if (high === 0) {
                 html = '<span class="abj404-health-dot abj404-health-green"></span>' +

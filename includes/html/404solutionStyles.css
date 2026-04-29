@@ -4000,6 +4000,13 @@ input[type="checkbox"]:focus-visible {
     background: #dba617;
 }
 
+/* Used while the logs_hits rollup is being rebuilt: we don't know whether
+   captured URLs need attention yet, so render an intentional muted dot
+   instead of an uncolored (visually broken) circle. WordPress admin gray. */
+.abj404-health-gray {
+    background: #8c8f94;
+}
+
 /* Header text wrapper — heading + guidance on same line */
 .abj404-table-header-text {
     display: flex;
