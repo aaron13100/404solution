@@ -312,6 +312,12 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      * deliberately do NOT fall back to the old logsv2 GROUP BY query: the whole
      * point of this function is to never run that scan again.
      *
+     * Cache policy: only the result of a successful query against a populated
+     * rollup is cached for STATUS_CACHE_TTL (24h). Errors, timeouts, missing
+     * rollups, and empty-during-rebuild outcomes all return 0 *without
+     * caching* so the next request retries — otherwise a single transient
+     * failure would hide repeat-visitor URLs for a full day.
+     *
      * @return int Number of captured URLs with 3+ log hits
      */
     function getHighImpactCapturedCount(): int {
@@ -321,6 +327,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         }
 
         // If the rollup is not available, defer rather than scan logsv2.
+        // Do not cache: the rebuild is in flight and the next request should retry.
         if (!$this->logsHitsTableExists()) {
             $this->scheduleHitsTableRebuild();
             return 0;
@@ -329,13 +336,25 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         $query = $this->buildHighImpactCapturedCountQuery();
 
         $result = $this->queryWithTimeout($query, 60);
+        $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
         $rows = is_array($result['rows']) ? $result['rows'] : array();
         $count = (!empty($rows) && isset($rows[0]['cnt'])) ? intval($rows[0]['cnt']) : 0;
 
+        // Do not cache on error/timeout — the rollup is fine, the query just
+        // failed transiently (network blip, replication lag, etc.). Caching 0
+        // for 24h would silently hide real repeat-visitor URLs.
+        if ($hadError) {
+            return 0;
+        }
+
         // If the rollup exists but has no rows yet (first run, or rebuild in
-        // progress), schedule a rebuild so the next call can return real data.
-        if ($count === 0 && empty($result['last_error']) && empty($result['timed_out'])) {
-            $this->maybeScheduleRebuildIfHitsTableEmpty();
+        // progress), schedule a rebuild AND skip caching so the next request
+        // can serve real data once the rebuild completes (typically seconds).
+        if ($count === 0) {
+            if ($this->isHitsTableEmpty()) {
+                $this->scheduleHitsTableRebuild();
+                return 0;
+            }
         }
 
         set_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED, $count, self::STATUS_CACHE_TTL);
@@ -360,18 +379,23 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
     }
 
     /**
-     * Schedule a rebuild only if logs_hits is empty (no aggregation done yet).
-     * Cheap: SELECT 1 ... LIMIT 1 against a small table.
-     * @return void
+     * Cheap probe: does the logs_hits rollup contain at least one row?
+     * SELECT 1 ... LIMIT 1 against a small table.
+     *
+     * @return bool true when the rollup has zero rows (rebuild in progress,
+     *              cold start, or post-truncate). false when at least one
+     *              row exists OR when the probe itself errors (treat
+     *              ambiguous probes as "not empty" so we don't spam reschedules).
      */
-    private function maybeScheduleRebuildIfHitsTableEmpty(): void {
+    private function isHitsTableEmpty(): bool {
         $check = "SELECT 1 FROM {wp_abj404_logs_hits} LIMIT 1";
         $check = $this->doTableNameReplacements($check);
         $result = $this->queryAndGetResults($check);
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        if (empty($rows)) {
-            $this->scheduleHitsTableRebuild();
+        if (!empty($result['last_error']) || !empty($result['timed_out'])) {
+            return false;
         }
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        return empty($rows);
     }
 
     /**
