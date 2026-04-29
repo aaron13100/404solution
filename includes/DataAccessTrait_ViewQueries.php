@@ -296,6 +296,22 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
     /**
      * Count captured URLs that have been hit 3 or more times (signal of real user impact).
      * Uses transient caching for performance.
+     *
+     * Implementation: INNER JOIN against the pre-aggregated logs_hits rollup,
+     * which already stores logshits per requested_url and is rebuilt by cron via
+     * createRedirectsForViewHitsTable(). Same JOIN shape as
+     * getRedirectsForViewQuery() — BINARY column equality.
+     *
+     * The previous implementation aggregated logsv2 with GROUP BY + HAVING per
+     * call; on busy sites with millions of log rows that took 30–60s and hit
+     * the AJAX timeout. The pre-aggregated table makes the count O(distinct
+     * URLs) instead of O(total log rows).
+     *
+     * Fallback: if logs_hits is missing or empty, return 0 and schedule a
+     * shutdown-time rebuild so a subsequent request can serve real data. We
+     * deliberately do NOT fall back to the old logsv2 GROUP BY query: the whole
+     * point of this function is to never run that scan again.
+     *
      * @return int Number of captured URLs with 3+ log hits
      */
     function getHighImpactCapturedCount(): int {
@@ -304,30 +320,58 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             return intval(is_scalar($cached) ? $cached : 0);
         }
 
-        // Pre-aggregate log counts in a subquery, then count matching redirects.
-        // This avoids the expensive varchar JOIN (r.url = l.requested_url with
-        // 190-char prefix indexes) and the GROUP BY + HAVING temp table on the
-        // redirects table.  The logsv2 subquery uses the requested_url index to
-        // aggregate, and the outer query checks existence via IN on the same
-        // prefix-indexed column — far cheaper than a full JOIN.
-        $query = "SELECT COUNT(*) as cnt
-            FROM {wp_abj404_redirects} r
-            WHERE r.status = " . ABJ404_STATUS_CAPTURED . " AND r.disabled = 0
-              AND r.url IN (
-                SELECT requested_url
-                FROM {wp_abj404_logsv2}
-                GROUP BY requested_url
-                HAVING COUNT(*) >= 3
-              )";
-        $query = $this->doTableNameReplacements($query);
+        // If the rollup is not available, defer rather than scan logsv2.
+        if (!$this->logsHitsTableExists()) {
+            $this->scheduleHitsTableRebuild();
+            return 0;
+        }
+
+        $query = $this->buildHighImpactCapturedCountQuery();
 
         $result = $this->queryWithTimeout($query, 60);
         $rows = is_array($result['rows']) ? $result['rows'] : array();
         $count = (!empty($rows) && isset($rows[0]['cnt'])) ? intval($rows[0]['cnt']) : 0;
 
+        // If the rollup exists but has no rows yet (first run, or rebuild in
+        // progress), schedule a rebuild so the next call can return real data.
+        if ($count === 0 && empty($result['last_error']) && empty($result['timed_out'])) {
+            $this->maybeScheduleRebuildIfHitsTableEmpty();
+        }
+
         set_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED, $count, self::STATUS_CACHE_TTL);
 
         return $count;
+    }
+
+    /**
+     * Build the SQL for getHighImpactCapturedCount(). Exposed so structural
+     * regression tests can assert no logsv2 access and verify the EXPLAIN plan.
+     *
+     * @return string Fully-replaced SQL (table-name placeholders resolved).
+     */
+    function buildHighImpactCapturedCountQuery(): string {
+        $query = "SELECT COUNT(*) AS cnt
+            FROM {wp_abj404_redirects} r
+            INNER JOIN {wp_abj404_logs_hits} h
+                ON BINARY r.url = BINARY h.requested_url
+            WHERE r.status = " . ABJ404_STATUS_CAPTURED . " AND r.disabled = 0
+              AND h.logshits >= 3";
+        return $this->doTableNameReplacements($query);
+    }
+
+    /**
+     * Schedule a rebuild only if logs_hits is empty (no aggregation done yet).
+     * Cheap: SELECT 1 ... LIMIT 1 against a small table.
+     * @return void
+     */
+    private function maybeScheduleRebuildIfHitsTableEmpty(): void {
+        $check = "SELECT 1 FROM {wp_abj404_logs_hits} LIMIT 1";
+        $check = $this->doTableNameReplacements($check);
+        $result = $this->queryAndGetResults($check);
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        if (empty($rows)) {
+            $this->scheduleHitsTableRebuild();
+        }
     }
 
     /**
