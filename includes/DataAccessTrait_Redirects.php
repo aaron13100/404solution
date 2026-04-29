@@ -236,26 +236,35 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         // disk usage (MB to bytes). delete 1k rows at a time until the size is acceptable.
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
         $maxLogSizeBytes = (array_key_exists('maximum_log_disk_usage', $options) ? $options['maximum_log_disk_usage'] : 100) * 1024 * 1000;
-        
-        // Approximation: information_schema.TABLE_ROWS instead of a full
-        // COUNT(id) scan. The value is only used as the denominator in
-        // averageSizePerLine, so a ~1% drift is irrelevant. On 10M-row
-        // logsv2 this saves a multi-second index scan every daily cron tick.
-        $totalLogLines = $abj404dao->getLogsCountApprox();
-        $averageSizePerLine = max($logsSizeBytes, 1) / max($totalLogLines, 1);
-        $logLinesToKeep = ceil($maxLogSizeBytes / $averageSizePerLine);
-        $logLinesToDelete = max($totalLogLines - $logLinesToKeep, 0);
-        if ($logLinesToDelete == null || trim((string)$logLinesToDelete) == '') {
-        	$logLinesToDelete = 0;
-        }
-        if ($logLinesToDelete > 0) {
-	        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
-	        $query = $this->f->str_replace('{lines_to_delete}', (string)$logLinesToDelete, $query);
-	        $results = $this->queryAndGetResults($query);
-            $oldLogRowsDeletedBySizeRaw = $results['rows_affected'] ?? 0;
-            $oldLogRowsDeletedBySize = (is_int($oldLogRowsDeletedBySizeRaw) || is_float($oldLogRowsDeletedBySizeRaw) || is_string($oldLogRowsDeletedBySizeRaw))
-                ? (int)$oldLogRowsDeletedBySizeRaw
-                : 0;
+
+        // Disk-size gate first: skip the trim entirely when we're under budget.
+        // This keeps the daily cron path fast in the common case (no over-quota,
+        // no scan, no destructive query) without relying on a row-count
+        // approximation for any decision that drives DELETE.
+        //
+        // When we ARE over budget, pay for an exact COUNT(id) before computing
+        // logLinesToDelete. An information_schema.TABLE_ROWS approximation
+        // would be cheap, but for InnoDB it can drift by orders of magnitude
+        // — using it as the denominator of a destructive DELETE … LIMIT N
+        // query risks over-deleting retained logs (approx too low →
+        // averageSizePerLine inflated → logLinesToKeep too small) or
+        // under-deleting enough to miss the disk cap (approx too high →
+        // reverse). The exact COUNT cost is paid only on the rare ticks
+        // where we actually need to trim.
+        if ($logsSizeBytes > $maxLogSizeBytes) {
+            $totalLogLines = $abj404dao->getLogsCount(0);
+            $averageSizePerLine = max($logsSizeBytes, 1) / max($totalLogLines, 1);
+            $logLinesToKeep = ceil($maxLogSizeBytes / $averageSizePerLine);
+            $logLinesToDelete = max($totalLogLines - $logLinesToKeep, 0);
+            if ($logLinesToDelete > 0) {
+                $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
+                $query = $this->f->str_replace('{lines_to_delete}', (string)$logLinesToDelete, $query);
+                $results = $this->queryAndGetResults($query);
+                $oldLogRowsDeletedBySizeRaw = $results['rows_affected'] ?? 0;
+                $oldLogRowsDeletedBySize = (is_int($oldLogRowsDeletedBySizeRaw) || is_float($oldLogRowsDeletedBySizeRaw) || is_string($oldLogRowsDeletedBySizeRaw))
+                    ? (int)$oldLogRowsDeletedBySizeRaw
+                    : 0;
+            }
         }
         
         $logsSizeBytes = $abj404dao->getLogDiskUsage();
