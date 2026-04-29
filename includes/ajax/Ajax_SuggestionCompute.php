@@ -22,15 +22,6 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
     const COMPUTE_RATE_LIMIT_WINDOW_SECONDS = 60;
 
     /**
-     * N-gram cache size threshold for skipping gate 4.
-     * Below this, the worst-case full Levenshtein scan is cheap enough that
-     * we may bypass gate 4 in the async path to broaden recall.  At or above
-     * this corpus size the full scan is expensive (~5s on 10K+ posts), so we
-     * leave gate 4 ON so a Dice<0.3 result returns early instead of scanning.
-     */
-    const SKIP_GATE4_MAX_CANDIDATES = 200;
-
-    /**
      * Compute suggestions for a 404 URL and store results in transient.
      * This runs in a background HTTP request.
      *
@@ -175,30 +166,13 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         // Get options for suggestion settings
         $options = $abj404logic->getOptions();
 
-        // Conditional gate-4 bypass.  Gate 4 is the early return that fires
-        // when the N-gram prefilter finds zero candidates at Dice >= 0.3.
-        // On a small corpus the worst-case full Levenshtein fallback is
-        // cheap, so we skip the gate to broaden recall.  On a large corpus
-        // the fallback is expensive (~5s on 10K+ posts), so we leave gate 4
-        // ON to cap worst-case cost per request — same recall on the common
-        // case (where the prefilter does find candidates), much lower
-        // worst-case cost when it doesn't.
-        $candidateCount = 0;
-        try {
-            if (class_exists('ABJ_404_Solution_NGramFilter')) {
-                $ngram = ABJ_404_Solution_NGramFilter::getInstance();
-                if (is_object($ngram) && method_exists($ngram, 'getCacheCount')) {
-                    $candidateCount = (int)$ngram->getCacheCount();
-                }
-            }
-        } catch (Throwable $e) {
-            // If the corpus size cannot be read, default to NOT skipping
-            // gate 4 — the safer choice (caps worst-case cost).
-            $candidateCount = self::SKIP_GATE4_MAX_CANDIDATES;
-        }
-        if ($candidateCount < self::SKIP_GATE4_MAX_CANDIDATES) {
-            $spellChecker->setSkipNgramGate4(true);
-        }
+        // Gate 4 is the early return that fires when the N-gram prefilter
+        // finds zero candidates at Dice >= 0.3. That is useful in the
+        // synchronous redirect path, but it suppresses page suggestions for
+        // long or low-overlap 404 URLs. This worker is already asynchronous
+        // and rate-limited, so prioritize recall and let the full
+        // Levenshtein fallback produce the best available suggestions.
+        $spellChecker->setSkipNgramGate4(true);
 
         // Perform the expensive computation
         $suggestCatsRaw = isset($options['suggest_cats']) ? $options['suggest_cats'] : '';
