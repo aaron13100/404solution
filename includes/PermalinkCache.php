@@ -175,17 +175,23 @@ class ABJ_404_Solution_PermalinkCache {
             return 0;
         }
 
-        $updated = 0;
+        $idToKeywords = array();
         foreach ($rows as $row) {
             $id = isset($row->id) ? (int)$row->id : 0;
+            if ($id <= 0) {
+                continue;
+            }
             $content = isset($row->post_content) && is_string($row->post_content) ? $row->post_content : '';
-
-            $keywords = self::extractContentKeywords($content);
-            $this->dao->updateContentKeywordsForId($id, $keywords);
-            $updated++;
+            $idToKeywords[$id] = self::extractContentKeywords($content);
         }
 
-        return $updated;
+        if (empty($idToKeywords)) {
+            return 0;
+        }
+
+        $this->dao->bulkUpdateContentKeywords($idToKeywords);
+
+        return count($idToKeywords);
     }
 
     /**

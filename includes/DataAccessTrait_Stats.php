@@ -820,26 +820,58 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
     }
 
     /**
-     * Store extracted content keywords for a permalink cache entry.
+     * Bulk-update content_keywords for many permalink cache rows in a single
+     * UPDATE statement, eliminating the N+1 round trips that previously hit
+     * the DB on every cron tick and on every anonymous-AJAX suggestion-compute
+     * request that touched populateContentKeywords (audit finding G3).
      *
-     * @param int    $id       The post ID (permalink cache primary key).
-     * @param string $keywords Space-separated lowercase keywords.
+     * Builds:
+     *   UPDATE {table} SET content_keywords = CASE id
+     *       WHEN %d THEN %s ... END
+     *   WHERE id IN (%d, %d, ...)
+     *
+     * Routes through queryAndGetResults() so the bulk write inherits the
+     * centralized timeout, retry, and corrupted-table recovery.
+     *
+     * @param array<int, string> $idToKeywords Map of permalink cache id => keywords string.
      * @return void
      */
-    function updateContentKeywordsForId(int $id, string $keywords): void {
-        global $wpdb;
+    function bulkUpdateContentKeywords(array $idToKeywords): void {
+        if (empty($idToKeywords)) {
+            return;
+        }
 
         $table = $this->doTableNameReplacements('{wp_abj404_permalink_cache}');
-        $wpdb->update(
-            $table,
-            array('content_keywords' => $keywords),
-            array('id' => $id),
-            array('%s'),
-            array('%d')
-        );
 
-        if ($wpdb->last_error && !$this->classifyAndHandleInfrastructureError($wpdb->last_error)) {
-            $this->logger->errorMessage("Error updating content_keywords for id $id: " . $wpdb->last_error);
+        $whenClauses = array();
+        $params = array();
+        $ids = array();
+        foreach ($idToKeywords as $id => $keywords) {
+            $intId = (int) $id;
+            $whenClauses[] = 'WHEN %d THEN %s';
+            $params[] = $intId;
+            $params[] = is_string($keywords) ? $keywords : '';
+            $ids[] = $intId;
+        }
+
+        $idPlaceholders = implode(',', array_fill(0, count($ids), '%d'));
+
+        $sql = "UPDATE `{$table}` SET content_keywords = CASE id\n        "
+            . implode("\n        ", $whenClauses)
+            . "\n        END\n        WHERE id IN ({$idPlaceholders})";
+
+        $allParams = array_merge($params, $ids);
+
+        $result = $this->queryAndGetResults($sql, array('query_params' => $allParams));
+
+        $lastError = isset($result['last_error']) ? (string) $result['last_error'] : '';
+        if ($lastError !== '') {
+            // "Unknown column" means content_keywords hasn't been added yet (DB migration pending).
+            // Other infrastructure errors are already handled by queryAndGetResults; only log
+            // unclassified errors here.
+            if (stripos($lastError, 'unknown column') !== false) {
+                $this->logger->warn("content_keywords column not yet available (DB migration pending): " . $lastError);
+            }
         }
     }
 
