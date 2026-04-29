@@ -722,11 +722,9 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
             // Log so the operator can correlate "no top URLs in digest" with
             // a rollup rebuild in flight, instead of silently shipping an
             // empty table that looks like "no captured 404s in this period."
-            if (isset($this->logger) && method_exists($this->logger, 'warn')) {
-                $this->logger->warn('getTopCapturedForDigest: logs_hits rollup unavailable; '
-                    . 'digest top-captured table will be empty until rebuild completes. '
-                    . 'EmailDigest pre-checks via logsHitsTableExists() to render an "unavailable" message instead.');
-            }
+            $this->logger->warn('getTopCapturedForDigest: logs_hits rollup unavailable; '
+                . 'digest top-captured table will be empty until rebuild completes. '
+                . 'EmailDigest pre-checks via logsHitsTableExists() to render an "unavailable" message instead.');
             $this->scheduleHitsTableRebuild();
             return array();
         }
@@ -738,13 +736,12 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
             // Transient query failure on a present rollup. Log so the operator
             // can correlate "empty digest table" with a real DB hiccup rather
             // than assuming "no captured 404s in this period."
-            if (isset($this->logger) && method_exists($this->logger, 'warn')) {
-                $errMsg = isset($result['last_error']) ? (string)$result['last_error'] : '';
-                $timedOut = !empty($result['timed_out']);
-                $this->logger->warn('getTopCapturedForDigest: query failed against present rollup; '
-                    . 'digest top-captured table will be empty. timed_out=' . ($timedOut ? '1' : '0')
-                    . ', error=' . ($errMsg !== '' ? $errMsg : '(none)'));
-            }
+            $errRaw = $result['last_error'] ?? '';
+            $errMsg = is_string($errRaw) ? $errRaw : '';
+            $timedOut = !empty($result['timed_out']);
+            $this->logger->warn('getTopCapturedForDigest: query failed against present rollup; '
+                . 'digest top-captured table will be empty. timed_out=' . ($timedOut ? '1' : '0')
+                . ', error=' . ($errMsg !== '' ? $errMsg : '(none)'));
             return array();
         }
 
@@ -887,7 +884,7 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
             $intId = (int) $id;
             $whenClauses[] = 'WHEN %d THEN %s';
             $params[] = $intId;
-            $params[] = is_string($keywords) ? $keywords : '';
+            $params[] = $keywords;
             $ids[] = $intId;
         }
 
@@ -901,7 +898,8 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
 
         $result = $this->queryAndGetResults($sql, array('query_params' => $allParams));
 
-        $lastError = isset($result['last_error']) ? (string) $result['last_error'] : '';
+        $lastErrorRaw = $result['last_error'] ?? '';
+        $lastError = is_string($lastErrorRaw) ? $lastErrorRaw : '';
         if ($lastError !== '') {
             // "Unknown column" means content_keywords hasn't been added yet (DB migration pending).
             // Other infrastructure errors are already handled by queryAndGetResults; only log

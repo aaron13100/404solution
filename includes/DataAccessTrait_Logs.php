@@ -398,7 +398,8 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             // Never fall back to scanning logsv2.
             if (!empty($chunkResult['timed_out']) ||
                 (isset($chunkResult['last_error']) && $chunkResult['last_error'] != '')) {
-                $err = isset($chunkResult['last_error']) ? (string)$chunkResult['last_error'] : '';
+                $errRaw = $chunkResult['last_error'] ?? '';
+                $err = is_string($errRaw) ? $errRaw : '';
                 if ($err !== '' && strpos($err, 'logs_hits') !== false) {
                     $this->scheduleHitsTableRebuild();
                 }

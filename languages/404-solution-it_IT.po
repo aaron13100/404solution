@@ -3737,3 +3737,7 @@ msgstr "Caricamento sezione Google Search Console…"
 #: includes/ajax/Ajax_Php.php includes/js/settingsDeferred.js
 msgid "Unable to load Google Search Console section."
 msgstr "Impossibile caricare la sezione Google Search Console."
+
+#: includes/EmailDigest.php
+msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
+msgstr "URL principali non disponibili: il riepilogo dei log è in fase di ricostruzione. Sarà disponibile nel prossimo riepilogo."

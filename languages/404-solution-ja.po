@@ -3753,3 +3753,7 @@ msgstr "Google Search Consoleセクションを読み込み中…"
 #: includes/ajax/Ajax_Php.php includes/js/settingsDeferred.js
 msgid "Unable to load Google Search Console section."
 msgstr "Google Search Consoleセクションを読み込めませんでした。"
+
+#: includes/EmailDigest.php
+msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
+msgstr "上位のURLは利用できません：ログ集計を再構築中です。次回のダイジェストで利用可能になります。"

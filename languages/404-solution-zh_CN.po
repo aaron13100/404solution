@@ -3746,3 +3746,7 @@ msgstr "正在加载Google Search Console部分…"
 #: includes/ajax/Ajax_Php.php includes/js/settingsDeferred.js
 msgid "Unable to load Google Search Console section."
 msgstr "无法加载Google Search Console部分。"
+
+#: includes/EmailDigest.php
+msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
+msgstr "热门URL不可用：日志汇总正在重建中。将在下一次摘要中提供。"
