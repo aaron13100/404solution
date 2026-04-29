@@ -1546,11 +1546,44 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
      *   'hits_redirect' => int  (rows where dest_url is not the 404 sentinel)
      *   'new_captures'  => int  (same as hits_404 for trend purposes)
      *
+     * Result is cached in a transient keyed on (blog_id, days, max_log_id)
+     * with TTL TREND_DATA_CACHE_TTL_SECONDS. New log inserts increase
+     * max_log_id which moves the cache key, so fresh data appears
+     * automatically as soon as a new request arrives.
+     *
      * @param int $days Number of days (default 30, clamped to 1-90)
      * @return array<int, array<string, mixed>>
      */
     public function getDailyActivityTrend(int $days = 30): array {
         $days = max(1, min(90, $days));
+
+        $blogId = 1;
+        if (function_exists('get_current_blog_id')) {
+            $blogId = function_exists('absint')
+                ? absint(get_current_blog_id())
+                : abs(intval(get_current_blog_id()));
+            if ($blogId <= 0) {
+                $blogId = 1;
+            }
+        }
+
+        $maxLogId = 0;
+        try {
+            $maxLogId = intval($this->getMaxLogId());
+            if ($maxLogId < 0) {
+                $maxLogId = 0;
+            }
+        } catch (Throwable $unused) {
+            $maxLogId = 0;
+        }
+
+        $cacheKey = 'abj404_trend_v1_' . $blogId . '_' . $days . '_' . $maxLogId;
+        if (function_exists('get_transient')) {
+            $cached = get_transient($cacheKey);
+            if (is_array($cached)) {
+                return $cached;
+            }
+        }
 
         $logsTable = $this->doTableNameReplacements('{wp_abj404_logsv2}');
         $cutoff = time() - ($days * 86400);
@@ -1602,6 +1635,10 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
                     'new_captures'  => 0,
                 );
             }
+        }
+
+        if (function_exists('set_transient')) {
+            set_transient($cacheKey, $output, self::TREND_DATA_CACHE_TTL_SECONDS);
         }
 
         return $output;

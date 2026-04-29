@@ -43,6 +43,8 @@ class ABJ_404_Solution_DataAccess {
     const PERIODIC_STATS_CACHE_TTL_SECONDS = 300;
     /** @var int Minimum interval before recalculating expensive stats aggregates. */
     const PERIODIC_STATS_REFRESH_COOLDOWN_SECONDS = 30;
+    /** @var int Max age for cached daily-activity trend data (Stats tab Chart.js). */
+    const TREND_DATA_CACHE_TTL_SECONDS = 900;
     /** @var int Retention for dashboard stats snapshot payload (stale snapshot is acceptable for fast first paint). */
     const STATS_DASHBOARD_CACHE_TTL_SECONDS = 86400;
     /** @var int Minimum time between full stats snapshot recomputes. */
