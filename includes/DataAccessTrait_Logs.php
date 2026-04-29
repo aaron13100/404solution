@@ -313,13 +313,27 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
     }
     
     /**
+     * Populate logshits / logsid / last_used on each row from the pre-aggregated
+     * wp_abj404_logs_hits rollup. Used by the captured/redirects table fallback
+     * path when the main getRedirectsForView JOIN cannot include the rollup
+     * (logs_hits race, sort by url/status/timestamp with queryAllRowsAtOnce=false).
+     *
+     * Reads only from logs_hits — never scans wp_abj404_logsv2. The previous
+     * implementation aggregated logsv2 with GROUP BY in 50-URL chunks; on busy
+     * sites with hot URLs (100K+ hits/URL) that meant 100K rows scanned per
+     * chunk, routinely hitting the centralized 60s timeout. logs_hits is
+     * O(distinct URLs), so the same lookup runs in milliseconds.
+     *
+     * Fallback: if logs_hits is missing or the lookup errors, schedule a
+     * shutdown-time rebuild (mirrors getHighImpactCapturedCount, commit
+     * 9133848d) and return rows with their original null/zero hit fields.
+     * Never falls back to scanning logsv2 — the whole point is to never run
+     * that query again.
+     *
      * @param array<int, array<string, mixed>> $rows
      * @return array<int, array<string, mixed>>
      */
     function populateLogsData($rows) {
-        global $wpdb;
-
-        // If no rows, return early
         if (empty($rows)) {
             return $rows;
         }
@@ -336,45 +350,54 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             }
         }
 
-        // If no valid URLs, return rows unchanged
         if (empty($urls)) {
             return $rows;
         }
 
-        // Remove duplicates to avoid unnecessary work
         $urls = array_values(array_unique($urls));
 
-        // Fetch logs data in batches to avoid extremely large IN() clauses
-        // which can be slow on tables with prefix indexes (190-char limit).
-        $logsTable = $this->getPrefixedTableName('abj404_logsv2');
-        $batchSize = 50;
+        // If the rollup is not available, defer to a shutdown-time rebuild
+        // rather than scan raw logsv2. Caller sees rows with null hits — same
+        // contract as the main getRedirectsForView path when logs_hits is missing.
+        if (!$this->logsHitsTableExists()) {
+            $this->scheduleHitsTableRebuild();
+            return $rows;
+        }
+
+        // Chunk lookups so an absurdly large URL set doesn't build a multi-MB
+        // IN() clause. logs_hits is small (O(distinct URLs)) so a generous batch
+        // is fine — we cap at 200 to stay well within MySQL packet limits.
+        $logsHitsTable = $this->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $batchSize = 200;
         $logsResults = array();
         $urlChunks = array_chunk($urls, $batchSize);
 
         foreach ($urlChunks as $urlChunk) {
             $placeholders = implode(',', array_fill(0, count($urlChunk), '%s'));
-            $sql = "SELECT requested_url,
-                        MIN(id) AS logsid,
-                        MAX(timestamp) AS last_used,
-                        COUNT(requested_url) AS logshits
-                 FROM {$logsTable}
-                 WHERE requested_url IN ($placeholders)
-                 GROUP BY requested_url";
+            // BINARY column equality matches getRedirectsForViewQuery() so case
+            // and encoding edge cases behave identically across the main path
+            // and this fallback. logs_hits stores rows by their exact logged
+            // URL — variants like '/foo' and 'foo' may both exist as separate
+            // rows; the PHP-side aggregation below merges them by canonical URL.
+            $sql = "SELECT requested_url, logsid, last_used, logshits "
+                 . "FROM {$logsHitsTable} "
+                 . "WHERE BINARY requested_url IN ($placeholders)";
 
-            // Route through queryAndGetResults so each chunk inherits the
-            // centralized 60s timeout. Without it, a slow chunk on a huge
-            // logsv2 table can stall an admin AJAX request past the
-            // reverse-proxy limit (Cloudflare 524).
             $chunkResult = $this->queryAndGetResults($sql, array(
                 'query_params' => $urlChunk,
                 'log_too_slow' => false,
             ));
 
-            // queryAndGetResults() already logs errors/timeouts and applies
-            // recovery. On failure abort the whole population early so we
-            // don't leak partial data into the view.
+            // logs_hits can be dropped between the existence check above and
+            // this query (rebuild race). Treat any failure as "rollup
+            // unavailable": schedule a rebuild and return rows untouched.
+            // Never fall back to scanning logsv2.
             if (!empty($chunkResult['timed_out']) ||
                 (isset($chunkResult['last_error']) && $chunkResult['last_error'] != '')) {
+                $err = isset($chunkResult['last_error']) ? (string)$chunkResult['last_error'] : '';
+                if ($err !== '' && strpos($err, 'logs_hits') !== false) {
+                    $this->scheduleHitsTableRebuild();
+                }
                 return $rows;
             }
 
