@@ -878,7 +878,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             return $fresh;
         }
 
-        $observed = (is_array($fresh) && isset($fresh['DB_VERSION']) && is_scalar($fresh['DB_VERSION']))
+        $observed = (isset($fresh['DB_VERSION']) && is_scalar($fresh['DB_VERSION']))
             ? (string)$fresh['DB_VERSION']
             : '(missing)';
         $this->logger->warn(sprintf(
@@ -886,7 +886,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $observed,
             ABJ404_VERSION
         ));
-        return is_array($fresh) ? $fresh : $options;
+        return $fresh;
     }
 
     /**
