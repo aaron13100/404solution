@@ -77,7 +77,15 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         }
 
         // (3) Token check via transient lookup.
-        $urlKey = md5($requestedURL);
+        // Use the same normalizeURLForCacheKey() pipeline as the producer
+        // (SpellChecker::triggerAsyncSuggestionComputation) and the polling
+        // consumer (Ajax_SuggestionPolling::pollSuggestions). Without this,
+        // any URL that esc_url touches — spaces, unicode, double ampersands —
+        // hashes to a different transient key than the producer wrote, and
+        // this worker reports "Unauthorized" while the polling client never
+        // finds the result. Sibling shape of 73f21bce / 6e0908a8 / 83b9fb85.
+        $normalizedURL = $f->normalizeURLForCacheKey($requestedURL);
+        $urlKey = md5($normalizedURL);
         $transientKey = 'abj404_suggest_' . $urlKey;
 
         $existingRaw = get_transient($transientKey);
