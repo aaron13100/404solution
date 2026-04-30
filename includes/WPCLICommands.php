@@ -291,7 +291,6 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
         require_once __DIR__ . '/DataAccess.php';
 
-        global $wpdb;
         $dao = ABJ_404_Solution_DataAccess::getInstance();
 
         $table = $dao->doTableNameReplacements('{wp_abj404_redirects}');
@@ -302,9 +301,11 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         ));
 
         // Count before confirming so the user knows the blast radius.
-        $count = (int)$wpdb->get_var(
-            "SELECT COUNT(*) FROM `{$table}` WHERE status IN ({$statusIn}) AND disabled = 0"
+        $countResult = $dao->queryAndGetResults(
+            "SELECT COUNT(*) AS c FROM `{$table}` WHERE status IN ({$statusIn}) AND disabled = 0"
         );
+        $countRow = $countResult['rows'][0] ?? null;
+        $count = is_array($countRow) && isset($countRow['c']) ? (int)$countRow['c'] : 0;
 
         if ($count === 0) {
             \WP_CLI::line('No captured 404 entries to purge.');
@@ -313,12 +314,12 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
         \WP_CLI::confirm("This will permanently delete {$count} captured 404 entr" . ($count === 1 ? 'y' : 'ies') . '. Continue?', $assocArgs);
 
-        $deleted = $wpdb->query(
+        $deleteResult = $dao->queryAndGetResults(
             "DELETE FROM `{$table}` WHERE status IN ({$statusIn}) AND disabled = 0"
         );
 
-        if ($deleted === false) {
-            \WP_CLI::error('Database error: ' . $wpdb->last_error);
+        if (!empty($deleteResult['last_error'])) {
+            \WP_CLI::error('Database error: ' . $deleteResult['last_error']);
             return;
         }
 
@@ -601,7 +602,12 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
         if ($type === 'ngram' || $type === 'all') {
             $ngramTable = $dao->doTableNameReplacements('{wp_abj404_ngram_cache}');
-            $wpdb->query("TRUNCATE TABLE `{$ngramTable}`");
+            // skip_repair: TRUNCATE itself is the recovery path during cache flush;
+            // we must not recurse into the missing-table repairer here.
+            $dao->queryAndGetResults(
+                "TRUNCATE TABLE `{$ngramTable}`",
+                ['skip_repair' => true]
+            );
             // Reset the initialized flag so the cache is rebuilt on the next request.
             delete_option('abj404_ngram_cache_initialized');
             delete_option('abj404_ngram_rebuild_offset');
@@ -694,8 +700,6 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
      * @return array<int, array<string, mixed>>
      */
     private function fetchRedirectRows($dao, array $types, $limit) {
-        global $wpdb;
-
         $table = $dao->doTableNameReplacements('{wp_abj404_redirects}');
         $limit = absint($limit);
 
@@ -712,7 +716,8 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
                   ORDER BY url ASC
                   LIMIT {$limit}";
 
-        $rows = $wpdb->get_results($query, ARRAY_A);
+        $result = $dao->queryAndGetResults($query);
+        $rows = $result['rows'] ?? [];
         return is_array($rows) ? $rows : array();
     }
 
