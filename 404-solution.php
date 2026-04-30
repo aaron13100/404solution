@@ -286,6 +286,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'Logging.php',
 				$inc . 'FrontendRequestPipeline.php',
 				$inc . 'ImportExportService.php',
+				$inc . 'QueryBudgetInstrumentation.php',
 				// View + traits
 				$inc . 'View.php',
 				$inc . 'ViewTrait_Shared.php',

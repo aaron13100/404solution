@@ -64,6 +64,12 @@ if (!defined("ABJ404_MAX_URL_LENGTH")) { define("ABJ404_MAX_URL_LENGTH", 4096); 
 // Load the bootstrap file which contains the service initialization function
 require_once(__DIR__ . '/bootstrap.php');
 
+// Optional runtime query-budget instrumentation.  No-op unless
+// ABJ404_QUERY_BUDGET_LOG env var or constant points to a writable
+// directory.  Implements the deliverable of technique 4 in
+// docs/PROACTIVE_BUG_DISCOVERY.md ("reverse-proxy timeout budget audit").
+require_once(__DIR__ . '/QueryBudgetInstrumentation.php');
+
 // Initialize the service container
 // This sets up dependency injection for all core services
 abj_404_solution_init_services();
