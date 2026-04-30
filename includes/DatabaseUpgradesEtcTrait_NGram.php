@@ -85,6 +85,16 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
                     get_current_blog_id()
                 );
 
+                // Pattern 7 (defense-in-depth): if a concurrent infra-level
+                // DB error (disk full, read-only, crashed table) contributed
+                // to wp_schedule_single_event() failing, surface it as a
+                // plugin-page admin notice. The cron failure itself remains
+                // ERROR level — the user must act on a broken cron — but
+                // the underlying hosting issue is the actionable cause.
+                if (!empty($wpdb->last_error)) {
+                    $this->dao->classifyAndHandleInfrastructureError($wpdb->last_error);
+                }
+
                 $this->logger->errorMessage($errorMsg);
                 return false;
             }
@@ -372,6 +382,14 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
                             is_multisite() ? 'yes' : 'no',
                             get_current_blog_id()
                         );
+
+                            // Pattern 7 (defense-in-depth): if a concurrent
+                            // infra-level DB error contributed to the cron
+                            // failure, surface the hosting cause as a
+                            // plugin-page admin notice.
+                            if (!empty($wpdb->last_error)) {
+                                $this->dao->classifyAndHandleInfrastructureError($wpdb->last_error);
+                            }
 
                             $this->logger->errorMessage($errorMsg);
                         }

@@ -1297,12 +1297,30 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
                 // Use a single ERROR line so email summaries include the actual DB error(s).
                 $context = $this->getWpdbRecentQueryContextForLogs();
                 $contextSuffix = ($context !== '') ? (" | savequeries_context=" . $context) : '';
-                $this->logger->errorMessage(
-                    "flushLogQueue recovery incomplete: {$successCount} inserted, {$failCount} failed." .
-                    " | batch_error=" . $batchError .
-                    " | failures=" . implode(' || ', $detailsParts) . $detailsSuffix .
-                    $contextSuffix
-                );
+                // Pattern 7 (defense-in-depth): the bespoke recovery above
+                // handles "table is full" + "commands out of sync" only. If
+                // $batchError is a different infra cause (disk full, read-only,
+                // crashed table, lock timeout, ...) classify it so the user
+                // gets a plugin-page admin notice rather than a dev email
+                // alone. classifyAndHandleInfrastructureError logs at WARN
+                // and returns true for matched infra causes; in that case we
+                // skip the errorMessage to avoid double-reporting (and to
+                // honor rule 8: hosting issues never trigger email reports).
+                if ($this->classifyAndHandleInfrastructureError($batchError)) {
+                    $this->logger->warn(
+                        "flushLogQueue recovery incomplete: {$successCount} inserted, {$failCount} failed." .
+                        " | batch_error=" . $batchError .
+                        " | failures=" . implode(' || ', $detailsParts) . $detailsSuffix .
+                        $contextSuffix
+                    );
+                } else {
+                    $this->logger->errorMessage(
+                        "flushLogQueue recovery incomplete: {$successCount} inserted, {$failCount} failed." .
+                        " | batch_error=" . $batchError .
+                        " | failures=" . implode(' || ', $detailsParts) . $detailsSuffix .
+                        $contextSuffix
+                    );
+                }
             } else {
                 // Batch insert failure was recovered; don't escalate as an error.
                 $this->logger->warn("flushLogQueue batch INSERT failed but recovered: all {$successCount} entries inserted individually. | batch_error=" . $batchError);

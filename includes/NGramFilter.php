@@ -979,7 +979,13 @@ class ABJ_404_Solution_NGramFilter {
             'version' => $currentVersion
         ];
 
-        // Cache in transient for subsequent requests
+        // @cache-write-audit: opt-out — self-validating cache. The cached
+        // payload carries the coverage version key (line 941 reads
+        // $cached['version']); any mutation to the underlying tables calls
+        // invalidateCoverageCaches() which bumps COVERAGE_VERSION_KEY, so a
+        // stale (or query-error-poisoned) entry is invalidated by the next
+        // mutation rather than by an explicit last_error/timed_out check.
+        // Reference fixes: 6315bcb8, c8fba7ee, 2a0a2dd6.
         set_transient(self::COVERAGE_RATIO_KEY, $this->coverageRatioMemo, self::COVERAGE_RATIO_CACHE_TTL);
 
         return $ratio;

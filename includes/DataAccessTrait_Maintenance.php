@@ -219,6 +219,8 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
                         'A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)');
                     $this->setPluginDbNotice('corrupted_temp_table', $noticeMessage, $errorMessage);
                     if (function_exists('set_transient')) {
+                        // @cache-write-audit: opt-out — admin-notice dedup cooldown
+                        // (one notice per 24h per failure type), not a query result.
                         set_transient($cooldownKey, 1, 86400);
                     }
                 }
@@ -485,7 +487,16 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
         $this->queryAndGetResults($query);
     }
 
-    /** @return void */
+    /**
+     * @cache-write-audit: opt-out — spelling_cache is itself the cache;
+     * SpellChecker recomputes lookups on demand from {wp_abj404_redirects}
+     * and {wp_abj404_permalink_cache}, neither of which derives a transient
+     * from spelling_cache rows. A grep for `spelling_cache` against
+     * includes/ confirms no transient/option keys depend on it. No
+     * dependent caches to invalidate.
+     *
+     * @return void
+     */
     function deleteSpellingCache(): void {
         $query = "truncate table {wp_abj404_spelling_cache}";
 
