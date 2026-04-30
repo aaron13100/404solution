@@ -870,6 +870,30 @@ class ABJ_404_Solution_DataAccess {
         $this->queryAndGetResults("set session sql_big_selects = 1", $ignoreErrorsOptions);
     }
 
+    /**
+     * Convenience: run a query that returns a single scalar value and return it
+     * as an int. The query must SELECT exactly one column from the first row;
+     * the column name is irrelevant — the first value of $rows[0] is taken.
+     *
+     * Returns 0 when the query fails, returns no rows, or the value is not
+     * scalar. Tightly typed so callers don't have to repeat the
+     * `is_array($result['rows']) && is_array($result['rows'][0]) && …`
+     * narrowing boilerplate at every COUNT(*) call site.
+     *
+     * @param string $query Any SELECT … that produces exactly one column.
+     * @param array<string, mixed> $options Options to forward to queryAndGetResults().
+     * @return int
+     */
+    public function queryScalarInt($query, $options = array()) {
+        $result = $this->queryAndGetResults($query, $options);
+        $rows = isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : array();
+        if (empty($rows) || !is_array($rows[0])) {
+            return 0;
+        }
+        $first = reset($rows[0]);
+        return is_scalar($first) ? (int)$first : 0;
+    }
+
     /** Return the results of the query in a variable.
      * @param string $query
      * @param array<string, mixed> $options

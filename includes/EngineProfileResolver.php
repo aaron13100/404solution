@@ -292,12 +292,13 @@ class ABJ_404_Solution_EngineProfileResolver {
             'SHOW TABLES LIKE %s',
             ['query_params' => [$table]]
         );
-        $rows = $queryResult['rows'] ?? [];
-        if (empty($rows) || !is_array($rows[0])) {
+        $rows = isset($queryResult['rows']) && is_array($queryResult['rows']) ? $queryResult['rows'] : [];
+        $first = $rows[0] ?? null;
+        if (!is_array($first)) {
             return false;
         }
-        $first = reset($rows[0]);
-        return $first === $table;
+        $firstValue = reset($first);
+        return $firstValue === $table;
     }
 
     /**
@@ -333,7 +334,8 @@ class ABJ_404_Solution_EngineProfileResolver {
                 ['query_params' => [$name, $urlPattern, $isRegex, $enabledEngines, $priority, $status, $id]]
             );
             $this->cachedProfiles = null;
-            return empty($queryResult['last_error']) ? $id : false;
+            $updateError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
+            return $updateError === '' ? $id : false;
         }
 
         $queryResult = $this->dao()->queryAndGetResults(
@@ -342,10 +344,11 @@ class ABJ_404_Solution_EngineProfileResolver {
             ['query_params' => [$name, $urlPattern, $isRegex, $enabledEngines, $priority, $status]]
         );
         $this->cachedProfiles = null;
-        if (!empty($queryResult['last_error'])) {
+        $lastError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
+        if ($lastError !== '') {
             return false;
         }
-        $insertId = isset($queryResult['insert_id']) ? (int)$queryResult['insert_id'] : 0;
+        $insertId = isset($queryResult['insert_id']) && is_scalar($queryResult['insert_id']) ? (int)$queryResult['insert_id'] : 0;
         return $insertId > 0 ? $insertId : false;
     }
 
@@ -362,7 +365,8 @@ class ABJ_404_Solution_EngineProfileResolver {
             ['query_params' => [$id]]
         );
         $this->cachedProfiles = null;
-        return empty($queryResult['last_error']);
+        $deleteError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
+        return $deleteError === '';
     }
 
     /**

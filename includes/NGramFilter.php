@@ -291,16 +291,18 @@ class ABJ_404_Solution_NGramFilter {
             ]]
         );
 
-        if (!empty($queryResult['last_error'])) {
+        $lastError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
+        if ($lastError !== '') {
             global $wpdb;
+            $dbName = isset($wpdb->dbname) && is_string($wpdb->dbname) ? $wpdb->dbname : '';
             // Enhanced error message with multisite context and table details
             $errorContext = sprintf(
                 "Failed to store N-grams for page ID %d: %s, Table: %s, Prefix: %s, DB: %s",
                 $pageId,
-                $queryResult['last_error'],
+                $lastError,
                 $table,
                 $this->dao->getLowercasePrefix(),
-                $wpdb->dbname
+                $dbName
             );
 
             // Add multisite context if applicable
@@ -308,7 +310,7 @@ class ABJ_404_Solution_NGramFilter {
                 $errorContext .= sprintf(", Blog ID: %d", get_current_blog_id());
             }
 
-            if (!$this->dao->classifyAndHandleInfrastructureError($queryResult['last_error'])) {
+            if (!$this->dao->classifyAndHandleInfrastructureError($lastError)) {
                 $this->logger->errorMessage($errorContext);
             }
             return false;
@@ -338,13 +340,13 @@ class ABJ_404_Solution_NGramFilter {
             ['query_params' => [$pageId, $type]]
         );
 
-        $rows = $queryResult['rows'] ?? [];
-        if (empty($rows) || !isset($rows[0]['ngrams'])) {
+        $rows = isset($queryResult['rows']) && is_array($queryResult['rows']) ? $queryResult['rows'] : [];
+        $first = $rows[0] ?? null;
+        if (!is_array($first) || !isset($first['ngrams']) || !is_string($first['ngrams'])) {
             return null;
         }
 
-        $result = $rows[0]['ngrams'];
-        $decoded = json_decode($result, true);
+        $decoded = json_decode($first['ngrams'], true);
         if (!is_array($decoded) || !isset($decoded['bi'], $decoded['tri'])) {
             return null;
         }
@@ -365,9 +367,7 @@ class ABJ_404_Solution_NGramFilter {
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
         // Check cache size first - abort if too large
-        $countResult = $this->dao->queryAndGetResults("SELECT COUNT(*) AS c FROM {$table}");
-        $countRow = $countResult['rows'][0] ?? null;
-        $count = is_array($countRow) && isset($countRow['c']) ? (int)$countRow['c'] : 0;
+        $count = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
         if ($count > 10000) {
             $this->logger->errorMessage("CRITICAL: N-gram cache has {$count} entries. Cannot load into memory. Feature disabled for this request.");
             return [];
@@ -380,22 +380,27 @@ class ABJ_404_Solution_NGramFilter {
         $listResult = $this->dao->queryAndGetResults(
             "SELECT id, url, url_normalized, ngrams, ngram_count FROM {$table}"
         );
-        $results = $listResult['rows'] ?? [];
+        $results = isset($listResult['rows']) && is_array($listResult['rows']) ? $listResult['rows'] : [];
 
-        if (!is_array($results) || empty($results)) {
+        if (empty($results)) {
             return [];
         }
 
         // Decode JSON for each entry and ensure array format
-        foreach ($results as &$row) {
-            // Handle both object and array results (defensive coding for test environments)
+        $output = [];
+        foreach ($results as $row) {
             if (is_object($row)) {
                 $row = (array) $row;
             }
-            $row['ngrams'] = json_decode($row['ngrams'], true);
+            if (!is_array($row)) {
+                continue;
+            }
+            $ngramsRaw = isset($row['ngrams']) && is_string($row['ngrams']) ? $row['ngrams'] : '';
+            $row['ngrams'] = json_decode($ngramsRaw, true);
+            $output[] = $row;
         }
 
-        return $results;
+        return $output;
     }
 
     /**
@@ -409,7 +414,7 @@ class ABJ_404_Solution_NGramFilter {
      * @param int $maxNgramCount Maximum N-gram count
      * @param int $limit Maximum number of results to return
      * @param int|null $targetNgramCount The query's actual N-gram count for proximity ordering
-     * @return array<int, object|array<string, mixed>> Array of cached entries
+     * @return array<int, array<string, mixed>> Array of cached entries
      */
     public function getCachedNGramsFiltered($minNgramCount, $maxNgramCount, $limit = 1000, $targetNgramCount = null) {
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
@@ -431,7 +436,7 @@ class ABJ_404_Solution_NGramFilter {
              LIMIT %d",
             ['query_params' => [$minNgramCount, $orderTarget, $halfLimit]]
         );
-        $resultsBelow = $belowResult['rows'] ?? [];
+        $resultsBelow = isset($belowResult['rows']) && is_array($belowResult['rows']) ? $belowResult['rows'] : [];
 
         // Query 2: above target - adjust limit based on below results to handle skewed distributions
         // If below side returned fewer than halfLimit, give the remainder to above side
@@ -446,7 +451,7 @@ class ABJ_404_Solution_NGramFilter {
              LIMIT %d",
             ['query_params' => [$orderTarget, $maxNgramCount, $aboveLimit]]
         );
-        $resultsAbove = $aboveResult['rows'] ?? [];
+        $resultsAbove = isset($aboveResult['rows']) && is_array($aboveResult['rows']) ? $aboveResult['rows'] : [];
 
         // If we didn't get enough results, fetch additional from whichever side hit its limit
         $aboveCount = count($resultsAbove);
@@ -463,7 +468,7 @@ class ABJ_404_Solution_NGramFilter {
                  LIMIT %d OFFSET %d",
                 ['query_params' => [$minNgramCount, $orderTarget, $additionalNeeded, $belowCount]]
             );
-            $extraBelow = $extraBelowResult['rows'] ?? [];
+            $extraBelow = isset($extraBelowResult['rows']) && is_array($extraBelowResult['rows']) ? $extraBelowResult['rows'] : [];
             $resultsBelow = array_merge($resultsBelow, $extraBelow);
             $totalFetched = count($resultsBelow) + $aboveCount;
         }
@@ -479,7 +484,7 @@ class ABJ_404_Solution_NGramFilter {
                  LIMIT %d OFFSET %d",
                 ['query_params' => [$orderTarget, $maxNgramCount, $additionalNeeded, $aboveCount]]
             );
-            $extraAbove = $extraAboveResult['rows'] ?? [];
+            $extraAbove = isset($extraAboveResult['rows']) && is_array($extraAboveResult['rows']) ? $extraAboveResult['rows'] : [];
             $resultsAbove = array_merge($resultsAbove, $extraAbove);
         }
 
@@ -489,6 +494,9 @@ class ABJ_404_Solution_NGramFilter {
         // Decode JSON for each entry, filtering out corrupt entries
         $validResults = [];
         foreach ($merged as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
             $ngramsJson = isset($row['ngrams']) && is_string($row['ngrams']) ? $row['ngrams'] : '';
             $decoded = json_decode($ngramsJson, true);
             if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
@@ -514,11 +522,11 @@ class ABJ_404_Solution_NGramFilter {
      * - $below: ngram_count <= target, ordered DESC by ngram_count (closest first)
      * - $above: ngram_count > target, ordered ASC by ngram_count (closest first)
      *
-     * @param array<int, array<string, mixed>> $below Results with ngram_count <= target
-     * @param array<int, array<string, mixed>> $above Results with ngram_count > target
+     * @param array<int, mixed> $below Results with ngram_count <= target
+     * @param array<int, mixed> $above Results with ngram_count > target
      * @param int $targetNgramCount The target N-gram count
      * @param int $limit Maximum results to return
-     * @return array<int, array<string, mixed>> Merged results ordered by proximity to target
+     * @return array<int, mixed> Merged results ordered by proximity to target
      */
     private function mergeByProximity($below, $above, $targetNgramCount, $limit) {
         $result = [];
@@ -529,9 +537,11 @@ class ABJ_404_Solution_NGramFilter {
 
         while (count($result) < $limit && ($i < $belowCount || $j < $aboveCount)) {
             // Calculate distances (use PHP_INT_MAX as sentinel for exhausted arrays)
-            $belowNgramRaw = ($i < $belowCount && isset($below[$i]['ngram_count'])) ? $below[$i]['ngram_count'] : 0;
+            $belowEntry = $below[$i] ?? null;
+            $aboveEntry = $above[$j] ?? null;
+            $belowNgramRaw = (is_array($belowEntry) && isset($belowEntry['ngram_count'])) ? $belowEntry['ngram_count'] : 0;
             $belowNgramCount = is_scalar($belowNgramRaw) ? (int)$belowNgramRaw : 0;
-            $aboveNgramRaw = ($j < $aboveCount && isset($above[$j]['ngram_count'])) ? $above[$j]['ngram_count'] : 0;
+            $aboveNgramRaw = (is_array($aboveEntry) && isset($aboveEntry['ngram_count'])) ? $aboveEntry['ngram_count'] : 0;
             $aboveNgramCount = is_scalar($aboveNgramRaw) ? (int)$aboveNgramRaw : 0;
             $distBelow = ($i < $belowCount)
                 ? abs($belowNgramCount - $targetNgramCount)
@@ -568,7 +578,8 @@ class ABJ_404_Solution_NGramFilter {
             ['query_params' => [(int)$pageId, $type]]
         );
 
-        $success = empty($queryResult['last_error']);
+        $lastError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
+        $success = $lastError === '';
         if ($success) {
             // Invalidate coverage ratio caches since N-gram count changed
             $this->invalidateCoverageCaches();
@@ -599,9 +610,9 @@ class ABJ_404_Solution_NGramFilter {
             "SELECT id, url FROM {$permalinkCacheTable} WHERE id IN ({$placeholders})",
             ['query_params' => array_values($pageIds)]
         );
-        $pages = $pageResult['rows'] ?? [];
+        $pages = isset($pageResult['rows']) && is_array($pageResult['rows']) ? $pageResult['rows'] : [];
 
-        if (!is_array($pages) || empty($pages)) {
+        if (empty($pages)) {
             return ['processed' => 0, 'success' => 0, 'failed' => 0];
         }
 
@@ -660,11 +671,7 @@ class ABJ_404_Solution_NGramFilter {
             "SELECT id, url FROM {$permalinkCacheTable} LIMIT %d OFFSET %d",
             ['query_params' => [$batchSize, $offset]]
         );
-        $pages = $batchResult['rows'] ?? [];
-
-        if (!is_array($pages)) {
-            $pages = [];
-        }
+        $pages = isset($batchResult['rows']) && is_array($batchResult['rows']) ? $batchResult['rows'] : [];
 
         $stats = [
             'processed' => 0,
@@ -893,9 +900,7 @@ class ABJ_404_Solution_NGramFilter {
             return $this->ngramCountMemo;
         }
 
-        $result = $this->dao->queryAndGetResults("SELECT COUNT(*) AS c FROM {$table}");
-        $row = $result['rows'][0] ?? null;
-        $this->ngramCountMemo = is_array($row) && isset($row['c']) ? (int)$row['c'] : 0;
+        $this->ngramCountMemo = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
         return $this->ngramCountMemo;
     }
 
@@ -940,12 +945,8 @@ class ABJ_404_Solution_NGramFilter {
         $permalinkTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
 
         // Get both counts (required for ratio computation)
-        $ngramCountResult = $this->dao->queryAndGetResults("SELECT COUNT(*) AS c FROM {$ngramTable}");
-        $ngramRow = $ngramCountResult['rows'][0] ?? null;
-        $ngramCount = is_array($ngramRow) && isset($ngramRow['c']) ? (int)$ngramRow['c'] : 0;
-        $permalinkCountResult = $this->dao->queryAndGetResults("SELECT COUNT(*) AS c FROM {$permalinkTable}");
-        $permalinkRow = $permalinkCountResult['rows'][0] ?? null;
-        $permalinkCount = is_array($permalinkRow) && isset($permalinkRow['c']) ? (int)$permalinkRow['c'] : 0;
+        $ngramCount = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$ngramTable}");
+        $permalinkCount = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkTable}");
 
         // Memoize ngram count to avoid redundant queries elsewhere
         $this->ngramCountMemo = $ngramCount;
@@ -986,32 +987,33 @@ class ABJ_404_Solution_NGramFilter {
     public function getCacheStats() {
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
-        $totalRow = $this->dao->queryAndGetResults("SELECT COUNT(*) AS c FROM {$table}");
-        $postsRow = $this->dao->queryAndGetResults(
+        $totalEntries = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
+        $postsEntries = $this->dao->queryScalarInt(
             "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
             ['query_params' => ['post']]
         );
-        $categoryRow = $this->dao->queryAndGetResults(
+        $categoryEntries = $this->dao->queryScalarInt(
             "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
             ['query_params' => ['category']]
         );
-        $tagRow = $this->dao->queryAndGetResults(
+        $tagEntries = $this->dao->queryScalarInt(
             "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
             ['query_params' => ['tag']]
         );
-        $lastUpdatedRow = $this->dao->queryAndGetResults(
+        $lastUpdatedResult = $this->dao->queryAndGetResults(
             "SELECT MAX(last_updated) AS m FROM {$table}"
         );
+        $lastUpdatedRows = isset($lastUpdatedResult['rows']) && is_array($lastUpdatedResult['rows']) ? $lastUpdatedResult['rows'] : [];
+        $lastUpdatedFirst = $lastUpdatedRows[0] ?? null;
+        $lastUpdated = is_array($lastUpdatedFirst) && isset($lastUpdatedFirst['m']) ? $lastUpdatedFirst['m'] : null;
 
-        $stats = [
-            'total_entries' => $totalRow['rows'][0]['c'] ?? null,
-            'posts_entries' => $postsRow['rows'][0]['c'] ?? null,
-            'category_entries' => $categoryRow['rows'][0]['c'] ?? null,
-            'tag_entries' => $tagRow['rows'][0]['c'] ?? null,
-            'last_updated' => $lastUpdatedRow['rows'][0]['m'] ?? null,
+        return [
+            'total_entries' => $totalEntries,
+            'posts_entries' => $postsEntries,
+            'category_entries' => $categoryEntries,
+            'tag_entries' => $tagEntries,
+            'last_updated' => $lastUpdated,
         ];
-
-        return $stats;
     }
 
     /**

@@ -301,11 +301,9 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         ));
 
         // Count before confirming so the user knows the blast radius.
-        $countResult = $dao->queryAndGetResults(
+        $count = $dao->queryScalarInt(
             "SELECT COUNT(*) AS c FROM `{$table}` WHERE status IN ({$statusIn}) AND disabled = 0"
         );
-        $countRow = $countResult['rows'][0] ?? null;
-        $count = is_array($countRow) && isset($countRow['c']) ? (int)$countRow['c'] : 0;
 
         if ($count === 0) {
             \WP_CLI::line('No captured 404 entries to purge.');
@@ -318,11 +316,13 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
             "DELETE FROM `{$table}` WHERE status IN ({$statusIn}) AND disabled = 0"
         );
 
-        if (!empty($deleteResult['last_error'])) {
-            \WP_CLI::error('Database error: ' . $deleteResult['last_error']);
+        $deleteError = isset($deleteResult['last_error']) && is_string($deleteResult['last_error']) ? $deleteResult['last_error'] : '';
+        if ($deleteError !== '') {
+            \WP_CLI::error('Database error: ' . $deleteError);
             return;
         }
 
+        $deleted = isset($deleteResult['rows_affected']) && is_scalar($deleteResult['rows_affected']) ? (int)$deleteResult['rows_affected'] : $count;
         \WP_CLI::success("Purged {$deleted} captured 404 entries.");
     }
 
@@ -717,8 +717,14 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
                   LIMIT {$limit}";
 
         $result = $dao->queryAndGetResults($query);
-        $rows = $result['rows'] ?? [];
-        return is_array($rows) ? $rows : array();
+        $rows = isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : array();
+        $output = [];
+        foreach ($rows as $row) {
+            if (is_array($row)) {
+                $output[] = $row;
+            }
+        }
+        return $output;
     }
 
     /**
