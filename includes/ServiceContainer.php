@@ -161,6 +161,36 @@ class ABJ_404_Solution_ServiceContainer {
  *
  * @param string $name Service identifier
  * @return mixed The service instance
+ *
+ * @phpstan-return (
+ *     $name is 'functions' ? ABJ_404_Solution_Functions : (
+ *     $name is 'logging' ? ABJ_404_Solution_Logging : (
+ *     $name is 'clock' ? ABJ_404_Solution_Clock : (
+ *     $name is 'error_handler' ? class-string : (
+ *     $name is 'data_access' ? ABJ_404_Solution_DataAccess : (
+ *     $name is 'database_upgrades' ? ABJ_404_Solution_DatabaseUpgradesEtc : (
+ *     $name is 'permalink_cache' ? ABJ_404_Solution_PermalinkCache : (
+ *     $name is 'ngram_filter' ? ABJ_404_Solution_NGramFilter : (
+ *     $name is 'plugin_logic' ? ABJ_404_Solution_PluginLogic : (
+ *     $name is 'spell_checker' ? ABJ_404_Solution_SpellChecker : (
+ *     $name is 'engine_slug' ? ABJ_404_Solution_SlugMatchingEngine : (
+ *     $name is 'engine_url_fix' ? ABJ_404_Solution_UrlFixEngine : (
+ *     $name is 'engine_title' ? ABJ_404_Solution_TitleMatchingEngine : (
+ *     $name is 'engine_category_tag' ? ABJ_404_Solution_CategoryTagMatchingEngine : (
+ *     $name is 'engine_content' ? ABJ_404_Solution_ContentMatchingEngine : (
+ *     $name is 'engine_spelling' ? ABJ_404_Solution_SpellingMatchingEngine : (
+ *     $name is 'engine_archive_fallback' ? ABJ_404_Solution_ArchiveFallbackEngine : (
+ *     $name is 'matching_engines' ? array<int, object> : (
+ *     $name is 'wordpress_connector' ? ABJ_404_Solution_WordPress_Connector : (
+ *     $name is 'slug_change_handler' ? ABJ_404_Solution_SlugChangeHandler : (
+ *     $name is 'published_posts_provider' ? ABJ_404_Solution_PublishedPostsProvider : (
+ *     $name is 'sync_utils' ? ABJ_404_Solution_SynchronizationUtils : (
+ *     $name is 'request_context' ? ABJ_404_Solution_RequestContext : (
+ *     $name is 'view' ? ABJ_404_Solution_View : (
+ *     $name is 'view_suggestions' ? ABJ_404_Solution_View_Suggestions : (
+ *     $name is 'shortcode' ? ABJ_404_Solution_ShortCode :
+ *     mixed
+ * ))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
