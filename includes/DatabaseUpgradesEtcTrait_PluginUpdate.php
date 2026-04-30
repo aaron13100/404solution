@@ -87,6 +87,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait {
             $wpdb->esc_like($subdirectoryWithSlash) . '%'  // WHERE: with path
         );
 
+        // DAO-bypass-approved: One-shot path-relativization migration; already prepared (multi-line CASE with prefix args), wpdb->query for rows-affected return; tightly mocked in DatabaseMigrationTest
         $updateResult = $wpdb->query($updateQuery);
 
         // Check for errors

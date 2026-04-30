@@ -147,23 +147,22 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 	function getTableCollationFromInformationSchema($tableName) {
 		global $wpdb;
 
-		$query = $wpdb->prepare(
+		$queryResult = $this->dao->queryAndGetResults(
 			"SELECT TABLE_COLLATION, " .
 			"SUBSTRING_INDEX(TABLE_COLLATION, '_', 1) as TABLE_CHARSET " .
 			"FROM information_schema.tables " .
 			"WHERE TABLE_NAME = %s AND TABLE_SCHEMA = DATABASE()",
-			$tableName
+			['query_params' => [$tableName]]
 		);
 
-		$results = $wpdb->get_results($query, ARRAY_A);
-
-		// Check for query errors
-		if (!empty($wpdb->last_error)) {
-			$this->logger->debugMessage("information_schema query failed for $tableName: " . $wpdb->last_error);
+		$lastError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
+		if ($lastError !== '') {
+			$this->logger->debugMessage("information_schema query failed for $tableName: " . $lastError);
 			return null;
 		}
 
-		if (empty($results[0])) {
+		$results = isset($queryResult['rows']) && is_array($queryResult['rows']) ? $queryResult['rows'] : [];
+		if (empty($results) || !is_array($results[0])) {
 			$this->logger->debugMessage("Table $tableName not found in information_schema (may not exist).");
 			return null;
 		}
@@ -521,6 +520,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
             $currentTime
         );
 
+        // DAO-bypass-approved: Outside-plugin-tables wp_options cleanup probe (parallels DataAccessTrait_ViewQueries:478 transient clear)
         $expiredTimeouts = $wpdb->get_col($query);
 
         if ($wpdb->last_error) {
