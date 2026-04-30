@@ -1073,16 +1073,25 @@ function paginationLinksChange(triggerItem, options) {
             }
 
             var messageFromServer = '';
-            var detailsFromServer = '';
+            var stageFromServer = '';
+            var lastQueryRedacted = '';
             if (responseJson && responseJson.data) {
                 if (responseJson.data.message) {
                     messageFromServer = String(responseJson.data.message);
                 }
-                if (responseJson.data.details) {
-                    try {
-                        detailsFromServer = JSON.stringify(responseJson.data.details, null, 2);
-                    } catch (e) {
-                        detailsFromServer = String(responseJson.data.details);
+                // ViewUpdater::ajaxUpdatePaginationLinks attaches a debug payload under
+                // data.details when the caller is a plugin admin. context.stage names the
+                // phase that was running (e.g. 'table_captured', 'captured_status_counts');
+                // wpdb.last_query_redacted is the most recent SQL with literal values masked.
+                // Surfacing both makes admin-side timeout/500 reports actionable without a
+                // server-side debug log dump.
+                if (responseJson.data.details && typeof responseJson.data.details === 'object') {
+                    var details = responseJson.data.details;
+                    if (details.context && details.context.stage) {
+                        stageFromServer = String(details.context.stage);
+                    }
+                    if (details.wpdb && details.wpdb.last_query_redacted) {
+                        lastQueryRedacted = String(details.wpdb.last_query_redacted);
                     }
                 }
             }
@@ -1101,8 +1110,14 @@ function paginationLinksChange(triggerItem, options) {
                     'action: ' + action,
                     'subpage: ' + subpage
                 ];
+                if (stageFromServer) {
+                    detailLines.push('Server stage: ' + stageFromServer);
+                }
                 if (messageFromServer) {
                     detailLines.push('Server message: ' + messageFromServer);
+                }
+                if (lastQueryRedacted) {
+                    detailLines.push('Last query (redacted): ' + lastQueryRedacted);
                 }
                 var $detailsEl = jQuery('<pre></pre>')
                     .css({whiteSpace: 'pre-wrap', margin: '0 0 8px 0'})
