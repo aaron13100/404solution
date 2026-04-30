@@ -176,6 +176,7 @@ class ABJ_404_Solution_CrossPluginImporter {
             return array();
         }
 
+        // DAO-bypass-approved: Reading external plugin's table (Rank Math) — DAO would auto-CREATE
         $rows = $wpdb->get_results(
             "SELECT source_url, dest_url, redirect_type, regex_flag
              FROM `{$tableName}`
@@ -226,6 +227,7 @@ class ABJ_404_Solution_CrossPluginImporter {
             return array();
         }
 
+        // DAO-bypass-approved: Reading external plugin's table (Yoast) — DAO would auto-CREATE
         $rows = $wpdb->get_results(
             "SELECT origin, target, redirect_type
              FROM `{$tableName}`",
@@ -274,6 +276,7 @@ class ABJ_404_Solution_CrossPluginImporter {
             return array();
         }
 
+        // DAO-bypass-approved: Reading external plugin's table (AIOSEO) — DAO would auto-CREATE
         $rows = $wpdb->get_results(
             "SELECT source, target, type
              FROM `{$tableName}`
@@ -373,6 +376,7 @@ class ABJ_404_Solution_CrossPluginImporter {
             return array();
         }
 
+        // DAO-bypass-approved: Reading external plugin's table (Redirection) — DAO would auto-CREATE
         $rows = $wpdb->get_results(
             "SELECT url, action_data, action_code, regex
              FROM `{$tableName}`
@@ -455,6 +459,7 @@ class ABJ_404_Solution_CrossPluginImporter {
         /** @var \wpdb $wpdb */
 
         // Use get_var so we get null on miss rather than an error.
+        // DAO-bypass-approved: tableExists() probe for external plugin's table
         $result = $wpdb->get_var(
             $wpdb->prepare('SHOW TABLES LIKE %s', $tableName)
         );

@@ -500,12 +500,14 @@ class ABJ_404_Solution_UninstallModal {
         $table_name = $dao->getPrefixedTableName('abj404_redirects');
 
         // Check if table exists
+        // DAO-bypass-approved: Diagnostic table-existence probe for redirect-count display
         $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
 
         if (!$table_exists) {
             return 0;
         }
 
+        // DAO-bypass-approved: Diagnostic count for uninstall-modal preview
         $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE status != " . ABJ404_STATUS_TRASH);
 
         return $count ? intval($count) : 0;
@@ -867,6 +869,7 @@ class ABJ_404_Solution_UninstallModal {
         );
 
         // Get MySQL/MariaDB version
+        // DAO-bypass-approved: Diagnostic — MySQL VERSION() for support email
         $version = $wpdb->get_var("SELECT VERSION()");
         if ($version) {
             $info['version'] = $version;
@@ -889,6 +892,7 @@ class ABJ_404_Solution_UninstallModal {
             "FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = %s",
             $db_name
         );
+        // DAO-bypass-approved: Diagnostic — information_schema.SCHEMATA probe
         $db_result = $wpdb->get_row($charset_query, ARRAY_A);
 
         if ($db_result && !empty($db_result['DEFAULT_CHARACTER_SET_NAME'])) {
@@ -898,7 +902,9 @@ class ABJ_404_Solution_UninstallModal {
         }
 
         // Fallback: SHOW VARIABLES for character_set_database and collation_database
+        // DAO-bypass-approved: Diagnostic — server variable readout for support email
         $charset_result = $wpdb->get_row("SHOW VARIABLES LIKE 'character_set_database'", ARRAY_A);
+        // DAO-bypass-approved: Diagnostic — server variable readout for support email
         $collation_result = $wpdb->get_row("SHOW VARIABLES LIKE 'collation_database'", ARRAY_A);
 
         if ($charset_result && isset($charset_result['Value'])) {
@@ -968,6 +974,7 @@ class ABJ_404_Solution_UninstallModal {
 
         // Discover all plugin tables dynamically so new tables are automatically included.
         $prefix = $dao->getLowercasePrefix();
+        // DAO-bypass-approved: Diagnostic table enumeration for collation snapshot
         $rawTables = $wpdb->get_results(
             $wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->esc_like($prefix . 'abj404_') . '%'),
             ARRAY_N
@@ -1072,6 +1079,7 @@ class ABJ_404_Solution_UninstallModal {
             $tableName
         );
 
+        // DAO-bypass-approved: Diagnostic — information_schema.tables probe
         $result = $wpdb->get_row($query, ARRAY_A);
 
         // Check for query error
@@ -1127,6 +1135,7 @@ class ABJ_404_Solution_UninstallModal {
         }
 
         // SHOW TABLE STATUS LIKE requires the table name without database prefix matching
+        // DAO-bypass-approved: Diagnostic — fallback metadata probe (SHOW TABLE STATUS)
         $result = $wpdb->get_row(
             $wpdb->prepare("SHOW TABLE STATUS LIKE %s", $tableName),
             ARRAY_A
@@ -1172,6 +1181,7 @@ class ABJ_404_Solution_UninstallModal {
         // @utf8-audit: opt-out — $tableName is built from $wpdb->prefix +
         // 'abj404_*' constants by the uninstall flow; never user input.
         // Use backticks to safely quote table name
+        // DAO-bypass-approved: Diagnostic — last-resort SHOW CREATE TABLE charset parse
         $result = $wpdb->get_row("SHOW CREATE TABLE `" . esc_sql($tableName) . "`", ARRAY_N);
 
         if (empty($result[1])) {

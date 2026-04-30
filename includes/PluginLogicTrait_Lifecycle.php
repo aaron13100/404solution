@@ -240,6 +240,7 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
 
             // Remove ALL custom database tables via dynamic discovery.
             // SHOW TABLES is the source of truth — new tables are automatically included.
+            // DAO-bypass-approved: deleteBlogData() — multisite blog teardown after switch_to_blog()
             $tables = $wpdb->get_results(
                 $wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->esc_like($prefix . 'abj404_') . '%'),
                 ARRAY_N
@@ -247,6 +248,7 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             foreach ($tables as $tableRow) {
                 $tblName = is_array($tableRow) && isset($tableRow[0]) ? $tableRow[0] : '';
                 if (preg_match('/^[a-zA-Z0-9_]+$/', $tblName) && strpos($tblName, 'abj404') !== false) {
+                    // DAO-bypass-approved: deleteBlogData() — DDL drop during blog teardown
                     $wpdb->query("DROP TABLE IF EXISTS `{$tblName}`");
                 }
             }
@@ -270,6 +272,7 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             }
 
             // Delete dynamic sync options (using LIKE pattern)
+            // DAO-bypass-approved: deleteBlogData() — wp_options cleanup during blog teardown
             $wpdb->query(
                 $wpdb->prepare(
                     "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",

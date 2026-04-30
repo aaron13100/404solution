@@ -156,6 +156,7 @@ class ABJ_404_Solution_InternalLinkScanner {
             $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         } else {
             $prepared = $wpdb->prepare($sql, $capturedStatus);
+            // DAO-bypass-approved: Test-environment fallback — primary path goes through queryAndGetResults at :149
             $rows = $wpdb->get_results($prepared, ARRAY_A);
             if (!is_array($rows)) {
                 return array();
