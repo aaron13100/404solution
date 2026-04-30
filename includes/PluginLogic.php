@@ -869,6 +869,7 @@ class ABJ_404_Solution_PluginLogic {
         // Since 3.0.7: Mark existing users as having completed setup wizard
         // This prevents the wizard from showing to users upgrading from earlier versions
         // Important: Skip this for NEW installs (where DB_VERSION is 0.0.0) so they see the wizard
+        // @cache-write-audit: opt-out — stores a setup-completion date marker, not a query result
         if ($currentDBVersion !== '0.0.0' && version_compare($currentDBVersion, '3.0.7') < 0) {
             update_option('abj404_setup_completed', gmdate('Y-m-d'));
             $this->logger->infoMessage('Marked setup wizard as completed for existing user.');
