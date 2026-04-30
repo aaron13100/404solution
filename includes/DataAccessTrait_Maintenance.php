@@ -50,7 +50,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
             try {
                 $this->logger->infoMessage("Collation mismatch detected — running correctCollations() to converge plugin tables.");
                 if (class_exists('ABJ_404_Solution_DatabaseUpgradesEtc')) {
-                    $upgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+                    $upgrades = abj_service('database_upgrades');
                     if (method_exists($upgrades, 'correctCollations')) {
                         $upgrades->correctCollations();
                     }
@@ -173,7 +173,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
                 // redirect_conditions, ngram_cache) are never auto-dropped because they
                 // contain user data or are expensive to rebuild.
                 if ($this->isDroppableTable($tableToRepair)) {
-	                $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+	                $abj404logic = abj_service('plugin_logic');
 	                $options = $abj404logic->getOptions();
 
 	                // Migrate from old global scalar to per-table counts
@@ -199,7 +199,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
 	                		$this->logger->warn("Skipping drop+recreate for " . $tableToRepair .
 	                			" — disk appears full. Repair count: " . ($prevCount + 1));
 	                	} else {
-	                		$upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+	                		$upgradesEtc = abj_service('database_upgrades');
 	                		$this->queryAndGetResults("DROP TABLE `{$tableToRepair}`");
 	                		$upgradesEtc->createDatabaseTables(false);
 	                	}
@@ -357,7 +357,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
         $this->queryAndGetResults($query);
 
         // Invalidate coverage ratio since permalink count changed
-        ABJ_404_Solution_NGramFilter::getInstance()->invalidateCoverageCaches();
+        abj_service('ngram_filter')->invalidateCoverageCaches();
     }
 
     /** @param int $post_id @return void */
@@ -368,12 +368,12 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
         $this->queryAndGetResults($query, array('query_params' => array($post_id)));
 
         // Invalidate coverage ratio since permalink count changed
-        ABJ_404_Solution_NGramFilter::getInstance()->invalidateCoverageCaches();
+        abj_service('ngram_filter')->invalidateCoverageCaches();
     }
 
     /** @return array<int, array<string, mixed>>|null */
     function getIDsNeededForPermalinkCache() {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
 
         // get the valid post types
         $options = $abj404logic->getOptions();
@@ -509,30 +509,63 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
      * logged by this plugin). Stores flagged redirect IDs in a transient for fast
      * lookup at redirect-processing time.
      *
+     * Joins the pre-aggregated wp_abj404_logs_hits rollup (NOT raw logsv2) and
+     * filters on the `failed_hits` column — the count of 404-only hits per
+     * canonical URL, computed by the rollup builder via
+     * SUM(CASE WHEN dest_url='' OR dest_url IS NULL THEN 1 ELSE 0 END). This
+     * scales the cron's cost with URL cardinality (thousands), not raw hit
+     * cardinality (millions). The previous implementation INNER JOINed
+     * wp_abj404_logsv2 on a string column with a timestamp filter — same
+     * O(N rows) shape that timed out the digest cron on busy sites
+     * (audit finding G1; mirrors commit 9133848d for getHighImpactCapturedCount).
+     *
+     * Fallback when the rollup is missing or pre-dates the failed_hits column
+     * (existing installs upgrading): schedule a rebuild and store an empty
+     * list. Never falls back to scanning logsv2.
+     *
+     * h.requested_url is stored canonical (leading '/', no trailing '/') by the
+     * rollup builder; r.final_dest is canonicalized at JOIN time so legacy
+     * destinations with or without leading/trailing slashes match the same
+     * indexed h.requested_url row. The CONCAT/TRIM is on r.final_dest (outer
+     * side of the join), which has thousands of rows — small enough that the
+     * per-row expression cost is dominated by the indexed h.requested_url
+     * lookup.
+     *
      * @return void
      */
     function flagDeadDestinationRedirects(): void {
-        $cutoff         = time() - 7 * 86400;
-        $redirectsTable = $this->doTableNameReplacements('{wp_abj404_redirects}');
-        $logsTable      = $this->doTableNameReplacements('{wp_abj404_logsv2}');
+        $cutoff = time() - 7 * 86400;
+        $flaggedIds = array();
 
-        // Route through queryAndGetResults() so this redirects-vs-logsv2 JOIN
-        // inherits the centralized 60-second timeout. The JOIN runs in a cron
-        // context, but a bad index/lock contention can still hang long enough
-        // to back up the cron runner. Always store an empty flag list on
-        // failure so stale data does not poison redirect handling.
+        // Skip silently when the rollup is missing or hasn't been rebuilt
+        // since the failed_hits column was added: schedule a rebuild and
+        // store an empty list. A degraded cron cycle is acceptable; falling
+        // back to scanning logsv2 is not.
+        if (!$this->logsHitsTableExists() || !$this->logsHitsHasFailedHitsColumn()) {
+            $this->scheduleHitsTableRebuild();
+            $this->storeDeadDestIdsTransient($flaggedIds);
+            return;
+        }
+
+        // 30s timeout: the rollup-side JOIN should complete in milliseconds.
+        // A blown timeout here signals rollup corruption / lock contention,
+        // not "logsv2 is huge" — fast failure is the right behavior.
         $sql = "SELECT DISTINCT r.id
-             FROM `{$redirectsTable}` r
-             INNER JOIN `{$logsTable}` l ON l.requested_url = r.final_dest
-             WHERE l.timestamp > %d
-               AND (l.dest_url = '' OR l.dest_url IS NULL)
+             FROM {wp_abj404_redirects} r
+             INNER JOIN {wp_abj404_logs_hits} h
+                 ON BINARY h.requested_url = BINARY CONCAT('/', TRIM(BOTH '/' FROM r.final_dest))
+             WHERE h.last_used > %d
+               AND h.failed_hits > 0
                AND r.disabled = 0
                AND r.final_dest != ''
                AND r.final_dest != '0'";
+        $sql = $this->doTableNameReplacements($sql);
 
-        $result = $this->queryAndGetResults($sql, array('query_params' => array($cutoff)));
+        $result = $this->queryAndGetResults($sql, array(
+            'query_params' => array($cutoff),
+            'timeout' => 30,
+        ));
 
-        $flaggedIds = array();
         if (empty($result['timed_out']) && (!isset($result['last_error']) || $result['last_error'] == '')) {
             $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
             foreach ($rows as $row) {
@@ -549,10 +582,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
             }
         }
 
-        if (function_exists('set_transient')) {
-            $ttl = defined('HOUR_IN_SECONDS') ? 25 * (int) HOUR_IN_SECONDS : 90000;
-            set_transient('abj404_dead_dest_ids', $flaggedIds, $ttl);
-        }
+        $this->storeDeadDestIdsTransient($flaggedIds);
 
         if (!empty($flaggedIds)) {
             $this->logger->infoMessage(
@@ -560,6 +590,52 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
                 ' redirect(s) with dead destinations: ' . implode(', ', $flaggedIds)
             );
         }
+    }
+
+    /**
+     * Persist the dead-destination ID list. Extracted so the rollup-missing
+     * fallback path stores the same empty-list shape as the success path —
+     * stale data must never poison redirect handling.
+     *
+     * @param array<int, string> $flaggedIds
+     * @return void
+     */
+    private function storeDeadDestIdsTransient(array $flaggedIds): void {
+        if (function_exists('set_transient')) {
+            $ttl = defined('HOUR_IN_SECONDS') ? 25 * (int) HOUR_IN_SECONDS : 90000;
+            set_transient('abj404_dead_dest_ids', $flaggedIds, $ttl);
+        }
+    }
+
+    /**
+     * Detect whether the live wp_abj404_logs_hits table has the failed_hits
+     * column. Existing installs that rebuilt the rollup before the column
+     * was added will have the older 4-column schema; the next rollup pass
+     * recreates the table with the new column included. Until then, the
+     * cron must skip silently rather than emit a query that errors with
+     * "Unknown column 'h.failed_hits'".
+     *
+     * Uses information_schema (single indexed lookup); the SHOW COLUMNS
+     * fallback in queryAndGetResults handles hosts that restrict
+     * information_schema access.
+     *
+     * @return bool
+     */
+    private function logsHitsHasFailedHitsColumn(): bool {
+        $tableName = $this->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $sql = "SELECT 1 FROM information_schema.columns "
+            . "WHERE table_schema = DATABASE() "
+            . "AND table_name = %s "
+            . "AND column_name = 'failed_hits' LIMIT 1";
+        $result = $this->queryAndGetResults($sql, array(
+            'query_params' => array($tableName),
+            'log_errors' => false,
+        ));
+        if (!empty($result['last_error'])) {
+            return false;
+        }
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        return !empty($rows);
     }
 
     /**
@@ -572,7 +648,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
      * @return int Number of redirects moved to trash
      */
     public function expireOldAutoRedirects(): int {
-        $options = ABJ_404_Solution_PluginLogic::getInstance()->getOptions();
+        $options = abj_service('plugin_logic')->getOptions();
         $daysRaw = isset($options['auto_302_expiration_days']) ? $options['auto_302_expiration_days'] : 0;
         $days = is_numeric($daysRaw) ? (int)$daysRaw : 0;
         if ($days <= 0) {

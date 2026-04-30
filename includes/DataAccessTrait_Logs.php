@@ -238,7 +238,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         $ttSelectQuery = $this->doTableNameReplacements($ttSelectQuery);
 
         $ttInsertQuery = "insert into " . $tempDestTable . " (requested_url, logsid, " .
-            "last_used, logshits) \n " . $ttSelectQuery;
+            "last_used, logshits, failed_hits) \n " . $ttSelectQuery;
         return $this->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false, 'timeout' => 60));
     }
 
@@ -278,12 +278,16 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         // so URL variants like '/foo', 'foo', and '/foo/' collapse into a
         // single pre-agg row. The same canonical key can still appear across
         // chunks — Phase 2 sums them.
+        // failed_hits = count of 404-only hits per canonical URL (rows where
+        // dest_url is empty/NULL). Lets flagDeadDestinationRedirects() avoid
+        // scanning logsv2 in cron — see DataAccessTrait_Maintenance::flagDeadDestinationRedirects().
         for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
             $end = $start + $chunkSize;
             $chunkQuery = "INSERT INTO " . $preAggTable .
-                " (requested_url, logsid, last_used, logshits) " .
+                " (requested_url, logsid, last_used, logshits, failed_hits) " .
                 "SELECT CONCAT('/', TRIM(BOTH '/' FROM requested_url)), " .
-                "       MIN(id), MAX(timestamp), COUNT(*) " .
+                "       MIN(id), MAX(timestamp), COUNT(*), " .
+                "       SUM(CASE WHEN dest_url = '' OR dest_url IS NULL THEN 1 ELSE 0 END) " .
                 "FROM " . $logsv2Table . " " .
                 "WHERE id >= %d AND id < %d " .
                 "GROUP BY CONCAT('/', TRIM(BOTH '/' FROM requested_url))";
@@ -301,16 +305,18 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
 
         // Phase 2: join the small pre-agg table with redirects and
         // re-aggregate across chunks into the final temp table.
-        // a.requested_url is already canonical from Phase 1, so the join
-        // only needs to canonicalize r.url. Final GROUP BY collapses any
-        // remaining duplicate canonical rows that originated from different
-        // ID-range chunks.
+        // a.requested_url is already canonical from Phase 1. Match against
+        // the persisted r.canonical_url column (added 4.1.10) so the JOIN
+        // is an indexed equality lookup; COALESCE fallback covers rows
+        // where the chunked backfill hasn't reached yet. Final GROUP BY
+        // collapses any remaining duplicate canonical rows that originated
+        // from different ID-range chunks.
         $phase2Query = "INSERT INTO " . $tempDestTable .
-            " (requested_url, logsid, last_used, logshits) " .
-            "SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits) " .
+            " (requested_url, logsid, last_used, logshits, failed_hits) " .
+            "SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits), SUM(a.failed_hits) " .
             "FROM " . $preAggTable . " a " .
             "INNER JOIN " . $redirectsTable . " r " .
-            "ON a.requested_url = CONCAT('/', TRIM(BOTH '/' FROM r.url)) " .
+            "ON a.requested_url = COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url))) " .
             "GROUP BY a.requested_url";
         $results = $this->queryAndGetResults($phase2Query, array('log_too_slow' => false, 'timeout' => 60));
 
@@ -649,7 +655,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
      * @return array<int, array<string, mixed>> rows from querying the logs table.
      */
     function getLogRecords($tableOptions) {
-    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+    	$abj404logic = abj_service('plugin_logic');
 
     	$logsid_included = '';
         $logsid = '';
@@ -849,7 +855,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
      */
     function logRedirectHit(string $requested_url, string $action, string $matchReason, ?string $requestedURLDetail = null, ?array $pipelineTrace = null): void {
         global $wpdb;
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         $logTableName = $this->doTableNameReplacements("{wp_abj404_logsv2}");
 
         $now = time();
@@ -1012,13 +1018,13 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         }
             
         // ------------ debug message begin
-        $helperFunctions = ABJ_404_Solution_Functions::getInstance();
+        $helperFunctions = abj_service('functions');
         $reasonMessage = trim(implode(", ",
                     array_filter(
-                    array(ABJ_404_Solution_RequestContext::getInstance()->ignore_doprocess ?: '',
-                          ABJ_404_Solution_RequestContext::getInstance()->ignore_donotprocess ?: ''))));
+                    array(abj_service('request_context')->ignore_doprocess ?: '',
+                          abj_service('request_context')->ignore_donotprocess ?: ''))));
         $permalinksKept = '(not set)';
-        $ctx = ABJ_404_Solution_RequestContext::getInstance();
+        $ctx = abj_service('request_context');
         if ($this->logger->isDebug() && !empty($ctx->permalinks_found)) {
        		$permalinksKept = $ctx->permalinks_kept;
         }
@@ -1406,6 +1412,15 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             return null;
         }
         if (!defined('DB_USER') || !defined('DB_PASSWORD') || !defined('DB_NAME') || !defined('DB_HOST')) {
+            // Per-request warn once: silently returning null here is the
+            // exact pattern the error-swallow audit flagged as Smell 1 —
+            // tests that don't set the constants exercise this fallback
+            // branch and never the real one.
+            static $warnedNoDbConsts = false;
+            if (!$warnedNoDbConsts) {
+                $warnedNoDbConsts = true;
+                $this->logger->warn(__METHOD__ . ': DB_USER/DB_PASSWORD/DB_NAME/DB_HOST undefined; isolated wpdb unavailable');
+            }
             return null;
         }
 
