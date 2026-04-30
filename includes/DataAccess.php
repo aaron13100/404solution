@@ -8,6 +8,7 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/DataAccessTrait_Maintenance.php';
 require_once __DIR__ . '/DataAccessTrait_ViewQueries.php';
 require_once __DIR__ . '/DataAccessTrait_Logs.php';
+require_once __DIR__ . '/DataAccessTrait_LogsHitsRebuild.php';
 require_once __DIR__ . '/DataAccessTrait_Redirects.php';
 require_once __DIR__ . '/DataAccessTrait_Stats.php';
 require_once __DIR__ . '/DataAccessTrait_ErrorClassification.php';
@@ -104,6 +105,7 @@ class ABJ_404_Solution_DataAccess {
     use ABJ_404_Solution_DataAccess_MaintenanceTrait;
     use ABJ_404_Solution_DataAccess_ViewQueriesTrait;
     use ABJ_404_Solution_DataAccess_LogsTrait;
+    use ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait;
     use ABJ_404_Solution_DataAccess_RedirectsTrait;
     use ABJ_404_Solution_DataAccess_StatsTrait;
     use ABJ_404_Solution_DataAccess_ErrorClassificationTrait;
