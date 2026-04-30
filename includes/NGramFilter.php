@@ -265,8 +265,6 @@ class ABJ_404_Solution_NGramFilter {
             return false;
         }
 
-        global $wpdb;
-
         $ngramJson = json_encode($ngrams);
         if ($ngramJson === false) {
             $this->logger->errorMessage("Failed to JSON encode N-grams for page ID {$pageId}");
@@ -277,27 +275,29 @@ class ABJ_404_Solution_NGramFilter {
 
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
-        // Use REPLACE to handle updates (REPLACE = DELETE + INSERT)
-        $result = $wpdb->replace(
-            $table,
-            [
-                'id' => (int)$pageId,
-                'type' => $type,
-                'url' => $url,
-                'url_normalized' => $urlNormalized,
-                'ngrams' => $ngramJson,
-                'ngram_count' => $ngramCount,
-                'last_updated' => current_time('mysql')
-            ],
-            ['%d', '%s', '%s', '%s', '%s', '%d', '%s']
+        // Use REPLACE to handle updates (REPLACE = DELETE + INSERT).
+        // Routed through DAO for centralized timeout/retry/recovery.
+        $queryResult = $this->dao->queryAndGetResults(
+            "REPLACE INTO {$table} (id, type, url, url_normalized, ngrams, ngram_count, last_updated)
+             VALUES (%d, %s, %s, %s, %s, %d, %s)",
+            ['query_params' => [
+                (int)$pageId,
+                $type,
+                $url,
+                $urlNormalized,
+                $ngramJson,
+                $ngramCount,
+                current_time('mysql'),
+            ]]
         );
 
-        if ($result === false) {
+        if (!empty($queryResult['last_error'])) {
+            global $wpdb;
             // Enhanced error message with multisite context and table details
             $errorContext = sprintf(
                 "Failed to store N-grams for page ID %d: %s, Table: %s, Prefix: %s, DB: %s",
                 $pageId,
-                $wpdb->last_error,
+                $queryResult['last_error'],
                 $table,
                 $this->dao->getLowercasePrefix(),
                 $wpdb->dbname
@@ -308,7 +308,7 @@ class ABJ_404_Solution_NGramFilter {
                 $errorContext .= sprintf(", Blog ID: %d", get_current_blog_id());
             }
 
-            if (!$this->dao->classifyAndHandleInfrastructureError($wpdb->last_error ?? '')) {
+            if (!$this->dao->classifyAndHandleInfrastructureError($queryResult['last_error'])) {
                 $this->logger->errorMessage($errorContext);
             }
             return false;
@@ -331,21 +331,19 @@ class ABJ_404_Solution_NGramFilter {
      * @return array{bi: array<int, string>, tri: array<int, string>}|null N-gram data or null if not found
      */
     public function getNGramsForPage($pageId, $type = 'post') {
-        global $wpdb;
-
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
-        $query = $wpdb->prepare(
+
+        $queryResult = $this->dao->queryAndGetResults(
             "SELECT ngrams FROM {$table} WHERE id = %d AND type = %s",
-            $pageId,
-            $type
+            ['query_params' => [$pageId, $type]]
         );
 
-        $result = $wpdb->get_var($query);
-
-        if ($result === null) {
+        $rows = $queryResult['rows'] ?? [];
+        if (empty($rows) || !isset($rows[0]['ngrams'])) {
             return null;
         }
 
+        $result = $rows[0]['ngrams'];
         $decoded = json_decode($result, true);
         if (!is_array($decoded) || !isset($decoded['bi'], $decoded['tri'])) {
             return null;
@@ -364,12 +362,12 @@ class ABJ_404_Solution_NGramFilter {
      * @return array<int, array<string, mixed>> Array of cached entries with id, url, url_normalized, and ngrams
      */
     public function getAllCachedNGrams() {
-        global $wpdb;
-
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
         // Check cache size first - abort if too large
-        $count = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+        $countResult = $this->dao->queryAndGetResults("SELECT COUNT(*) AS c FROM {$table}");
+        $countRow = $countResult['rows'][0] ?? null;
+        $count = is_array($countRow) && isset($countRow['c']) ? (int)$countRow['c'] : 0;
         if ($count > 10000) {
             $this->logger->errorMessage("CRITICAL: N-gram cache has {$count} entries. Cannot load into memory. Feature disabled for this request.");
             return [];
@@ -379,11 +377,12 @@ class ABJ_404_Solution_NGramFilter {
             $this->logger->infoMessage("WARNING: N-gram cache has {$count} entries. This may cause memory issues.");
         }
 
-        $query = "SELECT id, url, url_normalized, ngrams, ngram_count FROM {$table}";
+        $listResult = $this->dao->queryAndGetResults(
+            "SELECT id, url, url_normalized, ngrams, ngram_count FROM {$table}"
+        );
+        $results = $listResult['rows'] ?? [];
 
-        $results = $wpdb->get_results($query, ARRAY_A);
-
-        if (!is_array($results)) {
+        if (!is_array($results) || empty($results)) {
             return [];
         }
 
@@ -413,8 +412,6 @@ class ABJ_404_Solution_NGramFilter {
      * @return array<int, object|array<string, mixed>> Array of cached entries
      */
     public function getCachedNGramsFiltered($minNgramCount, $maxNgramCount, $limit = 1000, $targetNgramCount = null) {
-        global $wpdb;
-
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
         // Clamp target to valid range; fall back to midpoint if not provided
@@ -426,34 +423,30 @@ class ABJ_404_Solution_NGramFilter {
 
         // Query 1: ngram_count <= target, ORDER BY ngram_count DESC
         // Uses idx_ngram_count for both range scan and sort (no filesort)
-        $queryBelow = $wpdb->prepare(
+        $belowResult = $this->dao->queryAndGetResults(
             "SELECT id, url, url_normalized, ngrams, ngram_count
              FROM {$table}
              WHERE ngram_count >= %d AND ngram_count <= %d
              ORDER BY ngram_count DESC
              LIMIT %d",
-            $minNgramCount,
-            $orderTarget,
-            $halfLimit
+            ['query_params' => [$minNgramCount, $orderTarget, $halfLimit]]
         );
-        $resultsBelow = $wpdb->get_results($queryBelow, ARRAY_A) ?: [];
+        $resultsBelow = $belowResult['rows'] ?? [];
 
         // Query 2: above target - adjust limit based on below results to handle skewed distributions
         // If below side returned fewer than halfLimit, give the remainder to above side
         $belowCount = count($resultsBelow);
         $aboveLimit = $limit - $belowCount;
 
-        $queryAbove = $wpdb->prepare(
+        $aboveResult = $this->dao->queryAndGetResults(
             "SELECT id, url, url_normalized, ngrams, ngram_count
              FROM {$table}
              WHERE ngram_count > %d AND ngram_count <= %d
              ORDER BY ngram_count ASC
              LIMIT %d",
-            $orderTarget,
-            $maxNgramCount,
-            $aboveLimit
+            ['query_params' => [$orderTarget, $maxNgramCount, $aboveLimit]]
         );
-        $resultsAbove = $wpdb->get_results($queryAbove, ARRAY_A) ?: [];
+        $resultsAbove = $aboveResult['rows'] ?? [];
 
         // If we didn't get enough results, fetch additional from whichever side hit its limit
         $aboveCount = count($resultsAbove);
@@ -462,18 +455,15 @@ class ABJ_404_Solution_NGramFilter {
         if ($totalFetched < $limit && $belowCount === $halfLimit) {
             // Below hit its limit, might have more rows - fetch additional
             $additionalNeeded = $limit - $totalFetched;
-            $queryBelowExtra = $wpdb->prepare(
+            $extraBelowResult = $this->dao->queryAndGetResults(
                 "SELECT id, url, url_normalized, ngrams, ngram_count
                  FROM {$table}
                  WHERE ngram_count >= %d AND ngram_count <= %d
                  ORDER BY ngram_count DESC
                  LIMIT %d OFFSET %d",
-                $minNgramCount,
-                $orderTarget,
-                $additionalNeeded,
-                $belowCount
+                ['query_params' => [$minNgramCount, $orderTarget, $additionalNeeded, $belowCount]]
             );
-            $extraBelow = $wpdb->get_results($queryBelowExtra, ARRAY_A) ?: [];
+            $extraBelow = $extraBelowResult['rows'] ?? [];
             $resultsBelow = array_merge($resultsBelow, $extraBelow);
             $totalFetched = count($resultsBelow) + $aboveCount;
         }
@@ -481,18 +471,15 @@ class ABJ_404_Solution_NGramFilter {
         if ($totalFetched < $limit && $aboveCount === $aboveLimit) {
             // Above hit its limit, might have more rows - fetch additional
             $additionalNeeded = $limit - $totalFetched;
-            $queryAboveExtra = $wpdb->prepare(
+            $extraAboveResult = $this->dao->queryAndGetResults(
                 "SELECT id, url, url_normalized, ngrams, ngram_count
                  FROM {$table}
                  WHERE ngram_count > %d AND ngram_count <= %d
                  ORDER BY ngram_count ASC
                  LIMIT %d OFFSET %d",
-                $orderTarget,
-                $maxNgramCount,
-                $additionalNeeded,
-                $aboveCount
+                ['query_params' => [$orderTarget, $maxNgramCount, $additionalNeeded, $aboveCount]]
             );
-            $extraAbove = $wpdb->get_results($queryAboveExtra, ARRAY_A) ?: [];
+            $extraAbove = $extraAboveResult['rows'] ?? [];
             $resultsAbove = array_merge($resultsAbove, $extraAbove);
         }
 
@@ -575,17 +562,19 @@ class ABJ_404_Solution_NGramFilter {
      * @return bool Success status
      */
     public function invalidatePage($pageId, $type = 'post') {
-        global $wpdb;
-
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
-        $result = $wpdb->delete($table, ['id' => $pageId, 'type' => $type], ['%d', '%s']);
+        $queryResult = $this->dao->queryAndGetResults(
+            "DELETE FROM {$table} WHERE id = %d AND type = %s",
+            ['query_params' => [(int)$pageId, $type]]
+        );
 
-        if ($result !== false) {
+        $success = empty($queryResult['last_error']);
+        if ($success) {
             // Invalidate coverage ratio caches since N-gram count changed
             $this->invalidateCoverageCaches();
         }
 
-        return $result !== false;
+        return $success;
     }
 
     /**
@@ -602,19 +591,17 @@ class ABJ_404_Solution_NGramFilter {
             return ['processed' => 0, 'success' => 0, 'failed' => 0];
         }
 
-        global $wpdb;
         $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
 
         // Prepare IN clause for page IDs
         $placeholders = implode(',', array_fill(0, count($pageIds), '%d'));
-        $query = $wpdb->prepare(
+        $pageResult = $this->dao->queryAndGetResults(
             "SELECT id, url FROM {$permalinkCacheTable} WHERE id IN ({$placeholders})",
-            ...$pageIds
+            ['query_params' => array_values($pageIds)]
         );
+        $pages = $pageResult['rows'] ?? [];
 
-        $pages = $wpdb->get_results($query, ARRAY_A);
-
-        if (!is_array($pages)) {
+        if (!is_array($pages) || empty($pages)) {
             return ['processed' => 0, 'success' => 0, 'failed' => 0];
         }
 
@@ -666,18 +653,14 @@ class ABJ_404_Solution_NGramFilter {
      * @return array{processed: int, success: int, failed: int}
      */
     public function rebuildCache($batchSize = 100, $offset = 0) {
-        global $wpdb;
-
         $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
 
         // Get a batch of pages from permalink cache
-        $query = $wpdb->prepare(
+        $batchResult = $this->dao->queryAndGetResults(
             "SELECT id, url FROM {$permalinkCacheTable} LIMIT %d OFFSET %d",
-            $batchSize,
-            $offset
+            ['query_params' => [$batchSize, $offset]]
         );
-
-        $pages = $wpdb->get_results($query, ARRAY_A);
+        $pages = $batchResult['rows'] ?? [];
 
         if (!is_array($pages)) {
             $pages = [];
@@ -910,8 +893,9 @@ class ABJ_404_Solution_NGramFilter {
             return $this->ngramCountMemo;
         }
 
-        $countResult = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
-        $this->ngramCountMemo = is_scalar($countResult) ? (int)$countResult : 0;
+        $result = $this->dao->queryAndGetResults("SELECT COUNT(*) AS c FROM {$table}");
+        $row = $result['rows'][0] ?? null;
+        $this->ngramCountMemo = is_array($row) && isset($row['c']) ? (int)$row['c'] : 0;
         return $this->ngramCountMemo;
     }
 
@@ -952,13 +936,16 @@ class ABJ_404_Solution_NGramFilter {
         }
 
         // Transient miss or version mismatch - compute fresh ratio
-        global $wpdb;
         $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
         $permalinkTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
 
         // Get both counts (required for ratio computation)
-        $ngramCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$ngramTable}");
-        $permalinkCount = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$permalinkTable}");
+        $ngramCountResult = $this->dao->queryAndGetResults("SELECT COUNT(*) AS c FROM {$ngramTable}");
+        $ngramRow = $ngramCountResult['rows'][0] ?? null;
+        $ngramCount = is_array($ngramRow) && isset($ngramRow['c']) ? (int)$ngramRow['c'] : 0;
+        $permalinkCountResult = $this->dao->queryAndGetResults("SELECT COUNT(*) AS c FROM {$permalinkTable}");
+        $permalinkRow = $permalinkCountResult['rows'][0] ?? null;
+        $permalinkCount = is_array($permalinkRow) && isset($permalinkRow['c']) ? (int)$permalinkRow['c'] : 0;
 
         // Memoize ngram count to avoid redundant queries elsewhere
         $this->ngramCountMemo = $ngramCount;
@@ -997,16 +984,31 @@ class ABJ_404_Solution_NGramFilter {
      * @return array<string, mixed> Statistics including total_entries, posts_entries, etc.
      */
     public function getCacheStats() {
-        global $wpdb;
-
         $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
 
+        $totalRow = $this->dao->queryAndGetResults("SELECT COUNT(*) AS c FROM {$table}");
+        $postsRow = $this->dao->queryAndGetResults(
+            "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
+            ['query_params' => ['post']]
+        );
+        $categoryRow = $this->dao->queryAndGetResults(
+            "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
+            ['query_params' => ['category']]
+        );
+        $tagRow = $this->dao->queryAndGetResults(
+            "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
+            ['query_params' => ['tag']]
+        );
+        $lastUpdatedRow = $this->dao->queryAndGetResults(
+            "SELECT MAX(last_updated) AS m FROM {$table}"
+        );
+
         $stats = [
-            'total_entries' => $wpdb->get_var("SELECT COUNT(*) FROM {$table}"),
-            'posts_entries' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'post'"),
-            'category_entries' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'category'"),
-            'tag_entries' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'tag'"),
-            'last_updated' => $wpdb->get_var("SELECT MAX(last_updated) FROM {$table}")
+            'total_entries' => $totalRow['rows'][0]['c'] ?? null,
+            'posts_entries' => $postsRow['rows'][0]['c'] ?? null,
+            'category_entries' => $categoryRow['rows'][0]['c'] ?? null,
+            'tag_entries' => $tagRow['rows'][0]['c'] ?? null,
+            'last_updated' => $lastUpdatedRow['rows'][0]['m'] ?? null,
         ];
 
         return $stats;
