@@ -831,7 +831,7 @@ class ABJ_404_Solution_PluginLogic {
                     $this->logger->infoMessage($result['rows_affected'] .
                             ' log rows were migrated to the new table structre.');
                     // log the rows inserted/migrated.
-                    $wpdb->query('drop table ' . $this->dao->getLowercasePrefix() . 'abj404_logs');
+                    $this->dao->queryAndGetResults('drop table ' . $this->dao->getLowercasePrefix() . 'abj404_logs');
                 }
             }
         }

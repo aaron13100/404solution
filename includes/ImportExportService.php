@@ -138,8 +138,6 @@ class ABJ_404_Solution_ImportExportService {
      * @return array<int, array{source: string, dest: string, code: int, is_regex: bool}>
      */
     function getExportableRedirects() {
-        global $wpdb;
-
         $dao = ABJ_404_Solution_DataAccess::getInstance();
         $redirectsTable = $dao->doTableNameReplacements('{wp_abj404_redirects}');
         $cacheTable     = $dao->doTableNameReplacements('{wp_abj404_permalink_cache}');
@@ -149,7 +147,7 @@ class ABJ_404_Solution_ImportExportService {
         $typeExternal = defined('ABJ404_TYPE_EXTERNAL') ? (int)ABJ404_TYPE_EXTERNAL : 4;
         $typeHome     = defined('ABJ404_TYPE_HOME')     ? (int)ABJ404_TYPE_HOME     : 5;
 
-        $query = $wpdb->prepare(
+        $queryResult = $dao->queryAndGetResults(
             "SELECT r.url, r.status, r.type, r.final_dest, r.code, r.disabled,
                     pc.url AS cached_url
              FROM {$redirectsTable} r
@@ -158,12 +156,11 @@ class ABJ_404_Solution_ImportExportService {
                AND (r.disabled IS NULL OR r.disabled = 0)
                AND r.url IS NOT NULL AND r.url != ''
              ORDER BY r.url",
-            $manualStatus,
-            $regexStatus
+            ['query_params' => [$manualStatus, $regexStatus]]
         );
 
-        $rows = $wpdb->get_results($query, ARRAY_A);
-        if (!is_array($rows)) {
+        $rows = $queryResult['rows'] ?? [];
+        if (!is_array($rows) || empty($rows)) {
             return array();
         }
 

@@ -346,22 +346,19 @@ class ABJ_404_Solution_RestApiController {
         $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
         $total = $this->dao->getRecordCount($types, 0);
 
-        global $wpdb;
         $redirectsTable = $this->dao->doTableNameReplacements('{wp_abj404_redirects}');
         $statusIn       = implode(', ', array_map('absint', $types));
         $limitStart     = ($page - 1) * $perPage;
 
-        $query = $wpdb->prepare(
+        $queryResult = $this->dao->queryAndGetResults(
             "SELECT id, url, status, type, final_dest, code, timestamp, disabled
              FROM `{$redirectsTable}`
              WHERE status IN ({$statusIn}) AND disabled = 0
              ORDER BY url ASC
              LIMIT %d, %d",
-            $limitStart,
-            $perPage
+            ['query_params' => [$limitStart, $perPage]]
         );
-        $rows = $wpdb->get_results($query, ARRAY_A);
-        $rows = is_array($rows) ? $rows : array();
+        $rows = is_array($queryResult['rows'] ?? null) ? $queryResult['rows'] : array();
 
         return new \WP_REST_Response(array(
             'items'       => array_values($rows),
