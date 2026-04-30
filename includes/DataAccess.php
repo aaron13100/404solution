@@ -1494,7 +1494,6 @@ class ABJ_404_Solution_DataAccess {
                         
             $result = $my_custom_db->public_strip_invalid_text_from_query($query);
 
-            // @phpstan-ignore function.impossibleType, function.impossibleType
             if (is_wp_error($result)) {
                 return 'WP_Error: ' . $result->get_error_message();
             }

@@ -231,7 +231,6 @@ class ABJ_404_Solution_NGramFilter {
         // Dice coefficient: 2 * |intersection| / (|set1| + |set2|)
         // Defensive: guard denominator even though empty() check above should guarantee > 0.
         $denominator = count($set1) + count($set2);
-        /** @phpstan-ignore greater.alwaysTrue, ternary.elseUnreachable */
         $dice = ($denominator > 0) ? (2.0 * $intersection) / $denominator : 0.0;
 
         return $dice;

@@ -111,14 +111,13 @@ class ABJ_404_Solution_SlugChangeHandler {
         $newURL = get_permalink($post);
 
         // Defensive: get_permalink may return WP_Error via filters in some environments.
-        // @phpstan-ignore-next-line
         if (is_wp_error($newURL)) {
             $abj404logging->debugMessage("Could not get permalink for post (WP_Error). ID: " .
                 $post_id . ", error: " . $newURL->get_error_message());
             return;
         }
 
-        if ($newURL === false || $newURL === '') { // @phpstan-ignore-line
+        if ($newURL === false || $newURL === '') {
             $abj404logging->debugMessage("Could not get permalink for post (invalid return). ID: " .
                 $post_id);
             return;
