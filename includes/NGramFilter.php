@@ -776,8 +776,12 @@ class ABJ_404_Solution_NGramFilter {
             $this->logger->debugMessage("N-gram cache is empty.");
 
             // Schedule background rebuild if not already initialized/scheduled
-            // This ensures automatic recovery from empty cache state
-            if (get_option('abj404_ngram_cache_initialized') !== '1') {
+            // This ensures automatic recovery from empty cache state.
+            // Use the multisite-aware getter so network-activated installs read
+            // get_site_option (where the flag is stored) rather than get_option
+            // (which would be empty on the frontend 404 dispatch path and cause
+            // duplicate rebuild scheduling).
+            if (!$this->isCacheInitialized()) {
                 try {
                     $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
                     $dbUpgrades->scheduleNGramCacheRebuild();
