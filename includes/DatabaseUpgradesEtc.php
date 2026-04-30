@@ -250,6 +250,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		// On case-insensitive MySQL (lower_case_table_names >= 1), table names
 		// are already treated as lowercase internally. Renaming is pointless and
 		// can cause issues on some hosting setups.
+		// DAO-bypass-approved: Schema-bootstrap inside renameAbj404TablesToLowerCase() — runs before plugin DAO is fully wired during DB upgrades
 		$lctnResult = $wpdb->get_row("SHOW VARIABLES LIKE 'lower_case_table_names'", ARRAY_A);
 		if (is_array($lctnResult)) {
 			$lctnValue = null;
@@ -851,6 +852,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    	}
 	    	// @utf8-audit: opt-out — $tableName is fully-qualified plugin table
 	    	// name from doTableNameReplacements / $wpdb->prefix; never user input.
+	    	// DAO-bypass-approved: Schema-bootstrap inside verifyTableMaterialized() — verifies CREATE TABLE actually materialized; DAO timeout wrapper is irrelevant for DDL existence probe
 	    	$found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
 	    	if ($found === $tableName) {
 	    		return true;
@@ -1252,6 +1254,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     private function indexExists($tableName, $indexName) {
         global $wpdb;
         $sql = $wpdb->prepare("SHOW INDEX FROM {$tableName} WHERE Key_name = %s", $indexName);
+        // DAO-bypass-approved: indexExists() schema-introspection helper (already prepared); DDL pre-check before ALTER TABLE
         $results = $wpdb->get_results($sql, ARRAY_A);
         return !empty($results);
     }

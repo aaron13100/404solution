@@ -444,6 +444,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         // Check each required table
         foreach ($requiredTables as $tableName) {
             $fullTableName = $this->dao->getPrefixedTableName($tableName);
+            // DAO-bypass-approved: Schema-bootstrap inside repairMissingTables() — runs before CREATE TABLE; routing through DAO would trigger the same missing-table auto-repair we are about to invoke ourselves (recursion)
             $tableExists = $wpdb->get_var("SHOW TABLES LIKE '{$fullTableName}'");
 
             if (!$tableExists) {

@@ -475,6 +475,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             // options table name (system value); never user input.
             /** @var string $optionsTable */
             $optionsTable = esc_sql($wpdb->options);
+            // DAO-bypass-approved: View-cache clear targets wp_options — outside the plugin's owned tables; runs during cache invalidation hot path; failure is best-effort
             $wpdb->query(
                 "DELETE FROM `{$optionsTable}` WHERE option_name LIKE '_transient_abj404_view_%'"
                 . " OR option_name LIKE '_transient_timeout_abj404_view_%'"
