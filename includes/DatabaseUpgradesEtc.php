@@ -134,6 +134,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->updateTableEngineToInnoDB();
     		$this->createIndexes();
 
+    		// First chunk of the canonical_url backfill runs in-band so newly
+    		// upgraded small sites finish in one shot. Larger sites converge
+    		// over subsequent daily-maintenance cron ticks (same method).
+    		$this->backfillRedirectsCanonicalUrl();
+
     		$this->logger->infoMessage(sprintf(
     			"Network activation: Created tables for current site (ID %d). Scheduling background task for remaining sites.",
     			$currentBlogId
@@ -150,6 +155,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->updateTableEngineToInnoDB();
     		$this->createIndexes();
 
+    		// First chunk of the canonical_url backfill runs in-band so newly
+    		// upgraded small sites finish in one shot. Larger sites converge
+    		// over subsequent daily-maintenance cron ticks (same method).
+    		$this->backfillRedirectsCanonicalUrl();
+
     		$this->logger->infoMessage(sprintf(
     			"Network upgrade: Updated tables for current site (ID %d). Scheduling background upgrade for remaining sites.",
     			$currentBlogId
@@ -163,6 +173,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$this->correctCollations();
     		$this->updateTableEngineToInnoDB();
     		$this->createIndexes();
+
+    		// First chunk of the canonical_url backfill runs in-band so newly
+    		// upgraded small sites finish in one shot. Larger sites converge
+    		// over subsequent daily-maintenance cron ticks (same method).
+    		$this->backfillRedirectsCanonicalUrl();
     	}
 
     	// Adopt orphaned tables AFTER target tables exist (rename handles prefix mismatches).
@@ -1010,6 +1025,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 $this->correctCollations();
                 $this->updateTableEngineToInnoDB();
                 $this->createIndexes();
+                $this->backfillRedirectsCanonicalUrl();
                 $this->renameAbj404TablesToLowerCase();
 
                 ABJ_404_Solution_PluginLogic::doRegisterCrons();
@@ -1055,6 +1071,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 $this->correctCollations();
                 $this->updateTableEngineToInnoDB();
                 $this->createIndexes();
+                $this->backfillRedirectsCanonicalUrl();
                 $this->renameAbj404TablesToLowerCase();
                 $this->correctIssuesAfter();
 
@@ -1108,6 +1125,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 $this->correctCollations();
                 $this->updateTableEngineToInnoDB();
                 $this->createIndexes();
+                $this->backfillRedirectsCanonicalUrl();
 
                 $successCount++;
                 $this->logger->debugMessage(sprintf(

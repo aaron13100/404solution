@@ -53,18 +53,35 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait {
         // Uses CHAR_LENGTH() for UTF-8 multibyte character safety
         $subdirectoryWithSlash = $subdirectory . '/';
 
-        $updateQuery = $wpdb->prepare(
-            "UPDATE {$redirectsTable}
-             SET url = CASE
+        // canonical_url stays in lockstep with url — same CASE expression
+        // applied to both columns so the captured-page JOIN keeps matching
+        // logs_hits.requested_url after the path rewrite. Wrapped in
+        // CONCAT('/', TRIM(BOTH '/' FROM ...)) to preserve the canonical form
+        // (no leading-slash duplication, no trailing slash). The CASE WHEN
+        // canonical_url IS NOT NULL guard avoids overwriting NULL rows
+        // (post-upgrade, pre-backfill) which the daily backfill will fill.
+        $canonicalCase = "CASE
                  WHEN url = %s OR url = %s THEN '/'
                  WHEN url LIKE %s THEN CONCAT('/', SUBSTRING(url, CHAR_LENGTH(%s) + 1))
                  ELSE url
-             END
+             END";
+
+        $updateQuery = $wpdb->prepare(
+            "UPDATE {$redirectsTable}
+             SET url = " . $canonicalCase . ",
+                 canonical_url = CASE
+                     WHEN canonical_url IS NULL THEN NULL
+                     ELSE CONCAT('/', TRIM(BOTH '/' FROM (" . $canonicalCase . ")))
+                 END
              WHERE url = %s OR url = %s OR url LIKE %s",
-            $subdirectory,                                  // CASE: exact match /blog
-            $subdirectoryWithSlash,                         // CASE: with slash /blog/
-            $wpdb->esc_like($subdirectoryWithSlash) . '%', // CASE: with path /blog/*
-            $subdirectoryWithSlash,                         // SUBSTRING length calculation
+            $subdirectory,                                  // url CASE: exact match /blog
+            $subdirectoryWithSlash,                         // url CASE: with slash /blog/
+            $wpdb->esc_like($subdirectoryWithSlash) . '%', // url CASE: with path /blog/*
+            $subdirectoryWithSlash,                         // url SUBSTRING length
+            $subdirectory,                                  // canonical CASE: exact match /blog
+            $subdirectoryWithSlash,                         // canonical CASE: with slash /blog/
+            $wpdb->esc_like($subdirectoryWithSlash) . '%', // canonical CASE: with path /blog/*
+            $subdirectoryWithSlash,                         // canonical SUBSTRING length
             $subdirectory,                                  // WHERE: exact match
             $subdirectoryWithSlash,                         // WHERE: with slash
             $wpdb->esc_like($subdirectoryWithSlash) . '%'  // WHERE: with path

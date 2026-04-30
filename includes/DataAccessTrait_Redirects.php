@@ -399,6 +399,47 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
     }
 
     /**
+     * Canonical URL form stored in {wp_abj404_redirects}.canonical_url.
+     *
+     * Mirrors the SQL expression CONCAT('/', TRIM(BOTH '/' FROM url)) so the
+     * captured-page JOIN against logs_hits.requested_url is a single indexed
+     * equality lookup instead of evaluating CONCAT/TRIM per redirect row.
+     * Both sides (the persisted column here and the rollup pre-aggregation
+     * in getRedirectsForViewTempTable.sql) MUST produce byte-identical
+     * output for the JOIN to match.
+     *
+     * Examples: 'foo' → '/foo', '/foo/' → '/foo', '' → '/', '/' → '/'.
+     *
+     * @param mixed $url
+     * @return string
+     */
+    public static function computeRedirectsCanonicalUrl($url): string {
+        if (!is_string($url)) {
+            return '/';
+        }
+        $trimmed = trim($url, '/');
+        if ($trimmed === '') {
+            return '/';
+        }
+        return '/' . $trimmed;
+    }
+
+    /**
+     * SQL expression that emits the canonical form of an arbitrary URL column.
+     *
+     * Used by the (rare) callsites that still need to canonicalize at JOIN
+     * time — e.g. logs_hits rebuild, which canonicalizes logsv2.requested_url
+     * before grouping. Persistent canonical_url on redirects rows is the fast
+     * path; this expression is only for columns we cannot pre-compute.
+     *
+     * @param string $columnExpr A SQL column reference, e.g. "r.url".
+     * @return string SQL fragment.
+     */
+    public static function hitsCanonicalUrlSqlExpression(string $columnExpr): string {
+        return "CONCAT('/', TRIM(BOTH '/' FROM " . $columnExpr . "))";
+    }
+
+    /**
      * Store a redirect for future use.
      * @global type $wpdb
      * @param string $fromURL
@@ -458,8 +499,14 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 'code' => $code,
                 'disabled' => $disabled,
                 'timestamp' => $now,
+                // Pre-compute the canonical form so the captured-page JOIN to
+                // logs_hits.requested_url is a single indexed equality lookup
+                // instead of CONCAT('/', TRIM(...)) per row at query time. The
+                // formula must stay in lockstep with hitsCanonicalUrlSqlExpression()
+                // (read side) and the buildRedirectsCanonicalUrlChunk() backfill.
+                'canonical_url' => self::computeRedirectsCanonicalUrl($fromURL),
             );
-            $insertFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d');
+            $insertFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d', '%s');
             if ($engine !== null) {
                 $insertData['engine'] = substr((string)$engine, 0, 64);
                 $insertFormats[] = '%s';

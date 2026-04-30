@@ -384,14 +384,16 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      */
     function buildHighImpactCapturedCountQuery(): string {
         // logs_hits.requested_url is stored in canonical form (leading '/',
-        // no trailing '/') by createRedirectsForViewHitsTable(). Canonicalize
-        // r.url on the (small) redirects side so a single indexed lookup
-        // against h.requested_url matches every URL variant the original
-        // request might have arrived as.
+        // no trailing '/') by createRedirectsForViewHitsTable(). Match against
+        // the persisted r.canonical_url column (added 4.1.10) so the JOIN is
+        // an indexed equality lookup instead of CONCAT/TRIM per row. The
+        // COALESCE fallback covers rows from upgraded sites where the chunked
+        // backfill hasn't reached yet.
         $query = "SELECT COUNT(*) AS cnt
             FROM {wp_abj404_redirects} r
             INNER JOIN {wp_abj404_logs_hits} h
-                ON BINARY h.requested_url = BINARY CONCAT('/', TRIM(BOTH '/' FROM r.url))
+                ON BINARY h.requested_url = BINARY
+                   COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))
             WHERE r.status = " . ABJ404_STATUS_CAPTURED . " AND r.disabled = 0
               AND h.logshits >= 3";
         return $this->doTableNameReplacements($query);
@@ -928,9 +930,17 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
 
             // Verify table was actually created before using it (handles silent creation failures)
             if ($this->logsHitsTableExists()) {
+                // canonical_url is the persisted CONCAT('/', TRIM(BOTH '/' FROM url))
+                // form (added 4.1.10) so this JOIN is a single indexed equality
+                // lookup against logs_hits.requested_url instead of evaluating
+                // the function on every redirects row. The COALESCE fallback
+                // covers rows from upgraded sites where the chunked backfill
+                // hasn't reached yet — those rows merge in via the original
+                // expression so behavior matches pre-upgrade exactly.
                 $logsTableJoin = "  LEFT OUTER JOIN {wp_abj404_logs_hits} logstable \n " .
                         "  on binary logstable.requested_url = " .
-                        "binary concat('/', trim(both '/' from wp_abj404_redirects.url)) \n ";
+                        "binary COALESCE(wp_abj404_redirects.canonical_url, " .
+                        "concat('/', trim(both '/' from wp_abj404_redirects.url))) \n ";
             } else {
                 // Fall back to null columns if table creation failed
                 $logsTableColumns = "null as logshits, \n null as logsid, \n null as last_used, \n";
