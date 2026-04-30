@@ -160,6 +160,11 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         	"/sql/createLogsHitsTempTable.sql");
         $createTempTableQuery = $this->doTableNameReplacements($createTempTableQuery);
         $this->queryAndGetResults($createTempTableQuery);
+        // @cache-write-audit: opt-out — temp table internal to this rebuild
+        // (`{wp_abj404_logs_hits}_temp`); no other code path reads it, so no
+        // dependent caches exist to invalidate. The atomic swap to the live
+        // `{wp_abj404_logs_hits}` table later in this function is the only
+        // observable effect.
         $this->queryAndGetResults("truncate table " . $tempDestTable);
 
         // Capture a pre-insert snapshot watermark.
@@ -192,6 +197,8 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         // Format: "elapsed_time|max_log_id" (e.g., "0.35|12345")
         $elapsedTime = $results['elapsed_time'];
         $comment = $elapsedTime . '|' . $maxLogIdSnapshot;
+        // @utf8-audit: opt-out — $comment is internally composed from numeric
+        // elapsed-time and integer max-log-id values; never user-controlled.
         // Escape comment and truncate to MySQL's 2048 char limit for table comments
         $comment = substr(esc_sql($comment), 0, 2048);
         $addComment = "ALTER TABLE " . $tempDestTable . " COMMENT '" . $comment . "'";
@@ -592,6 +599,9 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         global $wpdb;
     	$whereClause = '';
         if ($specificURL != '') {
+            // Strip invalid UTF-8 first — esc_sql does not validate UTF-8 and
+            // bot-fed URLs deliver garbage bytes (Pattern 10).
+            $specificURL = $this->f->sanitizeInvalidUTF8($specificURL);
             // Escape user input to prevent SQL injection
             $escapedURL = esc_sql($specificURL);
             $whereClause = "where requested_url = '" . $escapedURL . "'";
@@ -881,6 +891,9 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
 
             if ($requestedUrlColumnMeta === null) {
                 $resultArray = $wpdb->get_results($getCharsetQuery, ARRAY_A);
+                // @cache-write-audit: opt-out — guarded by `!empty($resultArray)` below.
+                // $wpdb->get_results returns null on error, and !empty(null) is false,
+                // so a failed query never reaches the cache writes inside this block.
                 if (!empty($resultArray)) {
                     $requestedUrlColumnMeta = array(
                         'charset_name' => $resultArray[0]['charset_name'] ?? $resultArray[0]['CHARSET_NAME'] ?? null,
@@ -910,6 +923,10 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
                         $already = get_transient($warnKey);
                         if ($already !== $warnVal) {
                             $ttl = defined('WEEK_IN_SECONDS') ? WEEK_IN_SECONDS : 604800;
+                            // @cache-write-audit: opt-out — log-spam dedup marker, not a
+                            // query result. The cached value is the table+charset signature
+                            // we have already warned about; re-warning is harmless if the
+                            // transient is wrong.
                             set_transient($warnKey, $warnVal, $ttl);
                             $this->logger->warn("Logs table column charset is '{$requestedUrlCharset}' for {$logTableName}. URL-encoding stored requested URLs to avoid charset issues.");
                         }
@@ -1335,6 +1352,10 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
 
         $ttl = defined('HOUR_IN_SECONDS') ? (int) HOUR_IN_SECONDS : 3600;
         if (function_exists('set_transient')) {
+            // @cache-write-audit: opt-out — rate-limit cooldown timestamp, not a
+            // query result. The cached value (1) is a sentinel meaning "auto-trim
+            // attempted within the last hour"; we want it written even if the
+            // DELETE failed so we do not retry immediately and pile on the disk.
             set_transient($cooldownKey, 1, $ttl);
         }
 

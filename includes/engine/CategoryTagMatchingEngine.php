@@ -424,7 +424,11 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
     private function buildTitleWhereClause(array $keywords): string {
         $conditions = [];
         foreach ($keywords as $kw) {
-            $escaped = esc_sql($this->f->strtolower($kw));
+            // Strip invalid UTF-8 before SQL — keywords originate from
+            // rawurldecode'd URL slugs and can carry scanner-attack bytes
+            // (Pattern 10 — esc_sql does not validate UTF-8).
+            $cleanKw = $this->f->sanitizeInvalidUTF8($this->f->strtolower($kw));
+            $escaped = esc_sql($cleanKw);
             $conditions[] = "lower(wp_posts.post_title) LIKE '%" . $escaped . "%'";
         }
 

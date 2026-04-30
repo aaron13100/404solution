@@ -225,6 +225,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         $query = $this->doTableNameReplacements($query);
 
         $result = $this->queryAndGetResults($query);
+        $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
         $rows = is_array($result['rows']) ? $result['rows'] : array();
 
         $counts = array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0);
@@ -239,8 +240,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             );
         }
 
-        // Cache the result
-        set_transient(self::CACHE_KEY_REDIRECT_STATUS, $counts, self::STATUS_CACHE_TTL);
+        // Skip the cache write when the SUM(...) query returned an error or
+        // timed out: $rows is empty in that case so $counts is the all-zero
+        // default, and pinning that for STATUS_CACHE_TTL (24h) would make the
+        // Redirects admin page show "0 of every status" until the transient
+        // expires. Same policy as 6454a7dd / b857be36.
+        if (!$hadError) {
+            set_transient(self::CACHE_KEY_REDIRECT_STATUS, $counts, self::STATUS_CACHE_TTL);
+        }
 
         return $counts;
     }
@@ -273,6 +280,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         $query = $this->doTableNameReplacements($query);
 
         $result = $this->queryAndGetResults($query);
+        $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
         $rows = is_array($result['rows']) ? $result['rows'] : array();
 
         $counts = array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0);
@@ -287,8 +295,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             );
         }
 
-        // Cache the result
-        set_transient(self::CACHE_KEY_CAPTURED_STATUS, $counts, self::STATUS_CACHE_TTL);
+        // Skip the cache write when the SUM(...) query returned an error or
+        // timed out: $rows is empty in that case so $counts is the all-zero
+        // default, and pinning that for STATUS_CACHE_TTL (24h) would make the
+        // Captured-URLs admin page show "0 captured / 0 ignored / 0 later"
+        // until the transient expires. Same policy as 6454a7dd / b857be36.
+        if (!$hadError) {
+            set_transient(self::CACHE_KEY_CAPTURED_STATUS, $counts, self::STATUS_CACHE_TTL);
+        }
 
         return $counts;
     }
@@ -455,6 +469,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         // we delete by prefix from wp_options directly.
         global $wpdb;
         if (isset($wpdb->options) && method_exists($wpdb, 'query')) {
+            // @utf8-audit: opt-out — $wpdb->options is the WordPress core
+            // options table name (system value); never user input.
             /** @var string $optionsTable */
             $optionsTable = esc_sql($wpdb->options);
             $wpdb->query(

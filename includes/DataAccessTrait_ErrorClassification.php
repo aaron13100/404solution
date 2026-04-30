@@ -470,6 +470,8 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             if ($dbName === '') {
                 return '';
             }
+            // @utf8-audit: opt-out — $wpdb->dbname is set by WordPress at
+            // bootstrap from wp-config.php; never user input.
             $dbNameEscaped = esc_sql($dbName);
             $dbNameStr = is_array($dbNameEscaped) ? '' : $dbNameEscaped;
             // Find any table containing 'abj404_redirects' in this database.

@@ -175,6 +175,9 @@ class ABJ_404_Solution_Uninstaller {
     private static function deleteTable(string $table_name): void {
         global $wpdb;
 
+        // @utf8-audit: opt-out — $table_name is built from $wpdb->prefix +
+        // 'abj404_*' constants in the deleteTables() loop, or comes from a
+        // SHOW TABLES query result; never user input.
         // Security: Use wpdb methods and prepare statement
         $table_name = esc_sql($table_name);
         $wpdb->query("DROP TABLE IF EXISTS `$table_name`");

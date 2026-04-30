@@ -211,7 +211,11 @@ class ABJ_404_Solution_ContentMatchingEngine implements ABJ_404_Solution_Matchin
     private function buildWhereClause(array $keywords): string {
         $conditions = [];
         foreach ($keywords as $kw) {
-            $escaped = esc_sql($this->f->strtolower($kw));
+            // Strip invalid UTF-8 before SQL — keywords originate from
+            // rawurldecode'd URL slugs and can carry scanner-attack bytes
+            // (Pattern 10 — esc_sql does not validate UTF-8).
+            $cleanKw = $this->f->sanitizeInvalidUTF8($this->f->strtolower($kw));
+            $escaped = esc_sql($cleanKw);
             $conditions[] = "plc.content_keywords LIKE '%" . $escaped . "%'";
         }
 

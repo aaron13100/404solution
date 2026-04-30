@@ -247,6 +247,8 @@ class ABJ_404_Solution_DataAccess {
             return false;
         }
 
+        // @utf8-audit: opt-out — $tableName is always a system value (built
+        // from $wpdb->prefix or doTableNameReplacements); never user input.
         // Use SHOW TABLES to check existence (esc_sql avoids prepare() variadic
         // arg issues with some test mocks while remaining injection-safe for a table name)
         $table = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
@@ -265,6 +267,8 @@ class ABJ_404_Solution_DataAccess {
     private function getTableColumnNames(string $tableName): array {
         global $wpdb;
         if (!isset($wpdb)) { return []; }
+        // @utf8-audit: opt-out — $tableName is always a system value (built
+        // from $wpdb->prefix or doTableNameReplacements); never user input.
         $rows = $wpdb->get_results("SHOW COLUMNS FROM `" . esc_sql($tableName) . "`", ARRAY_A);
         if (!is_array($rows) || !empty($wpdb->last_error)) { return []; }
         $columns = [];
@@ -907,8 +911,14 @@ class ABJ_404_Solution_DataAccess {
         }
 
         $result['elapsed_time'] = $timer->stop();
+        $elapsedMs = ((float)$result['elapsed_time']) * 1000.0;
         if (function_exists('abj404_benchmark_record_db_query')) {
-            abj404_benchmark_record_db_query(((float)$result['elapsed_time']) * 1000.0);
+            abj404_benchmark_record_db_query($elapsedMs);
+        }
+        if (function_exists('abj404_query_budget_record')) {
+            // Record SQL filename only (never raw SQL — PII-free).  See
+            // ABJ_404_Solution_QueryBudgetInstrumentation for the contract.
+            abj404_query_budget_record($this->extractSqlFilename($query), $elapsedMs, $timeoutSeconds);
         }
         $this->harvestWpdbResult($result);
 

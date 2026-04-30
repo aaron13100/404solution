@@ -334,6 +334,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		if ($dbNameRaw === '') {
 			return;
 		}
+		// @utf8-audit: opt-out — $wpdb->dbname is set by WordPress at
+		// bootstrap from wp-config.php; never user input.
 		$dbNameEscaped = esc_sql($dbNameRaw);
 		$dbName = is_array($dbNameEscaped) ? '' : $dbNameEscaped;
 
@@ -832,6 +834,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    	if (!isset($wpdb)) {
 	    		return false;
 	    	}
+	    	// @utf8-audit: opt-out — $tableName is fully-qualified plugin table
+	    	// name from doTableNameReplacements / $wpdb->prefix; never user input.
 	    	$found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
 	    	if ($found === $tableName) {
 	    		return true;

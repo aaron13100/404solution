@@ -1169,6 +1169,8 @@ class ABJ_404_Solution_UninstallModal {
             return null;
         }
 
+        // @utf8-audit: opt-out — $tableName is built from $wpdb->prefix +
+        // 'abj404_*' constants by the uninstall flow; never user input.
         // Use backticks to safely quote table name
         $result = $wpdb->get_row("SHOW CREATE TABLE `" . esc_sql($tableName) . "`", ARRAY_N);
 

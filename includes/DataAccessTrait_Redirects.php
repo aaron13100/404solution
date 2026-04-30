@@ -713,6 +713,8 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         if (!isset($wpdb)) {
             return [];
         }
+        // @utf8-audit: opt-out — $tableName is always a system value
+        // (doTableNameReplacements / $wpdb->prefix); never user input.
         $rows = $wpdb->get_results(
             "SHOW COLUMNS FROM `" . esc_sql($tableName) . "`",
             ARRAY_A
