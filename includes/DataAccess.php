@@ -91,6 +91,9 @@ class ABJ_404_Solution_DataAccess {
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
+
+    /** @var ABJ_404_Solution_Clock|null Lazy-resolved by clock(); kept null to preserve constructor signature. */
+    private $clock = null;
     /** @var bool Whether a server-side DB issue was noted this request (for auto-clear). */
     private $serverSideIssueNoted = false;
     /** @var bool Whether we already checked for a stale notice transient this request. */
@@ -148,6 +151,39 @@ class ABJ_404_Solution_DataAccess {
         // Use injected dependencies or fall back to getInstance() for backward compatibility
         $this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
         $this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
+    }
+
+    /**
+     * Inject a specific clock instance. Tests bind a `FrozenClock` so
+     * cooldown / rate-limit windows can be advanced deterministically.
+     * @param ABJ_404_Solution_Clock $clock @return void
+     */
+    public function setClock(ABJ_404_Solution_Clock $clock): void {
+        $this->clock = $clock;
+    }
+
+    /**
+     * Resolve the clock used for time-based operations: injected setter
+     * wins, then container `'clock'` service, then a fresh `SystemClock`
+     * (CLI / fixtures that bypass `bootstrap.php`).
+     * @return ABJ_404_Solution_Clock
+     */
+    protected function clock(): ABJ_404_Solution_Clock {
+        if ($this->clock !== null) { return $this->clock; }
+        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+            try {
+                $c = ABJ_404_Solution_ServiceContainer::getInstance();
+                if (is_object($c) && method_exists($c, 'has') && $c->has('clock')) {
+                    $resolved = $c->get('clock');
+                    if ($resolved instanceof ABJ_404_Solution_Clock) {
+                        $this->clock = $resolved;
+                        return $this->clock;
+                    }
+                }
+            } catch (Throwable $e) { /* fall through to SystemClock */ }
+        }
+        $this->clock = new ABJ_404_Solution_SystemClock();
+        return $this->clock;
     }
 
     /** @return self */
@@ -1316,7 +1352,7 @@ class ABJ_404_Solution_DataAccess {
         $payload = array(
             'type' => $type,
             'message' => $message,
-            'timestamp' => time(),
+            'timestamp' => $this->clock()->now(),
             'error_string' => $errorString,
         );
         $this->setRuntimeFlag('abj404_plugin_db_notice', $payload, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
@@ -1364,7 +1400,8 @@ class ABJ_404_Solution_DataAccess {
         $diskUntil = is_scalar($rawDiskFlag) ? (int)$rawDiskFlag : 0;
         $rawReadOnlyFlag = $this->getRuntimeFlag('abj404_db_read_only_until');
         $readOnlyUntil = is_scalar($rawReadOnlyFlag) ? (int)$rawReadOnlyFlag : 0;
-        return ($diskUntil > time() || $readOnlyUntil > time());
+        $now = $this->clock()->now();
+        return ($diskUntil > $now || $readOnlyUntil > $now);
     }
 
     /** @return bool */

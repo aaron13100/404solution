@@ -279,6 +279,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'bootstrap.php',
 				$inc . 'classmap.php',
 				$inc . 'ServiceContainer.php',
+				$inc . 'Clock.php',
 				$inc . 'ErrorHandler.php',
 				// Core classes
 				$inc . 'WordPress_Connector.php',

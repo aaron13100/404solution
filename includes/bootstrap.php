@@ -46,6 +46,16 @@ function abj_404_solution_init_services() {
     });
 
     /**
+     * Clock service - injectable wall-clock so cooldown/rate-limit/cron-window
+     * code can be tested with a frozen virtual time. Production binds
+     * `SystemClock` (delegates to `time()` etc.); tests bind `FrozenClock`.
+     * See `docs/clock-injection-audit.md`.
+     */
+    $container->set('clock', function($c) {
+        return new ABJ_404_Solution_SystemClock();
+    });
+
+    /**
      * Error handler service - manages error handling and reporting.
      */
     $container->set('error_handler', function($c) {

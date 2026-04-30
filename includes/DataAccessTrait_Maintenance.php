@@ -43,7 +43,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
 
         $cooldownKey = 'abj404_collation_recovery_cooldown';
         $cooldownUntil = $this->getRuntimeFlag($cooldownKey);
-        $onCooldown = is_scalar($cooldownUntil) && (int)$cooldownUntil > time();
+        $onCooldown = is_scalar($cooldownUntil) && (int)$cooldownUntil > $this->clock()->now();
 
         if (!$onCooldown) {
             self::$collationRecoveryInProgress = true;
@@ -61,7 +61,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
                 self::$collationRecoveryInProgress = false;
                 // Set the 1-hour cooldown regardless of success/failure so we don't
                 // hammer correctCollations() on a hot query path.
-                $this->setRuntimeFlag($cooldownKey, time() + 3600, 3600);
+                $this->setRuntimeFlag($cooldownKey, $this->clock()->now() + 3600, 3600);
             }
         }
 

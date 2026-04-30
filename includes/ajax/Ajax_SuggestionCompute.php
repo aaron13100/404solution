@@ -22,6 +22,32 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
     const COMPUTE_RATE_LIMIT_WINDOW_SECONDS = 60;
 
     /**
+     * Resolve the time source. Tests bind a `FrozenClock` via the
+     * service container so the single-flight claim window (90s),
+     * worker-recovery window, and `created`/`completed` timestamps can
+     * be asserted exactly. When no container is bound the fallback is
+     * the production `SystemClock`.
+     *
+     * @return ABJ_404_Solution_Clock
+     */
+    private static function clock(): ABJ_404_Solution_Clock {
+        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+            try {
+                $c = ABJ_404_Solution_ServiceContainer::getInstance();
+                if (is_object($c) && method_exists($c, 'has') && $c->has('clock')) {
+                    $svc = $c->get('clock');
+                    if ($svc instanceof ABJ_404_Solution_Clock) {
+                        return $svc;
+                    }
+                }
+            } catch (Throwable $e) {
+                // fall through
+            }
+        }
+        return new ABJ_404_Solution_SystemClock();
+    }
+
+    /**
      * Compute suggestions for a 404 URL and store results in transient.
      * This runs in a background HTTP request.
      *
@@ -123,16 +149,16 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
                 // First worker - claim the work by setting started=time()
                 // TTL of 120s gives slow hosts enough time to complete computation
                 $existingUrl = isset($existing['url']) ? $existing['url'] : '';
-                $existingCreated = (isset($existing['created']) && is_scalar($existing['created'])) ? (int)$existing['created'] : time();
+                $existingCreated = (isset($existing['created']) && is_scalar($existing['created'])) ? (int)$existing['created'] : self::clock()->now();
                 set_transient($transientKey, array(
                     'status' => 'pending',
                     'url' => $existingUrl,
-                    'started' => time(),  // Claim the work
+                    'started' => self::clock()->now(),  // Claim the work
                     'created' => $existingCreated,  // Preserve creation timestamp
                     'token' => $storedToken
                 ), 120);
                 // Proceed to compute
-            } elseif ((time() - $startedAt) < 90) {
+            } elseif ((self::clock()->now() - $startedAt) < 90) {
                 // Another worker claimed recently and is still computing - skip
                 wp_die();
             }
@@ -197,7 +223,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             'status' => 'complete',
             'suggestions' => $suggestionsPacket,
             'url' => $requestedURL,
-            'completed' => time(),
+            'completed' => self::clock()->now(),
             'token' => $storedToken  // Preserve token for debugging/audit
         ), 120); // 2 minute TTL
 

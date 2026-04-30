@@ -12,6 +12,31 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_Ajax_SuggestionPolling {
 
     /**
+     * Resolve the time source. Tests bind a `FrozenClock` via the
+     * service container so the worker-stuck-at-90s and worker-not-claimed-at-15s
+     * thresholds can be asserted exactly. When no container is bound the
+     * fallback is the production `SystemClock`.
+     *
+     * @return ABJ_404_Solution_Clock
+     */
+    private static function clock(): ABJ_404_Solution_Clock {
+        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
+            try {
+                $c = ABJ_404_Solution_ServiceContainer::getInstance();
+                if (is_object($c) && method_exists($c, 'has') && $c->has('clock')) {
+                    $svc = $c->get('clock');
+                    if ($svc instanceof ABJ_404_Solution_Clock) {
+                        return $svc;
+                    }
+                }
+            } catch (Throwable $e) {
+                // fall through
+            }
+        }
+        return new ABJ_404_Solution_SystemClock();
+    }
+
+    /**
      * Check if suggestions are ready and return them if complete.
      * Returns JSON with status and optionally HTML content.
      * @return void
@@ -86,14 +111,14 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
             $startedAt = (isset($data['started']) && is_scalar($data['started'])) ? (int)$data['started'] : 0;
             $createdAt = (isset($data['created']) && is_scalar($data['created'])) ? (int)$data['created'] : 0;
 
-            if ($startedAt > 0 && (time() - $startedAt) > 90) {
+            if ($startedAt > 0 && (self::clock()->now() - $startedAt) > 90) {
                 // Computation started but hasn't completed in 90 seconds - worker likely crashed
                 // Return 200 so the JS success handler catches it immediately (not error retry loop)
                 wp_send_json(array('status' => 'timeout', 'message' => 'Computation timed out'));
                 return; // @phpstan-ignore deadCode.unreachable
             }
 
-            if ($startedAt === 0 && $createdAt > 0 && (time() - $createdAt) > 15) {
+            if ($startedAt === 0 && $createdAt > 0 && (self::clock()->now() - $createdAt) > 15) {
                 // No worker has claimed work in 15 seconds - background dispatch likely failed
                 // (common on single-threaded servers where wp_remote_post loopback fails)
                 wp_send_json(array('status' => 'timeout', 'message' => 'Worker failed to start'));

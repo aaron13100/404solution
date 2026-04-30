@@ -229,7 +229,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         }
         if ($this->isDiskFullError($errorText)) {
             $this->serverSideIssueNoted = true;
-            $this->setRuntimeFlag('abj404_db_disk_full_until', time() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
+            $this->setRuntimeFlag('abj404_db_disk_full_until', $this->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
 
             // Disambiguate InnoDB tablespace exhaustion from actual disk full or MyISAM limit.
             // "table is full" for InnoDB means the shared tablespace (ibdata1) is at capacity —
@@ -248,13 +248,13 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         }
         if ($this->isQuotaLimitError($errorText)) {
             $this->serverSideIssueNoted = true;
-            $this->setRuntimeFlag('abj404_db_quota_cooldown_until', time() + self::DB_QUOTA_COOLDOWN_SECONDS, self::DB_QUOTA_COOLDOWN_SECONDS);
+            $this->setRuntimeFlag('abj404_db_quota_cooldown_until', $this->clock()->now() + self::DB_QUOTA_COOLDOWN_SECONDS, self::DB_QUOTA_COOLDOWN_SECONDS);
             $this->setPluginDbNotice('query_quota', $this->localizeOrDefault('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.'), $errorText);
             return;
         }
         if ($this->isReadOnlyError($errorText)) {
             $this->serverSideIssueNoted = true;
-            $this->setRuntimeFlag('abj404_db_read_only_until', time() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
+            $this->setRuntimeFlag('abj404_db_read_only_until', $this->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
             $this->setPluginDbNotice('read_only', $this->localizeOrDefault('Database appears to be in read-only mode. Plugin write operations are temporarily paused.'), $errorText);
             return;
         }
@@ -272,7 +272,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     private function isQuotaCooldownActive(): bool {
         $rawQuotaFlag = $this->getRuntimeFlag('abj404_db_quota_cooldown_until');
         $until = is_scalar($rawQuotaFlag) ? (int)$rawQuotaFlag : 0;
-        return ($until > time());
+        return ($until > $this->clock()->now());
     }
 
     /** @param string $errorText @return bool */
@@ -309,7 +309,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         $repairCooldownKey = 'abj404_missing_table_repair_cooldown';
         $cooldownTtlSeconds = 3600;
         $cooldownUntil = $this->getRuntimeFlag($repairCooldownKey);
-        if (is_scalar($cooldownUntil) && (int)$cooldownUntil > time()) {
+        if (is_scalar($cooldownUntil) && (int)$cooldownUntil > $this->clock()->now()) {
             $this->logger->warn("Missing plugin table (repair previously failed, cooldown active): "
                 . $result['last_error']);
             // Clear last_error so the caller (queryAndGetResults) does not
@@ -404,7 +404,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
                 // Engage 1h cooldown and surface a single admin notice on
                 // the plugin screen so the admin knows to investigate.
                 // Never email; never show on all wp-admin pages.
-                $this->setRuntimeFlag($repairCooldownKey, time() + $cooldownTtlSeconds, $cooldownTtlSeconds);
+                $this->setRuntimeFlag($repairCooldownKey, $this->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
                 $tableLabel = ($missingTable !== '') ? "'" . $missingTable . "' " : '';
                 $adminMsg = 'A plugin database table ' . $tableLabel
                     . 'is missing and could not be repaired automatically. '
@@ -415,14 +415,14 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
                 $noticePayload = array(
                     'type'         => 'missing_table',
                     'message'      => $this->localizeOrDefault($adminMsg),
-                    'timestamp'    => time(),
+                    'timestamp'    => $this->clock()->now(),
                     'error_string' => $result['last_error'],
                 );
                 $this->setRuntimeFlag('abj404_plugin_db_notice', $noticePayload, 86400);
             }
         } catch (Throwable $e) {
             $this->logger->warn("Missing-table auto-repair failed: " . $e->getMessage());
-            $this->setRuntimeFlag($repairCooldownKey, time() + $cooldownTtlSeconds, $cooldownTtlSeconds);
+            $this->setRuntimeFlag($repairCooldownKey, $this->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
         } finally {
             self::$tableRepairInProgress = false;
         }
