@@ -161,7 +161,7 @@ trait ViewTrait_Stats {
             return;
         }
 
-        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $dao = abj_service('data_access');
         $redirectsTable = $dao->doTableNameReplacements('{wp_abj404_redirects}');
 
         // Query score distribution bands. Route through the DAO so the
@@ -633,8 +633,8 @@ trait ViewTrait_Stats {
      * @return string
      */
     private function getMigrateFromPluginMarkup(): string {
-        $dao    = ABJ_404_Solution_DataAccess::getInstance();
-        $logger = ABJ_404_Solution_Logging::getInstance();
+        $dao    = abj_service('data_access');
+        $logger = abj_service('logging');
         $importer = new ABJ_404_Solution_CrossPluginImporter($dao, $logger);
 
         $detected = $importer->detectInstalledPlugins();

@@ -15,7 +15,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
     
     /** @return bool */
     function isMyISAMSupported(): bool {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404dao = abj_service('data_access');
         $supportResults = $abj404dao->queryAndGetResults("SELECT ENGINE, SUPPORT " .
             "FROM information_schema.ENGINES WHERE lower(ENGINE) = 'myisam'",
             array('log_errors' => false));

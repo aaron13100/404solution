@@ -19,7 +19,7 @@ class ABJ_404_Solution_View_Suggestions {
 	 * @param ABJ_404_Solution_Functions|null $functions String utilities
 	 */
 	public function __construct($functions = null) {
-		$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
+		$this->f = $functions !== null ? $functions : abj_service('functions');
 	}
 
 	/** @return self */

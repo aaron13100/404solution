@@ -480,7 +480,7 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
             return $defaultValue;
         }
 
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         $unslash = function($value) {
             return function_exists('wp_unslash') ? wp_unslash($value) : $value;
         };
@@ -765,12 +765,15 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
     function buildTopCapturedForDigestQuery(int $limit): string {
         $limit = max(1, $limit);
         // logs_hits.requested_url is canonical (leading '/', no trailing '/').
-        // Canonicalize r.url on the (small) redirects side so variants fold
-        // into the same rollup row.
+        // Match against the persisted r.canonical_url column (added 4.1.10)
+        // so the JOIN is an indexed equality lookup instead of CONCAT/TRIM
+        // per row. The COALESCE fallback covers rows from upgraded sites
+        // where the chunked backfill hasn't reached yet.
         $query = "SELECT r.url, COALESCE(h.logshits, 0) AS logshits, r.timestamp AS created
             FROM {wp_abj404_redirects} r
             LEFT JOIN {wp_abj404_logs_hits} h
-                ON BINARY h.requested_url = BINARY CONCAT('/', TRIM(BOTH '/' FROM r.url))
+                ON BINARY h.requested_url = BINARY
+                   COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))
             WHERE r.status = " . ABJ404_STATUS_CAPTURED . " AND r.disabled = 0
             ORDER BY logshits DESC, r.url ASC
             LIMIT " . $limit;
@@ -805,6 +808,14 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
                 array(ABJ404_STATUS_AUTO)
             );
         } catch (Throwable $e) {
+            // Infrastructure-class failure: log a warn so the support-bundle
+            // reader can see the dashboard's zero counts came from a query
+            // failure (missing column, partial migration, etc.) rather than
+            // an empty redirects table.
+            $this->logger->warn(
+                'getRedirectsBreakdownStats failed; returning zero counts: '
+                . $e->getMessage()
+            );
             return $zero;
         }
 
@@ -817,7 +828,7 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
 
     /** @return int */
     function getCapturedCountForNotification(): int {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404dao = abj_service('data_access');
         return $abj404dao->getRecordCount(array(ABJ404_STATUS_CAPTURED));
     }
 

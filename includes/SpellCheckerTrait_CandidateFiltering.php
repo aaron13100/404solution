@@ -75,7 +75,7 @@ trait SpellCheckerTrait_CandidateFiltering {
 
 		$returnValue = array($permalinks,$rowType);
 		$this->dao->storeSpellingPermalinksToCache($requestedURLRaw, $returnValue);
-		$ctx = ABJ_404_Solution_RequestContext::getInstance();
+		$ctx = abj_service('request_context');
 		$ctx->permalinks_found = (string)json_encode($returnValue);
 		$ctx->permalinks_kept = (string)json_encode($permalinks);
 

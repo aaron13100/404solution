@@ -26,7 +26,7 @@ trait ViewTrait_Settings {
         $settingsMode = $this->logic->getSettingsMode();
 
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
-        $helperFunctions = ABJ_404_Solution_Functions::getInstance();
+        $helperFunctions = abj_service('functions');
         $urlParts = parse_url($helperFunctions->normalizeUrlString($_SERVER['REQUEST_URI'] ?? ''));
         $currentURL = (is_array($urlParts) && isset($urlParts['path'])) ? $urlParts['path'] : '';
         if (is_array($options) && isset($options['menuLocation']) &&

@@ -212,7 +212,19 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         if (!method_exists($wpdb, 'get_var') || !method_exists($wpdb, 'prepare')) {
             return false; // Safe default when $wpdb is a partial stub
         }
-        $dbName = defined('DB_NAME') ? (string)DB_NAME : '';
+        if (defined('DB_NAME')) {
+            $dbName = (string)DB_NAME;
+        } else {
+            // Per-request warn once: silent empty-string fallback hides
+            // whether the schema-probe is actually working in tests that
+            // forget to define DB_NAME (Smell 1 from error-swallow audit).
+            static $warnedNoDbName = false;
+            if (!$warnedNoDbName) {
+                $warnedNoDbName = true;
+                $this->logger->warn(__METHOD__ . ': DB_NAME undefined; using empty schema in InnoDB probe');
+            }
+            $dbName = '';
+        }
         $engine = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
@@ -330,7 +342,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
         self::$tableRepairInProgress = true;
         try {
-            $upgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+            $upgrades = abj_service('database_upgrades');
             // Pass $force = true so the repair bypasses the concurrency lock — if another
             // request holds the lock (e.g. a concurrent upgrade), calling createDatabaseTables
             // without $force would silently return without creating anything, leaving the

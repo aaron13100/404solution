@@ -109,12 +109,12 @@ class ABJ_404_Solution_SpellChecker {
 	 */
 	public function __construct($functions = null, $pluginLogic = null, $dataAccess = null, $logging = null, $permalinkCache = null, $ngramFilter = null) {
 		// Use injected dependencies or fall back to getInstance() for backward compatibility
-		$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
-		$this->logic = $pluginLogic !== null ? $pluginLogic : ABJ_404_Solution_PluginLogic::getInstance();
-		$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
-		$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
-		$this->permalinkCache = $permalinkCache !== null ? $permalinkCache : ABJ_404_Solution_PermalinkCache::getInstance();
-		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : ABJ_404_Solution_NGramFilter::getInstance();
+		$this->f = $functions !== null ? $functions : abj_service('functions');
+		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
+		$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
+		$this->logger = $logging !== null ? $logging : abj_service('logging');
+		$this->permalinkCache = $permalinkCache !== null ? $permalinkCache : abj_service('permalink_cache');
+		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : abj_service('ngram_filter');
 
 		// Set the custom 404 page id if there is one
 		$options = $this->logic->getOptions();
@@ -214,7 +214,7 @@ class ABJ_404_Solution_SpellChecker {
 	static function init(): void {
 		// any time a page is saved or updated, or the permalink structure changes, then we have to clear
 		// the spelling cache because the results may have changed.
-		$me = ABJ_404_Solution_SpellChecker::getInstance();
+		$me = abj_service('spell_checker');
 
 		add_action('updated_option', array($me,'permalinkStructureChanged'), 10, 2);
 		add_action('save_post', array($me,'save_postListener'), 10, 3);
@@ -229,7 +229,7 @@ class ABJ_404_Solution_SpellChecker {
 	 * @return array<string, mixed>|null
 	 */
 	function getPermalinkUsingSpelling(string $requestedURL, ?string $fullRequestedURL = null, $optionsOverride = null) {
-		$abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
+		$abj404spellChecker = abj_service('spell_checker');
 
 		$options = is_array($optionsOverride) ? $optionsOverride : $this->logic->getOptions();
 
@@ -322,7 +322,7 @@ class ABJ_404_Solution_SpellChecker {
 	 * @return bool True if computation was triggered, false if already pending/complete
 	 */
 	public function triggerAsyncSuggestionComputation($requestedURL) {
-		$f = ABJ_404_Solution_Functions::getInstance();
+		$f = abj_service('functions');
 
 		// Normalize URL using centralized function for consistency
 		$normalizedURL = $f->normalizeURLForCacheKey($requestedURL);

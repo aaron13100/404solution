@@ -73,7 +73,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
      * @return int Count of deleted redirects
      */
     private function deleteOldRedirectsByType($options, $now, $optionKey, $statusList, $debugMessageType) {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404dao = abj_service('data_access');
         $deletedCount = 0;
 
         // Calculate time threshold
@@ -167,8 +167,8 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
      */
     function deleteOldRedirectsCron() {
         global $wpdb;
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404dao = abj_service('data_access');
+        $abj404logic = abj_service('plugin_logic');
         
         $options = $abj404logic->getOptions();
         $now = time();
@@ -186,7 +186,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             $manually_fired = false;
         }
 
-        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+        $upgradesEtc = abj_service('database_upgrades');
         $upgradesEtc->createDatabaseTables(false);
 
         // Ensure database connection is active for long-running maintenance operations
@@ -319,7 +319,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $abj404dao->flagDeadDestinationRedirects();
 
         // add some entries to the permalink cache if necessary
-        $abj404permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
+        $abj404permalinkCache = abj_service('permalink_cache');
         $rowsUpdated = $abj404permalinkCache->updatePermalinkCache(15);
         $message .= ", Permlink cache rows updated: " . $rowsUpdated;
         
@@ -329,7 +329,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $this->logger->infoMessage($message);
         
         // fix any lingering errors
-        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+        $upgradesEtc = abj_service('database_upgrades');
         $upgradesEtc->createDatabaseTables();
         
         $this->queryAndGetResults("optimize table {wp_abj404_redirects}");
@@ -480,14 +480,14 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         }
 
         // if we should not capture a 404 then don't.
-        if (!ABJ_404_Solution_RequestContext::getInstance()->ignore_doprocess) {
+        if (!abj_service('request_context')->ignore_doprocess) {
             $now = time();
             $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
 
             // Normalize to relative path before storing (Issue #24)
             // Fix HIGH #1 (5th review): Abort operation if normalization fails
             // Storing un-normalized URLs causes permanent lookup failures
-            $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+            $abj404logic = abj_service('plugin_logic');
             $fromURL = $abj404logic->normalizeToRelativePath($fromURL);
 
             // Fix HIGH #1 (3rd review): Remove esc_sql() - wpdb->insert handles escaping
@@ -607,7 +607,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         // Normalize to relative path before querying (Issue #24)
         // Fix HIGH #1 (5th review): Abort operation if normalization fails
         // Querying with un-normalized URLs causes lookup failures
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         $candidates = $abj404logic->getNormalizedUrlCandidates($url);
         foreach ($candidates as $candidate) {
             $redirect = $this->getActiveRedirectForNormalizedUrl($candidate, $degradedMode);
@@ -635,7 +635,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         // Normalize to relative path before querying (Issue #24)
         // Fix HIGH #1 (5th review): Abort operation if normalization fails
         // Querying with un-normalized URLs causes lookup failures
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         $candidates = $abj404logic->getNormalizedUrlCandidates($url);
         foreach ($candidates as $candidate) {
             $redirect = $this->getExistingRedirectForNormalizedUrl($candidate);
@@ -837,7 +837,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
     function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '',
     	$limitResults = '', $orderResults = '', $extraWhereClause = '') {
         global $wpdb;
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
 
         // Fix for missing table error (reported by 2 users - 4% of errors)
         // Check if wp_posts table exists before querying
@@ -990,7 +990,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
      */
     function getPublishedImagesIDs() {
         global $wpdb;
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         
         // get the valid post types
         $options = $abj404logic->getOptions();
@@ -1021,7 +1021,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
      */
     function getPublishedTags($slug = null, $limit = null) {
         global $wpdb;
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
 
         // get the valid post types
         $options = $abj404logic->getOptions();
@@ -1102,7 +1102,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
      */
     function getPublishedCategories($term_id = null, $slug = null, $limit = null) {
         global $wpdb;
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
 
         // get the valid post types
         $options = $abj404logic->getOptions();
@@ -1261,8 +1261,9 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
 
         $rows = $wpdb->get_results($sql, ARRAY_A);
 
-        if ($wpdb->last_error) {
-            $this->logger->warn("getRedirectConditions: DB error for redirect_id={$redirectId}: " . $wpdb->last_error);
+        $lastError = (string)($wpdb->last_error ?? '');
+        if ($lastError !== '') {
+            $this->logger->warn("getRedirectConditions: DB error for redirect_id={$redirectId}: " . $lastError);
             return [];
         }
 
@@ -1294,8 +1295,9 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         // Delete existing conditions for this redirect.
         $wpdb->delete($table, ['redirect_id' => $redirectId], ['%d']);
 
-        if ($wpdb->last_error) {
-            $this->logger->warn("saveRedirectConditions: error deleting old conditions for redirect_id={$redirectId}: " . $wpdb->last_error);
+        $deleteError = (string)($wpdb->last_error ?? '');
+        if ($deleteError !== '') {
+            $this->logger->warn("saveRedirectConditions: error deleting old conditions for redirect_id={$redirectId}: " . $deleteError);
         }
 
         if (empty($conditions)) {
@@ -1356,8 +1358,9 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 ['%d', '%s', '%s', '%s', '%s', '%d']
             );
 
-            if ($wpdb->last_error) {
-                $this->logger->warn("saveRedirectConditions: error inserting condition #{$index} for redirect_id={$redirectId}: " . $wpdb->last_error);
+            $insertError = (string)($wpdb->last_error ?? '');
+            if ($insertError !== '') {
+                $this->logger->warn("saveRedirectConditions: error inserting condition #{$index} for redirect_id={$redirectId}: " . $insertError);
             }
         }
     }

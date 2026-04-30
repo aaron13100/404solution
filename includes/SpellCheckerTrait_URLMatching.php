@@ -28,14 +28,14 @@ trait SpellCheckerTrait_URLMatching {
 			$regexURL = $row['url'];
 
 			if ($isDebug) {
-				ABJ_404_Solution_RequestContext::getInstance()->debug_info = 'Applying custom regex "' . $regexURL . '" to URL: ' .
+				abj_service('request_context')->debug_info = 'Applying custom regex "' . $regexURL . '" to URL: ' .
 					$requestedURL;
 			}
 			$regexURLStr = is_string($regexURL) ? $regexURL : '';
 			$preparedURL = $this->getPreparedRegexPattern($regexURLStr);
 			if ($this->f->regexMatch($preparedURL, $requestedURL)) {
 				if ($isDebug) {
-					ABJ_404_Solution_RequestContext::getInstance()->debug_info = 'Cleared after regex.';
+					abj_service('request_context')->debug_info = 'Cleared after regex.';
 				}
 				$rowType = isset($row['type']) && is_scalar($row['type']) ? (int)$row['type'] : 0;
 				$rowDest = isset($row['final_dest']) && is_scalar($row['final_dest']) ? (string)$row['final_dest'] : '';
@@ -84,7 +84,7 @@ trait SpellCheckerTrait_URLMatching {
 			}
 
 			if ($isDebug) {
-				ABJ_404_Solution_RequestContext::getInstance()->debug_info = 'Cleared after regex.';
+				abj_service('request_context')->debug_info = 'Cleared after regex.';
 			}
 		}
 
@@ -194,7 +194,7 @@ trait SpellCheckerTrait_URLMatching {
 	 */
 	function getFromPermalinkCache(string $requestedURL): array {
 		// The request cache is used when the suggested pages shortcode is used.
-        $ctx = ABJ_404_Solution_RequestContext::getInstance();
+        $ctx = abj_service('request_context');
         if (!empty($ctx->permalinks_found)) {
 			$permalinks = json_decode($ctx->permalinks_found, true);
 			if (is_array($permalinks)) {

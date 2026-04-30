@@ -260,7 +260,7 @@ trait SpellCheckerTrait_PostListeners {
 
 	function initializePublishedPostsProvider(): void {
 		if ($this->publishedPostsProvider == null) {
-			$this->publishedPostsProvider = ABJ_404_Solution_PublishedPostsProvider::getInstance();
+			$this->publishedPostsProvider = abj_service('published_posts_provider');
 		}
 		$this->permalinkCache->updatePermalinkCache(1);
 	}

@@ -26,7 +26,7 @@ class ABJ_404_Solution_WPNotice {
     public function __construct($type, $message) {
     	$this->type = self::INFO;
     	
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         $typeStr = is_string($type) ? $type : (is_scalar($type) ? (string)$type : '');
         $VALID_TYPES = array(self::ERROR, self::WARNING, self::SUCCESS, self::INFO);
         if (!in_array($typeStr, $VALID_TYPES)) {

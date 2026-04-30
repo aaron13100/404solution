@@ -36,9 +36,9 @@ class ABJ_404_Solution_PermalinkCache {
      */
     public function __construct($dataAccess = null, $logging = null, $pluginLogic = null) {
         // Use injected dependencies or fall back to getInstance() for backward compatibility
-        $this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
-        $this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
-        $this->logic = $pluginLogic !== null ? $pluginLogic : ABJ_404_Solution_PluginLogic::getInstance();
+        $this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
+        $this->logger = $logging !== null ? $logging : abj_service('logging');
+        $this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
     }
 
     /** @return self */
@@ -52,7 +52,7 @@ class ABJ_404_Solution_PermalinkCache {
     
     /** @return void */
     static function init(): void {
-        $me = ABJ_404_Solution_PermalinkCache::getInstance();
+        $me = abj_service('permalink_cache');
         
         add_action('updated_option', array($me, 'permalinkStructureChanged'), 10, 2);
     }
@@ -101,7 +101,7 @@ class ABJ_404_Solution_PermalinkCache {
 
         // Invalidate coverage ratio if rows were inserted (new permalinks may lack N-grams)
         if ($rowsInserted > 0) {
-            ABJ_404_Solution_NGramFilter::getInstance()->invalidateCoverageCaches();
+            abj_service('ngram_filter')->invalidateCoverageCaches();
         }
 
         // now we have to update the the pages that have parents to include the parent

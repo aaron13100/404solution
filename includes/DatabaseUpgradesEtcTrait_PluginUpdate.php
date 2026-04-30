@@ -19,7 +19,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait {
     function migrateURLsToRelativePaths() {
         global $wpdb;
 
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $abj404logging = abj_service('logging');
 
         // Get current WordPress subdirectory
         $homeURL = get_home_url();

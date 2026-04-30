@@ -42,8 +42,8 @@ class ABJ_404_Solution_WPNotices {
      * @return string the messages to display.
      */
     static function echoAdminNotices() {
-    	$f = ABJ_404_Solution_Functions::getInstance();
-    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+    	$f = abj_service('functions');
+    	$abj404logic = abj_service('plugin_logic');
 
     	$allHTML = '';
     	if (!$abj404logic->userIsPluginAdmin()) {

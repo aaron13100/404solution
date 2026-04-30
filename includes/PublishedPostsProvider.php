@@ -106,7 +106,7 @@ class ABJ_404_Solution_PublishedPostsProvider {
      * @return array<int, mixed>
      */
     private function getNextBatchFromTheDatabase(int $permalinkLength, int $batchSize, $maxAcceptableDistance): array {
-    	$abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+    	$abj404dao = abj_service('data_access');
 
     	$orderBy = "abs(plc.url_length - " . $permalinkLength . "), wp_posts.id";
     	$limit = $this->currentLowRowNumber . ", " . $batchSize;

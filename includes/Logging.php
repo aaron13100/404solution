@@ -88,7 +88,7 @@ class ABJ_404_Solution_Logging {
     
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         $options = $abj404logic->getOptions(true);
 
         return (array_key_exists('debug_mode', $options) && $options['debug_mode'] == true);
@@ -120,6 +120,10 @@ class ABJ_404_Solution_Logging {
                     $date = new DateTime();
                 }
             } catch (Exception $e) {
+                // Use error_log (not $this->warn) because this method is part
+                // of the logging path; calling warn here would risk recursion
+                // if the timezone failure also breaks warn's own DateTime use.
+                @error_log('404 Solution: timezone constructor failed (' . $e->getMessage() . '); using server default');
                 $date = new DateTime();
             }
         }
@@ -203,8 +207,8 @@ class ABJ_404_Solution_Logging {
      * @return void
      */
     function logUserCapabilities(string $msg): void {
-    	$f = ABJ_404_Solution_Functions::getInstance();
-    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+    	$f = abj_service('functions');
+    	$abj404logic = abj_service('plugin_logic');
     	$user = wp_get_current_user();
         $usercaps = $f->str_replace(',"', ', "', wp_kses_post((string)json_encode($user->get_role_caps())));
         
@@ -256,8 +260,8 @@ class ABJ_404_Solution_Logging {
      * @return bool
      */
     function emailErrorLogIfNecessary(): bool {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404dao = abj_service('data_access');
+        $abj404logic = abj_service('plugin_logic');
         $options = $abj404logic->getOptions(true);
         
         if (!file_exists($this->getDebugFilePath())) {
@@ -386,7 +390,7 @@ class ABJ_404_Solution_Logging {
         }
 
         // Get plugin-specific counts
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404dao = abj_service('data_access');
         $redirectCounts = $abj404dao->getRedirectStatusCounts(true);
         $capturedCounts = $abj404dao->getCapturedStatusCounts(true);
         $totalLogsInDB = $abj404dao->getLogsCount(0);
@@ -462,7 +466,7 @@ class ABJ_404_Solution_Logging {
      * @return array{num: int, line: string|null, total_error_count: int}
      */
     function getLatestErrorLine(): array {
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         $latestErrorLineFound = array();
         $latestErrorLineFound['num'] = -1;
         $latestErrorLineFound['line'] = null;
@@ -519,7 +523,7 @@ class ABJ_404_Solution_Logging {
      * @return string Sanitized log excerpt or message if no errors found
      */
     function getSanitizedLogExcerptForSupport() {
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         $errorEntries = array();
         $recentLines = array();
         $maxEntries = 15;
@@ -746,7 +750,7 @@ class ABJ_404_Solution_Logging {
      * @return string Sanitized line with PII masked adaptively
      */
     public function sanitizeLogLine($line) {
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
 
         // Strip query strings from URLs (everything after ? in http/https URLs)
         // This removes tokens, emails, session IDs, search terms, etc. from URLs
@@ -871,7 +875,7 @@ class ABJ_404_Solution_Logging {
     /** @return string */
     function getDebugFilename(): string {
         // get the UUID here.
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         $options = $abj404logic->getOptions(true);
         $debugFileKey = null;
         if (is_array($options) && array_key_exists(self::DEBUG_FILE_KEY, $options)) {
@@ -883,7 +887,7 @@ class ABJ_404_Solution_Logging {
             $this->deleteDebugFile();
 
             // create a probably unique UUID and store it to the database.
-            $syncUtils = ABJ_404_Solution_SynchronizationUtils::getInstance();
+            $syncUtils = abj_service('sync_utils');
             $debugFileKey = $syncUtils->uniqidReal();
             $options[self::DEBUG_FILE_KEY] = $debugFileKey;
             $abj404logic->updateOptions($options);
@@ -921,7 +925,7 @@ class ABJ_404_Solution_Logging {
      * @return string
      */
     function getFilePathAndMoveOldFile($directory, $filename) {
-    	$f = ABJ_404_Solution_Functions::getInstance();
+    	$f = abj_service('functions');
         // create the directory and move the file
         if (!$f->createDirectoryWithErrorMessages($directory)) {
             return ABJ404_PATH . $filename;
@@ -954,7 +958,7 @@ class ABJ_404_Solution_Logging {
     /** @return void */
     function removeLastSentErrorLineFromDatabase(): void {
     	// update the last sent error line since the debug file will be deleted.
-    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+    	$abj404logic = abj_service('plugin_logic');
     	$options = $abj404logic->getOptions(true);
     	$options[self::LAST_SENT_LINE] = 0;
     	$abj404logic->updateOptions($options);
@@ -964,7 +968,7 @@ class ABJ_404_Solution_Logging {
      * @return boolean true if the file was deleted.
      */
     function deleteDebugFile() {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         $allIsWell = true;
         
         // since the debug file is being deleted we reset the last error line that was sent.

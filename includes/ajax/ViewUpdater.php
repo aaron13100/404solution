@@ -264,7 +264,7 @@ class ABJ_404_Solution_ViewUpdater {
 
         // Always attempt to write to the plugin debug file.
         try {
-            $logger = ABJ_404_Solution_Logging::getInstance();
+            $logger = abj_service('logging');
             if (is_object($logger) && method_exists($logger, 'writeLineToDebugFile')) {
                 $logger->writeLineToDebugFile($line);
                 return;
@@ -276,7 +276,7 @@ class ABJ_404_Solution_ViewUpdater {
         // Last-resort fallback (should be rare): write next to the plugin.
         // This ensures we still capture the error even if options/services are broken.
         try {
-            $logger = ABJ_404_Solution_Logging::getInstance();
+            $logger = abj_service('logging');
             if (is_object($logger) && method_exists($logger, 'sanitizeLogLine')) {
                 $line = $logger->sanitizeLogLine($line);
             }
@@ -364,8 +364,8 @@ class ABJ_404_Solution_ViewUpdater {
     
     /** @return void */
     function getPaginationLinks() {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404dao = abj_service('data_access');
+        $abj404logic = abj_service('plugin_logic');
         global $abj404view;
         
         $rowsPerPage = absint($abj404dao->getPostOrGetSanitize('rowsPerPage'));
@@ -406,7 +406,7 @@ class ABJ_404_Solution_ViewUpdater {
             }
 
             // Verify user has appropriate capabilities (respects plugin admin users)
-            $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+            $abj404logic = abj_service('plugin_logic');
             $isPluginAdmin = $abj404logic->userIsPluginAdmin();
             if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
                 $GLOBALS['abj404_ajax_context']['is_plugin_admin'] = $isPluginAdmin;
@@ -525,7 +525,7 @@ class ABJ_404_Solution_ViewUpdater {
             // If PluginLogic is broken/throws, fall back to WordPress capability checks so real admins can still see details.
             if (!$isPluginAdmin) {
                 try {
-                    $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+                    $abj404logic = abj_service('plugin_logic');
                     if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
                         $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
                     }
@@ -593,8 +593,8 @@ class ABJ_404_Solution_ViewUpdater {
 
     /** @return void */
     function refreshStatsDashboard() {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404dao = abj_service('data_access');
+        $abj404logic = abj_service('plugin_logic');
 
         $nonce = $abj404dao->getPostOrGetSanitize('nonce');
         $page = $abj404dao->getPostOrGetSanitize('page', '');
@@ -655,7 +655,7 @@ class ABJ_404_Solution_ViewUpdater {
         } catch (Throwable $e) {
             if (!$isPluginAdmin) {
                 try {
-                    $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+                    $abj404logic = abj_service('plugin_logic');
                     if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
                         $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
                     }
@@ -702,8 +702,8 @@ class ABJ_404_Solution_ViewUpdater {
      * @return void
      */
     function refreshHealthBar() {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404dao = abj_service('data_access');
+        $abj404logic = abj_service('plugin_logic');
 
         $nonce = $abj404dao->getPostOrGetSanitize('nonce');
         $page = $abj404dao->getPostOrGetSanitize('page', '');
@@ -775,7 +775,7 @@ class ABJ_404_Solution_ViewUpdater {
         } catch (Throwable $e) {
             if (!$isPluginAdmin) {
                 try {
-                    $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+                    $abj404logic = abj_service('plugin_logic');
                     if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
                         $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
                     }
@@ -825,8 +825,8 @@ class ABJ_404_Solution_ViewUpdater {
      * @return void
      */
     function fetchInflightStage() {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404dao = abj_service('data_access');
+        $abj404logic = abj_service('plugin_logic');
 
         $nonce = $abj404dao->getPostOrGetSanitize('nonce');
         $requestId = self::readClientRequestId();

@@ -84,7 +84,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         }
 
         // URL normalization requires the Functions service.
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
             try {
                 $c = ABJ_404_Solution_ServiceContainer::getInstance();
@@ -175,9 +175,9 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         );
 
         // Get dependencies
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
-        $logger = ABJ_404_Solution_Logging::getInstance();
+        $abj404logic = abj_service('plugin_logic');
+        $spellChecker = abj_service('spell_checker');
+        $logger = abj_service('logging');
 
         if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
             try {
@@ -292,7 +292,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         // Use plugin's logging if available, fallback to error_log
         if (class_exists('ABJ_404_Solution_Logging')) {
             try {
-                $logger = ABJ_404_Solution_Logging::getInstance();
+                $logger = abj_service('logging');
                 $logger->errorMessage($logMessage);
             } catch (Exception $e) {
                 // Logging failed during shutdown - use error_log as fallback

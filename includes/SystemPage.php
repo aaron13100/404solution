@@ -161,7 +161,7 @@ class ABJ_404_Solution_SystemPage {
      * @return void
      */
     public function handleSystemPageDeleted(): void {
-        $logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $logic = abj_service('plugin_logic');
         $options = $logic->getOptions(true);
 
         if (isset($options['dest404_behavior']) && $options['dest404_behavior'] === 'suggest') {
@@ -180,7 +180,7 @@ class ABJ_404_Solution_SystemPage {
      * @return void
      */
     public function verifySystemPageOnRequest(): void {
-        $logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $logic = abj_service('plugin_logic');
         $options = $logic->getOptions(true);
 
         if (!isset($options['dest404_behavior']) || $options['dest404_behavior'] !== 'suggest') {
@@ -265,7 +265,7 @@ class ABJ_404_Solution_SystemPage {
         $pageId = $instance->createSystemPage();
 
         if ($pageId > 0) {
-            $logic = ABJ_404_Solution_PluginLogic::getInstance();
+            $logic = abj_service('plugin_logic');
             $options = $logic->getOptions(true);
             $options['dest404_behavior'] = 'suggest';
             $options['dest404page'] = $pageId . '|' . ABJ404_TYPE_POST;

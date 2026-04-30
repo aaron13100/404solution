@@ -13,8 +13,8 @@ class ABJ_404_Solution_Ajax_TrashLink {
      * @return void
      */
     static function trashAction(): void {
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404dao = abj_service('data_access');
+        $abj404logic = abj_service('plugin_logic');
         $abj404view = $GLOBALS['abj404view'] ?? null;
 
         if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
@@ -30,7 +30,7 @@ class ABJ_404_Solution_Ajax_TrashLink {
             }
         }
         if ($abj404view === null && class_exists('ABJ_404_Solution_View')) {
-            $abj404view = ABJ_404_Solution_View::getInstance();
+            $abj404view = abj_service('view');
         }
 
         /** @var ABJ_404_Solution_DataAccess $abj404dao */

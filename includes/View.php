@@ -55,10 +55,10 @@ class ABJ_404_Solution_View {
 	 */
 	public function __construct($functions = null, $pluginLogic = null, $dataAccess = null, $logging = null) {
 		// Use injected dependencies or fall back to getInstance() for backward compatibility
-		$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
-		$this->logic = $pluginLogic !== null ? $pluginLogic : ABJ_404_Solution_PluginLogic::getInstance();
-		$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
-		$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
+		$this->f = $functions !== null ? $functions : abj_service('functions');
+		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
+		$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
+		$this->logger = $logging !== null ? $logging : abj_service('logging');
 	}
 
 	/** @return self */

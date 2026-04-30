@@ -30,7 +30,7 @@ class ABJ_404_Solution_UserRequest {
     public static function getInstance() {
         if (self::$instance == null) {
             if (!self::initialize()) {
-                $abj404logging = ABJ_404_Solution_Logging::getInstance();
+                $abj404logging = abj_service('logging');
                 $abj404logging->errorMessage('Issue initializing ' . __CLASS__, 
                         new Exception('Issue initializing ' . __CLASS__));
             }
@@ -43,9 +43,9 @@ class ABJ_404_Solution_UserRequest {
     public static function initialize(): bool {
         global $wp_rewrite;
         
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logging = abj_service('logging');
+        $f = abj_service('functions');
+        $abj404logic = abj_service('plugin_logic');
         
         $urlToParse = $f->normalizeUrlString($_SERVER['REQUEST_URI']);
       	
@@ -187,7 +187,7 @@ class ABJ_404_Solution_UserRequest {
     
     /** @return string */
     function getPathWithSortedQueryString(): string {
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         $requestedURL = $this->getPath();
         /** @var array<string, string> $urlPartsForSort */
         $urlPartsForSort = $this->getUrlParts() ?? array();
@@ -207,7 +207,7 @@ class ABJ_404_Solution_UserRequest {
      * @return string
      */
     function getOnlyTheSlug() {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         $path = $this->getRequestURIWithoutCommentsPage();
         return $abj404logic->removeHomeDirectory($path);
     }

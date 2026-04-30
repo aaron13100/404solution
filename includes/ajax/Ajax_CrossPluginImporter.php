@@ -34,8 +34,8 @@ class ABJ_404_Solution_Ajax_CrossPluginImporter {
             return; // @phpstan-ignore deadCode.unreachable
         }
 
-        $dao    = ABJ_404_Solution_DataAccess::getInstance();
-        $logger = ABJ_404_Solution_Logging::getInstance();
+        $dao    = abj_service('data_access');
+        $logger = abj_service('logging');
         $importer = new ABJ_404_Solution_CrossPluginImporter($dao, $logger);
 
         // Pass a very large limit so getImportPreview returns all rows — we only need the count.

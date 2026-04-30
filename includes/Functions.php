@@ -50,7 +50,7 @@ abstract class ABJ_404_Solution_Functions {
      * @return string|array<int|string, mixed> The urlencoded string or array of strings.
      */
     function selectivelyURLEncode($input) {
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
 
         // Handle array input
         if (is_array($input)) {
@@ -306,7 +306,7 @@ abstract class ABJ_404_Solution_Functions {
     			$lastMessagePart = ", Stripped: " . $dataStripped;
     		}
     		
-    		$logger = ABJ_404_Solution_Logging::getInstance();
+    		$logger = abj_service('logging');
     		$logger->errorMessage("Error " . $jsonErrorNumber . " parsing JSON in "
     			. __CLASS__ . "->" . __FUNCTION__ . "(). Error message: " . $errorMsg . $lastMessagePart);
     	}
@@ -437,7 +437,7 @@ abstract class ABJ_404_Solution_Functions {
      * @return float|string
      */
     function getExecutionTime() {
-        $startTime = ABJ_404_Solution_RequestContext::getInstance()->process_start_time;
+        $startTime = abj_service('request_context')->process_start_time;
         if ($startTime !== null) {
             $elapsedTime = microtime(true) - $startTime;
             
@@ -531,7 +531,7 @@ abstract class ABJ_404_Solution_Functions {
      * @return array<string, mixed> an array with id, type, score, link, and title.
      */
     static function permalinkInfoToArray($idAndType, $linkScore, $rowType = null, $options = null) {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $abj404logging = abj_service('logging');
         $permalink = array();
 
         if ($idAndType == NULL) {
@@ -606,7 +606,7 @@ abstract class ABJ_404_Solution_Functions {
         	$permalink['link'] = $permalink['id'];
         	if ($permalink['link'] == ABJ404_TYPE_EXTERNAL) {
 	        	if ($options == null) {
-	        		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+	        		$abj404logic = abj_service('plugin_logic');
 	        		$options = $abj404logic->getOptions();
 	        	}
 	        	$urlDestination = (array_key_exists('dest404pageURL', $options) &&
@@ -631,12 +631,12 @@ abstract class ABJ_404_Solution_Functions {
         
         // Decode anything that might be encoded to support utf8 characters
         if (array_key_exists('link', $permalink)) {
-        	$f = ABJ_404_Solution_Functions::getInstance();
+        	$f = abj_service('functions');
         	$linkVal = is_string($permalink['link']) ? $permalink['link'] : (is_scalar($permalink['link']) ? (string)$permalink['link'] : '');
         	$permalink['link'] = $f->normalizeUrlString($linkVal);
         }
         $titleVal = (array_key_exists('title', $permalink) && is_string($permalink['title'])) ? $permalink['title'] : '';
-        $permalink['title'] = ABJ_404_Solution_Functions::getInstance()->normalizeUrlString($titleVal);
+        $permalink['title'] = abj_service('functions')->normalizeUrlString($titleVal);
         
         return $permalink;
     }
@@ -745,7 +745,7 @@ abstract class ABJ_404_Solution_Functions {
      * @return array<string, string>
      */
     private static function getDataSupplement(string $filePath, bool $appendExtraData = true): array {
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         $path = strtolower($filePath);
         
         // remove the first part of the path because some people don't want to see
@@ -786,7 +786,7 @@ abstract class ABJ_404_Solution_Functions {
      * @return void
      */
     function readURLtoFile(string $url, string $filePath): void {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $abj404logging = abj_service('logging');
         
         ABJ_404_Solution_Functions::safeUnlink($filePath);
 
@@ -842,7 +842,7 @@ abstract class ABJ_404_Solution_Functions {
      * @return bool
      */
     function endsWithCaseInsensitive(string $haystack, string $needle): bool {
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         $length = $f->strlen($needle);
         if ($f->strlen($haystack) < $length) {
             return false;
@@ -860,7 +860,7 @@ abstract class ABJ_404_Solution_Functions {
      * @return bool
      */
     function endsWithCaseSensitive(string $haystack, string $needle): bool {
-    	$f = ABJ_404_Solution_Functions::getInstance();
+    	$f = abj_service('functions');
     	$length = $f->strlen($needle);
     	if ($f->strlen($haystack) < $length) {
     		return false;

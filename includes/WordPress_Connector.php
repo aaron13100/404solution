@@ -52,11 +52,11 @@ class ABJ_404_Solution_WordPress_Connector {
 	 */
 	public function __construct($pluginLogic = null, $dataAccess = null, $logging = null, $functions = null, $spellChecker = null) {
 		// Use injected dependencies or fall back to getInstance() for backward compatibility
-		$this->logic = $pluginLogic !== null ? $pluginLogic : ABJ_404_Solution_PluginLogic::getInstance();
-		$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
-		$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
-		$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
-		$this->spellChecker = $spellChecker !== null ? $spellChecker : ABJ_404_Solution_SpellChecker::getInstance();
+		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
+		$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
+		$this->logger = $logging !== null ? $logging : abj_service('logging');
+		$this->f = $functions !== null ? $functions : abj_service('functions');
+		$this->spellChecker = $spellChecker !== null ? $spellChecker : abj_service('spell_checker');
 	}
 
 	/** @return ABJ_404_Solution_FrontendRequestPipeline */
@@ -134,7 +134,7 @@ class ABJ_404_Solution_WordPress_Connector {
         self::$adminRuntimeErrors[] = $summary;
 
         try {
-            $logger = ABJ_404_Solution_Logging::getInstance();
+            $logger = abj_service('logging');
             $logger->errorMessage('Admin runtime exception in ' . $hookName . ': ' . $e->getMessage());
         } catch (Throwable $ignored) {
             // Last-resort logging fallback.
@@ -493,7 +493,7 @@ class ABJ_404_Solution_WordPress_Connector {
                 return;
             }
 
-            $logic = ABJ_404_Solution_PluginLogic::getInstance();
+            $logic = abj_service('plugin_logic');
             $options = $logic->getOptions();
             $theme = (isset($options['admin_theme']) && is_string($options['admin_theme'])) ? $options['admin_theme'] : 'default';
 
@@ -526,7 +526,7 @@ class ABJ_404_Solution_WordPress_Connector {
             // This MUST run before CSS is parsed to prevent flash
             // Setting on html immediately, and body as soon as it's available
             $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeSetterScript.html");
-            $f = ABJ_404_Solution_Functions::getInstance();
+            $f = abj_service('functions');
             $html = $f->str_replace('{theme}', esc_js($theme), $html);
             echo $html;
 
@@ -630,7 +630,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
                 // Load template and replace placeholder
                 $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/criticalThemeCSS.html");
-                $f = ABJ_404_Solution_Functions::getInstance();
+                $f = abj_service('functions');
                 $html = $f->str_replace('{css_variables}', $cssVars, $html);
                 echo $html;
             }
@@ -703,7 +703,7 @@ class ABJ_404_Solution_WordPress_Connector {
      */
     /** @return void */
     function suggestions() {
-        $abj404shortCode = ABJ_404_Solution_ShortCode::getInstance();
+        $abj404shortCode = abj_service('shortcode');
 
         if (is_404()) {
             $content = $abj404shortCode->shortcodePageSuggestions(array());
@@ -895,7 +895,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
                 // Open review page in new tab and redirect current page to clean URL
                 $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/reviewRedirectScript.html");
-                $f = ABJ_404_Solution_Functions::getInstance();
+                $f = abj_service('functions');
                 $html = $f->str_replace('{review_url}', esc_js('https://wordpress.org/support/plugin/404-solution/reviews/#new-post'), $html);
                 echo $html;
                 wp_safe_redirect(remove_query_arg(array('abj404_leaving_review', '_wpnonce')));
@@ -1078,7 +1078,7 @@ class ABJ_404_Solution_WordPress_Connector {
         );
 
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/reviewQualificationQuestion.html");
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         $html = $f->str_replace('{yes_url}', esc_attr($yes_url), $html);
         $html = $f->str_replace('{not_yet_url}', esc_attr($not_yet_url), $html);
         $html = $f->str_replace('{ask_later_url}', esc_attr($ask_later_url), $html);
@@ -1107,7 +1107,7 @@ class ABJ_404_Solution_WordPress_Connector {
         );
 
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/reviewLinkNotice.html");
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         $html = $f->str_replace('{review_link_url}', esc_attr($review_link_url), $html);
         $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
         $html = $f->str_replace('{close_url}', esc_attr($close_url), $html);
@@ -1134,7 +1134,7 @@ class ABJ_404_Solution_WordPress_Connector {
         if ($nonce_field === false) { $nonce_field = ''; }
 
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/feedbackFormNotice.html");
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         $html = $f->str_replace('{nonce_field}', $nonce_field, $html);
         $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
         $html = $f->str_replace('{close_url}', esc_attr($close_url), $html);
@@ -1276,7 +1276,7 @@ class ABJ_404_Solution_WordPress_Connector {
             wp_die(__('Insufficient permissions.', '404-solution'), 403);
         }
 
-        $logger = ABJ_404_Solution_Logging::getInstance();
+        $logger = abj_service('logging');
         $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
 
         $isCentralized = isset($_GET['abj404_gsc_centralized']) && $_GET['abj404_gsc_centralized'] === '1';
@@ -1359,7 +1359,7 @@ class ABJ_404_Solution_WordPress_Connector {
             wp_die(__('Security check failed.', '404-solution'), 403);
         }
 
-        $logger = ABJ_404_Solution_Logging::getInstance();
+        $logger = abj_service('logging');
         $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
         $gsc->revokeAuthorization();
 

@@ -48,7 +48,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
     public function list_redirects($args, $assocArgs) {
         require_once __DIR__ . '/DataAccess.php';
 
-        $dao    = ABJ_404_Solution_DataAccess::getInstance();
+        $dao    = abj_service('data_access');
         $status = isset($assocArgs['status']) ? strtolower(trim($assocArgs['status'])) : '';
         $format = isset($assocArgs['format']) ? strtolower(trim($assocArgs['format'])) : 'table';
 
@@ -114,7 +114,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
     public function create($args, $assocArgs) {
         require_once __DIR__ . '/DataAccess.php';
 
-        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $dao = abj_service('data_access');
 
         $from  = isset($assocArgs['from']) ? trim($assocArgs['from']) : '';
         $to    = isset($assocArgs['to']) ? trim($assocArgs['to']) : '';
@@ -193,7 +193,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
             return;
         }
 
-        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $dao = abj_service('data_access');
         $arg = trim($args[0]);
 
         if (ctype_digit($arg)) {
@@ -237,7 +237,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
     public function stats($args, $assocArgs) {
         require_once __DIR__ . '/DataAccess.php';
 
-        $dao      = ABJ_404_Solution_DataAccess::getInstance();
+        $dao      = abj_service('data_access');
         $snapshot = $dao->getStatsDashboardSnapshot(false);
         // getStatsDashboardSnapshot always returns array{refreshed_at, hash, data}.
         $data = is_array($snapshot['data']) ? $snapshot['data'] : array();
@@ -291,7 +291,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
         require_once __DIR__ . '/DataAccess.php';
 
-        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $dao = abj_service('data_access');
 
         $table = $dao->doTableNameReplacements('{wp_abj404_redirects}');
         $statusIn = implode(', ', array(
@@ -365,8 +365,8 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         require_once __DIR__ . '/DataAccess.php';
         require_once __DIR__ . '/ImportExportService.php';
 
-        $dao     = ABJ_404_Solution_DataAccess::getInstance();
-        $logging = ABJ_404_Solution_Logging::getInstance();
+        $dao     = abj_service('data_access');
+        $logging = abj_service('logging');
         $svc     = new ABJ_404_Solution_ImportExportService($dao, $logging);
 
         $fileHandle = fopen($filePath, 'r');
@@ -475,8 +475,8 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $format = isset($assocArgs['format']) ? strtolower(trim($assocArgs['format'])) : 'native';
         $output = isset($assocArgs['output']) ? trim($assocArgs['output']) : '';
 
-        $dao     = ABJ_404_Solution_DataAccess::getInstance();
-        $logging = ABJ_404_Solution_Logging::getInstance();
+        $dao     = abj_service('data_access');
+        $logging = abj_service('logging');
         $svc     = new ABJ_404_Solution_ImportExportService($dao, $logging);
 
         $serverFormats = array('htaccess', 'nginx', 'cloudflare', 'netlify', 'vercel');
@@ -587,7 +587,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         }
 
         global $wpdb;
-        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $dao = abj_service('data_access');
         $flushed = array();
 
         if ($type === 'spelling' || $type === 'all') {
@@ -654,7 +654,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         require_once __DIR__ . '/Functions.php';
 
         $url = trim($args[0]);
-        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $dao = abj_service('data_access');
 
         // Check for an exact match (manual or auto redirect).
         $exact = $dao->getExistingRedirectForURL($url);
@@ -668,7 +668,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
         // Check for a regex match.
         $regexRedirects = $dao->getRedirectsWithRegEx();
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         foreach ($regexRedirects as $row) {
             $pattern = isset($row['url']) && is_scalar($row['url']) ? (string)$row['url'] : '';
             if ($pattern === '') {

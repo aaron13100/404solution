@@ -42,7 +42,7 @@ class ABJ_404_Solution_SynchronizationUtils {
 			$fileModePath = $this->getFileModePath();
 			$optionsModePath = $this->getOptionsModePath();
 			if (file_exists($fileModePath) && file_exists($optionsModePath)) {
-				$fileUtils = ABJ_404_Solution_Functions::getInstance();
+				$fileUtils = abj_service('functions');
 				$fileUtils->safeUnlink($fileModePath);
 				$fileUtils->safeUnlink($optionsModePath);
 			}
@@ -73,7 +73,7 @@ class ABJ_404_Solution_SynchronizationUtils {
 					$pass = false;
 				}
 				
-				$f = ABJ_404_Solution_Functions::getInstance();
+				$f = abj_service('functions');
 				$f->createDirectoryWithErrorMessages(dirname($optionsModePath));
 				if ($pass) {
 					$usingFileMode = false;
@@ -91,8 +91,8 @@ class ABJ_404_Solution_SynchronizationUtils {
 	
 	/** @return void */
 	function switchToFileSyncMode() {
-		$f = ABJ_404_Solution_Functions::getInstance();
-		$fileUtils = ABJ_404_Solution_Functions::getInstance();
+		$f = abj_service('functions');
+		$fileUtils = abj_service('functions');
 		
 		self::$usingFileMode = true;
 		$optionsModePath = $this->getOptionsModePath();
@@ -188,7 +188,7 @@ class ABJ_404_Solution_SynchronizationUtils {
             }
             
             $uniqueIDForDebugging = $this->createUniqueID('DEBUG_KEY');
-            $logger = ABJ_404_Solution_Logging::getInstance();
+            $logger = abj_service('logging');
             $logger->errorMessage("Forcibly removed synchronization after " . 
             		$timePassed . " seconds for the " . "key " . $internalSynchronizedKey . 
             		" with value: " . $uniqueID . ', value after delete: ' . $valueAfterDelete . 
@@ -245,7 +245,7 @@ class ABJ_404_Solution_SynchronizationUtils {
 
 		} else {
 			// Fail silently instead of throwing fatal exception.			
-			$logger = ABJ_404_Solution_Logging::getInstance();
+			$logger = abj_service('logging');
 			$logger->debugMessage("Synchronization lock release mismatch. " .
 				"Synchronized key: $synchronizedKeyFromUser, current holder: $currentLockHolder, " .
 				"attempted release by: $uniqueID");

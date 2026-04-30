@@ -496,7 +496,7 @@ class ABJ_404_Solution_UninstallModal {
             return 0;
         }
 
-        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $dao = abj_service('data_access');
         $table_name = $dao->getPrefixedTableName('abj404_redirects');
 
         // Check if table exists
@@ -540,7 +540,7 @@ class ABJ_404_Solution_UninstallModal {
         }
 
         try {
-            $dao = ABJ_404_Solution_DataAccess::getInstance();
+            $dao = abj_service('data_access');
 
             // Get redirect counts by status
             $redirectCounts = $dao->getRedirectStatusCounts(true);
@@ -565,17 +565,17 @@ class ABJ_404_Solution_UninstallModal {
 
             // Get debug file size
             if (class_exists('ABJ_404_Solution_Logging')) {
-                $logger = ABJ_404_Solution_Logging::getInstance();
+                $logger = abj_service('logging');
                 $debugFilePath = $logger->getDebugFilePath();
                 if (file_exists($debugFilePath)) {
                     $debugFileSize = filesize($debugFilePath);
                     $stats['debug_file_size_mb'] = round($debugFileSize / (1024 * 1024), 2);
                 }
             }
-        } catch (Exception $e) {
-            // Return defaults if there's any error
-        } catch (Error $e) {
-            // Also catch PHP Error for method not found, etc.
+        } catch (\Throwable $e) {
+            // Surface which call failed so the support-bundle reader sees the
+            // reason values are missing instead of silently returning defaults.
+            $stats['_errors'][] = 'getDebugFileSize: ' . $e->getMessage();
         }
 
         return $stats;
@@ -754,7 +754,7 @@ class ABJ_404_Solution_UninstallModal {
 
             if (class_exists('ABJ_404_Solution_Logging')) {
                 try {
-                    $logger = ABJ_404_Solution_Logging::getInstance();
+                    $logger = abj_service('logging');
                     $logExcerpt = $logger->getSanitizedLogExcerptForSupport();
                     $body .= $logExcerpt . "\n\n";
                 } catch (Exception $e) {
@@ -948,8 +948,8 @@ class ABJ_404_Solution_UninstallModal {
             return implode("\n", $summaryLines);
         }
 
-        $dbUtils = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $dbUtils = abj_service('database_upgrades');
+        $dao = abj_service('data_access');
 
         // Get baseline from wp_posts
         $targetTable = $wpdb->prefix . 'posts';

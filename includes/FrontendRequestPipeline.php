@@ -210,7 +210,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             }
         }
 
-        ABJ_404_Solution_RequestContext::getInstance()->process_start_time = microtime(true);
+        abj_service('request_context')->process_start_time = microtime(true);
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
         if ($userRequest === null) {
             // SAFE_BAIL: no user request context — cannot resolve a URL to look up.
@@ -222,7 +222,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->logic->initializeIgnoreValues($pathOnly, $urlSlugOnly);
         $this->trace = [];
 
-        if (ABJ_404_Solution_RequestContext::getInstance()->ignore_donotprocess) {
+        if (abj_service('request_context')->ignore_donotprocess) {
             $this->addTraceStep('Ignore list', 'Matched — request ignored');
             $this->dao->logRedirectHit($pathOnly, '404', 'ignore_donotprocess', null, $this->trace);
             $this->emitBenchmarkHeadersIfEnabled();
@@ -764,7 +764,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
 
             $urlSlugOnly = $this->logic->removeHomeDirectory($requestedURL);
-            $spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
+            $spellChecker = abj_service('spell_checker');
             $options = $this->logic->getOptions();
             $suggestCats = isset($options['suggest_cats']) && is_string($options['suggest_cats']) ? $options['suggest_cats'] : '1';
             $suggestTags = isset($options['suggest_tags']) && is_string($options['suggest_tags']) ? $options['suggest_tags'] : '1';

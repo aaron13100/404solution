@@ -133,7 +133,7 @@ class ABJ_404_Solution_InternalLinkScanner {
         // Use the plugin's DAO if available, otherwise fall back to strtolower prefix.
         $dao = null;
         if (class_exists('ABJ_404_Solution_DataAccess')) {
-            $dao = ABJ_404_Solution_DataAccess::getInstance();
+            $dao = abj_service('data_access');
             $redirectsTable = $dao->doTableNameReplacements('{wp_abj404_redirects}');
         } else {
             $redirectsTable = strtolower($wpdb->prefix) . 'abj404_redirects';

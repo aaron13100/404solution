@@ -86,10 +86,10 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
      * @return void
      */
     private static function activateSingleSite(): void {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         add_option('abj404_settings', '', '', false);
 
-        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+        $upgradesEtc = abj_service('database_upgrades');
         $upgradesEtc->createDatabaseTables();
 
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
@@ -235,7 +235,7 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             switch_to_blog($blog_id);
 
             global $wpdb;
-            $dao = ABJ_404_Solution_DataAccess::getInstance();
+            $dao = abj_service('data_access');
             $prefix = $dao->getLowercasePrefix();
 
             // Remove ALL custom database tables via dynamic discovery.

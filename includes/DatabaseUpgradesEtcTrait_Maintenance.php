@@ -523,11 +523,12 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         // DAO-bypass-approved: Outside-plugin-tables wp_options cleanup probe (parallels DataAccessTrait_ViewQueries:478 transient clear)
         $expiredTimeouts = $wpdb->get_col($query);
 
-        if ($wpdb->last_error) {
-            if (!$this->dao->classifyAndHandleInfrastructureError($wpdb->last_error)) {
-                $this->logger->errorMessage("Failed to query for expired rate limit transients: " . $wpdb->last_error);
+        $lastError = (string)($wpdb->last_error ?? '');
+        if ($lastError !== '') {
+            if (!$this->dao->classifyAndHandleInfrastructureError($lastError)) {
+                $this->logger->errorMessage("Failed to query for expired rate limit transients: " . $lastError);
             }
-            return ['deleted' => 0, 'errors' => 1, 'error' => $wpdb->last_error];
+            return ['deleted' => 0, 'errors' => 1, 'error' => $lastError];
         }
 
         if (!empty($expiredTimeouts)) {
@@ -579,10 +580,10 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         $this->cleanupExpiredRateLimitTransients();
 
         // Flag redirects whose destination URL is generating 404s (drives redirect suspension)
-        ABJ_404_Solution_DataAccess::getInstance()->flagDeadDestinationRedirects();
+        abj_service('data_access')->flagDeadDestinationRedirects();
 
         // Expire auto-created redirects that exceed the configured age threshold
-        ABJ_404_Solution_DataAccess::getInstance()->expireOldAutoRedirects();
+        abj_service('data_access')->expireOldAutoRedirects();
 
         // Backfill canonical_url on legacy redirect rows so the captured-page
         // JOIN to logs_hits.requested_url stays index-friendly. Chunked + rate-

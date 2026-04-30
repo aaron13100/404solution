@@ -79,7 +79,7 @@ class ABJ_404_Solution_Ajax_Php {
 	static function updateOptions() {
 		$logic = self::getServiceIfAvailable('plugin_logic');
 		/** @var ABJ_404_Solution_PluginLogic $abj404logic */
-		$abj404logic = ($logic !== null) ? $logic : ABJ_404_Solution_PluginLogic::getInstance();
+		$abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
 
 		// Verify user has appropriate capabilities (respects plugin admin users)
 		if (!$abj404logic->userIsPluginAdmin()) {
@@ -90,7 +90,7 @@ class ABJ_404_Solution_Ajax_Php {
 		// Verify nonce for CSRF protection
 		// The nonce is sent as part of the form data which is JSON-encoded in 'encodedData'
 		if (isset($_POST['encodedData'])) {
-			$f = ABJ_404_Solution_Functions::getInstance();
+			$f = abj_service('functions');
 			$postData = $f->decodeComplicatedData($_POST['encodedData']);
 			$nonce = (is_array($postData) && isset($postData['nonce']) && is_string($postData['nonce'])) ? $postData['nonce'] : '';
 			if (!wp_verify_nonce($nonce, 'abj404UpdateOptions')) {
@@ -127,7 +127,7 @@ class ABJ_404_Solution_Ajax_Php {
 	static function loadGscSection() {
 		$logic = self::getServiceIfAvailable('plugin_logic');
 		/** @var ABJ_404_Solution_PluginLogic $abj404logic */
-		$abj404logic = ($logic !== null) ? $logic : ABJ_404_Solution_PluginLogic::getInstance();
+		$abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
 
 		if (!$abj404logic->userIsPluginAdmin()) {
 			wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
@@ -146,7 +146,7 @@ class ABJ_404_Solution_Ajax_Php {
 		}
 
 		try {
-			$gscLogger = ABJ_404_Solution_Logging::getInstance();
+			$gscLogger = abj_service('logging');
 			$gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
 
 			// Render using cached data only — never blocks on API calls.
@@ -163,7 +163,7 @@ class ABJ_404_Solution_Ajax_Php {
 			return; // @phpstan-ignore deadCode.unreachable
 		} catch (Throwable $e) {
 			try {
-				ABJ_404_Solution_Logging::getInstance()->errorMessage('Error loading deferred GSC section: ' . $e->getMessage());
+				abj_service('logging')->errorMessage('Error loading deferred GSC section: ' . $e->getMessage());
 			} catch (Throwable $ignored) {
 				// ignore
 			}
@@ -225,10 +225,10 @@ class ABJ_404_Solution_Ajax_Php {
     	$abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();;
         $dao = self::getServiceIfAvailable('data_access');
         /** @var ABJ_404_Solution_DataAccess $abj404dao */
-        $abj404dao = ($dao !== null) ? $dao : ABJ_404_Solution_DataAccess::getInstance();
+        $abj404dao = ($dao !== null) ? $dao : abj_service('data_access');
         $funcs = self::getServiceIfAvailable('functions');
         /** @var ABJ_404_Solution_Functions $f */
-        $f = ($funcs !== null) ? $funcs : ABJ_404_Solution_Functions::getInstance();
+        $f = ($funcs !== null) ? $funcs : abj_service('functions');
 
         // Verify nonce for CSRF protection
         $getNonce = isset($_GET['nonce']) ? (string)$_GET['nonce'] : '';
@@ -241,7 +241,7 @@ class ABJ_404_Solution_Ajax_Php {
         // Verify user has appropriate capabilities (respects plugin admin users)
         $logicSvc = self::getServiceIfAvailable('plugin_logic');
         /** @var ABJ_404_Solution_PluginLogic $abj404logic */
-        $abj404logic = ($logicSvc !== null) ? $logicSvc : ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = ($logicSvc !== null) ? $logicSvc : abj_service('plugin_logic');
         if (!$abj404logic->userIsPluginAdmin()) {
             self::sendJson(self::buildAutocompleteErrorItem(__('Unauthorized', '404-solution')), 200);
             return;
@@ -285,14 +285,14 @@ class ABJ_404_Solution_Ajax_Php {
     static function echoRedirectToPages() {
         $logic = self::getServiceIfAvailable('plugin_logic');
         /** @var ABJ_404_Solution_PluginLogic $abj404logic */
-        $abj404logic = ($logic !== null) ? $logic : ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
         $abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();
         $dao = self::getServiceIfAvailable('data_access');
         /** @var ABJ_404_Solution_DataAccess $abj404dao */
-        $abj404dao = ($dao !== null) ? $dao : ABJ_404_Solution_DataAccess::getInstance();
+        $abj404dao = ($dao !== null) ? $dao : abj_service('data_access');
         $funcs = self::getServiceIfAvailable('functions');
         /** @var ABJ_404_Solution_Functions $f */
-        $f = ($funcs !== null) ? $funcs : ABJ_404_Solution_Functions::getInstance();
+        $f = ($funcs !== null) ? $funcs : abj_service('functions');
 
         // Verify nonce for CSRF protection
         $getNonce = isset($_GET['nonce']) ? (string)$_GET['nonce'] : '';
@@ -374,7 +374,7 @@ class ABJ_404_Solution_Ajax_Php {
      * @return array<int, array<string, string>>
      */
     function provideSearchFeedback($suggestions, $term) {
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         $category = '';
         
         if (empty($suggestions)) {
@@ -418,7 +418,7 @@ class ABJ_404_Solution_Ajax_Php {
      * @return array<int, array<string, string>>
      */
     function filterPages($pagesToFilter, $searchTerm) {
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         if ($searchTerm == "") {
             return $pagesToFilter;
         }        

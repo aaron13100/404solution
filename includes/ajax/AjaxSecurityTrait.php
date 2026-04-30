@@ -32,7 +32,7 @@ trait ABJ_404_Solution_AjaxSecurityTrait {
             return; // @phpstan-ignore deadCode.unreachable
         }
 
-        if (!ABJ_404_Solution_PluginLogic::getInstance()->userIsPluginAdmin()) {
+        if (!abj_service('plugin_logic')->userIsPluginAdmin()) {
             wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
             return; // @phpstan-ignore deadCode.unreachable
         }

@@ -57,7 +57,7 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         }
 
         // Sanitize input
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
         if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
             try {
                 $c = ABJ_404_Solution_ServiceContainer::getInstance();

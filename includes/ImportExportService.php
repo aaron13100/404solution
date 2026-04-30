@@ -138,7 +138,7 @@ class ABJ_404_Solution_ImportExportService {
      * @return array<int, array{source: string, dest: string, code: int, is_regex: bool}>
      */
     function getExportableRedirects() {
-        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        $dao = abj_service('data_access');
         $redirectsTable = $dao->doTableNameReplacements('{wp_abj404_redirects}');
         $cacheTable     = $dao->doTableNameReplacements('{wp_abj404_permalink_cache}');
 

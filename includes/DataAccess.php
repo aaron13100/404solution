@@ -151,8 +151,8 @@ class ABJ_404_Solution_DataAccess {
      */
     public function __construct($functions = null, $logging = null) {
         // Use injected dependencies or fall back to getInstance() for backward compatibility
-        $this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
-        $this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
+        $this->f = $functions !== null ? $functions : abj_service('functions');
+        $this->logger = $logging !== null ? $logging : abj_service('logging');
     }
 
     /**
@@ -377,7 +377,7 @@ class ABJ_404_Solution_DataAccess {
      * @return boolean
      */
     function shouldEmailErrorFile() {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();        
+        $abj404logging = abj_service('logging');        
         
         $pluginInfo = $this->getLatestPluginVersion();
         
@@ -1502,8 +1502,13 @@ class ABJ_404_Solution_DataAccess {
     
             return $result;
     
-        } catch (Exception $e) {
-            // oh well.
+        } catch (Throwable $e) {
+            // Surface the swallowed failure so the support-bundle reader can
+            // see the wpdb extension fell through. The function contract
+            // (NULL|string|WP_Error) is preserved by returning null.
+            $this->logger->warn(
+                'get_stripped_query_result failed; returning null: ' . $e->getMessage()
+            );
             return null;
         }
     }

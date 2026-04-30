@@ -116,9 +116,9 @@ class ABJ_404_Solution_ShortCode {
 	 * @return void
 	 */
 	static function updateURLbarIfNecessary(): void {
-		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-		$f = ABJ_404_Solution_Functions::getInstance();
-		$abj404logging = ABJ_404_Solution_Logging::getInstance();
+		$abj404logic = abj_service('plugin_logic');
+		$f = abj_service('functions');
+		$abj404logging = abj_service('logging');
 		$debugMessage = '';
         $options = $abj404logic->getOptions();
 		
@@ -245,10 +245,10 @@ class ABJ_404_Solution_ShortCode {
     static function shortcodePageSuggestions( array $atts ): string {
         $didSwitchLocale = self::maybeSwitchToFrontendLocale();
         try {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $abj404spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logic = abj_service('plugin_logic');
+        $abj404spellChecker = abj_service('spell_checker');
+        $f = abj_service('functions');
+        $abj404dao = abj_service('data_access');
         
         // Attributes
         $atts = shortcode_atts(
@@ -299,7 +299,7 @@ class ABJ_404_Solution_ShortCode {
          	"</script> \n";
         }
 
-        $ctxUrl = ABJ_404_Solution_RequestContext::getInstance()->requested_url;
+        $ctxUrl = abj_service('request_context')->requested_url;
         if ($ctxUrl !== '') {
             // Normalize URL using centralized function for consistency
             $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($ctxUrl));
@@ -618,8 +618,8 @@ class ABJ_404_Solution_ShortCode {
     public static function renderSuggestionsHTML(array $suggestionsPacket, string $requestedURL = ''): string {
         $didSwitchLocale = self::maybeSwitchToFrontendLocale();
         try {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $abj404logic = abj_service('plugin_logic');
+        $f = abj_service('functions');
         // Rendering should be side-effect free (no upgrade/migration work triggered on frontend/AJAX).
         $options = $abj404logic->getOptions(true);
 

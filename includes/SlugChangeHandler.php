@@ -33,7 +33,7 @@ class ABJ_404_Solution_SlugChangeHandler {
      * @return void
      */
     static function init() {
-        $me = ABJ_404_Solution_SlugChangeHandler::getInstance();
+        $me = abj_service('slug_change_handler');
         add_action('save_post', array($me, 'save_postHandler'), 10, 3);
         add_action('transition_post_status', array($me, 'postStatusTransitionHandler'), 10, 3);
         add_action('before_delete_post', array($me, 'beforeDeletePostHandler'), 10, 2);
@@ -46,7 +46,7 @@ class ABJ_404_Solution_SlugChangeHandler {
      * @return void
      */
     function save_postHandler($post_id, $post, $update) {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
+        $abj404logging = abj_service('logging');
 
         // Prevent duplicate processing within same request
         // WordPress fires save_post multiple times per save operation
@@ -70,7 +70,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // Check if we should create a redirect (respects per-post override from editor)
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         $options = $abj404logic->getOptions();
 
         // Check for per-post override from Quick Edit, Classic Editor, or Gutenberg
@@ -97,7 +97,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // get the old slug
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404dao = abj_service('data_access');
 
         $oldURL = $abj404dao->getPermalinkFromCache($post_id);
 
@@ -179,7 +179,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         $post_id = (int)$post->ID;
 
         // Check option
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         $options = $abj404logic->getOptions();
         if (!isset($options['auto_trash_redirect']) || $options['auto_trash_redirect'] != '1') {
             return;
@@ -190,7 +190,7 @@ class ABJ_404_Solution_SlugChangeHandler {
             return;
         }
 
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404dao = abj_service('data_access');
         $oldURL = $abj404dao->getPermalinkFromCache($post_id);
 
         if ($oldURL == null || $oldURL == '') {
@@ -210,7 +210,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         $abj404dao->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_HOME,
             '0', $redirectCode, 0, 'post trashed');
 
-        ABJ_404_Solution_Logging::getInstance()->infoMessage(
+        abj_service('logging')->infoMessage(
             "Added automatic redirect to homepage after post trashed. ID: " . $post_id . ", old URL: " . $oldURL);
     }
 
@@ -234,7 +234,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // Check option
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         $options = $abj404logic->getOptions();
         if (!isset($options['auto_trash_redirect']) || $options['auto_trash_redirect'] != '1') {
             return;
@@ -247,7 +247,7 @@ class ABJ_404_Solution_SlugChangeHandler {
             return;
         }
 
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404dao = abj_service('data_access');
         $oldURL = $abj404dao->getPermalinkFromCache($post_id);
 
         if ($oldURL == null || $oldURL == '') {
@@ -267,7 +267,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         $abj404dao->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_HOME,
             '0', $redirectCode, 0, 'post deleted');
 
-        ABJ_404_Solution_Logging::getInstance()->infoMessage(
+        abj_service('logging')->infoMessage(
             "Added automatic redirect to homepage after post deleted. ID: " . $post_id . ", old URL: " . $oldURL);
     }
 }

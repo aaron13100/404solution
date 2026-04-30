@@ -88,7 +88,7 @@ class ABJ_404_Solution_Privacy {
                 // fall back
             }
         }
-        return ABJ_404_Solution_DataAccess::getInstance();
+        return abj_service('data_access');
     }
 
     /**

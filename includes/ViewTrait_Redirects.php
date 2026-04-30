@@ -306,7 +306,7 @@ trait ViewTrait_Redirects {
                 $selected = " selected";
             }
             
-            ABJ_404_Solution_RequestContext::getInstance()->debug_info = 'Before row: ' . $rowCounter . ', Title: ' . $theTitle . 
+            abj_service('request_context')->debug_info = 'Before row: ' . $rowCounter . ', Title: ' . $theTitle . 
                     ', Post type: ' . $row->post_type;
             
             if ($row->post_type != $currentPostType) {
@@ -337,14 +337,14 @@ trait ViewTrait_Redirects {
             $content[] = esc_html($theTitle);
             $content[] = "</option>";
             
-            ABJ_404_Solution_RequestContext::getInstance()->debug_info = 'After row: ' . $rowCounter . ', Title: ' . $theTitle . 
+            abj_service('request_context')->debug_info = 'After row: ' . $rowCounter . ', Title: ' . $theTitle . 
                     ', Post type: ' . $row->post_type;
         }
         
         $content[] = "\n" . '</optgroup>' . "\n";
         
 
-        ABJ_404_Solution_RequestContext::getInstance()->debug_info = 'Cleared after building redirect destination page list.';
+        abj_service('request_context')->debug_info = 'Cleared after building redirect destination page list.';
         
         return implode('', $content);
     }
@@ -464,7 +464,7 @@ trait ViewTrait_Redirects {
      */
     private function getSuggestedDestination(string $url, array $options): ?array {
         try {
-            $spellChecker = ABJ_404_Solution_SpellChecker::getInstance();
+            $spellChecker = abj_service('spell_checker');
             $permalinksPacket = $spellChecker->findMatchingPosts($url, '1', '1');
             $permalinks = is_array($permalinksPacket[0] ?? null) ? $permalinksPacket[0] : array();
             $rowType = is_string($permalinksPacket[1] ?? '') ? (string)($permalinksPacket[1] ?? '') : '';

@@ -260,21 +260,31 @@ function abj_404_solution_init_services() {
      * Slug change handler - detects and handles post slug changes.
      */
     $container->set('slug_change_handler', function($c) {
-        return ABJ_404_Solution_SlugChangeHandler::getInstance();
+        return new ABJ_404_Solution_SlugChangeHandler();
     });
 
     /**
      * Published posts provider - manages published post lookups.
      */
     $container->set('published_posts_provider', function($c) {
-        return ABJ_404_Solution_PublishedPostsProvider::getInstance();
+        return new ABJ_404_Solution_PublishedPostsProvider();
     });
 
     /**
      * Synchronization utilities - handles data synchronization.
      */
     $container->set('sync_utils', function($c) {
-        return ABJ_404_Solution_SynchronizationUtils::getInstance();
+        return new ABJ_404_Solution_SynchronizationUtils();
+    });
+
+    /**
+     * Request context - request-scoped state holder (debug breadcrumbs,
+     * permalink cache, ignore flags). Replaces $_REQUEST[ABJ404_PP] as an
+     * intra-request message bus. Container scope guarantees one instance
+     * per PHP request, matching legacy `getInstance()` semantics.
+     */
+    $container->set('request_context', function($c) {
+        return new ABJ_404_Solution_RequestContext();
     });
 
     // =========================================================================
@@ -308,7 +318,7 @@ function abj_404_solution_init_services() {
      * Shortcode handler - processes WordPress shortcodes.
      */
     $container->set('shortcode', function($c) {
-        return ABJ_404_Solution_ShortCode::getInstance();
+        return new ABJ_404_Solution_ShortCode();
     });
 }
 
@@ -342,6 +352,7 @@ function abj_get_instance($className) {
         'ABJ_404_Solution_SynchronizationUtils' => 'sync_utils',
         'ABJ_404_Solution_View_Suggestions' => 'view_suggestions',
         'ABJ_404_Solution_ShortCode' => 'shortcode',
+        'ABJ_404_Solution_RequestContext' => 'request_context',
     );
 
     if (isset($serviceMap[$className])) {

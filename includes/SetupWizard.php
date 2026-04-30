@@ -158,7 +158,7 @@ class ABJ_404_Solution_SetupWizard {
      * @return void
      */
     private static function applySettings(): void {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
         $options = $abj404logic->getOptions();
 
         // Question 1: What happens when page not found

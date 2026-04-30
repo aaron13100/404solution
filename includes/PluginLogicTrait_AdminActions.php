@@ -17,7 +17,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
      * @return string
      */
     function handlePluginAction($action, &$sub) {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
 
         $message = "";
         $message = array_key_exists('display-this-message', $_POST) ?
@@ -100,7 +100,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                     // Set transient to prevent duplicate requests for 10 seconds
                     set_transient($transientKey, time(), 10);
 
-                    $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+                    $dbUpgrades = abj_service('database_upgrades');
 
                     // Use async rebuild to avoid timeouts on large sites
                     $scheduled = $dbUpgrades->scheduleNGramCacheRebuild();
@@ -131,7 +131,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             }
         } else if ($action == "saveGscSettings") {
             if (check_admin_referer('abj404_gsc_save', '_wpnonce_gsc') && is_admin()) {
-                $logger = ABJ_404_Solution_Logging::getInstance();
+                $logger = abj_service('logging');
                 $gsc = new ABJ_404_Solution_GoogleSearchConsole($logger);
                 $error = $gsc->saveSettings($_POST);
                 $message = ($error === '') ? __('Google Search Console credentials saved.', '404-solution') : $error;

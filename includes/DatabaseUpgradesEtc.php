@@ -64,13 +64,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 */
 	public function __construct($dataAccess = null, $logging = null, $functions = null, $permalinkCache = null, $syncUtils = null, $pluginLogic = null, $ngramFilter = null) {
 		// Use injected dependencies or fall back to getInstance() for backward compatibility
-		$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
-		$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
-		$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
-		$this->permalinkCache = $permalinkCache !== null ? $permalinkCache : ABJ_404_Solution_PermalinkCache::getInstance();
-		$this->syncUtils = $syncUtils !== null ? $syncUtils : ABJ_404_Solution_SynchronizationUtils::getInstance();
-		$this->logic = $pluginLogic !== null ? $pluginLogic : ABJ_404_Solution_PluginLogic::getInstance();
-		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : ABJ_404_Solution_NGramFilter::getInstance();
+		$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
+		$this->logger = $logging !== null ? $logging : abj_service('logging');
+		$this->f = $functions !== null ? $functions : abj_service('functions');
+		$this->permalinkCache = $permalinkCache !== null ? $permalinkCache : abj_service('permalink_cache');
+		$this->syncUtils = $syncUtils !== null ? $syncUtils : abj_service('sync_utils');
+		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
+		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : abj_service('ngram_filter');
 	}
 
 	/** @return self */
@@ -1032,7 +1032,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
                 ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
-                $logic = ABJ_404_Solution_PluginLogic::getInstance();
+                $logic = abj_service('plugin_logic');
                 $logic->doUpdateDBVersionOption();
             }
         );
@@ -1077,7 +1077,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 $this->renameAbj404TablesToLowerCase();
                 $this->correctIssuesAfter();
 
-                $logic = ABJ_404_Solution_PluginLogic::getInstance();
+                $logic = abj_service('plugin_logic');
                 $logic->doUpdateDBVersionOption();
             }
         );

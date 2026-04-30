@@ -53,8 +53,8 @@ class ABJ_404_Solution_ErrorHandler {
      * @return boolean
      */
     static function NormalErrorHandler($errno, $errstr, $errfile, $errline) {
-        $abj404logging = ABJ_404_Solution_Logging::getInstance();
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $abj404logging = abj_service('logging');
+        $f = abj_service('functions');
         $onlyAWarning = false;
         
         try {
@@ -89,7 +89,7 @@ class ABJ_404_Solution_ErrorHandler {
             }
             
             $extraInfo = "(none)";
-            $ctxDebugInfo = ABJ_404_Solution_RequestContext::getInstance()->debug_info;
+            $ctxDebugInfo = abj_service('request_context')->debug_info;
             if ($ctxDebugInfo !== '') {
                 $extraInfo = stripcslashes(wp_kses_post((string)json_encode($ctxDebugInfo)));
             }
@@ -115,10 +115,16 @@ class ABJ_404_Solution_ErrorHandler {
             } else {
                 echo $errmsg;
             }
-        } catch (Exception $ex) { 
-            // ignored
+        } catch (Throwable $ex) {
+            // Last-resort breadcrumb: the inner logging path itself failed,
+            // so we can't go through $abj404logging. Match the pattern used
+            // by WordPress_Connector::reportAdminRuntimeError() and
+            // Ajax_SuggestionCompute::handleShutdown(). Widening from
+            // Exception to Throwable is intentional — Error types are
+            // exactly the case the outer handler exists for.
+            @error_log('404 Solution: error handler itself failed: ' . $ex->getMessage());
         }
-        
+
         // show all warnings and errors.
         if ($GLOBALS['abj404_display_errors']) {
 	        error_reporting(E_ALL);
@@ -152,7 +158,7 @@ class ABJ_404_Solution_ErrorHandler {
      */
     private static function safeWriteLine(string $line): bool {
         try {
-            $logger = ABJ_404_Solution_Logging::getInstance();
+            $logger = abj_service('logging');
             if (is_object($logger) && method_exists($logger, 'writeLineToDebugFile')) {
                 $logger->writeLineToDebugFile($line);
                 return true;
@@ -161,7 +167,7 @@ class ABJ_404_Solution_ErrorHandler {
             // fall back below
         }
         try {
-            $logger = ABJ_404_Solution_Logging::getInstance();
+            $logger = abj_service('logging');
             if (is_object($logger) && method_exists($logger, 'sanitizeLogLine')) {
                 $line = $logger->sanitizeLogLine($line);
             }
@@ -355,7 +361,7 @@ class ABJ_404_Solution_ErrorHandler {
      * @return bool
      */
     public static function processFatalError($lasterror): bool {
-        $f = ABJ_404_Solution_Functions::getInstance();
+        $f = abj_service('functions');
 
         if ($lasterror == null || !is_array($lasterror) || !array_key_exists('type', $lasterror) ||
             !array_key_exists('file', $lasterror)) {
@@ -421,7 +427,7 @@ class ABJ_404_Solution_ErrorHandler {
             // Only try to compute admin status if it wasn't already determined earlier in the request.
             if ($isPluginAdmin === null) {
                 try {
-                    $logic = ABJ_404_Solution_PluginLogic::getInstance();
+                    $logic = abj_service('plugin_logic');
                     if (is_object($logic) && method_exists($logic, 'userIsPluginAdmin')) {
                         $isPluginAdmin = $logic->userIsPluginAdmin();
                     }
@@ -481,7 +487,7 @@ class ABJ_404_Solution_ErrorHandler {
             }
 
             $extraInfo = "(none)";
-            $ctxDebugInfo = ABJ_404_Solution_RequestContext::getInstance()->debug_info;
+            $ctxDebugInfo = abj_service('request_context')->debug_info;
             if ($ctxDebugInfo !== '') {
                 $extraInfo = stripcslashes(wp_kses_post((string)json_encode($ctxDebugInfo)));
             }
@@ -494,7 +500,7 @@ class ABJ_404_Solution_ErrorHandler {
                 ", \nAdditional info: " . $extraInfo . ", mbstring: " .
                 (extension_loaded('mbstring') ? 'true' : 'false');
 
-            $abj404logging = ABJ_404_Solution_Logging::getInstance();
+            $abj404logging = abj_service('logging');
             if ($abj404logging != null) {
                 switch ($errno) {
                     case E_NOTICE:
@@ -512,7 +518,9 @@ class ABJ_404_Solution_ErrorHandler {
                 echo $errmsg;
             }
         } catch (Throwable $ex) {
-            // ignored
+            // Last-resort breadcrumb: inner logging itself failed during the
+            // fatal-error path. See NormalErrorHandler() above for rationale.
+            @error_log('404 Solution: error handler itself failed: ' . $ex->getMessage());
         }
 
 		if ($isPluginAdminPage) {

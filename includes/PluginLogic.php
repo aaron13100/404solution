@@ -128,9 +128,9 @@ class ABJ_404_Solution_PluginLogic {
      */
     function __construct($functions = null, $dataAccess = null, $logging = null) {
     	// Use injected dependencies or fall back to getInstance() for backward compatibility
-    	$this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
-    	$this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
-    	$this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
+    	$this->f = $functions !== null ? $functions : abj_service('functions');
+    	$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
+    	$this->logger = $logging !== null ? $logging : abj_service('logging');
 
         $urlPath = parse_url(get_home_url(), PHP_URL_PATH);
         // Fix MEDIUM #1 (5th review): Distinguish between parse failure (false) and no path (null)
@@ -324,7 +324,7 @@ class ABJ_404_Solution_PluginLogic {
     		return $allcaps;
     	}
 
-    	$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+    	$abj404logic = abj_service('plugin_logic');
 
     	$isPluginAdmin = false;
     	$isViewing404AdminPage = false;
@@ -403,7 +403,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return void
      */
     function initializeIgnoreValues(string $urlRequest, string $urlSlugOnly): void {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
 
         $options = $abj404logic->getOptions();
         $ignoreReasonDoNotProcess = null;
@@ -440,7 +440,7 @@ class ABJ_404_Solution_PluginLogic {
             foreach ($patternsToIgnore as $patternToIgnore) {
                 $patternToIgnoreStr = is_string($patternToIgnore) ? $patternToIgnore : (string)$patternToIgnore;
                 $patternToIgnoreNoSlashes = stripslashes($patternToIgnoreStr);
-                ABJ_404_Solution_RequestContext::getInstance()->debug_info = 'Applying regex pattern to ignore\"' .
+                abj_service('request_context')->debug_info = 'Applying regex pattern to ignore\"' .
                     $patternToIgnoreNoSlashes . '" to URL slug: ' . $urlSlugOnly;
                 $matches = array();
                 if ($this->f->regexMatch($patternToIgnoreNoSlashes, $urlSlugOnly, $matches)) {
@@ -449,10 +449,10 @@ class ABJ_404_Solution_PluginLogic {
                     $ignoreReasonDoNotProcess = 'Files and folders (do not redirect) pattern: ' .
                         esc_html($patternToIgnoreNoSlashes);
                 }
-                ABJ_404_Solution_RequestContext::getInstance()->debug_info = 'Cleared after regex pattern to ignore.';
+                abj_service('request_context')->debug_info = 'Cleared after regex pattern to ignore.';
             }
         }
-        ABJ_404_Solution_RequestContext::getInstance()->ignore_donotprocess = is_string($ignoreReasonDoNotProcess) ? $ignoreReasonDoNotProcess : false;
+        abj_service('request_context')->ignore_donotprocess = is_string($ignoreReasonDoNotProcess) ? $ignoreReasonDoNotProcess : false;
 
         // -----
         // ignore and process
@@ -466,7 +466,7 @@ class ABJ_404_Solution_PluginLogic {
                 $ignoreReasonDoProcess = 'User agent (process ok): ' . $agentToIgnore;
             }
         }
-        ABJ_404_Solution_RequestContext::getInstance()->ignore_doprocess = is_string($ignoreReasonDoProcess) ? $ignoreReasonDoProcess : false;
+        abj_service('request_context')->ignore_doprocess = is_string($ignoreReasonDoProcess) ? $ignoreReasonDoProcess : false;
     }
 
     /** @return string */
@@ -526,7 +526,7 @@ class ABJ_404_Solution_PluginLogic {
      		echo $c;
     	}
 
-    	ABJ_404_Solution_RequestContext::getInstance()->requested_url = $requested_url;
+    	abj_service('request_context')->requested_url = $requested_url;
     }
 
     /** The passed in reason will be appended to the automatically generated reason.
@@ -537,7 +537,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return void
      */
     function sendTo404Page(string $requestedURL, string $reason = '', bool $useUserSpecified404 = true, $optionsOverride = null): void {
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404logic = abj_service('plugin_logic');
 
         $options = (is_array($optionsOverride) ? $optionsOverride : $abj404logic->getOptions());
 
@@ -711,7 +711,7 @@ class ABJ_404_Solution_PluginLogic {
         // transient fatals from class/method signature mismatches.
         self::invalidateOpcacheForCriticalFiles();
 
-        $syncUtils = ABJ_404_Solution_SynchronizationUtils::getInstance();
+        $syncUtils = abj_service('sync_utils');
 
         $synchronizedKeyFromUser = "update_db_version";
         $uniqueID = $syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
@@ -736,7 +736,7 @@ class ABJ_404_Solution_PluginLogic {
         }
 
         // update the permalink cache because updating the plugin version may affect it.
-        $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
+        $permalinkCache = abj_service('permalink_cache');
         $permalinkCache->updatePermalinkCache(1);
 
         return $returnValue;
@@ -766,11 +766,11 @@ class ABJ_404_Solution_PluginLogic {
         	$currentDBVersion . " to " . ABJ404_VERSION . " (begin).");
 
         // remove old log files. added in 2.28.0
-        $fileUtils = ABJ_404_Solution_Functions::getInstance();
+        $fileUtils = abj_service('functions');
         $fileUtils->deleteDirectoryRecursively(ABJ404_PATH . 'temp/');
 
         // wp_abj404_logsv2 exists since 1.7.
-        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+        $upgradesEtc = abj_service('database_upgrades');
         $upgradesEtc->createDatabaseTables(true);
 
         // abj404_duplicateCronAction is no longer needed as of 1.7.
@@ -1194,7 +1194,7 @@ class ABJ_404_Solution_PluginLogic {
 
     	// if the destination is the default 404 page then send the user there.
     	if ($type == ABJ404_TYPE_404_DISPLAYED) {
-    		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+    		$abj404logic = abj_service('plugin_logic');
     		$abj404logic->sendTo404Page($requestedURL, '', false);
 
     		return true;

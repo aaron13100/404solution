@@ -116,9 +116,9 @@ class ABJ_404_Solution_NGramFilter {
      */
     public function __construct($dataAccess = null, $logging = null, $functions = null) {
         // Use injected dependencies or fall back to getInstance() for backward compatibility
-        $this->dao = $dataAccess !== null ? $dataAccess : ABJ_404_Solution_DataAccess::getInstance();
-        $this->logger = $logging !== null ? $logging : ABJ_404_Solution_Logging::getInstance();
-        $this->f = $functions !== null ? $functions : ABJ_404_Solution_Functions::getInstance();
+        $this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
+        $this->logger = $logging !== null ? $logging : abj_service('logging');
+        $this->f = $functions !== null ? $functions : abj_service('functions');
     }
 
     /** @return self */
@@ -772,7 +772,7 @@ class ABJ_404_Solution_NGramFilter {
             // duplicate rebuild scheduling).
             if (!$this->isCacheInitialized()) {
                 try {
-                    $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
+                    $dbUpgrades = abj_service('database_upgrades');
                     $dbUpgrades->scheduleNGramCacheRebuild();
                     $this->logger->infoMessage("Empty N-gram cache detected during 404 request. Scheduled background rebuild.");
                 } catch (Exception $e) {

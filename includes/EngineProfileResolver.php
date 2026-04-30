@@ -42,7 +42,7 @@ class ABJ_404_Solution_EngineProfileResolver {
      */
     private function dao() {
         if ($this->dao === null) {
-            $this->dao = ABJ_404_Solution_DataAccess::getInstance();
+            $this->dao = abj_service('data_access');
         }
         return $this->dao;
     }

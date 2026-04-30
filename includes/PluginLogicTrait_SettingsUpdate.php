@@ -297,7 +297,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $this->updateOptions($new_options);
 
             // update the permalink cache because the post types included may have changed.
-            $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
+            $permalinkCache = abj_service('permalink_cache');
             $permalinkCache->updatePermalinkCache(2);
 
             $returnData['error'] = $message;

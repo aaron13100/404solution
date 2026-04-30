@@ -34,7 +34,7 @@ class ABJ_404_Solution_FileSync {
 	 */
 	function getOwnerFromFile(string $key): string {
 		$filePath = $this->getSyncFilePath($key);
-		$fileUtils = ABJ_404_Solution_Functions::getInstance();
+		$fileUtils = abj_service('functions');
 
 		// Fixed: TOCTOU race condition - catch exception instead of check-then-read
 		try {
@@ -69,7 +69,7 @@ class ABJ_404_Solution_FileSync {
 	 */
 	function releaseLock(string $uniqueID, string $key): void {
 		$filePath = $this->getSyncFilePath($key);
-		$fileUtils = ABJ_404_Solution_Functions::getInstance();
+		$fileUtils = abj_service('functions');
 		$fileUtils->safeUnlink($filePath);
 	}
 	

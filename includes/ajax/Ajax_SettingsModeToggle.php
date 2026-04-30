@@ -40,8 +40,8 @@ class ABJ_404_Solution_Ajax_SettingsModeToggle {
     function handleModeToggle(): void {
         self::requireAdminWithNonce('abj404_mode_toggle');
 
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+        $abj404dao = abj_service('data_access');
+        $abj404logic = abj_service('plugin_logic');
 
         $mode = $abj404dao->getPostOrGetSanitize('mode');
 
