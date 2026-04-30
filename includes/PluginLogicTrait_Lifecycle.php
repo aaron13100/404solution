@@ -155,7 +155,12 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
      * @return void
      */
     static function activateNewSite($blog_id, $user_id, $domain, $path, $site_id, $meta): void {
-        // Only activate if the plugin is network-activated
+        // Only activate if the plugin is network-activated.
+        // is_plugin_active_for_network() lives in wp-admin/includes/plugin.php; guard
+        // adjacent in case this hook fires before wp-admin includes are loaded.
+        if (!function_exists('is_plugin_active_for_network')) {
+            return;
+        }
         if (is_plugin_active_for_network(plugin_basename(ABJ404_FILE))) {
             switch_to_blog($blog_id);
             self::activateSingleSite();
@@ -172,7 +177,12 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
      * @return void
      */
     static function activateNewSiteModern($site, $args): void {
-        // Only activate if the plugin is network-activated
+        // Only activate if the plugin is network-activated.
+        // is_plugin_active_for_network() lives in wp-admin/includes/plugin.php; guard
+        // adjacent in case this hook fires before wp-admin includes are loaded.
+        if (!function_exists('is_plugin_active_for_network')) {
+            return;
+        }
         if (is_plugin_active_for_network(plugin_basename(ABJ404_FILE))) {
             switch_to_blog((int)$site->blog_id);
             self::activateSingleSite();

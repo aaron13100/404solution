@@ -20,6 +20,14 @@ class ABJ_404_Solution_PostEditorIntegration {
     /** @var self|null */
     private static $instance = null;
 
+    /**
+     * Track post IDs already processed by saveExclusionMeta within the current request.
+     * WordPress fires save_post multiple times per save; this prevents redundant
+     * update_post_meta writes (Pattern 11).
+     * @var array<int, bool>
+     */
+    private static $processedExclusionPosts = [];
+
     /** @return self */
     public static function getInstance() {
         if (self::$instance === null) {
@@ -275,7 +283,12 @@ class ABJ_404_Solution_PostEditorIntegration {
      */
     /** @return void */
     public function enqueueGutenbergScript() {
-        // Only load on post edit screens
+        // Only load on post edit screens.
+        // get_current_screen() lives in wp-admin/includes/screen.php; guard adjacent
+        // because this hook may fire from contexts where wp-admin includes aren't loaded.
+        if (!function_exists('get_current_screen')) {
+            return;
+        }
         $screen = get_current_screen();
         if (!$screen || $screen->base !== 'post') {
             return;
@@ -310,6 +323,10 @@ class ABJ_404_Solution_PostEditorIntegration {
      * @return void
      */
     public function saveExclusionMeta($post_id) {
+        // Prevent duplicate processing within same request (WordPress fires save_post 2-4 times per save).
+        if (isset(self::$processedExclusionPosts[$post_id])) {
+            return;
+        }
         if (!isset($_POST['abj404_meta_box_nonce'])) {
             return;
         }
@@ -325,6 +342,7 @@ class ABJ_404_Solution_PostEditorIntegration {
 
         $value = isset($_POST['abj404_exclude']) && $_POST['abj404_exclude'] === '1' ? '1' : '';
         update_post_meta($post_id, '_abj404_exclude', $value);
+        self::$processedExclusionPosts[$post_id] = true;
     }
 
     // ==================== Term Meta Integration ====================

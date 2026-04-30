@@ -11,11 +11,26 @@ if (!defined('ABSPATH')) {
 trait SpellCheckerTrait_PostListeners {
 
 	/**
+	 * Track post IDs already processed by save_postListener within the current request.
+	 * WordPress fires save_post 2-4 times per save; without dedup the SpellChecker
+	 * runs cache invalidation, permalink-cache update, and incremental N-gram update
+	 * once per fire (Pattern 11).
+	 * @var array<int, bool>
+	 */
+	private static $processedSavePostIds = [];
+
+	/**
 	 * @param int $post_id
 	 * @param \WP_Post|null $post
 	 * @param bool|null $update
 	 */
 	function save_postListener($post_id, $post = null, $update = null): void {
+		// Prevent duplicate processing within same request (WordPress fires save_post 2-4 times per save).
+		if (isset(self::$processedSavePostIds[$post_id])) {
+			return;
+		}
+		self::$processedSavePostIds[$post_id] = true;
+
 		if ($post == null) {
 			$post = get_post($post_id);
 		}
