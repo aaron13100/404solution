@@ -598,21 +598,11 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         }
     }
 
-    /**
-     * Number of rows updated per chunk by backfillRedirectsCanonicalUrl().
-     * Sized so a single chunk completes well under the standard 60s query
-     * timeout even on slow disks; the chunk loop will keep going until the
-     * per-invocation budget is exhausted.
-     */
-    const CANONICAL_URL_BACKFILL_CHUNK_SIZE = 5000;
-
-    /**
-     * Per-invocation wall-clock budget (seconds) for backfillRedirectsCanonicalUrl().
-     * Bounds how long the daily cron / activation handler will spend on this
-     * task in one call so a 350K-row site finishes over a few cron ticks
-     * instead of all in one request that risks PHP max_execution_time.
-     */
-    const CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC = 25;
+    // Constants CANONICAL_URL_BACKFILL_CHUNK_SIZE and
+    // CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC are defined on the using class
+    // (ABJ_404_Solution_DatabaseUpgradesEtc) because trait constants require
+    // PHP 8.2+ and the plugin supports PHP 7.4. self::* below resolves to
+    // the using class at compile time.
 
     /**
      * Populate {wp_abj404_redirects}.canonical_url for any rows still NULL,
