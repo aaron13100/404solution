@@ -455,14 +455,14 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
     function setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled = 0, $engine = null, $score = null) {
         global $wpdb;
 
-        // nonce is verified outside of this method. We can't verify here because 
+        // nonce is verified outside of this method. We can't verify here because
         // automatic redirects are sometimes created without user interaction.
 
         if (!is_numeric($type)) {
             $this->logger->errorMessage("Wrong data type for redirect. TYPE is non-numeric. From: " .
                     esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         } else if (!is_numeric($status)) {
-            $this->logger->errorMessage("Wrong data type for redirect. STATUS is non-numeric. From: " . 
+            $this->logger->errorMessage("Wrong data type for redirect. STATUS is non-numeric. From: " .
                     esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
         }
 
@@ -479,6 +479,8 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             return 0;
         }
 
+        $insertId = 0;
+
         // if we should not capture a 404 then don't.
         if (!abj_service('request_context')->ignore_doprocess) {
             $now = time();
@@ -490,7 +492,6 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             $abj404logic = abj_service('plugin_logic');
             $fromURL = $abj404logic->normalizeToRelativePath($fromURL);
 
-            // Fix HIGH #1 (3rd review): Remove esc_sql() - wpdb->insert handles escaping
             $insertData = array(
                 'url' => $fromURL,
                 'status' => $status,
@@ -515,7 +516,15 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 $insertData['score'] = round((float)$score, 2);
                 $insertFormats[] = '%f';
             }
-            $wpdb->insert($redirectsTable, $insertData, $insertFormats);
+
+            $insertSql = "INSERT INTO `" . $redirectsTable . "` (`" .
+                implode('`, `', array_keys($insertData)) . "`) VALUES (" .
+                implode(', ', $insertFormats) . ")";
+            $insertResult = $this->queryAndGetResults($insertSql, array(
+                'query_params' => array_values($insertData),
+            ));
+            $insertIdRaw = $insertResult['insert_id'] ?? 0;
+            $insertId = is_scalar($insertIdRaw) ? (int)$insertIdRaw : 0;
 
             // Invalidate caches
             $this->invalidateStatusCountsCache();
@@ -525,7 +534,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             }
         }
 
-        return $wpdb->insert_id;
+        return $insertId;
     }
 
     /**
@@ -762,11 +771,13 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         }
         // @utf8-audit: opt-out — $tableName is always a system value
         // (doTableNameReplacements / $wpdb->prefix); never user input.
-        $rows = $wpdb->get_results(
+        $result = $this->queryAndGetResults(
             "SHOW COLUMNS FROM `" . esc_sql($tableName) . "`",
-            ARRAY_A
+            array('log_errors' => false)
         );
-        if (!is_array($rows) || !empty($wpdb->last_error)) {
+        $rows = isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : [];
+        $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
+        if ($lastError !== '') {
             return [];
         }
         $columns = [];
@@ -864,13 +875,19 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             // (fixes bug: Arabic sites on latin1 databases get "invalid data" errors)
             // Note: Check actual column collation, not database default - on mixed setups
             // the database may be latin1 but wp_posts.post_name is utf8mb4
-            $columnCollation = $wpdb->get_var($wpdb->prepare(
+            $collationResult = $this->queryAndGetResults(
                 "SELECT COLLATION_NAME FROM INFORMATION_SCHEMA.COLUMNS
                  WHERE TABLE_SCHEMA = DATABASE()
                  AND TABLE_NAME = %s
                  AND COLUMN_NAME = 'post_name'",
-                $wpdb->posts
-            ));
+                array('query_params' => array($wpdb->posts), 'log_errors' => false)
+            );
+            $collationRows = isset($collationResult['rows']) && is_array($collationResult['rows']) ? $collationResult['rows'] : array();
+            $columnCollation = null;
+            if (!empty($collationRows) && is_array($collationRows[0])) {
+                $first = reset($collationRows[0]);
+                $columnCollation = is_scalar($first) ? (string)$first : null;
+            }
             if ($columnCollation !== null && strpos(strtolower($columnCollation), 'utf8mb4') !== false) {
                 // Column supports utf8mb4 - use CAST for proper Unicode comparison
                 $resolvedCollation = $this->sanitizeCollationIdentifier($columnCollation);
@@ -1210,8 +1227,9 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
 
         if ($purge == 'abj404_redirects') {
             $query = "update {wp_abj404_redirects} set disabled = 1 where status in (" . $typesForSQL . ")";
-            $query = $this->doTableNameReplacements($query);
-            $redirectCount = $wpdb->query($query);
+            $purgeResult = $this->queryAndGetResults($query);
+            $rowsAffectedRaw = $purgeResult['rows_affected'] ?? 0;
+            $redirectCount = is_scalar($rowsAffectedRaw) ? (int)$rowsAffectedRaw : 0;
 
             // Invalidate caches so the admin table reflects the purge immediately
             $this->invalidateStatusCountsCache();
@@ -1242,8 +1260,6 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
      * @return array<int, array<string, mixed>>
      */
     public function getRedirectConditions(int $redirectId): array {
-        global $wpdb;
-
         $table = $this->doTableNameReplacements('{wp_abj404_redirect_conditions}');
 
         // Guard: conditions table may not exist on older installs before upgrade runs.
@@ -1251,23 +1267,22 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             return [];
         }
 
-        $sql = $wpdb->prepare(
+        $result = $this->queryAndGetResults(
             "SELECT id, redirect_id, logic, condition_type, operator, value, sort_order
-             FROM {$table}
+             FROM `{$table}`
              WHERE redirect_id = %d
              ORDER BY sort_order ASC, id ASC",
-            $redirectId
+            array('query_params' => array($redirectId), 'log_errors' => false)
         );
 
-        $rows = $wpdb->get_results($sql, ARRAY_A);
-
-        $lastError = (string)($wpdb->last_error ?? '');
+        $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
         if ($lastError !== '') {
             $this->logger->warn("getRedirectConditions: DB error for redirect_id={$redirectId}: " . $lastError);
             return [];
         }
 
-        return is_array($rows) ? $rows : [];
+        $rows = isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : [];
+        return $rows;
     }
 
     /**
@@ -1282,8 +1297,6 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
      * @return void
      */
     public function saveRedirectConditions(int $redirectId, array $conditions): void {
-        global $wpdb;
-
         $table = $this->doTableNameReplacements('{wp_abj404_redirect_conditions}');
 
         // Guard: conditions table may not exist yet.
@@ -1293,9 +1306,11 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         }
 
         // Delete existing conditions for this redirect.
-        $wpdb->delete($table, ['redirect_id' => $redirectId], ['%d']);
-
-        $deleteError = (string)($wpdb->last_error ?? '');
+        $deleteResult = $this->queryAndGetResults(
+            "DELETE FROM `{$table}` WHERE redirect_id = %d",
+            array('query_params' => array($redirectId), 'log_errors' => false)
+        );
+        $deleteError = isset($deleteResult['last_error']) && is_string($deleteResult['last_error']) ? $deleteResult['last_error'] : '';
         if ($deleteError !== '') {
             $this->logger->warn("saveRedirectConditions: error deleting old conditions for redirect_id={$redirectId}: " . $deleteError);
         }
@@ -1345,20 +1360,15 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 $value = substr($value, 0, 1024);
             }
 
-            $wpdb->insert(
-                $table,
-                [
-                    'redirect_id'    => $redirectId,
-                    'logic'          => $logic,
-                    'condition_type' => $type,
-                    'operator'       => $operator,
-                    'value'          => $value,
-                    'sort_order'     => $sortOrder,
-                ],
-                ['%d', '%s', '%s', '%s', '%s', '%d']
+            $insertResult = $this->queryAndGetResults(
+                "INSERT INTO `{$table}` (`redirect_id`, `logic`, `condition_type`, `operator`, `value`, `sort_order`)
+                 VALUES (%d, %s, %s, %s, %s, %d)",
+                array(
+                    'query_params' => array($redirectId, $logic, $type, $operator, $value, $sortOrder),
+                    'log_errors' => false,
+                )
             );
-
-            $insertError = (string)($wpdb->last_error ?? '');
+            $insertError = isset($insertResult['last_error']) && is_string($insertResult['last_error']) ? $insertResult['last_error'] : '';
             if ($insertError !== '') {
                 $this->logger->warn("saveRedirectConditions: error inserting condition #{$index} for redirect_id={$redirectId}: " . $insertError);
             }
