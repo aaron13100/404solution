@@ -30,7 +30,71 @@ class ABJ_404_Solution_ViewUpdater {
                 array($me, 'refreshStatsDashboard'));
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxRefreshHealthBar',
                 array($me, 'refreshHealthBar'));
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxFetchInflightStage',
+                array($me, 'fetchInflightStage'));
         // wp_ajax_nopriv_ is for normal users
+    }
+
+    /**
+     * Validate a client-supplied request id used as the transient suffix for
+     * in-flight stage tracking.  The id is only ever written into a transient
+     * key (`abj404_inflight_<id>`), never executed or logged verbatim — but we
+     * still constrain it to alphanumerics so a malformed payload cannot collide
+     * with other plugins' transients or blow past WP's 172-char option-name
+     * limit.
+     *
+     * @return string  Sanitized id, or '' if missing/invalid.
+     */
+    private static function readClientRequestId() {
+        $raw = '';
+        if (isset($_REQUEST['requestId'])) {
+            $raw = $_REQUEST['requestId'];
+        }
+        if (!is_string($raw) || $raw === '') {
+            return '';
+        }
+        if (!preg_match('/\A[a-zA-Z0-9]{8,64}\z/', $raw)) {
+            return '';
+        }
+        return $raw;
+    }
+
+    /**
+     * Update the in-flight stage marker for the current AJAX request.  Sets
+     * `$context['stage']` and — when a client requestId is present — also
+     * writes a short-lived transient so a follow-up `ajaxFetchInflightStage`
+     * call can read which phase the server was in when a client-side timeout
+     * fired (no response, no body, no headers reach the browser).
+     *
+     * Transient TTL is intentionally short (60s) — diagnostics that arrive
+     * after a minute aren't useful for the user-visible error notice anyway.
+     *
+     * @param array<string, mixed> $context  Passed by reference; mutated in place.
+     * @param string $stage  Stage label (e.g. 'table_captured', 'paginationLinksTop').
+     * @return void
+     */
+    private static function setStage(&$context, $stage) {
+        if (!is_array($context)) {
+            $context = array();
+        }
+        $context['stage'] = $stage;
+        if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
+            $GLOBALS['abj404_ajax_context']['stage'] = $stage;
+        }
+
+        $requestId = isset($context['requestId']) && is_string($context['requestId']) ? $context['requestId'] : '';
+        if ($requestId === '') {
+            return;
+        }
+        if (!function_exists('set_transient')) {
+            return;
+        }
+        try {
+            set_transient('abj404_inflight_' . $requestId, (string)$stage, 60);
+        } catch (Throwable $e) {
+            // Diagnostics — best effort.  Never let a transient write failure
+            // mask the real query error we're trying to diagnose.
+        }
     }
 
     /**
@@ -77,6 +141,9 @@ class ABJ_404_Solution_ViewUpdater {
                 }
                 if (array_key_exists('subpage', $ctx) && is_string($ctx['subpage']) && $ctx['subpage'] !== '') {
                     header('X-ABJ404-Subpage: ' . preg_replace('/[\r\n]+/', '', $ctx['subpage']));
+                }
+                if (array_key_exists('requestId', $ctx) && is_string($ctx['requestId']) && $ctx['requestId'] !== '') {
+                    header('X-ABJ404-Request-Id: ' . preg_replace('/[^a-zA-Z0-9]/', '', $ctx['requestId']));
                 }
             }
             header('Content-type: application/json; charset=UTF-8');
@@ -234,6 +301,10 @@ class ABJ_404_Solution_ViewUpdater {
         $context['ajax_expected_json'] = true;
         $context['response_sent'] = false;
         $context['ob_level_before'] = ob_get_level();
+        // Client-supplied request id for in-flight stage diagnostics (see setStage()).
+        // The browser generates this so it has a key to look up the stage even when
+        // a pure timeout means no response/header ever arrived.
+        $context['requestId'] = self::readClientRequestId();
 
         // Prevent WordPress's "critical error" HTML page from masking details for AJAX calls.
         if (!headers_sent()) {
@@ -244,6 +315,9 @@ class ABJ_404_Solution_ViewUpdater {
             }
             if (array_key_exists('subpage', $context) && is_string($context['subpage']) && $context['subpage'] !== '') {
                 header('X-ABJ404-Subpage: ' . preg_replace('/[\r\n]+/', '', $context['subpage']));
+            }
+            if ($context['requestId'] !== '') {
+                header('X-ABJ404-Request-Id: ' . $context['requestId']);
             }
             @ini_set('display_errors', '0');
         }
@@ -371,14 +445,14 @@ class ABJ_404_Solution_ViewUpdater {
 
             $data = array();
             if ($subpage == 'abj404_redirects') {
-                $context['stage'] = 'table_redirects';
+                self::setStage($context, 'table_redirects');
                 $data['table'] = $view->getAdminRedirectsPageTable($subpage);
 
                 // Include tab counts so the page shell can render instantly with
                 // placeholders and fill them in. The slower health-bar query
                 // (getHighImpactCapturedCount, see refreshHealthBar()) is fetched
                 // in a separate AJAX call so it never blocks first paint of the table.
-                $context['stage'] = 'redirect_status_counts';
+                self::setStage($context, 'redirect_status_counts');
                 $statusCounts = $abj404dao->getRedirectStatusCounts();
                 // Tab counts keyed by filter value for JS tab updates.
                 $data['tabCounts'] = array(
@@ -389,11 +463,11 @@ class ABJ_404_Solution_ViewUpdater {
                 );
 
             } else if ($subpage == 'abj404_captured') {
-                $context['stage'] = 'table_captured';
+                self::setStage($context, 'table_captured');
                 $data['table'] = $view->getCapturedURLSPageTable($subpage);
 
                 // Include tab counts so the page shell can render instantly.
-                $context['stage'] = 'captured_status_counts';
+                self::setStage($context, 'captured_status_counts');
                 $statusCounts = $abj404dao->getCapturedStatusCounts();
                 $data['statusCounts'] = $statusCounts;
                 // Tab counts keyed by filter value for JS tab updates.
@@ -408,7 +482,7 @@ class ABJ_404_Solution_ViewUpdater {
                 );
 
             } else if ($subpage == 'abj404_logs') {
-                $context['stage'] = 'table_logs';
+                self::setStage($context, 'table_logs');
                 $data['table'] = $view->getAdminLogsPageTable($subpage);
 
             } else {
@@ -436,9 +510,9 @@ class ABJ_404_Solution_ViewUpdater {
                 );
             }
 
-            $context['stage'] = 'paginationLinksTop';
+            self::setStage($context, 'paginationLinksTop');
             $data['paginationLinksTop'] = $view->getPaginationLinks($subpage);
-            $context['stage'] = 'paginationLinksBottom';
+            self::setStage($context, 'paginationLinksBottom');
             $data['paginationLinksBottom'] = $view->getPaginationLinks($subpage, false);
 
             self::markAjaxResponseSent();
@@ -673,12 +747,12 @@ class ABJ_404_Solution_ViewUpdater {
                 return;
             }
 
-            $context['stage'] = 'redirect_status_counts';
+            self::setStage($context, 'redirect_status_counts');
             $statusCounts = $abj404dao->getRedirectStatusCounts();
             // Provide the captured filter constant so JS can build the "View" link.
             $statusCounts['_capturedFilter'] = ABJ404_STATUS_CAPTURED;
 
-            $context['stage'] = 'high_impact_count';
+            self::setStage($context, 'high_impact_count');
             $rollupAvailable = $abj404dao->logsHitsTableExists();
             if ($rollupAvailable) {
                 $highImpactCapturedCount = (int)$abj404dao->getHighImpactCapturedCount();
@@ -732,6 +806,76 @@ class ABJ_404_Solution_ViewUpdater {
                 $isPluginAdmin
             );
             self::sendJsonResponseAndExit($payload, 500);
+            return;
+        }
+    }
+
+    /**
+     * Look up the last in-flight stage stamped by `setStage()` for a given
+     * client-supplied requestId.  Used by the JS error handler when
+     * `textStatus === 'timeout'` so the admin notice can name which phase the
+     * server was in when the client gave up — diagnostics for pure client
+     * timeouts where no response, header, or body ever arrives.
+     *
+     * Returns 200 with `{stage: '...'}` on success, `{stage: ''}` if the
+     * transient has expired or the requestId is unknown.  Reads (but does
+     * not delete) the transient — letting it expire naturally avoids a race
+     * if the original AJAX is still running.
+     *
+     * @return void
+     */
+    function fetchInflightStage() {
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
+
+        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
+        $requestId = self::readClientRequestId();
+
+        try {
+            if (!wp_verify_nonce($nonce, 'abj404_fetchInflightStage')) {
+                self::sendJsonResponseAndExit(
+                    self::buildAjaxErrorResponse('Invalid security token', null, false),
+                    403
+                );
+                return;
+            }
+            if (!$abj404logic->userIsPluginAdmin()) {
+                self::sendJsonResponseAndExit(
+                    self::buildAjaxErrorResponse('Unauthorized', null, false),
+                    403
+                );
+                return;
+            }
+            // Tight rate limit — this endpoint only fires from the JS timeout
+            // handler.  A real admin sees ~1 hit per stuck request.
+            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('fetch_inflight_stage', 120, 60)) {
+                self::sendJsonResponseAndExit(
+                    self::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false),
+                    429
+                );
+                return;
+            }
+            if ($requestId === '') {
+                self::sendJsonResponseAndExit(array('stage' => ''), 200);
+                return;
+            }
+
+            $stage = '';
+            if (function_exists('get_transient')) {
+                $value = get_transient('abj404_inflight_' . $requestId);
+                if (is_string($value)) {
+                    $stage = $value;
+                }
+            }
+
+            self::sendJsonResponseAndExit(array('stage' => $stage), 200);
+            return;
+
+        } catch (Throwable $e) {
+            // Diagnostics endpoint — never fail loudly.  An admin-side notice
+            // that says "stage: (lookup failed)" is a worse outcome than
+            // "stage: (unknown)".
+            self::sendJsonResponseAndExit(array('stage' => ''), 200);
             return;
         }
     }

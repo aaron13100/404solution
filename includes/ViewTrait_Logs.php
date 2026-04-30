@@ -35,6 +35,7 @@ trait ViewTrait_Logs {
         $orderby = array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'timestamp';
         $order = array_key_exists('order', $tableOptions) && is_string($tableOptions['order']) ? $tableOptions['order'] : 'DESC';
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
+        $inflightNonce = wp_create_nonce('abj404_fetchInflightStage');
 
         // Filter bar with search dropdown and AJAX data attributes for deferred table load
         echo '<div class="abj404-filter-bar tablenav"'
@@ -42,6 +43,7 @@ trait ViewTrait_Logs {
                 . ' data-pagination-ajax-action="ajaxUpdatePaginationLinks"'
                 . ' data-pagination-ajax-subpage="' . esc_attr($sub) . '"'
                 . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '"'
+                . ' data-pagination-inflight-nonce="' . esc_attr($inflightNonce) . '"'
                 . ' data-pagination-current-signature=""'
                 . ' data-pagination-current-orderby="' . esc_attr($orderby) . '"'
                 . ' data-pagination-current-order="' . esc_attr($order) . '"'
@@ -571,6 +573,7 @@ trait ViewTrait_Logs {
 
         $ajaxAction = 'ajaxUpdatePaginationLinks';
         $ajaxNonce = wp_create_nonce('abj404_updatePaginationLink');
+        $inflightNonce = wp_create_nonce('abj404_fetchInflightStage');
         
         $searchFilterControl = '<!--';
         if ($sub == 'abj404_redirects' || $sub == 'abj404_captured') {
@@ -630,6 +633,7 @@ trait ViewTrait_Logs {
         $html = $this->f->str_replace('{data-pagination-ajax-action}', esc_attr($ajaxAction), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-subpage}', esc_attr($sub), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-nonce}', esc_attr($ajaxNonce), $html);
+        $html = $this->f->str_replace('{data-pagination-inflight-nonce}', esc_attr($inflightNonce), $html);
         $html = $this->f->str_replace('{data-pagination-current-signature}', esc_attr($this->getCurrentTableDataSignature($sub)), $html);
         $html = $this->f->str_replace('{data-pagination-current-orderby}', esc_attr((string)$orderby), $html);
         $html = $this->f->str_replace('{data-pagination-current-order}', esc_attr((string)$order), $html);

@@ -52,6 +52,7 @@ trait ViewTrait_RedirectsTable {
         $perPage = isset($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
+        $inflightNonce = wp_create_nonce('abj404_fetchInflightStage');
         $autoRefresh = '1'; // $sub is always 'abj404_captured' here
         $rawFilter = $tableOptions['filter'] ?? 0;
         $currentFilter = is_scalar($rawFilter) ? $rawFilter : 0;
@@ -70,6 +71,7 @@ trait ViewTrait_RedirectsTable {
                 . ' data-pagination-ajax-action="ajaxUpdatePaginationLinks"'
                 . ' data-pagination-ajax-subpage="' . esc_attr($sub) . '"'
                 . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '"'
+                . ' data-pagination-inflight-nonce="' . esc_attr($inflightNonce) . '"'
                 . ' data-pagination-current-signature=""'
                 . ' data-pagination-current-orderby="' . esc_attr($currentOrderBy) . '"'
                 . ' data-pagination-current-order="' . esc_attr($currentOrder) . '"'
@@ -424,6 +426,7 @@ trait ViewTrait_RedirectsTable {
         $perPage = isset($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
+        $inflightNonce = wp_create_nonce('abj404_fetchInflightStage');
         $autoRefresh = '1'; // $sub is always 'abj404_redirects' here
         $rawOrderBy = $tableOptions['orderby'] ?? '';
         $currentOrderBy = is_string($rawOrderBy) ? $rawOrderBy : 'url';
@@ -439,6 +442,7 @@ trait ViewTrait_RedirectsTable {
                 . ' data-pagination-ajax-action="ajaxUpdatePaginationLinks"'
                 . ' data-pagination-ajax-subpage="' . esc_attr($sub) . '"'
                 . ' data-pagination-ajax-nonce="' . esc_attr($paginationNonce) . '"'
+                . ' data-pagination-inflight-nonce="' . esc_attr($inflightNonce) . '"'
                 . ' data-pagination-current-signature=""'
                 . ' data-pagination-current-orderby="' . esc_attr($currentOrderBy) . '"'
                 . ' data-pagination-current-order="' . esc_attr($currentOrder) . '"'

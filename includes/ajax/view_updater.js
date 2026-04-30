@@ -1,10 +1,31 @@
 
 if (typeof(getURLParameter) !== "function") {
     function getURLParameter(name) {
-        return (location.search.split('?' + name + '=')[1] || 
-                location.search.split('&' + name + '=')[1] || 
+        return (location.search.split('?' + name + '=')[1] ||
+                location.search.split('&' + name + '=')[1] ||
                 '').split('&')[0];
     }
+}
+
+/**
+ * Generate a short alphanumeric id used by the server to key an in-flight
+ * stage transient (see ViewUpdater::setStage).  Generated client-side so the
+ * id is known to the JS error handler even when a pure network timeout means
+ * no response, header, or body ever arrives — which is the only path the
+ * follow-up `ajaxFetchInflightStage` call can recover diagnostics for.
+ *
+ * Server validates: `[a-zA-Z0-9]{8,64}`.  16 hex-ish chars is plenty of
+ * entropy to avoid transient-key collisions across concurrent admin tabs.
+ *
+ * @returns {string}
+ */
+function abj404GenerateRequestId() {
+    var alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    var out = '';
+    for (var i = 0; i < 16; i++) {
+        out += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+    }
+    return out;
 }
 
 // when the user presses enter on the filter text input then update the table
@@ -852,10 +873,14 @@ function paginationLinksChange(triggerItem, options) {
         var nonceMatch = url.match(/[?&]nonce=([^&]+)/);
         nonce = nonceMatch ? nonceMatch[1] : '';
     }
+    // Inflight-stage nonce is optional — older page renders won't have it,
+    // and the timeout follow-up call simply skips when missing.
+    var inflightNonce = $ajaxConfigEl.attr('data-pagination-inflight-nonce') || '';
 
     // Use a clean admin-ajax base URL; always send 'action' in the payload for compatibility with security plugins.
     var baseUrl = url.split('?')[0];
     var requestStartedAt = Date.now();
+    var requestId = abj404GenerateRequestId();
     var baselineComparison = null;
     var isDetectOnlyBackground = (isBackgroundRefresh && detectOnly);
     if (isBackgroundRefresh && detectOnly) {
@@ -901,6 +926,11 @@ function paginationLinksChange(triggerItem, options) {
     }
 
     // do an ajax call to update the data
+    // Background detect-only refreshes use a tight 15s budget so a stalled
+    // refresh never lingers in the background; explicit user actions use 45s
+    // so a cold-cache table query (large redirects/logs tables) has time to
+    // complete before the placeholder turns into an error notice.
+    var ajaxTimeoutMs = (isBackgroundRefresh && detectOnly) ? 15000 : 45000;
     jQuery.ajax({
         url: baseUrl,
         type: 'POST',
@@ -909,7 +939,7 @@ function paginationLinksChange(triggerItem, options) {
         // attemptMissingTableRepairAndRetry runs createDatabaseTables) can leave
         // the table stuck on its loading placeholder forever — onError never
         // fires and the retry/fallback path never engages.
-        timeout: 15000,
+        timeout: ajaxTimeoutMs,
         data: {
             action: action,
             page: page,
@@ -924,7 +954,8 @@ function paginationLinksChange(triggerItem, options) {
             id: id,
             detectOnly: detectOnly ? '1' : '0',
             currentSignature: (detectOnly && baselineComparison && baselineComparison.serverSignature)
-                ? baselineComparison.serverSignature : ''
+                ? baselineComparison.serverSignature : '',
+            requestId: requestId
         },
         success: function (result) {
             if (isBackgroundRefresh && detectOnly) {
@@ -1103,12 +1134,18 @@ function paginationLinksChange(triggerItem, options) {
                 var noticeTitle = '404 Solution: AJAX error while updating the table.';
                 var $notice = jQuery('<div class="notice notice-error abj404-ajax-error-notice is-dismissible"></div>');
                 var $titleEl = jQuery('<p></p>').css('font-weight', 'bold').text(noticeTitle);
+                // Wall-clock elapsed since AJAX dispatch.  Distinguishes
+                // "instant network drop" (small elapsed) from "real slow query"
+                // (close to the timeout budget) on pure client-timeout errors
+                // where no responseJson is available.
+                var elapsedMs = Date.now() - requestStartedAt;
                 var detailLines = [
                     'HTTP status: ' + status,
                     'textStatus: ' + textStatus,
                     'errorThrown: ' + errorThrown,
                     'action: ' + action,
-                    'subpage: ' + subpage
+                    'subpage: ' + subpage,
+                    'Elapsed: ' + elapsedMs + 'ms'
                 ];
                 if (stageFromServer) {
                     detailLines.push('Server stage: ' + stageFromServer);
@@ -1119,10 +1156,60 @@ function paginationLinksChange(triggerItem, options) {
                 if (lastQueryRedacted) {
                     detailLines.push('Last query (redacted): ' + lastQueryRedacted);
                 }
+                // On a pure client timeout the response never arrived, so
+                // stageFromServer/messageFromServer/lastQueryRedacted are all
+                // empty.  Fire one small follow-up call to the inflight-stage
+                // endpoint to read the transient the server stamped before
+                // the client gave up.  Adds a "Inflight stage:" line to the
+                // notice as soon as the lookup returns.
+                var shouldFetchInflightStage = (
+                    textStatus === 'timeout' && !stageFromServer && !!inflightNonce
+                );
+                if (shouldFetchInflightStage) {
+                    detailLines.push('Inflight stage: (looking up…)');
+                }
                 var $detailsEl = jQuery('<pre></pre>')
                     .css({whiteSpace: 'pre-wrap', margin: '0 0 8px 0'})
                     .text(detailLines.join('\n'));
                 $notice.append($titleEl).append($detailsEl);
+                if (shouldFetchInflightStage) {
+                    jQuery.ajax({
+                        url: baseUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        timeout: 5000,
+                        data: {
+                            action: 'ajaxFetchInflightStage',
+                            nonce: inflightNonce,
+                            requestId: requestId
+                        }
+                    }).done(function(stageResult) {
+                        var inflightStage = '';
+                        if (stageResult && typeof stageResult.stage === 'string' && stageResult.stage !== '') {
+                            inflightStage = stageResult.stage;
+                        }
+                        var lookupLine = inflightStage
+                            ? 'Inflight stage: ' + inflightStage
+                            : 'Inflight stage: (unknown)';
+                        var updated = detailLines.slice();
+                        for (var i = 0; i < updated.length; i++) {
+                            if (updated[i].indexOf('Inflight stage:') === 0) {
+                                updated[i] = lookupLine;
+                                break;
+                            }
+                        }
+                        $detailsEl.text(updated.join('\n'));
+                    }).fail(function() {
+                        var updated = detailLines.slice();
+                        for (var i = 0; i < updated.length; i++) {
+                            if (updated[i].indexOf('Inflight stage:') === 0) {
+                                updated[i] = 'Inflight stage: (lookup failed)';
+                                break;
+                            }
+                        }
+                        $detailsEl.text(updated.join('\n'));
+                    });
+                }
                 jQuery('.abj404-ajax-error-notice').remove();
                 var $tableContainer = jQuery('.abj404-table-container').first();
                 if ($tableContainer.length > 0) {
