@@ -207,15 +207,15 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 **Bug Fixes**
 
-* Fixed the table-repair path triggered by "Table is marked as crashed" or "Incorrect key file" MyISAM errors escalating to a DROP and recreate after several failed REPAIR TABLE attempts. The droppable list previously included the `logsv2`, `lookup`, and `logs_hits` tables, so any cron tick that reached this path could destroy log history. The plugin now leaves the table alone if REPAIR cannot fix it, preserving captured-404 history regardless of how often the corrupted-table error fires.
-* Fixed the cron-reachable repair for stripped plugin tables (those missing an `id` column) using DROP and recreate instead of a non-destructive ALTER. This was the failure class behind the widespread `logs_hits` data loss observed during the 4.1.6 to 4.1.7 upgrade. The repair path now uses `ALTER TABLE ADD COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST`, which preserves all existing rows.
-* Fixed `@`-suppressed PHP warnings still triggering admin error-email reports. The most common case was `@opcache_invalidate()` on hosts that block the function via `opcache.restrict_api`; the suppression was being ignored and admins were receiving recurring emails about a no-op call. The error handler now honors `error_reporting() === 0` and lets PHP's default behavior take over.
-* Fixed the `logs_hits` rebuild taking the single-statement direct path on retention-trimmed sites with a small live row count but a large id range, which could time out at 60 seconds on shared hosts. The threshold for the direct path has been dropped to 5,000 rows so mid-size and larger ranges always go through the chunked pre-aggregation path.
+* Fixed loss of captured-404 history when the database performed automatic repair of a crashed log table. The plugin previously dropped and recreated the affected table after repeated repair failures, destroying logged hits in the process. It now leaves the table alone if repair cannot succeed, preserving your captured-404 history.
+* Fixed loss of log data during repair of damaged plugin tables that were missing their primary key column. This was the underlying cause of the log-history loss reported during the 4.1.6 to 4.1.7 upgrade. The repair now preserves all existing rows instead of recreating the table from scratch.
+* Fixed recurring admin email reports caused by `opcache_invalidate()` on hosts that block the function. The plugin's error handler now respects PHP's standard warning-suppression behavior, so blocked-but-harmless calls no longer generate email notifications.
+* Fixed timeouts during the nightly log-cache rebuild on sites with aggressive log retention. The rebuild now reliably completes within shared-host time limits.
 
 **Improvements**
 
-* The captured-404 list and other admin views that join the logs table now use a precomputed, indexed `canonical_url` column instead of a per-row CONCAT/COALESCE expression on every log row. The column is populated at insert time and backfilled during nightly maintenance with a 15-second per-tick budget; once the backfill completes, the admin views switch to a bare indexed-column reference, sharply reducing query cost on sites with large log tables.
-* Admin error-email reports for SQL failures now identify the originating call site (class and method, or a source-marked label) instead of the generic "inline-query" sentinel. Previously, recurring "Table doesn't exist" errors all carried the same opaque label regardless of which feature triggered them; the new label makes it possible to tell at a glance which code path produced the failure.
+* The Captured 404s list and other admin views that read log data now load substantially faster on sites with large log tables. A new indexed column replaces a slower per-row computation; existing sites are updated in the background during nightly maintenance and speed up over time.
+* Admin email reports for database errors now identify which feature triggered the failure instead of using a generic label. When the same error recurs, you can tell at a glance which part of the plugin produced it.
 
 ## Version 4.1.10 (Apr 30, 2026) ##
 
