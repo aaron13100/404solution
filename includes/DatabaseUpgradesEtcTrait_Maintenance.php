@@ -800,22 +800,20 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
     }
 
     /**
-     * Register a shutdown-hook backfill of logsv2.canonical_url, deduped per
+     * Register a deferred backfill of logsv2.canonical_url, deduped per
      * request. Called from the Captured-404s admin tab render so the
      * legacy NULL backlog clears on each visit (15-second budget per
-     * shutdown, ~25K-75K rows per invocation on shared hosting).
+     * invocation, ~25K-75K rows per invocation on shared hosting).
      *
-     * Why shutdown and not wp_schedule_single_event:
+     * Why shutdown outside AJAX and WP-Cron during AJAX:
      *   - shutdown always fires; wp-cron silently doesn't on
      *     DISABLE_WP_CRON=true sites without a server-side cron worker
      *     (a real subset of WP installs).
-     *   - With shutdown, cost is borne by the admin who explicitly clicked
-     *     the tab — the response is already sent (the AJAX path calls
-     *     fastcgi_finish_request before shutdown). They don't perceive the
-     *     wait.
-     *   - With wp-cron, an arbitrary later visitor's request triggers the
-     *     loopback spawn, tying up a PHP-FPM slot for the same 15s window
-     *     for someone who didn't ask for it.
+     *   - On normal page requests, shutdown keeps convergence independent of
+     *     wp-cron and the response has already been rendered.
+     *   - On admin-ajax.php, some hosts/proxies still hold the HTTP response
+     *     open until shutdown work finishes. Use WP-Cron there so table AJAX
+     *     cannot time out behind the 15-second backfill budget.
      *
      * Pre-flight gates (in order, cheapest first):
      *   1. Static request-scoped flag — skip if already scheduled.
@@ -861,9 +859,34 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         }
 
         self::$logsv2CanonicalBackfillScheduled = true;
+        if ($this->shouldScheduleLogsv2CanonicalBackfillViaCron()) {
+            if (function_exists('wp_schedule_single_event')) {
+                wp_schedule_single_event(time() + 5, 'abj404_logsv2_canonical_backfill');
+            }
+            return;
+        }
+
         if (function_exists('add_action')) {
             add_action('shutdown', function (): void { $this->backfillLogsv2CanonicalUrl(); });
         }
+    }
+
+    /** @return bool */
+    private function shouldScheduleLogsv2CanonicalBackfillViaCron(): bool {
+        if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
+            return true;
+        }
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            return true;
+        }
+        $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
+            ? $_SERVER['SCRIPT_NAME'] : '';
+        if ($scriptName !== '' && basename($scriptName) === 'admin-ajax.php') {
+            return true;
+        }
+        $pagenow = isset($GLOBALS['pagenow']) && is_string($GLOBALS['pagenow'])
+            ? $GLOBALS['pagenow'] : '';
+        return $pagenow === 'admin-ajax.php';
     }
 
     /**

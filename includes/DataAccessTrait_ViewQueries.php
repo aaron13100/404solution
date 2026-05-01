@@ -1243,11 +1243,37 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             }
 
             self::$hitsTableRebuildScheduled = true;
-            $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild for shutdown hook.");
             $this->setRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG, time(), 86400);
             $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'scheduled', 86400);
+            if ($this->shouldScheduleHitsTableRebuildViaCron()) {
+                $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild via WP-Cron.");
+                if (function_exists('wp_schedule_single_event')) {
+                    wp_schedule_single_event(time() + 5, 'abj404_updateLogsHitsTableAction');
+                }
+                return;
+            }
+
+            $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild for shutdown hook.");
             add_action('shutdown', function(): void { $this->createRedirectsForViewHitsTable(); });
         }
+    }
+
+    /** @return bool */
+    private function shouldScheduleHitsTableRebuildViaCron(): bool {
+        if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
+            return true;
+        }
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            return true;
+        }
+        $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
+            ? $_SERVER['SCRIPT_NAME'] : '';
+        if ($scriptName !== '' && basename($scriptName) === 'admin-ajax.php') {
+            return true;
+        }
+        $pagenow = isset($GLOBALS['pagenow']) && is_string($GLOBALS['pagenow'])
+            ? $GLOBALS['pagenow'] : '';
+        return $pagenow === 'admin-ajax.php';
     }
 
     private function getHitsTableRebuildLockOptionName(): string {
