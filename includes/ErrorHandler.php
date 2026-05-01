@@ -165,6 +165,29 @@ class ABJ_404_Solution_ErrorHandler {
     }
 
     /**
+     * @param mixed $sql
+     * @return string
+     */
+    private static function redactSqlShape($sql): string {
+        if (!is_string($sql) || $sql === '') {
+            return '';
+        }
+
+        $out = $sql;
+        $out = preg_replace("~'(?:\\\\'|''|[^'])*'~", "?", $out) ?? $out;
+        $out = preg_replace('~"(?:\\\\"|""|[^"])*"~', "?", $out) ?? $out;
+        $out = preg_replace('~\\b0x[0-9A-Fa-f]+\\b~', '?', $out) ?? $out;
+        $out = preg_replace('~\\b\\d+(?:\\.\\d+)?\\b~', '?', $out) ?? $out;
+        $out = preg_replace('~\\(\\s*\\?\\s*(?:,\\s*\\?\\s*)+\\)~', '(?)', $out) ?? $out;
+        $out = preg_replace('~\\bIN\\s*\\(\\?\\)\\b~i', 'IN (?)', $out) ?? $out;
+        $out = preg_replace('~\\s+~', ' ', trim($out)) ?? $out;
+        if (strlen($out) > 4000) {
+            $out = substr($out, 0, 4000) . '...';
+        }
+        return $out;
+    }
+
+    /**
      * @param string $line
      * @return bool
      */
@@ -419,6 +442,14 @@ class ABJ_404_Solution_ErrorHandler {
                 'fatal_error' => $lasterror,
                 'context' => $ctx,
             );
+            if (isset($GLOBALS['wpdb']) && is_object($GLOBALS['wpdb'])) {
+                $lastQuery = $GLOBALS['wpdb']->last_query ?? '';
+                $details['wpdb'] = array(
+                    'last_error' => $GLOBALS['wpdb']->last_error ?? '',
+                    'last_query_redacted' => self::redactSqlShape($lastQuery),
+                    'last_query_length' => is_string($lastQuery) ? strlen($lastQuery) : 0,
+                );
+            }
             if ($bufferedOutput !== '') {
                 $details['buffered_output'] = substr($bufferedOutput, 0, 8000);
             }

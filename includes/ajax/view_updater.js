@@ -28,6 +28,89 @@ function abj404GenerateRequestId() {
     return out;
 }
 
+function abj404AjaxStageDiagnostics(stage, subpage) {
+    var map = {
+        table_redirects: {
+            queryLabel: 'getAdminRedirectsPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+            whatHappening: 'Loading Redirects table rows'
+        },
+        redirect_status_counts: {
+            queryLabel: 'getRedirectStatusCounts()',
+            whatHappening: 'Counting Redirects status tabs'
+        },
+        table_captured: {
+            queryLabel: 'getCapturedURLSPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+            whatHappening: 'Loading Captured 404 URLs table rows'
+        },
+        captured_status_counts: {
+            queryLabel: 'getCapturedStatusCounts()',
+            whatHappening: 'Counting Captured 404 URLs status tabs'
+        },
+        table_logs: {
+            queryLabel: 'getAdminLogsPageTable() -> getLogRecords()',
+            whatHappening: 'Loading Logs table rows'
+        },
+        paginationLinksTop: {
+            queryLabel: 'getPaginationLinks(top) -> getRedirectsForViewCount() / getRedirectsForView.sql',
+            whatHappening: 'Rendering top pagination links'
+        },
+        paginationLinksBottom: {
+            queryLabel: 'getPaginationLinks(bottom) -> getRedirectsForViewCount() / getRedirectsForView.sql',
+            whatHappening: 'Rendering bottom pagination links'
+        }
+    };
+    if (stage && map[stage]) {
+        return map[stage];
+    }
+    if (subpage === 'abj404_captured') {
+        return {
+            queryLabel: 'getCapturedURLSPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+            whatHappening: 'Loading Captured 404 URLs table rows'
+        };
+    }
+    if (subpage === 'abj404_logs') {
+        return {
+            queryLabel: 'getAdminLogsPageTable() -> getLogRecords()',
+            whatHappening: 'Loading Logs table rows'
+        };
+    }
+    return {
+        queryLabel: 'getAdminRedirectsPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+        whatHappening: 'Loading Redirects table rows'
+    };
+}
+
+function abj404FormatAjaxFailureDetails(meta) {
+    meta = meta || {};
+    var elapsed = parseInt(meta.elapsedMs, 10);
+    var timeout = parseInt(meta.timeoutMs, 10);
+    var lines = [
+        'What was happening: ' + (meta.whatHappening || 'Updating table data'),
+        'Query: ' + (meta.queryLabel || 'unknown'),
+        'HTTP status: ' + (meta.status || ''),
+        'textStatus: ' + (meta.textStatus || ''),
+        'errorThrown: ' + (meta.errorThrown || ''),
+        'action: ' + (meta.action || ''),
+        'subpage: ' + (meta.subpage || '')
+    ];
+    if (!isNaN(elapsed)) {
+        lines.push('Elapsed: ' + elapsed + 'ms');
+    }
+    if (!isNaN(timeout)) {
+        lines.push('Timeout budget: ' + timeout + 'ms');
+    }
+    if (meta.stage) {
+        lines.push('Server stage: ' + meta.stage);
+    }
+    if (meta.message) {
+        lines.push('Server message: ' + meta.message);
+    }
+    if (meta.lastQueryRedacted) {
+        lines.push('Last query (redacted): ' + meta.lastQueryRedacted);
+    }
+    return lines;
+}
+
 // when the user presses enter on the filter text input then update the table
 jQuery(document).ready(function($) {
     bindSearchFieldListeners();
@@ -290,7 +373,8 @@ function triggerInitialTableLoadIfNeeded() {
                 // Replace the "Loading…" cell text with a concrete error state so
                 // the page no longer appears stuck — stripping the attribute alone
                 // leaves the original placeholder rows visible to the user.
-                var errorMessage = 'Could not load table data. Try refreshing the page.';
+                var fallbackDetails = abj404FormatAjaxFailureDetails(errorMeta || {});
+                var errorMessage = 'Could not load table data. ' + fallbackDetails.join('\n');
                 jQuery('.abj404-table[data-table-awaiting-load] tbody').html(
                     '<tr><td class="abj404-empty-message abj404-error">' +
                     jQuery('<div/>').text(errorMessage).html() +
@@ -1105,6 +1189,8 @@ function paginationLinksChange(triggerItem, options) {
 
             var messageFromServer = '';
             var stageFromServer = '';
+            var queryLabelFromServer = '';
+            var whatHappeningFromServer = '';
             var lastQueryRedacted = '';
             if (responseJson && responseJson.data) {
                 if (responseJson.data.message) {
@@ -1120,6 +1206,12 @@ function paginationLinksChange(triggerItem, options) {
                     var details = responseJson.data.details;
                     if (details.context && details.context.stage) {
                         stageFromServer = String(details.context.stage);
+                    }
+                    if (details.context && details.context.query_label) {
+                        queryLabelFromServer = String(details.context.query_label);
+                    }
+                    if (details.context && details.context.what_happening) {
+                        whatHappeningFromServer = String(details.context.what_happening);
                     }
                     if (details.wpdb && details.wpdb.last_query_redacted) {
                         lastQueryRedacted = String(details.wpdb.last_query_redacted);
@@ -1139,23 +1231,22 @@ function paginationLinksChange(triggerItem, options) {
                 // (close to the timeout budget) on pure client-timeout errors
                 // where no responseJson is available.
                 var elapsedMs = Date.now() - requestStartedAt;
-                var detailLines = [
-                    'HTTP status: ' + status,
-                    'textStatus: ' + textStatus,
-                    'errorThrown: ' + errorThrown,
-                    'action: ' + action,
-                    'subpage: ' + subpage,
-                    'Elapsed: ' + elapsedMs + 'ms'
-                ];
-                if (stageFromServer) {
-                    detailLines.push('Server stage: ' + stageFromServer);
-                }
-                if (messageFromServer) {
-                    detailLines.push('Server message: ' + messageFromServer);
-                }
-                if (lastQueryRedacted) {
-                    detailLines.push('Last query (redacted): ' + lastQueryRedacted);
-                }
+                var inferredDiagnostics = abj404AjaxStageDiagnostics(stageFromServer, subpage);
+                var detailMeta = {
+                    whatHappening: whatHappeningFromServer || inferredDiagnostics.whatHappening,
+                    queryLabel: queryLabelFromServer || inferredDiagnostics.queryLabel,
+                    status: status,
+                    textStatus: textStatus,
+                    errorThrown: errorThrown,
+                    action: action,
+                    subpage: subpage,
+                    elapsedMs: elapsedMs,
+                    timeoutMs: ajaxTimeoutMs,
+                    stage: stageFromServer,
+                    message: messageFromServer,
+                    lastQueryRedacted: lastQueryRedacted
+                };
+                var detailLines = abj404FormatAjaxFailureDetails(detailMeta);
                 // On a pure client timeout the response never arrived, so
                 // stageFromServer/messageFromServer/lastQueryRedacted are all
                 // empty.  Fire one small follow-up call to the inflight-stage
@@ -1185,17 +1276,31 @@ function paginationLinksChange(triggerItem, options) {
                         }
                     }).done(function(stageResult) {
                         var inflightStage = '';
+                        var inflightQueryLabel = '';
+                        var inflightWhatHappening = '';
                         if (stageResult && typeof stageResult.stage === 'string' && stageResult.stage !== '') {
                             inflightStage = stageResult.stage;
+                        }
+                        if (stageResult && typeof stageResult.queryLabel === 'string' && stageResult.queryLabel !== '') {
+                            inflightQueryLabel = stageResult.queryLabel;
+                        }
+                        if (stageResult && typeof stageResult.whatHappening === 'string' && stageResult.whatHappening !== '') {
+                            inflightWhatHappening = stageResult.whatHappening;
                         }
                         var lookupLine = inflightStage
                             ? 'Inflight stage: ' + inflightStage
                             : 'Inflight stage: (unknown)';
+                        var lookupDiagnostics = abj404AjaxStageDiagnostics(inflightStage, subpage);
                         var updated = detailLines.slice();
                         for (var i = 0; i < updated.length; i++) {
+                            if (updated[i].indexOf('What was happening:') === 0) {
+                                updated[i] = 'What was happening: ' + (inflightWhatHappening || lookupDiagnostics.whatHappening);
+                            }
+                            if (updated[i].indexOf('Query:') === 0) {
+                                updated[i] = 'Query: ' + (inflightQueryLabel || lookupDiagnostics.queryLabel);
+                            }
                             if (updated[i].indexOf('Inflight stage:') === 0) {
                                 updated[i] = lookupLine;
-                                break;
                             }
                         }
                         $detailsEl.text(updated.join('\n'));
@@ -1223,7 +1328,15 @@ function paginationLinksChange(triggerItem, options) {
                     status: status,
                     textStatus: textStatus,
                     errorThrown: errorThrown,
-                    message: messageFromServer
+                    message: messageFromServer,
+                    action: action,
+                    subpage: subpage,
+                    elapsedMs: Date.now() - requestStartedAt,
+                    timeoutMs: ajaxTimeoutMs,
+                    stage: stageFromServer,
+                    queryLabel: queryLabelFromServer || abj404AjaxStageDiagnostics(stageFromServer, subpage).queryLabel,
+                    whatHappening: whatHappeningFromServer || abj404AjaxStageDiagnostics(stageFromServer, subpage).whatHappening,
+                    lastQueryRedacted: lastQueryRedacted
                 });
             }
             if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {

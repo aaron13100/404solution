@@ -77,9 +77,14 @@ class ABJ_404_Solution_ViewUpdater {
         if (!is_array($context)) {
             $context = array();
         }
+        $diagnostics = self::getStageDiagnostics($stage);
         $context['stage'] = $stage;
+        $context['query_label'] = $diagnostics['query_label'];
+        $context['what_happening'] = $diagnostics['what_happening'];
         if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
             $GLOBALS['abj404_ajax_context']['stage'] = $stage;
+            $GLOBALS['abj404_ajax_context']['query_label'] = $diagnostics['query_label'];
+            $GLOBALS['abj404_ajax_context']['what_happening'] = $diagnostics['what_happening'];
         }
 
         $requestId = isset($context['requestId']) && is_string($context['requestId']) ? $context['requestId'] : '';
@@ -92,7 +97,59 @@ class ABJ_404_Solution_ViewUpdater {
         // Diagnostics — best effort. Never let a transient write failure
         // mask the real query error we're trying to diagnose. The
         // @-suppression converts any wpdb/network warning into a no-op.
-        @set_transient('abj404_inflight_' . $requestId, (string)$stage, 60);
+        @set_transient('abj404_inflight_' . $requestId, array(
+            'stage' => (string)$stage,
+            'query_label' => $diagnostics['query_label'],
+            'what_happening' => $diagnostics['what_happening'],
+        ), 60);
+    }
+
+    /**
+     * @param string $stage
+     * @return array{query_label: string, what_happening: string}
+     */
+    private static function getStageDiagnostics($stage) {
+        $map = array(
+            'table_redirects' => array(
+                'query_label' => 'getAdminRedirectsPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+                'what_happening' => 'Loading Redirects table rows',
+            ),
+            'redirect_status_counts' => array(
+                'query_label' => 'getRedirectStatusCounts()',
+                'what_happening' => 'Counting Redirects status tabs',
+            ),
+            'table_captured' => array(
+                'query_label' => 'getCapturedURLSPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+                'what_happening' => 'Loading Captured 404 URLs table rows',
+            ),
+            'captured_status_counts' => array(
+                'query_label' => 'getCapturedStatusCounts()',
+                'what_happening' => 'Counting Captured 404 URLs status tabs',
+            ),
+            'table_logs' => array(
+                'query_label' => 'getAdminLogsPageTable() -> getLogRecords()',
+                'what_happening' => 'Loading Logs table rows',
+            ),
+            'paginationLinksTop' => array(
+                'query_label' => 'getPaginationLinks(top) -> getRedirectsForViewCount() / getRedirectsForView.sql',
+                'what_happening' => 'Rendering top pagination links',
+            ),
+            'paginationLinksBottom' => array(
+                'query_label' => 'getPaginationLinks(bottom) -> getRedirectsForViewCount() / getRedirectsForView.sql',
+                'what_happening' => 'Rendering bottom pagination links',
+            ),
+            'high_impact_count' => array(
+                'query_label' => 'getHighImpactCapturedCount()',
+                'what_happening' => 'Counting high-impact captured URLs',
+            ),
+        );
+        if (array_key_exists($stage, $map)) {
+            return $map[$stage];
+        }
+        return array(
+            'query_label' => (string)$stage,
+            'what_happening' => 'Running AJAX stage ' . (string)$stage,
+        );
     }
 
     /**
@@ -842,14 +899,27 @@ class ABJ_404_Solution_ViewUpdater {
             }
 
             $stage = '';
+            $queryLabel = '';
+            $whatHappening = '';
             if (function_exists('get_transient')) {
                 $value = get_transient('abj404_inflight_' . $requestId);
-                if (is_string($value)) {
+                if (is_array($value)) {
+                    $stage = isset($value['stage']) && is_string($value['stage']) ? $value['stage'] : '';
+                    $queryLabel = isset($value['query_label']) && is_string($value['query_label']) ? $value['query_label'] : '';
+                    $whatHappening = isset($value['what_happening']) && is_string($value['what_happening']) ? $value['what_happening'] : '';
+                } else if (is_string($value)) {
                     $stage = $value;
+                    $diagnostics = self::getStageDiagnostics($stage);
+                    $queryLabel = $diagnostics['query_label'];
+                    $whatHappening = $diagnostics['what_happening'];
                 }
             }
 
-            self::sendJsonResponseAndExit(array('stage' => $stage), 200);
+            self::sendJsonResponseAndExit(array(
+                'stage' => $stage,
+                'queryLabel' => $queryLabel,
+                'whatHappening' => $whatHappening,
+            ), 200);
             return;
 
         } catch (Throwable $e) {
