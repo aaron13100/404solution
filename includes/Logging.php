@@ -98,20 +98,16 @@ class ABJ_404_Solution_Logging {
             $date = new DateTime("now", new DateTimeZone($timezoneString));
         } else {
             $gmtOffsetRaw = get_option('gmt_offset');
-            $timezoneOffset = is_scalar($gmtOffsetRaw) ? (int)$gmtOffsetRaw : 0;
-            $timezoneOffsetString = '+';
-            if ($timezoneOffset < 0) {
-                $timezoneOffsetString = '-';
-            }
+            // WordPress's gmt_offset is hours and may be fractional
+            // (e.g. 5.5 India, 5.75 Nepal, -3.5 Newfoundland).
+            $gmtOffsetHours = is_scalar($gmtOffsetRaw) ? (float)$gmtOffsetRaw : 0.0;
+            $totalMinutes = (int) round($gmtOffsetHours * 60);
+            $sign = $totalMinutes < 0 ? '-' : '+';
+            $absMinutes = abs($totalMinutes);
+            $tzString = sprintf('%s%02d:%02d', $sign, intdiv($absMinutes, 60), $absMinutes % 60);
 
             try {
-                // PHP versions before 5.5.18 don't accept "+0" in the constructor.
-                // This try/catch fixes https://wordpress.org/support/topic/fatal-error-3172/
-                if (version_compare(phpversion(), "5.5.18", ">=")) {
-                    $date = new DateTime("now", new DateTimeZone($timezoneOffsetString . $timezoneOffset));
-                } else {
-                    $date = new DateTime();
-                }
+                $date = new DateTime("now", new DateTimeZone($tzString));
             } catch (Exception $e) {
                 // Use error_log (not $this->warn) because this method is part
                 // of the logging path; calling warn here would risk recursion
