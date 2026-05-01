@@ -863,40 +863,50 @@ class ABJ_404_Solution_Logging {
     
     /** @return string */
     function getDebugFilename(): string {
-        // get the UUID here.
-        $abj404logic = abj_service('plugin_logic');
-        // abj_service returns null when the container is uninitialised or the
-        // factory threw — common during very-early boot, the test harness, and
-        // self-healing recovery from broken installs. Use a deterministic
-        // filename in that case so logging stays available.
-        if (!is_object($abj404logic) || !method_exists($abj404logic, 'getOptions')) {
-            return 'abj404_debug.txt';
-        }
-        $options = $abj404logic->getOptions(true);
-        $debugFileKey = null;
-        if (is_array($options) && array_key_exists(self::DEBUG_FILE_KEY, $options)) {
-            $debugFileKey = is_string($options[self::DEBUG_FILE_KEY]) ? $options[self::DEBUG_FILE_KEY] : null;
-        }
-        // if the key doesn't exist then create it.
-        if ($debugFileKey === null || trim($debugFileKey) === '') {
-            // delete any lingering debug files.
-            $this->deleteDebugFile();
-
-            // create a probably unique UUID and store it to the database.
-            $syncUtils = abj_service('sync_utils');
-            if (!is_object($syncUtils) || !method_exists($syncUtils, 'uniqidReal')) {
+        // The is_object() / method_exists() guards below catch the static
+        // unreachability cases (container miss, factory returned null), but
+        // they cannot catch a Throwable raised from inside the resolved call
+        // — getOptions() may surface a DB read failure, uniqidReal() may
+        // raise on a corrupt random source, updateOptions() may fail to
+        // persist. writeLineToDebugFile() promises non-throwing; any escape
+        // from this method violates that contract. Absorb every Throwable
+        // and return the deterministic fallback name so logging stays
+        // available even when upstream services are degraded.
+        try {
+            // get the UUID here.
+            $abj404logic = abj_service('plugin_logic');
+            // abj_service returns null when the container is uninitialised
+            // or the factory threw — common during very-early boot, the
+            // test harness, and self-healing recovery from broken installs.
+            if (!is_object($abj404logic) || !method_exists($abj404logic, 'getOptions')) {
                 return 'abj404_debug.txt';
             }
-            $debugFileKey = $syncUtils->uniqidReal();
-            $options[self::DEBUG_FILE_KEY] = $debugFileKey;
-            if (method_exists($abj404logic, 'updateOptions')) {
-                $abj404logic->updateOptions($options);
+            $options = $abj404logic->getOptions(true);
+            $debugFileKey = null;
+            if (is_array($options) && array_key_exists(self::DEBUG_FILE_KEY, $options)) {
+                $debugFileKey = is_string($options[self::DEBUG_FILE_KEY]) ? $options[self::DEBUG_FILE_KEY] : null;
             }
+            // if the key doesn't exist then create it.
+            if ($debugFileKey === null || trim($debugFileKey) === '') {
+                // delete any lingering debug files.
+                $this->deleteDebugFile();
+
+                // create a probably unique UUID and store it to the database.
+                $syncUtils = abj_service('sync_utils');
+                if (!is_object($syncUtils) || !method_exists($syncUtils, 'uniqidReal')) {
+                    return 'abj404_debug.txt';
+                }
+                $debugFileKey = $syncUtils->uniqidReal();
+                $options[self::DEBUG_FILE_KEY] = $debugFileKey;
+                if (method_exists($abj404logic, 'updateOptions')) {
+                    $abj404logic->updateOptions($options);
+                }
+            }
+
+            return 'abj404_debug_' . $debugFileKey . '.txt';
+        } catch (\Throwable $e) {
+            return 'abj404_debug.txt';
         }
-
-        $debugFileName = 'abj404_debug_' . $debugFileKey . '.txt';
-
-        return $debugFileName;
     }
     
     /** @return string */
