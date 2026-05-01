@@ -523,21 +523,144 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /**
-     * Extract filename from SQL comment wrapper for safe logging.
+     * Resolve a stable source identifier for safe logging.
      *
-     * When SQL files are loaded, they're wrapped in comment blocks with the filename.
-     * This extracts just the filename (e.g. "file.sql") for production logging
-     * without exposing potentially sensitive query content or PII.
+     * Resolution order (most-specific wins):
+     *   1. Explicit `/* abj404:src=ID *​/` marker prepended to inline SQL.
+     *      Use this when the call site is non-obvious (helper wrappers,
+     *      dynamically-built DDL) and you want a stable label that survives
+     *      refactors.
+     *   2. Loaded `.sql` filename — detected via the `/* -- file.sql BEGIN -- *​/`
+     *      wrapper that getDataSupplement() prepends in Functions.php.
+     *   3. Backtrace fallback — the closest non-DAO frame, formatted as
+     *      `File::method` (or `File:line` if no enclosing method).  Ensures
+     *      every queryAndGetResults() call is traceable to its source even
+     *      without an explicit marker.
      *
-     * @param string $query The SQL query potentially containing a filename comment
-     * @return string The extracted filename or 'inline-query' if no comment found
+     * Apr/May 2026 error reports (38 of 43 emails) labeled SQL errors
+     * "SQL: inline-query", hiding which call site failed.  After this change
+     * the literal sentinel "inline-query" is no longer returned — the
+     * backtrace fallback always supplies a meaningful identifier.
+     *
+     * @param string $query The SQL query (may contain marker or file wrapper)
+     * @return string Source identifier; never the literal "inline-query".
      */
     private function extractSqlFilename($query) {
-        // Extract filename from: /* -- /path/to/file.sql BEGIN -- */
-        if (preg_match('/\/\*\s*-+\s*(.+?\.sql)\s+BEGIN\s*-+\s*\*\//i', $query, $matches)) {
-            return basename($matches[1]);
+        if (is_string($query) && $query !== '') {
+            // 1. Explicit marker — accept identifier characters and a few
+            //    common separators (::, #, ., -) so call sites can pass
+            //    "Class::method", "Class::method#hint", or "module.action".
+            if (preg_match('/\/\*\s*abj404:src=([A-Za-z0-9_:#.\\\\\-]+)\s*\*\//i', $query, $m)) {
+                return $m[1];
+            }
+            // 2. Filename from BEGIN/END wrapper.
+            if (preg_match('/\/\*\s*-+\s*(.+?\.sql)\s+BEGIN\s*-+\s*\*\//i', $query, $m)) {
+                return basename($m[1]);
+            }
         }
-        return 'inline-query';
+        // 3. Backtrace fallback — find the closest caller outside DataAccess.php.
+        return $this->resolveCallerFromBacktrace();
+    }
+
+    /**
+     * Walk debug_backtrace() to find the nearest meaningful caller.
+     *
+     * The "meaningful" frame is the one whose body contains the original
+     * call to queryAndGetResults() (or to extractSqlFilename in tests) —
+     * i.e. the SQL-building call site we want to see in error reports.
+     *
+     * Skip rules:
+     *   - Frames whose function is an internal DAO helper (extractSqlFilename,
+     *     resolveCallerFromBacktrace, queryAndGetResults, retry/recovery
+     *     wrappers).  These are infrastructure, not the SQL source.
+     *   - Frames whose function name is a `{closure...}` synthetic, which
+     *     obscures the calling test/helper method.
+     *
+     * Trait methods on the DAO appear with class=ABJ_404_Solution_DataAccess
+     * (because traits are mixed into the using class), but the frame's `file`
+     * still points at the trait file.  We surface the trait file basename in
+     * that case so error reports identify which trait the inline SQL came
+     * from instead of the generic `DataAccess`.
+     *
+     * @return string `Class::method`, `File::method`, or `unknown-source`.
+     */
+    private function resolveCallerFromBacktrace() {
+        static $internalMethods = array(
+            'extractSqlFilename' => true,
+            'resolveCallerFromBacktrace' => true,
+            'queryAndGetResults' => true,
+            'attemptInvalidDataRetry' => true,
+            'attemptMissingTableRepairAndRetry' => true,
+            'repairCorruptedTableAndRetry' => true,
+            'recoverFromCollationMismatchAndRetry' => true,
+            'call_user_func_array' => true,
+            'call_user_func' => true,
+        );
+        // 40 frames is comfortably deeper than any DAO call we see in
+        // practice (typical depth is 4–8); cheap enough on the rare error
+        // path and bounded enough for the budget hook's fast path.
+        $frames = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 40);
+        foreach ($frames as $frame) {
+            $fn = $frame['function'];
+            if ($fn === '' || isset($internalMethods[$fn])) {
+                continue;
+            }
+            // Closures bound to the DAO (and anonymous helper closures in
+            // test code) carry synthetic names like `{closure:/path:line}`.
+            // They obscure the meaningful calling method, so step past them.
+            if (strpos($fn, '{closure') !== false) {
+                continue;
+            }
+            $cls = isset($frame['class']) && is_string($frame['class']) ? $frame['class'] : '';
+            // Patchwork (Brain\Monkey's code instrumentation, used in tests)
+            // wraps userland calls in CallRerouting frames; PHPUnit wraps
+            // tests in TestCase invocation frames.  Skip both so the
+            // resolved source reflects the actual SQL caller, not test
+            // harness plumbing.  Production loads neither.
+            $fullFile = isset($frame['file']) && is_string($frame['file']) ? $frame['file'] : '';
+            if ($cls !== '' && (
+                strpos($cls, 'Patchwork') !== false ||
+                strpos($cls, 'PHPUnit\\') === 0
+            )) {
+                continue;
+            }
+            if (strpos($fn, 'Patchwork\\') !== false) {
+                continue;
+            }
+            if ($fullFile !== '' && (
+                strpos($fullFile, '/patchwork/') !== false ||
+                strpos($fullFile, '\\patchwork\\') !== false
+            )) {
+                continue;
+            }
+            $file = $fullFile !== '' ? basename($fullFile) : '';
+            $fileLabel = preg_replace('/\.php$/i', '', $file);
+            if (!is_string($fileLabel)) {
+                $fileLabel = $file;
+            }
+            // Trait methods report the using-class (DataAccess).  The trait
+            // file basename is what tells us *which* trait, so prefer it.
+            if ($cls === 'ABJ_404_Solution_DataAccess'
+                && $fileLabel !== '' && $fileLabel !== 'DataAccess') {
+                return $fileLabel . '::' . $fn;
+            }
+            if ($cls !== '') {
+                $shortClass = $cls;
+                $nsPos = strrpos($shortClass, '\\');
+                if ($nsPos !== false) {
+                    $shortClass = substr($shortClass, $nsPos + 1);
+                }
+                if (strpos($shortClass, 'ABJ_404_Solution_') === 0) {
+                    $shortClass = substr($shortClass, strlen('ABJ_404_Solution_'));
+                }
+                return $shortClass . '::' . $fn;
+            }
+            if ($fileLabel !== '') {
+                return $fileLabel . '::' . $fn;
+            }
+            return $fn;
+        }
+        return 'unknown-source';
     }
 
     /**
@@ -783,8 +906,13 @@ class ABJ_404_Solution_DataAccess {
         if (function_exists('abj404_benchmark_record_db_query')) {
             abj404_benchmark_record_db_query($elapsedMs);
         }
-        if (function_exists('abj404_query_budget_record')) {
-            // Record SQL filename only (never raw SQL — PII-free).  See
+        if (function_exists('abj404_query_budget_record')
+            && class_exists('ABJ_404_Solution_QueryBudgetInstrumentation', false)
+            && ABJ_404_Solution_QueryBudgetInstrumentation::isEnabled()) {
+            // Resolve the source identifier only when the recorder is
+            // actually enabled — extractSqlFilename's debug_backtrace fallback
+            // costs ~100µs per call and runs on every query, so the gate
+            // matters for the always-loaded fast path.  See
             // ABJ_404_Solution_QueryBudgetInstrumentation for the contract.
             abj404_query_budget_record($this->extractSqlFilename($query), $elapsedMs, $timeoutSeconds);
         }

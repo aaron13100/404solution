@@ -253,7 +253,8 @@ trait ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait {
             "/sql/getRedirectsForViewTempTable.sql");
         $ttSelectQuery = $this->doTableNameReplacements($ttSelectQuery);
 
-        $ttInsertQuery = "insert into " . $tempDestTable . " (requested_url, logsid, " .
+        $ttInsertQuery = "/* abj404:src=DataAccessTrait_LogsHitsRebuild::hitsTableInsertDirect */ " .
+            "insert into " . $tempDestTable . " (requested_url, logsid, " .
             "last_used, logshits, failed_hits) \n " . $ttSelectQuery;
         return $this->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false, 'timeout' => 60));
     }
@@ -299,7 +300,11 @@ trait ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait {
         // scanning logsv2 in cron — see DataAccessTrait_Maintenance::flagDeadDestinationRedirects().
         for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
             $end = $start + $chunkSize;
-            $chunkQuery = "INSERT INTO " . $preAggTable .
+            // Marker: this chunk INSERT generated 38 of 43 May 2026 error
+            // emails when logs_hits was missing.  Explicit marker keeps the
+            // source identifier stable even if the trait method is renamed.
+            $chunkQuery = "/* abj404:src=DataAccessTrait_LogsHitsRebuild::hitsTableInsertChunked#phase1Chunk */ " .
+                "INSERT INTO " . $preAggTable .
                 " (requested_url, logsid, last_used, logshits, failed_hits) " .
                 "SELECT CONCAT('/', TRIM(BOTH '/' FROM requested_url)), " .
                 "       MIN(id), MAX(timestamp), COUNT(*), " .
@@ -327,7 +332,8 @@ trait ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait {
         // where the chunked backfill hasn't reached yet. Final GROUP BY
         // collapses any remaining duplicate canonical rows that originated
         // from different ID-range chunks.
-        $phase2Query = "INSERT INTO " . $tempDestTable .
+        $phase2Query = "/* abj404:src=DataAccessTrait_LogsHitsRebuild::hitsTableInsertChunked#phase2Aggregate */ " .
+            "INSERT INTO " . $tempDestTable .
             " (requested_url, logsid, last_used, logshits, failed_hits) " .
             "SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits), SUM(a.failed_hits) " .
             "FROM " . $preAggTable . " a " .

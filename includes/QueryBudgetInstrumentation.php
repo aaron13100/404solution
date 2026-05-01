@@ -15,7 +15,8 @@ if (!defined('ABSPATH')) {
  *   - PHP constant ABJ404_QUERY_BUDGET_LOG (string path to a writable directory)
  *
  * When enabled, every queryAndGetResults() call records:
- *   - extracted SQL filename (or 'inline-query')
+ *   - resolved SQL source identifier (filename, /* abj404:src=ID *​/ marker,
+ *     or backtrace-derived Class::method — see DataAccess::extractSqlFilename)
  *   - elapsed wall-clock ms
  *   - per-query timeout hint actually used (s)
  *   - timestamp + request URI
@@ -145,7 +146,7 @@ class ABJ_404_Solution_QueryBudgetInstrumentation {
     /**
      * Records a single queryAndGetResults() invocation.
      *
-     * @param string $sqlInfo  Filename or inline-query marker (NOT raw SQL — keeps log PII-free)
+     * @param string $sqlInfo  Resolved source identifier (NOT raw SQL — keeps log PII-free)
      * @param float  $elapsedMs Wall-clock duration in milliseconds
      * @param int    $timeoutSeconds The per-query timeout hint actually applied
      * @return void
@@ -163,7 +164,10 @@ class ABJ_404_Solution_QueryBudgetInstrumentation {
         // because flushOnShutdown() guards against double-emission.
         self::ensureShutdownRegistered();
 
-        $sqlInfo = $sqlInfo === '' ? 'inline-query' : $sqlInfo;
+        // Empty input would erase the source attribution that drives triage,
+        // so substitute a stable sentinel.  DataAccess::extractSqlFilename
+        // never produces empty strings — this guards against external callers.
+        $sqlInfo = $sqlInfo === '' ? 'unknown-source' : $sqlInfo;
         if (strlen($sqlInfo) > 200) {
             $sqlInfo = substr($sqlInfo, 0, 200);
         }
