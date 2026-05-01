@@ -1,5 +1,13 @@
 # Changelog #
 
+## Version 4.1.12 (May 1, 2026) ##
+
+**Bug Fixes**
+
+* Fixed Captured 404s and Page Redirects table AJAX requests timing out while background log-cache maintenance was running. Maintenance that is triggered by an AJAX table load now runs through scheduled background tasks instead of shutdown work tied to the same HTTP request.
+* Fixed debug-log setup failing on sites with negative or fractional WordPress timezone offsets.
+* Fixed diagnostic logging paths that could throw while trying to report another error, which could hide the original problem behind a secondary logging failure.
+
 ## Version 4.1.11 (May 1, 2026) ##
 
 **Bug Fixes**
