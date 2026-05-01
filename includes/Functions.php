@@ -18,18 +18,11 @@ abstract class ABJ_404_Solution_Functions {
         }
 
         // If the DI container is initialized, prefer it.
-        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-            try {
-                $c = ABJ_404_Solution_ServiceContainer::getInstance();
-                if (is_object($c) && method_exists($c, 'has') && $c->has('functions')) {
-                    $service = $c->get('functions');
-                    if ($service instanceof self) {
-                        self::$instance = $service;
-                        return self::$instance;
-                    }
-                }
-            } catch (Throwable $e) {
-                // fall back to legacy singleton below
+        if (class_exists('ABJ_404_Solution_ServiceContainer')) {
+            $service = ABJ_404_Solution_ServiceContainer::safeGet('functions');
+            if ($service instanceof self) {
+                self::$instance = $service;
+                return self::$instance;
             }
         }
 

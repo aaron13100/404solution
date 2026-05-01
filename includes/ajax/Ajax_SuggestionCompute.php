@@ -31,17 +31,10 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
      * @return ABJ_404_Solution_Clock
      */
     private static function clock(): ABJ_404_Solution_Clock {
-        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-            try {
-                $c = ABJ_404_Solution_ServiceContainer::getInstance();
-                if (is_object($c) && method_exists($c, 'has') && $c->has('clock')) {
-                    $svc = $c->get('clock');
-                    if ($svc instanceof ABJ_404_Solution_Clock) {
-                        return $svc;
-                    }
-                }
-            } catch (Throwable $e) {
-                // fall through
+        if (class_exists('ABJ_404_Solution_ServiceContainer')) {
+            $svc = ABJ_404_Solution_ServiceContainer::safeGet('clock');
+            if ($svc instanceof ABJ_404_Solution_Clock) {
+                return $svc;
             }
         }
         return new ABJ_404_Solution_SystemClock();
@@ -85,17 +78,6 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
 
         // URL normalization requires the Functions service.
         $f = abj_service('functions');
-        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-            try {
-                $c = ABJ_404_Solution_ServiceContainer::getInstance();
-                if (is_object($c) && method_exists($c, 'has') && $c->has('functions')) {
-                    $svc = $c->get('functions');
-                    if ($svc instanceof ABJ_404_Solution_Functions) { $f = $svc; }
-                }
-            } catch (Throwable $e) {
-                // fall back to singleton
-            }
-        }
         $rawUrl = function_exists('wp_unslash') ? wp_unslash($_POST['url']) : $_POST['url'];
         $requestedURL = $f->normalizeUrlString($rawUrl);
         if (empty($requestedURL)) {
@@ -178,19 +160,6 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         $abj404logic = abj_service('plugin_logic');
         $spellChecker = abj_service('spell_checker');
         $logger = abj_service('logging');
-
-        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-            try {
-                $c = ABJ_404_Solution_ServiceContainer::getInstance();
-                if (is_object($c) && method_exists($c, 'has')) {
-                    if ($c->has('plugin_logic')) { $svc = $c->get('plugin_logic'); if ($svc instanceof ABJ_404_Solution_PluginLogic) { $abj404logic = $svc; } }
-                    if ($c->has('spell_checker')) { $svc = $c->get('spell_checker'); if ($svc instanceof ABJ_404_Solution_SpellChecker) { $spellChecker = $svc; } }
-                    if ($c->has('logging')) { $svc = $c->get('logging'); if ($svc instanceof ABJ_404_Solution_Logging) { $logger = $svc; } }
-                }
-            } catch (Throwable $e) {
-                // fall back to singletons
-            }
-        }
 
         $logger->debugMessage("Ajax_SuggestionCompute: Starting computation for " . esc_html($requestedURL));
 

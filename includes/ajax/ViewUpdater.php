@@ -89,12 +89,10 @@ class ABJ_404_Solution_ViewUpdater {
         if (!function_exists('set_transient')) {
             return;
         }
-        try {
-            set_transient('abj404_inflight_' . $requestId, (string)$stage, 60);
-        } catch (Throwable $e) {
-            // Diagnostics — best effort.  Never let a transient write failure
-            // mask the real query error we're trying to diagnose.
-        }
+        // Diagnostics — best effort. Never let a transient write failure
+        // mask the real query error we're trying to diagnose. The
+        // @-suppression converts any wpdb/network warning into a no-op.
+        @set_transient('abj404_inflight_' . $requestId, (string)$stage, 60);
     }
 
     /**
@@ -189,14 +187,10 @@ class ABJ_404_Solution_ViewUpdater {
             return $abj404view;
         }
         if (function_exists('abj_service')) {
-            try {
-                $resolved = abj_service('view');
-                if (is_object($resolved)) {
-                    $abj404view = $resolved;
-                    return $abj404view;
-                }
-            } catch (Throwable $e) {
-                // fall through to error below
+            $resolved = abj_service('view');
+            if (is_object($resolved)) {
+                $abj404view = $resolved;
+                return $abj404view;
             }
         }
         throw new Exception('ABJ404 view service not initialized (abj404view is null).');
@@ -263,25 +257,16 @@ class ABJ_404_Solution_ViewUpdater {
         }
 
         // Always attempt to write to the plugin debug file.
-        try {
-            $logger = abj_service('logging');
-            if (is_object($logger) && method_exists($logger, 'writeLineToDebugFile')) {
-                $logger->writeLineToDebugFile($line);
-                return;
-            }
-        } catch (Throwable $e) {
-            // fall back below
+        $logger = abj_service('logging');
+        if (is_object($logger) && method_exists($logger, 'writeLineToDebugFile')) {
+            $logger->writeLineToDebugFile($line);
+            return;
         }
 
         // Last-resort fallback (should be rare): write next to the plugin.
         // This ensures we still capture the error even if options/services are broken.
-        try {
-            $logger = abj_service('logging');
-            if (is_object($logger) && method_exists($logger, 'sanitizeLogLine')) {
-                $line = $logger->sanitizeLogLine($line);
-            }
-        } catch (Throwable $e) {
-            // ignore; still write the best-effort line below
+        if (is_object($logger) && method_exists($logger, 'sanitizeLogLine')) {
+            $line = $logger->sanitizeLogLine($line);
         }
         @file_put_contents(ABJ404_PATH . 'abj404_debug_fallback.txt', $line . "\n", FILE_APPEND);
     }
@@ -524,30 +509,22 @@ class ABJ_404_Solution_ViewUpdater {
             // Determine admin status for diagnostics (never shown to non-admins).
             // If PluginLogic is broken/throws, fall back to WordPress capability checks so real admins can still see details.
             if (!$isPluginAdmin) {
-                try {
-                    $abj404logic = abj_service('plugin_logic');
-                    if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
-                        $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
-                    }
-                } catch (Throwable $ignored) {
-                    // ignore and try WP fallback below
+                $abj404logic = abj_service('plugin_logic');
+                if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
+                    $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
                 }
                 if (!$isPluginAdmin) {
-                    try {
-                        // Best-effort fallback: treat WordPress administrators as plugin admins for debugging
-                        // if PluginLogic is broken. Avoid current_user_can() to keep delegated admin semantics
-                        // centralized in PluginLogic.
-                        if (function_exists('wp_get_current_user')) {
-                            $user = wp_get_current_user();
-                            if (is_object($user) && property_exists($user, 'roles') && is_array($user->roles)) {
-                                $isPluginAdmin = in_array('administrator', $user->roles, true);
-                            }
+                    // Best-effort fallback: treat WordPress administrators as plugin admins for debugging
+                    // if PluginLogic is broken. Avoid current_user_can() to keep delegated admin semantics
+                    // centralized in PluginLogic.
+                    if (function_exists('wp_get_current_user')) {
+                        $user = wp_get_current_user();
+                        if (is_object($user) && property_exists($user, 'roles') && is_array($user->roles)) {
+                            $isPluginAdmin = in_array('administrator', $user->roles, true);
                         }
-                        if (!$isPluginAdmin && function_exists('is_super_admin') && is_super_admin()) {
-                            $isPluginAdmin = true;
-                        }
-                    } catch (Throwable $ignored) {
-                        // ignore
+                    }
+                    if (!$isPluginAdmin && function_exists('is_super_admin') && is_super_admin()) {
+                        $isPluginAdmin = true;
                     }
                 }
                 if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
@@ -654,13 +631,9 @@ class ABJ_404_Solution_ViewUpdater {
 
         } catch (Throwable $e) {
             if (!$isPluginAdmin) {
-                try {
-                    $abj404logic = abj_service('plugin_logic');
-                    if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
-                        $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
-                    }
-                } catch (Throwable $ignored) {
-                    // ignore and try fallback
+                $abj404logic = abj_service('plugin_logic');
+                if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
+                    $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
                 }
             }
 
@@ -774,13 +747,9 @@ class ABJ_404_Solution_ViewUpdater {
 
         } catch (Throwable $e) {
             if (!$isPluginAdmin) {
-                try {
-                    $abj404logic = abj_service('plugin_logic');
-                    if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
-                        $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
-                    }
-                } catch (Throwable $ignored) {
-                    // ignore and try fallback
+                $abj404logic = abj_service('plugin_logic');
+                if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
+                    $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
                 }
             }
 

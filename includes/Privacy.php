@@ -75,17 +75,10 @@ class ABJ_404_Solution_Privacy {
 
     /** @return ABJ_404_Solution_DataAccess */
     private static function resolveDao() {
-        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-            try {
-                $c = ABJ_404_Solution_ServiceContainer::getInstance();
-                if (is_object($c) && method_exists($c, 'has') && $c->has('data_access')) {
-                    $svc = $c->get('data_access');
-                    if ($svc instanceof ABJ_404_Solution_DataAccess) {
-                        return $svc;
-                    }
-                }
-            } catch (Throwable $e) {
-                // fall back
+        if (class_exists('ABJ_404_Solution_ServiceContainer')) {
+            $svc = ABJ_404_Solution_ServiceContainer::safeGet('data_access');
+            if ($svc instanceof ABJ_404_Solution_DataAccess) {
+                return $svc;
             }
         }
         return abj_service('data_access');

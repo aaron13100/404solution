@@ -59,18 +59,10 @@ class ABJ_404_Solution_Ajax_Php {
 	 * @return mixed
 	 */
 	private static function getServiceIfAvailable($serviceName) {
-		if (!function_exists('abj_service') || !class_exists('ABJ_404_Solution_ServiceContainer')) {
+		if (!class_exists('ABJ_404_Solution_ServiceContainer')) {
 			return null;
 		}
-		try {
-			$c = ABJ_404_Solution_ServiceContainer::getInstance();
-			if (is_object($c) && method_exists($c, 'has') && $c->has($serviceName)) {
-				return $c->get($serviceName);
-			}
-		} catch (Throwable $e) {
-			// fall through
-		}
-		return null;
+		return ABJ_404_Solution_ServiceContainer::safeGet($serviceName);
 	}
 
 	/** Update plugin options via AJAX.
@@ -162,10 +154,9 @@ class ABJ_404_Solution_Ajax_Php {
 			wp_send_json_success(array('html' => $html, 'refresh_scheduled' => $refreshScheduled), 200);
 			return; // @phpstan-ignore deadCode.unreachable
 		} catch (Throwable $e) {
-			try {
-				abj_service('logging')->errorMessage('Error loading deferred GSC section: ' . $e->getMessage());
-			} catch (Throwable $ignored) {
-				// ignore
+			$logger = abj_service('logging');
+			if (is_object($logger) && method_exists($logger, 'errorMessage')) {
+				$logger->errorMessage('Error loading deferred GSC section: ' . $e->getMessage());
 			}
 			wp_send_json_error(array('message' => __('Unable to load Google Search Console section.', '404-solution')), 500);
 			return; // @phpstan-ignore deadCode.unreachable

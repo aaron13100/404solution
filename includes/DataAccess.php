@@ -186,17 +186,12 @@ class ABJ_404_Solution_DataAccess {
      */
     protected function clock(): ABJ_404_Solution_Clock {
         if ($this->clock !== null) { return $this->clock; }
-        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-            try {
-                $c = ABJ_404_Solution_ServiceContainer::getInstance();
-                if (is_object($c) && method_exists($c, 'has') && $c->has('clock')) {
-                    $resolved = $c->get('clock');
-                    if ($resolved instanceof ABJ_404_Solution_Clock) {
-                        $this->clock = $resolved;
-                        return $this->clock;
-                    }
-                }
-            } catch (Throwable $e) { /* fall through to SystemClock */ }
+        if (class_exists('ABJ_404_Solution_ServiceContainer')) {
+            $resolved = ABJ_404_Solution_ServiceContainer::safeGet('clock');
+            if ($resolved instanceof ABJ_404_Solution_Clock) {
+                $this->clock = $resolved;
+                return $this->clock;
+            }
         }
         $this->clock = new ABJ_404_Solution_SystemClock();
         return $this->clock;
@@ -209,18 +204,11 @@ class ABJ_404_Solution_DataAccess {
         }
 
         // If the DI container is initialized, prefer it.
-        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-            try {
-                $c = ABJ_404_Solution_ServiceContainer::getInstance();
-                if (is_object($c) && method_exists($c, 'has') && $c->has('data_access')) {
-                    $resolved = $c->get('data_access');
-                    if ($resolved instanceof self) {
-                        self::$instance = $resolved;
-                        return self::$instance;
-                    }
-                }
-            } catch (Throwable $e) {
-                // fall back to legacy singleton below
+        if (class_exists('ABJ_404_Solution_ServiceContainer')) {
+            $resolved = ABJ_404_Solution_ServiceContainer::safeGet('data_access');
+            if ($resolved instanceof self) {
+                self::$instance = $resolved;
+                return self::$instance;
             }
         }
 

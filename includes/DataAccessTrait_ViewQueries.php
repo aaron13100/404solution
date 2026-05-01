@@ -458,13 +458,12 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      * @return void
      */
     function invalidateViewSnapshotCache(): void {
-        try {
-            // Clear all rows from the view cache table.
-            $query = "DELETE FROM {wp_abj404_view_cache} WHERE 1=1";
-            $this->queryAndGetResults($query, array('log_errors' => false));
-        } catch (\Throwable $e) {
-            // Best-effort: cache will expire naturally via TTL if this fails.
-        }
+        // Clear all rows from the view cache table. The 'log_errors' => false
+        // option signals to queryAndGetResults() that this is a best-effort
+        // operation: the cache expires naturally via TTL if the DELETE fails,
+        // so the DAO layer handles the failure quietly without re-throwing.
+        $query = "DELETE FROM {wp_abj404_view_cache} WHERE 1=1";
+        $this->queryAndGetResults($query, array('log_errors' => false));
 
         // Clear WordPress transients for view row and count snapshots.
         // The transient keys are hashed (e.g. abj404_view_rows_<md5>), so

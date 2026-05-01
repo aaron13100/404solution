@@ -16,19 +16,6 @@ class ABJ_404_Solution_Ajax_TrashLink {
         $abj404dao = abj_service('data_access');
         $abj404logic = abj_service('plugin_logic');
         $abj404view = $GLOBALS['abj404view'] ?? null;
-
-        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-            try {
-                $c = ABJ_404_Solution_ServiceContainer::getInstance();
-                if (is_object($c) && method_exists($c, 'has')) {
-                    if ($c->has('data_access')) { $abj404dao = $c->get('data_access'); }
-                    if ($c->has('plugin_logic')) { $abj404logic = $c->get('plugin_logic'); }
-                    if ($c->has('view')) { $abj404view = $c->get('view'); }
-                }
-            } catch (Throwable $e) {
-                // fall back to singletons above
-            }
-        }
         if ($abj404view === null && class_exists('ABJ_404_Solution_View')) {
             $abj404view = abj_service('view');
         }

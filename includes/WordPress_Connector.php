@@ -71,16 +71,9 @@ class ABJ_404_Solution_WordPress_Connector {
 
 		$matchingEngines = [];
 		if (class_exists('ABJ_404_Solution_ServiceContainer')) {
-			try {
-				$container = ABJ_404_Solution_ServiceContainer::getInstance();
-				if ($container->has('matching_engines')) {
-					$engines = $container->get('matching_engines');
-					if (is_array($engines)) {
-						$matchingEngines = $engines;
-					}
-				}
-			} catch (\Throwable $e) {
-				// Fall back to empty engines; pipeline works without them.
+			$engines = ABJ_404_Solution_ServiceContainer::safeGet('matching_engines');
+			if (is_array($engines)) {
+				$matchingEngines = $engines;
 			}
 		}
 
@@ -102,18 +95,11 @@ class ABJ_404_Solution_WordPress_Connector {
 		}
 
 		// If the DI container is initialized, prefer it.
-		if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-			try {
-				$c = ABJ_404_Solution_ServiceContainer::getInstance();
-				if (is_object($c) && method_exists($c, 'has') && $c->has('wordpress_connector')) {
-					$svc = $c->get('wordpress_connector');
-					if ($svc instanceof self) {
-						self::$instance = $svc;
-						return self::$instance;
-					}
-				}
-			} catch (Throwable $e) {
-				// fall back
+		if (class_exists('ABJ_404_Solution_ServiceContainer')) {
+			$svc = ABJ_404_Solution_ServiceContainer::safeGet('wordpress_connector');
+			if ($svc instanceof self) {
+				self::$instance = $svc;
+				return self::$instance;
 			}
 		}
 
@@ -1245,7 +1231,9 @@ class ABJ_404_Solution_WordPress_Connector {
             }
         } catch (\Throwable $e) {
             // Something failed before menu registration. Continue with defaults
-            // so the admin page is still accessible for debugging.
+            // so the admin page is still accessible for debugging. Surface the
+            // failure to PHP's error log so it isn't completely invisible.
+            error_log('404 Solution: addMainSettingsPageLink pre-registration failed: ' . $e->getMessage());
         }
 
         if ($menuLocation === 'settingsLevel') {

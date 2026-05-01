@@ -169,22 +169,13 @@ class ABJ_404_Solution_ErrorHandler {
      * @return bool
      */
     private static function safeWriteLine(string $line): bool {
-        try {
-            $logger = abj_service('logging');
-            if (is_object($logger) && method_exists($logger, 'writeLineToDebugFile')) {
-                $logger->writeLineToDebugFile($line);
-                return true;
-            }
-        } catch (Throwable $e) {
-            // fall back below
+        $logger = abj_service('logging');
+        if (is_object($logger) && method_exists($logger, 'writeLineToDebugFile')) {
+            $logger->writeLineToDebugFile($line);
+            return true;
         }
-        try {
-            $logger = abj_service('logging');
-            if (is_object($logger) && method_exists($logger, 'sanitizeLogLine')) {
-                $line = $logger->sanitizeLogLine($line);
-            }
-        } catch (Throwable $e) {
-            // ignore; still write the best-effort line below
+        if (is_object($logger) && method_exists($logger, 'sanitizeLogLine')) {
+            $line = $logger->sanitizeLogLine($line);
         }
         @file_put_contents(ABJ404_PATH . 'abj404_debug_fallback.txt', $line . "\n", FILE_APPEND);
         return false;
@@ -449,18 +440,14 @@ class ABJ_404_Solution_ErrorHandler {
             }
             if ($isPluginAdmin === null) {
                 // Best-effort fallback: show details to real WordPress admins if PluginLogic is broken.
-                try {
-                    if (function_exists('wp_get_current_user')) {
-                        $user = wp_get_current_user();
-                        if (is_object($user) && property_exists($user, 'roles') && is_array($user->roles)) {
-                            $isPluginAdmin = in_array('administrator', $user->roles, true);
-                        }
+                if (function_exists('wp_get_current_user')) {
+                    $user = wp_get_current_user();
+                    if (is_object($user) && property_exists($user, 'roles') && is_array($user->roles)) {
+                        $isPluginAdmin = in_array('administrator', $user->roles, true);
                     }
-                    if ($isPluginAdmin !== true && function_exists('is_super_admin') && is_super_admin()) {
-                        $isPluginAdmin = true;
-                    }
-                } catch (Throwable $e) {
-                    // ignore
+                }
+                if ($isPluginAdmin !== true && function_exists('is_super_admin') && is_super_admin()) {
+                    $isPluginAdmin = true;
                 }
             }
             if ($isPluginAdmin === null) {

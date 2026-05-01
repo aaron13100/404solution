@@ -138,6 +138,54 @@ class ABJ_404_Solution_ServiceContainer {
     public static function reset() {
         self::$instance = null;
     }
+
+    /**
+     * Non-throwing existence check. Returns true iff the container has a
+     * registered factory for the named service. Bootstraps the container
+     * singleton on demand so callers don't have to.
+     *
+     * @param string $name Service identifier
+     * @return bool
+     */
+    public static function safeHas($name) {
+        $c = self::getInstance();
+        return $c->has($name);
+    }
+
+    /**
+     * Non-throwing service resolution. Returns the resolved instance, or
+     * null if the service isn't registered or the factory raises any
+     * Throwable. Replaces the legacy `try { ServiceContainer::get(...) }
+     * catch { fall back } ` pattern at call sites — the swallow lives
+     * here, in one place, and is logged via error_log() so it isn't
+     * completely invisible.
+     *
+     * @param string $name Service identifier
+     * @return mixed The service instance, or null on any failure
+     */
+    public static function safeGet($name) {
+        $c = self::getInstance();
+        if (!$c->has($name)) {
+            return null;
+        }
+        try {
+            return $c->get($name);
+        } catch (\Throwable $e) {
+            error_log('404 Solution: ServiceContainer::safeGet(' . $name . ') failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Returns true iff the container singleton has been instantiated AND
+     * at least one service factory has been registered. False during
+     * very early boot (autoload-only) or after `reset()` in tests.
+     *
+     * @return bool
+     */
+    public static function isInitialized() {
+        return self::$instance !== null && self::$instance->services !== array();
+    }
 }
 
 /**
@@ -228,11 +276,23 @@ function abj_service($name) {
         if (class_exists($class) && method_exists($class, 'getInstance')) {
             /** @var callable(): mixed $callback */
             $callback = array($class, 'getInstance');
-            return call_user_func($callback);
+            try {
+                return call_user_func($callback);
+            } catch (\Throwable $e) {
+                error_log('404 Solution: abj_service(' . $name . ') legacy fallback failed: ' . $e->getMessage());
+                return null;
+            }
         }
     }
 
-    // Last resort — let the container raise its standard "not registered"
-    // exception so callers see a clear failure mode.
-    return $container->get($name);
+    // Last resort — the container raises its standard "not registered"
+    // exception. Catch and return null so callers can rely on a uniform
+    // non-throwing contract; the swallow is logged via error_log() so the
+    // failure is still visible in production logs.
+    try {
+        return $container->get($name);
+    } catch (\Throwable $e) {
+        error_log('404 Solution: abj_service(' . $name . ') unresolved: ' . $e->getMessage());
+        return null;
+    }
 }

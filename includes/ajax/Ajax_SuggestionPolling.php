@@ -20,17 +20,10 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
      * @return ABJ_404_Solution_Clock
      */
     private static function clock(): ABJ_404_Solution_Clock {
-        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-            try {
-                $c = ABJ_404_Solution_ServiceContainer::getInstance();
-                if (is_object($c) && method_exists($c, 'has') && $c->has('clock')) {
-                    $svc = $c->get('clock');
-                    if ($svc instanceof ABJ_404_Solution_Clock) {
-                        return $svc;
-                    }
-                }
-            } catch (Throwable $e) {
-                // fall through
+        if (class_exists('ABJ_404_Solution_ServiceContainer')) {
+            $svc = ABJ_404_Solution_ServiceContainer::safeGet('clock');
+            if ($svc instanceof ABJ_404_Solution_Clock) {
+                return $svc;
             }
         }
         return new ABJ_404_Solution_SystemClock();
@@ -58,17 +51,6 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
 
         // Sanitize input
         $f = abj_service('functions');
-        if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-            try {
-                $c = ABJ_404_Solution_ServiceContainer::getInstance();
-                if (is_object($c) && method_exists($c, 'has') && $c->has('functions')) {
-                    $svc = $c->get('functions');
-                    if ($svc instanceof ABJ_404_Solution_Functions) { $f = $svc; }
-                }
-            } catch (Throwable $e) {
-                // fall back
-            }
-        }
         if (isset($_POST['url'])) {
             $rawUrl = function_exists('wp_unslash') ? wp_unslash($_POST['url']) : $_POST['url'];
             $requestedURL = $f->normalizeUrlString($rawUrl);

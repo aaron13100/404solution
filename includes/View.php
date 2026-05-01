@@ -68,18 +68,11 @@ class ABJ_404_Solution_View {
 		}
 
 		// If the DI container is initialized, prefer it.
-		if (function_exists('abj_service') && class_exists('ABJ_404_Solution_ServiceContainer')) {
-			try {
-				$c = ABJ_404_Solution_ServiceContainer::getInstance();
-				if (is_object($c) && method_exists($c, 'has') && $c->has('view')) {
-					$resolved = $c->get('view');
-					if ($resolved instanceof self) {
-						self::$instance = $resolved;
-						return self::$instance;
-					}
-				}
-			} catch (Throwable $e) {
-				// fall back
+		if (class_exists('ABJ_404_Solution_ServiceContainer')) {
+			$resolved = ABJ_404_Solution_ServiceContainer::safeGet('view');
+			if ($resolved instanceof self) {
+				self::$instance = $resolved;
+				return self::$instance;
 			}
 		}
 
