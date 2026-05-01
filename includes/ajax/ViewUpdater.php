@@ -417,6 +417,9 @@ class ABJ_404_Solution_ViewUpdater {
         $filterText = $abj404dao->getPostOrGetSanitize('filterText', '');
         $filter = $abj404dao->getPostOrGetSanitize('filter', '');
         $detectOnly = ((string)$abj404dao->getPostOrGetSanitize('detectOnly', '0') === '1');
+        $cacheModeRaw = (string)$abj404dao->getPostOrGetSanitize('cacheMode', 'normal');
+        $cacheMode = in_array($cacheModeRaw, array('normal', 'cache_or_pending', 'refresh_cache'), true)
+            ? $cacheModeRaw : 'normal';
         $currentSignature = strtolower(trim((string)$abj404dao->getPostOrGetSanitize('currentSignature', '')));
         if (strlen($currentSignature) > 128) {
             $currentSignature = substr($currentSignature, 0, 128);
@@ -431,6 +434,7 @@ class ABJ_404_Solution_ViewUpdater {
             'filterText_length' => strlen((string)$filterText),
             'filter' => $filter,
             'detectOnly' => $detectOnly ? 1 : 0,
+            'cacheMode' => $cacheMode,
             'currentSignature_length' => strlen($currentSignature),
             'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
@@ -484,6 +488,27 @@ class ABJ_404_Solution_ViewUpdater {
 
             /** @var ABJ_404_Solution_View $view */
             $view = self::resolveViewInstance($abj404view);
+
+            if ($cacheMode === 'cache_or_pending'
+                    && !$detectOnly
+                    && ($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
+                    && is_object($abj404dao)
+                    && method_exists($abj404dao, 'viewTableSnapshotAvailable')) {
+                $stage = ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
+                self::setStage($context, $stage);
+                $tableOptions = $abj404logic->getTableOptions($subpage);
+                if (!$abj404dao->viewTableSnapshotAvailable($subpage, $tableOptions)) {
+                    self::markAjaxResponseSent();
+                    self::getAndClearAjaxBufferedOutput();
+                    self::sendJsonResponseAndExit(array(
+                        'cachePending' => true,
+                        'cacheMode' => $cacheMode,
+                        'subpage' => $subpage,
+                        'message' => __('Preparing table data in the background.', '404-solution'),
+                    ), 200);
+                    return;
+                }
+            }
 
             $data = array();
             if ($subpage == 'abj404_redirects') {

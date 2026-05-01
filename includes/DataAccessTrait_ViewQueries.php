@@ -826,6 +826,81 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         
         return $rows;
     }
+
+    /**
+     * Return whether the admin rows view already has a usable snapshot.
+     *
+     * Used by the AJAX first-paint path to avoid running an expensive cold
+     * table query inline. Fresh snapshots are preferred, but a recently
+     * refreshed stale snapshot is still usable because it lets the admin see
+     * real rows while background refresh detects newer data non-destructively.
+     *
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return bool
+     */
+    function viewRowsSnapshotAvailable($sub, array $tableOptions): bool {
+        $rawOrderBy = $tableOptions['orderby'] ?? '';
+        $orderBy = strtolower(is_string($rawOrderBy) ? $rawOrderBy : '');
+        $isLogsMaintenanceSort = ($orderBy === 'logshits' || $orderBy === 'last_used');
+        $rawPerpage = $tableOptions['perpage'] ?? 0;
+        $canUseSnapshotCache = absint(is_scalar($rawPerpage) ? $rawPerpage : 0) <= 200
+            && !$isLogsMaintenanceSort;
+        if (!$canUseSnapshotCache) {
+            return false;
+        }
+
+        $snapshotCacheKey = $this->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
+        $freshRows = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, false, false);
+        if (is_array($freshRows)) {
+            return true;
+        }
+        $recentRows = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, true, true);
+        if (is_array($recentRows)) {
+            return true;
+        }
+        if (function_exists('get_transient')) {
+            $transientRows = get_transient($snapshotCacheKey);
+            if (is_array($transientRows)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Return whether the full AJAX table response can be rendered from cache.
+     *
+     * Rows alone are not enough for first paint: pagination rendering also
+     * needs getRedirectsForViewCount(). If the count snapshot is cold, the
+     * "cached" path can still block on a heavy COUNT query. The initial AJAX
+     * cache gate uses this method so cold counts are also pushed to the
+     * background hydrate request.
+     *
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return bool
+     */
+    function viewTableSnapshotAvailable($sub, array $tableOptions): bool {
+        if (!$this->viewRowsSnapshotAvailable($sub, $tableOptions)) {
+            return false;
+        }
+
+        $rawOrderBy = $tableOptions['orderby'] ?? '';
+        $orderBy = strtolower(is_string($rawOrderBy) ? $rawOrderBy : '');
+        $isLogsMaintenanceSort = ($orderBy === 'logshits' || $orderBy === 'last_used');
+        $rawPerpage = $tableOptions['perpage'] ?? 0;
+        $canUseSnapshotCache = function_exists('get_transient')
+            && absint(is_scalar($rawPerpage) ? $rawPerpage : 0) <= 200
+            && !$isLogsMaintenanceSort;
+        if (!$canUseSnapshotCache) {
+            return false;
+        }
+
+        $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
+        return get_transient($countCacheKey) !== false;
+    }
     
     /**
      * @param string $sub

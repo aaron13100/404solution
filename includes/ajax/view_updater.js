@@ -354,7 +354,12 @@ function triggerInitialTableLoadIfNeeded() {
         paginationLinksChange(perpageElements[0], {
             backgroundRefresh: false,
             detectOnly: false,
-            onComplete: function() {
+            cacheMode: 'cache_or_pending',
+            onComplete: function(meta) {
+                if (meta && meta.cachePending) {
+                    startPlaceholderTableHydration(perpageElements[0]);
+                    return;
+                }
                 $config.attr('data-pagination-initial-load', '0');
             },
             onError: function(errorMeta) {
@@ -388,6 +393,54 @@ function triggerInitialTableLoadIfNeeded() {
     };
 
     triggerInitialLoadAttempt(1);
+}
+
+function tablePlaceholderStillAwaitingLoad() {
+    return jQuery('.abj404-table[data-table-awaiting-load="1"]').length > 0;
+}
+
+function startPlaceholderTableHydration(triggerItem) {
+    if (window.abj404PlaceholderHydrationRunning === true) {
+        return;
+    }
+    window.abj404PlaceholderHydrationRunning = true;
+
+    var maxAttempts = 8;
+    var runAttempt = function(attemptNumber) {
+        if (!tablePlaceholderStillAwaitingLoad()) {
+            window.abj404PlaceholderHydrationRunning = false;
+            return;
+        }
+        paginationLinksChange(triggerItem, {
+            backgroundRefresh: true,
+            detectOnly: false,
+            cacheMode: 'refresh_cache',
+            autoHydratePlaceholder: true,
+            onComplete: function(meta) {
+                if (meta && meta.cachePending && attemptNumber < maxAttempts) {
+                    window.setTimeout(function() {
+                        runAttempt(attemptNumber + 1);
+                    }, 1500 * attemptNumber);
+                    return;
+                }
+                window.abj404PlaceholderHydrationRunning = false;
+                getRefreshStatusHost().attr('data-pagination-initial-load', '0');
+            },
+            onError: function() {
+                if (attemptNumber < maxAttempts && tablePlaceholderStillAwaitingLoad()) {
+                    window.setTimeout(function() {
+                        runAttempt(attemptNumber + 1);
+                    }, 2000 * attemptNumber);
+                    return;
+                }
+                window.abj404PlaceholderHydrationRunning = false;
+            }
+        });
+    };
+
+    window.setTimeout(function() {
+        runAttempt(1);
+    }, 250);
 }
 
 function getStatsRefreshConfigHost() {
@@ -903,6 +956,7 @@ function paginationLinksChange(triggerItem, options) {
     options = options || {};
     var isBackgroundRefresh = options.backgroundRefresh === true;
     var detectOnly = options.detectOnly === true;
+    var cacheMode = options.cacheMode || 'normal';
     var rowThatChanged = jQuery(triggerItem).parentsUntil('.tablenav').parent();
     var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
     var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();
@@ -1037,11 +1091,20 @@ function paginationLinksChange(triggerItem, options) {
             paged: paged,
             id: id,
             detectOnly: detectOnly ? '1' : '0',
+            cacheMode: cacheMode,
             currentSignature: (detectOnly && baselineComparison && baselineComparison.serverSignature)
                 ? baselineComparison.serverSignature : '',
             requestId: requestId
         },
         success: function (result) {
+            if (result && result.cachePending) {
+                jQuery('.abj404-loading-overlay').remove();
+                jQuery('.abj404-refresh-status').text(result.message || 'Preparing table data in the background.');
+                if (typeof options.onComplete === 'function') {
+                    options.onComplete({cachePending: true});
+                }
+                return;
+            }
             if (isBackgroundRefresh && detectOnly) {
                 setDetectOnlyRefreshInFlight(false);
                 var hasUpdate;
@@ -1076,6 +1139,14 @@ function paginationLinksChange(triggerItem, options) {
 
             // get the current text value
             var currentFieldValue = jQuery('input[name=searchFilter]').val();
+            var mayReplaceVisibleTable = !isBackgroundRefresh ||
+                (options.autoHydratePlaceholder === true && tablePlaceholderStillAwaitingLoad());
+            if (!mayReplaceVisibleTable) {
+                if (typeof options.onComplete === 'function') {
+                    options.onComplete({skippedReplace: true});
+                }
+                return;
+            }
 
             // replace the tables - support both old (.wp-list-table) and new (.abj404-table) table classes
             var pageLinks = jQuery('.abj404-pagination-right');
