@@ -64,6 +64,16 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
             queryLabel: 'getPaginationLinks(bottom) -> getRedirectsForViewCount() / getRedirectsForView.sql',
             whatHappening: 'Rendering bottom pagination links',
             stageNumber: 4
+        },
+        table_cache_rows: {
+            queryLabel: 'getRedirectsForView',
+            whatHappening: 'Warming table row snapshot',
+            stageNumber: 1
+        },
+        table_cache_count: {
+            queryLabel: 'getRedirectsForViewCount',
+            whatHappening: 'Warming table count snapshot',
+            stageNumber: 2
         }
     };
     if (stage && map[stage]) {
@@ -479,30 +489,49 @@ function startPlaceholderTableHydration(triggerItem) {
             window.abj404PlaceholderHydrationRunning = false;
             return;
         }
-        paginationLinksChange(triggerItem, {
-            backgroundRefresh: true,
-            detectOnly: false,
-            cacheMode: 'refresh_cache',
-            autoHydratePlaceholder: true,
-            showStageProgress: true,
+        warmTableCacheStage(triggerItem, {
             stageProgressMessage: 'Currently refreshing data',
             onComplete: function(meta) {
-                if (meta && meta.cachePending && attemptNumber < maxAttempts) {
-                    window.setTimeout(function() {
-                        runAttempt(attemptNumber + 1);
-                    }, 1500 * attemptNumber);
+                if (meta && meta.status === 'blocked') {
+                    showTableWarmupFailure(meta);
+                    window.abj404PlaceholderHydrationRunning = false;
+                    getRefreshStatusHost().attr('data-pagination-initial-load', '0');
                     return;
                 }
+                if (meta && meta.ready) {
+                    paginationLinksChange(triggerItem, {
+                        backgroundRefresh: true,
+                        detectOnly: false,
+                        cacheMode: 'cache_or_pending',
+                        autoHydratePlaceholder: true,
+                        onComplete: function() {
+                            window.abj404PlaceholderHydrationRunning = false;
+                            getRefreshStatusHost().attr('data-pagination-initial-load', '0');
+                        },
+                        onError: function(errorMeta) {
+                            showTableWarmupFailure(errorMeta || meta);
+                            window.abj404PlaceholderHydrationRunning = false;
+                        }
+                    });
+                    return;
+                }
+                if (attemptNumber < maxAttempts) {
+                    window.setTimeout(function() {
+                        runAttempt(attemptNumber + 1);
+                    }, 700);
+                    return;
+                }
+                showTableWarmupFailure(meta || {});
                 window.abj404PlaceholderHydrationRunning = false;
-                getRefreshStatusHost().attr('data-pagination-initial-load', '0');
             },
-            onError: function() {
+            onError: function(errorMeta) {
                 if (attemptNumber < maxAttempts && tablePlaceholderStillAwaitingLoad()) {
                     window.setTimeout(function() {
                         runAttempt(attemptNumber + 1);
-                    }, 2000 * attemptNumber);
+                    }, 1200);
                     return;
                 }
+                showTableWarmupFailure(errorMeta || {});
                 window.abj404PlaceholderHydrationRunning = false;
             }
         });
@@ -511,6 +540,112 @@ function startPlaceholderTableHydration(triggerItem) {
     window.setTimeout(function() {
         runAttempt(1);
     }, 250);
+}
+
+function showTableWarmupFailure(meta) {
+    meta = meta || {};
+    var stage = meta.stage || 'rows';
+    var stageNumber = meta.stageNumber || (stage === 'count' ? 2 : 1);
+    var queryLabel = meta.queryLabel || (stage === 'count' ? 'getRedirectsForViewCount' : 'getRedirectsForView');
+    var message = 'Could not finish refreshing data (stage ' + stageNumber + ', ' + queryLabel + ')';
+    if (meta.lastError) {
+        message += '. ' + meta.lastError;
+    }
+    jQuery('.abj404-refresh-status').text(message);
+    if (tablePlaceholderStillAwaitingLoad()) {
+        jQuery('.abj404-table[data-table-awaiting-load] tbody').html(
+            '<tr><td class="abj404-empty-message abj404-error">' +
+            jQuery('<div/>').text(message).html() +
+            '</td></tr>'
+        );
+    }
+}
+
+function warmTableCacheStage(triggerItem, options) {
+    options = options || {};
+    var rowThatChanged = jQuery(triggerItem).parentsUntil('.tablenav').parent();
+    var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
+    var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();
+    var $ajaxConfigEl = jQuery("[data-pagination-ajax-url]").first();
+    if ($ajaxConfigEl.length === 0) {
+        $ajaxConfigEl = jQuery(".abj404-filter-bar").first();
+    }
+    var url = $ajaxConfigEl.attr("data-pagination-ajax-url") || window.ajaxurl;
+    if (!url) {
+        if (typeof options.onError === 'function') {
+            options.onError({lastError: 'Missing AJAX URL'});
+        }
+        return;
+    }
+    var baseUrl = url.split('?')[0];
+    var subpage = $ajaxConfigEl.attr("data-pagination-ajax-subpage") || getURLParameter('subpage');
+    var page = getURLParameter('page');
+    var trashFilter = $ajaxConfigEl.attr('data-pagination-current-filter') || getURLParameter('filter');
+    var orderby = $ajaxConfigEl.attr('data-pagination-current-orderby') || getURLParameter('orderby');
+    var order = $ajaxConfigEl.attr('data-pagination-current-order') || getURLParameter('order');
+    var paged = $ajaxConfigEl.attr('data-pagination-current-paged') || getURLParameter('paged');
+    var nonce = $ajaxConfigEl.attr("data-pagination-ajax-nonce") || '';
+    var inflightNonce = $ajaxConfigEl.attr('data-pagination-inflight-nonce') || '';
+    var requestId = abj404GenerateRequestId();
+    var requestStartedAt = Date.now();
+    var stopStageProgressPolling = abj404StartStageProgressPolling({
+        baseUrl: baseUrl,
+        nonce: inflightNonce,
+        requestId: requestId,
+        subpage: subpage,
+        message: options.stageProgressMessage || 'Currently refreshing data'
+    });
+
+    jQuery.ajax({
+        url: baseUrl,
+        type: 'POST',
+        dataType: 'json',
+        timeout: 45000,
+        data: {
+            action: 'ajaxWarmTableCache',
+            page: page,
+            rowsPerPage: rowsPerPage,
+            filterText: filterText,
+            filter: trashFilter,
+            subpage: subpage,
+            nonce: nonce,
+            orderby: orderby,
+            order: order,
+            paged: paged,
+            requestId: requestId
+        },
+        success: function(result) {
+            stopStageProgressPolling();
+            if (result && result.stage && result.queryLabel) {
+                jQuery('.abj404-refresh-status').text(
+                    abj404FormatRefreshingStageMessage(
+                        options.stageProgressMessage || 'Currently refreshing data',
+                        result.stage === 'count' ? 'table_cache_count' : 'table_cache_rows',
+                        result.queryLabel,
+                        subpage
+                    )
+                );
+            }
+            if (typeof options.onComplete === 'function') {
+                options.onComplete(result || {});
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            stopStageProgressPolling();
+            if (typeof options.onError === 'function') {
+                options.onError({
+                    status: jqXHR && jqXHR.status ? jqXHR.status : '',
+                    textStatus: textStatus,
+                    errorThrown: errorThrown,
+                    elapsedMs: Date.now() - requestStartedAt,
+                    timeoutMs: 45000,
+                    stage: '',
+                    queryLabel: '',
+                    lastError: textStatus || errorThrown || 'ajax-error'
+                });
+            }
+        }
+    });
 }
 
 function getStatsRefreshConfigHost() {

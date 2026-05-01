@@ -26,6 +26,8 @@ class ABJ_404_Solution_ViewUpdater {
         $me = ABJ_404_Solution_ViewUpdater::getInstance();
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxUpdatePaginationLinks',
                 array($me, 'getPaginationLinks'));
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxWarmTableCache',
+                array($me, 'warmTableCache'));
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxRefreshStatsDashboard',
                 array($me, 'refreshStatsDashboard'));
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxRefreshHealthBar',
@@ -137,6 +139,14 @@ class ABJ_404_Solution_ViewUpdater {
             'paginationLinksBottom' => array(
                 'query_label' => 'getPaginationLinks(bottom) -> getRedirectsForViewCount() / getRedirectsForView.sql',
                 'what_happening' => 'Rendering bottom pagination links',
+            ),
+            'table_cache_rows' => array(
+                'query_label' => 'getRedirectsForView',
+                'what_happening' => 'Warming table row snapshot',
+            ),
+            'table_cache_count' => array(
+                'query_label' => 'getRedirectsForViewCount',
+                'what_happening' => 'Warming table count snapshot',
             ),
             'high_impact_count' => array(
                 'query_label' => 'getHighImpactCapturedCount()',
@@ -650,6 +660,121 @@ class ABJ_404_Solution_ViewUpdater {
                 $isPluginAdmin
             );
             self::sendJsonResponseAndExit($payload, 500);
+            return;
+        }
+    }
+
+    /** @return void */
+    function warmTableCache() {
+        $abj404dao = abj_service('data_access');
+        $abj404logic = abj_service('plugin_logic');
+
+        $rowsPerPage = absint($abj404dao->getPostOrGetSanitize('rowsPerPage'));
+        $subpage = $abj404dao->getPostOrGetSanitize('subpage');
+        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
+        $page = $abj404dao->getPostOrGetSanitize('page', '');
+        $filterText = $abj404dao->getPostOrGetSanitize('filterText', '');
+        $filter = $abj404dao->getPostOrGetSanitize('filter', '');
+
+        $isPluginAdmin = false;
+        $context = array(
+            'action' => 'ajaxWarmTableCache',
+            'page' => $page,
+            'subpage' => $subpage,
+            'rowsPerPage' => $rowsPerPage,
+            'filterText_length' => strlen((string)$filterText),
+            'filter' => $filter,
+            'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
+            'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
+        );
+        $context = self::startAjaxDebugContext($context);
+
+        try {
+            if (!wp_verify_nonce($nonce, 'abj404_updatePaginationLink')) {
+                self::safeLogAjaxFailure('AJAX invalid nonce in ajaxWarmTableCache.', $context);
+                self::markAjaxResponseSent();
+                self::sendJsonResponseAndExit(self::buildAjaxErrorResponse('Invalid security token', null, false), 403);
+                return;
+            }
+
+            $isPluginAdmin = $abj404logic->userIsPluginAdmin();
+            if (!$isPluginAdmin) {
+                self::safeLogAjaxFailure('AJAX unauthorized in ajaxWarmTableCache.', $context);
+                self::markAjaxResponseSent();
+                self::sendJsonResponseAndExit(self::buildAjaxErrorResponse('Unauthorized', null, false), 403);
+                return;
+            }
+
+            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('warm_table_cache', 1500, 60)) {
+                self::safeLogAjaxFailure('AJAX rate limit in ajaxWarmTableCache.', $context);
+                self::markAjaxResponseSent();
+                self::sendJsonResponseAndExit(self::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false), 429);
+                return;
+            }
+
+            if ($rowsPerPage > 0) {
+                $abj404logic->updatePerPageOption($rowsPerPage);
+            }
+
+            if ($subpage !== 'abj404_redirects' && $subpage !== 'abj404_captured') {
+                self::markAjaxResponseSent();
+                self::getAndClearAjaxBufferedOutput();
+                self::sendJsonResponseAndExit(array(
+                    'status' => 'ready',
+                    'ready' => true,
+                    'uncached' => true,
+                    'stage' => 'rows',
+                    'stageNumber' => 1,
+                    'queryLabel' => 'getRedirectsForView',
+                ), 200);
+                return;
+            }
+
+            $tableOptions = $abj404logic->getTableOptions($subpage);
+            $stage = 'table_cache_rows';
+            if (is_object($abj404dao) && method_exists($abj404dao, 'viewRowsSnapshotAvailable')
+                    && $abj404dao->viewRowsSnapshotAvailable($subpage, $tableOptions)) {
+                $stage = 'table_cache_count';
+            }
+            self::setStage($context, $stage);
+            $warmup = $abj404dao->warmViewTableSnapshotStage($subpage, $tableOptions);
+
+            self::markAjaxResponseSent();
+            self::getAndClearAjaxBufferedOutput();
+            self::sendJsonResponseAndExit($warmup, 200);
+            return;
+        } catch (Throwable $e) {
+            if (!$isPluginAdmin) {
+                $abj404logic = abj_service('plugin_logic');
+                if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
+                    try {
+                        $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
+                    } catch (Throwable $ignored) {
+                        $isPluginAdmin = false;
+                    }
+                }
+            }
+
+            $details = array(
+                'exception' => array(
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                ),
+                'context' => $context,
+            );
+            self::safeLogAjaxFailure('AJAX exception in ajaxWarmTableCache.', $details, $e);
+            $capturedOutput = self::getAndClearAjaxBufferedOutput();
+            if ($capturedOutput !== '') {
+                $details['buffered_output'] = substr($capturedOutput, 0, 8000);
+            }
+
+            self::markAjaxResponseSent();
+            self::sendJsonResponseAndExit(
+                self::buildAjaxErrorResponse('Server error while preparing table data.', $details, $isPluginAdmin),
+                500
+            );
             return;
         }
     }

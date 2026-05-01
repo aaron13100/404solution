@@ -666,15 +666,13 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      * @return array<int|string, mixed> rows from the redirects table.
      */
     function getRedirectsForView($sub, $tableOptions) {
-        $rawOrderBySnap = $tableOptions['orderby'] ?? '';
-        $orderByForSnapshot = strtolower(is_string($rawOrderBySnap) ? $rawOrderBySnap : '');
-        $isLogsMaintenanceSort = ($orderByForSnapshot === 'logshits' || $orderByForSnapshot === 'last_used');
-        $rawPerpageSnap = $tableOptions['perpage'] ?? 0;
-        $canUseSnapshotCache = absint(is_scalar($rawPerpageSnap) ? $rawPerpageSnap : 0) <= 200
-            && !$isLogsMaintenanceSort;
+        $canUseSnapshotCache = $this->canUseViewTableSnapshotCache($tableOptions);
+        $queryTimeout = isset($tableOptions['_abj404_query_timeout']) && is_numeric($tableOptions['_abj404_query_timeout'])
+            ? max(1, intval($tableOptions['_abj404_query_timeout'])) : 0;
+        $throwOnQueryError = !empty($tableOptions['_abj404_throw_on_view_query_error']);
         $snapshotCacheKey = '';
         $refreshLockHeld = false;
-        if ($canUseSnapshotCache) {
+        if ($canUseSnapshotCache && $queryTimeout <= 0) {
             $snapshotCacheKey = $this->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
             $cachedRowsFromTable = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, false, false);
             if (is_array($cachedRowsFromTable)) {
@@ -734,14 +732,15 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
         // they can use a different ID - not the ID from the logs table.
         $this->setSqlBigSelects();
-        $results = $this->queryAndGetResults($query);
+        $queryOptions = $queryTimeout > 0 ? array('timeout' => $queryTimeout) : array();
+        $results = $this->queryAndGetResults($query, $queryOptions);
 
         if (!empty($results['last_error']) && is_string($results['last_error']) && $this->isCollationError($results['last_error'])) {
             $retryOptions = $tableOptions;
             $retryOptions['forceCollate'] = 'utf8mb4_general_ci';
             $query = $this->getRedirectsForViewQuery($sub, $retryOptions, $queryAllRowsAtOnce,
                 $limitStart, $limitEnd, false);
-            $results = $this->queryAndGetResults($query);
+            $results = $this->queryAndGetResults($query, $queryOptions);
         }
 
         // Handle race condition: logs_hits table may have been dropped between existence check and query
@@ -768,7 +767,18 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
                 $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false,
                     $limitStart, $limitEnd, false);
             }
-            $results = $this->queryAndGetResults($query);
+            $results = $this->queryAndGetResults($query, $queryOptions);
+        }
+
+        if ($throwOnQueryError && (!empty($results['timed_out']) || !empty($results['last_error']))) {
+            $lastError = isset($results['last_error']) && is_string($results['last_error']) ? $results['last_error'] : '';
+            if ($lastError === '' && !empty($results['timed_out'])) {
+                $lastError = 'getRedirectsForView timed out';
+            }
+            if ($refreshLockHeld && $snapshotCacheKey !== '') {
+                $this->releaseViewSnapshotRefreshLock($snapshotCacheKey);
+            }
+            throw new \Exception($lastError);
         }
 
         /** @var array<int, array<string, mixed>> $rows */
@@ -814,6 +824,9 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         	" rows to display before log data and " . count($rows) . 
         	" rows to display after log data for page: ". $sub);
 
+        if ($canUseSnapshotCache && $snapshotCacheKey === '') {
+            $snapshotCacheKey = $this->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
+        }
         if ($canUseSnapshotCache && $snapshotCacheKey !== '' && is_array($rows)) {
             $this->setViewRowsSnapshotToTable($snapshotCacheKey, $sub, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
             if (function_exists('set_transient')) {
@@ -840,12 +853,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      * @return bool
      */
     function viewRowsSnapshotAvailable($sub, array $tableOptions): bool {
-        $rawOrderBy = $tableOptions['orderby'] ?? '';
-        $orderBy = strtolower(is_string($rawOrderBy) ? $rawOrderBy : '');
-        $isLogsMaintenanceSort = ($orderBy === 'logshits' || $orderBy === 'last_used');
-        $rawPerpage = $tableOptions['perpage'] ?? 0;
-        $canUseSnapshotCache = absint(is_scalar($rawPerpage) ? $rawPerpage : 0) <= 200
-            && !$isLogsMaintenanceSort;
+        $canUseSnapshotCache = $this->canUseViewTableSnapshotCache($tableOptions);
         if (!$canUseSnapshotCache) {
             return false;
         }
@@ -887,13 +895,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             return false;
         }
 
-        $rawOrderBy = $tableOptions['orderby'] ?? '';
-        $orderBy = strtolower(is_string($rawOrderBy) ? $rawOrderBy : '');
-        $isLogsMaintenanceSort = ($orderBy === 'logshits' || $orderBy === 'last_used');
-        $rawPerpage = $tableOptions['perpage'] ?? 0;
         $canUseSnapshotCache = function_exists('get_transient')
-            && absint(is_scalar($rawPerpage) ? $rawPerpage : 0) <= 200
-            && !$isLogsMaintenanceSort;
+            && $this->canUseViewTableSnapshotCache($tableOptions);
         if (!$canUseSnapshotCache) {
             return false;
         }
@@ -908,16 +911,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      * @return int
      */
     function getRedirectsForViewCount(string $sub, array $tableOptions): int {
-        $rawOrderByCount = $tableOptions['orderby'] ?? '';
-        $orderByForSnapshot = strtolower(is_string($rawOrderByCount) ? $rawOrderByCount : '');
-        $isLogsMaintenanceSort = ($orderByForSnapshot === 'logshits' || $orderByForSnapshot === 'last_used');
-        $rawPerpageCount = $tableOptions['perpage'] ?? 0;
+        $queryTimeout = isset($tableOptions['_abj404_query_timeout']) && is_numeric($tableOptions['_abj404_query_timeout'])
+            ? max(1, intval($tableOptions['_abj404_query_timeout'])) : 0;
+        $throwOnQueryError = !empty($tableOptions['_abj404_throw_on_view_query_error']);
         $canUseSnapshotCache = function_exists('get_transient')
-            && absint(is_scalar($rawPerpageCount) ? $rawPerpageCount : 0) <= 200
-            && !$isLogsMaintenanceSort;
+            && $this->canUseViewTableSnapshotCache($tableOptions);
         $requestCountCacheKey = (string)$sub . '|' . md5(serialize($tableOptions));
         $countCacheKey = '';
-        if ($canUseSnapshotCache) {
+        if ($canUseSnapshotCache && $queryTimeout <= 0) {
             $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
             $cachedCount = get_transient($countCacheKey);
             if ($cachedCount !== false) {
@@ -932,16 +933,24 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         	true);
 
         $this->setSqlBigSelects();
-        $results = $this->queryAndGetResults($query);
+        $queryOptions = $queryTimeout > 0 ? array('timeout' => $queryTimeout) : array();
+        $results = $this->queryAndGetResults($query, $queryOptions);
         $lastErrorRaw = $results['last_error'] ?? '';
         $lastError = is_string($lastErrorRaw) ? $lastErrorRaw : '';
         if (!empty($lastError) && $this->isCollationError($lastError)) {
             $retryOptions = $tableOptions;
             $retryOptions['forceCollate'] = 'utf8mb4_general_ci';
             $retryQuery = $this->getRedirectsForViewQuery($sub, $retryOptions, false, 0, PHP_INT_MAX, true);
-            $results = $this->queryAndGetResults($retryQuery);
+            $results = $this->queryAndGetResults($retryQuery, $queryOptions);
             $lastErrorRaw2 = $results['last_error'] ?? '';
             $lastError = is_string($lastErrorRaw2) ? $lastErrorRaw2 : '';
+        }
+
+        if ($throwOnQueryError && (!empty($results['timed_out']) || $lastError !== '')) {
+            if ($lastError === '' && !empty($results['timed_out'])) {
+                $lastError = 'getRedirectsForViewCount timed out';
+            }
+            throw new \Exception($lastError);
         }
 
         if ($lastError != '' && trim($lastError) != '') {
@@ -955,6 +964,9 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         $row = is_array($rows[0] ?? null) ? $rows[0] : array();
         $countValue = intval(is_scalar($row['count'] ?? 0) ? $row['count'] : 0);
         $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = $countValue;
+        if ($canUseSnapshotCache && $countCacheKey === '') {
+            $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
+        }
         if ($canUseSnapshotCache && $countCacheKey !== '') {
             set_transient($countCacheKey, $countValue, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
         }

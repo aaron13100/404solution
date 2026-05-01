@@ -57,6 +57,267 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         return $this->getLowercasePrefix() . 'abj404_view_cache_lock_' . md5((string)$cacheKey);
     }
 
+    /** @param string $cacheKey @return string */
+    private function getViewWarmupStateOptionName(string $cacheKey): string {
+        return $this->getLowercasePrefix() . 'abj404_view_warmup_' . md5((string)$cacheKey);
+    }
+
+    /**
+     * @param array<string, mixed> $tableOptions
+     * @return bool
+     */
+    private function canUseViewTableSnapshotCache(array $tableOptions): bool {
+        $rawOrderBy = $tableOptions['orderby'] ?? '';
+        $orderBy = strtolower(is_string($rawOrderBy) ? $rawOrderBy : '');
+        $isLogsMaintenanceSort = ($orderBy === 'logshits' || $orderBy === 'last_used');
+        $rawPerpage = $tableOptions['perpage'] ?? 0;
+        return absint(is_scalar($rawPerpage) ? $rawPerpage : 0) <= 200 && !$isLogsMaintenanceSort;
+    }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return string
+     */
+    private function getViewTableWarmupShapeKey(string $sub, array $tableOptions): string {
+        return $this->getViewSnapshotCacheKey('abj404_view_table', $sub, $tableOptions);
+    }
+
+    /**
+     * @param mixed $state
+     * @return array<string, mixed>
+     */
+    private function normalizeViewWarmupState($state): array {
+        $default = array(
+            'status' => 'idle',
+            'stage' => 'rows',
+            'stage_started_at' => 0,
+            'stage_completed_at' => 0,
+            'attempts_by_stage' => array('rows' => 0, 'count' => 0),
+            'query_label' => 'getRedirectsForView',
+            'last_error' => '',
+            'logged_stale_by_stage' => array(),
+        );
+        if (!is_array($state)) {
+            return $default;
+        }
+        $out = array_merge($default, $state);
+        if (!in_array($out['status'], array('idle', 'running', 'ready', 'blocked', 'error'), true)) {
+            $out['status'] = 'idle';
+        }
+        if (!in_array($out['stage'], array('rows', 'count'), true)) {
+            $out['stage'] = 'rows';
+        }
+        $out['stage_started_at'] = intval($out['stage_started_at']);
+        $out['stage_completed_at'] = intval($out['stage_completed_at']);
+        $attempts = is_array($out['attempts_by_stage']) ? $out['attempts_by_stage'] : array();
+        $out['attempts_by_stage'] = array(
+            'rows' => intval($attempts['rows'] ?? 0),
+            'count' => intval($attempts['count'] ?? 0),
+        );
+        $out['query_label'] = is_string($out['query_label']) ? $out['query_label'] : $this->getViewWarmupStageQueryLabel((string)$out['stage']);
+        $out['last_error'] = is_string($out['last_error']) ? $out['last_error'] : '';
+        $out['logged_stale_by_stage'] = is_array($out['logged_stale_by_stage']) ? $out['logged_stale_by_stage'] : array();
+        return $out;
+    }
+
+    /** @param string $stage @return string */
+    private function getViewWarmupStageQueryLabel(string $stage): string {
+        return $stage === 'count' ? 'getRedirectsForViewCount' : 'getRedirectsForView';
+    }
+
+    /** @param string $stage @return int */
+    private function getViewWarmupStageNumber(string $stage): int {
+        return $stage === 'count' ? 2 : 1;
+    }
+
+    /**
+     * @param string $optionName
+     * @return array<string, mixed>
+     */
+    private function getViewWarmupState(string $optionName): array {
+        if (!function_exists('get_option')) {
+            return $this->normalizeViewWarmupState(null);
+        }
+        return $this->normalizeViewWarmupState(get_option($optionName, array()));
+    }
+
+    /**
+     * @param string $optionName
+     * @param array<string, mixed> $state
+     * @return void
+     */
+    private function setViewWarmupState(string $optionName, array $state): void {
+        if (function_exists('update_option')) {
+            update_option($optionName, $state, false);
+        } else if (function_exists('add_option')) {
+            add_option($optionName, $state, '', false);
+        }
+    }
+
+    /**
+     * Warm exactly one admin table snapshot stage, then return progress.
+     *
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return array<string, mixed>
+     */
+    function warmViewTableSnapshotStage(string $sub, array $tableOptions): array {
+        if (!$this->canUseViewTableSnapshotCache($tableOptions)) {
+            return array(
+                'status' => 'ready',
+                'ready' => true,
+                'uncached' => true,
+                'stage' => 'rows',
+                'stageNumber' => 1,
+                'queryLabel' => 'getRedirectsForView',
+                'message' => 'This table shape is not snapshot-cacheable.',
+            );
+        }
+
+        $shapeKey = $this->getViewTableWarmupShapeKey($sub, $tableOptions);
+        $optionName = $this->getViewWarmupStateOptionName($shapeKey);
+        $state = $this->getViewWarmupState($optionName);
+        $now = time();
+
+        if ($this->viewTableSnapshotAvailable($sub, $tableOptions)) {
+            $state['status'] = 'ready';
+            $state['stage'] = 'count';
+            $state['query_label'] = 'getRedirectsForViewCount';
+            $state['stage_completed_at'] = $now;
+            $state['last_error'] = '';
+            $this->setViewWarmupState($optionName, $state);
+            return $this->formatViewWarmupResponse($state, true);
+        }
+
+        if ($this->viewRowsSnapshotAvailable($sub, $tableOptions)) {
+            $state['stage'] = 'count';
+            $state['query_label'] = 'getRedirectsForViewCount';
+        } else {
+            $state['stage'] = 'rows';
+            $state['query_label'] = 'getRedirectsForView';
+        }
+
+        $stage = (string)$state['stage'];
+        $attempts = is_array($state['attempts_by_stage']) ? $state['attempts_by_stage'] : array('rows' => 0, 'count' => 0);
+        $attemptCount = intval($attempts[$stage] ?? 0);
+
+        if ($state['status'] === 'running') {
+            $elapsed = $now - intval($state['stage_started_at']);
+            if ($elapsed <= self::VIEW_SNAPSHOT_WARMUP_STALE_SECONDS) {
+                return $this->formatViewWarmupResponse($state, false);
+            }
+            if ($attemptCount >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+                $state['status'] = 'blocked';
+                $state['last_error'] = 'Previous warmup stage was killed or stalled too many times.';
+                $this->setViewWarmupState($optionName, $state);
+                return $this->formatViewWarmupResponse($state, false);
+            }
+            $loggedKey = $stage . ':' . intval($state['stage_started_at']);
+            if (empty($state['logged_stale_by_stage'][$loggedKey])) {
+                $this->logStaleViewWarmupStage($sub, $tableOptions, $state, $elapsed, $attemptCount);
+                $state['logged_stale_by_stage'][$loggedKey] = 1;
+            }
+        }
+
+        if ($attemptCount >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+            $state['status'] = 'blocked';
+            $state['last_error'] = 'Warmup stage reached the retry limit.';
+            $this->setViewWarmupState($optionName, $state);
+            return $this->formatViewWarmupResponse($state, false);
+        }
+
+        $attempts[$stage] = $attemptCount + 1;
+        $state['status'] = 'running';
+        $state['stage_started_at'] = $now;
+        $state['stage_completed_at'] = 0;
+        $state['attempts_by_stage'] = $attempts;
+        $state['query_label'] = $this->getViewWarmupStageQueryLabel($stage);
+        $state['last_error'] = '';
+        $this->setViewWarmupState($optionName, $state);
+
+        $stageOptions = $tableOptions;
+        $stageOptions['_abj404_query_timeout'] = self::VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS;
+        $stageOptions['_abj404_throw_on_view_query_error'] = true;
+
+        try {
+            if ($stage === 'rows') {
+                $this->getRedirectsForView($sub, $stageOptions);
+                $state['status'] = 'idle';
+                $state['stage'] = 'count';
+                $state['query_label'] = 'getRedirectsForViewCount';
+            } else {
+                $this->getRedirectsForViewCount($sub, $stageOptions);
+                $state['status'] = 'ready';
+                $state['stage'] = 'count';
+                $state['query_label'] = 'getRedirectsForViewCount';
+            }
+            $state['stage_completed_at'] = time();
+            $state['last_error'] = '';
+            $this->setViewWarmupState($optionName, $state);
+            return $this->formatViewWarmupResponse($state, $state['status'] === 'ready');
+        } catch (Throwable $e) {
+            $state['last_error'] = $e->getMessage();
+            $state['stage_completed_at'] = time();
+            $state['status'] = (intval($attempts[$stage] ?? 0) >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) ? 'blocked' : 'idle';
+            $this->setViewWarmupState($optionName, $state);
+            return $this->formatViewWarmupResponse($state, false);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     * @param bool $ready
+     * @return array<string, mixed>
+     */
+    private function formatViewWarmupResponse(array $state, bool $ready): array {
+        $stage = (string)($state['stage'] ?? 'rows');
+        return array(
+            'status' => (string)($state['status'] ?? 'idle'),
+            'ready' => $ready || (string)($state['status'] ?? '') === 'ready',
+            'stage' => $stage,
+            'stageNumber' => $this->getViewWarmupStageNumber($stage),
+            'queryLabel' => $this->getViewWarmupStageQueryLabel($stage),
+            'stageStartedAt' => intval($state['stage_started_at'] ?? 0),
+            'stageCompletedAt' => intval($state['stage_completed_at'] ?? 0),
+            'attemptsByStage' => is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array(),
+            'lastError' => is_string($state['last_error'] ?? '') ? (string)$state['last_error'] : '',
+        );
+    }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $state
+     * @param int $elapsed
+     * @param int $attemptCount
+     * @return void
+     */
+    private function logStaleViewWarmupStage(string $sub, array $tableOptions, array $state, int $elapsed, int $attemptCount): void {
+        $details = array(
+            'stage' => (string)($state['stage'] ?? ''),
+            'query_label' => (string)($state['query_label'] ?? ''),
+            'elapsed_seconds' => $elapsed,
+            'subpage' => $sub,
+            'attempt_count' => $attemptCount,
+            'table_shape' => array(
+                'filter' => $tableOptions['filter'] ?? null,
+                'orderby' => $tableOptions['orderby'] ?? null,
+                'order' => $tableOptions['order'] ?? null,
+                'paged' => $tableOptions['paged'] ?? null,
+                'perpage' => $tableOptions['perpage'] ?? null,
+                'filterText_length' => is_string($tableOptions['filterText'] ?? null) ? strlen((string)$tableOptions['filterText']) : 0,
+                'score_range' => $tableOptions['score_range'] ?? null,
+            ),
+        );
+        $message = 'Table cache warmup stage appears stalled: ' . json_encode($details);
+        if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'warn')) {
+            $this->logger->warn($message);
+        } else if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'errorMessage')) {
+            $this->logger->errorMessage($message);
+        }
+    }
+
     /** @param string $cacheKey @return bool */
     private function isViewSnapshotRefreshLocked(string $cacheKey): bool {
         if (!function_exists('get_option')) {

@@ -35,6 +35,12 @@ class ABJ_404_Solution_DataAccess {
     const VIEW_SNAPSHOT_CACHE_TTL_SECONDS = 120;
     /** @var int Minimum interval between expensive refreshes for the same view key. */
     const VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS = 30;
+    /** @var int DB timeout budget for each resumable table-cache warmup stage. */
+    const VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS = 28;
+    /** @var int Age after which a running warmup stage is treated as killed/stalled. */
+    const VIEW_SNAPSHOT_WARMUP_STALE_SECONDS = 35;
+    /** @var int Max killed/timeout attempts for one warmup stage before blocking retries. */
+    const VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS = 3;
     /** @var int Safety cap: avoid storing extremely large payloads in cache. */
     const VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES = 2097152; // 2 MiB
     /** @var int Cross-request lock timeout for logs-hits rebuild jobs. */
