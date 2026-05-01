@@ -53,10 +53,22 @@ class ABJ_404_Solution_ErrorHandler {
      * @return boolean
      */
     static function NormalErrorHandler($errno, $errstr, $errfile, $errline) {
+        // Respect PHP's `@` error-suppression operator. While inside @somefunc(),
+        // PHP sets error_reporting() to 0 for the duration of the call. A custom
+        // handler that ignores this state still escalates intentionally-suppressed
+        // warnings to error-level logging — defeating the suppression.
+        // Concrete case: @opcache_invalidate() at PluginLogic.php:1042 on hosts
+        // with opcache.restrict_api set was producing email-threshold reports
+        // because this guard was missing. Returning false here lets PHP's default
+        // handler honour the suppression.
+        if (error_reporting() === 0) {
+            return false;
+        }
+
         $abj404logging = abj_service('logging');
         $f = abj_service('functions');
         $onlyAWarning = false;
-        
+
         try {
         	// if the error file does not contain the name of our plugin then we ignore it.
         	$slashPos = $f->strpos(ABJ404_NAME, '/');
