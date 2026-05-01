@@ -191,9 +191,13 @@ trait ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait {
         $chunkSize = self::HITS_TABLE_PREAGG_CHUNK_SIZE;
         $idRange = $maxLogIdSnapshot - $minLogId;
 
-        // Small-table fast path: if the entire logsv2 table fits in one chunk,
-        // run the original single query (no pre-aggregation overhead).
-        if ($idRange <= $chunkSize) {
+        // Tiny-table fast path: only skip pre-aggregation for trivially small
+        // tables. Above this threshold (HITS_TABLE_DIRECT_PATH_THRESHOLD) the
+        // direct path's CONCAT/COALESCE-derived JOIN can hit the 60s ceiling
+        // on shared hosts even at id ranges far below HITS_TABLE_PREAGG_CHUNK_SIZE
+        // — log retention by timestamp lets MIN(id) climb monotonically, so
+        // a site's id range converges to its live row count.
+        if ($idRange <= self::HITS_TABLE_DIRECT_PATH_THRESHOLD) {
             $results = $this->hitsTableInsertDirect($tempDestTable);
         } else {
             $results = $this->hitsTableInsertChunked(

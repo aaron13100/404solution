@@ -41,6 +41,18 @@ class ABJ_404_Solution_DataAccess {
     const HITS_TABLE_REBUILD_LOCK_TTL_SECONDS = 180;
     /** @var int Number of logsv2 IDs to process per chunk during pre-aggregation. */
     const HITS_TABLE_PREAGG_CHUNK_SIZE = 100000;
+    /**
+     * @var int If MAX(id) - MIN(id) is at or below this threshold, the rebuild
+     *          uses the single-statement direct path; above it, the chunked
+     *          two-phase path. Threshold is intentionally far smaller than
+     *          HITS_TABLE_PREAGG_CHUNK_SIZE: log retention by timestamp lets
+     *          MIN(id) climb monotonically, so MAX-MIN converges to the live
+     *          row count, and the direct path's CONCAT/COALESCE-derived JOIN
+     *          times out at 60s on shared hosts at row counts well below
+     *          HITS_TABLE_PREAGG_CHUNK_SIZE. Only truly tiny tables benefit
+     *          from skipping the pre-agg overhead.
+     */
+    const HITS_TABLE_DIRECT_PATH_THRESHOLD = 5000;
     /** @var int Max age for cached stats-periodic aggregates. */
     const PERIODIC_STATS_CACHE_TTL_SECONDS = 300;
     /** @var int Minimum interval before recalculating expensive stats aggregates. */
