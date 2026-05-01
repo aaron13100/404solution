@@ -1344,6 +1344,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	     */
 	    private function parseIndexDDLToSpec($indexDDL) {
 	        $indexDDL = trim($indexDDL);
+	        // Tolerate a trailing comma — the line-extracting regex pulls each
+	        // KEY definition out as-is from the surrounding CREATE TABLE list,
+	        // and any KEY that isn't the LAST one will end with a comma. Same
+	        // canonical form either way.
+	        $indexDDL = rtrim($indexDDL, ',');
 	        $matches = [];
 	        if (!preg_match('/^(unique\\s+)?key\\s+`?([^`\\s]+)`?\\s*(\\(.+\\))\\s*(?:using\\s+\\w+)?\\s*$/i', $indexDDL, $matches)) {
 	            return null;
