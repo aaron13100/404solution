@@ -85,36 +85,6 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
     }
 
     /**
-     * Tables that may be safely dropped and recreated after repeated repair failures.
-     * Tables NOT in this list (e.g. redirects, engine_profiles, redirect_conditions,
-     * ngram_cache) will never be auto-dropped because they contain user-configured
-     * data or are expensive to rebuild.
-     *
-     * New tables default to NOT droppable (safe-by-default).
-     *
-     * @var array<int, string>
-     */
-    private static $droppableTables = array(
-        'logsv2', 'permalink_cache', 'spelling_cache',
-        'lookup', 'logs_hits', 'view_cache',
-    );
-
-    /**
-     * Check whether a table name matches one of the droppable table suffixes.
-     *
-     * @param string $tableName Sanitized table name.
-     * @return bool
-     */
-    private function isDroppableTable(string $tableName): bool {
-        foreach (self::$droppableTables as $suffix) {
-            if (substr($tableName, -strlen($suffix)) === $suffix) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * Validate and sanitize a table name extracted from error messages or SQL.
      * Only allows alphanumeric characters and underscores, and requires 'abj404' in the name.
      *
@@ -167,45 +137,6 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
                 $result = $this->queryAndGetResults($query, array('log_errors' => false));
                 $this->logger->infoMessage("Attempted to repair table " . $tableToRepair . ". Result: " .
                         json_encode($result));
-
-                // Track repair attempts only for tables that are safe to drop+recreate.
-                // Tables not in the droppable whitelist (e.g. redirects, engine_profiles,
-                // redirect_conditions, ngram_cache) are never auto-dropped because they
-                // contain user data or are expensive to rebuild.
-                if ($this->isDroppableTable($tableToRepair)) {
-	                $abj404logic = abj_service('plugin_logic');
-	                $options = $abj404logic->getOptions();
-
-	                // Migrate from old global scalar to per-table counts
-	                if (isset($options['repaired_count']) && is_scalar($options['repaired_count'])) {
-	                	unset($options['repaired_count']);
-	                }
-	                if (!isset($options['repaired_counts']) || !is_array($options['repaired_counts'])) {
-	                	$options['repaired_counts'] = array();
-	                }
-
-	                $tableKey = $tableToRepair;
-	                $prevCount = isset($options['repaired_counts'][$tableKey]) ? intval($options['repaired_counts'][$tableKey]) : 0;
-	                $options['repaired_counts'][$tableKey] = $prevCount + 1;
-	                $abj404logic->updateOptions($options);
-
-	                if ($prevCount + 1 > 3 && $prevCount + 1 < 7) {
-	                	// Before dropping, check if the last error was disk-full.
-	                	// Dropping + recreating on a full disk will just fail again.
-	                	$lowerError = strtolower($errorMessage);
-	                	if (strpos($lowerError, 'is full') !== false ||
-	                		strpos($lowerError, 'no space left') !== false ||
-	                		strpos($lowerError, 'table full') !== false) {
-	                		$this->logger->warn("Skipping drop+recreate for " . $tableToRepair .
-	                			" — disk appears full. Repair count: " . ($prevCount + 1));
-	                	} else {
-	                		$upgradesEtc = abj_service('database_upgrades');
-	                		$this->queryAndGetResults("DROP TABLE `{$tableToRepair}`");
-	                		$upgradesEtc->createDatabaseTables(false);
-	                	}
-	                }
-                }
-
             } else {
                 // Non-plugin table or invalid name: the plugin cannot repair it,
                 // but we can notify the admin once per day so they can contact their host.
