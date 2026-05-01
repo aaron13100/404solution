@@ -32,31 +32,38 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
     var map = {
         table_redirects: {
             queryLabel: 'getAdminRedirectsPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
-            whatHappening: 'Loading Redirects table rows'
+            whatHappening: 'Loading Redirects table rows',
+            stageNumber: 1
         },
         redirect_status_counts: {
             queryLabel: 'getRedirectStatusCounts()',
-            whatHappening: 'Counting Redirects status tabs'
+            whatHappening: 'Counting Redirects status tabs',
+            stageNumber: 2
         },
         table_captured: {
             queryLabel: 'getCapturedURLSPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
-            whatHappening: 'Loading Captured 404 URLs table rows'
+            whatHappening: 'Loading Captured 404 URLs table rows',
+            stageNumber: 1
         },
         captured_status_counts: {
             queryLabel: 'getCapturedStatusCounts()',
-            whatHappening: 'Counting Captured 404 URLs status tabs'
+            whatHappening: 'Counting Captured 404 URLs status tabs',
+            stageNumber: 2
         },
         table_logs: {
             queryLabel: 'getAdminLogsPageTable() -> getLogRecords()',
-            whatHappening: 'Loading Logs table rows'
+            whatHappening: 'Loading Logs table rows',
+            stageNumber: 1
         },
         paginationLinksTop: {
             queryLabel: 'getPaginationLinks(top) -> getRedirectsForViewCount() / getRedirectsForView.sql',
-            whatHappening: 'Rendering top pagination links'
+            whatHappening: 'Rendering top pagination links',
+            stageNumber: 3
         },
         paginationLinksBottom: {
             queryLabel: 'getPaginationLinks(bottom) -> getRedirectsForViewCount() / getRedirectsForView.sql',
-            whatHappening: 'Rendering bottom pagination links'
+            whatHappening: 'Rendering bottom pagination links',
+            stageNumber: 4
         }
     };
     if (stage && map[stage]) {
@@ -65,18 +72,77 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
     if (subpage === 'abj404_captured') {
         return {
             queryLabel: 'getCapturedURLSPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
-            whatHappening: 'Loading Captured 404 URLs table rows'
+            whatHappening: 'Loading Captured 404 URLs table rows',
+            stageNumber: 1
         };
     }
     if (subpage === 'abj404_logs') {
         return {
             queryLabel: 'getAdminLogsPageTable() -> getLogRecords()',
-            whatHappening: 'Loading Logs table rows'
+            whatHappening: 'Loading Logs table rows',
+            stageNumber: 1
         };
     }
     return {
         queryLabel: 'getAdminRedirectsPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
-        whatHappening: 'Loading Redirects table rows'
+        whatHappening: 'Loading Redirects table rows',
+        stageNumber: 1
+    };
+}
+
+function abj404FormatRefreshingStageMessage(baseMessage, stage, queryLabel, subpage) {
+    var diagnostics = abj404AjaxStageDiagnostics(stage, subpage);
+    var stageNumber = diagnostics.stageNumber || '?';
+    var label = queryLabel || diagnostics.queryLabel || stage || 'unknown';
+    return (baseMessage || 'Currently refreshing data') + ' (stage ' + stageNumber + ', ' + label + ')';
+}
+
+function abj404StartStageProgressPolling(config) {
+    config = config || {};
+    if (!config.baseUrl || !config.nonce || !config.requestId) {
+        return function() {};
+    }
+    var stopped = false;
+    var baseMessage = config.message || 'Currently refreshing data';
+    var updateStage = function() {
+        if (stopped) {
+            return;
+        }
+        jQuery.ajax({
+            url: config.baseUrl,
+            type: 'POST',
+            dataType: 'json',
+            timeout: 5000,
+            data: {
+                action: 'ajaxFetchInflightStage',
+                nonce: config.nonce,
+                requestId: config.requestId
+            }
+        }).done(function(stageResult) {
+            if (stopped || !stageResult) {
+                return;
+            }
+            var stage = typeof stageResult.stage === 'string' ? stageResult.stage : '';
+            var queryLabel = typeof stageResult.queryLabel === 'string' ? stageResult.queryLabel : '';
+            if (stage || queryLabel) {
+                var message = abj404FormatRefreshingStageMessage(baseMessage, stage, queryLabel, config.subpage || '');
+                jQuery('.abj404-refresh-status').text(message);
+                var toast = document.getElementById('abj404-background-refresh-toast');
+                if (toast) {
+                    var label = toast.querySelector('.abj404-refresh-label');
+                    if (label) {
+                        label.textContent = message;
+                    }
+                }
+            }
+        });
+    };
+    jQuery('.abj404-refresh-status').text(baseMessage + ' (...)');
+    updateStage();
+    var intervalId = window.setInterval(updateStage, 2500);
+    return function() {
+        stopped = true;
+        window.clearInterval(intervalId);
     };
 }
 
@@ -289,6 +355,8 @@ function triggerBackgroundTableRefreshIfEnabled() {
         paginationLinksChange(perpageElements[0], {
             backgroundRefresh: true,
             detectOnly: true,
+            showStageProgress: true,
+            stageProgressMessage: startedText,
             onComplete: function(meta) {
                 var $latestConfig = getRefreshStatusHost();
                 var hasUpdate = !!(meta && meta.hasUpdate);
@@ -416,6 +484,8 @@ function startPlaceholderTableHydration(triggerItem) {
             detectOnly: false,
             cacheMode: 'refresh_cache',
             autoHydratePlaceholder: true,
+            showStageProgress: true,
+            stageProgressMessage: 'Currently refreshing data',
             onComplete: function(meta) {
                 if (meta && meta.cachePending && attemptNumber < maxAttempts) {
                     window.setTimeout(function() {
@@ -1069,6 +1139,16 @@ function paginationLinksChange(triggerItem, options) {
     // so a cold-cache table query (large redirects/logs tables) has time to
     // complete before the placeholder turns into an error notice.
     var ajaxTimeoutMs = (isBackgroundRefresh && detectOnly) ? 15000 : 45000;
+    var stopStageProgressPolling = function() {};
+    if (options.showStageProgress === true) {
+        stopStageProgressPolling = abj404StartStageProgressPolling({
+            baseUrl: baseUrl,
+            nonce: inflightNonce,
+            requestId: requestId,
+            subpage: subpage,
+            message: options.stageProgressMessage || 'Currently refreshing data'
+        });
+    }
     jQuery.ajax({
         url: baseUrl,
         type: 'POST',
@@ -1097,6 +1177,7 @@ function paginationLinksChange(triggerItem, options) {
             requestId: requestId
         },
         success: function (result) {
+            stopStageProgressPolling();
             if (result && result.cachePending) {
                 jQuery('.abj404-loading-overlay').remove();
                 jQuery('.abj404-refresh-status').text(result.message || 'Preparing table data in the background.');
@@ -1230,6 +1311,7 @@ function paginationLinksChange(triggerItem, options) {
             }
         },
         error: function (jqXHR, textStatus, errorThrown) {
+            stopStageProgressPolling();
             if (isBackgroundRefresh && detectOnly) {
                 setDetectOnlyRefreshInFlight(false);
             }
