@@ -182,7 +182,7 @@ class ABJ_404_Solution_Uninstaller {
         // cron. Refuse cron context as a structural backstop so
         // CronReachableDestructiveSqlLintTest can prove the DROP TABLE below
         // is unreachable from any cron tick.
-        if (defined('DOING_CRON') && DOING_CRON) {
+        if (function_exists('wp_doing_cron') && wp_doing_cron()) {
             return;
         }
 

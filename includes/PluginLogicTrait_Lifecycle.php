@@ -236,7 +236,7 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
         // Refuse cron context as a structural backstop so
         // CronReachableDestructiveSqlLintTest can prove the DROP TABLE below
         // is never reachable from a daily cron tick.
-        if (defined('DOING_CRON') && DOING_CRON) {
+        if (function_exists('wp_doing_cron') && wp_doing_cron()) {
             return;
         }
 

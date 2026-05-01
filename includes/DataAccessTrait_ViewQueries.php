@@ -1263,9 +1263,6 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
             return true;
         }
-        if (defined('DOING_AJAX') && DOING_AJAX) {
-            return true;
-        }
         $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
             ? $_SERVER['SCRIPT_NAME'] : '';
         if ($scriptName !== '' && basename($scriptName) === 'admin-ajax.php') {
