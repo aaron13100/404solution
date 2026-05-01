@@ -24,6 +24,7 @@ return array(
     'ABJ_404_Solution_DataAccess_RedirectsTrait' => $base . 'includes/DataAccessTrait_Redirects.php',
     'ABJ_404_Solution_DataAccess_StatsTrait' => $base . 'includes/DataAccessTrait_Stats.php',
     'ABJ_404_Solution_DataAccess_ViewQueriesTrait' => $base . 'includes/DataAccessTrait_ViewQueries.php',
+    'ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait' => $base . 'includes/DatabaseUpgradesEtcTrait_Indexes.php',
     'ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait' => $base . 'includes/DatabaseUpgradesEtcTrait_Maintenance.php',
     'ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait' => $base . 'includes/DatabaseUpgradesEtcTrait_NGram.php',
     'ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait' => $base . 'includes/DatabaseUpgradesEtcTrait_PluginUpdate.php',

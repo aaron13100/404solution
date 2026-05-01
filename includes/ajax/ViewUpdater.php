@@ -511,7 +511,11 @@ class ABJ_404_Solution_ViewUpdater {
             if (!$isPluginAdmin) {
                 $abj404logic = abj_service('plugin_logic');
                 if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
-                    $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
+                    try {
+                        $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
+                    } catch (Throwable $ignored) {
+                        $isPluginAdmin = false;
+                    }
                 }
                 if (!$isPluginAdmin) {
                     // Best-effort fallback: treat WordPress administrators as plugin admins for debugging
@@ -633,7 +637,11 @@ class ABJ_404_Solution_ViewUpdater {
             if (!$isPluginAdmin) {
                 $abj404logic = abj_service('plugin_logic');
                 if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
-                    $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
+                    try {
+                        $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
+                    } catch (Throwable $ignored) {
+                        $isPluginAdmin = false;
+                    }
                 }
             }
 
@@ -749,7 +757,11 @@ class ABJ_404_Solution_ViewUpdater {
             if (!$isPluginAdmin) {
                 $abj404logic = abj_service('plugin_logic');
                 if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
-                    $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
+                    try {
+                        $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
+                    } catch (Throwable $ignored) {
+                        $isPluginAdmin = false;
+                    }
                 }
             }
 

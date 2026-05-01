@@ -869,6 +869,13 @@ class ABJ_404_Solution_Logging {
     function getDebugFilename(): string {
         // get the UUID here.
         $abj404logic = abj_service('plugin_logic');
+        // abj_service returns null when the container is uninitialised or the
+        // factory threw — common during very-early boot, the test harness, and
+        // self-healing recovery from broken installs. Use a deterministic
+        // filename in that case so logging stays available.
+        if (!is_object($abj404logic) || !method_exists($abj404logic, 'getOptions')) {
+            return 'abj404_debug.txt';
+        }
         $options = $abj404logic->getOptions(true);
         $debugFileKey = null;
         if (is_array($options) && array_key_exists(self::DEBUG_FILE_KEY, $options)) {
@@ -881,13 +888,18 @@ class ABJ_404_Solution_Logging {
 
             // create a probably unique UUID and store it to the database.
             $syncUtils = abj_service('sync_utils');
+            if (!is_object($syncUtils) || !method_exists($syncUtils, 'uniqidReal')) {
+                return 'abj404_debug.txt';
+            }
             $debugFileKey = $syncUtils->uniqidReal();
             $options[self::DEBUG_FILE_KEY] = $debugFileKey;
-            $abj404logic->updateOptions($options);
+            if (method_exists($abj404logic, 'updateOptions')) {
+                $abj404logic->updateOptions($options);
+            }
         }
-        
+
         $debugFileName = 'abj404_debug_' . $debugFileKey . '.txt';
-        
+
         return $debugFileName;
     }
     
