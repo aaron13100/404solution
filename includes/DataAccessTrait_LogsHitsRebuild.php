@@ -255,12 +255,62 @@ trait ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait {
     private function hitsTableInsertDirect(string $tempDestTable): array {
         $ttSelectQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
             "/sql/getRedirectsForViewTempTable.sql");
+
+        // When the logsv2.canonical_url backfill has confirmed zero NULL
+        // rows, drop the logsv2-side COALESCE so the planner can pick the
+        // smaller side as the driving table and use idx_canonical_url for
+        // the JOIN probe (~17,000x cost reduction per the
+        // redirects-temp-table-perf writeup §3 EXPLAIN evidence).
+        // Redirects-side COALESCE stays — backfillRedirectsCanonicalUrl
+        // doesn't flip an explicit "complete" flag and we treat the
+        // CONCAT/TRIM(redirects.url) fallback as the eternal safety net.
+        if ($this->isLogsv2CanonicalUrlBackfillComplete()) {
+            $ttSelectQuery = $this->dropLogsv2CanonicalCoalesceWrap($ttSelectQuery);
+        }
+
         $ttSelectQuery = $this->doTableNameReplacements($ttSelectQuery);
 
         $ttInsertQuery = "/* abj404:src=DataAccessTrait_LogsHitsRebuild::hitsTableInsertDirect */ " .
             "insert into " . $tempDestTable . " (requested_url, logsid, " .
             "last_used, logshits, failed_hits) \n " . $ttSelectQuery;
         return $this->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false, 'timeout' => 60));
+    }
+
+    /**
+     * Returns true once backfillLogsv2CanonicalUrl() has confirmed zero
+     * remaining NULL rows on logsv2.canonical_url. Cached at request scope
+     * via the wp_options layer (autoload=false → wp_cache hits a
+     * non-autoloaded option once per request, then short-circuits).
+     */
+    private function isLogsv2CanonicalUrlBackfillComplete(): bool {
+        if (!function_exists('get_option')) {
+            return false;
+        }
+        $optName = ABJ_404_Solution_DatabaseUpgradesEtc::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION;
+        return (bool)get_option($optName);
+    }
+
+    /**
+     * Strip the logsv2-side COALESCE wrapper from
+     * getRedirectsForViewTempTable.sql so the JOIN expression collapses
+     * to a bare {wp_abj404_logsv2}.canonical_url reference. Leaves the
+     * redirects-side COALESCE alone (eternal safety net).
+     *
+     * Used only after isLogsv2CanonicalUrlBackfillComplete() returns true,
+     * so the bare reference is guaranteed-non-NULL.
+     *
+     * @param string $sql
+     * @return string
+     */
+    private function dropLogsv2CanonicalCoalesceWrap(string $sql): string {
+        // Matches the three occurrences in the SQL file (SELECT, ON, GROUP
+        // BY) regardless of indentation on the continuation line. Anchored
+        // to the {wp_abj404_logsv2} placeholder so we never accidentally
+        // touch the redirects-side COALESCE on the same line of the JOIN.
+        $pattern = '/COALESCE\(\{wp_abj404_logsv2\}\.canonical_url,\s*CONCAT\(\'\/\',\s*TRIM\(BOTH\s+\'\/\'\s+FROM\s+\{wp_abj404_logsv2\}\.requested_url\)\)\)/';
+        $replacement = '{wp_abj404_logsv2}.canonical_url';
+        $result = preg_replace($pattern, $replacement, $sql);
+        return is_string($result) ? $result : $sql;
     }
 
     /**
@@ -295,13 +345,23 @@ trait ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait {
         $this->queryAndGetResults($createPreAggQuery);
 
         // Phase 1: chunk through logsv2 by ID range.
-        // Each chunk aggregates by canonical requested_url (CONCAT('/', TRIM…))
-        // so URL variants like '/foo', 'foo', and '/foo/' collapse into a
-        // single pre-agg row. The same canonical key can still appear across
-        // chunks — Phase 2 sums them.
+        // Each chunk aggregates by canonical requested_url so URL variants
+        // like '/foo', 'foo', and '/foo/' collapse into a single pre-agg row.
+        // Reads logsv2.canonical_url (added 4.1.x) when populated and falls
+        // back to CONCAT('/', TRIM(...)) on legacy NULL rows — the COALESCE
+        // form keeps reads correct regardless of backfill state. Once
+        // backfillLogsv2CanonicalUrl() flips
+        // LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION (zero NULL rows
+        // observed), this collapses to a bare canonical_url reference and
+        // the GROUP BY can use idx_canonical_url for a loose-index scan.
+        // The same canonical key can still appear across chunks — Phase 2
+        // sums them.
         // failed_hits = count of 404-only hits per canonical URL (rows where
         // dest_url is empty/NULL). Lets flagDeadDestinationRedirects() avoid
         // scanning logsv2 in cron — see DataAccessTrait_Maintenance::flagDeadDestinationRedirects().
+        $logsv2CanonicalExpr = $this->isLogsv2CanonicalUrlBackfillComplete()
+            ? "canonical_url"
+            : "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
         for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
             $end = $start + $chunkSize;
             // Marker: this chunk INSERT generated 38 of 43 May 2026 error
@@ -310,12 +370,12 @@ trait ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait {
             $chunkQuery = "/* abj404:src=DataAccessTrait_LogsHitsRebuild::hitsTableInsertChunked#phase1Chunk */ " .
                 "INSERT INTO " . $preAggTable .
                 " (requested_url, logsid, last_used, logshits, failed_hits) " .
-                "SELECT CONCAT('/', TRIM(BOTH '/' FROM requested_url)), " .
+                "SELECT " . $logsv2CanonicalExpr . ", " .
                 "       MIN(id), MAX(timestamp), COUNT(*), " .
                 "       SUM(CASE WHEN dest_url = '' OR dest_url IS NULL THEN 1 ELSE 0 END) " .
                 "FROM " . $logsv2Table . " " .
                 "WHERE id >= %d AND id < %d " .
-                "GROUP BY CONCAT('/', TRIM(BOTH '/' FROM requested_url))";
+                "GROUP BY " . $logsv2CanonicalExpr;
             $chunkResult = $this->queryAndGetResults($chunkQuery, array(
                 'log_too_slow' => false,
                 'timeout' => 10,

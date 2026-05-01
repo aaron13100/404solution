@@ -25,6 +25,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	/** @var string|null */
 	private static $uniqID = null;
 
+	/**
+	 * Per-request dedup flag for scheduleLogsv2CanonicalUrlBackfill().
+	 * Mirrors DataAccess::$hitsTableRebuildScheduled — ensures the shutdown
+	 * hook is registered at most once per request even if the schedule
+	 * function is called from multiple paths (Captured-404s tab render +
+	 * Stats panel + EmailDigest, etc.). Reset to false naturally when the
+	 * PHP process ends; persistent SAPIs (PHP-FPM, mod_php) reset it
+	 * implicitly between requests because static is process-local.
+	 *
+	 * @var bool
+	 */
+	private static $logsv2CanonicalBackfillScheduled = false;
+
 	/** @var ABJ_404_Solution_DataAccess */
 	private $dao;
 
@@ -338,6 +351,32 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 * instead of all in one request that risks PHP max_execution_time.
 	 */
 	const CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC = 25;
+
+	/**
+	 * Per-invocation wall-clock budget (seconds) for backfillLogsv2CanonicalUrl().
+	 * Tighter than the redirects-side budget because logsv2 backfill can also
+	 * be triggered from the Captured-404s admin-tab shutdown hook, which
+	 * holds a PHP-FPM worker for the duration. 15s caps worker-hold to a
+	 * window short enough that concurrent visitors are unlikely to notice
+	 * worker-pool pressure on shared hosts. Daily cron uses the same budget
+	 * so convergence math (~25K-75K rows per invocation) is consistent.
+	 */
+	const LOGSV2_CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC = 15;
+
+	/**
+	 * wp_options key that flips to '1' once backfillLogsv2CanonicalUrl()
+	 * confirms zero NULL rows remain on logsv2.canonical_url. Once set, the
+	 * read-side query can drop the COALESCE fallback and use the no-COALESCE
+	 * form ("logsv2.canonical_url = redirects.canonical_url"); the planner
+	 * picks the smaller side as driver and skips the Filter step (~17,000x
+	 * cost reduction vs the COALESCE form per the redirects-temp-table-perf
+	 * writeup).
+	 *
+	 * Stored as autoload=false so the option doesn't bloat the autoloaded
+	 * options blob on every request — read on the captured-404s render path
+	 * only, which already triggers wp_cache lookups for related options.
+	 */
+	const LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION = 'abj404_logsv2_canonical_url_backfill_complete';
 
 	/**
 	 * Known plugin table suffixes for adoption.
@@ -838,6 +877,17 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    		if (!$this->verifyTableMaterialized($tableName, $ddlEntry['placeholder'])) {
 	    			// Don't abort the loop — other tables can still get created.
 	    			continue;
+	    		}
+
+	    		// Targeted online-DDL column add(s) before the generic verifyColumns()
+	    		// flow runs a bare ALTER. On large logsv2 tables (multi-GB on
+	    		// busy sites) bare ADD COLUMN can block the table for tens of
+	    		// seconds; the targeted helper uses ALGORITHM=INPLACE, LOCK=NONE
+	    		// so InnoDB ≥ 5.6 picks the lockless online-DDL path. If the
+	    		// engine doesn't support it the helper falls back silently and
+	    		// verifyColumns() picks up the column add as a safety net.
+	    		if ($ddlEntry['bareTableName'] === 'abj404_logsv2') {
+	    			$this->ensureLogsv2CanonicalUrlColumn($tableName);
 	    		}
 
 	    		$this->verifyColumns($tableName, $query);
@@ -1384,7 +1434,52 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
             $this->logger->infoMessage("Added {$indexName} to {$logsTable} using query: {$query}");
         }
     }
-    
+
+	    /**
+	     * Add the canonical_url column to logsv2 with online DDL when supported.
+	     *
+	     * Mirrors ensureLogsCompositeIndex(): a small idempotent helper that runs
+	     * ahead of the generic verifyColumns() flow so the column add can use
+	     * ALGORITHM=INPLACE, LOCK=NONE on InnoDB ≥ 5.6 (no table lock during the
+	     * rewrite). On engines that don't support online DDL for ADD COLUMN the
+	     * explicit clause causes the statement to fail with
+	     * ER_ALTER_OPERATION_NOT_SUPPORTED; we then fall back to a bare ALTER —
+	     * which is what verifyColumns() also runs as the safety net.
+	     *
+	     * The matching idx_canonical_url is added by the standard verifyIndexes()
+	     * flow — index adds use online DDL by default on InnoDB ≥ 5.6 so a
+	     * separate ensure helper isn't required for the index.
+	     *
+	     * @param string $logsTable
+	     * @return void
+	     */
+	    private function ensureLogsv2CanonicalUrlColumn(string $logsTable): void {
+	        if ($this->columnExists($logsTable, 'canonical_url')) {
+	            return;
+	        }
+	        $inplaceQuery = "ALTER TABLE " . $logsTable .
+	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL," .
+	            " ALGORITHM=INPLACE, LOCK=NONE";
+	        $result = $this->dao->queryAndGetResults($inplaceQuery,
+	            array('log_too_slow' => false, 'log_errors' => false));
+	        if (empty($result['last_error']) && $this->columnExists($logsTable, 'canonical_url')) {
+	            $this->logger->infoMessage("Added canonical_url to {$logsTable} (ALGORITHM=INPLACE, LOCK=NONE).");
+	            return;
+	        }
+	        // Engine didn't support online DDL for ADD COLUMN — bare ALTER falls
+	        // back to whatever algorithm the engine picks (COPY on MyISAM / very
+	        // old InnoDB). On modern InnoDB the bare ALTER is itself implicitly
+	        // INPLACE for ADD COLUMN ... DEFAULT NULL, so this branch only runs
+	        // on legacy engines where some lock is unavoidable.
+	        $bareQuery = "ALTER TABLE " . $logsTable .
+	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL";
+	        $bare = $this->dao->queryAndGetResults($bareQuery,
+	            array('log_too_slow' => false));
+	        if (empty($bare['last_error']) && $this->columnExists($logsTable, 'canonical_url')) {
+	            $this->logger->infoMessage("Added canonical_url to {$logsTable} (bare ALTER fallback).");
+	        }
+	    }
+
     /**
      * @param string $tableName
      * @param string $createTableStatementGoal

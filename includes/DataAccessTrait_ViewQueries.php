@@ -1167,6 +1167,21 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         // Record that we checked during this request (used for admin tooltip UX).
         $this->setRuntimeFlag(self::HITS_TABLE_LAST_CHECKED_FLAG, time(), 86400);
 
+        // Piggyback on the captured-404s tab render: also schedule a
+        // 15-second logsv2.canonical_url backfill at shutdown if there's
+        // legacy NULL-row backlog. The shutdown handler holds a worker
+        // for the budget but the admin response is already flushed by
+        // fastcgi_finish_request, so the user doesn't perceive the wait.
+        // The function is internally deduped + gated on column existence,
+        // probe results, and the backfill-complete option, so calling it
+        // unconditionally is cheap.
+        if (function_exists('abj_service')) {
+            $upgradesEtc = abj_service('database_upgrades');
+            if (is_object($upgradesEtc) && method_exists($upgradesEtc, 'scheduleLogsv2CanonicalUrlBackfill')) {
+                $upgradesEtc->scheduleLogsv2CanonicalUrlBackfill();
+            }
+        }
+
         if ($this->shouldSkipNonEssentialDbWrites()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown.");
             $this->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);

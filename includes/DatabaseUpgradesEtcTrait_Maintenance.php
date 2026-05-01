@@ -591,6 +591,15 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         // sites; converges on its own across successive runs.
         $this->backfillRedirectsCanonicalUrl();
 
+        // Same idea for logsv2: legacy rows (pre-4.1.x) lack canonical_url, so
+        // the hits-rebuild JOIN falls back to CONCAT/TRIM and can't use
+        // idx_canonical_url. Chunked + rate-limited so even a multi-hundred-K
+        // logsv2 backlog converges across successive cron ticks. Tighter
+        // 15-second budget (vs redirects' 25) because this same function is
+        // also reachable from the Captured-404s tab shutdown hook —
+        // see scheduleLogsv2CanonicalUrlBackfill().
+        $this->backfillLogsv2CanonicalUrl();
+
         // Nightly internal-link scan: find broken internal links in published content.
         if (class_exists('ABJ_404_Solution_InternalLinkScanner')) {
             $scanner = new ABJ_404_Solution_InternalLinkScanner();
@@ -681,6 +690,203 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
             ));
         }
         return $totalUpdated;
+    }
+
+    /**
+     * Populate {wp_abj404_logsv2}.canonical_url for any rows still NULL,
+     * one chunk at a time. Each chunk runs:
+     *
+     *   UPDATE logsv2 SET canonical_url = CONCAT('/', TRIM(BOTH '/' FROM requested_url))
+     *   WHERE canonical_url IS NULL LIMIT N
+     *
+     * Mirrors backfillRedirectsCanonicalUrl() with one budget difference —
+     * 15-second wall budget (vs 25 for redirects) because this function is
+     * also reachable from the Captured-404s admin tab via
+     * scheduleLogsv2CanonicalUrlBackfill(), and the shutdown hook holds a
+     * PHP-FPM worker for the full budget. 15s leaves enough headroom for
+     * concurrent traffic on shared hosts. On a Bruno-class 250K-row backlog
+     * this converges in ~3-10 days on daily cron alone, faster if the admin
+     * regularly visits the tab.
+     *
+     * Once the backlog is fully cleared (no rows where canonical_url IS NULL),
+     * sets the abj404_logsv2_canonical_url_backfill_complete option so reads
+     * can drop the COALESCE fallback in getRedirectsForViewTempTable.sql and
+     * use the no-COALESCE form (logsv2.canonical_url = redirects.canonical_url).
+     *
+     * Skips silently when:
+     *   - the logsv2 table is missing (degraded site state)
+     *   - the canonical_url column is missing (column add hasn't happened
+     *     yet, e.g. immediately after upgrade before verifyColumns ran)
+     *   - the previous run errored — repair flow surfaces the error
+     *
+     * @return int Number of rows updated in this invocation.
+     */
+    public function backfillLogsv2CanonicalUrl(): int {
+        global $wpdb;
+        if (!isset($wpdb)) {
+            return 0;
+        }
+        $logsTable = $this->dao->doTableNameReplacements('{wp_abj404_logsv2}');
+
+        // SHOW TABLES existence probe — same shape as in
+        // backfillRedirectsCanonicalUrl(). Routing through queryAndGetResults
+        // would log a benign "table doesn't exist" error on freshly-installed
+        // sites before runInitialCreateTables() has run.
+        // DAO-bypass-approved: schema existence probe — see comment above.
+        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsTable) . "'");
+        if ($found !== $logsTable) {
+            return 0;
+        }
+        if (!$this->columnExists($logsTable, 'canonical_url')) {
+            return 0;
+        }
+
+        $chunkSize = (int)self::CANONICAL_URL_BACKFILL_CHUNK_SIZE;
+        $timeBudget = (float)self::LOGSV2_CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC;
+        $start = microtime(true);
+        $totalUpdated = 0;
+
+        while ((microtime(true) - $start) < $timeBudget) {
+            $query = "UPDATE " . $logsTable .
+                " SET canonical_url = CONCAT('/', TRIM(BOTH '/' FROM requested_url))" .
+                " WHERE canonical_url IS NULL" .
+                " LIMIT " . $chunkSize;
+
+            $result = $this->dao->queryAndGetResults($query);
+            $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
+            if ($lastError !== '') {
+                $this->logger->warn("backfillLogsv2CanonicalUrl: stopping after error: " . $lastError);
+                return $totalUpdated;
+            }
+
+            $rowsAffected = isset($result['rows_affected']) && is_numeric($result['rows_affected'])
+                ? (int)$result['rows_affected'] : 0;
+            $totalUpdated += $rowsAffected;
+            if ($rowsAffected < $chunkSize) {
+                break;
+            }
+        }
+
+        if ($totalUpdated > 0) {
+            $this->logger->infoMessage(sprintf(
+                "backfillLogsv2CanonicalUrl: populated canonical_url on %d logsv2 rows in %.2fs.",
+                $totalUpdated,
+                microtime(true) - $start
+            ));
+        }
+
+        // If the backlog is now drained, flip the completion flag so reads
+        // can drop the COALESCE fallback. Cheap LIMIT 1 probe — at most reads
+        // one row's worth of data via the canonical_url IS NULL filter (uses
+        // idx_canonical_url because IS NULL is sargable on a B-tree on a
+        // nullable column).
+        if (!get_option(self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION)) {
+            $remainingProbe = $this->dao->queryAndGetResults(
+                "SELECT 1 FROM " . $logsTable . " WHERE canonical_url IS NULL LIMIT 1"
+            );
+            $remainingRows = is_array($remainingProbe['rows'] ?? null) ? $remainingProbe['rows'] : [];
+            $remainingError = isset($remainingProbe['last_error']) && is_string($remainingProbe['last_error']) ? $remainingProbe['last_error'] : '';
+            if ($remainingError === '' && empty($remainingRows)) {
+                update_option(self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION, '1', false);
+                $this->logger->infoMessage(
+                    "backfillLogsv2CanonicalUrl: backlog cleared — flipped " .
+                    self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION .
+                    "; reads can now drop the COALESCE fallback."
+                );
+            }
+        }
+
+        return $totalUpdated;
+    }
+
+    /**
+     * Register a shutdown-hook backfill of logsv2.canonical_url, deduped per
+     * request. Called from the Captured-404s admin tab render so the
+     * legacy NULL backlog clears on each visit (15-second budget per
+     * shutdown, ~25K-75K rows per invocation on shared hosting).
+     *
+     * Why shutdown and not wp_schedule_single_event:
+     *   - shutdown always fires; wp-cron silently doesn't on
+     *     DISABLE_WP_CRON=true sites without a server-side cron worker
+     *     (a real subset of WP installs).
+     *   - With shutdown, cost is borne by the admin who explicitly clicked
+     *     the tab — the response is already sent (the AJAX path calls
+     *     fastcgi_finish_request before shutdown). They don't perceive the
+     *     wait.
+     *   - With wp-cron, an arbitrary later visitor's request triggers the
+     *     loopback spawn, tying up a PHP-FPM slot for the same 15s window
+     *     for someone who didn't ask for it.
+     *
+     * Pre-flight gates (in order, cheapest first):
+     *   1. Static request-scoped flag — skip if already scheduled.
+     *   2. Backfill-complete option — skip permanently once flipped.
+     *   3. Column existence — skip on pre-upgrade installs.
+     *   4. Cheap "any NULL rows?" probe (LIMIT 1, indexed) — skip if
+     *      backlog is already drained but the flag wasn't flipped (e.g.
+     *      first time we observe a clean backlog).
+     *
+     * @return void
+     */
+    public function scheduleLogsv2CanonicalUrlBackfill(): void {
+        if (self::$logsv2CanonicalBackfillScheduled) {
+            return;
+        }
+        if (function_exists('get_option') && get_option(self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION)) {
+            return;
+        }
+
+        global $wpdb;
+        if (!isset($wpdb)) {
+            return;
+        }
+
+        $logsTable = $this->dao->doTableNameReplacements('{wp_abj404_logsv2}');
+        if (!$this->columnExists($logsTable, 'canonical_url')) {
+            return;
+        }
+
+        $probe = $this->dao->queryAndGetResults(
+            "SELECT 1 FROM " . $logsTable . " WHERE canonical_url IS NULL LIMIT 1",
+            array('log_too_slow' => false)
+        );
+        $rows = is_array($probe['rows'] ?? null) ? $probe['rows'] : [];
+        $probeError = isset($probe['last_error']) && is_string($probe['last_error']) ? $probe['last_error'] : '';
+        if ($probeError === '' && empty($rows)) {
+            // No NULL rows but flag wasn't set yet — flip it now to skip
+            // future probes on this and later requests.
+            if (function_exists('update_option')) {
+                update_option(self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION, '1', false);
+            }
+            return;
+        }
+
+        self::$logsv2CanonicalBackfillScheduled = true;
+        if (function_exists('add_action')) {
+            add_action('shutdown', function (): void { $this->backfillLogsv2CanonicalUrl(); });
+        }
+    }
+
+    /**
+     * Test-only: reset the per-request shutdown-schedule dedup flag so the
+     * next call to scheduleLogsv2CanonicalUrlBackfill() can register again.
+     * Production callers never invoke this — the flag clears naturally when
+     * the PHP process ends.
+     *
+     * @return void
+     */
+    public static function resetLogsv2CanonicalBackfillScheduledFlagForTests(): void {
+        self::$logsv2CanonicalBackfillScheduled = false;
+    }
+
+    /**
+     * Test-only: read the current state of the per-request dedup flag so
+     * tests can assert that scheduleLogsv2CanonicalUrlBackfill() did or did
+     * not register a shutdown hook.
+     *
+     * @return bool
+     */
+    public static function getLogsv2CanonicalBackfillScheduledFlagForTests(): bool {
+        return self::$logsv2CanonicalBackfillScheduled;
     }
 
     /**

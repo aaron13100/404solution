@@ -715,18 +715,25 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         // insert the username into the lookup table and get the ID from the lookup table.
         $usernameLookupID = $this->insertLookupValueAndGetID($current_user_name);
 
-        // Queue the log entry for batch INSERT at shutdown
+        // Queue the log entry for batch INSERT at shutdown.
+        // canonical_url is included so it's part of validatedColumns at flush
+        // time (which is derived from the FIRST queued entry's keys, not from
+        // sanitizeLogEntry's output — adding it later would still be sanitized
+        // but never reach the INSERT column list).
+        $reqUrlForLog = esc_url_raw($requested_url);
+        $reqUrlForLogStr = is_string($reqUrlForLog) ? $reqUrlForLog : '';
         $this->queueLogEntry([
             'timestamp' => $now,
             'user_ip' => $ipAddressToSave,
             'referrer' => $referer,
             'dest_url' => $action,
-            'requested_url' => esc_url_raw($requested_url),
+            'requested_url' => $reqUrlForLogStr,
             'requested_url_detail' => $requestedURLDetail,
             'username' => $usernameLookupID,
             'min_log_id' => $minLogID,
             'engine' => substr($matchReason, 0, 64),
             'pipeline_trace' => $this->serializePipelineTrace($pipelineTrace),
+            'canonical_url' => '/' . trim($reqUrlForLogStr, '/'),
         ]);
     }
 
@@ -1207,6 +1214,31 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         // Enforce lengths on URL fields (match schema)
         $sanitized['requested_url'] = $normalizeString($entry['requested_url'], 2048);
         $sanitized['requested_url_detail'] = $normalizeString($entry['requested_url_detail'], 2048);
+
+        // canonical_url: PHP equivalent of CONCAT('/', TRIM(BOTH '/' FROM requested_url)).
+        // Populated at insert time so every new logsv2 row is born with the
+        // indexed canonical form set — the read-side JOIN (logsv2.canonical_url
+        // = redirects.canonical_url) hits idx_canonical_url instead of
+        // recomputing CONCAT/TRIM per row. Why insert-time and not
+        // backfill-only: logsv2 logs every 404 hit including bot traffic, so a
+        // busy site can produce 10K+ rows/day — the NULL backlog would grow
+        // faster than any chunked backfill could clear it. The matching
+        // idx_canonical_url + the COALESCE fallback in
+        // getRedirectsForViewTempTable.sql together keep reads correct
+        // regardless of whether legacy backfill is complete.
+        //
+        // Derived if missing from $entry (legacy callers / tests) so the
+        // invariant "every sanitized entry has canonical_url" holds. If the
+        // INSERT-time table doesn't have the column yet (pre-upgrade install),
+        // flushLogQueue's schema-drift filter at validatedColumns drops the
+        // key from the column list — the value is computed but harmless.
+        $reqUrlSafe = is_string($sanitized['requested_url']) ? $sanitized['requested_url'] : '';
+        if (array_key_exists('canonical_url', $entry) && is_string($entry['canonical_url'])) {
+            $canonical = $entry['canonical_url'];
+        } else {
+            $canonical = '/' . trim($reqUrlSafe, '/');
+        }
+        $sanitized['canonical_url'] = substr($canonical, 0, 2048);
 
         $usernameVal = $entry['username'] ?? null;
         $sanitized['username'] = ($usernameVal === null || !is_scalar($usernameVal))
