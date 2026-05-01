@@ -231,6 +231,15 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
      * @return void
      */
     static function deleteBlogData($blog_id, $drop = false): void {
+        // CRON GUARD: hooked only via add_action('delete_blog') from
+        // registerLifecycleHooks(), which itself runs only under is_admin().
+        // Refuse cron context as a structural backstop so
+        // CronReachableDestructiveSqlLintTest can prove the DROP TABLE below
+        // is never reachable from a daily cron tick.
+        if (defined('DOING_CRON') && DOING_CRON) {
+            return;
+        }
+
         if ($drop) {
             switch_to_blog($blog_id);
 

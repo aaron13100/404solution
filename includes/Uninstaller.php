@@ -177,6 +177,15 @@ class ABJ_404_Solution_Uninstaller {
     private static function deleteTable(string $table_name): void {
         global $wpdb;
 
+        // CRON GUARD: Uninstaller.php is loaded only by uninstall.php which
+        // WordPress invokes during operator-driven plugin removal, never via
+        // cron. Refuse cron context as a structural backstop so
+        // CronReachableDestructiveSqlLintTest can prove the DROP TABLE below
+        // is unreachable from any cron tick.
+        if (defined('DOING_CRON') && DOING_CRON) {
+            return;
+        }
+
         // @utf8-audit: opt-out — $table_name is built from $wpdb->prefix +
         // 'abj404_*' constants in the deleteTables() loop, or comes from a
         // SHOW TABLES query result; never user input.
