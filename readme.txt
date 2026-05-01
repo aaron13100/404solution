@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 4.1.10
+Stable tag: 4.1.11
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -200,6 +200,20 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Email Digest** — Weekly HTML email summarizing captured 404s, resolution rate, and a ranked table of top 404 URLs with color-coded hit badges.
 
 == Changelog ==
+
+= Version 4.1.11 (May 1, 2026) =
+
+**Bug Fixes**
+
+* Fixed the table-repair path triggered by "Table is marked as crashed" or "Incorrect key file" MyISAM errors escalating to a DROP and recreate after several failed REPAIR TABLE attempts. The droppable list previously included the `logsv2`, `lookup`, and `logs_hits` tables, so any cron tick that reached this path could destroy log history. The plugin now leaves the table alone if REPAIR cannot fix it, preserving captured-404 history regardless of how often the corrupted-table error fires.
+* Fixed the cron-reachable repair for stripped plugin tables (those missing an `id` column) using DROP and recreate instead of a non-destructive ALTER. This was the failure class behind the widespread `logs_hits` data loss observed during the 4.1.6 to 4.1.7 upgrade. The repair path now uses `ALTER TABLE ADD COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST`, which preserves all existing rows.
+* Fixed `@`-suppressed PHP warnings still triggering admin error-email reports. The most common case was `@opcache_invalidate()` on hosts that block the function via `opcache.restrict_api`; the suppression was being ignored and admins were receiving recurring emails about a no-op call. The error handler now honors `error_reporting() === 0` and lets PHP's default behavior take over.
+* Fixed the `logs_hits` rebuild taking the single-statement direct path on retention-trimmed sites with a small live row count but a large id range, which could time out at 60 seconds on shared hosts. The threshold for the direct path has been dropped to 5,000 rows so mid-size and larger ranges always go through the chunked pre-aggregation path.
+
+**Improvements**
+
+* The captured-404 list and other admin views that join the logs table now use a precomputed, indexed `canonical_url` column instead of a per-row CONCAT/COALESCE expression on every log row. The column is populated at insert time and backfilled during nightly maintenance with a 15-second per-tick budget; once the backfill completes, the admin views switch to a bare indexed-column reference, sharply reducing query cost on sites with large log tables.
+* Admin error-email reports for SQL failures now identify the originating call site (class and method, or a source-marked label) instead of the generic "inline-query" sentinel. Previously, recurring "Table doesn't exist" errors all carried the same opaque label regardless of which feature triggered them; the new label makes it possible to tell at a glance which code path produced the failure.
 
 = Version 4.1.10 (Apr 30, 2026) =
 
