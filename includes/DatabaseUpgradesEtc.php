@@ -812,14 +812,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
 	    /** @return void */
 	    function runInitialCreateTables() {
-	    	// Drop stripped tables BEFORE any CREATE TABLE IF NOT EXISTS runs.  Without
-	    	// this, an existing-but-broken table (missing the file's `id` PRIMARY KEY)
-	    	// would survive the IF NOT EXISTS check and verifyColumns would only ALTER
-	    	// ADD the missing non-PK columns — the auto_increment PK can never be
-	    	// retro-added by ALTER, leaving the table permanently broken.  Previously
-	    	// this lived only in correctIssuesBefore() (upgrade-flow only), so cron
-	    	// callers like deleteOldRedirectsCron's createDatabaseTables() (no $updatingToNewVersion
-	    	// flag) silently propagated the broken state.
+	    	// Re-add a stripped `id` PRIMARY KEY (via ALTER) BEFORE any CREATE TABLE
+	    	// IF NOT EXISTS runs.  Without this step, an existing-but-broken table
+	    	// (missing the file's `id` PRIMARY KEY) would survive the IF NOT EXISTS
+	    	// check and verifyColumns would only ALTER ADD the missing non-PK
+	    	// columns, leaving the table without its primary key.  Lives here (not
+	    	// just in correctIssuesBefore) so cron callers of createDatabaseTables()
+	    	// — which don't pass the $updatingToNewVersion flag — also repair
+	    	// stripped tables instead of propagating the broken state.
 	    	$this->repairStrippedViewCacheTable();
 
 	    	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {

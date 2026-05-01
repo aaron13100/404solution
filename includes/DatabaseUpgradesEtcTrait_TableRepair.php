@@ -53,28 +53,39 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
     /**
      * For every permanent plugin table, check whether the table exists but is
      * missing its primary `id` column — the signature of the 3.3.3 column-drop
-     * bug.  If a table is stripped, drop it so that runInitialCreateTables() can
-     * recreate it cleanly from the DDL file.
+     * bug.  When a stripped table is detected, ALTER it to add back the `id`
+     * AUTO_INCREMENT PRIMARY KEY in place; runInitialCreateTables() then runs
+     * verifyColumns to fill in any other missing columns.
+     *
+     * Why ALTER, not DROP: dropping the table during a daily cron path was the
+     * direct cause of the 4.1.6 → 4.1.7 incident, where ~93% of upgraded sites
+     * lost their `_logs_hits` table because a mis-named DDL file caused this
+     * method to mis-classify a runtime-rebuilt table as "stripped" and drop
+     * it. Even with the 4.1.8 positive-evidence guard, dropping during cron
+     * remains the wrong primitive: a future detection regression would again
+     * wipe live data. ALTER preserves whatever rows the table already holds,
+     * so the worst case of a mis-detection is a no-op rebuild of an index
+     * column the table already has — a recoverable warning, not data loss.
      *
      * Generalised in 3.3.5 from a view_cache-only fix to cover all plugin tables:
      * the 3.3.3 bug only affected view_cache.sql, but any future DDL file shipped
      * without parseable backtick column syntax would trigger the same data wipe on
      * that table with no repair path.
      *
-     * 4.1.8: Hardened to require POSITIVE evidence before dropping a table. The
+     * 4.1.8: Hardened to require POSITIVE evidence before repairing a table. The
      * 4.1.7 release shipped a DDL file whose placeholder mis-classified
      * `_logs_hits` (a runtime-rebuilt table with no `id` column) as permanent.
      * The previous "drop if no `id` in live DDL" check then wiped the table on
-     * upgrade. The current check only drops when the *file's* DDL declares an
+     * upgrade. The current check only fires when the *file's* DDL declares an
      * `id` column AND the live table is missing it — absence of `id` in a file
      * that never declared one is not evidence of stripping.
      *
      * 4.1.8: Also called from runInitialCreateTables() so that any caller of
-     * createDatabaseTables() — including non-upgrade callers like
-     * deleteOldRedirectsCron's maintenance pass — repairs stripped tables
-     * before CREATE TABLE IF NOT EXISTS turns the broken state into a permanent
-     * "id-less" table via verifyColumns ALTER ADD.  Idempotent: when the live
-     * DDL already declares `id`, every iteration short-circuits.
+     * createDatabaseTables() — including non-upgrade callers like the daily
+     * insurance check — repairs stripped tables before CREATE TABLE IF NOT
+     * EXISTS turns the broken state into a permanent table that verifyColumns
+     * cannot fully repair.  Idempotent: when the live DDL already declares
+     * `id`, every iteration short-circuits.
      *
      * @return void
      */
@@ -103,9 +114,17 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
     		}
 
     		// File declares `id`, live table is missing it — stripped.
+    		// ALTER (not DROP): preserve whatever rows the table holds so a
+    		// false-positive detection cannot lose user data.  Both MySQL 5.7+
+    		// and MariaDB 10.x accept retro-adding an AUTO_INCREMENT PRIMARY
+    		// KEY in this single-statement form; the prior comment claiming
+    		// otherwise (rationale for the original DROP) was incorrect.
     		$this->logger->infoMessage("Repairing stripped plugin table " . $tableName .
-    			" (missing id column — caused by DDL parsing bug). Dropping for clean recreation.");
-    		$this->dao->queryAndGetResults("DROP TABLE IF EXISTS " . $tableName);
+    			" (missing id column — caused by DDL parsing bug). Adding id column via ALTER.");
+    		$this->dao->queryAndGetResults(
+    			"ALTER TABLE `" . $tableName . "` " .
+    			"ADD COLUMN `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST"
+    		);
     	}
     }
 
