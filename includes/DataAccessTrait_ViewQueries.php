@@ -924,16 +924,20 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         if (array_key_exists($requestCountCacheKey, $this->redirectsForViewCountRequestCache)) {
             return intval($this->redirectsForViewCountRequestCache[$requestCountCacheKey]);
         }
-    	
-        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false, 0, PHP_INT_MAX,
-        	true);
+
+        $rawFilterText = is_string($tableOptions['filterText'] ?? null) ? $tableOptions['filterText'] : '';
+        if ($rawFilterText === '') {
+            $query = $this->getOptimizedRedirectsForViewCountQuery($sub, $tableOptions);
+        } else {
+            $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false, 0, PHP_INT_MAX, true);
+        }
 
         $this->setSqlBigSelects();
         $queryOptions = $queryTimeout > 0 ? array('timeout' => $queryTimeout) : array();
         $results = $this->queryAndGetResults($query, $queryOptions);
         $lastErrorRaw = $results['last_error'] ?? '';
         $lastError = is_string($lastErrorRaw) ? $lastErrorRaw : '';
-        if (!empty($lastError) && $this->isCollationError($lastError)) {
+        if ($rawFilterText !== '' && !empty($lastError) && $this->isCollationError($lastError)) {
             $retryOptions = $tableOptions;
             $retryOptions['forceCollate'] = 'utf8mb4_general_ci';
             $retryQuery = $this->getRedirectsForViewQuery($sub, $retryOptions, false, 0, PHP_INT_MAX, true);
@@ -964,6 +968,49 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             set_transient($countCacheKey, $countValue, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
         }
         return $countValue;
+    }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return string
+     */
+    private function getOptimizedRedirectsForViewCountQuery(string $sub, array $tableOptions): string {
+        global $abj404_redirect_types, $abj404_captured_types;
+
+        $statusTypes = '';
+        if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == ABJ404_TRASH_FILTER) {
+            if ($sub == 'abj404_redirects') {
+                $statusTypes = implode(", ", $abj404_redirect_types);
+            } else if ($sub == 'abj404_captured') {
+                $statusTypes = implode(", ", $abj404_captured_types);
+            }
+        } else if ($tableOptions['filter'] == ABJ404_STATUS_MANUAL) {
+            $statusTypes = implode(", ", array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_REGEX));
+        } else if ($tableOptions['filter'] == ABJ404_HANDLED_FILTER) {
+            $statusTypes = implode(", ", array(ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
+        } else {
+            $statusTypes = $tableOptions['filter'];
+        }
+        $statusTypes = preg_replace('/[^\d, ]/', '', trim(is_string($statusTypes) ? $statusTypes : ''));
+
+        $trashValue = ($tableOptions['filter'] == ABJ404_TRASH_FILTER) ? 1 : 0;
+
+        $scoreRangeClause = '';
+        $rawScoreRange = is_string($tableOptions['score_range'] ?? '') ? ($tableOptions['score_range'] ?? 'all') : 'all';
+        switch ($rawScoreRange) {
+            case 'high': $scoreRangeClause = 'AND wp_abj404_redirects.score >= 80'; break;
+            case 'medium': $scoreRangeClause = 'AND wp_abj404_redirects.score >= 50 AND wp_abj404_redirects.score < 80'; break;
+            case 'low': $scoreRangeClause = 'AND wp_abj404_redirects.score IS NOT NULL AND wp_abj404_redirects.score < 50'; break;
+            case 'manual': $scoreRangeClause = 'AND wp_abj404_redirects.score IS NULL'; break;
+        }
+
+        $query = "SELECT COUNT(*) AS count\n" .
+                 "FROM {wp_abj404_redirects} wp_abj404_redirects\n" .
+                 "WHERE 1 and status IN (" . $statusTypes . ") AND disabled = " . intval($trashValue) . "\n" .
+                 $scoreRangeClause;
+
+        return $this->doTableNameReplacements($query);
     }
     
     /**

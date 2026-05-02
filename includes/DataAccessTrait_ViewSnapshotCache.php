@@ -94,6 +94,10 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             'stage_started_at' => 0,
             'stage_completed_at' => 0,
             'attempts_by_stage' => array('rows' => 0, 'count' => 0),
+            'timings_by_stage' => array(
+                'rows' => array('last_ms' => 0, 'max_ms' => 0, 'last_completed_at' => 0, 'last_error' => ''),
+                'count' => array('last_ms' => 0, 'max_ms' => 0, 'last_completed_at' => 0, 'last_error' => ''),
+            ),
             'query_label' => 'getRedirectsForView',
             'last_error' => '',
             'logged_stale_by_stage' => array(),
@@ -110,15 +114,40 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         }
         $out['stage_started_at'] = intval($out['stage_started_at']);
         $out['stage_completed_at'] = intval($out['stage_completed_at']);
+
         $attempts = is_array($out['attempts_by_stage']) ? $out['attempts_by_stage'] : array();
         $out['attempts_by_stage'] = array(
             'rows' => intval($attempts['rows'] ?? 0),
             'count' => intval($attempts['count'] ?? 0),
         );
+
+        $timings = is_array($out['timings_by_stage']) ? $out['timings_by_stage'] : array();
+        $out['timings_by_stage'] = array(
+            'rows' => $this->normalizeStageTiming($timings['rows'] ?? null),
+            'count' => $this->normalizeStageTiming($timings['count'] ?? null),
+        );
+
         $out['query_label'] = is_string($out['query_label']) ? $out['query_label'] : $this->getViewWarmupStageQueryLabel((string)$out['stage']);
         $out['last_error'] = is_string($out['last_error']) ? $out['last_error'] : '';
         $out['logged_stale_by_stage'] = is_array($out['logged_stale_by_stage']) ? $out['logged_stale_by_stage'] : array();
         return $out;
+    }
+
+    /**
+     * @param mixed $timing
+     * @return array<string, mixed>
+     */
+    private function normalizeStageTiming($timing): array {
+        $default = array('last_ms' => 0, 'max_ms' => 0, 'last_completed_at' => 0, 'last_error' => '');
+        if (!is_array($timing)) {
+            return $default;
+        }
+        return array(
+            'last_ms' => intval($timing['last_ms'] ?? 0),
+            'max_ms' => intval($timing['max_ms'] ?? 0),
+            'last_completed_at' => intval($timing['last_completed_at'] ?? 0),
+            'last_error' => is_string($timing['last_error'] ?? '') ? (string)$timing['last_error'] : '',
+        );
     }
 
     /** @param string $stage @return string */
@@ -254,6 +283,7 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         $stageOptions['_abj404_query_timeout'] = self::VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS;
         $stageOptions['_abj404_throw_on_view_query_error'] = true;
 
+        $startMs = microtime(true);
         try {
             if ($stage === 'rows') {
                 $this->getRedirectsForView($sub, $stageOptions);
@@ -266,14 +296,50 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
                 $state['stage'] = 'count';
                 $state['query_label'] = 'getRedirectsForViewCount';
             }
+            $elapsedMs = (int)round((microtime(true) - $startMs) * 1000);
             $state['stage_completed_at'] = time();
             $state['last_error'] = '';
+
+            $timings = $state['timings_by_stage'][$stage];
+            $timings['last_ms'] = $elapsedMs;
+            $timings['max_ms'] = max($timings['max_ms'], $elapsedMs);
+            $timings['last_completed_at'] = $state['stage_completed_at'];
+            $timings['last_error'] = '';
+            $state['timings_by_stage'][$stage] = $timings;
+
+            if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'debugMessage')) {
+                $this->logger->debugMessage(sprintf(
+                    "[warmup] shape=%s stage=%s ms=%d attempts=%d error=",
+                    substr($shapeKey, 0, 8),
+                    $stage,
+                    $elapsedMs,
+                    $attemptCount + 1
+                ));
+            }
+
             $this->setViewWarmupState($optionName, $state);
             return $this->formatViewWarmupResponse($state, $state['status'] === 'ready');
         } catch (Throwable $e) {
+            $elapsedMs = (int)round((microtime(true) - $startMs) * 1000);
             $state['last_error'] = $e->getMessage();
             $state['stage_completed_at'] = time();
             $state['status'] = (intval($attempts[$stage] ?? 0) >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) ? 'blocked' : 'idle';
+
+            $timings = $state['timings_by_stage'][$stage];
+            $timings['last_error'] = $state['last_error'];
+            $state['timings_by_stage'][$stage] = $timings;
+
+            if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'debugMessage')) {
+                $this->logger->debugMessage(sprintf(
+                    "[warmup] shape=%s stage=%s ms=%d attempts=%d error=%s",
+                    substr($shapeKey, 0, 8),
+                    $stage,
+                    $elapsedMs,
+                    $attemptCount + 1,
+                    $state['last_error']
+                ));
+            }
+
             $this->logViewWarmupFailure($sub, $tableOptions, $state);
             $this->setViewWarmupState($optionName, $state);
             return $this->formatViewWarmupResponse($state, false);
@@ -296,6 +362,7 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             'stageStartedAt' => intval($state['stage_started_at'] ?? 0),
             'stageCompletedAt' => intval($state['stage_completed_at'] ?? 0),
             'attemptsByStage' => is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array(),
+            'timingsByStage' => is_array($state['timings_by_stage'] ?? null) ? $state['timings_by_stage'] : array(),
             'lastError' => is_string($state['last_error'] ?? '') ? (string)$state['last_error'] : '',
         );
     }

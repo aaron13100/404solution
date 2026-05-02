@@ -100,11 +100,16 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
     };
 }
 
-function abj404FormatRefreshingStageMessage(baseMessage, stage, queryLabel, subpage) {
+function abj404FormatRefreshingStageMessage(baseMessage, stage, queryLabel, subpage, timingMs, completedStage) {
     var diagnostics = abj404AjaxStageDiagnostics(stage, subpage);
     var stageNumber = diagnostics.stageNumber || '?';
     var label = queryLabel || diagnostics.queryLabel || stage || 'unknown';
-    return (baseMessage || 'Currently refreshing data') + ' (stage ' + stageNumber + ', ' + label + ')';
+    var completedText = '';
+    if (completedStage && timingMs > 0) {
+        var completedDiag = abj404AjaxStageDiagnostics(completedStage === 'rows' ? 'table_cache_rows' : 'table_cache_count', subpage);
+        completedText = 'Stage ' + (completedDiag.stageNumber || '?') + ' complete in ' + timingMs + ' ms. ';
+    }
+    return completedText + (baseMessage || 'Currently refreshing data') + ' (stage ' + stageNumber + ', ' + label + ')';
 }
 
 function abj404StartStageProgressPolling(config) {
@@ -617,14 +622,30 @@ function warmTableCacheStage(triggerItem, options) {
         success: function(result) {
             stopStageProgressPolling();
             if (result && result.stage && result.queryLabel) {
-                jQuery('.abj404-refresh-status').text(
-                    abj404FormatRefreshingStageMessage(
-                        options.stageProgressMessage || 'Currently refreshing data',
-                        result.stage === 'count' ? 'table_cache_count' : 'table_cache_rows',
-                        result.queryLabel,
-                        subpage
-                    )
+                var completedStage = (result.stage === 'count' && !result.ready) ? 'rows' : (result.ready ? 'count' : '');
+                var timingMs = 0;
+                if (completedStage && result.timingsByStage && result.timingsByStage[completedStage]) {
+                    timingMs = result.timingsByStage[completedStage].last_ms;
+                }
+
+                var message = abj404FormatRefreshingStageMessage(
+                    options.stageProgressMessage || 'Currently refreshing data',
+                    result.stage === 'count' ? 'table_cache_count' : 'table_cache_rows',
+                    result.queryLabel,
+                    subpage,
+                    timingMs,
+                    completedStage
                 );
+                jQuery('.abj404-refresh-status').text(message);
+
+                if (completedStage) {
+                    console.log('[abj404 warmup]', {
+                        stage: completedStage,
+                        ms: timingMs,
+                        attempts: (result.attemptsByStage && result.attemptsByStage[completedStage]) || 0,
+                        error: (result.timingsByStage && result.timingsByStage[completedStage] && result.timingsByStage[completedStage].last_error) || ''
+                    });
+                }
             }
             if (typeof options.onComplete === 'function') {
                 options.onComplete(result || {});
