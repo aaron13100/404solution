@@ -989,7 +989,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         global $wpdb;
 
         $logsTableColumns = '';
-        $logsTableJoin = '';
+        $logsTableColumns = "null as logshits, \n null as logsid, \n null as last_used, \n";
         $statusTypes = '';
         $trashValue = '';
         $selectCountReplacement = '/* selecting data as usual */';
@@ -1000,23 +1000,19 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         		"count(*) as count\n /* only selecting for count";
         }
 
-        // if we're showing all rows include all of the log data in the query already. this makes the query very slow. 
-        // this should be replaced by the dynamic loading of log data using ajax queries as the page is viewed.
-        if ($queryAllRowsAtOnce) {
-             $logsTableColumns = "logstable.logshits as logshits, \n" .
-                    "logstable.logsid, \n" .
-                    "logstable.last_used, \n";
-        } else {
-            $logsTableColumns = "null as logshits, \n null as logsid, \n null as last_used, \n";
-        }        
-
-        if ($queryAllRowsAtOnce) {
+        if ($queryAllRowsAtOnce && !$selectCountOnly) {
             // create a temp table and use that instead of a subselect to avoid the sql error
             // "The SELECT would examine more than MAX_JOIN_SIZE rows"
             $this->maybeUpdateRedirectsForViewHitsTable();
 
             // Verify table was actually created before using it (handles silent creation failures)
             if ($this->logsHitsTableExists()) {
+                // if we're showing all rows include all of the log data in the query already. this makes the query very slow. 
+                // this should be replaced by the dynamic loading of log data using ajax queries as the page is viewed.
+                $logsTableColumns = "logstable.logshits as logshits, \n" .
+                    "logstable.logsid, \n" .
+                    "logstable.last_used, \n";
+
                 // canonical_url is the persisted CONCAT('/', TRIM(BOTH '/' FROM url))
                 // form (added 4.1.10) so this JOIN is a single indexed equality
                 // lookup against logs_hits.requested_url instead of evaluating
@@ -1030,7 +1026,6 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
                         "concat('/', trim(both '/' from wp_abj404_redirects.url))) \n ";
             } else {
                 // Fall back to null columns if table creation failed
-                $logsTableColumns = "null as logshits, \n null as logsid, \n null as last_used, \n";
                 $this->logger->debugMessage("logs_hits table not available, falling back to null columns");
             }
         }
