@@ -241,7 +241,8 @@ add_action('doing_it_wrong_run', function($function_name, $message, $version) {
 			}
 
         } catch (Throwable $e) {
-            // error_log('Failed to log early translation stack trace: ' . $e->getMessage());
+            error_log('404 Solution: failed to capture early translation stack trace: ' .
+                $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
         }
     }
 }, 10, 3);
@@ -564,6 +565,8 @@ if ($GLOBALS['abj404_boot_ok']) {
 			// so the user still has a menu item with error details instead of nothing.
 			$GLOBALS['abj404_boot_ok'] = false;
 			$GLOBALS['abj404_boot_error'] = 'Plugin initialization failed: ' . $e->getMessage();
+			error_log('404 Solution: admin initialization failed: ' .
+				$e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
 			add_action('admin_menu', 'abj404_degraded_admin_menu');
 			add_action('admin_notices', 'abj404_degraded_admin_notice');
 		}
@@ -759,6 +762,8 @@ if (!function_exists('abj404_admin_page_callback')) {
 				ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay();
 			} catch (\Throwable $e) {
 				$renderError = $e;
+				error_log('404 Solution: admin page rendering failed: ' .
+					$e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
 			}
 			$output = ob_get_clean();
 
