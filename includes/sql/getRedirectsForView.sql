@@ -69,7 +69,9 @@ from    {wp_abj404_redirects} wp_abj404_redirects
         LEFT OUTER JOIN {wp_posts} wp_posts
         on CAST(wp_abj404_redirects.final_dest AS UNSIGNED) = wp_posts.id
 
+        -- logsTableJoin starts here
         {logsTableJoin}
+        -- logsTableJoin ends here
 
         left outer join {wp_terms} terms
         on CAST(wp_abj404_redirects.final_dest AS UNSIGNED) = terms.term_id
@@ -78,7 +80,10 @@ from    {wp_abj404_redirects} wp_abj404_redirects
         on wp_options.option_name = 'blogname'
 
 where 1 and (status in ({statusTypes})) and disabled = {trashValue}
+
+-- scoreRangeClause starts here
 {scoreRangeClause}
+-- scoreRangeClause ends here
 
 /* {searchFilterForRedirectsExists}
 and replace(lower(CONVERT(CONCAT(wp_abj404_redirects.url, '////', 
