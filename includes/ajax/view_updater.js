@@ -502,7 +502,7 @@ function startPlaceholderTableHydration(triggerItem) {
                     paginationLinksChange(triggerItem, {
                         backgroundRefresh: true,
                         detectOnly: false,
-                        cacheMode: 'cache_or_pending',
+                        cacheMode: 'normal',
                         autoHydratePlaceholder: true,
                         onComplete: function() {
                             window.abj404PlaceholderHydrationRunning = false;
