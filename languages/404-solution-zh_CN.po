@@ -3750,3 +3750,11 @@ msgstr "无法加载Google Search Console部分。"
 #: includes/EmailDigest.php
 msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
 msgstr "热门URL不可用：日志汇总正在重建中。将在下一次摘要中提供。"
+msgid "AJAX Load Times"
+msgstr "AJAX 加载时间"
+
+msgid "Debug Info"
+msgstr "调试信息"
+
+msgid "Preparing table data in the background."
+msgstr "正在后台准备表格数据。"

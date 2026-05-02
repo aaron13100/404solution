@@ -2718,3 +2718,11 @@ msgstr ""
 #: includes/EmailDigest.php
 msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
 msgstr ""
+msgid "AJAX Load Times"
+msgstr ""
+
+msgid "Debug Info"
+msgstr ""
+
+msgid "Preparing table data in the background."
+msgstr ""

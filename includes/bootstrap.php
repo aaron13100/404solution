@@ -284,7 +284,7 @@ function abj_404_solution_init_services() {
      * per PHP request, matching legacy `getInstance()` semantics.
      */
     $container->set('request_context', function($c) {
-        return new ABJ_404_Solution_RequestContext();
+        return ABJ_404_Solution_RequestContext::getInstance();
     });
 
     // =========================================================================

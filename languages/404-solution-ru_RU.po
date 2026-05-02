@@ -3751,3 +3751,11 @@ msgstr "Не удалось загрузить раздел Google Search Consol
 #: includes/EmailDigest.php
 msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
 msgstr "Лучшие URL-адреса недоступны: сводка журналов перестраивается. Будет доступна в следующей сводке."
+msgid "AJAX Load Times"
+msgstr "Время загрузки AJAX"
+
+msgid "Debug Info"
+msgstr "Отладочная информация"
+
+msgid "Preparing table data in the background."
+msgstr "Подготовка данных таблицы в фоновом режиме."

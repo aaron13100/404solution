@@ -3784,3 +3784,15 @@ msgstr ""
 #: includes/EmailDigest.php
 msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
 msgstr "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
+
+#: includes/html/adminFooter.html
+msgid "AJAX Load Times"
+msgstr "AJAX Load Times"
+
+#: includes/html/adminFooter.html
+msgid "Debug Info"
+msgstr "Debug Info"
+
+#: includes/ajax/ViewUpdater.php
+msgid "Preparing table data in the background."
+msgstr "Preparing table data in the background."

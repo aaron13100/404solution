@@ -3773,3 +3773,11 @@ msgstr "تعذر تحميل قسم Google Search Console."
 #: includes/EmailDigest.php
 msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
 msgstr "أهم عناوين URL غير متاحة: تتم إعادة بناء تجميع السجلات. ستكون متاحة في الملخص التالي."
+msgid "AJAX Load Times"
+msgstr "أوقات تحميل AJAX"
+
+msgid "Debug Info"
+msgstr "معلومات التصحيح"
+
+msgid "Preparing table data in the background."
+msgstr "جارٍ تحضير بيانات الجدول في الخلفية."

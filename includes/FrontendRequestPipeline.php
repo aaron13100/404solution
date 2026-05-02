@@ -432,12 +432,19 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     /**
      * Evaluate an already-fetched redirect: check actionability, health, and conditions.
      *
-     * @param array<string, mixed> $redirect The redirect row from getActiveRedirectForURL().
+     * @param array<string, mixed>|null $redirect The redirect row from getActiveRedirectForURL().
      * @param string $labelSuffix Appended to trace step labels (e.g. ' (without comments)').
      * @param array<string, mixed> $options Plugin options.
      * @return array<string, mixed>|null The redirect row if actionable, null otherwise.
      */
-    private function evaluateRedirectCandidate(array $redirect, string $labelSuffix, array $options): ?array {
+    private function evaluateRedirectCandidate(?array $redirect, string $labelSuffix, array $options): ?array {
+        if ($redirect === null) {
+            if ($labelSuffix === '') {
+                $this->addTraceStep('Redirect lookup', 'No matching redirect');
+            }
+            return null;
+        }
+
         $typeHomeInt = defined('ABJ404_TYPE_HOME') ? (int)ABJ404_TYPE_HOME : 5;
         $redirectType = isset($redirect['type']) && is_scalar($redirect['type']) ? (int)$redirect['type'] : 0;
 

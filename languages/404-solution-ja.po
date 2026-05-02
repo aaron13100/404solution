@@ -3757,3 +3757,11 @@ msgstr "Google Search Consoleセクションを読み込めませんでした。
 #: includes/EmailDigest.php
 msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
 msgstr "上位のURLは利用できません：ログ集計を再構築中です。次回のダイジェストで利用可能になります。"
+msgid "AJAX Load Times"
+msgstr "AJAX 読み込み時間"
+
+msgid "Debug Info"
+msgstr "デバッグ情報"
+
+msgid "Preparing table data in the background."
+msgstr "バックグラウンドでテーブルデータを準備しています。"

@@ -6,6 +6,8 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/DataAccessTrait_Maintenance.php';
+require_once __DIR__ . '/DataAccessTrait_Connection.php';
+require_once __DIR__ . '/DataAccessTrait_ViewMetadata.php';
 require_once __DIR__ . '/DataAccessTrait_ViewQueries.php';
 require_once __DIR__ . '/DataAccessTrait_ViewSnapshotCache.php';
 require_once __DIR__ . '/DataAccessTrait_Logs.php';
@@ -122,6 +124,8 @@ class ABJ_404_Solution_DataAccess {
     private $redirectsForViewCountRequestCache = array();
 
     use ABJ_404_Solution_DataAccess_MaintenanceTrait;
+    use ABJ_404_Solution_DataAccess_ConnectionTrait;
+    use ABJ_404_Solution_DataAccess_ViewMetadataTrait;
     use ABJ_404_Solution_DataAccess_ViewQueriesTrait;
     use ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait;
     use ABJ_404_Solution_DataAccess_LogsTrait;
@@ -223,57 +227,6 @@ class ABJ_404_Solution_DataAccess {
         self::$instance = new ABJ_404_Solution_DataAccess();
 
         return self::$instance;
-    }
-
-    /**
-     * Ensure database connection is active and reconnect if necessary.
-     *
-     * Fix for MySQL Server Gone Away error (reported by 3 users - 7% of errors)
-     * This prevents "MySQL server has gone away" errors during long-running operations
-     * by checking the connection status and reconnecting if needed.
-     *
-     * @return bool True if connection is active, false otherwise
-     */
-    private function ensureConnection() {
-        global $wpdb;
-
-        // Check if wpdb exists
-        if (!isset($wpdb)) {
-            return true; // Assume connection is OK if wpdb doesn't exist
-        }
-
-        // Try to check connection (WordPress 3.9+)
-        try {
-            // Try to call check_connection - if it doesn't exist, we'll catch the error
-            $isConnected = $wpdb->check_connection(false);
-
-            // If not connected, attempt reconnection
-            if (!$isConnected) {
-                $this->logger->debugMessage("Database connection lost, attempting to reconnect...");
-
-                // Attempt to reconnect
-                $wpdb->db_connect();
-
-                // Verify reconnection succeeded
-                if ($wpdb->check_connection(false)) {
-                    $this->logger->debugMessage("Database reconnection successful");
-                    return true;
-                } else {
-                    $this->logger->errorMessage("Failed to reconnect to database");
-                    return false;
-                }
-            }
-        } catch (Exception $e) {
-            // If check fails, assume connection is OK to avoid breaking functionality
-            $this->logger->debugMessage("Connection check failed: " . $e->getMessage());
-            return true;
-        } catch (Error $e) {
-            // Handle fatal errors (e.g., method doesn't exist)
-            $this->logger->debugMessage("Connection check not available: " . $e->getMessage());
-            return true;
-        }
-
-        return true;
     }
 
     /**
@@ -788,11 +741,7 @@ class ABJ_404_Solution_DataAccess {
             . ', log_errors_option: ' . ($logErrors ? 'true' : 'false')
             . ', execution_time: ' . $elapsed;
 
-        if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'errorMessage')) {
-            $this->logger->errorMessage($message);
-        } else {
-            error_log('404 Solution: ' . $message);
-        }
+        $this->logger->errorMessage($message);
     }
 
     /**
@@ -811,11 +760,8 @@ class ABJ_404_Solution_DataAccess {
             . ', route: ' . ($producesRows ? 'get_results' : 'query')
             . ', log_errors_option: ' . ($logErrors ? 'true' : 'false');
 
-        if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'errorMessage')) {
-            $this->logger->errorMessage($message, $e);
-        } else {
-            error_log('404 Solution: ' . $message);
-        }
+        $exception = $e instanceof Exception ? $e : new Exception($e->getMessage(), (int)$e->getCode(), $e);
+        $this->logger->errorMessage($message, $exception);
     }
 
     /**
@@ -991,7 +937,10 @@ class ABJ_404_Solution_DataAccess {
             abj404_query_budget_record($this->extractSqlFilename($query), $elapsedMs, $timeoutSeconds);
         }
         $this->harvestWpdbResult($result);
-        $this->logObservedSqlError($query, $result, $options, $producesRows);
+        $lastErrorForObservedLog = is_string($result['last_error'] ?? null) ? $result['last_error'] : '';
+        if ($lastErrorForObservedLog === '' || !$this->isTransientConnectionError($lastErrorForObservedLog)) {
+            $this->logObservedSqlError($query, $result, $options, $producesRows);
+        }
 
         if ($producesRows && !is_array($result['rows'])) {
             // In production (WP_DEBUG off), only log SQL filename to avoid PII exposure
@@ -1096,20 +1045,21 @@ class ABJ_404_Solution_DataAccess {
             // already handled by dedicated repair/retry handlers above or by
             // noteDatabaseIssueFromError() (admin notice + write-block cooldown).
             // Log as WARN instead of ERROR to avoid triggering dev email reports.
+            $lastErrorForClassification = is_string($result['last_error']) ? $result['last_error'] : '';
             if ($reportError && (
-                $this->isDiskFullError($result['last_error']) ||
-                $this->isReadOnlyError($result['last_error']) ||
-                $this->isQuotaLimitError($result['last_error']) ||
-                $this->isInvalidDataError($result['last_error']) ||
-                $this->isCollationError($result['last_error']) ||
-                $this->isMissingPluginTableError($result['last_error']) ||
-                $this->isIncorrectKeyFileError($result['last_error']) ||
-                $this->isCrashedTableError($result['last_error']) ||
-                $this->isDeadlockOrLockTimeoutError($result['last_error']) ||
-                $this->isTransientConnectionError($result['last_error']) ||
-                $this->isQueryTimeoutError($result['last_error'])
+                $this->isDiskFullError($lastErrorForClassification) ||
+                $this->isReadOnlyError($lastErrorForClassification) ||
+                $this->isQuotaLimitError($lastErrorForClassification) ||
+                $this->isInvalidDataError($lastErrorForClassification) ||
+                $this->isCollationError($lastErrorForClassification) ||
+                $this->isMissingPluginTableError($lastErrorForClassification) ||
+                $this->isIncorrectKeyFileError($lastErrorForClassification) ||
+                $this->isCrashedTableError($lastErrorForClassification) ||
+                $this->isDeadlockOrLockTimeoutError($lastErrorForClassification) ||
+                $this->isTransientConnectionError($lastErrorForClassification) ||
+                $this->isQueryTimeoutError($lastErrorForClassification)
             )) {
-                $this->logger->warn("Server-side DB issue (handled): " . $result['last_error']);
+                $this->logger->warn("Server-side DB issue (handled): " . $lastErrorForClassification);
                 $reportError = false;
             }
 

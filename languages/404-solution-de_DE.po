@@ -3742,3 +3742,11 @@ msgstr "Google Search Console Bereich konnte nicht geladen werden."
 #: includes/EmailDigest.php
 msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
 msgstr "Top-URLs nicht verfügbar: Die Protokollzusammenfassung wird neu aufgebaut. Verfügbar in der nächsten Übersicht."
+msgid "AJAX Load Times"
+msgstr "AJAX-Ladezeiten"
+
+msgid "Debug Info"
+msgstr "Debug-Informationen"
+
+msgid "Preparing table data in the background."
+msgstr "Tabellendaten werden im Hintergrund vorbereitet."

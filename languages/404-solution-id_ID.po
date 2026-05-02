@@ -3737,3 +3737,11 @@ msgstr "Tidak dapat memuat bagian Google Search Console."
 #: includes/EmailDigest.php
 msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
 msgstr "URL teratas tidak tersedia: ringkasan log sedang dibangun ulang. Akan tersedia di ringkasan berikutnya."
+msgid "AJAX Load Times"
+msgstr "Waktu muat AJAX"
+
+msgid "Debug Info"
+msgstr "Informasi debug"
+
+msgid "Preparing table data in the background."
+msgstr "Menyiapkan data tabel di latar belakang."

@@ -3738,3 +3738,11 @@ msgstr "Impossible de charger la section Google Search Console."
 #: includes/EmailDigest.php
 msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
 msgstr "URL principales indisponibles : la consolidation des journaux est en cours de reconstruction. Sera disponible dans le prochain résumé."
+msgid "AJAX Load Times"
+msgstr "Temps de chargement AJAX"
+
+msgid "Debug Info"
+msgstr "Informations de débogage"
+
+msgid "Preparing table data in the background."
+msgstr "Préparation des données du tableau en arrière-plan."

@@ -105,20 +105,29 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         if (!is_array($state)) {
             return $default;
         }
+        /** @var array<string, mixed> $out */
         $out = array_merge($default, $state);
-        if (!in_array($out['status'], array('idle', 'running', 'ready', 'blocked', 'error'), true)) {
+        $status = is_string($out['status'] ?? null) ? $out['status'] : 'idle';
+        if (!in_array($status, array('idle', 'running', 'ready', 'blocked', 'error'), true)) {
             $out['status'] = 'idle';
+        } else {
+            $out['status'] = $status;
         }
-        if (!in_array($out['stage'], array('rows', 'count'), true)) {
+        $stage = is_string($out['stage'] ?? null) ? $out['stage'] : 'rows';
+        if (!in_array($stage, array('rows', 'count'), true)) {
             $out['stage'] = 'rows';
+        } else {
+            $out['stage'] = $stage;
         }
-        $out['stage_started_at'] = intval($out['stage_started_at']);
-        $out['stage_completed_at'] = intval($out['stage_completed_at']);
+        $stageStartedAt = $out['stage_started_at'] ?? 0;
+        $stageCompletedAt = $out['stage_completed_at'] ?? 0;
+        $out['stage_started_at'] = is_scalar($stageStartedAt) ? intval($stageStartedAt) : 0;
+        $out['stage_completed_at'] = is_scalar($stageCompletedAt) ? intval($stageCompletedAt) : 0;
 
         $attempts = is_array($out['attempts_by_stage']) ? $out['attempts_by_stage'] : array();
         $out['attempts_by_stage'] = array(
-            'rows' => intval($attempts['rows'] ?? 0),
-            'count' => intval($attempts['count'] ?? 0),
+            'rows' => is_scalar($attempts['rows'] ?? 0) ? intval($attempts['rows']) : 0,
+            'count' => is_scalar($attempts['count'] ?? 0) ? intval($attempts['count']) : 0,
         );
 
         $timings = is_array($out['timings_by_stage']) ? $out['timings_by_stage'] : array();
@@ -127,8 +136,8 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             'count' => $this->normalizeStageTiming($timings['count'] ?? null),
         );
 
-        $out['query_label'] = is_string($out['query_label']) ? $out['query_label'] : $this->getViewWarmupStageQueryLabel((string)$out['stage']);
-        $out['last_error'] = is_string($out['last_error']) ? $out['last_error'] : '';
+        $out['query_label'] = is_string($out['query_label'] ?? null) ? $out['query_label'] : $this->getViewWarmupStageQueryLabel((string)$out['stage']);
+        $out['last_error'] = is_string($out['last_error'] ?? null) ? $out['last_error'] : '';
         $out['logged_stale_by_stage'] = is_array($out['logged_stale_by_stage']) ? $out['logged_stale_by_stage'] : array();
         return $out;
     }
@@ -142,11 +151,15 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         if (!is_array($timing)) {
             return $default;
         }
+        $lastMs = $timing['last_ms'] ?? 0;
+        $maxMs = $timing['max_ms'] ?? 0;
+        $lastCompletedAt = $timing['last_completed_at'] ?? 0;
+        $lastError = $timing['last_error'] ?? '';
         return array(
-            'last_ms' => intval($timing['last_ms'] ?? 0),
-            'max_ms' => intval($timing['max_ms'] ?? 0),
-            'last_completed_at' => intval($timing['last_completed_at'] ?? 0),
-            'last_error' => is_string($timing['last_error'] ?? '') ? (string)$timing['last_error'] : '',
+            'last_ms' => is_scalar($lastMs) ? intval($lastMs) : 0,
+            'max_ms' => is_scalar($maxMs) ? intval($maxMs) : 0,
+            'last_completed_at' => is_scalar($lastCompletedAt) ? intval($lastCompletedAt) : 0,
+            'last_error' => is_string($lastError) ? $lastError : '',
         );
     }
 
@@ -229,35 +242,41 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
 
         $stage = (string)$state['stage'];
         $attempts = is_array($state['attempts_by_stage']) ? $state['attempts_by_stage'] : array('rows' => 0, 'count' => 0);
-        $attemptCount = intval($attempts[$stage] ?? 0);
+        $attemptCountRaw = $attempts[$stage] ?? 0;
+        $attemptCount = is_scalar($attemptCountRaw) ? intval($attemptCountRaw) : 0;
 
         if ($state['status'] === 'running') {
-            $elapsed = $now - intval($state['stage_started_at']);
+            $stageStartedAt = $state['stage_started_at'] ?? 0;
+            $elapsed = $now - (is_scalar($stageStartedAt) ? intval($stageStartedAt) : 0);
             if ($elapsed <= self::VIEW_SNAPSHOT_WARMUP_STALE_SECONDS) {
                 return $this->formatViewWarmupResponse($state, false);
             }
             if ($attemptCount >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
                 $state['status'] = 'blocked';
-                $previousError = is_string($state['last_error'] ?? '') ? trim((string)$state['last_error']) : '';
+                $previousLastError = $state['last_error'] ?? '';
+                $previousError = is_string($previousLastError) ? trim($previousLastError) : '';
                 $state['last_error'] = 'Previous warmup stage was killed or stalled too many times.'
                     . ($this->isViewWarmupErrorDiagnostic($previousError) ? ' Previous error: ' . $previousError : '');
                 $this->logViewWarmupFailure($sub, $tableOptions, $state);
                 $this->setViewWarmupState($optionName, $state);
                 return $this->formatViewWarmupResponse($state, false);
             }
-            $loggedKey = $stage . ':' . intval($state['stage_started_at']);
-            if (empty($state['logged_stale_by_stage'][$loggedKey])) {
+            $loggedKey = $stage . ':' . (is_scalar($stageStartedAt) ? intval($stageStartedAt) : 0);
+            $loggedStaleByStage = is_array($state['logged_stale_by_stage'] ?? null) ? $state['logged_stale_by_stage'] : array();
+            if (empty($loggedStaleByStage[$loggedKey])) {
                 $this->logStaleViewWarmupStage($sub, $tableOptions, $state, $elapsed, $attemptCount);
-                $state['logged_stale_by_stage'][$loggedKey] = 1;
+                $loggedStaleByStage[$loggedKey] = 1;
+                $state['logged_stale_by_stage'] = $loggedStaleByStage;
             }
         }
 
         if ($attemptCount >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
-            $previousError = is_string($state['last_error'] ?? '') ? trim((string)$state['last_error']) : '';
+            $previousLastError = $state['last_error'] ?? '';
+            $previousError = is_string($previousLastError) ? trim($previousLastError) : '';
             if (!$this->isViewWarmupErrorDiagnostic($previousError)) {
                 $attempts[$stage] = self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS - 1;
                 $state['attempts_by_stage'] = $attempts;
-                $attemptCount = intval($attempts[$stage] ?? 0);
+                $attemptCount = is_scalar($attempts[$stage] ?? 0) ? intval($attempts[$stage]) : 0;
             }
         }
 
@@ -300,22 +319,22 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             $state['stage_completed_at'] = time();
             $state['last_error'] = '';
 
-            $timings = $state['timings_by_stage'][$stage];
+            $timingsByStage = is_array($state['timings_by_stage'] ?? null) ? $state['timings_by_stage'] : array();
+            $timings = $this->normalizeStageTiming($timingsByStage[$stage] ?? null);
             $timings['last_ms'] = $elapsedMs;
             $timings['max_ms'] = max($timings['max_ms'], $elapsedMs);
             $timings['last_completed_at'] = $state['stage_completed_at'];
             $timings['last_error'] = '';
-            $state['timings_by_stage'][$stage] = $timings;
+            $timingsByStage[$stage] = $timings;
+            $state['timings_by_stage'] = $timingsByStage;
 
-            if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'debugMessage')) {
-                $this->logger->debugMessage(sprintf(
-                    "[warmup] shape=%s stage=%s ms=%d attempts=%d error=",
-                    substr($shapeKey, 0, 8),
-                    $stage,
-                    $elapsedMs,
-                    $attemptCount + 1
-                ));
-            }
+            $this->logger->debugMessage(sprintf(
+                "[warmup] shape=%s stage=%s ms=%d attempts=%d error=",
+                substr($shapeKey, 0, 8),
+                $stage,
+                $elapsedMs,
+                $attemptCount + 1
+            ));
 
             $this->setViewWarmupState($optionName, $state);
             return $this->formatViewWarmupResponse($state, $state['status'] === 'ready');
@@ -323,22 +342,23 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             $elapsedMs = (int)round((microtime(true) - $startMs) * 1000);
             $state['last_error'] = $e->getMessage();
             $state['stage_completed_at'] = time();
-            $state['status'] = (intval($attempts[$stage] ?? 0) >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) ? 'blocked' : 'idle';
+            $currentAttempts = is_scalar($attempts[$stage] ?? 0) ? intval($attempts[$stage]) : 0;
+            $state['status'] = ($currentAttempts >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) ? 'blocked' : 'idle';
 
-            $timings = $state['timings_by_stage'][$stage];
+            $timingsByStage = is_array($state['timings_by_stage'] ?? null) ? $state['timings_by_stage'] : array();
+            $timings = $this->normalizeStageTiming($timingsByStage[$stage] ?? null);
             $timings['last_error'] = $state['last_error'];
-            $state['timings_by_stage'][$stage] = $timings;
+            $timingsByStage[$stage] = $timings;
+            $state['timings_by_stage'] = $timingsByStage;
 
-            if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'debugMessage')) {
-                $this->logger->debugMessage(sprintf(
-                    "[warmup] shape=%s stage=%s ms=%d attempts=%d error=%s",
-                    substr($shapeKey, 0, 8),
-                    $stage,
-                    $elapsedMs,
-                    $attemptCount + 1,
-                    $state['last_error']
-                ));
-            }
+            $this->logger->debugMessage(sprintf(
+                "[warmup] shape=%s stage=%s ms=%d attempts=%d error=%s",
+                substr($shapeKey, 0, 8),
+                $stage,
+                $elapsedMs,
+                $attemptCount + 1,
+                $state['last_error']
+            ));
 
             $this->logViewWarmupFailure($sub, $tableOptions, $state);
             $this->setViewWarmupState($optionName, $state);
@@ -352,18 +372,24 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
      * @return array<string, mixed>
      */
     private function formatViewWarmupResponse(array $state, bool $ready): array {
-        $stage = (string)($state['stage'] ?? 'rows');
+        $stageValue = $state['stage'] ?? 'rows';
+        $stage = is_string($stageValue) ? $stageValue : 'rows';
+        $statusValue = $state['status'] ?? 'idle';
+        $status = is_string($statusValue) ? $statusValue : 'idle';
+        $stageStartedAt = $state['stage_started_at'] ?? 0;
+        $stageCompletedAt = $state['stage_completed_at'] ?? 0;
+        $lastError = $state['last_error'] ?? '';
         return array(
-            'status' => (string)($state['status'] ?? 'idle'),
-            'ready' => $ready || (string)($state['status'] ?? '') === 'ready',
+            'status' => $status,
+            'ready' => $ready || $status === 'ready',
             'stage' => $stage,
             'stageNumber' => $this->getViewWarmupStageNumber($stage),
             'queryLabel' => $this->getViewWarmupStageQueryLabel($stage),
-            'stageStartedAt' => intval($state['stage_started_at'] ?? 0),
-            'stageCompletedAt' => intval($state['stage_completed_at'] ?? 0),
+            'stageStartedAt' => is_scalar($stageStartedAt) ? intval($stageStartedAt) : 0,
+            'stageCompletedAt' => is_scalar($stageCompletedAt) ? intval($stageCompletedAt) : 0,
             'attemptsByStage' => is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array(),
             'timingsByStage' => is_array($state['timings_by_stage'] ?? null) ? $state['timings_by_stage'] : array(),
-            'lastError' => is_string($state['last_error'] ?? '') ? (string)$state['last_error'] : '',
+            'lastError' => is_string($lastError) ? $lastError : '',
         );
     }
 
@@ -377,8 +403,8 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
      */
     private function logStaleViewWarmupStage(string $sub, array $tableOptions, array $state, int $elapsed, int $attemptCount): void {
         $details = array(
-            'stage' => (string)($state['stage'] ?? ''),
-            'query_label' => (string)($state['query_label'] ?? ''),
+            'stage' => is_string($state['stage'] ?? null) ? $state['stage'] : '',
+            'query_label' => is_string($state['query_label'] ?? null) ? $state['query_label'] : '',
             'elapsed_seconds' => $elapsed,
             'subpage' => $sub,
             'attempt_count' => $attemptCount,
@@ -388,16 +414,12 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
                 'order' => $tableOptions['order'] ?? null,
                 'paged' => $tableOptions['paged'] ?? null,
                 'perpage' => $tableOptions['perpage'] ?? null,
-                'filterText_length' => is_string($tableOptions['filterText'] ?? null) ? strlen((string)$tableOptions['filterText']) : 0,
+                'filterText_length' => is_string($tableOptions['filterText'] ?? null) ? strlen($tableOptions['filterText']) : 0,
                 'score_range' => $tableOptions['score_range'] ?? null,
             ),
         );
         $message = 'Table cache warmup stage appears stalled: ' . json_encode($details);
-        if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'warn')) {
-            $this->logger->warn($message);
-        } else if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'errorMessage')) {
-            $this->logger->errorMessage($message);
-        }
+        $this->logger->warn($message);
     }
 
     /**
@@ -408,11 +430,11 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
      */
     private function logViewWarmupFailure(string $sub, array $tableOptions, array $state): void {
         $details = array(
-            'status' => (string)($state['status'] ?? ''),
-            'stage' => (string)($state['stage'] ?? ''),
-            'stage_number' => $this->getViewWarmupStageNumber((string)($state['stage'] ?? 'rows')),
-            'query_label' => (string)($state['query_label'] ?? ''),
-            'last_error' => (string)($state['last_error'] ?? ''),
+            'status' => is_string($state['status'] ?? null) ? $state['status'] : '',
+            'stage' => is_string($state['stage'] ?? null) ? $state['stage'] : '',
+            'stage_number' => $this->getViewWarmupStageNumber(is_string($state['stage'] ?? null) ? $state['stage'] : 'rows'),
+            'query_label' => is_string($state['query_label'] ?? null) ? $state['query_label'] : '',
+            'last_error' => is_string($state['last_error'] ?? null) ? $state['last_error'] : '',
             'subpage' => $sub,
             'attempts_by_stage' => is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array(),
             'table_shape' => array(
@@ -421,18 +443,12 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
                 'order' => $tableOptions['order'] ?? null,
                 'paged' => $tableOptions['paged'] ?? null,
                 'perpage' => $tableOptions['perpage'] ?? null,
-                'filterText_length' => is_string($tableOptions['filterText'] ?? null) ? strlen((string)$tableOptions['filterText']) : 0,
+                'filterText_length' => is_string($tableOptions['filterText'] ?? null) ? strlen($tableOptions['filterText']) : 0,
                 'score_range' => $tableOptions['score_range'] ?? null,
             ),
         );
         $message = 'Table cache warmup failed: ' . json_encode($details);
-        if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'errorMessage')) {
-            $this->logger->errorMessage($message);
-        } else if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'warn')) {
-            $this->logger->warn($message);
-        } else {
-            error_log('404 Solution: ' . $message);
-        }
+        $this->logger->errorMessage($message);
     }
 
     /** @param string $lastError @return bool */
@@ -507,12 +523,15 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             FROM {wp_abj404_view_cache}
             WHERE cache_key = %s LIMIT 1";
         $result = $this->queryAndGetResults($query, array('query_params' => array($cacheKey), 'log_errors' => true));
-        if (!is_array($result['rows']) || empty($result['rows']) || !is_array($result['rows'][0])) {
+        $resultRows = $result['rows'] ?? array();
+        if (!is_array($resultRows) || empty($resultRows) || !is_array($resultRows[0])) {
             return null;
         }
-        $row = $result['rows'][0];
-        $expiresAt = intval($row['expires_at'] ?? 0);
-        $refreshedAt = intval($row['refreshed_at'] ?? 0);
+        $row = $resultRows[0];
+        $expiresAtRaw = $row['expires_at'] ?? 0;
+        $refreshedAtRaw = $row['refreshed_at'] ?? 0;
+        $expiresAt = is_scalar($expiresAtRaw) ? intval($expiresAtRaw) : 0;
+        $refreshedAt = is_scalar($refreshedAtRaw) ? intval($refreshedAtRaw) : 0;
         $now = time();
         $isFresh = ($expiresAt > $now);
         $recentEnough = ($refreshedAt > 0 && ($now - $refreshedAt) <= self::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS);
@@ -522,7 +541,8 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         if ($respectCooldown && !$isFresh && !$recentEnough) {
             return null;
         }
-        return $this->decodeSnapshotPayload((string)($row['payload'] ?? ''));
+        $payload = $row['payload'] ?? '';
+        return $this->decodeSnapshotPayload(is_scalar($payload) ? (string)$payload : '');
     }
 
     /**
