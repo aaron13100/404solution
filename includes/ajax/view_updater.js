@@ -8,6 +8,64 @@ if (typeof(getURLParameter) !== "function") {
 }
 
 /**
+ * Stores AJAX interaction details for the footer debug section.
+ * @type {string[]}
+ */
+window.abj404AjaxInteractionLogs = [];
+
+/**
+ * Append a message to the AJAX debug log in the footer.
+ *
+ * @param {string} message
+ * @param {object|null} details
+ * @returns {void}
+ */
+function abj404UpdateAjaxDebugLog(message, details) {
+    if (!message) {
+        return;
+    }
+    var d = new Date();
+    var hours = String(d.getHours());
+    if (hours.length < 2) { hours = '0' + hours; }
+    var minutes = String(d.getMinutes());
+    if (minutes.length < 2) { minutes = '0' + minutes; }
+    var seconds = String(d.getSeconds());
+    if (seconds.length < 2) { seconds = '0' + seconds; }
+    var ms = String(d.getMilliseconds());
+    while (ms.length < 3) { ms = '0' + ms; }
+    
+    var timestamp = hours + ':' + minutes + ':' + seconds + '.' + ms;
+    var logEntry = '[' + timestamp + '] ' + message;
+    if (details && typeof details === 'object') {
+        try {
+            logEntry += ' ' + JSON.stringify(details);
+        } catch (e) {
+            // ignore serialization errors
+        }
+    }
+    
+    window.abj404AjaxInteractionLogs.push(logEntry);
+    
+    var $container = jQuery('#abj404-ajax-debug-info');
+    var $log = jQuery('#abj404-ajax-debug-log');
+    
+    if ($container.length > 0) {
+        $container.show();
+    }
+    
+    if ($log.length > 0) {
+        var $entry = jQuery('<div>').text(logEntry).css({
+            marginBottom: '4px',
+            borderBottom: '1px solid #e0e0e0',
+            paddingBottom: '2px'
+        });
+        $log.append($entry);
+        // auto-scroll to bottom
+        $log.scrollTop($log[0].scrollHeight);
+    }
+}
+
+/**
  * Generate a short alphanumeric id used by the server to key an in-flight
  * stage transient (see ViewUpdater::setStage).  Generated client-side so the
  * id is known to the JS error handler even when a pure network timeout means
@@ -142,6 +200,14 @@ function abj404StartStageProgressPolling(config) {
             if (stage || queryLabel) {
                 var message = abj404FormatRefreshingStageMessage(baseMessage, stage, queryLabel, config.subpage || '');
                 jQuery('.abj404-refresh-status').text(message);
+                
+                // Also log to the footer debug section
+                abj404UpdateAjaxDebugLog('Polling: ' + message, {
+                    stage: stage,
+                    queryLabel: queryLabel,
+                    whatHappening: stageResult.whatHappening || ''
+                });
+
                 var toast = document.getElementById('abj404-background-refresh-toast');
                 if (toast) {
                     var label = toast.querySelector('.abj404-refresh-label');
@@ -239,6 +305,8 @@ function refreshHealthBarIfNeeded() {
 
     $bar.attr('data-health-bar-loading', '1');
 
+    abj404UpdateAjaxDebugLog('Starting Health Bar AJAX: ' + action);
+
     jQuery.ajax({
         url: url,
         type: 'POST',
@@ -251,6 +319,9 @@ function refreshHealthBarIfNeeded() {
         },
         success: function(result) {
             $bar.removeAttr('data-health-bar-loading');
+            abj404UpdateAjaxDebugLog('Health Bar AJAX Success: ' + action, {
+                highImpactCapturedCount: result ? result.highImpactCapturedCount : null
+            });
             if (!result || typeof result.highImpactCapturedCount === 'undefined' || !result.statusCounts) {
                 $bar.removeAttr('data-health-bar-placeholder');
                 $bar.empty();
@@ -275,13 +346,19 @@ function refreshHealthBarIfNeeded() {
             $bar.html(html);
             $bar.removeAttr('data-health-bar-placeholder');
         },
-        error: function() {
+        error: function(jqXHR, textStatus, errorThrown) {
             // On error, drop the placeholder so the UI doesn't get stuck on
             // "Loading status…" forever.  The failure has already been logged
             // server-side via the ajaxRefreshHealthBar exception handler.
             $bar.removeAttr('data-health-bar-loading');
             $bar.removeAttr('data-health-bar-placeholder');
             $bar.empty();
+            
+            abj404UpdateAjaxDebugLog('Health Bar AJAX Error: ' + action, {
+                status: jqXHR ? jqXHR.status : '',
+                textStatus: textStatus,
+                errorThrown: errorThrown
+            });
         }
     });
 }
@@ -557,6 +634,7 @@ function showTableWarmupFailure(meta) {
         message += '. ' + meta.lastError;
     }
     jQuery('.abj404-refresh-status').text(message);
+    abj404UpdateAjaxDebugLog('Table Warmup Failure: ' + message, meta);
     if (tablePlaceholderStillAwaitingLoad()) {
         jQuery('.abj404-table[data-table-awaiting-load] tbody').html(
             '<tr><td class="abj404-empty-message abj404-error">' +
@@ -636,7 +714,20 @@ function warmTableCacheStage(triggerItem, options) {
                     timingMs,
                     completedStage
                 );
-                jQuery('.abj404-refresh-status').text(message);
+                
+                if (result.ready) {
+                    jQuery('.abj404-refresh-status').text('');
+                } else {
+                    jQuery('.abj404-refresh-status').text(message);
+                }
+
+                // Log details to debug footer
+                abj404UpdateAjaxDebugLog('Warmup stage completed: ' + message, {
+                    stage: result.stage,
+                    queryLabel: result.queryLabel,
+                    timingMs: timingMs,
+                    ready: result.ready
+                });
 
                 if (completedStage) {
                     console.log('[abj404 warmup]', {
@@ -743,6 +834,7 @@ function triggerStatsBackgroundRefreshIfEnabled() {
 
     var runRefresh = function() {
         var startMs = Date.now();
+        abj404UpdateAjaxDebugLog('Starting Stats AJAX: ' + action);
         jQuery.ajax({
             url: window.ajaxurl || 'admin-ajax.php',
             type: 'POST',
@@ -760,6 +852,10 @@ function triggerStatsBackgroundRefreshIfEnabled() {
                     payload = payload.data;
                 }
                 var hasUpdate = !!(payload && payload.hasUpdate);
+                abj404UpdateAjaxDebugLog('Stats AJAX Success: ' + action, {
+                    hasUpdate: hasUpdate,
+                    durationMs: Date.now() - startMs
+                });
                 if (hasUpdate) {
                     showRefreshAvailablePill(refreshAvailableText, 5000);
                 }
@@ -777,6 +873,12 @@ function triggerStatsBackgroundRefreshIfEnabled() {
                 markStatsAutoRefreshCompleted($config);
             },
             error: function(xhr, textStatus, errorThrown) {
+                abj404UpdateAjaxDebugLog('Stats AJAX Error: ' + action, {
+                    status: xhr ? xhr.status : '',
+                    textStatus: textStatus,
+                    errorThrown: errorThrown,
+                    durationMs: Date.now() - startMs
+                });
                 if (window.abj404StatsBackgroundRefreshState) {
                     var duration = Date.now() - startMs;
                     window.abj404StatsBackgroundRefreshState.finishedAt = Date.now();
@@ -809,6 +911,9 @@ function setRefreshStatus($config, message) {
     }
     if ($status.length > 0) {
         $status.text(message || '');
+        if (message) {
+            abj404UpdateAjaxDebugLog('Status: ' + message);
+        }
     }
 }
 
@@ -1305,6 +1410,16 @@ function paginationLinksChange(triggerItem, options) {
             message: options.stageProgressMessage || 'Currently refreshing data'
         });
     }
+
+    abj404UpdateAjaxDebugLog('Starting AJAX: ' + action + ' for subpage ' + subpage, {
+        paged: paged,
+        filter: trashFilter,
+        filterText: filterText,
+        rowsPerPage: rowsPerPage,
+        detectOnly: detectOnly,
+        cacheMode: cacheMode
+    });
+
     jQuery.ajax({
         url: baseUrl,
         type: 'POST',
@@ -1334,14 +1449,25 @@ function paginationLinksChange(triggerItem, options) {
         },
         success: function (result) {
             stopStageProgressPolling();
+            jQuery('.abj404-refresh-status').text('');
+            
             if (result && result.cachePending) {
                 jQuery('.abj404-loading-overlay').remove();
-                jQuery('.abj404-refresh-status').text(result.message || 'Preparing table data in the background.');
+                var pendingMsg = result.message || 'Preparing table data in the background.';
+                jQuery('.abj404-refresh-status').text(pendingMsg);
+                abj404UpdateAjaxDebugLog('AJAX Success (Cache Pending): ' + pendingMsg);
                 if (typeof options.onComplete === 'function') {
                     options.onComplete({cachePending: true});
                 }
                 return;
             }
+            
+            abj404UpdateAjaxDebugLog('AJAX Success: ' + action, {
+                durationMs: Date.now() - requestStartedAt,
+                tableLength: (result && result.table) ? result.table.length : 0,
+                hasUpdate: result && result.hasUpdate
+            });
+
             if (isBackgroundRefresh && detectOnly) {
                 setDetectOnlyRefreshInFlight(false);
                 var hasUpdate;
@@ -1468,6 +1594,8 @@ function paginationLinksChange(triggerItem, options) {
         },
         error: function (jqXHR, textStatus, errorThrown) {
             stopStageProgressPolling();
+            jQuery('.abj404-refresh-status').text('');
+
             if (isBackgroundRefresh && detectOnly) {
                 setDetectOnlyRefreshInFlight(false);
             }
@@ -1480,6 +1608,13 @@ function paginationLinksChange(triggerItem, options) {
             if (responsePreview.length > 2000) {
                 responsePreview = responsePreview.slice(0, 2000) + "\n…(truncated)…";
             }
+
+            abj404UpdateAjaxDebugLog('AJAX Error: ' + action, {
+                status: status,
+                textStatus: textStatus,
+                errorThrown: errorThrown,
+                durationMs: Date.now() - requestStartedAt
+            });
 
             // Always log full details to the console for easier debugging.
             if (window && window.console && window.console.error) {
