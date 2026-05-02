@@ -771,14 +771,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         }
 
         if ($throwOnQueryError && (!empty($results['timed_out']) || !empty($results['last_error']))) {
-            $lastError = isset($results['last_error']) && is_string($results['last_error']) ? $results['last_error'] : '';
-            if ($lastError === '' && !empty($results['timed_out'])) {
-                $lastError = 'getRedirectsForView timed out';
-            }
             if ($refreshLockHeld && $snapshotCacheKey !== '') {
                 $this->releaseViewSnapshotRefreshLock($snapshotCacheKey);
             }
-            throw new \Exception($lastError);
+            throw new \Exception($this->formatViewQueryFailureMessage('getRedirectsForView', $query, $results));
         }
 
         /** @var array<int, array<string, mixed>> $rows */
@@ -947,10 +943,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         }
 
         if ($throwOnQueryError && (!empty($results['timed_out']) || $lastError !== '')) {
-            if ($lastError === '' && !empty($results['timed_out'])) {
-                $lastError = 'getRedirectsForViewCount timed out';
-            }
-            throw new \Exception($lastError);
+            throw new \Exception($this->formatViewQueryFailureMessage('getRedirectsForViewCount', $query, $results));
         }
 
         if ($lastError != '' && trim($lastError) != '') {
@@ -990,6 +983,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
 
         $logsTableColumns = '';
         $logsTableColumns = "null as logshits, \n null as logsid, \n null as last_used, \n";
+        $logsTableJoin = '';
         $statusTypes = '';
         $trashValue = '';
         $selectCountReplacement = '/* selecting data as usual */';
@@ -1176,8 +1170,34 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         }
         
         $query = $this->f->doNormalReplacements($query);
-        
+
         return $query;
+    }
+
+    /**
+     * Build an actionable query failure message for table warmup errors.
+     *
+     * @param string $queryLabel
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @return string
+     */
+    private function formatViewQueryFailureMessage(string $queryLabel, string $query, array $result): string {
+        $lastErrorRaw = $result['last_error'] ?? '';
+        $lastError = is_string($lastErrorRaw) ? trim($lastErrorRaw) : '';
+        $timedOut = !empty($result['timed_out']);
+        $sqlSource = method_exists($this, 'extractSqlFilename') ? $this->extractSqlFilename($query) : 'unknown';
+
+        if ($lastError === '' && $timedOut) {
+            $lastError = $queryLabel . ' timed out';
+        } else if ($lastError === '') {
+            $lastError = $queryLabel . ' failed without a database error message';
+        }
+
+        return $queryLabel . ' failed'
+            . '; last_error=' . $lastError
+            . '; timed_out=' . ($timedOut ? 'true' : 'false')
+            . '; sql_source=' . $sqlSource;
     }
 
     /**

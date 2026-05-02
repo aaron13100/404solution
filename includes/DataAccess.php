@@ -761,6 +761,64 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /**
+     * Log the first observed database error for every query, before retry and
+     * recovery paths can mutate or clear wpdb::last_error.
+     *
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param array<string, mixed> $options
+     * @param bool $producesRows
+     * @return void
+     */
+    private function logObservedSqlError(string $query, array $result, array $options, bool $producesRows): void {
+        $lastError = isset($result['last_error']) && is_string($result['last_error'])
+            ? trim($result['last_error']) : '';
+        if ($lastError === '') {
+            return;
+        }
+
+        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
+        $elapsed = isset($result['elapsed_time']) && is_numeric($result['elapsed_time'])
+            ? round((float)$result['elapsed_time'], 4) : 0;
+        $logErrors = !array_key_exists('log_errors', $options) || (bool)$options['log_errors'];
+        $message = 'SQL query error observed: ' . $lastError
+            . ', SQL: ' . $sqlInfo
+            . ', source: ' . $this->extractSqlFilename($query)
+            . ', route: ' . ($producesRows ? 'get_results' : 'query')
+            . ', log_errors_option: ' . ($logErrors ? 'true' : 'false')
+            . ', execution_time: ' . $elapsed;
+
+        if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'errorMessage')) {
+            $this->logger->errorMessage($message);
+        } else {
+            error_log('404 Solution: ' . $message);
+        }
+    }
+
+    /**
+     * @param string $query
+     * @param Throwable $e
+     * @param array<string, mixed> $options
+     * @param bool $producesRows
+     * @return void
+     */
+    private function logSqlThrowable(string $query, Throwable $e, array $options, bool $producesRows): void {
+        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
+        $logErrors = !array_key_exists('log_errors', $options) || (bool)$options['log_errors'];
+        $message = 'SQL query threw exception: ' . $e->getMessage()
+            . ', SQL: ' . $sqlInfo
+            . ', source: ' . $this->extractSqlFilename($query)
+            . ', route: ' . ($producesRows ? 'get_results' : 'query')
+            . ', log_errors_option: ' . ($logErrors ? 'true' : 'false');
+
+        if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'errorMessage')) {
+            $this->logger->errorMessage($message, $e);
+        } else {
+            error_log('404 Solution: ' . $message);
+        }
+    }
+
+    /**
      * Build a SQL-safe comma-separated list from recognized_post_types option.
      *
      * @param array<string, mixed> $options Plugin options array.
@@ -900,11 +958,21 @@ class ABJ_404_Solution_DataAccess {
         $producesRows = $this->queryProducesResultRows($query);
 
         $result = array();
-        if ($producesRows) {
-            $result['rows'] = $wpdb->get_results($query, $resultType);
-        } else {
-            $wpdb->query($query);
-            $result['rows'] = array();
+        try {
+            if ($producesRows) {
+                $result['rows'] = $wpdb->get_results($query, $resultType);
+            } else {
+                $wpdb->query($query);
+                $result['rows'] = array();
+            }
+        } catch (Throwable $e) {
+            $result['elapsed_time'] = $timer->stop();
+            $this->logSqlThrowable($query, $e, $options, $producesRows);
+            if ($suppressWpdbErrors) {
+                /** @var wpdb $wpdb */
+                $wpdb->suppress_errors($previousSuppressState);
+            }
+            throw $e;
         }
 
         $result['elapsed_time'] = $timer->stop();
@@ -923,6 +991,7 @@ class ABJ_404_Solution_DataAccess {
             abj404_query_budget_record($this->extractSqlFilename($query), $elapsedMs, $timeoutSeconds);
         }
         $this->harvestWpdbResult($result);
+        $this->logObservedSqlError($query, $result, $options, $producesRows);
 
         if ($producesRows && !is_array($result['rows'])) {
             // In production (WP_DEBUG off), only log SQL filename to avoid PII exposure

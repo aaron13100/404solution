@@ -209,7 +209,10 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             }
             if ($attemptCount >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
                 $state['status'] = 'blocked';
-                $state['last_error'] = 'Previous warmup stage was killed or stalled too many times.';
+                $previousError = is_string($state['last_error'] ?? '') ? trim((string)$state['last_error']) : '';
+                $state['last_error'] = 'Previous warmup stage was killed or stalled too many times.'
+                    . ($this->isViewWarmupErrorDiagnostic($previousError) ? ' Previous error: ' . $previousError : '');
+                $this->logViewWarmupFailure($sub, $tableOptions, $state);
                 $this->setViewWarmupState($optionName, $state);
                 return $this->formatViewWarmupResponse($state, false);
             }
@@ -221,8 +224,19 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         }
 
         if ($attemptCount >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+            $previousError = is_string($state['last_error'] ?? '') ? trim((string)$state['last_error']) : '';
+            if (!$this->isViewWarmupErrorDiagnostic($previousError)) {
+                $attempts[$stage] = self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS - 1;
+                $state['attempts_by_stage'] = $attempts;
+                $attemptCount = intval($attempts[$stage] ?? 0);
+            }
+        }
+
+        if ($attemptCount >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
             $state['status'] = 'blocked';
-            $state['last_error'] = 'Warmup stage reached the retry limit.';
+            $state['last_error'] = 'Warmup stage reached the retry limit.'
+                . ($this->isViewWarmupErrorDiagnostic($previousError) ? ' Previous error: ' . $previousError : '');
+            $this->logViewWarmupFailure($sub, $tableOptions, $state);
             $this->setViewWarmupState($optionName, $state);
             return $this->formatViewWarmupResponse($state, false);
         }
@@ -260,6 +274,7 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             $state['last_error'] = $e->getMessage();
             $state['stage_completed_at'] = time();
             $state['status'] = (intval($attempts[$stage] ?? 0) >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) ? 'blocked' : 'idle';
+            $this->logViewWarmupFailure($sub, $tableOptions, $state);
             $this->setViewWarmupState($optionName, $state);
             return $this->formatViewWarmupResponse($state, false);
         }
@@ -316,6 +331,50 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         } else if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'errorMessage')) {
             $this->logger->errorMessage($message);
         }
+    }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $state
+     * @return void
+     */
+    private function logViewWarmupFailure(string $sub, array $tableOptions, array $state): void {
+        $details = array(
+            'status' => (string)($state['status'] ?? ''),
+            'stage' => (string)($state['stage'] ?? ''),
+            'stage_number' => $this->getViewWarmupStageNumber((string)($state['stage'] ?? 'rows')),
+            'query_label' => (string)($state['query_label'] ?? ''),
+            'last_error' => (string)($state['last_error'] ?? ''),
+            'subpage' => $sub,
+            'attempts_by_stage' => is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array(),
+            'table_shape' => array(
+                'filter' => $tableOptions['filter'] ?? null,
+                'orderby' => $tableOptions['orderby'] ?? null,
+                'order' => $tableOptions['order'] ?? null,
+                'paged' => $tableOptions['paged'] ?? null,
+                'perpage' => $tableOptions['perpage'] ?? null,
+                'filterText_length' => is_string($tableOptions['filterText'] ?? null) ? strlen((string)$tableOptions['filterText']) : 0,
+                'score_range' => $tableOptions['score_range'] ?? null,
+            ),
+        );
+        $message = 'Table cache warmup failed: ' . json_encode($details);
+        if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'errorMessage')) {
+            $this->logger->errorMessage($message);
+        } else if (isset($this->logger) && is_object($this->logger) && method_exists($this->logger, 'warn')) {
+            $this->logger->warn($message);
+        } else {
+            error_log('404 Solution: ' . $message);
+        }
+    }
+
+    /** @param string $lastError @return bool */
+    private function isViewWarmupErrorDiagnostic(string $lastError): bool {
+        if ($lastError === '') {
+            return false;
+        }
+        return $lastError !== 'Warmup stage reached the retry limit.'
+            && $lastError !== 'Previous warmup stage was killed or stalled too many times.';
     }
 
     /** @param string $cacheKey @return bool */
@@ -380,7 +439,7 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         $query = "SELECT payload, refreshed_at, expires_at
             FROM {wp_abj404_view_cache}
             WHERE cache_key = %s LIMIT 1";
-        $result = $this->queryAndGetResults($query, array('query_params' => array($cacheKey), 'log_errors' => false));
+        $result = $this->queryAndGetResults($query, array('query_params' => array($cacheKey), 'log_errors' => true));
         if (!is_array($result['rows']) || empty($result['rows']) || !is_array($result['rows'][0])) {
             return null;
         }
