@@ -269,6 +269,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      * @return void
      */
     function invalidateViewSnapshotCache(): void {
+        // Mark the precomputed view_done table stale. The next request
+        // triggers a rebuild (subject to the per-request guard).
+        $this->invalidateViewDone();
+
         // Clear all rows from the view cache table. The 'log_errors' => false
         // option signals to queryAndGetResults() that this is a best-effort
         // operation: the cache expires naturally via TTL if the DELETE fails,
@@ -482,7 +486,6 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             ? max(1, intval($tableOptions['_abj404_query_timeout'])) : 0;
         $throwOnQueryError = !empty($tableOptions['_abj404_throw_on_view_query_error']);
         $snapshotCacheKey = '';
-        $refreshLockHeld = false;
         if ($canUseSnapshotCache && $queryTimeout <= 0) {
             $snapshotCacheKey = $this->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
             $cachedRowsFromTable = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, false, false);
@@ -495,158 +498,46 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
                     return $cachedRows;
                 }
             }
+        }
 
-            // Server-side dedupe: don't run the same refresh concurrently.
-            if ($this->isViewSnapshotRefreshLocked($snapshotCacheKey)) {
-                $staleRowsFromTable = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, true, true);
-                if (is_array($staleRowsFromTable)) {
-                    return $staleRowsFromTable;
-                }
-                $waitedRows = $this->waitForViewRowsSnapshotFromTable($snapshotCacheKey, 4000);
-                if (is_array($waitedRows)) {
-                    return $waitedRows;
-                }
-                if (function_exists('get_transient')) {
-                    $waitedTransientRows = get_transient($snapshotCacheKey);
-                    if (is_array($waitedTransientRows)) {
-                        return $waitedTransientRows;
-                    }
-                }
-            } else {
-                // At most once per 30s per cache key: if stale-but-recent snapshot exists, serve it.
-                $recentRowsFromTable = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, true, true);
-                if (is_array($recentRowsFromTable)) {
-                    return $recentRowsFromTable;
-                }
-                $refreshLockHeld = $this->acquireViewSnapshotRefreshLock($snapshotCacheKey);
+        try {
+            $rows = $this->runRedirectsForViewStaged((string)$sub, is_array($tableOptions) ? $tableOptions : array());
+        } catch (Throwable $e) {
+            if ($throwOnQueryError) {
+                $stagedFailureMarker = '/* staged: ' . $e->getMessage() . ' */';
+                $diagnostics = $this->captureViewQueryFailureDiagnostics(
+                    (string)$sub,
+                    $stagedFailureMarker,
+                    is_array($tableOptions) ? $tableOptions : array(),
+                    array('last_error' => $e->getMessage(), 'timed_out' => false)
+                );
+                $diagnostics['failed_query_label'] = 'getRedirectsForView';
+                $diagnostics['staged_error'] = $e->getMessage();
+                $message = 'getRedirectsForView failed; last_error=' . $e->getMessage()
+                    . '; timed_out=false; sql_source=' . $stagedFailureMarker;
+                throw new ABJ_404_Solution_ViewQueryFailureException($message, $diagnostics);
             }
-        }
-    	
-    	// for normal page views we limit the rows returned based on user preferences for paginaiton.
-        $paged = absint(is_scalar($tableOptions['paged'] ?? 1) ? ($tableOptions['paged'] ?? 1) : 1);
-        if ($paged < 1) {
-            $paged = 1;
-        }
-        $perpage = absint(is_scalar($tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE) ? ($tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE) : ABJ404_OPTION_DEFAULT_PERPAGE);
-        if ($perpage < 1) {
-            $perpage = ABJ404_OPTION_DEFAULT_PERPAGE;
-        }
-        $limitStart = ($paged - 1) * $perpage;
-        $limitEnd = $perpage;
-        
-        $queryAllRowsAtOnce = ($tableOptions['perpage'] > 5000) || ($tableOptions['orderby'] == 'logshits')
-                || ($tableOptions['orderby'] == 'last_used');
-        
-        $query = $this->getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce,
-        	$limitStart, $limitEnd, false);
-
-        // if this takes too long then rewrite how specific URLs are linked to from the redirects table.
-        // they can use a different ID - not the ID from the logs table.
-        $this->setSqlBigSelects();
-        $queryOptions = $queryTimeout > 0 ? array('timeout' => $queryTimeout) : array();
-        $results = $this->queryAndGetResults($query, $queryOptions);
-
-        if (!empty($results['last_error']) && is_string($results['last_error']) && $this->isCollationError($results['last_error'])) {
-            $retryOptions = $tableOptions;
-            $retryOptions['forceCollate'] = 'utf8mb4_general_ci';
-            $query = $this->getRedirectsForViewQuery($sub, $retryOptions, $queryAllRowsAtOnce,
-                $limitStart, $limitEnd, false);
-            $results = $this->queryAndGetResults($query, $queryOptions);
+            $this->logger->errorMessage('[staged] getRedirectsForView failed: ' . $e->getMessage(),
+                $e instanceof \Exception ? $e : null);
+            return array();
         }
 
-        // Handle race condition: logs_hits table may have been dropped between existence check and query
-        // (fixes bug: "Table 'xxx.wp_abj404_logs_hits' doesn't exist" error during shutdown)
-        $usedFallbackForLogsHits = false;
-        $needsPhpSortAndLimit = false;
-        if (!empty($results['last_error']) && is_string($results['last_error']) && strpos($results['last_error'], 'logs_hits') !== false) {
-            $this->logger->debugMessage("logs_hits table unavailable, retrying without JOIN: " . $results['last_error']);
-            // Retry with queryAllRowsAtOnce = false to skip logs_hits JOIN
-            // (The query builder only adds the JOIN when queryAllRowsAtOnce is true)
-            $usedFallbackForLogsHits = true;
-            $queryAllRowsAtOnce = false;
-
-            // If sorting by logshits/last_used, we need to query rows, populate logs
-            // data in PHP, sort, then slice to the page. Cap the fetch to prevent
-            // memory exhaustion on large sites (PHP_INT_MAX previously crashed Apache).
-            if ($tableOptions['orderby'] == 'logshits' || $tableOptions['orderby'] == 'last_used') {
-                $needsPhpSortAndLimit = true;
-                $fallbackMaxRows = 5000;
-                $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false,
-                    0, $fallbackMaxRows, false);
-            } else {
-                // Other sort columns work fine with normal limit
-                $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false,
-                    $limitStart, $limitEnd, false);
-            }
-            $results = $this->queryAndGetResults($query, $queryOptions);
-        }
-
-        if ($throwOnQueryError && (!empty($results['timed_out']) || !empty($results['last_error']))) {
-            if ($refreshLockHeld && $snapshotCacheKey !== '') {
-                $this->releaseViewSnapshotRefreshLock($snapshotCacheKey);
-            }
-            $message = $this->formatViewQueryFailureMessage('getRedirectsForView', $query, $results);
-            $diagnostics = $this->captureViewQueryFailureDiagnostics($sub, $query, $tableOptions, $results);
-            $diagnostics['failed_query_label'] = 'getRedirectsForView';
-            throw new ABJ_404_Solution_ViewQueryFailureException($message, $diagnostics);
-        }
-
-        /** @var array<int, array<string, mixed>> $rows */
-        $rows = is_array($results['rows']) ? $results['rows'] : array();
-        $foundRowsBeforeLogsData = count($rows);
-
-        // populate the logs data if we need to
-        if (!$queryAllRowsAtOnce) {
-            $rows = $this->populateLogsData($rows);
-
-            // If fallback was used and user wanted to sort by logshits/last_used,
-            // we need to sort in PHP since the DB query sorted on NULL placeholders,
-            // then apply the limit that was skipped in the query
-            if ($needsPhpSortAndLimit && !empty($rows)) {
-                $orderBy = $tableOptions['orderby'];
-                $rawOrderDir = $tableOptions['order'] ?? 'DESC';
-                $orderDir = strtoupper(is_string($rawOrderDir) ? $rawOrderDir : 'DESC');
-                usort($rows, function($a, $b) use ($orderBy, $orderDir) {
-                    $valA = isset($a[$orderBy]) ? $a[$orderBy] : 0;
-                    $valB = isset($b[$orderBy]) ? $b[$orderBy] : 0;
-                    // For last_used (timestamp), compare as integers
-                    // For logshits (count), compare as integers
-                    $primaryCmp = $valA <=> $valB;
-                    if ($primaryCmp !== 0) {
-                        return $orderDir === 'DESC' ? -$primaryCmp : $primaryCmp;
-                    }
-
-                    // Keep URL tie-break ASC to match SQL ordering.
-                    $urlCmp = strcmp(is_scalar($a['url'] ?? '') ? (string)($a['url'] ?? '') : '', is_scalar($b['url'] ?? '') ? (string)($b['url'] ?? '') : '');
-                    if ($urlCmp !== 0) {
-                        return $urlCmp;
-                    }
-
-                    // Final tie-break by id in the requested direction.
-                    $idCmp = (is_scalar($a['id'] ?? 0) ? (int)($a['id'] ?? 0) : 0) <=> (is_scalar($b['id'] ?? 0) ? (int)($b['id'] ?? 0) : 0);
-                    return $orderDir === 'DESC' ? -$idCmp : $idCmp;
-                });
-                // Now apply the limit that was skipped in the query
-                $rows = array_slice($rows, $limitStart, $limitEnd);
-            }
-        }
-        $this->logger->debugMessage("Found " . $foundRowsBeforeLogsData . 
-        	" rows to display before log data and " . count($rows) . 
-        	" rows to display after log data for page: ". $sub);
+        $this->logger->debugMessage(sprintf(
+            '[staged] getRedirectsForView returned %d rows for page %s',
+            count($rows),
+            (string)$sub
+        ));
 
         if ($canUseSnapshotCache && $snapshotCacheKey === '') {
             $snapshotCacheKey = $this->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
         }
-        if ($canUseSnapshotCache && $snapshotCacheKey !== '' && is_array($rows)) {
+        if ($canUseSnapshotCache && $snapshotCacheKey !== '') {
             $this->setViewRowsSnapshotToTable($snapshotCacheKey, $sub, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
             if (function_exists('set_transient')) {
                 set_transient($snapshotCacheKey, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
             }
         }
-        if ($refreshLockHeld && $snapshotCacheKey !== '') {
-            $this->releaseViewSnapshotRefreshLock($snapshotCacheKey);
-        }
-        
+
         return $rows;
     }
 
@@ -741,23 +632,47 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
 
         $rawFilterText = is_string($tableOptions['filterText'] ?? null) ? $tableOptions['filterText'] : '';
         if ($rawFilterText === '') {
+            // No search filter: simple COUNT against the live redirects table
+            // is fast enough that there is no value building view_done just
+            // for this. Keeps cold-start counts cheap.
             $query = $this->getOptimizedRedirectsForViewCountQuery($sub, $tableOptions);
+            $this->setSqlBigSelects();
+            $queryOptions = $queryTimeout > 0 ? array('timeout' => $queryTimeout) : array();
+            $results = $this->queryAndGetResults($query, $queryOptions);
+            $lastErrorRaw = $results['last_error'] ?? '';
+            $lastError = is_string($lastErrorRaw) ? $lastErrorRaw : '';
         } else {
-            $query = $this->getRedirectsForViewQuery($sub, $tableOptions, false, 0, PHP_INT_MAX, true);
-        }
-
-        $this->setSqlBigSelects();
-        $queryOptions = $queryTimeout > 0 ? array('timeout' => $queryTimeout) : array();
-        $results = $this->queryAndGetResults($query, $queryOptions);
-        $lastErrorRaw = $results['last_error'] ?? '';
-        $lastError = is_string($lastErrorRaw) ? $lastErrorRaw : '';
-        if ($rawFilterText !== '' && !empty($lastError) && $this->isCollationError($lastError)) {
-            $retryOptions = $tableOptions;
-            $retryOptions['forceCollate'] = 'utf8mb4_general_ci';
-            $retryQuery = $this->getRedirectsForViewQuery($sub, $retryOptions, false, 0, PHP_INT_MAX, true);
-            $results = $this->queryAndGetResults($retryQuery, $queryOptions);
-            $lastErrorRaw2 = $results['last_error'] ?? '';
-            $lastError = is_string($lastErrorRaw2) ? $lastErrorRaw2 : '';
+            // Search-filtered count needs to apply the LIKE composite against
+            // the precomputed dest_for_view/status_for_view/type_for_view
+            // columns, so route through the staged path.
+            try {
+                $countValue = $this->runRedirectsForViewCountStaged((string)$sub, is_array($tableOptions) ? $tableOptions : array());
+                $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = $countValue;
+                if ($canUseSnapshotCache && $countCacheKey === '') {
+                    $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
+                }
+                if ($canUseSnapshotCache && $countCacheKey !== '') {
+                    set_transient($countCacheKey, $countValue, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
+                }
+                return $countValue;
+            } catch (Throwable $e) {
+                if ($throwOnQueryError) {
+                    $stagedFailureMarker = '/* staged-count: ' . $e->getMessage() . ' */';
+                    $diagnostics = $this->captureViewQueryFailureDiagnostics(
+                        (string)$sub,
+                        $stagedFailureMarker,
+                        is_array($tableOptions) ? $tableOptions : array(),
+                        array('last_error' => $e->getMessage(), 'timed_out' => false)
+                    );
+                    $diagnostics['failed_query_label'] = 'getRedirectsForViewCount';
+                    $diagnostics['staged_error'] = $e->getMessage();
+                    throw new ABJ_404_Solution_ViewQueryFailureException($e->getMessage(), $diagnostics);
+                }
+                $this->logger->errorMessage('[staged] getRedirectsForViewCount failed: ' . $e->getMessage(),
+                    $e instanceof \Exception ? $e : null);
+                $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = -1;
+                return -1;
+            }
         }
 
         if ($throwOnQueryError && (!empty($results['timed_out']) || $lastError !== '')) {
