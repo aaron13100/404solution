@@ -585,7 +585,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             if ($refreshLockHeld && $snapshotCacheKey !== '') {
                 $this->releaseViewSnapshotRefreshLock($snapshotCacheKey);
             }
-            throw new \Exception($this->formatViewQueryFailureMessage('getRedirectsForView', $query, $results));
+            $message = $this->formatViewQueryFailureMessage('getRedirectsForView', $query, $results);
+            $diagnostics = $this->captureViewQueryFailureDiagnostics($sub, $query, $tableOptions, $results);
+            $diagnostics['failed_query_label'] = 'getRedirectsForView';
+            throw new ABJ_404_Solution_ViewQueryFailureException($message, $diagnostics);
         }
 
         /** @var array<int, array<string, mixed>> $rows */
@@ -758,11 +761,19 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         }
 
         if ($throwOnQueryError && (!empty($results['timed_out']) || $lastError !== '')) {
-            throw new \Exception($this->formatViewQueryFailureMessage('getRedirectsForViewCount', $query, $results));
+            $message = $this->formatViewQueryFailureMessage('getRedirectsForViewCount', $query, $results);
+            $diagnostics = $this->captureViewQueryFailureDiagnostics($sub, $query, $tableOptions, $results);
+            $diagnostics['failed_query_label'] = 'getRedirectsForViewCount';
+            throw new ABJ_404_Solution_ViewQueryFailureException($message, $diagnostics);
         }
 
         if ($lastError != '' && trim($lastError) != '') {
-        	throw new \Exception("Error getting redirect count: " . esc_html($lastError));
+            $diagnostics = $this->captureViewQueryFailureDiagnostics($sub, $query, $tableOptions, $results);
+            $diagnostics['failed_query_label'] = 'getRedirectsForViewCount';
+            throw new ABJ_404_Solution_ViewQueryFailureException(
+                "Error getting redirect count: " . esc_html($lastError),
+                $diagnostics
+            );
         }
         $rows = is_array($results['rows']) ? $results['rows'] : array();
         if (empty($rows)) {

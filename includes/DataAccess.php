@@ -15,6 +15,7 @@ require_once __DIR__ . '/DataAccessTrait_LogsHitsRebuild.php';
 require_once __DIR__ . '/DataAccessTrait_Redirects.php';
 require_once __DIR__ . '/DataAccessTrait_Stats.php';
 require_once __DIR__ . '/DataAccessTrait_ErrorClassification.php';
+require_once __DIR__ . '/ViewQueryFailureException.php';
 
 /* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*

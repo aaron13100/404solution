@@ -339,6 +339,33 @@ class ABJ_404_Solution_ViewUpdater {
     }
 
     /**
+     * If the captured throwable is an ABJ_404_Solution_ViewQueryFailureException
+     * (or a wrapped version of one), return its diagnostics payload. Otherwise
+     * return null. Used by the AJAX error handlers to surface getRedirectsForView /
+     * getRedirectsForViewCount diagnostics (table counts, engine, indexes,
+     * canonical_url state, EXPLAIN, db_version, etc.) to plugin admins and the
+     * debug log without a follow-up debug zip.
+     *
+     * @param Throwable $throwable
+     * @return array<string, mixed>|null
+     */
+    private static function extractViewQueryDiagnostics(Throwable $throwable) {
+        $current = $throwable;
+        $depth = 0;
+        while ($current !== null && $depth < 5) {
+            if ($current instanceof ABJ_404_Solution_ViewQueryFailureException) {
+                $diagnostics = $current->getDiagnostics();
+                if (is_array($diagnostics)) {
+                    return $diagnostics;
+                }
+            }
+            $current = $current->getPrevious();
+            $depth++;
+        }
+        return null;
+    }
+
+    /**
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
@@ -645,6 +672,10 @@ class ABJ_404_Solution_ViewUpdater {
                     'last_query_length' => is_string($lastQuery) ? strlen($lastQuery) : 0,
                 );
             }
+            $viewQueryDiagnostics = self::extractViewQueryDiagnostics($e);
+            if ($viewQueryDiagnostics !== null) {
+                $details['view_query_diagnostics'] = $viewQueryDiagnostics;
+            }
 
             // Always log to the plugin debug file, regardless of admin status.
             self::safeLogAjaxFailure('AJAX exception in ajaxUpdatePaginationLinks.', $details, $e);
@@ -764,6 +795,10 @@ class ABJ_404_Solution_ViewUpdater {
                 ),
                 'context' => $context,
             );
+            $viewQueryDiagnostics = self::extractViewQueryDiagnostics($e);
+            if ($viewQueryDiagnostics !== null) {
+                $details['view_query_diagnostics'] = $viewQueryDiagnostics;
+            }
             self::safeLogAjaxFailure('AJAX exception in ajaxWarmTableCache.', $details, $e);
             $capturedOutput = self::getAndClearAjaxBufferedOutput();
             if ($capturedOutput !== '') {
