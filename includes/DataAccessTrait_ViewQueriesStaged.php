@@ -715,7 +715,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
     /** @return void */
     private function stageUpdateHits(): void {
+        $this->runStagedSqlFile('09a_drop_hits_temp.sql', array());
+        $this->runStagedSqlFile('09b_create_hits_temp.sql', array());
+        $this->runStagedSqlFile('09c_insert_hits_temp.sql', array());
         $this->runStagedSqlFile('09_update_hits.sql', array());
+        $this->runStagedSqlFile('09a_drop_hits_temp.sql', array());
     }
 
     /** @return void */
