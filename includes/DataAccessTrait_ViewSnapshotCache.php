@@ -104,6 +104,7 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             'query_label' => 'getRedirectsForView',
             'last_error' => '',
             'logged_stale_by_stage' => array(),
+            'build_progress_at_stage_start' => array(),
         );
         if (!is_array($state)) {
             return $default;
@@ -142,6 +143,8 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         $out['query_label'] = is_string($out['query_label'] ?? null) ? $out['query_label'] : $this->getViewWarmupStageQueryLabel((string)$out['stage']);
         $out['last_error'] = is_string($out['last_error'] ?? null) ? $out['last_error'] : '';
         $out['logged_stale_by_stage'] = is_array($out['logged_stale_by_stage']) ? $out['logged_stale_by_stage'] : array();
+        $out['build_progress_at_stage_start'] = is_array($out['build_progress_at_stage_start'] ?? null)
+            ? $out['build_progress_at_stage_start'] : array();
         return $out;
     }
 
@@ -174,6 +177,58 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
     /** @param string $stage @return int */
     private function getViewWarmupStageNumber(string $stage): int {
         return $stage === 'count' ? 2 : 1;
+    }
+
+    /** @return array<string, int> */
+    private function getViewBuildProgressFingerprint(): array {
+        if (!method_exists($this, 'readProgressOption')) {
+            return array();
+        }
+        return array(
+            'started_at' => $this->readProgressOption('started_at', 0),
+            'current_stage' => $this->readProgressOption('current_stage', 0),
+            's2_high_water' => $this->readProgressOption('s2_high_water', 0),
+            's4_high_water' => $this->readProgressOption('s4_high_water', 0),
+            's5_high_water' => $this->readProgressOption('s5_high_water', 0),
+        );
+    }
+
+    /**
+     * @param mixed $baseline
+     * @param array<string, int>|null $current
+     * @return bool
+     */
+    private function viewBuildProgressAdvancedSince($baseline, ?array $current = null): bool {
+        if (!is_array($baseline) || empty($baseline)) {
+            return false;
+        }
+        $current = $current ?? $this->getViewBuildProgressFingerprint();
+        foreach (array('current_stage', 's2_high_water', 's4_high_water', 's5_high_water') as $key) {
+            $before = is_scalar($baseline[$key] ?? null) ? intval($baseline[$key]) : 0;
+            $after = is_scalar($current[$key] ?? null) ? intval($current[$key]) : 0;
+            if ($after > $before) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     * @param string $stage
+     * @param array<string, int>|null $currentProgress
+     * @return bool
+     */
+    private function forgiveWarmupAttemptIfBuildProgressed(array &$state, string $stage, ?array $currentProgress = null): bool {
+        if (!$this->viewBuildProgressAdvancedSince($state['build_progress_at_stage_start'] ?? array(), $currentProgress)) {
+            return false;
+        }
+        $attempts = is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array('rows' => 0, 'count' => 0);
+        $attempts[$stage] = max(0, (is_scalar($attempts[$stage] ?? 0) ? intval($attempts[$stage]) : 0) - 1);
+        $state['attempts_by_stage'] = $attempts;
+        $state['build_progress_at_stage_start'] = is_array($currentProgress)
+            ? $currentProgress : $this->getViewBuildProgressFingerprint();
+        return true;
     }
 
     /**
@@ -254,6 +309,12 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             if ($elapsed <= self::VIEW_SNAPSHOT_WARMUP_STALE_SECONDS) {
                 return $this->formatViewWarmupResponse($state, false);
             }
+            $currentBuildProgress = $this->getViewBuildProgressFingerprint();
+            if ($this->forgiveWarmupAttemptIfBuildProgressed($state, $stage, $currentBuildProgress)) {
+                $attempts = is_array($state['attempts_by_stage']) ? $state['attempts_by_stage'] : array('rows' => 0, 'count' => 0);
+                $attemptCountRaw = $attempts[$stage] ?? 0;
+                $attemptCount = is_scalar($attemptCountRaw) ? intval($attemptCountRaw) : 0;
+            }
             if ($attemptCount >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
                 $state['status'] = 'blocked';
                 $previousLastError = $state['last_error'] ?? '';
@@ -299,6 +360,7 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         $state['attempts_by_stage'] = $attempts;
         $state['query_label'] = $this->getViewWarmupStageQueryLabel($stage);
         $state['last_error'] = '';
+        $state['build_progress_at_stage_start'] = $this->getViewBuildProgressFingerprint();
         $this->setViewWarmupState($optionName, $state);
 
         $stageOptions = $tableOptions;
@@ -346,6 +408,10 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             $state['last_error'] = $e->getMessage();
             $state['stage_completed_at'] = time();
             $currentAttempts = is_scalar($attempts[$stage] ?? 0) ? intval($attempts[$stage]) : 0;
+            if ($this->forgiveWarmupAttemptIfBuildProgressed($state, $stage)) {
+                $attempts = is_array($state['attempts_by_stage']) ? $state['attempts_by_stage'] : $attempts;
+                $currentAttempts = is_scalar($attempts[$stage] ?? 0) ? intval($attempts[$stage]) : 0;
+            }
             $state['status'] = ($currentAttempts >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) ? 'blocked' : 'idle';
 
             $timingsByStage = is_array($state['timings_by_stage'] ?? null) ? $state['timings_by_stage'] : array();
