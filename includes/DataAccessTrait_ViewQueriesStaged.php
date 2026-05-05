@@ -114,6 +114,9 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         $this->stagedQueryTimeoutSeconds = isset($tableOptions['_abj404_query_timeout'])
             && is_numeric($tableOptions['_abj404_query_timeout'])
             ? max(0, intval($tableOptions['_abj404_query_timeout'])) : 0;
+        if (!empty($tableOptions['_abj404_force_view_rebuild'])) {
+            $this->invalidateViewDone();
+        }
         $haveDone = $this->viewDoneTableExists();
         $builtAt = $this->viewDoneBuiltAt();
         $isFresh = $haveDone && $builtAt > 0 && (time() - $builtAt) < self::VIEW_DONE_FRESHNESS_TTL_SECONDS;
@@ -517,6 +520,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             if ($this->logsHitsTableExists()) {
                 $this->markBuildStage('staged_build_s9_update_hits');
                 $this->stageUpdateHits();
+            } else {
+                $this->markBuildStage('staged_build_s9_update_hits', 'skipped; logs hits table unavailable');
             }
             // Skipped or not, we've moved past S9.
             $this->writeProgressOption('current_stage', 9);

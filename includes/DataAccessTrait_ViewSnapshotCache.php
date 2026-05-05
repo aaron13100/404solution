@@ -67,6 +67,9 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
      * @return bool
      */
     private function canUseViewTableSnapshotCache(array $tableOptions): bool {
+        if (!empty($tableOptions['_abj404_force_view_rebuild'])) {
+            return false;
+        }
         $rawOrderBy = $tableOptions['orderby'] ?? '';
         $orderBy = strtolower(is_string($rawOrderBy) ? $rawOrderBy : '');
         $isLogsMaintenanceSort = ($orderBy === 'logshits' || $orderBy === 'last_used');

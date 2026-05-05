@@ -96,6 +96,28 @@ class ABJ_404_Solution_ViewUpdater {
         if (!function_exists('set_transient')) {
             return;
         }
+        $event = array(
+            'stage' => (string)$stage,
+            'query_label' => $diagnostics['query_label'],
+            'what_happening' => $diagnostics['what_happening'],
+            'time_ms' => (int)round(microtime(true) * 1000),
+        );
+        $events = array();
+        if (function_exists('get_transient')) {
+            $existing = @get_transient('abj404_inflight_' . $requestId);
+            if (is_array($existing) && is_array($existing['events'] ?? null)) {
+                $events = $existing['events'];
+            }
+        }
+        $lastEvent = !empty($events) ? $events[count($events) - 1] : null;
+        $lastStage = is_array($lastEvent) && isset($lastEvent['stage']) && is_string($lastEvent['stage'])
+            ? $lastEvent['stage'] : '';
+        if ($lastStage !== (string)$stage) {
+            $events[] = $event;
+            if (count($events) > 200) {
+                $events = array_slice($events, -200);
+            }
+        }
         // Diagnostics — best effort. Never let a transient write failure
         // mask the real query error we're trying to diagnose. The
         // @-suppression converts any wpdb/network warning into a no-op.
@@ -103,6 +125,7 @@ class ABJ_404_Solution_ViewUpdater {
             'stage' => (string)$stage,
             'query_label' => $diagnostics['query_label'],
             'what_happening' => $diagnostics['what_happening'],
+            'events' => $events,
         ), 60);
     }
 
@@ -546,6 +569,8 @@ class ABJ_404_Solution_ViewUpdater {
         $cacheModeRaw = (string)$abj404dao->getPostOrGetSanitize('cacheMode', 'normal');
         $cacheMode = in_array($cacheModeRaw, array('normal', 'cache_or_pending', 'refresh_cache'), true)
             ? $cacheModeRaw : 'normal';
+        $forceViewRebuild = ((string)$abj404dao->getPostOrGetSanitize('forceViewRebuild', '0') === '1'
+            || (string)$abj404dao->getPostOrGetSanitize('abj404_force_view_rebuild', '0') === '1');
         $currentSignature = strtolower(trim((string)$abj404dao->getPostOrGetSanitize('currentSignature', '')));
         if (strlen($currentSignature) > 128) {
             $currentSignature = substr($currentSignature, 0, 128);
@@ -561,6 +586,7 @@ class ABJ_404_Solution_ViewUpdater {
             'filter' => $filter,
             'detectOnly' => $detectOnly ? 1 : 0,
             'cacheMode' => $cacheMode,
+            'forceViewRebuild' => $forceViewRebuild ? 1 : 0,
             'currentSignature_length' => strlen($currentSignature),
             'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
@@ -617,6 +643,7 @@ class ABJ_404_Solution_ViewUpdater {
 
             if ($cacheMode === 'cache_or_pending'
                     && !$detectOnly
+                    && !$forceViewRebuild
                     && ($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
                     && is_object($abj404dao)
                     && method_exists($abj404dao, 'viewTableSnapshotAvailable')) {
@@ -1175,12 +1202,29 @@ class ABJ_404_Solution_ViewUpdater {
             $stage = '';
             $queryLabel = '';
             $whatHappening = '';
+            $events = array();
             if (function_exists('get_transient')) {
                 $value = get_transient('abj404_inflight_' . $requestId);
                 if (is_array($value)) {
                     $stage = isset($value['stage']) && is_string($value['stage']) ? $value['stage'] : '';
                     $queryLabel = isset($value['query_label']) && is_string($value['query_label']) ? $value['query_label'] : '';
                     $whatHappening = isset($value['what_happening']) && is_string($value['what_happening']) ? $value['what_happening'] : '';
+                    $rawEvents = is_array($value['events'] ?? null) ? $value['events'] : array();
+                    foreach ($rawEvents as $rawEvent) {
+                        if (!is_array($rawEvent)) {
+                            continue;
+                        }
+                        $eventStage = isset($rawEvent['stage']) && is_string($rawEvent['stage']) ? $rawEvent['stage'] : '';
+                        if ($eventStage === '') {
+                            continue;
+                        }
+                        $events[] = array(
+                            'stage' => $eventStage,
+                            'queryLabel' => isset($rawEvent['query_label']) && is_string($rawEvent['query_label']) ? $rawEvent['query_label'] : '',
+                            'whatHappening' => isset($rawEvent['what_happening']) && is_string($rawEvent['what_happening']) ? $rawEvent['what_happening'] : '',
+                            'timeMs' => isset($rawEvent['time_ms']) && is_scalar($rawEvent['time_ms']) ? intval($rawEvent['time_ms']) : 0,
+                        );
+                    }
                 } else if (is_string($value)) {
                     $stage = $value;
                     $diagnostics = self::getStageDiagnostics($stage);
@@ -1193,6 +1237,7 @@ class ABJ_404_Solution_ViewUpdater {
                 'stage' => $stage,
                 'queryLabel' => $queryLabel,
                 'whatHappening' => $whatHappening,
+                'events' => $events,
             ), 200);
             return;
 

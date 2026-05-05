@@ -168,6 +168,17 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         $allowedScoreRanges = array('all', 'high', 'medium', 'low', 'manual');
         $tableOptions['score_range'] = in_array($rawScoreRange, $allowedScoreRanges, true) ? $rawScoreRange : 'all';
 
+        // Developer/admin diagnostic: force a fresh staged view_done rebuild
+        // for the current AJAX table load. This is intentionally hidden behind
+        // an explicit request flag rather than a normal option.
+        $forceViewRebuild = (string)$this->dao->getPostOrGetSanitize('forceViewRebuild', '');
+        if ($forceViewRebuild === '') {
+            $forceViewRebuild = (string)$this->dao->getPostOrGetSanitize('abj404_force_view_rebuild', '');
+        }
+        if ($forceViewRebuild === '1') {
+            $tableOptions['_abj404_force_view_rebuild'] = '1';
+        }
+
         // sanitize all values.
         $sanitizedTableOptions = $this->sanitizePostData($tableOptions);
 
