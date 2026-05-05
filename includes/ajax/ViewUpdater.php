@@ -152,14 +152,103 @@ class ABJ_404_Solution_ViewUpdater {
                 'query_label' => 'getHighImpactCapturedCount()',
                 'what_happening' => 'Counting high-impact captured URLs',
             ),
+            // Sub-stages of the staged view-build pipeline (see
+            // DataAccessTrait_ViewQueriesStaged::runStagedBuildOnce). These
+            // are emitted by markBuildStage() during cold-cache builds so the
+            // .abj404-refresh-status element can show step-by-step progress
+            // instead of a single frozen "stage 1" label for the whole build.
+            'staged_build_s1_create' => array(
+                'query_label' => 'CREATE TABLE wp_abj404_view_build',
+                'what_happening' => 'Creating build buffer (1/11)',
+            ),
+            'staged_build_s2_insert' => array(
+                'query_label' => 'INSERT INTO wp_abj404_view_build SELECT FROM wp_abj404_redirects',
+                'what_happening' => 'Bulk-loading redirects into build buffer (2/11)',
+            ),
+            'staged_build_s3_index_fd' => array(
+                'query_label' => 'ALTER TABLE wp_abj404_view_build ADD INDEX idx_fd_int',
+                'what_happening' => 'Adding pre-join indexes (3/11)',
+            ),
+            'staged_build_s4_update_posts' => array(
+                'query_label' => 'UPDATE wp_abj404_view_build LEFT JOIN wp_posts',
+                'what_happening' => 'Filling published-status from wp_posts (4/11)',
+            ),
+            'staged_build_s5_update_terms' => array(
+                'query_label' => 'UPDATE wp_abj404_view_build LEFT JOIN wp_terms',
+                'what_happening' => 'Filling published-status from wp_terms (5/11)',
+            ),
+            'staged_build_s6_update_home' => array(
+                'query_label' => 'UPDATE wp_abj404_view_build (HOME)',
+                'what_happening' => 'Filling HOME-typed redirects (6/11)',
+            ),
+            'staged_build_s7_update_external' => array(
+                'query_label' => 'UPDATE wp_abj404_view_build (EXTERNAL)',
+                'what_happening' => 'Filling EXTERNAL-typed redirects (7/11)',
+            ),
+            'staged_build_s8_update_special' => array(
+                'query_label' => 'UPDATE wp_abj404_view_build (404-displayed)',
+                'what_happening' => 'Filling 404-displayed redirects (8/11)',
+            ),
+            'staged_build_s9_update_hits' => array(
+                'query_label' => 'UPDATE wp_abj404_view_build LEFT JOIN wp_abj404_logs_hits',
+                'what_happening' => 'Filling hit counts (9/11)',
+            ),
+            'staged_build_s10_index_sort' => array(
+                'query_label' => 'ALTER TABLE wp_abj404_view_build ADD INDEX (sort indexes)',
+                'what_happening' => 'Adding read-side sort indexes (10/11)',
+            ),
+            'staged_build_s11_swap' => array(
+                'query_label' => 'RENAME TABLE wp_abj404_view_build TO wp_abj404_view_done',
+                'what_happening' => 'Atomic table swap (11/11)',
+            ),
         );
         if (array_key_exists($stage, $map)) {
             return $map[$stage];
+        }
+        // Sub-stage with a free-form ":detail" suffix (e.g. the batched insert
+        // emits 'staged_build_s2_insert:batch 4/12'). Strip the detail to find
+        // the base label, then append the detail to what_happening so the GUI
+        // shows "Bulk-loading redirects into build buffer (2/11) — batch 4/12".
+        $colonPos = is_string($stage) ? strpos((string)$stage, ':') : false;
+        if ($colonPos !== false) {
+            $base = substr((string)$stage, 0, $colonPos);
+            $detail = trim(substr((string)$stage, $colonPos + 1));
+            if (array_key_exists($base, $map)) {
+                $entry = $map[$base];
+                if ($detail !== '') {
+                    $entry['what_happening'] = $entry['what_happening'] . ' — ' . $detail;
+                }
+                return $entry;
+            }
         }
         return array(
             'query_label' => (string)$stage,
             'what_happening' => 'Running AJAX stage ' . (string)$stage,
         );
+    }
+
+    /**
+     * Public version of setStage() that reads the AJAX requestId from the
+     * global context rather than requiring a `&$context` reference.  Used by
+     * code paths (e.g. the staged view-build pipeline) that run beneath
+     * DataAccess and don't have $context threaded through.
+     *
+     * Best-effort: if no AJAX context exists (background cron, CLI), this is
+     * a no-op — no transient is written and no global is mutated.
+     *
+     * @param string $stage  Stage label.  May be a known key in
+     *                       getStageDiagnostics(), or `<key>:<detail>` where
+     *                       detail is appended to what_happening for mid-stage
+     *                       progress messages (e.g. 'staged_build_s2_insert:batch 4/12').
+     * @return void
+     */
+    public static function markInflightStage($stage) {
+        if (!isset($GLOBALS['abj404_ajax_context']) || !is_array($GLOBALS['abj404_ajax_context'])) {
+            return;
+        }
+        $context = $GLOBALS['abj404_ajax_context'];
+        self::setStage($context, (string)$stage);
+        $GLOBALS['abj404_ajax_context'] = $context;
     }
 
     /**

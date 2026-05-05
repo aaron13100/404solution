@@ -11,7 +11,12 @@
      - dest_for_view stays the column default (empty string)
      - wp_post_id, wp_post_type stay NULL
      - published_status becomes 0 (matches legacy behavior, drives the
-       red "broken destination" badge in the admin UI). */
+       red "broken destination" badge in the admin UI).
+
+   Resumable batching: invoked once per id-range batch by
+   stageUpdatePostsBatched().  Bounds are inclusive on the high side so
+   the caller can stride forward by id range without missing rows on
+   batch boundaries. */
 UPDATE {wp_abj404_view_build} t
 LEFT JOIN {wp_posts} p ON p.ID = t.fd_int
 SET
@@ -27,3 +32,5 @@ SET
         ELSE 0
     END
 WHERE t.type = {ABJ404_TYPE_POST}
+  AND t.id > {LO_BOUND}
+  AND t.id <= {HI_BOUND}
