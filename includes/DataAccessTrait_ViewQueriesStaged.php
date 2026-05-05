@@ -180,6 +180,96 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     }
 
     /**
+     * Public read-only check used by the AJAX fetch endpoints to gate "serve
+     * from cache vs. return pending".  True when view_done exists and has
+     * been at least once successfully built (not invalidated). Stale-but-
+     * present is serveable: the steady-state warm path serves stale and
+     * schedules a background rebuild without blocking.
+     *
+     * The ViewUpdater AJAX path uses this to avoid triggering the inline
+     * build inside a request: if not serveable, the fetch returns
+     * `viewBuildPending: true` and the JS poller hits ajaxAdvanceViewBuild.
+     *
+     * @return bool
+     */
+    public function viewDoneIsServeable(): bool {
+        if (!$this->viewDoneTableExists()) {
+            return false;
+        }
+        // Invalidated (built_at == 0) is NOT serveable: the freshness option
+        // was just cleared by a redirect create/update/delete, so any read
+        // would return wildly out-of-date data.  The build must run before
+        // the next fetch.
+        return $this->viewDoneBuiltAt() > 0;
+    }
+
+    /**
+     * Public progress snapshot used by the AJAX fetch endpoints when they
+     * return a pending response, and by the build-advance endpoint after each
+     * tick.  Always safe to call; never queries beyond cheap option reads
+     * plus a SHOW TABLES probe.
+     *
+     * Shape:
+     *   - status:        'ready' (view_done is serveable) or 'pending'
+     *   - stage:         current sub-stage (0..11) reached so far
+     *   - of:            11 (total number of build sub-stages)
+     *   - build_started: unix ts when this resumable build began (0 if none)
+     *   - progress_text: short human-readable summary (e.g. "stage 2/11")
+     *
+     * @return array<string, mixed>
+     */
+    public function getViewBuildProgress(): array {
+        $stage = $this->readProgressOption('current_stage', 0);
+        $startedAt = $this->readProgressOption('started_at', 0);
+        $status = $this->viewDoneIsServeable() ? 'ready' : 'pending';
+        return array(
+            'status' => $status,
+            'stage' => max(0, $stage),
+            'of' => 11,
+            'build_started' => max(0, $startedAt),
+            'progress_text' => $this->describeBuildProgressForNotice(),
+        );
+    }
+
+    /**
+     * Public bounded build-advance entry point used by ajaxAdvanceViewBuild.
+     * Runs at most one resumable tick of the staged build (10s/stage budget;
+     * yields mid-stage on S2/S4/S5).  Idempotent: safe to call concurrently.
+     * Competing callers fail to acquire the build lock and just return the
+     * current progress.  Returns the same shape as getViewBuildProgress()
+     * with an additional `locked` bool that is true when this call did not
+     * acquire the lock (another worker is already advancing the build).
+     *
+     * Errors during a tick propagate as exceptions; the caller (AJAX handler)
+     * surfaces them.  This is intentionally NOT silent: a failing build that
+     * never advances would otherwise leave the JS poller spinning forever.
+     *
+     * @return array<string, mixed>
+     */
+    public function advanceViewBuildOnce(): array {
+        if ($this->viewDoneIsServeable()) {
+            return $this->getViewBuildProgress();
+        }
+        if (!$this->acquireViewBuildLock()) {
+            $progress = $this->getViewBuildProgress();
+            $progress['locked'] = true;
+            return $progress;
+        }
+        try {
+            $isComplete = $this->runStagedBuildOnce();
+        } finally {
+            $this->releaseViewBuildLock();
+        }
+        if ($isComplete) {
+            return $this->getViewBuildProgress();
+        }
+        // Yielded mid-stage; schedule a background tick so cron also pushes
+        // forward even if the JS poller stops (admin closes the tab).
+        $this->scheduleViewDoneRebuild();
+        return $this->getViewBuildProgress();
+    }
+
+    /**
      * COUNT(*) sibling to runRedirectsForViewStaged. Used by
      * getRedirectsForViewCount when filterText is non-empty (the
      * filterText-empty path already uses the optimized COUNT against

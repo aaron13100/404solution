@@ -340,6 +340,121 @@ function abj404StartStageProgressPolling(config) {
     };
 }
 
+/**
+ * Poll the bounded ajaxAdvanceViewBuild endpoint until the staged view_done
+ * table is ready (status === 'ready') or the budget is exhausted. Each call
+ * runs at most one resumable build tick (10s/stage budget; yields mid-stage
+ * on S2/S4/S5).  The fetch endpoint never builds inline, so this poller is
+ * the only path that advances a cold-start build from the browser side.
+ *
+ * config (all optional except baseUrl + nonce):
+ *   - baseUrl:   admin-ajax.php URL.
+ *   - nonce:     `abj404_fetchInflightStage` nonce (reused for advance).
+ *   - subpage:   used by the status-line message lookup.
+ *   - intervalMs: poll cadence; default 1000ms.
+ *   - maxAttempts: hard cap on ticks; default 240 (~4 min at 1s cadence).
+ *   - onProgress(progress): called after every tick.
+ *   - onReady(progress):    called once when status === 'ready'.
+ *   - onError(meta):        called if the endpoint returns 5xx or hits
+ *                           the attempt cap.
+ *
+ * Returns a `stop()` function the caller can invoke to cancel polling
+ * (e.g. when the admin navigates away).
+ */
+function abj404PollViewBuildAdvance(config) {
+    config = config || {};
+    if (!config.baseUrl || !config.nonce) {
+        if (typeof config.onError === 'function') {
+            config.onError({lastError: 'Missing baseUrl or nonce'});
+        }
+        return function() {};
+    }
+    var stopped = false;
+    var attemptCount = 0;
+    var maxAttempts = parseInt(config.maxAttempts, 10) || 240;
+    var intervalMs = parseInt(config.intervalMs, 10) || 1000;
+    var onProgress = (typeof config.onProgress === 'function') ? config.onProgress : function() {};
+    var onReady = (typeof config.onReady === 'function') ? config.onReady : function() {};
+    var onError = (typeof config.onError === 'function') ? config.onError : function() {};
+    var stop = function() { stopped = true; };
+
+    var formatProgressMessage = function(progress) {
+        if (!progress || typeof progress !== 'object') {
+            return 'Building redirects view...';
+        }
+        var stage = parseInt(progress.stage, 10) || 0;
+        var of = parseInt(progress.of, 10) || 11;
+        var text = (typeof progress.progress_text === 'string' && progress.progress_text)
+            ? progress.progress_text
+            : ('stage ' + stage + '/' + of);
+        return 'Preparing redirects view (' + text + ')';
+    };
+
+    var fireOnce = function() {
+        if (stopped) {
+            return;
+        }
+        attemptCount++;
+        if (attemptCount > maxAttempts) {
+            stopped = true;
+            onError({
+                lastError: 'View build advance exceeded ' + maxAttempts + ' attempts',
+                attemptCount: attemptCount
+            });
+            return;
+        }
+
+        jQuery.ajax({
+            url: config.baseUrl,
+            type: 'POST',
+            dataType: 'json',
+            timeout: 30000,
+            data: {
+                action: 'ajaxAdvanceViewBuild',
+                nonce: config.nonce,
+                page: config.page || '',
+                subpage: config.subpage || ''
+            }
+        }).done(function(result) {
+            if (stopped) {
+                return;
+            }
+            var progress = (result && result.progress) ? result.progress : {};
+            var status = (result && typeof result.status === 'string') ? result.status : '';
+            jQuery('.abj404-refresh-status').text(formatProgressMessage(progress));
+            abj404UpdateAjaxDebugLog('View build advance: ' + (progress.progress_text || ''), {
+                status: status,
+                stage: progress.stage,
+                of: progress.of,
+                build_started: progress.build_started,
+                attemptCount: attemptCount
+            });
+            onProgress(progress);
+            if (status === 'ready') {
+                stopped = true;
+                onReady(progress);
+                return;
+            }
+            window.setTimeout(fireOnce, intervalMs);
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            if (stopped) {
+                return;
+            }
+            stopped = true;
+            onError({
+                status: jqXHR && jqXHR.status ? jqXHR.status : '',
+                textStatus: textStatus,
+                errorThrown: errorThrown,
+                lastError: textStatus || errorThrown || 'ajax-error',
+                attemptCount: attemptCount
+            });
+        });
+    };
+
+    fireOnce();
+    return stop;
+}
+
 function abj404FormatAjaxFailureDetails(meta) {
     meta = meta || {};
     var elapsed = parseInt(meta.elapsedMs, 10);
@@ -629,6 +744,15 @@ function triggerInitialTableLoadIfNeeded() {
             detectOnly: false,
             cacheMode: 'cache_or_pending',
             onComplete: function(meta) {
+                if (meta && meta.viewBuildPending) {
+                    // Cold start: the staged view_done table is missing or
+                    // invalidated. Poll the bounded build-advance endpoint
+                    // (one resumable tick per call) and retry the fetch when
+                    // the build reports ready.  No HTTP 500 path can fire
+                    // here: the fetch endpoint never builds inline.
+                    startViewBuildPollingThenRetry(perpageElements[0], $config, attemptNumber);
+                    return;
+                }
                 if (meta && meta.cachePending) {
                     startPlaceholderTableHydration(perpageElements[0]);
                     return;
@@ -668,6 +792,85 @@ function triggerInitialTableLoadIfNeeded() {
     triggerInitialLoadAttempt(1);
 }
 
+/**
+ * Bridge between a fetch response with `viewBuildPending: true` and the
+ * bounded build-advance poller.  When the staged view_done table is missing
+ * or invalidated the fetch endpoint refuses to build inline (this is the
+ * whole point of the architectural split); the JS must drive the build via
+ * ajaxAdvanceViewBuild and re-issue the fetch when ready.
+ *
+ * Single-flight: a `window.abj404ViewBuildAdvanceRunning` flag prevents
+ * concurrent pollers when triggerInitialTableLoadIfNeeded retries quickly.
+ */
+function startViewBuildPollingThenRetry(triggerItem, $config, fetchAttemptNumber) {
+    if (window.abj404ViewBuildAdvanceRunning === true) {
+        return;
+    }
+    window.abj404ViewBuildAdvanceRunning = true;
+
+    var $ajaxConfigEl = jQuery('[data-pagination-ajax-url]').first();
+    if ($ajaxConfigEl.length === 0) {
+        $ajaxConfigEl = jQuery('.abj404-filter-bar').first();
+    }
+    var url = $ajaxConfigEl.attr('data-pagination-ajax-url') || window.ajaxurl;
+    var baseUrl = url ? url.split('?')[0] : '';
+    var inflightNonce = $ajaxConfigEl.attr('data-pagination-inflight-nonce') || '';
+    var subpage = $ajaxConfigEl.attr('data-pagination-ajax-subpage') || getURLParameter('subpage');
+
+    if (!baseUrl || !inflightNonce) {
+        // No advance endpoint config: drop placeholders so the page is usable.
+        window.abj404ViewBuildAdvanceRunning = false;
+        if ($config && $config.length > 0) {
+            $config.attr('data-pagination-initial-load', '0');
+        }
+        showTableWarmupFailure({lastError: 'View build advance endpoint config missing'});
+        return;
+    }
+
+    abj404PollViewBuildAdvance({
+        baseUrl: baseUrl,
+        nonce: inflightNonce,
+        subpage: subpage,
+        page: getURLParameter('page') || '',
+        intervalMs: 1000,
+        onReady: function() {
+            window.abj404ViewBuildAdvanceRunning = false;
+            jQuery('.abj404-refresh-status').text('');
+            // Re-issue the fetch now that view_done is ready.  Use the same
+            // cache_or_pending mode so a cold snapshot triggers the existing
+            // warm-and-hydrate path (which is now safe because view_done
+            // exists, so getRedirectsForView is a fast read).
+            paginationLinksChange(triggerItem, {
+                backgroundRefresh: false,
+                detectOnly: false,
+                cacheMode: 'cache_or_pending',
+                onComplete: function(meta) {
+                    if (meta && meta.cachePending) {
+                        startPlaceholderTableHydration(triggerItem);
+                        return;
+                    }
+                    if ($config && $config.length > 0) {
+                        $config.attr('data-pagination-initial-load', '0');
+                    }
+                },
+                onError: function(errorMeta) {
+                    if ($config && $config.length > 0) {
+                        $config.attr('data-pagination-initial-load', '0');
+                    }
+                    showTableWarmupFailure(errorMeta || {});
+                }
+            });
+        },
+        onError: function(errorMeta) {
+            window.abj404ViewBuildAdvanceRunning = false;
+            if ($config && $config.length > 0) {
+                $config.attr('data-pagination-initial-load', '0');
+            }
+            showTableWarmupFailure(errorMeta || {});
+        }
+    });
+}
+
 function tablePlaceholderStillAwaitingLoad() {
     return jQuery('.abj404-table[data-table-awaiting-load="1"]').length > 0;
 }
@@ -687,6 +890,15 @@ function startPlaceholderTableHydration(triggerItem) {
         warmTableCacheStage(triggerItem, {
             stageProgressMessage: 'Currently refreshing data',
             onComplete: function(meta) {
+                if (meta && meta.viewBuildPending) {
+                    // The snapshot warm cannot run yet because view_done is
+                    // missing / invalidated.  Hand off to the bounded build
+                    // poller; on ready it re-issues a fetch which falls into
+                    // the warm-and-hydrate path naturally.
+                    window.abj404PlaceholderHydrationRunning = false;
+                    startViewBuildPollingThenRetry(triggerItem, getRefreshStatusHost(), 1);
+                    return;
+                }
                 if (meta && meta.status === 'blocked') {
                     showTableWarmupFailure(meta);
                     window.abj404PlaceholderHydrationRunning = false;
@@ -814,6 +1026,19 @@ function warmTableCacheStage(triggerItem, options) {
         },
         success: function(result) {
             stopStageProgressPolling(true);
+            if (result && result.viewBuildPending) {
+                // The staged view_done table is missing or invalidated.
+                // Don't try to warm the snapshot cache (which would call
+                // getRedirectsForView and trigger an inline build): pass the
+                // pending state up so the caller can poll ajaxAdvanceViewBuild.
+                abj404UpdateAjaxDebugLog('Warmup deferred (view build pending)', {
+                    progress: result.progress
+                });
+                if (typeof options.onComplete === 'function') {
+                    options.onComplete(result);
+                }
+                return;
+            }
             if (result && result.stage && result.queryLabel) {
                 var completedStage = (result.stage === 'count' && !result.ready) ? 'rows' : (result.ready ? 'count' : '');
                 var timingMs = 0;
@@ -1568,11 +1793,27 @@ function paginationLinksChange(triggerItem, options) {
             stopStageProgressPolling(true);
             jQuery('.abj404-refresh-status').text('');
             
+            if (result && result.viewBuildPending) {
+                jQuery('.abj404-loading-overlay').remove();
+                var pendingMsg = result.message || 'Preparing the redirects view table. Please wait.';
+                jQuery('.abj404-refresh-status').text(pendingMsg);
+                abj404UpdateAjaxDebugLog('AJAX Success (View Build Pending): ' + pendingMsg, {
+                    progress: result.progress
+                });
+                if (typeof options.onComplete === 'function') {
+                    options.onComplete({
+                        viewBuildPending: true,
+                        progress: result.progress || null
+                    });
+                }
+                return;
+            }
+
             if (result && result.cachePending) {
                 jQuery('.abj404-loading-overlay').remove();
-                var pendingMsg = result.message || 'Preparing table data in the background.';
-                jQuery('.abj404-refresh-status').text(pendingMsg);
-                abj404UpdateAjaxDebugLog('AJAX Success (Cache Pending): ' + pendingMsg);
+                var cachePendingMsg = result.message || 'Preparing table data in the background.';
+                jQuery('.abj404-refresh-status').text(cachePendingMsg);
+                abj404UpdateAjaxDebugLog('AJAX Success (Cache Pending): ' + cachePendingMsg);
                 if (typeof options.onComplete === 'function') {
                     options.onComplete({cachePending: true});
                 }

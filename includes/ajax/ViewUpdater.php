@@ -36,6 +36,8 @@ class ABJ_404_Solution_ViewUpdater {
                 array($me, 'refreshHealthBar'));
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxFetchInflightStage',
                 array($me, 'fetchInflightStage'));
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxAdvanceViewBuild',
+                array($me, 'advanceViewBuild'));
         // wp_ajax_nopriv_ is for normal users
     }
 
@@ -643,6 +645,38 @@ class ABJ_404_Solution_ViewUpdater {
             /** @var ABJ_404_Solution_View $view */
             $view = self::resolveViewInstance($abj404view);
 
+            // View-build gate: never let an AJAX fetch trigger an inline staged
+            // build.  If the precomputed view_done table is not serveable
+            // (missing or invalidated by a recent redirect edit), respond
+            // immediately with `viewBuildPending` and let the JS poller hit
+            // ajaxAdvanceViewBuild repeatedly to advance the build one tick
+            // per call.  No HTTP 500 path from build pressure can happen here.
+            if (($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
+                    && !$detectOnly
+                    && is_object($abj404dao)
+                    && method_exists($abj404dao, 'viewDoneIsServeable')
+                    && !$abj404dao->viewDoneIsServeable()) {
+                $stage = ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
+                self::setStage($context, $stage);
+                if ($forceViewRebuild && method_exists($abj404dao, 'invalidateViewDone')) {
+                    $abj404dao->invalidateViewDone();
+                }
+                $progress = method_exists($abj404dao, 'getViewBuildProgress')
+                    ? $abj404dao->getViewBuildProgress()
+                    : array('status' => 'pending', 'stage' => 0, 'of' => 11,
+                        'build_started' => 0, 'progress_text' => 'not yet started');
+                self::markAjaxResponseSent();
+                self::getAndClearAjaxBufferedOutput();
+                self::sendJsonResponseAndExit(array(
+                    'viewBuildPending' => true,
+                    'cacheMode' => $cacheMode,
+                    'subpage' => $subpage,
+                    'progress' => $progress,
+                    'message' => __('Preparing the redirects view table. Please wait.', '404-solution'),
+                ), 200);
+                return;
+            }
+
             if ($cacheMode === 'cache_or_pending'
                     && !$detectOnly
                     && !$forceViewRebuild
@@ -875,6 +909,32 @@ class ABJ_404_Solution_ViewUpdater {
                     'stage' => 'rows',
                     'stageNumber' => 1,
                     'queryLabel' => 'getRedirectsForView',
+                ), 200);
+                return;
+            }
+
+            // Same view-build gate as the fetch endpoint: warming the snapshot
+            // cache calls getRedirectsForView, which will inline-build the
+            // staged view_done if missing.  When view_done is not serveable,
+            // the JS poller must advance the build via ajaxAdvanceViewBuild
+            // before the snapshot warm can start.  Returning ready=false here
+            // keeps the placeholder hydration loop running until then.
+            if (is_object($abj404dao) && method_exists($abj404dao, 'viewDoneIsServeable')
+                    && !$abj404dao->viewDoneIsServeable()) {
+                $progress = method_exists($abj404dao, 'getViewBuildProgress')
+                    ? $abj404dao->getViewBuildProgress()
+                    : array('status' => 'pending', 'stage' => 0, 'of' => 11,
+                        'build_started' => 0, 'progress_text' => 'not yet started');
+                self::markAjaxResponseSent();
+                self::getAndClearAjaxBufferedOutput();
+                self::sendJsonResponseAndExit(array(
+                    'status' => 'pending',
+                    'ready' => false,
+                    'viewBuildPending' => true,
+                    'stage' => 'rows',
+                    'stageNumber' => 1,
+                    'queryLabel' => 'getRedirectsForView',
+                    'progress' => $progress,
                 ), 200);
                 return;
             }
@@ -1244,10 +1304,131 @@ class ABJ_404_Solution_ViewUpdater {
             return;
 
         } catch (Throwable $e) {
-            // Diagnostics endpoint — never fail loudly.  An admin-side notice
+            // Diagnostics endpoint, never fail loudly.  An admin-side notice
             // that says "stage: (lookup failed)" is a worse outcome than
             // "stage: (unknown)".
             self::sendJsonResponseAndExit(array('stage' => ''), 200);
+            return;
+        }
+    }
+
+    /**
+     * Bounded build-advance endpoint paired with the fetch-only path on
+     * `getPaginationLinks` / `warmTableCache`. Each call runs at most one
+     * resumable tick of the staged view_done build (10s/stage budget; yields
+     * mid-stage on S2/S4/S5) and returns the current progress.  The JS poller
+     * fires this every ~1s after a fetch returns `viewBuildPending: true`.
+     *
+     * Idempotent: concurrent calls fail to acquire the build lock and just
+     * return the current progress.  Errors are returned as a 500 with the
+     * standard error envelope so the JS poller can stop and surface a notice
+     * instead of spinning forever.
+     *
+     * Reuses the `abj404_fetchInflightStage` nonce (already bound on every
+     * admin page that can hit this endpoint) so no additional nonce plumbing
+     * is needed.
+     *
+     * @return void
+     */
+    function advanceViewBuild() {
+        $abj404dao = abj_service('data_access');
+        $abj404logic = abj_service('plugin_logic');
+
+        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
+        $page = $abj404dao->getPostOrGetSanitize('page', '');
+        $subpage = $abj404dao->getPostOrGetSanitize('subpage', '');
+
+        $isPluginAdmin = false;
+        $context = array(
+            'action' => 'ajaxAdvanceViewBuild',
+            'page' => $page,
+            'subpage' => $subpage,
+            'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
+            'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
+        );
+        $context = self::startAjaxDebugContext($context);
+
+        try {
+            if (!wp_verify_nonce($nonce, 'abj404_fetchInflightStage')) {
+                self::safeLogAjaxFailure('AJAX invalid nonce in ajaxAdvanceViewBuild.', $context);
+                self::markAjaxResponseSent();
+                self::sendJsonResponseAndExit(self::buildAjaxErrorResponse('Invalid security token', null, false), 403);
+                return;
+            }
+
+            $isPluginAdmin = $abj404logic->userIsPluginAdmin();
+            if (!$isPluginAdmin) {
+                self::safeLogAjaxFailure('AJAX unauthorized in ajaxAdvanceViewBuild.', $context);
+                self::markAjaxResponseSent();
+                self::sendJsonResponseAndExit(self::buildAjaxErrorResponse('Unauthorized', null, false), 403);
+                return;
+            }
+
+            // The poller fires this once per second per admin tab while a
+            // build is in progress.  A single tab might burn ~120 calls in a
+            // long resumable build; keep the ceiling well above that.
+            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('advance_view_build', 600, 60)) {
+                self::safeLogAjaxFailure('AJAX rate limit in ajaxAdvanceViewBuild.', $context);
+                self::markAjaxResponseSent();
+                self::sendJsonResponseAndExit(self::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false), 429);
+                return;
+            }
+
+            if (!is_object($abj404dao) || !method_exists($abj404dao, 'advanceViewBuildOnce')) {
+                self::markAjaxResponseSent();
+                self::getAndClearAjaxBufferedOutput();
+                self::sendJsonResponseAndExit(array(
+                    'status' => 'unsupported',
+                    'progress' => array('status' => 'pending', 'stage' => 0, 'of' => 11,
+                        'build_started' => 0, 'progress_text' => 'unsupported'),
+                ), 200);
+                return;
+            }
+
+            $progress = $abj404dao->advanceViewBuildOnce();
+            $statusValue = is_array($progress) && isset($progress['status']) && is_string($progress['status'])
+                ? $progress['status'] : 'pending';
+
+            self::markAjaxResponseSent();
+            self::getAndClearAjaxBufferedOutput();
+            self::sendJsonResponseAndExit(array(
+                'status' => $statusValue,
+                'progress' => is_array($progress) ? $progress : array(),
+            ), 200);
+            return;
+
+        } catch (Throwable $e) {
+            if (!$isPluginAdmin) {
+                $abj404logic = abj_service('plugin_logic');
+                if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
+                    try {
+                        $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
+                    } catch (Throwable $ignored) {
+                        $isPluginAdmin = false;
+                    }
+                }
+            }
+
+            $details = array(
+                'exception' => array(
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                ),
+                'context' => $context,
+            );
+            self::safeLogAjaxFailure('AJAX exception in ajaxAdvanceViewBuild.', $details, $e);
+            $capturedOutput = self::getAndClearAjaxBufferedOutput();
+            if ($capturedOutput !== '') {
+                $details['buffered_output'] = substr($capturedOutput, 0, 8000);
+            }
+
+            self::markAjaxResponseSent();
+            self::sendJsonResponseAndExit(
+                self::buildAjaxErrorResponse('Server error while advancing the view build.', $details, $isPluginAdmin),
+                500
+            );
             return;
         }
     }
