@@ -90,104 +90,104 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
     var map = {
         table_redirects: {
             queryLabel: 'getAdminRedirectsPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
-            whatHappening: 'Loading Redirects table rows',
+            whatsHappening: 'Loading Redirects table rows',
             stageNumber: 1
         },
         redirect_status_counts: {
             queryLabel: 'getRedirectStatusCounts()',
-            whatHappening: 'Counting Redirects status tabs',
+            whatsHappening: 'Counting Redirects status tabs',
             stageNumber: 2
         },
         table_captured: {
             queryLabel: 'getCapturedURLSPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
-            whatHappening: 'Loading Captured 404 URLs table rows',
+            whatsHappening: 'Loading Captured 404 URLs table rows',
             stageNumber: 1
         },
         captured_status_counts: {
             queryLabel: 'getCapturedStatusCounts()',
-            whatHappening: 'Counting Captured 404 URLs status tabs',
+            whatsHappening: 'Counting Captured 404 URLs status tabs',
             stageNumber: 2
         },
         table_logs: {
             queryLabel: 'getAdminLogsPageTable() -> getLogRecords()',
-            whatHappening: 'Loading Logs table rows',
+            whatsHappening: 'Loading Logs table rows',
             stageNumber: 1
         },
         paginationLinksTop: {
             queryLabel: 'getPaginationLinks(top) -> getRedirectsForViewCount() / getRedirectsForView.sql',
-            whatHappening: 'Rendering top pagination links',
+            whatsHappening: 'Rendering top pagination links',
             stageNumber: 3
         },
         paginationLinksBottom: {
             queryLabel: 'getPaginationLinks(bottom) -> getRedirectsForViewCount() / getRedirectsForView.sql',
-            whatHappening: 'Rendering bottom pagination links',
+            whatsHappening: 'Rendering bottom pagination links',
             stageNumber: 4
         },
         table_cache_rows: {
             queryLabel: 'getRedirectsForView',
-            whatHappening: 'Warming table row snapshot',
+            whatsHappening: 'Warming table row snapshot',
             stageNumber: 1
         },
         table_cache_count: {
             queryLabel: 'getRedirectsForViewCount',
-            whatHappening: 'Warming table count snapshot',
+            whatsHappening: 'Warming table count snapshot',
             stageNumber: 2
         },
         // Sub-stages of the staged view-build pipeline.  These render under
         // the outer AJAX stage as steps 1..11 of the cold-cache build.
         staged_build_s1_create: {
             queryLabel: 'CREATE TABLE wp_abj404_view_build',
-            whatHappening: 'Creating build buffer (1/11)',
+            whatsHappening: 'Creating build buffer (1/11)',
             stageNumber: 1
         },
         staged_build_s2_insert: {
             queryLabel: 'INSERT INTO wp_abj404_view_build SELECT FROM wp_abj404_redirects',
-            whatHappening: 'Bulk-loading redirects into build buffer (2/11)',
+            whatsHappening: 'Bulk-loading redirects into build buffer (2/11)',
             stageNumber: 2
         },
         staged_build_s3_index_fd: {
             queryLabel: 'ALTER TABLE wp_abj404_view_build ADD INDEX idx_fd_int',
-            whatHappening: 'Adding pre-join indexes (3/11)',
+            whatsHappening: 'Adding pre-join indexes (3/11)',
             stageNumber: 3
         },
         staged_build_s4_update_posts: {
             queryLabel: 'UPDATE wp_abj404_view_build LEFT JOIN wp_posts',
-            whatHappening: 'Filling published-status from wp_posts (4/11)',
+            whatsHappening: 'Filling published-status from wp_posts (4/11)',
             stageNumber: 4
         },
         staged_build_s5_update_terms: {
             queryLabel: 'UPDATE wp_abj404_view_build LEFT JOIN wp_terms',
-            whatHappening: 'Filling published-status from wp_terms (5/11)',
+            whatsHappening: 'Filling published-status from wp_terms (5/11)',
             stageNumber: 5
         },
         staged_build_s6_update_home: {
             queryLabel: 'UPDATE wp_abj404_view_build (HOME)',
-            whatHappening: 'Filling HOME-typed redirects (6/11)',
+            whatsHappening: 'Filling HOME-typed redirects (6/11)',
             stageNumber: 6
         },
         staged_build_s7_update_external: {
             queryLabel: 'UPDATE wp_abj404_view_build (EXTERNAL)',
-            whatHappening: 'Filling EXTERNAL-typed redirects (7/11)',
+            whatsHappening: 'Filling EXTERNAL-typed redirects (7/11)',
             stageNumber: 7
         },
         staged_build_s8_update_special: {
             queryLabel: 'UPDATE wp_abj404_view_build (404-displayed)',
-            whatHappening: 'Filling 404-displayed redirects (8/11)',
+            whatsHappening: 'Filling 404-displayed redirects (8/11)',
             stageNumber: 8
         },
         staged_build_s9_update_hits: {
             queryLabel: 'UPDATE wp_abj404_view_build LEFT JOIN wp_abj404_logs_hits',
-            whatHappening: 'Filling hit counts (9/11)',
+            whatsHappening: 'Filling hit counts (9/11)',
             stageNumber: 9
         },
         staged_build_s10_index_sort: {
             queryLabel: 'ALTER TABLE wp_abj404_view_build ADD INDEX (sort indexes)',
-            whatHappening: 'Adding read-side sort indexes (10/11)',
+            whatsHappening: 'Adding read-side sort indexes (10/11)',
             stageNumber: 10
         },
         staged_build_s11_swap: {
             queryLabel: 'RENAME TABLE wp_abj404_view_build TO wp_abj404_view_done',
-            whatHappening: 'Atomic table swap (11/11)',
+            whatsHappening: 'Atomic table swap (11/11)',
             stageNumber: 11
         }
     };
@@ -196,7 +196,7 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
     }
     // Server may emit `<base>:<detail>` for mid-stage progress
     // (e.g. 'staged_build_s2_insert:batch 4/12').  Resolve to the base entry
-    // and append the detail to whatHappening so the polled status line shows
+    // and append the detail to whatsHappening so the polled status line shows
     // batch progress.
     if (typeof stage === 'string') {
         var colonPos = stage.indexOf(':');
@@ -206,9 +206,9 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
             if (map[base]) {
                 return {
                     queryLabel: map[base].queryLabel,
-                    whatHappening: detail
-                        ? map[base].whatHappening + ' — ' + detail
-                        : map[base].whatHappening,
+                    whatsHappening: detail
+                        ? map[base].whatsHappening + ' — ' + detail
+                        : map[base].whatsHappening,
                     stageNumber: map[base].stageNumber
                 };
             }
@@ -217,20 +217,20 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
     if (subpage === 'abj404_captured') {
         return {
             queryLabel: 'getCapturedURLSPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
-            whatHappening: 'Loading Captured 404 URLs table rows',
+            whatsHappening: 'Loading Captured 404 URLs table rows',
             stageNumber: 1
         };
     }
     if (subpage === 'abj404_logs') {
         return {
             queryLabel: 'getAdminLogsPageTable() -> getLogRecords()',
-            whatHappening: 'Loading Logs table rows',
+            whatsHappening: 'Loading Logs table rows',
             stageNumber: 1
         };
     }
     return {
         queryLabel: 'getAdminRedirectsPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
-        whatHappening: 'Loading Redirects table rows',
+        whatsHappening: 'Loading Redirects table rows',
         stageNumber: 1
     };
 }
@@ -238,11 +238,11 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
 function abj404FormatRefreshingStageMessage(baseMessage, stage, queryLabel, subpage, timingMs, completedStage) {
     var diagnostics = abj404AjaxStageDiagnostics(stage, subpage);
     var stageNumber = diagnostics.stageNumber || '?';
-    // Prefer the human-readable whatHappening text (includes mid-stage detail
+    // Prefer the human-readable whatsHappening text (includes mid-stage detail
     // like "batch 4/12" for the staged build).  Fall back to queryLabel —
     // which is what older callers used — when no diagnostics lookup matches
     // (e.g. stage names emitted by other code paths).
-    var label = diagnostics.whatHappening
+    var label = diagnostics.whatsHappening
         || queryLabel
         || diagnostics.queryLabel
         || stage
@@ -281,10 +281,10 @@ function abj404StartStageProgressPolling(config) {
             }
             seenStageEvents[eventKey] = true;
             var eventDiagnostics = abj404AjaxStageDiagnostics(eventStage, config.subpage || '');
-            abj404UpdateAjaxDebugLog('Stage progress: ' + eventDiagnostics.whatHappening, {
+            abj404UpdateAjaxDebugLog('Stage progress: ' + eventDiagnostics.whatsHappening, {
                 stage: eventStage,
                 queryLabel: event.queryLabel || eventDiagnostics.queryLabel || '',
-                whatHappening: event.whatHappening || eventDiagnostics.whatHappening || ''
+                whatsHappening: event.whatsHappening || eventDiagnostics.whatsHappening || ''
             });
         }
 
@@ -338,7 +338,7 @@ function abj404FormatAjaxFailureDetails(meta) {
     var elapsed = parseInt(meta.elapsedMs, 10);
     var timeout = parseInt(meta.timeoutMs, 10);
     var lines = [
-        'What was happening: ' + (meta.whatHappening || 'Updating table data'),
+        'What was happening: ' + (meta.whatsHappening || 'Updating table data'),
         'Query: ' + (meta.queryLabel || 'unknown'),
         'HTTP status: ' + (meta.status || ''),
         'textStatus: ' + (meta.textStatus || ''),
@@ -1744,7 +1744,7 @@ function paginationLinksChange(triggerItem, options) {
             var messageFromServer = '';
             var stageFromServer = '';
             var queryLabelFromServer = '';
-            var whatHappeningFromServer = '';
+            var whatsHappeningFromServer = '';
             var lastQueryRedacted = '';
             if (responseJson && responseJson.data) {
                 if (responseJson.data.message) {
@@ -1765,7 +1765,7 @@ function paginationLinksChange(triggerItem, options) {
                         queryLabelFromServer = String(details.context.query_label);
                     }
                     if (details.context && details.context.what_happening) {
-                        whatHappeningFromServer = String(details.context.what_happening);
+                        whatsHappeningFromServer = String(details.context.what_happening);
                     }
                     if (details.wpdb && details.wpdb.last_query_redacted) {
                         lastQueryRedacted = String(details.wpdb.last_query_redacted);
@@ -1787,7 +1787,7 @@ function paginationLinksChange(triggerItem, options) {
                 var elapsedMs = Date.now() - requestStartedAt;
                 var inferredDiagnostics = abj404AjaxStageDiagnostics(stageFromServer, subpage);
                 var detailMeta = {
-                    whatHappening: whatHappeningFromServer || inferredDiagnostics.whatHappening,
+                    whatsHappening: whatsHappeningFromServer || inferredDiagnostics.whatsHappening,
                     queryLabel: queryLabelFromServer || inferredDiagnostics.queryLabel,
                     status: status,
                     textStatus: textStatus,
@@ -1831,15 +1831,15 @@ function paginationLinksChange(triggerItem, options) {
                     }).done(function(stageResult) {
                         var inflightStage = '';
                         var inflightQueryLabel = '';
-                        var inflightWhatHappening = '';
+                        var inflightwhatsHappening = '';
                         if (stageResult && typeof stageResult.stage === 'string' && stageResult.stage !== '') {
                             inflightStage = stageResult.stage;
                         }
                         if (stageResult && typeof stageResult.queryLabel === 'string' && stageResult.queryLabel !== '') {
                             inflightQueryLabel = stageResult.queryLabel;
                         }
-                        if (stageResult && typeof stageResult.whatHappening === 'string' && stageResult.whatHappening !== '') {
-                            inflightWhatHappening = stageResult.whatHappening;
+                        if (stageResult && typeof stageResult.whatsHappening === 'string' && stageResult.whatsHappening !== '') {
+                            inflightwhatsHappening = stageResult.whatsHappening;
                         }
                         var lookupLine = inflightStage
                             ? 'Inflight stage: ' + inflightStage
@@ -1848,7 +1848,7 @@ function paginationLinksChange(triggerItem, options) {
                         var updated = detailLines.slice();
                         for (var i = 0; i < updated.length; i++) {
                             if (updated[i].indexOf('What was happening:') === 0) {
-                                updated[i] = 'What was happening: ' + (inflightWhatHappening || lookupDiagnostics.whatHappening);
+                                updated[i] = 'What was happening: ' + (inflightwhatsHappening || lookupDiagnostics.whatsHappening);
                             }
                             if (updated[i].indexOf('Query:') === 0) {
                                 updated[i] = 'Query: ' + (inflightQueryLabel || lookupDiagnostics.queryLabel);
@@ -1889,7 +1889,7 @@ function paginationLinksChange(triggerItem, options) {
                     timeoutMs: ajaxTimeoutMs,
                     stage: stageFromServer,
                     queryLabel: queryLabelFromServer || abj404AjaxStageDiagnostics(stageFromServer, subpage).queryLabel,
-                    whatHappening: whatHappeningFromServer || abj404AjaxStageDiagnostics(stageFromServer, subpage).whatHappening,
+                    whatsHappening: whatsHappeningFromServer || abj404AjaxStageDiagnostics(stageFromServer, subpage).whatsHappening,
                     lastQueryRedacted: lastQueryRedacted
                 });
             }

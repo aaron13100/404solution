@@ -1201,14 +1201,14 @@ class ABJ_404_Solution_ViewUpdater {
 
             $stage = '';
             $queryLabel = '';
-            $whatHappening = '';
+            $whatsHappening = '';
             $events = array();
             if (function_exists('get_transient')) {
                 $value = get_transient('abj404_inflight_' . $requestId);
                 if (is_array($value)) {
                     $stage = isset($value['stage']) && is_string($value['stage']) ? $value['stage'] : '';
                     $queryLabel = isset($value['query_label']) && is_string($value['query_label']) ? $value['query_label'] : '';
-                    $whatHappening = isset($value['what_happening']) && is_string($value['what_happening']) ? $value['what_happening'] : '';
+                    $whatsHappening = isset($value['what_happening']) && is_string($value['what_happening']) ? $value['what_happening'] : '';
                     $rawEvents = is_array($value['events'] ?? null) ? $value['events'] : array();
                     foreach ($rawEvents as $rawEvent) {
                         if (!is_array($rawEvent)) {
@@ -1221,7 +1221,7 @@ class ABJ_404_Solution_ViewUpdater {
                         $events[] = array(
                             'stage' => $eventStage,
                             'queryLabel' => isset($rawEvent['query_label']) && is_string($rawEvent['query_label']) ? $rawEvent['query_label'] : '',
-                            'whatHappening' => isset($rawEvent['what_happening']) && is_string($rawEvent['what_happening']) ? $rawEvent['what_happening'] : '',
+                            'whatsHappening' => isset($rawEvent['what_happening']) && is_string($rawEvent['what_happening']) ? $rawEvent['what_happening'] : '',
                             'timeMs' => isset($rawEvent['time_ms']) && is_scalar($rawEvent['time_ms']) ? intval($rawEvent['time_ms']) : 0,
                         );
                     }
@@ -1229,14 +1229,14 @@ class ABJ_404_Solution_ViewUpdater {
                     $stage = $value;
                     $diagnostics = self::getStageDiagnostics($stage);
                     $queryLabel = $diagnostics['query_label'];
-                    $whatHappening = $diagnostics['what_happening'];
+                    $whatsHappening = $diagnostics['what_happening'];
                 }
             }
 
             self::sendJsonResponseAndExit(array(
                 'stage' => $stage,
                 'queryLabel' => $queryLabel,
-                'whatHappening' => $whatHappening,
+                'whatsHappening' => $whatsHappening,
                 'events' => $events,
             ), 200);
             return;
