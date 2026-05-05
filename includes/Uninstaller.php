@@ -252,7 +252,8 @@ class ABJ_404_Solution_Uninstaller {
             'abj404_cleanupCronAction',
             'abj404_updateLogsHitsTableAction',
             'abj404_updatePermalinkCacheAction',
-            'abj404_rebuild_ngram_cache_hook'
+            'abj404_rebuild_ngram_cache_hook',
+            'abj404_rebuildViewDone'
         );
 
         foreach ($cron_hooks as $hook) {

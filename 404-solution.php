@@ -1028,10 +1028,23 @@ function abj404_networkUpgradeBackgroundListener() {
     }
 }
 }
+if (!function_exists('abj404_rebuildViewDoneListener')) {
+/** @return void */
+function abj404_rebuildViewDoneListener() {
+    try {
+        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
+        $abj404dao->rebuildViewDoneInBackground();
+    } catch (\Throwable $e) {
+        error_log('404 Solution cron (view table rebuild): ' . $e->getMessage());
+    }
+}
+}
 add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
 add_action('abj404_updateLogsHitsTableAction', 'abj404_updateLogsHitsTableListener');
 add_action('abj404_logsv2_canonical_backfill', 'abj404_logsv2CanonicalUrlBackfillListener');
 add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheListener', 10, 2);
+add_action('abj404_rebuildViewDone', 'abj404_rebuildViewDoneListener');
 add_action('abj404_send_digest', 'abj404_sendDigestCronListener');
 if (!function_exists('abj404_sendDigestCronListener')) {
 /** @return void */

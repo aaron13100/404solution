@@ -14,7 +14,7 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
     /** Remove cron jobs. @return void */
     static function doUnregisterCrons(): void {
         $crons = array('abj404_cleanupCronAction', 'abj404_duplicateCronAction', 'removeDuplicatesCron', 'deleteOldRedirectsCron',
-            'abj404_gsc_fetch_cron', 'abj404_gsc_background_refresh');
+            'abj404_gsc_fetch_cron', 'abj404_gsc_background_refresh', 'abj404_rebuildViewDone');
         for ($i = 0; $i < count($crons); $i++) {
             $cron_name = $crons[$i];
             $timestamp1 = wp_next_scheduled($cron_name);
@@ -295,6 +295,7 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
                 'abj404_updateLogsHitsTableAction',
                 'abj404_updatePermalinkCacheAction',
                 'abj404_rebuild_ngram_cache_hook',
+                'abj404_rebuildViewDone',
                 'abj404_gsc_fetch_cron',
                 'abj404_gsc_background_refresh',
             );
@@ -337,5 +338,18 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
                 wp_schedule_event($gscTimestamp, 'daily', 'abj404_gsc_fetch_cron');
             }
         }
+
+        self::scheduleViewDoneWarmup();
+    }
+
+    /** @return void */
+    private static function scheduleViewDoneWarmup(): void {
+        if (!function_exists('wp_next_scheduled') || !function_exists('wp_schedule_single_event')) {
+            return;
+        }
+        if (wp_next_scheduled('abj404_rebuildViewDone') !== false) {
+            return;
+        }
+        wp_schedule_single_event(time() + 5, 'abj404_rebuildViewDone');
     }
 }
