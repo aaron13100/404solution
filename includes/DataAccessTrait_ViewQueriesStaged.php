@@ -28,8 +28,6 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
     const VIEW_DONE_FRESHNESS_TTL_SECONDS = 120;
     const VIEW_DONE_BUILD_LOCK_NAME = 'abj404_view_build';
-    const VIEW_DONE_FIRST_BUILD_POLL_INTERVAL_MS = 250;
-    const VIEW_DONE_FIRST_BUILD_POLL_BUDGET_MS = 25000;
 
     // Default batch size for the resumable bulk INSERT (S2) and per-id-range
     // UPDATEs (S4/S5).  Tuned to fit comfortably within a single per-query
@@ -99,13 +97,21 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
     /**
      * Public entry: returns the page of rows the admin Redirects/Captured
-     * tab should render. Always reads from the served view_done table.
-     * The build is triggered (inline or background, depending on freshness
-     * and presence of view_done) before the read.
+     * tab should render. Read-only with respect to view_done; never runs
+     * the staged build inline. If view_done is missing or invalidated, a
+     * background rebuild is scheduled and ABJ_404_Solution_ViewBuildPendingException
+     * is thrown so the caller can translate it into a pending response.
+     *
+     * The fetch AJAX handler (ViewUpdater::getPaginationLinks) gates on
+     * viewDoneIsServeable() before calling this method, so under normal
+     * traffic this never throws. Non-AJAX callers (REST API, snapshot
+     * warmup pipeline, tests) can hit the pending path; they handle it
+     * by retrying once cron / the JS poller advances the build.
      *
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return array<int, array<string, mixed>>
+     * @throws ABJ_404_Solution_ViewBuildPendingException
      */
     public function runRedirectsForViewStaged(string $sub, array $tableOptions): array {
         // Honor _abj404_query_timeout from the warmup pipeline so staged
@@ -134,40 +140,17 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             return $this->readFromViewDone($sub, $tableOptions);
         }
 
-        // Either view_done is missing entirely, or invalidateViewDone()
-        // cleared the freshness option (redirect was just created/edited/
-        // deleted). Either way, force an inline rebuild before serving.
-        // Stale data after an invalidation is wildly wrong, not just 60s
-        // out of date.
-        if ($this->acquireViewBuildLock()) {
-            $isComplete = false;
-            try {
-                $isComplete = $this->runStagedBuildOnce();
-            } finally {
-                $this->releaseViewBuildLock();
-            }
-            if ($isComplete && $this->viewDoneTableExists()) {
-                return $this->readFromViewDone($sub, $tableOptions);
-            }
-            // Build yielded mid-stage (resumable).  Schedule a background
-            // tick to continue, then either serve the prior view_done if it
-            // exists, or fall through to the poll-and-notify path.
-            $this->scheduleViewDoneRebuild();
-            if ($haveDone && $this->viewDoneTableExists()) {
-                return $this->readFromViewDone($sub, $tableOptions);
-            }
-        }
-
-        if ($this->pollForViewDone(self::VIEW_DONE_FIRST_BUILD_POLL_BUDGET_MS)) {
-            return $this->readFromViewDone($sub, $tableOptions);
-        }
-
+        // view_done is missing or invalidated. Schedule a background rebuild
+        // (cron + ajaxAdvanceViewBuild advance the build) and signal pending
+        // back up. Inline build inside a fetch request is intentionally
+        // removed: on slow hosts it fatals at max_execution_time and the
+        // HTTP 500 / "critical error" payload defeats client-side recovery.
+        $this->scheduleViewDoneRebuild();
         $progress = $this->describeBuildProgressForNotice();
-        $this->surfaceViewBuildAdminNotice(
-            'The redirects view table is still being built (' . $progress
-            . '). Reload the page in a few seconds.'
+        throw new ABJ_404_Solution_ViewBuildPendingException(
+            'Staged view build pending; background rebuild scheduled. Progress: ' . $progress,
+            $progress
         );
-        throw new \Exception('Staged view build still pending after poll budget. Progress: ' . $progress);
     }
 
     /** @return int Unix timestamp of last successful build, or 0 if missing. */
@@ -289,31 +272,23 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         $isFresh = $haveDone && $builtAt > 0 && (time() - $builtAt) < self::VIEW_DONE_FRESHNESS_TTL_SECONDS;
         $isInvalidated = $haveDone && $builtAt === 0;
 
+        if (!$haveDone || $isInvalidated) {
+            // No serveable view_done. Schedule a background rebuild and
+            // signal pending; never run the staged build inline inside a
+            // request. The fetch AJAX gate prevents this from being reached
+            // under normal traffic; non-AJAX callers retry on next request.
+            $this->scheduleViewDoneRebuild();
+            $progress = $this->describeBuildProgressForNotice();
+            throw new ABJ_404_Solution_ViewBuildPendingException(
+                'Staged view-count build pending; background rebuild scheduled. Progress: ' . $progress,
+                $progress
+            );
+        }
+
         if (!$isFresh) {
-            if (!$haveDone || $isInvalidated) {
-                // Force inline rebuild: either no data at all, or the
-                // freshness option was cleared by invalidateViewDone().
-                if ($this->acquireViewBuildLock()) {
-                    $isComplete = false;
-                    try {
-                        $isComplete = $this->runStagedBuildOnce();
-                    } finally {
-                        $this->releaseViewBuildLock();
-                    }
-                    if (!$isComplete) {
-                        $this->scheduleViewDoneRebuild();
-                        if (!$haveDone && !$this->pollForViewDone(self::VIEW_DONE_FIRST_BUILD_POLL_BUDGET_MS)) {
-                            throw new \Exception('Staged view build still pending after poll budget. Progress: '
-                                . $this->describeBuildProgressForNotice());
-                        }
-                    }
-                } else if (!$this->pollForViewDone(self::VIEW_DONE_FIRST_BUILD_POLL_BUDGET_MS)) {
-                    throw new \Exception('Staged view build still pending after poll budget. Progress: '
-                        . $this->describeBuildProgressForNotice());
-                }
-            } else {
-                $this->scheduleViewDoneRebuild();
-            }
+            // Stale but not invalidated: serve the stale count and kick off
+            // a background rebuild for the next request.
+            $this->scheduleViewDoneRebuild();
         }
 
         $sql = $this->buildViewDoneCountQuery($sub, $tableOptions);
@@ -1378,25 +1353,6 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             array('log_errors' => false));
     }
 
-    /**
-     * Wait up to $budgetMs for view_done to materialize. Used when the
-     * build lock was unavailable on a first-ever request and we need
-     * the other builder to finish before we can serve.
-     *
-     * @param int $budgetMs
-     * @return bool true when view_done becomes available within the budget
-     */
-    private function pollForViewDone(int $budgetMs): bool {
-        $deadline = microtime(true) + ($budgetMs / 1000);
-        while (microtime(true) < $deadline) {
-            if ($this->viewDoneTableExists()) {
-                return true;
-            }
-            usleep(self::VIEW_DONE_FIRST_BUILD_POLL_INTERVAL_MS * 1000);
-        }
-        return $this->viewDoneTableExists();
-    }
-
     /** @return void */
     private function scheduleViewDoneRebuild(): void {
         if (function_exists('wp_next_scheduled') && function_exists('wp_schedule_single_event')) {
@@ -1405,21 +1361,6 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             if ($next === false) {
                 wp_schedule_single_event(time() + 1, $hook);
             }
-        }
-    }
-
-    /**
-     * Surface a single admin notice on the plugin's own admin pages when
-     * the first-ever build is still pending. Per CLAUDE.md: never email,
-     * never wp-admin-wide. Existing transient-based dedupe keeps it to one
-     * notice per 24h per failure type.
-     *
-     * @param string $message
-     * @return void
-     */
-    private function surfaceViewBuildAdminNotice(string $message): void {
-        if (function_exists('set_transient')) {
-            set_transient('abj404_view_build_pending_notice', $message, 60);
         }
     }
 }

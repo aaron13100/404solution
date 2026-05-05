@@ -502,6 +502,17 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
 
         try {
             $rows = $this->runRedirectsForViewStaged((string)$sub, is_array($tableOptions) ? $tableOptions : array());
+        } catch (ABJ_404_Solution_ViewBuildPendingException $pending) {
+            // Cold-start state, not an error. The fetch AJAX gate normally
+            // intercepts this before the read; non-AJAX callers (REST, warmup)
+            // see an empty page and retry once cron / the JS poller advances
+            // the build. Re-throw when the warmup pipeline asks for it so its
+            // attempt counter advances and a stage gets blamed.
+            if ($throwOnQueryError) {
+                throw $pending;
+            }
+            $this->logger->debugMessage('[staged] getRedirectsForView pending: ' . $pending->getMessage());
+            return array();
         } catch (Throwable $e) {
             if ($throwOnQueryError) {
                 $stagedFailureMarker = '/* staged: ' . $e->getMessage() . ' */';
@@ -655,6 +666,16 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
                     set_transient($countCacheKey, $countValue, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
                 }
                 return $countValue;
+            } catch (ABJ_404_Solution_ViewBuildPendingException $pending) {
+                // view_done not yet built. Same treatment as getRedirectsForView:
+                // signal pending up the warmup pipeline if requested, otherwise
+                // record a sentinel count and let the caller retry next request.
+                if ($throwOnQueryError) {
+                    throw $pending;
+                }
+                $this->logger->debugMessage('[staged] getRedirectsForViewCount pending: ' . $pending->getMessage());
+                $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = -1;
+                return -1;
             } catch (Throwable $e) {
                 if ($throwOnQueryError) {
                     $stagedFailureMarker = '/* staged-count: ' . $e->getMessage() . ' */';
