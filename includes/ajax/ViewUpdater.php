@@ -9,6 +9,8 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_ViewUpdater {
 
+    private const INFLIGHT_STAGE_EVENT_LIMIT = 5000;
+
 	/** @var self|null */
 	private static $instance = null;
 
@@ -114,8 +116,8 @@ class ABJ_404_Solution_ViewUpdater {
             ? $lastEvent['stage'] : '';
         if ($lastStage !== (string)$stage) {
             $events[] = $event;
-            if (count($events) > 200) {
-                $events = array_slice($events, -200);
+            if (count($events) > self::INFLIGHT_STAGE_EVENT_LIMIT) {
+                $events = array_slice($events, -self::INFLIGHT_STAGE_EVENT_LIMIT);
             }
         }
         // Diagnostics — best effort. Never let a transient write failure

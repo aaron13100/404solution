@@ -12,6 +12,7 @@ if (typeof(getURLParameter) !== "function") {
  * @type {string[]}
  */
 window.abj404AjaxInteractionLogs = [];
+window.abj404AjaxInteractionLogLimit = 5000;
 
 /**
  * Append a message to the AJAX debug log in the footer.
@@ -45,6 +46,9 @@ function abj404UpdateAjaxDebugLog(message, details) {
     }
     
     window.abj404AjaxInteractionLogs.push(logEntry);
+    if (window.abj404AjaxInteractionLogs.length > window.abj404AjaxInteractionLogLimit) {
+        window.abj404AjaxInteractionLogs.splice(0, window.abj404AjaxInteractionLogs.length - window.abj404AjaxInteractionLogLimit);
+    }
     
     var $container = jQuery('#abj404-ajax-debug-info');
     var $log = jQuery('#abj404-ajax-debug-log');
@@ -60,6 +64,9 @@ function abj404UpdateAjaxDebugLog(message, details) {
             paddingBottom: '2px'
         });
         $log.append($entry);
+        while ($log.children().length > window.abj404AjaxInteractionLogLimit) {
+            $log.children().first().remove();
+        }
         // auto-scroll to bottom
         $log.scrollTop($log[0].scrollHeight);
     }
