@@ -109,6 +109,7 @@ return array(
     'ABJ_404_Solution_UserRequest' => $base . 'includes/php/objs/UserRequest.php',
     'ABJ_404_Solution_View' => $base . 'includes/View.php',
     'ABJ_404_Solution_ViewBuildPendingException' => $base . 'includes/ViewBuildPendingException.php',
+    'ABJ_404_Solution_ViewBuildPendingResponseBuilder' => $base . 'includes/ajax/ViewBuildPendingResponseBuilder.php',
     'ABJ_404_Solution_ViewQueryFailureException' => $base . 'includes/ViewQueryFailureException.php',
     'ABJ_404_Solution_ViewUpdater' => $base . 'includes/ajax/ViewUpdater.php',
     'ABJ_404_Solution_View_Suggestions' => $base . 'includes/View_Suggestions.php',

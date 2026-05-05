@@ -777,6 +777,18 @@ class ABJ_404_Solution_ViewUpdater {
             return;
 
         } catch (Throwable $e) {
+            // Race recovery: viewDoneIsServeable() can race with invalidateViewDone();
+            // surface the pending shape the JS poller already handles, never a 500.
+            $pending = ABJ_404_Solution_ViewBuildPendingResponseBuilder::find($e);
+            if ($pending !== null) {
+                self::markAjaxResponseSent();
+                self::getAndClearAjaxBufferedOutput();
+                self::sendJsonResponseAndExit(
+                    ABJ_404_Solution_ViewBuildPendingResponseBuilder::fetchResponse($abj404dao, $subpage, $cacheMode, $pending),
+                    200
+                );
+                return;
+            }
             // Determine admin status for diagnostics (never shown to non-admins).
             // If PluginLogic is broken/throws, fall back to WordPress capability checks so real admins can still see details.
             if (!$isPluginAdmin) {
@@ -953,6 +965,19 @@ class ABJ_404_Solution_ViewUpdater {
             self::sendJsonResponseAndExit($warmup, 200);
             return;
         } catch (Throwable $e) {
+            // Race recovery: same defense as getPaginationLinks. The warm
+            // path uses a different response shape because the JS placeholder
+            // hydration consumes ready=false directly.
+            $pending = ABJ_404_Solution_ViewBuildPendingResponseBuilder::find($e);
+            if ($pending !== null) {
+                self::markAjaxResponseSent();
+                self::getAndClearAjaxBufferedOutput();
+                self::sendJsonResponseAndExit(
+                    ABJ_404_Solution_ViewBuildPendingResponseBuilder::warmResponse($abj404dao, $pending),
+                    200
+                );
+                return;
+            }
             if (!$isPluginAdmin) {
                 $abj404logic = abj_service('plugin_logic');
                 if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
