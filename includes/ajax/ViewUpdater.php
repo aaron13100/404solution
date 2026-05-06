@@ -66,6 +66,29 @@ class ABJ_404_Solution_ViewUpdater {
     }
 
     /**
+     * Best-effort foreground lease for admin/browser-owned rebuilds. Failure
+     * only means cron may compete for the view-build lock; it must never break
+     * the admin table response itself.
+     *
+     * @param mixed $dao
+     * @return void
+     */
+    private static function tryClaimForegroundViewBuildLease($dao): void {
+        if (!is_object($dao) || !method_exists($dao, 'claimForegroundViewBuildLease')) {
+            return;
+        }
+        try {
+            $dao->claimForegroundViewBuildLease();
+        } catch (Throwable $e) {
+            self::safeLogAjaxFailure(
+                'claimForegroundViewBuildLease failed; cron may compete for the build lock.',
+                null,
+                $e
+            );
+        }
+    }
+
+    /**
      * Update the in-flight stage marker for the current AJAX request.  Sets
      * `$context['stage']` and — when a client requestId is present — also
      * writes a short-lived transient so a follow-up `ajaxFetchInflightStage`
@@ -573,8 +596,6 @@ class ABJ_404_Solution_ViewUpdater {
         $cacheModeRaw = (string)$abj404dao->getPostOrGetSanitize('cacheMode', 'normal');
         $cacheMode = in_array($cacheModeRaw, array('normal', 'cache_or_pending', 'refresh_cache'), true)
             ? $cacheModeRaw : 'normal';
-        $forceViewRebuild = ((string)$abj404dao->getPostOrGetSanitize('forceViewRebuild', '0') === '1'
-            || (string)$abj404dao->getPostOrGetSanitize('abj404_force_view_rebuild', '0') === '1');
         $currentSignature = strtolower(trim((string)$abj404dao->getPostOrGetSanitize('currentSignature', '')));
         if (strlen($currentSignature) > 128) {
             $currentSignature = substr($currentSignature, 0, 128);
@@ -590,7 +611,6 @@ class ABJ_404_Solution_ViewUpdater {
             'filter' => $filter,
             'detectOnly' => $detectOnly ? 1 : 0,
             'cacheMode' => $cacheMode,
-            'forceViewRebuild' => $forceViewRebuild ? 1 : 0,
             'currentSignature_length' => strlen($currentSignature),
             'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
@@ -658,9 +678,6 @@ class ABJ_404_Solution_ViewUpdater {
                     && !$abj404dao->viewDoneIsServeable()) {
                 $stage = ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
                 self::setStage($context, $stage);
-                if ($forceViewRebuild && method_exists($abj404dao, 'invalidateViewDone')) {
-                    $abj404dao->invalidateViewDone();
-                }
                 $progress = method_exists($abj404dao, 'getViewBuildProgress')
                     ? $abj404dao->getViewBuildProgress()
                     : array('status' => 'pending', 'stage' => 0, 'of' => 11,
@@ -679,7 +696,6 @@ class ABJ_404_Solution_ViewUpdater {
 
             if ($cacheMode === 'cache_or_pending'
                     && !$detectOnly
-                    && !$forceViewRebuild
                     && ($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
                     && is_object($abj404dao)
                     && method_exists($abj404dao, 'viewTableSnapshotAvailable')) {
@@ -1362,12 +1378,16 @@ class ABJ_404_Solution_ViewUpdater {
         $nonce = $abj404dao->getPostOrGetSanitize('nonce');
         $page = $abj404dao->getPostOrGetSanitize('page', '');
         $subpage = $abj404dao->getPostOrGetSanitize('subpage', '');
+        $requestId = self::readClientRequestId();
+        $forceViewRebuild = ((string)$abj404dao->getPostOrGetSanitize('forceViewRebuild', '0') === '1');
 
         $isPluginAdmin = false;
         $context = array(
             'action' => 'ajaxAdvanceViewBuild',
             'page' => $page,
             'subpage' => $subpage,
+            'requestId' => $requestId,
+            'forceViewRebuild' => $forceViewRebuild ? 1 : 0,
             'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
         );
@@ -1410,6 +1430,20 @@ class ABJ_404_Solution_ViewUpdater {
                 return;
             }
 
+            // The browser only sends forceViewRebuild=1 on the first advance
+            // call of an ?abj404_force_view_rebuild=1 page-load. Invalidating
+            // here (rather than in the fetch path) keeps the rebuild owned by
+            // a single requestId so every staged sub-stage shows up in the
+            // debug log.
+            if ($forceViewRebuild) {
+                if (method_exists($abj404dao, 'invalidateViewSnapshotCache')) {
+                    $abj404dao->invalidateViewSnapshotCache();
+                } else if (method_exists($abj404dao, 'invalidateViewDone')) {
+                    $abj404dao->invalidateViewDone();
+                }
+            }
+
+            self::tryClaimForegroundViewBuildLease($abj404dao);
             $progress = $abj404dao->advanceViewBuildOnce();
             $statusValue = is_array($progress) && isset($progress['status']) && is_string($progress['status'])
                 ? $progress['status'] : 'pending';

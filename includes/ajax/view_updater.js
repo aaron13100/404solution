@@ -8,6 +8,31 @@ if (typeof(getURLParameter) !== "function") {
 }
 
 /**
+ * Strip ?abj404_force_view_rebuild=1 from the visible URL so a hard reload
+ * doesn't loop the rebuild and so subsequent page-internal flows don't read
+ * the flag. Pure cosmetic + idempotency: the JS that consumes the flag has
+ * already captured it before this runs.
+ *
+ * @returns {void}
+ */
+function abj404StripForceViewRebuildFromUrl() {
+    if (!window.history || typeof window.history.replaceState !== 'function') {
+        return;
+    }
+    var search = location.search;
+    if (search.indexOf('abj404_force_view_rebuild=') < 0) {
+        return;
+    }
+    search = search
+        .replace(/(^\?|&)abj404_force_view_rebuild=[^&]*/, '$1')
+        .replace(/^\?&/, '?')
+        .replace(/&&+/g, '&')
+        .replace(/[?&]$/, '');
+    if (search === '?') { search = ''; }
+    window.history.replaceState(null, '', location.pathname + search + location.hash);
+}
+
+/**
  * Stores AJAX interaction details for the footer debug section.
  * @type {string[]}
  */
@@ -350,6 +375,7 @@ function abj404StartStageProgressPolling(config) {
  * config (all optional except baseUrl + nonce):
  *   - baseUrl:   admin-ajax.php URL.
  *   - nonce:     `abj404_fetchInflightStage` nonce (reused for advance).
+ *   - requestId: in-flight stage tracking id for the build-advance request.
  *   - subpage:   used by the status-line message lookup.
  *   - intervalMs: poll cadence; default 1000ms.
  *   - maxAttempts: hard cap on ticks; default 240 (~4 min at 1s cadence).
@@ -377,6 +403,10 @@ function abj404PollViewBuildAdvance(config) {
     var onReady = (typeof config.onReady === 'function') ? config.onReady : function() {};
     var onError = (typeof config.onError === 'function') ? config.onError : function() {};
     var stop = function() { stopped = true; };
+    // forceViewRebuild is sent only on the first advance call so the server
+    // invalidates view_done exactly once. Re-sending it on subsequent calls
+    // would reset build progress mid-rebuild and cause stages to repeat.
+    var sendForceViewRebuild = (config.forceViewRebuild === true);
 
     var formatProgressMessage = function(progress) {
         if (!progress || typeof progress !== 'object') {
@@ -404,17 +434,23 @@ function abj404PollViewBuildAdvance(config) {
             return;
         }
 
+        var requestData = {
+            action: 'ajaxAdvanceViewBuild',
+            nonce: config.nonce,
+            page: config.page || '',
+            subpage: config.subpage || '',
+            requestId: config.requestId || ''
+        };
+        if (sendForceViewRebuild) {
+            requestData.forceViewRebuild = '1';
+            sendForceViewRebuild = false;
+        }
         jQuery.ajax({
             url: config.baseUrl,
             type: 'POST',
             dataType: 'json',
             timeout: 30000,
-            data: {
-                action: 'ajaxAdvanceViewBuild',
-                nonce: config.nonce,
-                page: config.page || '',
-                subpage: config.subpage || ''
-            }
+            data: requestData
         }).done(function(result) {
             if (stopped) {
                 return;
@@ -490,15 +526,105 @@ function abj404FormatAjaxFailureDetails(meta) {
 jQuery(document).ready(function($) {
     bindSearchFieldListeners();
     bindPaginationLinkListeners();
+    // Diagnostic: ?abj404_force_view_rebuild=1 must own the whole rebuild
+    // under a single requestId so every staged sub-stage shows up in the
+    // debug log. Runs first, suppresses the regular initial-load and
+    // background-refresh flows until the rebuild is complete.
+    if (abj404HandleForceViewRebuild()) {
+        return;
+    }
     triggerInitialTableLoadIfNeeded();
     triggerBackgroundTableRefreshIfEnabled();
     triggerStatsBackgroundRefreshIfEnabled();
     // The health bar is rendered as an empty placeholder by PHP and hydrated
     // here so the slow getHighImpactCapturedCount() query never blocks first
-    // paint of the redirects table.  Safe to call on every page — it returns
+    // paint of the redirects table.  Safe to call on every page; returns
     // early when no placeholder is in the DOM.
     refreshHealthBarIfNeeded();
 });
+
+/**
+ * Owns the diagnostic `?abj404_force_view_rebuild=1` flow end-to-end. One
+ * requestId, one stage-progress poller, one advance poller, sending
+ * forceViewRebuild=1 only on the first advance call so the server invalidates
+ * view_done exactly once. On `ready`, runs the regular initial-load + refresh
+ * flows so the page hydrates as if the user had navigated freshly.
+ *
+ * Returns true when the force-rebuild flow took ownership of the page (the
+ * caller should skip the standard initial-load flow); false otherwise.
+ *
+ * @returns {boolean}
+ */
+function abj404HandleForceViewRebuild() {
+    if (getURLParameter('abj404_force_view_rebuild') !== '1') {
+        return false;
+    }
+    if (window.abj404ForceRebuildHandled === true) {
+        return false;
+    }
+    window.abj404ForceRebuildHandled = true;
+
+    var $ajaxConfigEl = jQuery('[data-pagination-ajax-url]').first();
+    if ($ajaxConfigEl.length === 0) {
+        $ajaxConfigEl = jQuery('.abj404-filter-bar').first();
+    }
+    var url = $ajaxConfigEl.attr('data-pagination-ajax-url') || window.ajaxurl;
+    var inflightNonce = $ajaxConfigEl.attr('data-pagination-inflight-nonce') || '';
+    if (!url || !inflightNonce) {
+        // No advance endpoint config on this page; fall back to normal flow.
+        abj404StripForceViewRebuildFromUrl();
+        return false;
+    }
+    var baseUrl = url.split('?')[0];
+    var subpage = $ajaxConfigEl.attr('data-pagination-ajax-subpage') || getURLParameter('subpage');
+    var requestId = abj404GenerateRequestId();
+
+    abj404StripForceViewRebuildFromUrl();
+    abj404UpdateAjaxDebugLog('Force-rebuild requested', {requestId: requestId, subpage: subpage});
+
+    var stopBuildStagePolling = abj404StartStageProgressPolling({
+        baseUrl: baseUrl,
+        nonce: inflightNonce,
+        requestId: requestId,
+        subpage: subpage,
+        message: 'Force-rebuilding redirects view'
+    });
+
+    // Delegate to the standard initial-load + refresh flows so cachePending,
+    // viewBuildPending, and error retries all reuse the same handlers as a
+    // fresh page navigation. Replicating those branches here is a footgun
+    // (one of them gets forgotten and the table sticks on "Preparing table
+    // data in the background").
+    var resumeNormalFlows = function() {
+        triggerInitialTableLoadIfNeeded();
+        triggerBackgroundTableRefreshIfEnabled();
+        triggerStatsBackgroundRefreshIfEnabled();
+        refreshHealthBarIfNeeded();
+    };
+
+    abj404PollViewBuildAdvance({
+        baseUrl: baseUrl,
+        nonce: inflightNonce,
+        requestId: requestId,
+        subpage: subpage,
+        page: getURLParameter('page') || '',
+        intervalMs: 1000,
+        forceViewRebuild: true,
+        onReady: function() {
+            stopBuildStagePolling(true);
+            jQuery('.abj404-refresh-status').text('');
+            abj404UpdateAjaxDebugLog('Force-rebuild complete');
+            resumeNormalFlows();
+        },
+        onError: function(errorMeta) {
+            stopBuildStagePolling(true);
+            abj404UpdateAjaxDebugLog('Force-rebuild failed', errorMeta || {});
+            resumeNormalFlows();
+        }
+    });
+
+    return true;
+}
 
 /**
  * Hydrate the redirects-page health bar via a dedicated AJAX call so the
@@ -816,6 +942,7 @@ function startViewBuildPollingThenRetry(triggerItem, $config, fetchAttemptNumber
     var baseUrl = url ? url.split('?')[0] : '';
     var inflightNonce = $ajaxConfigEl.attr('data-pagination-inflight-nonce') || '';
     var subpage = $ajaxConfigEl.attr('data-pagination-ajax-subpage') || getURLParameter('subpage');
+    var buildRequestId = abj404GenerateRequestId();
 
     if (!baseUrl || !inflightNonce) {
         // No advance endpoint config: drop placeholders so the page is usable.
@@ -827,13 +954,23 @@ function startViewBuildPollingThenRetry(triggerItem, $config, fetchAttemptNumber
         return;
     }
 
+    var stopBuildStageProgressPolling = abj404StartStageProgressPolling({
+        baseUrl: baseUrl,
+        nonce: inflightNonce,
+        requestId: buildRequestId,
+        subpage: subpage,
+        message: 'Preparing redirects view'
+    });
+
     abj404PollViewBuildAdvance({
         baseUrl: baseUrl,
         nonce: inflightNonce,
+        requestId: buildRequestId,
         subpage: subpage,
         page: getURLParameter('page') || '',
         intervalMs: 1000,
         onReady: function() {
+            stopBuildStageProgressPolling(true);
             window.abj404ViewBuildAdvanceRunning = false;
             jQuery('.abj404-refresh-status').text('');
             // Re-issue the fetch now that view_done is ready.  Use the same
@@ -862,6 +999,7 @@ function startViewBuildPollingThenRetry(triggerItem, $config, fetchAttemptNumber
             });
         },
         onError: function(errorMeta) {
+            stopBuildStageProgressPolling(true);
             window.abj404ViewBuildAdvanceRunning = false;
             if ($config && $config.length > 0) {
                 $config.attr('data-pagination-initial-load', '0');
@@ -988,7 +1126,6 @@ function warmTableCacheStage(triggerItem, options) {
     var baseUrl = url.split('?')[0];
     var subpage = $ajaxConfigEl.attr("data-pagination-ajax-subpage") || getURLParameter('subpage');
     var page = getURLParameter('page');
-    var forceViewRebuild = getURLParameter('abj404_force_view_rebuild') === '1';
     var trashFilter = $ajaxConfigEl.attr('data-pagination-current-filter') || getURLParameter('filter');
     var orderby = $ajaxConfigEl.attr('data-pagination-current-orderby') || getURLParameter('orderby');
     var order = $ajaxConfigEl.attr('data-pagination-current-order') || getURLParameter('order');
@@ -1021,8 +1158,7 @@ function warmTableCacheStage(triggerItem, options) {
             orderby: orderby,
             order: order,
             paged: paged,
-            requestId: requestId,
-            forceViewRebuild: forceViewRebuild ? '1' : '0'
+            requestId: requestId
         },
         success: function(result) {
             stopStageProgressPolling(true);
@@ -1651,7 +1787,6 @@ function paginationLinksChange(triggerItem, options) {
     var action = $ajaxConfigEl.attr("data-pagination-ajax-action") || 'ajaxUpdatePaginationLinks';
     var subpage = $ajaxConfigEl.attr("data-pagination-ajax-subpage") || getURLParameter('subpage');
     var page = getURLParameter('page');
-    var forceViewRebuild = getURLParameter('abj404_force_view_rebuild') === '1';
     var trashFilter = $ajaxConfigEl.attr('data-pagination-current-filter');
     if (typeof trashFilter === 'undefined' || trashFilter === null || trashFilter === '') {
         trashFilter = getURLParameter('filter');
@@ -1742,7 +1877,7 @@ function paginationLinksChange(triggerItem, options) {
     // complete before the placeholder turns into an error notice.
     var ajaxTimeoutMs = (isBackgroundRefresh && detectOnly) ? 15000 : 45000;
     var stopStageProgressPolling = function() {};
-    if (options.showStageProgress === true || (forceViewRebuild && !detectOnly)) {
+    if (options.showStageProgress === true) {
         stopStageProgressPolling = abj404StartStageProgressPolling({
             baseUrl: baseUrl,
             nonce: inflightNonce,
@@ -1786,7 +1921,6 @@ function paginationLinksChange(triggerItem, options) {
             cacheMode: cacheMode,
             currentSignature: (detectOnly && baselineComparison && baselineComparison.serverSignature)
                 ? baselineComparison.serverSignature : '',
-            forceViewRebuild: (forceViewRebuild && !detectOnly) ? '1' : '0',
             requestId: requestId
         },
         success: function (result) {

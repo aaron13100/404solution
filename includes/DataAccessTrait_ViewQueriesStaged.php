@@ -45,6 +45,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     // is considered stale: the buffer table and high-water options are
     // dropped on the next entry and the build restarts from scratch.
     const VIEW_BUILD_RESUME_TTL_SECONDS = 600;
+    const VIEW_BUILD_FOREGROUND_LEASE_SECONDS = 120;
 
     /** @var bool Process-local guard so a single request never rebuilds twice. */
     private static $viewBuildAlreadyRanThisRequest = false;
@@ -108,6 +109,23 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     /** @return string */
     private function viewDoneFreshnessOptionName(): string {
         return $this->getLowercasePrefix() . 'abj404_view_done_built_at';
+    }
+
+    // Foreground admin/AJAX flows hold this lease briefly so staged-build
+    // diagnostics reach the browser instead of being hidden inside cron. Cron
+    // checks foregroundViewBuildLeaseActive() and reschedules itself instead
+    // of taking the build lock while the lease is held.
+    /** @return void */
+    public function claimForegroundViewBuildLease(): void {
+        if (!function_exists('update_option')) { return; }
+        update_option($this->getLowercasePrefix() . 'abj404_view_build_foreground_until',
+            time() + self::VIEW_BUILD_FOREGROUND_LEASE_SECONDS, false);
+    }
+    /** @return bool */
+    private function foregroundViewBuildLeaseActive(): bool {
+        if (!function_exists('get_option')) { return false; }
+        $until = get_option($this->getLowercasePrefix() . 'abj404_view_build_foreground_until', 0);
+        return is_scalar($until) && intval($until) > time();
     }
 
     /**
@@ -283,8 +301,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         if ($isComplete) {
             return $this->getViewBuildProgress();
         }
-        // Yielded mid-stage; schedule a background tick so cron also pushes
-        // forward even if the JS poller stops (admin closes the tab).
+        // Yielded mid-stage; schedule a background tick so cron pushes forward
+        // even if the JS poller stops. Cron respects the foreground lease.
         $this->scheduleViewDoneRebuild();
         return $this->getViewBuildProgress();
     }
@@ -347,9 +365,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      * @return void
      */
     public function rebuildViewDoneInBackground(): void {
-        if (!$this->acquireViewBuildLock()) {
+        if ($this->foregroundViewBuildLeaseActive()) {
+            $this->scheduleViewDoneRebuild(self::VIEW_BUILD_FOREGROUND_LEASE_SECONDS);
             return;
         }
+        if (!$this->acquireViewBuildLock()) { return; }
         try {
             $isComplete = $this->runStagedBuildOnce();
             if (!$isComplete) {
@@ -453,6 +473,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      */
     private function logTimedViewBuildStage(int $stageNumber, string $stageKey, string $status, float $started): void {
         $elapsedMs = (int)round((microtime(true) - $started) * 1000);
+        $this->markBuildStage($stageKey, $status . ' in ' . $elapsedMs . ' ms');
         $this->logger->debugMessage(sprintf(
             '[staged] build stage %d/11 %s %s in %d ms',
             $stageNumber,
@@ -1466,12 +1487,12 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     }
 
     /** @return void */
-    private function scheduleViewDoneRebuild(): void {
+    private function scheduleViewDoneRebuild(int $delaySeconds = 1): void {
         if (function_exists('wp_next_scheduled') && function_exists('wp_schedule_single_event')) {
             $hook = 'abj404_rebuildViewDone';
             $next = wp_next_scheduled($hook);
             if ($next === false) {
-                wp_schedule_single_event(time() + 1, $hook);
+                wp_schedule_single_event(time() + max(1, intval($delaySeconds)), $hook);
             }
         }
     }

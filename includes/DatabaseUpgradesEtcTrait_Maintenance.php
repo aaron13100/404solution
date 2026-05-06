@@ -605,6 +605,39 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
             $scanner = new ABJ_404_Solution_InternalLinkScanner();
             $scanner->runNightlyScan();
         }
+
+        $this->refreshViewDoneSnapshotInline();
+    }
+
+    /**
+     * Invalidate the staged view_done snapshot and drive the staged build to
+     * completion inline so admin tables on quiet sites still see at most a
+     * 24-hour-old snapshot. Bounded by an iteration cap so a build that yields
+     * indefinitely (lease contention, transient lock failures) cannot stall
+     * the daily maintenance window.
+     *
+     * Runs after the other daily tasks so canonical_url backfills, dead-dest
+     * flagging, and auto-redirect expiry are already reflected in the freshly
+     * rebuilt view_done.
+     *
+     * @return void
+     */
+    private function refreshViewDoneSnapshotInline(): void {
+        $dao = abj_service('data_access');
+        if (!is_object($dao)
+                || !method_exists($dao, 'invalidateViewSnapshotCache')
+                || !method_exists($dao, 'advanceViewBuildOnce')) {
+            return;
+        }
+        $dao->invalidateViewSnapshotCache();
+        // 11 staged sub-stages with up to a few yields each on resumable
+        // stages (S2/S4/S5); 30 ticks comfortably covers a full rebuild.
+        for ($i = 0; $i < 30; $i++) {
+            $progress = $dao->advanceViewBuildOnce();
+            if (!is_array($progress)) { break; }
+            if (($progress['status'] ?? '') === 'ready') { break; }
+            if (!empty($progress['locked'])) { break; }
+        }
     }
 
     // Constants CANONICAL_URL_BACKFILL_CHUNK_SIZE and
