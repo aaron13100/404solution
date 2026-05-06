@@ -413,6 +413,56 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     }
 
     /**
+     * Run one staged view-build step and write a clear per-stage timing line.
+     *
+     * The build can span several HTTP requests. For resumable stages that yield
+     * mid-stage (S2/S4/S5), this records the time spent in the current tick and
+     * marks the status as yielded; the final tick for that stage is logged as
+     * completed.
+     *
+     * @param int $stageNumber  1-based staged build number.
+     * @param string $stageKey  Stable stage key used by AJAX progress.
+     * @param callable $callback Stage work to execute.
+     * @return mixed
+     */
+    private function runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback) {
+        $started = microtime(true);
+        try {
+            $result = $callback();
+        } catch (\Throwable $e) {
+            $this->logTimedViewBuildStage($stageNumber, $stageKey, 'error', $started);
+            throw $e;
+        }
+
+        $status = 'completed';
+        if ($result === false) {
+            $status = 'yielded';
+        } else if ($result === 'skipped') {
+            $status = 'skipped';
+        }
+        $this->logTimedViewBuildStage($stageNumber, $stageKey, $status, $started);
+        return $result;
+    }
+
+    /**
+     * @param int $stageNumber
+     * @param string $stageKey
+     * @param string $status
+     * @param float $started
+     * @return void
+     */
+    private function logTimedViewBuildStage(int $stageNumber, string $stageKey, string $status, float $started): void {
+        $elapsedMs = (int)round((microtime(true) - $started) * 1000);
+        $this->logger->debugMessage(sprintf(
+            '[staged] build stage %d/11 %s %s in %d ms',
+            $stageNumber,
+            $stageKey,
+            $status,
+            $elapsedMs
+        ));
+    }
+
+    /**
      * @param string $shortName  One of self::$viewBuildProgressOptionNames keys.
      * @return string  Site-prefixed option name.
      */
@@ -557,7 +607,9 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 1) {
             $this->markBuildStage('staged_build_s1_create');
-            $this->stageCreateBuildTable();
+            $this->runTimedViewBuildStage(1, 'staged_build_s1_create', function () {
+                $this->stageCreateBuildTable();
+            });
             // Stamp started_at on the very first stage so the resume-TTL
             // clock starts from buffer creation.
             if ($this->readProgressOption('started_at', 0) === 0) {
@@ -568,7 +620,9 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 2) {
-            if (!$this->stageInsertRedirectsBatched()) {
+            if (!$this->runTimedViewBuildStage(2, 'staged_build_s2_insert', function () {
+                return $this->stageInsertRedirectsBatched();
+            })) {
                 return false; // budget exhausted; resume on next request
             }
             $this->writeProgressOption('current_stage', 2);
@@ -577,13 +631,17 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 3) {
             $this->markBuildStage('staged_build_s3_index_fd');
-            $this->stageAddPreJoinIndexes();
+            $this->runTimedViewBuildStage(3, 'staged_build_s3_index_fd', function () {
+                $this->stageAddPreJoinIndexes();
+            });
             $this->writeProgressOption('current_stage', 3);
             $stage = 3;
         }
 
         if ($stage < 4) {
-            if (!$this->stageUpdatePostsBatched()) {
+            if (!$this->runTimedViewBuildStage(4, 'staged_build_s4_update_posts', function () {
+                return $this->stageUpdatePostsBatched();
+            })) {
                 return false;
             }
             $this->writeProgressOption('current_stage', 4);
@@ -591,7 +649,9 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 5) {
-            if (!$this->stageUpdateTermsBatched()) {
+            if (!$this->runTimedViewBuildStage(5, 'staged_build_s5_update_terms', function () {
+                return $this->stageUpdateTermsBatched();
+            })) {
                 return false;
             }
             $this->writeProgressOption('current_stage', 5);
@@ -600,32 +660,41 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 6) {
             $this->markBuildStage('staged_build_s6_update_home');
-            $this->stageUpdateHome();
+            $this->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
+                $this->stageUpdateHome();
+            });
             $this->writeProgressOption('current_stage', 6);
             $stage = 6;
         }
 
         if ($stage < 7) {
             $this->markBuildStage('staged_build_s7_update_external');
-            $this->stageUpdateExternal();
+            $this->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
+                $this->stageUpdateExternal();
+            });
             $this->writeProgressOption('current_stage', 7);
             $stage = 7;
         }
 
         if ($stage < 8) {
             $this->markBuildStage('staged_build_s8_update_special');
-            $this->stageUpdateSpecial();
+            $this->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
+                $this->stageUpdateSpecial();
+            });
             $this->writeProgressOption('current_stage', 8);
             $stage = 8;
         }
 
         if ($stage < 9) {
-            if ($this->logsHitsTableExists()) {
-                $this->markBuildStage('staged_build_s9_update_hits');
-                $this->stageUpdateHits();
-            } else {
+            $this->runTimedViewBuildStage(9, 'staged_build_s9_update_hits', function () {
+                if ($this->logsHitsTableExists()) {
+                    $this->markBuildStage('staged_build_s9_update_hits');
+                    $this->stageUpdateHits();
+                    return null;
+                }
                 $this->markBuildStage('staged_build_s9_update_hits', 'skipped; logs hits table unavailable');
-            }
+                return 'skipped';
+            });
             // Skipped or not, we've moved past S9.
             $this->writeProgressOption('current_stage', 9);
             $stage = 9;
@@ -633,14 +702,18 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 10) {
             $this->markBuildStage('staged_build_s10_index_sort');
-            $this->stageAddSortIndexes();
+            $this->runTimedViewBuildStage(10, 'staged_build_s10_index_sort', function () {
+                $this->stageAddSortIndexes();
+            });
             $this->writeProgressOption('current_stage', 10);
             $stage = 10;
         }
 
         if ($stage < 11) {
             $this->markBuildStage('staged_build_s11_swap');
-            $this->stageRenameSwap();
+            $this->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
+                $this->stageRenameSwap();
+            });
             if (function_exists('update_option')) {
                 update_option($this->viewDoneFreshnessOptionName(), time(), false);
             }
