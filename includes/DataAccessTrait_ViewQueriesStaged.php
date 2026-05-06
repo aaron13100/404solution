@@ -1495,6 +1495,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
     /** @return void */
     private function releaseViewBuildLock(): void {
+        // @utf8-audit: opt-out - $name is built from $wpdb->prefix + a class
+        // constant; never user input, cannot contain invalid UTF-8 bytes.
         $name = $this->getLowercasePrefix() . self::VIEW_DONE_BUILD_LOCK_NAME;
         $this->queryAndGetResults("SELECT RELEASE_LOCK('" . esc_sql($name) . "')",
             array('log_errors' => false));
